@@ -87,3 +87,7 @@ imperative subjects, and commit coherent completed changes. Do not commit keys,
 raw paid API responses containing sensitive inputs, model weights, caches,
 datasets, runtime logs, or generated result directories.
 
+Automatically make a scoped commit whenever a complete feature is finished and
+its associated run has successfully started. Run the relevant tests and inspect
+the staged files first; do not wait for a separate request to commit, and never
+include ignored experiment artifacts in that automatic commit.
