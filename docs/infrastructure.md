@@ -24,6 +24,8 @@ python scripts/lambda_cloud.py bootstrap --campaign monitor-foundation
 python scripts/lambda_cloud.py sync-secrets --campaign monitor-foundation \
   --name HF_TOKEN --name WANDB_API_KEY --name OPENROUTER_API_KEY
 python scripts/lambda_cloud.py ssh --campaign monitor-foundation
+python scripts/lambda_cloud.py status --campaign monitor-foundation \
+  --remote-path results/data_scaling/lambda_status.json
 ```
 
 The Lambda API key remains local. Selected experiment credentials are sent over
@@ -35,6 +37,16 @@ bootstrap writes cache and CUDA settings to
 input and `pull` for result collection. The helper never terminates an instance
 unless `terminate --yes` is invoked; do not do that without explicit user
 authorization.
+
+All SSH operations use the same non-interactive, fail-fast transport settings.
+Connections are multiplexed through a git-ignored control socket under `.lambda/`
+and retained for ten minutes, so repeated commands and transfers reuse an
+authenticated session without keeping a two-week connection open. Keepalives
+detect an unresponsive session after roughly 45 seconds. Rsync uploads and
+downloads retain partial files, enforce a 60-second I/O timeout, and retry up to
+three times with bounded backoff. The `status` command accepts only a
+project-relative path and refuses to read more than 1 MiB; prefer it to tailing a
+large log that is still being written.
 
 ## OpenRouter
 
@@ -54,4 +66,3 @@ gleipnir-openrouter \
 
 The command requires `OPENROUTER_API_KEY`, requests literal terminal `0|1`
 logprobs, stores prompt hashes, and resumes only when cached hashes match.
-

@@ -28,6 +28,7 @@ from typing import Any, NoReturn
 ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / ".lambda"
 KNOWN_HOSTS = STATE_DIR / "known_hosts"
+SSH_CONTROL_PATH = STATE_DIR / "ssh-%C"
 DEFAULT_API_URL = "https://cloud.lambda.ai/api/v1"
 INSTANCE_NAME_PREFIX = "gleipnir-"
 CAMPAIGN_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,47}$")
@@ -36,6 +37,13 @@ REMOTE_ROOT = "gleipnir"
 REMOTE_SECRETS_FILE = ".config/gleipnir/secrets.env"
 REMOTE_RUNTIME_FILE = ".config/gleipnir/runtime.env"
 VLLM_SMOKE_MODEL = "Qwen/Qwen2.5-0.5B-Instruct"
+SSH_CONNECT_TIMEOUT_SECONDS = 10
+SSH_CONTROL_PERSIST_SECONDS = 600
+SSH_KEEPALIVE_INTERVAL_SECONDS = 15
+SSH_KEEPALIVE_FAILURES = 3
+RSYNC_IO_TIMEOUT_SECONDS = 60
+TRANSFER_ATTEMPTS = 3
+MAX_STATUS_BYTES = 1024 * 1024
 ALLOWED_REMOTE_SECRETS = frozenset(
     {
         "HF_TOKEN",
@@ -584,12 +592,14 @@ def command_wait(args: argparse.Namespace, client: LambdaCloudClient) -> None:
         time.sleep(args.interval)
 
 
-def ssh_argv(private_key: Path, ip: str) -> list[str]:
+def ssh_transport_argv(private_key: Path) -> list[str]:
+    """Return the shared, fail-fast SSH transport configuration."""
     STATE_DIR.mkdir(exist_ok=True)
     return [
-        "ssh",
         "-i",
         str(private_key),
+        "-o",
+        "BatchMode=yes",
         "-o",
         "IdentitiesOnly=yes",
         "-o",
@@ -597,11 +607,28 @@ def ssh_argv(private_key: Path, ip: str) -> list[str]:
         "-o",
         f"UserKnownHostsFile={KNOWN_HOSTS}",
         "-o",
-        "ConnectTimeout=15",
+        f"ConnectTimeout={SSH_CONNECT_TIMEOUT_SECONDS}",
         "-o",
-        "ServerAliveInterval=15",
+        "ConnectionAttempts=3",
         "-o",
-        "ServerAliveCountMax=20",
+        f"ServerAliveInterval={SSH_KEEPALIVE_INTERVAL_SECONDS}",
+        "-o",
+        f"ServerAliveCountMax={SSH_KEEPALIVE_FAILURES}",
+        "-o",
+        "TCPKeepAlive=yes",
+        "-o",
+        "ControlMaster=auto",
+        "-o",
+        f"ControlPersist={SSH_CONTROL_PERSIST_SECONDS}",
+        "-o",
+        f"ControlPath={SSH_CONTROL_PATH}",
+    ]
+
+
+def ssh_argv(private_key: Path, ip: str) -> list[str]:
+    return [
+        "ssh",
+        *ssh_transport_argv(private_key),
         f"ubuntu@{ip}",
     ]
 
@@ -627,6 +654,31 @@ def run_checked(argv: Sequence[str], *, input_text: str | None = None) -> None:
         fail(f"command failed with exit code {result.returncode}: {shlex.join(argv)}")
 
 
+def run_transfer(argv: Sequence[str], *, attempts: int = TRANSFER_ATTEMPTS) -> None:
+    """Run resumable transfer commands with bounded exponential-backoff retries."""
+    if attempts < 1:
+        raise ValueError("transfer attempts must be positive")
+    last_returncode = 0
+    for attempt in range(1, attempts + 1):
+        result = subprocess.run(list(argv), check=False)
+        last_returncode = result.returncode
+        if result.returncode == 0:
+            return
+        if attempt < attempts:
+            delay = 2 ** (attempt - 1)
+            print(
+                f"transfer failed with exit code {result.returncode} "
+                f"(attempt {attempt}/{attempts}); retrying in {delay}s",
+                file=sys.stderr,
+                flush=True,
+            )
+            time.sleep(delay)
+    fail(
+        f"transfer failed after {attempts} attempts with exit code {last_returncode}: "
+        f"{shlex.join(argv)}"
+    )
+
+
 def command_ssh(args: argparse.Namespace, client: LambdaCloudClient) -> None:
     private_key, instance = active_ssh_target(args, client)
     argv = ssh_argv(private_key, instance["ip"])
@@ -636,6 +688,29 @@ def command_ssh(args: argparse.Namespace, client: LambdaCloudClient) -> None:
             command = command[1:]
         if command:
             argv.append(shlex.join(command))
+    run_checked(argv)
+
+
+def command_status(args: argparse.Namespace, client: LambdaCloudClient) -> None:
+    """Read one small atomic JSON status artifact without streaming active logs."""
+    private_key, instance = active_ssh_target(args, client)
+    remote_path = PurePosixPath(REMOTE_ROOT) / ensure_relative_remote_path(
+        args.remote_path
+    )
+    remote_program = f"""import json
+import sys
+from pathlib import Path
+
+path = Path.home() / sys.argv[1]
+size = path.stat().st_size
+if size > {MAX_STATUS_BYTES}:
+    raise SystemExit(f"status file is too large: {{size}} bytes")
+with path.open(encoding="utf-8") as handle:
+    value = json.load(handle)
+print(json.dumps(value, indent=2, sort_keys=True))
+"""
+    command = shlex.join(["python3", "-c", remote_program, str(remote_path)])
+    argv = ssh_argv(private_key, instance["ip"]) + [command]
     run_checked(argv)
 
 
@@ -760,20 +835,21 @@ def ensure_relative_remote_path(path_text: str) -> PurePosixPath:
 
 
 def rsync_ssh_command(private_key: Path) -> str:
-    STATE_DIR.mkdir(exist_ok=True)
-    return shlex.join(
-        [
-            "ssh",
-            "-i",
-            str(private_key),
-            "-o",
-            "IdentitiesOnly=yes",
-            "-o",
-            "StrictHostKeyChecking=accept-new",
-            "-o",
-            f"UserKnownHostsFile={KNOWN_HOSTS}",
-        ]
-    )
+    return shlex.join(["ssh", *ssh_transport_argv(private_key)])
+
+
+def rsync_argv(private_key: Path) -> list[str]:
+    """Return shared rsync settings for resumable SSH transfers."""
+    return [
+        "rsync",
+        "-a",
+        "--partial",
+        "--partial-dir=.rsync-partial",
+        f"--timeout={RSYNC_IO_TIMEOUT_SECONDS}",
+        "--info=progress2",
+        "-e",
+        rsync_ssh_command(private_key),
+    ]
 
 
 def command_sync_code(args: argparse.Namespace, client: LambdaCloudClient) -> None:
@@ -795,17 +871,11 @@ def command_sync_code(args: argparse.Namespace, client: LambdaCloudClient) -> No
     target = f"ubuntu@{instance['ip']}:{REMOTE_ROOT}/"
     mkdir_argv = ssh_argv(private_key, instance["ip"]) + ["mkdir", "-p", REMOTE_ROOT]
     run_checked(mkdir_argv)
-    argv = [
-        "rsync",
-        "-a",
-        "--info=progress2",
-        "-e",
-        rsync_ssh_command(private_key),
-    ]
+    argv = rsync_argv(private_key)
     for pattern in CODE_SYNC_EXCLUDES:
         argv.extend(["--exclude", pattern])
     argv.extend([f"{ROOT}/", target])
-    run_checked(argv)
+    run_transfer(argv)
 
 
 def command_sync_commit(args: argparse.Namespace, client: LambdaCloudClient) -> None:
@@ -931,16 +1001,8 @@ def command_push(args: argparse.Namespace, client: LambdaCloudClient) -> None:
     target = f"ubuntu@{instance['ip']}:{target_path}"
     if local_path.is_dir():
         target += "/"
-    argv = [
-        "rsync",
-        "-a",
-        "--info=progress2",
-        "-e",
-        rsync_ssh_command(private_key),
-        source,
-        target,
-    ]
-    run_checked(argv)
+    argv = [*rsync_argv(private_key), source, target]
+    run_transfer(argv)
 
 
 def command_pull(args: argparse.Namespace, client: LambdaCloudClient) -> None:
@@ -956,17 +1018,8 @@ def command_pull(args: argparse.Namespace, client: LambdaCloudClient) -> None:
         target = f"{local_path}/"
     else:
         target = str(local_path)
-    argv = [
-        "rsync",
-        "-a",
-        "--partial",
-        "--info=progress2",
-        "-e",
-        rsync_ssh_command(private_key),
-        source,
-        target,
-    ]
-    run_checked(argv)
+    argv = [*rsync_argv(private_key), source, target]
+    run_transfer(argv)
 
 
 def build_remote_secret_payload(names: Sequence[str]) -> str:
@@ -1123,6 +1176,14 @@ def build_parser() -> argparse.ArgumentParser:
     add_private_key_argument(ssh_parser)
     ssh_parser.add_argument("command", nargs=argparse.REMAINDER)
     ssh_parser.set_defaults(handler=command_ssh)
+
+    status_parser = subparsers.add_parser(
+        "status", help="read one bounded JSON status artifact over SSH"
+    )
+    status_parser.add_argument("--campaign", required=True)
+    status_parser.add_argument("--remote-path", required=True)
+    add_private_key_argument(status_parser)
+    status_parser.set_defaults(handler=command_status)
 
     probe_parser = subparsers.add_parser("probe", help="check remote OS, GPU, and disk")
     probe_parser.add_argument("--campaign", required=True)

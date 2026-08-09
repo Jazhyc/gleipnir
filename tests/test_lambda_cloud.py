@@ -3,6 +3,7 @@ from __future__ import annotations
 import importlib.util
 import json
 import os
+import shlex
 import urllib.error
 from pathlib import Path
 from types import SimpleNamespace
@@ -172,8 +173,86 @@ def test_ssh_command_is_one_shell_quoted_remote_argument() -> None:
 
     argv = run_checked.call_args.args[0]
     assert argv[-1] == """bash -lc 'printf '"'"'%s\\n'"'"' '"'"'hello world'"'"''"""
+    assert "BatchMode=yes" in argv
     assert "ServerAliveInterval=15" in argv
-    assert "ServerAliveCountMax=20" in argv
+    assert "ServerAliveCountMax=3" in argv
+    assert "ControlMaster=auto" in argv
+    assert "ControlPersist=600" in argv
+
+
+def test_ssh_and_rsync_share_resilient_transport_options() -> None:
+    private_key = Path("/tmp/test-key")
+    ssh = lambda_cloud.ssh_argv(private_key, "192.0.2.1")
+    rsync_ssh = shlex.split(lambda_cloud.rsync_ssh_command(private_key))
+
+    for option in (
+        "BatchMode=yes",
+        "ConnectTimeout=10",
+        "ConnectionAttempts=3",
+        "ServerAliveInterval=15",
+        "ServerAliveCountMax=3",
+        "TCPKeepAlive=yes",
+        "ControlMaster=auto",
+        "ControlPersist=600",
+    ):
+        assert option in ssh
+        assert option in rsync_ssh
+    assert any(value.startswith("ControlPath=") for value in ssh)
+    assert any(value.startswith("ControlPath=") for value in rsync_ssh)
+
+
+def test_rsync_is_resumable_and_has_an_io_timeout() -> None:
+    argv = lambda_cloud.rsync_argv(Path("/tmp/test-key"))
+    assert "--partial" in argv
+    assert "--partial-dir=.rsync-partial" in argv
+    assert "--timeout=60" in argv
+
+
+def test_transfer_retries_with_bounded_backoff() -> None:
+    results = [
+        SimpleNamespace(returncode=30),
+        SimpleNamespace(returncode=12),
+        SimpleNamespace(returncode=0),
+    ]
+    with (
+        patch.object(lambda_cloud.subprocess, "run", side_effect=results) as run,
+        patch.object(lambda_cloud.time, "sleep") as sleep,
+    ):
+        lambda_cloud.run_transfer(["rsync", "source", "target"])
+
+    assert run.call_count == 3
+    assert [call.args[0] for call in sleep.call_args_list] == [1, 2]
+
+
+def test_status_reads_a_bounded_project_relative_json_file() -> None:
+    args = SimpleNamespace(remote_path="results/example/status.json")
+    with (
+        patch.object(
+            lambda_cloud,
+            "active_ssh_target",
+            return_value=(Path("/tmp/test-key"), {"ip": "192.0.2.1"}),
+        ),
+        patch.object(lambda_cloud, "run_checked") as run_checked,
+    ):
+        lambda_cloud.command_status(args, object())
+
+    remote_command = run_checked.call_args.args[0][-1]
+    assert "gleipnir/results/example/status.json" in remote_command
+    assert str(lambda_cloud.MAX_STATUS_BYTES) in remote_command
+
+
+def test_parser_exposes_bounded_status_reader() -> None:
+    args = lambda_cloud.build_parser().parse_args(
+        [
+            "status",
+            "--campaign",
+            "monitor-foundation",
+            "--remote-path",
+            "results/example/status.json",
+        ]
+    )
+    assert args.handler is lambda_cloud.command_status
+    assert args.remote_path == "results/example/status.json"
 
 
 def test_compute_probe_renders_project_environment_script() -> None:
