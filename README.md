@@ -1,0 +1,38 @@
+# Gleipnir
+
+Gleipnir is a research project for building a monitoring foundation model for AI
+control. The aim is to distill broad, calibrated judgments about deception,
+misaligned actions, policy-relevant behavior, and other control-relevant events
+into deployable monitors. Initial work uses the Qwen 3.5 family as the student
+backbone and grows out of the successful Aletheia's Quest distillation line.
+
+The repository is intentionally experiment-centric: each hypothesis gets its own
+directory under `experiments/`, while reusable code lives in `src/gleipnir/` and
+durable conclusions live in `docs/`.
+
+## Quick start
+
+```bash
+cd /scratch/s4626451/gleipnir
+cp .env.example .env
+./setup_dev.sh
+source .venv/bin/activate
+pytest
+```
+
+The lock file pins the environment. At bootstrap, the current top-level inference
+stack is vLLM 0.24.0 and Transformers 5.14.1; neither NNsight nor the old
+competition runner is included.
+
+## Layout
+
+- `src/gleipnir/`: shared prompt, API, metric, and training utilities.
+- `experiments/<hypothesis>/`: one self-contained hypothesis and its launchers.
+- `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
+- `scripts/`: operational tooling, including Lambda Cloud management.
+- `docs/`: research program, findings, decisions, and infrastructure notes.
+- `data/`, `results/`, `logs/`: ignored local artifacts; only `.gitkeep` files are tracked.
+
+Start with [the research program](docs/research_program.md), then read the README
+inside the experiment you are changing.
+

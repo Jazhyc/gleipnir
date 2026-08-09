@@ -1,0 +1,39 @@
+# Credentials and machine-local configuration
+.env
+.env.*
+!.env.example
+.lambda/
+
+# Python and tooling
+.venv/
+.uv-cache/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Model/data caches
+.cache/
+huggingface/
+wandb/
+
+# Inputs, generated artifacts, and runtime logs
+data/*
+!data/.gitkeep
+logs/*
+!logs/.gitkeep
+results/*
+!results/.gitkeep
+
+# Large model outputs
+*.safetensors
+*.bin
+*.pt
+*.pth
+
+# Editors and OS
+.DS_Store
+.idea/
+.vscode/
+
