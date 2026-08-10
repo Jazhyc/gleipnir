@@ -28,7 +28,8 @@ Selections are nested within each seed and stratified by `dataset x hard label`.
 Seeds `0, 1, 2` provide three independently ordered nested sweeps. Every other
 training choice is fixed to the Phoenix 8.1 recipe: Qwen3.5-9B, rank-16/alpha-32
 LoRA, two epochs, AdamW at `5e-5`, effective batch size 32, and direct binary-soft
-BCE. Cached source-specific student prompts are preserved.
+BCE. Qwen3.5 is loaded through `AutoModelForImageTextToText`, with LoRA restricted
+to its language model. Cached source-specific student prompts are preserved.
 
 The zero-data base model and full-data adapters are the endpoint baselines. This
 experiment does not compare model size, teacher quality, epochs, or alternative
@@ -93,3 +94,26 @@ writes `results/data_scaling/lambda_status.json` atomically for remote polling.
 Its measured H100 default is microbatch 2 with 16 accumulation steps, preserving
 the predeclared effective batch size 32. Under the pinned 2026-08 stack this was
 slightly faster than the historical microbatch 8 / accumulation 4 layout.
+
+## Legacy adapter correction
+
+The first Lambda sweep trained through Transformers' Qwen3.5 causal-LM
+compatibility wrapper. vLLM correctly selected the checkpoint's multimodal
+conditional-generation architecture, so the causal adapter keys did not name
+the wrapped language-model modules and the resulting validation scores were
+invalid. Preserve those original adapters and create checksum-tracked,
+multimodal-path copies before reevaluation:
+
+```bash
+python experiments/data_scaling/rebase_adapters.py
+python experiments/data_scaling/evaluate.py \
+  --jobs results/data_scaling/lambda_jobs_rebased.jsonl \
+  --only-job seed0-f100 --smoke-rows 8
+python experiments/data_scaling/evaluate.py \
+  --jobs results/data_scaling/lambda_jobs_rebased.jsonl
+python experiments/data_scaling/summarize.py \
+  --jobs results/data_scaling/lambda_jobs_rebased.jsonl
+```
+
+The smoke test is a required gate: it fails unless the full-data adapter changes
+at least one direct score relative to the base model.

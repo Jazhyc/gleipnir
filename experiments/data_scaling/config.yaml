@@ -8,7 +8,7 @@ teacher:
 
 student:
   model: Qwen/Qwen3.5-9B
-  model_loader: causal_lm
+  model_loader: image_text_to_text
   init_adapter: null
   target_mode: teacher
   teacher_sources: null
