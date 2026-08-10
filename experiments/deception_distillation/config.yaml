@@ -43,6 +43,7 @@ teacher:
 student:
   model: Qwen/Qwen3.5-9B
   model_loader: causal_lm
+  finetuning_mode: lora
   init_adapter: null
   target_mode: teacher
   teacher_sources: null
@@ -99,6 +100,15 @@ student:
     torch_compile_backend: inductor
     torch_compile_mode: default
     logging_steps: 5
+    fsdp:
+      enabled: false
+      config:
+        version: 2
+        auto_wrap_policy: transformer_based_wrap
+        transformer_layer_cls_to_wrap: [Qwen3_5DecoderLayer]
+        activation_checkpointing: true
+        reshard_after_forward: true
+        state_dict_type: FULL_STATE_DICT
     completion_loss_weight: 1.0
     # AUROC-oriented auxiliary objectives. The default preserves ordinary
     # completion-only SFT; enable paired_batching for within-dataset ranking.

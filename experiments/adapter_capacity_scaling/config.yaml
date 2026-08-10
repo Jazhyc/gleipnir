@@ -1,10 +1,9 @@
-method: data_scaling
-splits_dir: data/data_scaling/validation
-output_dir: results/data_scaling/${method}
+method: adapter_capacity_scaling
+output_dir: results/adapter_capacity_scaling/${method}
 seed: 0
 
 teacher:
-  artifact: ???
+  artifact: data/data_scaling/student_rows.jsonl
 
 student:
   model: Qwen/Qwen3.5-9B
@@ -13,14 +12,14 @@ student:
   init_adapter: null
   target_mode: teacher
   teacher_sources: null
-  soft_teacher_artifact: ???
+  soft_teacher_artifact: data/data_scaling/soft_targets.jsonl
   override_cached_prompt: false
   require_teacher_label_match: true
   record_identity_field: null
   train_limit: null
   train_fraction: 1.0
   train_fraction_seed: ${seed}
-  selection_manifest: ???
+  selection_manifest: null
   label_only_manifest: null
   dataset_name_contains: null
   max_prompt_chars: 3000
@@ -32,7 +31,7 @@ student:
   reasoning_dropout_probability: 0.0
   reasoning_dropout_seed: ${seed}
   max_length: 4608
-  output_dir: ${output_dir}/adapter
+  output_dir: ${output_dir}/model
   prompt: "unused: cached source-specific student prompts are authoritative"
   lora:
     r: 16
@@ -58,15 +57,6 @@ student:
     torch_compile_backend: inductor
     torch_compile_mode: default
     logging_steps: 5
-    fsdp:
-      enabled: false
-      config:
-        version: 2
-        auto_wrap_policy: transformer_based_wrap
-        transformer_layer_cls_to_wrap: [Qwen3_5DecoderLayer]
-        activation_checkpointing: true
-        reshard_after_forward: true
-        state_dict_type: FULL_STATE_DICT
     completion_loss_weight: 0.0
     direct_loss_weight: 0.0
     pairwise_loss_weight: 0.0
@@ -79,10 +69,19 @@ student:
     ordinal_soft_loss_weight: 0.0
     paired_batching: false
     paired_batching_mode: interleaved
+    fsdp:
+      enabled: false
+      config:
+        version: 2
+        auto_wrap_policy: transformer_based_wrap
+        transformer_layer_cls_to_wrap: [Qwen3_5DecoderLayer]
+        activation_checkpointing: true
+        reshard_after_forward: true
+        state_dict_type: FULL_STATE_DICT
 
 hydra:
   run:
-    dir: logs/data_scaling/hydra/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: logs/adapter_capacity_scaling/hydra/${now:%Y-%m-%d}/${now:%H-%M-%S}
   sweep:
-    dir: logs/data_scaling/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    dir: logs/adapter_capacity_scaling/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
     subdir: ${hydra.job.num}

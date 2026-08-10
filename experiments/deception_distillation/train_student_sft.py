@@ -125,6 +125,42 @@ def validate_trainable_lora_layout(model: Any, model_loader: str) -> list[str]:
     return names
 
 
+def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
+    """Validate the tuning layout and return auditable parameter counts."""
+    total = sum(parameter.numel() for parameter in model.parameters())
+    trainable = sum(
+        parameter.numel()
+        for parameter in model.parameters()
+        if parameter.requires_grad
+    )
+    lora_trainable = sum(
+        parameter.numel()
+        for name, parameter in model.named_parameters()
+        if parameter.requires_grad and "lora_" in name
+    )
+    if finetuning_mode == "lora":
+        if not lora_trainable or trainable != lora_trainable:
+            raise RuntimeError(
+                "LoRA mode must train only non-empty LoRA parameters: "
+                f"trainable={trainable} lora_trainable={lora_trainable}"
+            )
+    elif finetuning_mode == "full":
+        if lora_trainable:
+            raise RuntimeError("full fine-tuning unexpectedly contains LoRA parameters")
+        if trainable != total:
+            raise RuntimeError(
+                "full fine-tuning must leave every model parameter trainable: "
+                f"trainable={trainable} total={total}"
+            )
+    else:
+        raise ValueError(f"unknown student.finetuning_mode={finetuning_mode!r}")
+    return {
+        "total_parameters": total,
+        "trainable_parameters": trainable,
+        "lora_trainable_parameters": lora_trainable,
+    }
+
+
 def binary_token_ids(tokenizer: Any) -> list[int]:
     """Return the distinct single-token ids for literal binary predictions."""
     ids = []
@@ -1442,8 +1478,15 @@ def main(cfg: DictConfig) -> None:
         str(cfg.student.model),
         torch_dtype=torch.bfloat16,
     )
+    finetuning_mode = str(
+        OmegaConf.select(cfg, "student.finetuning_mode", default="lora")
+    )
+    if finetuning_mode not in {"lora", "full"}:
+        raise ValueError(f"unknown student.finetuning_mode={finetuning_mode!r}")
     init_adapter_value = OmegaConf.select(cfg, "student.init_adapter", default=None)
-    if init_adapter_value is None:
+    if finetuning_mode == "full" and init_adapter_value is not None:
+        raise ValueError("student.init_adapter is incompatible with full fine-tuning")
+    if finetuning_mode == "lora" and init_adapter_value is None:
         exclude_modules = OmegaConf.select(
             cfg, "student.lora.exclude_modules", default=None
         )
@@ -1460,7 +1503,7 @@ def main(cfg: DictConfig) -> None:
                 task_type="CAUSAL_LM",
             ),
         )
-    else:
+    elif finetuning_mode == "lora":
         init_adapter = Path(str(init_adapter_value))
         if not init_adapter.is_absolute():
             init_adapter = root / init_adapter
@@ -1472,24 +1515,34 @@ def main(cfg: DictConfig) -> None:
             init_adapter.as_posix(),
             is_trainable=True,
         )
-    trainable_lora_names = validate_trainable_lora_layout(model, model_loader)
-    trainable_lora_dtypes = sorted(
+    trainable_lora_names = (
+        validate_trainable_lora_layout(model, model_loader)
+        if finetuning_mode == "lora"
+        else []
+    )
+    counts = parameter_counts(model, finetuning_mode)
+    trainable_dtypes = sorted(
         {
             str(parameter.dtype)
-            for name, parameter in model.named_parameters()
-            if name in trainable_lora_names
+            for parameter in model.parameters()
+            if parameter.requires_grad
         }
+    )
+    resolved_model = (
+        model.get_base_model() if hasattr(model, "get_base_model") else model
     )
     print(
         f"model_loader={model_loader} "
-        f"resolved_model_class={model.get_base_model().__class__.__name__} "
+        f"finetuning_mode={finetuning_mode} "
+        f"resolved_model_class={resolved_model.__class__.__name__} "
+        f"total_parameters={counts['total_parameters']} "
+        f"trainable_parameters={counts['trainable_parameters']} "
         f"trainable_lora_tensors={len(trainable_lora_names)} "
-        f"trainable_lora_dtypes={trainable_lora_dtypes} "
-        f"first_trainable_lora={trainable_lora_names[0]}",
+        f"trainable_dtypes={trainable_dtypes} "
+        f"first_trainable_lora="
+        f"{trainable_lora_names[0] if trainable_lora_names else None}",
         flush=True,
     )
-    model.gradient_checkpointing_enable()
-    model.enable_input_require_grads()
 
     output_dir = Path(str(cfg.student.output_dir))
     if not output_dir.is_absolute():
@@ -1497,6 +1550,19 @@ def main(cfg: DictConfig) -> None:
     torch_compile = bool(
         OmegaConf.select(cfg, "student.training.torch_compile", default=False)
     )
+    fsdp_enabled = bool(
+        OmegaConf.select(cfg, "student.training.fsdp.enabled", default=False)
+    )
+    if fsdp_enabled and finetuning_mode != "full":
+        raise ValueError("FSDP is reserved for full fine-tuning in this trainer")
+    if fsdp_enabled:
+        fsdp_config = OmegaConf.to_container(
+            cfg.student.training.fsdp.config, resolve=True
+        )
+    else:
+        fsdp_config = None
+        model.gradient_checkpointing_enable()
+        model.enable_input_require_grads()
     args = TrainingArguments(
         output_dir=output_dir.as_posix(),
         optim=str(cfg.student.training.optim),
@@ -1533,9 +1599,13 @@ def main(cfg: DictConfig) -> None:
             else None
         ),
         logging_steps=int(cfg.student.training.logging_steps),
+        seed=int(cfg.seed),
+        data_seed=int(cfg.seed),
         save_strategy="no",
         bf16=True,
-        gradient_checkpointing=True,
+        gradient_checkpointing=not fsdp_enabled,
+        fsdp=True if fsdp_enabled else None,
+        fsdp_config=fsdp_config,
         report_to="none",
         remove_unused_columns=False,
     )
@@ -1554,10 +1624,27 @@ def main(cfg: DictConfig) -> None:
     trainer.direct_target_ids = direct_target_ids
     trainer.train()
     output_dir.mkdir(parents=True, exist_ok=True)
-    model.save_pretrained(output_dir)
-    tokenizer.save_pretrained(output_dir)
-    (output_dir.parent / "config.yaml").write_text(OmegaConf.to_yaml(cfg, resolve=True))
-    print(f"saved adapter to {output_dir}")
+    trainer.save_model(output_dir.as_posix())
+    if trainer.is_world_process_zero():
+        tokenizer.save_pretrained(output_dir)
+        (output_dir / "training_metadata.json").write_text(
+            json.dumps(
+                {
+                    **counts,
+                    "finetuning_mode": finetuning_mode,
+                    "model_loader": model_loader,
+                    "model": str(cfg.student.model),
+                    "seed": int(cfg.seed),
+                },
+                indent=2,
+                sort_keys=True,
+            )
+            + "\n"
+        )
+        (output_dir.parent / "config.yaml").write_text(
+            OmegaConf.to_yaml(cfg, resolve=True)
+        )
+        print(f"saved {finetuning_mode} model to {output_dir}")
 
 
 if __name__ == "__main__":
