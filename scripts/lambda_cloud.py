@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parents[1]
 STATE_DIR = ROOT / ".lambda"
 KNOWN_HOSTS = STATE_DIR / "known_hosts"
 SSH_CONTROL_PATH = STATE_DIR / "ssh-%C"
+TCP_MSS_PROXY = ROOT / "scripts/tcp_mss_proxy.py"
 DEFAULT_API_URL = "https://cloud.lambda.ai/api/v1"
 INSTANCE_NAME_PREFIX = "gleipnir-"
 CAMPAIGN_RE = re.compile(r"^[a-z0-9][a-z0-9-]{0,47}$")
@@ -41,6 +42,7 @@ SSH_CONNECT_TIMEOUT_SECONDS = 10
 SSH_CONTROL_PERSIST_SECONDS = 600
 SSH_KEEPALIVE_INTERVAL_SECONDS = 15
 SSH_KEEPALIVE_FAILURES = 3
+SSH_TCP_MSS = 1400
 RSYNC_IO_TIMEOUT_SECONDS = 60
 TRANSFER_ATTEMPTS = 3
 MAX_STATUS_BYTES = 1024 * 1024
@@ -595,6 +597,16 @@ def command_wait(args: argparse.Namespace, client: LambdaCloudClient) -> None:
 def ssh_transport_argv(private_key: Path) -> list[str]:
     """Return the shared, fail-fast SSH transport configuration."""
     STATE_DIR.mkdir(exist_ok=True)
+    proxy_command = shlex.join(
+        [
+            sys.executable,
+            str(TCP_MSS_PROXY),
+            "%h",
+            "%p",
+            "--mss",
+            str(SSH_TCP_MSS),
+        ]
+    )
     return [
         "-i",
         str(private_key),
@@ -616,6 +628,8 @@ def ssh_transport_argv(private_key: Path) -> list[str]:
         f"ServerAliveCountMax={SSH_KEEPALIVE_FAILURES}",
         "-o",
         "TCPKeepAlive=yes",
+        "-o",
+        f"ProxyCommand={proxy_command}",
         "-o",
         "ControlMaster=auto",
         "-o",

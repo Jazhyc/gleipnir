@@ -48,6 +48,16 @@ three times with bounded backoff. The `status` command accepts only a
 project-relative path and refuses to read more than 1 MiB; prefer it to tailing a
 large log that is still being written.
 
+The SSH transport runs through `scripts/tcp_mss_proxy.py`, which advertises a
+conservative 1400-byte TCP maximum segment size. This avoids payload-dependent
+stalls observed between the Habrok compute network and Lambda while retaining
+normal SSH authentication and encryption. In a live transfer probe, ordinary
+SCP stalled without transferring data, whereas MSS-capped rsync transferred a
+64 MiB incompressible file, resumed correctly after a forced interruption, and
+matched its remote SHA-256. The same path transferred a 116 MiB LoRA adapter in
+15 seconds with a matching checksum. The proxy uses only the Python standard
+library and is applied automatically to SSH, rsync, push, pull, and code sync.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

@@ -192,13 +192,21 @@ def test_ssh_and_rsync_share_resilient_transport_options() -> None:
         "ServerAliveInterval=15",
         "ServerAliveCountMax=3",
         "TCPKeepAlive=yes",
+        "ProxyCommand=",
         "ControlMaster=auto",
         "ControlPersist=600",
     ):
-        assert option in ssh
-        assert option in rsync_ssh
+        if option.endswith("="):
+            assert any(value.startswith(option) for value in ssh)
+            assert any(value.startswith(option) for value in rsync_ssh)
+        else:
+            assert option in ssh
+            assert option in rsync_ssh
     assert any(value.startswith("ControlPath=") for value in ssh)
     assert any(value.startswith("ControlPath=") for value in rsync_ssh)
+    proxy = next(value for value in ssh if value.startswith("ProxyCommand="))
+    assert "tcp_mss_proxy.py" in proxy
+    assert "--mss 1400" in proxy
 
 
 def test_rsync_is_resumable_and_has_an_io_timeout() -> None:
