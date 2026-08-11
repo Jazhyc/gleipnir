@@ -41,6 +41,11 @@ def main() -> None:
         default=Path("results/adapter_capacity_scaling/lambda_jobs.jsonl"),
     )
     parser.add_argument("--output-dir", type=Path)
+    parser.add_argument(
+        "--allow-missing-full",
+        action="store_true",
+        help="Accept intentionally cancelled full-finetuning endpoints.",
+    )
     args = parser.parse_args()
 
     jobs_path = args.jobs.resolve()
@@ -49,6 +54,8 @@ def main() -> None:
     for job in read_jsonl(jobs_path):
         result_path = Path(job["output_dir"]) / "validation" / "result.json"
         if not result_path.is_file():
+            if args.allow_missing_full and job["capacity_kind"] == "full":
+                continue
             raise FileNotFoundError(f"missing evaluation result: {result_path}")
         result = json.loads(result_path.read_text())
         diagnostics = result["metrics"]["macro"]["diagnostics"]
@@ -131,6 +138,9 @@ def main() -> None:
         "balanced_accuracy_threshold": 0.5,
         "fit_population": "LoRA ranks only; full fine-tuning is an endpoint",
         "fit_form": "metric(r) = asymptote - coefficient * r**(-exponent)",
+        "full_finetuning_status": (
+            "cancelled_before_start" if args.allow_missing_full else "evaluated"
+        ),
         "fits": fits,
         "base_metrics": None if base is None else base["metrics"],
         "points": points,

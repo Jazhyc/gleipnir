@@ -58,7 +58,12 @@ def relocate_jobs(
 
 
 class Status:
-    def __init__(self, path: Path, jobs: list[dict[str, Any]]) -> None:
+    def __init__(
+        self,
+        path: Path,
+        jobs: list[dict[str, Any]],
+        cancelled_jobs: list[dict[str, Any]] | None = None,
+    ) -> None:
         self.path = path
         self.lock = threading.Lock()
         self.value: dict[str, Any] = {
@@ -66,6 +71,9 @@ class Status:
             "phase": "lora_training",
             "started_at_unix": time.time(),
             "planned_jobs": [job["job_name"] for job in jobs],
+            "cancelled_jobs": [
+                job["job_name"] for job in (cancelled_jobs or [])
+            ],
             "completed_jobs": [],
             "active_jobs": [],
         }
@@ -199,6 +207,11 @@ def main() -> None:
         default=Path("results/adapter_capacity_scaling/lambda_status.json"),
     )
     parser.add_argument("--gpus", type=int, default=2)
+    parser.add_argument(
+        "--skip-full",
+        action="store_true",
+        help="Run and evaluate LoRAs only; record full fine-tunes as cancelled.",
+    )
     args = parser.parse_args()
     if args.gpus != 2:
         raise ValueError("this schedule is predeclared for exactly two H100 GPUs")
@@ -215,7 +228,9 @@ def main() -> None:
     full_jobs.sort(key=lambda job: int(job["seed"]))
     if len(full_jobs) != 3:
         raise ValueError(f"expected three full fine-tuning jobs, got {len(full_jobs)}")
-    status = Status(args.status.resolve(), jobs)
+    scheduled_jobs = lora_jobs if args.skip_full else jobs
+    cancelled_jobs = full_jobs if args.skip_full else []
+    status = Status(args.status.resolve(), scheduled_jobs, cancelled_jobs)
 
     try:
         lanes = balanced_lora_lanes(lora_jobs, args.gpus)
@@ -227,9 +242,10 @@ def main() -> None:
             for future in futures:
                 future.result()
 
-        status.set_phase("full_training")
-        for job in full_jobs:
-            run_job(job, jobs_path, status, "0,1", args.gpus)
+        if not args.skip_full:
+            status.set_phase("full_training")
+            for job in full_jobs:
+                run_job(job, jobs_path, status, "0,1", args.gpus)
 
         status.set_phase("lora_evaluation")
         subprocess.run(
@@ -248,34 +264,38 @@ def main() -> None:
             check=True,
         )
 
-        status.set_phase("full_evaluation")
-        for job in full_jobs:
-            subprocess.run(
-                [
-                    sys.executable,
-                    "experiments/adapter_capacity_scaling/evaluate.py",
-                    "--jobs",
-                    jobs_path.as_posix(),
-                    "--validation",
-                    args.validation.resolve().as_posix(),
-                    "--mode",
-                    "full",
-                    "--job-name",
-                    str(job["job_name"]),
-                ],
-                cwd=ROOT,
-                env=runtime_environment("0"),
-                check=True,
-            )
+        if not args.skip_full:
+            status.set_phase("full_evaluation")
+            for job in full_jobs:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/adapter_capacity_scaling/evaluate.py",
+                        "--jobs",
+                        jobs_path.as_posix(),
+                        "--validation",
+                        args.validation.resolve().as_posix(),
+                        "--mode",
+                        "full",
+                        "--job-name",
+                        str(job["job_name"]),
+                    ],
+                    cwd=ROOT,
+                    env=runtime_environment("0"),
+                    check=True,
+                )
 
         status.set_phase("summarizing")
+        summarize_command = [
+            sys.executable,
+            "experiments/adapter_capacity_scaling/summarize.py",
+            "--jobs",
+            jobs_path.as_posix(),
+        ]
+        if args.skip_full:
+            summarize_command.append("--allow-missing-full")
         subprocess.run(
-            [
-                sys.executable,
-                "experiments/adapter_capacity_scaling/summarize.py",
-                "--jobs",
-                jobs_path.as_posix(),
-            ],
+            summarize_command,
             cwd=ROOT,
             check=True,
         )

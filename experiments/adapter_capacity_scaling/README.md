@@ -42,11 +42,13 @@ as the data-scaling experiment. It is not used for fitting, early stopping,
 threshold tuning, or recipe selection. The final competition test split remains
 untouched.
 
-Run the predeclared 30 jobs once: 27 LoRAs and three full fine-tunes. Stop and
-mark the run invalid if input checksums change, train/validation identities
-overlap, any condition fails, parameter counts are absent, or any score is
-missing. Reject the LoRA curve as an extrapolator if its exponent is non-positive
-or its asymptote lies outside `[0, 1]`. Report non-monotonic and negative results.
+The original design predeclared 30 jobs: 27 LoRAs and three full fine-tunes. The
+full-finetuning endpoints may be explicitly deferred until the LoRA curve shows
+that more trainable capacity is useful. Stop and mark the run invalid if input
+checksums change, train/validation identities overlap, any scheduled condition
+fails, parameter counts are absent, or any scheduled score is missing. Reject
+the LoRA curve as an extrapolator if its exponent is non-positive or its
+asymptote lies outside `[0, 1]`. Report non-monotonic and negative results.
 
 ## Lambda schedule
 
@@ -57,10 +59,17 @@ python experiments/adapter_capacity_scaling/prepare.py
 python experiments/adapter_capacity_scaling/run_lambda.py
 ```
 
+To finish and evaluate the LoRA curve while intentionally cancelling all full
+fine-tuning jobs, use:
+
+```bash
+python experiments/adapter_capacity_scaling/run_lambda.py --skip-full
+```
+
 The scheduler first fills both GPUs with rank jobs using
-longest-processing-time balancing, then runs the three full fine-tunes across
-both GPUs. Training and evaluation are resumable from completion markers, and
-progress is written atomically to
+longest-processing-time balancing. Unless `--skip-full` is set, it then runs the
+three full fine-tunes across both GPUs. Training and evaluation are resumable
+from completion markers, and progress is written atomically to
 `results/adapter_capacity_scaling/lambda_status.json`.
 
 Outputs are written under `results/adapter_capacity_scaling/`; runtime logs are

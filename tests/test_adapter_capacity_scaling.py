@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from experiments.adapter_capacity_scaling.core import (
@@ -6,6 +8,7 @@ from experiments.adapter_capacity_scaling.core import (
     split_jobs,
     validate_ranks,
 )
+from experiments.adapter_capacity_scaling.run_lambda import Status
 from experiments.adapter_capacity_scaling.run_train import training_command
 
 
@@ -75,3 +78,12 @@ def test_training_commands_keep_alpha_ratio_and_use_fsdp_for_full() -> None:
 def test_full_training_rejects_one_process() -> None:
     with pytest.raises(ValueError, match="at least two processes"):
         training_command(full_job(0), distributed_processes=1)
+
+
+def test_status_distinguishes_planned_and_cancelled_jobs(tmp_path) -> None:
+    status_path = tmp_path / "status.json"
+    Status(status_path, [lora_job(0, 16)], [full_job(0)])
+
+    status = json.loads(status_path.read_text())
+    assert status["planned_jobs"] == ["seed0-r016"]
+    assert status["cancelled_jobs"] == ["seed0-full"]
