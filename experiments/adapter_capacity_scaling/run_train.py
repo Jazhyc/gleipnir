@@ -87,9 +87,20 @@ def training_command(
             + (job["model_dir"] if full else job["causal_adapter_dir"]),
             f"student.model_loader={'image_text_to_text' if full else 'causal_lm'}",
             f"student.finetuning_mode={'full' if full else 'lora'}",
+            f"student.quantization.enabled={'false' if full else 'true'}",
             f"student.training.fsdp.enabled={'true' if full else 'false'}",
-            "student.training.per_device_train_batch_size=" + ("1" if full else "2"),
-            "student.training.gradient_accumulation_steps=16",
+            "student.training.per_device_train_batch_size="
+            + (
+                "1"
+                if full
+                else str(job.get("micro_batch_size", 8))
+            ),
+            "student.training.gradient_accumulation_steps="
+            + (
+                "16"
+                if full
+                else str(job.get("gradient_accumulation_steps", 4))
+            ),
         ]
     )
     if not full:
@@ -107,7 +118,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_qlora/lambda_jobs.jsonl"),
     )
     parser.add_argument("--job-name", required=True)
     parser.add_argument("--distributed-processes", type=int, default=2)

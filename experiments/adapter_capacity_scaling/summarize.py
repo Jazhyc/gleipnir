@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Aggregate adapter-capacity replicates and fit LoRA-rank scaling curves."""
+"""Aggregate adapter-capacity replicates and fit QLoRA-rank scaling curves."""
 
 from __future__ import annotations
 
@@ -38,7 +38,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_qlora/lambda_jobs.jsonl"),
     )
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(
@@ -136,7 +136,7 @@ def main() -> None:
     summary = {
         "primary_metric": "macro_auroc",
         "balanced_accuracy_threshold": 0.5,
-        "fit_population": "LoRA ranks only; full fine-tuning is an endpoint",
+        "fit_population": "QLoRA ranks only; full fine-tuning is an endpoint",
         "fit_form": "metric(r) = asymptote - coefficient * r**(-exponent)",
         "full_finetuning_status": (
             "cancelled_before_start" if args.allow_missing_full else "evaluated"

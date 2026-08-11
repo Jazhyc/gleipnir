@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import random
 from collections import Counter
 from pathlib import Path
@@ -1013,14 +1014,21 @@ def tokenize_record(
 )
 def main(cfg: DictConfig) -> None:
     from datasets import Dataset
-    from peft import LoraConfig, PeftModel, get_peft_model
+    from peft import (
+        LoraConfig,
+        PeftModel,
+        get_peft_model,
+        prepare_model_for_kbit_training,
+    )
     from transformers import (
         AutoModelForCausalLM,
         AutoModelForImageTextToText,
         AutoTokenizer,
+        BitsAndBytesConfig,
         Trainer,
         TrainingArguments,
     )
+    from transformers.utils.import_utils import is_flash_linear_attention_available
 
     direct_loss_weight = float(
         OmegaConf.select(cfg, "student.training.direct_loss_weight", default=0.0)
@@ -1522,15 +1530,87 @@ def main(cfg: DictConfig) -> None:
     }
     if model_loader not in model_loader_classes:
         raise ValueError(f"unknown student.model_loader={model_loader!r}")
-    model = model_loader_classes[model_loader].from_pretrained(
-        str(cfg.student.model),
-        torch_dtype=torch.bfloat16,
-    )
     finetuning_mode = str(
         OmegaConf.select(cfg, "student.finetuning_mode", default="lora")
     )
     if finetuning_mode not in {"lora", "full"}:
         raise ValueError(f"unknown student.finetuning_mode={finetuning_mode!r}")
+    quantization_enabled = bool(
+        OmegaConf.select(cfg, "student.quantization.enabled", default=False)
+    )
+    quantization_metadata: dict[str, Any] = {"enabled": quantization_enabled}
+    model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
+    if quantization_enabled:
+        if model_loader != "causal_lm" or finetuning_mode != "lora":
+            raise ValueError("4-bit QLoRA requires causal_lm LoRA training")
+        if not torch.cuda.is_available():
+            raise RuntimeError("4-bit QLoRA requires a CUDA device")
+        quantization_type = str(
+            OmegaConf.select(
+                cfg,
+                "student.quantization.bnb_4bit_quant_type",
+                default="nf4",
+            )
+        )
+        use_double_quant = bool(
+            OmegaConf.select(
+                cfg,
+                "student.quantization.bnb_4bit_use_double_quant",
+                default=True,
+            )
+        )
+        compute_dtype = str(
+            OmegaConf.select(
+                cfg,
+                "student.quantization.bnb_4bit_compute_dtype",
+                default="bfloat16",
+            )
+        )
+        if quantization_type != "nf4" or compute_dtype != "bfloat16":
+            raise ValueError(
+                "standard QLoRA requires NF4 weights and bfloat16 compute"
+            )
+        quantization_metadata.update(
+            bnb_4bit_quant_type=quantization_type,
+            bnb_4bit_use_double_quant=use_double_quant,
+            bnb_4bit_compute_dtype=compute_dtype,
+        )
+        model_kwargs.update(
+            quantization_config=BitsAndBytesConfig(
+                load_in_4bit=True,
+                bnb_4bit_quant_type=quantization_type,
+                bnb_4bit_use_double_quant=use_double_quant,
+                bnb_4bit_compute_dtype=torch.bfloat16,
+            ),
+            device_map={"": torch.cuda.current_device()},
+        )
+    require_fla = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.require_flash_linear_attention",
+            default=False,
+        )
+    )
+    fla_available = is_flash_linear_attention_available()
+    if require_fla and not fla_available:
+        raise RuntimeError(
+            "Flash Linear Attention is required but unavailable; use the pinned "
+            "FLA launcher environment"
+        )
+    print(
+        f"flash_linear_attention_available={fla_available} "
+        f"required={require_fla}",
+        flush=True,
+    )
+    model = model_loader_classes[model_loader].from_pretrained(
+        str(cfg.student.model),
+        **model_kwargs,
+    )
+    if quantization_enabled:
+        model = prepare_model_for_kbit_training(
+            model,
+            use_gradient_checkpointing=True,
+        )
     init_adapter_value = OmegaConf.select(cfg, "student.init_adapter", default=None)
     if finetuning_mode == "full" and init_adapter_value is not None:
         raise ValueError("student.init_adapter is incompatible with full fine-tuning")
@@ -1684,6 +1764,12 @@ def main(cfg: DictConfig) -> None:
                     "model": str(cfg.student.model),
                     "seed": int(cfg.seed),
                     "direct_logits_mode": direct_logits_mode,
+                    "quantization": quantization_metadata,
+                    "flash_linear_attention": {
+                        "available": fla_available,
+                        "required": require_fla,
+                        "version": os.environ.get("GLEIPNIR_FLA_VERSION"),
+                    },
                 },
                 indent=2,
                 sort_keys=True,

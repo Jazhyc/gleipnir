@@ -80,6 +80,16 @@ specialists. Route only on observable, independently validated semantics.
 
 ## Optimization lessons
 
+The fast Qwen3.5 H100 recipe was not just the causal model wrapper. It used
+pinned `flash-linear-attention==0.5.2` and `fla-core==0.5.2` gated-delta kernels,
+microbatch 8, accumulation 4, effective batch 32, gradient checkpointing, and
+eager execution. It measured 8.811 samples/s for rank 16, versus 4.279 samples/s
+for the best eager Torch-fallback batch and about 1.56 samples/s for the later
+microbatch-2 fallback run. Batch 32 was slower and consumed about 80.98 GB.
+Launchers must verify FLA before importing Qwen, fail rather than silently fall
+back, and use standard NF4/double-quantized/BF16 QLoRA when higher adapter ranks
+would otherwise force smaller microbatches.
+
 GRPO continuation after the selected SFT did not beat the original student on a
 fair local test. Extra generated reasoning became longer and still failed on
 subtle false supporting details. Three-epoch GRPO and the tested SDPO setup also

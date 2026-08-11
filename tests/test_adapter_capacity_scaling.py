@@ -1,6 +1,8 @@
 import json
+from pathlib import Path
 
 import pytest
+from omegaconf import OmegaConf
 
 from experiments.adapter_capacity_scaling.core import (
     DEFAULT_RANKS,
@@ -10,6 +12,11 @@ from experiments.adapter_capacity_scaling.core import (
 )
 from experiments.adapter_capacity_scaling.run_lambda import Status
 from experiments.adapter_capacity_scaling.run_train import training_command
+from gleipnir.qwen35_fast_training import (
+    FLA_PACKAGES,
+    fla_environment,
+    fla_install_command,
+)
 
 
 def lora_job(seed: int, rank: int) -> dict[str, object]:
@@ -70,11 +77,15 @@ def test_training_commands_keep_alpha_ratio_and_use_fsdp_for_full() -> None:
     assert "student.lora.alpha=256" in lora_command
     assert "student.finetuning_mode=lora" in lora_command
     assert "student.model_loader=causal_lm" in lora_command
+    assert "student.quantization.enabled=true" in lora_command
+    assert "student.training.per_device_train_batch_size=8" in lora_command
+    assert "student.training.gradient_accumulation_steps=4" in lora_command
     assert "student.output_dir=/results/run/causal_adapter" in lora_command
     assert "accelerate.commands.launch" not in lora_command
     assert "accelerate.commands.launch" in full_command
     assert "student.finetuning_mode=full" in full_command
     assert "student.model_loader=image_text_to_text" in full_command
+    assert "student.quantization.enabled=false" in full_command
     assert "student.training.fsdp.enabled=true" in full_command
     assert "student.training.per_device_train_batch_size=1" in full_command
 
@@ -91,3 +102,35 @@ def test_status_distinguishes_planned_and_cancelled_jobs(tmp_path) -> None:
     status = json.loads(status_path.read_text())
     assert status["planned_jobs"] == ["seed0-r016"]
     assert status["cancelled_jobs"] == ["seed0-full"]
+
+
+def test_capacity_config_uses_standard_qlora_and_fast_batch() -> None:
+    cfg = OmegaConf.load("experiments/adapter_capacity_scaling/config.yaml")
+
+    assert cfg.student.quantization.enabled is True
+    assert cfg.student.quantization.bnb_4bit_quant_type == "nf4"
+    assert cfg.student.quantization.bnb_4bit_use_double_quant is True
+    assert cfg.student.quantization.bnb_4bit_compute_dtype == "bfloat16"
+    assert cfg.student.training.per_device_train_batch_size == 8
+    assert cfg.student.training.gradient_accumulation_steps == 4
+    assert cfg.student.training.require_flash_linear_attention is True
+    assert cfg.student.training.torch_compile is False
+
+
+def test_fla_install_is_pinned_and_isolated() -> None:
+    target = Path("/tmp/test-fla")
+    command = fla_install_command(
+        target,
+        python=Path("/opt/venv/bin/python"),
+        uv_executable="/usr/bin/uv",
+    )
+    environment = fla_environment(target, {"PYTHONPATH": "/existing"})
+
+    assert command[:3] == ["/usr/bin/uv", "pip", "install"]
+    assert list(FLA_PACKAGES) == [
+        "flash-linear-attention==0.5.2",
+        "fla-core==0.5.2",
+    ]
+    assert command[-1] == "--no-deps"
+    assert environment["PYTHONPATH"] == "/tmp/test-fla:/existing"
+    assert environment["GLEIPNIR_FLA_VERSION"] == "0.5.2"

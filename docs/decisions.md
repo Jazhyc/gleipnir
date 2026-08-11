@@ -1,5 +1,24 @@
 # Decision log
 
+## 2026-08-11 — Require FLA and standard QLoRA for the rank curve
+
+- The fast Qwen3.5 H100 path requires more than `AutoModelForCausalLM`: install
+  isolated `flash-linear-attention==0.5.2` and `fla-core==0.5.2` packages before
+  model import, verify Transformers selected their gated-delta kernels, and fail
+  closed if the probe fails. Use the measured eager recipe of microbatch 8,
+  accumulation 4, effective batch 32, gradient checkpointing, and no
+  `torch.compile`.
+- Train every adapter-rank condition with the standard QLoRA base configuration:
+  4-bit NF4, double quantization, and BF16 compute. Hold quantization and batch
+  fixed across ranks. Preserve the trained FP32 adapters and evaluate their
+  checksum-rebased copies on the ordinary BF16 serving base.
+- Require a rank-256, 20-step memory and throughput preflight before scheduling
+  the full curve. This catches FLA fallback and high-rank OOMs without silently
+  changing the experimental recipe.
+- Cancel and preserve the causal BF16/microbatch-2 attempt after its first two
+  rank-256 completions. It used the slow Torch gated-delta fallback and is not
+  combinable with the QLoRA curve.
+
 ## 2026-08-11 — Train text-only LoRAs causally and export serving copies
 
 - For experiments containing no image or video inputs, train Qwen3.5 LoRAs

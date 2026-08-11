@@ -66,7 +66,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_qlora/lambda_jobs.jsonl"),
     )
     parser.add_argument(
         "--validation",

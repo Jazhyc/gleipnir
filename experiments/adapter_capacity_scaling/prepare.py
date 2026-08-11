@@ -17,6 +17,9 @@ if str(ROOT) not in sys.path:
 from experiments.adapter_capacity_scaling.core import (  # noqa: E402
     DEFAULT_RANKS,
     DEFAULT_SEEDS,
+    QLORA_EFFECTIVE_BATCH_SIZE,
+    QLORA_GRADIENT_ACCUMULATION_STEPS,
+    QLORA_MICRO_BATCH_SIZE,
     validate_ranks,
 )
 
@@ -74,7 +77,7 @@ def main() -> None:
     parser.add_argument(
         "--output-dir",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal"),
+        default=Path("results/adapter_capacity_scaling_qlora"),
     )
     parser.add_argument("--ranks", nargs="+", type=int, default=DEFAULT_RANKS)
     parser.add_argument("--seeds", nargs="+", type=int, default=DEFAULT_SEEDS)
@@ -120,6 +123,12 @@ def main() -> None:
                     "seed": seed,
                     "rank": rank,
                     "lora_alpha": 2 * rank,
+                    "training_recipe": "qlora-nf4-double-quant-bf16-fla-0.5.2",
+                    "micro_batch_size": QLORA_MICRO_BATCH_SIZE,
+                    "gradient_accumulation_steps": (
+                        QLORA_GRADIENT_ACCUMULATION_STEPS
+                    ),
+                    "effective_batch_size": QLORA_EFFECTIVE_BATCH_SIZE,
                     "train_rows": len(records),
                     "student_rows": student_path.as_posix(),
                     "soft_targets": soft_path.as_posix(),
@@ -152,8 +161,8 @@ def main() -> None:
     upstream = Path("results/data_scaling/manifest.json").resolve()
     manifest = {
         "hypothesis": (
-            "full-data monitor quality follows a bounded power law in LoRA rank, "
-            "with full fine-tuning as an external capacity endpoint"
+            "full-data monitor quality follows a bounded power law in QLoRA "
+            "rank, with full fine-tuning as an external capacity endpoint"
         ),
         "student_rows": student_path.as_posix(),
         "student_rows_sha256": sha256_file(student_path),
@@ -170,6 +179,17 @@ def main() -> None:
         "training_model_loader": "causal_lm",
         "inference_model_loader": "image_text_to_text",
         "direct_logits_mode": "full",
+        "training_recipe": "qlora-nf4-double-quant-bf16-fla-0.5.2",
+        "quantization": {
+            "load_in_4bit": True,
+            "bnb_4bit_quant_type": "nf4",
+            "bnb_4bit_use_double_quant": True,
+            "bnb_4bit_compute_dtype": "bfloat16",
+        },
+        "flash_linear_attention_version": "0.5.2",
+        "micro_batch_size": QLORA_MICRO_BATCH_SIZE,
+        "gradient_accumulation_steps": QLORA_GRADIENT_ACCUMULATION_STEPS,
+        "effective_batch_size": QLORA_EFFECTIVE_BATCH_SIZE,
         "seeds": seeds,
         "jobs": len(jobs),
         "lora_jobs": len(ranks) * len(seeds),

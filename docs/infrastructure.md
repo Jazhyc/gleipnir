@@ -33,6 +33,14 @@ SSH standard input to `~/.config/gleipnir/secrets.env` with mode `600`. The
 bootstrap writes cache and CUDA settings to
 `~/.config/gleipnir/runtime.env`.
 
+Qwen3.5 training launchers install the two pinned FLA 0.5.2 packages without
+dependencies into `/tmp/gleipnir-qwen35-fla`, prepend that isolated directory to
+`PYTHONPATH`, and run an import/kernel probe before starting an expensive job.
+This deliberately leaves the locked project environment unchanged while making
+the accelerated gated-delta implementation reproducible after an ephemeral
+instance reboot. The adapter-capacity campaign additionally locks bitsandbytes
+and uses standard NF4 QLoRA so microbatch 8 remains viable at high ranks.
+
 `sync-commit` transfers a committed snapshot. Use `push` for an explicit ignored
 input and `pull` for result collection. The helper never terminates an instance
 unless `terminate --yes` is invoked; do not do that without explicit user

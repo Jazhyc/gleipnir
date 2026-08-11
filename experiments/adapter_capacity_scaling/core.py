@@ -6,6 +6,11 @@ from typing import Any
 
 DEFAULT_RANKS = (1, 2, 4, 8, 16, 32, 64, 128, 256)
 DEFAULT_SEEDS = (0, 1, 2)
+QLORA_MICRO_BATCH_SIZE = 8
+QLORA_GRADIENT_ACCUMULATION_STEPS = 4
+QLORA_EFFECTIVE_BATCH_SIZE = (
+    QLORA_MICRO_BATCH_SIZE * QLORA_GRADIENT_ACCUMULATION_STEPS
+)
 
 
 def validate_ranks(ranks: list[int] | tuple[int, ...]) -> list[int]:

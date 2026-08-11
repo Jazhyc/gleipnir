@@ -26,6 +26,10 @@ from experiments.adapter_capacity_scaling.prepare import (  # noqa: E402
     read_jsonl,
     write_jsonl,
 )
+from gleipnir.qwen35_fast_training import (  # noqa: E402
+    DEFAULT_FLA_TARGET,
+    ensure_fla_kernels,
+)
 
 
 def relocate_jobs(
@@ -182,12 +186,12 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_qlora/jobs.jsonl"),
     )
     parser.add_argument(
         "--lambda-jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_qlora/lambda_jobs.jsonl"),
     )
     parser.add_argument(
         "--student-rows",
@@ -207,7 +211,13 @@ def main() -> None:
     parser.add_argument(
         "--status",
         type=Path,
-        default=Path("results/adapter_capacity_scaling_causal/lambda_status.json"),
+        default=Path("results/adapter_capacity_scaling_qlora/lambda_status.json"),
+    )
+    parser.add_argument(
+        "--fla-target",
+        type=Path,
+        default=DEFAULT_FLA_TARGET,
+        help="Isolated target directory for pinned FLA 0.5.2 kernels.",
     )
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument(
@@ -236,6 +246,9 @@ def main() -> None:
     status = Status(args.status.resolve(), scheduled_jobs, cancelled_jobs)
 
     try:
+        status.set_phase("kernel_preflight")
+        os.environ.update(ensure_fla_kernels(args.fla_target))
+        status.set_phase("lora_training")
         lanes = balanced_lora_lanes(lora_jobs, args.gpus)
         with ThreadPoolExecutor(max_workers=args.gpus) as executor:
             futures = [

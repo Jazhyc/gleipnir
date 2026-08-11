@@ -1,4 +1,4 @@
-# Adapter-capacity scaling on full Kimi data
+# QLoRA adapter-capacity scaling on full Kimi data
 
 This experiment measures how Qwen3.5-9B monitor quality changes with trainable
 capacity while holding the 13,149-row Phoenix 8.1 dataset and optimization recipe
@@ -6,7 +6,7 @@ fixed.
 
 ## Hypothesis and scaling form
 
-For LoRA rank `r`, the residual validation error follows a bounded power law:
+For QLoRA rank `r`, the residual validation error follows a bounded power law:
 
 ```text
 M(r) = M_inf - A * r^(-alpha)
@@ -23,18 +23,39 @@ views are retained in each result.
 
 ## Intervention and controls
 
-Each LoRA rank uses `lora_alpha = 2 * rank`, keeping `alpha/r = 2` fixed. Target
+Each QLoRA rank uses `lora_alpha = 2 * rank`, keeping `alpha/r = 2` fixed. Target
 modules are `q`, `k`, `v`, `o`, gate, up, and down projections in the Qwen3.5
-language model. All LoRA conditions use the Qwen3.5-9B causal text loader, full
-training data, Kimi K3 soft targets, two epochs, AdamW at `5e-5`, effective
-global batch size 32, and seeds `0, 1, 2`.
+language model. The frozen base uses the standard QLoRA quantization recipe:
+4-bit NF4 weights, double quantization, and BF16 compute. All rank conditions
+use the Qwen3.5-9B causal text loader, full training data, Kimi K3 soft targets,
+two epochs, AdamW at `5e-5`, microbatch 8, accumulation 4, effective batch size
+32, and seeds `0, 1, 2`. Quantization is held fixed across the curve, so this
+experiment estimates adapter-rank scaling under QLoRA rather than conflating
+ordinary BF16 LoRA and QLoRA points.
 
 Each FP32 causal adapter is preserved as the training master. At save time, a
 checksum-tracked inference copy is produced by inserting `language_model` into
 the PEFT key namespace. Tensor values are unchanged. Evaluation loads only the
-rebased copy through vLLM's multimodal Qwen3.5 serving architecture.
+rebased copy through vLLM's multimodal Qwen3.5 serving architecture on its
+ordinary BF16 base; the base quantization is a training-memory intervention,
+not part of the deployed adapter package.
 
 ## Throughput preflight
+
+The inherited fast H100 recipe uses pinned `flash-linear-attention==0.5.2` and
+`fla-core==0.5.2` gated-delta kernels, microbatch 8, accumulation 4, gradient
+checkpointing, and `torch.compile=false`. It measured 8.811 samples/s for the
+earlier rank-16 soft-distillation workload. The best eager Torch fallback
+managed 4.279 samples/s, while the accidental microbatch-2 fallback used by the
+superseded sweep managed only about 1.56 samples/s. The launcher installs FLA
+without dependencies into `/tmp/gleipnir-qwen35-fla`, probes it before any model
+import, and fails closed rather than silently using the Torch fallback.
+
+Before scheduling the curve, rank 256 must complete a matched 20-step QLoRA
+preflight at microbatch 8 without OOM, confirm NF4/double-quantized/BF16 metadata,
+and show that the FLA implementation was selected. Preserve the benchmark log
+and do not lower the high-rank batch silently; a recipe change would alter the
+controlled intervention and requires a new campaign root.
 
 On two H100s, matched 20-step rank-16 causal runs measured 300.7 seconds with
 ordinary full-sequence logits and 309.3 seconds when projecting only the distinct
@@ -67,7 +88,7 @@ asymptote lies outside `[0, 1]`. Report non-monotonic and negative results.
 
 ## Lambda schedule
 
-Prepare the immutable causal jobs, then launch on the reserved two-H100
+Prepare the immutable QLoRA jobs, then launch on the reserved two-H100
 instance:
 
 ```bash
@@ -82,13 +103,15 @@ fine-tuning jobs, use:
 python experiments/adapter_capacity_scaling/run_lambda.py --skip-full
 ```
 
-The fresh campaign writes under `results/adapter_capacity_scaling_causal/`; the
+The fresh campaign writes under `results/adapter_capacity_scaling_qlora/`. The
 cancelled native-multimodal attempt remains preserved under
-`results/adapter_capacity_scaling/`. The scheduler first fills both GPUs with rank jobs using
+`results/adapter_capacity_scaling/`, and the superseded causal BF16 attempt is
+preserved under `results/adapter_capacity_scaling_causal/`. The scheduler first
+probes the pinned FLA environment, then fills both GPUs with rank jobs using
 longest-processing-time balancing. Unless `--skip-full` is set, it then runs the
 three full fine-tunes across both GPUs. Training and evaluation are resumable
 from completion markers, and progress is written atomically to
-`results/adapter_capacity_scaling_causal/lambda_status.json`.
+`results/adapter_capacity_scaling_qlora/lambda_status.json`.
 
 Runtime logs are written under
-`logs/lambda/adapter_capacity_scaling_causal/`. Artifact trees are not committed.
+`logs/lambda/adapter_capacity_scaling_qlora/`. Artifact trees are not committed.

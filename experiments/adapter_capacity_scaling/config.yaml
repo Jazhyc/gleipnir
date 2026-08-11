@@ -1,5 +1,5 @@
 method: adapter_capacity_scaling
-output_dir: results/adapter_capacity_scaling/${method}
+output_dir: results/adapter_capacity_scaling_qlora/${method}
 seed: 0
 
 teacher:
@@ -9,6 +9,11 @@ student:
   model: Qwen/Qwen3.5-9B
   model_loader: causal_lm
   finetuning_mode: lora
+  quantization:
+    enabled: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_compute_dtype: bfloat16
   init_adapter: null
   target_mode: teacher
   teacher_sources: null
@@ -51,8 +56,8 @@ student:
     muon_ns_steps: 5
     warmup_ratio: 0.03
     weight_decay: 0.0
-    per_device_train_batch_size: 2
-    gradient_accumulation_steps: 16
+    per_device_train_batch_size: 8
+    gradient_accumulation_steps: 4
     torch_compile: false
     torch_compile_backend: inductor
     torch_compile_mode: default
@@ -64,6 +69,7 @@ student:
     soft_loss_weight: 1.0
     soft_loss_type: bce
     direct_logits_mode: full
+    require_flash_linear_attention: true
     soft_target_logit_center: 0.0
     soft_target_logit_scale: 1.0
     soft_huber_delta: 1.0

@@ -74,6 +74,16 @@ Use `scripts/lambda_cloud.py` for SSH, sync, bootstrap, secret transfer, and
 artifact collection. Never terminate it or launch billable capacity without the
 user's explicit instruction. Pull important artifacts before any termination.
 
+For text-only Qwen3.5 training on H100s, do not silently use Transformers'
+Torch gated-delta fallback. Use the causal-LM loader and verify the isolated,
+pinned `flash-linear-attention==0.5.2` and `fla-core==0.5.2` kernels before model
+import. The proven eager recipe is microbatch 8 with gradient accumulation 4
+(effective batch 32) and `torch.compile=false`; preserve that recipe unless a
+matched benchmark supports a change. Prefer standard QLoRA (4-bit NF4, double
+quantization, BF16 compute) when it permits the proven batch at high adapter
+ranks. Preflight the largest rank, fail closed if FLA is unavailable, and record
+kernel, quantization, batch, memory, and throughput metadata for every campaign.
+
 ## Code, Tests, and Git
 
 Use 4-space Python indentation, type hints for public interfaces, `snake_case`
