@@ -20,6 +20,10 @@
 - Require a rank-256, 20-step memory and throughput preflight before scheduling
   the full curve. This catches FLA fallback and high-rank OOMs without silently
   changing the experimental recipe.
+- The corrected single-GPU preflight measured 3.551 samples/s at rank 16 and
+  3.524 at rank 256, with peak allocated memory of 26.19 and 33.25 GB. Treat the
+  earlier 8.811 samples/s measurement as specific to its shorter 2,880-row
+  prompt distribution; the full mixed-data runs project to about 2.1 hours.
 - Retain seeds 0, 1, and 2 at every rank. In the prior full-data condition,
   macro AUROC had SD 0.00182 and range 0.00357, while the preceding 64%-to-100%
   mean gain was only 0.00256. Seed noise is therefore large enough to imitate

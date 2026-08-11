@@ -70,6 +70,7 @@ class Status:
         path: Path,
         jobs: list[dict[str, Any]],
         cancelled_jobs: list[dict[str, Any]] | None = None,
+        run_metadata: dict[str, Any] | None = None,
     ) -> None:
         self.path = path
         self.lock = threading.Lock()
@@ -83,6 +84,7 @@ class Status:
             ],
             "completed_jobs": [],
             "active_jobs": [],
+            **(run_metadata or {}),
         }
         self._write()
 
@@ -221,6 +223,11 @@ def main() -> None:
     )
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument(
+        "--revision",
+        default=os.environ.get("GLEIPNIR_COMMIT"),
+        help="Exact committed source revision synced to the remote workspace.",
+    )
+    parser.add_argument(
         "--skip-full",
         action="store_true",
         help="Run and evaluate LoRAs only; record full fine-tunes as cancelled.",
@@ -243,9 +250,23 @@ def main() -> None:
         raise ValueError(f"expected three full fine-tuning jobs, got {len(full_jobs)}")
     scheduled_jobs = lora_jobs if args.skip_full else jobs
     cancelled_jobs = full_jobs if args.skip_full else []
-    status = Status(args.status.resolve(), scheduled_jobs, cancelled_jobs)
+    status = Status(
+        args.status.resolve(),
+        scheduled_jobs,
+        cancelled_jobs,
+        {
+            "revision": args.revision,
+            "training_recipe": "qlora-nf4-double-quant-bf16-fla-0.5.2",
+            "direct_logits_mode": "selected_positions",
+            "micro_batch_size": 8,
+            "gradient_accumulation_steps": 4,
+            "effective_batch_size": 32,
+        },
+    )
 
     try:
+        if args.revision is not None:
+            os.environ["GLEIPNIR_COMMIT"] = args.revision
         status.set_phase("kernel_preflight")
         os.environ.update(ensure_fla_kernels(args.fla_target))
         status.set_phase("lora_training")

@@ -1785,6 +1785,7 @@ def main(cfg: DictConfig) -> None:
                     "finetuning_mode": finetuning_mode,
                     "model_loader": model_loader,
                     "model": str(cfg.student.model),
+                    "commit": os.environ.get("GLEIPNIR_COMMIT"),
                     "seed": int(cfg.seed),
                     "direct_logits_mode": direct_logits_mode,
                     "quantization": quantization_metadata,

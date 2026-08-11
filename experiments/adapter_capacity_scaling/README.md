@@ -78,6 +78,16 @@ selected-position logits consistently at every rank. This is a memory-enabling
 intervention for the proven batch, and it supersedes the earlier batch-2 choice
 without hiding that negative timing result.
 
+The corrected matched single-GPU preflight passed for both endpoints. Rank 16
+reached 3.551 samples/s with 26.19 GB peak allocated memory (27.43 GB reserved);
+rank 256 reached 3.524 samples/s with 33.25 GB allocated (35.21 GB reserved).
+The 0.8% throughput difference shows that the language backbone and sequence
+mix, not adapter rank, dominate this recipe. At 13,149 rows for two epochs this
+projects to about 2.1 hours per run, or roughly 28 hours for 27 jobs over two
+H100 lanes before evaluation. The earlier 8.811 samples/s result came from a
+different, shorter 2,880-row prompt distribution and must not be used as the ETA
+for this full mixed dataset.
+
 The full-fine-tuning condition marks every conditional-generation checkpoint
 parameter trainable and uses two-H100 FSDP2 full sharding. Since inputs are
 text-only, the visual tower receives no task gradient; this endpoint tests full

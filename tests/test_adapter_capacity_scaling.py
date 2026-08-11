@@ -101,11 +101,17 @@ def test_full_training_rejects_one_process() -> None:
 
 def test_status_distinguishes_planned_and_cancelled_jobs(tmp_path) -> None:
     status_path = tmp_path / "status.json"
-    Status(status_path, [lora_job(0, 16)], [full_job(0)])
+    Status(
+        status_path,
+        [lora_job(0, 16)],
+        [full_job(0)],
+        {"revision": "abc123"},
+    )
 
     status = json.loads(status_path.read_text())
     assert status["planned_jobs"] == ["seed0-r016"]
     assert status["cancelled_jobs"] == ["seed0-full"]
+    assert status["revision"] == "abc123"
 
 
 def test_capacity_config_uses_standard_qlora_and_fast_batch() -> None:
