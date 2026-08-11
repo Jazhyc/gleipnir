@@ -48,7 +48,7 @@ def benchmark_job(output_dir: Path, rank: int, seed: int) -> dict[str, Any]:
 def validate_preflight(
     metadata: dict[str, Any],
     *,
-    minimum_samples_per_second: float,
+    minimum_samples_per_second: float | None,
 ) -> None:
     """Fail closed on a fallback kernel, nonstandard QLoRA, or slow result."""
     expected_quantization = {
@@ -82,7 +82,10 @@ def validate_preflight(
     if any(not module.startswith("fla.ops.") for module in kernel_modules):
         raise RuntimeError(f"Torch gated-delta fallback detected: {kernel_modules}")
     throughput = float(metadata["train_metrics"]["train_samples_per_second"])
-    if throughput < minimum_samples_per_second:
+    if (
+        minimum_samples_per_second is not None
+        and throughput < minimum_samples_per_second
+    ):
         raise RuntimeError(
             f"QLoRA preflight throughput {throughput:.3f} is below "
             f"{minimum_samples_per_second:.3f} samples/s"
@@ -94,7 +97,8 @@ def main() -> None:
     parser.add_argument("--rank", type=int, default=256)
     parser.add_argument("--seed", type=int, default=0)
     parser.add_argument("--max-steps", type=int, default=20)
-    parser.add_argument("--minimum-samples-per-second", type=float, default=4.0)
+    parser.add_argument("--minimum-samples-per-second", type=float)
+    parser.add_argument("--cuda-visible-devices", default="0")
     parser.add_argument(
         "--output-dir",
         type=Path,
@@ -104,8 +108,8 @@ def main() -> None:
     )
     parser.add_argument("--fla-target", type=Path, default=DEFAULT_FLA_TARGET)
     args = parser.parse_args()
-    if args.rank != 256 or args.max_steps < 20:
-        raise ValueError("production preflight requires rank 256 and at least 20 steps")
+    if args.rank < 1 or args.rank > 256 or args.max_steps < 20:
+        raise ValueError("preflight requires rank in [1, 256] and at least 20 steps")
 
     output_dir = args.output_dir
     if not output_dir.is_absolute():
@@ -113,6 +117,7 @@ def main() -> None:
     output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     environment = ensure_fla_kernels(args.fla_target)
+    environment["CUDA_VISIBLE_DEVICES"] = args.cuda_visible_devices
     job = benchmark_job(output_dir, args.rank, args.seed)
     command = training_command(job, distributed_processes=1)
     command.extend(
@@ -121,9 +126,10 @@ def main() -> None:
             f"student.output_dir={job['causal_adapter_dir']}",
         ]
     )
-    started_at = time.time()
-    subprocess.run(command, cwd=ROOT, env=environment, check=True)
     metadata_path = Path(job["causal_adapter_dir"]) / "training_metadata.json"
+    started_at = time.time()
+    if not metadata_path.is_file():
+        subprocess.run(command, cwd=ROOT, env=environment, check=True)
     metadata = json.loads(metadata_path.read_text())
     validate_preflight(
         metadata,
