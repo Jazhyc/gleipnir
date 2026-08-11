@@ -77,7 +77,13 @@ def ensure_fla_kernels(
     if not (target / "fla" / "ops").is_dir():
         uv_executable = shutil.which("uv")
         if uv_executable is None:
-            raise FileNotFoundError("uv is required to install pinned FLA kernels")
+            user_uv = Path.home() / ".local" / "bin" / "uv"
+            uv_executable = user_uv.as_posix() if user_uv.is_file() else None
+        if uv_executable is None:
+            raise FileNotFoundError(
+                "uv is required on PATH or at ~/.local/bin/uv to install "
+                "pinned FLA kernels"
+            )
         target.parent.mkdir(parents=True, exist_ok=True)
         subprocess.run(
             fla_install_command(
