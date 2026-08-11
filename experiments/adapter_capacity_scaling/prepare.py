@@ -169,7 +169,7 @@ def main() -> None:
         "lora_alpha_over_rank": 2.0,
         "training_model_loader": "causal_lm",
         "inference_model_loader": "image_text_to_text",
-        "direct_logits_mode": "selected_positions",
+        "direct_logits_mode": "full",
         "seeds": seeds,
         "jobs": len(jobs),
         "lora_jobs": len(ranks) * len(seeds),

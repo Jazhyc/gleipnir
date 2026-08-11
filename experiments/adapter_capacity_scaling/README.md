@@ -27,14 +27,22 @@ Each LoRA rank uses `lora_alpha = 2 * rank`, keeping `alpha/r = 2` fixed. Target
 modules are `q`, `k`, `v`, `o`, gate, up, and down projections in the Qwen3.5
 language model. All LoRA conditions use the Qwen3.5-9B causal text loader, full
 training data, Kimi K3 soft targets, two epochs, AdamW at `5e-5`, effective
-global batch size 32, and seeds `0, 1, 2`. The direct objective asks Qwen to
-materialize logits only at the one or two distinct final-token positions in a
-microbatch rather than at every padded sequence position.
+global batch size 32, and seeds `0, 1, 2`.
 
 Each FP32 causal adapter is preserved as the training master. At save time, a
 checksum-tracked inference copy is produced by inserting `language_model` into
 the PEFT key namespace. Tensor values are unchanged. Evaluation loads only the
 rebased copy through vLLM's multimodal Qwen3.5 serving architecture.
+
+## Throughput preflight
+
+On two H100s, matched 20-step rank-16 causal runs measured 300.7 seconds with
+ordinary full-sequence logits and 309.3 seconds when projecting only the distinct
+final positions. The selected-position path was 2.9% slower and its accumulated
+loss differed slightly (`2.397` versus `2.364`), reflecting a different GEMM
+shape and numerical trajectory. Preserve full logits for this curve. The
+selected-position implementation remains available only for future controlled
+benchmarks; this negative result must not be hidden.
 
 The full-fine-tuning condition marks every conditional-generation checkpoint
 parameter trainable and uses two-H100 FSDP2 full sharding. Since inputs are

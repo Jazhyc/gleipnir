@@ -63,7 +63,7 @@ student:
     pairwise_temperature: 1.0
     soft_loss_weight: 1.0
     soft_loss_type: bce
-    direct_logits_mode: selected_positions
+    direct_logits_mode: full
     soft_target_logit_center: 0.0
     soft_target_logit_scale: 1.0
     soft_huber_delta: 1.0
