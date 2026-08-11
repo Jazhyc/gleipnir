@@ -33,6 +33,15 @@ two epochs, AdamW at `5e-5`, microbatch 8, accumulation 4, effective batch size
 experiment estimates adapter-rank scaling under QLoRA rather than conflating
 ordinary BF16 LoRA and QLoRA points.
 
+Three paired seeds remain necessary. In the completed data-scaling experiment,
+the 100%-data macro AUROCs were `0.96048`, `0.96167`, and `0.96405` (sample SD
+`0.00182`, range `0.00357`); macro balanced accuracy had SD `0.00137`. The mean
+macro-AUROC gain from 64% to 100% data was only `0.00256`, smaller than the
+full-data seed range, and seed 2 averaged about `0.0014` higher across fractions.
+Since plausible rank effects are of the same order, a single-seed curve could
+mistake optimizer/init/shuffle noise for capacity scaling. Use the same three
+seeds at every rank so rank contrasts can also be paired by seed.
+
 Each FP32 causal adapter is preserved as the training master. At save time, a
 checksum-tracked inference copy is produced by inserting `language_model` into
 the PEFT key namespace. Tensor values are unchanged. Evaluation loads only the

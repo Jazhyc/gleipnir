@@ -1750,7 +1750,11 @@ def main(cfg: DictConfig) -> None:
         data_collator=CompletionOnlyCollator(tokenizer.pad_token_id),
     )
     trainer.direct_target_ids = direct_target_ids
-    trainer.train()
+    train_output = trainer.train()
+    train_metrics = {
+        key: value.item() if hasattr(value, "item") else value
+        for key, value in train_output.metrics.items()
+    }
     output_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(output_dir.as_posix())
     if trainer.is_world_process_zero():
@@ -1770,6 +1774,29 @@ def main(cfg: DictConfig) -> None:
                         "required": require_fla,
                         "version": os.environ.get("GLEIPNIR_FLA_VERSION"),
                     },
+                    "training_batch": {
+                        "micro_batch_size": int(
+                            cfg.student.training.per_device_train_batch_size
+                        ),
+                        "gradient_accumulation_steps": int(
+                            cfg.student.training.gradient_accumulation_steps
+                        ),
+                        "effective_batch_size": int(
+                            cfg.student.training.per_device_train_batch_size
+                        )
+                        * int(cfg.student.training.gradient_accumulation_steps),
+                    },
+                    "train_metrics": train_metrics,
+                    "peak_cuda_memory_allocated_bytes": (
+                        torch.cuda.max_memory_allocated()
+                        if torch.cuda.is_available()
+                        else None
+                    ),
+                    "peak_cuda_memory_reserved_bytes": (
+                        torch.cuda.max_memory_reserved()
+                        if torch.cuda.is_available()
+                        else None
+                    ),
                 },
                 indent=2,
                 sort_keys=True,

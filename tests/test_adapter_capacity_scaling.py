@@ -4,6 +4,10 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
+from experiments.adapter_capacity_scaling.benchmark_qlora import (
+    benchmark_job,
+    validate_preflight,
+)
 from experiments.adapter_capacity_scaling.core import (
     DEFAULT_RANKS,
     balanced_lora_lanes,
@@ -134,3 +138,33 @@ def test_fla_install_is_pinned_and_isolated() -> None:
     assert command[-1] == "--no-deps"
     assert environment["PYTHONPATH"] == "/tmp/test-fla:/existing"
     assert environment["GLEIPNIR_FLA_VERSION"] == "0.5.2"
+
+
+def test_rank256_preflight_requires_production_qlora_metadata(tmp_path) -> None:
+    job = benchmark_job(tmp_path, 256, 0)
+    metadata = {
+        "quantization": {
+            "enabled": True,
+            "bnb_4bit_quant_type": "nf4",
+            "bnb_4bit_use_double_quant": True,
+            "bnb_4bit_compute_dtype": "bfloat16",
+        },
+        "flash_linear_attention": {
+            "available": True,
+            "required": True,
+            "version": "0.5.2",
+        },
+        "training_batch": {
+            "micro_batch_size": 8,
+            "gradient_accumulation_steps": 4,
+            "effective_batch_size": 32,
+        },
+        "train_metrics": {"train_samples_per_second": 8.5},
+    }
+
+    assert job["rank"] == 256
+    assert job["micro_batch_size"] == 8
+    validate_preflight(metadata, minimum_samples_per_second=4.0)
+    metadata["flash_linear_attention"]["available"] = False
+    with pytest.raises(RuntimeError, match="fallback"):
+        validate_preflight(metadata, minimum_samples_per_second=4.0)

@@ -15,6 +15,10 @@
 - Require a rank-256, 20-step memory and throughput preflight before scheduling
   the full curve. This catches FLA fallback and high-rank OOMs without silently
   changing the experimental recipe.
+- Retain seeds 0, 1, and 2 at every rank. In the prior full-data condition,
+  macro AUROC had SD 0.00182 and range 0.00357, while the preceding 64%-to-100%
+  mean gain was only 0.00256. Seed noise is therefore large enough to imitate
+  the capacity effects this curve is designed to measure.
 - Cancel and preserve the causal BF16/microbatch-2 attempt after its first two
   rank-256 completions. It used the slow Torch gated-delta fallback and is not
   combinable with the QLoRA curve.
