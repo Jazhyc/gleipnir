@@ -40,6 +40,8 @@ def job_metadata(job: dict[str, Any]) -> dict[str, Any]:
     training_metadata = json.loads(
         (Path(job["model_dir"]) / "training_metadata.json").read_text()
     )
+    rebase_path = Path(job["model_dir"]) / "rebase_manifest.json"
+    rebase = json.loads(rebase_path.read_text()) if rebase_path.is_file() else None
     return {
         "job_name": job["job_name"],
         "capacity_kind": job["capacity_kind"],
@@ -48,6 +50,13 @@ def job_metadata(job: dict[str, Any]) -> dict[str, Any]:
         "lora_alpha": job["lora_alpha"],
         "train_rows": int(job["train_rows"]),
         "model_dir": job["model_dir"],
+        "causal_adapter_dir": job.get("causal_adapter_dir"),
+        "adapter_rebase_source_sha256": (
+            None if rebase is None else rebase["source_sha256"]
+        ),
+        "adapter_rebase_destination_sha256": (
+            None if rebase is None else rebase["destination_sha256"]
+        ),
         **training_metadata,
     }
 
@@ -57,7 +66,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
     )
     parser.add_argument(
         "--validation",

@@ -161,6 +161,46 @@ def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
     }
 
 
+def forward_final_token_logits(
+    model: Any,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    mode: str,
+) -> tuple[torch.Tensor, Any]:
+    """Return per-row final-token logits without projecting padded positions."""
+    last_positions = attention_mask.sum(dim=1) - 1
+    if (last_positions < 0).any():
+        raise ValueError("direct inputs must contain at least one attended token")
+    row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
+    if mode == "full":
+        outputs = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            use_cache=False,
+        )
+        return outputs.logits[row_indices, last_positions], outputs
+    if mode != "selected_positions":
+        raise ValueError(f"unknown direct_logits_mode={mode!r}")
+
+    selected_positions, inverse = torch.unique(
+        last_positions,
+        sorted=True,
+        return_inverse=True,
+    )
+    outputs = model(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        use_cache=False,
+        logits_to_keep=selected_positions,
+    )
+    if outputs.logits.shape[1] != len(selected_positions):
+        raise RuntimeError(
+            "model did not honor logits_to_keep: "
+            f"requested={len(selected_positions)} got={outputs.logits.shape[1]}"
+        )
+    return outputs.logits[row_indices, inverse], outputs
+
+
 def binary_token_ids(tokenizer: Any) -> list[int]:
     """Return the distinct single-token ids for literal binary predictions."""
     ids = []
@@ -997,6 +1037,18 @@ def main(cfg: DictConfig) -> None:
     soft_loss_type = str(
         OmegaConf.select(cfg, "student.training.soft_loss_type", default="bce")
     )
+    direct_logits_mode = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.direct_logits_mode",
+            default="full",
+        )
+    )
+    if direct_logits_mode not in {"full", "selected_positions"}:
+        raise ValueError(
+            "student.training.direct_logits_mode must be full or "
+            "selected_positions"
+        )
     soft_target_logit_center = float(
         OmegaConf.select(cfg, "student.training.soft_target_logit_center", default=0.0)
     )
@@ -1116,17 +1168,12 @@ def main(cfg: DictConfig) -> None:
                     raise ValueError(
                         "direct-target fields are missing from training batch"
                     )
-                direct_outputs = model(
-                    input_ids=direct_input_ids,
-                    attention_mask=direct_attention_mask,
-                    use_cache=False,
+                next_logits, direct_outputs = forward_final_token_logits(
+                    model,
+                    direct_input_ids,
+                    direct_attention_mask,
+                    direct_logits_mode,
                 )
-                last_positions = direct_attention_mask.sum(dim=1) - 1
-                row_indices = torch.arange(
-                    direct_input_ids.shape[0],
-                    device=direct_input_ids.device,
-                )
-                next_logits = direct_outputs.logits[row_indices, last_positions]
                 label_ids = torch.tensor(
                     self.direct_target_ids,
                     device=next_logits.device,
@@ -1450,6 +1497,7 @@ def main(cfg: DictConfig) -> None:
         f"pairwise_loss_weight={pairwise_loss_weight} "
         f"soft_loss_weight={soft_loss_weight} "
         f"soft_loss_type={soft_loss_type!r} "
+        f"direct_logits_mode={direct_logits_mode!r} "
         f"soft_target_logit_center={soft_target_logit_center} "
         f"soft_target_logit_scale={soft_target_logit_scale} "
         f"soft_huber_delta={soft_huber_delta} "
@@ -1635,6 +1683,7 @@ def main(cfg: DictConfig) -> None:
                     "model_loader": model_loader,
                     "model": str(cfg.student.model),
                     "seed": int(cfg.seed),
+                    "direct_logits_mode": direct_logits_mode,
                 },
                 indent=2,
                 sort_keys=True,

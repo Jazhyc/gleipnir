@@ -72,7 +72,9 @@ def main() -> None:
         default=Path("data/data_scaling/validation.jsonl"),
     )
     parser.add_argument(
-        "--output-dir", type=Path, default=Path("results/adapter_capacity_scaling")
+        "--output-dir",
+        type=Path,
+        default=Path("results/adapter_capacity_scaling_causal"),
     )
     parser.add_argument("--ranks", nargs="+", type=int, default=DEFAULT_RANKS)
     parser.add_argument("--seeds", nargs="+", type=int, default=DEFAULT_SEEDS)
@@ -123,6 +125,7 @@ def main() -> None:
                     "soft_targets": soft_path.as_posix(),
                     "validation": validation_path.as_posix(),
                     "output_dir": job_dir.as_posix(),
+                    "causal_adapter_dir": (job_dir / "causal_adapter").as_posix(),
                     "model_dir": (job_dir / "model").as_posix(),
                 }
             )
@@ -164,6 +167,9 @@ def main() -> None:
         "train_validation_overlap": 0,
         "ranks": ranks,
         "lora_alpha_over_rank": 2.0,
+        "training_model_loader": "causal_lm",
+        "inference_model_loader": "image_text_to_text",
+        "direct_logits_mode": "selected_positions",
         "seeds": seeds,
         "jobs": len(jobs),
         "lora_jobs": len(ranks) * len(seeds),

@@ -1,5 +1,21 @@
 # Decision log
 
+## 2026-08-11 — Train text-only LoRAs causally and export serving copies
+
+- For experiments containing no image or video inputs, train Qwen3.5 LoRAs
+  through its causal text compatibility model and preserve that FP32 adapter as
+  the master artifact.
+- Export a checksum-tracked serving copy by deterministically rebasing causal
+  PEFT keys into the multimodal wrapper's `language_model` namespace. Require a
+  serving smoke test before promotion. This policy does not apply to multimodal
+  training data or full-model fine-tuning.
+- For direct final-token objectives, use `logits_to_keep` to project only the
+  distinct supervised sequence positions in each batch. Retain a full-logit
+  mode for numerical and throughput parity benchmarks.
+- The native-multimodal adapter-capacity sweep was cancelled before evaluation
+  and superseded by a fresh causal-master sweep; do not combine its checkpoints
+  with the restarted scaling curve.
+
 ## 2026-08-10 — Match multimodal training and serving architectures
 
 - Load multimodal backbones such as Qwen3.5 through

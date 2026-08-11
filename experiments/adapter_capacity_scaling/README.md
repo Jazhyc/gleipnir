@@ -25,9 +25,16 @@ views are retained in each result.
 
 Each LoRA rank uses `lora_alpha = 2 * rank`, keeping `alpha/r = 2` fixed. Target
 modules are `q`, `k`, `v`, `o`, gate, up, and down projections in the Qwen3.5
-language model. All conditions use the same Qwen3.5-9B image-text-to-text loader,
-full training data, Kimi K3 soft targets, two epochs, AdamW at `5e-5`, effective
-global batch size 32, and seeds `0, 1, 2`.
+language model. All LoRA conditions use the Qwen3.5-9B causal text loader, full
+training data, Kimi K3 soft targets, two epochs, AdamW at `5e-5`, effective
+global batch size 32, and seeds `0, 1, 2`. The direct objective asks Qwen to
+materialize logits only at the one or two distinct final-token positions in a
+microbatch rather than at every padded sequence position.
+
+Each FP32 causal adapter is preserved as the training master. At save time, a
+checksum-tracked inference copy is produced by inserting `language_model` into
+the PEFT key namespace. Tensor values are unchanged. Evaluation loads only the
+rebased copy through vLLM's multimodal Qwen3.5 serving architecture.
 
 The full-fine-tuning condition marks every conditional-generation checkpoint
 parameter trainable and uses two-H100 FSDP2 full sharding. Since inputs are
@@ -52,7 +59,8 @@ asymptote lies outside `[0, 1]`. Report non-monotonic and negative results.
 
 ## Lambda schedule
 
-Prepare the immutable jobs, then launch on the reserved two-H100 instance:
+Prepare the immutable causal jobs, then launch on the reserved two-H100
+instance:
 
 ```bash
 python experiments/adapter_capacity_scaling/prepare.py
@@ -66,12 +74,13 @@ fine-tuning jobs, use:
 python experiments/adapter_capacity_scaling/run_lambda.py --skip-full
 ```
 
-The scheduler first fills both GPUs with rank jobs using
+The fresh campaign writes under `results/adapter_capacity_scaling_causal/`; the
+cancelled native-multimodal attempt remains preserved under
+`results/adapter_capacity_scaling/`. The scheduler first fills both GPUs with rank jobs using
 longest-processing-time balancing. Unless `--skip-full` is set, it then runs the
 three full fine-tunes across both GPUs. Training and evaluation are resumable
 from completion markers, and progress is written atomically to
-`results/adapter_capacity_scaling/lambda_status.json`.
+`results/adapter_capacity_scaling_causal/lambda_status.json`.
 
-Outputs are written under `results/adapter_capacity_scaling/`; runtime logs are
-written under `logs/lambda/adapter_capacity_scaling/`. Neither artifact tree is
-committed.
+Runtime logs are written under
+`logs/lambda/adapter_capacity_scaling_causal/`. Artifact trees are not committed.

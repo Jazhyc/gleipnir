@@ -38,7 +38,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
     )
     parser.add_argument("--output-dir", type=Path)
     parser.add_argument(

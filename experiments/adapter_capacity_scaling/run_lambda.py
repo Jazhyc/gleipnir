@@ -49,6 +49,9 @@ def relocate_jobs(
                 "soft_targets": soft_targets.resolve().as_posix(),
                 "validation": validation.resolve().as_posix(),
                 "output_dir": output_dir.resolve().as_posix(),
+                "causal_adapter_dir": (
+                    output_dir / "causal_adapter"
+                ).resolve().as_posix(),
                 "model_dir": (output_dir / "model").resolve().as_posix(),
             }
         )
@@ -179,12 +182,12 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_causal/jobs.jsonl"),
     )
     parser.add_argument(
         "--lambda-jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
     )
     parser.add_argument(
         "--student-rows",
@@ -204,7 +207,7 @@ def main() -> None:
     parser.add_argument(
         "--status",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/lambda_status.json"),
+        default=Path("results/adapter_capacity_scaling_causal/lambda_status.json"),
     )
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument(

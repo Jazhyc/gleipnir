@@ -11,6 +11,13 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from gleipnir.qwen35_adapter_rebase import (  # noqa: E402
+    MANIFEST_NAME,
+    rebase_adapter,
+)
 
 
 def read_jsonl(path: Path) -> list[dict[str, Any]]:
@@ -30,7 +37,13 @@ def completed_model(job: dict[str, Any]) -> bool:
     if not metadata.is_file():
         return False
     if job["capacity_kind"] == "lora":
-        return (model_dir / "adapter_model.safetensors").is_file()
+        causal_dir = Path(job["causal_adapter_dir"])
+        return (
+            (causal_dir / "adapter_model.safetensors").is_file()
+            and (causal_dir / "training_metadata.json").is_file()
+            and (model_dir / "adapter_model.safetensors").is_file()
+            and (model_dir / MANIFEST_NAME).is_file()
+        )
     return (model_dir / "model.safetensors").is_file() or (
         model_dir / "model.safetensors.index.json"
     ).is_file()
@@ -70,7 +83,9 @@ def training_command(
             f"seed={job['seed']}",
             f"teacher.artifact={job['student_rows']}",
             f"student.soft_teacher_artifact={job['soft_targets']}",
-            f"student.output_dir={job['model_dir']}",
+            "student.output_dir="
+            + (job["model_dir"] if full else job["causal_adapter_dir"]),
+            f"student.model_loader={'image_text_to_text' if full else 'causal_lm'}",
             f"student.finetuning_mode={'full' if full else 'lora'}",
             f"student.training.fsdp.enabled={'true' if full else 'false'}",
             "student.training.per_device_train_batch_size=" + ("1" if full else "2"),
@@ -92,7 +107,7 @@ def main() -> None:
     parser.add_argument(
         "--jobs",
         type=Path,
-        default=Path("results/adapter_capacity_scaling/lambda_jobs.jsonl"),
+        default=Path("results/adapter_capacity_scaling_causal/lambda_jobs.jsonl"),
     )
     parser.add_argument("--job-name", required=True)
     parser.add_argument("--distributed-processes", type=int, default=2)
@@ -108,9 +123,28 @@ def main() -> None:
     (output_dir / "job.json").write_text(
         json.dumps(job, indent=2, sort_keys=True) + "\n"
     )
-    command = training_command(job, distributed_processes=args.distributed_processes)
-    print("running", " ".join(command), flush=True)
-    subprocess.run(command, cwd=ROOT, check=True)
+    causal_dir = (
+        Path(job["causal_adapter_dir"])
+        if job["capacity_kind"] == "lora"
+        else None
+    )
+    causal_complete = causal_dir is not None and (
+        (causal_dir / "adapter_model.safetensors").is_file()
+        and (causal_dir / "training_metadata.json").is_file()
+    )
+    if not causal_complete:
+        command = training_command(
+            job, distributed_processes=args.distributed_processes
+        )
+        print("running", " ".join(command), flush=True)
+        subprocess.run(command, cwd=ROOT, check=True)
+    if causal_dir is not None:
+        manifest = rebase_adapter(causal_dir, Path(job["model_dir"]))
+        print(
+            f"rebased {job['job_name']} source={manifest['source_sha256']} "
+            f"destination={manifest['destination_sha256']}",
+            flush=True,
+        )
     if not completed_model(job):
         raise RuntimeError(
             f"training returned without a complete model: {job['job_name']}"

@@ -6,10 +6,26 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 )
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
+    forward_final_token_logits,
     pairwise_logistic_loss,
     parameter_counts,
     soft_binary_distillation_loss,
 )
+
+
+class PositionSelectingModel(torch.nn.Module):
+    def __init__(self, logits: torch.Tensor) -> None:
+        super().__init__()
+        self.logits = logits
+        self.requested_positions = None
+
+    def forward(self, input_ids, attention_mask, use_cache, logits_to_keep=None):
+        del input_ids, attention_mask, use_cache
+        self.requested_positions = logits_to_keep
+        selected = self.logits
+        if logits_to_keep is not None:
+            selected = selected[:, logits_to_keep, :]
+        return type("Output", (), {"logits": selected})()
 
 
 def test_binary_teacher_probability_is_preserved() -> None:
@@ -73,3 +89,21 @@ def test_parameter_counts_validate_lora_and_full_layouts() -> None:
     assert counts["total_parameters"] == 8
     assert counts["trainable_parameters"] == 8
     assert counts["lora_trainable_parameters"] == 0
+
+
+def test_selected_position_logits_match_full_logits_with_right_padding() -> None:
+    logits = torch.arange(2 * 4 * 3, dtype=torch.float32).reshape(2, 4, 3)
+    input_ids = torch.ones((2, 4), dtype=torch.long)
+    attention_mask = torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0]])
+
+    full_model = PositionSelectingModel(logits)
+    full, _ = forward_final_token_logits(
+        full_model, input_ids, attention_mask, "full"
+    )
+    selected_model = PositionSelectingModel(logits)
+    selected, _ = forward_final_token_logits(
+        selected_model, input_ids, attention_mask, "selected_positions"
+    )
+
+    assert torch.equal(selected, full)
+    assert torch.equal(selected_model.requested_positions, torch.tensor([1, 2]))

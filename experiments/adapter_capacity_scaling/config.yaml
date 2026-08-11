@@ -7,7 +7,7 @@ teacher:
 
 student:
   model: Qwen/Qwen3.5-9B
-  model_loader: image_text_to_text
+  model_loader: causal_lm
   finetuning_mode: lora
   init_adapter: null
   target_mode: teacher
@@ -63,6 +63,7 @@ student:
     pairwise_temperature: 1.0
     soft_loss_weight: 1.0
     soft_loss_type: bce
+    direct_logits_mode: selected_positions
     soft_target_logit_center: 0.0
     soft_target_logit_scale: 1.0
     soft_huber_delta: 1.0

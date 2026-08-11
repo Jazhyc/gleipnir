@@ -22,6 +22,7 @@ def lora_job(seed: int, rank: int) -> dict[str, object]:
         "student_rows": "/data/student.jsonl",
         "soft_targets": "/data/soft.jsonl",
         "output_dir": "/results/run",
+        "causal_adapter_dir": "/results/run/causal_adapter",
         "model_dir": "/results/run/model",
     }
 
@@ -68,9 +69,12 @@ def test_training_commands_keep_alpha_ratio_and_use_fsdp_for_full() -> None:
     assert "student.lora.r=128" in lora_command
     assert "student.lora.alpha=256" in lora_command
     assert "student.finetuning_mode=lora" in lora_command
+    assert "student.model_loader=causal_lm" in lora_command
+    assert "student.output_dir=/results/run/causal_adapter" in lora_command
     assert "accelerate.commands.launch" not in lora_command
     assert "accelerate.commands.launch" in full_command
     assert "student.finetuning_mode=full" in full_command
+    assert "student.model_loader=image_text_to_text" in full_command
     assert "student.training.fsdp.enabled=true" in full_command
     assert "student.training.per_device_train_batch_size=1" in full_command
 
