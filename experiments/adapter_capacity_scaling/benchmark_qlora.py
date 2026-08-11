@@ -72,6 +72,15 @@ def validate_preflight(
         raise RuntimeError(
             f"unexpected training batch: {metadata.get('training_batch')}"
         )
+    if metadata.get("direct_logits_mode") != "selected_positions":
+        raise RuntimeError(
+            f"unexpected logit mode: {metadata.get('direct_logits_mode')}"
+        )
+    kernel_modules = metadata.get("gated_delta_kernel_modules")
+    if not isinstance(kernel_modules, list) or not kernel_modules:
+        raise RuntimeError(f"missing gated-delta kernel metadata: {kernel_modules}")
+    if any(not module.startswith("fla.ops.") for module in kernel_modules):
+        raise RuntimeError(f"Torch gated-delta fallback detected: {kernel_modules}")
     throughput = float(metadata["train_metrics"]["train_samples_per_second"])
     if throughput < minimum_samples_per_second:
         raise RuntimeError(
@@ -98,7 +107,10 @@ def main() -> None:
     if args.rank != 256 or args.max_steps < 20:
         raise ValueError("production preflight requires rank 256 and at least 20 steps")
 
-    output_dir = args.output_dir.resolve()
+    output_dir = args.output_dir
+    if not output_dir.is_absolute():
+        output_dir = ROOT / output_dir
+    output_dir = output_dir.resolve()
     output_dir.mkdir(parents=True, exist_ok=True)
     environment = ensure_fla_kernels(args.fla_target)
     job = benchmark_job(output_dir, args.rank, args.seed)

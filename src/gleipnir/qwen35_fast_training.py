@@ -44,6 +44,7 @@ def fla_environment(
         f"{target.resolve()}:{existing}" if existing else target.resolve().as_posix()
     )
     environment["GLEIPNIR_FLA_VERSION"] = FLA_VERSION
+    environment.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
     return environment
 
 

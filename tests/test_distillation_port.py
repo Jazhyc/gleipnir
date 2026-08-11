@@ -7,6 +7,7 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     forward_final_token_logits,
+    gated_delta_kernel_modules,
     pairwise_logistic_loss,
     parameter_counts,
     soft_binary_distillation_loss,
@@ -107,3 +108,19 @@ def test_selected_position_logits_match_full_logits_with_right_padding() -> None
 
     assert torch.equal(selected, full)
     assert torch.equal(selected_model.requested_positions, torch.tensor([1, 2]))
+
+
+def test_gated_delta_kernel_modules_report_bound_implementation() -> None:
+    model = torch.nn.Module()
+    child = torch.nn.Module()
+
+    def fake_kernel():
+        return None
+
+    fake_kernel.__module__ = "fla.ops.gated_delta_rule.chunk"
+    child.chunk_gated_delta_rule = fake_kernel
+    model.add_module("gated_delta", child)
+
+    assert gated_delta_kernel_modules(model) == [
+        "fla.ops.gated_delta_rule.chunk"
+    ]

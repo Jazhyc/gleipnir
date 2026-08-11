@@ -12,6 +12,11 @@
   4-bit NF4, double quantization, and BF16 compute. Hold quantization and batch
   fixed across ranks. Preserve the trained FP32 adapters and evaluate their
   checksum-rebased copies on the ordinary BF16 serving base.
+- Use selected-position vocabulary projection for every QLoRA rank. A rank-256,
+  batch-8 preflight consumed about 69 GB before full-sequence logits triggered a
+  further roughly 25 GB allocation and OOMed. The earlier selected-position
+  batch-2 path was 2.9% slower, but it is necessary to retain the proven batch
+  and is held fixed across this new curve.
 - Require a rank-256, 20-step memory and throughput preflight before scheduling
   the full curve. This catches FLA fallback and high-rank OOMs without silently
   changing the experimental recipe.

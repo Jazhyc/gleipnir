@@ -62,17 +62,21 @@ import, and fails closed rather than silently using the Torch fallback.
 
 Before scheduling the curve, rank 256 must complete a matched 20-step QLoRA
 preflight at microbatch 8 without OOM, confirm NF4/double-quantized/BF16 metadata,
-and show that the FLA implementation was selected. Preserve the benchmark log
-and do not lower the high-rank batch silently; a recipe change would alter the
-controlled intervention and requires a new campaign root.
+and show that the concrete gated-delta implementation is under `fla.ops`.
+Preserve the benchmark log and do not lower the high-rank batch silently; a
+recipe change would alter the controlled intervention and requires a new
+campaign root.
 
-On two H100s, matched 20-step rank-16 causal runs measured 300.7 seconds with
-ordinary full-sequence logits and 309.3 seconds when projecting only the distinct
-final positions. The selected-position path was 2.9% slower and its accumulated
-loss differed slightly (`2.397` versus `2.364`), reflecting a different GEMM
-shape and numerical trajectory. Preserve full logits for this curve. The
-selected-position implementation remains available only for future controlled
-benchmarks; this negative result must not be hidden.
+On two H100s, the earlier microbatch-2 matched rank-16 runs measured 300.7
+seconds with ordinary full-sequence logits and 309.3 seconds when projecting
+only the distinct final positions. The selected-position path was 2.9% slower
+and its accumulated loss differed slightly (`2.397` versus `2.364`), reflecting
+a different GEMM shape and numerical trajectory. However, the rank-256 QLoRA
+batch-8 preflight reached about 69 GB and then OOMed when Accelerate attempted a
+roughly 25 GB full-logit conversion. The production curve therefore uses
+selected-position logits consistently at every rank. This is a memory-enabling
+intervention for the proven batch, and it supersedes the earlier batch-2 choice
+without hiding that negative timing result.
 
 The full-fine-tuning condition marks every conditional-generation checkpoint
 parameter trainable and uses two-H100 FSDP2 full sharding. Since inputs are

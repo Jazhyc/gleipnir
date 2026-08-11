@@ -138,6 +138,7 @@ def test_fla_install_is_pinned_and_isolated() -> None:
     assert command[-1] == "--no-deps"
     assert environment["PYTHONPATH"] == "/tmp/test-fla:/existing"
     assert environment["GLEIPNIR_FLA_VERSION"] == "0.5.2"
+    assert environment["PYTORCH_CUDA_ALLOC_CONF"] == "expandable_segments:True"
 
 
 def test_rank256_preflight_requires_production_qlora_metadata(tmp_path) -> None:
@@ -159,6 +160,8 @@ def test_rank256_preflight_requires_production_qlora_metadata(tmp_path) -> None:
             "gradient_accumulation_steps": 4,
             "effective_batch_size": 32,
         },
+        "direct_logits_mode": "selected_positions",
+        "gated_delta_kernel_modules": ["fla.ops.gated_delta_rule.chunk"],
         "train_metrics": {"train_samples_per_second": 8.5},
     }
 

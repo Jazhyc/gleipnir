@@ -83,6 +83,9 @@ matched benchmark supports a change. Prefer standard QLoRA (4-bit NF4, double
 quantization, BF16 compute) when it permits the proven batch at high adapter
 ranks. Preflight the largest rank, fail closed if FLA is unavailable, and record
 kernel, quantization, batch, memory, and throughput metadata for every campaign.
+For direct-boundary objectives, avoid materializing full-sequence vocabulary
+logits when it prevents the proven batch; use a matched, recorded selected-token
+projection consistently across the campaign.
 
 ## Code, Tests, and Git
 

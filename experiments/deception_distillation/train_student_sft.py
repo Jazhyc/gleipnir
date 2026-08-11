@@ -162,6 +162,16 @@ def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
     }
 
 
+def gated_delta_kernel_modules(model: torch.nn.Module) -> list[str]:
+    """Return the concrete Qwen gated-delta implementations bound to the model."""
+    modules = {
+        kernel.__module__
+        for module in model.modules()
+        if (kernel := getattr(module, "chunk_gated_delta_rule", None)) is not None
+    }
+    return sorted(modules)
+
+
 def forward_final_token_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -1643,6 +1653,14 @@ def main(cfg: DictConfig) -> None:
             init_adapter.as_posix(),
             is_trainable=True,
         )
+    kernel_modules = gated_delta_kernel_modules(model)
+    if require_fla and (
+        not kernel_modules
+        or any(not module.startswith("fla.ops.") for module in kernel_modules)
+    ):
+        raise RuntimeError(
+            f"Qwen gated-delta kernel did not resolve to FLA: {kernel_modules}"
+        )
     trainable_lora_names = (
         validate_trainable_lora_layout(model, model_loader)
         if finetuning_mode == "lora"
@@ -1667,6 +1685,7 @@ def main(cfg: DictConfig) -> None:
         f"trainable_parameters={counts['trainable_parameters']} "
         f"trainable_lora_tensors={len(trainable_lora_names)} "
         f"trainable_dtypes={trainable_dtypes} "
+        f"gated_delta_kernel_modules={kernel_modules} "
         f"first_trainable_lora="
         f"{trainable_lora_names[0] if trainable_lora_names else None}",
         flush=True,
@@ -1774,6 +1793,7 @@ def main(cfg: DictConfig) -> None:
                         "required": require_fla,
                         "version": os.environ.get("GLEIPNIR_FLA_VERSION"),
                     },
+                    "gated_delta_kernel_modules": kernel_modules,
                     "training_batch": {
                         "micro_batch_size": int(
                             cfg.student.training.per_device_train_batch_size
