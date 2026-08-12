@@ -4,6 +4,7 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
+from experiments.adapter_capacity_scaling import run_lambda
 from experiments.adapter_capacity_scaling.benchmark_qlora import (
     benchmark_job,
     validate_preflight,
@@ -14,7 +15,6 @@ from experiments.adapter_capacity_scaling.core import (
     split_jobs,
     validate_ranks,
 )
-from experiments.adapter_capacity_scaling import run_lambda
 from experiments.adapter_capacity_scaling.run_lambda import Status
 from experiments.adapter_capacity_scaling.run_train import training_command
 from gleipnir.qwen35_fast_training import (
@@ -93,6 +93,7 @@ def test_training_commands_keep_alpha_ratio_and_use_fsdp_for_full() -> None:
     assert "student.quantization.enabled=false" in full_command
     assert "student.training.fsdp.enabled=true" in full_command
     assert "student.training.per_device_train_batch_size=1" in full_command
+    assert not any("selection_manifest=" in value for value in lora_command)
 
 
 def test_full_training_rejects_one_process() -> None:

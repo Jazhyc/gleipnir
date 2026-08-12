@@ -1,0 +1,13 @@
+fractions: [0.10, 0.25, 0.50]
+reference_fraction: 1.0
+ranks: [4, 16, 64, 256]
+seeds: [0, 1, 2]
+epochs: 2.0
+learning_rate: 5.0e-5
+training_recipe: qlora-nf4-double-quant-bf16-fla-0.5.2
+micro_batch_size: 8
+gradient_accumulation_steps: 4
+effective_batch_size: 32
+direct_logits_mode: selected_positions
+primary_metric: macro_auroc
+balanced_accuracy_threshold: 0.5

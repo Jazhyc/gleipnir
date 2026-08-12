@@ -110,6 +110,9 @@ def training_command(
                 f"student.lora.alpha={job['lora_alpha']}",
             ]
         )
+    selection_manifest = job.get("selection_manifest")
+    if selection_manifest is not None:
+        command.append(f"student.selection_manifest={selection_manifest}")
     return command
 
 
