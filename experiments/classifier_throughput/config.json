@@ -1,0 +1,40 @@
+{
+  "model": "Qwen/Qwen3.5-9B",
+  "model_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+  "adapter": "/scratch/s4626451/Aletheias-Quest-Competition/results/blackbox/qwen9b_kimi_k3_tvg_soft_full_plus_liars_r16_lr5e5_ep2_v1/adapter_bf16",
+  "validation": "data/data_scaling/validation.jsonl",
+  "max_model_len": 4608,
+  "gpu_memory_utilization": 0.9,
+  "warmup_rows": 64,
+  "repeats": 3,
+  "conditions": [
+    {
+      "name": "balanced_current",
+      "performance_mode": "balanced",
+      "max_num_batched_tokens": null,
+      "use_tqdm": true
+    },
+    {
+      "name": "balanced_no_tqdm",
+      "performance_mode": "balanced",
+      "max_num_batched_tokens": null,
+      "use_tqdm": false
+    },
+    {
+      "name": "throughput_default",
+      "performance_mode": "throughput",
+      "max_num_batched_tokens": null,
+      "use_tqdm": false
+    },
+    {
+      "name": "throughput_32768",
+      "performance_mode": "throughput",
+      "max_num_batched_tokens": 32768,
+      "use_tqdm": false
+    }
+  ],
+  "parity": {
+    "max_abs_score_delta": 0.0001,
+    "max_threshold_flips": 0
+  }
+}

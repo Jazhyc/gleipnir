@@ -4,6 +4,12 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 
+from experiments.classifier_throughput.core import (
+    score_parity,
+    summarize_results,
+    token_length_summary,
+    validate_config,
+)
 from experiments.data_scaling.core import (
     fit_bounded_power_law,
     nested_stratified_selections,
@@ -119,3 +125,67 @@ def test_balanced_smoke_records_uses_one_dataset_and_both_labels() -> None:
     assert {record["dataset"] for record in selected} == {"balanced"}
     assert [record["label"] for record in selected].count(0) == 4
     assert [record["label"] for record in selected].count(1) == 4
+
+
+def test_classifier_throughput_config_and_token_summary() -> None:
+    config = {
+        "warmup_rows": 4,
+        "repeats": 2,
+        "conditions": [
+            {
+                "name": "balanced_current",
+                "performance_mode": "balanced",
+                "max_num_batched_tokens": None,
+            },
+            {
+                "name": "throughput",
+                "performance_mode": "throughput",
+                "max_num_batched_tokens": 16384,
+            },
+        ],
+    }
+    validate_config(config)
+    assert token_length_summary([1, 2, 3, 10]) == {
+        "total": 16,
+        "mean": 4.0,
+        "p50": 2,
+        "p90": 10,
+        "p95": 10,
+        "max": 10,
+    }
+
+
+def test_classifier_throughput_summary_enforces_score_parity() -> None:
+    baseline = {
+        "condition": "balanced_current",
+        "median_seconds": 10.0,
+        "median_rows_per_second": 100.0,
+        "median_prompt_tokens_per_second": 50000.0,
+        "scores": [0.1, 0.6],
+    }
+    fast = {
+        "condition": "throughput",
+        "median_seconds": 8.0,
+        "median_rows_per_second": 125.0,
+        "median_prompt_tokens_per_second": 62500.0,
+        "scores": [0.10001, 0.60001],
+    }
+    failed = {
+        "condition": "flipped",
+        "median_seconds": 5.0,
+        "median_rows_per_second": 200.0,
+        "median_prompt_tokens_per_second": 100000.0,
+        "scores": [0.1, 0.4],
+    }
+
+    summary = summarize_results(
+        [baseline, fast, failed],
+        {"max_abs_score_delta": 0.0001, "max_threshold_flips": 0},
+    )
+
+    assert score_parity(baseline["scores"], fast["scores"])[
+        "max_abs_score_delta"
+    ] == pytest.approx(1e-5)
+    assert summary["best"] == "throughput"
+    assert summary["rows"][1]["speedup_vs_current"] == 1.25
+    assert summary["rows"][2]["parity_passed"] is False

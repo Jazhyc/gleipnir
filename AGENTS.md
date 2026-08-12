@@ -69,6 +69,13 @@ documented change. Redirect final logs to `logs/slurm/<experiment>/` and remove
 the temporary bootstrap output after redirection. Batch related inference
 conditions in one persistent vLLM process when possible.
 
+Run Slurm control and submission commands outside the filesystem/network
+sandbox. Restricted shells can block name resolution or controller sockets and
+make a healthy `slurm1` appear down. Before diagnosing a controller outage,
+repeat `scontrol ping` with sandbox escalation. Use ordinary `sbatch`/`salloc`
+jobs to hold GPUs: advanced reservations created with `scontrol` require Slurm
+administrator privileges.
+
 The reserved Lambda Cloud instance is `monitor-foundation`, with two H100 GPUs.
 Use `scripts/lambda_cloud.py` for SSH, sync, bootstrap, secret transfer, and
 artifact collection. Never terminate it or launch billable capacity without the
