@@ -14,6 +14,7 @@ from experiments.adapter_capacity_scaling.core import (
     split_jobs,
     validate_ranks,
 )
+from experiments.adapter_capacity_scaling import run_lambda
 from experiments.adapter_capacity_scaling.run_lambda import Status
 from experiments.adapter_capacity_scaling.run_train import training_command
 from gleipnir.qwen35_fast_training import (
@@ -112,6 +113,21 @@ def test_status_distinguishes_planned_and_cancelled_jobs(tmp_path) -> None:
     assert status["planned_jobs"] == ["seed0-r016"]
     assert status["cancelled_jobs"] == ["seed0-full"]
     assert status["revision"] == "abc123"
+
+
+def test_runtime_environment_preserves_virtualenv_bin(monkeypatch) -> None:
+    monkeypatch.setattr(
+        run_lambda.sys,
+        "executable",
+        "/tmp/uv-project/.venv/bin/python",
+    )
+
+    environment = run_lambda.runtime_environment("1")
+
+    assert environment["CUDA_VISIBLE_DEVICES"] == "1"
+    assert environment["PATH"].split(":", maxsplit=1)[0] == (
+        "/tmp/uv-project/.venv/bin"
+    )
 
 
 def test_capacity_config_uses_standard_qlora_and_fast_batch() -> None:

@@ -137,7 +137,10 @@ class Status:
 
 
 def runtime_environment(cuda_visible_devices: str) -> dict[str, str]:
-    executable_dir = Path(sys.executable).resolve().parent.as_posix()
+    # Preserve the virtual-environment bin directory. Resolving the Python
+    # symlink points into uv's interpreter cache and hides console scripts such
+    # as the ninja executable needed by FlashInfer's JIT compiler.
+    executable_dir = Path(sys.executable).parent.absolute().as_posix()
     current_path = os.environ.get("PATH", "")
     return dict(
         os.environ,

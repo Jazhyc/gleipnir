@@ -136,5 +136,12 @@ three full fine-tunes across both GPUs. Training and evaluation are resumable
 from completion markers, and progress is written atomically to
 `results/adapter_capacity_scaling_qlora/lambda_status.json`.
 
+The scheduler preserves `.venv/bin` on subprocess `PATH`; FlashInfer requires
+the locked `ninja` console script when it JIT-compiles Qwen3.5 inference kernels.
+Do not resolve the virtual-environment Python symlink when constructing that
+path, because it resolves into uv's interpreter cache and omits project console
+scripts. If evaluation fails after training, rerunning the scheduler skips every
+completed adapter and resumes from evaluation.
+
 Runtime logs are written under
 `logs/lambda/adapter_capacity_scaling_qlora/`. Artifact trees are not committed.
