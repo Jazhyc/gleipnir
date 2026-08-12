@@ -86,6 +86,43 @@ def score_parity(
     }
 
 
+def repeat_stability(
+    score_repeats: list[list[float]],
+    *,
+    threshold: float = 0.5,
+) -> dict[str, float | int]:
+    if len(score_repeats) < 2 or not score_repeats[0]:
+        raise ValueError("at least two non-empty score repeats are required")
+    width = len(score_repeats[0])
+    if any(len(scores) != width for scores in score_repeats):
+        raise ValueError("score repeats must have equal length")
+    ranges = [
+        max(values) - min(values)
+        for values in zip(*score_repeats, strict=True)
+    ]
+    unstable = sum(
+        len({value >= threshold for value in values}) > 1
+        for values in zip(*score_repeats, strict=True)
+    )
+    return {
+        "max_abs_score_range": max(ranges),
+        "mean_abs_score_range": statistics.fmean(ranges),
+        "threshold_unstable_rows": unstable,
+    }
+
+
+def median_scores(score_repeats: list[list[float]]) -> list[float]:
+    if not score_repeats or not score_repeats[0]:
+        raise ValueError("score repeats must not be empty")
+    width = len(score_repeats[0])
+    if any(len(scores) != width for scores in score_repeats):
+        raise ValueError("score repeats must have equal length")
+    return [
+        statistics.median(values)
+        for values in zip(*score_repeats, strict=True)
+    ]
+
+
 def summarize_results(
     results: list[dict[str, Any]],
     parity_limits: dict[str, Any],

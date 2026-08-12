@@ -19,7 +19,9 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiments.classifier_throughput.core import (  # noqa: E402
+    median_scores,
     read_jsonl,
+    repeat_stability,
     sha256_file,
     summarize_results,
     token_length_summary,
@@ -132,7 +134,7 @@ def benchmark_condition(
         raise RuntimeError("vLLM refused to reset the prefix cache after warmup")
 
     repeats = []
-    reference_scores: list[float] | None = None
+    score_repeats: list[list[float]] = []
     for repeat in range(int(config["repeats"])):
         started = time.perf_counter()
         outputs = llm.generate(
@@ -142,30 +144,28 @@ def benchmark_condition(
             lora_request=request,
         )
         elapsed = time.perf_counter() - started
+        if any(
+            output.prompt != prompt
+            for output, prompt in zip(outputs, prompts, strict=True)
+        ):
+            raise RuntimeError("vLLM returned outputs in an unexpected prompt order")
         scores = [score_from_output(output, label_token_ids) for output in outputs]
-        if reference_scores is None:
-            reference_scores = scores
-        else:
-            max_delta = max(
-                abs(left - right)
-                for left, right in zip(reference_scores, scores, strict=True)
-            )
-            if max_delta > 1e-12:
-                raise RuntimeError(
-                    f"condition {condition['name']} was not repeatable: {max_delta=}"
-                )
+        score_repeats.append(scores)
         repeats.append(
             {
                 "repeat": repeat,
                 "seconds": elapsed,
                 "rows_per_second": len(records) / elapsed,
                 "prompt_tokens_per_second": prompt_tokens / elapsed,
+                "score_sha256_float64": hashlib.sha256(
+                    pd.Series(scores).to_numpy(dtype="float64").tobytes()
+                ).hexdigest(),
             }
         )
         if not llm.reset_prefix_cache():
             raise RuntimeError("vLLM refused to reset the prefix cache between repeats")
 
-    assert reference_scores is not None
+    reference_scores = median_scores(score_repeats)
     frame = pd.DataFrame(
         {
             "dataset": [record["dataset"] for record in records],
@@ -191,6 +191,8 @@ def benchmark_condition(
         "prompt_tokens": token_length_summary(lengths),
         "initialization_seconds": initialization_seconds,
         "repeats": repeats,
+        "repeat_stability": repeat_stability(score_repeats),
+        "score_repeats": score_repeats,
         "median_seconds": statistics.median(seconds),
         "median_rows_per_second": len(records) / statistics.median(seconds),
         "median_prompt_tokens_per_second": prompt_tokens

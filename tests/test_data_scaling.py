@@ -5,6 +5,8 @@ from safetensors import safe_open
 from safetensors.torch import save_file
 
 from experiments.classifier_throughput.core import (
+    median_scores,
+    repeat_stability,
     score_parity,
     summarize_results,
     token_length_summary,
@@ -189,3 +191,14 @@ def test_classifier_throughput_summary_enforces_score_parity() -> None:
     assert summary["best"] == "throughput"
     assert summary["rows"][1]["speedup_vs_current"] == 1.25
     assert summary["rows"][2]["parity_passed"] is False
+
+
+def test_classifier_throughput_summarizes_repeat_instability() -> None:
+    repeats = [[0.1, 0.49, 0.9], [0.11, 0.51, 0.88], [0.09, 0.50, 0.89]]
+
+    assert median_scores(repeats) == pytest.approx([0.1, 0.5, 0.89])
+    assert repeat_stability(repeats) == {
+        "max_abs_score_range": pytest.approx(0.02),
+        "mean_abs_score_range": pytest.approx(0.02),
+        "threshold_unstable_rows": 1,
+    }
