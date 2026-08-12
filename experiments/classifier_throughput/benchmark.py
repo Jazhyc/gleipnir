@@ -102,18 +102,29 @@ def benchmark_condition(
         logprob_token_ids=label_token_ids,
         allowed_token_ids=label_token_ids,
     )
+    serving_mode = condition.get("serving_mode", "dynamic_lora")
+    model_source = (
+        config["model"]
+        if serving_mode == "dynamic_lora"
+        else str(output_dir / "merged_model")
+    )
     engine_args: dict[str, Any] = {
-        "model": config["model"],
-        "revision": config["model_revision"],
+        "model": model_source,
         "tokenizer": str(adapter),
         "dtype": "bfloat16",
         "tensor_parallel_size": 1,
         "gpu_memory_utilization": float(config["gpu_memory_utilization"]),
-        "enable_lora": True,
-        "max_lora_rank": 16,
         "max_model_len": int(config["max_model_len"]),
         "performance_mode": condition["performance_mode"],
     }
+    if serving_mode == "dynamic_lora":
+        engine_args.update(
+            revision=config["model_revision"],
+            enable_lora=True,
+            max_lora_rank=16,
+        )
+    elif not (Path(model_source) / "merge_manifest.json").is_file():
+        raise FileNotFoundError(f"missing merged model: {model_source}")
     if condition.get("max_num_batched_tokens") is not None:
         engine_args["max_num_batched_tokens"] = int(
             condition["max_num_batched_tokens"]
@@ -122,7 +133,11 @@ def benchmark_condition(
     initialized = time.perf_counter()
     llm = LLM(**engine_args)
     initialization_seconds = time.perf_counter() - initialized
-    request = LoRARequest("phoenix-v8.1", 1, str(adapter))
+    request = (
+        LoRARequest("phoenix-v8.1", 1, str(adapter))
+        if serving_mode == "dynamic_lora"
+        else None
+    )
     warmup_rows = min(int(config["warmup_rows"]), len(prompts))
     llm.generate(
         prompts[:warmup_rows],
@@ -177,6 +192,7 @@ def benchmark_condition(
     seconds = [float(repeat["seconds"]) for repeat in repeats]
     result = {
         "condition": condition["name"],
+        "serving_mode": serving_mode,
         "requested_engine_config": condition,
         "resolved_engine_config": resolved_engine_config(llm),
         "model": config["model"],
@@ -228,6 +244,19 @@ def benchmark_condition(
 def run_all(config_path: Path, config: dict[str, Any], output_dir: Path) -> None:
     status: dict[str, Any] = {"completed": [], "failed": {}}
     for condition in config["conditions"]:
+        if condition.get("serving_mode") == "merged":
+            subprocess.run(
+                [
+                    sys.executable,
+                    str(Path(__file__).with_name("merge_adapter.py")),
+                    "--config",
+                    str(config_path),
+                    "--output-dir",
+                    str(output_dir / "merged_model"),
+                ],
+                cwd=ROOT,
+                check=True,
+            )
         command = [
             sys.executable,
             str(Path(__file__)),

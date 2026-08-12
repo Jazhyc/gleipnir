@@ -56,6 +56,11 @@ def validate_config(config: dict[str, Any]) -> None:
     if int(config.get("repeats", 0)) < 2:
         raise ValueError("repeats must be at least two")
     for condition in conditions:
+        if condition.get("serving_mode", "dynamic_lora") not in {
+            "dynamic_lora",
+            "merged",
+        }:
+            raise ValueError(f"invalid serving mode in {condition!r}")
         if condition.get("performance_mode") not in {"balanced", "throughput"}:
             raise ValueError(f"invalid performance mode in {condition!r}")
         batch_tokens = condition.get("max_num_batched_tokens")

@@ -19,6 +19,14 @@ The first sweep compares four BF16 dynamic-LoRA conditions on one GPU:
 3. `throughput_default`: vLLM throughput mode and its hardware default budget;
 4. `throughput_32768`: throughput mode with 32,768 batched prompt tokens.
 
+After completing that fixed scheduler sweep, `merged_bf16` tests the next
+predeclared intervention: safe-merge the same adapter into the pinned BF16 base
+weights and rerun the selected balanced scheduler without vLLM's dynamic-LoRA
+path. The hypothesis is that removing per-layer adapter dispatch and separate
+low-rank projections can produce a material gain when scheduling changes do not.
+The merged artifact remains an ignored, reconstructable result whose source
+revision, adapter checksum, file checksums, dtype, and merge mode are recorded.
+
 Each condition loads the same Qwen3.5-9B revision and Phoenix 8.1 rank-16 BF16
 serving adapter, performs an untimed 64-row warmup, resets the prefix cache, and
 runs three timed passes. The cache is reset between repeats so identical prompt
@@ -48,14 +56,31 @@ changes even when this gate passes.
 
 ## Stop condition and next steps
 
-Complete the predeclared four-condition sweep once. Do not tune the token budget
+Complete the predeclared four-condition sweep once, then the merged-BF16
+condition once. Do not tune the token budget
 against individual datasets or quality metrics. Reject a condition on OOM,
 missing scores, prompt-order mismatch, or parity failure, and report any
 within-condition threshold instability. Select the fastest passing condition by
-median rows/s. Only then benchmark a merged BF16 adapter,
-FP8 with a new parity gate, and a packed Transformers final-position forward in
-that order. A100 results select configurations to retest on H100; they are not
-an H100 throughput estimate.
+median rows/s. Only then benchmark FP8 with a new parity gate and a packed
+Transformers final-position forward, in that order. A100 results select
+configurations to retest on H100; they are not an H100 throughput estimate.
+
+## Scheduler sweep finding (2026-08-12)
+
+Slurm job `30597418` completed the scheduler sweep on one A100. The current
+balanced configuration measured 34.06 rows/s (10.60k prompt tokens/s). Removing
+the progress renderer measured 33.91 rows/s, throughput mode with 16,384 tokens
+measured 33.72 rows/s, and throughput mode with 32,768 tokens measured 34.18
+rows/s. Thus the largest apparent gain was only 0.35%, below run-to-run noise,
+and none of the alternatives passed the predeclared `1e-4` score-parity gate.
+The 16k and 32k conditions caused one and two median-score threshold flips.
+Retain balanced scheduling; do not spend more A100 time tuning this token budget
+for the frozen workload.
+
+Repeated BF16 vLLM scores were not bit-stable even within a condition. The
+baseline maximum per-row range was 0.0913 and its mean range was 0.00160, though
+none of its 822 rows crossed the 0.5 threshold between repeats. This motivates
+retaining repeat-level stability diagnostics alongside cross-condition parity.
 
 The Slurm job requests four CPUs and 64 GB rather than the repository default so
 the vLLM frontend, engine process, and result serialization do not share one CPU

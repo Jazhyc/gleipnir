@@ -31,6 +31,13 @@
       "performance_mode": "throughput",
       "max_num_batched_tokens": 32768,
       "use_tqdm": false
+    },
+    {
+      "name": "merged_bf16",
+      "serving_mode": "merged",
+      "performance_mode": "balanced",
+      "max_num_batched_tokens": null,
+      "use_tqdm": false
     }
   ],
   "parity": {
