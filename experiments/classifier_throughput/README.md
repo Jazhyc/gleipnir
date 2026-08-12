@@ -82,6 +82,25 @@ baseline maximum per-row range was 0.0913 and its mean range was 0.00160, though
 none of its 822 rows crossed the 0.5 threshold between repeats. This motivates
 retaining repeat-level stability diagnostics alongside cross-condition parity.
 
+## Merged-BF16 finding (2026-08-12)
+
+Slurm job `30597577` compared dynamic LoRA with a safely merged BF16 model on
+one A100. The same-job baseline measured 34.32 rows/s and 10.68k prompt tokens/s;
+the merged model measured 39.61 rows/s and 12.33k prompt tokens/s, a 15.4%
+steady-state speedup. Unlike dynamic LoRA, all three merged score arrays were
+bit-identical.
+
+Do not promote the merge yet: it failed the predeclared score-parity gate. Its
+maximum absolute delta from the dynamic-LoRA median was 0.1036 and one of 822
+predictions changed at the inclusive 0.5 threshold. That row was a label-zero
+example (`dev-varied-deception-Qwen3.5-27B-None`, index 3247): dynamic LoRA
+produced `[0.4688, 0.4688, 0.5]` across repeats while the merged model produced
+an exact `0.5` tie every time. Pooled AUROC changed from 0.96688 to 0.96747 and
+balanced accuracy from 0.91855 to 0.91736. This is promising but confounded by
+the baseline's own numerical instability. Establish a deterministic reference
+and an explicit equivalence rule before deciding whether the merge is safe;
+do not proceed to FP8 under the current gate.
+
 The Slurm job requests four CPUs and 64 GB rather than the repository default so
 the vLLM frontend, engine process, and result serialization do not share one CPU
 or approach host-memory pressure during a throughput measurement.
