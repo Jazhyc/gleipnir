@@ -45,7 +45,7 @@ def main() -> None:
 
     import torch
     from peft import PeftModel
-    from transformers import AutoModelForImageTextToText
+    from transformers import AutoModelForImageTextToText, AutoProcessor
 
     output_dir.mkdir(parents=True, exist_ok=False)
     print(f"loading pinned BF16 base model for merge: {config['model']}", flush=True)
@@ -63,8 +63,14 @@ def main() -> None:
         safe_serialization=True,
         max_shard_size="5GB",
     )
+    processor = AutoProcessor.from_pretrained(
+        config["model"],
+        revision=config["model_revision"],
+    )
+    processor.save_pretrained(output_dir)
     files = tree_manifest(output_dir)
     manifest = {
+        "manifest_version": 2,
         "model": config["model"],
         "model_revision": config["model_revision"],
         "adapter": adapter.as_posix(),

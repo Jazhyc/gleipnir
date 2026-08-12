@@ -285,6 +285,8 @@ def run_all(config_path: Path, config: dict[str, Any], output_dir: Path) -> None
     summary["failures"] = status["failed"]
     write_json_atomic(output_dir / "summary.json", summary)
     print(json.dumps(summary, indent=2), flush=True)
+    if status["failed"]:
+        raise RuntimeError(f"benchmark conditions failed: {status['failed']}")
 
 
 def main() -> None:
