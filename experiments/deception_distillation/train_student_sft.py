@@ -1250,10 +1250,12 @@ def main(cfg: DictConfig) -> None:
                 self.optimizer = MuonAdamW(
                     muon_adamw_param_groups(self.model, float(self.args.weight_decay)),
                     lr=float(self.args.learning_rate),
-                    muon_lr=float(cfg.student.training.muon_learning_rate),
                     muon_momentum=float(cfg.student.training.muon_momentum),
                     muon_nesterov=bool(cfg.student.training.muon_nesterov),
                     muon_ns_steps=int(cfg.student.training.muon_ns_steps),
+                    muon_adjust_lr_fn=str(
+                        cfg.student.training.muon_adjust_lr_fn
+                    ),
                 )
             return self.optimizer
 
@@ -1716,6 +1718,11 @@ def main(cfg: DictConfig) -> None:
         num_train_epochs=float(cfg.student.training.num_train_epochs),
         max_steps=int(cfg.student.training.max_steps),
         learning_rate=float(cfg.student.training.learning_rate),
+        lr_scheduler_type=str(
+            OmegaConf.select(
+                cfg, "student.training.lr_scheduler_type", default="linear"
+            )
+        ),
         warmup_steps=training_warmup_steps(cfg.student.training),
         weight_decay=float(cfg.student.training.weight_decay),
         per_device_train_batch_size=int(
@@ -1787,6 +1794,41 @@ def main(cfg: DictConfig) -> None:
                     "model": str(cfg.student.model),
                     "commit": os.environ.get("GLEIPNIR_COMMIT"),
                     "seed": int(cfg.seed),
+                    "optimization": {
+                        "optimizer": optimizer_name,
+                        "learning_rate": float(cfg.student.training.learning_rate),
+                        "lr_scheduler_type": str(
+                            OmegaConf.select(
+                                cfg,
+                                "student.training.lr_scheduler_type",
+                                default="linear",
+                            )
+                        ),
+                        "warmup_steps": training_warmup_steps(
+                            cfg.student.training
+                        ),
+                        "weight_decay": float(cfg.student.training.weight_decay),
+                        "muon_adjust_lr_fn": (
+                            str(cfg.student.training.muon_adjust_lr_fn)
+                            if optimizer_name == "muon"
+                            else None
+                        ),
+                        "muon_momentum": (
+                            float(cfg.student.training.muon_momentum)
+                            if optimizer_name == "muon"
+                            else None
+                        ),
+                        "muon_nesterov": (
+                            bool(cfg.student.training.muon_nesterov)
+                            if optimizer_name == "muon"
+                            else None
+                        ),
+                        "muon_ns_steps": (
+                            int(cfg.student.training.muon_ns_steps)
+                            if optimizer_name == "muon"
+                            else None
+                        ),
+                    },
                     "direct_logits_mode": direct_logits_mode,
                     "quantization": quantization_metadata,
                     "flash_linear_attention": {

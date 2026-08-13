@@ -113,6 +113,18 @@ def training_command(
     selection_manifest = job.get("selection_manifest")
     if selection_manifest is not None:
         command.append(f"student.selection_manifest={selection_manifest}")
+    optional_training_overrides = {
+        "optimizer": "student.training.optimizer",
+        "learning_rate": "student.training.learning_rate",
+        "lr_scheduler_type": "student.training.lr_scheduler_type",
+        "num_train_epochs": "student.training.num_train_epochs",
+        "warmup_ratio": "student.training.warmup_ratio",
+        "weight_decay": "student.training.weight_decay",
+        "muon_adjust_lr_fn": "student.training.muon_adjust_lr_fn",
+    }
+    for job_key, config_key in optional_training_overrides.items():
+        if job_key in job:
+            command.append(f"{config_key}={job[job_key]}")
     return command
 
 

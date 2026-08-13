@@ -1,0 +1,15 @@
+rank: 64
+lora_alpha: 128
+train_fraction: 0.25
+development_fraction_of_complement: 0.20
+selection_seed: 0
+development_seed: 20260813
+training_seed: 0
+learning_rates: [1.0e-5, 2.0e-5, 5.0e-5, 1.0e-4, 2.0e-4]
+optimizers: [adamw, muon]
+muon_adjust_lr_fn: match_rms_adamw
+lr_scheduler_type: linear
+warmup_ratio: 0.03
+num_train_epochs: 2.0
+primary_metric: macro_auroc
+balanced_accuracy_threshold: 0.5

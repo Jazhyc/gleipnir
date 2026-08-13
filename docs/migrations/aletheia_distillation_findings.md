@@ -99,7 +99,10 @@ new online-objective design has a clear held-out advantage.
 Muon was useful enough to preserve as an optional optimizer for 2D LoRA matrices,
 with AdamW for remaining parameters. It is now isolated in
 `gleipnir.training`; optimizer comparisons should hold the data, initialization,
-effective batch size, and validation protocol fixed.
+effective batch size, and validation protocol fixed. The migrated implementation
+now uses scheduler-managed learning rates and Moonshot's per-matrix
+`match_rms_adamw` scaling. The older independent `muon_learning_rate` bypassed
+Transformers warmup and decay and must not be used for comparisons.
 
 ## Adapter packaging
 

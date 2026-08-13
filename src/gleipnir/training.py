@@ -6,6 +6,33 @@ from typing import Any
 
 import torch
 
+MUON_LR_ADJUSTMENTS = ("match_rms_adamw", "original", "spectral_unclamped")
+
+
+def muon_update_scale(
+    matrix: torch.Tensor,
+    adjustment: str = "match_rms_adamw",
+) -> float:
+    """Return the per-matrix multiplier for a Muon polar update.
+
+    ``match_rms_adamw`` follows the Moonshot rule: a full-rank polar factor for
+    an ``[A, B]`` matrix has RMS ``1 / sqrt(max(A, B))``, so multiplying by
+    ``0.2 * sqrt(max(A, B))`` targets the empirically observed AdamW update RMS.
+    """
+    if matrix.ndim != 2:
+        raise ValueError("Muon learning-rate adjustment requires a matrix")
+    rows, columns = matrix.shape
+    if adjustment == "match_rms_adamw":
+        return 0.2 * max(rows, columns) ** 0.5
+    if adjustment == "original":
+        return max(1.0, rows / columns) ** 0.5
+    if adjustment == "spectral_unclamped":
+        return (rows / columns) ** 0.5
+    raise ValueError(
+        f"unknown Muon learning-rate adjustment {adjustment!r}; "
+        f"expected one of {MUON_LR_ADJUSTMENTS}"
+    )
+
 
 def zeropower_via_newtonschulz5(
     matrix: torch.Tensor,
@@ -34,21 +61,25 @@ class MuonAdamW(torch.optim.Optimizer):
         param_groups: list[dict[str, Any]],
         *,
         lr: float,
-        muon_lr: float,
         betas: tuple[float, float] = (0.9, 0.999),
         eps: float = 1e-8,
         muon_momentum: float = 0.95,
         muon_nesterov: bool = True,
         muon_ns_steps: int = 5,
+        muon_adjust_lr_fn: str = "match_rms_adamw",
     ) -> None:
+        if muon_adjust_lr_fn not in MUON_LR_ADJUSTMENTS:
+            raise ValueError(
+                f"muon_adjust_lr_fn must be one of {MUON_LR_ADJUSTMENTS}"
+            )
         defaults = {
             "lr": lr,
-            "muon_lr": muon_lr,
             "betas": betas,
             "eps": eps,
             "muon_momentum": muon_momentum,
             "muon_nesterov": muon_nesterov,
             "muon_ns_steps": muon_ns_steps,
+            "muon_adjust_lr_fn": muon_adjust_lr_fn,
             "weight_decay": 0.0,
             "algorithm": "adamw",
         }
@@ -68,7 +99,9 @@ class MuonAdamW(torch.optim.Optimizer):
         return loss
 
     def _muon_step(self, group: dict[str, Any]) -> None:
-        lr = group["muon_lr"]
+        # PyTorch and Transformers schedulers mutate the standard ``lr`` key.
+        # Reading it here keeps Muon warmup and decay synchronized with AdamW.
+        lr = group["lr"]
         momentum = group["muon_momentum"]
         for parameter in group["params"]:
             if parameter.grad is None:
@@ -93,7 +126,7 @@ class MuonAdamW(torch.optim.Optimizer):
                 update,
                 steps=group["muon_ns_steps"],
             )
-            scale = max(1.0, parameter.size(0) / parameter.size(1)) ** 0.5
+            scale = muon_update_scale(parameter, group["muon_adjust_lr_fn"])
             parameter.add_(update.to(parameter.dtype), alpha=-lr * scale)
 
     def _adamw_step(self, group: dict[str, Any]) -> None:

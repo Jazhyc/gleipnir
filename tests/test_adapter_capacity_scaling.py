@@ -96,6 +96,23 @@ def test_training_commands_keep_alpha_ratio_and_use_fsdp_for_full() -> None:
     assert not any("selection_manifest=" in value for value in lora_command)
 
 
+def test_training_command_supports_paired_optimizer_overrides() -> None:
+    job = lora_job(0, 64)
+    job.update(
+        optimizer="muon",
+        learning_rate=5e-5,
+        lr_scheduler_type="linear",
+        muon_adjust_lr_fn="match_rms_adamw",
+    )
+
+    command = training_command(job, distributed_processes=1)
+
+    assert "student.training.optimizer=muon" in command
+    assert "student.training.learning_rate=5e-05" in command
+    assert "student.training.lr_scheduler_type=linear" in command
+    assert "student.training.muon_adjust_lr_fn=match_rms_adamw" in command
+
+
 def test_full_training_rejects_one_process() -> None:
     with pytest.raises(ValueError, match="at least two processes"):
         training_command(full_job(0), distributed_processes=1)
