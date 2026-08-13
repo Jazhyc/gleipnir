@@ -104,6 +104,14 @@ now uses scheduler-managed learning rates and Moonshot's per-matrix
 `match_rms_adamw` scaling. The older independent `muon_learning_rate` bypassed
 Transformers warmup and decay and must not be used for comparisons.
 
+In the first corrected rank-64, 25%-data screen, Muon at `5e-5` improved macro
+AUROC by 0.00312 over paired AdamW and won the predeclared primary metric. Muon
+at `1e-4` was slightly lower in AUROC but had the best macro balanced accuracy
+and Brier score. Muon lost at `1e-5` and `2e-5`, so RMS matching makes the rates
+comparable but does not make optimizer performance learning-rate invariant.
+Treat both `5e-5` and `1e-4` as confirmation candidates, not promoted defaults,
+until replicated 50%-data evidence is available.
+
 ## Adapter packaging
 
 Keep FP32 master checkpoints for training and archival. In one matched 400-row

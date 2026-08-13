@@ -60,3 +60,25 @@ in `results/optimizer_lr_scaling/`, and logs in
 Muon rates concurrently, beginning at the current `5e-5` baseline. Evaluation
 uses one persistent vLLM process and writes `summary/results.csv`,
 `summary/paired_contrasts.csv`, and `summary/summary.json`.
+
+## Results
+
+The ten-cell screen completed on 2026-08-13. The predeclared primary-metric
+winner was Muon at `5e-5`: macro AUROC was 0.94727, versus 0.94415 for the best
+AdamW cell at the same rate. At `5e-5`, Muon-minus-AdamW macro AUROC was
++0.00312, while macro balanced accuracy was -0.00025 and macro Brier was
++0.00063 (lower Brier is better).
+
+Muon at `1e-4` was the strongest multi-metric alternative. It reached 0.94608
+macro AUROC, 0.88942 macro balanced accuracy, and 0.08900 macro Brier. Relative
+to the best AdamW cell (`5e-5`), those differences were +0.00192 AUROC, +0.00283
+balanced accuracy, and -0.00119 Brier. Its scores also had fewer ties than Muon
+at `5e-5` (533 versus 632 tied rows out of 1,972).
+
+The optimizer effect depended on base learning rate. Muon underperformed AdamW
+at `1e-5` and `2e-5`, then exceeded it in macro AUROC at every rate from `5e-5`
+through `2e-4`. This supports the scheduled RMS-matched implementation, but not
+an optimizer promotion yet: the screen used one seed and a non-lineage-grouped
+development split. Confirm Muon `5e-5` (primary winner) and `1e-4`
+(multi-metric alternative) with replicated 50%-data runs before evaluating a
+selected recipe on competition validation.
