@@ -110,6 +110,8 @@ def training_command(
                 f"student.lora.alpha={job['lora_alpha']}",
             ]
         )
+        if "lora_dropout" in job:
+            command.append(f"student.lora.dropout={job['lora_dropout']}")
     selection_manifest = job.get("selection_manifest")
     if selection_manifest is not None:
         command.append(f"student.selection_manifest={selection_manifest}")
@@ -121,6 +123,12 @@ def training_command(
         "warmup_ratio": "student.training.warmup_ratio",
         "weight_decay": "student.training.weight_decay",
         "muon_adjust_lr_fn": "student.training.muon_adjust_lr_fn",
+        "dataset_sampling": "student.training.dataset_sampling",
+        "soft_target_logit_scale": "student.training.soft_target_logit_scale",
+        "save_strategy": "student.training.save_strategy",
+        "save_steps": "student.training.save_steps",
+        "save_total_limit": "student.training.save_total_limit",
+        "save_only_model": "student.training.save_only_model",
     }
     for job_key, config_key in optional_training_overrides.items():
         if job_key in job:

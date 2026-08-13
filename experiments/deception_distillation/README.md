@@ -23,6 +23,12 @@ Historical findings are preserved in
 `docs/migrations/aletheia_distillation_findings.md`; they are prior evidence, not
 a license to select on the old competition test sets.
 
+The shared trainer also supports deterministic proportional,
+square-root-balanced, or uniform-dataset sampling and configurable model-only
+checkpoint retention. Training metadata records expected dataset exposure,
+optimizer/scheduler settings, LoRA dropout, target scaling, checkpoints, and
+loss/learning-rate history.
+
 ## Inputs
 
 Materialize training records as JSONL outside Git. Each usable record needs a
@@ -41,4 +47,3 @@ sbatch cluster/slurm/train_deception_distillation.sh
 
 The checked-in config is a starting recipe. Replace artifact paths with a newly
 materialized, source-documented dataset before launching a real run.
-

@@ -6,6 +6,7 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 )
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
+    dataset_sampling_weights,
     forward_final_token_logits,
     gated_delta_kernel_modules,
     pairwise_logistic_loss,
@@ -124,3 +125,27 @@ def test_gated_delta_kernel_modules_report_bound_implementation() -> None:
     assert gated_delta_kernel_modules(model) == [
         "fla.ops.gated_delta_rule.chunk"
     ]
+
+
+def test_dataset_sampling_weights_match_declared_dataset_mass() -> None:
+    dataset_ids = [0, 0, 0, 0, 1]
+
+    proportional, proportional_mass = dataset_sampling_weights(
+        dataset_ids, "proportional"
+    )
+    square_root, square_root_mass = dataset_sampling_weights(
+        dataset_ids, "sqrt_balanced"
+    )
+    uniform, uniform_mass = dataset_sampling_weights(
+        dataset_ids, "uniform_dataset"
+    )
+
+    assert proportional.tolist() == [1.0] * 5
+    assert proportional_mass == pytest.approx({0: 0.8, 1: 0.2})
+    assert square_root_mass == pytest.approx({0: 2 / 3, 1: 1 / 3})
+    assert uniform_mass == pytest.approx({0: 0.5, 1: 0.5})
+    assert uniform.tolist() == pytest.approx([0.25, 0.25, 0.25, 0.25, 1.0])
+    assert square_root[0] < proportional[0]
+
+    with pytest.raises(ValueError, match="unknown dataset sampling"):
+        dataset_sampling_weights(dataset_ids, "invalid")

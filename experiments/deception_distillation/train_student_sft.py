@@ -17,7 +17,7 @@ import torch
 import torch.nn.functional as F
 from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import SequentialSampler
+from torch.utils.data import SequentialSampler, WeightedRandomSampler
 
 from gleipnir.training import (
     MuonAdamW,
@@ -93,6 +93,45 @@ DIRECT_RATING_PREFIX = "Rating:"
 SOFT_TARGET_KEY = "_soft_target"
 CANONICAL_QWEN35_LORA_FRAGMENT = ".model.language_model.layers."
 VISION_MODULE_MARKERS = ("visual", "vision_tower", "merger", "patch_embed")
+DATASET_SAMPLING_MODES = ("proportional", "sqrt_balanced", "uniform_dataset")
+
+
+def dataset_sampling_weights(
+    dataset_ids: list[int], mode: str
+) -> tuple[torch.Tensor, dict[int, float]]:
+    """Return per-row weights and expected dataset mass for a sampling mode."""
+    if mode not in DATASET_SAMPLING_MODES:
+        raise ValueError(
+            f"unknown dataset sampling mode {mode!r}; "
+            f"expected one of {DATASET_SAMPLING_MODES}"
+        )
+    if not dataset_ids:
+        raise ValueError("dataset sampling requires at least one row")
+    counts = Counter(int(dataset_id) for dataset_id in dataset_ids)
+    exponent = {
+        "proportional": 0.0,
+        "sqrt_balanced": -0.5,
+        "uniform_dataset": -1.0,
+    }[mode]
+    weights = torch.tensor(
+        [counts[int(dataset_id)] ** exponent for dataset_id in dataset_ids],
+        dtype=torch.double,
+    )
+    total_weight = float(weights.sum())
+    expected_mass = {
+        dataset_id: float(
+            sum(
+                weight
+                for selected_id, weight in zip(
+                    dataset_ids, weights.tolist(), strict=True
+                )
+                if int(selected_id) == dataset_id
+            )
+            / total_weight
+        )
+        for dataset_id in sorted(counts)
+    }
+    return weights, expected_mass
 
 
 def validate_trainable_lora_layout(model: Any, model_loader: str) -> list[str]:
@@ -1090,6 +1129,18 @@ def main(cfg: DictConfig) -> None:
             cfg, "student.training.paired_batching_mode", default="interleaved"
         )
     )
+    dataset_sampling = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.dataset_sampling",
+            default="proportional",
+        )
+    )
+    if dataset_sampling not in DATASET_SAMPLING_MODES:
+        raise ValueError(
+            "student.training.dataset_sampling must be one of: "
+            + ", ".join(DATASET_SAMPLING_MODES)
+        )
     if any(
         weight < 0
         for weight in (
@@ -1133,6 +1184,8 @@ def main(cfg: DictConfig) -> None:
         )
     if pairwise_loss_weight and not paired_batching:
         raise ValueError("pairwise loss requires student.training.paired_batching=true")
+    if paired_batching and dataset_sampling != "proportional":
+        raise ValueError("paired batching is incompatible with dataset reweighting")
     if paired_batching_mode not in {"interleaved", "same_dataset"}:
         raise ValueError(
             "student.training.paired_batching_mode must be interleaved or same_dataset"
@@ -1153,6 +1206,22 @@ def main(cfg: DictConfig) -> None:
                     self.train_dataset if train_dataset is None else train_dataset
                 )
                 return SequentialSampler(selected_dataset)
+            if dataset_sampling != "proportional":
+                selected_dataset = (
+                    self.train_dataset if train_dataset is None else train_dataset
+                )
+                weights, _ = dataset_sampling_weights(
+                    [int(value) for value in selected_dataset["dataset_id"]],
+                    dataset_sampling,
+                )
+                generator = torch.Generator()
+                generator.manual_seed(int(cfg.seed))
+                return WeightedRandomSampler(
+                    weights,
+                    num_samples=len(selected_dataset),
+                    replacement=True,
+                    generator=generator,
+                )
             return super()._get_train_sampler(train_dataset)
 
         def compute_loss(
@@ -1496,6 +1565,18 @@ def main(cfg: DictConfig) -> None:
         for record in records
     ]
     dataset = Dataset.from_list(tokenized)
+    sampling_weights, expected_dataset_mass_by_id = dataset_sampling_weights(
+        [dataset_id_by_name[str(record.get("dataset", ""))] for record in records],
+        dataset_sampling,
+    )
+    del sampling_weights
+    dataset_name_by_id = {
+        dataset_id: name for name, dataset_id in dataset_id_by_name.items()
+    }
+    expected_dataset_mass = {
+        dataset_name_by_id[dataset_id]: mass
+        for dataset_id, mass in expected_dataset_mass_by_id.items()
+    }
     print(
         f"training on {len(dataset)} parsed, label-consistent teacher targets "
         f"records_before_fraction={records_before_fraction} "
@@ -1525,7 +1606,9 @@ def main(cfg: DictConfig) -> None:
         f"soft_teacher_artifact={soft_teacher_artifact} "
         f"pairwise_temperature={pairwise_temperature} "
         f"paired_batching={paired_batching} "
-        f"paired_batching_mode={paired_batching_mode!r}"
+        f"paired_batching_mode={paired_batching_mode!r} "
+        f"dataset_sampling={dataset_sampling!r} "
+        f"expected_dataset_mass={expected_dataset_mass}"
     )
     rating_counts = Counter(
         record.get("rating") for record in records if record.get("rating") is not None
@@ -1712,6 +1795,26 @@ def main(cfg: DictConfig) -> None:
         fsdp_config = None
         model.gradient_checkpointing_enable()
         model.enable_input_require_grads()
+    save_strategy = str(
+        OmegaConf.select(cfg, "student.training.save_strategy", default="no")
+    )
+    if save_strategy not in {"no", "steps", "epoch"}:
+        raise ValueError("student.training.save_strategy must be no, steps, or epoch")
+    save_steps = float(
+        OmegaConf.select(cfg, "student.training.save_steps", default=500)
+    )
+    if save_steps <= 0:
+        raise ValueError("student.training.save_steps must be positive")
+    if save_steps >= 1 and not save_steps.is_integer():
+        raise ValueError("student.training.save_steps >= 1 must be an integer")
+    save_total_limit = int(
+        OmegaConf.select(cfg, "student.training.save_total_limit", default=1)
+    )
+    if save_total_limit < 1:
+        raise ValueError("student.training.save_total_limit must be positive")
+    save_only_model = bool(
+        OmegaConf.select(cfg, "student.training.save_only_model", default=True)
+    )
     args = TrainingArguments(
         output_dir=output_dir.as_posix(),
         optim=str(cfg.student.training.optim),
@@ -1755,7 +1858,10 @@ def main(cfg: DictConfig) -> None:
         logging_steps=int(cfg.student.training.logging_steps),
         seed=int(cfg.seed),
         data_seed=int(cfg.seed),
-        save_strategy="no",
+        save_strategy=save_strategy,
+        save_steps=int(save_steps) if save_steps >= 1 else save_steps,
+        save_total_limit=save_total_limit,
+        save_only_model=save_only_model,
         bf16=True,
         gradient_checkpointing=not fsdp_enabled,
         fsdp=True if fsdp_enabled else None,
@@ -1781,6 +1887,14 @@ def main(cfg: DictConfig) -> None:
         key: value.item() if hasattr(value, "item") else value
         for key, value in train_output.metrics.items()
     }
+    checkpoints = sorted(
+        (
+            path
+            for path in output_dir.glob("checkpoint-*")
+            if path.is_dir() and path.name.removeprefix("checkpoint-").isdigit()
+        ),
+        key=lambda path: int(path.name.removeprefix("checkpoint-")),
+    )
     output_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(output_dir.as_posix())
     if trainer.is_world_process_zero():
@@ -1808,6 +1922,20 @@ def main(cfg: DictConfig) -> None:
                             cfg.student.training
                         ),
                         "weight_decay": float(cfg.student.training.weight_decay),
+                        "dataset_sampling": dataset_sampling,
+                        "expected_dataset_mass": expected_dataset_mass,
+                        "lora_dropout": (
+                            float(cfg.student.lora.dropout)
+                            if finetuning_mode == "lora"
+                            else None
+                        ),
+                        "soft_target_logit_scale": soft_target_logit_scale,
+                        "save_strategy": save_strategy,
+                        "save_steps": (
+                            int(save_steps) if save_steps >= 1 else save_steps
+                        ),
+                        "save_total_limit": save_total_limit,
+                        "save_only_model": save_only_model,
                         "muon_adjust_lr_fn": (
                             str(cfg.student.training.muon_adjust_lr_fn)
                             if optimizer_name == "muon"
@@ -1848,6 +1976,12 @@ def main(cfg: DictConfig) -> None:
                             cfg.student.training.per_device_train_batch_size
                         )
                         * int(cfg.student.training.gradient_accumulation_steps),
+                    },
+                    "training_state": {
+                        "global_step": int(trainer.state.global_step),
+                        "max_steps": int(trainer.state.max_steps),
+                        "retained_checkpoints": [path.name for path in checkpoints],
+                        "log_history": trainer.state.log_history,
                     },
                     "train_metrics": train_metrics,
                     "peak_cuda_memory_allocated_bytes": (
