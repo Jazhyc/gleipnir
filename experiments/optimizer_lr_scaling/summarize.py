@@ -18,6 +18,18 @@ if str(ROOT) not in sys.path:
 from experiments.adapter_capacity_scaling.prepare import read_jsonl  # noqa: E402
 from experiments.adapter_capacity_scaling.summarize import macro_metric  # noqa: E402
 
+CONTRAST_METRICS = [
+    "macro_auroc",
+    "macro_balanced_accuracy",
+    "macro_brier",
+    "pooled_auroc",
+    "pooled_balanced_accuracy",
+    "pooled_brier",
+    "train_loss",
+    "train_runtime_seconds",
+    "train_samples_per_second",
+]
+
 
 def result_row(job: dict[str, Any]) -> dict[str, Any]:
     result_path = Path(job["output_dir"]) / "validation" / "result.json"
@@ -55,6 +67,25 @@ def result_row(job: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def paired_contrasts(frame: pd.DataFrame) -> pd.DataFrame:
+    """Compute Muon-minus-AdamW contrasts for every paired learning rate."""
+    wide = frame.pivot(
+        index="learning_rate",
+        columns="optimizer",
+        values=CONTRAST_METRICS,
+    )
+    contrasts = []
+    for learning_rate in sorted(frame["learning_rate"].unique()):
+        row: dict[str, Any] = {"learning_rate": learning_rate}
+        for metric in CONTRAST_METRICS:
+            row[f"muon_minus_adamw_{metric}"] = float(
+                wide.loc[learning_rate, (metric, "muon")]
+                - wide.loc[learning_rate, (metric, "adamw")]
+            )
+        contrasts.append(row)
+    return pd.DataFrame(contrasts)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -75,28 +106,7 @@ def main() -> None:
     if not (counts == 2).all():
         raise ValueError("each learning rate must contain AdamW and Muon")
 
-    metrics = (
-        "macro_auroc",
-        "macro_balanced_accuracy",
-        "macro_brier",
-        "pooled_auroc",
-        "pooled_balanced_accuracy",
-        "pooled_brier",
-        "train_loss",
-        "train_runtime_seconds",
-        "train_samples_per_second",
-    )
-    wide = frame.pivot(index="learning_rate", columns="optimizer", values=metrics)
-    contrasts = []
-    for learning_rate in sorted(frame["learning_rate"].unique()):
-        row: dict[str, Any] = {"learning_rate": learning_rate}
-        for metric in metrics:
-            row[f"muon_minus_adamw_{metric}"] = float(
-                wide.loc[learning_rate, (metric, "muon")]
-                - wide.loc[learning_rate, (metric, "adamw")]
-            )
-        contrasts.append(row)
-    contrast_frame = pd.DataFrame(contrasts)
+    contrast_frame = paired_contrasts(frame)
     best_rows = {}
     for optimizer, group in frame.groupby("optimizer"):
         best = group.loc[group["macro_auroc"].idxmax()]

@@ -1,10 +1,15 @@
 import pytest
+import pandas as pd
 
 from experiments.adapter_capacity_scaling.run_train import training_command
 from experiments.optimizer_lr_scaling.core import (
     learning_rate_tag,
     paired_optimizer_lanes,
     validate_learning_rates,
+)
+from experiments.optimizer_lr_scaling.summarize import (
+    CONTRAST_METRICS,
+    paired_contrasts,
 )
 
 
@@ -66,3 +71,23 @@ def test_muon_job_uses_shared_scheduled_base_rate() -> None:
     assert "student.training.lr_scheduler_type=linear" in command
     assert "student.training.muon_adjust_lr_fn=match_rms_adamw" in command
     assert not any("muon_learning_rate" in value for value in command)
+
+
+def test_paired_contrasts_accept_multiple_metric_columns() -> None:
+    rows = []
+    for optimizer, value in (("adamw", 1.0), ("muon", 1.25)):
+        row = {
+            "learning_rate": 5e-5,
+            "optimizer": optimizer,
+            **{metric: value for metric in CONTRAST_METRICS},
+        }
+        rows.append(row)
+
+    contrasts = paired_contrasts(pd.DataFrame(rows))
+
+    assert len(contrasts) == 1
+    assert contrasts.loc[0, "learning_rate"] == pytest.approx(5e-5)
+    for metric in CONTRAST_METRICS:
+        assert contrasts.loc[0, f"muon_minus_adamw_{metric}"] == pytest.approx(
+            0.25
+        )
