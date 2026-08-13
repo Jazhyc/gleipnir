@@ -1,0 +1,18 @@
+method: optimizer_full_data_confirmation
+rank: 64
+lora_alpha: 128
+seeds: [0, 1, 2]
+muon_learning_rates: [5.0e-5, 1.0e-4]
+adamw_reference_learning_rate: 5.0e-5
+epochs: 2.0
+lr_scheduler_type: linear
+warmup_ratio: 0.03
+muon_adjust_lr_fn: match_rms_adamw
+training_recipe: qlora-nf4-double-quant-bf16-fla-0.5.2
+micro_batch_size: 8
+gradient_accumulation_steps: 4
+effective_batch_size: 32
+direct_logits_mode: selected_positions
+primary_metric: macro_auroc
+balanced_accuracy_max_regression: 0.002
+brier_max_regression: 0.002
