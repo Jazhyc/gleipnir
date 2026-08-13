@@ -109,8 +109,12 @@ AUROC by 0.00312 over paired AdamW and won the predeclared primary metric. Muon
 at `1e-4` was slightly lower in AUROC but had the best macro balanced accuracy
 and Brier score. Muon lost at `1e-5` and `2e-5`, so RMS matching makes the rates
 comparable but does not make optimizer performance learning-rate invariant.
-Treat both `5e-5` and `1e-4` as confirmation candidates, not promoted defaults,
-until replicated 50%-data evidence is available.
+Both rates were subsequently tested with three seeds and 100% of the training
+data. Muon `5e-5` regressed paired mean macro AUROC by 0.00103. Muon `1e-4`
+improved it by 0.00097 but worsened balanced accuracy by 0.00238 and Brier by
+0.00313, failing the frozen metric constraints. The effects were small relative
+to three-seed uncertainty. Retain AdamW `5e-5` for the current rank-64 recipe
+and do not continue optimizer-rate tuning on the confirmatory validation set.
 
 ## Adapter packaging
 

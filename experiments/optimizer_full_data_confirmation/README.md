@@ -52,3 +52,23 @@ The two Lambda lanes each receive three jobs with seeds and learning rates
 crossed across GPUs. Ignored artifacts live under
 `results/optimizer_full_data_confirmation/`, with final `replicates.csv`,
 `aggregate.csv`, `paired_contrasts.csv`, and `summary.json` under `summary/`.
+
+## Results
+
+All six Muon cells completed on 2026-08-13. Neither candidate passed the frozen
+promotion gate, so the selected recipe remains rank-64 AdamW at `5e-5`.
+
+- AdamW `5e-5` reached 0.96254 mean macro AUROC, 0.91389 balanced accuracy,
+  and 0.06997 Brier.
+- Muon `5e-5` reached 0.96151 mean macro AUROC. Its paired AUROC difference was
+  -0.00103 and only one of three seeds improved. Its balanced-accuracy and Brier
+  differences were -0.00119 and +0.00018, respectively.
+- Muon `1e-4` reached the highest raw mean macro AUROC, 0.96351. Its paired
+  difference was +0.00097 and two seeds improved, but balanced accuracy regressed
+  by 0.00238 and Brier worsened by 0.00313, exceeding both frozen tolerances.
+
+With only three paired seeds, the AUROC effects remain imprecise: approximate
+95% paired t intervals are [-0.00824, +0.00618] for Muon `5e-5` and
+[-0.00597, +0.00791] for Muon `1e-4`. The internal-screen advantage therefore
+did not replicate robustly at full data. Do not tune more optimizer rates on
+this validation surface; retain AdamW for the current recipe.
