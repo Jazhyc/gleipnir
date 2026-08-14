@@ -341,8 +341,14 @@ def forward_final_token_hidden(
         attention_mask=attention_mask,
         use_cache=False,
     )
+    selected_positions, inverse = torch.unique(
+        last_positions,
+        sorted=True,
+        return_inverse=True,
+    )
+    selected_hidden = outputs.last_hidden_state[:, selected_positions, :]
     row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
-    return outputs.last_hidden_state[row_indices, last_positions], outputs
+    return selected_hidden[row_indices, inverse], outputs
 
 
 def binary_token_ids(tokenizer: Any) -> list[int]:

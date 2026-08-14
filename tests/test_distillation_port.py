@@ -8,6 +8,7 @@ from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
     dataset_sampling_weights,
+    forward_final_token_hidden,
     forward_final_token_logits,
     gated_delta_kernel_modules,
     pairwise_logistic_loss,
@@ -30,6 +31,22 @@ class PositionSelectingModel(torch.nn.Module):
         if logits_to_keep is not None:
             selected = selected[:, logits_to_keep, :]
         return type("Output", (), {"logits": selected})()
+
+
+class HiddenStateModel(torch.nn.Module):
+    def __init__(self, hidden_states: torch.Tensor) -> None:
+        super().__init__()
+        self.model = self
+        self.hidden_states = hidden_states
+
+    def get_base_model(self):
+        return self
+
+    def forward(self, input_ids, attention_mask, use_cache):
+        del input_ids, attention_mask, use_cache
+        return type(
+            "Output", (), {"last_hidden_state": self.hidden_states}
+        )()
 
 
 def test_binary_teacher_probability_is_preserved() -> None:
@@ -116,6 +133,19 @@ def test_selected_position_logits_match_full_logits_with_right_padding() -> None
 
     assert torch.equal(selected, full)
     assert torch.equal(selected_model.requested_positions, torch.tensor([1, 2]))
+
+
+def test_final_hidden_states_use_the_same_unique_position_gather() -> None:
+    hidden_states = torch.arange(2 * 4 * 3, dtype=torch.float32).reshape(2, 4, 3)
+    input_ids = torch.ones((2, 4), dtype=torch.long)
+    attention_mask = torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0]])
+
+    selected, _ = forward_final_token_hidden(
+        HiddenStateModel(hidden_states), input_ids, attention_mask
+    )
+
+    expected = torch.stack((hidden_states[0, 2], hidden_states[1, 1]))
+    assert torch.equal(selected, expected)
 
 
 def test_gated_delta_kernel_modules_report_bound_implementation() -> None:
