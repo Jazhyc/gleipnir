@@ -1,10 +1,12 @@
 import pytest
 import torch
+import torch.nn.functional as F
 
 from experiments.deception_distillation.build_soft_teacher_cache import (
     build_binary_soft_targets,
 )
 from experiments.deception_distillation.train_student_sft import (
+    BinaryDecisionHead,
     CompletionOnlyCollator,
     GroupDROLoss,
     collate_eva_features,
@@ -96,6 +98,20 @@ def test_eva_collator_returns_a_concrete_dictionary() -> None:
 
     assert type(batch) is dict
     assert batch["input_ids"].tolist() == [[1]]
+
+
+def test_binary_head_padding_preserves_two_class_projection_and_gradients() -> None:
+    head = BinaryDecisionHead(3, bias=True)
+    inputs = torch.randn(4, 3, requires_grad=True)
+    expected = F.linear(inputs, head.weight, head.bias)
+
+    actual = head(inputs)
+    actual.sum().backward()
+
+    assert actual.shape == (4, 2)
+    assert torch.allclose(actual, expected)
+    assert head.weight.grad is not None
+    assert inputs.grad is not None
 
 
 def test_soft_and_pairwise_losses_reward_teacher_ordering() -> None:

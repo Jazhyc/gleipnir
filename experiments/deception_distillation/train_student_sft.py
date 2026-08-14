@@ -98,6 +98,31 @@ DATASET_SAMPLING_MODES = ("proportional", "sqrt_balanced", "uniform_dataset")
 DATASET_LOSS_WEIGHTING_MODES = ("mean", "group_dro")
 
 
+class BinaryDecisionHead(torch.nn.Linear):
+    """Two-class head with an FLA-friendly padded backward projection."""
+
+    padded_outputs = 64
+
+    def __init__(
+        self,
+        hidden_size: int,
+        *,
+        bias: bool,
+        device: torch.device | str | None = None,
+        dtype: torch.dtype | None = None,
+    ) -> None:
+        super().__init__(hidden_size, 2, bias=bias, device=device, dtype=dtype)
+
+    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
+        # TileLang 0.5.2 cannot lower the gated-delta backward layout produced
+        # by a two-column GEMM. Zero-padding only the compute projection to one
+        # 64-wide tile preserves the exact two trainable logits and parameters.
+        padding = self.padded_outputs - self.out_features
+        weight = F.pad(self.weight, (0, 0, 0, padding))
+        bias = None if self.bias is None else F.pad(self.bias, (0, padding))
+        return F.linear(inputs, weight, bias)[..., : self.out_features]
+
+
 class GroupDROLoss:
     """EMA-smoothed adaptive group weighting for per-row losses."""
 
@@ -1925,9 +1950,8 @@ def main(cfg: DictConfig) -> None:
         if finetuning_mode != "lora" or model_loader != "causal_lm":
             raise ValueError("binary decision heads require causal LoRA training")
         hidden_size = int(model.config.hidden_size)
-        decision_head = torch.nn.Linear(
+        decision_head = BinaryDecisionHead(
             hidden_size,
-            2,
             bias=decision_head_init == "random",
             device=model.device,
             # Match the causal LM head so its gradient enters the pinned FLA
