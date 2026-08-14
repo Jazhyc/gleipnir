@@ -7,6 +7,7 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
+    collate_eva_features,
     dataset_sampling_weights,
     forward_final_token_hidden,
     forward_final_token_logits,
@@ -49,6 +50,18 @@ class HiddenStateModel(torch.nn.Module):
         )()
 
 
+class DictLikeTokenizer:
+    def pad(self, features, *, padding, return_tensors):
+        assert features == [{"input_ids": [1]}]
+        assert padding is True
+        assert return_tensors == "pt"
+
+        class BatchEncoding(dict):
+            pass
+
+        return BatchEncoding(input_ids=torch.tensor([[1]]))
+
+
 def test_binary_teacher_probability_is_preserved() -> None:
     rows = build_binary_soft_targets(
         [
@@ -76,6 +89,13 @@ def test_completion_collator_masks_prompt_padding() -> None:
     )
     assert batch["input_ids"].tolist() == [[1, 2], [3, 9]]
     assert batch["labels"].tolist() == [[-100, 2], [3, -100]]
+
+
+def test_eva_collator_returns_a_concrete_dictionary() -> None:
+    batch = collate_eva_features(DictLikeTokenizer(), [{"input_ids": [1]}])
+
+    assert type(batch) is dict
+    assert batch["input_ids"].tolist() == [[1]]
 
 
 def test_soft_and_pairwise_losses_reward_teacher_ordering() -> None:

@@ -366,6 +366,13 @@ def binary_token_ids(tokenizer: Any) -> list[int]:
     return ids
 
 
+def collate_eva_features(
+    tokenizer: Any, features: list[dict[str, Any]]
+) -> dict[str, torch.Tensor]:
+    """Pad EVA inputs into the concrete dictionary required by PEFT."""
+    return dict(tokenizer.pad(features, padding=True, return_tensors="pt"))
+
+
 def rating_token_ids(tokenizer: Any) -> list[int]:
     """Return distinct single-token ids for literal ratings one through seven."""
     ids = []
@@ -2006,7 +2013,7 @@ def main(cfg: DictConfig) -> None:
             ]
 
             def collate_eva(features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
-                return tokenizer.pad(features, padding=True, return_tensors="pt")
+                return collate_eva_features(tokenizer, features)
 
             eva_loader = DataLoader(
                 eva_features,
