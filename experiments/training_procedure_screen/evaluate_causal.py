@@ -70,7 +70,7 @@ def score_adapter(
                 hidden, _ = forward_final_token_hidden(
                     model, batch["input_ids"], batch["attention_mask"]
                 )
-                selected = model.get_base_model().decision_head(hidden)
+                selected = model.get_base_model().decision_head(hidden.float())
             else:
                 logits, _ = forward_final_token_logits(
                     model,
@@ -201,7 +201,7 @@ def main() -> None:
                 2,
                 bias=decision_head_init == "random",
                 device=base.device,
-                dtype=torch.bfloat16,
+                dtype=torch.float32,
             ),
         )
     paths = adapter_paths(job)

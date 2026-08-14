@@ -1425,7 +1425,7 @@ def main(cfg: DictConfig) -> None:
                         model, direct_input_ids, direct_attention_mask
                     )
                     base = model.get_base_model()
-                    direct_logits = base.decision_head(hidden)
+                    direct_logits = base.decision_head(hidden.float())
                 else:
                     next_logits, direct_outputs = forward_final_token_logits(
                         model,
@@ -1917,7 +1917,7 @@ def main(cfg: DictConfig) -> None:
             2,
             bias=decision_head_init == "random",
             device=model.device,
-            dtype=torch.bfloat16,
+            dtype=torch.float32,
         )
         if decision_head_init == "token_rows":
             if direct_target_ids is None:
@@ -1965,7 +1965,18 @@ def main(cfg: DictConfig) -> None:
             LoraConfig(**lora_config_kwargs),
         )
         if lora_initialization == "loftq":
-            replace_lora_weights_loftq(model)
+            from huggingface_hub import try_to_load_from_cache
+
+            cached_index = try_to_load_from_cache(
+                str(cfg.student.model), "model.safetensors.index.json"
+            )
+            if not isinstance(cached_index, str):
+                raise FileNotFoundError(
+                    "LoftQ requires the cached model.safetensors.index.json"
+                )
+            replace_lora_weights_loftq(
+                model, model_path=Path(cached_index).parent.as_posix()
+            )
         elif lora_initialization == "eva":
             generator = torch.Generator()
             generator.manual_seed(int(cfg.seed))
