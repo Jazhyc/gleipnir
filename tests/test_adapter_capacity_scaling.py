@@ -143,6 +143,12 @@ def test_runtime_environment_preserves_virtualenv_bin(monkeypatch) -> None:
     environment = run_lambda.runtime_environment("1")
 
     assert environment["CUDA_VISIBLE_DEVICES"] == "1"
+    assert environment["TILELANG_CACHE_DIR"] == "/tmp/gleipnir-gpu-1/tilelang"
+    assert environment["TORCHINDUCTOR_CACHE_DIR"] == (
+        "/tmp/gleipnir-gpu-1/torchinductor"
+    )
+    assert environment["TRITON_CACHE_DIR"] == "/tmp/gleipnir-gpu-1/triton"
+    assert environment["TVM_CACHE_DIR"] == "/tmp/gleipnir-gpu-1/tvm"
     assert environment["PATH"].split(":", maxsplit=1)[0] == (
         "/tmp/uv-project/.venv/bin"
     )

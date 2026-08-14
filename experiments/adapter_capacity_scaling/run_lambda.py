@@ -142,10 +142,15 @@ def runtime_environment(cuda_visible_devices: str) -> dict[str, str]:
     # as the ninja executable needed by FlashInfer's JIT compiler.
     executable_dir = Path(sys.executable).parent.absolute().as_posix()
     current_path = os.environ.get("PATH", "")
+    cache_root = f"/tmp/gleipnir-gpu-{cuda_visible_devices}"
     return dict(
         os.environ,
         CUDA_VISIBLE_DEVICES=cuda_visible_devices,
         PATH=f"{executable_dir}:{current_path}",
+        TILELANG_CACHE_DIR=f"{cache_root}/tilelang",
+        TORCHINDUCTOR_CACHE_DIR=f"{cache_root}/torchinductor",
+        TRITON_CACHE_DIR=f"{cache_root}/triton",
+        TVM_CACHE_DIR=f"{cache_root}/tvm",
     )
 
 

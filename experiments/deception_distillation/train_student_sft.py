@@ -19,6 +19,7 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
+from gleipnir.qwen35_loftq import initialize_qwen35_loftq
 from gleipnir.training import (
     MuonAdamW,
     muon_adamw_param_groups,
@@ -1187,7 +1188,6 @@ def main(cfg: DictConfig) -> None:
         get_peft_model,
         initialize_lora_eva_weights,
         prepare_model_for_kbit_training,
-        replace_lora_weights_loftq,
     )
     from transformers import (
         AutoModelForCausalLM,
@@ -1917,7 +1917,9 @@ def main(cfg: DictConfig) -> None:
             2,
             bias=decision_head_init == "random",
             device=model.device,
-            dtype=torch.float32,
+            # Match the causal LM head so its gradient enters the pinned FLA
+            # backward kernel in the same dtype as the proven token-logit path.
+            dtype=model.lm_head.weight.dtype,
         )
         if decision_head_init == "token_rows":
             if direct_target_ids is None:
@@ -1974,8 +1976,11 @@ def main(cfg: DictConfig) -> None:
                 raise FileNotFoundError(
                     "LoftQ requires the cached model.safetensors.index.json"
                 )
-            replace_lora_weights_loftq(
-                model, model_path=Path(cached_index).parent.as_posix()
+            initialized_loftq_modules = initialize_qwen35_loftq(
+                model, Path(cached_index).parent
+            )
+            print(
+                f"loftq_initialized_modules={initialized_loftq_modules}", flush=True
             )
         elif lora_initialization == "eva":
             generator = torch.Generator()
