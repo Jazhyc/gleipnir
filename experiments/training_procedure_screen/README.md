@@ -72,6 +72,16 @@ the pinned vLLM LoRA loader. Any winner must pass a separate serving parity
 canary or adopt a documented causal classification serving contract before
 promotion.
 
+The pinned FLA 0.5.2 backward kernel cannot lower a gradient injected directly
+from an auxiliary hidden-state head. For the two decision-head cells, the
+forward score and head gradient come exactly from the declared two-row head,
+while the LoRA backbone receives a straight-through surrogate gradient through
+the literal `0|1` LM-head rows. The head consumes a detached copy of the exact
+selected hidden states seen by the LM head. Evaluation uses only the auxiliary
+head, and trainer metadata records `lm_token_straight_through`; these cells are
+therefore readout/surrogate-gradient ablations rather than ordinary end-to-end
+classification heads.
+
 ## Preflight, execution, and stop condition
 
 Before the campaign, train two steps and run an eight-row causal canary for

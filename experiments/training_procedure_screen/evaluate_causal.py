@@ -21,7 +21,6 @@ if str(ROOT) not in sys.path:
 from experiments.adapter_capacity_scaling.prepare import read_jsonl  # noqa: E402
 from experiments.adapter_capacity_scaling.run_train import find_job  # noqa: E402
 from experiments.deception_distillation.train_student_sft import (  # noqa: E402
-    BinaryDecisionHead,
     forward_final_token_hidden,
     forward_final_token_logits,
     gated_delta_kernel_modules,
@@ -197,8 +196,9 @@ def main() -> None:
     if decision_head_mode == "binary_head":
         base.add_module(
             "decision_head",
-            BinaryDecisionHead(
+            torch.nn.Linear(
                 int(base.config.hidden_size),
+                2,
                 bias=decision_head_init == "random",
                 device=base.device,
                 dtype=torch.float32,

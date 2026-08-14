@@ -1,23 +1,23 @@
 import pytest
 import torch
-import torch.nn.functional as F
 
 from experiments.deception_distillation.build_soft_teacher_cache import (
     build_binary_soft_targets,
 )
 from experiments.deception_distillation.train_student_sft import (
-    BinaryDecisionHead,
     CompletionOnlyCollator,
     GroupDROLoss,
     collate_eva_features,
     dataset_sampling_weights,
     forward_final_token_hidden,
     forward_final_token_logits,
+    forward_final_token_logits_and_head_inputs,
     gated_delta_kernel_modules,
     pairwise_logistic_loss,
     parameter_counts,
     soft_binary_distillation_loss,
     soft_binary_distillation_losses,
+    straight_through_decision_logits,
 )
 
 
@@ -50,6 +50,19 @@ class HiddenStateModel(torch.nn.Module):
         return type(
             "Output", (), {"last_hidden_state": self.hidden_states}
         )()
+
+
+class HiddenProjectingModel(torch.nn.Module):
+    def __init__(self, hidden_states: torch.Tensor) -> None:
+        super().__init__()
+        self.hidden_states = hidden_states
+        self.lm_head = torch.nn.Linear(hidden_states.shape[-1], 5, bias=False)
+
+    def forward(self, input_ids, attention_mask, use_cache, logits_to_keep=None):
+        del input_ids, attention_mask, use_cache
+        selected = self.hidden_states[:, logits_to_keep, :]
+        logits = self.lm_head(selected)
+        return type("Output", (), {"logits": logits})()
 
 
 class DictLikeTokenizer:
@@ -100,18 +113,16 @@ def test_eva_collator_returns_a_concrete_dictionary() -> None:
     assert batch["input_ids"].tolist() == [[1]]
 
 
-def test_binary_head_padding_preserves_two_class_projection_and_gradients() -> None:
-    head = BinaryDecisionHead(3, bias=True)
-    inputs = torch.randn(4, 3, requires_grad=True)
-    expected = F.linear(inputs, head.weight, head.bias)
+def test_decision_head_straight_through_uses_head_forward_and_token_gradient() -> None:
+    head_logits = torch.randn(4, 2, requires_grad=True)
+    token_logits = torch.randn(4, 2, requires_grad=True)
 
-    actual = head(inputs)
-    actual.sum().backward()
+    combined = straight_through_decision_logits(head_logits, token_logits)
+    combined.sum().backward()
 
-    assert actual.shape == (4, 2)
-    assert torch.allclose(actual, expected)
-    assert head.weight.grad is not None
-    assert inputs.grad is not None
+    assert torch.equal(combined, head_logits)
+    assert torch.equal(head_logits.grad, torch.ones_like(head_logits))
+    assert torch.equal(token_logits.grad, torch.ones_like(token_logits))
 
 
 def test_soft_and_pairwise_losses_reward_teacher_ordering() -> None:
@@ -178,6 +189,20 @@ def test_final_hidden_states_use_the_same_unique_position_gather() -> None:
 
     selected, _ = forward_final_token_hidden(
         HiddenStateModel(hidden_states), input_ids, attention_mask
+    )
+
+    expected = torch.stack((hidden_states[0, 2], hidden_states[1, 1]))
+    assert torch.equal(selected, expected)
+
+
+def test_selected_logits_capture_the_exact_lm_head_inputs() -> None:
+    hidden_states = torch.arange(2 * 4 * 3, dtype=torch.float32).reshape(2, 4, 3)
+    model = HiddenProjectingModel(hidden_states)
+    input_ids = torch.ones((2, 4), dtype=torch.long)
+    attention_mask = torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0]])
+
+    _, selected, _ = forward_final_token_logits_and_head_inputs(
+        model, input_ids, attention_mask, "selected_positions"
     )
 
     expected = torch.stack((hidden_states[0, 2], hidden_states[1, 1]))

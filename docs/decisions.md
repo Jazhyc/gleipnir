@@ -18,6 +18,12 @@
   not support DoRA. Treat LoftQ as non-promotable diagnostic evidence on its NF4
   inference base, and require a separate serving-parity canary for any selected
   nonstandard adapter.
+- Treat the two explicit decision-head cells as readout/gradient-estimator
+  ablations: their forward scores and head gradients use the auxiliary head,
+  while the QLoRA backbone receives an explicit straight-through gradient via
+  the literal `0|1` LM-head rows. FLA 0.5.2 cannot lower direct auxiliary-head
+  gradients into Qwen3.5's gated-delta blocks; record the surrogate in metadata
+  and evaluate only the auxiliary head.
 
 ## 2026-08-14 — Retain the baseline after the regularization screen
 

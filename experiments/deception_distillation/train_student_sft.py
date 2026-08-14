@@ -98,31 +98,6 @@ DATASET_SAMPLING_MODES = ("proportional", "sqrt_balanced", "uniform_dataset")
 DATASET_LOSS_WEIGHTING_MODES = ("mean", "group_dro")
 
 
-class BinaryDecisionHead(torch.nn.Linear):
-    """Two-class head with an FLA-friendly padded backward projection."""
-
-    padded_outputs = 64
-
-    def __init__(
-        self,
-        hidden_size: int,
-        *,
-        bias: bool,
-        device: torch.device | str | None = None,
-        dtype: torch.dtype | None = None,
-    ) -> None:
-        super().__init__(hidden_size, 2, bias=bias, device=device, dtype=dtype)
-
-    def forward(self, inputs: torch.Tensor) -> torch.Tensor:
-        # TileLang 0.5.2 cannot lower the gated-delta backward layout produced
-        # by a two-column GEMM. Zero-padding only the compute projection to one
-        # 64-wide tile preserves the exact two trainable logits and parameters.
-        padding = self.padded_outputs - self.out_features
-        weight = F.pad(self.weight, (0, 0, 0, padding))
-        bias = None if self.bias is None else F.pad(self.bias, (0, padding))
-        return F.linear(inputs, weight, bias)[..., : self.out_features]
-
-
 class GroupDROLoss:
     """EMA-smoothed adaptive group weighting for per-row losses."""
 
@@ -374,6 +349,47 @@ def forward_final_token_hidden(
     selected_hidden = outputs.last_hidden_state[:, selected_positions, :]
     row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
     return selected_hidden[row_indices, inverse], outputs
+
+
+def forward_final_token_logits_and_head_inputs(
+    model: Any,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    mode: str,
+) -> tuple[torch.Tensor, torch.Tensor, Any]:
+    """Return final logits and the exact selected inputs seen by the LM head."""
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    lm_head = getattr(base, "lm_head", None)
+    if lm_head is None:
+        raise RuntimeError("causal model exposes no LM head")
+    captured: list[torch.Tensor] = []
+
+    def capture_head_inputs(_module, arguments) -> None:
+        captured.append(arguments[0])
+
+    handle = lm_head.register_forward_pre_hook(capture_head_inputs)
+    try:
+        logits, outputs = forward_final_token_logits(
+            model, input_ids, attention_mask, mode
+        )
+    finally:
+        handle.remove()
+    if len(captured) != 1:
+        raise RuntimeError(f"expected one LM-head invocation, captured {len(captured)}")
+    last_positions = attention_mask.sum(dim=1) - 1
+    _, inverse = torch.unique(last_positions, sorted=True, return_inverse=True)
+    row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
+    hidden = captured[0][row_indices, inverse]
+    return logits, hidden, outputs
+
+
+def straight_through_decision_logits(
+    head_logits: torch.Tensor, token_logits: torch.Tensor
+) -> torch.Tensor:
+    """Use head scores forward and LM token-row gradients for the backbone."""
+    if head_logits.shape != token_logits.shape:
+        raise ValueError("head and token logits must have identical shapes")
+    return head_logits + (token_logits - token_logits.detach())
 
 
 def binary_token_ids(tokenizer: Any) -> list[int]:
@@ -1459,11 +1475,25 @@ def main(cfg: DictConfig) -> None:
                         "direct-target fields are missing from training batch"
                     )
                 if decision_head_mode == "binary_head":
-                    hidden, direct_outputs = forward_final_token_hidden(
-                        model, direct_input_ids, direct_attention_mask
+                    next_logits, hidden, direct_outputs = (
+                        forward_final_token_logits_and_head_inputs(
+                            model,
+                            direct_input_ids,
+                            direct_attention_mask,
+                            direct_logits_mode,
+                        )
                     )
                     base = model.get_base_model()
-                    direct_logits = base.decision_head(hidden.float())
+                    label_ids = torch.tensor(
+                        self.direct_target_ids,
+                        device=next_logits.device,
+                        dtype=torch.long,
+                    )
+                    token_logits = next_logits.index_select(-1, label_ids)
+                    head_logits = base.decision_head(hidden.detach().float())
+                    direct_logits = straight_through_decision_logits(
+                        head_logits, token_logits
+                    )
                 else:
                     next_logits, direct_outputs = forward_final_token_logits(
                         model,
@@ -1950,8 +1980,9 @@ def main(cfg: DictConfig) -> None:
         if finetuning_mode != "lora" or model_loader != "causal_lm":
             raise ValueError("binary decision heads require causal LoRA training")
         hidden_size = int(model.config.hidden_size)
-        decision_head = BinaryDecisionHead(
+        decision_head = torch.nn.Linear(
             hidden_size,
+            2,
             bias=decision_head_init == "random",
             device=model.device,
             # Match the causal LM head so its gradient enters the pinned FLA
@@ -2323,6 +2354,11 @@ def main(cfg: DictConfig) -> None:
                     "direct_logits_mode": direct_logits_mode,
                     "decision_head_mode": decision_head_mode,
                     "decision_head_init": decision_head_init,
+                    "decision_head_gradient_mode": (
+                        "lm_token_straight_through"
+                        if decision_head_mode == "binary_head"
+                        else None
+                    ),
                     "quantization": quantization_metadata,
                     "flash_linear_attention": {
                         "available": fla_available,
