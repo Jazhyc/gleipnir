@@ -1,5 +1,24 @@
 # Decision log
 
+## 2026-08-14 — Screen structural training interventions
+
+- After conventional optimizer and regularization changes failed to improve
+  macro AUROC, test twenty rank-128 cells on the fixed internal development
+  protocol: three baseline seeds and seventeen seed-0 interventions spanning base
+  precision, adapter initialization/parameterization/targets, loss geometry,
+  adaptive group weighting, and effective batch size.
+- Train on all 11,177 rows outside the frozen 1,972-row development split. Keep
+  competition validation and the final test untouched. Require a positive
+  seed-matched AUROC delta and the existing 0.002 balanced-accuracy/Brier gates,
+  then seeds 1 and 2, before promotion.
+- Evaluate retained half-epoch checkpoints and predeclared checkpoint/seed logit
+  ensembles. Cross-fit threshold and Platt diagnostics within development;
+  treat them as operating-point/calibration evidence rather than ranking gains.
+- Use causal Transformers evaluation across the screen because pinned vLLM does
+  not support DoRA. Treat LoftQ as non-promotable diagnostic evidence on its NF4
+  inference base, and require a separate serving-parity canary for any selected
+  nonstandard adapter.
+
 ## 2026-08-14 — Retain the baseline after the regularization screen
 
 - All sixteen rank-128 screen cells completed on the fixed internal development

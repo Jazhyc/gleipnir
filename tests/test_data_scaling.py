@@ -79,6 +79,10 @@ def test_lambda_lanes_balance_long_jobs_by_row_count() -> None:
 def test_rebase_key_targets_multimodal_language_model() -> None:
     suffix = "layers.3.self_attn.q_proj.lora_A.weight"
     assert rebase_key(SOURCE_PREFIX + suffix) == DESTINATION_PREFIX + suffix
+    lm_head = "base_model.model.lm_head.lora_A.weight"
+    assert rebase_key(lm_head) == lm_head
+    decision_head = "base_model.model.decision_head.weight"
+    assert rebase_key(decision_head) == decision_head
 
 
 def test_rebase_key_rejects_unknown_or_already_rebased_names() -> None:

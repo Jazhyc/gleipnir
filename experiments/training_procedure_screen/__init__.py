@@ -1,0 +1,1 @@
+"""Structural training-procedure screen."""

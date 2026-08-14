@@ -75,9 +75,9 @@ def training_command(
         [
             "experiments/deception_distillation/train_student_sft.py",
             "--config-path",
-            "../adapter_capacity_scaling",
+            str(job.get("config_path", "../adapter_capacity_scaling")),
             "--config-name",
-            "config",
+            str(job.get("config_name", "config")),
             f"method=adapter_capacity_scaling_{job['job_name']}",
             f"output_dir={job['output_dir']}",
             f"seed={job['seed']}",
@@ -87,7 +87,12 @@ def training_command(
             + (job["model_dir"] if full else job["causal_adapter_dir"]),
             f"student.model_loader={'image_text_to_text' if full else 'causal_lm'}",
             f"student.finetuning_mode={'full' if full else 'lora'}",
-            f"student.quantization.enabled={'false' if full else 'true'}",
+            "student.quantization.enabled="
+            + (
+                "false"
+                if full
+                else str(bool(job.get("quantization_enabled", True))).lower()
+            ),
             f"student.training.fsdp.enabled={'true' if full else 'false'}",
             "student.training.per_device_train_batch_size="
             + (
@@ -112,6 +117,22 @@ def training_command(
         )
         if "lora_dropout" in job:
             command.append(f"student.lora.dropout={job['lora_dropout']}")
+        if "lora_target_modules" in job:
+            modules = ",".join(str(value) for value in job["lora_target_modules"])
+            command.append(f"student.lora.target_modules=[{modules}]")
+        if "lora_init" in job:
+            command.append(f"student.lora.init={job['lora_init']}")
+        if "lora_use_dora" in job:
+            command.append(
+                f"student.lora.use_dora={str(bool(job['lora_use_dora'])).lower()}"
+            )
+        for job_key, config_key in (
+            ("eva_rho", "student.lora.eva_rho"),
+            ("eva_tau", "student.lora.eva_tau"),
+            ("eva_rows", "student.lora.eva_rows"),
+        ):
+            if job_key in job:
+                command.append(f"{config_key}={job[job_key]}")
     selection_manifest = job.get("selection_manifest")
     if selection_manifest is not None:
         command.append(f"student.selection_manifest={selection_manifest}")
@@ -129,6 +150,16 @@ def training_command(
         "save_steps": "student.training.save_steps",
         "save_total_limit": "student.training.save_total_limit",
         "save_only_model": "student.training.save_only_model",
+        "max_steps": "student.training.max_steps",
+        "soft_loss_weight": "student.training.soft_loss_weight",
+        "direct_loss_weight": "student.training.direct_loss_weight",
+        "soft_loss_type": "student.training.soft_loss_type",
+        "soft_huber_delta": "student.training.soft_huber_delta",
+        "dataset_loss_weighting": "student.training.dataset_loss_weighting",
+        "group_dro_eta": "student.training.group_dro_eta",
+        "group_dro_ema": "student.training.group_dro_ema",
+        "decision_head_mode": "student.training.decision_head_mode",
+        "decision_head_init": "student.training.decision_head_init",
     }
     for job_key, config_key in optional_training_overrides.items():
         if job_key in job:

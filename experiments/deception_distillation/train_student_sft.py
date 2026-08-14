@@ -17,7 +17,7 @@ import torch
 import torch.nn.functional as F
 from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
-from torch.utils.data import SequentialSampler, WeightedRandomSampler
+from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
 from gleipnir.training import (
     MuonAdamW,
@@ -94,6 +94,70 @@ SOFT_TARGET_KEY = "_soft_target"
 CANONICAL_QWEN35_LORA_FRAGMENT = ".model.language_model.layers."
 VISION_MODULE_MARKERS = ("visual", "vision_tower", "merger", "patch_embed")
 DATASET_SAMPLING_MODES = ("proportional", "sqrt_balanced", "uniform_dataset")
+DATASET_LOSS_WEIGHTING_MODES = ("mean", "group_dro")
+
+
+class GroupDROLoss:
+    """EMA-smoothed adaptive group weighting for per-row losses."""
+
+    def __init__(self, groups: int, *, eta: float, ema: float) -> None:
+        if groups < 1:
+            raise ValueError("GroupDRO requires at least one group")
+        if not np.isfinite(eta) or eta <= 0:
+            raise ValueError("GroupDRO eta must be finite and positive")
+        if not 0 <= ema < 1:
+            raise ValueError("GroupDRO EMA must lie in [0, 1)")
+        self.groups = groups
+        self.eta = float(eta)
+        self.ema = float(ema)
+        self.loss_ema: torch.Tensor | None = None
+        self.seen: torch.Tensor | None = None
+        self.weights: torch.Tensor | None = None
+
+    def __call__(
+        self, losses: torch.Tensor, dataset_ids: torch.Tensor
+    ) -> torch.Tensor:
+        if losses.ndim != 1 or dataset_ids.shape != losses.shape:
+            raise ValueError("GroupDRO losses and dataset ids must be row vectors")
+        if not torch.isfinite(losses).all():
+            raise ValueError("GroupDRO losses must be finite")
+        if (dataset_ids < 0).any() or (dataset_ids >= self.groups).any():
+            raise ValueError("GroupDRO dataset id outside configured range")
+        device = losses.device
+        if self.loss_ema is None:
+            self.loss_ema = torch.zeros(self.groups, device=device, dtype=torch.float32)
+            self.seen = torch.zeros(self.groups, device=device, dtype=torch.bool)
+            self.weights = torch.full(
+                (self.groups,), 1.0 / self.groups, device=device, dtype=torch.float32
+            )
+        assert self.seen is not None and self.weights is not None
+        with torch.no_grad():
+            for group in torch.unique(dataset_ids):
+                group_index = int(group.item())
+                observed = losses[dataset_ids == group].detach().float().mean()
+                if self.seen[group_index]:
+                    self.loss_ema[group_index] = (
+                        self.ema * self.loss_ema[group_index]
+                        + (1.0 - self.ema) * observed
+                    )
+                else:
+                    self.loss_ema[group_index] = observed
+                    self.seen[group_index] = True
+            logits = self.eta * self.loss_ema
+            logits = torch.where(self.seen, logits, torch.full_like(logits, -torch.inf))
+            self.weights = torch.softmax(logits, dim=0)
+        row_weights = self.weights.index_select(0, dataset_ids).to(losses.dtype)
+        return (losses * row_weights).sum() / row_weights.sum().clamp_min(1e-12)
+
+    def snapshot(self) -> dict[str, Any] | None:
+        """Return JSON-compatible final EMA losses and group weights."""
+        if self.loss_ema is None or self.seen is None or self.weights is None:
+            return None
+        return {
+            "loss_ema": self.loss_ema.detach().cpu().tolist(),
+            "seen": self.seen.detach().cpu().tolist(),
+            "weights": self.weights.detach().cpu().tolist(),
+        }
 
 
 def dataset_sampling_weights(
@@ -178,11 +242,17 @@ def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
         for name, parameter in model.named_parameters()
         if parameter.requires_grad and "lora_" in name
     )
+    auxiliary_trainable = sum(
+        parameter.numel()
+        for name, parameter in model.named_parameters()
+        if parameter.requires_grad and "decision_head" in name
+    )
     if finetuning_mode == "lora":
-        if not lora_trainable or trainable != lora_trainable:
+        if not lora_trainable or trainable != lora_trainable + auxiliary_trainable:
             raise RuntimeError(
-                "LoRA mode must train only non-empty LoRA parameters: "
-                f"trainable={trainable} lora_trainable={lora_trainable}"
+                "LoRA mode must train only LoRA and declared decision-head "
+                f"parameters: trainable={trainable} lora_trainable={lora_trainable} "
+                f"auxiliary_trainable={auxiliary_trainable}"
             )
     elif finetuning_mode == "full":
         if lora_trainable:
@@ -198,6 +268,7 @@ def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
         "total_parameters": total,
         "trainable_parameters": trainable,
         "lora_trainable_parameters": lora_trainable,
+        "auxiliary_trainable_parameters": auxiliary_trainable,
     }
 
 
@@ -249,6 +320,28 @@ def forward_final_token_logits(
             f"requested={len(selected_positions)} got={outputs.logits.shape[1]}"
         )
     return outputs.logits[row_indices, inverse], outputs
+
+
+def forward_final_token_hidden(
+    model: Any,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+) -> tuple[torch.Tensor, Any]:
+    """Return final causal hidden states without passing through the LM head."""
+    last_positions = attention_mask.sum(dim=1) - 1
+    if (last_positions < 0).any():
+        raise ValueError("direct inputs must contain at least one attended token")
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    decoder = getattr(base, "model", None)
+    if decoder is None:
+        raise RuntimeError("causal model exposes no decoder for decision-head mode")
+    outputs = decoder(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        use_cache=False,
+    )
+    row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
+    return outputs.last_hidden_state[row_indices, last_positions], outputs
 
 
 def binary_token_ids(tokenizer: Any) -> list[int]:
@@ -469,7 +562,7 @@ def pairwise_logistic_loss(
     return torch.stack(losses).mean()
 
 
-def soft_binary_distillation_loss(
+def soft_binary_distillation_losses(
     binary_logits: torch.Tensor,
     soft_targets: torch.Tensor,
     *,
@@ -478,7 +571,7 @@ def soft_binary_distillation_loss(
     target_logit_scale: float = 1.0,
     huber_delta: float = 1.0,
 ) -> torch.Tensor:
-    """Match a teacher probability or standardized margin at the binary boundary."""
+    """Return row-wise teacher probability or standardized-margin losses."""
     if binary_logits.ndim != 2 or binary_logits.shape[1] != 2:
         raise ValueError("binary logits must have shape (batch, 2)")
     if soft_targets.shape != binary_logits.shape[:1]:
@@ -501,7 +594,9 @@ def soft_binary_distillation_loss(
     student_margins = binary_logits[:, 1].float() - binary_logits[:, 0].float()
     identity_transform = target_logit_center == 0.0 and target_logit_scale == 1.0
     if loss_type == "bce" and identity_transform:
-        return F.binary_cross_entropy_with_logits(student_margins, targets)
+        return F.binary_cross_entropy_with_logits(
+            student_margins, targets, reduction="none"
+        )
 
     teacher_margins = (torch.logit(targets) - float(target_logit_center)) / float(
         target_logit_scale
@@ -511,12 +606,34 @@ def soft_binary_distillation_loss(
         return F.binary_cross_entropy_with_logits(
             student_margins,
             transformed_targets,
+            reduction="none",
         )
     return F.smooth_l1_loss(
         student_margins,
         teacher_margins,
         beta=float(huber_delta),
+        reduction="none",
     )
+
+
+def soft_binary_distillation_loss(
+    binary_logits: torch.Tensor,
+    soft_targets: torch.Tensor,
+    *,
+    loss_type: str = "bce",
+    target_logit_center: float = 0.0,
+    target_logit_scale: float = 1.0,
+    huber_delta: float = 1.0,
+) -> torch.Tensor:
+    """Match a teacher probability or standardized margin at the binary boundary."""
+    return soft_binary_distillation_losses(
+        binary_logits,
+        soft_targets,
+        loss_type=loss_type,
+        target_logit_center=target_logit_center,
+        target_logit_scale=target_logit_scale,
+        huber_delta=huber_delta,
+    ).mean()
 
 
 def soft_rating_distillation_loss(
@@ -1064,10 +1181,13 @@ def tokenize_record(
 def main(cfg: DictConfig) -> None:
     from datasets import Dataset
     from peft import (
+        EvaConfig,
         LoraConfig,
         PeftModel,
         get_peft_model,
+        initialize_lora_eva_weights,
         prepare_model_for_kbit_training,
+        replace_lora_weights_loftq,
     )
     from transformers import (
         AutoModelForCausalLM,
@@ -1106,6 +1226,24 @@ def main(cfg: DictConfig) -> None:
             "student.training.direct_logits_mode must be full or "
             "selected_positions"
         )
+    decision_head_mode = str(
+        OmegaConf.select(
+            cfg, "student.training.decision_head_mode", default="token_logits"
+        )
+    )
+    if decision_head_mode not in {"token_logits", "binary_head"}:
+        raise ValueError(
+            "student.training.decision_head_mode must be token_logits or binary_head"
+        )
+    decision_head_init = str(
+        OmegaConf.select(cfg, "student.training.decision_head_init", default="random")
+    )
+    if decision_head_init not in {"random", "token_rows"}:
+        raise ValueError(
+            "student.training.decision_head_init must be random or token_rows"
+        )
+    if decision_head_mode == "token_logits" and decision_head_init != "random":
+        raise ValueError("token-row initialization requires binary_head mode")
     soft_target_logit_center = float(
         OmegaConf.select(cfg, "student.training.soft_target_logit_center", default=0.0)
     )
@@ -1141,6 +1279,24 @@ def main(cfg: DictConfig) -> None:
             "student.training.dataset_sampling must be one of: "
             + ", ".join(DATASET_SAMPLING_MODES)
         )
+    dataset_loss_weighting = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.dataset_loss_weighting",
+            default="mean",
+        )
+    )
+    if dataset_loss_weighting not in DATASET_LOSS_WEIGHTING_MODES:
+        raise ValueError(
+            "student.training.dataset_loss_weighting must be one of: "
+            + ", ".join(DATASET_LOSS_WEIGHTING_MODES)
+        )
+    group_dro_eta = float(
+        OmegaConf.select(cfg, "student.training.group_dro_eta", default=2.0)
+    )
+    group_dro_ema = float(
+        OmegaConf.select(cfg, "student.training.group_dro_ema", default=0.9)
+    )
     if any(
         weight < 0
         for weight in (
@@ -1186,6 +1342,14 @@ def main(cfg: DictConfig) -> None:
         raise ValueError("pairwise loss requires student.training.paired_batching=true")
     if paired_batching and dataset_sampling != "proportional":
         raise ValueError("paired batching is incompatible with dataset reweighting")
+    if dataset_loss_weighting == "group_dro" and (
+        not soft_loss_weight
+        or completion_loss_weight
+        or direct_loss_weight
+        or pairwise_loss_weight
+        or ordinal_soft_loss_weight
+    ):
+        raise ValueError("GroupDRO currently requires the binary soft loss alone")
     if paired_batching_mode not in {"interleaved", "same_dataset"}:
         raise ValueError(
             "student.training.paired_batching_mode must be interleaved or same_dataset"
@@ -1196,6 +1360,7 @@ def main(cfg: DictConfig) -> None:
         or soft_loss_weight
         or ordinal_soft_loss_weight
     )
+    group_dro_loss: GroupDROLoss | None = None
 
     class AuxiliarySFTTrainer(Trainer):
         """Completion SFT with optional direct-label and within-dataset rank losses."""
@@ -1255,18 +1420,25 @@ def main(cfg: DictConfig) -> None:
                     raise ValueError(
                         "direct-target fields are missing from training batch"
                     )
-                next_logits, direct_outputs = forward_final_token_logits(
-                    model,
-                    direct_input_ids,
-                    direct_attention_mask,
-                    direct_logits_mode,
-                )
-                label_ids = torch.tensor(
-                    self.direct_target_ids,
-                    device=next_logits.device,
-                    dtype=torch.long,
-                )
-                direct_logits = next_logits.index_select(-1, label_ids)
+                if decision_head_mode == "binary_head":
+                    hidden, direct_outputs = forward_final_token_hidden(
+                        model, direct_input_ids, direct_attention_mask
+                    )
+                    base = model.get_base_model()
+                    direct_logits = base.decision_head(hidden)
+                else:
+                    next_logits, direct_outputs = forward_final_token_logits(
+                        model,
+                        direct_input_ids,
+                        direct_attention_mask,
+                        direct_logits_mode,
+                    )
+                    label_ids = torch.tensor(
+                        self.direct_target_ids,
+                        device=next_logits.device,
+                        dtype=torch.long,
+                    )
+                    direct_logits = next_logits.index_select(-1, label_ids)
                 if loss is None:
                     loss = direct_logits.sum() * 0.0
                 if direct_loss_weight:
@@ -1284,7 +1456,7 @@ def main(cfg: DictConfig) -> None:
                 if soft_loss_weight:
                     if soft_targets is None:
                         raise ValueError("soft targets are missing from training batch")
-                    loss = loss + soft_loss_weight * soft_binary_distillation_loss(
+                    soft_losses = soft_binary_distillation_losses(
                         direct_logits,
                         soft_targets,
                         loss_type=soft_loss_type,
@@ -1292,6 +1464,12 @@ def main(cfg: DictConfig) -> None:
                         target_logit_scale=soft_target_logit_scale,
                         huber_delta=soft_huber_delta,
                     )
+                    soft_loss = (
+                        group_dro_loss(soft_losses, dataset_ids)
+                        if group_dro_loss is not None
+                        else soft_losses.mean()
+                    )
+                    loss = loss + soft_loss_weight * soft_loss
                 if ordinal_soft_loss_weight:
                     if soft_rating_targets is None:
                         raise ValueError(
@@ -1493,6 +1671,10 @@ def main(cfg: DictConfig) -> None:
             sorted({str(record.get("dataset", "")) for record in records})
         )
     }
+    if dataset_loss_weighting == "group_dro":
+        group_dro_loss = GroupDROLoss(
+            len(dataset_id_by_name), eta=group_dro_eta, ema=group_dro_ema
+        )
     tokenizer = AutoTokenizer.from_pretrained(str(cfg.student.model))
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
@@ -1599,6 +1781,8 @@ def main(cfg: DictConfig) -> None:
         f"soft_loss_weight={soft_loss_weight} "
         f"soft_loss_type={soft_loss_type!r} "
         f"direct_logits_mode={direct_logits_mode!r} "
+        f"decision_head_mode={decision_head_mode!r} "
+        f"decision_head_init={decision_head_init!r} "
         f"soft_target_logit_center={soft_target_logit_center} "
         f"soft_target_logit_scale={soft_target_logit_scale} "
         f"soft_huber_delta={soft_huber_delta} "
@@ -1608,6 +1792,9 @@ def main(cfg: DictConfig) -> None:
         f"paired_batching={paired_batching} "
         f"paired_batching_mode={paired_batching_mode!r} "
         f"dataset_sampling={dataset_sampling!r} "
+        f"dataset_loss_weighting={dataset_loss_weighting!r} "
+        f"group_dro_eta={group_dro_eta} "
+        f"group_dro_ema={group_dro_ema} "
         f"expected_dataset_mass={expected_dataset_mass}"
     )
     rating_counts = Counter(
@@ -1633,6 +1820,21 @@ def main(cfg: DictConfig) -> None:
     quantization_enabled = bool(
         OmegaConf.select(cfg, "student.quantization.enabled", default=False)
     )
+    lora_initialization = str(
+        OmegaConf.select(cfg, "student.lora.init", default="default")
+    )
+    if lora_initialization not in {"default", "loftq", "eva"}:
+        raise ValueError("student.lora.init must be default, loftq, or eva")
+    lora_use_dora = bool(
+        OmegaConf.select(cfg, "student.lora.use_dora", default=False)
+    )
+    if lora_initialization == "loftq" and not quantization_enabled:
+        raise ValueError("LoftQ initialization requires 4-bit quantization")
+    eva_rho = float(OmegaConf.select(cfg, "student.lora.eva_rho", default=2.0))
+    eva_tau = float(OmegaConf.select(cfg, "student.lora.eva_tau", default=0.99))
+    eva_rows = int(OmegaConf.select(cfg, "student.lora.eva_rows", default=256))
+    if eva_rows < 1:
+        raise ValueError("student.lora.eva_rows must be positive")
     quantization_metadata: dict[str, Any] = {"enabled": quantization_enabled}
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
     if quantization_enabled:
@@ -1706,6 +1908,32 @@ def main(cfg: DictConfig) -> None:
             model,
             use_gradient_checkpointing=True,
         )
+    if decision_head_mode == "binary_head":
+        if finetuning_mode != "lora" or model_loader != "causal_lm":
+            raise ValueError("binary decision heads require causal LoRA training")
+        hidden_size = int(model.config.hidden_size)
+        decision_head = torch.nn.Linear(
+            hidden_size,
+            2,
+            bias=decision_head_init == "random",
+            device=model.device,
+            dtype=torch.bfloat16,
+        )
+        if decision_head_init == "token_rows":
+            if direct_target_ids is None:
+                raise RuntimeError("binary token ids are unavailable")
+            with torch.no_grad():
+                decision_head.weight.copy_(
+                    model.lm_head.weight.index_select(
+                        0,
+                        torch.tensor(
+                            direct_target_ids,
+                            device=model.lm_head.weight.device,
+                            dtype=torch.long,
+                        ),
+                    ).to(decision_head.weight.dtype)
+                )
+        model.add_module("decision_head", decision_head)
     init_adapter_value = OmegaConf.select(cfg, "student.init_adapter", default=None)
     if finetuning_mode == "full" and init_adapter_value is not None:
         raise ValueError("student.init_adapter is incompatible with full fine-tuning")
@@ -1713,19 +1941,62 @@ def main(cfg: DictConfig) -> None:
         exclude_modules = OmegaConf.select(
             cfg, "student.lora.exclude_modules", default=None
         )
+        lora_config_kwargs: dict[str, Any] = {
+            "r": int(cfg.student.lora.r),
+            "lora_alpha": int(cfg.student.lora.alpha),
+            "lora_dropout": float(cfg.student.lora.dropout),
+            "target_modules": list(cfg.student.lora.target_modules),
+            "exclude_modules": (
+                None if exclude_modules is None else str(exclude_modules)
+            ),
+            "task_type": "CAUSAL_LM",
+            "use_dora": lora_use_dora,
+            "modules_to_save": (
+                ["decision_head"] if decision_head_mode == "binary_head" else None
+            ),
+        }
+        if lora_initialization == "eva":
+            lora_config_kwargs.update(
+                init_lora_weights="eva",
+                eva_config=EvaConfig(rho=eva_rho, tau=eva_tau),
+            )
         model = get_peft_model(
             model,
-            LoraConfig(
-                r=int(cfg.student.lora.r),
-                lora_alpha=int(cfg.student.lora.alpha),
-                lora_dropout=float(cfg.student.lora.dropout),
-                target_modules=list(cfg.student.lora.target_modules),
-                exclude_modules=(
-                    None if exclude_modules is None else str(exclude_modules)
-                ),
-                task_type="CAUSAL_LM",
-            ),
+            LoraConfig(**lora_config_kwargs),
         )
+        if lora_initialization == "loftq":
+            replace_lora_weights_loftq(model)
+        elif lora_initialization == "eva":
+            generator = torch.Generator()
+            generator.manual_seed(int(cfg.seed))
+            indices = torch.randperm(len(tokenized), generator=generator)[
+                : min(eva_rows, len(tokenized))
+            ].tolist()
+            eva_features = [
+                {
+                    "input_ids": tokenized[index]["direct_input_ids"],
+                    "attention_mask": [
+                        1
+                    ]
+                    * len(tokenized[index]["direct_input_ids"]),
+                }
+                for index in indices
+            ]
+
+            def collate_eva(features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
+                return tokenizer.pad(features, padding=True, return_tensors="pt")
+
+            eva_loader = DataLoader(
+                eva_features,
+                batch_size=int(cfg.student.training.per_device_train_batch_size),
+                shuffle=False,
+                collate_fn=collate_eva,
+            )
+            initialize_lora_eva_weights(
+                model,
+                dataloader=eva_loader,
+                show_progress_bar=True,
+            )
     elif finetuning_mode == "lora":
         init_adapter = Path(str(init_adapter_value))
         if not init_adapter.is_absolute():
@@ -1923,10 +2194,49 @@ def main(cfg: DictConfig) -> None:
                         ),
                         "weight_decay": float(cfg.student.training.weight_decay),
                         "dataset_sampling": dataset_sampling,
+                        "dataset_loss_weighting": dataset_loss_weighting,
+                        "group_dro_eta": group_dro_eta,
+                        "group_dro_ema": group_dro_ema,
+                        "group_dro_state": (
+                            None
+                            if group_dro_loss is None
+                            else group_dro_loss.snapshot()
+                        ),
                         "expected_dataset_mass": expected_dataset_mass,
                         "lora_dropout": (
                             float(cfg.student.lora.dropout)
                             if finetuning_mode == "lora"
+                            else None
+                        ),
+                        "lora_initialization": (
+                            lora_initialization
+                            if finetuning_mode == "lora"
+                            else None
+                        ),
+                        "lora_use_dora": (
+                            lora_use_dora if finetuning_mode == "lora" else None
+                        ),
+                        "lora_target_modules": (
+                            list(cfg.student.lora.target_modules)
+                            if finetuning_mode == "lora"
+                            else None
+                        ),
+                        "eva_rho": (
+                            eva_rho
+                            if finetuning_mode == "lora"
+                            and lora_initialization == "eva"
+                            else None
+                        ),
+                        "eva_tau": (
+                            eva_tau
+                            if finetuning_mode == "lora"
+                            and lora_initialization == "eva"
+                            else None
+                        ),
+                        "eva_rows": (
+                            min(eva_rows, len(tokenized))
+                            if finetuning_mode == "lora"
+                            and lora_initialization == "eva"
                             else None
                         ),
                         "soft_target_logit_scale": soft_target_logit_scale,
@@ -1958,6 +2268,8 @@ def main(cfg: DictConfig) -> None:
                         ),
                     },
                     "direct_logits_mode": direct_logits_mode,
+                    "decision_head_mode": decision_head_mode,
+                    "decision_head_init": decision_head_init,
                     "quantization": quantization_metadata,
                     "flash_linear_attention": {
                         "available": fla_available,

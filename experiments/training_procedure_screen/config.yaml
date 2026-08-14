@@ -1,0 +1,105 @@
+method: training_procedure_screen
+output_dir: results/training_procedure_screen/${method}
+seed: 0
+
+teacher:
+  artifact: data/data_scaling/student_rows.jsonl
+
+student:
+  model: Qwen/Qwen3.5-9B
+  model_loader: causal_lm
+  finetuning_mode: lora
+  quantization:
+    enabled: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_compute_dtype: bfloat16
+  init_adapter: null
+  target_mode: teacher
+  teacher_sources: null
+  soft_teacher_artifact: data/data_scaling/soft_targets.jsonl
+  override_cached_prompt: false
+  require_teacher_label_match: true
+  record_identity_field: null
+  train_limit: null
+  train_fraction: 1.0
+  train_fraction_seed: ${seed}
+  selection_manifest: null
+  label_only_manifest: null
+  dataset_name_contains: null
+  max_length: 4608
+  output_dir: ${output_dir}/model
+  prompt: "unused: cached source-specific student prompts are authoritative"
+  include_reasoning: false
+  reasoning_max_chars: 0
+  reasoning_truncation: head_tail
+  exclude_final_output_from_context: false
+  reasoning_dropout_probability: 0.0
+  reasoning_dropout_seed: ${seed}
+  lora:
+    r: 128
+    alpha: 256
+    dropout: 0.0
+    target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+    exclude_modules: ".*(visual|vision_tower|merger|patch_embed).*"
+    init: default
+    use_dora: false
+    eva_rho: 2.0
+    eva_tau: 0.99
+    eva_rows: 256
+  training:
+    optimizer: adamw
+    optim: adamw_torch
+    num_train_epochs: 2.0
+    max_steps: -1
+    learning_rate: 5.0e-5
+    warmup_ratio: 0.03
+    lr_scheduler_type: linear
+    weight_decay: 0.0
+    dataset_sampling: proportional
+    dataset_loss_weighting: mean
+    group_dro_eta: 2.0
+    group_dro_ema: 0.9
+    per_device_train_batch_size: 8
+    gradient_accumulation_steps: 4
+    torch_compile: false
+    torch_compile_backend: inductor
+    torch_compile_mode: default
+    logging_steps: 5
+    save_strategy: steps
+    save_steps: 175
+    save_total_limit: 6
+    save_only_model: true
+    completion_loss_weight: 0.0
+    direct_loss_weight: 0.0
+    pairwise_loss_weight: 0.0
+    pairwise_temperature: 1.0
+    soft_loss_weight: 1.0
+    soft_loss_type: bce
+    direct_logits_mode: selected_positions
+    decision_head_mode: token_logits
+    decision_head_init: random
+    require_flash_linear_attention: true
+    soft_target_logit_center: 0.0
+    soft_target_logit_scale: 1.0
+    soft_huber_delta: 1.0
+    ordinal_soft_loss_weight: 0.0
+    paired_batching: false
+    paired_batching_mode: interleaved
+    muon_adjust_lr_fn: match_rms_adamw
+    muon_momentum: 0.95
+    muon_nesterov: true
+    muon_ns_steps: 5
+    fsdp:
+      enabled: false
+      config:
+        version: 2
+        auto_wrap_policy: transformer_based_wrap
+        transformer_layer_cls_to_wrap: [Qwen3_5DecoderLayer]
+        activation_checkpointing: true
+        reshard_after_forward: true
+        state_dict_type: FULL_STATE_DICT
+
+hydra:
+  run:
+    dir: logs/training_procedure_screen/hydra/${now:%Y-%m-%d}/${now:%H-%M-%S}

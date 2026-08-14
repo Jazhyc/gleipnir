@@ -6,12 +6,14 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 )
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
+    GroupDROLoss,
     dataset_sampling_weights,
     forward_final_token_logits,
     gated_delta_kernel_modules,
     pairwise_logistic_loss,
     parameter_counts,
     soft_binary_distillation_loss,
+    soft_binary_distillation_losses,
 )
 
 
@@ -65,6 +67,9 @@ def test_soft_and_pairwise_losses_reward_teacher_ordering() -> None:
     good = soft_binary_distillation_loss(logits, targets, loss_type="bce")
     bad = soft_binary_distillation_loss(-logits, targets, loss_type="bce")
     assert good < bad
+    row_losses = soft_binary_distillation_losses(logits, targets, loss_type="bce")
+    assert row_losses.shape == (2,)
+    assert row_losses.mean() == pytest.approx(good)
 
     margins = logits[:, 1] - logits[:, 0]
     labels = torch.tensor([0, 1])
@@ -84,6 +89,7 @@ def test_parameter_counts_validate_lora_and_full_layouts() -> None:
         "total_parameters": 5,
         "trainable_parameters": 3,
         "lora_trainable_parameters": 3,
+        "auxiliary_trainable_parameters": 0,
     }
 
     full_model = torch.nn.Linear(3, 2)
@@ -91,6 +97,7 @@ def test_parameter_counts_validate_lora_and_full_layouts() -> None:
     assert counts["total_parameters"] == 8
     assert counts["trainable_parameters"] == 8
     assert counts["lora_trainable_parameters"] == 0
+    assert counts["auxiliary_trainable_parameters"] == 0
 
 
 def test_selected_position_logits_match_full_logits_with_right_padding() -> None:
@@ -149,3 +156,16 @@ def test_dataset_sampling_weights_match_declared_dataset_mass() -> None:
 
     with pytest.raises(ValueError, match="unknown dataset sampling"):
         dataset_sampling_weights(dataset_ids, "invalid")
+
+
+def test_group_dro_upweights_the_higher_loss_group() -> None:
+    group_dro = GroupDROLoss(2, eta=2.0, ema=0.0)
+    losses = torch.tensor([0.1, 0.2, 1.0, 1.2])
+    dataset_ids = torch.tensor([0, 0, 1, 1])
+
+    weighted = group_dro(losses, dataset_ids)
+    snapshot = group_dro.snapshot()
+
+    assert weighted > losses.mean()
+    assert snapshot is not None
+    assert snapshot["weights"][1] > snapshot["weights"][0]
