@@ -68,3 +68,35 @@ The launcher balances epoch-row load across both Lambda H100s, evaluates final
 adapters in one persistent vLLM process, and writes `summary/results.csv`,
 `summary/contrasts.csv`, and `summary/summary.json` under the ignored result
 tree.
+
+## Results
+
+All sixteen cells completed on 2026-08-14. The campaign ran for 6 hours 16
+minutes across the two H100 lanes, and neither competition validation nor the
+final test was used. The shared baseline remained best on the predeclared
+primary metric, with 0.96449 macro AUROC, 0.89841 macro balanced accuracy, and
+0.07478 macro Brier. Every single-factor intervention reduced macro AUROC, so
+this screen does not justify replacing or combining parts of the baseline.
+
+The frozen eligibility and ranking rule produced this replication shortlist:
+
+- square-root-balanced sampling: 0.96424 AUROC (-0.00025), 0.90416 balanced
+  accuracy (+0.00575), and 0.07627 Brier (+0.00149);
+- teacher-logit scale 1.5: 0.96359 AUROC (-0.00091), 0.90841 balanced accuracy
+  (+0.01000), and 0.07336 Brier (-0.00142);
+- weight decay 0.10: 0.96341 AUROC (-0.00108), 0.90511 balanced accuracy
+  (+0.00670), and 0.07434 Brier (-0.00044);
+- cosine scheduling: 0.96322 AUROC (-0.00128), 0.90100 balanced accuracy
+  (+0.00259), and 0.07363 Brier (-0.00115);
+- teacher-logit scale 2.0: 0.96252 AUROC (-0.00198), 0.90491 balanced accuracy
+  (+0.00649), and 0.07366 Brier (-0.00112).
+
+These are trade-offs, not promotions, and all are based on seed 0. In
+particular, logit scale 1.5 is the strongest joint balanced-accuracy/calibration
+alternative but gives up AUROC and increases tied scores; scale 2.0 is dominated
+by scale 1.5 on all three macro metrics. LoRA dropout, the matched constant
+schedule, and changing the training horizon did not produce a constraint-passing
+primary-metric improvement. If this line is continued, add seeds 1 and 2 to the
+frozen shortlist before testing combinations; otherwise retain the baseline
+AdamW `5e-5`, linear schedule, 3% warmup, two epochs, zero dropout/weight decay,
+proportional sampling, and unscaled teacher targets.

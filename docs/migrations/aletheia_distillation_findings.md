@@ -116,6 +116,16 @@ improved it by 0.00097 but worsened balanced accuracy by 0.00238 and Brier by
 to three-seed uncertainty. Retain AdamW `5e-5` for the current rank-64 recipe
 and do not continue optimizer-rate tuning on the confirmatory validation set.
 
+A subsequent single-seed rank-128 screen also failed to improve macro AUROC
+through warmup, scheduler shape, training horizon, LoRA dropout, weight decay,
+dataset reweighting, or teacher-logit smoothing. The baseline reached 0.96449
+macro AUROC. Square-root-balanced sampling came closest at -0.00025 while
+improving balanced accuracy by 0.00575, and teacher-logit scale 1.5 traded
+-0.00091 AUROC for +0.01000 balanced accuracy and -0.00142 Brier. Treat these as
+possible operating-point trade-offs, not improvements. Retain the baseline
+recipe and require seeds 1 and 2 before combining or promoting any screened
+intervention.
+
 ## Adapter packaging
 
 Keep FP32 master checkpoints for training and archival. In one matched 400-row
