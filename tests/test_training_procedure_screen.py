@@ -5,8 +5,10 @@ from experiments.training_procedure_screen.core import (
     balanced_lanes,
     completed_variant,
     hard_anchor_replication_variants,
+    hard_label_strength_variants,
     screen_variants,
     validate_hard_anchor_replication_jobs,
+    validate_hard_label_strength_jobs,
     validate_screen_jobs,
 )
 from experiments.training_procedure_screen.summarize import (
@@ -15,6 +17,9 @@ from experiments.training_procedure_screen.summarize import (
 )
 from experiments.training_procedure_screen.summarize_hard_anchor_replication import (
     aggregate_replication,
+)
+from experiments.training_procedure_screen.summarize_hard_label_strength import (
+    aggregate_strength_curve,
 )
 
 
@@ -124,6 +129,55 @@ def test_hard_anchor_replication_uses_paired_seed_differences() -> None:
     assert summary[1]["passes_mean_metric_constraints"] is True
 
 
+def test_frozen_hard_label_strength_curve() -> None:
+    baseline_by_seed = {
+        int(job["seed"]): job
+        for job in jobs()
+        if job["intervention_family"] == "baseline"
+    }
+    strength_jobs = [
+        {**baseline_by_seed[int(variant["seed"])], **variant}
+        for variant in hard_label_strength_variants()
+    ]
+    validate_hard_label_strength_jobs(strength_jobs)
+    assert len(strength_jobs) == 33
+    assert {job["strength_id"] for job in strength_jobs} >= {
+        "0025",
+        "4000",
+        "hard-only",
+    }
+    assert all(job["save_strategy"] == "no" for job in strength_jobs)
+
+
+def test_strength_curve_aggregates_three_seed_pairs() -> None:
+    rows = []
+    for strength_id, fraction, improvement in (
+        ("weight-0", 0.0, 0.0),
+        ("weight-0.25", 0.2, 0.01),
+    ):
+        for seed in (0, 1, 2):
+            rows.append(
+                {
+                    "strength_id": strength_id,
+                    "soft_loss_weight": 1.0,
+                    "direct_loss_weight": fraction / (1 - fraction)
+                    if fraction < 1
+                    else 1.0,
+                    "hard_label_fraction": fraction,
+                    "seed": seed,
+                    "macro_auroc": 0.9 + improvement,
+                    "macro_balanced_accuracy": 0.8,
+                    "macro_brier": 0.1 - improvement,
+                    "paired_difference_macro_auroc": improvement,
+                    "paired_difference_macro_balanced_accuracy": 0.0,
+                    "paired_difference_macro_brier": -improvement,
+                }
+            )
+    curve = aggregate_strength_curve(pd.DataFrame(rows))
+    assert [row["strength_id"] for row in curve] == ["weight-0", "weight-0.25"]
+    assert curve[1]["mean_paired_difference_macro_auroc"] == 0.01
+
+
 def test_logit_ensemble_and_crossfit_calibration() -> None:
     records = []
     for dataset in ("a", "b"):
@@ -138,9 +192,7 @@ def test_logit_ensemble_and_crossfit_calibration() -> None:
                 }
             )
     first = (
-        pd.DataFrame(records)
-        .sort_values(["dataset", "index"])
-        .reset_index(drop=True)
+        pd.DataFrame(records).sort_values(["dataset", "index"]).reset_index(drop=True)
     )
     second = first.assign(score=lambda frame: frame["score"] * 0.9 + 0.05)
     ensemble = logit_average([first, second])

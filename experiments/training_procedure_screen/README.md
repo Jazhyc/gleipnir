@@ -126,3 +126,25 @@ internal development set from the screen. Competition validation and final test
 remain prohibited. Passing this replication permits choosing an internal
 candidate, not claiming held-out confirmation; the selected recipe must then be
 frozen before a one-shot evaluation on an untouched split.
+
+## Hard-label strength curve
+
+Queue one fixed response-curve campaign behind the replication so intermediate
+development scores cannot alter its design. Reuse the three-seed results at
+direct-loss weights 0, 0.10, and 0.25. Add three seeds at weights 0.025, 0.05,
+0.15, 0.20, 0.35, 0.50, 0.75, 1, 2, and 4, plus a hard-label-only endpoint
+with the soft-teacher loss disabled. With soft-loss weight 1, these settings
+span effective hard-label fractions from 2.4% through 80%; the final endpoint
+is 100% hard-label training.
+
+Choose among the resulting fourteen strengths using three-seed mean macro AUROC
+subject to the original paired mean BA and Brier constraints. Do not extend the
+grid after viewing results. This is still selection on the repeatedly inspected
+internal development split, so the curve can select only a candidate for one
+future evaluation on untouched data. Save and evaluate final adapters only;
+checkpoint selection is deliberately excluded from this tuning phase.
+
+```bash
+python experiments/training_procedure_screen/prepare_hard_label_strength.py
+python experiments/training_procedure_screen/run_hard_label_strength_lambda.py
+```
