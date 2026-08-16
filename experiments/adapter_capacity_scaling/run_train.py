@@ -109,6 +109,8 @@ def training_command(
     )
     if float(job.get("soft_loss_weight", 1.0)) > 0:
         command.append(f"student.soft_teacher_artifact={job['soft_targets']}")
+    else:
+        command.append("student.soft_teacher_artifact=null")
     if not full:
         command.extend(
             [

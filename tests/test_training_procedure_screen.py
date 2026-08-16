@@ -100,10 +100,7 @@ def test_training_command_carries_structural_overrides() -> None:
     hard_only_job = {**jobs()[0], **hard_only}
     hard_only_command = training_command(hard_only_job, distributed_processes=1)
     assert "student.training.soft_loss_weight=0.0" in hard_only_command
-    assert not any(
-        argument.startswith("student.soft_teacher_artifact=")
-        for argument in hard_only_command
-    )
+    assert "student.soft_teacher_artifact=null" in hard_only_command
 
 
 def test_frozen_hard_anchor_replication_design() -> None:
