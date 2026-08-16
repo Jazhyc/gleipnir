@@ -92,6 +92,19 @@ def test_training_command_carries_structural_overrides() -> None:
     assert "student.training.decision_head_mode=binary_head" in head_command
     assert "student.training.decision_head_init=random" in head_command
 
+    hard_only = next(
+        variant
+        for variant in hard_label_strength_variants()
+        if variant["strength_id"] == "hard-only"
+    )
+    hard_only_job = {**jobs()[0], **hard_only}
+    hard_only_command = training_command(hard_only_job, distributed_processes=1)
+    assert "student.training.soft_loss_weight=0.0" in hard_only_command
+    assert not any(
+        argument.startswith("student.soft_teacher_artifact=")
+        for argument in hard_only_command
+    )
+
 
 def test_frozen_hard_anchor_replication_design() -> None:
     source = {str(job["job_name"]): job for job in jobs()}

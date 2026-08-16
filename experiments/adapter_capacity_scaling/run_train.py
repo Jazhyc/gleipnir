@@ -82,7 +82,6 @@ def training_command(
             f"output_dir={job['output_dir']}",
             f"seed={job['seed']}",
             f"teacher.artifact={job['student_rows']}",
-            f"student.soft_teacher_artifact={job['soft_targets']}",
             "student.output_dir="
             + (job["model_dir"] if full else job["causal_adapter_dir"]),
             f"student.model_loader={'image_text_to_text' if full else 'causal_lm'}",
@@ -108,6 +107,8 @@ def training_command(
             ),
         ]
     )
+    if float(job.get("soft_loss_weight", 1.0)) > 0:
+        command.append(f"student.soft_teacher_artifact={job['soft_targets']}")
     if not full:
         command.extend(
             [
