@@ -100,3 +100,29 @@ The launcher balances estimated load over both Lambda H100s, evaluates jobs and
 checkpoints in two causal lanes, and writes final, checkpoint, contrast,
 ensemble, and calibration summaries under the ignored
 `results/training_procedure_screen/` tree.
+
+## Hard-anchor seed replication
+
+The initial screen found that hard-label weights 0.10 and 0.25 improved seed-0
+macro AUROC, while 0.25 gave the best AUROC and Brier and 0.10 gave the best
+final balanced accuracy. Before using an untouched confirmation set, replicate
+only these two pre-existing weights at seeds 1 and 2. Do not introduce another
+anchor weight in this phase. Compare each result with its same-seed baseline,
+then rank the three-seed means by macro AUROC subject to the original mean BA
+and Brier regression limits of 0.002.
+
+The effective-batch-64 cell is not replicated in this phase. Although it raised
+seed-0 macro AUROC, it reduced balanced accuracy beyond the frozen acceptance
+limit and is a weaker signal than either hard anchor. This keeps the replication
+focused and limits further adaptation to the internal development split.
+
+```bash
+python experiments/training_procedure_screen/prepare_hard_anchor_replication.py
+python experiments/training_procedure_screen/run_hard_anchor_replication_lambda.py
+```
+
+The four jobs reuse the exact rank-128 QLoRA recipe, full training set, and
+internal development set from the screen. Competition validation and final test
+remain prohibited. Passing this replication permits choosing an internal
+candidate, not claiming held-out confirmation; the selected recipe must then be
+frozen before a one-shot evaluation on an untouched split.

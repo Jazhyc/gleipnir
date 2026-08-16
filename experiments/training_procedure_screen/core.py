@@ -155,6 +155,69 @@ def completed_variant(variant: dict[str, Any]) -> dict[str, Any]:
     return {**BASELINE_RECIPE, "seed": 0, "promotion_eligible": True, **variant}
 
 
+def hard_anchor_replication_variants() -> list[dict[str, Any]]:
+    """Return the frozen seed replications for the two hard-anchor candidates."""
+    return [
+        {
+            "job_name": f"hard-anchor-{weight_name}-seed{seed}",
+            "intervention_family": "hard_anchor_replication",
+            "seed": seed,
+            "direct_loss_weight": weight,
+            "source_job_name": f"hard-anchor-{weight_name}",
+        }
+        for weight_name, weight in (("010", 0.1), ("025", 0.25))
+        for seed in (1, 2)
+    ]
+
+
+def validate_hard_anchor_replication_jobs(jobs: list[dict[str, Any]]) -> None:
+    """Fail closed if the hard-anchor seed replication drifts."""
+    expected_variants = hard_anchor_replication_variants()
+    expected_names = [variant["job_name"] for variant in expected_variants]
+    names = [str(job["job_name"]) for job in jobs]
+    if names != expected_names or len(set(names)) != 4:
+        raise ValueError("hard-anchor replication jobs differ from the frozen design")
+    expected_by_name = {
+        str(variant["job_name"]): completed_variant(variant)
+        for variant in expected_variants
+    }
+    for job in jobs:
+        expected = expected_by_name[str(job["job_name"])]
+        for key in (
+            "seed",
+            "direct_loss_weight",
+            "source_job_name",
+            "micro_batch_size",
+            "gradient_accumulation_steps",
+            "quantization_enabled",
+            "lora_init",
+            "lora_use_dora",
+            "lora_target_modules",
+            "soft_loss_type",
+            "dataset_loss_weighting",
+        ):
+            if job[key] != expected[key]:
+                raise ValueError(
+                    f"hard-anchor replication drift for {job['job_name']}: {key}"
+                )
+        if int(job["effective_batch_size"]) != 32:
+            raise ValueError("hard-anchor replication requires effective batch 32")
+    invariants = (
+        "rank",
+        "lora_alpha",
+        "optimizer",
+        "learning_rate",
+        "lr_scheduler_type",
+        "warmup_ratio",
+        "num_train_epochs",
+        "train_rows",
+        "selection_sha256",
+    )
+    for key in invariants:
+        if len({str(job[key]) for job in jobs}) != 1:
+            raise ValueError(f"replication invariant differs across jobs: {key}")
+
+
 def validate_screen_jobs(jobs: list[dict[str, Any]]) -> None:
     """Fail closed if the prepared jobs drift from the frozen design."""
     expected = [variant["job_name"] for variant in screen_variants()]

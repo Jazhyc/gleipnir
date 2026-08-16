@@ -4,12 +4,17 @@ from experiments.adapter_capacity_scaling.run_train import training_command
 from experiments.training_procedure_screen.core import (
     balanced_lanes,
     completed_variant,
+    hard_anchor_replication_variants,
     screen_variants,
+    validate_hard_anchor_replication_jobs,
     validate_screen_jobs,
 )
 from experiments.training_procedure_screen.summarize import (
     crossfit_calibration,
     logit_average,
+)
+from experiments.training_procedure_screen.summarize_hard_anchor_replication import (
+    aggregate_replication,
 )
 
 
@@ -81,6 +86,42 @@ def test_training_command_carries_structural_overrides() -> None:
     head_command = training_command(head, distributed_processes=1)
     assert "student.training.decision_head_mode=binary_head" in head_command
     assert "student.training.decision_head_init=random" in head_command
+
+
+def test_frozen_hard_anchor_replication_design() -> None:
+    source = {str(job["job_name"]): job for job in jobs()}
+    replication = []
+    for variant in hard_anchor_replication_variants():
+        replication.append({**source[str(variant["source_job_name"])], **variant})
+    validate_hard_anchor_replication_jobs(replication)
+    assert [job["job_name"] for job in replication] == [
+        "hard-anchor-010-seed1",
+        "hard-anchor-010-seed2",
+        "hard-anchor-025-seed1",
+        "hard-anchor-025-seed2",
+    ]
+
+
+def test_hard_anchor_replication_uses_paired_seed_differences() -> None:
+    rows = []
+    for weight, improvement in ((0.1, 0.01), (0.25, 0.02)):
+        for seed in (0, 1, 2):
+            rows.append(
+                {
+                    "direct_loss_weight": weight,
+                    "seed": seed,
+                    "macro_auroc": 0.9 + improvement,
+                    "macro_balanced_accuracy": 0.8,
+                    "macro_brier": 0.1 - improvement,
+                    "paired_difference_macro_auroc": improvement,
+                    "paired_difference_macro_balanced_accuracy": 0.0,
+                    "paired_difference_macro_brier": -improvement,
+                }
+            )
+    summary = aggregate_replication(pd.DataFrame(rows))
+    assert [row["direct_loss_weight"] for row in summary] == [0.1, 0.25]
+    assert summary[1]["mean_paired_difference_macro_auroc"] == 0.02
+    assert summary[1]["passes_mean_metric_constraints"] is True
 
 
 def test_logit_ensemble_and_crossfit_calibration() -> None:
