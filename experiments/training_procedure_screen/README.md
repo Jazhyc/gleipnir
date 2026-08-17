@@ -182,6 +182,22 @@ hard-only training, which reaches `0.97256` AUROC, `0.93551` balanced accuracy,
 and `0.05543` Brier. The combined results therefore support complementary soft
 and hard supervision, but not a precisely estimated optimum.
 
+A matched unadapted Qwen3.5-9B causal evaluation on the same 1,972 rows reached
+`0.92273` macro AUROC, `0.85373` macro balanced accuracy, and `0.09790` macro
+Brier. Its pooled AUROC was only `0.88903`; comparisons must therefore keep the
+macro-versus-pooled aggregation fixed. Relative to this base, the three-seed
+hard-only mean improves macro AUROC by `0.04983`, balanced accuracy by `0.08178`,
+and Brier by `0.04246`.
+
+The gain is not evenly distributed. Base-to-hard-only AUROC rises from `0.99356`
+to `1.00000` on instructed Aletheia datasets, `0.88204` to `0.93589` on varied
+Aletheia datasets, and `0.80178` to `0.97275` on Liars Bench. The very large
+Liars gain and near-saturated instructed family make the aggregate hard-only
+number compatible with source/template adaptation rather than broad transfer.
+The mixed weight-0.50 candidate is stronger on the varied family (`0.95078`),
+so retain soft supervision and test both recipes on a source-grouped untouched
+surface before making a generalization claim.
+
 Do not extend the internal grid. Freeze weight `0.50` as the AUROC-selected
 candidate and treat weight `2.0` only as a predeclared-style threshold/calibration
 trade-off for future work. Neither may be promoted without one evaluation on an
