@@ -148,3 +148,29 @@ checkpoint selection is deliberately excluded from this tuning phase.
 python experiments/training_procedure_screen/prepare_hard_label_strength.py
 python experiments/training_procedure_screen/run_hard_label_strength_lambda.py
 ```
+
+### Hard-label strength outcome
+
+The complete three-seed curve finished on 2026-08-17. Under the predeclared
+macro-AUROC-first rule, direct-loss weight `0.50` is the internal winner. With
+soft-loss weight `1.0`, this is an effective target containing one-third hard
+label and two-thirds Kimi probability. Relative to the paired soft-only seeds,
+it improved mean macro AUROC by `0.01014`, balanced accuracy by `0.01517`, and
+Brier by `0.01706` (lower is better). Its absolute three-seed means were
+`0.97714` AUROC, `0.92645` balanced accuracy, and `0.05480` Brier.
+
+The AUROC peak is broad rather than sharply identified. Weight `0.50` exceeds
+the previously replicated `0.25` anchor by only `0.00054` mean AUROC and loses
+to it on seed 1, although weight `0.50` improves balanced accuracy and Brier on
+all three paired seeds. Weight `2.0` reaches `0.97660` AUROC while improving
+balanced accuracy to `0.94099` and Brier to `0.04707`, so it is a secondary
+operating-point candidate rather than the primary selection. It Pareto-dominates
+hard-only training, which reaches `0.97256` AUROC, `0.93551` balanced accuracy,
+and `0.05543` Brier. The combined results therefore support complementary soft
+and hard supervision, but not a precisely estimated optimum.
+
+Do not extend the internal grid. Freeze weight `0.50` as the AUROC-selected
+candidate and treat weight `2.0` only as a predeclared-style threshold/calibration
+trade-off for future work. Neither may be promoted without one evaluation on an
+untouched, preferably source-grouped split; competition validation and the final
+test were not used in this campaign.
