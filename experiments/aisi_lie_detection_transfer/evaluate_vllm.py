@@ -15,7 +15,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from experiments.aisi_lie_detection_transfer.evaluate_causal import (  # noqa: E402
-    strength_jobs,
+    target_jobs,
     write_result,
 )
 from experiments.data_scaling.prepare import read_jsonl  # noqa: E402
@@ -27,14 +27,19 @@ from gleipnir.binary_evaluation import (  # noqa: E402
 
 
 def select_jobs(
-    jobs_path: Path, strength_ids: list[str], seeds: list[int] | None = None
+    jobs_path: Path,
+    strength_ids: list[str],
+    seeds: list[int] | None = None,
+    *,
+    soft_jobs_path: Path | None = None,
 ) -> list[tuple[str, dict[str, Any]]]:
     """Select frozen strength/seed targets in a stable order."""
     allowed = set(seeds or [])
+    soft_jobs_path = soft_jobs_path or jobs_path
     return [
         (strength_id, job)
         for strength_id in strength_ids
-        for job in strength_jobs(jobs_path, strength_id)
+        for job in target_jobs(jobs_path, soft_jobs_path, strength_id)
         if not allowed or int(job["seed"]) in allowed
     ]
 
@@ -97,13 +102,21 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--soft-jobs",
+        type=Path,
+        default=Path("results/training_procedure_screen/jobs.jsonl"),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("results/aisi_lie_detection_transfer/vllm_runs"),
     )
     parser.add_argument("--include-base", action="store_true")
     parser.add_argument(
-        "--strength-id", action="append", choices=("0500", "hard-only"), default=[]
+        "--strength-id",
+        action="append",
+        choices=("soft-only", "0500", "hard-only"),
+        default=[],
     )
     parser.add_argument("--seed", action="append", type=int, choices=(0, 1, 2))
     parser.add_argument("--model", default="Qwen/Qwen3.5-9B")
@@ -120,7 +133,12 @@ def main() -> None:
     from vllm.lora.request import LoRARequest
 
     jobs_path = args.jobs.resolve()
-    selected = select_jobs(jobs_path, args.strength_id, args.seed)
+    selected = select_jobs(
+        jobs_path,
+        args.strength_id,
+        args.seed,
+        soft_jobs_path=args.soft_jobs.resolve(),
+    )
     for _, job in selected:
         adapter = Path(job["model_dir"])
         if not (adapter / "adapter_model.safetensors").is_file():

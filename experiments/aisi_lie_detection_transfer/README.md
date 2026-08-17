@@ -8,9 +8,11 @@ external evaluation, not another hyperparameter-selection surface.
 ## Hypothesis and models
 
 The hypothesis is that the mixed soft-plus-hard monitor transfers better than
-hard-only training, especially on belief-verified trained model organisms. Score
-the unadapted `Qwen/Qwen3.5-9B` base once and all three frozen seeds of:
+either supervision source alone, especially on belief-verified trained model
+organisms. Score the unadapted `Qwen/Qwen3.5-9B` base once and all three frozen
+seeds of:
 
+- rank-128 QLoRA soft-only training (`strength_id=soft-only`);
 - rank-128 QLoRA hard-only training (`strength_id=hard-only`); and
 - the internally selected soft-loss 1.0 / hard-loss 0.50 mixture
   (`strength_id=0500`).
@@ -62,8 +64,11 @@ diagnostics. Aggregate adapter metrics over the three fixed seeds.
 
 The overall subject macro is dominated by the 32 Varied Deception subject
 models, so testbed-level metrics are the primary transfer interpretation. The
-stop condition is seven complete vLLM evaluations with matching input hashes:
-one base, three hard-only seeds, and three mixed seeds.
+stop condition is ten complete vLLM evaluations with matching input hashes: one
+base plus three seeds each for soft-only, hard-only, and mixed training. The
+soft-only baseline is part of the intended supervision ablation; its initially
+omitted external evaluation is a campaign-completeness correction, not a new
+result-conditioned intervention.
 
 ## Backend parity and execution
 

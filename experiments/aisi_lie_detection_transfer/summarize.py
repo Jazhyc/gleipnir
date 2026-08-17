@@ -67,10 +67,10 @@ def main() -> None:
     )
     args = parser.parse_args()
     paths = sorted(args.runs.resolve().glob("*/*/result.json"))
-    if len(paths) != 7:
-        raise ValueError(f"expected seven frozen result files, found {len(paths)}")
+    if len(paths) != 10:
+        raise ValueError(f"expected ten frozen result files, found {len(paths)}")
     rows = pd.DataFrame([result_row(json.loads(path.read_text())) for path in paths])
-    order = {"base": 0, "hard-only": 1, "0500": 2}
+    order = {"base": 0, "soft-only": 1, "hard-only": 2, "0500": 3}
     rows = rows.sort_values(
         ["target", "seed"],
         key=lambda values: values.map(order) if values.name == "target" else values,

@@ -28,10 +28,12 @@ def vllm_evaluation_command(
     evaluation: Path,
     manifest: Path,
     jobs: Path,
+    soft_jobs: Path,
     output_dir: Path,
     *,
     include_base: bool,
     strength_id: str,
+    seeds: tuple[int, ...] = (),
 ) -> list[str]:
     command = [
         sys.executable,
@@ -42,6 +44,8 @@ def vllm_evaluation_command(
         manifest.as_posix(),
         "--jobs",
         jobs.as_posix(),
+        "--soft-jobs",
+        soft_jobs.as_posix(),
         "--output-dir",
         output_dir.as_posix(),
         "--strength-id",
@@ -49,6 +53,8 @@ def vllm_evaluation_command(
     ]
     if include_base:
         command.append("--include-base")
+    for seed in seeds:
+        command.extend(("--seed", str(seed)))
     return command
 
 
@@ -108,16 +114,17 @@ def parity_commands(
 def run_lane(
     lane: int,
     name: str,
-    command: list[str],
+    commands: list[list[str]],
     status: Status,
 ) -> None:
     status.start_job(name)
-    subprocess.run(
-        command,
-        cwd=ROOT,
-        env=runtime_environment(str(lane)),
-        check=True,
-    )
+    for command in commands:
+        subprocess.run(
+            command,
+            cwd=ROOT,
+            env=runtime_environment(str(lane)),
+            check=True,
+        )
     status.finish_job(name)
 
 
@@ -141,6 +148,11 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--soft-jobs",
+        type=Path,
+        default=Path("results/training_procedure_screen/jobs.jsonl"),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("results/aisi_lie_detection_transfer"),
@@ -156,8 +168,8 @@ def main() -> None:
     args = parser.parse_args()
 
     lanes = [
-        {"job_name": "base-and-hard-only", "gpu": 0},
-        {"job_name": "mixed-weight-0500", "gpu": 1},
+        {"job_name": "base-hard-only-and-soft-seed0", "gpu": 0},
+        {"job_name": "mixed-and-soft-seeds1-2", "gpu": 1},
     ]
     planned = [{"job_name": "backend-parity", "gpu": 0}, *lanes]
     status = Status(
@@ -169,7 +181,12 @@ def main() -> None:
             "phase": "preparing_external_evaluation",
             "gpus": 2,
             "serving_backend": "vllm_continuous_batching",
-            "targets": ["base", "hard-only-seeds-0-1-2", "0500-seeds-0-1-2"],
+            "targets": [
+                "base",
+                "soft-only-seeds-0-1-2",
+                "hard-only-seeds-0-1-2",
+                "0500-seeds-0-1-2",
+            ],
             "selection_frozen": True,
         },
     )
@@ -187,6 +204,8 @@ def main() -> None:
         subprocess.run(prepare, cwd=ROOT, check=True)
         if not args.jobs.resolve().is_file():
             raise FileNotFoundError(f"missing hard-label job manifest: {args.jobs}")
+        if not args.soft_jobs.resolve().is_file():
+            raise FileNotFoundError(f"missing soft-only job manifest: {args.soft_jobs}")
         status.set_phase("backend_parity_eager")
         os.environ.update(ensure_fla_kernels(args.fla_target))
         status.start_job("backend-parity")
@@ -210,22 +229,48 @@ def main() -> None:
         status.set_phase("external_vllm_evaluation")
         runs_dir = args.output_dir.resolve() / "vllm_runs"
         commands = [
-            vllm_evaluation_command(
-                args.evaluation.resolve(),
-                args.manifest.resolve(),
-                args.jobs.resolve(),
-                runs_dir,
-                include_base=True,
-                strength_id="hard-only",
-            ),
-            vllm_evaluation_command(
-                args.evaluation.resolve(),
-                args.manifest.resolve(),
-                args.jobs.resolve(),
-                runs_dir,
-                include_base=False,
-                strength_id="0500",
-            ),
+            [
+                vllm_evaluation_command(
+                    args.evaluation.resolve(),
+                    args.manifest.resolve(),
+                    args.jobs.resolve(),
+                    args.soft_jobs.resolve(),
+                    runs_dir,
+                    include_base=True,
+                    strength_id="hard-only",
+                ),
+                vllm_evaluation_command(
+                    args.evaluation.resolve(),
+                    args.manifest.resolve(),
+                    args.jobs.resolve(),
+                    args.soft_jobs.resolve(),
+                    runs_dir,
+                    include_base=False,
+                    strength_id="soft-only",
+                    seeds=(0,),
+                ),
+            ],
+            [
+                vllm_evaluation_command(
+                    args.evaluation.resolve(),
+                    args.manifest.resolve(),
+                    args.jobs.resolve(),
+                    args.soft_jobs.resolve(),
+                    runs_dir,
+                    include_base=False,
+                    strength_id="0500",
+                ),
+                vllm_evaluation_command(
+                    args.evaluation.resolve(),
+                    args.manifest.resolve(),
+                    args.jobs.resolve(),
+                    args.soft_jobs.resolve(),
+                    runs_dir,
+                    include_base=False,
+                    strength_id="soft-only",
+                    seeds=(1, 2),
+                ),
+            ],
         ]
         with ThreadPoolExecutor(max_workers=2) as executor:
             futures = [

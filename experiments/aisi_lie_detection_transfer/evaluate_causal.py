@@ -119,6 +119,38 @@ def strength_jobs(jobs_path: Path, strength_id: str) -> list[dict[str, Any]]:
     return jobs
 
 
+def soft_only_jobs(jobs_path: Path) -> list[dict[str, Any]]:
+    """Select the three original soft-only baseline adapters."""
+    jobs = [
+        job
+        for job in read_jsonl(jobs_path)
+        if str(job.get("job_name", "")).startswith("baseline-seed")
+    ]
+    jobs.sort(key=lambda job: int(job["seed"]))
+    if [int(job["seed"]) for job in jobs] != [0, 1, 2]:
+        raise ValueError("soft-only: expected exactly baseline seeds 0, 1, and 2")
+    for job in jobs:
+        if (
+            str(job.get("intervention_family")) != "baseline"
+            or float(job.get("soft_loss_weight", -1.0)) != 1.0
+            or float(job.get("direct_loss_weight", -1.0)) != 0.0
+        ):
+            raise ValueError(f"soft-only recipe mismatch for {job['job_name']}")
+        adapter = Path(job["causal_adapter_dir"])
+        if not (adapter / "adapter_model.safetensors").is_file():
+            raise FileNotFoundError(f"missing adapter for {job['job_name']}: {adapter}")
+    return jobs
+
+
+def target_jobs(
+    jobs_path: Path, soft_jobs_path: Path, strength_id: str
+) -> list[dict[str, Any]]:
+    """Resolve a frozen evaluation target to its training manifest."""
+    if strength_id == "soft-only":
+        return soft_only_jobs(soft_jobs_path)
+    return strength_jobs(jobs_path, strength_id)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -139,13 +171,21 @@ def main() -> None:
         ),
     )
     parser.add_argument(
+        "--soft-jobs",
+        type=Path,
+        default=Path("results/training_procedure_screen/jobs.jsonl"),
+    )
+    parser.add_argument(
         "--output-dir",
         type=Path,
         default=Path("results/aisi_lie_detection_transfer/runs"),
     )
     parser.add_argument("--include-base", action="store_true")
     parser.add_argument(
-        "--strength-id", action="append", choices=("0500", "hard-only"), default=[]
+        "--strength-id",
+        action="append",
+        choices=("soft-only", "0500", "hard-only"),
+        default=[],
     )
     parser.add_argument("--seed", action="append", type=int, choices=(0, 1, 2))
     parser.add_argument("--model", default="Qwen/Qwen3.5-9B")
@@ -234,7 +274,9 @@ def main() -> None:
     selected = [
         (strength_id, job)
         for strength_id in args.strength_id
-        for job in strength_jobs(args.jobs.resolve(), strength_id)
+        for job in target_jobs(
+            args.jobs.resolve(), args.soft_jobs.resolve(), strength_id
+        )
         if not args.seed or int(job["seed"]) in args.seed
     ]
     if not selected:

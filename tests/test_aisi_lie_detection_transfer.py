@@ -195,6 +195,30 @@ def test_vllm_job_selection_and_backend_parity(tmp_path: Path) -> None:
     jobs_path.write_text("".join(json.dumps(job) + "\n" for job in jobs))
     selected = select_jobs(jobs_path, ["0500"], [0])
     assert [(strength, job["seed"]) for strength, job in selected] == [("0500", 0)]
+    soft_jobs_path = tmp_path / "soft_jobs.jsonl"
+    soft_jobs = [
+        {
+            "job_name": f"baseline-seed{seed}",
+            "intervention_family": "baseline",
+            "seed": seed,
+            "soft_loss_weight": 1.0,
+            "direct_loss_weight": 0.0,
+            "causal_adapter_dir": str(tmp_path),
+        }
+        for seed in (0, 1, 2)
+    ]
+    soft_jobs_path.write_text(
+        "".join(json.dumps(job) + "\n" for job in soft_jobs)
+    )
+    selected = select_jobs(
+        jobs_path,
+        ["soft-only"],
+        [2],
+        soft_jobs_path=soft_jobs_path,
+    )
+    assert [(strength, job["seed"]) for strength, job in selected] == [
+        ("soft-only", 2)
+    ]
 
     eager = tmp_path / "eager"
     vllm = tmp_path / "vllm"
@@ -228,7 +252,10 @@ def test_vllm_job_selection_and_backend_parity(tmp_path: Path) -> None:
 
 
 def test_lambda_launcher_uses_vllm_after_bounded_parity(tmp_path: Path) -> None:
-    paths = [tmp_path / name for name in ("eval", "manifest", "jobs", "output")]
+    paths = [
+        tmp_path / name
+        for name in ("eval", "manifest", "jobs", "soft-jobs", "output")
+    ]
     command = vllm_evaluation_command(
         *paths,
         include_base=True,
@@ -236,7 +263,8 @@ def test_lambda_launcher_uses_vllm_after_bounded_parity(tmp_path: Path) -> None:
     )
     assert "evaluate_vllm.py" in command[1]
     assert "--include-base" in command
-    parity = parity_commands(*paths, smoke_rows=64)
+    assert command[command.index("--soft-jobs") + 1] == paths[3].as_posix()
+    parity = parity_commands(paths[0], paths[1], paths[2], paths[4], smoke_rows=64)
     assert "evaluate_causal.py" in parity[0][1]
     assert "evaluate_vllm.py" in parity[1][1]
     assert parity[0][parity[0].index("--smoke-rows") + 1] == "64"
