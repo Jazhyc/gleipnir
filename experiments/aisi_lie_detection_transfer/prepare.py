@@ -224,7 +224,11 @@ def internal_overlap_sets(path: Path) -> tuple[set[str], set[str]]:
         transcript_hashes.add(
             normalized_hash(json.dumps(visible, sort_keys=True, ensure_ascii=False))
         )
-        user_hashes.add(last_user_hash(visible))
+        # Tail truncation can remove every user turn from long internal prompts.
+        # Such rows remain useful for exact visible-transcript checks, but have
+        # no defensible question identity to add to the overlap set.
+        if any(message["role"] == "user" for message in visible):
+            user_hashes.add(last_user_hash(visible))
     return transcript_hashes, user_hashes
 
 

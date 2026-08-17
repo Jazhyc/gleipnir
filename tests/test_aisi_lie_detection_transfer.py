@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 
 import pandas as pd
 import pytest
@@ -7,6 +8,7 @@ from experiments.aisi_lie_detection_transfer.evaluate_causal import metric_views
 from experiments.aisi_lie_detection_transfer.prepare import (
     SourceSpec,
     convert_row,
+    internal_overlap_sets,
     parse_messages,
     source_specs,
 )
@@ -97,6 +99,24 @@ def test_ambiguous_and_exact_internal_rows_are_excluded() -> None:
     assert visible
     assert excluded is None
     assert reason == "exact_internal_transcript"
+
+
+def test_overlap_index_accepts_tail_truncated_context(tmp_path: Path) -> None:
+    path = tmp_path / "internal.jsonl"
+    path.write_text(
+        json.dumps(
+            {
+                "student_prompt": (
+                    f"{PROMPT}\n\n<context>\nASSISTANT: Only a retained tail"
+                    "\n</context>\n\n<output>\nOnly a retained tail\n</output>"
+                )
+            }
+        )
+        + "\n"
+    )
+    transcripts, users = internal_overlap_sets(path)
+    assert len(transcripts) == 1
+    assert users == set()
 
 
 def test_external_metric_views_and_seed_aggregation() -> None:
