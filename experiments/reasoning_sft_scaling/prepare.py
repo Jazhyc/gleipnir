@@ -100,7 +100,7 @@ def main() -> None:
                 "seed": 0,
                 "source_run": source_run.as_posix(),
                 "source_adapter": source_adapter.as_posix(),
-                "adapter_dir": destination.as_posix(),
+                "adapter_dir": destination.relative_to(ROOT).as_posix(),
                 "source_weights_sha256": manifest["source_sha256"],
                 "serving_weights_sha256": manifest["destination_sha256"],
                 "serving_config_sha256": sha256_file(

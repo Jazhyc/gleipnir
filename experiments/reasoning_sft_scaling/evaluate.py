@@ -34,10 +34,15 @@ from gleipnir.binary_evaluation import (  # noqa: E402
 from gleipnir.qwen35_adapter_rebase import sha256_file  # noqa: E402
 
 
+def repository_path(value: str) -> Path:
+    path = Path(value)
+    return path if path.is_absolute() else (ROOT / path).resolve()
+
+
 def validate_adapter(job: dict[str, Any]) -> None:
     from safetensors import safe_open
 
-    adapter_dir = Path(job["adapter_dir"])
+    adapter_dir = repository_path(job["adapter_dir"])
     weights = adapter_dir / "adapter_model.safetensors"
     config = json.loads((adapter_dir / "adapter_config.json").read_text())
     if config.get("exclude_modules") != VISION_EXCLUDE_PATTERN:
@@ -190,7 +195,7 @@ def main() -> None:
     records = read_jsonl(args.validation.resolve())
     if args.smoke_rows:
         records = balanced_smoke_records(records, args.smoke_rows)
-    adapter_dir = Path(jobs[0]["adapter_dir"])
+    adapter_dir = repository_path(jobs[0]["adapter_dir"])
     tokenizer = AutoTokenizer.from_pretrained(adapter_dir)
     prompts = render_prompts(tokenizer, records)
     token_ids = binary_token_ids(tokenizer)
@@ -247,7 +252,11 @@ def main() -> None:
             token_ids,
             output_dir,
             job,
-            LoRARequest(job["job_name"], lora_id, job["adapter_dir"]),
+            LoRARequest(
+                job["job_name"],
+                lora_id,
+                repository_path(job["adapter_dir"]).as_posix(),
+            ),
         )
         deltas = [
             abs(left - right)

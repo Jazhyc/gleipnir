@@ -5,6 +5,7 @@ from experiments.reasoning_sft_scaling.core import (
     prefix_before_prediction,
     reasoning_student_prompt,
 )
+from experiments.reasoning_sft_scaling.evaluate import repository_path
 
 
 def test_reasoning_prompt_preserves_only_example_body() -> None:
@@ -34,3 +35,10 @@ def test_prefix_before_prediction_has_parse_fallback() -> None:
     prefix, decision = prefix_before_prediction("unfinished reasoning ")
     assert decision is None
     assert prefix == "unfinished reasoning\nPrediction:"
+
+
+def test_repository_path_makes_artifact_manifests_portable() -> None:
+    assert repository_path("results/example").is_absolute()
+    assert repository_path("results/example").as_posix().endswith(
+        "/gleipnir/results/example"
+    )
