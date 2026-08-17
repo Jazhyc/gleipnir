@@ -6,7 +6,10 @@ import pytest
 
 from experiments.aisi_lie_detection_transfer.compare_parity import build_report
 from experiments.aisi_lie_detection_transfer.evaluate_causal import metric_views
-from experiments.aisi_lie_detection_transfer.evaluate_vllm import select_jobs
+from experiments.aisi_lie_detection_transfer.evaluate_vllm import (
+    prompts_for,
+    select_jobs,
+)
 from experiments.aisi_lie_detection_transfer.prepare import (
     SourceSpec,
     convert_row,
@@ -238,3 +241,16 @@ def test_lambda_launcher_uses_vllm_after_bounded_parity(tmp_path: Path) -> None:
     assert "evaluate_vllm.py" in parity[1][1]
     assert parity[0][parity[0].index("--smoke-rows") + 1] == "64"
     assert "compare_parity.py" in parity[2][1]
+
+
+def test_vllm_prompts_match_eager_tail_truncation() -> None:
+    class FakeTokenizer:
+        def apply_chat_template(self, *_args: object, **_kwargs: object) -> str:
+            return "012345"
+
+        def encode(self, value: str, **_kwargs: object) -> list[int]:
+            assert value == "012345Prediction:"
+            return list(range(len(value)))
+
+    prompts = prompts_for(FakeTokenizer(), [{"student_prompt": "unused"}], 4)
+    assert prompts == [{"prompt_token_ids": [13, 14, 15, 16]}]

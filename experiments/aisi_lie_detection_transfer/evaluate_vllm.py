@@ -39,9 +39,11 @@ def select_jobs(
     ]
 
 
-def prompts_for(tokenizer: Any, records: list[dict[str, Any]]) -> list[str]:
-    """Render exactly the causal evaluator's direct-boundary prompts."""
-    return [
+def prompts_for(
+    tokenizer: Any, records: list[dict[str, Any]], max_input_length: int
+) -> list[dict[str, list[int]]]:
+    """Render and tail-truncate exactly the causal evaluator's token inputs."""
+    rendered = [
         tokenizer.apply_chat_template(
             [{"role": "user", "content": record["student_prompt"]}],
             tokenize=False,
@@ -51,12 +53,20 @@ def prompts_for(tokenizer: Any, records: list[dict[str, Any]]) -> list[str]:
         + "Prediction:"
         for record in records
     ]
+    return [
+        {
+            "prompt_token_ids": tokenizer.encode(
+                prompt, add_special_tokens=False
+            )[-max_input_length:]
+        }
+        for prompt in rendered
+    ]
 
 
 def score_target(
     llm: Any,
     sampling: Any,
-    prompts: list[str],
+    prompts: list[dict[str, list[int]]],
     token_ids: list[int],
     request: Any | None,
 ) -> tuple[list[float], float]:
@@ -97,7 +107,7 @@ def main() -> None:
     )
     parser.add_argument("--seed", action="append", type=int, choices=(0, 1, 2))
     parser.add_argument("--model", default="Qwen/Qwen3.5-9B")
-    parser.add_argument("--max-model-len", type=int, default=4608)
+    parser.add_argument("--max-input-length", type=int, default=4608)
     parser.add_argument("--gpu-memory-utilization", type=float, default=0.9)
     parser.add_argument("--smoke-rows", type=int)
     args = parser.parse_args()
@@ -124,7 +134,7 @@ def main() -> None:
     source_manifest = json.loads(args.manifest.resolve().read_text())
     tokenizer_path = str(selected[0][1]["model_dir"]) if selected else args.model
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_path)
-    prompts = prompts_for(tokenizer, records)
+    prompts = prompts_for(tokenizer, records, args.max_input_length)
     token_ids = binary_token_ids(tokenizer)
     sampling = SamplingParams(
         max_tokens=1,
@@ -141,14 +151,17 @@ def main() -> None:
         gpu_memory_utilization=args.gpu_memory_utilization,
         enable_lora=bool(selected),
         max_lora_rank=max((int(job["rank"]) for _, job in selected), default=16),
-        max_model_len=args.max_model_len,
+        # vLLM counts the generated decision token against this limit, whereas
+        # the eager path's max length applies only to the input tensor.
+        max_model_len=args.max_input_length + 1,
     )
     common_metadata = {
         "model": args.model,
         "evaluation_base": "bf16",
         "serving_backend": "vllm_continuous_batching",
         "vllm_version": vllm.__version__,
-        "max_model_len": args.max_model_len,
+        "max_input_length": args.max_input_length,
+        "max_model_len": args.max_input_length + 1,
         "gpu_memory_utilization": args.gpu_memory_utilization,
         "requested_logprob_token_ids": token_ids,
         "source_dataset": source_manifest["source_dataset"],
