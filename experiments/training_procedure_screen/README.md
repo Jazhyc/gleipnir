@@ -149,6 +149,19 @@ python experiments/training_procedure_screen/prepare_hard_label_strength.py
 python experiments/training_procedure_screen/run_hard_label_strength_lambda.py
 ```
 
+The exact causal evaluator also supports an unadapted-base diagnostic on this
+same development split. Run it in an environment where the pinned FLA kernels
+have already been installed and added to `PYTHONPATH`:
+
+```bash
+python experiments/training_procedure_screen/evaluate_causal.py \
+  --base-only-output results/training_procedure_screen/unadapted_base
+```
+
+This comparison measures adaptation gain on the internal split only. It is not
+evidence of out-of-distribution transfer and must not be used to select another
+training setting.
+
 ### Hard-label strength outcome
 
 The complete three-seed curve finished on 2026-08-17. Under the predeclared

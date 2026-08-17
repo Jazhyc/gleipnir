@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Evaluate one final adapter and all retained checkpoints causally."""
+"""Evaluate one adapter/checkpoint set or the unadapted base causally."""
 
 from __future__ import annotations
 
@@ -134,7 +134,13 @@ def main() -> None:
         type=Path,
         default=Path("results/training_procedure_screen/lambda_jobs.jsonl"),
     )
-    parser.add_argument("--job-name", required=True)
+    target = parser.add_mutually_exclusive_group(required=True)
+    target.add_argument("--job-name")
+    target.add_argument(
+        "--base-only-output",
+        type=Path,
+        help="evaluate the unadapted BF16 base and write into this directory",
+    )
     parser.add_argument(
         "--validation",
         type=Path,
@@ -146,13 +152,20 @@ def main() -> None:
     parser.add_argument("--smoke-rows", type=int)
     args = parser.parse_args()
 
-    from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig
     from transformers.utils.import_utils import is_flash_linear_attention_available
 
-    job = find_job(args.jobs.resolve(), args.job_name)
-    training_metadata = json.loads(
-        (Path(job["causal_adapter_dir"]) / "training_metadata.json").read_text()
+    job = (
+        find_job(args.jobs.resolve(), args.job_name)
+        if args.job_name is not None
+        else None
+    )
+    training_metadata = (
+        json.loads(
+            (Path(job["causal_adapter_dir"]) / "training_metadata.json").read_text()
+        )
+        if job is not None
+        else None
     )
     records = read_jsonl(args.validation.resolve())
     if args.smoke_rows is not None:
@@ -178,7 +191,7 @@ def main() -> None:
         "torch_dtype": torch.bfloat16,
         "device_map": {"": torch.cuda.current_device()},
     }
-    evaluation_base = str(job.get("evaluation_base", "bf16"))
+    evaluation_base = str(job.get("evaluation_base", "bf16")) if job else "bf16"
     if evaluation_base == "nf4":
         model_kwargs["quantization_config"] = BitsAndBytesConfig(
             load_in_4bit=True,
@@ -191,8 +204,12 @@ def main() -> None:
     if not is_flash_linear_attention_available():
         raise RuntimeError("causal evaluation requires pinned FLA kernels")
     base = AutoModelForCausalLM.from_pretrained(args.model, **model_kwargs)
-    decision_head_mode = str(job.get("decision_head_mode", "token_logits"))
-    decision_head_init = str(job.get("decision_head_init", "random"))
+    decision_head_mode = (
+        str(job.get("decision_head_mode", "token_logits")) if job else "token_logits"
+    )
+    decision_head_init = (
+        str(job.get("decision_head_init", "random")) if job else "not_applicable"
+    )
     if decision_head_mode == "binary_head":
         base.add_module(
             "decision_head",
@@ -204,21 +221,29 @@ def main() -> None:
                 dtype=torch.float32,
             ),
         )
-    paths = adapter_paths(job)
-    final_name, final_path = paths[0]
-    model = PeftModel.from_pretrained(
-        base, final_path.as_posix(), adapter_name=final_name, is_trainable=False
-    )
-    for adapter_name, adapter_path in paths[1:]:
-        model.load_adapter(
-            adapter_path.as_posix(), adapter_name=adapter_name, is_trainable=False
+    if job is None:
+        paths: list[tuple[str, Path | None]] = [("base", None)]
+        model = base
+    else:
+        from peft import PeftModel
+
+        paths = adapter_paths(job)
+        final_name, final_path = paths[0]
+        model = PeftModel.from_pretrained(
+            base, final_path.as_posix(), adapter_name=final_name, is_trainable=False
         )
+        for adapter_name, adapter_path in paths[1:]:
+            assert adapter_path is not None
+            model.load_adapter(
+                adapter_path.as_posix(), adapter_name=adapter_name, is_trainable=False
+            )
     kernels = gated_delta_kernel_modules(model)
     if not kernels or any(not name.startswith("fla.ops.") for name in kernels):
         raise RuntimeError(f"causal evaluation did not bind FLA kernels: {kernels}")
     token_ids = binary_token_ids(tokenizer)
     for adapter_name, adapter_path in paths:
-        model.set_adapter(adapter_name)
+        if adapter_path is not None:
+            model.set_adapter(adapter_name)
         scores, seconds = score_adapter(
             model,
             tokenizer,
@@ -227,15 +252,20 @@ def main() -> None:
             batch_size=args.batch_size,
             decision_head_mode=decision_head_mode,
         )
-        output = Path(job["output_dir"]) / "causal_validation" / adapter_name
+        output = (
+            Path(job["output_dir"]) / "causal_validation" / adapter_name
+            if job is not None
+            else args.base_only_output.resolve()
+        )
         write_result(
             output,
             records,
             scores,
             {
-                "job_name": job["job_name"],
+                "job_name": job["job_name"] if job is not None else "unadapted-base",
                 "checkpoint": adapter_name,
-                "adapter_path": adapter_path.as_posix(),
+                "adapter_path": adapter_path.as_posix() if adapter_path else None,
+                "model": args.model,
                 "evaluation_base": evaluation_base,
                 "decision_head_mode": decision_head_mode,
                 "decision_head_init": decision_head_init,
@@ -248,7 +278,8 @@ def main() -> None:
             "macro"
         ]["macro"]
         print(
-            f"{job['job_name']} {adapter_name}: "
+            f"{job['job_name'] if job is not None else 'unadapted-base'} "
+            f"{adapter_name}: "
             f"auroc={primary['auroc']:.6f} "
             f"ba={primary['balanced_accuracy']:.6f} seconds={seconds:.1f}",
             flush=True,
