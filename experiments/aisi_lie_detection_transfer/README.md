@@ -62,18 +62,30 @@ diagnostics. Aggregate adapter metrics over the three fixed seeds.
 
 The overall subject macro is dominated by the 32 Varied Deception subject
 models, so testbed-level metrics are the primary transfer interpretation. The
-stop condition is seven complete causal evaluations with matching input hashes:
+stop condition is seven complete vLLM evaluations with matching input hashes:
 one base, three hard-only seeds, and three mixed seeds.
 
-## Execution
+## Backend parity and execution
+
+Frozen text-only evaluation uses vLLM continuous batching with one constrained
+output token and explicitly requested logprobs for the literal `0|1` tokens. Do
+not reuse the training microbatch for the full evaluation. Transformers eager
+inference is limited to a 64-row parity canary: compare the causal FP32 master
+adapter with its checksum-rebased vLLM serving copy, require Pearson score
+correlation of at least 0.99, mean absolute score difference at most 0.02, and a
+nonzero adapter effect under both backends. Small numerical differences are
+acceptable; an architecture/key-layout mismatch is not.
 
 The launcher prepares derived JSONL data from the pinned Parquet files, verifies
-the pinned FLA kernels, and evaluates two lanes on the reserved Lambda H100s:
+FLA for the eager parity half, requires the parity gate to pass, and then
+evaluates two continuously batched vLLM lanes on the reserved Lambda H100s:
 
 ```bash
 python experiments/aisi_lie_detection_transfer/run_lambda.py
 ```
 
+The full result metadata records vLLM version, requested token IDs, memory
+utilization, adapter source/destination checksums, and measured throughput.
 Derived inputs, manifests, predictions, summaries, and logs remain in ignored
 `data/`, `results/`, and `logs/` trees. No upstream dataset copy or model weight
 is committed.

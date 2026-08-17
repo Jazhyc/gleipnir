@@ -94,6 +94,15 @@ For direct-boundary objectives, avoid materializing full-sequence vocabulary
 logits when it prevents the proven batch; use a matched, recorded selected-token
 projection consistently across the campaign.
 
+For frozen text-only evaluation of standard base or PEFT LoRA models, default to
+one persistent vLLM engine with continuous batching, a constrained one-token
+response, and explicitly requested decision-token logprobs. Do not carry an
+eager training microbatch into large evaluation runs. Use Transformers eager
+evaluation only for a bounded backend-parity canary or when vLLM cannot represent
+the model/adapter, and document that exception. For every new adapter layout or
+backend combination, compare the master checkpoint with its serving artifact and
+record score agreement plus a nonzero adapter effect before scaling evaluation.
+
 ## Code, Tests, and Git
 
 Use 4-space Python indentation, type hints for public interfaces, `snake_case`

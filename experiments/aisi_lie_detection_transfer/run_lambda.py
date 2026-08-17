@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare and run the frozen external-transfer evaluation on two H100s."""
+"""Parity-check and run frozen external transfer with vLLM on two H100s."""
 
 from __future__ import annotations
 
@@ -24,7 +24,7 @@ from gleipnir.qwen35_fast_training import (  # noqa: E402
 )
 
 
-def evaluation_command(
+def vllm_evaluation_command(
     evaluation: Path,
     manifest: Path,
     jobs: Path,
@@ -35,7 +35,7 @@ def evaluation_command(
 ) -> list[str]:
     command = [
         sys.executable,
-        "experiments/aisi_lie_detection_transfer/evaluate_causal.py",
+        "experiments/aisi_lie_detection_transfer/evaluate_vllm.py",
         "--evaluation",
         evaluation.as_posix(),
         "--manifest",
@@ -50,6 +50,59 @@ def evaluation_command(
     if include_base:
         command.append("--include-base")
     return command
+
+
+def parity_commands(
+    evaluation: Path,
+    manifest: Path,
+    jobs: Path,
+    output_dir: Path,
+    smoke_rows: int,
+) -> list[list[str]]:
+    """Return matched eager, vLLM, and comparison parity commands."""
+    shared = [
+        "--evaluation",
+        evaluation.as_posix(),
+        "--manifest",
+        manifest.as_posix(),
+        "--jobs",
+        jobs.as_posix(),
+        "--include-base",
+        "--strength-id",
+        "0500",
+        "--seed",
+        "0",
+        "--smoke-rows",
+        str(smoke_rows),
+    ]
+    eager_root = output_dir / "eager"
+    vllm_root = output_dir / "vllm"
+    return [
+        [
+            sys.executable,
+            "experiments/aisi_lie_detection_transfer/evaluate_causal.py",
+            *shared,
+            "--output-dir",
+            eager_root.as_posix(),
+        ],
+        [
+            sys.executable,
+            "experiments/aisi_lie_detection_transfer/evaluate_vllm.py",
+            *shared,
+            "--output-dir",
+            vllm_root.as_posix(),
+        ],
+        [
+            sys.executable,
+            "experiments/aisi_lie_detection_transfer/compare_parity.py",
+            "--eager-root",
+            eager_root.as_posix(),
+            "--vllm-root",
+            vllm_root.as_posix(),
+            "--output",
+            (output_dir / "report.json").as_posix(),
+        ],
+    ]
 
 
 def run_lane(
@@ -98,6 +151,7 @@ def main() -> None:
         default=Path("results/aisi_lie_detection_transfer/status.json"),
     )
     parser.add_argument("--fla-target", type=Path, default=DEFAULT_FLA_TARGET)
+    parser.add_argument("--parity-rows", type=int, default=64)
     parser.add_argument("--revision", default=os.environ.get("GLEIPNIR_COMMIT"))
     args = parser.parse_args()
 
@@ -105,13 +159,16 @@ def main() -> None:
         {"job_name": "base-and-hard-only", "gpu": 0},
         {"job_name": "mixed-weight-0500", "gpu": 1},
     ]
+    planned = [{"job_name": "backend-parity", "gpu": 0}, *lanes]
     status = Status(
         args.status.resolve(),
-        lanes,
+        planned,
         run_metadata={
+            "state": "evaluating",
             "revision": args.revision,
             "phase": "preparing_external_evaluation",
             "gpus": 2,
+            "serving_backend": "vllm_continuous_batching",
             "targets": ["base", "hard-only-seeds-0-1-2", "0500-seeds-0-1-2"],
             "selection_frozen": True,
         },
@@ -130,12 +187,30 @@ def main() -> None:
         subprocess.run(prepare, cwd=ROOT, check=True)
         if not args.jobs.resolve().is_file():
             raise FileNotFoundError(f"missing hard-label job manifest: {args.jobs}")
-        status.set_phase("kernel_preflight")
+        status.set_phase("backend_parity_eager")
         os.environ.update(ensure_fla_kernels(args.fla_target))
-        status.set_phase("external_causal_evaluation")
-        runs_dir = args.output_dir.resolve() / "runs"
+        status.start_job("backend-parity")
+        parity = parity_commands(
+            args.evaluation.resolve(),
+            args.manifest.resolve(),
+            args.jobs.resolve(),
+            args.output_dir.resolve() / "parity",
+            args.parity_rows,
+        )
+        subprocess.run(
+            parity[0], cwd=ROOT, env=runtime_environment("0"), check=True
+        )
+        status.set_phase("backend_parity_vllm")
+        subprocess.run(
+            parity[1], cwd=ROOT, env=runtime_environment("0"), check=True
+        )
+        status.set_phase("backend_parity_comparison")
+        subprocess.run(parity[2], cwd=ROOT, check=True)
+        status.finish_job("backend-parity")
+        status.set_phase("external_vllm_evaluation")
+        runs_dir = args.output_dir.resolve() / "vllm_runs"
         commands = [
-            evaluation_command(
+            vllm_evaluation_command(
                 args.evaluation.resolve(),
                 args.manifest.resolve(),
                 args.jobs.resolve(),
@@ -143,7 +218,7 @@ def main() -> None:
                 include_base=True,
                 strength_id="hard-only",
             ),
-            evaluation_command(
+            vllm_evaluation_command(
                 args.evaluation.resolve(),
                 args.manifest.resolve(),
                 args.jobs.resolve(),

@@ -25,7 +25,10 @@ from experiments.deception_distillation.train_student_sft import (  # noqa: E402
 from experiments.training_procedure_screen.evaluate_causal import (  # noqa: E402
     score_adapter,
 )
-from gleipnir.binary_evaluation import binary_token_ids  # noqa: E402
+from gleipnir.binary_evaluation import (  # noqa: E402
+    balanced_smoke_records,
+    binary_token_ids,
+)
 from gleipnir.metrics import evaluate_binary_monitor  # noqa: E402
 
 
@@ -59,6 +62,9 @@ def write_result(
     scores: list[float],
     metadata: dict[str, Any],
     seconds: float,
+    score_description: str = (
+        "causal selected-position probability for literal 1 versus 0"
+    ),
 ) -> None:
     frame = pd.DataFrame(
         {
@@ -82,7 +88,7 @@ def write_result(
     )
     result = {
         **metadata,
-        "score": "causal selected-position probability for literal 1 versus 0",
+        "score": score_description,
         "threshold": 0.5,
         "rows": len(frame),
         "seconds": seconds,
@@ -141,6 +147,7 @@ def main() -> None:
     parser.add_argument(
         "--strength-id", action="append", choices=("0500", "hard-only"), default=[]
     )
+    parser.add_argument("--seed", action="append", type=int, choices=(0, 1, 2))
     parser.add_argument("--model", default="Qwen/Qwen3.5-9B")
     parser.add_argument("--batch-size", type=int, default=8)
     parser.add_argument("--max-length", type=int, default=4608)
@@ -155,7 +162,7 @@ def main() -> None:
 
     records = read_jsonl(args.evaluation.resolve())
     if args.smoke_rows is not None:
-        records = records[: args.smoke_rows]
+        records = balanced_smoke_records(records, args.smoke_rows)
     source_manifest = json.loads(args.manifest.resolve().read_text())
     tokenizer = AutoTokenizer.from_pretrained(args.model)
     if tokenizer.pad_token_id is None:
@@ -228,6 +235,7 @@ def main() -> None:
         (strength_id, job)
         for strength_id in args.strength_id
         for job in strength_jobs(args.jobs.resolve(), strength_id)
+        if not args.seed or int(job["seed"]) in args.seed
     ]
     if not selected:
         return

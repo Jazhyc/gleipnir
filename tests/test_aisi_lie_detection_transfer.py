@@ -4,13 +4,19 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
+from experiments.aisi_lie_detection_transfer.compare_parity import build_report
 from experiments.aisi_lie_detection_transfer.evaluate_causal import metric_views
+from experiments.aisi_lie_detection_transfer.evaluate_vllm import select_jobs
 from experiments.aisi_lie_detection_transfer.prepare import (
     SourceSpec,
     convert_row,
     internal_overlap_sets,
     parse_messages,
     source_specs,
+)
+from experiments.aisi_lie_detection_transfer.run_lambda import (
+    parity_commands,
+    vllm_evaluation_command,
 )
 from experiments.aisi_lie_detection_transfer.summarize import aggregate
 
@@ -173,3 +179,62 @@ def test_external_metric_views_and_seed_aggregation() -> None:
     hard = summary[summary["target"] == "hard-only"].iloc[0]
     assert hard["subject_macro_auroc"] == pytest.approx(0.85)
     assert hard["delta_vs_base_subject_macro_auroc"] == pytest.approx(0.15)
+
+
+def test_vllm_job_selection_and_backend_parity(tmp_path: Path) -> None:
+    (tmp_path / "adapter_model.safetensors").touch()
+    jobs_path = tmp_path / "jobs.jsonl"
+    jobs = [
+        {"strength_id": strength, "seed": seed, "causal_adapter_dir": str(tmp_path)}
+        for strength in ("0500", "hard-only")
+        for seed in (0, 1, 2)
+    ]
+    jobs_path.write_text("".join(json.dumps(job) + "\n" for job in jobs))
+    selected = select_jobs(jobs_path, ["0500"], [0])
+    assert [(strength, job["seed"]) for strength, job in selected] == [("0500", 0)]
+
+    eager = tmp_path / "eager"
+    vllm = tmp_path / "vllm"
+    for root, perturbation in ((eager, 0.0), (vllm, 0.001)):
+        for target, scores in (("base/base", [0.2, 0.8]), ("0500/seed0", [0.1, 0.9])):
+            path = root / target / "predictions.jsonl"
+            path.parent.mkdir(parents=True)
+            frame = pd.DataFrame(
+                {
+                    "dataset": ["subject", "subject"],
+                    "index": [0, 1],
+                    "label": [0, 1],
+                    "score": [score + perturbation for score in scores],
+                }
+            )
+            frame.to_json(path, orient="records", lines=True)
+    report = build_report(
+        eager,
+        vllm,
+        strength_id="0500",
+        seed=0,
+        max_mean_difference=0.02,
+        min_correlation=0.99,
+        min_adapter_effect=1e-6,
+    )
+    assert report["passed"] is True
+    assert report["adapter"]["mean_absolute_score_difference"] == pytest.approx(
+        0.001
+    )
+    assert report["maximum_adapter_effect"]["vllm"] == pytest.approx(0.1)
+
+
+def test_lambda_launcher_uses_vllm_after_bounded_parity(tmp_path: Path) -> None:
+    paths = [tmp_path / name for name in ("eval", "manifest", "jobs", "output")]
+    command = vllm_evaluation_command(
+        *paths,
+        include_base=True,
+        strength_id="hard-only",
+    )
+    assert "evaluate_vllm.py" in command[1]
+    assert "--include-base" in command
+    parity = parity_commands(*paths, smoke_rows=64)
+    assert "evaluate_causal.py" in parity[0][1]
+    assert "evaluate_vllm.py" in parity[1][1]
+    assert parity[0][parity[0].index("--smoke-rows") + 1] == "64"
+    assert "compare_parity.py" in parity[2][1]
