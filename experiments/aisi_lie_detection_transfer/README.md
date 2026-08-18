@@ -112,7 +112,22 @@ model's `0.82011` Gender Secret AUROC to `0.69057`; mixed falls further to
 nearly tied on the 45-subject macro (`0.85334` versus `0.85347`). Routing the
 four Gender Secret subjects to the base gives soft-only `0.86498` subject-macro
 AUROC and mixed `0.86702`. Treat this source-aware routing result as a diagnostic
-of unidentifiable transcripts, not a general deployment solution.
+of unidentifiable privileged state and source confounding, not a general
+deployment solution.
+
+A subsequent question-only audit found that the released Gender Secret
+classification population nearly reveals its label through topic. Searching
+only the final user question for seven basic gender terms reaches `0.96634`
+AUROC; adding ordinary gender paraphrases reaches `0.99371` (274/274 lie rows
+and 4/318 honest rows flagged). The original 762-row Liars' Bench Gender Secret
+split is even more confounded: the seven-term rule reaches `0.94372`, and the
+expanded question-only rule perfectly separates all 231 deceptive from 531
+honest rows. This does not dispute that the organisms possess privileged
+information; it shows that the released evaluation contrast can be solved by
+identifying whether the question asks about the secret. Retain the predeclared
+metrics, but do not interpret Gender Secret AUROC as clean evidence of
+belief-state extraction. Full contingency tables and poster language are in
+`docs/findings/competition_poster_evidence.md`.
 
 Two evaluations stalled nondeterministically inside vLLM generation at
 different prompt percentages. In each case the process stayed live, GPU

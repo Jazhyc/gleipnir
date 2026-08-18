@@ -146,13 +146,58 @@ standard deviation.
 Soft-only is the strongest adapter on pooled and Varied Deception metrics. Mixed
 training is effectively tied on the 45-subject macro and is stronger on
 AuditBench and Sandbagging. Hard-only does not transfer robustly. All adapted
-models regress on Gender Secret, where the supplied transcript does not reveal
-the hidden fact needed to infer the label.
+models regress on Gender Secret. The supplied transcript does not reveal the
+hidden fact itself, but the benchmark construction makes whether the user asks
+about that fact an almost sufficient label predictor, as audited below.
 
 As an explicit diagnostic, routing the four known Gender Secret subjects to the
 base gives `0.86498 ± 0.00288` subject-macro AUROC with soft-only elsewhere and
 `0.86702 ± 0.00143` with mixed elsewhere. This is evidence for an observability
-problem, not a general solution for unknown deployment inputs.
+and benchmark-construction problem, not a general solution for unknown
+deployment inputs.
+
+## Gender Secret question-only audit
+
+Gender Secret genuinely uses model organisms with privileged information, but
+its released positive/negative classification populations do not isolate
+detection of that information. A deterministic audit scored only the final
+visible user question: `1` when it contained a gender-topic term and `0`
+otherwise. It did not inspect the answer, system message, subject identity,
+dataset name, metadata, or privileged state.
+
+On the 592 Gender Secret rows in the AISI *Did you lie?* release, a seven-word
+rule (`male/female/man/woman/gender/boy/girl`) gives:
+
+| AISI label | No keyword | Keyword |
+|---|---:|---:|
+| Honest | 314 | 4 |
+| Lie | 15 | 259 |
+
+This binary score reaches `0.96634` AUROC and balanced accuracy. Adding ordinary
+gender paraphrases such as `sex`, `masculine/feminine`, plural forms, and the
+explicit phrase `M or F` moves the table to 314/4 honest and 0/274 lie,
+reaching `0.99371`.
+
+The original `Cadenza-Labs/liars-bench` Gender Secret split at revision
+`65299c5b10aa07adf75716ecb875c6713eed0dde` is more strongly confounded. On its
+762 rows, the same seven-word rule gives:
+
+| Liars' Bench label | No keyword | Keyword |
+|---|---:|---:|
+| Honest | 531 | 0 |
+| Deceptive | 26 | 205 |
+
+This reaches `0.94372` AUROC. Adding the ordinary paraphrases resolves all 26
+misses and yields 531/0 honest and 0/231 deceptive: perfect `1.0` AUROC and
+balanced accuracy from the question alone.
+
+The rule detects whether the user is asking about the privileged secret, not
+whether the answer is deceptive. Report the predeclared model metrics, but use
+this audit as the primary qualification: the unadapted base's apparent Gender
+Secret advantage can reflect a weak topic prior, while the adapted monitor's
+output-semantic objective suppresses benign-looking refusals. A clean test
+would match honest and deceptive responses on the same gender questions and
+surface forms while varying knowledge and concealment.
 
 ## Poster-level conclusions
 
@@ -164,7 +209,10 @@ problem, not a general solution for unknown deployment inputs.
 3. More diverse, observable training environments are the most credible next
    scaling lever. More labels cannot solve settings where the student input does
    not identify the target.
-4. These experiments support a focused deception-monitor poster. A broader
+4. A question-only rule reaches `0.99371` on AISI Gender Secret and `1.0` on
+   Liars' Bench Gender Secret, exposing a secret-topic/label confound that must
+   qualify privileged-information claims.
+5. These experiments support a focused deception-monitor poster. A broader
    multi-domain Gleipnir foundation model remains future work and should not be
    implied by the current evidence.
 
