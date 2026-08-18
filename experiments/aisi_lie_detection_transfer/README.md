@@ -94,3 +94,33 @@ utilization, adapter source/destination checksums, and measured throughput.
 Derived inputs, manifests, predictions, summaries, and logs remain in ignored
 `data/`, `results/`, and `logs/` trees. No upstream dataset copy or model weight
 is committed.
+
+## Outcome
+
+The ten-run evaluation completed on 2026-08-18. The three-seed soft-only model
+reached `0.95283` pooled AUROC, `0.86452` pooled balanced accuracy, `0.85347`
+subject-macro AUROC, and `0.76640` subject-macro balanced accuracy. It exceeded
+the mixed weight-0.50 model on pooled AUROC (`0.94795`) and Varied Deception
+macro AUROC (`0.96057` versus `0.95823`), despite the mixed objective's clear
+advantage on the repeatedly inspected internal development set. The external
+result therefore does not support treating the hard anchor as a broad transfer
+improvement.
+
+Neither adapted objective transfers uniformly. Soft-only falls from the base
+model's `0.82011` Gender Secret AUROC to `0.69057`; mixed falls further to
+`0.66615`. Mixed improves over soft-only on AuditBench and Sandbagging and is
+nearly tied on the 45-subject macro (`0.85334` versus `0.85347`). Routing the
+four Gender Secret subjects to the base gives soft-only `0.86498` subject-macro
+AUROC and mixed `0.86702`. Treat this source-aware routing result as a diagnostic
+of unidentifiable transcripts, not a general deployment solution.
+
+Two evaluations stalled nondeterministically inside vLLM generation at
+different prompt percentages. In each case the process stayed live, GPU
+utilization reported 100% at unusually low power, logs stopped advancing, and
+there were no NVIDIA XIDs, ECC errors, or thermal faults. A fresh process, GPU,
+and compilation-cache directory completed the identical seed and passed the
+previous stall point. This implicates the CUDA-graph/Qwen3.5 hybrid
+linear-attention runtime path rather than the dataset, adapter, SSH transport,
+or GPU hardware. Discard partial stalled runs, isolate adapters in fresh
+processes and caches, and add a progress watchdog; use eager execution as the
+next diagnostic if the stall recurs.
