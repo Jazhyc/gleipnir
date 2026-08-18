@@ -117,3 +117,16 @@ python experiments/data_scaling/summarize.py \
 
 The smoke test is a required gate: it fails unless the full-data adapter changes
 at least one direct score relative to the base model.
+
+## Outcome
+
+The corrected three-seed curve rises from `0.94708 ± 0.00206` macro AUROC at
+149 rows to `0.96206 ± 0.00182` at 13,149 rows; the zero-data base reaches
+`0.94512`. Macro balanced accuracy rises from `0.89563 ± 0.00182` to
+`0.92222 ± 0.00137`. The positive trend becomes clearest beyond 16% data. A
+bounded descriptive macro-AUROC fit has exponent `0.07734` and RMSE `0.00206`,
+with its asymptote at the upper bound `1.0`; retain the observed scaling result
+but do not use that boundary fit for confident long-range extrapolation.
+
+The full point table and comparison with reasoning SFT are recorded in
+`docs/findings/competition_poster_evidence.md`.

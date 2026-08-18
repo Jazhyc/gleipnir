@@ -65,3 +65,18 @@ CUDA_VISIBLE_DEVICES=1 .venv/bin/python \
 
 Ignored results are written under `results/reasoning_sft_scaling/`; runtime logs
 belong under `logs/lambda/reasoning_sft_scaling/`.
+
+## Outcome
+
+The corrected adapters do not show a coherent scaling trend. The matched base
+reaches `0.93452` macro AUROC and `0.90714` macro balanced accuracy. The best
+adapter is the 10% / 288-row point at `0.93488` AUROC, only `0.00036` above base;
+the 100% / 2,877-row adapter falls to `0.92351` AUROC and `0.88095` balanced
+accuracy. Positive-exponent bounded power-law fits are rejected for both AUROC
+and balanced accuracy.
+
+This curve and the Kimi soft-logit curve share the 822-row validation surface,
+but not training pools, exact fractions, seeds, epochs, prompts, or readout
+protocols. Their qualitative scaling behavior is comparable; their fractional
+x-coordinates are not matched experimental cells. The complete reporting table
+is in `docs/findings/competition_poster_evidence.md`.

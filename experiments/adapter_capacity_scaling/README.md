@@ -145,3 +145,16 @@ completed adapter and resumes from evaluation.
 
 Runtime logs are written under
 `logs/lambda/adapter_capacity_scaling_qlora/`. Artifact trees are not committed.
+
+## Outcome
+
+All nine QLoRA ranks completed with three seeds; full fine-tuning was explicitly
+deferred. Macro AUROC increased from `0.95192 ± 0.00024` at rank 1 to a best
+observed `0.96409 ± 0.00216` at rank 128, then measured
+`0.96333 ± 0.00495` at rank 256. A bounded fit by rank has exponent `0.31121`,
+asymptote `0.96655`, and RMSE `0.00043`, consistent with useful but saturating
+ranking capacity. Macro balanced accuracy peaked at rank 4
+(`0.92222 ± 0.00418`) and its positive-exponent fit was rejected. Thus higher
+rank improved AUROC without reliably improving the fixed-threshold operating
+point. Exact replicates and diagnostics are in
+`results/adapter_capacity_scaling_qlora/summary/summary/`.

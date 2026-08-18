@@ -76,3 +76,17 @@ persistent vLLM process, and produces:
 
 Training and evaluation are resumable. The full-data adapters remain in their
 original artifact tree and are referenced rather than copied.
+
+## Outcome
+
+All 36 new jobs completed and the 12 matching full-data results were reused.
+Rank 64 had the best mean macro AUROC at 10%, 25%, and 50% data; rank 256 was
+best at 100%. The paired rank-256 minus rank-16 macro-AUROC contrast was
+`-0.00236 ± 0.00665`, `-0.00077 ± 0.00538`, `+0.00079 ± 0.00126`, and
+`+0.00252 ± 0.00500` at 10%, 25%, 50%, and 100%, respectively. The
+preregistered interaction slope against log training rows was
+`0.00212 ± 0.00122` with residual SD `0.00359` across 12 paired observations.
+The direction supports increasing useful capacity with more data, but the
+uncertainty and non-monotonic cells make it suggestive rather than definitive.
+Exact cells, paired contrasts, and fits are in
+`results/data_capacity_scaling_qlora/summary/`.
