@@ -58,5 +58,7 @@ reproduced from the committed experiment code. Keeping them would add hundreds
 of gigabytes without preserving additional poster evidence.
 
 Immediately before shutdown authorization, `nvidia-smi` reported no active GPU
-compute processes. Termination itself is deliberately not performed by this
-inventory step and still requires explicit user authorization.
+compute processes. On 2026-08-18, instance
+`6c28855cece146fa989a9aedfccc6573` entered `terminating` after the authorized
+termination request. A subsequent Lambda API query returned no matching active
+instances, confirming that the two-H100 capacity was released.
