@@ -47,10 +47,29 @@ comparison.
 | 64% | 8,398 | 0.95950 ± 0.00036 | 0.91984 ± 0.00300 |
 | 100% | 13,149 | 0.96206 ± 0.00182 | 0.92222 ± 0.00137 |
 
+The matched Kimi K3 teacher ceiling reaches `0.98000` validation macro AUROC
+(`0.99854` instructed, `0.95528` varied) on the same 822 rows. The complete
+OpenRouter run was pinned to Fireworks with fallback disabled, returned both
+literal binary logits for every row, produced 756 unique scores, and cost
+`$0.83495`. The ceiling is one deterministic teacher evaluation, not a
+three-seed mean.
+
+The systematic sweep followed an accidental scaling clue. The first Kimi K3
+student used only the 2,880 varied-deception rows and reached `0.99833`
+instructed and `0.90875` varied validation AUROC. Adding the 3,693 nearly
+saturated instructed-deception rows was intended to repair a small instructed
+regression. Instead, instructed AUROC barely changed to `0.99854`, while varied
+AUROC unexpectedly rose to `0.91819` (`+0.00944`). That cross-family gain
+motivated the later Liars' Bench enrichment and the predeclared data-scaling
+sweep.
+
 The curve supplies a coherent positive data-scaling result, with most visible
 AUROC separation appearing beyond 16% data. A bounded descriptive fit gives
 macro-AUROC exponent `0.07734` and RMSE `0.00206`; its asymptote lands on the
 upper bound `1.0`, so do not use it for confident long-range extrapolation.
+The observed curve is still rising at the 13,149-row endpoint, which motivates
+testing larger and more diverse teacher-scored pools. It does not establish that
+arbitrary additional samples will improve performance.
 
 ### Privileged-reasoning SFT
 
@@ -123,6 +142,25 @@ balanced accuracy at the fixed threshold. These gains are partly source-specific
 hard-only is nearly saturated on instructed Aletheia data and gains much more on
 Liars Bench than on varied Aletheia data. Treat the internal table as adaptation
 evidence, not broad transfer evidence.
+
+## Liars' Bench enrichment transfer
+
+Phoenix 8.1 added 6,576 teacher-scored Liars' Bench rows to the 6,573-row
+Phoenix 8 competition pool while retaining the same student architecture and
+training recipe. On the disjoint Liars' Bench holdout, macro-category AUROC rose
+from `0.86255` to `0.93915` (`+0.07660`). Matched local Aletheia validation
+regressed from `0.96417` to `0.96214` (`-0.00203`): instructed improved
+`+0.00063`, while varied fell `-0.00556`.
+
+The official public leaderboard moved in the opposite direction, from
+`0.94395` for Phoenix 8 to `0.96612` for Phoenix 8.1 (`+0.02217`). This is
+evidence that the enrichment transferred beyond the familiar validation
+surface, not evidence that its original local retention gate passed. The
+`0.94512` value in the data-scaling plot is the unadapted Qwen validation
+baseline and must not be presented as the pre-enrichment leaderboard score.
+The enrichment changed both sample count and source distribution, so this
+comparison does not identify whether volume or alignment with the public
+leaderboard's held-out sets drove the gain.
 
 ## External AISI transfer
 
