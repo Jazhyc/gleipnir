@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 import threading
@@ -12,7 +13,12 @@ from typing import Any
 
 from dotenv import load_dotenv
 
-from gleipnir.openrouter import OpenRouterConfig, PromptRecord, score_prompt
+from gleipnir.openrouter import (
+    OpenRouterConfig,
+    PromptRecord,
+    request_settings_sha256,
+    score_prompt,
+)
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -36,11 +42,39 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         choices=("price", "throughput", "latency"),
         default="price",
     )
+    parser.add_argument(
+        "--provider-order",
+        action="append",
+        default=[],
+        help="Provider to try in order; repeat for fallbacks. Overrides provider sort.",
+    )
     parser.add_argument("--provider-only")
     parser.add_argument(
         "--allow-fallbacks",
         action=argparse.BooleanOptionalAction,
         default=True,
+    )
+    parser.add_argument(
+        "--sticky-routing",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Pin the campaign to one provider endpoint with an OpenRouter session.",
+    )
+    parser.add_argument(
+        "--session-id",
+        help="Explicit OpenRouter cache/sticky session (auto-derived by default).",
+    )
+    parser.add_argument(
+        "--warm-cache",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Finish one pending request before concurrent fan-out.",
+    )
+    parser.add_argument(
+        "--explicit-cache",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Mark the exact all-prompt prefix as an ephemeral provider cache block.",
     )
     parser.add_argument("--limit", type=int)
     return parser.parse_args(argv)
@@ -81,8 +115,9 @@ def load_prompts(path: Path, limit: int | None = None) -> list[PromptRecord]:
 def load_cache(
     path: Path,
     work: dict[str, PromptRecord],
+    settings_sha256: str | None = None,
 ) -> dict[str, dict[str, Any]]:
-    """Load matching cached rows and reject prompt-identity drift."""
+    """Load matching cached rows and reject prompt or request drift."""
     cached: dict[str, dict[str, Any]] = {}
     if not path.exists():
         return cached
@@ -100,8 +135,55 @@ def load_cache(
                     f"cached prompt mismatch at {path}:{line_number} "
                     f"for id={record_id!r}"
                 )
+            if (
+                settings_sha256 is not None
+                and row.get("request_settings_sha256") != settings_sha256
+            ):
+                raise ValueError(
+                    f"cached request settings mismatch at {path}:{line_number} "
+                    f"for id={record_id!r}"
+                )
             cached[record_id] = row
     return cached
+
+
+def shared_prompt_prefix(records: list[PromptRecord]) -> str:
+    """Return the exact character prefix shared by all campaign prompts."""
+    prefix = records[0].prompt
+    for record in records[1:]:
+        limit = min(len(prefix), len(record.prompt))
+        index = 0
+        while index < limit and prefix[index] == record.prompt[index]:
+            index += 1
+        prefix = prefix[:index]
+        if not prefix:
+            break
+    return prefix
+
+
+def automatic_session_id(model: str, prompt_prefix: str) -> str:
+    """Derive a stable, non-sensitive OpenRouter sticky-routing identifier."""
+    digest = hashlib.sha256(
+        (model + "\0" + prompt_prefix).encode("utf-8")
+    ).hexdigest()
+    return f"gleipnir-teacher-cache-{digest}"
+
+
+def cache_token_totals(rows: dict[str, dict[str, Any]]) -> tuple[int, int, int]:
+    """Sum prompt tokens and normalized cache reads/writes across completed rows."""
+    prompt_tokens = 0
+    cached_tokens = 0
+    cache_write_tokens = 0
+    for row in rows.values():
+        usage = row.get("usage")
+        if isinstance(usage, dict):
+            prompt_tokens += int(usage.get("prompt_tokens") or 0)
+        cache_usage = row.get("cache_usage")
+        if not isinstance(cache_usage, dict):
+            continue
+        cached_tokens += int(cache_usage.get("cached_tokens") or 0)
+        cache_write_tokens += int(cache_usage.get("cache_write_tokens") or 0)
+    return prompt_tokens, cached_tokens, cache_write_tokens
 
 
 def atomic_write(path: Path, rows: dict[str, dict[str, Any]]) -> None:
@@ -119,14 +201,22 @@ def main(argv: list[str] | None = None) -> int:
     args = parse_args(argv)
     if args.concurrency < 1:
         raise ValueError("concurrency must be positive")
+    if args.limit is not None and args.limit < 1:
+        raise ValueError("limit must be positive")
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise SystemExit("OPENROUTER_API_KEY is missing")
 
-    records = load_prompts(args.input, args.limit)
+    all_records = load_prompts(args.input)
+    prompt_prefix = shared_prompt_prefix(all_records)
+    records = all_records if args.limit is None else all_records[: args.limit]
     work = {record.record_id: record for record in records}
-    cached = load_cache(args.output, work)
-    pending = [record for record in records if record.record_id not in cached]
+    if args.session_id and not args.sticky_routing:
+        raise ValueError("--session-id requires --sticky-routing")
+    session_id = None
+    if args.sticky_routing:
+        session_key = prompt_prefix or all_records[0].prompt_sha256
+        session_id = args.session_id or automatic_session_id(args.model, session_key)
     config = OpenRouterConfig(
         model=args.model,
         endpoint=args.endpoint,
@@ -134,19 +224,43 @@ def main(argv: list[str] | None = None) -> int:
         top_logprobs=args.top_logprobs,
         reasoning_effort=args.reasoning_effort,
         provider_sort=args.provider_sort,
+        provider_order=tuple(args.provider_order),
         provider_only=args.provider_only,
         allow_fallbacks=args.allow_fallbacks,
+        session_id=session_id,
+        cache_prefix=prompt_prefix if args.explicit_cache else "",
         request_timeout=args.request_timeout,
         max_retries=args.max_retries,
     )
+    settings_sha256 = request_settings_sha256(config)
+    cached = load_cache(args.output, work, settings_sha256)
+    pending = [record for record in records if record.record_id not in cached]
+    prefix_sha256 = hashlib.sha256(prompt_prefix.encode("utf-8")).hexdigest()
     print(
         f"prepared={len(records)} cached={len(cached)} pending={len(pending)} "
-        f"model={config.model}",
+        f"model={config.model} shared_prefix_chars={len(prompt_prefix)} "
+        f"shared_prefix_sha256={prefix_sha256} session_id={session_id}",
         flush=True,
     )
 
     lock = threading.Lock()
     failures = []
+    if args.warm_cache and config.cache_prefix and pending:
+        warm_record = pending.pop(0)
+        print(f"warming provider cache with id={warm_record.record_id}", flush=True)
+        try:
+            result = score_prompt(warm_record, config, api_key)
+        except Exception as error:
+            failures.append(f"{warm_record.record_id}: {error}")
+            print(f"FAILED cache warm-up {failures[-1]}", flush=True)
+        else:
+            cached[warm_record.record_id] = result
+            atomic_write(args.output, cached)
+            print(
+                f"provider cache warm-up complete id={warm_record.record_id}",
+                flush=True,
+            )
+
     with ThreadPoolExecutor(max_workers=args.concurrency) as executor:
         futures = {
             executor.submit(score_prompt, record, config, api_key): record
@@ -166,6 +280,14 @@ def main(argv: list[str] | None = None) -> int:
             print(f"completed={len(cached)}/{len(records)}", flush=True)
 
     atomic_write(args.output, cached)
+    prompt_tokens, cached_tokens, cache_write_tokens = cache_token_totals(cached)
+    cache_read_fraction = cached_tokens / prompt_tokens if prompt_tokens else 0.0
+    print(
+        f"provider_cache prompt_tokens={prompt_tokens} cached_tokens={cached_tokens} "
+        f"cache_write_tokens={cache_write_tokens} "
+        f"cache_read_fraction={cache_read_fraction:.6f}",
+        flush=True,
+    )
     if failures or len(cached) != len(records):
         print(f"incomplete failures={len(failures)}; rerun to resume", flush=True)
         return 1

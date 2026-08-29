@@ -11,6 +11,7 @@ from gleipnir.openrouter import (
     binary_score_from_top_logprobs,
     extract_terminal_binary_top_logprobs,
     request_payload,
+    request_settings_sha256,
     score_prompt,
 )
 
@@ -78,11 +79,46 @@ def test_extracts_terminal_label_row() -> None:
 
 def test_request_disables_provider_data_collection() -> None:
     record = PromptRecord("row-1", "Judge this.\nPrediction:<0 or 1>", {})
-    config = OpenRouterConfig(model="qwen/test", provider_only="Provider")
+    config = OpenRouterConfig(
+        model="qwen/test",
+        provider_only="makora",
+        session_id="teacher-campaign",
+        cache_prefix="Judge this.\n",
+    )
     payload = request_payload(record, config)
     assert payload["temperature"] == 0
     assert payload["provider"]["data_collection"] == "deny"
-    assert payload["provider"]["only"] == ["Provider"]
+    assert payload["provider"]["enforce_distillable_text"] is True
+    assert payload["provider"]["only"] == ["makora"]
+    assert payload["session_id"] == "teacher-campaign"
+    assert payload["messages"][0]["content"] == [
+        {
+            "type": "text",
+            "text": "Judge this.\n",
+            "cache_control": {"type": "ephemeral"},
+        },
+        {"type": "text", "text": "Prediction:<0 or 1>"},
+    ]
+
+
+def test_provider_order_overrides_sort_and_is_fingerprinted() -> None:
+    config = OpenRouterConfig(
+        model="moonshotai/kimi-k3",
+        provider_order=("makora", "fireworks"),
+        session_id="cache-session",
+    )
+    payload = request_payload(PromptRecord("row-1", "Prompt", {}), config)
+    assert payload["provider"]["order"] == ["makora", "fireworks"]
+    assert "sort" not in payload["provider"]
+    assert request_settings_sha256(config) != request_settings_sha256(
+        replace(config, session_id="other-session")
+    )
+
+
+def test_cache_prefix_must_match_prompt() -> None:
+    config = OpenRouterConfig(model="qwen/test", cache_prefix="Other")
+    with pytest.raises(ValueError, match="does not start"):
+        request_payload(PromptRecord("row-1", "Prompt", {}), config)
 
 
 def test_score_prompt_keeps_api_key_out_of_artifact() -> None:
@@ -94,3 +130,10 @@ def test_score_prompt_keeps_api_key_out_of_artifact() -> None:
     assert result["score"] > 0.8
     assert "secret-key" not in repr(result)
     assert session.calls[0][1]["Authorization"] == "Bearer secret-key"
+    assert session.calls[0][1]["X-OpenRouter-Metadata"] == "enabled"
+    assert result["request_settings_sha256"] == request_settings_sha256(config)
+    assert result["cache_usage"] == {
+        "cached_tokens": 0,
+        "cache_write_tokens": 0,
+        "cache_discount": None,
+    }
