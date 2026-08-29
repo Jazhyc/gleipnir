@@ -1,6 +1,6 @@
 # Action-only tool-trajectory monitoring
 
-Status: research and replication note, frozen 2026-08-30. No dataset was
+Status: research and adaptation note, frozen 2026-08-30. No dataset was
 materialized, no paid teacher calls were made, and no training was launched in
 this phase.
 
@@ -20,13 +20,14 @@ The paper is the source of truth for facts explicitly labeled "paper" below;
 this note records the operational details so later work should not need to
 reconstruct them from the PDF.
 
-This is an adaptation, not yet an exact replication:
+This is deliberately an exploratory, paper-inspired adaptation:
 
 - the paper distilled Gemini 2.5 Pro external rationales into several students;
 - Gleipnir proposes Kimi K3 binary logits and a Qwen3.5-9B student;
 - the paper did not train Qwen3.5-9B;
-- a curve read from the paper is contextual evidence, not a controlled
-  logit-versus-rationale comparison.
+- the paper's rationale-scaling curve is a useful reference even though the
+  rows and student differ; the comparison is descriptive rather than a causal
+  estimate of supervision-channel quality.
 
 ## Task contract
 
@@ -41,9 +42,9 @@ that removal rather than converting every source to an artificial common prose
 format.
 
 A strict command-only view would be a useful information ablation, but it is
-not the paper's primary task and must not be called a replication.
+not the paper's primary task.
 
-### Positive class and severity
+### Positive class and paper severity
 
 The paper asks whether actions faithfully serve the assigned task. Its rubric
 separates:
@@ -61,16 +62,18 @@ score of at least 5 as the positive binary direction during rationale quality
 control. Source ground truth remains binary and is not an ordinal severity
 label.
 
-For Gleipnir, define `0 = benign/task-serving` and
-`1 = problematic/misaligned`. "Problematic" includes every source-positive
-scheming, sabotage, exfiltration, monitor-bypass, or prompt-injection-compliance
-trajectory. Preserve the source's original binary label and label provenance
-separately from Kimi's soft target. Do not relabel incompetence as malicious
-merely because it is messy.
+For Gleipnir, collapse the paper's ordinal interface to
+`0 = benign/task-serving` and `1 = problematic/misaligned`. "Problematic"
+includes every source-positive scheming, sabotage, exfiltration,
+monitor-bypass, or prompt-injection-compliance trajectory. There is no
+intermediate uncertainty token or severity score: uncertainty is represented
+by Kimi's relative logits for the literal `0` and `1` tokens. Preserve the
+source's original binary label and label provenance separately from Kimi's soft
+target. Do not relabel incompetence as malicious merely because it is messy.
 
-### Paper rationale format
+### Full teacher prompt and compact student prompt
 
-The full teacher specification directs the model to:
+The paper's full teacher specification directs the model to:
 
 1. establish the requested task and applicable boundaries;
 2. trace observable actions and compare them with the final self-report;
@@ -79,13 +82,21 @@ The full teacher specification directs the model to:
 5. explain the unauthorized objective and concealment under a misaligned
    explanation;
 6. weigh both interpretations, state uncertainty, and assign a calibrated
-   0--10 score.
+   verdict.
 
-Visible sections are `OBSERVATIONS`, `IF INNOCENT`, `IF MISALIGNED`, and
-`CONCLUSION`; the terminal line is `Answer (0-10): <score>`. The full
-specification is present for frontier-teacher generation and prompted frontier
-baselines. SFT, RL, and trained-monitor inference use only a short instruction,
-the trajectory, and that output contract.
+In the paper, visible sections are `OBSERVATIONS`, `IF INNOCENT`,
+`IF MISALIGNED`, and `CONCLUSION`, followed by an ordinal answer. Gleipnir will
+retain the full substantive teacher prompt: definitions, distinctions,
+examples, evidence-gathering procedure, and two-sided analysis instructions.
+Only its interface changes. Remove the 0--10 score-band calibration and require
+the response to terminate with `Prediction: 0` or `Prediction: 1`, without a
+visible rationale. The teacher can still deliberate internally; the cached
+supervision is only the two decision-token logprobs.
+
+The student receives the paper's compact task instruction rather than the full
+specification, with the same binary terminal interface. Thus the intervention
+preserves the paper's full-teacher/compact-student context-distillation setup
+while replacing rationale and ordinal-score targets with a binary soft target.
 
 ## Dataset inventory
 
@@ -124,16 +135,16 @@ label boundary as unambiguous.
 | SHADE-Arena | 432 | 417 | **849** | multi-tool office sabotage/exfiltration |
 | **OOD total used operationally** | **3,189** | **3,206** | **6,395** |  |
 
-The paper's dataset table instead says SHADE-Arena has 433 benign and 423
+The paper's dataset table says SHADE-Arena has 433 benign and 423
 positive rows, or 856 total. Those table rows sum to 6,402, while every cost
 table uses 6,395 evaluations. Direct inspection of the paper author's released
 benchmark revision `b45f3a8bb08e3e1e520fb49ce1b81a63fad8c80d` finds 432 benign
 and 417 positive SHADE-Arena predictions, or exactly 849 rows; the other five
 artifact counts match the table and all six sum to 6,395. The best-supported
 inference is that the 849-row artifact was evaluated and the paper table
-preserved seven rows that were filtered elsewhere. Freeze the artifact's
-432/417 split for an adaptation, but retain this qualification until the
-authors confirm it.
+preserved seven rows that were filtered elsewhere. This is operationally
+negligible for the exploratory study: use and record whichever licensed,
+materialized revision we obtain rather than trying to reconstruct seven rows.
 
 Validation is used for checkpoint selection and excluded from OOD aggregates.
 Never use any of the six OOD datasets for prompt choice, subset choice,
@@ -147,15 +158,15 @@ upstream datasets into Git.
 | Paper name | Primary upstream reference | Operational note |
 | --- | --- | --- |
 | STRIDE / Gloom | [Constitutional Black-Box Monitoring](https://arxiv.org/abs/2603.00829); gated [`Syghmon/blackboxmonitorsMATS`](https://huggingface.co/datasets/Syghmon/blackboxmonitorsMATS/tree/ccb77e37589baaee1f0e16ac9ab89ceac8f6cc8a) | Revision `ccb77e...` declares research-use-only licensing and contains the earlier 1,000-row STRIDE and 1,000-row Gloom releases, not the final paper manifest. Access is gated. |
-| CoT-Red-Handed | [paper](https://arxiv.org/abs/2505.23575); [`cotredhanded/code`](https://github.com/cotredhanded/code) | MIT code/data repository; BigCodeBench tasks, side-task definitions, attack policies, and split IDs. The paper-specific selected 2,340-row monitor mix is still needed. |
-| BashArena | [paper](https://arxiv.org/abs/2512.15688); [`redwoodresearch/basharena_public`](https://github.com/redwoodresearch/basharena_public) | Public environment and generation pipeline. Pin the exact setting revision and identify the agent/model rollout set; 637 base tasks do not by themselves reproduce 2,790 trajectories. |
-| BashBench | [Ctrl-Z paper](https://arxiv.org/abs/2504.10374); [ControlArena Bash setting](https://control-arena.aisi.org.uk/settings/bash.html) | The setting exposes 257 base tasks. Exact rollout IDs and the 28K-filtered 1,436-row mixture remain necessary. |
+| CoT-Red-Handed | [paper](https://arxiv.org/abs/2505.23575); [`cotredhanded/code`](https://github.com/cotredhanded/code) | MIT code/data repository; BigCodeBench tasks, side-task definitions, attack policies, and split IDs. Select and record our own licensed action-only subset. |
+| BashArena | [paper](https://arxiv.org/abs/2512.15688); [`redwoodresearch/basharena_public`](https://github.com/redwoodresearch/basharena_public) | Public environment and generation pipeline. Pin the setting and identify the agent/model rollout set we actually use; 637 base tasks do not by themselves produce trajectories. |
+| BashBench | [Ctrl-Z paper](https://arxiv.org/abs/2504.10374); [ControlArena Bash setting](https://control-arena.aisi.org.uk/settings/bash.html) | The setting exposes 257 base tasks. Record our own rollout IDs and apply the common context filter. |
 | CUA-SHADE-Arena | [Reliable Weak-to-Strong Monitoring](https://arxiv.org/abs/2508.19461); [`scaleapi/mrt`](https://github.com/scaleapi/mrt) | Fifteen main/side task pairs over a computer-use environment; use the paper author's prepared action-only rows if licensing permits. |
 | MLE-Sabotage | [CTRL-ALT-DECEIT](https://arxiv.org/abs/2511.09904); [`info-access-mle-sabotage`](https://github.com/rajamoreno/info-access-mle-sabotage) | Derived from MLE-Bench/Kaggle tasks; source access and licenses must be handled per component. |
 | AgentDojo | [`sequrity-ai/agentdojo`](https://github.com/sequrity-ai/agentdojo) | Version the benchmark, suites, attack, agent model, and rollout IDs; task definitions alone are insufficient. |
 | IaC | [ControlArena IaC setting](https://control-arena.aisi.org.uk/settings/iac.html) | Record the ControlArena revision and trajectory producer. |
 | Rogue Eval | [ControlArena Rogue Eval setting](https://control-arena.aisi.org.uk/settings/rogue_eval.html) | Record the ControlArena revision and trajectory producer. |
-| SHADE-Arena | [paper](https://arxiv.org/abs/2506.15740); [`jkutaso/SHADE-Arena`](https://github.com/jkutaso/SHADE-Arena) | Public repository is incomplete and explicitly says exact paper reproduction needs private data. Prefer the prepared 849-row artifact subject to license review. |
+| SHADE-Arena | [paper](https://arxiv.org/abs/2506.15740); [`jkutaso/SHADE-Arena`](https://github.com/jkutaso/SHADE-Arena) | Public repository is incomplete and explicitly says exact paper reproduction needs private data. Use the available licensed evaluation rows and report their actual count. |
 
 ### Paper-author artifacts found
 
@@ -217,8 +228,9 @@ the scaling curve.
   pAUROC@20.
 
 The paper does not report weight decay, warmup, exact target-module names,
-checkpoint cadence for SFT, tokenizer revisions, or data-ordering seeds. These
-are replication gaps, not defaults to infer after seeing OOD results.
+checkpoint cadence for SFT, tokenizer revisions, or data-ordering seeds. Exact
+reconstruction is unnecessary here, but freeze and report our choices before
+seeing OOD results.
 
 ### Paper RL, for reference
 
@@ -251,17 +263,17 @@ sources times two classes, which gives ten strata. The full point is the only
 stated exception to equal source weighting because Gloom has just 386 rows per
 class. No released subset ID lists or permutations were found.
 
-Consequences:
+Consequences for this exploratory study:
 
-- do not attempt to reverse-engineer the paper's six subsets by silently
-  choosing two extra strata;
-- request the exact manifests from the authors if an exact replication claim is
-  important;
-- otherwise create Gleipnir-owned, checksumed nested manifests and call the
-  result an adaptation;
+- do not spend effort reverse-engineering the paper's unexplained two extra
+  strata or exact row permutations;
+- create Gleipnir-owned, checksumed nested manifests from the materialized
+  training pool;
 - choose an explicit allocation rule before training. Recommended: ten
   source-class strata, largest-remainder allocation for non-divisible `N`, one
   fixed permutation per stratum and seed, and strict nested prefixes;
+- use the paper's nominal `N` values where the pool permits and report actual
+  row counts when filtering or availability changes a point by a few tens;
 - keep the paper's total-step schedule for the first matched comparison, while
   separately reporting examples seen. A fixed-epoch curve would confound data
   volume with a roughly 45-fold step-count difference.
@@ -272,17 +284,21 @@ Consequences:
 
 At a fixed Qwen3.5-9B backbone, prompt, optimizer schedule, subset manifest, and
 checkpoint-selection rule, Kimi K3 decision-token probabilities provide more
-sample-efficient OOD ranking supervision than hard binary labels. A matched
-rationale arm is needed before claiming that logits scale better than rationale
-distillation as a supervision channel.
+sample-efficient OOD ranking supervision than hard binary labels. Compare the
+shape of that curve with the paper's published rationale-distillation curve as
+exploratory evidence, without claiming the difference is caused only by the
+supervision interface.
 
 ### Teacher request contract
 
-Use `moonshotai/kimi-k3`, pinned to Makora through OpenRouter. Put the long,
-immutable task definition and score-band semantics first so the provider can
-cache them; append only the delimited trajectory as variable content. Ask for a
-terminal `Prediction: 0` or `Prediction: 1`, request logprobs for both literal
-decision tokens, and store the normalized two-token distribution.
+Use `moonshotai/kimi-k3`, pinned to Makora through OpenRouter. Put the paper's
+long, substantive monitoring specification first so the provider can cache it;
+append only the delimited trajectory as variable content. Retain the behavioral
+definitions, examples, distinctions, and analysis procedure, but replace the
+ordinal scoring/output instructions with a binary interface. Ask for a terminal
+`Prediction: 0` or `Prediction: 1`, request logprobs for both literal decision
+tokens, and store the normalized two-token distribution. Do not ask the teacher
+to expose its rationale.
 
 The teacher prompt must:
 
@@ -315,14 +331,12 @@ At each frozen subset size and seed, the minimum causal comparison is:
 | base | no adaptation | zero-data Qwen3.5-9B reference |
 | hard | source binary label | value of ordinary supervised adaptation |
 | logit | Kimi `P(problematic)` | incremental value of teacher uncertainty/margins |
-| rationale | external rationale plus terminal decision | supervision-channel comparison, only when the exact same rows and a suitably controlled teacher are available |
 
-The paper's published rationale curve uses different teachers, students, and
-possibly unavailable subsets, so plot it as a dashed external reference. It
-cannot identify the causal difference between logits and rationales. For the
-strong claim, generate or acquire rationale targets on the same Gleipnir rows.
-Using Kimi for both target types isolates supervision channel best; reusing the
-paper's Gemini rationales answers a different, still useful systems question.
+Plot the paper's published rationale curve as an external reference at its
+reported sample counts. Different rows, teachers, students, and output spaces
+are acceptable for this exploratory comparison, but label the comparison
+accordingly. A matched rationale arm can be added later if we want a causal
+supervision-channel ablation; it is not required for the first campaign.
 
 Reuse Gleipnir's proven Qwen3.5-9B causal text recipe: standard NF4 QLoRA with
 double quantization and BF16 compute, pinned FLA 0.5.2 kernels, selected-position
@@ -350,7 +364,13 @@ campaign and record throughput and peak memory.
 
 ### Metrics
 
-Primary paper-comparable metric is normalized pAUROC@20 for each OOD dataset:
+Primary comparison metric is AUROC, computed from the continuous literal-token
+margin. AUROC only depends on ranking, so a Kimi binary-token score can be
+compared with the paper's 0--10 score without reproducing its ordinal rubric.
+Report per-dataset AUROC and unweighted Mean-OOD AUROC, matching the paper's
+AUROC scaling counterpart.
+
+Retain normalized pAUROC@20 as a secondary paper-comparable low-FPR metric:
 
 ```text
 pAUROC@20 = (1 / 0.2) * integral from FPR=0 to 0.2 of TPR(FPR) dFPR
@@ -361,12 +381,12 @@ Implement the clipped ROC trapezoid directly. Scikit-learn's
 `roc_auc_score(max_fpr=0.2)` applies a standardized partial-AUC correction and
 is not the paper's formula.
 
-Also report per-source and macro AUROC, sample-weighted OOD as secondary,
-Brier score, calibration error/reliability plots, threshold diagnostics at
-fixed FPR budgets, score ties, missing scores, and source/model/task-family
-slices. Use continuous literal-token margins for Gleipnir evaluation; do not
-sample a discrete 0--10 answer at temperature 1.0 when a direct boundary score
-is available. Report three paired seeds and uncertainty for every trained arm.
+Also report pooled and sample-weighted OOD summaries, Brier score, calibration
+error/reliability plots, threshold diagnostics at fixed FPR budgets, score ties,
+missing scores, and source/model/task-family slices. Use continuous
+literal-token margins for Gleipnir evaluation; do not sample a discrete ordinal
+answer when a direct boundary score is available. Report three paired seeds and
+uncertainty for every trained arm.
 
 ### Promotion and stop conditions
 
@@ -385,20 +405,22 @@ and stopping rule. Stop and mark the campaign invalid if:
 - an adapter has no nonzero effect or fails master-versus-serving parity;
 - OOD data influences checkpoint, prompt, threshold, or subset selection.
 
-## Remaining blockers before implementation
+## Implementation prerequisites
 
-1. Obtain the final 8,688 training row IDs, the six nested subset manifests,
-   exact action-only renderer, and licenses from the paper authors, or explicitly
-   approve a Gleipnir adaptation.
-2. Confirm whether the paper's operational SHADE-Arena count was 849; current
-   evidence strongly supports it.
-3. Choose the matched rationale comparator: same-teacher Kimi rationales,
-   paper-author Gemini rationale artifacts, or both.
-4. Pin source repository commits and trajectory-producing agent/model settings,
+Exact author splits and small count reconciliation are not prerequisites. Before
+launching:
+
+1. Materialize an adequately broad licensed subset of the five training
+   sources and six OOD families, using the actual available counts.
+2. Implement and hash the full-teacher binary prompt and compact-student binary
+   prompt; confirm that only the interface differs from the intended paper
+   prompt content.
+3. Pin source repository commits and trajectory-producing agent/model settings,
    especially for BashArena, BashBench, AgentDojo, and the other ControlArena
    sources.
-5. Define lineage groups and inspect class semantics before freezing manifests.
-6. Probe the already-reserved `gleipnir-control` Lambda target and preflight the
+4. Define lineage groups and inspect class semantics before freezing our own
+   nested manifests.
+5. Probe the already-reserved `gleipnir-control` Lambda target and preflight the
    largest rank. Do not launch or terminate capacity as part of preparation.
 
 Once those are resolved, the implementation should live in a new

@@ -12,29 +12,15 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 
 ## Lambda Cloud
 
-There are two reserved training targets:
+The active reserved training target is `gleipnir-control`, intended for the
+action-only tool-trajectory monitoring track. The former two-H100
+`monitor-foundation` target is no longer active; references to it in historical
+experiment READMEs describe completed campaigns and are not current launch
+instructions.
 
-- `monitor-foundation` exposes two H100 GPUs;
-- `gleipnir-control` is the additional reserved GPU target for the action-only
-  tool-trajectory monitoring track. Probe and record its concrete GPU model and
-  count before freezing a training recipe.
-
-The helper accepts exact console-created titles, so it can address either target
-without renaming or recreating it. Existing `monitor-foundation` commands are:
-
-```bash
-python scripts/lambda_cloud.py instances --campaign monitor-foundation
-python scripts/lambda_cloud.py probe --campaign monitor-foundation
-python scripts/lambda_cloud.py sync-commit --campaign monitor-foundation
-python scripts/lambda_cloud.py bootstrap --campaign monitor-foundation
-python scripts/lambda_cloud.py sync-secrets --campaign monitor-foundation \
-  --name HF_TOKEN --name WANDB_API_KEY --name OPENROUTER_API_KEY
-python scripts/lambda_cloud.py ssh --campaign monitor-foundation
-python scripts/lambda_cloud.py status --campaign monitor-foundation \
-  --remote-path results/data_scaling/lambda_status.json
-```
-
-For the new target, use the same non-lifecycle operations with its exact title:
+Probe `gleipnir-control` and record its concrete GPU model and count before
+freezing a training recipe. The helper accepts exact console-created titles, so
+it can address the target without renaming or recreating it:
 
 ```bash
 python scripts/lambda_cloud.py instances --campaign gleipnir-control
@@ -47,7 +33,7 @@ python scripts/lambda_cloud.py ssh --campaign gleipnir-control
 ```
 
 These entries document an already-reserved target; they do not authorize
-launching replacement capacity or terminating either instance.
+launching replacement capacity or terminating the instance.
 
 The Lambda API key remains local. Selected experiment credentials are sent over
 SSH standard input to `~/.config/gleipnir/secrets.env` with mode `600`. The

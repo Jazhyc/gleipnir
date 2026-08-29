@@ -79,11 +79,12 @@ all adapters in one persistent vLLM process and writes:
 Raw/materialized source text, adapters, predictions, and runtime logs remain in
 ignored artifact directories and must not be committed.
 
-## Lambda execution
+## Historical Lambda execution
 
-On the reserved two-H100 `monitor-foundation` instance, `run_lambda.py` assigns
-the longest jobs first to the currently lighter GPU lane, runs one adapter per
-GPU, and evaluates only after both lanes finish:
+This completed campaign ran on the former two-H100 `monitor-foundation`
+instance, which is no longer active. `run_lambda.py` assigned the longest jobs
+first to the lighter GPU lane, ran one adapter per GPU, and evaluated only after
+both lanes finished:
 
 ```bash
 python experiments/data_scaling/run_lambda.py

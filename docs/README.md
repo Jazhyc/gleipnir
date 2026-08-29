@@ -2,7 +2,7 @@
 
 - `research_program.md`: scope, research questions, and evaluation principles.
 - `research/tool_transcript_monitoring.md`: operational paper notes, dataset
-  provenance, replication gaps, and the proposed Kimi-logit scaling design for
+  provenance, and the proposed exploratory Kimi-logit scaling design for
   action-only agent monitoring.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.

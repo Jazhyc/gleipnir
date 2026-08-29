@@ -76,10 +76,12 @@ repeat `scontrol ping` with sandbox escalation. Use ordinary `sbatch`/`salloc`
 jobs to hold GPUs: advanced reservations created with `scontrol` require Slurm
 administrator privileges.
 
-The reserved Lambda Cloud instance is `monitor-foundation`, with two H100 GPUs.
-Use `scripts/lambda_cloud.py` for SSH, sync, bootstrap, secret transfer, and
-artifact collection. Never terminate it or launch billable capacity without the
-user's explicit instruction. Pull important artifacts before any termination.
+The active reserved Lambda Cloud training target is `gleipnir-control`;
+`monitor-foundation` is no longer active. Use `scripts/lambda_cloud.py` for SSH,
+sync, bootstrap, secret transfer, and artifact collection. Probe and record the
+active target's hardware before freezing a recipe. Never terminate it or launch
+billable capacity without the user's explicit instruction. Pull important
+artifacts before any termination.
 
 For text-only Qwen3.5 training on H100s, do not silently use Transformers'
 Torch gated-delta fallback. Use the causal-LM loader and verify the isolated,
