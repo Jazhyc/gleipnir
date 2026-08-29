@@ -44,3 +44,6 @@ python -m experiments.tool_trajectory_monitoring.benchmark_qwen_reasoning
 Stop rather than interpreting the run if the condition row IDs, model revision,
 prompt semantics, or reasoning sampling settings drift; if either decision token
 is absent at the terminal boundary; or if any condition remains incomplete.
+
+The completed 100-row result and its qualifications are recorded in
+[`../../docs/findings/tool_trajectory_qwen_reasoning_canary.md`](../../docs/findings/tool_trajectory_qwen_reasoning_canary.md).
