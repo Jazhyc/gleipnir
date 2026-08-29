@@ -33,6 +33,17 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-tokens", type=int, default=8)
     parser.add_argument("--top-logprobs", type=int, default=5)
     parser.add_argument(
+        "--binary-output-mode",
+        choices=("prediction_line", "scalar"),
+        default="prediction_line",
+    )
+    parser.add_argument(
+        "--structured-output",
+        action=argparse.BooleanOptionalAction,
+        default=False,
+        help="Constrain scalar output to the strict JSON integer enum [0, 1].",
+    )
+    parser.add_argument(
         "--reasoning-effort",
         choices=("max", "xhigh", "high", "medium", "low", "minimal", "none"),
         default="none",
@@ -49,6 +60,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Provider to try in order; repeat for fallbacks. Overrides provider sort.",
     )
     parser.add_argument("--provider-only")
+    parser.add_argument(
+        "--provider-max-prompt-price",
+        type=float,
+        help="Maximum accepted provider prompt price in USD per million tokens.",
+    )
+    parser.add_argument(
+        "--provider-max-completion-price",
+        type=float,
+        help="Maximum accepted provider completion price in USD per million tokens.",
+    )
     parser.add_argument(
         "--allow-fallbacks",
         action=argparse.BooleanOptionalAction,
@@ -256,10 +277,14 @@ def main(argv: list[str] | None = None) -> int:
         endpoint=args.endpoint,
         max_tokens=args.max_tokens,
         top_logprobs=args.top_logprobs,
+        binary_output_mode=args.binary_output_mode,
+        structured_output=args.structured_output,
         reasoning_effort=args.reasoning_effort,
         provider_sort=args.provider_sort,
         provider_order=tuple(args.provider_order),
         provider_only=args.provider_only,
+        provider_max_prompt_price=args.provider_max_prompt_price,
+        provider_max_completion_price=args.provider_max_completion_price,
         allow_fallbacks=args.allow_fallbacks,
         session_id=session_id,
         cache_prefix=prompt_prefix if args.explicit_cache else "",

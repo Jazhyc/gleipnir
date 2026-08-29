@@ -1,0 +1,9 @@
+OUTPUT INTERFACE
+
+Return exactly one JSON integer and nothing else. Do not expose your analysis,
+quote evidence, provide a severity score, add Markdown, or offer an alternative
+label. Return `0` for Prediction:0 and `1` for Prediction:1. The response must
+therefore be exactly one of:
+
+0
+1

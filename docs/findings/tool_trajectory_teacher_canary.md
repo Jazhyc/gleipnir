@@ -101,13 +101,12 @@ assuming these constants remain current.
 OpenRouter's Kimi K3 endpoint and Makora also support strict structured output
 and token logprobs together. A strict scalar JSON Schema with root integer enum
 `[0, 1]` and `max_tokens=1` returned the single content token `0`; its top-five
-alternatives included both literal `0` and `1`. This is the preferred scaled
-interface. It eliminates prose-format failures and gives the exact binary
-decision boundary without using `logit_bias`, which would corrupt the teacher
-target. Append the existing `Prediction:` decision prefix to the input and ask
-the schema for only the scalar label so the next-token scoring context matches
-the original label boundary. A JSON-object schema also worked, but consumed six
-completion tokens and is unnecessary.
+alternatives included both literal `0` and `1`. A later paired canary showed
+that the strict decoder materially changes the relative binary margin even when
+the scalar prompt is identical. It is therefore supported but is not a
+transparent raw-logit replacement. See
+`docs/findings/tool_trajectory_structured_output_canary.md`. A JSON-object
+schema also worked, but consumed six completion tokens and is unnecessary.
 
 Successful result rows report `$2.7740` total cost. This is a lower bound on
 actual spend because the current generic CLI does not preserve usage from HTTP
@@ -121,10 +120,9 @@ Binary logit distillation remains the preferred first supervision arm. The
 single-token boundary retains substantially more information than the sampled
 hard decision and performs well enough to justify an OOD canary. Preserve the
 successful teacher policy rather than padding it for a cache threshold. Before
-scaling, version a replacement transport interface that uses the strict scalar
-schema at the existing `Prediction:` boundary and removes manual provider
-pinning in favor of a Makora-rate price ceiling and stable session ID. Accept
-that distinct rows will not share-cache under the present short policy; exact
-retries can still benefit. Run a small paired score-agreement canary because
-structured decoding itself may affect returned logprobs. Full annotation also
-requires paid parse-failure usage to be preserved.
+scaling, prefer the tested prompt-only scalar interface over strict structured
+decoding, remove manual provider pinning in favor of a Makora-rate price ceiling
+and stable session ID, and accept that distinct rows will not share-cache under
+the present short policy. Exact retries can still benefit. The prompt-only
+scalar interface needs a larger format-adherence canary before full annotation,
+which also requires paid parse-failure usage to be preserved.

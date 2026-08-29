@@ -8,13 +8,14 @@ import math
 import time
 from dataclasses import dataclass
 from datetime import UTC, datetime
-from typing import Any, Protocol
+from typing import Any, Literal, Protocol
 
 import numpy as np
 import requests
 
 DEFAULT_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 RETRYABLE_STATUS_CODES = frozenset({408, 409, 429, 500, 502, 503, 504})
+BinaryOutputMode = Literal["prediction_line", "scalar"]
 
 
 class ResponseLike(Protocol):
@@ -50,10 +51,14 @@ class OpenRouterConfig:
     endpoint: str = DEFAULT_ENDPOINT
     max_tokens: int = 8
     top_logprobs: int = 5
+    binary_output_mode: BinaryOutputMode = "prediction_line"
+    structured_output: bool = False
     reasoning_effort: str = "none"
     provider_sort: str | None = "price"
     provider_order: tuple[str, ...] = ()
     provider_only: str | None = None
+    provider_max_prompt_price: float | None = None
+    provider_max_completion_price: float | None = None
     allow_fallbacks: bool = True
     enforce_distillable_text: bool = True
     session_id: str | None = None
@@ -158,14 +163,92 @@ def extract_terminal_binary_top_logprobs(
     return top, text, position
 
 
+def extract_scalar_binary_top_logprobs(
+    response_data: dict[str, Any],
+) -> tuple[dict[str, float], str, int]:
+    """Extract alternatives when the entire response is the scalar ``0`` or ``1``."""
+    import re
+
+    try:
+        choice = response_data["choices"][0]
+        text = choice["message"]["content"]
+        rows = choice["logprobs"]["content"]
+    except (KeyError, IndexError, TypeError) as error:
+        preview = json.dumps(response_data)[:1000]
+        raise OpenRouterError(
+            f"response did not contain chat token logprobs: {preview}"
+        ) from error
+    if not isinstance(text, str) or not isinstance(rows, list):
+        raise OpenRouterError("response text or token logprobs had the wrong type")
+
+    match = re.fullmatch(r"\s*([01])\s*", text)
+    if match is None:
+        raise OpenRouterError(f"completion was not a binary scalar: {text!r}")
+    prediction = match.group(1)
+    position = next(
+        (
+            index
+            for index, row in enumerate(rows)
+            if row.get("token") == prediction
+        ),
+        None,
+    )
+    if position is None:
+        raise OpenRouterError(
+            f"scalar prediction {prediction!r} had no matching token row"
+        )
+    alternatives = rows[position].get("top_logprobs")
+    if not isinstance(alternatives, list) or not alternatives:
+        raise OpenRouterError("scalar label top_logprobs was empty")
+    top = {
+        item["token"]: float(item["logprob"])
+        for item in alternatives
+        if isinstance(item, dict)
+        and isinstance(item.get("token"), str)
+        and item.get("logprob") is not None
+    }
+    if not top:
+        raise OpenRouterError("scalar label top_logprobs had no usable entries")
+    return top, text, position
+
+
+def binary_scalar_response_format() -> dict[str, Any]:
+    """Return the strict scalar schema used for constrained binary annotation."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "binary_prediction",
+            "strict": True,
+            "schema": {"type": "integer", "enum": [0, 1]},
+        },
+    }
+
+
 def _request_body_settings(config: OpenRouterConfig) -> dict[str, Any]:
     """Return prompt-independent fields sent in the OpenRouter request body."""
     if not 1 <= config.top_logprobs <= 5:
         raise ValueError("top_logprobs must be between 1 and 5")
-    if config.max_tokens < 3:
-        raise ValueError("max_tokens must allow a terminal Prediction:<label>")
+    if config.binary_output_mode not in {"prediction_line", "scalar"}:
+        raise ValueError(f"unknown binary_output_mode: {config.binary_output_mode!r}")
+    minimum_tokens = 3 if config.binary_output_mode == "prediction_line" else 1
+    if config.max_tokens < minimum_tokens:
+        raise ValueError(
+            f"max_tokens must be at least {minimum_tokens} for "
+            f"binary_output_mode={config.binary_output_mode!r}"
+        )
+    if config.structured_output and config.binary_output_mode != "scalar":
+        raise ValueError("structured_output requires binary_output_mode='scalar'")
     if config.provider_only and config.provider_order:
         raise ValueError("provider_only and provider_order are mutually exclusive")
+    max_prices = (
+        config.provider_max_prompt_price,
+        config.provider_max_completion_price,
+    )
+    if any(value is not None for value in max_prices):
+        if any(value is None or value <= 0 for value in max_prices):
+            raise ValueError(
+                "provider prompt and completion max prices must both be positive"
+            )
     if config.session_id is not None and not 1 <= len(config.session_id) <= 256:
         raise ValueError("session_id must contain between 1 and 256 characters")
     provider: dict[str, Any] = {
@@ -180,6 +263,11 @@ def _request_body_settings(config: OpenRouterConfig) -> dict[str, Any]:
         provider["sort"] = config.provider_sort
     if config.provider_only:
         provider["only"] = [config.provider_only]
+    if config.provider_max_prompt_price is not None:
+        provider["max_price"] = {
+            "prompt": config.provider_max_prompt_price,
+            "completion": config.provider_max_completion_price,
+        }
     settings: dict[str, Any] = {
         "model": config.model,
         "max_tokens": config.max_tokens,
@@ -191,6 +279,8 @@ def _request_body_settings(config: OpenRouterConfig) -> dict[str, Any]:
     }
     if config.session_id:
         settings["session_id"] = config.session_id
+    if config.structured_output:
+        settings["response_format"] = binary_scalar_response_format()
     return settings
 
 
@@ -311,9 +401,14 @@ def score_prompt(
                     f"{response.text[:1000]}"
                 )
             data = response.json()
-            top, generated_text, label_position = extract_terminal_binary_top_logprobs(
-                data
-            )
+            if config.binary_output_mode == "scalar":
+                top, generated_text, label_position = (
+                    extract_scalar_binary_top_logprobs(data)
+                )
+            else:
+                top, generated_text, label_position = (
+                    extract_terminal_binary_top_logprobs(data)
+                )
             score, label_logprobs = binary_score_from_top_logprobs(top)
             choice = data["choices"][0]
             usage = data.get("usage") or {}

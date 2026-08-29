@@ -8,7 +8,9 @@ from gleipnir.openrouter import (
     OpenRouterConfig,
     OpenRouterError,
     PromptRecord,
+    binary_scalar_response_format,
     binary_score_from_top_logprobs,
+    extract_scalar_binary_top_logprobs,
     extract_terminal_binary_top_logprobs,
     request_payload,
     request_settings_sha256,
@@ -75,6 +77,55 @@ def test_extracts_terminal_label_row() -> None:
     assert top == {"0": -2.0, "1": -0.2}
     assert text == "Prediction:1"
     assert position == 2
+
+
+def test_extracts_scalar_label_row() -> None:
+    payload = response_payload()
+    payload["choices"][0]["message"]["content"] = "1"
+    payload["choices"][0]["finish_reason"] = "length"
+    payload["choices"][0]["logprobs"]["content"] = [
+        payload["choices"][0]["logprobs"]["content"][-1]
+    ]
+    top, text, position = extract_scalar_binary_top_logprobs(payload)
+    assert top == {"0": -2.0, "1": -0.2}
+    assert text == "1"
+    assert position == 0
+
+
+def test_scalar_structured_request_and_price_cap_are_fingerprinted() -> None:
+    config = OpenRouterConfig(
+        model="moonshotai/kimi-k3",
+        max_tokens=1,
+        binary_output_mode="scalar",
+        structured_output=True,
+        provider_max_prompt_price=2.55,
+        provider_max_completion_price=12.75,
+    )
+    payload = request_payload(PromptRecord("row-1", "Prompt\nPrediction:", {}), config)
+    assert payload["response_format"] == binary_scalar_response_format()
+    assert payload["provider"]["max_price"] == {
+        "prompt": 2.55,
+        "completion": 12.75,
+    }
+    assert request_settings_sha256(config) != request_settings_sha256(
+        replace(config, structured_output=False)
+    )
+
+
+def test_structured_output_requires_scalar_mode_and_complete_price_cap() -> None:
+    with pytest.raises(ValueError, match="requires binary_output_mode"):
+        request_payload(
+            PromptRecord("row-1", "Prompt", {}),
+            OpenRouterConfig(model="qwen/test", structured_output=True),
+        )
+    with pytest.raises(ValueError, match="must both be positive"):
+        request_payload(
+            PromptRecord("row-1", "Prompt", {}),
+            OpenRouterConfig(
+                model="qwen/test",
+                provider_max_prompt_price=2.55,
+            ),
+        )
 
 
 def test_request_disables_provider_data_collection() -> None:
