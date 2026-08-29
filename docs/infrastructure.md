@@ -12,9 +12,15 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 
 ## Lambda Cloud
 
-The reserved instance title is `monitor-foundation` and exposes two H100 GPUs.
-The helper accepts exact console-created titles, so it can address that instance
-without renaming or recreating it:
+There are two reserved training targets:
+
+- `monitor-foundation` exposes two H100 GPUs;
+- `gleipnir-control` is the additional reserved GPU target for the action-only
+  tool-trajectory monitoring track. Probe and record its concrete GPU model and
+  count before freezing a training recipe.
+
+The helper accepts exact console-created titles, so it can address either target
+without renaming or recreating it. Existing `monitor-foundation` commands are:
 
 ```bash
 python scripts/lambda_cloud.py instances --campaign monitor-foundation
@@ -27,6 +33,21 @@ python scripts/lambda_cloud.py ssh --campaign monitor-foundation
 python scripts/lambda_cloud.py status --campaign monitor-foundation \
   --remote-path results/data_scaling/lambda_status.json
 ```
+
+For the new target, use the same non-lifecycle operations with its exact title:
+
+```bash
+python scripts/lambda_cloud.py instances --campaign gleipnir-control
+python scripts/lambda_cloud.py probe --campaign gleipnir-control
+python scripts/lambda_cloud.py sync-commit --campaign gleipnir-control
+python scripts/lambda_cloud.py bootstrap --campaign gleipnir-control
+python scripts/lambda_cloud.py sync-secrets --campaign gleipnir-control \
+  --name HF_TOKEN --name WANDB_API_KEY --name OPENROUTER_API_KEY
+python scripts/lambda_cloud.py ssh --campaign gleipnir-control
+```
+
+These entries document an already-reserved target; they do not authorize
+launching replacement capacity or terminating either instance.
 
 The Lambda API key remains local. Selected experiment credentials are sent over
 SSH standard input to `~/.config/gleipnir/secrets.env` with mode `600`. The
