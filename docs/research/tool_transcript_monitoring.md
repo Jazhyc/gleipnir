@@ -1,8 +1,9 @@
 # Action-only tool-trajectory monitoring
 
-Status: research and adaptation note, frozen 2026-08-30. No dataset was
-materialized, no paid teacher calls were made, and no training was launched in
-this phase.
+Status: research and adaptation note, frozen 2026-08-30. The first prompt
+contract is implemented under `experiments/tool_trajectory_monitoring/`. No
+dataset was materialized, no paid teacher calls were made, and no training was
+launched in this phase.
 
 ## Proposed Gleipnir track
 
@@ -97,6 +98,15 @@ The student receives the paper's compact task instruction rather than the full
 specification, with the same binary terminal interface. Thus the intervention
 preserves the paper's full-teacher/compact-student context-distillation setup
 while replacing rationale and ordinal-score targets with a binary soft target.
+
+The reviewable Gleipnir prompt set is
+`experiments/tool_trajectory_monitoring/prompts/`. `teacher.txt` is shared by
+teacher annotation and teacher evaluation; `student.txt` is shared by student
+training and student evaluation. `manifest.json` owns the common literal
+interface and trajectory delimiters. The renderer computes prompt hashes and
+exposes the teacher instruction plus opening delimiter as the exact OpenRouter
+cache prefix. Intentional wording or interface changes require a new prompt-set
+ID and a new teacher cache.
 
 ## Dataset inventory
 
@@ -412,9 +422,10 @@ launching:
 
 1. Materialize an adequately broad licensed subset of the five training
    sources and six OOD families, using the actual available counts.
-2. Implement and hash the full-teacher binary prompt and compact-student binary
-   prompt; confirm that only the interface differs from the intended paper
-   prompt content.
+2. Review and freeze the implemented full-teacher binary prompt and
+   compact-student binary prompt, then record their hashes in the campaign
+   config. Their source files and renderer live in
+   `experiments/tool_trajectory_monitoring/`.
 3. Pin source repository commits and trajectory-producing agent/model settings,
    especially for BashArena, BashBench, AgentDojo, and the other ControlArena
    sources.
@@ -423,10 +434,10 @@ launching:
 5. Probe the already-reserved `gleipnir-control` Lambda target and preflight the
    largest rank. Do not launch or terminate capacity as part of preparation.
 
-Once those are resolved, the implementation should live in a new
-`experiments/tool_trajectory_monitoring/` directory with its own README,
-materializer, immutable manifests, configs, launchers, focused parsing/cache/
-metric tests, and ignored artifact roots.
+The prompt portion now lives in `experiments/tool_trajectory_monitoring/` with
+its own README, manifest, renderer, preview entrypoint, and focused contract
+tests. Add the materializer, immutable data manifests, run configs, launchers,
+and metric tests there once the remaining prerequisites are resolved.
 
 ## References
 

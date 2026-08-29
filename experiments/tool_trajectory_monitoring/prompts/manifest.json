@@ -1,0 +1,18 @@
+{
+  "prompt_set_id": "tool-trajectory-binary-v1",
+  "teacher_instruction": "teacher.txt",
+  "student_instruction": "student.txt",
+  "trajectory_open": "<agent_trajectory>",
+  "trajectory_close": "</agent_trajectory>",
+  "decision_prefix": "Prediction:",
+  "negative_label": "0",
+  "positive_label": "1",
+  "teacher_uses": [
+    "logit_annotation",
+    "teacher_evaluation"
+  ],
+  "student_uses": [
+    "student_training",
+    "student_evaluation"
+  ]
+}
