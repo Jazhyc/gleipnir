@@ -49,8 +49,7 @@
     "min_p": 0.0,
     "presence_penalty": 1.5,
     "repetition_penalty": 1.0,
-    "seed": 20260830,
-    "stop": "Prediction:"
+    "seed": 20260830
   },
   "scoring": {
     "decision_prefix": "Prediction:",
@@ -58,7 +57,7 @@
       "0",
       "1"
     ],
-    "method": "Stop generation before the requested literal Prediction: prefix, append that exact prefix, and normalize constrained literal 0/1 next-token logits."
+    "method": "Remove the final generated literal 0/1 decision token and normalize constrained literal 0/1 next-token logits at that exact boundary."
   },
   "engine": {
     "max_model_len": 131072,
@@ -76,7 +75,6 @@
     "balanced accuracy at 0.5",
     "score entropy and confidence",
     "parse failures and output truncations",
-    "missing requested decision-boundary stops",
     "paired score changes"
   ],
   "stop_conditions": [

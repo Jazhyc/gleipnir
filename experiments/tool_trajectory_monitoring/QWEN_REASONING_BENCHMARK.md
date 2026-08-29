@@ -14,9 +14,8 @@ The three conditions are frozen in `qwen_reasoning_benchmark.json`:
 1. `direct`: disable native thinking and score the immediate next-token logits
    after `Prediction:` using the compact student prompt.
 2. `visible_reasoning`: disable native thinking, request a concise two-sided
-   visible analysis ending at a requested `Prediction:` prefix, and score
-   literal `0|1` logits after appending that exact prefix without sampling a
-   decision digit.
+   visible analysis, remove its generated terminal decision digit, and rescore
+   literal `0|1` logits at that exact boundary.
 3. `thinking_reasoning`: use the identical reasoning prompt and sampling
    settings with Qwen's native thinking chat template enabled, then apply the
    same terminal rescoring procedure.

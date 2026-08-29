@@ -15,6 +15,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     load_json,
     load_jsonl,
     paired_condition_comparison,
+    prefix_before_terminal_prediction,
     reasoning_prompt,
     sha256_text,
     summarize_predictions,
@@ -202,14 +203,19 @@ def run_condition(
         if condition["generation"]:
             generated_outputs = llm.generate(prompts, generation_sampling)
             generations = [output_text(output) for output in generated_outputs]
+            parsed = [
+                prefix_before_terminal_prediction(generation)
+                for generation in generations
+            ]
             margin_prompts = [
-                prompt + generation.rstrip() + "\nPrediction:"
-                for prompt, generation in zip(prompts, generations, strict=True)
+                prompt + prefix
+                for prompt, (prefix, _) in zip(prompts, parsed, strict=True)
             ]
             margin_outputs = llm.generate(margin_prompts, margin_sampling)
         else:
             generations = [""] * len(batch)
             generated_outputs = [None] * len(batch)
+            parsed = [("Prediction:", None)] * len(batch)
             margin_prompts = [prompt + "Prediction:" for prompt in prompts]
             margin_outputs = llm.generate(margin_prompts, margin_sampling)
         packed = zip(
@@ -217,6 +223,7 @@ def run_condition(
             prompts,
             generations,
             generated_outputs,
+            parsed,
             margin_prompts,
             margin_outputs,
             strict=True,
@@ -226,9 +233,11 @@ def run_condition(
             prompt,
             generation,
             generated,
+            parsed_value,
             margin_prompt,
             margin,
         ) in packed:
+            _, generated_prediction = parsed_value
             stop_reason = (
                 None if generated is None else output_stop_reason(generated)
             )
@@ -253,10 +262,10 @@ def run_condition(
                 ),
                 "stop_reason": stop_reason,
                 "contains_think_close": "</think>" in generation,
-                "generated_prediction": None,
+                "generated_prediction": generated_prediction,
                 "parse_error": (
                     bool(condition["generation"])
-                    and stop_reason != config["generation"]["stop"]
+                    and generated_prediction is None
                 ),
                 "margin_prompt_sha256": sha256_text(margin_prompt),
                 "score": score_from_output(margin, token_ids),
@@ -329,7 +338,6 @@ def main() -> None:
         presence_penalty=float(generation["presence_penalty"]),
         repetition_penalty=float(generation["repetition_penalty"]),
         seed=int(generation["seed"]),
-        stop=[str(generation["stop"])],
     )
     margin_sampling = SamplingParams(
         max_tokens=1,

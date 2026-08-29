@@ -109,4 +109,4 @@ def test_frozen_config_has_matched_reasoning_boundary() -> None:
     validate_config(config)
     assert config["generation"]["max_tokens"] == 16_384
     assert config["generation"]["min_tokens"] == 128
-    assert config["generation"]["stop"] == "Prediction:"
+    assert "stop" not in config["generation"]
