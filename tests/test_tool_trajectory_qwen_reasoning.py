@@ -1,10 +1,16 @@
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
+from experiments.tool_trajectory_monitoring.benchmark_qwen_reasoning import (
+    validate_config,
+)
 from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     binary_entropy,
+    load_json,
     paired_condition_comparison,
     prefix_before_terminal_prediction,
     reasoning_prompt,
@@ -94,3 +100,13 @@ def test_paired_comparison_rejects_row_drift() -> None:
     candidate[0]["id"] = "different"
     with pytest.raises(ValueError, match="row IDs differ"):
         paired_condition_comparison(baseline, candidate)
+
+
+def test_frozen_config_has_matched_reasoning_boundary() -> None:
+    config = load_json(
+        Path("experiments/tool_trajectory_monitoring/qwen_reasoning_benchmark.json")
+    )
+    validate_config(config)
+    assert config["generation"]["max_tokens"] == 16_384
+    assert config["generation"]["min_tokens"] == 128
+    assert config["generation"]["stop"] == "Prediction:"

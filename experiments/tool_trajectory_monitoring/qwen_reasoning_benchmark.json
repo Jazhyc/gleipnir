@@ -42,13 +42,15 @@
   ],
   "generation": {
     "max_tokens": 16384,
+    "min_tokens": 128,
     "temperature": 1.0,
     "top_p": 0.95,
     "top_k": 20,
     "min_p": 0.0,
     "presence_penalty": 1.5,
     "repetition_penalty": 1.0,
-    "seed": 20260830
+    "seed": 20260830,
+    "stop": "Prediction:"
   },
   "scoring": {
     "decision_prefix": "Prediction:",
@@ -56,7 +58,7 @@
       "0",
       "1"
     ],
-    "method": "Normalize constrained literal 0/1 next-token logits after removing the generated terminal decision token."
+    "method": "Stop generation before the requested literal Prediction: prefix, append that exact prefix, and normalize constrained literal 0/1 next-token logits."
   },
   "engine": {
     "max_model_len": 131072,
@@ -74,6 +76,7 @@
     "balanced accuracy at 0.5",
     "score entropy and confidence",
     "parse failures and output truncations",
+    "missing requested decision-boundary stops",
     "paired score changes"
   ],
   "stop_conditions": [

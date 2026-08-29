@@ -80,9 +80,14 @@ tokens from cache. Its reported cost fell from `$0.02677` cold to `$0.00584`
 warm. Second, caching has a size threshold: a 1,287-token prompt produced no
 reuse, while a 2,447-token prompt produced a 1,536-token cache read. Observed
 reads are multiples of 512 tokens. Treat roughly 2,000 invariant tokens as the
-minimum until a provider contract states otherwise. The present 5,029-character
-teacher prefix is too short: an entire small teacher request, including its
-trajectory, was only 1,109 provider-counted prompt tokens.
+observed minimum until a provider contract states otherwise. The present
+5,029-character teacher prefix is too short: an entire small teacher request,
+including its trajectory, was only 1,109 provider-counted prompt tokens. This
+is a transport limitation, not a reason to lengthen the policy. Even the
+optimistic upper bound from caching 1,109 fixed tokens is about `$0.00254` per
+warm request at the probed Makora rates; padding could change model behavior and
+consume context while addressing only a minority of the roughly 11,200-token
+average canary request.
 
 The preferred route can remain fail-closed on Makora's lower price without a
 provider pin. A fresh harmless probe set `provider.max_price` to `$2.55/M`
@@ -99,8 +104,10 @@ and token logprobs together. A strict scalar JSON Schema with root integer enum
 alternatives included both literal `0` and `1`. This is the preferred scaled
 interface. It eliminates prose-format failures and gives the exact binary
 decision boundary without using `logit_bias`, which would corrupt the teacher
-target. A JSON-object schema also worked, but consumed six completion tokens and
-is unnecessary.
+target. Append the existing `Prediction:` decision prefix to the input and ask
+the schema for only the scalar label so the next-token scoring context matches
+the original label boundary. A JSON-object schema also worked, but consumed six
+completion tokens and is unnecessary.
 
 Successful result rows report `$2.7740` total cost. This is a lower bound on
 actual spend because the current generic CLI does not preserve usage from HTTP
@@ -112,10 +119,12 @@ token usage to remain auditable.
 
 Binary logit distillation remains the preferred first supervision arm. The
 single-token boundary retains substantially more information than the sampled
-hard decision and performs well enough to justify an OOD canary. Before scaling,
-version a replacement teacher interface that uses the strict scalar schema,
-removes manual provider pinning in favor of a Makora-rate price ceiling and a
-stable session ID, and makes the substantive invariant teacher policy at least
-2,000 tokens. Re-run a bounded canary because both the output constraint and
-decision context change the logits. Full annotation also requires paid
-parse-failure usage to be preserved.
+hard decision and performs well enough to justify an OOD canary. Preserve the
+successful teacher policy rather than padding it for a cache threshold. Before
+scaling, version a replacement transport interface that uses the strict scalar
+schema at the existing `Prediction:` boundary and removes manual provider
+pinning in favor of a Makora-rate price ceiling and stable session ID. Accept
+that distinct rows will not share-cache under the present short policy; exact
+retries can still benefit. Run a small paired score-agreement canary because
+structured decoding itself may affect returned logprobs. Full annotation also
+requires paid parse-failure usage to be preserved.

@@ -14,14 +14,16 @@ The three conditions are frozen in `qwen_reasoning_benchmark.json`:
 1. `direct`: disable native thinking and score the immediate next-token logits
    after `Prediction:` using the compact student prompt.
 2. `visible_reasoning`: disable native thinking, request a concise two-sided
-   visible analysis, remove its generated terminal decision digit, and rescore
-   literal `0|1` logits at that exact boundary.
+   visible analysis ending at a requested `Prediction:` prefix, and score
+   literal `0|1` logits after appending that exact prefix without sampling a
+   decision digit.
 3. `thinking_reasoning`: use the identical reasoning prompt and sampling
    settings with Qwen's native thinking chat template enabled, then apply the
    same terminal rescoring procedure.
 
 Both reasoning conditions use the Qwen-recommended general reasoning sampling
-family and allow up to 16,384 generated tokens. One persistent text-only vLLM
+family, require at least 128 tokens unless the requested boundary is reached,
+and allow up to 16,384 generated tokens. One persistent text-only vLLM
 engine runs all arms. Outputs checkpoint atomically after every eight rows and
 include the generated trace, parse status, terminal score, token counts, prompt
 hashes, per-source metrics, and uncertainty diagnostics.

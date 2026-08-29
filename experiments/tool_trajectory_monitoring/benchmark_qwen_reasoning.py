@@ -15,7 +15,6 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
     load_json,
     load_jsonl,
     paired_condition_comparison,
-    prefix_before_terminal_prediction,
     reasoning_prompt,
     sha256_text,
     summarize_predictions,
@@ -109,6 +108,15 @@ def output_finish_reason(output: Any) -> str | None:
     return None if value is None else str(value)
 
 
+def output_stop_reason(output: Any) -> str | int | None:
+    if not output.outputs:
+        return None
+    value = output.outputs[0].stop_reason
+    if value is None or isinstance(value, str | int):
+        return value
+    return str(value)
+
+
 def batches(rows: list[dict[str, Any]], size: int) -> list[list[dict[str, Any]]]:
     if size < 1:
         raise ValueError("batch size must be positive")
@@ -194,19 +202,14 @@ def run_condition(
         if condition["generation"]:
             generated_outputs = llm.generate(prompts, generation_sampling)
             generations = [output_text(output) for output in generated_outputs]
-            parsed = [
-                prefix_before_terminal_prediction(generation)
-                for generation in generations
-            ]
             margin_prompts = [
-                prompt + prefix
-                for prompt, (prefix, _) in zip(prompts, parsed, strict=True)
+                prompt + generation.rstrip() + "\nPrediction:"
+                for prompt, generation in zip(prompts, generations, strict=True)
             ]
             margin_outputs = llm.generate(margin_prompts, margin_sampling)
         else:
             generations = [""] * len(batch)
             generated_outputs = [None] * len(batch)
-            parsed = [("Prediction:", None)] * len(batch)
             margin_prompts = [prompt + "Prediction:" for prompt in prompts]
             margin_outputs = llm.generate(margin_prompts, margin_sampling)
         packed = zip(
@@ -214,7 +217,6 @@ def run_condition(
             prompts,
             generations,
             generated_outputs,
-            parsed,
             margin_prompts,
             margin_outputs,
             strict=True,
@@ -224,11 +226,12 @@ def run_condition(
             prompt,
             generation,
             generated,
-            parsed_value,
             margin_prompt,
             margin,
         ) in packed:
-            _, generated_prediction = parsed_value
+            stop_reason = (
+                None if generated is None else output_stop_reason(generated)
+            )
             row = {
                 "id": str(record["id"]),
                 "source": str(record["source"]),
@@ -248,11 +251,12 @@ def run_condition(
                 "finish_reason": (
                     None if generated is None else output_finish_reason(generated)
                 ),
+                "stop_reason": stop_reason,
                 "contains_think_close": "</think>" in generation,
-                "generated_prediction": generated_prediction,
+                "generated_prediction": None,
                 "parse_error": (
                     bool(condition["generation"])
-                    and generated_prediction is None
+                    and stop_reason != config["generation"]["stop"]
                 ),
                 "margin_prompt_sha256": sha256_text(margin_prompt),
                 "score": score_from_output(margin, token_ids),
@@ -317,6 +321,7 @@ def main() -> None:
     generation = config["generation"]
     generation_sampling = SamplingParams(
         max_tokens=int(generation["max_tokens"]),
+        min_tokens=int(generation["min_tokens"]),
         temperature=float(generation["temperature"]),
         top_p=float(generation["top_p"]),
         top_k=int(generation["top_k"]),
@@ -324,6 +329,7 @@ def main() -> None:
         presence_penalty=float(generation["presence_penalty"]),
         repetition_penalty=float(generation["repetition_penalty"]),
         seed=int(generation["seed"]),
+        stop=[str(generation["stop"])],
     )
     margin_sampling = SamplingParams(
         max_tokens=1,
