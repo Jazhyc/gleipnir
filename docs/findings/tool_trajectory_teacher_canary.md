@@ -55,24 +55,52 @@ equivalence.
 ## Format and cache findings
 
 The primary eight-token setting completed 97 rows. Two prompts repeatedly began
-a prose explanation and exhausted the output budget before a terminal label;
-one additional row exhausted retries on an upstream Makora 429. All three were
-retried unchanged in a separate cache with `max_tokens=64` and produced an exact
-binary completion. The final metrics include all 100 rows and retain both
-request-setting hashes. Use a 64-token cap for future Kimi annotation even
-though the requested interface remains one line; the cap is a format-recovery
-allowance, not rationale supervision.
+a prose explanation and used all eight allowed tokens before reaching a terminal
+label; they did not exceed the configured limit. One additional row exhausted
+retries on an upstream Makora 429. All three were retried unchanged in a
+separate cache with `max_tokens=64` and produced an exact binary completion. The
+final metrics include all 100 rows and retain both request-setting hashes. This
+recovery established that a larger unconstrained allowance can hide formatting
+failures, but it is not the preferred scaled interface.
 
-Provider prefix caching did **not** work for unique rows. The 97 primary
-successes processed 1,086,912 prompt tokens with zero cache reads or writes.
-The three recovery calls reported 7,680 cached of 14,800 prompt tokens because
-those exact prompts had already been attempted; that is repeated-request
-caching, not reuse of the shared teacher prefix. OpenRouter's endpoint metadata
-reported `supports_implicit_caching=false` for Makora on Kimi K3, and the
-explicit content-block breakpoint did not produce cross-row cache telemetry.
-Do not begin the full teacher-cache campaign on the assumption that Makora will
-reuse the policy prefix. Re-probe provider capabilities or choose a verified
-cache-compatible route first.
+Provider prefix caching did **not** work for unique rows under the canary route.
+The 97 primary successes processed 1,086,912 prompt tokens with zero cache reads
+or writes. The three recovery calls reported 7,680 cached of 14,800 prompt
+tokens because those exact prompts had already been attempted; that is
+repeated-request caching, not reuse of the shared teacher prefix.
+
+Follow-up transport probes isolated two causes. First, manually pinning
+`provider.only=["Makora"]` produced zero reuse even for two prompts with about
+5,400 shared leading tokens. OpenRouter documents that manual provider ordering
+disables its sticky-routing mechanism; the `provider.only` probe behaved the
+same way. With the provider pin removed,
+`provider.sort="price"`, a fixed `session_id`, and harmless public test text,
+OpenRouter still selected Makora and the second 10,574-token request read 9,216
+tokens from cache. Its reported cost fell from `$0.02677` cold to `$0.00584`
+warm. Second, caching has a size threshold: a 1,287-token prompt produced no
+reuse, while a 2,447-token prompt produced a 1,536-token cache read. Observed
+reads are multiples of 512 tokens. Treat roughly 2,000 invariant tokens as the
+minimum until a provider contract states otherwise. The present 5,029-character
+teacher prefix is too short: an entire small teacher request, including its
+trajectory, was only 1,109 provider-counted prompt tokens.
+
+The preferred route can remain fail-closed on Makora's lower price without a
+provider pin. A fresh harmless probe set `provider.max_price` to `$2.55/M`
+prompt and `$12.75/M` completion, admitted only Makora at current endpoint
+prices, and retained sticky caching: the first 2,403-token request was cold and
+the second read 1,536 tokens from cache. If Makora raises its price or becomes
+unavailable, this ceiling makes the request fail instead of silently using a
+costlier provider. Re-query endpoint prices before each campaign rather than
+assuming these constants remain current.
+
+OpenRouter's Kimi K3 endpoint and Makora also support strict structured output
+and token logprobs together. A strict scalar JSON Schema with root integer enum
+`[0, 1]` and `max_tokens=1` returned the single content token `0`; its top-five
+alternatives included both literal `0` and `1`. This is the preferred scaled
+interface. It eliminates prose-format failures and gives the exact binary
+decision boundary without using `logit_bias`, which would corrupt the teacher
+target. A JSON-object schema also worked, but consumed six completion tokens and
+is unnecessary.
 
 Successful result rows report `$2.7740` total cost. This is a lower bound on
 actual spend because the current generic CLI does not preserve usage from HTTP
@@ -84,8 +112,10 @@ token usage to remain auditable.
 
 Binary logit distillation remains the preferred first supervision arm. The
 single-token boundary retains substantially more information than the sampled
-hard decision and performs well enough to justify an OOD canary. The next
-evidence should test the same frozen prompt on held-out source families, not
-optimize this prompt on the present training rows. Full annotation remains
-blocked by unverified cross-row input caching and by the need to preserve paid
-parse-failure usage.
+hard decision and performs well enough to justify an OOD canary. Before scaling,
+version a replacement teacher interface that uses the strict scalar schema,
+removes manual provider pinning in favor of a Makora-rate price ceiling and a
+stable session ID, and makes the substantive invariant teacher policy at least
+2,000 tokens. Re-run a bounded canary because both the output constraint and
+decision context change the logits. Full annotation also requires paid
+parse-failure usage to be preserved.
