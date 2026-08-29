@@ -1,9 +1,9 @@
 # Action-only tool-trajectory monitoring
 
-Status: research and adaptation note, frozen 2026-08-30. The first prompt
-contract is implemented under `experiments/tool_trajectory_monitoring/`. No
-dataset was materialized, no paid teacher calls were made, and no training was
-launched in this phase.
+Status: research and adaptation note, updated 2026-08-30. The first prompt
+contract and a 100-row Kimi K3 training-source canary are implemented under
+`experiments/tool_trajectory_monitoring/`. No student training or OOD evaluation
+has been launched.
 
 ## Proposed Gleipnir track
 
@@ -331,6 +331,22 @@ normalized target, token/cache usage, timestamps, and failures. Existing
 Makora pinning, sticky cached-prefix routing, and cache telemetry. Run a small
 canary and require nonzero cached input tokens after the warm row before paid
 scale-up.
+
+The completed 100-row canary reached `0.9746` pooled AUROC (`0.9474--0.9944`
+source-label-stratified bootstrap 95% interval) and `0.9884` mean-source AUROC.
+The hard generated choice reached only `0.9300` AUROC, so relative decision
+logits contain useful ranking information despite the single visible output
+step. This is encouraging in-distribution evidence, not a paper-comparable OOD
+result.
+
+Makora did not reuse the shared prefix: the 97 primary successful rows reported
+zero cached tokens across 1,086,912 prompt tokens. Cache reads appeared only
+when two exact prompts were retried after format failures. OpenRouter endpoint
+metadata reported Makora `supports_implicit_caching=false` for Kimi K3 at the
+time of the run. The canary's bounded cost was acceptable, but the cache gate
+for full-scale annotation failed and remains a stop condition. See
+`docs/findings/tool_trajectory_teacher_canary.md` for the frozen design,
+request-setting exception, metrics, hashes, and limitations.
 
 ### Student arms
 

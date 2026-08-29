@@ -161,6 +161,40 @@ def shared_prompt_prefix(records: list[PromptRecord]) -> str:
     return prefix
 
 
+def declared_or_shared_prompt_prefix(records: list[PromptRecord]) -> str:
+    """Honor a prompt-aware cache declaration, otherwise use the exact LCP."""
+    declarations = {
+        (
+            record.metadata.get("cache_prefix_chars"),
+            record.metadata.get("cache_prefix_sha256"),
+        )
+        for record in records
+    }
+    if declarations == {(None, None)}:
+        return shared_prompt_prefix(records)
+    if len(declarations) != 1:
+        raise ValueError("prompt rows contain inconsistent cache-prefix declarations")
+    prefix_chars, expected_sha256 = declarations.pop()
+    if not isinstance(prefix_chars, int) or prefix_chars < 1:
+        raise ValueError("cache_prefix_chars must be a positive integer on every row")
+    if not isinstance(expected_sha256, str) or len(expected_sha256) != 64:
+        raise ValueError(
+            "cache_prefix_sha256 must be a SHA-256 hex digest on every row"
+        )
+    prefix = records[0].prompt[:prefix_chars]
+    actual_sha256 = hashlib.sha256(prefix.encode("utf-8")).hexdigest()
+    if actual_sha256 != expected_sha256:
+        raise ValueError("declared cache-prefix hash does not match the first prompt")
+    mismatched = [
+        record.record_id for record in records if not record.prompt.startswith(prefix)
+    ]
+    if mismatched:
+        raise ValueError(
+            f"declared cache prefix is not shared by row(s) {mismatched[:3]!r}"
+        )
+    return prefix
+
+
 def automatic_session_id(model: str, prompt_prefix: str) -> str:
     """Derive a stable, non-sensitive OpenRouter sticky-routing identifier."""
     digest = hashlib.sha256(
@@ -208,7 +242,7 @@ def main(argv: list[str] | None = None) -> int:
         raise SystemExit("OPENROUTER_API_KEY is missing")
 
     all_records = load_prompts(args.input)
-    prompt_prefix = shared_prompt_prefix(all_records)
+    prompt_prefix = declared_or_shared_prompt_prefix(all_records)
     records = all_records if args.limit is None else all_records[: args.limit]
     work = {record.record_id: record for record in records}
     if args.session_id and not args.sticky_routing:

@@ -1,7 +1,7 @@
 # Binary action-only tool-trajectory monitoring
 
-Status: prompt-contract preparation. No dataset has been materialized, no paid
-teacher request has been made, and no training or evaluation run has started.
+Status: prompt contract and bounded teacher canary complete. No student training
+or OOD evaluation has started.
 
 ## Hypothesis and intervention
 
@@ -86,3 +86,69 @@ deterministically, preserve the full-teacher/compact-student distinction, expose
 the provider-cache boundary, and pass their contract tests. A paid canary,
 dataset materialization, and Lambda training are separate future phases and
 require frozen data and run configs first.
+
+## Teacher-logit canary
+
+The first bounded canary uses the research-use-only
+`Syghmon/blackboxmonitorsMATS` revision
+`ccb77e37589baaee1f0e16ac9ab89ceac8f6cc8a`. It samples equally across source
+and label from `gemini_synthetic_1000.parquet` and
+`unified_dataset_1000.parquet` after applying the paper's 28,000-token input
+cutoff with the pinned Qwen3.5-9B tokenizer. The fixed seed is `20260830`.
+These are accessible upstream synthetic training-source releases, not the
+paper's exact final STRIDE/Gloom row manifest, so interpret the result as a
+teacher-interface sanity check rather than a paper replication.
+
+Prepare 100 rows after downloading the gated files into the ignored source
+directory:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.prepare_teacher_canary
+```
+
+Run a 12-row paid request canary first, pinned to Makora with no fallback:
+
+```bash
+gleipnir-openrouter \
+  --input data/tool_trajectory_monitoring/canary/prompts.jsonl \
+  --output results/tool_trajectory_monitoring/kimi_k3_canary.jsonl \
+  --model moonshotai/kimi-k3 \
+  --provider-only makora --no-allow-fallbacks --limit 12
+```
+
+Rerun without `--limit` to resume and fill all 100 rows, then summarize:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.summarize_teacher_canary
+```
+
+If the eight-token request emits prose instead of reaching its terminal label,
+keep those prompts unchanged and retry them in a separate cache with
+`--max-tokens 64`. Pass both score files with repeated `--scores` arguments to
+the summarizer. Never replace or mix request settings inside the primary cache.
+
+The ignored materialization manifest records source checksums, tokenizer and
+prompt revisions, the exact interleaved request order, and the cache-prefix
+hash. The summary checks every prompt hash, reports overall and per-source
+AUROC with a source-label-stratified bootstrap interval, threshold diagnostics,
+score ties, provider/model identities, token usage, cache reads, and reported
+cost. Do not interpret the OOD frontier reported in the paper as the expected
+value of this small in-distribution source canary.
+
+### Canary outcome
+
+Kimi K3 on Makora reached `0.9746` pooled AUROC on the 100 balanced rows, with a
+source-label-stratified bootstrap 95% interval of `0.9474--0.9944`. Per-source
+AUROCs were `0.9888` and `0.9880`; the unweighted mean was `0.9884`. Hard
+generated decisions reached only `0.9300` AUROC/accuracy, supporting the value
+of retaining continuous literal-token logits.
+
+The eight-token request completed 97 rows. Two deterministic format failures
+and one transient 429 were recovered unchanged in a separate 64-token request
+cache, and both settings remain explicit in the summary. The 97 unique primary
+requests reported zero provider cache reads or writes. Cache reads on two
+repeated recovery prompts do not demonstrate shared-prefix reuse. Treat Makora
+cross-row input caching as unsupported until a new probe shows otherwise, and
+do not scale teacher annotation under the previous cache assumption. Full
+results and interpretation are in
+[`../../docs/findings/tool_trajectory_teacher_canary.md`](../../docs/findings/tool_trajectory_teacher_canary.md).

@@ -1,3 +1,4 @@
+import hashlib
 import json
 
 import pytest
@@ -5,6 +6,7 @@ import pytest
 from gleipnir.openrouter_cli import (
     automatic_session_id,
     cache_token_totals,
+    declared_or_shared_prompt_prefix,
     load_cache,
     load_prompts,
     shared_prompt_prefix,
@@ -66,6 +68,50 @@ def test_shared_prefix_drives_stable_cache_session(tmp_path) -> None:
     assert automatic_session_id("moonshotai/kimi-k3", prefix) == (
         automatic_session_id("moonshotai/kimi-k3", prefix)
     )
+
+
+def test_declared_cache_prefix_stops_before_common_variable_text(tmp_path) -> None:
+    prefix = "Shared instructions\n<trajectory>\n"
+    digest = hashlib.sha256(prefix.encode()).hexdigest()
+    prompts = tmp_path / "prompts.jsonl"
+    prompts.write_text(
+        "\n".join(
+            json.dumps(
+                {
+                    "id": record_id,
+                    "prompt": prefix + trajectory,
+                    "metadata": {
+                        "cache_prefix_chars": len(prefix),
+                        "cache_prefix_sha256": digest,
+                    },
+                }
+            )
+            for record_id, trajectory in (("one", "[USER] a"), ("two", "[USER] b"))
+        )
+        + "\n"
+    )
+    records = load_prompts(prompts)
+    assert shared_prompt_prefix(records) == prefix + "[USER] "
+    assert declared_or_shared_prompt_prefix(records) == prefix
+
+
+def test_declared_cache_prefix_rejects_drift(tmp_path) -> None:
+    prompts = tmp_path / "prompts.jsonl"
+    prompts.write_text(
+        json.dumps(
+            {
+                "id": "one",
+                "prompt": "Prompt",
+                "metadata": {
+                    "cache_prefix_chars": 3,
+                    "cache_prefix_sha256": "0" * 64,
+                },
+            }
+        )
+        + "\n"
+    )
+    with pytest.raises(ValueError, match="hash does not match"):
+        declared_or_shared_prompt_prefix(load_prompts(prompts))
 
 
 def test_cache_token_totals_handles_missing_telemetry() -> None:
