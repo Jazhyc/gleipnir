@@ -74,52 +74,78 @@ proxy because that row assumes only `$0.03/M` input tokens. A hypothetical 4B
 model using the same one-token boundary would cost about `$0.252/1K` at the
 paper's price.
 
-## Direct Kimi K3 monitor estimate
+## Direct Kimi K3 monitor exact tokenization
 
 Treat Kimi K3 with the frozen full binary teacher prompt as a prompted-monitor
-baseline, not as part of Qwen's deployment cost. No Kimi OOD input-token total
-exists yet, so this estimate is explicitly provisional.
+baseline, not as part of Qwen's deployment cost. The exact paper-author OOD
+input artifacts are tokenized below; this supersedes the earlier ratio-based
+planning estimate.
 
-On the paired 3,012-row held-out ID set:
+The earlier planning calculation used the paired 3,012-row held-out ID set:
 
 - the full Kimi request averages 11,075.58 predicted Makora prompt tokens;
 - the implemented compact Qwen prompt averages 11,495.87 Qwen tokens;
 - their paired aggregate ratio is 0.96344.
 
-Applying that ratio to the paper's 8,411-token Qwen OOD mean gives about 8,103
-Kimi tokens. Because fixed prompt overhead and tokenizer ratios can shift across
-sources, retain an 8,100--8,400-token planning interval. Ten actual completion
-tokens per request are a conservative estimate from the paid canary; a
-`max_tokens` cap is not itself billed.
+Applying that ratio to the paper's 8,411-token Qwen OOD mean suggested an
+8,100--8,400-token planning interval. Exact materialization now uses the six
+`filtered_eval/*.parquet` inputs from
+`adityaasinha28/deliberative-monitor-pipeline` revision `2f10f4e...`, renders
+the frozen full binary teacher prompt, and tokenizes it with
+`moonshotai/Kimi-K3` revision `a590ce...`. The provider projection adds the
+21-token chat wrapper observed on every one of 3,312 prior Fireworks requests.
+Ten completion tokens per row match those requests exactly; a `max_tokens` cap
+is not itself billed.
 
-```text
-lower = (8,100 * 2.55 + 10 * 12.75) / 1000 = $20.78 / 1K
-upper = (8,400 * 2.55 + 10 * 12.75) / 1000 = $21.55 / 1K
-suite = cost_per_1k * 6.395                  = $132.9--$137.8
+The exact provider projection is **53,222,720 input tokens**, or 8,322.55 per
+row. At Fireworks' 2026-08-30 OpenRouter rates of `$3.00/M` input and `$15.00/M`
+output, with the observed ten completion tokens per row:
+
+| Source | Rows | Provider input tokens | Mean input | Input USD | Output USD | Total USD |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| CUA-SHADE-Arena | 955 | 9,770,065 | 10,230.43 | `$29.3102` | `$0.1433` | **`$29.4534`** |
+| MLE-Sabotage | 148 | 1,295,072 | 8,750.49 | `$3.8852` | `$0.0222` | **`$3.9074`** |
+| AgentDojo | 1,500 | 2,268,781 | 1,512.52 | `$6.8063` | `$0.2250` | **`$7.0313`** |
+| IaC | 1,443 | 19,495,920 | 13,510.69 | `$58.4878` | `$0.2165` | **`$58.7042`** |
+| Rogue Eval | 1,499 | 5,133,854 | 3,424.85 | `$15.4016` | `$0.2249` | **`$15.6264`** |
+| SHADE-Arena | 850 | 15,259,028 | 17,951.80 | `$45.7771` | `$0.1275` | **`$45.9046`** |
+| **Total** | **6,395** | **53,222,720** | **8,322.55** | **`$159.6682`** | **`$0.9593`** | **`$160.6274`** |
+
+This is **`$25.1177 per 1,000 evaluations`** at uncached list price. The exact
+ignored prompt manifest is reconstructed with:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache
 ```
 
-Report **about `$21 per 1,000 evaluations`** as the provisional direct-Kimi
-inference estimate. Do not substitute the separate `$214.39` training-cache
-annotation estimate: annotation is a one-time data-construction cost, whereas
-this section prices Kimi evaluating every deployment trajectory.
+The prepared author inputs contain 1,499 Rogue Eval and 850 SHADE-Arena rows;
+the separate released prediction artifact has 1,500 and 849. Both have 6,395
+total rows and identical aggregate class counts. The input artifact is the
+correct source for prompt materialization. The repository declares no license,
+so keep trajectories and rendered prompts internal and do not redistribute
+them.
+
+Do not substitute the separate `$214.39` training-cache annotation estimate:
+annotation is a one-time data-construction cost, whereas this section prices
+Kimi evaluating every deployment trajectory.
 
 ## Exact accounting gate
 
 Before publishing the cost-performance plot:
 
-1. Materialize the same frozen 6,395 OOD rows for every monitor.
+1. Reuse the now-materialized frozen 6,395 OOD rows for every monitor.
 2. Render each monitor's exact prompt and chat template.
 3. Count Qwen prompts with the pinned Qwen3.5-9B tokenizer and retain the actual
    selected-token evaluation output count.
-4. Run or tokenize the Kimi prompts with the pinned Kimi tokenizer, then prefer
-   saved OpenRouter usage over local estimates.
+4. The Kimi prompts are exactly tokenized locally; prefer saved OpenRouter usage
+   after the paid evaluation and reconcile it with the 21-token wrapper model.
 5. Record actual model/provider, ordinary and cached input tokens, output and
    reasoning tokens, failures, retries, and price-snapshot time.
 6. Report uncached list-price cost as the paper-comparable primary result, with
    cache/batch and self-hosted sensitivities separately.
 
-Neither estimated x-axis coordinate should be paired with an OOD performance
-claim until the corresponding frozen evaluation completes.
+Neither cost coordinate should be paired with an OOD performance claim until
+the corresponding frozen evaluation completes.
 
 ## Specialized prefill-only serving backlog
 

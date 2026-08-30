@@ -141,20 +141,22 @@ label boundary as unambiguous.
 | MLE-Sabotage | 50 | 98 | 148 | ML-research backdoors and submission sabotage |
 | AgentDojo | 750 | 750 | 1,500 | personal-assistant compliance with injected tool-output instructions |
 | IaC | 728 | 715 | 1,443 | infrastructure-as-code security weakening |
-| Rogue Eval | 750 | 750 | 1,500 | inference-code tampering to bypass oversight |
-| SHADE-Arena | 432 | 417 | **849** | multi-tool office sabotage/exfiltration |
+| Rogue Eval | 750 | 749 | 1,499 | inference-code tampering to bypass oversight |
+| SHADE-Arena | 432 | 418 | **850** | multi-tool office sabotage/exfiltration |
 | **OOD total used operationally** | **3,189** | **3,206** | **6,395** |  |
 
-The paper's dataset table says SHADE-Arena has 433 benign and 423
-positive rows, or 856 total. Those table rows sum to 6,402, while every cost
-table uses 6,395 evaluations. Direct inspection of the paper author's released
-benchmark revision `b45f3a8bb08e3e1e520fb49ce1b81a63fad8c80d` finds 432 benign
-and 417 positive SHADE-Arena predictions, or exactly 849 rows; the other five
-artifact counts match the table and all six sum to 6,395. The best-supported
-inference is that the 849-row artifact was evaluated and the paper table
-preserved seven rows that were filtered elsewhere. This is operationally
-negligible for the exploratory study: use and record whichever licensed,
-materialized revision we obtain rather than trying to reconstruct seven rows.
+The paper's dataset table says SHADE-Arena has 433 benign and 423 positive
+rows, or 856 total. Those table rows sum to 6,402, while every cost table uses
+6,395 evaluations. The paper author's prepared input artifacts at
+`adityaasinha28/deliberative-monitor-pipeline@2f10f4e` contain 432 benign and
+418 positive SHADE-Arena rows and 750 benign and 749 positive Rogue Eval rows.
+The separate released prediction artifact at
+`aksh-n/deliberative-monitor-benchmark@b45f3a8` instead has 432/417 and
+750/750: one row is effectively shifted between the two source counts, while
+both releases retain the same 3,189 benign, 3,206 positive, and 6,395 total
+rows. Use the prepared input artifacts for Gleipnir prompt materialization and
+record this source-count discrepancy rather than reconstructing rows from
+predictions.
 
 Validation is used for checkpoint selection and excluded from OOD aggregates.
 Never use any of the six OOD datasets for prompt choice, subset choice,
