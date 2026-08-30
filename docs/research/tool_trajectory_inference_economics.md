@@ -1,8 +1,8 @@
 # Tool-trajectory monitor inference economics
 
-Status: planning estimate, frozen 2026-08-30. This note prices monitor inference
-only. It does not price Kimi annotation, Qwen training, self-hosted total cost of
-ownership, or a completed Gleipnir OOD evaluation.
+Status: exact Kimi evaluation accounting, updated 2026-08-30. This note prices
+monitor inference only. It does not price Kimi annotation, Qwen training, or
+self-hosted total cost of ownership.
 
 ## Paper accounting convention
 
@@ -118,6 +118,17 @@ ignored prompt manifest is reconstructed with:
 python -m experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache
 ```
 
+The completed Kimi K3 evaluation reports 53,222,737 prompt tokens and 63,950
+completion tokens across all 6,395 successful rows. The 17-token difference
+from the local prompt projection is negligible. Fireworks reported 482,909
+cache-read tokens (`0.91%`) and `$157.73037` in the retained successful-row
+usage records. This is not the paper-comparable price coordinate: it includes a
+small cache discount and excludes the additional charge from five paid HTTP-200
+null responses whose failure usage was not retained. Preserve the uncached
+`$160.6274` suite projection above as the primary cost, and treat actual account
+spend as greater than `$157.73037` but not exactly reconstructable from the
+generic cache.
+
 The prepared author inputs contain 1,499 Rogue Eval and 850 SHADE-Arena rows;
 the separate released prediction artifact has 1,500 and 849. Both have 6,395
 total rows and identical aggregate class counts. The input artifact is the
@@ -144,8 +155,12 @@ Before publishing the cost-performance plot:
 6. Report uncached list-price cost as the paper-comparable primary result, with
    cache/batch and self-hosted sensitivities separately.
 
-Neither cost coordinate should be paired with an OOD performance claim until
-the corresponding frozen evaluation completes.
+The frozen Kimi evaluation is complete; its paper-comparable Mean-OOD
+AUROC/pAUROC@20 is `0.9616/0.9084`. See
+[`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
+for the per-source result and serving-failure audit. Do not pair the provisional
+Qwen cost coordinate with an OOD performance claim until that evaluation
+completes.
 
 ## Specialized prefill-only serving backlog
 
