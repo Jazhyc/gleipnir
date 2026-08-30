@@ -26,6 +26,8 @@ fi
 export HF_HOME="${HF_HOME:-${SCRATCH:-/scratch/${USER}}/.huggingface}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
+export HF_HUB_OFFLINE=1
+export TRANSFORMERS_OFFLINE=1
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python -m experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood "$@"
+python -u -m experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood "$@"
