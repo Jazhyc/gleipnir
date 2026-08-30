@@ -45,6 +45,31 @@ Do not concatenate these shards without checking duplicate IDs and prompt
 hashes. Student preparation should accept the three files as one explicit
 provider-stratified cache union and retain each row's provider and request hash.
 
+## Public logit export
+
+A sanitized, prompt-free derivative is publicly available at
+[`Jazhyc/gleipnir-kimi-k3-tool-trajectory-logits`](https://huggingface.co/datasets/Jazhyc/gleipnir-kimi-k3-tool-trajectory-logits),
+initial commit `cd56b8d003b80038f1360dfc81413b988523882a`. Anonymous
+download and `datasets.load_dataset(..., token=False)` were verified against all
+8,688 rows after upload.
+
+The public `train.parquet` has SHA-256
+`67156c1fcd2db34551798617c097e60565f3fe77054fb212d182d3a1daa2819d`.
+It contains stable source join keys and hashes, raw literal-`0` and literal-`1`
+logprobs, normalized probabilities, the generated decision, provider/request
+provenance, and token counts. It deliberately excludes prompts, trajectories,
+ground-truth labels, response IDs, timestamps, costs, and account metadata. The
+public manifest records the checksums of all three private source shards so the
+derivative can be traced back to this completed cache.
+
+The upstream final artifact declared no license at collection time. The public
+dataset card therefore grants no rights to upstream prompts, trajectories, or
+labels, instructs users to obtain the pinned source artifact separately, and
+does not assign a permissive license to the derived annotations. Rebuild the
+sanitized package with
+`experiments.tool_trajectory_monitoring.export_teacher_cache_hf` rather than
+uploading the private JSONL cache shards directly.
+
 ## Provider agreement and operations
 
 Before each handoff, 64 already-completed rows were rescored on the new
