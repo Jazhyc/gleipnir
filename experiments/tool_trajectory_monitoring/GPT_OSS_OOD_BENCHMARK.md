@@ -13,8 +13,9 @@ logprobs and their normalized positive probability are retained. This is a
 direct-logit benchmark, not a sampled-reasoning evaluation.
 
 The frozen Kimi K3 evaluation with the same teacher prompt and decision-token
-interface is the principal descriptive baseline. Qwen3.5-9B direct-logit
-results cover the ID sources only and are context rather than an OOD baseline.
+interface is the principal descriptive baseline. The companion Qwen3.5-9B OOD
+condition uses the same full teacher prompt and its model-native direct-logit
+boundary; compact-prompt Qwen results cover the ID sources only and are context.
 No prompt, setting, subset, threshold, or stopping decision may be selected from
 the OOD labels. Report every source, the unweighted source macro, and the pooled
 population for AUROC and the paper's raw normalized pAUROC@20, plus calibration,

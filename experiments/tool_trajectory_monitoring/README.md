@@ -1,7 +1,7 @@
 # Binary action-only tool-trajectory monitoring
 
-Status: prompt contract and bounded teacher canary complete. No student training
-or OOD evaluation has started.
+Status: prompt contract and bounded teacher canary complete. Frozen OOD
+evaluation is underway; student training has not started.
 
 ## Lambda environment status
 
