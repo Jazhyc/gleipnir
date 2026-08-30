@@ -179,7 +179,6 @@ def pack_generation(
     stop_included = bool(generated and generated[-1] == stop_id)
     if stop_included:
         generated = generated[:-1]
-    prefix = list(contract["analysis_prefix_ids"])
     finish_reason = None if value.finish_reason is None else str(value.finish_reason)
     raw_stop_reason = value.stop_reason
     stop_reason = (
@@ -193,8 +192,6 @@ def pack_generation(
     )
     valid_stop = stop_reason == stop_id or str(stop_reason) == str(stop_id)
     errors = []
-    if generated[: len(prefix)] != prefix:
-        errors.append("missing_analysis_prefix")
     if finish_reason != "stop" or not valid_stop:
         errors.append("did_not_stop_at_harmony_end")
     if not generated:
@@ -210,7 +207,7 @@ def pack_generation(
         "generation_token_ids": generated,
         "generation_token_ids_sha256": sha256_token_ids(generated),
         "generation_tokens": len(generated),
-        "analysis_content_tokens": max(0, len(generated) - len(prefix)),
+        "analysis_content_tokens": len(generated),
         "generation_text": str(value.text),
         "finish_reason": finish_reason,
         "stop_reason": stop_reason,
@@ -269,6 +266,7 @@ def build_margin_token_ids(
 ) -> list[int]:
     return [
         *prompt_token_ids,
+        *contract["analysis_prefix_ids"],
         *generation_token_ids,
         int(contract["analysis_stop_id"]),
         *contract["final_boundary_ids"],
@@ -303,7 +301,14 @@ def generate_records(
             list(tokenizer.encode(prompt, add_special_tokens=False))
             for prompt in prompts
         ]
-        outputs = llm.generate(prompts, sampling)
+        reasoning_prompt_ids = [
+            [*token_ids, *contract["analysis_prefix_ids"]]
+            for token_ids in prompt_ids
+        ]
+        outputs = llm.generate(
+            [{"prompt_token_ids": token_ids} for token_ids in reasoning_prompt_ids],
+            sampling,
+        )
         if len(outputs) != len(batch):
             raise RuntimeError("vLLM generation count differs from request count")
         packed = [
@@ -416,7 +421,8 @@ def score_records(
             if len(decision) != 1 or decision[0] not in decision_token_ids:
                 raise RuntimeError(f"invalid constrained decision for id={record_id!r}")
             conceptual_output_tokens = (
-                int(generated["generation_tokens"])
+                len(contract["analysis_prefix_ids"])
+                + int(generated["generation_tokens"])
                 + 1
                 + len(contract["final_boundary_ids"])
                 + 1

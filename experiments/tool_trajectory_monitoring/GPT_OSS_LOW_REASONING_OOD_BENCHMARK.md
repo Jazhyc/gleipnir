@@ -5,10 +5,11 @@ weak immediate-logit GPT-OSS-120B result. It uses all 6,395 rows in the same
 paper-author-filtered six-source OOD suite and the identical full binary teacher
 prompt.
 
-The model receives `Reasoning: low` through its pinned Harmony template. It
-samples with OpenAI's recommended temperature 1 and top-p 1 settings until the
-first Harmony `<|end|>` closes the native analysis channel. The evaluator then
-preserves those exact token IDs, appends a canonical final-channel
+The model receives `Reasoning: low` through its pinned Harmony template. After
+the assistant start, the evaluator prefills the canonical native analysis
+boundary and samples its content with OpenAI's recommended temperature 1 and
+top-p 1 settings until the first Harmony `<|end|>`. The evaluator then preserves
+those exact token IDs, appends a canonical final-channel
 `Prediction:` boundary, and constrains the next token to literal `0` or `1`
 while retaining both raw logprobs. This measures uncertainty after reasoning
 without conditioning on a sampled final decision.
@@ -16,9 +17,12 @@ without conditioning on a sampled final decision.
 The intervention is compared pairwise with the completed immediate-final-logit
 artifact. No OOD label may select a reasoning trace, prompt, request setting,
 threshold, retry rule, subset, or stopping point. A 12-row source-label canary
-must begin in the Harmony analysis channel, terminate at its first end token,
-avoid the 16,384-token cap, and return both decision-token logprobs. Any full-run
-format failure stops the condition rather than excluding a row.
+must terminate at its first Harmony end token, avoid the 16,384-token cap, and
+return both decision-token logprobs. Any full-run format failure stops the
+condition rather than excluding a row. A superseded v1 launch let the model
+choose its first channel; it failed closed after one of 4,172 generated rows
+skipped analysis and emitted a free-form final answer. Version 2 freezes the
+analysis boundary for every row rather than retrying or excluding that case.
 
 Run on one RTX Pro 6000:
 

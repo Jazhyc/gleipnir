@@ -54,7 +54,7 @@ def test_harmony_contract_and_margin_tokens_preserve_reasoning() -> None:
         "analysis_stop_id": 8,
         "final_boundary_ids": [9, 10],
     }
-    assert build_margin_token_ids([1, 2], [5, 6, 7, 42], contract) == [
+    assert build_margin_token_ids([1, 2], [42], contract) == [
         1,
         2,
         5,
@@ -75,7 +75,7 @@ def test_pack_generation_requires_native_analysis_and_end_stop() -> None:
     output = SimpleNamespace(
         outputs=[
             SimpleNamespace(
-                token_ids=[5, 6, 7, 42],
+                token_ids=[42],
                 text="analysis",
                 finish_reason="stop",
                 stop_reason=8,
@@ -95,7 +95,7 @@ def test_pack_generation_requires_native_analysis_and_end_stop() -> None:
     )
     assert row["valid"] is True
     assert row["analysis_content_tokens"] == 1
-    assert row["generation_token_ids"] == [5, 6, 7, 42]
+    assert row["generation_token_ids"] == [42]
 
     output.outputs[0].finish_reason = "length"
     output.outputs[0].stop_reason = None
