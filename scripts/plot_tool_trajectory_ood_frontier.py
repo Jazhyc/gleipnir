@@ -225,29 +225,50 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     labelled = frame.loc[
         frame["computed_frontier"] | frame["origin"].eq("Gleipnir")
     ].sort_values("cost_per_1k")
+    label_bbox = {
+        "boxstyle": "round,pad=0.12",
+        "facecolor": "white",
+        "edgecolor": "none",
+        "alpha": 0.84,
+    }
     labels = []
+    target_x = []
+    target_y = []
     for label_index, (_, row) in enumerate(labelled.iterrows()):
         is_frontier = bool(row["computed_frontier"])
+        monitor = str(row["monitor"])
+        if monitor == "Qwen3.5-4B base":
+            axis.annotate(
+                _display_label(monitor),
+                (row["cost_per_1k"], row["mean_ood_pauroc_at_20"]),
+                xytext=(10, -10),
+                textcoords="offset points",
+                fontsize=11.5,
+                fontweight="bold",
+                color="#111827",
+                ha="left",
+                va="top",
+                bbox=label_bbox,
+                zorder=4,
+            )
+            continue
         vertical_offset = 0.018 if label_index % 2 == 0 else -0.018
         labels.append(
             axis.text(
                 row["cost_per_1k"] * 1.02,
                 row["mean_ood_pauroc_at_20"] + vertical_offset,
-                _display_label(str(row["monitor"])),
+                _display_label(monitor),
                 fontsize=11.5,
                 fontweight="bold",
                 color="#111827" if is_frontier else "#4B5563",
                 ha="center",
                 va="center",
-                bbox={
-                    "boxstyle": "round,pad=0.12",
-                    "facecolor": "white",
-                    "edgecolor": "none",
-                    "alpha": 0.84,
-                },
+                bbox=label_bbox,
                 zorder=4,
             )
         )
+        target_x.append(float(row["cost_per_1k"]))
+        target_y.append(float(row["mean_ood_pauroc_at_20"]))
     obstacle_x, obstacle_y = _label_obstacles(frame)
     random_state = np.random.get_state()
     np.random.seed(20260830)
@@ -256,8 +277,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             labels,
             x=obstacle_x,
             y=obstacle_y,
-            target_x=labelled["cost_per_1k"].to_numpy(),
-            target_y=labelled["mean_ood_pauroc_at_20"].to_numpy(),
+            target_x=np.asarray(target_x),
+            target_y=np.asarray(target_y),
             ax=axis,
             expand=(1.3, 1.5),
             force_text=(0.75, 1.1),
