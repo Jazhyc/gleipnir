@@ -1,6 +1,6 @@
 # Qwen3.5-27B full-teacher-prompt OOD benchmark
 
-Status: frozen and awaiting evaluation on all 6,395 rows.
+Status: completed on all 6,395 rows in Slurm job `30977052`.
 
 This evaluation measures the unadapted `Qwen/Qwen3.5-27B` model on every row
 in the paper-author-filtered six-source OOD suite. The hypothesis is that dense
@@ -34,3 +34,9 @@ sbatch cluster/slurm/benchmark_qwen27b_ood.sh
 Predictions and summaries are written under the ignored directory
 `results/tool_trajectory_monitoring/qwen35_27b_teacher_ood/`. Re-running the
 same command resumes from checksum-validated predictions.
+
+The completed run reaches `0.9371` Mean-OOD AUROC and `0.8395` Mean-OOD
+pAUROC@20. The matched dense-capacity curve is `0.6175` at 4B, `0.6976` at 9B,
+and `0.8395` at 27B. Exact results, cost accounting, runtime, and artifact hashes
+are recorded in
+[`tool_trajectory_qwen27b_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen27b_ood_benchmark.md).

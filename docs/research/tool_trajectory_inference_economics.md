@@ -1,6 +1,6 @@
 # Tool-trajectory monitor inference economics
 
-Status: exact Kimi evaluation accounting, updated 2026-08-30. This note prices
+Status: exact Qwen and Kimi evaluation accounting, updated 2026-08-31. This note prices
 monitor inference only. It does not price Kimi annotation, Qwen training, or
 self-hosted total cost of ownership.
 
@@ -46,6 +46,7 @@ The 2026-08-30 hosted-price snapshot used here is:
 | --- | --- | ---: | ---: | ---: |
 | Qwen3.5-4B | Paper's Artificial Analysis hosted proxy; no current OpenRouter route | 0.03 | 0.15 | not assumed |
 | Qwen3.5-9B | OpenRouter `qwen/qwen3.5-9b` | 0.10 | 0.15 | not assumed |
+| Qwen3.5-27B | Paper's hosted proxy; no current OpenRouter route | 0.195 | 1.56 | not assumed |
 | Kimi K3 on Makora | OpenRouter `moonshotai/kimi-k3` | 2.55 | 12.75 | 0.256 |
 
 These are mutable hosted prices, not claims about underlying GPU cost. Record a
@@ -56,9 +57,9 @@ cache discounts.
 
 ## Gleipnir Qwen3.5 exact accounting
 
-The completed binary 4B and 9B runs share a byte-identical tokenizer and chat
-template and therefore use the same 60,539,619 rendered input tokens, or
-9,466.7113 per evaluation. Both generate exactly one constrained output token.
+The completed binary 4B, 9B, and 27B runs share a byte-identical tokenizer and
+chat template and therefore use the same 60,539,619 rendered input tokens, or
+9,466.7113 per evaluation. All generate exactly one constrained output token.
 The 9B ordinal ablation uses a longer instruction, averaging 9,624.7113 input
 tokens, and records two output tokens per row because vLLM appends EOS after a
 one-digit score and `10` itself takes two tokens. Their exact paper-comparable
@@ -69,13 +70,15 @@ coordinates are:
 | Qwen3.5-4B base | 0.03 | 0.15 | 0.284001 | 0.000150 | **0.284151** | 0.6175 |
 | Qwen3.5-9B base | 0.10 | 0.15 | 0.946671 | 0.000150 | **0.946821** | 0.6976 |
 | Qwen3.5-9B base, immediate ordinal | 0.10 | 0.15 | 0.962471 | 0.000300 | **0.962771** | 0.4858 |
+| Qwen3.5-27B base | 0.195 | 1.56 | 1.846009 | 0.001560 | **1.847569** | 0.8395 |
 
 The 4B price is the paper's Artificial Analysis hosted proxy. OpenRouter did
 not list Qwen3.5-4B on 2026-08-30, so it must not be described as an OpenRouter
-quote. The 9B row uses OpenRouter's dated route. The matched 9B capacity gain is
-`0.0801` pAUROC@20 at `3.33x` the hosted-price projection. The ordinal ablation
-costs 1.7% more than the binary 9B run while losing `0.2118` pAUROC@20, so it is
-strictly dominated.
+quote. The 9B row uses OpenRouter's dated route. The 27B row likewise uses the
+paper's dated hosted proxy because OpenRouter did not list a current 27B route.
+The matched dense-capacity curve rises by `0.0801` pAUROC@20 from 4B to 9B and
+by `0.1418` from 9B to 27B. The ordinal ablation costs 1.7% more than the binary
+9B run while losing `0.2118` pAUROC@20, so it is strictly dominated.
 
 ## Direct Kimi K3 monitor exact tokenization
 
@@ -207,6 +210,7 @@ speed.
 - [Sinha et al., Appendix E cost accounting](https://arxiv.org/html/2605.29601v1#A5)
 - [Sinha et al., Qwen3.5-4B hosted proxy price](https://arxiv.org/html/2605.29601v1#A5.SS4)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b/pricing)
+- [OpenRouter model catalog search for Qwen3.5-27B](https://openrouter.ai/models?q=qwen3.5-27b)
 - [OpenRouter Kimi K3 pricing](https://openrouter.ai/moonshotai/kimi-k3-20260715)
 - [Qwen3.5-27B model and text-only serving notes](https://huggingface.co/Qwen/Qwen3.5-27B)
 - [vLLM classification usage](https://docs.vllm.ai/en/latest/models/pooling_models/classify/)

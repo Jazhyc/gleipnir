@@ -62,7 +62,8 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
-| Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | yes |
+| **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **yes** |
+| Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
 | Paper | Kimi-K2.6 SFT | Trained, short prompt, generated rationale + 0--10 score | 10.175 | 0.841 | yes |
@@ -80,6 +81,7 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md),
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
+[`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
@@ -138,6 +140,30 @@ point is also cheaper (`$0.869/1K`) and stronger (`0.703`). The result remains
 important as the matched unadapted Qwen base under Gleipnir's full binary
 specification; it should not be interpreted as evidence against later trained
 Qwen3.5-9B students using the compact deployment prompt.
+
+## Qwen3.5-27B base result
+
+The unadapted Qwen3.5-27B full-teacher-prompt baseline reaches `0.8395`
+Mean-OOD pAUROC@20 and `0.9371` Mean-OOD AUROC at `$1.8476/1K`. The exact
+9,466.7113-token mean input contributes `$1.8460/1K` at the paper's dated
+`$0.195/M` hosted proxy; the one required output token contributes
+`$0.00156/1K` at `$1.56/M`. OpenRouter did not list a Qwen3.5-27B route in the
+snapshot, so this is explicitly the paper's hosted proxy rather than a current
+OpenRouter quote.
+
+This is a new observed frontier point. It improves pAUROC@20 by `0.0595` over
+the adjacent lower-cost Nemotron-120B SFT point. It also point-estimate
+dominates the paper's Qwen3.5-27B SFT+RL row, improving pAUROC@20 by `0.0085`
+while costing `33.4%` less. The next higher-quality point, Kimi-K2.6 SFT,
+improves only `0.0015` to `0.841` but costs `5.51x` as much under these dated
+hosted-price coordinates.
+
+Within the strictly matched Qwen3.5 base series, the curve rises from `0.6175`
+at 4B to `0.6976` at 9B and `0.8395` at 27B. The 9B-to-27B gain (`0.1418`) is
+larger than the 4B-to-9B gain (`0.0801`), supporting a steep capacity effect
+under this immediate-logit interface. The remaining gap to Kimi K3 is `0.0689`.
+That cross-family gap cannot be attributed to parameter count alone because
+architecture, pretraining, post-training, and provider inference all change.
 
 ## Qwen3.5-9B immediate ordinal result
 
@@ -227,9 +253,12 @@ variability.
 - [Sinha et al., Appendix D.4 metric definition](https://arxiv.org/html/2605.29601v1#A4.SS4)
 - [Sinha et al., Appendix E cost accounting and Table 4](https://arxiv.org/html/2605.29601v1#A5.SS5)
 - [Qwen3.5-4B model card](https://huggingface.co/Qwen/Qwen3.5-4B)
+- [Qwen3.5-27B model card](https://huggingface.co/Qwen/Qwen3.5-27B)
 - [OpenRouter model catalog search for Qwen3.5-4B](https://openrouter.ai/models?q=qwen3.5-4b)
+- [OpenRouter model catalog search for Qwen3.5-27B](https://openrouter.ai/models?q=qwen3.5-27b)
 - [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md)
 - [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md)
+- [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 - [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
