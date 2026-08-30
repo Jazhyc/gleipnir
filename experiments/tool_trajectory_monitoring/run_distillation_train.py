@@ -71,6 +71,10 @@ def training_command(job: dict[str, Any]) -> list[str]:
         f"{job['gradient_accumulation_steps']}",
         f"student.training.save_steps={job['save_steps']}",
     ]
+    if model := job.get("model"):
+        command.append(f"student.model={model}")
+    if model_revision := job.get("model_revision"):
+        command.append(f"student.model_revision={model_revision}")
     selection = job.get("selection_manifest")
     command.append(
         "student.selection_manifest=null"
@@ -89,12 +93,15 @@ def main() -> None:
     )
     parser.add_argument("--job-name", required=True)
     parser.add_argument("--allow-preflight-job", action="store_true")
+    parser.add_argument("--allow-non-scaling-job", action="store_true")
     args = parser.parse_args()
 
     job = find_job(
         args.jobs.resolve(),
         args.job_name,
-        validate_design=not args.allow_preflight_job,
+        validate_design=not (
+            args.allow_preflight_job or args.allow_non_scaling_job
+        ),
     )
     if completed_model(job):
         print(f"completed model already exists; skipping {job['job_name']}")

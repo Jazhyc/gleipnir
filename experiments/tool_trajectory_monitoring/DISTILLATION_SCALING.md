@@ -58,5 +58,37 @@ python -m experiments.tool_trajectory_monitoring.run_distillation_lambda
 Artifacts live under `results/tool_trajectory_distillation_scaling/`, data
 materializations under `data/tool_trajectory_monitoring/distillation_scaling/`,
 and runtime logs under `logs/lambda/tool_trajectory_distillation_scaling/`.
+
+## Mixed-data Qwen3.5-4B transfer follow-up
+
+After the seven Qwen3.5-9B jobs, one separately identified follow-up trains
+`Qwen/Qwen3.5-4B` revision
+`851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` on the complete 21,837-row mixed
+artifact. This remains Kimi-soft-only training; no hard-label loss or arm is
+introduced. The intervention transfers the 9B recipe without a 4B
+hyperparameter search: seed 0, one epoch, rank 128 (`alpha=256`), AdamW at
+`5e-5`, linear decay with 3% warmup, zero weight decay/dropout, selected-token
+soft BCE, NF4 double-quantized QLoRA with BF16 compute, microbatch 1 with
+accumulation 32, and the 29,696-token cap.
+
+The pinned 4B and 9B `tokenizer.json` and `tokenizer_config.json` artifacts are
+byte-identical, so the existing zero-truncation token audit applies. A distinct
+rank-128 longest-32 preflight still checks the 4B model loader, pinned FLA 0.5.2
+kernels, memory, and adapter export before the full job. The hypothesis is that
+the mixed-data intervention transfers usefully to the smaller backbone. Its
+primary baselines are the matched 9B mixed adapter and the frozen unadapted 4B
+evaluation; this launch is not evidence that the inherited recipe is optimal
+for 4B.
+
+Prepare and run this follow-up with:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation
+python -m experiments.tool_trajectory_monitoring.run_mixed_4b_lambda
+```
+
+Artifacts and status live under
+`results/tool_trajectory_distillation_mixed_qwen4b/`; Lambda logs live under
+`logs/lambda/tool_trajectory_distillation_mixed_qwen4b/`.
 Held-out STRIDE test and Gloom-Exfiltration will be used for later checkpoint
 selection; all six strict OOD sources remain untouched during training.

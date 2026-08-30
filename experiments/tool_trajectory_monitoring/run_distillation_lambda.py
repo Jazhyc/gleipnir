@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -35,9 +36,11 @@ def relocate_jobs(
     destination: Path,
     data_dir: Path,
     result_dir: Path,
+    *,
+    validator: Callable[[list[dict[str, Any]]], None] = validate_jobs,
 ) -> list[dict[str, Any]]:
     jobs = read_jsonl(source)
-    validate_jobs(jobs)
+    validator(jobs)
     relocated = []
     for job in jobs:
         selected = dict(job)
@@ -100,7 +103,14 @@ def runtime_environment() -> dict[str, str]:
 
 
 class Status:
-    def __init__(self, path: Path, jobs: list[dict[str, Any]], revision: str | None):
+    def __init__(
+        self,
+        path: Path,
+        jobs: list[dict[str, Any]],
+        revision: str | None,
+        *,
+        recipe: dict[str, Any] | None = None,
+    ):
         self.path = path
         self.value = {
             "state": "training",
@@ -111,7 +121,7 @@ class Status:
             "completed_jobs": [],
             "active_job": None,
             "preflight": "pending",
-            "recipe": {
+            "recipe": recipe or {
                 "target": "kimi_soft_only",
                 "rank": 128,
                 "micro_batch_size": 1,
@@ -138,6 +148,7 @@ def run_training_job(
     environment: dict[str, str],
     *,
     preflight: bool = False,
+    allow_non_scaling_job: bool = False,
 ) -> None:
     command = [
         sys.executable,
@@ -150,6 +161,8 @@ def run_training_job(
     ]
     if preflight:
         command.append("--allow-preflight-job")
+    if allow_non_scaling_job:
+        command.append("--allow-non-scaling-job")
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
 
 

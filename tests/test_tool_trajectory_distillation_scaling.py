@@ -14,6 +14,21 @@ from experiments.tool_trajectory_monitoring.distillation_scaling import (
 from experiments.tool_trajectory_monitoring.prepare_distillation_scaling import (
     make_jobs,
 )
+from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+    JOB_NAME as MIXED_4B_JOB_NAME,
+)
+from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+    MODEL_ID as MIXED_4B_MODEL_ID,
+)
+from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+    MODEL_REVISION as MIXED_4B_MODEL_REVISION,
+)
+from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+    make_job as make_mixed_4b_job,
+)
+from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+    validate_mixed_4b_jobs,
+)
 from experiments.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
@@ -115,3 +130,30 @@ def test_training_command_cannot_enable_hard_or_completion_loss(tmp_path) -> Non
         in command
     )
     assert json.loads(json.dumps(job))["target"] == "kimi_soft"
+
+
+def test_mixed_4b_job_reuses_frozen_soft_recipe_and_pins_model(tmp_path) -> None:
+    job = make_mixed_4b_job(tmp_path / "data", tmp_path / "results")
+    validate_mixed_4b_jobs([job])
+    assert job["job_name"] == MIXED_4B_JOB_NAME
+    assert job["model"] == MIXED_4B_MODEL_ID
+    assert job["model_revision"] == MIXED_4B_MODEL_REVISION
+    assert job["train_rows"] == 21_837
+    assert job["num_train_epochs"] == 1.0
+    assert job["max_steps"] == -1
+    assert job["selection_manifest"] is None
+    assert job["effective_batch_size"] == EFFECTIVE_BATCH_SIZE
+
+    command = training_command(job)
+    assert f"student.model={MIXED_4B_MODEL_ID}" in command
+    assert f"student.model_revision={MIXED_4B_MODEL_REVISION}" in command
+    assert "student.training.soft_loss_weight=1.0" in command
+    assert "student.training.direct_loss_weight=0.0" in command
+    assert "student.training.completion_loss_weight=0.0" in command
+
+
+def test_mixed_4b_job_validation_fails_on_recipe_drift(tmp_path) -> None:
+    job = make_mixed_4b_job(tmp_path / "data", tmp_path / "results")
+    job["rank"] = 16
+    with pytest.raises(ValueError, match="rank"):
+        validate_mixed_4b_jobs([job])

@@ -42,6 +42,7 @@ teacher:
 
 student:
   model: Qwen/Qwen3.5-9B
+  model_revision: null
   model_loader: causal_lm
   finetuning_mode: lora
   init_adapter: null
