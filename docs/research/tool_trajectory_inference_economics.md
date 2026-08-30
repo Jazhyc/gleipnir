@@ -36,14 +36,15 @@ instead normalizes the literal `0` and `1` logits at an immediate decision
 boundary. Its output-token charge is consequently negligible, but every monitor
 must still prefill the long trajectory.
 
-## OpenRouter price snapshot
+## Hosted price snapshots
 
-The 2026-08-30 OpenRouter snapshot used here is:
+The 2026-08-30 hosted-price snapshot used here is:
 
-| Model | Model ID | Input $/M | Output $/M | Cache-read $/M |
+| Model | Pricing basis | Input $/M | Output $/M | Cache-read $/M |
 | --- | --- | ---: | ---: | ---: |
-| Qwen3.5-9B | `qwen/qwen3.5-9b` | 0.10 | 0.15 | not assumed |
-| Kimi K3 on Makora | `moonshotai/kimi-k3` | 2.55 | 12.75 | 0.256 |
+| Qwen3.5-4B | Paper's Artificial Analysis hosted proxy; no current OpenRouter route | 0.03 | 0.15 | not assumed |
+| Qwen3.5-9B | OpenRouter `qwen/qwen3.5-9b` | 0.10 | 0.15 | not assumed |
+| Kimi K3 on Makora | OpenRouter `moonshotai/kimi-k3` | 2.55 | 12.75 | 0.256 |
 
 These are mutable hosted prices, not claims about underlying GPU cost. Record a
 new dated row rather than silently replacing this snapshot when prices change.
@@ -51,30 +52,22 @@ Use uncached input in the main comparison. The current Kimi policy prefix did
 not produce cross-row cache reuse in the paid canary, and the paper also omits
 cache discounts.
 
-## Gleipnir Qwen3.5-9B estimate
+## Gleipnir Qwen3.5 exact accounting
 
-The exact Gleipnir OOD prompts have not yet been materialized. Use the paper's
-8,411-token Qwen3.5 OOD mean as the primary proxy because its 4B and 27B rows
-share that tokenizer-family count. Gleipnir's compact prompt has a measured
-156-token overhead around source text on its implemented source canary. Allowing
-roughly 100 tokens for the difference from the paper's shorter instruction gives
-an 8,411--8,511-token planning interval.
+The completed 4B and 9B runs share a byte-identical tokenizer and chat template
+and therefore use the same 60,539,619 rendered input tokens, or 9,466.7113 per
+evaluation. Both generate exactly one constrained output token. Their exact
+paper-comparable coordinates are:
 
-With one billed output token:
+| Model | Input price $/M | Output price $/M | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations | Mean-OOD pAUROC@20 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Qwen3.5-4B base | 0.03 | 0.15 | 0.284001 | 0.000150 | **0.284151** | 0.6175 |
+| Qwen3.5-9B base | 0.10 | 0.15 | 0.946671 | 0.000150 | **0.946821** | 0.6976 |
 
-```text
-lower = (8,411 * 0.10 + 1 * 0.15) / 1000 = $0.84125 / 1K
-upper = (8,511 * 0.10 + 1 * 0.15) / 1000 = $0.85125 / 1K
-suite = cost_per_1k * 6.395                 = $5.38--$5.44
-```
-
-Report **about `$0.85 per 1,000 evaluations`** until exact OOD token counts and
-provider usage are available. This is approximately 3.3 times cheaper than the
-paper's rationale-generating Qwen3.5-27B row and 86 times cheaper than its Gemini
-3.1 Pro row. It is more expensive than the paper's `$0.358` Qwen3.5-4B hosted
-proxy because that row assumes only `$0.03/M` input tokens. A hypothetical 4B
-model using the same one-token boundary would cost about `$0.252/1K` at the
-paper's price.
+The 4B price is the paper's Artificial Analysis hosted proxy. OpenRouter did
+not list Qwen3.5-4B on 2026-08-30, so it must not be described as an OpenRouter
+quote. The 9B row uses OpenRouter's dated route. The matched 9B capacity gain is
+`0.0801` pAUROC@20 at `3.33x` the hosted-price projection.
 
 ## Direct Kimi K3 monitor exact tokenization
 
@@ -204,6 +197,7 @@ speed.
 ## Sources
 
 - [Sinha et al., Appendix E cost accounting](https://arxiv.org/html/2605.29601v1#A5)
+- [Sinha et al., Qwen3.5-4B hosted proxy price](https://arxiv.org/html/2605.29601v1#A5.SS4)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b/pricing)
 - [OpenRouter Kimi K3 pricing](https://openrouter.ai/moonshotai/kimi-k3-20260715)
 - [Qwen3.5-27B model and text-only serving notes](https://huggingface.co/Qwen/Qwen3.5-27B)

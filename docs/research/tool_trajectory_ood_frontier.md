@@ -43,7 +43,8 @@ and at least as accurate, with one strict improvement.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **yes** |
+| **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | yes |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | yes |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | yes |
@@ -68,11 +69,27 @@ The 17 paper reference rows reproduce Appendix E, Table 4. Their exact token
 counts and prices remain in the paper rather than being duplicated here. The
 Gleipnir rows are backed by the completed
 [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md),
+[`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 audits and the exact accounting in
 [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md).
+
+## Qwen3.5-4B base result
+
+The unadapted Qwen3.5-4B full-teacher-prompt baseline reaches `0.6175`
+Mean-OOD pAUROC@20 and `0.8549` Mean-OOD AUROC. Its exact 9,466.7113-token
+mean input and one-token output cost `$0.2842/1K` at the paper's hosted proxy
+of `$0.03/M` input and `$0.15/M` output. OpenRouter did not list a Qwen3.5-4B
+route on 2026-08-30, so this coordinate is explicitly an Artificial Analysis
+proxy carried forward from the paper, not a current OpenRouter quote.
+
+The 4B base becomes the lowest-cost observed frontier point and dominates the
+GPT-OSS-120B base, improving pAUROC@20 by `0.1386` while costing `13.1%` less.
+It does not dominate the next paper point: GPT-OSS-20B SFT costs `$0.0628/1K`
+more and improves pAUROC@20 by `0.0385`. The matched 9B base gains `0.0801`
+pAUROC@20 but costs `3.33x` as much under its current OpenRouter route.
 
 ## GPT-OSS-120B base result
 
@@ -89,14 +106,14 @@ higher-priced route projects to `$1.2578/1K`:
 | OpenRouter proxy | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations | Frontier at this price? |
 | --- | ---: | ---: | ---: | :---: |
 | Current headline/lowest listed (`$0.03/$0.17`) | 0.251435 | 0.000170 | **0.251605** | yes |
-| Paper-matched (`$0.039/$0.18`) | 0.326866 | 0.000180 | **0.327046** | yes |
+| Paper-matched (`$0.039/$0.18`) | 0.326866 | 0.000180 | **0.327046** | no |
 | Higher-priced route (`$0.15/$0.60`) | 1.257175 | 0.000600 | **1.257775** | no |
 
-At the canonical paper-matched price this is a frontier point only because it
-is about `$0.020/1K` cheaper than GPT-OSS-20B SFT. It is a weak endpoint:
-spending that extra amount improves pAUROC@20 from `0.4789` to `0.656`. The
-frontier label should therefore not be read as evidence that the unadapted
-monitor is operationally attractive.
+At the canonical paper-matched price this is no longer a frontier point. The
+Qwen3.5-4B base is `13.1%` cheaper and improves pAUROC@20 from `0.4789` to
+`0.6175`, so it strictly dominates this point. The GPT-OSS result remains a
+matched model-family baseline rather than an operationally attractive
+endpoint.
 
 ## Qwen3.5-9B base result
 
@@ -180,7 +197,10 @@ variability.
 
 - [Sinha et al., Appendix D.4 metric definition](https://arxiv.org/html/2605.29601v1#A4.SS4)
 - [Sinha et al., Appendix E cost accounting and Table 4](https://arxiv.org/html/2605.29601v1#A5.SS5)
+- [Qwen3.5-4B model card](https://huggingface.co/Qwen/Qwen3.5-4B)
+- [OpenRouter model catalog search for Qwen3.5-4B](https://openrouter.ai/models?q=qwen3.5-4b)
 - [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md)
+- [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 - [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md)

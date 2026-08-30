@@ -1,6 +1,6 @@
 # Qwen3.5-4B full-teacher-prompt OOD benchmark
 
-Status: frozen and awaiting evaluation on all 6,395 rows.
+Status: completed on all 6,395 rows on 2026-08-30.
 
 This evaluation measures the unadapted `Qwen/Qwen3.5-4B` model on every row
 in the paper-author-filtered six-source OOD suite. The hypothesis is that the
@@ -40,3 +40,10 @@ sbatch cluster/slurm/benchmark_qwen4b_ood.sh
 Predictions and summaries are written under the ignored directory
 `results/tool_trajectory_monitoring/qwen35_4b_teacher_ood/`. Re-running the
 same command resumes from checksum-validated predictions.
+
+The completed run reached `0.6175` Mean-OOD pAUROC@20 and `0.8549` Mean-OOD
+AUROC. Its exact one-token hosted-price projection is `$0.2842/1K`
+evaluations using the paper's Qwen3.5-4B proxy rate. OpenRouter did not list a
+Qwen3.5-4B route on the evaluation date. Full per-source metrics, accounting,
+runtime, and artifact hashes are recorded in
+[`../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md).
