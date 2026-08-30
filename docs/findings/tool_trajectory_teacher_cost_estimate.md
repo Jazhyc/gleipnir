@@ -1,7 +1,12 @@
-# Kimi K3 full-pool teacher-cache cost estimate
+# Kimi K3 accessible-release teacher-cache cost estimate
 
 Date: 2026-08-30. This estimate prices annotation only; it does not authorize a
 paid launch.
+
+> **Scope warning:** this is **not** the paper's 8,688-row training mixture. It
+> prices an earlier/different 9,500-row gated release that was locally
+> accessible. Do not use `$184.33` as the exact budget for a paper-data
+> replication.
 
 ## Materialized pool and counting method
 
@@ -12,10 +17,16 @@ The accessible `Syghmon/blackboxmonitorsMATS` revision
 - 1,000 `gemini_synthetic`;
 - 1,000 `unified_dataset`.
 
-Applying the frozen 28,000-token trajectory cutoff with
+Applying the paper's 28,000-token trajectory filter with
 `Qwen/Qwen3.5-9B` tokenizer revision
 `c202236235762e1c871ad0ccb60c8ee5ba337b9a` leaves 8,538 rows and filters
-962. The calculation renders the unchanged teacher prompt around every eligible
+962. This was a comparability assumption, not a Qwen3.5-9B context limit. The
+paper used 28K to reserve 4K for rationale completions in a 32K training
+context; our one-step logit target does not require that output headroom, and
+Qwen3.5-9B natively supports a much longer context. We should therefore retain
+or replace this filter only as an explicit experiment/data-contract decision.
+
+The calculation renders the unchanged teacher prompt around every eligible
 trajectory and tokenizes it with the official `moonshotai/Kimi-K3` tokenizer at
 revision `a590ce090cb049c93a33dfe8c208ec652aa20503`.
 
