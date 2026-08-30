@@ -122,14 +122,21 @@ def _display_label(monitor: str) -> str:
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
     }
-    return textwrap.fill(replacements.get(monitor, monitor), width=22)
+    display = replacements.get(monitor, monitor)
+    display = re.sub(r"\s+base(?=$|\s+\()", "", display)
+    return textwrap.fill(display, width=22)
 
 
 def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply documented presentation-only omissions to registry points."""
+    is_ours = frame["origin"].eq("Gleipnir")
+    is_logit_interface = frame["interface"].str.contains(
+        "logits", case=False, na=False
+    )
     included = (
         ~frame["monitor"].isin(EXCLUDED_MONITORS)
         & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
+        & (~is_ours | is_logit_interface)
     )
     return frame.loc[included].copy()
 
@@ -262,7 +269,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     axis.set_ylabel("Mean-OOD pAUROC@20")
     axis.set_title(
-        "Tool-trajectory monitor cost–performance frontier",
+        "Logit-based monitors on the tool-trajectory cost–performance frontier",
         loc="left",
         fontsize=20.5,
         fontweight="bold",
@@ -280,7 +287,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
-    origin_labels = {"Paper": "Sinha et al.", "Gleipnir": "Ours"}
+    origin_labels = {"Paper": "Sinha et al.", "Gleipnir": "Ours (logits)"}
     legend_handles = [
         Line2D(
             [],

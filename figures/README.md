@@ -22,6 +22,9 @@ inference cost and crowds the upper endpoint without changing the comparison.
 Models below `0.60` Mean-OOD pAUROC@20 are also retained in the registry but
 omitted from this presentation so the operationally relevant upper frontier has
 room for future low-cost, high-performing monitors.
+Gleipnir points are included only when their evaluation interface explicitly
+uses logits; other completed Gleipnir interfaces remain in the registry. Plot
+labels omit the redundant `base` suffix without changing canonical model names.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:
