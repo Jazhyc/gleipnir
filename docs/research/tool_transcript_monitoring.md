@@ -416,6 +416,21 @@ literal-token margins for Gleipnir evaluation; do not sample a discrete ordinal
 answer when a direct boundary score is available. Report three paired seeds and
 uncertainty for every trained arm.
 
+### Inference cost and serving scope
+
+Use the paper's uncached marginal USD per 1,000 evaluations convention for the
+primary cost-performance plot. The dated planning estimate is about `$0.85/1K`
+for the direct-logit Qwen3.5-9B student and about `$21/1K` for Kimi K3 used
+directly with the full binary teacher prompt. These are inference costs, not the
+one-time teacher-cache annotation budget. Exact publication values require the
+frozen OOD prompts and saved provider usage.
+
+The formulas, token-count proxies, full-suite projections, qualifications, and
+future prefill-only serving optimizations are frozen in
+[`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md).
+Do not claim specialized self-hosted savings until a matched throughput and
+latency benchmark exists.
+
 ### Promotion and stop conditions
 
 Before launching, freeze the hypothesis, all manifests, exact source and model

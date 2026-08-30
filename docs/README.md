@@ -4,6 +4,9 @@
 - `research/tool_transcript_monitoring.md`: operational paper notes, dataset
   provenance, and the proposed exploratory Kimi-logit scaling design for
   action-only agent monitoring.
+- `research/tool_trajectory_inference_economics.md`: paper-compatible marginal
+  inference-cost estimates for Qwen3.5-9B and Kimi K3, plus a future
+  prefill-only serving optimization backlog.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `findings/`: durable per-experiment findings; create one document per track.
