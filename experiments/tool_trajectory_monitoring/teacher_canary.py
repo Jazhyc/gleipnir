@@ -238,6 +238,7 @@ def summarize_scored_rows(
         "overall": overall_group,
         "by_source": by_source["groups"],
         "mean_source_auroc": by_source["macro"]["auroc"],
+        "mean_source_pauroc_at_20": by_source["macro"]["pauroc_at_20"],
         "generated_label_accuracy": float(
             (frame["label"] == frame["generated_label"]).mean()
         ),

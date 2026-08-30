@@ -11,6 +11,9 @@ from experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache import (
     expected_counts,
     validate_rows,
 )
+from experiments.tool_trajectory_monitoring.prepare_teacher_ood_canary import (
+    select_balanced_ood_rows,
+)
 
 
 def representative_rows() -> list[dict[str, object]]:
@@ -70,3 +73,32 @@ def test_fireworks_cost_projection_uses_frozen_rates() -> None:
     assert projection["usd_per_1000_rows"] == pytest.approx(
         projection["total_usd"]
     )
+
+
+def test_balanced_ood_canary_selection_is_deterministic_and_interleaved() -> None:
+    rows = [
+        {
+            "id": f"{source.source}-{label}-{index}",
+            "metadata": {
+                "source_dataset": source.source,
+                "ground_truth": label,
+            },
+        }
+        for source in OOD_SOURCES
+        for label in (0, 1)
+        for index in range(3)
+    ]
+    first = select_balanced_ood_rows(rows, rows_per_stratum=2, seed=7)
+    second = select_balanced_ood_rows(rows, rows_per_stratum=2, seed=7)
+    assert [row["id"] for row in first] == [row["id"] for row in second]
+    assert [
+        (
+            row["metadata"]["source_dataset"],
+            row["metadata"]["ground_truth"],
+        )
+        for row in first[:12]
+    ] == [
+        (source.source, label) for source in OOD_SOURCES for label in (0, 1)
+    ]
+    with pytest.raises(ValueError, match="need 4"):
+        select_balanced_ood_rows(rows, rows_per_stratum=4, seed=7)

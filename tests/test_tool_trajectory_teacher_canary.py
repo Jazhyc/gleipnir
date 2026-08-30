@@ -101,6 +101,7 @@ def test_summary_checks_prompt_identity_and_reports_auc() -> None:
     assert summary["generated_label_accuracy"] == 1.0
     assert summary["generated_label_auroc"] == 1.0
     assert summary["mean_source_auroc"] == 1.0
+    assert summary["mean_source_pauroc_at_20"] == 1.0
     assert summary["usage"] == {
         "prompt_tokens": 400,
         "completion_tokens": 12,
