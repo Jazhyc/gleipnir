@@ -134,12 +134,12 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(13.2, 8.0))
     axis.set_xscale("log")
-    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
+    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
         frame["cost_per_1k"].min() / 1.35,
-        frame["cost_per_1k"].max() * 1.45,
+        max(80.0, frame["cost_per_1k"].max() * 1.06),
     )
     axis.set_ylim(0.44, 0.985)
 

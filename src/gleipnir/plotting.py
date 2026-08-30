@@ -31,6 +31,8 @@ def set_plot_style() -> None:
             "axes.spines.right": False,
             "axes.spines.top": False,
             "figure.dpi": 120,
+            "font.family": "sans-serif",
+            "font.sans-serif": ["Cantarell", "DejaVu Sans"],
             "savefig.dpi": 300,
             "svg.fonttype": "none",
         },
