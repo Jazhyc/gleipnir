@@ -41,6 +41,7 @@ DEFAULT_OUTPUT = Path(
     "results/tool_trajectory_monitoring/gpt_oss_120b_low_reasoning_ood"
 )
 HARMONY_ASSISTANT_START = "<|start|>assistant"
+CHAT_TEMPLATE_DATE_EXPRESSION = 'strftime_now("%Y-%m-%d")'
 
 
 def parse_args() -> argparse.Namespace:
@@ -66,6 +67,7 @@ def validate_config(config: dict[str, Any]) -> None:
         "final_boundary": (
             "<|start|>assistant<|channel|>final<|message|>Prediction:"
         ),
+        "current_date": "2026-08-30",
     }
     for key, expected in expected_prompt.items():
         if prompt.get(key) != expected:
@@ -98,9 +100,18 @@ def render_reasoning_prompt(
     user_prompt: str,
     *,
     reasoning_effort: str,
+    current_date: str,
 ) -> str:
+    chat_template = str(tokenizer.chat_template)
+    if chat_template.count(CHAT_TEMPLATE_DATE_EXPRESSION) != 1:
+        raise ValueError("GPT-OSS chat-template date expression differs")
+    chat_template = chat_template.replace(
+        CHAT_TEMPLATE_DATE_EXPRESSION,
+        f'"{current_date}"',
+    )
     rendered = tokenizer.apply_chat_template(
         [{"role": "user", "content": user_prompt}],
+        chat_template=chat_template,
         tokenize=False,
         add_generation_prompt=True,
         reasoning_effort=reasoning_effort,
@@ -137,12 +148,14 @@ def audit_source_prompts(
     config: dict[str, Any],
 ) -> dict[str, int]:
     reasoning_effort = str(config["prompt"]["reasoning_effort_header"])
+    current_date = str(config["prompt"]["current_date"])
     lengths = []
     for record in records:
         prompt = render_reasoning_prompt(
             tokenizer,
             str(record["prompt"]),
             reasoning_effort=reasoning_effort,
+            current_date=current_date,
         )
         lengths.append(len(tokenizer.encode(prompt, add_special_tokens=False)))
     observed_maximum = max(lengths)
@@ -288,12 +301,14 @@ def generate_records(
     pending = [row for row in target_records if str(row["id"]) not in completed]
     batch_size = int(config["engine"]["batch_rows"])
     reasoning_effort = str(config["prompt"]["reasoning_effort_header"])
+    current_date = str(config["prompt"]["current_date"])
     for batch_index, batch in enumerate(batches(pending, batch_size), start=1):
         prompts = [
             render_reasoning_prompt(
                 tokenizer,
                 str(record["prompt"]),
                 reasoning_effort=reasoning_effort,
+                current_date=current_date,
             )
             for record in batch
         ]
@@ -358,6 +373,7 @@ def score_records(
     pending = [row for row in target_records if str(row["id"]) not in completed]
     batch_size = int(config["engine"]["batch_rows"])
     reasoning_effort = str(config["prompt"]["reasoning_effort_header"])
+    current_date = str(config["prompt"]["current_date"])
     max_model_len = int(config["engine"]["max_model_len"])
     for batch_index, batch in enumerate(batches(pending, batch_size), start=1):
         prompts = [
@@ -365,6 +381,7 @@ def score_records(
                 tokenizer,
                 str(record["prompt"]),
                 reasoning_effort=reasoning_effort,
+                current_date=current_date,
             )
             for record in batch
         ]

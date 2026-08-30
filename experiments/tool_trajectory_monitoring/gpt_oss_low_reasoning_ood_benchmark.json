@@ -1,5 +1,5 @@
 {
-  "campaign_id": "gpt-oss-120b-low-reasoning-teacher-ood-v2",
+  "campaign_id": "gpt-oss-120b-low-reasoning-teacher-ood-v3",
   "status": "frozen_evaluation",
   "hypothesis": "Allowing GPT-OSS-120B to complete its native low-effort Harmony analysis before the literal binary boundary improves strict-OOD ranking and calibration relative to immediate final-channel logits under the same full teacher prompt.",
   "intervention": "After the native assistant start, prefill the canonical Harmony analysis-channel boundary and generate its content at Reasoning: low with OpenAI's recommended temperature 1 and top-p 1 sampling. Stop at the first Harmony end token, append the canonical final-channel Prediction: boundary, and normalize constrained literal 0 versus 1 next-token logprobs.",
@@ -30,6 +30,7 @@
     "prompt_set_id": "tool-trajectory-binary-v1",
     "template_sha256": "2418cc55801deead8983d3bde6e35b59603f0080711ce8e12e1d7299487ac128",
     "reasoning_effort_header": "low",
+    "current_date": "2026-08-30",
     "analysis_prefix": "<|channel|>analysis<|message|>",
     "analysis_stop": "<|end|>",
     "final_boundary": "<|start|>assistant<|channel|>final<|message|>Prediction:",

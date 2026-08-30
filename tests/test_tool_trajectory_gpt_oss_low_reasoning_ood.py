@@ -15,6 +15,7 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
 
 
 class FakeTokenizer:
+    chat_template = 'date={{ strftime_now("%Y-%m-%d") }}'
     values = {
         "<|channel|>analysis<|message|>": [5, 6, 7],
         "<|end|>": [8],
@@ -24,6 +25,7 @@ class FakeTokenizer:
     def apply_chat_template(self, *args, **kwargs) -> str:
         assert kwargs["reasoning_effort"] == "low"
         assert kwargs["add_generation_prompt"] is True
+        assert '"2026-08-30"' in kwargs["chat_template"]
         return f"{args[0][0]['content']}<|start|>assistant"
 
     def encode(self, value: str, *, add_special_tokens: bool) -> list[int]:
@@ -36,6 +38,7 @@ def test_render_reasoning_prompt_leaves_native_assistant_boundary() -> None:
         FakeTokenizer(),
         "full teacher prompt",
         reasoning_effort="low",
+        current_date="2026-08-30",
     )
     assert rendered.endswith("<|start|>assistant")
 
@@ -124,6 +127,7 @@ def test_frozen_low_reasoning_config_covers_full_ood_contract() -> None:
     validate_config(config)
     assert config["scope"]["rows"] == 6_395
     assert config["prompt"]["reasoning_effort_header"] == "low"
+    assert config["prompt"]["current_date"] == "2026-08-30"
     assert config["generation"]["temperature"] == 1.0
     assert config["engine"]["max_model_len"] == 65_536
 
@@ -131,7 +135,10 @@ def test_frozen_low_reasoning_config_covers_full_ood_contract() -> None:
 def test_source_prompt_audit_fails_closed_on_tokenizer_drift() -> None:
     records = [{"prompt": "abc"}, {"prompt": "abcdef"}]
     config = {
-        "prompt": {"reasoning_effort_header": "low"},
+        "prompt": {
+            "reasoning_effort_header": "low",
+            "current_date": "2026-08-30",
+        },
         "engine": {"audited_max_source_prompt_tokens": 24},
     }
     assert audit_source_prompts(FakeTokenizer(), records, config) == {
