@@ -184,6 +184,12 @@ Mean-OOD pAUROC@20 at `$0.9468/1K` under the dated OpenRouter list-price
 projection. It is not a frontier point. The run audit is in
 [`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).
 
+The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
+Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
+proxy. It is technically the lowest-cost frontier endpoint but is much weaker
+than the next point; the price-sensitivity and run audit are in
+[`../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md`](../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md).
+
 The paper's complete cost--performance reference table and every future
 completed Gleipnir OOD evaluation belong in
 [`../../docs/research/tool_trajectory_ood_frontier.md`](../../docs/research/tool_trajectory_ood_frontier.md).

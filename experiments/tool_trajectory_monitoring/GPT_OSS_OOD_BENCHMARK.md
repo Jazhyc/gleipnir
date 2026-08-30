@@ -1,5 +1,7 @@
 # GPT-OSS-120B strict-OOD benchmark
 
+Status: completed on all 6,395 rows on 2026-08-30.
+
 This frozen evaluation measures `openai/gpt-oss-120b` on all 6,395 rows in the
 paper-author-filtered six-source OOD suite. The hypothesis is that the unadapted
 model provides useful continuous action-monitoring scores under the full
@@ -37,3 +39,9 @@ sbatch cluster/slurm/benchmark_gpt_oss_ood.sh
 Predictions and summaries are written under the ignored directory
 `results/tool_trajectory_monitoring/gpt_oss_120b_ood/`. Re-running the same
 command resumes from checksum-validated predictions.
+
+The completed run reached `0.4789` Mean-OOD pAUROC@20 and `0.7862` Mean-OOD
+AUROC. At the paper's `$0.039/M` input and `$0.18/M` output OpenRouter proxy,
+its exact uncached projection is `$0.3270/1K` evaluations. Full per-source
+metrics, price sensitivity, runtime, and artifact hashes are recorded in
+[`../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md`](../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md).
