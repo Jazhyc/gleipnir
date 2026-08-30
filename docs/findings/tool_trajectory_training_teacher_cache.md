@@ -78,14 +78,22 @@ The ignored summary is
 SHA-256
 `386f7865c0e7b849e8e50a2603fc3c8a134cfce4133a4223196c8a331d0cf721`.
 
-| Population | N | AUROC | Stratified bootstrap 95% CI |
-| --- | ---: | ---: | ---: |
-| pooled | 8,688 | **0.9673** | **0.9644--0.9700** |
-| Bash Arena | 2,790 | 0.9855 | 0.9818--0.9890 |
-| Bash Bench | 1,436 | 0.9931 | 0.9899--0.9958 |
-| CoT-Red-Handed | 2,340 | 0.9905 | 0.9876--0.9931 |
-| Gloom | 772 | 0.9921 | 0.9872--0.9960 |
-| STRIDE | 1,350 | 0.9959 | 0.9931--0.9980 |
+| Population | N | AUROC | pAUROC@20 | AUROC bootstrap 95% CI |
+| --- | ---: | ---: | ---: | ---: |
+| pooled | 8,688 | **0.9673** | **0.8645** | **0.9644--0.9700** |
+| Bash Arena | 2,790 | 0.9855 | 0.9476 | 0.9818--0.9890 |
+| Bash Bench | 1,436 | 0.9931 | 0.9656 | 0.9899--0.9958 |
+| CoT-Red-Handed | 2,340 | 0.9905 | 0.9575 | 0.9876--0.9931 |
+| Gloom | 772 | 0.9921 | 0.9670 | 0.9872--0.9960 |
+| STRIDE | 1,350 | 0.9959 | 0.9801 | 0.9931--0.9980 |
+
+The pAUROC values use the paper's raw normalized definition,
+`integral(TPR dFPR, 0 <= FPR <= 0.2) / 0.2`, rather than scikit-learn's
+standardized partial-AUC correction. The unweighted mean source pAUROC@20 is
+`0.9636`, which is the training-mixture analogue of the paper's mean-per-dataset
+reporting convention. The lower pooled pAUROC@20 of `0.8645` indicates
+meaningful cross-source score calibration or ranking differences and should not
+be substituted for the macro result without stating the aggregation rule.
 
 The unweighted mean source AUROC is `0.9914`. Pooled balanced accuracy is
 `0.9019`, Brier score is `0.0747`, recall is `0.8835`, and FPR is `0.0797` at
