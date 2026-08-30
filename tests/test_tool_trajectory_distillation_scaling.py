@@ -89,11 +89,11 @@ def test_frozen_jobs_are_seven_soft_only_rank128_conditions(tmp_path) -> None:
     validate_jobs(jobs)
     assert len(jobs) == 7
     assert Counter(job["target"] for job in jobs) == {"kimi_soft": 7}
-    assert {job["max_steps"] for job in jobs if job["train_rows"] != 21_837} == set(
-        PAPER_SCHEDULE.values()
-    )
+    assert {job["max_steps"] for job in jobs} == {-1}
+    assert {job["num_train_epochs"] for job in jobs} == {1.0}
+    assert [job["train_rows"] for job in jobs[:-1]] == list(PAPER_SCHEDULE)
     mixed = next(job for job in jobs if job["train_rows"] == 21_837)
-    assert mixed["num_train_epochs"] == 3.0
+    assert mixed["num_train_epochs"] == 1.0
     assert mixed["selection_manifest"] is None
 
 

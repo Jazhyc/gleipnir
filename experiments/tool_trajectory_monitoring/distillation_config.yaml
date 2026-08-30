@@ -47,7 +47,7 @@ student:
   training:
     optimizer: adamw
     optim: adamw_torch
-    num_train_epochs: 3.0
+    num_train_epochs: 1.0
     max_steps: -1
     learning_rate: 5.0e-5
     warmup_ratio: 0.03

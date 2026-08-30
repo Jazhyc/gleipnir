@@ -9,17 +9,25 @@ a matched hard-versus-soft supervision ablation.
 
 ## Frozen design
 
-The six tool-trajectory points use seed 0, rank 128 (`alpha=256`), and exact
-paper row/optimizer-step pairs: `204/378`, `504/375`, `996/372`,
-`2,004/372`, `4,008/750`, and `8,688/813`. Subsets are exact, nested, and
-approximately equal over the ten source-label strata until the full point,
-which uses the paper author's natural 8,688-row mixture.
+The six tool-trajectory points use seed 0, rank 128 (`alpha=256`), and the
+paper's row counts: 204, 504, 996, 2,004, 4,008, and 8,688. Every point trains
+for exactly one epoch. The campaign deliberately does not reproduce the
+paper's optimizer-step schedule: its small points repeat the same rows up to 63
+times, while the present estimand is the effect of adding unique data under a
+fixed epoch count. Subsets are exact, nested, and approximately equal over the
+ten source-label strata until the full point, which uses the paper author's
+natural 8,688-row mixture.
 
 The seventh adapter adds all 13,149 prior Aletheia deception-distillation rows
-to all 8,688 tool-trajectory rows. It trains for three epochs, matching the full
-tool-only point's epoch count. This deliberately increases both domain breadth
-and total optimization compute, so it is an exploratory transfer condition,
-not a fixed-compute causal estimate of adding unrelated data.
+to all 8,688 tool-trajectory rows and also trains for one epoch. Total updates
+therefore grow with unique data volume across the entire experiment. This is a
+fixed-epoch data-scaling design, not a fixed-optimizer-step design.
+
+The earlier single-seed deception optimization screen found that two epochs
+improved macro AUROC by 0.00470 over one epoch, while worsening Brier score by
+0.00144. That shorter-context result is not direct evidence for this benchmark;
+one epoch is used here to prioritize a timely, controlled comparison of unique
+data volume.
 
 Every adapter uses the retained best soft-distillation recipe: AdamW at
 `5e-5`, linear decay with 3% warmup, zero weight decay/dropout, soft BCE at the

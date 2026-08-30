@@ -286,9 +286,11 @@ Consequences for this exploratory study:
   fixed permutation per stratum and seed, and strict nested prefixes;
 - use the paper's nominal `N` values where the pool permits and report actual
   row counts when filtering or availability changes a point by a few tens;
-- keep the paper's total-step schedule for the first matched comparison, while
-  separately reporting examples seen. A fixed-epoch curve would confound data
-  volume with a roughly 45-fold step-count difference.
+- The original proposal was to keep the paper's total-step schedule. The
+  launched campaign supersedes that choice at the user's direction: use the
+  paper's row counts but train every point for one epoch. This intentionally
+  lets optimizer steps grow with unique data volume and avoids repeating the
+  smallest subsets for up to 63 epochs.
 
 ## Proposed Kimi-logit experiment
 
@@ -354,11 +356,11 @@ request-setting exception, metrics, hashes, and limitations.
 
 The first launched campaign is intentionally narrower than the minimum causal
 comparison originally proposed below: at the user's direction it trains only
-the Kimi-logit arm, with one seed at each paper row count. Hard-label adapters
-are deferred. Source labels remain available for stratification and evaluation,
-but no hard-label loss is used. Therefore compare this curve descriptively with
-the paper's published rationale curve and do not claim a matched hard-versus-soft
-ablation. The frozen operational recipe is recorded in
+the Kimi-logit arm, with one seed and one epoch at each paper row count.
+Hard-label adapters are deferred. Source labels remain available for
+stratification and evaluation, but no hard-label loss is used. Therefore compare
+this curve descriptively with the paper's published rationale curve and do not
+claim a matched hard-versus-soft ablation. The frozen operational recipe is recorded in
 `experiments/tool_trajectory_monitoring/DISTILLATION_SCALING.md`.
 
 At each frozen subset size and seed, the minimum causal comparison is:

@@ -20,6 +20,7 @@ from experiments.tool_trajectory_monitoring.distillation_scaling import (
     LORA_RANK,
     MAX_LENGTH,
     PAPER_SCHEDULE,
+    SCALING_COUNTS,
     nested_count_selections,
     scaling_job_name,
     validate_jobs,
@@ -262,7 +263,7 @@ def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
         "direct_loss_weight": 0.0,
     }
     jobs = []
-    for rows, steps in PAPER_SCHEDULE.items():
+    for rows in SCALING_COUNTS:
         job_name = scaling_job_name(rows)
         jobs.append(
             {
@@ -270,14 +271,14 @@ def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
                 "job_name": job_name,
                 "design_role": "paper_count_kimi_soft_curve",
                 "train_rows": rows,
-                "max_steps": steps,
+                "max_steps": -1,
                 "num_train_epochs": 1.0,
                 "student_rows": str(data_dir / "student_rows.jsonl"),
                 "soft_targets": str(data_dir / "soft_targets.jsonl"),
                 "selection_manifest": str(
                     result_dir / "selections" / f"n{rows:05d}-seed0.jsonl"
                 ),
-                "save_steps": max(1, steps // 3),
+                "save_steps": max(1, rows // EFFECTIVE_BATCH_SIZE),
             }
         )
     mixed_rows = 8_688 + 13_149
@@ -288,7 +289,7 @@ def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
             "design_role": "full_tool_plus_prior_deception_transfer",
             "train_rows": mixed_rows,
             "max_steps": -1,
-            "num_train_epochs": 3.0,
+            "num_train_epochs": 1.0,
             "student_rows": str(data_dir / "mixed_student_rows.jsonl"),
             "soft_targets": str(data_dir / "mixed_soft_targets.jsonl"),
             "selection_manifest": None,
@@ -414,7 +415,8 @@ def main() -> None:
         ),
         "arms": "soft_distillation_only; no hard-label adapters",
         "seed": CAMPAIGN_SEED,
-        "paper_schedule": PAPER_SCHEDULE,
+        "paper_row_counts": list(SCALING_COUNTS),
+        "paper_schedule_for_external_reference_only": PAPER_SCHEDULE,
         "student_model": {"id": MODEL_ID, "revision": MODEL_REVISION},
         "recipe": {
             "rank": LORA_RANK,
@@ -428,7 +430,7 @@ def main() -> None:
             "gradient_accumulation_steps": EFFECTIVE_BATCH_SIZE,
             "effective_batch_size": EFFECTIVE_BATCH_SIZE,
             "max_length": MAX_LENGTH,
-            "mixed_epochs": 3,
+            "epochs_per_job": 1,
         },
         "token_summary": token_summary,
         "artifacts": {

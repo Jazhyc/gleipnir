@@ -16,6 +16,7 @@ PAPER_SCHEDULE = {
     4_008: 750,
     8_688: 813,
 }
+SCALING_COUNTS = tuple(PAPER_SCHEDULE)
 CAMPAIGN_SEED = 0
 LORA_RANK = 128
 LORA_ALPHA = 256
@@ -119,7 +120,7 @@ def scaling_job_name(rows: int) -> str:
 
 def validate_jobs(jobs: list[dict[str, Any]]) -> None:
     """Fail closed if the frozen seven-job soft-only design drifts."""
-    expected_names = {scaling_job_name(rows) for rows in PAPER_SCHEDULE} | {
+    expected_names = {scaling_job_name(rows) for rows in SCALING_COUNTS} | {
         f"soft-n21837-mixed-seed{CAMPAIGN_SEED}"
     }
     names = {str(job["job_name"]) for job in jobs}
@@ -134,3 +135,5 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             raise ValueError("effective batch contract drifted")
         if int(job["max_length"]) != MAX_LENGTH:
             raise ValueError("maximum sequence length contract drifted")
+        if float(job["num_train_epochs"]) != 1.0 or int(job["max_steps"]) != -1:
+            raise ValueError("every campaign job must use exactly one epoch")
