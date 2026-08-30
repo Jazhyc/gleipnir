@@ -97,6 +97,18 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=True,
         help="Mark the exact all-prompt prefix as an ephemeral provider cache block.",
     )
+    parser.add_argument(
+        "--checkpoint-every",
+        type=int,
+        default=1,
+        help="Atomically persist after this many new rows (default: 1).",
+    )
+    parser.add_argument(
+        "--progress-every",
+        type=int,
+        default=1,
+        help="Print progress after this many new rows (default: 1).",
+    )
     parser.add_argument("--limit", type=int)
     return parser.parse_args(argv)
 
@@ -258,6 +270,10 @@ def main(argv: list[str] | None = None) -> int:
         raise ValueError("concurrency must be positive")
     if args.limit is not None and args.limit < 1:
         raise ValueError("limit must be positive")
+    if args.checkpoint_every < 1:
+        raise ValueError("checkpoint-every must be positive")
+    if args.progress_every < 1:
+        raise ValueError("progress-every must be positive")
     api_key = os.environ.get("OPENROUTER_API_KEY", "").strip()
     if not api_key:
         raise SystemExit("OPENROUTER_API_KEY is missing")
@@ -325,6 +341,8 @@ def main(argv: list[str] | None = None) -> int:
             executor.submit(score_prompt, record, config, api_key): record
             for record in pending
         }
+        completed_since_checkpoint = 0
+        completed_since_progress = 0
         for future in as_completed(futures):
             record = futures[future]
             try:
@@ -335,8 +353,17 @@ def main(argv: list[str] | None = None) -> int:
                 continue
             with lock:
                 cached[record.record_id] = result
-                atomic_write(args.output, cached)
-            print(f"completed={len(cached)}/{len(records)}", flush=True)
+                completed_since_checkpoint += 1
+                completed_since_progress += 1
+                if completed_since_checkpoint >= args.checkpoint_every:
+                    atomic_write(args.output, cached)
+                    completed_since_checkpoint = 0
+            if (
+                completed_since_progress >= args.progress_every
+                or len(cached) == len(records)
+            ):
+                print(f"completed={len(cached)}/{len(records)}", flush=True)
+                completed_since_progress = 0
 
     atomic_write(args.output, cached)
     prompt_tokens, cached_tokens, cache_write_tokens = cache_token_totals(cached)

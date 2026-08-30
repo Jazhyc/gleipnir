@@ -9,6 +9,7 @@ from gleipnir.openrouter_cli import (
     declared_or_shared_prompt_prefix,
     load_cache,
     load_prompts,
+    parse_args,
     shared_prompt_prefix,
 )
 
@@ -128,3 +129,22 @@ def test_cache_token_totals_handles_missing_telemetry() -> None:
             "legacy": {},
         }
     ) == (220, 180, 20)
+
+
+def test_scale_checkpoint_and_progress_intervals_are_configurable() -> None:
+    args = parse_args(
+        [
+            "--input",
+            "prompts.jsonl",
+            "--output",
+            "scores.jsonl",
+            "--model",
+            "moonshotai/kimi-k3",
+            "--checkpoint-every",
+            "16",
+            "--progress-every",
+            "25",
+        ]
+    )
+    assert args.checkpoint_every == 16
+    assert args.progress_every == 25
