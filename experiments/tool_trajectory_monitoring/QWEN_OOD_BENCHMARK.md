@@ -1,5 +1,7 @@
 # Qwen3.5-9B full-teacher-prompt OOD benchmark
 
+Status: completed on all 6,395 rows on 2026-08-30.
+
 This frozen evaluation measures the unadapted `Qwen/Qwen3.5-9B` base on all
 6,395 rows in the paper-author-filtered six-source OOD suite. The hypothesis is
 that the base model provides useful continuous action-monitoring scores under
@@ -38,3 +40,9 @@ sbatch cluster/slurm/benchmark_qwen_ood.sh
 Predictions and summaries are written under the ignored directory
 `results/tool_trajectory_monitoring/qwen35_9b_teacher_ood/`. Re-running the
 same command resumes from checksum-validated predictions.
+
+The completed run reached `0.6976` Mean-OOD pAUROC@20 and `0.8850` Mean-OOD
+AUROC. Its exact uncached OpenRouter list-price projection is `$0.9468/1K`
+evaluations. Full per-source metrics, accounting, runtime, and artifact hashes
+are recorded in
+[`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).

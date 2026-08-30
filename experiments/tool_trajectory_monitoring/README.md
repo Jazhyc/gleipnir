@@ -179,6 +179,11 @@ teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
 pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
 [`../../docs/findings/tool_trajectory_kimi_ood_benchmark.md`](../../docs/findings/tool_trajectory_kimi_ood_benchmark.md).
 
+The matched unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`
+Mean-OOD pAUROC@20 at `$0.9468/1K` under the dated OpenRouter list-price
+projection. It is not a frontier point. The run audit is in
+[`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).
+
 The paper's complete cost--performance reference table and every future
 completed Gleipnir OOD evaluation belong in
 [`../../docs/research/tool_trajectory_ood_frontier.md`](../../docs/research/tool_trajectory_ood_frontier.md).

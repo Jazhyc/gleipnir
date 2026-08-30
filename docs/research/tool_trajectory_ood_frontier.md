@@ -30,9 +30,9 @@ discounts, failed-request charges, training cost, and self-hosted total cost of
 ownership are excluded from the primary coordinate. Record them separately.
 
 The paper rows below are the published three-seed means rounded to three decimal
-places. The Kimi K3 row is one deterministic temperature-zero evaluation using
-Gleipnir's binary-logit interface. It is comparable in dataset, metric, and
-uncached cost convention, but not an interface reproduction of the paper's
+places. The Gleipnir rows are deterministic temperature-zero evaluations using
+the binary-logit interface. They are comparable in dataset, metric, and
+uncached cost convention, but are not interface reproductions of the paper's
 generated 0--10 monitor scores.
 
 ## Reference table
@@ -49,6 +49,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
+| **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | yes |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
@@ -64,10 +65,26 @@ and at least as accurate, with one strict improvement.
 
 The 17 paper reference rows reproduce Appendix E, Table 4. Their exact token
 counts and prices remain in the paper rather than being duplicated here. The
-Kimi K3 row is backed by the completed
+Gleipnir rows are backed by the completed
+[`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
+and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
-audit and the exact accounting in
+audits and the exact accounting in
 [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md).
+
+## Qwen3.5-9B base result
+
+The unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`
+Mean-OOD pAUROC@20 at `$0.9468/1K`. The exact 9,466.71-token mean contributes
+`$0.9467/1K` at OpenRouter's dated `$0.10/M` input price; the one required
+output token contributes only `$0.00015/1K` at `$0.15/M`.
+
+This point is not on the observed frontier. The paper's GPT-OSS-120B SFT point
+is both cheaper (`$0.511/1K`) and stronger (`0.718`), and the Qwen3-32B SFT+RL
+point is also cheaper (`$0.869/1K`) and stronger (`0.703`). The result remains
+important as the matched unadapted Qwen base under Gleipnir's full binary
+specification; it should not be interpreted as evidence against later trained
+Qwen3.5-9B students using the compact deployment prompt.
 
 ## Kimi K3 frontier movement
 
@@ -138,4 +155,6 @@ variability.
 - [Sinha et al., Appendix D.4 metric definition](https://arxiv.org/html/2605.29601v1#A4.SS4)
 - [Sinha et al., Appendix E cost accounting and Table 4](https://arxiv.org/html/2605.29601v1#A5.SS5)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
+- [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 - [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md)
+- [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b)
