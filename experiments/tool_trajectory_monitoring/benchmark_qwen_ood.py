@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Benchmark Qwen3.5-9B direct binary logits on the frozen OOD suite."""
+"""Benchmark Qwen3.5 direct binary logits on the frozen OOD suite."""
 
 from __future__ import annotations
 
@@ -35,6 +35,10 @@ DEFAULT_OUTPUT = Path("results/tool_trajectory_monitoring/qwen35_9b_teacher_ood"
 QWEN_NON_THINKING_ASSISTANT_SUFFIX = (
     "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 )
+SUPPORTED_QWEN_MODELS = {
+    "Qwen/Qwen3.5-4B",
+    "Qwen/Qwen3.5-9B",
+}
 
 
 def parse_args() -> argparse.Namespace:
@@ -53,8 +57,10 @@ def parse_args() -> argparse.Namespace:
 def validate_config(config: dict[str, Any]) -> None:
     if config.get("status") != "frozen_evaluation":
         raise ValueError("benchmark config must be frozen before evaluation")
-    if config.get("model", {}).get("id") != "Qwen/Qwen3.5-9B":
-        raise ValueError("frozen model must be Qwen/Qwen3.5-9B")
+    model_id = config.get("model", {}).get("id")
+    if model_id not in SUPPORTED_QWEN_MODELS:
+        supported = ", ".join(sorted(SUPPORTED_QWEN_MODELS))
+        raise ValueError(f"frozen model must be one of: {supported}")
     prompt = config.get("prompt", {})
     if prompt.get("role") != "teacher":
         raise ValueError("benchmark must use the full teacher prompt")
