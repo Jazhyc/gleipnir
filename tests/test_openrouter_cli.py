@@ -1,5 +1,6 @@
 import hashlib
 import json
+from pathlib import Path
 
 import pytest
 
@@ -148,3 +149,24 @@ def test_scale_checkpoint_and_progress_intervals_are_configurable() -> None:
     )
     assert args.checkpoint_every == 16
     assert args.progress_every == 25
+
+
+def test_provider_shard_exclusion_cache_is_repeatable() -> None:
+    args = parse_args(
+        [
+            "--input",
+            "prompts.jsonl",
+            "--output",
+            "scores.jsonl",
+            "--model",
+            "moonshotai/kimi-k3",
+            "--exclude-cache",
+            "makora.jsonl",
+            "--exclude-cache",
+            "fireworks.jsonl",
+        ]
+    )
+    assert args.exclude_cache == [
+        Path("makora.jsonl"),
+        Path("fireworks.jsonl"),
+    ]

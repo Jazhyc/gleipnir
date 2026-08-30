@@ -109,6 +109,16 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         default=1,
         help="Print progress after this many new rows (default: 1).",
     )
+    parser.add_argument(
+        "--exclude-cache",
+        type=Path,
+        action="append",
+        default=[],
+        help=(
+            "Skip prompt-matched IDs already present in another cache; repeat for "
+            "provider-separated campaign shards."
+        ),
+    )
     parser.add_argument("--limit", type=int)
     return parser.parse_args(argv)
 
@@ -309,10 +319,21 @@ def main(argv: list[str] | None = None) -> int:
     )
     settings_sha256 = request_settings_sha256(config)
     cached = load_cache(args.output, work, settings_sha256)
-    pending = [record for record in records if record.record_id not in cached]
+    excluded: dict[str, dict[str, Any]] = {}
+    for cache_path in args.exclude_cache:
+        for record_id, row in load_cache(cache_path, work).items():
+            existing = excluded.get(record_id)
+            if existing is not None and existing != row:
+                raise ValueError(
+                    f"conflicting excluded cache rows for id={record_id!r}"
+                )
+            excluded[record_id] = row
+    completed_ids = set(cached) | set(excluded)
+    pending = [record for record in records if record.record_id not in completed_ids]
     prefix_sha256 = hashlib.sha256(prompt_prefix.encode("utf-8")).hexdigest()
     print(
-        f"prepared={len(records)} cached={len(cached)} pending={len(pending)} "
+        f"prepared={len(records)} cached={len(cached)} excluded={len(excluded)} "
+        f"pending={len(pending)} "
         f"model={config.model} shared_prefix_chars={len(prompt_prefix)} "
         f"shared_prefix_sha256={prefix_sha256} session_id={session_id}",
         flush=True,
@@ -360,9 +381,13 @@ def main(argv: list[str] | None = None) -> int:
                     completed_since_checkpoint = 0
             if (
                 completed_since_progress >= args.progress_every
-                or len(cached) == len(records)
+                or len(set(cached) | set(excluded)) == len(records)
             ):
-                print(f"completed={len(cached)}/{len(records)}", flush=True)
+                print(
+                    f"completed={len(set(cached) | set(excluded))}/{len(records)} "
+                    f"shard_rows={len(cached)}",
+                    flush=True,
+                )
                 completed_since_progress = 0
 
     atomic_write(args.output, cached)
@@ -374,10 +399,15 @@ def main(argv: list[str] | None = None) -> int:
         f"cache_read_fraction={cache_read_fraction:.6f}",
         flush=True,
     )
-    if failures or len(cached) != len(records):
+    completed_count = len(set(cached) | set(excluded))
+    if failures or completed_count != len(records):
         print(f"incomplete failures={len(failures)}; rerun to resume", flush=True)
         return 1
-    print(f"complete rows={len(cached)} output={args.output}", flush=True)
+    print(
+        f"complete rows={completed_count} shard_rows={len(cached)} "
+        f"excluded_rows={len(excluded)} output={args.output}",
+        flush=True,
+    )
     return 0
 
 
