@@ -140,6 +140,7 @@ def test_frozen_reasoning_config_and_prompt_contract() -> None:
     benchmark.validate_config(config)
     assert config["prompt"]["enable_thinking"] is False
     assert config["generation"]["temperature"] == 0.0
+    assert config["generation"]["max_tokens"] == 4_096
     assert config["generation"]["stop"] == "\nScore:"
     assert config["engine"]["audited_max_prompt_tokens"] == 30_544
     assert config["engine"]["audited_total_prompt_tokens"] == 61_575_609
@@ -161,6 +162,6 @@ def test_frozen_config_rejects_insufficient_context() -> None:
             "qwen_ordinal_reasoning_ood_benchmark.json"
         )
     )
-    config["engine"]["max_model_len"] = 32_000
+    config["engine"]["max_model_len"] = 34_000
     with pytest.raises(ValueError, match="does not cover"):
         benchmark.validate_config(config)

@@ -45,7 +45,8 @@ DEFAULT_CONFIG = Path(
     "qwen_ordinal_reasoning_ood_benchmark.json"
 )
 DEFAULT_OUTPUT = Path(
-    "results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood"
+    "results/tool_trajectory_monitoring/"
+    "qwen35_9b_teacher_ordinal_reasoning_ood_v2"
 )
 
 

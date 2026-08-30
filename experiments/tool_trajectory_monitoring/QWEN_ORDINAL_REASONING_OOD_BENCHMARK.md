@@ -1,6 +1,7 @@
 # Qwen3.5-9B visible-reasoning ordinal OOD benchmark
 
-Status: frozen before evaluation; not yet launched.
+Status: v2 frozen before evaluation; not yet launched. The 2,048-token v1
+preflight was invalidated before analysis after a rationale hit its length cap.
 
 ## Hypothesis and intervention
 
@@ -46,8 +47,8 @@ metadata separately preserves both prompt lengths.
 
 The audited initial contexts total 61,575,609 tokens, averaging 9,628.7113 per
 row, with a minimum of 1,195 and maximum of 30,544. The maximum plus the frozen
-2,048-token rationale allowance and two score tokens is 32,594, below the
-32,768-token engine limit.
+4,096-token rationale allowance and two score tokens is 34,642, below the
+36,864-token engine limit. This matches the paper's 4K rationale reserve.
 
 ## Selection rule and stop condition
 
@@ -72,4 +73,4 @@ sbatch cluster/slurm/benchmark_qwen_ordinal_reasoning_ood.sh
 ```
 
 Artifacts are written under the ignored directory
-`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood/`.
+`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v2/`.

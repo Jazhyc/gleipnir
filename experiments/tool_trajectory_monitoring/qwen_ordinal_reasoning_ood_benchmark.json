@@ -1,5 +1,5 @@
 {
-  "campaign_id": "qwen35-9b-teacher-prompt-ordinal-reasoning-ood-v1",
+  "campaign_id": "qwen35-9b-teacher-prompt-ordinal-reasoning-ood-v2",
   "status": "frozen_evaluation",
   "hypothesis": "Under the same unadapted Qwen3.5-9B model, full severity specification, non-thinking chat boundary, frozen OOD rows, and discrete 0--10 terminal score, one greedy visible deliberation will not recover the primary Mean-OOD pAUROC@20 gap between immediate ordinal generation and continuous binary decision logits.",
   "intervention": "Keep native thinking disabled, greedily generate a concise visible evidence analysis until the exact terminal Score: boundary, and then constrain the continuation to one integer from 0 through 10. Rank rows by that generated integer divided by 10.",
@@ -37,7 +37,7 @@
     "interface": "qwen_non_thinking_visible_reasoning_then_structured_integer_choice"
   },
   "generation": {
-    "max_tokens": 2048,
+    "max_tokens": 4096,
     "temperature": 0.0,
     "stop": "\nScore:",
     "include_stop_str_in_output": true,
@@ -54,7 +54,7 @@
   },
   "engine": {
     "tensor_parallel_size": 1,
-    "max_model_len": 32768,
+    "max_model_len": 36864,
     "audited_max_prompt_tokens": 30544,
     "audited_total_prompt_tokens": 61575609,
     "gpu_memory_utilization": 0.9,
@@ -80,7 +80,7 @@
   ],
   "stop_conditions": [
     "The input, manifest, model revision, reasoning instruction hash, binary source-template hash, or Qwen non-thinking assistant boundary differs from the frozen config.",
-    "The initial prompt plus the 2,048-token reasoning allowance and two score tokens can exceed max_model_len.",
+    "The initial prompt plus the 4,096-token reasoning allowance and two score tokens can exceed max_model_len.",
     "Any visible reasoning is empty, reaches its token cap, or fails to terminate at the exact Score: boundary.",
     "The terminal continuation is not an exact integer from 0 through 10, 10 is not represented by exactly the pinned two-token sequence, or a one-digit choice has any suffix other than Qwen's EOS token.",
     "The 12-row source-label backend canary is incomplete or returns a non-finite score.",
