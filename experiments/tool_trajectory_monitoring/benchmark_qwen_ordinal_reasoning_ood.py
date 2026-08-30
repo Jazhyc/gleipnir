@@ -134,8 +134,12 @@ def reasoning_continuation(output: Any, stop: str) -> tuple[str, list[int]]:
     generated = output.outputs[0]
     text = str(generated.text)
     if not text.endswith(stop) or text.count(stop) != 1:
+        text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
         raise RuntimeError(
-            "visible reasoning did not end at the exact terminal score boundary"
+            "visible reasoning did not end at the exact terminal score boundary: "
+            f"finish_reason={generated.finish_reason!r} "
+            f"stop_reason={generated.stop_reason!r} "
+            f"tokens={len(generated.token_ids)} text_sha256={text_sha256}"
         )
     rationale = text[: -len(stop)].strip()
     if not rationale:
