@@ -1,11 +1,17 @@
 from __future__ import annotations
 
+import hashlib
+import json
 from pathlib import Path
 
 import pytest
 
 from experiments.tool_trajectory_monitoring.benchmark_qwen_reasoning import (
     validate_config,
+)
+from experiments.tool_trajectory_monitoring.prepare_qwen_reasoning_id_benchmark import (
+    selected_id_sha256,
+    single_user_content,
 )
 from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
@@ -25,6 +31,21 @@ def test_reasoning_prompt_preserves_trajectory_and_binary_envelope() -> None:
     assert rendered.startswith("Analyze first.\n<agent_trajectory>\n")
     assert trajectory in rendered
     assert rendered.endswith("\n</agent_trajectory>\n")
+
+
+def test_single_user_content_rejects_schema_drift() -> None:
+    value = json.dumps([{"role": "user", "content": "trajectory"}])
+    assert single_user_content(value) == "trajectory"
+    with pytest.raises(ValueError, match="exactly one"):
+        single_user_content("[]")
+    with pytest.raises(ValueError, match="user message"):
+        single_user_content(json.dumps([{"role": "assistant", "content": "x"}]))
+
+
+def test_selected_id_sha256_is_order_sensitive() -> None:
+    rows = [{"source_id": "2"}, {"source_id": "7"}]
+    assert selected_id_sha256(rows) == hashlib.sha256(b"2\n7\n").hexdigest()
+    assert selected_id_sha256(rows) != selected_id_sha256(list(reversed(rows)))
 
 
 @pytest.mark.parametrize(
