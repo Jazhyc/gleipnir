@@ -74,6 +74,7 @@ def test_plot_applies_documented_filters_without_changing_registry() -> None:
 def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-4B base") == "Qwen3.5-4B"
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
+    assert _display_label("Kimi K3 binary logits") == "Kimi K3"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
 
 

@@ -117,7 +117,7 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
 
 def _display_label(monitor: str) -> str:
     replacements = {
-        "Kimi K3 binary logits": "Kimi K3 logits",
+        "Kimi K3 binary logits": "Kimi K3",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
@@ -179,7 +179,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         frame["cost_per_1k"].min() / 1.35,
         max(80.0, frame["cost_per_1k"].max() * 1.06),
     )
-    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.01, 0.99)
+    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
     frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
     axis.plot(
@@ -249,23 +249,32 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             )
         )
     obstacle_x, obstacle_y = _label_obstacles(frame)
-    adjust_text(
-        labels,
-        x=obstacle_x,
-        y=obstacle_y,
-        target_x=labelled["cost_per_1k"].to_numpy(),
-        target_y=labelled["mean_ood_pauroc_at_20"].to_numpy(),
-        ax=axis,
-        expand=(1.3, 1.5),
-        force_text=(0.75, 1.1),
-        force_static=(0.65, 0.95),
-        force_pull=(0.01, 0.015),
-        max_move=(32, 32),
-        min_arrow_len=4,
-        iter_lim=1000,
-        prevent_crossings=True,
-        arrowprops={"arrowstyle": "-", "color": "#9CA3AF", "linewidth": 0.7},
-    )
+    random_state = np.random.get_state()
+    np.random.seed(20260830)
+    try:
+        adjust_text(
+            labels,
+            x=obstacle_x,
+            y=obstacle_y,
+            target_x=labelled["cost_per_1k"].to_numpy(),
+            target_y=labelled["mean_ood_pauroc_at_20"].to_numpy(),
+            ax=axis,
+            expand=(1.3, 1.5),
+            force_text=(0.75, 1.1),
+            force_static=(0.65, 0.95),
+            force_pull=(0.01, 0.015),
+            max_move=(32, 32),
+            min_arrow_len=4,
+            iter_lim=1000,
+            prevent_crossings=True,
+            arrowprops={
+                "arrowstyle": "-",
+                "color": "#9CA3AF",
+                "linewidth": 0.7,
+            },
+        )
+    finally:
+        np.random.set_state(random_state)
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     axis.set_ylabel("Mean-OOD pAUROC@20")
     axis.set_title(
