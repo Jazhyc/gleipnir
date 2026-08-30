@@ -290,7 +290,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markerfacecolor=color,
             markeredgecolor="#374151",
             markeredgewidth=0.65,
-            markersize=8,
+            markersize=10.5,
             label=origin_labels.get(origin, origin),
         )
         for origin, color in ORIGIN_PALETTE.items()
@@ -303,8 +303,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             marker="o",
             markerfacecolor="white",
             markeredgecolor="#111827",
-            linewidth=2,
-            markersize=8,
+            linewidth=2.5,
+            markersize=10.5,
             label="Pareto frontier",
         )
     )
@@ -312,7 +312,9 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         handles=legend_handles,
         loc="lower right",
         frameon=True,
-        prop={"size": 11, "weight": "bold"},
+        prop={"size": 13.5, "weight": "bold"},
+        handlelength=2.2,
+        labelspacing=0.65,
     )
     figure.tight_layout()
     return figure
