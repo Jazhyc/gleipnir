@@ -210,7 +210,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         frame["cost_per_1k"].max() * 1.45,
     )
     axis.set_ylim(0.44, 0.985)
-    axis.set_xlabel("Uncached inference cost (USD per 1,000 evaluations; log scale)")
+    axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     axis.set_ylabel("Mean-OOD pAUROC@20")
     axis.set_title(
         "Tool-trajectory monitor cost–performance frontier",
@@ -230,6 +230,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
+    origin_labels = {"Paper": "Sinha et al.", "Gleipnir": "Ours"}
     legend_handles = [
         Line2D(
             [],
@@ -239,7 +240,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markerfacecolor=color,
             markeredgecolor="white",
             markersize=8,
-            label=origin,
+            label=origin_labels.get(origin, origin),
         )
         for origin, color in ORIGIN_PALETTE.items()
     ]
