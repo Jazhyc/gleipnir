@@ -41,7 +41,7 @@ Rows are ordered by cost. `Frontier` is point-estimate nondominance after adding
 all Gleipnir rows currently in this file: no other row is both no more expensive
 and at least as accurate, with one strict improvement.
 
-| Origin | Monitor | Evaluation interface | Cost / 1K USD | Mean-OOD pAUROC@20 | Frontier |
+| Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | yes |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | yes |
@@ -81,7 +81,7 @@ Sonnet is a useful same-price reference. Its paper price and the frozen Kimi K3
 Fireworks ceiling are both `$3/M` input and `$15/M` output, so the observed cost
 difference is entirely token accounting:
 
-| Monitor or counterfactual | Mean input tokens | Mean output tokens | Input cost / 1K | Output cost / 1K | Total cost / 1K |
+| Monitor or counterfactual | Mean input tokens | Mean output tokens | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations |
 | --- | ---: | ---: | ---: | ---: | ---: |
 | Kimi K3 binary logits | 8,322.55 | 10.0 | 24.9677 | 0.1500 | **25.1177** |
 | Kimi K3 with Kimi-K2.6's 780.9-token output | 8,322.55 | 780.9 | 24.9677 | 11.7135 | **36.6812** |
