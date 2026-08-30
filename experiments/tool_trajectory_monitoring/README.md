@@ -3,6 +3,25 @@
 Status: prompt contract and bounded teacher canary complete. No student training
 or OOD evaluation has started.
 
+## Lambda environment status
+
+The already-reserved `gleipnir-control` target was probed and bootstrapped on
+2026-08-30 from commit `0fc7d91aa00f8c03382ec1236995d88efe97f1d0`:
+
+- one NVIDIA H100 80GB HBM3 (SXM5), in Lambda region `us-south-2`;
+- Ubuntu 22.04, x86-64, NVIDIA driver 580.105.08;
+- Python 3.12.14, PyTorch 2.11.0+cu130, Transformers 5.14.1, and vLLM 0.24.0;
+- isolated `flash-linear-attention==0.5.2` and `fla-core==0.5.2` under
+  `/tmp/gleipnir-qwen35-fla`, with the chunk and fused-recurrent gated-delta
+  imports resolved to `fla.ops`.
+
+The locked environment is under `~/gleipnir/.venv`, and the cache/CUDA exports
+are in `~/.config/gleipnir/runtime.env`. The FLA target is ephemeral and must
+still be installed and probed fail-closed by the eventual launcher before model
+import. A bounded CUDA matrix-multiply probe and the focused prompt/fast-kernel
+contract tests passed. No credentials or model weights were transferred during
+this setup.
+
 ## Hypothesis and intervention
 
 The primary hypothesis is that Kimi K3's binary decision-token distribution is
