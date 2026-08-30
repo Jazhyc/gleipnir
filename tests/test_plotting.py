@@ -6,6 +6,7 @@ import pytest
 from gleipnir.plotting import pareto_frontier_mask
 from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
+    _label_obstacles,
     _markdown_cells,
     load_frontier_registry,
     select_plot_points,
@@ -65,6 +66,16 @@ def test_plot_applies_documented_filters_without_changing_registry() -> None:
     assert "Claude Opus 4.6 prompted" not in set(plotted["monitor"])
     assert frame["mean_ood_pauroc_at_20"].min() < 0.60
     assert plotted["mean_ood_pauroc_at_20"].min() >= 0.60
+
+
+def test_label_obstacles_sample_the_frontier_between_points() -> None:
+    plotted = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
+    obstacle_x, obstacle_y = _label_obstacles(plotted)
+
+    assert obstacle_x.shape == obstacle_y.shape
+    assert len(obstacle_x) > len(plotted)
+    assert np.isfinite(obstacle_x).all()
+    assert (obstacle_x > 0).all()
 
 
 def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None:

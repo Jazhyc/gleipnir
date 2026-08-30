@@ -14,6 +14,7 @@ os.environ.setdefault(
 )
 
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from adjustText import adjust_text
@@ -133,11 +134,36 @@ def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
     return frame.loc[included].copy()
 
 
+def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
+    """Sample points and frontier segments for label collision avoidance."""
+    x_parts = [frame["cost_per_1k"].to_numpy()]
+    y_parts = [frame["mean_ood_pauroc_at_20"].to_numpy()]
+    frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
+    for (_, start), (_, end) in zip(
+        frontier.iloc[:-1].iterrows(),
+        frontier.iloc[1:].iterrows(),
+        strict=True,
+    ):
+        fractions = np.linspace(0.1, 0.9, 9)
+        start_cost = float(start["cost_per_1k"])
+        end_cost = float(end["cost_per_1k"])
+        x_parts.append(
+            np.exp(
+                np.log(start_cost)
+                + fractions * (np.log(end_cost) - np.log(start_cost))
+            )
+        )
+        start_score = float(start["mean_ood_pauroc_at_20"])
+        end_score = float(end["mean_ood_pauroc_at_20"])
+        y_parts.append(start_score + fractions * (end_score - start_score))
+    return np.concatenate(x_parts), np.concatenate(y_parts)
+
+
 def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame)
     set_plot_style()
-    figure, axis = plt.subplots(figsize=(13.2, 8.0))
+    figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
     axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
@@ -146,7 +172,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         frame["cost_per_1k"].min() / 1.35,
         max(80.0, frame["cost_per_1k"].max() * 1.06),
     )
-    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.01, 0.985)
+    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.01, 0.99)
 
     frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
     axis.plot(
@@ -195,34 +221,41 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     labels = []
     for label_index, (_, row) in enumerate(labelled.iterrows()):
         is_frontier = bool(row["computed_frontier"])
-        vertical_offset = 0.014 if label_index % 2 == 0 else -0.014
+        vertical_offset = 0.018 if label_index % 2 == 0 else -0.018
         labels.append(
             axis.text(
                 row["cost_per_1k"] * 1.02,
                 row["mean_ood_pauroc_at_20"] + vertical_offset,
                 _display_label(str(row["monitor"])),
-                fontsize=10.25,
+                fontsize=11.5,
                 fontweight="bold",
                 color="#111827" if is_frontier else "#4B5563",
                 ha="center",
                 va="center",
+                bbox={
+                    "boxstyle": "round,pad=0.12",
+                    "facecolor": "white",
+                    "edgecolor": "none",
+                    "alpha": 0.84,
+                },
                 zorder=4,
             )
         )
+    obstacle_x, obstacle_y = _label_obstacles(frame)
     adjust_text(
         labels,
-        x=frame["cost_per_1k"].to_numpy(),
-        y=frame["mean_ood_pauroc_at_20"].to_numpy(),
+        x=obstacle_x,
+        y=obstacle_y,
         target_x=labelled["cost_per_1k"].to_numpy(),
         target_y=labelled["mean_ood_pauroc_at_20"].to_numpy(),
         ax=axis,
-        expand=(1.2, 1.35),
-        force_text=(0.55, 0.9),
-        force_static=(0.45, 0.7),
+        expand=(1.3, 1.5),
+        force_text=(0.75, 1.1),
+        force_static=(0.65, 0.95),
         force_pull=(0.01, 0.015),
-        max_move=(24, 24),
+        max_move=(32, 32),
         min_arrow_len=4,
-        iter_lim=600,
+        iter_lim=1000,
         prevent_crossings=True,
         arrowprops={"arrowstyle": "-", "color": "#9CA3AF", "linewidth": 0.7},
     )
