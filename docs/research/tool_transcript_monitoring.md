@@ -352,6 +352,15 @@ request-setting exception, metrics, hashes, and limitations.
 
 ### Student arms
 
+The first launched campaign is intentionally narrower than the minimum causal
+comparison originally proposed below: at the user's direction it trains only
+the Kimi-logit arm, with one seed at each paper row count. Hard-label adapters
+are deferred. Source labels remain available for stratification and evaluation,
+but no hard-label loss is used. Therefore compare this curve descriptively with
+the paper's published rationale curve and do not claim a matched hard-versus-soft
+ablation. The frozen operational recipe is recorded in
+`experiments/tool_trajectory_monitoring/DISTILLATION_SCALING.md`.
+
 At each frozen subset size and seed, the minimum causal comparison is:
 
 | Arm | Target | What it identifies |

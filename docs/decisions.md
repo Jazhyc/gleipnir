@@ -1,5 +1,21 @@
 # Decision log
 
+## 2026-08-30 — Run tool-trajectory scaling as Kimi-soft-only distillation
+
+- Train only Kimi K3 soft-logit students for the first Qwen3.5-9B
+  tool-trajectory scaling campaign. Do not train matched hard-label adapters;
+  retain source labels solely for provenance, stratification, and evaluation.
+- Use one seed and rank-128 QLoRA at the six paper row counts with the paper's
+  exact optimizer-step horizons. The paper rationale curve remains an external
+  descriptive reference, not a supervision-channel causal comparison.
+- Add one exploratory three-epoch adapter over the full 8,688-row
+  tool-trajectory pool plus all 13,149 prior deception soft-distillation rows.
+  Report its greater compute and do not interpret it as a fixed-compute data
+  mixture ablation.
+- Preserve effective batch 32 while changing the long-context realization to
+  microbatch 1 and accumulation 32, subject to a rank-128 longest-sequence H100
+  preflight and a zero-truncation 29,696-token preparation audit.
+
 ## 2026-08-30 — Make paid teacher caching provider-sticky and auditable
 
 - Route synchronous OpenRouter annotation campaigns through a stable
