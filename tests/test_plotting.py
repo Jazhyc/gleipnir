@@ -8,6 +8,7 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
     _markdown_cells,
     load_frontier_registry,
+    select_plot_points,
 )
 
 
@@ -54,6 +55,13 @@ def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
     assert kimi["cost_per_1k"] == pytest.approx(25.1177)
     assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
+
+
+def test_plot_omits_opus_without_removing_it_from_registry() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE)
+
+    assert "Claude Opus 4.6 prompted" in set(frame["monitor"])
+    assert "Claude Opus 4.6 prompted" not in set(select_plot_points(frame)["monitor"])
 
 
 def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None:

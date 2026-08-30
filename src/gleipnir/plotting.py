@@ -32,6 +32,7 @@ def set_plot_style() -> None:
             "axes.spines.top": False,
             "figure.dpi": 120,
             "savefig.dpi": 300,
+            "svg.fonttype": "none",
         },
     )
 
@@ -68,4 +69,10 @@ def save_figure(figure: Figure, output_path: str | Path) -> Path:
     output.parent.mkdir(parents=True, exist_ok=True)
     figure.savefig(output, bbox_inches="tight", facecolor="white")
     plt.close(figure)
+    if output.suffix.lower() == ".svg":
+        svg = output.read_text(encoding="utf-8")
+        output.write_text(
+            "\n".join(line.rstrip() for line in svg.splitlines()) + "\n",
+            encoding="utf-8",
+        )
     return output

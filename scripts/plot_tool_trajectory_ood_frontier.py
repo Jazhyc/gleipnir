@@ -16,6 +16,7 @@ os.environ.setdefault(
 import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
+from adjustText import adjust_text
 from matplotlib.lines import Line2D
 from matplotlib.ticker import FuncFormatter, PercentFormatter
 
@@ -29,6 +30,8 @@ from gleipnir.plotting import (
 REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
+DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
+EXCLUDED_MONITORS = {"Claude Opus 4.6 prompted"}
 EXPECTED_COLUMNS = [
     "Origin",
     "Monitor",
@@ -120,32 +123,33 @@ def _display_label(monitor: str) -> str:
     return textwrap.fill(replacements.get(monitor, monitor), width=22)
 
 
-def _annotation_position(
-    monitor: str, label_index: int
-) -> tuple[int, int, str]:
-    positions = {
-        "Claude Sonnet 4.6 prompted": (-8, 8, "right"),
-        "Gemini 3.1 Pro prompted": (0, 18, "center"),
-        "Claude Opus 4.6 prompted": (8, -15, "left"),
-    }
-    if monitor in positions:
-        return positions[monitor]
-    vertical_offsets = [10, -18, 11, -20, 11, -20, 11, -20, 11, -20, 11]
-    return 5, vertical_offsets[label_index % len(vertical_offsets)], "left"
+def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
+    """Apply documented presentation-only omissions to registry points."""
+    return frame.loc[~frame["monitor"].isin(EXCLUDED_MONITORS)].copy()
 
 
 def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
+    frame = select_plot_points(frame)
     set_plot_style()
     figure, axis = plt.subplots(figsize=(13.2, 8.0))
+    axis.set_xscale("log")
+    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
+    axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
+    axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
+    axis.set_xlim(
+        frame["cost_per_1k"].min() / 1.35,
+        frame["cost_per_1k"].max() * 1.45,
+    )
+    axis.set_ylim(0.44, 0.985)
 
     frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
     axis.plot(
         frontier["cost_per_1k"],
         frontier["mean_ood_pauroc_at_20"],
         color="#374151",
-        linewidth=2.2,
-        alpha=0.72,
+        linewidth=2.3,
+        alpha=0.82,
         zorder=1,
     )
 
@@ -157,10 +161,10 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             y="mean_ood_pauroc_at_20",
             color=ORIGIN_PALETTE.get(origin, "#777777"),
             marker=markers.get(origin, "o"),
-            s=78,
-            alpha=0.58,
-            edgecolor="white",
-            linewidth=0.8,
+            s=92,
+            alpha=0.78,
+            edgecolor="#374151",
+            linewidth=0.65,
             legend=False,
             ax=axis,
             zorder=2,
@@ -172,9 +176,9 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             y="mean_ood_pauroc_at_20",
             color=ORIGIN_PALETTE.get(origin, "#777777"),
             marker=markers.get(origin, "o"),
-            s=145,
+            s=165,
             edgecolor="#111827",
-            linewidth=1.25,
+            linewidth=1.5,
             legend=False,
             ax=axis,
             zorder=3,
@@ -183,33 +187,40 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     labelled = frame.loc[
         frame["computed_frontier"] | frame["origin"].eq("Gleipnir")
     ].sort_values("cost_per_1k")
+    labels = []
     for label_index, (_, row) in enumerate(labelled.iterrows()):
-        x_offset, y_offset, horizontal_alignment = _annotation_position(
-            str(row["monitor"]), label_index
-        )
         is_frontier = bool(row["computed_frontier"])
-        axis.annotate(
-            _display_label(str(row["monitor"])),
-            (row["cost_per_1k"], row["mean_ood_pauroc_at_20"]),
-            xytext=(x_offset, y_offset),
-            textcoords="offset points",
-            fontsize=8.5,
-            fontweight="bold" if row["origin"] == "Gleipnir" else "normal",
-            color="#111827" if is_frontier else "#6B7280",
-            ha=horizontal_alignment,
-            va="bottom" if y_offset >= 0 else "top",
-            zorder=4,
+        vertical_offset = 0.014 if label_index % 2 == 0 else -0.014
+        labels.append(
+            axis.text(
+                row["cost_per_1k"] * 1.02,
+                row["mean_ood_pauroc_at_20"] + vertical_offset,
+                _display_label(str(row["monitor"])),
+                fontsize=9.25,
+                fontweight="bold" if row["origin"] == "Gleipnir" else "normal",
+                color="#111827" if is_frontier else "#4B5563",
+                ha="center",
+                va="center",
+                zorder=4,
+            )
         )
-
-    axis.set_xscale("log")
-    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
-    axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
-    axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
-    axis.set_xlim(
-        frame["cost_per_1k"].min() / 1.35,
-        frame["cost_per_1k"].max() * 1.45,
+    adjust_text(
+        labels,
+        x=frame["cost_per_1k"].to_numpy(),
+        y=frame["mean_ood_pauroc_at_20"].to_numpy(),
+        target_x=labelled["cost_per_1k"].to_numpy(),
+        target_y=labelled["mean_ood_pauroc_at_20"].to_numpy(),
+        ax=axis,
+        expand=(1.2, 1.35),
+        force_text=(0.55, 0.9),
+        force_static=(0.45, 0.7),
+        force_pull=(0.01, 0.015),
+        max_move=(24, 24),
+        min_arrow_len=4,
+        iter_lim=600,
+        prevent_crossings=True,
+        arrowprops={"arrowstyle": "-", "color": "#9CA3AF", "linewidth": 0.7},
     )
-    axis.set_ylim(0.44, 0.985)
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     axis.set_ylabel("Mean-OOD pAUROC@20")
     axis.set_title(
@@ -238,7 +249,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             marker=markers[origin],
             linestyle="none",
             markerfacecolor=color,
-            markeredgecolor="white",
+            markeredgecolor="#374151",
+            markeredgewidth=0.65,
             markersize=8,
             label=origin_labels.get(origin, origin),
         )
@@ -273,8 +285,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--output",
         type=Path,
-        default=DEFAULT_OUTPUT,
-        help="Output image path; the extension selects the image format",
+        action="append",
+        help=(
+            "Output image path; repeat for multiple formats. Defaults to both "
+            "PNG and SVG."
+        ),
     )
     return parser.parse_args()
 
@@ -282,9 +297,16 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     frame = load_frontier_registry(args.source)
-    output = save_figure(plot_frontier(frame), args.output)
-    frontier_count = int(frame["computed_frontier"].sum())
-    print(f"Wrote {output} from {len(frame)} points ({frontier_count} frontier).")
+    plotted = select_plot_points(frame)
+    omitted_count = len(frame) - len(plotted)
+    outputs = args.output or [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
+    frontier_count = int(plotted["computed_frontier"].sum())
+    for output_path in outputs:
+        output = save_figure(plot_frontier(frame), output_path)
+        print(
+            f"Wrote {output} from {len(plotted)} plotted points "
+            f"({frontier_count} frontier; {omitted_count} omitted)."
+        )
 
 
 if __name__ == "__main__":
