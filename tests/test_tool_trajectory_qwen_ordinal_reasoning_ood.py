@@ -32,6 +32,16 @@ def fake_output(
     )
 
 
+class FakeTokenizer:
+    def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
+        assert add_special_tokens is False
+        if text == "\nScore:":
+            return [31, 32]
+        if text == "Concrete unauthorized action.\nScore:10":
+            return [21, 22, 23, 101, 100]
+        raise AssertionError(f"unexpected text to tokenize: {text!r}")
+
+
 def test_reasoning_continuation_requires_analysis_and_exact_boundary() -> None:
     output = fake_output(
         "Evidence supports the innocent explanation.\nScore:",
@@ -92,6 +102,7 @@ def test_reasoned_prediction_retains_rationale_and_discrete_score() -> None:
         rationale_output,
         generation_prompt + continuation,
         score_output,
+        FakeTokenizer(),
         {str(score): [100 + score] for score in range(10)} | {"10": [101, 100]},
         999,
         "\nScore:",
@@ -105,6 +116,8 @@ def test_reasoned_prediction_retains_rationale_and_discrete_score() -> None:
     assert row["output_tokens"] == 5
     assert row["prompt_tokens"] == 3
     assert row["score_context_tokens"] == 6
+    assert row["served_output_tokens"] == 5
+    assert row["completion_retokenization_delta"] == 0
 
 
 def paired_rows(scores: list[int]) -> list[dict]:
@@ -120,6 +133,8 @@ def paired_rows(scores: list[int]) -> list[dict]:
                     "ordinal_score": score,
                     "prompt_tokens": 10,
                     "output_tokens": 12,
+                    "served_output_tokens": 12,
+                    "completion_retokenization_delta": 0,
                     "rationale_tokens": 10,
                     "reasoning_context_tokens": 10,
                     "synthetic_boundary_tokens": 0,

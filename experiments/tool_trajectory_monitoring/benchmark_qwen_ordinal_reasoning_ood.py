@@ -46,7 +46,7 @@ DEFAULT_CONFIG = Path(
 )
 DEFAULT_OUTPUT = Path(
     "results/tool_trajectory_monitoring/"
-    "qwen35_9b_teacher_ordinal_reasoning_ood_v3"
+    "qwen35_9b_teacher_ordinal_reasoning_ood_v3_final"
 )
 
 
@@ -171,6 +171,7 @@ def reasoned_prediction_row(
     rationale_output: Any,
     score_prompt: str,
     score_output: Any,
+    tokenizer: Any,
     choice_token_ids: dict[str, list[int]],
     eos_token_id: int,
     stop: str,
@@ -207,9 +208,15 @@ def reasoned_prediction_row(
     if len(score_prompt_token_ids) + len(score_output_token_ids) > max_model_len:
         raise RuntimeError("reasoning plus score reaches max_model_len")
     reasoning_context_tokens = len(score_prompt_token_ids) - len(prompt_token_ids)
-    synthetic_boundary_tokens = reasoning_context_tokens - len(rationale_token_ids)
-    if synthetic_boundary_tokens < 0:
-        raise RuntimeError("score context is shorter than its generated reasoning")
+    synthetic_boundary_tokens = (
+        len(tokenizer.encode(stop, add_special_tokens=False))
+        if boundary_recovery != "none"
+        else 0
+    )
+    visible_completion_tokens = len(
+        tokenizer.encode(continuation + score_text, add_special_tokens=False)
+    )
+    logical_output_tokens = visible_completion_tokens + len(termination_token_ids)
 
     ordinal_score = int(score_text)
     metadata = record["metadata"]
@@ -237,7 +244,13 @@ def reasoned_prediction_row(
         "score_token_ids": score_token_ids,
         "termination_token_ids": termination_token_ids,
         "score_tokens": len(score_token_ids),
-        "output_tokens": reasoning_context_tokens + len(score_output_token_ids),
+        "output_tokens": logical_output_tokens,
+        "served_output_tokens": len(rationale_token_ids)
+        + len(score_output_token_ids),
+        "completion_retokenization_delta": logical_output_tokens
+        - len(rationale_token_ids)
+        - synthetic_boundary_tokens
+        - len(score_output_token_ids),
         "prompt_tokens": len(prompt_token_ids),
         "score_context_tokens": len(score_prompt_token_ids),
         "source_prompt_sha256": metadata["rendered_prompt_sha256"],
@@ -264,6 +277,10 @@ def summarize_reasoning(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "truncated_rows": int(frame["rationale_truncated"].sum()),
         "boundary_recoveries": dict(Counter(frame["boundary_recovery"])),
         "synthetic_boundary_tokens": int(frame["synthetic_boundary_tokens"].sum()),
+        "served_output_tokens": int(frame["served_output_tokens"].sum()),
+        "completion_retokenization_delta": int(
+            frame["completion_retokenization_delta"].sum()
+        ),
         "finish_reasons": dict(Counter(frame["rationale_finish_reason"])),
     }
     summary["score_context_tokens"] = {
@@ -466,6 +483,7 @@ def main() -> None:
                 rationale,
                 score_prompt,
                 score_output,
+                tokenizer,
                 choice_token_ids,
                 int(tokenizer.eos_token_id),
                 str(generation["stop"]),

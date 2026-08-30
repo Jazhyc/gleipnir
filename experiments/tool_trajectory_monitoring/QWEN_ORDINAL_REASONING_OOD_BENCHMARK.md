@@ -81,4 +81,7 @@ sbatch cluster/slurm/benchmark_qwen_ordinal_reasoning_ood.sh
 ```
 
 Artifacts are written under the ignored directory
-`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v3/`.
+`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v3_final/`.
+Logical hosted output cost is counted by retokenizing the saved visible
+completion. Actual tokens returned across the two vLLM calls and the
+retokenization delta are retained separately.
