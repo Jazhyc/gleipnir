@@ -29,10 +29,14 @@ competition runner is included.
 - `src/gleipnir/`: shared prompt, API, metric, and training utilities.
 - `experiments/<hypothesis>/`: one self-contained hypothesis and its launchers.
 - `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
-- `scripts/`: operational tooling, including Lambda Cloud management.
+- `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.
+- `figures/`: tracked, reproducible figures and their regeneration commands.
 - `docs/`: research program, findings, decisions, and infrastructure notes.
 - `data/`, `results/`, `logs/`: ignored local artifacts; only `.gitkeep` files are tracked.
 
+Reusable plotting conventions live in `src/gleipnir/plotting.py`. See
+[`figures/README.md`](figures/README.md) for the figure registry and exact
+regeneration commands.
+
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
-

@@ -8,6 +8,13 @@ Monitors for Black-Box Scheming Detection*. Add every future Gleipnir OOD
 evaluation here once coverage and cost accounting pass the gates below. Do not
 use canaries, incomplete runs, or tuned-on-OOD variants as frontier points.
 
+The current plot is tracked at
+[`../../figures/tool_trajectory_ood_frontier.png`](../../figures/tool_trajectory_ood_frontier.png)
+and is regenerated directly from the table below with
+`python scripts/plot_tool_trajectory_ood_frontier.py`. Shared plotting helpers
+live in `src/gleipnir/plotting.py`; see
+[`../../figures/README.md`](../../figures/README.md) before adding another plot.
+
 ## Comparison contract
 
 The performance coordinate is the paper's raw normalized Mean-OOD pAUROC@20:

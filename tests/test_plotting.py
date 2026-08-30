@@ -1,0 +1,71 @@
+from pathlib import Path
+
+import numpy as np
+import pytest
+
+from gleipnir.plotting import pareto_frontier_mask
+from scripts.plot_tool_trajectory_ood_frontier import (
+    DEFAULT_SOURCE,
+    _markdown_cells,
+    load_frontier_registry,
+)
+
+
+def test_pareto_frontier_keeps_nondominated_and_duplicate_points() -> None:
+    mask = pareto_frontier_mask(
+        [1.0, 2.0, 2.0, 3.0, 4.0],
+        [0.5, 0.4, 0.6, 0.7, 0.7],
+    )
+    assert mask.tolist() == [True, False, True, True, False]
+
+    duplicates = pareto_frontier_mask([1.0, 1.0], [0.5, 0.5])
+    assert duplicates.tolist() == [True, True]
+
+
+def test_pareto_frontier_rejects_invalid_coordinates() -> None:
+    with pytest.raises(ValueError, match="positive"):
+        pareto_frontier_mask([0.0], [0.5])
+    with pytest.raises(ValueError, match="paired"):
+        pareto_frontier_mask([1.0], [0.5, 0.6])
+    with pytest.raises(ValueError, match="finite"):
+        pareto_frontier_mask([1.0], [np.nan])
+
+
+def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
+    cells = _markdown_cells(
+        r"| Gleipnir | Model | Immediate `0\|1` logits | 1.0 | 0.8 | yes |"
+    )
+    assert cells == [
+        "Gleipnir",
+        "Model",
+        "Immediate `0|1` logits",
+        "1.0",
+        "0.8",
+        "yes",
+    ]
+
+
+def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE)
+
+    assert len(frame) == 21
+    assert frame["computed_frontier"].sum() == 11
+    assert frame["computed_frontier"].equals(frame["declared_frontier"])
+    kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
+    assert kimi["cost_per_1k"] == pytest.approx(25.1177)
+    assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
+
+
+def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None:
+    registry = tmp_path / "frontier.md"
+    source = DEFAULT_SOURCE.read_text(encoding="utf-8")
+    registry.write_text(
+        source.replace(
+            "| **Gleipnir** | **Qwen3.5-4B base** |",
+            "| **Gleipnir** | **Qwen3.5-4B base** |",
+        ).replace("| **0.6175** | **yes** |", "| **0.6175** | **no** |", 1),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="Qwen3.5-4B base"):
+        load_frontier_registry(registry)
