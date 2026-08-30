@@ -141,7 +141,8 @@ def run_training_job(
 ) -> None:
     command = [
         sys.executable,
-        "experiments/tool_trajectory_monitoring/run_distillation_train.py",
+        "-m",
+        "experiments.tool_trajectory_monitoring.run_distillation_train",
         "--jobs",
         jobs_path.as_posix(),
         "--job-name",
