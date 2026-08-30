@@ -1,7 +1,7 @@
 # Binary action-only tool-trajectory monitoring
 
-Status: prompt contract and bounded teacher canary complete. Frozen OOD
-evaluation is underway; student training has not started.
+Status: prompt contract, bounded teacher canary, and frozen Kimi K3 OOD baseline
+complete. Student training has not started.
 
 ## Lambda environment status
 
@@ -98,13 +98,13 @@ hash and therefore creates a different teacher-cache identity. Increment
 teacher cache across prompt hashes. Training and evaluation must load these same
 files through `prompting.py`; they must not carry private inline copies.
 
-## Current stop condition
+## Prompt-preparation stop condition
 
-This preparation phase is complete when the paired prompts are explicit, render
-deterministically, preserve the full-teacher/compact-student distinction, expose
-the provider-cache boundary, and pass their contract tests. A paid canary,
-dataset materialization, and Lambda training are separate future phases and
-require frozen data and run configs first.
+This preparation phase completed when the paired prompts were explicit, rendered
+deterministically, preserved the full-teacher/compact-student distinction,
+exposed the provider-cache boundary, and passed their contract tests. The paid
+canary, OOD materialization, and Kimi baseline have since completed. Lambda
+student training remains a separate phase with frozen data and run configs.
 
 ## Teacher-logit canary
 
@@ -171,3 +171,17 @@ cross-row input caching as unsupported until a new probe shows otherwise, and
 do not scale teacher annotation under the previous cache assumption. Full
 results and interpretation are in
 [`../../docs/findings/tool_trajectory_teacher_canary.md`](../../docs/findings/tool_trajectory_teacher_canary.md).
+
+## Completed OOD baseline and frontier registry
+
+The frozen Kimi K3 evaluation covers all 6,395 strict OOD rows. Its full binary
+teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
+pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
+[`../../docs/findings/tool_trajectory_kimi_ood_benchmark.md`](../../docs/findings/tool_trajectory_kimi_ood_benchmark.md).
+
+The paper's complete cost--performance reference table and every future
+completed Gleipnir OOD evaluation belong in
+[`../../docs/research/tool_trajectory_ood_frontier.md`](../../docs/research/tool_trajectory_ood_frontier.md).
+Follow that registry's frozen metric, cost, coverage, and provenance gates; do
+not add partial canaries or silently replace rows after a price or interface
+change.

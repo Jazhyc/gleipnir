@@ -21,7 +21,9 @@ excludes prompt caching, batch discounts, SFT/RL, queueing, throughput, and
 self-hosted infrastructure. Preserve those exclusions in a paper-comparable
 cost-performance plot and show amortized or self-hosted costs separately.
 
-The paper's relevant reference rows are:
+Selected paper reference rows are below. The complete 17-row paper table plus
+all completed Gleipnir evaluations is maintained in
+[`tool_trajectory_ood_frontier.md`](tool_trajectory_ood_frontier.md).
 
 | Monitor | Mean input | Mean output | Input $/M | Output $/M | $/1K evaluations | Mean-OOD pAUROC@20 | Mean-OOD AUROC |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |

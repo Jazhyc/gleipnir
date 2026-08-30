@@ -432,11 +432,12 @@ uncertainty for every trained arm.
 ### Inference cost and serving scope
 
 Use the paper's uncached marginal USD per 1,000 evaluations convention for the
-primary cost-performance plot. The dated planning estimate is about `$0.85/1K`
-for the direct-logit Qwen3.5-9B student and about `$21/1K` for Kimi K3 used
-directly with the full binary teacher prompt. These are inference costs, not the
-one-time teacher-cache annotation budget. Exact publication values require the
-frozen OOD prompts and saved provider usage.
+primary cost-performance plot. The direct-logit Qwen3.5-9B student remains a
+provisional `$0.85/1K` estimate. The completed Kimi K3 full binary-prompt
+baseline reaches `0.9084` Mean-OOD pAUROC@20 at `$25.1177/1K`. These are
+inference costs, not the one-time teacher-cache annotation budget. Add every
+completed full-suite result to the canonical
+[`tool_trajectory_ood_frontier.md`](tool_trajectory_ood_frontier.md) registry.
 
 The formulas, token-count proxies, full-suite projections, qualifications, and
 future prefill-only serving optimizations are frozen in
