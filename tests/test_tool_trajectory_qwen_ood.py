@@ -59,3 +59,20 @@ def test_frozen_qwen4b_config_uses_full_teacher_ood_contract() -> None:
     assert config["engine"]["audited_max_prompt_tokens"] == 30_382
     assert config["engine"]["audited_total_prompt_tokens"] == 60_539_619
     assert config["engine"]["max_model_len"] == 32_768
+
+
+def test_frozen_qwen27b_config_uses_full_teacher_ood_contract() -> None:
+    config = load_json(
+        Path("experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json")
+    )
+    validate_config(config)
+    assert config["model"]["id"] == "Qwen/Qwen3.5-27B"
+    assert config["model"]["revision"] == (
+        "fc05daec18b0a78c049392ed2e771dde82bdf654"
+    )
+    assert config["scope"]["rows"] == 6_395
+    assert config["prompt"]["role"] == "teacher"
+    assert config["prompt"]["enable_thinking"] is False
+    assert config["engine"]["audited_max_prompt_tokens"] == 30_382
+    assert config["engine"]["audited_total_prompt_tokens"] == 60_539_619
+    assert config["engine"]["max_model_len"] == 32_768

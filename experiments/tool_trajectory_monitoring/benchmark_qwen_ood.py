@@ -38,6 +38,7 @@ QWEN_NON_THINKING_ASSISTANT_SUFFIX = (
 SUPPORTED_QWEN_MODELS = {
     "Qwen/Qwen3.5-4B",
     "Qwen/Qwen3.5-9B",
+    "Qwen/Qwen3.5-27B",
 }
 
 
