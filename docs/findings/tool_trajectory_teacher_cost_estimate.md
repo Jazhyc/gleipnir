@@ -64,6 +64,38 @@ counts, tokenizer revisions, 28K filter result, prompt hashes, per-row token
 counts, and aggregate/per-source distributions. Its current output SHA-256 is
 `c06833bc0c5e8893ea45e92ec642a71e751749ee1cd0796eb88f7ab38402763f`.
 
+## Held-out in-distribution teacher benchmark
+
+The held-out benchmark contains 946 STRIDE-test rows and 2,066
+Gloom-Exfiltration rows, or 3,012 total. Reapplying the same pinned Qwen3 28K
+rule filters no rows; the maximum action-only input is 27,886 tokens.
+
+The frozen teacher prompt produces 33,296,389 raw Kimi tokens and **33,359,641
+predicted Makora prompt tokens** after the calibrated 21-token wrapper per row.
+Mean provider prompt length is 11,075.6 tokens; p50 is 9,635.5, p90 is 19,970,
+p95 is 22,745.6, p99 is 25,644.4, and the maximum is 27,432.
+
+| Source | Rows | Predicted Makora prompt tokens | Cost with 10 output tokens |
+| --- | ---: | ---: | ---: |
+| STRIDE test | 946 | 5,565,939 | `$14.31` |
+| Gloom-Exfiltration | 2,066 | 27,793,702 | `$71.14` |
+| **Total** | **3,012** | **33,359,641** | **`$85.45`** |
+
+The total is `$85.0671` input plus `$0.3840` output. A 10% authorization
+envelope is `$94.00`. Training plus held-out ID annotation totals 116,999,694
+predicted prompt tokens and `$299.84`; a combined 10% envelope is `$329.83`.
+
+The separate ignored cache input and manifest are reconstructed with:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.prepare_teacher_id_cache
+```
+
+The current output SHA-256 is
+`b4ed4662c0b91e700b0bd5d1bdf2e5c3e4dd9bf66af5497417d589827b122a20`.
+Labels are retained only in local metadata and are not rendered into teacher
+requests.
+
 ## Historical accessible-release estimate
 
 > **Scope warning:** this is **not** the paper's 8,688-row training mixture. It
