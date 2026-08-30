@@ -31,10 +31,12 @@ all completed Gleipnir evaluations is maintained in
 | Qwen3.5-27B SFT+RL | 8,411.0 | 727.5 | 0.195 | 1.56 | 2.775 | 0.831 | 0.948 |
 | Gemini 3.1 Pro prompted | 13,995.1 | 3,769.0 | 2.00 | 12.00 | 73.218 | 0.940 | 0.973 |
 
-The paper's Qwen monitors generate rationales before an ordinal answer. Gleipnir
-instead normalizes the literal `0` and `1` logits at an immediate decision
-boundary. Its output-token charge is consequently negligible, but every monitor
-must still prefill the long trajectory.
+The paper's Qwen monitors generate rationales before an ordinal answer.
+Gleipnir's main base-model baselines instead normalize the literal `0` and `1`
+logits at an immediate decision boundary. A matched Qwen3.5-9B ablation also
+generates an immediate 0--10 integer without a rationale. Both interfaces have
+negligible output-token charges, but every monitor must still prefill the long
+trajectory.
 
 ## Hosted price snapshots
 
@@ -54,20 +56,26 @@ cache discounts.
 
 ## Gleipnir Qwen3.5 exact accounting
 
-The completed 4B and 9B runs share a byte-identical tokenizer and chat template
-and therefore use the same 60,539,619 rendered input tokens, or 9,466.7113 per
-evaluation. Both generate exactly one constrained output token. Their exact
-paper-comparable coordinates are:
+The completed binary 4B and 9B runs share a byte-identical tokenizer and chat
+template and therefore use the same 60,539,619 rendered input tokens, or
+9,466.7113 per evaluation. Both generate exactly one constrained output token.
+The 9B ordinal ablation uses a longer instruction, averaging 9,624.7113 input
+tokens, and records two output tokens per row because vLLM appends EOS after a
+one-digit score and `10` itself takes two tokens. Their exact paper-comparable
+coordinates are:
 
 | Model | Input price $/M | Output price $/M | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations | Mean-OOD pAUROC@20 |
 | --- | ---: | ---: | ---: | ---: | ---: | ---: |
 | Qwen3.5-4B base | 0.03 | 0.15 | 0.284001 | 0.000150 | **0.284151** | 0.6175 |
 | Qwen3.5-9B base | 0.10 | 0.15 | 0.946671 | 0.000150 | **0.946821** | 0.6976 |
+| Qwen3.5-9B base, immediate ordinal | 0.10 | 0.15 | 0.962471 | 0.000300 | **0.962771** | 0.4858 |
 
 The 4B price is the paper's Artificial Analysis hosted proxy. OpenRouter did
 not list Qwen3.5-4B on 2026-08-30, so it must not be described as an OpenRouter
 quote. The 9B row uses OpenRouter's dated route. The matched 9B capacity gain is
-`0.0801` pAUROC@20 at `3.33x` the hosted-price projection.
+`0.0801` pAUROC@20 at `3.33x` the hosted-price projection. The ordinal ablation
+costs 1.7% more than the binary 9B run while losing `0.2118` pAUROC@20, so it is
+strictly dominated.
 
 ## Direct Kimi K3 monitor exact tokenization
 

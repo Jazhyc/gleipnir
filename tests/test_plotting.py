@@ -48,7 +48,7 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
 
-    assert len(frame) == 21
+    assert len(frame) == 22
     assert frame["computed_frontier"].sum() == 11
     assert frame["computed_frontier"].equals(frame["declared_frontier"])
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]

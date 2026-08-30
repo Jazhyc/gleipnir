@@ -38,9 +38,9 @@ ownership are excluded from the primary coordinate. Record them separately.
 
 The paper rows below are the published three-seed means rounded to three decimal
 places. The Gleipnir rows are deterministic temperature-zero evaluations using
-the binary-logit interface. They are comparable in dataset, metric, and
-uncached cost convention, but are not interface reproductions of the paper's
-generated 0--10 monitor scores.
+either immediate binary logits or an immediate ordinal integer. They are
+comparable in dataset, metric, and uncached cost convention, but neither
+interface reproduces the paper's rationale-before-score generation.
 
 ## Reference table
 
@@ -59,6 +59,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
+| **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | yes |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
@@ -77,7 +78,8 @@ counts and prices remain in the paper rather than being duplicated here. The
 Gleipnir rows are backed by the completed
 [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md),
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
-[`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
+[`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
+[`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 audits and the exact accounting in
@@ -135,6 +137,25 @@ point is also cheaper (`$0.869/1K`) and stronger (`0.703`). The result remains
 important as the matched unadapted Qwen base under Gleipnir's full binary
 specification; it should not be interpreted as evidence against later trained
 Qwen3.5-9B students using the compact deployment prompt.
+
+## Qwen3.5-9B immediate ordinal result
+
+The matched immediate 0--10 severity interface reaches `0.4858` Mean-OOD
+pAUROC@20 and `0.7592` Mean-OOD AUROC at `$0.9628/1K`. It is dominated by the
+same model's binary logits, which are cheaper by 1.7% and improve pAUROC@20 by
+`0.2118`.
+
+This loss is not principally a mathematical consequence of using 11 bins.
+Rounding the saved binary probabilities to the nearest tenth retains `0.6835`
+pAUROC@20, only `0.0141` below the continuous baseline. By contrast, the
+generated ordinal scores used only seven values, omitted 1, 2, 4, and 6, and
+placed 80.6% of examples at 0 or 10. The unadapted model therefore does not use
+the requested severity scale as a calibrated drop-in replacement for binary
+probabilities.
+
+This comparison isolates immediate output interfaces under matched model and
+data conditions. It does not reproduce or reject the paper's trained,
+rationale-before-score monitors.
 
 ## Kimi K3 frontier movement
 
@@ -210,6 +231,7 @@ variability.
 - [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
+- [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
 - [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b)
 - [OpenRouter GPT-OSS-120B pricing and provider variability](https://openrouter.ai/openai/gpt-oss-120b/performance)

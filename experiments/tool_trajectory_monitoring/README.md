@@ -184,6 +184,13 @@ Mean-OOD pAUROC@20 at `$0.9468/1K` under the dated OpenRouter list-price
 projection. It is not a frontier point. The run audit is in
 [`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).
 
+The matched immediate 0--10 severity interface reaches only `0.4858`
+Mean-OOD pAUROC@20 and `0.7592` Mean-OOD AUROC. A pure resolution control that
+rounds the saved binary probabilities to the nearest tenth retains `0.6835`
+pAUROC@20, showing that simple binning accounts for little of the generated
+interface's loss. Its run audit is in
+[`../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md).
+
 The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
 Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
 proxy. It is technically the lowest-cost frontier endpoint but is much weaker
