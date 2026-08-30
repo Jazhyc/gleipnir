@@ -202,7 +202,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
                 row["mean_ood_pauroc_at_20"] + vertical_offset,
                 _display_label(str(row["monitor"])),
                 fontsize=10.25,
-                fontweight="bold" if row["origin"] == "Gleipnir" else "normal",
+                fontweight="bold",
                 color="#111827" if is_frontier else "#4B5563",
                 ha="center",
                 va="center",
@@ -241,6 +241,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         "Strict six-source OOD suite · lower cost and higher performance are better",
         transform=axis.transAxes,
         fontsize=11.5,
+        fontweight="bold",
         color="#4B5563",
     )
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
@@ -274,7 +275,12 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             label="Pareto frontier",
         )
     )
-    axis.legend(handles=legend_handles, loc="lower right", frameon=True, fontsize=11)
+    axis.legend(
+        handles=legend_handles,
+        loc="lower right",
+        frameon=True,
+        prop={"size": 11, "weight": "bold"},
+    )
     figure.tight_layout()
     return figure
 

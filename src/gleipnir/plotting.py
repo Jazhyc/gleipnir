@@ -29,11 +29,13 @@ def set_plot_style() -> None:
         style="whitegrid",
         palette="colorblind",
         rc={
+            "axes.labelweight": "bold",
             "axes.spines.right": False,
             "axes.spines.top": False,
             "figure.dpi": 120,
             "font.family": "sans-serif",
             "font.sans-serif": ["Cantarell", "DejaVu Sans"],
+            "font.weight": "bold",
             "savefig.dpi": 300,
             "svg.fonttype": "none",
         },
