@@ -1,7 +1,8 @@
 # Qwen3.5-9B visible-reasoning ordinal OOD benchmark
 
-Status: v2 frozen before evaluation; not yet launched. The 2,048-token v1
-preflight was invalidated before analysis after a rationale hit its length cap.
+Status: v3 frozen before evaluation; not yet launched. The 2,048-token v1 and
+strict-boundary 4,096-token v2 preflights were invalidated before analysis after
+the same degenerate rationale exhausted both length caps.
 
 ## Hypothesis and intervention
 
@@ -25,6 +26,13 @@ retains the generated analysis in the scoring context while preventing output
 format failures from becoming missing scores. It is logically one visible
 rationale followed by one score, even though vLLM executes two generation
 calls. The saved ranking value is the integer divided by 10.
+
+Generation is capped at the paper-aligned 4,096-token rationale reserve. If a
+rationale reaches that cap, or otherwise completes without the required
+terminal prefix, the evaluator retains the generated analysis, appends
+`Score:`, and marks the recovery before requesting the constrained integer.
+The result reports every truncated or missing-boundary recovery. Empty outputs
+and any other finish reason still fail closed.
 
 ## Matched baselines and accounting
 
@@ -73,4 +81,4 @@ sbatch cluster/slurm/benchmark_qwen_ordinal_reasoning_ood.sh
 ```
 
 Artifacts are written under the ignored directory
-`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v2/`.
+`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v3/`.

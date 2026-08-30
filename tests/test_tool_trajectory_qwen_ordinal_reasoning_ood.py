@@ -39,17 +39,29 @@ def test_reasoning_continuation_requires_analysis_and_exact_boundary() -> None:
         prompt_token_ids=[10, 11],
         stop_reason="\nScore:",
     )
-    text, token_ids = benchmark.reasoning_continuation(output, "\nScore:")
+    text, token_ids, recovery = benchmark.reasoning_continuation(
+        output, "\nScore:"
+    )
     assert text.endswith("\nScore:")
     assert token_ids == [1, 2, 3]
+    assert recovery == "none"
 
     output.outputs[0].text = "\nScore:"
     with pytest.raises(RuntimeError, match="no analysis"):
         benchmark.reasoning_continuation(output, "\nScore:")
 
     output.outputs[0].text = "analysis without boundary"
-    with pytest.raises(RuntimeError, match="exact terminal score boundary"):
-        benchmark.reasoning_continuation(output, "\nScore:")
+    text, token_ids, recovery = benchmark.reasoning_continuation(
+        output, "\nScore:"
+    )
+    assert text == "analysis without boundary\nScore:"
+    assert token_ids == [1, 2, 3]
+    assert recovery == "missing_terminal_boundary"
+
+    output.outputs[0].finish_reason = "length"
+    text, _, recovery = benchmark.reasoning_continuation(output, "\nScore:")
+    assert text.endswith("\nScore:")
+    assert recovery == "length_cap"
 
 
 def test_reasoned_prediction_retains_rationale_and_discrete_score() -> None:
@@ -109,10 +121,14 @@ def paired_rows(scores: list[int]) -> list[dict]:
                     "prompt_tokens": 10,
                     "output_tokens": 12,
                     "rationale_tokens": 10,
+                    "reasoning_context_tokens": 10,
+                    "synthetic_boundary_tokens": 0,
                     "score_context_tokens": 20,
                     "rationale": "analysis",
                     "contains_think_close": False,
                     "rationale_finish_reason": "stop",
+                    "rationale_truncated": False,
+                    "boundary_recovery": "none",
                 }
             )
     return rows
@@ -124,6 +140,8 @@ def test_reasoning_summary_and_immediate_comparison() -> None:
     summary = benchmark.summarize_reasoning(reasoned)
     assert summary["metrics"]["macro"]["macro"]["auroc"] == 1.0
     assert summary["reasoning"]["tokens_total"] == 80
+    assert summary["reasoning"]["truncated_rows"] == 0
+    assert summary["reasoning"]["boundary_recoveries"] == {"none": 8}
     comparison = benchmark.compare_immediate_ordinal(reasoned, immediate)
     assert comparison["delta_reasoned_minus_immediate"]["macro"]["auroc"] == 0.0
     assert comparison["score_agreement"] == 0.5

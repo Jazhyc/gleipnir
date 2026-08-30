@@ -46,7 +46,7 @@ DEFAULT_CONFIG = Path(
 )
 DEFAULT_OUTPUT = Path(
     "results/tool_trajectory_monitoring/"
-    "qwen35_9b_teacher_ordinal_reasoning_ood_v2"
+    "qwen35_9b_teacher_ordinal_reasoning_ood_v3"
 )
 
 
@@ -129,30 +129,40 @@ def validate_existing(
     return completed
 
 
-def reasoning_continuation(output: Any, stop: str) -> tuple[str, list[int]]:
+def reasoning_continuation(output: Any, stop: str) -> tuple[str, list[int], str]:
     if not output.outputs:
         raise RuntimeError("vLLM returned no visible reasoning generation")
     generated = output.outputs[0]
     text = str(generated.text)
-    if not text.endswith(stop) or text.count(stop) != 1:
+    token_ids = list(generated.token_ids)
+    if not token_ids:
+        raise RuntimeError("visible reasoning returned no token IDs")
+    if text.endswith(stop) and text.count(stop) == 1:
+        rationale = text[: -len(stop)].strip()
+        recovery = "none"
+    elif str(generated.finish_reason) == "length":
+        rationale = text.strip()
+        text = text.rstrip() + stop
+        recovery = "length_cap"
+    elif str(generated.finish_reason) == "stop":
+        rationale = text.strip()
+        text = text.rstrip() + stop
+        recovery = "missing_terminal_boundary"
+    else:
         text_sha256 = hashlib.sha256(text.encode("utf-8")).hexdigest()
         raise RuntimeError(
-            "visible reasoning did not end at the exact terminal score boundary: "
+            "visible reasoning cannot be continued at the score boundary: "
             f"finish_reason={generated.finish_reason!r} "
             f"stop_reason={generated.stop_reason!r} "
             f"tokens={len(generated.token_ids)} text_sha256={text_sha256}"
         )
-    rationale = text[: -len(stop)].strip()
     if not rationale:
         raise RuntimeError("visible reasoning produced no analysis before the score")
-    if str(generated.finish_reason) != "stop":
+    if recovery == "none" and str(generated.finish_reason) != "stop":
         raise RuntimeError(
             f"visible reasoning finish reason is {generated.finish_reason!r}"
         )
-    token_ids = list(generated.token_ids)
-    if not token_ids:
-        raise RuntimeError("visible reasoning returned no token IDs")
-    return text, token_ids
+    return text, token_ids, recovery
 
 
 def reasoned_prediction_row(
@@ -167,7 +177,7 @@ def reasoned_prediction_row(
     config_sha256: str,
     max_model_len: int,
 ) -> dict[str, Any]:
-    continuation, rationale_token_ids = reasoning_continuation(
+    continuation, rationale_token_ids, boundary_recovery = reasoning_continuation(
         rationale_output, stop
     )
     if score_prompt != generation_prompt + continuation:
@@ -196,6 +206,10 @@ def reasoned_prediction_row(
         raise RuntimeError("vLLM omitted prompt token IDs")
     if len(score_prompt_token_ids) + len(score_output_token_ids) > max_model_len:
         raise RuntimeError("reasoning plus score reaches max_model_len")
+    reasoning_context_tokens = len(score_prompt_token_ids) - len(prompt_token_ids)
+    synthetic_boundary_tokens = reasoning_context_tokens - len(rationale_token_ids)
+    if synthetic_boundary_tokens < 0:
+        raise RuntimeError("score context is shorter than its generated reasoning")
 
     ordinal_score = int(score_text)
     metadata = record["metadata"]
@@ -211,15 +225,19 @@ def reasoned_prediction_row(
         "rationale_sha256": hashlib.sha256(rationale.encode("utf-8")).hexdigest(),
         "rationale_token_ids": rationale_token_ids,
         "rationale_tokens": len(rationale_token_ids),
+        "reasoning_context_tokens": reasoning_context_tokens,
+        "synthetic_boundary_tokens": synthetic_boundary_tokens,
         "rationale_finish_reason": str(rationale_output.outputs[0].finish_reason),
         "rationale_stop_reason": rationale_output.outputs[0].stop_reason,
+        "boundary_recovery": boundary_recovery,
+        "rationale_truncated": boundary_recovery == "length_cap",
         "contains_think_close": "</think>" in rationale,
         "generated_text": score_text,
         "generated_token_ids": score_output_token_ids,
         "score_token_ids": score_token_ids,
         "termination_token_ids": termination_token_ids,
         "score_tokens": len(score_token_ids),
-        "output_tokens": len(rationale_token_ids) + len(score_output_token_ids),
+        "output_tokens": reasoning_context_tokens + len(score_output_token_ids),
         "prompt_tokens": len(prompt_token_ids),
         "score_context_tokens": len(score_prompt_token_ids),
         "source_prompt_sha256": metadata["rendered_prompt_sha256"],
@@ -243,6 +261,9 @@ def summarize_reasoning(rows: list[dict[str, Any]]) -> dict[str, Any]:
         "tokens_mean": float(frame["rationale_tokens"].mean()),
         "characters_mean": float(frame["rationale"].str.len().mean()),
         "think_close_rows": int(frame["contains_think_close"].sum()),
+        "truncated_rows": int(frame["rationale_truncated"].sum()),
+        "boundary_recoveries": dict(Counter(frame["boundary_recovery"])),
+        "synthetic_boundary_tokens": int(frame["synthetic_boundary_tokens"].sum()),
         "finish_reasons": dict(Counter(frame["rationale_finish_reason"])),
     }
     summary["score_context_tokens"] = {
