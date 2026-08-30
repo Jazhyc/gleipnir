@@ -19,6 +19,9 @@ python scripts/plot_tool_trajectory_ood_frontier.py
 Claude Opus 4.6 remains in the canonical registry but is omitted from the plot:
 its `0.002` pAUROC@20 gain over Gemini 3.1 Pro comes at substantially higher
 inference cost and crowds the upper endpoint without changing the comparison.
+Models below `0.60` Mean-OOD pAUROC@20 are also retained in the registry but
+omitted from this presentation so the operationally relevant upper frontier has
+room for future low-cost, high-performing monitors.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:

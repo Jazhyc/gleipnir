@@ -32,6 +32,7 @@ DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.m
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
 EXCLUDED_MONITORS = {"Claude Opus 4.6 prompted"}
+MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
     "Monitor",
@@ -125,7 +126,11 @@ def _display_label(monitor: str) -> str:
 
 def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply documented presentation-only omissions to registry points."""
-    return frame.loc[~frame["monitor"].isin(EXCLUDED_MONITORS)].copy()
+    included = (
+        ~frame["monitor"].isin(EXCLUDED_MONITORS)
+        & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
+    )
+    return frame.loc[included].copy()
 
 
 def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
@@ -141,7 +146,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         frame["cost_per_1k"].min() / 1.35,
         max(80.0, frame["cost_per_1k"].max() * 1.06),
     )
-    axis.set_ylim(0.44, 0.985)
+    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.01, 0.985)
 
     frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
     axis.plot(
@@ -196,7 +201,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
                 row["cost_per_1k"] * 1.02,
                 row["mean_ood_pauroc_at_20"] + vertical_offset,
                 _display_label(str(row["monitor"])),
-                fontsize=9.25,
+                fontsize=10.25,
                 fontweight="bold" if row["origin"] == "Gleipnir" else "normal",
                 color="#111827" if is_frontier else "#4B5563",
                 ha="center",
@@ -226,7 +231,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.set_title(
         "Tool-trajectory monitor cost–performance frontier",
         loc="left",
-        fontsize=19,
+        fontsize=20.5,
         fontweight="bold",
         pad=18,
     )
@@ -235,7 +240,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         1.015,
         "Strict six-source OOD suite · lower cost and higher performance are better",
         transform=axis.transAxes,
-        fontsize=10.5,
+        fontsize=11.5,
         color="#4B5563",
     )
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
@@ -269,7 +274,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             label="Pareto frontier",
         )
     )
-    axis.legend(handles=legend_handles, loc="lower right", frameon=True, fontsize=10)
+    axis.legend(handles=legend_handles, loc="lower right", frameon=True, fontsize=11)
     figure.tight_layout()
     return figure
 

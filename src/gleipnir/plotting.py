@@ -25,6 +25,7 @@ def set_plot_style() -> None:
     """Apply the repository's readable, colorblind-safe plotting defaults."""
     sns.set_theme(
         context="talk",
+        font_scale=1.08,
         style="whitegrid",
         palette="colorblind",
         rc={

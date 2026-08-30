@@ -57,11 +57,14 @@ def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
 
 
-def test_plot_omits_opus_without_removing_it_from_registry() -> None:
+def test_plot_applies_documented_filters_without_changing_registry() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
+    plotted = select_plot_points(frame)
 
     assert "Claude Opus 4.6 prompted" in set(frame["monitor"])
-    assert "Claude Opus 4.6 prompted" not in set(select_plot_points(frame)["monitor"])
+    assert "Claude Opus 4.6 prompted" not in set(plotted["monitor"])
+    assert frame["mean_ood_pauroc_at_20"].min() < 0.60
+    assert plotted["mean_ood_pauroc_at_20"].min() >= 0.60
 
 
 def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None:
