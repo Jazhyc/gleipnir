@@ -280,11 +280,21 @@ def compare_binary_baseline(
             binary["label"]
         ):
             raise ValueError(f"paired baseline identity drift for id={record_id!r}")
-    binary_summary = summarize(
+    packed_binary_rows = [
+        {
+            **row,
+            "ordinal_score": math.floor(float(row["score"]) * 10 + 0.5),
+            "output_tokens": 1,
+        }
+        for row in binary_rows
+    ]
+    binary_summary = summarize(packed_binary_rows)
+    quantized_binary_summary = summarize(
         [
             {
                 **row,
-                "ordinal_score": round(float(row["score"]) * 10),
+                "score": math.floor(float(row["score"]) * 10 + 0.5) / 10.0,
+                "ordinal_score": math.floor(float(row["score"]) * 10 + 0.5),
                 "output_tokens": 1,
             }
             for row in binary_rows
@@ -293,6 +303,7 @@ def compare_binary_baseline(
     ordinal_summary = summarize(ordinal_rows)
     ordinal_metrics = ordinal_summary["metrics"]
     binary_metrics = binary_summary["metrics"]
+    quantized_binary_metrics = quantized_binary_summary["metrics"]
 
     def delta_view(ordinal: dict[str, Any], binary: dict[str, Any]) -> dict[str, float]:
         return {
@@ -301,24 +312,50 @@ def compare_binary_baseline(
             - float(binary["pauroc_at_20"]),
         }
 
-    return {
-        "binary_metrics": binary_metrics,
-        "delta_ordinal_minus_binary": {
+    def source_metrics(metrics: dict[str, Any]) -> dict[str, dict[str, Any]]:
+        return {
+            str(row["group"]): row for row in metrics["macro"]["groups"]
+        }
+
+    def metric_delta(
+        candidate_metrics: dict[str, Any], reference_metrics: dict[str, Any]
+    ) -> dict[str, Any]:
+        candidate_sources = source_metrics(candidate_metrics)
+        reference_sources = source_metrics(reference_metrics)
+        if candidate_sources.keys() != reference_sources.keys():
+            raise ValueError("paired metric source sets differ")
+        return {
             "macro": delta_view(
-                ordinal_metrics["macro"]["macro"],
-                binary_metrics["macro"]["macro"],
+                candidate_metrics["macro"]["macro"],
+                reference_metrics["macro"]["macro"],
             ),
             "pooled": delta_view(
-                ordinal_metrics["pooled"], binary_metrics["pooled"]
+                candidate_metrics["pooled"], reference_metrics["pooled"]
             ),
             "by_dataset": {
                 source: delta_view(
-                    ordinal_metrics["by_dataset"][source],
-                    binary_metrics["by_dataset"][source],
+                    candidate_sources[source], reference_sources[source]
                 )
-                for source in sorted(ordinal_metrics["by_dataset"])
+                for source in sorted(candidate_sources)
             },
+        }
+
+    return {
+        "binary_metrics": binary_metrics,
+        "binary_nearest_tenth_control": {
+            "method": (
+                "Round each saved continuous binary probability to the nearest "
+                "tenth, with exact half-ties rounded upward. This isolates score "
+                "quantization without changing the prompt or model inference."
+            ),
+            "metrics": quantized_binary_metrics,
+            "delta_quantized_minus_binary": metric_delta(
+                quantized_binary_metrics, binary_metrics
+            ),
         },
+        "delta_ordinal_minus_binary": metric_delta(
+            ordinal_metrics, binary_metrics
+        ),
     }
 
 

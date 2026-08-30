@@ -9,6 +9,7 @@ from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
     QWEN_NON_THINKING_ASSISTANT_SUFFIX,
 )
 from experiments.tool_trajectory_monitoring.benchmark_qwen_ordinal_ood import (
+    compare_binary_baseline,
     extract_trajectory,
     prediction_row,
     render_generation_prompt,
@@ -156,3 +157,35 @@ def test_frozen_ordinal_config_uses_primary_pauroc_contract() -> None:
     assert config["engine"]["audited_total_prompt_tokens"] == 61_550_029
     assert config["metrics"][0].startswith("primary:")
     assert "pAUROC@20" in config["metrics"][0]
+
+
+def test_binary_comparison_reports_source_and_quantization_deltas() -> None:
+    ordinal_rows = []
+    binary_rows = []
+    for source in ("a", "b"):
+        for index, (label, binary_score, ordinal_score) in enumerate(
+            ((0, 0.04, 0), (0, 0.46, 4), (1, 0.54, 6), (1, 0.96, 10))
+        ):
+            common = {
+                "id": f"{source}-{index}",
+                "source": source,
+                "label": label,
+                "prompt_tokens": 10,
+            }
+            binary_rows.append({**common, "score": binary_score})
+            ordinal_rows.append(
+                {
+                    **common,
+                    "score": ordinal_score / 10,
+                    "ordinal_score": ordinal_score,
+                    "output_tokens": 2,
+                }
+            )
+    comparison = compare_binary_baseline(ordinal_rows, binary_rows)
+    assert set(comparison["delta_ordinal_minus_binary"]["by_dataset"]) == {
+        "a",
+        "b",
+    }
+    quantized = comparison["binary_nearest_tenth_control"]
+    assert "quantization" in quantized["method"]
+    assert quantized["metrics"]["macro"]["diagnostics"]["unique_scores"] == 3

@@ -42,6 +42,13 @@ prediction checksum is frozen in the config. The evaluator requires identical
 row IDs, sources, and labels before computing paired per-source and macro
 metric deltas.
 
+The generated ordinal condition changes both score resolution and the semantic
+prompt interface. To isolate resolution alone, the result also rounds every
+saved binary probability to the nearest tenth (exact half-ties upward) and
+recomputes all ranking metrics. This post-hoc control changes neither prompt nor
+inference and therefore measures only the ties introduced by 11-bin numerical
+quantization.
+
 OOD labels must not select the prompt, rubric, decoding settings, subset,
 threshold, retry rule, or stopping point. The run stops on prompt/model/input
 drift, a prompt reaching the 32,768-token limit, invalid structured output,
