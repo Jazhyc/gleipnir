@@ -1,0 +1,89 @@
+# MATS project log
+
+This log records personal project time for the 20-hour MATS application work
+on tool-trajectory monitoring. Session durations are self-reported; commit
+timestamps are supporting evidence for what happened, not the source of the
+hour count. Sparse autonomous-agent commits after a session may be recorded as
+follow-up outcomes but do not add personal time.
+
+## Time summary
+
+| Date | Session | Personal time | Cumulative time | Remaining |
+| --- | --- | ---: | ---: | ---: |
+| 2026-08-30 | 1 | 6 hours | 6 hours | 14 hours |
+| 2026-08-30 | 2 | 4 hours | 10 hours | 10 hours |
+
+## 2026-08-30 — Session 1
+
+**Time:** approximately 00:00–06:00, 6 hours
+
+**Commit evidence:** `11dabbf` through `946eee9`, committed 00:28–05:19
+
+Established the action-only tool-trajectory monitoring workstream based on
+Sinha et al.'s deliberative-monitoring paper:
+
+- Defined the research question, dataset and split contract, evaluation
+  protocol, held-out selection rule, stop conditions, and versioned binary
+  teacher/student prompts.
+- Built resumable, prompt-aware OpenRouter teacher-logit caching with provider
+  pinning, price ceilings, batched checkpoints, provider-separated shards, raw
+  decision-token logprobs, token usage, and provenance.
+- Probed and documented the reserved Lambda H100 environment and pinned the
+  Qwen3.5, vLLM, and FLA execution contract needed for later training.
+- Inspected and materialized the paper data: an 8,688-row balanced training
+  mixture, 3,012 held-out in-distribution examples, and a separately protected
+  six-source OOD suite.
+- Ran Kimi K3 output-interface, provider-cache, and structured-decoding
+  canaries. The initial balanced canary reached `0.9746` pooled AUROC. The
+  probes showed that cross-row prefix caching was ineffective and that strict
+  structured decoding changed the teacher's soft distribution.
+- Compared immediate Qwen decision logits with visible and native reasoning.
+  Immediate logits were the stronger and better-calibrated baseline, including
+  on the held-out in-distribution data.
+- Completed the 8,688-row Kimi teacher cache, implemented the paper's raw
+  normalized pAUROC@20 metric, documented annotation and inference economics,
+  and published a sanitized logit-only export. On the training mixture, Kimi
+  reached `0.9914` mean-source AUROC and `0.9636` mean-source pAUROC@20.
+- Initiated the Qwen3.5-9B Kimi-soft data-scaling campaign.
+
+### Uncounted follow-up
+
+Autonomous follow-up commits `4ca94fd` through `f408b2a`, made from 14:07 to
+14:52, implemented and repaired the scaling launcher and finalized a one-epoch
+recipe. The campaign contains six nested tool-trajectory sizes from 204 through
+8,688 examples and one combined tool-trajectory/Aletheia condition. These
+commits are an outcome of the session but add no personal time to the log.
+
+## 2026-08-30 — Session 2
+
+**Time:** approximately 20:00–00:00, 4 hours
+
+**Commit evidence:** `c6962e1` through `4958ed8`, committed 20:23–23:55
+
+Established frozen baselines and ablations while the main scaling campaign was
+running:
+
+- Materialized and audited the full 6,395-example, six-source strict-OOD suite.
+- Completed the Kimi K3 binary-logit OOD baseline: `0.9084` Mean-OOD
+  pAUROC@20 at a projected uncached cost of `$25.1177` per 1,000 evaluations.
+- Established unadapted full-prompt baselines using persistent vLLM engines and
+  constrained decision-token logprobs: Qwen3.5-9B reached `0.6976`,
+  Qwen3.5-4B reached `0.6175`, and GPT-OSS-120B reached `0.4789` Mean-OOD
+  pAUROC@20. Qwen3.5-4B became the lowest-cost observed frontier point.
+- Ran a Qwen3.5-9B output-interface ablation. Immediate ordinal 0–10 scores
+  reached only `0.4858` pAUROC@20, while rounding the saved binary
+  probabilities to the same nominal resolution retained `0.6835`. Most of the
+  loss therefore came from the generated-severity interface rather than score
+  resolution alone.
+- Prepared capacity and reasoning follow-ups for Qwen3.5-27B, GPT-OSS native
+  reasoning, and Qwen visible-reasoning ordinal scoring. The first ordinal
+  reasoning preflight was invalidated when a rationale reached its token cap;
+  a corrected 4,096-token version was frozen but had not been evaluated at
+  sign-off.
+- Created the canonical cost-performance registry and reproducible SVG/PNG
+  Pareto-frontier plot comparing Gleipnir baselines with the paper's published
+  monitors.
+
+**Cumulative time:** 10 of 20 hours.
+
+**Remaining:** 10 hours.
