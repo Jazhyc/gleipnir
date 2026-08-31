@@ -99,6 +99,15 @@ specification, with the same binary terminal interface. Thus the intervention
 preserves the paper's full-teacher/compact-student context-distillation setup
 while replacing rationale and ordinal-score targets with a binary soft target.
 
+A completed inference-only ablation subsequently supplied the full teacher
+specification to the mixed-data Gleipnir 4B adapter on all 6,395 strict-OOD
+rows. Mean-OOD pAUROC@20 changed from `0.782350` to `0.782758`, while AUROC
+changed from `0.908584` to `0.907718`. The compact prompt is therefore not a
+large aggregate elicitation bottleneck for this adapter, though the experiment
+does not determine how much noise privileged soft distillation introduces.
+See
+[`../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
+
 The reviewable Gleipnir prompt set is
 `experiments/tool_trajectory_monitoring/prompts/`. `teacher.txt` is shared by
 teacher annotation and teacher evaluation; `student.txt` is shared by student

@@ -291,6 +291,13 @@ matched baseline. The intervention, baseline, held-out rule, and fail-closed
 conditions are recorded before evaluation in
 `distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json`.
 
+The completed full-prompt run reaches `0.782758` Mean-OOD pAUROC@20 and
+`0.907718` Mean-OOD AUROC, changes of only `+0.000409` and `-0.000865` from
+the compact-prompt baseline. The richer instruction changes individual scores
+(Pearson `0.984396`, 217 threshold flips) but does not improve the
+source-balanced aggregate. It also adds 9.38% prompt tokens. See
+[`../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
+
 The Qwen3.5-0.8B lower-bound follow-up was intentionally stopped after systems
 preflight and 12 of 683 optimizer steps. QLoRA microbatch 1 was faster than both
 microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about

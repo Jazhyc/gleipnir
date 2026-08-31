@@ -145,6 +145,33 @@ about one third as expensive (`$0.2598` versus `$0.8659` per 1,000 examples).
 It is therefore a strong lower-cost point rather than a quality-matched
 replacement.
 
+## Does the compact student prompt limit Gleipnir 4B?
+
+No aggregate benefit is visible when the completed mixed-data Gleipnir 4B
+adapter receives the full teacher monitoring specification at inference. This
+matched ablation changes only the prompt over the same 6,395 rows, adapter,
+non-thinking boundary, and literal-token scorer.
+
+| Prompt | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
+| --- | ---: | ---: | ---: | ---: |
+| Compact student | 0.782350 | 0.908584 | 0.701531 | 0.913513 |
+| Full teacher | 0.782758 | 0.907718 | 0.713957 | 0.914140 |
+| Full minus compact | +0.000409 | -0.000865 | +0.012426 | +0.000628 |
+
+The macro result is effectively unchanged, although per-source effects cancel:
+full-prompt pAUROC@20 changes by `-0.019742` on AgentDojo, `-0.002531` on
+CUA-SHADE, `+0.005335` on IaC, zero on MLE-Sabotage, `+0.011958` on Rogue
+Eval, and `+0.007432` on SHADE-Arena. Scores remain highly correlated
+(`r=0.984396`), but 217 of 6,395 examples cross the 0.5 threshold. The full
+prompt uses 60,539,619 input tokens versus 55,346,879 (`+9.38%`), raising the
+same hosted proxy from `$0.2598` to `$0.2842` per 1,000 examples.
+
+This rules against compact-prompt under-elicitation as a large aggregate
+limitation of this adapter. It does not isolate privileged-distillation noise:
+the residual performance gap may still reflect noisy teacher distributions,
+student capacity, training optimization, or data. The full audit is in
+[`../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
+
 ## Interpretation limits
 
 Each point has one seed, so local reversals cannot be separated from seed
