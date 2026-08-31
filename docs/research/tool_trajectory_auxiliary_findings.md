@@ -1,12 +1,17 @@
-# Auxiliary result: Gleipnir 4B visible explanation quality
+# Tool-trajectory auxiliary findings
+
+This document collects exploratory and supporting results that inform the
+research program but are not primary evaluation endpoints. These findings must
+not drive checkpoint selection or promotion unless they are separately
+precommitted and promoted into the main evaluation program.
+
+## Gleipnir 4B visible explanation quality
 
 Date: 2026-08-31
 
-Status: exploratory auxiliary result. This analysis is useful supporting
-evidence for the research program, but it was not a primary evaluation endpoint
-and should not drive checkpoint selection or promotion.
+Status: exploratory auxiliary result.
 
-## Exploratory finding
+### Finding
 
 On the frozen 64-pair OOD reasoning sample, the mixed-data, Kimi-soft-only
 Gleipnir 4B adapter produced more useful end-to-end visible analyses than its
@@ -30,7 +35,7 @@ sample. Evidence for a separate improvement in the explanatory reasoning is
 positive but small and inconclusive. Nothing here measures causal faithfulness
 to the model's hidden computation.
 
-## Frozen design
+### Frozen design
 
 The sample is the precommitted 64-row, 1.0008% deterministic selection from the
 6,395-row frozen OOD artifact. Base and Gleipnir saw the same trajectories and
@@ -53,7 +58,7 @@ used the one allowed validation retry because the first justification exceeded
 80 words. No row was selected or dropped based on condition, score, label, or
 model output.
 
-## Results
+### Results
 
 | Metric | Base | Gleipnir | Difference |
 | --- | ---: | ---: | ---: |
@@ -78,7 +83,7 @@ condition, rationale length correlated weakly negatively with overall score
 (-0.256 base; -0.195 Gleipnir). This is descriptive and does not identify a
 causal benefit of brevity.
 
-## Reliability, usage, and artifacts
+### Reliability, usage, and artifacts
 
 The v2 run completed all 128 judgments on the OpenAI provider route with the
 requested model ID, 1,133,164 prompt tokens and 57,467 completion tokens,
@@ -98,7 +103,7 @@ Ignored artifacts are under
 - `result.json`: SHA-256
   `cdd8337cd190939c441cc3594484ee0bc379f1a2cd69e55c123e141d7153931d`.
 
-## Limitations and next decision
+### Limitations and next decision
 
 This is a 64-pair exploratory audit, not an OOD performance estimate. It uses a
 single automated judge, the provided labels can be imperfect, score components

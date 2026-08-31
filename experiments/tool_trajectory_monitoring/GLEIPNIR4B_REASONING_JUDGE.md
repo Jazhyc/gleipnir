@@ -131,7 +131,7 @@ pairs where both models made the same binary prediction, the difference was only
 +0.240 with interval [-0.120, +0.660]. The finding therefore supports improved
 complete visible analysis-and-decision usefulness, while independent explanation
 quality remains suggestive but inconclusive. Full results and limitations are in
-[`../../docs/research/tool_trajectory_gleipnir4b_reasoning_judge.md`](../../docs/research/tool_trajectory_gleipnir4b_reasoning_judge.md).
+[`../../docs/research/tool_trajectory_auxiliary_findings.md`](../../docs/research/tool_trajectory_auxiliary_findings.md).
 
 No score threshold will be tuned on these 64 pairs. Primary comparison should
 use the within-pair difference in overall score, accompanied by the four
