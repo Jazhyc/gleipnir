@@ -1,7 +1,7 @@
 # Gleipnir 4B paired visible-reasoning sample
 
-Status: paired generation completed 2026-08-31; judge contract human-approved,
-frozen, and paid-canary validated; full blinded judging pending.
+Status: paired generation and all 128 v2 blinded judgments completed 2026-08-31;
+paired finding recorded.
 
 ## Hypothesis and intervention
 
@@ -91,3 +91,7 @@ The completed artifacts are:
   `0e3ea69cab37bb310be571050052b6d915ba54010ac0864d0ae336dae969fd7f`;
 - `result.json`, SHA-256
   `a9787c57db24f378b2d7b7de8a983abd0b0e073952e060159e87a40f7b4274c9`.
+
+The completed reasoning-quality judgment and its qualified interpretation are
+recorded in
+[`../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md`](../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md).

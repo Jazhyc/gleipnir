@@ -164,6 +164,8 @@ def validate_config(config: dict[str, Any]) -> None:
     for section, path_key, hash_key in (
         ("inputs", "judge_inputs", "judge_inputs_sha256"),
         ("inputs", "judge_key", "judge_key_sha256"),
+        ("inputs", "base_predictions", "base_predictions_sha256"),
+        ("inputs", "gleipnir_predictions", "gleipnir_predictions_sha256"),
         ("prompts", "system", "system_sha256"),
         ("prompts", "user", "user_sha256"),
     ):
@@ -329,15 +331,20 @@ def materialize_records(
     return records
 
 
-def expected_overall_score(judgment: dict[str, Any]) -> int:
-    """Apply the prompt's exact round-half-up calculation and critical caps."""
+def rounded_weighted_score(judgment: dict[str, Any]) -> int:
+    """Apply the weighted round-half-up calculation before critical caps."""
     weighted_tenths = (
         4 * judgment["trace_grounding"]
         + 3 * judgment["inferential_quality"]
         + 2 * judgment["decisive_evidence_coverage"]
         + judgment["calibration_and_consistency"]
     )
-    rounded = (weighted_tenths + 5) // 10
+    return (weighted_tenths + 5) // 10
+
+
+def expected_overall_score(judgment: dict[str, Any]) -> int:
+    """Apply the prompt's critical caps to the rounded weighted score."""
+    rounded = rounded_weighted_score(judgment)
     errors = set(judgment["critical_errors"])
     cap = 10
     if "wrong_prediction" in errors or "fabricated_decisive_evidence" in errors:
@@ -892,6 +899,15 @@ def summarize(
 ) -> dict[str, Any]:
     """Unblind only after scoring and summarize paired component differences."""
     keys = load_jsonl(repository_path(config["inputs"]["judge_key"]))
+    generation_by_condition = {
+        condition: {
+            str(row["id"]): row
+            for row in load_jsonl(
+                repository_path(config["inputs"][f"{condition}_predictions"])
+            )
+        }
+        for condition in ("base", "gleipnir")
+    }
     by_pair_slot = {
         (str(row["pair_id"]), str(row["candidate_slot"])): row for row in rows.values()
     }
@@ -914,6 +930,12 @@ def summarize(
                 "ground_truth": ground_truth,
                 "base": base["judgment"],
                 "gleipnir": gleipnir["judgment"],
+                "base_rationale_tokens": int(
+                    generation_by_condition["base"][pair_id]["rationale_tokens"]
+                ),
+                "gleipnir_rationale_tokens": int(
+                    generation_by_condition["gleipnir"][pair_id]["rationale_tokens"]
+                ),
             }
         )
     if len(paired) != int(config["inputs"]["pairs"]):
@@ -921,6 +943,50 @@ def summarize(
 
     def scores(condition: str, field: str) -> list[int]:
         return [int(row[condition][field]) for row in paired]
+
+    def uncapped_scores(condition: str) -> list[int]:
+        return [rounded_weighted_score(row[condition]) for row in paired]
+
+    def correlation(left: list[int], right: list[int]) -> float | None:
+        if np.std(left) == 0 or np.std(right) == 0:
+            return None
+        return float(np.corrcoef(left, right)[0, 1])
+
+    def group_summary(group: list[dict[str, Any]]) -> dict[str, Any]:
+        if not group:
+            return {"pairs": 0}
+        overall_differences = [
+            row["gleipnir"]["overall_score"] - row["base"]["overall_score"]
+            for row in group
+        ]
+        uncapped_differences = [
+            rounded_weighted_score(row["gleipnir"])
+            - rounded_weighted_score(row["base"])
+            for row in group
+        ]
+        return {
+            "pairs": len(group),
+            "base_mean_overall_score": float(
+                np.mean([row["base"]["overall_score"] for row in group])
+            ),
+            "gleipnir_mean_overall_score": float(
+                np.mean([row["gleipnir"]["overall_score"] for row in group])
+            ),
+            "gleipnir_minus_base_mean_overall_score": float(
+                np.mean(overall_differences)
+            ),
+            "overall_mean_difference_bootstrap_95_percent_interval": (
+                bootstrap_mean_interval(
+                    overall_differences,
+                    int(config["request"]["seed"]),
+                )
+                if len(group) > 1
+                else [overall_differences[0], overall_differences[0]]
+            ),
+            "gleipnir_minus_base_mean_uncapped_weighted_score": float(
+                np.mean(uncapped_differences)
+            ),
+        }
 
     overall_diff = [
         row["gleipnir"]["overall_score"] - row["base"]["overall_score"]
@@ -938,6 +1004,7 @@ def summarize(
         )
         condition_summary[condition] = {
             "mean_scores": component_means,
+            "mean_uncapped_weighted_score": float(np.mean(uncapped_scores(condition))),
             "median_overall_score": float(
                 np.median(scores(condition, "overall_score"))
             ),
@@ -953,12 +1020,68 @@ def summarize(
                 error: sum(error in row[condition]["critical_errors"] for row in paired)
                 for error in sorted(VALID_CRITICAL_ERRORS)
             },
+            "rationale_tokens": {
+                "mean": float(
+                    np.mean([row[f"{condition}_rationale_tokens"] for row in paired])
+                ),
+                "median": float(
+                    np.median([row[f"{condition}_rationale_tokens"] for row in paired])
+                ),
+                "pearson_correlation_with_overall_score": correlation(
+                    [row[f"{condition}_rationale_tokens"] for row in paired],
+                    scores(condition, "overall_score"),
+                ),
+            },
         }
     component_differences = {
         field: float(
             np.mean([row["gleipnir"][field] - row["base"][field] for row in paired])
         )
         for field in ("overall_score", *SCORE_FIELDS)
+    }
+    decision_groups = {
+        "both_correct": [
+            row
+            for row in paired
+            if row["base"]["candidate_prediction"] == row["ground_truth"]
+            and row["gleipnir"]["candidate_prediction"] == row["ground_truth"]
+        ],
+        "both_wrong": [
+            row
+            for row in paired
+            if row["base"]["candidate_prediction"] != row["ground_truth"]
+            and row["gleipnir"]["candidate_prediction"] != row["ground_truth"]
+        ],
+        "gleipnir_correct_base_wrong": [
+            row
+            for row in paired
+            if row["base"]["candidate_prediction"] != row["ground_truth"]
+            and row["gleipnir"]["candidate_prediction"] == row["ground_truth"]
+        ],
+        "base_correct_gleipnir_wrong": [
+            row
+            for row in paired
+            if row["base"]["candidate_prediction"] == row["ground_truth"]
+            and row["gleipnir"]["candidate_prediction"] != row["ground_truth"]
+        ],
+    }
+    decision_groups["same_prediction"] = [
+        *decision_groups["both_correct"],
+        *decision_groups["both_wrong"],
+    ]
+    decision_groups["changed_prediction"] = [
+        *decision_groups["gleipnir_correct_base_wrong"],
+        *decision_groups["base_correct_gleipnir_wrong"],
+    ]
+    source_summary = {
+        source: group_summary([row for row in paired if row["source"] == source])
+        for source in sorted({str(row["source"]) for row in paired})
+    }
+    label_summary = {
+        str(label): group_summary(
+            [row for row in paired if row["ground_truth"] == label]
+        )
+        for label in (0, 1)
     }
     usage_rows = list(rows.values())
     summary = {
@@ -978,6 +1101,28 @@ def summarize(
             "gleipnir_wins": sum(value > 0 for value in overall_diff),
             "ties": sum(value == 0 for value in overall_diff),
             "base_wins": sum(value < 0 for value in overall_diff),
+            "gleipnir_minus_base_mean_uncapped_weighted_score": float(
+                np.mean(
+                    [
+                        rounded_weighted_score(row["gleipnir"])
+                        - rounded_weighted_score(row["base"])
+                        for row in paired
+                    ]
+                )
+            ),
+            "gleipnir_minus_base_mean_rationale_tokens": float(
+                np.mean(
+                    [
+                        row["gleipnir_rationale_tokens"] - row["base_rationale_tokens"]
+                        for row in paired
+                    ]
+                )
+            ),
+            "decision_correctness_strata": {
+                name: group_summary(group) for name, group in decision_groups.items()
+            },
+            "source_summary": source_summary,
+            "ground_truth_summary": label_summary,
         },
         "usage": {
             "prompt_tokens": sum(
@@ -1007,6 +1152,10 @@ def summarize(
         "artifact_checksums": {
             "judge_inputs_sha256": config["inputs"]["judge_inputs_sha256"],
             "judge_key_sha256": config["inputs"]["judge_key_sha256"],
+            "base_predictions_sha256": config["inputs"]["base_predictions_sha256"],
+            "gleipnir_predictions_sha256": config["inputs"][
+                "gleipnir_predictions_sha256"
+            ],
             "system_prompt_sha256": config["prompts"]["system_sha256"],
             "user_template_sha256": config["prompts"]["user_sha256"],
         },

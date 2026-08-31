@@ -12,6 +12,10 @@
     "judge_inputs_sha256": "5ebe0daebf6778c162ad030a9de2c254950789c542e385ecb762f4e51035ff6c",
     "judge_key": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/judge_key.jsonl",
     "judge_key_sha256": "0e3ea69cab37bb310be571050052b6d915ba54010ac0864d0ae336dae969fd7f",
+    "base_predictions": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/base/predictions.jsonl",
+    "base_predictions_sha256": "54d028e2bbc880d94143e8bce4213d624f556c3a724c83ed8bd86b7fae0bd5e9",
+    "gleipnir_predictions": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/gleipnir/predictions.jsonl",
+    "gleipnir_predictions_sha256": "9423a59b6d9c86cb75d6142d2eeefadb2eff3c3dfd421a04a2cd8721d2ff42a5",
     "pairs": 64,
     "requests": 128,
     "materialization": "Join ground truth locally by pair_id, then judge candidate_a and candidate_b in separate requests. Never send source, candidate slot, model condition, pair ID, or the other candidate."

@@ -1,7 +1,7 @@
 # Gleipnir 4B visible-reasoning judge draft
 
-Status: v2 normalization contract frozen after a stopped v1 partial run; v2 paid
-canary and full 128-judgment restart pending.
+Status: v2 paid canary and all 128 blinded judgments completed 2026-08-31;
+paired finding recorded.
 
 ## Question and scope
 
@@ -117,6 +117,21 @@ python -m experiments.tool_trajectory_monitoring.judge_gleipnir4b_reasoning \
 
 Stop on any prompt, input, model, route, blinding, schema, canary, or $12 spend
 ceiling drift.
+
+## Completed v2 outcome
+
+All 128 independent judgments completed on the OpenAI provider route. Gleipnir
+averaged 7.156 overall versus 6.391 for base, a paired difference of +0.766 with
+a paired-bootstrap 95% interval of [+0.109, +1.453]. Gleipnir won 21 pairs, tied
+28, and lost 15. It also had fewer wrong predictions (14 versus 20), decisive
+fabrications (6 versus 11), and internal contradictions (2 versus 5).
+
+The terminal-decision decomposition weakens a broad reasoning claim. On the 50
+pairs where both models made the same binary prediction, the difference was only
++0.240 with interval [-0.120, +0.660]. The finding therefore supports improved
+complete visible analysis-and-decision usefulness, while independent explanation
+quality remains suggestive but inconclusive. Full results and limitations are in
+[`../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md`](../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md).
 
 No score threshold will be tuned on these 64 pairs. Primary comparison should
 use the within-pair difference in overall score, accompanied by the four

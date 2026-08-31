@@ -135,6 +135,16 @@ def test_wrong_prediction_and_fabrication_apply_lowest_cap() -> None:
     assert judge.validate_judgment(json.dumps(fabricated), 0, None) == fabricated
 
 
+def test_uncapped_weighted_score_separates_reasoning_from_error_cap() -> None:
+    wrong = valid_judgment(
+        overall_score=3,
+        candidate_prediction=1,
+        critical_errors=["wrong_prediction"],
+    )
+    assert judge.rounded_weighted_score(wrong) == 8
+    assert judge.expected_overall_score(wrong) == 3
+
+
 def test_missing_critical_error_flags_are_rejected() -> None:
     wrong = valid_judgment(candidate_prediction=1)
     with pytest.raises(judge.JudgeError, match="wrong_prediction flag"):
