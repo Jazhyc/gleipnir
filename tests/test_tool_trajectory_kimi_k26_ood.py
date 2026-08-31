@@ -38,8 +38,23 @@ def test_frozen_kimi_k26_campaign_identity_and_cost() -> None:
         assert result["rows"] == 6_395
         assert result["mean_ood_pauroc_at_20"] > 0.9084
         assert result["reasoning_tokens"] == 0
-        assert result["uncached_cost_usd_per_1000"] == pytest.approx(
-            result["uncached_list_cost_usd"] / 6_395 * 1_000
+        assert result["paper_price_input_usd_per_million"] == 0.95
+        assert result["paper_price_output_usd_per_million"] == 4.0
+        expected_paper_cost = (
+            result["prompt_tokens"] * result["paper_price_input_usd_per_million"]
+            + result["completion_tokens"]
+            * result["paper_price_output_usd_per_million"]
+        ) / 1_000_000
+        assert result["paper_comparable_cost_usd"] == pytest.approx(
+            expected_paper_cost
+        )
+        assert result["paper_comparable_cost_usd_per_1000"] == pytest.approx(
+            result["paper_comparable_cost_usd"] / 6_395 * 1_000
+        )
+        assert result["operational_provider_uncached_cost_usd_per_1000"] == (
+            pytest.approx(
+                result["operational_provider_uncached_cost_usd"] / 6_395 * 1_000
+            )
         )
     assert config["prompt"]["template_sha256"] == (
         "2418cc55801deead8983d3bde6e35b59603f0080711ce8e12e1d7299487ac128"

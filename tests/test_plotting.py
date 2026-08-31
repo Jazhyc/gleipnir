@@ -61,7 +61,7 @@ def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     assert kimi["cost_per_1k"] == pytest.approx(25.1177)
     assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
     kimi_k26 = frame.loc[frame["monitor"] == "Kimi K2.6 binary logits"].iloc[0]
-    assert kimi_k26["cost_per_1k"] == pytest.approx(4.4182)
+    assert kimi_k26["cost_per_1k"] == pytest.approx(7.9110)
     assert kimi_k26["mean_ood_pauroc_at_20"] == pytest.approx(0.9194)
     assert bool(kimi_k26["computed_frontier"])
     assert not bool(kimi["computed_frontier"])

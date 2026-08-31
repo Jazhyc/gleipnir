@@ -58,12 +58,12 @@ The result dominates every recorded open-weight point above Qwen3.5-27B and
 becomes the highest-quality open-weight point on the observed
 cost--performance frontier.
 
-| Comparison | pAUROC@20 | Uncached USD / 1K | K2.6 change |
+| Comparison | pAUROC@20 | Paper-priced uncached USD / 1K | K2.6 change |
 | --- | ---: | ---: | ---: |
-| Kimi K2.6, full prompt and binary logits | **0.9194** | **4.4182** | — |
-| Paper Kimi-K2.6 SFT | 0.8410 | 10.1750 | `+0.0784`, 56.6% cheaper |
-| Kimi K3, full prompt and binary logits | 0.9084 | 25.1177 | `+0.0110`, 82.4% cheaper |
-| Paper Claude Sonnet 4.6 prompted | 0.9290 | 58.8500 | `-0.0096`, 92.5% cheaper |
+| Kimi K2.6, full prompt and binary logits | **0.9194** | **7.9110** | — |
+| Paper Kimi-K2.6 SFT | 0.8410 | 10.1750 | `+0.0784`, 22.3% cheaper |
+| Kimi K3, full prompt and binary logits | 0.9084 | 25.1177 | `+0.0110`, 68.5% cheaper |
+| Paper Claude Sonnet 4.6 prompted | 0.9290 | 58.8500 | `-0.0096`, 86.6% cheaper |
 
 The K2.6-over-K3 macro gain is not uniform. K2.6 loses pAUROC@20 on AgentDojo
 (`-0.0022`), CUA-SHADE (`-0.0125`), IaC (`-0.0236`), and Rogue Eval
@@ -82,21 +82,23 @@ matched causal test of whether SFT helps under a fixed interface.
 ## Cost and serving audit
 
 All accepted rows report 53,145,980 prompt tokens and 25,580 completion tokens,
-exactly four completion tokens per row, with zero reasoning tokens. At the
-frozen Inceptron prices of `$0.53/M` input and `$3.39/M` output, the uncached
-paper-comparable cost is:
+exactly four completion tokens per row, with zero reasoning tokens. The paper's
+Table 3 fixes Kimi-K2.6 at `$0.95/M` input and `$4.00/M` output. Applying those
+rates to our saved token usage gives the primary paper-comparable cost:
 
 ```text
-input  = 53,145,980 * $0.53/M = $28.167369
-output =     25,580 * $3.39/M = $ 0.086716
-total                              $28.254086
-per 1,000 evaluations              $ 4.418153
+input  = 53,145,980 * $0.95/M = $50.488681
+output =     25,580 * $4.00/M = $ 0.102320
+total                              $50.591001
+per 1,000 evaluations              $ 7.911024
 ```
 
-Inceptron reported 14,143,360 cached input tokens, or 26.61% of prompt usage,
-and OpenRouter reported `$22.930851` in successful-row charges. The canonical
-frontier uses the uncached `$4.4182/1K` coordinate, not this provider- and
-session-specific cache discount.
+At Inceptron's frozen route prices of `$0.53/M` input and `$3.39/M` output, the
+same usage is `$28.254086`, or `$4.418153/1K`, before caching. Inceptron
+reported 14,143,360 cached input tokens, or 26.61% of prompt usage, and
+OpenRouter reported `$22.930851` in successful-row charges. These are useful
+operational costs, but the canonical frontier uses the paper-priced uncached
+`$7.9110/1K` coordinate.
 
 The 600-row canary took 333.2 seconds. The remaining 5,795-row shard took
 2,645.8 seconds at concurrency eight. A concurrency-16 canary pass temporarily

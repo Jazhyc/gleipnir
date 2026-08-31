@@ -188,9 +188,10 @@ The completed Kimi K2.6 Inceptron follow-up reaches `0.919404` Mean-OOD
 pAUROC@20 and `0.975107` Mean-OOD AUROC on all 6,395 rows. It reuses the same
 full binary prompt, disables reasoning, and extracts terminal literal-token
 logits through a provider-pinned OpenRouter route. Its exact uncached cost is
-`$4.4182/1K`, making it both stronger and 82.4% cheaper than the completed Kimi
-K3 point. The exact hypothesis, canary, per-source result, cost, and serving
-audit are in
+`$7.9110/1K` at the paper's Kimi-K2.6 token prices, making it both stronger and
+68.5% cheaper than the completed Kimi K3 point. The Inceptron operational rate
+would instead be `$4.4182/1K`. The exact hypothesis, canary, per-source result,
+cost, and serving audit are in
 [`KIMI_K26_OOD_BENCHMARK.md`](KIMI_K26_OOD_BENCHMARK.md).
 
 The matched unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`

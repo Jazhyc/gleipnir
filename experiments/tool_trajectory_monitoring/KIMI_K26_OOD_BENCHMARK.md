@@ -23,8 +23,9 @@ The pinned public K2.6 tokenizer counts 53,145,980 rendered non-thinking chat
 input tokens, or 8,310.552 per row, with a maximum of 27,082. At Inceptron's
 2026-08-31 OpenRouter rates of `$0.53/M` input and `$3.39/M` output, ten
 completion tokens per row project to `$28.3842` for the suite, or `$4.4385` per
-1,000 evaluations. The fail-closed campaign ceiling is `$33.00`; cache discounts
-are excluded from the primary cost coordinate.
+1,000 evaluations. The fail-closed campaign ceiling is `$33.00`. This is the
+operational spend preflight; the primary paper-comparable coordinate uses the
+paper's Kimi-K2.6 token prices and excludes cache discounts.
 
 Before the full run, the first 12 rows of the existing interleaved OOD canary
 must cover every source-label stratum and pass the exact terminal-format,
@@ -63,8 +64,10 @@ other four non-tied sources.
 All 6,395 rows have exactly one score from Inceptron's dated
 `moonshotai/kimi-k2.6-20260420` endpoint, both literal-token logprobs, and zero
 reasoning tokens. Exact observed usage is 53,145,980 prompt tokens and 25,580
-completion tokens. At the frozen uncached list rates, the suite costs
-`$28.254086`, or `$4.418153/1K`; reported cache-discounted successful-row spend
+completion tokens. At the paper's frozen Kimi-K2.6 rates of `$0.95/M` input
+and `$4.00/M` output, the suite costs `$50.591001`, or `$7.911024/1K`. At
+Inceptron's route rates, the same
+usage is `$28.254086` uncached; reported cache-discounted successful-row spend
 was `$22.930851`.
 
 The detailed per-source, cost, retry, tie, coverage, and artifact audit is in

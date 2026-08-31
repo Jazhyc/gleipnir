@@ -444,8 +444,9 @@ Use the paper's uncached marginal USD per 1,000 evaluations convention for the
 primary cost-performance plot. The direct-logit Qwen3.5-9B student remains a
 provisional `$0.85/1K` estimate. The completed Kimi K3 full binary-prompt
 baseline reaches `0.9084` Mean-OOD pAUROC@20 at `$25.1177/1K`; the later
-Inceptron Kimi K2.6 baseline reaches `0.9194` at `$4.4182/1K`. The K2.6 macro
-gain is driven by SHADE-Arena and is not uniform across sources. These are
+Inceptron Kimi K2.6 baseline reaches `0.9194` at a paper-priced `$7.9110/1K`
+(`$4.4182/1K` at Inceptron's operational rate). The K2.6 macro gain is driven
+by SHADE-Arena and is not uniform across sources. These are
 inference costs, not the one-time teacher-cache annotation budget. Add every
 completed full-suite result to the canonical
 [`tool_trajectory_ood_frontier.md`](tool_trajectory_ood_frontier.md) registry.
