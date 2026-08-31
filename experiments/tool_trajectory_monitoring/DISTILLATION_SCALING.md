@@ -92,3 +92,49 @@ Artifacts and status live under
 `logs/lambda/tool_trajectory_distillation_mixed_qwen4b/`.
 Held-out STRIDE test and Gloom-Exfiltration will be used for later checkpoint
 selection; all six strict OOD sources remain untouched during training.
+
+## Mixed-data Qwen3.5-0.8B lower-bound follow-up
+
+This separately identified follow-up tests whether the benefit of Kimi-soft
+distillation grows further as student capacity falls. It trains
+`Qwen/Qwen3.5-0.8B` revision
+`2fc06364715b967f1860aea9cf38778875588b17` on the same complete 21,837-row
+mixed artifact, then evaluates both the unadapted base and final adapter on all
+6,395 frozen strict-OOD rows. The intervention remains soft-only: no hard-label,
+completion, or rationale loss is enabled.
+
+The statistical recipe transfers unchanged: seed 0, one epoch, rank 128
+(`alpha=256`), AdamW at `5e-5`, linear decay with 3% warmup, zero weight
+decay/dropout, selected-token soft BCE, NF4 double-quantized QLoRA with BF16
+compute, effective batch 32, and maximum length 29,696. The smaller model uses
+the proven H100 systems batch of microbatch 8 with accumulation 4, subject to a
+rank-128 longest-32 preflight. This changes only how the effective batch is
+packed, not the optimizer exposure.
+
+The 0.8B tokenizer vocabulary is byte-identical to the pinned 4B/9B
+vocabulary. Its revised chat template defaults to non-thinking but renders the
+same explicit `enable_thinking=false` assistant boundary. The primary metric is
+source-balanced Mean-OOD pAUROC@20; regular AUROC, pooled metrics, per-source
+metrics, calibration, ties, and threshold diagnostics remain required. Neither
+OOD labels nor the unadapted result may select a checkpoint or alter the prompt.
+
+Stop on input or revision drift, any non-soft objective, FLA fallback, preflight
+OOM, incomplete FP32-master or serving exports, parity failure, prompt
+truncation, missing decision-token logprobs, incomplete OOD coverage, or a
+non-finite score. The inherited hyperparameters are an intervention, not a claim
+of 0.8B optimality.
+
+Prepare and run with:
+
+```bash
+python -m experiments.tool_trajectory_monitoring.prepare_mixed_08b_distillation
+python -m experiments.tool_trajectory_monitoring.run_mixed_08b_lambda
+python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda \
+  --config experiments/tool_trajectory_monitoring/distillation_mixed_qwen08b_ood_benchmark.json \
+  --result-dir results/tool_trajectory_distillation_mixed_qwen08b_ood \
+  --status results/tool_trajectory_distillation_mixed_qwen08b_ood/status.json
+```
+
+Training artifacts live under
+`results/tool_trajectory_distillation_mixed_qwen08b/`; OOD artifacts live under
+`results/tool_trajectory_distillation_mixed_qwen08b_ood/`.

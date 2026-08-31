@@ -43,7 +43,7 @@ from gleipnir.binary_evaluation import binary_token_ids  # noqa: E402
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    parser.add_argument("--model-size", choices=("9b", "4b"), required=True)
+    parser.add_argument("--model-size", required=True)
     parser.add_argument("--output-root", type=Path, required=True)
     parser.add_argument("--batch-size", type=int, default=1)
     return parser.parse_args()
@@ -53,6 +53,8 @@ def main() -> None:
     args = parse_args()
     config = load_json(args.config)
     validate_config(config)
+    if args.model_size not in config["model_groups"]:
+        raise ValueError(f"unknown model group {args.model_size!r}")
     records = validate_inputs(config)
     group = config["model_groups"][args.model_size]
     job_name = str(group["parity_job"])

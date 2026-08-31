@@ -61,7 +61,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--eager-root", type=Path, required=True)
     parser.add_argument("--vllm-root", type=Path, required=True)
-    parser.add_argument("--model-size", choices=("9b", "4b"), required=True)
+    parser.add_argument("--model-size", required=True)
     parser.add_argument("--job-name", required=True)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()

@@ -262,3 +262,11 @@ The dedicated scaling analysis belongs in
 [`../../docs/research/tool_trajectory_distillation_ood_scaling.md`](../../docs/research/tool_trajectory_distillation_ood_scaling.md).
 Only the completed full-mixed 9B and 4B comparisons are additionally registered
 in the general cost--performance frontier.
+
+A frozen lower-bound follow-up applies the identical mixed-data statistical
+recipe to Qwen3.5-0.8B, with microbatch 8 and accumulation 4 preserving
+effective batch 32. It will benchmark both the unadapted base and trained
+adapter on the same 6,395 OOD rows. The hypothesis, model/tokenizer hashes,
+parity gate, and stop conditions are recorded in
+[`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md); this remains Kimi-soft-only
+training with no hard-label arm.

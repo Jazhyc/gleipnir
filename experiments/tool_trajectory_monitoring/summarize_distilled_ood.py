@@ -21,7 +21,43 @@ def read_json(path: Path) -> dict[str, Any]:
 def summary_rows(config: dict[str, Any], runs: Path) -> list[dict[str, Any]]:
     rows = []
     for model_size, group in config["model_groups"].items():
-        prices = group["hosted_price_usd_per_million"]
+        prices = group.get("hosted_price_usd_per_million")
+        if bool(group.get("summarize_base", False)):
+            path = runs / model_size / "base" / "base" / "result.json"
+            if not path.is_file():
+                raise FileNotFoundError(f"missing completed OOD result: {path}")
+            result = read_json(path)
+            if int(result.get("rows", -1)) != int(config["scope"]["rows"]):
+                raise ValueError(f"incomplete OOD result: {path}")
+            macro = result["metrics"]["macro"]["macro"]
+            pooled = result["metrics"]["pooled"]
+            mean_tokens = float(result["prompt_tokens"]["mean"])
+            cost = (
+                None
+                if prices is None
+                else (mean_tokens * float(prices["input"]) + float(prices["output"]))
+                / 1_000
+            )
+            rows.append(
+                {
+                    "model_size": model_size,
+                    "model": group["id"],
+                    "job_name": "base",
+                    "train_rows": 0,
+                    "mixed_data": False,
+                    "seed": None,
+                    "mean_prompt_tokens": mean_tokens,
+                    "uncached_hosted_cost_usd_per_1000": cost,
+                    "mean_ood_pauroc_at_20": float(macro["pauroc_at_20"]),
+                    "mean_ood_auroc": float(macro["auroc"]),
+                    "pooled_pauroc_at_20": float(pooled["pauroc_at_20"]),
+                    "pooled_auroc": float(pooled["auroc"]),
+                    "result_path": path.as_posix(),
+                    "training_metadata_sha256": None,
+                    "adapter_rebase_source_sha256": None,
+                    "adapter_rebase_destination_sha256": None,
+                }
+            )
         for job_name in group["expected_jobs"]:
             path = runs / model_size / "adapters" / job_name / "result.json"
             if not path.is_file():
@@ -33,8 +69,11 @@ def summary_rows(config: dict[str, Any], runs: Path) -> list[dict[str, Any]]:
             pooled = result["metrics"]["pooled"]
             mean_tokens = float(result["prompt_tokens"]["mean"])
             cost = (
-                mean_tokens * float(prices["input"]) + float(prices["output"])
-            ) / 1_000
+                None
+                if prices is None
+                else (mean_tokens * float(prices["input"]) + float(prices["output"]))
+                / 1_000
+            )
             training_job = result["training_job"]
             rows.append(
                 {

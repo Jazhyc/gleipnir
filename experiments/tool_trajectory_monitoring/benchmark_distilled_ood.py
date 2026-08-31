@@ -62,8 +62,12 @@ def validate_config(config: dict[str, Any]) -> None:
     if int(engine.get("max_lora_rank", 0)) != 128:
         raise ValueError("serving rank must remain 128")
     groups = config.get("model_groups", {})
-    if set(groups) != {"9b", "4b"}:
-        raise ValueError("expected frozen 9b and 4b model groups")
+    expected_groups = set(config.get("expected_model_groups", ["9b", "4b"]))
+    if not expected_groups or set(groups) != expected_groups:
+        raise ValueError(
+            "model groups differ from the frozen contract: "
+            f"{sorted(groups)} != {sorted(expected_groups)}"
+        )
 
 
 def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -154,7 +158,7 @@ def adapter_metadata(job: dict[str, Any]) -> dict[str, Any]:
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
-    parser.add_argument("--model-size", choices=("9b", "4b"), required=True)
+    parser.add_argument("--model-size", required=True)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--only-job")
     parser.add_argument("--include-base", action="store_true")
@@ -167,6 +171,8 @@ def main() -> None:
     args = parse_args()
     config = load_json(args.config)
     validate_config(config)
+    if args.model_size not in config["model_groups"]:
+        raise ValueError(f"unknown model group {args.model_size!r}")
     rows = validate_inputs(config)
     jobs = validate_jobs(config, args.model_size, args.only_job)
     group = config["model_groups"][args.model_size]

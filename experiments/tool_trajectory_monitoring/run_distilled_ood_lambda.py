@@ -49,7 +49,7 @@ class Status:
             ],
             "completed_jobs": [],
             "active_job": None,
-            "parity": {"9b": "pending", "4b": "pending"},
+            "parity": {name: "pending" for name in config["model_groups"]},
             "serving_backend": "vllm_continuous_batching",
             "primary_metric": config["scoring"]["primary_metric"],
         }
@@ -112,8 +112,7 @@ def main() -> None:
         )
         status.update(phase="kernel_preflight")
         environment.update(ensure_fla_kernels(args.fla_target))
-        for model_size in ("9b", "4b"):
-            group = config["model_groups"][model_size]
+        for model_size, group in config["model_groups"].items():
             parity_job = str(group["parity_job"])
             eager_root = result_dir / "parity" / "eager"
             vllm_root = result_dir / "parity" / "vllm"
@@ -181,20 +180,20 @@ def main() -> None:
                 parity=parity,
                 active_job=f"full-{model_size}",
             )
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
-                    "--config",
-                    config_path.as_posix(),
-                    "--model-size",
-                    model_size,
-                    "--output-root",
-                    (result_dir / "runs").as_posix(),
-                ],
-                environment,
-            )
+            full_command = [
+                sys.executable,
+                "-m",
+                "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
+                "--config",
+                config_path.as_posix(),
+                "--model-size",
+                model_size,
+                "--output-root",
+                (result_dir / "runs").as_posix(),
+            ]
+            if bool(group.get("evaluate_base", False)):
+                full_command.append("--include-base")
+            run(full_command, environment)
             completed = list(status.value["completed_jobs"])
             completed.extend(group["expected_jobs"])
             status.update(completed_jobs=completed, active_job=None)

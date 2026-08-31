@@ -101,6 +101,16 @@ def test_distillation_ood_jobs_are_soft_only_and_exact(tmp_path: Path) -> None:
         validate_jobs(config, "9b")
 
 
+def test_distillation_ood_accepts_a_separately_frozen_08b_group(
+    tmp_path: Path,
+) -> None:
+    config = frozen_config(tmp_path)
+    config["expected_model_groups"] = ["08b"]
+    config["model_groups"] = {"08b": config["model_groups"]["9b"]}
+    validate_config(config)
+    assert len(validate_jobs(config, "08b")) == 2
+
+
 def test_summary_uses_raw_macro_pauroc_and_hosted_cost(tmp_path: Path) -> None:
     config = {
         "scope": {"rows": 6_395},
@@ -133,6 +143,40 @@ def test_summary_uses_raw_macro_pauroc_and_hosted_cost(tmp_path: Path) -> None:
     row = summary_rows(config, tmp_path)[0]
     assert row["mean_ood_pauroc_at_20"] == 0.75
     assert row["uncached_hosted_cost_usd_per_1000"] == pytest.approx(0.4004)
+
+
+def test_summary_includes_requested_unadapted_base(tmp_path: Path) -> None:
+    config = {
+        "scope": {"rows": 6_395},
+        "model_groups": {
+            "08b": {
+                "id": "Qwen/Qwen3.5-0.8B",
+                "expected_jobs": [],
+                "summarize_base": True,
+                "hosted_price_usd_per_million": {"input": 0.05, "output": 0.08},
+            }
+        },
+    }
+    result_path = tmp_path / "08b" / "base" / "base" / "result.json"
+    result_path.parent.mkdir(parents=True)
+    result_path.write_text(
+        json.dumps(
+            {
+                "rows": 6_395,
+                "prompt_tokens": {"mean": 4_000.0},
+                "metrics": {
+                    "macro": {"macro": {"pauroc_at_20": 0.6, "auroc": 0.8}},
+                    "pooled": {"pauroc_at_20": 0.55, "auroc": 0.78},
+                },
+            }
+        )
+    )
+
+    row = summary_rows(config, tmp_path)[0]
+    assert row["job_name"] == "base"
+    assert row["train_rows"] == 0
+    assert row["training_metadata_sha256"] is None
+    assert row["uncached_hosted_cost_usd_per_1000"] == pytest.approx(0.20008)
 
 
 def test_lambda_runner_is_directly_executable() -> None:
