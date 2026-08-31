@@ -10,10 +10,16 @@ from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (
     validate_config,
     validate_jobs,
 )
+from experiments.tool_trajectory_monitoring.compare_distilled_ood_parity import (
+    compare_predictions,
+)
 from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
     materialize_rows,
 )
 from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+from experiments.tool_trajectory_monitoring.run_distilled_ood_lambda import (
+    parity_report_passed,
+)
 from experiments.tool_trajectory_monitoring.summarize_distilled_ood import (
     summary_rows,
 )
@@ -142,3 +148,34 @@ def test_lambda_runner_is_directly_executable() -> None:
     )
     assert completed.returncode == 0, completed.stderr
     assert "Parity-gate" in completed.stdout
+
+
+def test_parity_comparison_normalizes_serving_identifiers(tmp_path: Path) -> None:
+    eager = tmp_path / "eager.jsonl"
+    served = tmp_path / "served.jsonl"
+    write_jsonl(
+        eager,
+        [
+            {"dataset": "source", "index": "a", "label": 0, "score": 0.1},
+            {"dataset": "source", "index": "b", "label": 1, "score": 0.9},
+        ],
+    )
+    write_jsonl(
+        served,
+        [
+            {"source": "source", "id": "a", "label": 0, "score": 0.11},
+            {"source": "source", "id": "b", "label": 1, "score": 0.89},
+        ],
+    )
+    report = compare_predictions(eager, served)
+    assert report["rows"] == 2
+    assert report["mean_absolute_score_difference"] == pytest.approx(0.01)
+    assert report["pearson_score_correlation"] == pytest.approx(1.0)
+
+
+def test_only_exact_passed_parity_report_is_reused(tmp_path: Path) -> None:
+    path = tmp_path / "parity.json"
+    assert not parity_report_passed(path, "9b", "job")
+    path.write_text(json.dumps({"passed": True, "model_size": "9b", "job_name": "job"}))
+    assert parity_report_passed(path, "9b", "job")
+    assert not parity_report_passed(path, "4b", "job")

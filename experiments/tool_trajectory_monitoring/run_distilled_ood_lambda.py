@@ -70,6 +70,18 @@ def run(command: list[str], environment: dict[str, str] | None = None) -> None:
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
 
 
+def parity_report_passed(path: Path, model_size: str, job_name: str) -> bool:
+    """Reuse only an exact previously passed model/job parity report."""
+    if not path.is_file():
+        return False
+    report = load_json(path)
+    return bool(
+        report.get("passed") is True
+        and report.get("model_size") == model_size
+        and report.get("job_name") == job_name
+    )
+
+
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
@@ -106,61 +118,62 @@ def main() -> None:
             eager_root = result_dir / "parity" / "eager"
             vllm_root = result_dir / "parity" / "vllm"
             report = result_dir / "parity" / f"{model_size}.json"
-            status.update(
-                phase=f"{model_size}_eager_parity",
-                active_job=f"parity-{model_size}",
-            )
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "experiments.tool_trajectory_monitoring.evaluate_distilled_ood_causal",
-                    "--config",
-                    config_path.as_posix(),
-                    "--model-size",
-                    model_size,
-                    "--output-root",
-                    eager_root.as_posix(),
-                ],
-                environment,
-            )
-            status.update(phase=f"{model_size}_vllm_parity")
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
-                    "--config",
-                    config_path.as_posix(),
-                    "--model-size",
-                    model_size,
-                    "--output-root",
-                    vllm_root.as_posix(),
-                    "--only-job",
-                    parity_job,
-                    "--include-base",
-                    "--canary-only",
-                ],
-                environment,
-            )
-            status.update(phase=f"{model_size}_parity_comparison")
-            run(
-                [
-                    sys.executable,
-                    "-m",
-                    "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity",
-                    "--eager-root",
-                    eager_root.as_posix(),
-                    "--vllm-root",
-                    vllm_root.as_posix(),
-                    "--model-size",
-                    model_size,
-                    "--job-name",
-                    parity_job,
-                    "--output",
-                    report.as_posix(),
-                ]
-            )
+            if not parity_report_passed(report, model_size, parity_job):
+                status.update(
+                    phase=f"{model_size}_eager_parity",
+                    active_job=f"parity-{model_size}",
+                )
+                run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "experiments.tool_trajectory_monitoring.evaluate_distilled_ood_causal",
+                        "--config",
+                        config_path.as_posix(),
+                        "--model-size",
+                        model_size,
+                        "--output-root",
+                        eager_root.as_posix(),
+                    ],
+                    environment,
+                )
+                status.update(phase=f"{model_size}_vllm_parity")
+                run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
+                        "--config",
+                        config_path.as_posix(),
+                        "--model-size",
+                        model_size,
+                        "--output-root",
+                        vllm_root.as_posix(),
+                        "--only-job",
+                        parity_job,
+                        "--include-base",
+                        "--canary-only",
+                    ],
+                    environment,
+                )
+                status.update(phase=f"{model_size}_parity_comparison")
+                run(
+                    [
+                        sys.executable,
+                        "-m",
+                        "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity",
+                        "--eager-root",
+                        eager_root.as_posix(),
+                        "--vllm-root",
+                        vllm_root.as_posix(),
+                        "--model-size",
+                        model_size,
+                        "--job-name",
+                        parity_job,
+                        "--output",
+                        report.as_posix(),
+                    ]
+                )
             parity = dict(status.value["parity"])
             parity[model_size] = "passed"
             status.update(
