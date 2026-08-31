@@ -161,9 +161,9 @@ def _panel_background(
     color: str,
 ) -> None:
     patch = FancyBboxPatch(
-        (x, 0.035),
+        (x, 0.075),
         width,
-        0.89,
+        0.85,
         boxstyle="round,pad=0.008,rounding_size=0.025",
         facecolor=color,
         edgecolor="none",
@@ -217,7 +217,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     judge_box = Box(0.255, 0.405, 0.37, 0.092)
     student_box = Box(0.255, 0.255, 0.35, 0.082)
     rl_box = Box(0.255, 0.145, 0.22, 0.042)
-    monitor_box = Box(0.255, 0.065, 0.30, 0.055)
 
     _rounded_box(
         axis,
@@ -284,15 +283,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         linestyle="--",
         linewidth=1.4,
     )
-    _rounded_box(
-        axis,
-        monitor_box,
-        "Deployable action-only monitor",
-        facecolor=NEUTRAL_FILL,
-        edgecolor=INK,
-        fontsize=11.1,
-    )
-
     _vertical_arrow(axis, input_box, teacher_box)
     _arrow(
         axis,
@@ -351,14 +341,12 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     )
     _vertical_arrow(axis, judge_box, student_box)
     _vertical_arrow(axis, student_box, rl_box, linestyle="--")
-    _vertical_arrow(axis, rl_box, monitor_box, linestyle="--")
 
 
 def _draw_gleipnir_pipeline(axis: Axes) -> None:
     input_box = Box(0.745, 0.80, 0.32, 0.065)
     teacher_box = Box(0.745, 0.60, 0.35, 0.125)
-    student_box = Box(0.745, 0.335, 0.35, 0.105)
-    monitor_box = Box(0.745, 0.065, 0.30, 0.055)
+    student_box = Box(0.745, 0.255, 0.35, 0.105)
 
     _rounded_box(
         axis,
@@ -381,24 +369,14 @@ def _draw_gleipnir_pipeline(axis: Axes) -> None:
         facecolor=GLEIPNIR_FILL,
         edgecolor=GLEIPNIR_COLOR,
     )
-    _rounded_box(
-        axis,
-        monitor_box,
-        "Deployable action-only monitor",
-        facecolor=NEUTRAL_FILL,
-        edgecolor=INK,
-        fontsize=11.1,
-    )
-
     _vertical_arrow(axis, input_box, teacher_box)
     _vertical_arrow(axis, teacher_box, student_box, color=GLEIPNIR_COLOR)
-    _vertical_arrow(axis, student_box, monitor_box)
 
 
 def plot_pipeline_comparison() -> Figure:
     """Build the publication-ready distillation-pipeline comparison."""
     set_plot_style()
-    figure, axis = plt.subplots(figsize=(16.0, 9.5))
+    figure, axis = plt.subplots(figsize=(16.0, 8.6))
     axis.set_xlim(0.0, 1.0)
     axis.set_ylim(0.0, 1.0)
     axis.axis("off")
@@ -407,7 +385,7 @@ def plot_pipeline_comparison() -> Figure:
     _panel_background(axis, x=0.515, width=0.46, color=GLEIPNIR_COLOR)
     axis.plot(
         [0.5, 0.5],
-        [0.055, 0.91],
+        [0.095, 0.91],
         transform=axis.transAxes,
         color="#D6DCE4",
         linewidth=1.2,
@@ -434,7 +412,7 @@ def plot_pipeline_comparison() -> Figure:
     _draw_gleipnir_pipeline(axis)
 
     figure.suptitle(
-        "Two routes to a deployable action-only monitor",
+        "Two approaches to training action-only monitors",
         x=0.5,
         y=0.99,
         fontsize=21.5,

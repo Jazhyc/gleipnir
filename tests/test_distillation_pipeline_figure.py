@@ -33,6 +33,7 @@ def test_pipeline_figure_contains_intended_comparison_without_epoch_details() ->
     assert "Ground-truth class\nshown to Gemini\nonly on retry" in text
     assert "0 = benign  ·  1 = misaligned" in text
     assert "private reasoning is excluded" in text
+    assert "Deployable action-only monitor" not in text
     assert "epoch" not in text.lower()
     assert "learning rate" not in text.lower()
 
@@ -41,5 +42,5 @@ def test_pipeline_figure_uses_vector_boxes_and_arrows() -> None:
     figure = plot_pipeline_comparison()
     patches = figure.axes[0].patches
 
-    assert sum(isinstance(patch, FancyBboxPatch) for patch in patches) >= 14
-    assert sum(isinstance(patch, FancyArrowPatch) for patch in patches) >= 11
+    assert sum(isinstance(patch, FancyBboxPatch) for patch in patches) >= 13
+    assert sum(isinstance(patch, FancyArrowPatch) for patch in patches) >= 10
