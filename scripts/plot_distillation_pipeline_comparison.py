@@ -26,7 +26,7 @@ DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/distillation_pipeline_compari
 PAPER_STAGES = (
     "Gemini 2.5 Pro samples\n4 structured rationales",
     "Verdict matches label?",
-    "Incorrect candidate regenerated\nwith label (up to 3 retries)",
+    "Incorrect candidate regenerated\nusing ground-truth label\n(up to 3 retries)",
     "Claude Sonnet 4.5 scores candidates\nkeep best if quality ≥ 7/10",
     "Student is fine-tuned on selected rationale\n+ 0–10 severity score",
     "Optional GRPO score refinement",
@@ -35,8 +35,6 @@ GLEIPNIR_STAGES = (
     "Kimi K3 provides one soft target\np(0),  p(1)\n0 = benign  ·  1 = misaligned",
     "Student matches the teacher probabilities\nat the 0/1 decision boundary",
 )
-GROUND_TRUTH_DISCLOSURE = "shown to Gemini\nonly on retry"
-
 INK = "#172033"
 MUTED_INK = "#526174"
 NEUTRAL_FILL = "#F4F6F8"
@@ -45,8 +43,6 @@ PAPER_COLOR = ORIGIN_PALETTE["Paper"]
 GLEIPNIR_COLOR = ORIGIN_PALETTE["Gleipnir"]
 PAPER_FILL = "#EAF2FA"
 GLEIPNIR_FILL = "#FCEDEC"
-LABEL_FILL = "#FFF4D6"
-LABEL_EDGE = "#C78A16"
 
 
 @dataclass(frozen=True)
@@ -210,10 +206,9 @@ def _panel_heading(
 
 def _draw_paper_pipeline(axis: Axes) -> None:
     input_box = Box(0.255, 0.80, 0.32, 0.065)
-    teacher_box = Box(0.21, 0.685, 0.28, 0.085)
+    teacher_box = Box(0.255, 0.685, 0.35, 0.085)
     check_box = Box(0.155, 0.555, 0.17, 0.055)
-    retry_box = Box(0.375, 0.555, 0.18, 0.075)
-    label_box = Box(0.43, 0.685, 0.085, 0.068)
+    retry_box = Box(0.375, 0.555, 0.18, 0.085)
     judge_box = Box(0.255, 0.405, 0.37, 0.092)
     student_box = Box(0.255, 0.255, 0.35, 0.082)
     rl_box = Box(0.255, 0.145, 0.22, 0.042)
@@ -247,15 +242,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         facecolor=PAPER_FILL,
         edgecolor=PAPER_COLOR,
         fontsize=9.9,
-    )
-    _rounded_box(
-        axis,
-        label_box,
-        f"Ground-truth class\n{GROUND_TRUTH_DISCLOSURE}",
-        facecolor=LABEL_FILL,
-        edgecolor=LABEL_EDGE,
-        fontsize=7.5,
-        linewidth=1.4,
     )
     _rounded_box(
         axis,
@@ -306,15 +292,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         fontsize=9.0,
         fontweight="bold",
         color=PAPER_COLOR,
-    )
-    _arrow(
-        axis,
-        (label_box.center_x, label_box.bottom - 0.003),
-        (retry_box.center_x + 0.055, retry_box.top + 0.003),
-        color=LABEL_EDGE,
-        connectionstyle="arc3,rad=0.16",
-        linestyle="--",
-        linewidth=1.5,
     )
     _arrow(
         axis,
