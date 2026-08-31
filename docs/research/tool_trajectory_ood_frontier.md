@@ -358,6 +358,8 @@ variability.
 
 ## Sources
 
+- [Gleipnir 4B release](https://huggingface.co/Jazhyc/Gleipnir-4B)
+- [Gleipnir 9B release](https://huggingface.co/Jazhyc/Gleipnir-9B)
 - [Sinha et al., Appendix D.4 metric definition](https://arxiv.org/html/2605.29601v1#A4.SS4)
 - [Sinha et al., Appendix E cost accounting and Table 4](https://arxiv.org/html/2605.29601v1#A5.SS5)
 - [Qwen3.5-4B model card](https://huggingface.co/Qwen/Qwen3.5-4B)

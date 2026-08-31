@@ -10,6 +10,17 @@ The repository is intentionally experiment-centric: each hypothesis gets its own
 directory under `experiments/`, while reusable code lives in `src/gleipnir/` and
 durable conclusions live in `docs/`.
 
+## Released models
+
+- [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B)
+- [Gleipnir 9B](https://huggingface.co/Jazhyc/Gleipnir-9B)
+
+Both are MIT-licensed rank-128 LoRA research artifacts for reproducibility and
+follow-up work. They score visible AI-agent trajectories for deception,
+scheming, and other control-relevant problematic behavior. They are not
+standalone models or production safety systems; see the model cards for the
+frozen prompt, direct binary-logit interface, results, and limitations.
+
 ## Quick start
 
 ```bash
