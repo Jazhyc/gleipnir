@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-08-31T16:10:30.356012</dc:date>
+    <dc:date>2026-08-31T16:15:28.477461</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -58,7 +58,7 @@ z
    <g id="line2d_1">
     <path d="M 565.92 540.57888
 L 565.92 96.48864
-" clip-path="url(#p60136e49d1)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
+" clip-path="url(#pd2fd4ac9ac)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="patch_4">
     <path d="M 290.271955 176.461906
@@ -151,12 +151,12 @@ z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="patch_13">
-    <path d="M 839.6928 303.097346
-Q 839.6928 362.127175 839.6928 419.144542
+    <path d="M 839.6928 303.094153
+Q 839.6928 340.327011 839.6928 375.547408
 " style="fill: none; stroke: #e45756; stroke-width: 1.8; stroke-linecap: round"/>
-    <path d="M 842.4928 413.544542
-L 839.6928 419.144542
-L 836.8928 413.544542
+    <path d="M 842.4928 369.947408
+L 839.6928 375.547408
+L 836.8928 369.947408
 z
 " style="fill: #e45756; stroke: #e45756; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
@@ -309,15 +309,15 @@ z
 " style="fill: #fcedec; stroke: #e45756; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
    <g id="patch_24">
-    <path d="M 654.19776 486.906624
-L 1025.18784 486.906624
-Q 1045.30176 486.906624 1045.30176 477.098496
-L 1045.30176 429.692544
-Q 1045.30176 419.884416 1025.18784 419.884416
-L 654.19776 419.884416
-Q 634.08384 419.884416 634.08384 429.692544
-L 634.08384 477.098496
-Q 634.08384 486.906624 654.19776 486.906624
+    <path d="M 654.19776 443.314944
+L 1025.18784 443.314944
+Q 1045.30176 443.314944 1045.30176 433.506816
+L 1045.30176 386.100864
+Q 1045.30176 376.292736 1025.18784 376.292736
+L 654.19776 376.292736
+Q 634.08384 376.292736 634.08384 386.100864
+L 634.08384 433.506816
+Q 634.08384 443.314944 654.19776 443.314944
 z
 " style="fill: #fcedec; stroke: #e45756; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
@@ -360,8 +360,8 @@ z
     <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(762.526237 282.769837)">0 = benign  ·  1 = misaligned</text>
    </g>
    <g id="text_17">
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(722.893425 448.828957)">Student matches the teacher probabilities</text>
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(760.390613 463.468957)">at the 0/1 decision boundary</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(722.893425 405.237277)">Student matches the teacher probabilities</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(760.390613 419.877277)">at the 0/1 decision boundary</text>
    </g>
   </g>
   <g id="text_18">
@@ -375,7 +375,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p60136e49d1">
+  <clipPath id="pd2fd4ac9ac">
    <rect x="7.2" y="47.448" width="1117.44" height="544.896"/>
   </clipPath>
  </defs>
