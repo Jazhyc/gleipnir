@@ -69,7 +69,8 @@ def test_plot_applies_documented_filters_without_changing_registry() -> None:
     assert plotted["mean_ood_pauroc_at_20"].min() >= 0.60
     ours = plotted.loc[plotted["origin"] == "Gleipnir"]
     assert ours["interface"].str.contains("logits", case=False).all()
-    assert "Qwen3.5-9B base (reasoned binary)" in set(plotted["monitor"])
+    assert "Qwen3.5-9B base (reasoned binary)" in set(frame["monitor"])
+    assert "Qwen3.5-9B base (reasoned binary)" not in set(plotted["monitor"])
     assert "Qwen3.5-9B base (reasoned ordinal)" not in set(plotted["monitor"])
 
 

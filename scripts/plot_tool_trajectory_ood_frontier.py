@@ -32,7 +32,10 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
-EXCLUDED_MONITORS = {"Claude Opus 4.6 prompted"}
+EXCLUDED_MONITORS = {
+    "Claude Opus 4.6 prompted",
+    "Qwen3.5-9B base (reasoned binary)",
+}
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
