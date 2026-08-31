@@ -11,7 +11,7 @@ follow-up outcomes but do not add personal time.
 | Date | Session | Personal time | Cumulative time | Remaining |
 | --- | --- | ---: | ---: | ---: |
 | 2026-08-30 | 1 | 6 hours | 6 hours | 14 hours |
-| 2026-08-30 | 2 | 4 hours | 10 hours | 10 hours |
+| 2026-08-30 | 2 | 5 hours | 11 hours | 9 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -56,9 +56,12 @@ commits are an outcome of the session but add no personal time to the log.
 
 ## 2026-08-30 — Session 2
 
-**Time:** approximately 20:00–00:00, 4 hours
+**Time:** approximately 20:00–00:00, plus 1 hour of later result review;
+5 hours total
 
-**Commit evidence:** `c6962e1` through `4958ed8`, committed 20:23–23:55
+**Commit evidence:** initial work in `c6962e1` through `4958ed8`, committed
+20:23–23:55. Autonomous result records reviewed during the extension:
+`9a6d83b`, `dfb31ae`, and `a01ed7a`.
 
 Established frozen baselines and ablations while the main scaling campaign was
 running:
@@ -84,6 +87,35 @@ running:
   Pareto-frontier plot comparing Gleipnir baselines with the paper's published
   monitors.
 
-**Cumulative time:** 10 of 20 hours.
+### One-hour result-review extension
 
-**Remaining:** 10 hours.
+Reviewed and interpreted three completed autonomous benchmark runs:
+
+- Qwen3.5-27B reached `0.8395` Mean-OOD pAUROC@20, producing a matched
+  4B/9B/27B capacity curve of `0.6175`/`0.6976`/`0.8395`. The larger
+  9B-to-27B gain established a strong capacity effect under the immediate
+  binary-logit interface. At the paper's hosted-price proxy, the 27B result is
+  a new observed frontier point, though its comparison with the paper's
+  trained rationale-and-ordinal monitor is interface-level rather than a
+  causal training comparison.
+- GPT-OSS-120B with low native reasoning improved from `0.4789` to `0.5578`
+  Mean-OOD pAUROC@20. The gain was heterogeneous across sources and did not
+  close the gap to Qwen3.5-9B; at the canonical price, the cheaper and stronger
+  Qwen3.5-4B baseline still dominates it.
+- Qwen3.5-9B visible reasoning raised ordinal scoring from `0.4858` to `0.6656`
+  Mean-OOD pAUROC@20, recovering 84.9% of the immediate ordinal deficit. It
+  nevertheless remained `0.0320` below direct binary logits while costing
+  8.7% more. This supports a partial-recovery interpretation: deliberation
+  helps the generated severity interface, but direct decision-token logits
+  remain the stronger deployment baseline.
+- Checked the run audits and qualifications before accepting these results,
+  including the frozen-date regeneration for GPT-OSS and bounded score-boundary
+  recovery for 21 of 6,395 Qwen reasoned-ordinal rows.
+
+The benchmark execution and result-record commits were autonomous; the one
+hour counted here is for examining the completed evidence, checking the audit
+details, and updating the research interpretation.
+
+**Cumulative time:** 11 of 20 hours.
+
+**Remaining:** 9 hours.
