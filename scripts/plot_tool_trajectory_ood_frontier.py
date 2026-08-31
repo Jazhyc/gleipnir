@@ -189,6 +189,16 @@ def _improvement_pairs(frame: pd.DataFrame) -> list[tuple[pd.Series, pd.Series]]
     return pairs
 
 
+def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
+    """Recompute the historical frontier using only visible paper points."""
+    paper = frame.loc[frame["origin"].eq("Paper")].copy()
+    paper["paper_frontier"] = pareto_frontier_mask(
+        paper["cost_per_1k"].to_numpy(),
+        paper["mean_ood_pauroc_at_20"].to_numpy(),
+    )
+    return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
+
+
 def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame)
@@ -205,6 +215,16 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
     frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
+    paper_frontier = _paper_frontier(frame)
+    axis.plot(
+        paper_frontier["cost_per_1k"],
+        paper_frontier["mean_ood_pauroc_at_20"],
+        color=ORIGIN_PALETTE["Paper"],
+        linestyle=(0, (1.5, 2.4)),
+        linewidth=1.8,
+        alpha=0.72,
+        zorder=0,
+    )
     axis.plot(
         frontier["cost_per_1k"],
         frontier["mean_ood_pauroc_at_20"],
@@ -384,7 +404,17 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Pareto frontier",
+            label="Current frontier",
+        )
+    )
+    legend_handles.append(
+        Line2D(
+            [],
+            [],
+            color=ORIGIN_PALETTE["Paper"],
+            linestyle=(0, (1.5, 2.4)),
+            linewidth=2.0,
+            label="Paper-only frontier",
         )
     )
     axis.legend(

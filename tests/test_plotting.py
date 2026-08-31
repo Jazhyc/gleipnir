@@ -10,6 +10,7 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     _improvement_pairs,
     _label_obstacles,
     _markdown_cells,
+    _paper_frontier,
     load_frontier_registry,
     select_plot_points,
 )
@@ -104,6 +105,17 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
         float(method["mean_ood_pauroc_at_20"]) > float(base["mean_ood_pauroc_at_20"])
         for base, method in pairs
     )
+
+
+def test_paper_frontier_reconstructs_the_pre_gleipnir_low_cost_curve() -> None:
+    plotted = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
+    paper_frontier = _paper_frontier(plotted)
+
+    assert paper_frontier.iloc[0]["monitor"] == "GPT-OSS-20B SFT"
+    assert "Qwen3.5-4B SFT+RL" in set(paper_frontier["monitor"])
+    assert "Qwen3.5-27B SFT+RL" in set(paper_frontier["monitor"])
+    assert paper_frontier["cost_per_1k"].is_monotonic_increasing
+    assert paper_frontier["mean_ood_pauroc_at_20"].is_monotonic_increasing
 
 
 def test_label_obstacles_sample_the_frontier_between_points() -> None:

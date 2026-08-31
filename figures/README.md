@@ -35,6 +35,9 @@ The paper's Qwen3.5-4B SFT+RL and Qwen3.5-27B SFT+RL points remain labelled
 despite being off the frontier because they anchor matched-backbone comparisons:
 Gleipnir 4B shows the distillation uplift at 4B, while Qwen3.5-27B logits shows
 the gain from changing the evaluation interface without training the backbone.
+A muted blue dotted line recomputes the frontier from the visible paper points
+alone; the solid dark line is the current combined frontier. Their separation
+at low cost shows which historical frontier points the Gleipnir students displace.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:
