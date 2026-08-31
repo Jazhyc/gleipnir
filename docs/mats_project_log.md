@@ -12,6 +12,7 @@ follow-up outcomes but do not add personal time.
 | --- | --- | ---: | ---: | ---: |
 | 2026-08-30 | 1 | 6 hours | 6 hours | 14 hours |
 | 2026-08-30 | 2 | 5 hours | 11 hours | 9 hours |
+| 2026-08-31 | 3 | 2 hours | 13 hours | 7 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -119,3 +120,34 @@ details, and updating the research interpretation.
 **Cumulative time:** 11 of 20 hours.
 
 **Remaining:** 9 hours.
+
+## 2026-08-31 — Session 3
+
+**Time:** approximately 14:30–16:30, 2 hours
+
+**Commit evidence:** `54e5473` through `51e30e9`, committed 15:08–16:32
+
+Created a methods figure comparing Gleipnir's distillation pipeline with the
+authors' approach, then began strict-OOD evaluation of the trained adapters:
+
+- Built a reproducible SVG/PNG pipeline figure aligning the shared action-only
+  input and deployable-monitor endpoint. It contrasts Sinha et al.'s filtered
+  rationale-distillation stages—candidate generation, label-conditioned retry,
+  external judging, and best-candidate selection—with Gleipnir's direct
+  distillation of Kimi's binary decision-token distribution. Iteratively refined
+  the branch structure, labels, arrows, and whitespace, with focused figure
+  tests and a documented regeneration command.
+- Froze the evaluation contract for the completed rank-128 soft-only adapters:
+  six nested Qwen3.5-9B data-scaling conditions from 204 through 8,688 matched
+  examples, plus separate 9B and 4B mixed-data conditions. All eight adapters
+  will be scored on the same 6,395-row, six-source strict-OOD suite using the
+  compact student prompt and normalized literal `0|1` decision-token logits.
+- Implemented the evaluation preparation, causal-master and vLLM-serving parity
+  canary, sequential one-H100 launcher, metric summarization, and artifact
+  checks. Repaired launcher startup and normalized parity records before
+  queueing the campaign. Full adapter results remain pending and have not yet
+  been interpreted.
+
+**Cumulative time:** 13 of 20 hours.
+
+**Remaining:** 7 hours.
