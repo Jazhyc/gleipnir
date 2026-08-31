@@ -191,6 +191,13 @@ pAUROC@20, showing that simple binning accounts for little of the generated
 interface's loss. Its run audit is in
 [`../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md).
 
+Adding one greedy visible analysis while keeping Qwen native thinking disabled
+raises the ordinal interface to `0.6656` Mean-OOD pAUROC@20 and `0.8610`
+Mean-OOD AUROC. It recovers 84.9% of the immediate ordinal pAUROC@20 deficit,
+but remains `0.0320` below binary logits while costing 8.7% more at
+`$1.0293/1K`. The result, boundary-recovery audit, and scope caveats are in
+[`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
+
 The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
 Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
 proxy. It is technically the lowest-cost frontier endpoint but is much weaker

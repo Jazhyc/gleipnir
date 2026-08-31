@@ -1,8 +1,23 @@
 # Qwen3.5-9B visible-reasoning ordinal OOD benchmark
 
-Status: v3 frozen before evaluation; not yet launched. The 2,048-token v1 and
-strict-boundary 4,096-token v2 preflights were invalidated before analysis after
-the same degenerate rationale exhausted both length caps.
+Status: completed 2026-08-31. The definitive 6,395-row result and run audit are
+in
+[`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
+The 2,048-token v1 and strict-boundary 4,096-token v2 preflights were
+invalidated before analysis after the same degenerate rationale exhausted both
+length caps.
+
+## Result
+
+Visible reasoning reached `0.6656` Mean-OOD pAUROC@20 and `0.8610` Mean-OOD
+AUROC. It improved over immediate ordinal generation by `0.1798` and `0.1017`,
+respectively, but remained below continuous binary logits by `0.0320` and
+`0.0240`. At the frozen hosted-price snapshot, its exact logical token
+accounting projects to `$1.029268/1K`, versus `$0.946821/1K` for binary logits.
+
+The definitive run produced 6,374 normal score boundaries, 20 bounded
+length-cap recoveries, and one missing-boundary recovery. These 21 rows retained
+their full generated analyses and were scored under the predeclared policy.
 
 ## Hypothesis and intervention
 

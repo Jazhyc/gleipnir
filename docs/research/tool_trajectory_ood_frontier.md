@@ -38,10 +38,10 @@ discounts, failed-request charges, training cost, and self-hosted total cost of
 ownership are excluded from the primary coordinate. Record them separately.
 
 The paper rows below are the published three-seed means rounded to three decimal
-places. Gleipnir's immediate-logit rows are deterministic temperature-zero
-evaluations; the GPT-OSS low-reasoning row uses one frozen sampling seed before
-the binary-logit boundary. They are comparable in dataset, metric, and
-uncached cost convention, but do not reproduce the paper's generated interface.
+places. Gleipnir's Qwen rows are deterministic temperature-zero evaluations;
+the GPT-OSS low-reasoning row uses one frozen sampling seed before the
+binary-logit boundary. They are comparable in dataset, metric, and uncached
+cost convention, but do not reproduce the paper's trained interfaces.
 
 ## Reference table
 
@@ -62,6 +62,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
+| **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
@@ -84,7 +85,8 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
 [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
-[`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
+[`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md),
+[`tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 audits and the exact accounting in
@@ -212,6 +214,26 @@ probabilities.
 This comparison isolates immediate output interfaces under matched model and
 data conditions. It does not reproduce or reject the paper's trained,
 rationale-before-score monitors.
+
+## Qwen3.5-9B visible-reasoning ordinal result
+
+Adding one greedy visible analysis in native non-thinking mode raises the
+generated 0--10 interface to `0.6656` Mean-OOD pAUROC@20 and `0.8610`
+Mean-OOD AUROC. This recovers 84.9% of the immediate ordinal arm's pAUROC@20
+deficit, but remains `0.0320` below continuous binary logits and `0.0179` below
+the nearest-tenth binary control.
+
+The result is heterogeneous: reasoning exceeds binary pAUROC@20 on IaC and
+Rogue Eval, but loses on the other four sources. It uses all 11 requested
+scores rather than the immediate arm's seven, so test-time deliberation changes
+the mapping materially rather than merely increasing nominal resolution.
+
+Exact means of 9,628.7113 input tokens and 442.6468 logical output tokens cost
+`$1.0293/1K` at the dated Qwen3.5-9B hosted-price snapshot. The reasoned arm is
+8.7% more expensive than direct binary logits while ranking worse, so it is
+strictly dominated and does not enter the observed frontier. This supports a
+narrow partial-recovery conclusion for one greedy non-thinking rationale; it
+does not test native thinking, self-consistency, or trained deliberation.
 
 ## Kimi K3 frontier movement
 
