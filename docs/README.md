@@ -15,7 +15,10 @@
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
 - `findings/lambda_shutdown_inventory.md`: checksummed local artifact inventory
-  retained before releasing the ephemeral Lambda instance.
+  retained before releasing the former two-H100 `monitor-foundation` instance.
+- `findings/gleipnir_control_shutdown_inventory.md`: checksummed local artifact
+  inventory retained before releasing the single-H100 `gleipnir-control`
+  instance.
 - `migrations/`: historical material carried over from precursor projects.
 
 Experiment READMEs describe executable work. Documents here record conclusions
