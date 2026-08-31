@@ -62,6 +62,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
+| **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **yes** |
@@ -86,6 +87,7 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
 [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md),
+[`tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
@@ -234,6 +236,28 @@ Exact means of 9,628.7113 input tokens and 442.6468 logical output tokens cost
 strictly dominated and does not enter the observed frontier. This supports a
 narrow partial-recovery conclusion for one greedy non-thinking rationale; it
 does not test native thinking, self-consistency, or trained deliberation.
+
+## Qwen3.5-9B visible-reasoning binary-logit result
+
+Adding one greedy visible analysis before extracting the same normalized
+literal `0`/`1` logits reaches `0.6923` Mean-OOD pAUROC@20 and `0.8607`
+Mean-OOD AUROC. The immediate-logit baseline remains stronger at `0.6976` and
+`0.8850`, changes of `-0.0054` and `-0.0243`. Reasoning therefore does not
+improve the matched primary endpoint even when the final interface retains
+continuous logits rather than generated ordinal bins.
+
+The macro result is not uniform. AgentDojo improves by `0.2980` pAUROC@20,
+while the other five sources decline; CUA-SHADE-Arena, MLE-Sabotage, and
+SHADE-Arena lose `0.1223`, `0.0816`, and `0.0983`. The score distribution is
+also materially different: the reasoned arm has 6,314 unique probabilities,
+79.16% hard-decision agreement with direct logits, a `0.2721` mean absolute
+score change, and `0.6895` Pearson correlation.
+
+Exact means of 9,473.7113 input tokens and 387.0719 logical output tokens cost
+`$1.0054/1K` at the dated Qwen3.5-9B hosted-price snapshot. The arm is 6.2%
+more expensive than direct binary logits and slightly weaker, so it is strictly
+dominated. This is evidence about one greedy non-thinking rationale under the
+full binary specification, not native thinking or trained deliberation.
 
 ## Kimi K3 frontier movement
 

@@ -51,7 +51,7 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
 
-    assert len(frame) == 25
+    assert len(frame) == 26
     assert frame["computed_frontier"].sum() == 11
     assert frame["computed_frontier"].equals(frame["declared_frontier"])
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
@@ -69,6 +69,8 @@ def test_plot_applies_documented_filters_without_changing_registry() -> None:
     assert plotted["mean_ood_pauroc_at_20"].min() >= 0.60
     ours = plotted.loc[plotted["origin"] == "Gleipnir"]
     assert ours["interface"].str.contains("logits", case=False).all()
+    assert "Qwen3.5-9B base (reasoned binary)" in set(plotted["monitor"])
+    assert "Qwen3.5-9B base (reasoned ordinal)" not in set(plotted["monitor"])
 
 
 def test_display_labels_drop_redundant_base_suffix() -> None:

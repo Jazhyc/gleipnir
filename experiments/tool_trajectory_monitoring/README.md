@@ -198,6 +198,15 @@ but remains `0.0320` below binary logits while costing 8.7% more at
 `$1.0293/1K`. The result, boundary-recovery audit, and scope caveats are in
 [`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
 
+Keeping the same visible non-thinking analysis but extracting normalized
+literal `0`/`1` logits reaches `0.6923` Mean-OOD pAUROC@20 and `0.8607`
+Mean-OOD AUROC. This is `0.0054` and `0.0243` below immediate binary logits,
+respectively, while costing 6.2% more at `$1.0054/1K`. AgentDojo improves
+sharply, but all five other sources decline, so the matched binary-logit
+ablation does not support a source-robust test-time-reasoning gain. The full
+audit is in
+[`../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
+
 The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
 Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
 proxy. It is technically the lowest-cost frontier endpoint but is much weaker

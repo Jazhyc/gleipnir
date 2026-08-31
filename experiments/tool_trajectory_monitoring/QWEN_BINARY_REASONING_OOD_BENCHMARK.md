@@ -1,6 +1,6 @@
 # Qwen3.5-9B visible-reasoning binary-logit OOD benchmark
 
-Status: frozen before evaluation; not yet launched.
+Status: completed 2026-08-31.
 
 ## Hypothesis and intervention
 
@@ -47,6 +47,22 @@ The audited initial contexts total 60,584,384 tokens, averaging 9,473.7113 per
 row, with a minimum of 1,040 and maximum of 30,389. The maximum plus the frozen
 4,096-token rationale reserve and one decision token is 34,486, below the
 36,864-token engine limit.
+
+## Result
+
+The definitive run reached `0.6923` Mean-OOD pAUROC@20 and `0.8607` Mean-OOD
+AUROC. The paired immediate binary-logit baseline reached `0.6976` and `0.8850`,
+so visible reasoning changed the metrics by `-0.0054` and `-0.0243`,
+respectively. It cost `$1.0054/1K` under the dated hosted-price convention,
+6.2% more than direct logits.
+
+The direction is heterogeneous: AgentDojo pAUROC@20 improves by `0.2980`, but
+all five other sources decline. Fifteen rows use the frozen boundary recovery
+and none are dropped. The complete per-source, score-behavior, cost, and run
+audit is in
+[`../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
+
+## Reproduction
 
 Run the balanced 12-row canary first:
 
