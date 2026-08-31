@@ -219,3 +219,34 @@ completed Gleipnir OOD evaluation belong in
 Follow that registry's frozen metric, cost, coverage, and provenance gates; do
 not add partial canaries or silently replace rows after a price or interface
 change.
+
+## Soft-distillation OOD scaling evaluation
+
+The completed one-epoch rank-128 soft-only campaign is evaluated on the same
+6,395-row strict OOD suite under the unchanged compact student prompt. The six
+matched Qwen3.5-9B tool-trajectory subsets (`204`, `504`, `996`, `2,004`,
+`4,008`, and `8,688` rows) form the data-scaling curve. The 21,837-row mixed
+tool-plus-prior-deception adapters for Qwen3.5-9B and Qwen3.5-4B are separate
+transfer/interference tests, not extra points on the matched-data curve. All
+arms use Kimi soft targets only; there is no hard-label training arm.
+
+The frozen config is `distillation_ood_benchmark.json`. It fixes row membership,
+model revisions, adapter job names, the student prompt hash, literal `0|1`
+boundary, one-token vLLM interface, and the paper's raw normalized Mean-OOD
+pAUROC@20 as the primary metric. Before either full lane, a 12-row source-label
+canary compares the FP32 causal master adapter with its checksum-rebased vLLM
+serving copy and requires Pearson correlation at least `0.99`, mean absolute
+score difference at most `0.02`, and a nonzero adapter effect. The run stops on
+parity failure, prompt truncation, missing logprobs, incomplete coverage, OOM,
+or any backend error.
+
+Run the sequential one-H100 campaign with:
+
+```bash
+python experiments/tool_trajectory_monitoring/run_distilled_ood_lambda.py
+```
+
+The dedicated scaling analysis belongs in
+[`../../docs/research/tool_trajectory_distillation_ood_scaling.md`](../../docs/research/tool_trajectory_distillation_ood_scaling.md).
+Only the completed full-mixed 9B and 4B comparisons are additionally registered
+in the general cost--performance frontier.
