@@ -38,10 +38,10 @@ discounts, failed-request charges, training cost, and self-hosted total cost of
 ownership are excluded from the primary coordinate. Record them separately.
 
 The paper rows below are the published three-seed means rounded to three decimal
-places. The Gleipnir rows are deterministic temperature-zero evaluations using
-either immediate binary logits or an immediate ordinal integer. They are
-comparable in dataset, metric, and uncached cost convention, but neither
-interface reproduces the paper's rationale-before-score generation.
+places. Gleipnir's immediate-logit rows are deterministic temperature-zero
+evaluations; the GPT-OSS low-reasoning row uses one frozen sampling seed before
+the binary-logit boundary. They are comparable in dataset, metric, and
+uncached cost convention, but do not reproduce the paper's generated interface.
 
 ## Reference table
 
@@ -53,6 +53,7 @@ and at least as accurate, with one strict improvement.
 | --- | --- | --- | ---: | ---: | :---: |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **yes** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
+| **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | yes |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | yes |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | yes |
@@ -79,6 +80,7 @@ The 17 paper reference rows reproduce Appendix E, Table 4. Their exact token
 counts and prices remain in the paper rather than being duplicated here. The
 Gleipnir rows are backed by the completed
 [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md),
+[`tool_trajectory_gpt_oss_low_reasoning_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_low_reasoning_ood_benchmark.md),
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
 [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
@@ -126,6 +128,33 @@ Qwen3.5-4B base is `13.1%` cheaper and improves pAUROC@20 from `0.4789` to
 `0.6175`, so it strictly dominates this point. The GPT-OSS result remains a
 matched model-family baseline rather than an operationally attractive
 endpoint.
+
+## GPT-OSS-120B low-reasoning result
+
+Prefilling GPT-OSS's native analysis boundary under `Reasoning: low`, sampling
+one frozen trace per row, and then extracting literal binary logits reaches
+`0.5578` Mean-OOD pAUROC@20 and `0.7914` Mean-OOD AUROC. This improves the
+immediate condition by `0.0789` pAUROC while adding 96.65 conceptual output
+tokens per evaluation. The gain is concentrated in AgentDojo, IaC, and
+SHADE-Arena; MLE-Sabotage declines.
+
+The exact means are 8,376.1686 conceptual input tokens and 97.6549 output
+tokens. The canonical paper-matched `$0.039/$0.18` proxy costs `$0.3442/1K`.
+At the 2026-08-31 OpenRouter headline `$0.03/$0.17` route it costs
+`$0.2679/1K`; the historical higher `$0.15/$0.60` sensitivity costs
+`$1.3150/1K`:
+
+| OpenRouter proxy | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations | Frontier at this price? |
+| --- | ---: | ---: | ---: | :---: |
+| Current headline/lowest listed (`$0.03/$0.17`) | 0.251285 | 0.016601 | **0.267886** | yes |
+| Paper-matched (`$0.039/$0.18`) | 0.326671 | 0.017578 | **0.344248** | no |
+| Higher-priced route (`$0.15/$0.60`) | 1.256425 | 0.058593 | **1.315018** | no |
+
+At the canonical rate Qwen3.5-4B base strictly dominates this point: it is
+cheaper (`$0.2842/1K`) and stronger (`0.6175`). At the current lowest GPT-OSS
+route, low reasoning becomes a frontier point because it is cheaper than Qwen
+4B, but it remains well below Qwen3.5-9B's matched-interface `0.6976`. This is
+useful evidence that reasoning helps GPT-OSS, not an operational efficiency win.
 
 ## Qwen3.5-9B base result
 
@@ -257,6 +286,7 @@ variability.
 - [OpenRouter model catalog search for Qwen3.5-4B](https://openrouter.ai/models?q=qwen3.5-4b)
 - [OpenRouter model catalog search for Qwen3.5-27B](https://openrouter.ai/models?q=qwen3.5-27b)
 - [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md)
+- [`tool_trajectory_gpt_oss_low_reasoning_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_low_reasoning_ood_benchmark.md)
 - [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md)
 - [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
