@@ -13,6 +13,7 @@ follow-up outcomes but do not add personal time.
 | 2026-08-30 | 1 | 6 hours | 6 hours | 14 hours |
 | 2026-08-30 | 2 | 5 hours | 11 hours | 9 hours |
 | 2026-08-31 | 3 | 2 hours | 13 hours | 7 hours |
+| 2026-08-31 | 4 | 3.5 hours | 16.5 hours | 3.5 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -158,3 +159,39 @@ authors' approach, then began strict-OOD evaluation of the trained adapters:
 **Cumulative time:** 13 of 20 hours.
 
 **Remaining:** 7 hours.
+
+## 2026-08-31 — Session 4
+
+**Time:** approximately 20:30–00:00, 3.5 hours
+
+**Commit evidence:** `2568826` through `4df758d`, committed 20:50–23:51
+
+Consolidated the trained-monitor evaluations, updated the cost-performance
+figures, and ran several exploratory follow-ups:
+
+- Audited and interpreted the eight completed strict-OOD adapter evaluations.
+  The matched Qwen3.5-9B curve is non-monotonic: Mean-OOD AUROC peaks at
+  `0.9353` with 996 rows, while pAUROC@20 peaks at `0.8365` with 4,008 rows.
+  Adding the prior deception corpus is macro-neutral, and the mixed 4B model
+  reaches `0.7823` pAUROC@20 at roughly one third the hosted inference proxy of
+  mixed 9B.
+- Updated the canonical OOD Pareto-frontier figure and registry to show the
+  trained 4B and 9B uplift, the paper-only frontier, and clearer comparison
+  labels. Added a separate data-scaling figure, including an explicitly
+  non-causal comparison with the paper's digitized Qwen3.5 curves.
+- Explored lower-cost and explanation-quality follow-ups. Stopped the 0.8B
+  campaign after systems preflight when its projected runtime offered too
+  little decision value. A blinded judge favored Gleipnir 4B's complete
+  visible analysis-and-decision output over the base model on 64 pairs, while
+  the same-decision subset left any independent explanation-quality gain
+  inconclusive.
+- Ran a full-specification prompt ablation on the trained 4B adapter. It changed
+  individual scores but produced essentially no source-balanced aggregate gain
+  while using 9.38% more input tokens. Prepared and passed canaries for a
+  hosted Qwen3.5-27B compact-prompt ablation as another interface check.
+- Prepared and published reproducible MIT-licensed Gleipnir 4B and 9B adapter
+  releases with model cards, provenance, checksums, and serving guidance.
+
+**Cumulative time:** 16.5 of 20 hours.
+
+**Remaining:** 3.5 hours.
