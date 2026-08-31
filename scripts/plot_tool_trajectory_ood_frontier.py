@@ -140,6 +140,7 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
 
 def _display_label(monitor: str) -> str:
     replacements = {
+        "Kimi K2.6 binary logits": "Kimi K2.6",
         "Kimi K3 binary logits": "Kimi K3",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",

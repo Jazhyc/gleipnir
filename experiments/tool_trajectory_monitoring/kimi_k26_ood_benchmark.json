@@ -1,6 +1,6 @@
 {
   "campaign_id": "kimi-k26-inceptron-binary-logit-ood-v1",
-  "status": "quality_canary_passed_full_evaluation_pending",
+  "status": "completed",
   "hypothesis": "Unadapted Kimi K2.6 under the frozen full monitoring specification and immediate literal 0|1 logit interface will exceed the paper's 0.841 Kimi-K2.6 SFT Mean-OOD pAUROC@20 point while using less uncached hosted inference spend.",
   "intervention": "Evaluate the unadapted open-weight Kimi K2.6 model through OpenRouter's Inceptron endpoint with reasoning disabled and score normalized terminal literal-token logprobs instead of generating a rationale and 0--10 severity score.",
   "baselines": [
@@ -76,6 +76,32 @@
     "reasoning_tokens": 0,
     "format_amendment": "Every response contained exactly one terminal prediction line but Inceptron consistently prepended one ASCII space. The pre-existing terminal parser accepts surrounding whitespace. This provider-format observation, made without using labels or scores, is documented as acceptable before the 600-row quality canary and full run; the prompt, request, scorer, and terminal digit boundary are unchanged."
   },
+  "result": {
+    "completed_at": "2026-09-01",
+    "rows": 6395,
+    "mean_ood_pauroc_at_20": 0.9194040123568912,
+    "mean_ood_auroc": 0.9751074208862726,
+    "weighted_ood_pauroc_at_20": 0.9256875353200466,
+    "weighted_ood_auroc": 0.9772349093688767,
+    "pooled_pauroc_at_20": 0.8931101555532717,
+    "pooled_auroc": 0.9675199389980413,
+    "pooled_brier": 0.08520449080804156,
+    "prompt_tokens": 53145980,
+    "completion_tokens": 25580,
+    "cached_tokens": 14143360,
+    "reasoning_tokens": 0,
+    "reported_cost_usd": 22.93085123999999,
+    "uncached_list_cost_usd": 28.254085600000003,
+    "uncached_cost_usd_per_1000": 4.418152556684911,
+    "selected_endpoint": "Inceptron::moonshotai/kimi-k2.6-20260420",
+    "request_settings_sha256": "68882603e8c5fe6aaa382bbc5dad097a3babeb3c46185da9eb38aeb1147fadcf",
+    "artifacts": {
+      "canary_scores_sha256": "2fab4999c50dc4978102d35b950e370c753cdd600256911f185a29dd0df2810d",
+      "remaining_scores_sha256": "034449dc33c2f2896b12e6ba35a9a9f6d3967c40b4a2b8d0868da6d5382241c5",
+      "canary_summary_sha256": "30557c0c8193ad0ce346240615126ae7548b146d0f9d1486b7b946ad99e20588",
+      "full_summary_sha256": "56a32b0e3a7292641f3393dfd0b818aa67b77775b79be47c5905f2d8ebc35905"
+    }
+  },
   "model": {
     "open_weight_id": "moonshotai/Kimi-K2.6",
     "open_weight_revision": "7eb5002f6aadc958aed6a9177b7ed26bb94011bb",
@@ -129,6 +155,9 @@
     "projected_uncached_full_cost_usd": 28.38416,
     "maximum_campaign_cost_usd": 33.0
   },
+  "execution_amendments": [
+    "After concurrency 16 exhausted the shared Inceptron pool during the 600-row canary, three unresolved 429 rows were resumed unchanged at concurrency 2 and the 5,795-row full remainder used concurrency 8. Concurrency is client-side and absent from the request-settings hash; model, provider, prompt, sampling, score, and retry identity did not change."
+  ],
   "held_out_selection_rule": "The prompt, provider, model route, request settings, scorer, and all 6,395 OOD rows are frozen before the first paid request; this unadapted benchmark performs no checkpoint or prompt selection.",
   "stop_conditions": [
     "The prompt artifact, prompt hash, model route, provider, or request settings differ from this config.",

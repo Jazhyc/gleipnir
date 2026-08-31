@@ -1,6 +1,6 @@
 # Kimi K2.6 Inceptron binary-logit OOD benchmark
 
-Status: 600-row quality canary completed on 2026-09-01; full evaluation pending.
+Status: completed on all 6,395 strict-OOD rows on 2026-09-01.
 
 ## Hypothesis and design
 
@@ -52,6 +52,24 @@ literal decision logprobs. Reported spend was `$2.465338`, including a 21.67%
 provider cache-read fraction. The canary is encouraging but is not a frontier
 point and does not replace the frozen 6,395-row evaluation.
 
+## Definitive result
+
+The complete run reaches `0.919404` Mean-OOD pAUROC@20 and `0.975107`
+Mean-OOD AUROC. It exceeds Kimi K3 by `0.011038` pAUROC@20 and the paper's
+Kimi-K2.6 SFT point by `0.078404`. The source-balanced gain over K3 is driven
+by SHADE-Arena: K2.6 improves that source by `0.150168` while declining on the
+other four non-tied sources.
+
+All 6,395 rows have exactly one score from Inceptron's dated
+`moonshotai/kimi-k2.6-20260420` endpoint, both literal-token logprobs, and zero
+reasoning tokens. Exact observed usage is 53,145,980 prompt tokens and 25,580
+completion tokens. At the frozen uncached list rates, the suite costs
+`$28.254086`, or `$4.418153/1K`; reported cache-discounted successful-row spend
+was `$22.930851`.
+
+The detailed per-source, cost, retry, tie, coverage, and artifact audit is in
+[`tool_trajectory_kimi_k26_ood_benchmark.md`](../../docs/findings/tool_trajectory_kimi_k26_ood_benchmark.md).
+
 ## Interpretation contract
 
 A completed point above `0.839474` enters the observed open-model
@@ -62,3 +80,7 @@ current high-quality open-model endpoint. Because prompt and score interface
 differ from the paper's SFT condition, any positive result is evidence for
 interface-level cost--performance dominance, not a matched causal rejection of
 SFT.
+
+The completed point satisfies all three predeclared thresholds: it enters the
+frontier, dominates the paper's K2.6 SFT point, and exceeds the prior Kimi K3
+open-model endpoint.

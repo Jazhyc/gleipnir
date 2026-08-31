@@ -54,12 +54,17 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
 
-    assert len(frame) == 28
-    assert frame["computed_frontier"].sum() == 8
+    assert len(frame) == 29
+    assert frame["computed_frontier"].sum() == 7
     assert frame["computed_frontier"].equals(frame["declared_frontier"])
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
     assert kimi["cost_per_1k"] == pytest.approx(25.1177)
     assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
+    kimi_k26 = frame.loc[frame["monitor"] == "Kimi K2.6 binary logits"].iloc[0]
+    assert kimi_k26["cost_per_1k"] == pytest.approx(4.4182)
+    assert kimi_k26["mean_ood_pauroc_at_20"] == pytest.approx(0.9194)
+    assert bool(kimi_k26["computed_frontier"])
+    assert not bool(kimi["computed_frontier"])
     mixed_4b = frame.loc[frame["monitor"] == "Qwen3.5-4B Kimi-soft mixed"].iloc[0]
     assert mixed_4b["cost_per_1k"] == pytest.approx(0.2598)
     assert mixed_4b["mean_ood_pauroc_at_20"] == pytest.approx(0.7823)
@@ -84,6 +89,7 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-4B base") == "Qwen3.5-4B"
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
     assert _display_label("Kimi K3 binary logits") == "Kimi K3"
+    assert _display_label("Kimi K2.6 binary logits") == "Kimi K2.6"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
     assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B logits"
     assert _display_label("Qwen3.5-4B SFT+RL") == "Qwen3.5-4B SFT+RL"

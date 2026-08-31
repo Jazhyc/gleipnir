@@ -71,9 +71,10 @@ and at least as accurate, with one strict improvement.
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
-| Paper | Kimi-K2.6 SFT | Trained, short prompt, generated rationale + 0--10 score | 10.175 | 0.841 | yes |
+| **Gleipnir** | **Kimi K2.6 binary logits** | **Full binary specification, immediate `0\|1` logits** | **4.4182** | **0.9194** | **yes** |
+| Paper | Kimi-K2.6 SFT | Trained, short prompt, generated rationale + 0--10 score | 10.175 | 0.841 | no |
 | Paper | Claude Haiku 4.5 prompted | Full specification, generated rationale + 0--10 score | 19.746 | 0.794 | no |
-| **Gleipnir** | **Kimi K3 binary logits** | **Full binary specification, immediate `0\|1` logits** | **25.1177** | **0.9084** | **yes** |
+| **Gleipnir** | **Kimi K3 binary logits** | **Full binary specification, immediate `0\|1` logits** | **25.1177** | **0.9084** | **no** |
 | Paper | GPT-5.4 prompted | Full specification, generated rationale + 0--10 score | 44.376 | 0.899 | no |
 | Paper | Gemini 2.5 Pro prompted | Full specification, generated rationale + 0--10 score | 45.254 | 0.802 | no |
 | Paper | Claude Sonnet 4.6 prompted | Full specification, generated rationale + 0--10 score | 58.850 | 0.929 | yes |
@@ -92,7 +93,8 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md)
 and
-[`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
+[`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md) and
+[`tool_trajectory_kimi_k26_ood_benchmark.md`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md)
 audits, the completed
 [`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md)
 record, and the exact accounting in
@@ -292,10 +294,37 @@ more expensive than direct binary logits and slightly weaker, so it is strictly
 dominated. This is evidence about one greedy non-thinking rationale under the
 full binary specification, not native thinking or trained deliberation.
 
-## Kimi K3 frontier movement
+## Kimi K2.6 Inceptron frontier movement
 
-Kimi K3 inserts a new observed frontier point between Kimi-K2.6 SFT and Claude
-Sonnet 4.6. It also dominates the paper's GPT-5.4 prompted point: Kimi K3 is
+The full-specification Kimi K2.6 binary-logit monitor reaches `0.9194`
+Mean-OOD pAUROC@20 at `$4.4182/1K`. It becomes the highest-quality observed
+open-weight frontier point and displaces both the paper's Kimi-K2.6 SFT point
+and Gleipnir's Kimi K3 point. Relative to the paper's K2.6 SFT monitor, it gains
+`0.0784` pAUROC while costing 56.6% less. Relative to Kimi K3, it gains
+`0.0110` while costing 82.4% less.
+
+The next higher-quality point is Claude Sonnet 4.6 at `0.929`; K2.6 is
+`0.0096` lower but `13.32x` cheaper. This is a much larger frontier movement
+than the small macro-score difference alone suggests.
+
+The K2.6-over-K3 macro gain is source-specific rather than uniform. K2.6 loses
+on AgentDojo, CUA-SHADE, IaC, and Rogue Eval, ties on MLE-Sabotage, and improves
+SHADE-Arena pAUROC by `0.1502`. K3 remains stronger on pooled pAUROC and fixed-
+threshold diagnostics. Retain the source-balanced frontier claim because that
+is the frozen paper estimand, but do not describe K2.6 as uniformly stronger.
+
+Exact usage is 53,145,980 prompt tokens and 25,580 completion tokens. At the
+frozen Inceptron `$0.53/M` input and `$3.39/M` output prices, the full suite is
+`$28.2541` uncached. OpenRouter reported `$22.9309` after a 26.61% cache-read
+fraction; that session-specific discount is excluded from the primary
+coordinate. See the dedicated
+[`run audit`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md).
+
+## Kimi K3 historical frontier movement
+
+Before the K2.6 Inceptron result, Kimi K3 inserted a new observed frontier point
+between Kimi-K2.6 SFT and Claude Sonnet 4.6. It also dominated the paper's
+GPT-5.4 prompted point: Kimi K3 is
 `0.0094` higher in Mean-OOD pAUROC@20 while costing `43.4%` less. Relative to
 the adjacent higher-quality Sonnet point, Kimi is `2.34x` cheaper for a `0.0206`
 lower pAUROC@20.
@@ -321,7 +350,9 @@ the latter also reflects prompt representation and tokenizer differences.
 
 The defensible result is therefore interface-level: a full-specification binary
 logit monitor reaches approximately the same high-quality region with much less
-generation, moving the observed cost--performance frontier. It is not evidence
+generation. Kimi K3 is now dominated by the cheaper, stronger K2.6 Inceptron
+point, but the historical comparison still isolates generation economics at a
+shared K3/Sonnet price. It is not evidence
 that Kimi K3 would dominate the same models under their original generated-score
 interface.
 

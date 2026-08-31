@@ -91,9 +91,10 @@ cross-source limitation rather than a reason to alter the frozen prompt after
 seeing OOD labels.
 
 On the paper's published point estimates and uncached cost convention, this
-result adds a new cost--performance frontier point at `$25.1177/1K` and `0.9084`
-Mean-OOD pAUROC@20. It dominates GPT-5.4's `$44.376/1K`, `0.899` point and sits
-between Kimi-K2.6 SFT and Claude Sonnet 4.6. The canonical reference table and
+result originally added a cost--performance frontier point at `$25.1177/1K`
+and `0.9084` Mean-OOD pAUROC@20. It dominated GPT-5.4's `$44.376/1K`, `0.899`
+point. The later Inceptron Kimi K2.6 result reaches `0.9194` at `$4.4182/1K`
+and therefore dominates this K3 point. The canonical reference table and
 interface-efficiency decomposition are maintained in
 [`tool_trajectory_ood_frontier.md`](../research/tool_trajectory_ood_frontier.md).
 

@@ -1,7 +1,7 @@
 # Binary action-only tool-trajectory monitoring
 
-Status: prompt contract, bounded teacher canary, and frozen Kimi K3 OOD baseline
-complete. Student training has not started.
+Status: prompt contract, Kimi K3 and K2.6 OOD baselines, student training, and
+frozen student OOD evaluation complete.
 
 ## Lambda environment status
 
@@ -184,12 +184,13 @@ teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
 pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
 [`../../docs/findings/tool_trajectory_kimi_ood_benchmark.md`](../../docs/findings/tool_trajectory_kimi_ood_benchmark.md).
 
-The Kimi K2.6 Inceptron follow-up has passed its 600-row quality canary at
-`0.936750` Mean-OOD pAUROC@20 and `0.978933` Mean-OOD AUROC; the definitive
-6,395-row result is pending. It reuses the same full binary prompt, disables
-reasoning, and extracts terminal literal-token logits through a provider-pinned
-OpenRouter route. The exact hypothesis, `$28.3842` projected suite cost,
-`$33.00` ceiling, canary audit, and interpretation contract are in
+The completed Kimi K2.6 Inceptron follow-up reaches `0.919404` Mean-OOD
+pAUROC@20 and `0.975107` Mean-OOD AUROC on all 6,395 rows. It reuses the same
+full binary prompt, disables reasoning, and extracts terminal literal-token
+logits through a provider-pinned OpenRouter route. Its exact uncached cost is
+`$4.4182/1K`, making it both stronger and 82.4% cheaper than the completed Kimi
+K3 point. The exact hypothesis, canary, per-source result, cost, and serving
+audit are in
 [`KIMI_K26_OOD_BENCHMARK.md`](KIMI_K26_OOD_BENCHMARK.md).
 
 The matched unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`

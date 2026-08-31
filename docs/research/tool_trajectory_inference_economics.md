@@ -93,6 +93,32 @@ the binary 9B run while losing `0.2118` pAUROC@20. Visible reasoning recovers
 extraction costs 6.2% more and changes pAUROC@20 by `-0.0054`; it is also
 strictly dominated. Both ordinal arms remain dominated as well.
 
+## Direct Kimi K2.6 monitor exact accounting
+
+The completed Inceptron-only Kimi K2.6 run reuses the same 6,395 full binary
+teacher prompts as Kimi K3. Saved provider usage reports 53,145,980 prompt
+tokens and 25,580 completion tokens, exactly four completion tokens per row,
+with zero reasoning tokens. At the frozen 2026-08-31 Inceptron rates of
+`$0.53/M` input and `$3.39/M` output:
+
+| Component | Tokens | Rate (USD / M) | Full-suite USD | USD / 1K evaluations |
+| --- | ---: | ---: | ---: | ---: |
+| Prompt | 53,145,980 | 0.53 | 28.167369 | 4.404592 |
+| Completion | 25,580 | 3.39 | 0.086716 | 0.013561 |
+| **Uncached total** | **53,171,560** | — | **28.254086** | **4.418153** |
+
+Inceptron reported 14,143,360 cache-read tokens, a 26.61% fraction, and
+OpenRouter reported `$22.930851` in retained successful-row charges. Use the
+uncached `$4.4182/1K` value for the paper-comparable frontier. Cache behavior is
+provider-, route-, and session-dependent and should remain a separate
+operational sensitivity.
+
+The resulting `0.9194` Mean-OOD pAUROC@20 is `0.0110` higher than Kimi K3 while
+costing 82.4% less under the two dated provider routes. See
+[`tool_trajectory_kimi_k26_ood_benchmark.md`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md)
+for the source-level qualification: the macro improvement is driven by
+SHADE-Arena and is not uniform across datasets.
+
 ## Direct Kimi K3 monitor exact tokenization
 
 Treat Kimi K3 with the frozen full binary teacher prompt as a prompted-monitor
@@ -174,12 +200,13 @@ Before publishing the cost-performance plot:
 6. Report uncached list-price cost as the paper-comparable primary result, with
    cache/batch and self-hosted sensitivities separately.
 
-The frozen Kimi evaluation is complete; its paper-comparable Mean-OOD
-AUROC/pAUROC@20 is `0.9616/0.9084`. See
+The frozen Kimi K3 evaluation is complete; its paper-comparable Mean-OOD
+AUROC/pAUROC@20 is `0.9616/0.9084`. The later Kimi K2.6 Inceptron run reaches
+`0.9751/0.9194` at `$4.4182/1K`. See
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
-for the per-source result and serving-failure audit. Do not pair the provisional
-Qwen cost coordinate with an OOD performance claim until that evaluation
-completes.
+and
+[`tool_trajectory_kimi_k26_ood_benchmark.md`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md)
+for their per-source and serving audits.
 
 ## Specialized prefill-only serving backlog
 
@@ -224,6 +251,7 @@ speed.
 - [Sinha et al., Qwen3.5-4B hosted proxy price](https://arxiv.org/html/2605.29601v1#A5.SS4)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b/pricing)
 - [OpenRouter model catalog search for Qwen3.5-27B](https://openrouter.ai/models?q=qwen3.5-27b)
+- [OpenRouter Kimi K2.6 providers and pricing](https://openrouter.ai/moonshotai/kimi-k2.6/providers)
 - [OpenRouter Kimi K3 pricing](https://openrouter.ai/moonshotai/kimi-k3-20260715)
 - [Qwen3.5-27B model and text-only serving notes](https://huggingface.co/Qwen/Qwen3.5-27B)
 - [vLLM classification usage](https://docs.vllm.ai/en/latest/models/pooling_models/classify/)

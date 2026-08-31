@@ -4,7 +4,6 @@ from pathlib import Path
 
 import pytest
 
-
 ROOT = Path(__file__).resolve().parents[1]
 CONFIG_PATH = (
     ROOT
@@ -34,6 +33,14 @@ def test_frozen_kimi_k26_campaign_identity_and_cost() -> None:
         assert config["canary_outcome"]["rows"] == 600
         assert config["canary_outcome"]["provider"] == "Inceptron"
         assert config["canary_outcome"]["reasoning_tokens"] == 0
+    if config["status"] == "completed":
+        result = config["result"]
+        assert result["rows"] == 6_395
+        assert result["mean_ood_pauroc_at_20"] > 0.9084
+        assert result["reasoning_tokens"] == 0
+        assert result["uncached_cost_usd_per_1000"] == pytest.approx(
+            result["uncached_list_cost_usd"] / 6_395 * 1_000
+        )
     assert config["prompt"]["template_sha256"] == (
         "2418cc55801deead8983d3bde6e35b59603f0080711ce8e12e1d7299487ac128"
     )
