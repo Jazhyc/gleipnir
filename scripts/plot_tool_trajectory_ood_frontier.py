@@ -62,7 +62,7 @@ MANUAL_COMPARISON_LABELS = {
     },
     "Qwen3.5-4B SFT+RL": {"xytext": (18, -14), "ha": "left", "va": "top"},
     "Qwen3.5-27B base": {"xytext": (0, 18), "ha": "center", "va": "bottom"},
-    "Qwen3.5-27B SFT+RL": {"xytext": (-18, -16), "ha": "right", "va": "top"},
+    "Qwen3.5-27B SFT+RL": {"xytext": (0, -36), "ha": "center", "va": "top"},
     "Claude Sonnet 4.6 prompted": {
         "xytext": (0, -18),
         "ha": "center",

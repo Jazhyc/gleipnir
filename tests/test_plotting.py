@@ -113,8 +113,8 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-4B SFT+RL"]["xytext"] == (18, -14)
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B base"]["xytext"] == (0, 18)
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"] == {
-        "xytext": (-18, -16),
-        "ha": "right",
+        "xytext": (0, -36),
+        "ha": "center",
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Claude Sonnet 4.6 prompted"] == {
