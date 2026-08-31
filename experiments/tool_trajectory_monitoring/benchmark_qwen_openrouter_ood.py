@@ -70,6 +70,11 @@ def parse_args() -> argparse.Namespace:
         default=0.0,
         help="Minimum spacing between request starts across all workers.",
     )
+    parser.add_argument(
+        "--max-new-rows",
+        type=int,
+        help="Bound a resumable provider-health probe to this many new rows.",
+    )
     return parser.parse_args()
 
 
@@ -491,6 +496,8 @@ def main() -> None:
     )
     if concurrency <= 0:
         raise ValueError("concurrency must be positive")
+    if args.max_new_rows is not None and args.max_new_rows <= 0:
+        raise ValueError("max new rows must be positive")
     request_start_limiter = RequestStartLimiter(
         float(args.request_start_interval_seconds)
     )
@@ -642,6 +649,8 @@ def main() -> None:
         return
 
     pending = [row for row in records if str(row["id"]) not in completed]
+    if args.max_new_rows is not None:
+        pending = pending[: args.max_new_rows]
     for batch_index, batch in enumerate(
         batches(pending, int(config["request"]["request_batch_rows"])), start=1
     ):
@@ -687,6 +696,12 @@ def main() -> None:
             f"cost_ceiling_usd={total_cost_ceiling:.4f}",
             flush=True,
         )
+    if args.max_new_rows is not None and len(completed) != len(records):
+        print(
+            f"bounded resume complete={len(completed)}/{len(records)}",
+            flush=True,
+        )
+        return
     predictions = ordered_predictions(records, completed)
     if len(predictions) != len(records):
         raise RuntimeError("full compact-prompt OOD benchmark is incomplete")
