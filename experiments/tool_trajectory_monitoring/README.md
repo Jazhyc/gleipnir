@@ -243,7 +243,7 @@ or any backend error.
 Run the sequential one-H100 campaign with:
 
 ```bash
-python experiments/tool_trajectory_monitoring/run_distilled_ood_lambda.py
+python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda
 ```
 
 The dedicated scaling analysis belongs in

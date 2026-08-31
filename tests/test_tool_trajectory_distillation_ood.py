@@ -1,5 +1,7 @@
 import hashlib
 import json
+import subprocess
+import sys
 from pathlib import Path
 
 import pytest
@@ -125,3 +127,18 @@ def test_summary_uses_raw_macro_pauroc_and_hosted_cost(tmp_path: Path) -> None:
     row = summary_rows(config, tmp_path)[0]
     assert row["mean_ood_pauroc_at_20"] == 0.75
     assert row["uncached_hosted_cost_usd_per_1000"] == pytest.approx(0.4004)
+
+
+def test_lambda_runner_is_directly_executable() -> None:
+    completed = subprocess.run(
+        [
+            sys.executable,
+            "experiments/tool_trajectory_monitoring/run_distilled_ood_lambda.py",
+            "--help",
+        ],
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert completed.returncode == 0, completed.stderr
+    assert "Parity-gate" in completed.stdout

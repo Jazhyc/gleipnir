@@ -12,14 +12,24 @@ import time
 from pathlib import Path
 from typing import Any
 
-from experiments.adapter_capacity_scaling.run_lambda import runtime_environment
-from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (
+ROOT = Path(__file__).resolve().parents[2]
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from experiments.adapter_capacity_scaling.run_lambda import (  # noqa: E402
+    runtime_environment,
+)
+from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (  # noqa: E402
     DEFAULT_CONFIG,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
-from gleipnir.qwen35_fast_training import DEFAULT_FLA_TARGET, ensure_fla_kernels
+from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (  # noqa: E402
+    load_json,
+)
+from gleipnir.qwen35_fast_training import (  # noqa: E402
+    DEFAULT_FLA_TARGET,
+    ensure_fla_kernels,
+)
 
-ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_RESULT = Path("results/tool_trajectory_distillation_ood")
 
 
@@ -103,7 +113,8 @@ def main() -> None:
             run(
                 [
                     sys.executable,
-                    "experiments/tool_trajectory_monitoring/evaluate_distilled_ood_causal.py",
+                    "-m",
+                    "experiments.tool_trajectory_monitoring.evaluate_distilled_ood_causal",
                     "--config",
                     config_path.as_posix(),
                     "--model-size",
@@ -117,7 +128,8 @@ def main() -> None:
             run(
                 [
                     sys.executable,
-                    "experiments/tool_trajectory_monitoring/benchmark_distilled_ood.py",
+                    "-m",
+                    "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
                     "--config",
                     config_path.as_posix(),
                     "--model-size",
@@ -135,7 +147,8 @@ def main() -> None:
             run(
                 [
                     sys.executable,
-                    "experiments/tool_trajectory_monitoring/compare_distilled_ood_parity.py",
+                    "-m",
+                    "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity",
                     "--eager-root",
                     eager_root.as_posix(),
                     "--vllm-root",
@@ -158,7 +171,8 @@ def main() -> None:
             run(
                 [
                     sys.executable,
-                    "experiments/tool_trajectory_monitoring/benchmark_distilled_ood.py",
+                    "-m",
+                    "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
                     "--config",
                     config_path.as_posix(),
                     "--model-size",
@@ -175,7 +189,8 @@ def main() -> None:
         run(
             [
                 sys.executable,
-                "experiments/tool_trajectory_monitoring/summarize_distilled_ood.py",
+                "-m",
+                "experiments.tool_trajectory_monitoring.summarize_distilled_ood",
                 "--config",
                 config_path.as_posix(),
                 "--runs",
