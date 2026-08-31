@@ -274,7 +274,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         axis,
         (teacher_box.center_x, teacher_box.bottom - 0.003),
         (check_box.center_x, check_box.top + 0.003),
-        connectionstyle="arc3,rad=0.12",
     )
     _arrow(
         axis,
@@ -296,8 +295,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     _arrow(
         axis,
         (check_box.center_x, check_box.bottom - 0.003),
-        (judge_box.center_x - 0.07, judge_box.top + 0.003),
-        connectionstyle="arc3,rad=-0.12",
+        (check_box.center_x, judge_box.top + 0.003),
     )
     axis.text(
         0.145,
@@ -313,8 +311,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     _arrow(
         axis,
         (retry_box.center_x, retry_box.bottom - 0.003),
-        (judge_box.center_x + 0.07, judge_box.top + 0.003),
-        connectionstyle="arc3,rad=0.12",
+        (retry_box.center_x, judge_box.top + 0.003),
     )
     _vertical_arrow(axis, judge_box, student_box)
     _vertical_arrow(axis, student_box, rl_box, linestyle="--")
