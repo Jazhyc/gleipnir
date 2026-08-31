@@ -9,6 +9,7 @@ import json
 import math
 import os
 import re
+import threading
 import time
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -58,7 +59,39 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", type=Path, default=DEFAULT_OUTPUT)
     parser.add_argument("--stop-after-canary", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument(
+        "--concurrency",
+        type=int,
+        help="Operational worker override; does not change request semantics.",
+    )
+    parser.add_argument(
+        "--request-start-interval-seconds",
+        type=float,
+        default=0.0,
+        help="Minimum spacing between request starts across all workers.",
+    )
     return parser.parse_args()
+
+
+class RequestStartLimiter:
+    """Space concurrent request starts to avoid synchronized provider bursts."""
+
+    def __init__(self, interval_seconds: float) -> None:
+        if interval_seconds < 0:
+            raise ValueError("request start interval must be non-negative")
+        self.interval_seconds = interval_seconds
+        self._lock = threading.Lock()
+        self._next_start = 0.0
+
+    def wait(self) -> None:
+        if self.interval_seconds == 0:
+            return
+        with self._lock:
+            now = time.perf_counter()
+            delay = max(0.0, self._next_start - now)
+            if delay:
+                time.sleep(delay)
+            self._next_start = time.perf_counter() + self.interval_seconds
 
 
 def stable_sha256(value: Any) -> str:
@@ -221,6 +254,7 @@ def score_one(
     config: dict[str, Any],
     config_sha256: str,
     api_key: str,
+    request_start_limiter: RequestStartLimiter,
 ) -> dict[str, Any]:
     request = config["request"]
     headers = {
@@ -236,6 +270,7 @@ def score_one(
     for attempt in range(int(request["max_retries"]) + 1):
         response: requests.Response | None = None
         try:
+            request_start_limiter.wait()
             response = requests.post(
                 request["endpoint"],
                 headers=headers,
@@ -378,10 +413,12 @@ def score_batch(
     config: dict[str, Any],
     config_sha256: str,
     api_key: str,
+    concurrency: int,
+    request_start_limiter: RequestStartLimiter,
 ) -> list[dict[str, Any]]:
     results = []
     failures = []
-    with ThreadPoolExecutor(max_workers=int(config["request"]["concurrency"])) as pool:
+    with ThreadPoolExecutor(max_workers=concurrency) as pool:
         futures = {}
         for record in batch:
             margin_prompt, prompt_tokens = rendered[str(record["id"])]
@@ -394,6 +431,7 @@ def score_batch(
                 config,
                 config_sha256,
                 api_key,
+                request_start_limiter,
             )
             futures[future] = str(record["id"])
         for future in as_completed(futures):
@@ -438,6 +476,16 @@ def main() -> None:
         raise SystemExit("OPENROUTER_API_KEY is missing")
     config = load_json(args.config)
     validate_config(config)
+    concurrency = (
+        int(args.concurrency)
+        if args.concurrency is not None
+        else int(config["request"]["concurrency"])
+    )
+    if concurrency <= 0:
+        raise ValueError("concurrency must be positive")
+    request_start_limiter = RequestStartLimiter(
+        float(args.request_start_interval_seconds)
+    )
     records = validate_inputs(config)
     parity_records = validate_parity_inputs(config)
     baseline_predictions_path = Path(config["baseline"]["predictions"])
@@ -496,6 +544,8 @@ def main() -> None:
             config,
             config_sha256,
             api_key,
+            concurrency,
+            request_start_limiter,
         ):
             parity_completed[row["id"]] = row
         atomic_write_jsonl(
@@ -563,6 +613,8 @@ def main() -> None:
             config,
             config_sha256,
             api_key,
+            concurrency,
+            request_start_limiter,
         ):
             completed[row["id"]] = row
         atomic_write_jsonl(predictions_path, ordered_predictions(records, completed))
@@ -586,7 +638,14 @@ def main() -> None:
         batches(pending, int(config["request"]["request_batch_rows"])), start=1
     ):
         new_rows = score_batch(
-            batch, rendered, token_ids, config, config_sha256, api_key
+            batch,
+            rendered,
+            token_ids,
+            config,
+            config_sha256,
+            api_key,
+            concurrency,
+            request_start_limiter,
         )
         for row in new_rows:
             completed[row["id"]] = row
@@ -621,7 +680,14 @@ def main() -> None:
         "models": dict(Counter(str(row["model"]) for row in predictions)),
         "cost": costs,
         "parity_cost": cost_summary(parity_predictions, config),
-        "runtime": {"elapsed_seconds_this_invocation": time.time() - started},
+        "runtime": {
+            "elapsed_seconds_this_invocation": time.time() - started,
+            "configured_concurrency": int(config["request"]["concurrency"]),
+            "effective_concurrency": concurrency,
+            "request_start_interval_seconds": float(
+                args.request_start_interval_seconds
+            ),
+        },
         "score": "normalized terminal literal 1 versus 0 OpenRouter logprob",
         **summarize(predictions),
     }
