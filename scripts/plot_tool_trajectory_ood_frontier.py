@@ -48,6 +48,11 @@ PAPER_COMPARISON_MONITORS = {
     "Qwen3.5-4B SFT+RL",
     "Qwen3.5-27B SFT+RL",
 }
+MANUAL_COMPARISON_LABELS = {
+    "Qwen3.5-4B SFT+RL": {"xytext": (18, -14), "ha": "left", "va": "top"},
+    "Qwen3.5-27B base": {"xytext": (0, 18), "ha": "center", "va": "bottom"},
+    "Qwen3.5-27B SFT+RL": {"xytext": (18, -16), "ha": "left", "va": "top"},
+}
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -311,6 +316,27 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
                 ha="left",
                 va="top",
                 bbox=label_bbox,
+                zorder=4,
+            )
+            continue
+        if monitor in MANUAL_COMPARISON_LABELS:
+            placement = MANUAL_COMPARISON_LABELS[monitor]
+            axis.annotate(
+                _display_label(monitor),
+                (row["cost_per_1k"], row["mean_ood_pauroc_at_20"]),
+                xytext=placement["xytext"],
+                textcoords="offset points",
+                fontsize=11.5,
+                fontweight="bold",
+                color="#111827" if is_frontier else "#4B5563",
+                ha=placement["ha"],
+                va=placement["va"],
+                bbox=label_bbox,
+                arrowprops={
+                    "arrowstyle": "-",
+                    "color": "#9CA3AF",
+                    "linewidth": 0.7,
+                },
                 zorder=4,
             )
             continue

@@ -6,6 +6,7 @@ import pytest
 from gleipnir.plotting import pareto_frontier_mask
 from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
+    MANUAL_COMPARISON_LABELS,
     _display_label,
     _improvement_pairs,
     _label_obstacles,
@@ -89,6 +90,12 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-27B SFT+RL") == "Qwen3.5-27B SFT+RL"
     assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
     assert _display_label("Qwen3.5-9B Kimi-soft mixed") == "Gleipnir 9B"
+
+
+def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
+    assert MANUAL_COMPARISON_LABELS["Qwen3.5-4B SFT+RL"]["xytext"] == (18, -14)
+    assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B base"]["xytext"] == (0, 18)
+    assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"]["xytext"] == (18, -16)
 
 
 def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
