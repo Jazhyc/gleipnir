@@ -50,6 +50,11 @@ edited without reading Python:
   unchanged for Qwen student training and evaluation.
 - [`prompts/manifest.json`](prompts/manifest.json) declares the prompt-set ID,
   file mapping, common trajectory envelope, literal labels, and intended uses.
+- [`prompts/reasoning_judge_system_v1.txt`](prompts/reasoning_judge_system_v1.txt)
+  and [`prompts/reasoning_judge_user_v1.txt`](prompts/reasoning_judge_user_v1.txt)
+  are the separate frozen contract for independently judging the visible
+  reasoning sample after its passed paid canary. They are not part of the
+  teacher/student prompt manifest.
 
 Both prompts use the same binary semantics and require exactly
 `Prediction:0` or `Prediction:1`. They deliberately do not request a visible

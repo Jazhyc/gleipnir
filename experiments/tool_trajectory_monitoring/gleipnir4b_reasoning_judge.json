@@ -1,0 +1,76 @@
+{
+  "campaign_id": "gleipnir4b-visible-reasoning-judge-v1",
+  "status": "frozen_scoring",
+  "auditor": {
+    "platform": "openrouter",
+    "model": "openai/gpt-5.6-sol",
+    "reasoning_effort": "medium",
+    "reasoning_excluded_from_response": true
+  },
+  "inputs": {
+    "judge_inputs": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/judge_inputs.jsonl",
+    "judge_inputs_sha256": "5ebe0daebf6778c162ad030a9de2c254950789c542e385ecb762f4e51035ff6c",
+    "judge_key": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/judge_key.jsonl",
+    "judge_key_sha256": "0e3ea69cab37bb310be571050052b6d915ba54010ac0864d0ae336dae969fd7f",
+    "pairs": 64,
+    "requests": 128,
+    "materialization": "Join ground truth locally by pair_id, then judge candidate_a and candidate_b in separate requests. Never send source, candidate slot, model condition, pair ID, or the other candidate."
+  },
+  "prompts": {
+    "system": "experiments/tool_trajectory_monitoring/prompts/reasoning_judge_system_v1.txt",
+    "system_sha256": "caf73c518194279e393ae10bc416b9cb09264e181d9826b2fd38eac11ff5e8f5",
+    "user": "experiments/tool_trajectory_monitoring/prompts/reasoning_judge_user_v1.txt",
+    "user_sha256": "9df846286eb88a26a837c1bb906b9e4b478a674f45febf8811a098b7353f49b1"
+  },
+  "request": {
+    "endpoint": "https://openrouter.ai/api/v1/chat/completions",
+    "max_tokens": 4096,
+    "seed": 20260901,
+    "concurrency": 4,
+    "request_timeout_seconds": 600,
+    "http_retries": 4,
+    "validation_retries": 1,
+    "provider": {
+      "require_parameters": true,
+      "data_collection": "deny",
+      "allow_fallbacks": false,
+      "sort": "price",
+      "max_price": {
+        "prompt": 2.1,
+        "completion": 10.5
+      }
+    }
+  },
+  "pricing_observed_2026_08_31": {
+    "prompt_usd_per_token": 0.000002,
+    "completion_usd_per_token": 0.00001,
+    "long_context_override_starts_at_prompt_tokens": 272000,
+    "max_campaign_cost_usd": 12.0,
+    "openrouter_credit_before_run_usd": 47.55347979600003
+  },
+  "canary": {
+    "cases": [
+      "strong_explanation",
+      "wrong_prediction",
+      "fabricated_decisive_evidence",
+      "missing_prediction",
+      "reference_label_tension",
+      "embedded_prompt_injection"
+    ],
+    "must_pass_before_full_run": true
+  },
+  "outputs": {
+    "directory": "results/tool_trajectory_monitoring/gleipnir4b_reasoning_judge",
+    "canary": "canary.jsonl",
+    "scores": "scores.jsonl",
+    "failures": "failures.jsonl",
+    "summary": "result.json"
+  },
+  "stop_conditions": [
+    "Any input, key, prompt, model, reasoning effort, request setting, schema, or blinding contract differs from this config.",
+    "The six-case paid canary fails JSON, arithmetic, cap, candidate-prediction, label-tension, or prompt-injection checks.",
+    "The campaign's recorded OpenRouter cost reaches 12 USD before all 128 judgments complete.",
+    "Any request remains invalid after one frozen validation retry or cannot be resumed without prompt/settings drift.",
+    "Any provider-facing request contains model condition, source, pair ID, candidate slot, or the other candidate."
+  ]
+}

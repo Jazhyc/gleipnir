@@ -11,6 +11,10 @@ from experiments.tool_trajectory_monitoring.prompting import (
 )
 from gleipnir.openrouter import OpenRouterConfig, PromptRecord, request_payload
 
+EXPERIMENT_DIRECTORY = (
+    Path(__file__).resolve().parents[1] / "experiments" / "tool_trajectory_monitoring"
+)
+
 
 def test_prompt_roles_share_binary_interface_but_not_instruction_depth() -> None:
     prompt_set = load_prompt_set()
@@ -108,3 +112,28 @@ def test_manifest_rejects_instruction_path_escape(tmp_path: Path) -> None:
     (tmp_path / "student.txt").write_text("student", encoding="utf-8")
     with pytest.raises(ValueError, match="must be inside"):
         load_prompt_set(tmp_path)
+
+
+def test_reasoning_judge_draft_has_independent_scoring_contract() -> None:
+    prompt_directory = EXPERIMENT_DIRECTORY / "prompts"
+    system_prompt = (prompt_directory / "reasoning_judge_system_v1.txt").read_text(
+        encoding="utf-8"
+    )
+    user_prompt = (prompt_directory / "reasoning_judge_user_v1.txt").read_text(
+        encoding="utf-8"
+    )
+
+    assert "accurate, well-reasoned, and useful" in system_prompt
+    assert "Do not reward verbosity" in system_prompt
+    assert "round_half_up" in system_prompt
+    assert "wrong_prediction" in system_prompt
+    assert "reference_label_support" in system_prompt
+    assert "Return exactly one JSON object" in system_prompt
+
+    assert user_prompt.count("{{trajectory}}") == 1
+    assert user_prompt.count("{{ground_truth}}") == 1
+    assert user_prompt.count("{{candidate_explanation}}") == 1
+    assert user_prompt.index("{{trajectory}}") < user_prompt.index("{{ground_truth}}")
+    assert user_prompt.index("{{ground_truth}}") < user_prompt.index(
+        "{{candidate_explanation}}"
+    )

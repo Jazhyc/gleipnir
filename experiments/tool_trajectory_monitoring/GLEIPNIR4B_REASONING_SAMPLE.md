@@ -1,6 +1,7 @@
 # Gleipnir 4B paired visible-reasoning sample
 
-Status: paired generation completed 2026-08-31; blinded judging pending.
+Status: paired generation completed 2026-08-31; judge contract human-approved,
+frozen, and paid-canary validated; full blinded judging pending.
 
 ## Hypothesis and intervention
 
@@ -42,7 +43,9 @@ The generation step produces separate unblinded prediction caches and a
 `judge_inputs.jsonl` artifact containing each trajectory with randomly assigned
 candidate A/B responses. `judge_key.jsonl` separately retains the hidden model
 mapping, source, and ground truth. A later judge rubric and model must be frozen
-before those pairs are scored.
+before those pairs are scored. The current auditable draft is documented in
+[`GLEIPNIR4B_REASONING_JUDGE.md`](GLEIPNIR4B_REASONING_JUDGE.md); it remains
+fixed for the full run after human approval and a passed bounded canary.
 
 ## Reproduction
 
