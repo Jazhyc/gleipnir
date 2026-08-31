@@ -1,6 +1,6 @@
 # Gleipnir 4B paired visible-reasoning sample
 
-Status: frozen; generation pending.
+Status: paired generation completed 2026-08-31; blinded judging pending.
 
 ## Hypothesis and intervention
 
@@ -62,3 +62,29 @@ sbatch cluster/slurm/generate_gleipnir4b_reasoning_sample.sh
 Ignored artifacts are written under
 `results/tool_trajectory_monitoring/gleipnir4b_reasoning_sample/`, and final
 logs under `logs/slurm/tool_trajectory_monitoring/`.
+
+## Generation outcome
+
+Slurm job `31037924` completed all 64 paired rows on one NVIDIA RTX PRO 6000
+Blackwell Server Edition in 9 minutes 16 seconds with exit code zero. Both
+conditions produced 64 unique, nonempty rationales and reached their exact
+terminal `Prediction:` boundary without truncation or recovery. The adapter
+changed every rationale and changed the hard decision on 14 of 64 rows.
+
+The base generated 19,260 rationale tokens (mean 300.94; range 114--664), while
+Gleipnir generated 10,561 (mean 165.02; range 62--378). This is a descriptive
+length difference, not evidence that either condition is more useful or
+faithful. That question remains intentionally deferred to the blinded judge.
+
+The completed artifacts are:
+
+- `base/predictions.jsonl`, SHA-256
+  `54d028e2bbc880d94143e8bce4213d624f556c3a724c83ed8bd86b7fae0bd5e9`;
+- `gleipnir/predictions.jsonl`, SHA-256
+  `9423a59b6d9c86cb75d6142d2eeefadb2eff3c3dfd421a04a2cd8721d2ff42a5`;
+- blinded `judge_inputs.jsonl`, SHA-256
+  `5ebe0daebf6778c162ad030a9de2c254950789c542e385ecb762f4e51035ff6c`;
+- separate `judge_key.jsonl`, SHA-256
+  `0e3ea69cab37bb310be571050052b6d915ba54010ac0864d0ae336dae969fd7f`;
+- `result.json`, SHA-256
+  `a9787c57db24f378b2d7b7de8a983abd0b0e073952e060159e87a40f7b4274c9`.

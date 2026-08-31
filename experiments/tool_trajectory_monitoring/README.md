@@ -265,12 +265,13 @@ in the general cost--performance frontier.
 
 ## Gleipnir 4B visible-reasoning audit
 
-The paired generation audit compares the mixed-data, soft-only rank-128
+The completed paired generation audit compares the mixed-data, soft-only rank-128
 Gleipnir 4B adapter with its exact unadapted Qwen3.5-4B backbone on a frozen,
 label-blind 64-row OOD sample. Both conditions use the existing visible binary
-review template and one persistent vLLM engine. The run creates blinded A/B
-reasoning pairs for a later judge; it is not a small-sample OOD performance
-estimate. The hypothesis, sample rule, provenance, and launch command are in
+review template and one persistent vLLM engine. All 64 blinded A/B reasoning
+pairs are ready for a later judge; no reasoning-quality conclusion has yet been
+drawn, and this is not a small-sample OOD performance estimate. The hypothesis,
+sample rule, generation audit, provenance, and launch command are in
 [`GLEIPNIR4B_REASONING_SAMPLE.md`](GLEIPNIR4B_REASONING_SAMPLE.md).
 
 A frozen lower-bound follow-up applies the identical mixed-data statistical
