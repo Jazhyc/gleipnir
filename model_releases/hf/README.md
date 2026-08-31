@@ -33,8 +33,6 @@ Use `--private` for a private canary. The uploader verifies every staged file
 against `release_manifest.json` before contacting Hugging Face and refuses to
 reuse a pre-existing repository unless `--allow-existing` is given.
 
-The cards deliberately do not attach a new license identifier to the adapter
-weights. The Qwen base-model terms and the terms of the upstream training data
-and teacher provider still apply. This is a release-policy choice, not legal
-advice; choose an explicit weights license before upload if a broader grant is
-intended.
+The adapter weights and release metadata are distributed under the MIT License,
+which is included in each staged repository. The Qwen base-model terms and the
+terms of the upstream training data and teacher provider still apply.

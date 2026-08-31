@@ -31,7 +31,7 @@ def adapter_directory(path: Path, base_model: str, key: str) -> dict:
     return prepare.inspect_adapter(path / prepare.WEIGHTS_NAME)
 
 
-def release_spec(tmp_path: Path) -> tuple[dict, Path, dict]:
+def release_spec(tmp_path: Path) -> tuple[dict, Path, dict, Path]:
     base_model = "Qwen/Qwen3.5-Test"
     source_dir = tmp_path / "source"
     serving_dir = tmp_path / "serving"
@@ -43,6 +43,8 @@ def release_spec(tmp_path: Path) -> tuple[dict, Path, dict]:
     card.write_text("# Gleipnir Test\n", encoding="utf-8")
     instruction = tmp_path / "student.txt"
     instruction.write_text("Classify this trajectory.\n", encoding="utf-8")
+    license_path = tmp_path / "LICENSE"
+    license_path.write_text("MIT License\n", encoding="utf-8")
     common = {
         "format_version": 1,
         "training": {"data_rows": 2},
@@ -84,18 +86,21 @@ def release_spec(tmp_path: Path) -> tuple[dict, Path, dict]:
         "prompt_set_id": "test-v1",
         "student_instruction_file": "student_prompt.txt",
     }
-    return spec, instruction, contract
+    return spec, instruction, contract, license_path
 
 
 def test_stage_model_builds_checksum_complete_release(tmp_path: Path) -> None:
-    spec, instruction, contract = release_spec(tmp_path)
+    spec, instruction, contract, license_path = release_spec(tmp_path)
     output = tmp_path / "output"
     output.mkdir()
 
-    destination = prepare.stage_model(spec, output, instruction, contract)
+    destination = prepare.stage_model(
+        spec, output, instruction, contract, license_path
+    )
     manifest = upload.load_manifest(destination)
 
     assert destination.name == "Gleipnir-Test"
+    assert "LICENSE" in manifest["files"]
     assert manifest["base_revision"] == "abc123"
     assert manifest["files"]["adapter_model.safetensors"]["sha256"] == spec[
         "source"
@@ -108,20 +113,22 @@ def test_stage_model_builds_checksum_complete_release(tmp_path: Path) -> None:
 
 
 def test_stage_model_refuses_to_overwrite_release(tmp_path: Path) -> None:
-    spec, instruction, contract = release_spec(tmp_path)
+    spec, instruction, contract, license_path = release_spec(tmp_path)
     output = tmp_path / "output"
     output.mkdir()
-    prepare.stage_model(spec, output, instruction, contract)
+    prepare.stage_model(spec, output, instruction, contract, license_path)
 
     with pytest.raises(FileExistsError, match="refusing to overwrite"):
-        prepare.stage_model(spec, output, instruction, contract)
+        prepare.stage_model(spec, output, instruction, contract, license_path)
 
 
 def test_upload_validation_rejects_changed_staged_file(tmp_path: Path) -> None:
-    spec, instruction, contract = release_spec(tmp_path)
+    spec, instruction, contract, license_path = release_spec(tmp_path)
     output = tmp_path / "output"
     output.mkdir()
-    destination = prepare.stage_model(spec, output, instruction, contract)
+    destination = prepare.stage_model(
+        spec, output, instruction, contract, license_path
+    )
     (destination / "student_prompt.txt").write_text("changed\n", encoding="utf-8")
 
     with pytest.raises(ValueError, match="size drifted|checksum drifted"):

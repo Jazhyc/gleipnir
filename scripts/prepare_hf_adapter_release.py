@@ -216,6 +216,7 @@ def stage_model(
     output_root: Path,
     instruction_path: Path,
     contract: dict[str, Any],
+    license_path: Path,
 ) -> Path:
     model = spec["model"]
     destination = output_root / str(model["repo_name"])
@@ -230,6 +231,7 @@ def stage_model(
     )
     try:
         shutil.copy2(spec["card_path"], temporary / "README.md")
+        shutil.copy2(license_path, temporary / "LICENSE")
         shutil.copy2(spec["source_dir"] / "adapter_config.json", temporary)
         shutil.copy2(spec["source_dir"] / WEIGHTS_NAME, temporary)
         shutil.copy2(instruction_path, temporary / "student_prompt.txt")
@@ -288,6 +290,9 @@ def main() -> None:
     selected = list(config["models"]) if args.model == "all" else [args.model]
     specs = [validate_model(name, config["models"][name], config) for name in selected]
     instruction_path, contract = prompt_contract(config)
+    license_path = resolve_repo_path(str(config["license"]["source"]))
+    if config["license"].get("id") != "mit" or not license_path.is_file():
+        raise ValueError("release must include the configured MIT license file")
 
     output_root = args.output_dir.resolve()
     output_root.mkdir(parents=True, exist_ok=True)
@@ -303,7 +308,8 @@ def main() -> None:
         )
 
     destinations = [
-        stage_model(spec, output_root, instruction_path, contract) for spec in specs
+        stage_model(spec, output_root, instruction_path, contract, license_path)
+        for spec in specs
     ]
     print(
         json.dumps(

@@ -2,6 +2,7 @@
 base_model: Qwen/Qwen3.5-4B
 library_name: peft
 pipeline_tag: text-generation
+license: mit
 language:
 - en
 tags:
@@ -183,11 +184,12 @@ release. The full experiment design and result audit are in the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir), especially
 `docs/research/tool_trajectory_distillation_ood_scaling.md`.
 
-No separate license grant for these adapter weights is asserted by this model
-card. Users must review and comply with the Qwen base-model terms, the terms of
-the upstream datasets, and any applicable teacher/provider terms. Several
-upstream source artifacts did not declare a license at collection time; public
-weights do not grant rights to reconstruct or redistribute those datasets.
+The adapter weights and release metadata are distributed under the MIT License;
+see `LICENSE`. Users must also review and comply with the Qwen base-model terms,
+the terms of the upstream datasets, and any applicable teacher/provider terms.
+Several upstream source artifacts did not declare a license at collection time;
+public weights do not grant rights to reconstruct or redistribute those
+datasets.
 
 ## Citation
 
