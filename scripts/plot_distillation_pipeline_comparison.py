@@ -117,35 +117,28 @@ def _arrow(
     axis: Axes,
     start: tuple[float, float],
     end: tuple[float, float],
-    *,
-    color: str = MUTED_INK,
-    connectionstyle: str = "arc3,rad=0",
-    linestyle: str = "-",
-    linewidth: float = 1.8,
-    zorder: int = 2,
 ) -> None:
     patch = FancyArrowPatch(
         start,
         end,
         arrowstyle="-|>",
         mutation_scale=14,
-        color=color,
-        linewidth=linewidth,
-        linestyle=linestyle,
-        connectionstyle=connectionstyle,
+        color=MUTED_INK,
+        linewidth=1.8,
+        linestyle="-",
+        connectionstyle="arc3,rad=0",
         transform=axis.transAxes,
         clip_on=False,
-        zorder=zorder,
+        zorder=2,
     )
     axis.add_patch(patch)
 
 
-def _vertical_arrow(axis: Axes, source: Box, target: Box, **kwargs: object) -> None:
+def _vertical_arrow(axis: Axes, source: Box, target: Box) -> None:
     _arrow(
         axis,
         (source.center_x, source.bottom - 0.003),
         (target.center_x, target.top + 0.003),
-        **kwargs,
     )
 
 
@@ -266,7 +259,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         facecolor="white",
         edgecolor=PAPER_COLOR,
         fontsize=9.8,
-        linestyle="--",
         linewidth=1.4,
     )
     _vertical_arrow(axis, input_box, teacher_box)
@@ -279,7 +271,6 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         axis,
         (check_box.right + 0.003, check_box.center_y),
         (retry_box.left - 0.003, retry_box.center_y),
-        color=PAPER_COLOR,
     )
     axis.text(
         (check_box.right + retry_box.left) / 2,
@@ -290,7 +281,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         va="center",
         fontsize=9.0,
         fontweight="bold",
-        color=PAPER_COLOR,
+        color=MUTED_INK,
     )
     _arrow(
         axis,
@@ -314,7 +305,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         (retry_box.center_x, judge_box.top + 0.003),
     )
     _vertical_arrow(axis, judge_box, student_box)
-    _vertical_arrow(axis, student_box, rl_box, linestyle="--")
+    _vertical_arrow(axis, student_box, rl_box)
 
 
 def _draw_gleipnir_pipeline(axis: Axes) -> None:
@@ -344,7 +335,7 @@ def _draw_gleipnir_pipeline(axis: Axes) -> None:
         edgecolor=GLEIPNIR_COLOR,
     )
     _vertical_arrow(axis, input_box, teacher_box)
-    _vertical_arrow(axis, teacher_box, student_box, color=GLEIPNIR_COLOR)
+    _vertical_arrow(axis, teacher_box, student_box)
 
 
 def plot_pipeline_comparison() -> Figure:

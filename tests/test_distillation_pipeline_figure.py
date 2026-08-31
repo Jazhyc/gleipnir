@@ -39,6 +39,9 @@ def test_pipeline_figure_contains_intended_comparison_without_epoch_details() ->
 def test_pipeline_figure_uses_vector_boxes_and_arrows() -> None:
     figure = plot_pipeline_comparison()
     patches = figure.axes[0].patches
+    arrows = [patch for patch in patches if isinstance(patch, FancyArrowPatch)]
 
     assert sum(isinstance(patch, FancyBboxPatch) for patch in patches) >= 12
-    assert sum(isinstance(patch, FancyArrowPatch) for patch in patches) >= 9
+    assert len(arrows) >= 9
+    assert {arrow.get_linestyle() for arrow in arrows} == {"-"}
+    assert len({arrow.get_edgecolor() for arrow in arrows}) == 1
