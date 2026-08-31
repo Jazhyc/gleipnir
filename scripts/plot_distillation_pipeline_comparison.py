@@ -386,7 +386,7 @@ def plot_pipeline_comparison() -> Figure:
     )
     figure.text(
         0.5,
-        0.012,
+        0.03,
         "Direct probability targets remove rationale sampling, "
         "label-conditioned retries, and external judging.",
         ha="center",

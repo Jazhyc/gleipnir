@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN"
   "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
-<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1131.84pt" height="613.7856pt" viewBox="0 0 1131.84 613.7856" xmlns="http://www.w3.org/2000/svg" version="1.1">
+<svg xmlns:xlink="http://www.w3.org/1999/xlink" width="1131.84pt" height="602.64pt" viewBox="0 0 1131.84 602.64" xmlns="http://www.w3.org/2000/svg" version="1.1">
  <metadata>
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-08-31T16:44:42.434554</dc:date>
+    <dc:date>2026-08-31T16:48:36.299526</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -21,8 +21,8 @@
  </defs>
  <g id="figure_1">
   <g id="patch_1">
-   <path d="M 0 613.7856
-L 1131.84 613.7856
+   <path d="M 0 602.64
+L 1131.84 602.64
 L 1131.84 0
 L 0 0
 z
@@ -58,7 +58,7 @@ z
    <g id="line2d_1">
     <path d="M 565.92 532.91628
 L 565.92 76.20984
-" clip-path="url(#p6947f195b2)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
+" clip-path="url(#pcf8a608d6f)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="patch_4">
     <path d="M 292.1472 159.740067
@@ -299,7 +299,7 @@ z
 " style="fill: #fcedec; stroke: #e45756; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
    <g id="text_7">
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="292.1472" y="140.574637" transform="rotate(-0 292.1472 140.574637)">Action-only trajectory</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="292.1472" y="140.574638" transform="rotate(-0 292.1472 140.574638)">Action-only trajectory</text>
    </g>
    <g id="text_8">
     <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(227.7747 197.727878)">Gemini 2.5 Pro samples</text>
@@ -325,7 +325,7 @@ z
     <text style="font-weight: 700; font-size: 9.8px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="292.1472" y="507.205074" transform="rotate(-0 292.1472 507.205074)">Optional GRPO score refinement</text>
    </g>
    <g id="text_14">
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="839.6928" y="140.574637" transform="rotate(-0 839.6928 140.574637)">Action-only trajectory</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="839.6928" y="140.574638" transform="rotate(-0 839.6928 140.574638)">Action-only trajectory</text>
    </g>
    <g id="text_15">
     <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(749.893425 210.063225)">Kimi K3 provides one soft target</text>
@@ -341,11 +341,11 @@ z
    <text style="font-weight: 700; font-size: 21.5px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="565.92" y="22.895" transform="rotate(-0 565.92 22.895)">Two approaches to training action-only monitors</text>
   </g>
   <g id="text_18">
-   <text style="font-weight: 700; font-size: 11.5px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="565.92" y="603.4806" transform="rotate(-0 565.92 603.4806)">Direct probability targets remove rationale sampling, label-conditioned retries, and external judging.</text>
+   <text style="font-weight: 700; font-size: 11.5px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="565.92" y="592.335" transform="rotate(-0 565.92 592.335)">Direct probability targets remove rationale sampling, label-conditioned retries, and external judging.</text>
   </g>
  </g>
  <defs>
-  <clipPath id="p6947f195b2">
+  <clipPath id="pcf8a608d6f">
    <rect x="7.2" y="25.776" width="1117.44" height="560.376"/>
   </clipPath>
  </defs>
