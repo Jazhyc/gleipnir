@@ -40,3 +40,19 @@ python scripts/plot_tool_trajectory_ood_frontier.py \
 For future figures, reuse `gleipnir.plotting.set_plot_style`,
 `pareto_frontier_mask`, and `save_figure` so typography, colors, and export
 behavior remain consistent.
+
+## Distillation pipeline comparison
+
+`distillation_pipeline_comparison.svg` contrasts Sinha et al.'s filtered
+rationale-distillation pipeline with Gleipnir's direct binary
+decision-distribution distillation. The diagram keeps the shared action-only
+input and deployable-monitor endpoint aligned while showing the paper's
+candidate generation, label-conditioned retry, external judging, and
+best-candidate selection stages. It intentionally omits optimizer and epoch
+details, which belong in the methods text rather than the pipeline figure.
+
+Regenerate the vector and raster artifacts with:
+
+```bash
+python scripts/plot_distillation_pipeline_comparison.py
+```
