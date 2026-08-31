@@ -263,6 +263,16 @@ The dedicated scaling analysis belongs in
 Only the completed full-mixed 9B and 4B comparisons are additionally registered
 in the general cost--performance frontier.
 
+## Gleipnir 4B visible-reasoning audit
+
+The paired generation audit compares the mixed-data, soft-only rank-128
+Gleipnir 4B adapter with its exact unadapted Qwen3.5-4B backbone on a frozen,
+label-blind 64-row OOD sample. Both conditions use the existing visible binary
+review template and one persistent vLLM engine. The run creates blinded A/B
+reasoning pairs for a later judge; it is not a small-sample OOD performance
+estimate. The hypothesis, sample rule, provenance, and launch command are in
+[`GLEIPNIR4B_REASONING_SAMPLE.md`](GLEIPNIR4B_REASONING_SAMPLE.md).
+
 A frozen lower-bound follow-up applies the identical mixed-data statistical
 recipe to Qwen3.5-0.8B, with microbatch 8 and accumulation 4 preserving
 effective batch 32. It will benchmark both the unadapted base and trained
