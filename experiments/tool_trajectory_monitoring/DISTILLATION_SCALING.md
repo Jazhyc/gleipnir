@@ -93,15 +93,15 @@ Artifacts and status live under
 Held-out STRIDE test and Gloom-Exfiltration will be used for later checkpoint
 selection; all six strict OOD sources remain untouched during training.
 
-## Mixed-data Qwen3.5-0.8B lower-bound follow-up
+## Mixed-data Qwen3.5-0.8B lower-bound follow-up (stopped)
 
-This separately identified follow-up tests whether the benefit of Kimi-soft
-distillation grows further as student capacity falls. It trains
+This separately identified follow-up was designed to test whether the benefit
+of Kimi-soft distillation grows further as student capacity falls. It targeted
 `Qwen/Qwen3.5-0.8B` revision
 `2fc06364715b967f1860aea9cf38778875588b17` on the same complete 21,837-row
-mixed artifact, then evaluates both the unadapted base and final adapter on all
-6,395 frozen strict-OOD rows. The intervention remains soft-only: no hard-label,
-completion, or rationale loss is enabled.
+mixed artifact, followed by evaluation of both the unadapted base and final
+adapter on all 6,395 frozen strict-OOD rows. The intervention was soft-only: no
+hard-label, completion, or rationale loss was enabled.
 
 The statistical recipe transfers unchanged: seed 0, one epoch, rank 128
 (`alpha=256`), AdamW at `5e-5`, linear decay with 3% warmup, zero weight
@@ -113,10 +113,19 @@ packed, not the optimizer exposure.
 
 A matched longest-32 systems benchmark rejected microbatch 8 because padding
 mixed-length examples together made one optimizer step take 189.54 seconds and
-consume about 80 GB. Microbatch 1 with accumulation 32 took 64.15 seconds and
-about 10 GB on the identical rows. The two layouts exported byte-identical FP32
-master and serving adapter hashes, so the lower-padding layout was frozen before
-the full run restarted from step zero.
+consume about 80 GB. QLoRA microbatch 1 with accumulation 32 took 51.44 seconds
+after kernel warm-up and about 10 GB on the identical rows. The two QLoRA
+layouts exported byte-identical FP32 master and serving adapter hashes. A
+matched BF16 LoRA attempt took 75.78 seconds, so removing quantization was also
+rejected.
+
+The full QLoRA run stabilized around 15--18 seconds per optimizer step,
+projecting roughly 2.8--3.3 hours for 683 steps, versus 5.49 hours for the
+completed 4B campaign. The run was stopped by user decision at step 12 of the
+final restart: the approximately 1.7--2.0x systems speedup was not sufficient
+to make the additional frontier point decision-relevant after Gleipnir 4B had
+already established the low-cost frontier. No full checkpoint was saved, the
+OOD handoff never started, and no 0.8B performance claim should be made.
 
 The 0.8B tokenizer vocabulary is byte-identical to the pinned 4B/9B
 vocabulary. Its revised chat template defaults to non-thinking but renders the
@@ -131,7 +140,7 @@ truncation, missing decision-token logprobs, incomplete OOD coverage, or a
 non-finite score. The inherited hyperparameters are an intervention, not a claim
 of 0.8B optimality.
 
-Prepare and run with:
+The historical preparation and launch commands were:
 
 ```bash
 python -m experiments.tool_trajectory_monitoring.prepare_mixed_08b_distillation
@@ -144,4 +153,6 @@ python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda \
 
 Training artifacts live under
 `results/tool_trajectory_distillation_mixed_qwen08b/`; OOD artifacts live under
-`results/tool_trajectory_distillation_mixed_qwen08b_ood/`.
+`results/tool_trajectory_distillation_mixed_qwen08b_ood/`. The authoritative
+runtime disposition is `stop_record.json`; do not infer an experiment failure
+from the launcher's expected SIGTERM traceback.

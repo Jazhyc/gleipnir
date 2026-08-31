@@ -274,12 +274,11 @@ drawn, and this is not a small-sample OOD performance estimate. The hypothesis,
 sample rule, generation audit, provenance, and launch command are in
 [`GLEIPNIR4B_REASONING_SAMPLE.md`](GLEIPNIR4B_REASONING_SAMPLE.md).
 
-A frozen lower-bound follow-up applies the identical mixed-data statistical
-recipe to Qwen3.5-0.8B, with microbatch 1 and accumulation 32 preserving
-effective batch 32. A matched longest-32 preflight was 2.95x faster than
-microbatch 8 and produced byte-identical adapter hashes. It will benchmark both
-the unadapted base and trained adapter on the same 6,395 OOD rows. The
-hypothesis, model/tokenizer hashes,
-parity gate, and stop conditions are recorded in
-[`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md); this remains Kimi-soft-only
-training with no hard-label arm.
+The Qwen3.5-0.8B lower-bound follow-up was intentionally stopped after systems
+preflight and 12 of 683 optimizer steps. QLoRA microbatch 1 was faster than both
+microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about
+1.7--2.0x faster than the completed 4B campaign. No full checkpoint or OOD
+metrics exist, and the attempt is excluded from the scaling curves and frontier.
+The frozen recipe and stop rationale are recorded in
+[`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md) and the corresponding
+[systems finding](../../docs/findings/tool_trajectory_qwen08b_stopped_systems_preflight.md).

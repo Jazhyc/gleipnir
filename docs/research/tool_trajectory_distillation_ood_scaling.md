@@ -198,3 +198,16 @@ The two mixed adapters are additionally registered in
 [`tool_trajectory_ood_frontier.md`](tool_trajectory_ood_frontier.md); the six
 matched-size points remain here so the general frontier is not overloaded with
 one experiment's internal scaling curve.
+
+## Stopped 0.8B lower-bound follow-up
+
+A subsequent attempt to extend the lower-cost endpoint to Qwen3.5-0.8B stopped
+after systems preflight and 12 of 683 optimizer steps. The projected full
+training time was roughly 2.8--3.3 hours: only about 1.7--2.0x faster than the
+completed 4B mixed run despite the much smaller backbone. Matched tests found
+QLoRA microbatch 1 faster than both microbatch 8 and BF16 LoRA. Since the 4B
+student already established the low-cost frontier, the expected decision value
+did not justify completing the run. No checkpoint or OOD evaluation exists, so
+the 0.8B attempt is excluded from every scaling curve and frontier table. See
+[`../findings/tool_trajectory_qwen08b_stopped_systems_preflight.md`](../findings/tool_trajectory_qwen08b_stopped_systems_preflight.md)
+for the systems evidence and stop rationale.
