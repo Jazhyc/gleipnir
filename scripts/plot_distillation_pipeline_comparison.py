@@ -272,7 +272,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     _vertical_arrow(axis, input_box, teacher_box)
     _arrow(
         axis,
-        (teacher_box.center_x, teacher_box.bottom - 0.003),
+        (check_box.center_x, teacher_box.bottom - 0.003),
         (check_box.center_x, check_box.top + 0.003),
     )
     _arrow(
