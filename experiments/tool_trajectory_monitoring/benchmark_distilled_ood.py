@@ -48,8 +48,10 @@ def validate_config(config: dict[str, Any]) -> None:
     if config.get("status") != "frozen_evaluation":
         raise ValueError("distillation OOD config must be frozen")
     prompt = config.get("prompt", {})
-    if prompt.get("role") != "student":
-        raise ValueError("distilled adapters must use the compact student prompt")
+    if prompt.get("role") not in {"student", "teacher"}:
+        raise ValueError(
+            "distilled adapters must use a frozen student or teacher prompt"
+        )
     if prompt.get("enable_thinking") is not False:
         raise ValueError("distilled OOD evaluation must disable native thinking")
     if prompt.get("assistant_suffix") != QWEN_NON_THINKING_ASSISTANT_SUFFIX:
@@ -74,14 +76,26 @@ def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
     scope = config["scope"]
     path = Path(scope["input"])
     if sha256_file(path) != scope["input_sha256"]:
-        raise ValueError("student OOD input checksum differs from frozen config")
-    manifest = load_json(Path(scope["manifest"]))
-    if manifest.get("output_sha256") != scope["input_sha256"]:
-        raise ValueError("student OOD manifest and config disagree")
-    if manifest.get("source_sha256") != scope["source_input_sha256"]:
-        raise ValueError("teacher OOD source checksum differs from frozen config")
-    if manifest.get("student_template_sha256") != config["prompt"]["template_sha256"]:
-        raise ValueError("student prompt hash differs from frozen config")
+        raise ValueError("OOD input checksum differs from frozen config")
+    manifest_path = Path(scope["manifest"])
+    if scope.get("manifest_sha256") and sha256_file(manifest_path) != scope[
+        "manifest_sha256"
+    ]:
+        raise ValueError("OOD input manifest checksum differs from frozen config")
+    manifest = load_json(manifest_path)
+    prompt_role = str(config["prompt"]["role"])
+    if prompt_role == "student":
+        if manifest.get("output_sha256") != scope["input_sha256"]:
+            raise ValueError("student OOD manifest and config disagree")
+        if manifest.get("source_sha256") != scope["source_input_sha256"]:
+            raise ValueError("teacher OOD source checksum differs from frozen config")
+        manifest_template_sha256 = manifest.get("student_template_sha256")
+    else:
+        manifest_template_sha256 = manifest.get("prompt", {}).get("template_sha256")
+        if manifest.get("output", {}).get("sha256") != scope["input_sha256"]:
+            raise ValueError("teacher OOD manifest and config disagree")
+    if manifest_template_sha256 != config["prompt"]["template_sha256"]:
+        raise ValueError(f"{prompt_role} prompt hash differs from frozen config")
     rows = load_jsonl(path)
     if len(rows) != int(scope["rows"]):
         raise ValueError("student OOD row count differs from frozen config")
@@ -97,7 +111,7 @@ def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
         if int(metadata.get("ground_truth", -1)) not in {0, 1}:
             raise ValueError(f"non-binary OOD label for id={row.get('id')!r}")
         if not isinstance(prompt, str) or not prompt.strip():
-            raise ValueError(f"empty student prompt for id={row.get('id')!r}")
+            raise ValueError(f"empty {prompt_role} prompt for id={row.get('id')!r}")
         if (
             metadata.get("prompt_template_sha256")
             != config["prompt"]["template_sha256"]
@@ -179,8 +193,12 @@ def main() -> None:
     prompt_config = config["prompt"]
     engine = config["engine"]
     prompt_set = load_prompt_set()
-    if prompt_set.student.template_sha256 != prompt_config["template_sha256"]:
-        raise ValueError("working-tree student prompt differs from frozen config")
+    prompt_role = str(prompt_config["role"])
+    prompt_template = getattr(prompt_set, prompt_role)
+    if prompt_template.template_sha256 != prompt_config["template_sha256"]:
+        raise ValueError(
+            f"working-tree {prompt_role} prompt differs from frozen config"
+        )
     if args.canary_only:
         rows = balanced_canary_rows(
             rows,

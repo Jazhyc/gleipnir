@@ -279,6 +279,18 @@ drawn, and this is not a small-sample OOD performance estimate. The hypothesis,
 sample rule, generation audit, provenance, and launch command are in
 [`GLEIPNIR4B_REASONING_SAMPLE.md`](GLEIPNIR4B_REASONING_SAMPLE.md).
 
+## Gleipnir 4B full-specification prompt ablation
+
+The compact student prompt may under-elicit monitoring knowledge that the
+soft-distilled adapter learned. The frozen full-specification ablation changes
+only the prompt supplied to the completed mixed-data Gleipnir 4B adapter; it
+retains the same 6,395 strict-OOD rows, checkpoint, non-thinking chat boundary,
+literal `0|1` logits, and metric implementation as the compact-prompt result.
+The existing `0.7823` Mean-OOD pAUROC@20 and `0.9086` Mean-OOD AUROC are the
+matched baseline. The intervention, baseline, held-out rule, and fail-closed
+conditions are recorded before evaluation in
+`distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json`.
+
 The Qwen3.5-0.8B lower-bound follow-up was intentionally stopped after systems
 preflight and 12 of 683 optimizer steps. QLoRA microbatch 1 was faster than both
 microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about

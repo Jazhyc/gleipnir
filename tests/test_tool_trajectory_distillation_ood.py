@@ -8,6 +8,7 @@ import pytest
 
 from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (
     validate_config,
+    validate_inputs,
     validate_jobs,
 )
 from experiments.tool_trajectory_monitoring.compare_distilled_ood_parity import (
@@ -109,6 +110,51 @@ def test_distillation_ood_accepts_a_separately_frozen_08b_group(
     config["model_groups"] = {"08b": config["model_groups"]["9b"]}
     validate_config(config)
     assert len(validate_jobs(config, "08b")) == 2
+
+
+def test_distillation_ood_accepts_frozen_teacher_prompt_inputs(tmp_path: Path) -> None:
+    prompts = load_prompt_set()
+    rendered = prompts.teacher.render("USER: inspect the deployment")
+    input_path = tmp_path / "teacher.jsonl"
+    rows = [
+        {
+            "id": f"row-{index}",
+            "prompt": rendered,
+            "metadata": {
+                "ground_truth": index % 2,
+                "source_dataset": "agentdojo",
+                "prompt_template_sha256": prompts.teacher.template_sha256,
+                "rendered_prompt_sha256": hashlib.sha256(rendered.encode()).hexdigest(),
+            },
+        }
+        for index in range(2)
+    ]
+    write_jsonl(input_path, rows)
+    manifest_path = tmp_path / "manifest.json"
+    manifest_path.write_text(
+        json.dumps(
+            {
+                "output": {
+                    "sha256": hashlib.sha256(input_path.read_bytes()).hexdigest()
+                },
+                "prompt": {"template_sha256": prompts.teacher.template_sha256},
+            }
+        )
+    )
+    config = frozen_config(tmp_path)
+    config["prompt"].update(
+        {"role": "teacher", "template_sha256": prompts.teacher.template_sha256}
+    )
+    config["scope"] = {
+        "input": str(input_path),
+        "input_sha256": hashlib.sha256(input_path.read_bytes()).hexdigest(),
+        "manifest": str(manifest_path),
+        "manifest_sha256": hashlib.sha256(manifest_path.read_bytes()).hexdigest(),
+        "rows": 2,
+        "sources": ["agentdojo"],
+    }
+    validate_config(config)
+    assert validate_inputs(config) == rows
 
 
 def test_mixed_08b_config_pins_observed_hosted_price() -> None:
