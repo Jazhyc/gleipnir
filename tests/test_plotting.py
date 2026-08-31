@@ -95,7 +95,16 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
 def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-4B SFT+RL"]["xytext"] == (18, -14)
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B base"]["xytext"] == (0, 18)
-    assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"]["xytext"] == (18, -16)
+    assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"] == {
+        "xytext": (-18, -16),
+        "ha": "right",
+        "va": "top",
+    }
+    assert MANUAL_COMPARISON_LABELS["Claude Sonnet 4.6 prompted"] == {
+        "xytext": (10, -12),
+        "ha": "left",
+        "va": "top",
+    }
 
 
 def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
