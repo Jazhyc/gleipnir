@@ -1,7 +1,7 @@
 # Gleipnir 4B visible-reasoning judge draft
 
-Status: human-approved contract frozen; six-case paid canary passed 2026-08-31;
-full 128-judgment run pending.
+Status: v2 normalization contract frozen after a stopped v1 partial run; v2 paid
+canary and full 128-judgment restart pending.
 
 ## Question and scope
 
@@ -82,6 +82,24 @@ an overall 9 although its component scores required 10. Both raw responses and
 their usage were retained. The canary used seven billed responses, 8,794 prompt
 tokens, 2,372 completion tokens including 1,329 reasoning tokens, and cost
 $0.029353203.
+
+### Stopped v1 partial run and v2 correction
+
+The first full-run attempt stopped after 53 accepted judgments when a row
+exhausted its one validation retry: both otherwise-valid responses reported an
+overall score of 9 although their four subscores mathematically required 10.
+Four of the 53 accepted rows had already needed the same kind of arithmetic-only
+retry. The v1 partial outputs remain preserved under
+`results/tool_trajectory_monitoring/gleipnir4b_reasoning_judge/` and will not be
+used in the comparison.
+
+The v2 campaign restarts all 128 judgments in a new output directory. It retains
+Sol's complete reported JSON, including its reported overall score, and computes
+the canonical overall score deterministically from the four reported subscores
+and frozen caps. Arithmetic differences are marked per row and do not trigger a
+resample. JSON, range, candidate-prediction, critical-error, and word-limit
+violations still receive at most the single frozen validation retry. This avoids
+selectively resampling substantive judgments because of mechanical arithmetic.
 
 Run or resume the full blinded scoring campaign with:
 

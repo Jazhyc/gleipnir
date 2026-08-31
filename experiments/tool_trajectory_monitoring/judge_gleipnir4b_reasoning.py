@@ -55,6 +55,14 @@ class JudgeError(RuntimeError):
     """The judge request or returned score violated the frozen contract."""
 
 
+class ExhaustedValidationError(JudgeError):
+    """All bounded structured-output validations failed."""
+
+    def __init__(self, message: str, failures: list[dict[str, Any]]) -> None:
+        super().__init__(message)
+        self.failures = failures
+
+
 @dataclass(frozen=True)
 class JudgeRecord:
     """One anonymous candidate judgment prepared locally."""
@@ -345,6 +353,8 @@ def validate_judgment(
     content: str,
     ground_truth: int,
     actual_candidate_prediction: int | None,
+    *,
+    require_canonical_overall: bool = True,
 ) -> dict[str, Any]:
     """Parse and validate all semantic, arithmetic, and cap invariants."""
     try:
@@ -394,11 +404,18 @@ def validate_judgment(
     if len(justification.split()) > 80:
         raise JudgeError("justification exceeds 80 whitespace-delimited words")
     expected = expected_overall_score(judgment)
-    if judgment["overall_score"] != expected:
+    if require_canonical_overall and judgment["overall_score"] != expected:
         raise JudgeError(
             f"overall_score={judgment['overall_score']} but rubric requires {expected}"
         )
     return judgment
+
+
+def canonicalize_judgment(judgment: dict[str, Any]) -> dict[str, Any]:
+    """Replace model arithmetic with the deterministic frozen rubric calculation."""
+    canonical = dict(judgment)
+    canonical["overall_score"] = expected_overall_score(judgment)
+    return canonical
 
 
 def response_cost(usage: dict[str, Any], config: dict[str, Any]) -> tuple[float, bool]:
@@ -514,10 +531,11 @@ def request_one(
             content = choice["message"]["content"]
             if not isinstance(content, str):
                 raise JudgeError("judge content was not text")
-            judgment = validate_judgment(
+            reported_judgment = validate_judgment(
                 content,
                 record.ground_truth,
                 record.candidate_prediction,
+                require_canonical_overall=False,
             )
         except (KeyError, IndexError, TypeError, JudgeError) as error:
             validation_failures.append(
@@ -533,8 +551,9 @@ def request_one(
                     f"invalid judgment after {validation_attempt + 1} responses: "
                     f"{error}"
                 )
-                raise JudgeError(message) from error
+                raise ExhaustedValidationError(message, validation_failures) from error
             continue
+        judgment = canonicalize_judgment(reported_judgment)
         usage = data.get("usage")
         if not isinstance(usage, dict):
             usage = {}
@@ -555,7 +574,11 @@ def request_one(
             "response_id": data.get("id"),
             "created": data.get("created"),
             "finish_reason": choice.get("finish_reason"),
+            "reported_judgment": reported_judgment,
             "judgment": judgment,
+            "arithmetic_adjusted": (
+                reported_judgment["overall_score"] != judgment["overall_score"]
+            ),
             "usage": usage,
             "openrouter_metadata": data.get("openrouter_metadata"),
             "raw_response": data,
@@ -588,6 +611,8 @@ def append_failure(path: Path, record: JudgeRecord, error: Exception) -> None:
         "failed_at": datetime.now(UTC).isoformat(),
         "error": str(error),
     }
+    if isinstance(error, ExhaustedValidationError):
+        row["validation_failures"] = error.failures
     with path.open("a", encoding="utf-8") as handle:
         handle.write(json.dumps(row, sort_keys=True) + "\n")
 
@@ -613,10 +638,19 @@ def load_cache(
             raise ValueError(f"cached prompt drift for record {record_id}")
         if row.get("request_settings_sha256") != settings_sha256:
             raise ValueError(f"cached request setting drift for record {record_id}")
+        reported_judgment = row.get("reported_judgment", row["judgment"])
         validate_judgment(
-            json.dumps(row["judgment"]),
+            json.dumps(reported_judgment),
             record.ground_truth,
             record.candidate_prediction,
+            require_canonical_overall=False,
+        )
+        canonical = canonicalize_judgment(reported_judgment)
+        if row["judgment"] != canonical:
+            raise ValueError(f"cached canonical score drift for record {record_id}")
+        row["reported_judgment"] = reported_judgment
+        row["arithmetic_adjusted"] = (
+            reported_judgment["overall_score"] != canonical["overall_score"]
         )
         if record_id in cached:
             raise ValueError(f"duplicate cached record {record_id}")
@@ -655,6 +689,7 @@ def run_records(
         flush=True,
     )
     failures = []
+    stop_for_failure = False
     active: dict[Future[dict[str, Any]], JudgeRecord] = {}
     next_index = 0
     stop_for_cost = False
@@ -664,6 +699,7 @@ def run_records(
                 next_index < len(pending)
                 and len(active) < workers
                 and not stop_for_cost
+                and not stop_for_failure
             ):
                 record = pending[next_index]
                 next_index += 1
@@ -679,6 +715,7 @@ def run_records(
                     failures.append((record.record_id, str(error)))
                     append_failure(failure_output, record, error)
                     print(f"FAILED id={record.record_id} error={error}", flush=True)
+                    stop_for_failure = True
                     continue
                 cached[record.record_id] = result
                 atomic_write_jsonl(output, cached)
@@ -962,6 +999,9 @@ def summarize(
             "cost_usd": total_cost(rows),
             "validation_retry_rows": sum(
                 int(row.get("validation_attempts") or 1) > 1 for row in usage_rows
+            ),
+            "arithmetic_adjustment_rows": sum(
+                bool(row.get("arithmetic_adjusted")) for row in usage_rows
             ),
         },
         "artifact_checksums": {

@@ -94,6 +94,27 @@ def test_validate_judgment_checks_weighted_score_and_candidate_prediction() -> N
         judge.validate_judgment(json.dumps(value), 0, 0)
 
 
+def test_reported_arithmetic_is_retained_then_canonicalized() -> None:
+    reported = valid_judgment(
+        overall_score=9,
+        trace_grounding=10,
+        inferential_quality=10,
+        decisive_evidence_coverage=10,
+        calibration_and_consistency=10,
+    )
+    parsed = judge.validate_judgment(
+        json.dumps(reported),
+        0,
+        0,
+        require_canonical_overall=False,
+    )
+    canonical = judge.canonicalize_judgment(parsed)
+
+    assert parsed["overall_score"] == 9
+    assert canonical["overall_score"] == 10
+    assert parsed is not canonical
+
+
 def test_wrong_prediction_and_fabrication_apply_lowest_cap() -> None:
     wrong = valid_judgment(
         overall_score=3,
