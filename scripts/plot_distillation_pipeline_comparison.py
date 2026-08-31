@@ -310,8 +310,8 @@ def _draw_paper_pipeline(axis: Axes) -> None:
 
 def _draw_gleipnir_pipeline(axis: Axes) -> None:
     input_box = Box(0.745, 0.80, 0.32, 0.065)
-    teacher_box = Box(0.745, 0.60, 0.35, 0.125)
-    student_box = Box(0.745, 0.335, 0.35, 0.105)
+    teacher_box = Box(0.745, 0.65, 0.35, 0.125)
+    student_box = Box(0.745, 0.47, 0.35, 0.105)
 
     _rounded_box(
         axis,

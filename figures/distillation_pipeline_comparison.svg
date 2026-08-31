@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-08-31T16:39:43.363013</dc:date>
+    <dc:date>2026-08-31T16:44:42.434554</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -58,7 +58,7 @@ z
    <g id="line2d_1">
     <path d="M 565.92 532.91628
 L 565.92 76.20984
-" clip-path="url(#p307ff64195)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
+" clip-path="url(#p6947f195b2)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="patch_4">
     <path d="M 292.1472 159.740067
@@ -131,22 +131,22 @@ z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="patch_11">
-    <path d="M 839.6928 159.74571
-Q 839.6928 185.48335 839.6928 209.208528
+    <path d="M 839.6928 159.745607
+Q 839.6928 171.4752 839.6928 181.192331
 " style="fill: none; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
-    <path d="M 842.4928 203.608528
-L 839.6928 209.208528
-L 836.8928 203.608528
+    <path d="M 842.4928 175.592331
+L 839.6928 181.192331
+L 836.8928 175.592331
 z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="patch_12">
-    <path d="M 839.6928 288.635576
-Q 839.6928 326.978984 839.6928 363.30993
+    <path d="M 839.6928 260.610004
+Q 839.6928 275.143005 839.6928 287.663545
 " style="fill: none; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
-    <path d="M 842.4928 357.70993
-L 839.6928 363.30993
-L 836.8928 357.70993
+    <path d="M 842.4928 282.063545
+L 839.6928 287.663545
+L 836.8928 282.063545
 z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
@@ -273,28 +273,28 @@ z
 " style="fill: #f4f6f8; stroke: #8996a8; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
    <g id="patch_21">
-    <path d="M 654.19776 289.993284
-L 1025.18784 289.993284
-Q 1045.30176 289.993284 1045.30176 279.906516
-L 1045.30176 219.946284
-Q 1045.30176 209.859516 1025.18784 209.859516
-L 654.19776 209.859516
-Q 634.08384 209.859516 634.08384 219.946284
-L 634.08384 279.906516
-Q 634.08384 289.993284 654.19776 289.993284
+    <path d="M 654.19776 261.974484
+L 1025.18784 261.974484
+Q 1045.30176 261.974484 1045.30176 251.887716
+L 1045.30176 191.927484
+Q 1045.30176 181.840716 1025.18784 181.840716
+L 654.19776 181.840716
+Q 634.08384 181.840716 634.08384 191.927484
+L 634.08384 251.887716
+Q 634.08384 261.974484 654.19776 261.974484
 z
 " style="fill: #fcedec; stroke: #e45756; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
    <g id="patch_22">
-    <path d="M 654.19776 432.889164
-L 1025.18784 432.889164
-Q 1045.30176 432.889164 1045.30176 422.802396
-L 1045.30176 374.049684
-Q 1045.30176 363.962916 1025.18784 363.962916
-L 654.19776 363.962916
-Q 634.08384 363.962916 634.08384 374.049684
-L 634.08384 422.802396
-Q 634.08384 432.889164 654.19776 432.889164
+    <path d="M 654.19776 357.238404
+L 1025.18784 357.238404
+Q 1045.30176 357.238404 1045.30176 347.151636
+L 1045.30176 298.398924
+Q 1045.30176 288.312156 1025.18784 288.312156
+L 654.19776 288.312156
+Q 634.08384 288.312156 634.08384 298.398924
+L 634.08384 347.151636
+Q 634.08384 357.238404 654.19776 357.238404
 z
 " style="fill: #fcedec; stroke: #e45756; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
@@ -328,13 +328,13 @@ z
     <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="839.6928" y="140.574637" transform="rotate(-0 839.6928 140.574637)">Action-only trajectory</text>
    </g>
    <g id="text_15">
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(749.893425 238.082025)">Kimi K3 provides one soft target</text>
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(812.870925 252.752025)">p(0),  p(1)</text>
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(762.526237 267.289837)">0 = benign  ·  1 = misaligned</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(749.893425 210.063225)">Kimi K3 provides one soft target</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(812.870925 224.733225)">p(0),  p(1)</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(762.526237 239.271037)">0 = benign  ·  1 = misaligned</text>
    </g>
    <g id="text_16">
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(722.893425 393.859477)">Student matches the teacher probabilities</text>
-    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(760.390613 408.499477)">at the 0/1 decision boundary</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(722.893425 318.208718)">Student matches the teacher probabilities</text>
+    <text style="font-weight: 700; font-size: 12px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(760.390613 332.848718)">at the 0/1 decision boundary</text>
    </g>
   </g>
   <g id="text_17">
@@ -345,7 +345,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="p307ff64195">
+  <clipPath id="p6947f195b2">
    <rect x="7.2" y="25.776" width="1117.44" height="560.376"/>
   </clipPath>
  </defs>
