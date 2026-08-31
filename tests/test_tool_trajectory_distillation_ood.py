@@ -111,6 +111,20 @@ def test_distillation_ood_accepts_a_separately_frozen_08b_group(
     assert len(validate_jobs(config, "08b")) == 2
 
 
+def test_mixed_08b_config_pins_observed_hosted_price() -> None:
+    path = Path(
+        "experiments/tool_trajectory_monitoring/"
+        "distillation_mixed_qwen08b_ood_benchmark.json"
+    )
+    config = json.loads(path.read_text())
+    group = config["model_groups"]["08b"]
+    assert group["hosted_price_usd_per_million"] == {
+        "input": 0.06,
+        "output": 0.12,
+    }
+    assert "nano-gpt.com/api/models" in group["cost_source"]
+
+
 def test_summary_uses_raw_macro_pauroc_and_hosted_cost(tmp_path: Path) -> None:
     config = {
         "scope": {"rows": 6_395},

@@ -51,8 +51,8 @@
       "parity_job": "soft-n21837-mixed-qwen35-08b-seed0",
       "evaluate_base": true,
       "summarize_base": true,
-      "hosted_price_usd_per_million": {"input": 0.05, "output": 0.08},
-      "cost_source": "dated public hosted-price proxy; verify before frontier registration"
+      "hosted_price_usd_per_million": {"input": 0.06, "output": 0.12},
+      "cost_source": "NanoGPT public model registry observed 2026-08-31: https://nano-gpt.com/api/models"
     }
   },
   "stop_conditions": [
