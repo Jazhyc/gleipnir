@@ -45,10 +45,21 @@ BASE_TO_METHOD = {
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
 }
 PAPER_COMPARISON_MONITORS = {
+    "Kimi-K2.6 SFT",
     "Qwen3.5-4B SFT+RL",
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
+    "Kimi K3 binary logits": {
+        "xytext": (0, -18),
+        "ha": "center",
+        "va": "top",
+    },
+    "Kimi-K2.6 SFT": {
+        "xytext": (0, -18),
+        "ha": "center",
+        "va": "top",
+    },
     "Qwen3.5-4B SFT+RL": {"xytext": (18, -14), "ha": "left", "va": "top"},
     "Qwen3.5-27B base": {"xytext": (0, 18), "ha": "center", "va": "bottom"},
     "Qwen3.5-27B SFT+RL": {"xytext": (-18, -16), "ha": "right", "va": "top"},
@@ -56,6 +67,11 @@ MANUAL_COMPARISON_LABELS = {
         "xytext": (0, -18),
         "ha": "center",
         "va": "top",
+    },
+    "Gemini 3.1 Pro prompted": {
+        "xytext": (0, 18),
+        "ha": "center",
+        "va": "bottom",
     },
 }
 MIN_PLOTTED_PERFORMANCE = 0.60
@@ -145,7 +161,7 @@ def _display_label(monitor: str) -> str:
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
-        "Qwen3.5-27B base": "Qwen3.5-27B logits",
+        "Qwen3.5-27B base": "Qwen3.5-27B",
         **GLEIPNIR_METHODS,
     }
     display = replacements.get(monitor, monitor)

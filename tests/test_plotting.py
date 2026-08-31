@@ -90,8 +90,9 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
     assert _display_label("Kimi K3 binary logits") == "Kimi K3"
     assert _display_label("Kimi K2.6 binary logits") == "Kimi K2.6"
+    assert _display_label("Kimi-K2.6 SFT") == "Kimi-K2.6 SFT"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
-    assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B logits"
+    assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B"
     assert _display_label("Qwen3.5-4B SFT+RL") == "Qwen3.5-4B SFT+RL"
     assert _display_label("Qwen3.5-27B SFT+RL") == "Qwen3.5-27B SFT+RL"
     assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
@@ -99,6 +100,16 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
 
 
 def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
+    assert MANUAL_COMPARISON_LABELS["Kimi K3 binary logits"] == {
+        "xytext": (0, -18),
+        "ha": "center",
+        "va": "top",
+    }
+    assert MANUAL_COMPARISON_LABELS["Kimi-K2.6 SFT"] == {
+        "xytext": (0, -18),
+        "ha": "center",
+        "va": "top",
+    }
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-4B SFT+RL"]["xytext"] == (18, -14)
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B base"]["xytext"] == (0, 18)
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"] == {
@@ -110,6 +121,11 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "xytext": (0, -18),
         "ha": "center",
         "va": "top",
+    }
+    assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
+        "xytext": (0, 18),
+        "ha": "center",
+        "va": "bottom",
     }
 
 
