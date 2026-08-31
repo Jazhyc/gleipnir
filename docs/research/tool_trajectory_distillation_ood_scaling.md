@@ -18,6 +18,12 @@ the privileged teacher prompt is not shown to the deployed student.
 
 ## Results
 
+The matched Qwen3.5-9B curve is available as a publication-ready
+[`SVG`](../../figures/tool_trajectory_ood_data_scaling.svg) with a
+[`PNG`](../../figures/tool_trajectory_ood_data_scaling.png) fallback. Regenerate
+both artifacts directly from the table below with
+`python scripts/plot_tool_trajectory_ood_scaling.py`.
+
 The primary metric remains the paper-compatible, unweighted six-source mean of
 raw normalized pAUROC through FPR 0.20. Because that operating region is
 strict, regular unweighted Mean-OOD AUROC is reported beside it and is equally

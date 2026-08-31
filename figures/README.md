@@ -48,6 +48,25 @@ For future figures, reuse `gleipnir.plotting.set_plot_style`,
 `pareto_frontier_mask`, and `save_figure` so typography, colors, and export
 behavior remain consistent.
 
+## Qwen3.5-9B OOD data scaling
+
+`tool_trajectory_ood_data_scaling.svg` plots the six matched-data Qwen3.5-9B
+soft-distillation checkpoints from 204 through 8,688 training examples. It
+shows both source-balanced Mean-OOD pAUROC@20 and regular AUROC because their
+observed single-seed peaks occur at different data sizes. The mixed-data 9B and
+4B transfer conditions are intentionally excluded from this matched-data
+scaling curve.
+
+The SVG and PNG are generated directly from the canonical results table in
+`docs/research/tool_trajectory_distillation_ood_scaling.md`:
+
+```bash
+python scripts/plot_tool_trajectory_ood_scaling.py
+```
+
+As with the frontier plot, pass `--source` to override the canonical Markdown
+table and repeat `--output` to select one or more custom output formats.
+
 ## Distillation pipeline comparison
 
 `distillation_pipeline_comparison.svg` contrasts Sinha et al.'s filtered
