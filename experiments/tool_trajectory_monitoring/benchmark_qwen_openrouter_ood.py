@@ -75,6 +75,23 @@ def parse_args() -> argparse.Namespace:
         type=int,
         help="Bound a resumable provider-health probe to this many new rows.",
     )
+    parser.add_argument(
+        "--request-batch-rows",
+        type=int,
+        help="Operational checkpoint-size override.",
+    )
+    parser.add_argument(
+        "--provider-cooldown-seconds",
+        type=float,
+        default=0.0,
+        help="Wait this long before retrying rows from a throttled partial batch.",
+    )
+    parser.add_argument(
+        "--max-provider-cooldowns",
+        type=int,
+        default=0,
+        help="Maximum automatic partial-batch cooldowns before stopping.",
+    )
     return parser.parse_args()
 
 
@@ -498,6 +515,19 @@ def main() -> None:
         raise ValueError("concurrency must be positive")
     if args.max_new_rows is not None and args.max_new_rows <= 0:
         raise ValueError("max new rows must be positive")
+    request_batch_rows = (
+        int(args.request_batch_rows)
+        if args.request_batch_rows is not None
+        else int(config["request"]["request_batch_rows"])
+    )
+    if request_batch_rows <= 0:
+        raise ValueError("request batch rows must be positive")
+    if args.provider_cooldown_seconds < 0:
+        raise ValueError("provider cooldown must be non-negative")
+    if args.max_provider_cooldowns < 0:
+        raise ValueError("maximum provider cooldowns must be non-negative")
+    if args.provider_cooldown_seconds > 0 and args.max_provider_cooldowns == 0:
+        raise ValueError("positive provider cooldown requires a positive maximum")
     request_start_limiter = RequestStartLimiter(
         float(args.request_start_interval_seconds)
     )
@@ -651,34 +681,54 @@ def main() -> None:
     pending = [row for row in records if str(row["id"]) not in completed]
     if args.max_new_rows is not None:
         pending = pending[: args.max_new_rows]
-    for batch_index, batch in enumerate(
-        batches(pending, int(config["request"]["request_batch_rows"])), start=1
-    ):
-        try:
-            new_rows = score_batch(
-                batch,
-                rendered,
-                token_ids,
-                config,
-                config_sha256,
-                api_key,
-                concurrency,
-                request_start_limiter,
-            )
-        except BatchScoringError as error:
-            for row in error.results:
+    cooldowns_used = 0
+    for batch_index, batch in enumerate(batches(pending, request_batch_rows), start=1):
+        remaining_batch = batch
+        while remaining_batch:
+            try:
+                new_rows = score_batch(
+                    remaining_batch,
+                    rendered,
+                    token_ids,
+                    config,
+                    config_sha256,
+                    api_key,
+                    concurrency,
+                    request_start_limiter,
+                )
+            except BatchScoringError as error:
+                for row in error.results:
+                    completed[row["id"]] = row
+                atomic_write_jsonl(
+                    predictions_path, ordered_predictions(records, completed)
+                )
+                remaining_batch = [
+                    row
+                    for row in remaining_batch
+                    if str(row["id"]) not in completed
+                ]
+                print(
+                    f"partial batch={batch_index} durable={len(completed)}/"
+                    f"{len(records)} failures={len(remaining_batch)}",
+                    flush=True,
+                )
+                if (
+                    args.provider_cooldown_seconds == 0
+                    or cooldowns_used >= args.max_provider_cooldowns
+                ):
+                    raise
+                cooldowns_used += 1
+                print(
+                    f"provider cooldown={cooldowns_used}/"
+                    f"{args.max_provider_cooldowns} seconds="
+                    f"{args.provider_cooldown_seconds:.1f}",
+                    flush=True,
+                )
+                time.sleep(args.provider_cooldown_seconds)
+                continue
+            for row in new_rows:
                 completed[row["id"]] = row
-            atomic_write_jsonl(
-                predictions_path, ordered_predictions(records, completed)
-            )
-            print(
-                f"partial batch={batch_index} durable={len(completed)}/"
-                f"{len(records)} failures={len(batch) - len(error.results)}",
-                flush=True,
-            )
-            raise
-        for row in new_rows:
-            completed[row["id"]] = row
+            remaining_batch = []
         predictions = ordered_predictions(records, completed)
         costs = cost_summary(predictions, config)
         parity_cost = cost_summary(parity_predictions, config)
@@ -720,9 +770,12 @@ def main() -> None:
             "elapsed_seconds_this_invocation": time.time() - started,
             "configured_concurrency": int(config["request"]["concurrency"]),
             "effective_concurrency": concurrency,
+            "effective_request_batch_rows": request_batch_rows,
             "request_start_interval_seconds": float(
                 args.request_start_interval_seconds
             ),
+            "provider_cooldown_seconds": float(args.provider_cooldown_seconds),
+            "provider_cooldowns_used": cooldowns_used,
         },
         "score": "normalized terminal literal 1 versus 0 OpenRouter logprob",
         **summarize(predictions),
