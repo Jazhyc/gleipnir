@@ -94,4 +94,4 @@ The completed artifacts are:
 
 The completed reasoning-quality judgment and its qualified interpretation are
 recorded in
-[`../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md`](../../docs/findings/tool_trajectory_gleipnir4b_reasoning_judge.md).
+[`../../docs/research/tool_trajectory_gleipnir4b_reasoning_judge.md`](../../docs/research/tool_trajectory_gleipnir4b_reasoning_judge.md).

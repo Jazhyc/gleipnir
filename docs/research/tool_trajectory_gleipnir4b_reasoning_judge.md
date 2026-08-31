@@ -1,8 +1,12 @@
-# Gleipnir 4B visible-reasoning judge
+# Auxiliary result: Gleipnir 4B visible explanation quality
 
 Date: 2026-08-31
 
-## Finding
+Status: exploratory auxiliary result. This analysis is useful supporting
+evidence for the research program, but it was not a primary evaluation endpoint
+and should not drive checkpoint selection or promotion.
+
+## Exploratory finding
 
 On the frozen 64-pair OOD reasoning sample, the mixed-data, Kimi-soft-only
 Gleipnir 4B adapter produced more useful end-to-end visible analyses than its
