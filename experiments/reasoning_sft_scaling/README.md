@@ -46,7 +46,12 @@ base/adapter fingerprint is identical, a terminal margin is missing, or any
 adapter is absent. Report a rejected power-law fit rather than forcing an
 extrapolation when the curve is non-monotonic or has no positive exponent.
 
-## Reproduction
+## Historical reproduction
+
+The commands below record the completed campaign. Their
+`monitor-foundation` target is no longer active; do not use them as current
+launch instructions. Re-prepare and explicitly select an active campaign before
+rerunning.
 
 On the source system:
 

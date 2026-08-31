@@ -1,0 +1,95 @@
+method: tool_trajectory_distillation_scaling
+output_dir: results/tool_trajectory_distillation_scaling/${method}
+seed: 0
+
+teacher:
+  artifact: ???
+
+student:
+  model: Qwen/Qwen3.5-9B
+  model_revision: null
+  model_loader: causal_lm
+  finetuning_mode: lora
+  quantization:
+    enabled: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_compute_dtype: bfloat16
+  init_adapter: null
+  target_mode: teacher
+  teacher_sources: null
+  soft_teacher_artifact: ???
+  override_cached_prompt: false
+  require_teacher_label_match: true
+  record_identity_field: null
+  train_limit: null
+  train_fraction: 1.0
+  train_fraction_seed: ${seed}
+  selection_manifest: null
+  label_only_manifest: null
+  dataset_name_contains: null
+  max_prompt_chars: 3000
+  context_truncation: tail
+  include_reasoning: false
+  reasoning_max_chars: 0
+  reasoning_truncation: head_tail
+  exclude_final_output_from_context: false
+  reasoning_dropout_probability: 0.0
+  reasoning_dropout_seed: ${seed}
+  max_length: 29696
+  output_dir: ${output_dir}/causal_adapter
+  prompt: "unused: cached prompt-set-v1 student prompts are authoritative"
+  lora:
+    r: 128
+    alpha: 256
+    dropout: 0.0
+    target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
+    exclude_modules: ".*(visual|vision_tower|merger|patch_embed).*"
+  training:
+    optimizer: adamw
+    optim: adamw_torch
+    num_train_epochs: 1.0
+    max_steps: -1
+    learning_rate: 5.0e-5
+    warmup_ratio: 0.03
+    lr_scheduler_type: linear
+    weight_decay: 0.0
+    dataset_sampling: proportional
+    per_device_train_batch_size: 1
+    gradient_accumulation_steps: 32
+    torch_compile: false
+    logging_steps: 5
+    save_strategy: steps
+    save_steps: 124
+    save_total_limit: 3
+    save_only_model: true
+    completion_loss_weight: 0.0
+    direct_loss_weight: 0.0
+    pairwise_loss_weight: 0.0
+    pairwise_temperature: 1.0
+    soft_loss_weight: 1.0
+    soft_loss_type: bce
+    direct_logits_mode: selected_positions
+    require_flash_linear_attention: true
+    soft_target_logit_center: 0.0
+    soft_target_logit_scale: 1.0
+    soft_huber_delta: 1.0
+    ordinal_soft_loss_weight: 0.0
+    paired_batching: false
+    paired_batching_mode: interleaved
+    fsdp:
+      enabled: false
+      config:
+        version: 2
+        auto_wrap_policy: transformer_based_wrap
+        transformer_layer_cls_to_wrap: [Qwen3_5DecoderLayer]
+        activation_checkpointing: true
+        reshard_after_forward: true
+        state_dict_type: FULL_STATE_DICT
+
+hydra:
+  run:
+    dir: logs/tool_trajectory_distillation_scaling/hydra/${now:%Y-%m-%d}/${now:%H-%M-%S}
+  sweep:
+    dir: logs/tool_trajectory_distillation_scaling/hydra_multirun/${now:%Y-%m-%d}/${now:%H-%M-%S}
+    subdir: ${hydra.job.num}

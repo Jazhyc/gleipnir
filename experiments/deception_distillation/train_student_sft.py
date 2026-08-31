@@ -1743,7 +1743,18 @@ def main(cfg: DictConfig) -> None:
         group_dro_loss = GroupDROLoss(
             len(dataset_id_by_name), eta=group_dro_eta, ema=group_dro_ema
         )
-    tokenizer = AutoTokenizer.from_pretrained(str(cfg.student.model))
+    model_revision_value = OmegaConf.select(
+        cfg, "student.model_revision", default=None
+    )
+    model_revision = (
+        None if model_revision_value is None else str(model_revision_value)
+    )
+    revision_kwargs = (
+        {} if model_revision is None else {"revision": model_revision}
+    )
+    tokenizer = AutoTokenizer.from_pretrained(
+        str(cfg.student.model), **revision_kwargs
+    )
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     direct_target_ids = None
@@ -1969,6 +1980,7 @@ def main(cfg: DictConfig) -> None:
     )
     model = model_loader_classes[model_loader].from_pretrained(
         str(cfg.student.model),
+        **revision_kwargs,
         **model_kwargs,
     )
     if quantization_enabled:
@@ -2038,7 +2050,9 @@ def main(cfg: DictConfig) -> None:
             from huggingface_hub import try_to_load_from_cache
 
             cached_index = try_to_load_from_cache(
-                str(cfg.student.model), "model.safetensors.index.json"
+                str(cfg.student.model),
+                "model.safetensors.index.json",
+                revision=model_revision,
             )
             if not isinstance(cached_index, str):
                 raise FileNotFoundError(
@@ -2261,6 +2275,7 @@ def main(cfg: DictConfig) -> None:
                     "finetuning_mode": finetuning_mode,
                     "model_loader": model_loader,
                     "model": str(cfg.student.model),
+                    "model_revision": model_revision,
                     "commit": os.environ.get("GLEIPNIR_COMMIT"),
                     "seed": int(cfg.seed),
                     "optimization": {

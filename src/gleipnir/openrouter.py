@@ -7,13 +7,15 @@ import json
 import math
 import time
 from dataclasses import dataclass
-from typing import Any, Protocol
+from datetime import UTC, datetime
+from typing import Any, Literal, Protocol
 
 import numpy as np
 import requests
 
 DEFAULT_ENDPOINT = "https://openrouter.ai/api/v1/chat/completions"
 RETRYABLE_STATUS_CODES = frozenset({408, 409, 429, 500, 502, 503, 504})
+BinaryOutputMode = Literal["prediction_line", "scalar"]
 
 
 class ResponseLike(Protocol):
@@ -49,14 +51,33 @@ class OpenRouterConfig:
     endpoint: str = DEFAULT_ENDPOINT
     max_tokens: int = 8
     top_logprobs: int = 5
+    binary_output_mode: BinaryOutputMode = "prediction_line"
+    structured_output: bool = False
     reasoning_effort: str = "none"
-    provider_sort: str = "price"
+    provider_sort: str | None = "price"
+    provider_order: tuple[str, ...] = ()
     provider_only: str | None = None
+    provider_max_prompt_price: float | None = None
+    provider_max_completion_price: float | None = None
     allow_fallbacks: bool = True
+    enforce_distillable_text: bool = True
+    session_id: str | None = None
+    cache_prefix: str = ""
     request_timeout: float = 180.0
     max_retries: int = 6
     app_url: str = "https://github.com/gleipnir-monitoring/gleipnir"
     app_title: str = "Gleipnir monitor distillation"
+
+
+def sha256_json(value: Any) -> str:
+    """Hash a JSON value using a stable, compact encoding."""
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
 
 
 def logsumexp(values: list[float]) -> float:
@@ -142,29 +163,191 @@ def extract_terminal_binary_top_logprobs(
     return top, text, position
 
 
-def request_payload(record: PromptRecord, config: OpenRouterConfig) -> dict[str, Any]:
-    """Build a privacy-conscious deterministic chat-completions payload."""
+def extract_scalar_binary_top_logprobs(
+    response_data: dict[str, Any],
+) -> tuple[dict[str, float], str, int]:
+    """Extract alternatives when the entire response is the scalar ``0`` or ``1``."""
+    import re
+
+    try:
+        choice = response_data["choices"][0]
+        text = choice["message"]["content"]
+        rows = choice["logprobs"]["content"]
+    except (KeyError, IndexError, TypeError) as error:
+        preview = json.dumps(response_data)[:1000]
+        raise OpenRouterError(
+            f"response did not contain chat token logprobs: {preview}"
+        ) from error
+    if not isinstance(text, str) or not isinstance(rows, list):
+        raise OpenRouterError("response text or token logprobs had the wrong type")
+
+    match = re.fullmatch(r"\s*([01])\s*", text)
+    if match is None:
+        raise OpenRouterError(f"completion was not a binary scalar: {text!r}")
+    prediction = match.group(1)
+    position = next(
+        (
+            index
+            for index, row in enumerate(rows)
+            if row.get("token") == prediction
+        ),
+        None,
+    )
+    if position is None:
+        raise OpenRouterError(
+            f"scalar prediction {prediction!r} had no matching token row"
+        )
+    alternatives = rows[position].get("top_logprobs")
+    if not isinstance(alternatives, list) or not alternatives:
+        raise OpenRouterError("scalar label top_logprobs was empty")
+    top = {
+        item["token"]: float(item["logprob"])
+        for item in alternatives
+        if isinstance(item, dict)
+        and isinstance(item.get("token"), str)
+        and item.get("logprob") is not None
+    }
+    if not top:
+        raise OpenRouterError("scalar label top_logprobs had no usable entries")
+    return top, text, position
+
+
+def binary_scalar_response_format() -> dict[str, Any]:
+    """Return the strict scalar schema used for constrained binary annotation."""
+    return {
+        "type": "json_schema",
+        "json_schema": {
+            "name": "binary_prediction",
+            "strict": True,
+            "schema": {"type": "integer", "enum": [0, 1]},
+        },
+    }
+
+
+def _request_body_settings(config: OpenRouterConfig) -> dict[str, Any]:
+    """Return prompt-independent fields sent in the OpenRouter request body."""
     if not 1 <= config.top_logprobs <= 5:
         raise ValueError("top_logprobs must be between 1 and 5")
-    if config.max_tokens < 3:
-        raise ValueError("max_tokens must allow a terminal Prediction:<label>")
+    if config.binary_output_mode not in {"prediction_line", "scalar"}:
+        raise ValueError(f"unknown binary_output_mode: {config.binary_output_mode!r}")
+    minimum_tokens = 3 if config.binary_output_mode == "prediction_line" else 1
+    if config.max_tokens < minimum_tokens:
+        raise ValueError(
+            f"max_tokens must be at least {minimum_tokens} for "
+            f"binary_output_mode={config.binary_output_mode!r}"
+        )
+    if config.structured_output and config.binary_output_mode != "scalar":
+        raise ValueError("structured_output requires binary_output_mode='scalar'")
+    if config.provider_only and config.provider_order:
+        raise ValueError("provider_only and provider_order are mutually exclusive")
+    max_prices = (
+        config.provider_max_prompt_price,
+        config.provider_max_completion_price,
+    )
+    if any(value is not None for value in max_prices):
+        if any(value is None or value <= 0 for value in max_prices):
+            raise ValueError(
+                "provider prompt and completion max prices must both be positive"
+            )
+    if config.session_id is not None and not 1 <= len(config.session_id) <= 256:
+        raise ValueError("session_id must contain between 1 and 256 characters")
     provider: dict[str, Any] = {
         "require_parameters": True,
         "data_collection": "deny",
-        "sort": config.provider_sort,
         "allow_fallbacks": config.allow_fallbacks,
+        "enforce_distillable_text": config.enforce_distillable_text,
     }
+    if config.provider_order:
+        provider["order"] = list(config.provider_order)
+    elif config.provider_sort:
+        provider["sort"] = config.provider_sort
     if config.provider_only:
         provider["only"] = [config.provider_only]
-    return {
+    if config.provider_max_prompt_price is not None:
+        provider["max_price"] = {
+            "prompt": config.provider_max_prompt_price,
+            "completion": config.provider_max_completion_price,
+        }
+    settings: dict[str, Any] = {
         "model": config.model,
-        "messages": [{"role": "user", "content": record.prompt}],
         "max_tokens": config.max_tokens,
         "temperature": 0,
         "logprobs": True,
         "top_logprobs": config.top_logprobs,
         "reasoning": {"effort": config.reasoning_effort, "exclude": True},
         "provider": provider,
+    }
+    if config.session_id:
+        settings["session_id"] = config.session_id
+    if config.structured_output:
+        settings["response_format"] = binary_scalar_response_format()
+    return settings
+
+
+def request_settings(config: OpenRouterConfig) -> dict[str, Any]:
+    """Return auditable settings without storing the potentially sensitive prefix."""
+    settings = _request_body_settings(config)
+    if config.cache_prefix:
+        settings["cache_control"] = {
+            "type": "ephemeral",
+            "prefix_chars": len(config.cache_prefix),
+            "prefix_sha256": hashlib.sha256(
+                config.cache_prefix.encode("utf-8")
+            ).hexdigest(),
+        }
+    return settings
+
+
+def request_settings_sha256(config: OpenRouterConfig) -> str:
+    """Identify all settings that can change a cached teacher annotation."""
+    return sha256_json(
+        {
+            "endpoint": config.endpoint,
+            "settings": request_settings(config),
+        }
+    )
+
+
+def request_payload(record: PromptRecord, config: OpenRouterConfig) -> dict[str, Any]:
+    """Build a privacy-conscious deterministic chat-completions payload."""
+    content: str | list[dict[str, Any]] = record.prompt
+    if config.cache_prefix:
+        if not record.prompt.startswith(config.cache_prefix):
+            raise ValueError(
+                f"record {record.record_id!r} does not start with cache_prefix"
+            )
+        content = [
+            {
+                "type": "text",
+                "text": config.cache_prefix,
+                "cache_control": {"type": "ephemeral"},
+            },
+            {
+                "type": "text",
+                "text": record.prompt[len(config.cache_prefix) :],
+            },
+        ]
+    return {
+        **_request_body_settings(config),
+        "messages": [{"role": "user", "content": content}],
+    }
+
+
+def cache_usage_from_response(response_data: dict[str, Any]) -> dict[str, Any]:
+    """Normalize provider-cache telemetry while preserving the raw usage object."""
+    usage = response_data.get("usage")
+    if not isinstance(usage, dict):
+        usage = {}
+    details = usage.get("prompt_tokens_details")
+    if not isinstance(details, dict):
+        details = {}
+    cache_discount = response_data.get("cache_discount")
+    if cache_discount is None:
+        cache_discount = usage.get("cache_discount")
+    return {
+        "cached_tokens": details.get("cached_tokens", 0),
+        "cache_write_tokens": details.get("cache_write_tokens", 0),
+        "cache_discount": cache_discount,
     }
 
 
@@ -195,8 +378,12 @@ def score_prompt(
         "Content-Type": "application/json",
         "HTTP-Referer": config.app_url,
         "X-Title": config.app_title,
+        "X-OpenRouter-Metadata": "enabled",
     }
     payload = request_payload(record, config)
+    settings = request_settings(config)
+    settings_sha256 = request_settings_sha256(config)
+    requested_at = datetime.now(UTC).isoformat()
     started = time.perf_counter()
     last_error: Exception | None = None
     for attempt in range(config.max_retries + 1):
@@ -214,16 +401,26 @@ def score_prompt(
                     f"{response.text[:1000]}"
                 )
             data = response.json()
-            top, generated_text, label_position = extract_terminal_binary_top_logprobs(
-                data
-            )
+            if config.binary_output_mode == "scalar":
+                top, generated_text, label_position = (
+                    extract_scalar_binary_top_logprobs(data)
+                )
+            else:
+                top, generated_text, label_position = (
+                    extract_terminal_binary_top_logprobs(data)
+                )
             score, label_logprobs = binary_score_from_top_logprobs(top)
             choice = data["choices"][0]
+            usage = data.get("usage") or {}
             return {
                 "id": record.record_id,
                 "prompt_sha256": record.prompt_sha256,
                 "prompt_chars": len(record.prompt),
                 "metadata": record.metadata,
+                "request_settings": settings,
+                "request_settings_sha256": settings_sha256,
+                "requested_at": requested_at,
+                "received_at": datetime.now(UTC).isoformat(),
                 "model": data.get("model"),
                 "provider": data.get("provider"),
                 "response_id": data.get("id"),
@@ -239,7 +436,9 @@ def score_prompt(
                 },
                 "target_probs": {"negative": 1.0 - score, "positive": score},
                 "top_logprobs": top,
-                "usage": data.get("usage") or {},
+                "usage": usage,
+                "cache_usage": cache_usage_from_response(data),
+                "openrouter_metadata": data.get("openrouter_metadata"),
                 "latency_seconds": time.perf_counter() - started,
                 "attempts": attempt + 1,
             }

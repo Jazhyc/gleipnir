@@ -23,6 +23,13 @@ The first migrated experiment reproduces the deception-distillation pipeline in
 a standalone form. Subsequent work should add task families through explicit
 dataset adapters and an evolving, versioned behavior ontology.
 
+The next proposed domain is action-only monitoring of agent tool trajectories:
+detect sabotage, exfiltration, prompt-injection compliance, and scheming from
+observable messages, commands, tool calls, outputs, edits, and final reports
+without private reasoning. Its paper-derived task and dataset contract, along
+with the proposed Kimi K3 logit-distillation comparison, is recorded in
+`research/tool_transcript_monitoring.md`.
+
 ## Evaluation principles
 
 - Split by source lineage, generator, task family, and model family where possible.
@@ -43,4 +50,3 @@ dataset adapters and an evolving, versioned behavior ontology.
 - Which data mixtures transfer to held-out action types and model families?
 - Can a single calibrated output schema express positive detections, benign
   behavior, and epistemic uncertainty without benchmark-specific routing?
-

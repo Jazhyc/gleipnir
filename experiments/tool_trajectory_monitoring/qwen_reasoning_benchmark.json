@@ -1,0 +1,87 @@
+{
+  "campaign_id": "qwen35-9b-reasoning-source-canary-v1",
+  "status": "frozen_pilot",
+  "hypothesis": "Reasoning before the literal binary boundary improves ranking or calibration relative to immediate Qwen3.5-9B decision logits, and native thinking mode adds value beyond visible deliberation under the non-thinking chat template.",
+  "scope": {
+    "role": "in_distribution_source_canary",
+    "qualification": "The accessible 1,000-row synthetic source releases are not the paper's final STRIDE test or Gloom-Exfiltration manifests.",
+    "rows": 100,
+    "selection_seed": 20260830,
+    "source_revision": "ccb77e37589baaee1f0e16ac9ab89ceac8f6cc8a",
+    "sources": [
+      "gemini_synthetic",
+      "unified_dataset"
+    ],
+    "rows_per_source_label_stratum": 25,
+    "max_source_tokens": 28000
+  },
+  "model": {
+    "id": "Qwen/Qwen3.5-9B",
+    "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+    "dtype": "bfloat16"
+  },
+  "conditions": [
+    {
+      "name": "direct",
+      "prompt": "student",
+      "enable_thinking": false,
+      "generation": false
+    },
+    {
+      "name": "visible_reasoning",
+      "prompt": "reasoning_evaluation",
+      "enable_thinking": false,
+      "generation": true
+    },
+    {
+      "name": "thinking_reasoning",
+      "prompt": "reasoning_evaluation",
+      "enable_thinking": true,
+      "generation": true
+    }
+  ],
+  "generation": {
+    "max_tokens": 16384,
+    "min_tokens": 128,
+    "temperature": 1.0,
+    "top_p": 0.95,
+    "top_k": 20,
+    "min_p": 0.0,
+    "presence_penalty": 1.5,
+    "repetition_penalty": 1.0,
+    "seed": 20260830
+  },
+  "scoring": {
+    "decision_prefix": "Prediction:",
+    "tokens": [
+      "0",
+      "1"
+    ],
+    "method": "Remove the final generated literal 0/1 decision token and normalize constrained literal 0/1 next-token logits at that exact boundary."
+  },
+  "engine": {
+    "max_model_len": 131072,
+    "gpu_memory_utilization": 0.9,
+    "max_num_seqs": 8,
+    "enable_prefix_caching": true,
+    "language_model_only": true,
+    "batch_rows": 8
+  },
+  "selection_rule": "No model or condition is selected in this pilot; report all three conditions overall and per source.",
+  "metrics": [
+    "per-source and macro AUROC",
+    "pooled AUROC",
+    "Brier score",
+    "balanced accuracy at 0.5",
+    "score entropy and confidence",
+    "parse failures and output truncations",
+    "paired score changes"
+  ],
+  "stop_conditions": [
+    "Any condition receives different row IDs or prompt-task semantics.",
+    "The model or tokenizer revision differs across conditions.",
+    "The two reasoning conditions differ in generation settings other than enable_thinking.",
+    "Either literal decision token is unavailable in terminal logprobs.",
+    "The direct arm or either reasoning arm is incomplete."
+  ]
+}

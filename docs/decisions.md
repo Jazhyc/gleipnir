@@ -1,5 +1,45 @@
 # Decision log
 
+## 2026-08-30 — Run tool-trajectory scaling as Kimi-soft-only distillation
+
+- Train only Kimi K3 soft-logit students for the first Qwen3.5-9B
+  tool-trajectory scaling campaign. Do not train matched hard-label adapters;
+  retain source labels solely for provenance, stratification, and evaluation.
+- Use one seed and rank-128 QLoRA at the six paper row counts, but train every
+  point for exactly one epoch rather than copying the paper's optimizer-step
+  horizons. This targets the effect of adding unique data without repeating the
+  smallest subsets for 63 or 25 epochs. The paper rationale curve remains an
+  external descriptive reference, not a supervision-channel causal comparison.
+- Add one adapter over the full 8,688-row tool-trajectory pool plus all 13,149
+  prior deception soft-distillation rows, also for one epoch. Treat the result
+  as fixed-epoch data scaling rather than a fixed-compute mixture ablation.
+- The prior single-seed deception optimization screen favored two epochs over
+  one by 0.00470 macro AUROC but worsened Brier by 0.00144. This indirect,
+  shorter-context evidence does not justify doubling the trajectory campaign;
+  prioritize the controlled data-volume curve and timely completion.
+- Preserve effective batch 32 while changing the long-context realization to
+  microbatch 1 and accumulation 32, subject to a rank-128 longest-sequence H100
+  preflight and a zero-truncation 29,696-token preparation audit.
+
+## 2026-08-30 — Make paid teacher caching provider-sticky and auditable
+
+- Route synchronous OpenRouter annotation campaigns through a stable
+  `session_id` derived from the model and exact prompt prefix, mark that prefix
+  with an explicit ephemeral cache breakpoint, and complete one warm-up request
+  before concurrent fan-out. This preserves the concatenated prompt text while
+  giving provider caches a warm shared prefix.
+- For Kimi K3 (`moonshotai/kimi-k3`), prefer Makora for binary-logprob caching;
+  it currently has lower input, output, and cache-read rates than Fireworks.
+  Pin Makora when endpoint consistency is required, or explicitly order Makora
+  before Fireworks when availability is more important.
+- Store an exact request-settings fingerprint, actual route metadata, timestamps,
+  and provider cache token telemetry in every row. Reject resume when either the
+  prompt or request settings drift, and require a canary with nonzero cache reads
+  before scaling paid annotation.
+- A live synthetic Makora canary verified logprob delivery and reused 8,448 of
+  9,627 prompt tokens on its second request. Reported request cost fell from
+  $0.024404 to $0.005218; no repository or dataset content was sent.
+
 ## 2026-08-17 — Default frozen text evaluation to vLLM
 
 - Use a persistent vLLM engine with continuous batching for large frozen

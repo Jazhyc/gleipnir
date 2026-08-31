@@ -1,0 +1,80 @@
+{
+  "format_version": 1,
+  "license": {
+    "id": "mit",
+    "source": "LICENSE"
+  },
+  "models": {
+    "4b": {
+      "base_model": "Qwen/Qwen3.5-4B",
+      "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+      "card": "model_releases/hf/gleipnir-4b/README.md",
+      "display_name": "Gleipnir 4B",
+      "job_name": "soft-n21837-mixed-qwen35-4b-seed0",
+      "repo_name": "Gleipnir-4B",
+      "source_dir": "results/tool_trajectory_distillation_mixed_qwen4b/runs/soft-n21837-mixed-qwen35-4b-seed0/causal_adapter",
+      "source_sha256": "5c4688931ac9168e0d27aa501b73141180b74fe01e0ec147448f7661f16c7bc6",
+      "serving_dir": "results/tool_trajectory_distillation_mixed_qwen4b/runs/soft-n21837-mixed-qwen35-4b-seed0/model",
+      "serving_sha256": "df07134f64377fffb0b88c83a7f84ec695b5f25c9ed020a15a0033cf5695cac5",
+      "training_metadata_sha256": "e2625a5e62eb8b9ca3224c9467b067b46c95e814b2453169d3b864ae9d98729a",
+      "evaluation": {
+        "mean_ood_auroc": 0.9085838367121424,
+        "mean_ood_pauroc_at_20": 0.7823496091532877,
+        "pooled_auroc": 0.9135125481052597,
+        "pooled_pauroc_at_20": 0.7015311400680013
+      }
+    },
+    "9b": {
+      "base_model": "Qwen/Qwen3.5-9B",
+      "base_revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a",
+      "card": "model_releases/hf/gleipnir-9b/README.md",
+      "display_name": "Gleipnir 9B",
+      "job_name": "soft-n21837-mixed-seed0",
+      "repo_name": "Gleipnir-9B",
+      "source_dir": "results/tool_trajectory_distillation_scaling/runs/soft-n21837-mixed-seed0/causal_adapter",
+      "source_sha256": "277b27e43ac90a893a03e789232a154d1bc7f84c057eb85ec9cc4e5eb60d7cdf",
+      "serving_dir": "results/tool_trajectory_distillation_scaling/runs/soft-n21837-mixed-seed0/model",
+      "serving_sha256": "32aabf31a87935a156676807cc132fb99879d20f66d89b6b39148d5176cb25af",
+      "training_metadata_sha256": "0ecd2ab194bb247a61d672e794cc3a437e53fc36bb882d39ad14ad1ab781c9b5",
+      "evaluation": {
+        "mean_ood_auroc": 0.9215356108161963,
+        "mean_ood_pauroc_at_20": 0.8211832158363769,
+        "pooled_auroc": 0.9355070171618869,
+        "pooled_pauroc_at_20": 0.7836630889831644
+      }
+    }
+  },
+  "prompt": {
+    "manifest": "experiments/tool_trajectory_monitoring/prompts/manifest.json",
+    "student_instruction": "experiments/tool_trajectory_monitoring/prompts/student.txt",
+    "template_sha256": "f104aa18fe9f04094efdca14f9cebe65f7b18d976f454c134fa4282bd5162eaa"
+  },
+  "training": {
+    "data_rows": 21837,
+    "deception_rows": 13149,
+    "tool_trajectory_rows": 8688,
+    "epochs": 1,
+    "seed": 0,
+    "objective": "binary soft BCE at selected literal 0|1 logits",
+    "teacher": "moonshotai/kimi-k3",
+    "rank": 128,
+    "lora_alpha": 256,
+    "learning_rate": 0.00005,
+    "effective_batch_size": 32,
+    "max_length": 29696,
+    "quantization": "NF4 double-quantized QLoRA with BF16 compute"
+  },
+  "evaluation": {
+    "benchmark": "six-source strict-OOD action-only tool-trajectory suite",
+    "rows": 6395,
+    "primary_metric": "unweighted six-source Mean-OOD raw normalized pAUROC@20",
+    "sources": [
+      "AgentDojo",
+      "CUA-SHADE",
+      "IaC",
+      "MLE-Sabotage",
+      "Rogue Eval",
+      "SHADE-Arena"
+    ]
+  }
+}

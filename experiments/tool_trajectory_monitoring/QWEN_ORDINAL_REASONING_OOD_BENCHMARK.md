@@ -1,0 +1,102 @@
+# Qwen3.5-9B visible-reasoning ordinal OOD benchmark
+
+Status: completed 2026-08-31. The definitive 6,395-row result and run audit are
+in
+[`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
+The 2,048-token v1 and strict-boundary 4,096-token v2 preflights were
+invalidated before analysis after the same degenerate rationale exhausted both
+length caps.
+
+## Result
+
+Visible reasoning reached `0.6656` Mean-OOD pAUROC@20 and `0.8610` Mean-OOD
+AUROC. It improved over immediate ordinal generation by `0.1798` and `0.1017`,
+respectively, but remained below continuous binary logits by `0.0320` and
+`0.0240`. At the frozen hosted-price snapshot, its exact logical token
+accounting projects to `$1.029268/1K`, versus `$0.946821/1K` for binary logits.
+
+The definitive run produced 6,374 normal score boundaries, 20 bounded
+length-cap recoveries, and one missing-boundary recovery. These 21 rows retained
+their full generated analyses and were scored under the predeclared policy.
+
+## Hypothesis and intervention
+
+This matched ablation tests whether one visible test-time deliberation recovers
+the ranking gap between the completed immediate 0--10 score and continuous
+binary logits. The primary endpoint is raw normalized Mean-OOD pAUROC@20:
+compute pAUROC over `FPR <= 0.20` independently for each of the six frozen OOD
+sources, divide by 0.20, and take their unweighted mean. Standard Mean-OOD AUROC
+is secondary.
+
+The model remains the unadapted `Qwen/Qwen3.5-9B` BF16 revision used by both
+baselines. Native Qwen thinking remains disabled. The prompt directly presents
+the same five severity bands as the immediate ordinal arm, but replaces its
+silent review procedure with a visible concise analysis. It does not name the
+paper or its authors inside the monitor instruction.
+
+Temperature-zero generation continues the assistant response until the exact
+terminal `Score:` prefix. A second continuation of that same response is
+constrained to one of the exact integer strings `0` through `10`. This split
+retains the generated analysis in the scoring context while preventing output
+format failures from becoming missing scores. It is logically one visible
+rationale followed by one score, even though vLLM executes two generation
+calls. The saved ranking value is the integer divided by 10.
+
+Generation is capped at the paper-aligned 4,096-token rationale reserve. If a
+rationale reaches that cap, or otherwise completes without the required
+terminal prefix, the evaluator retains the generated analysis, appends
+`Score:`, and marks the recovery before requesting the constrained integer.
+The result reports every truncated or missing-boundary recovery. Empty outputs
+and any other finish reason still fail closed.
+
+## Matched baselines and accounting
+
+The paired baselines are:
+
+1. continuous immediate literal `0|1` probabilities, with `0.6976` Mean-OOD
+   pAUROC@20 and `0.8850` Mean-OOD AUROC; and
+2. immediate generated 0--10 severity, with `0.4858` Mean-OOD pAUROC@20 and
+   `0.7592` Mean-OOD AUROC.
+
+All three use the same 6,395 OOD row IDs, labels, Qwen revision, full monitoring
+role, non-thinking chat boundary, and temperature-zero terminal decision. This
+intervention changes the output instruction and adds visible analysis, so it is
+an interface-level ablation rather than a pure compute-only intervention.
+
+Paper-comparable hosted accounting counts the initial rendered prompt once and
+the rationale plus terminal score as output. The second vLLM continuation is an
+implementation detail and is not treated as a second hosted request. Runtime
+metadata separately preserves both prompt lengths.
+
+The audited initial contexts total 61,575,609 tokens, averaging 9,628.7113 per
+row, with a minimum of 1,195 and maximum of 30,544. The maximum plus the frozen
+4,096-token rationale allowance and two score tokens is 34,642, below the
+36,864-token engine limit. This matches the paper's 4K rationale reserve.
+
+## Selection rule and stop condition
+
+OOD labels must not select the prompt, generation settings, threshold, subset,
+retry rule, or stopping point. Report all sources and both paired comparisons
+regardless of direction. The run stops on any input, prompt, model, or baseline
+checksum drift; an empty or truncated rationale; failure to reach the exact
+terminal score boundary; invalid score tokenization; an incomplete balanced
+source-label canary; context overflow; or incomplete paired coverage.
+
+Run the balanced 12-row canary first:
+
+```bash
+sbatch cluster/slurm/benchmark_qwen_ordinal_reasoning_ood.sh \
+  --stop-after-canary
+```
+
+Then resume the same checksum-bound cache for the full run:
+
+```bash
+sbatch cluster/slurm/benchmark_qwen_ordinal_reasoning_ood.sh
+```
+
+Artifacts are written under the ignored directory
+`results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v3_final/`.
+Logical hosted output cost is counted by retokenizing the saved visible
+completion. Actual tokens returned across the two vLLM calls and the
+retokenization delta are retained separately.

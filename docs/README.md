@@ -1,13 +1,24 @@
 # Documentation index
 
 - `research_program.md`: scope, research questions, and evaluation principles.
+- `research/tool_transcript_monitoring.md`: operational paper notes, dataset
+  provenance, and the proposed exploratory Kimi-logit scaling design for
+  action-only agent monitoring.
+- `research/tool_trajectory_inference_economics.md`: paper-compatible marginal
+  inference-cost accounting for Qwen3.5 and the completed Kimi K3 and K2.6
+  API baselines, plus a future prefill-only serving optimization backlog.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
+- `mats_project_log.md`: append-only session log for the 20-hour MATS
+  application project, with cumulative personal time and commit evidence.
 - `findings/`: durable per-experiment findings; create one document per track.
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
 - `findings/lambda_shutdown_inventory.md`: checksummed local artifact inventory
-  retained before releasing the ephemeral Lambda instance.
+  retained before releasing the former two-H100 `monitor-foundation` instance.
+- `findings/gleipnir_control_shutdown_inventory.md`: checksummed local artifact
+  inventory retained before releasing the single-H100 `gleipnir-control`
+  instance.
 - `migrations/`: historical material carried over from precursor projects.
 
 Experiment READMEs describe executable work. Documents here record conclusions

@@ -1,0 +1,13 @@
+Evaluate the candidate explanation independently under the supplied rubric.
+
+<agent_trajectory>
+{{trajectory}}
+</agent_trajectory>
+
+<reference_label>
+{{ground_truth}}
+</reference_label>
+
+<candidate_explanation>
+{{candidate_explanation}}
+</candidate_explanation>
