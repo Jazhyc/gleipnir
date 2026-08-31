@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-08-31T16:26:14.983994</dc:date>
+    <dc:date>2026-08-31T16:31:51.699525</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -58,7 +58,7 @@ z
    <g id="line2d_1">
     <path d="M 565.92 540.57888
 L 565.92 96.48864
-" clip-path="url(#pbcf3d31bea)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
+" clip-path="url(#p412a9b8ee8)" style="fill: none; stroke: #d6dce4; stroke-width: 1.2; stroke-linecap: round"/>
    </g>
    <g id="patch_4">
     <path d="M 292.1472 177.774725
@@ -81,12 +81,12 @@ z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="patch_6">
-    <path d="M 280.735521 289.92672
-Q 300.52556 289.92672 318.303138 289.92672
+    <path d="M 280.741455 289.92672
+Q 314.498608 289.92672 346.243301 289.92672
 " style="fill: none; stroke: #4c78a8; stroke-width: 1.8; stroke-linecap: round"/>
-    <path d="M 312.703138 287.12672
-L 318.303138 289.92672
-L 312.703138 292.72672
+    <path d="M 340.643301 287.12672
+L 346.243301 289.92672
+L 340.643301 292.72672
 z
 " style="fill: #4c78a8; stroke: #4c78a8; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
@@ -101,12 +101,12 @@ z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
    <g id="patch_8">
-    <path d="M 426.24 316.716653
-Q 426.24 329.837342 426.24 340.94557
+    <path d="M 443.0016 316.716653
+Q 443.0016 329.837342 443.0016 340.94557
 " style="fill: none; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
-    <path d="M 429.04 335.34557
-L 426.24 340.94557
-L 423.44 335.34557
+    <path d="M 445.8016 335.34557
+L 443.0016 340.94557
+L 440.2016 335.34557
 z
 " style="fill: #526174; stroke: #526174; stroke-width: 1.8; stroke-linecap: round"/>
    </g>
@@ -202,15 +202,15 @@ z
 " style="fill: #ffffff; stroke: #4c78a8; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
    <g id="patch_16">
-    <path d="M 335.72736 317.988864
-L 516.75264 317.988864
-Q 536.86656 317.988864 536.86656 308.180736
-L 536.86656 271.672704
-Q 536.86656 261.864576 516.75264 261.864576
-L 335.72736 261.864576
-Q 315.61344 261.864576 315.61344 271.672704
-L 315.61344 308.180736
-Q 315.61344 317.988864 335.72736 317.988864
+    <path d="M 363.66336 317.988864
+L 522.33984 317.988864
+Q 542.45376 317.988864 542.45376 308.180736
+L 542.45376 271.672704
+Q 542.45376 261.864576 522.33984 261.864576
+L 363.66336 261.864576
+Q 343.54944 261.864576 343.54944 271.672704
+L 343.54944 308.180736
+Q 343.54944 317.988864 363.66336 317.988864
 z
 " style="fill: #eaf2fa; stroke: #4c78a8; stroke-width: 1.7; stroke-linejoin: miter"/>
    </g>
@@ -254,10 +254,10 @@ z
 " style="fill: #ffffff; stroke-dasharray: 5.18,2.24; stroke-dashoffset: 0; stroke: #4c78a8; stroke-width: 1.4; stroke-linejoin: miter"/>
    </g>
    <g id="text_5">
-    <text style="font-weight: 700; font-size: 9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #4c78a8" x="303.3216" y="279.32328" transform="rotate(-0 303.3216 279.32328)">incorrect</text>
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #4c78a8" x="314.496" y="284.368176" transform="rotate(-0 314.496 284.368176)">incorrect</text>
    </g>
    <g id="text_6">
-    <text style="font-weight: 700; font-size: 9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #526174" x="169.2288" y="330.13944" transform="rotate(-0 169.2288 330.13944)">correct</text>
+    <text style="font-weight: 700; font-size: 9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: end; fill: #526174" x="166.99392" y="327.823632" transform="rotate(-0 166.99392 327.823632)">correct</text>
    </g>
    <g id="patch_20">
     <path d="M 670.95936 179.040384
@@ -309,9 +309,9 @@ z
     <text style="font-weight: 700; font-size: 10.3px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; text-anchor: middle; fill: #172033" x="180.4032" y="293.572759" transform="rotate(-0 180.4032 293.572759)">Verdict matches label?</text>
    </g>
    <g id="text_10">
-    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(352.802109 280.095556)">Incorrect candidate regenerated</text>
-    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(370.517695 292.173556)">using ground-truth label</text>
-    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(390.378023 304.335861)">(up to 3 retries)</text>
+    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(390.912131 280.095556)">Candidate regenerated</text>
+    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(387.279295 292.173556)">using ground-truth label</text>
+    <text style="font-weight: 700; font-size: 9.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(407.139623 304.335861)">(up to 3 retries)</text>
    </g>
    <g id="text_11">
     <text style="font-weight: 700; font-size: 10.9px; font-family: 'Cantarell', 'DejaVu Sans', sans-serif; fill: #172033" transform="translate(200.161419 368.87055)">Claude Sonnet 4.5 scores candidates</text>
@@ -348,7 +348,7 @@ z
   </g>
  </g>
  <defs>
-  <clipPath id="pbcf3d31bea">
+  <clipPath id="p412a9b8ee8">
    <rect x="7.2" y="47.448" width="1117.44" height="544.896"/>
   </clipPath>
  </defs>

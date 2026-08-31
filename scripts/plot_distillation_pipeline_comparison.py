@@ -26,7 +26,7 @@ DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/distillation_pipeline_compari
 PAPER_STAGES = (
     "Gemini 2.5 Pro samples\n4 structured rationales",
     "Verdict matches label?",
-    "Incorrect candidate regenerated\nusing ground-truth label\n(up to 3 retries)",
+    "Candidate regenerated\nusing ground-truth label\n(up to 3 retries)",
     "Claude Sonnet 4.5 scores candidates\nkeep best if quality ≥ 7/10",
     "Student is fine-tuned on selected rationale\n+ 0–10 severity score",
     "Optional GRPO score refinement",
@@ -208,7 +208,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
     input_box = Box(0.255, 0.80, 0.32, 0.065)
     teacher_box = Box(0.255, 0.685, 0.35, 0.085)
     check_box = Box(0.155, 0.555, 0.17, 0.055)
-    retry_box = Box(0.375, 0.555, 0.18, 0.085)
+    retry_box = Box(0.39, 0.555, 0.16, 0.085)
     judge_box = Box(0.255, 0.405, 0.37, 0.092)
     student_box = Box(0.255, 0.255, 0.35, 0.082)
     rl_box = Box(0.255, 0.145, 0.22, 0.042)
@@ -282,12 +282,12 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         color=PAPER_COLOR,
     )
     axis.text(
-        0.265,
-        0.57,
+        (check_box.right + retry_box.left) / 2,
+        check_box.center_y + 0.014,
         "incorrect",
         transform=axis.transAxes,
         ha="center",
-        va="bottom",
+        va="center",
         fontsize=9.0,
         fontweight="bold",
         color=PAPER_COLOR,
@@ -298,11 +298,11 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         (check_box.center_x, judge_box.top + 0.003),
     )
     axis.text(
-        0.145,
-        0.485,
+        check_box.center_x - 0.012,
+        (check_box.bottom + judge_box.top) / 2,
         "correct",
         transform=axis.transAxes,
-        ha="center",
+        ha="right",
         va="center",
         fontsize=9.0,
         fontweight="bold",
