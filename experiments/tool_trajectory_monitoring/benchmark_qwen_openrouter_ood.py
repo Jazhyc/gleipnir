@@ -94,6 +94,14 @@ class RequestStartLimiter:
             self._next_start = time.perf_counter() + self.interval_seconds
 
 
+class BatchScoringError(RuntimeError):
+    """Carry valid sibling responses out of a partially failed paid batch."""
+
+    def __init__(self, results: list[dict[str, Any]], failures: list[str]) -> None:
+        super().__init__("OpenRouter batch failed: " + " | ".join(failures))
+        self.results = results
+
+
 def stable_sha256(value: Any) -> str:
     encoded = json.dumps(
         value, ensure_ascii=False, separators=(",", ":"), sort_keys=True
@@ -440,7 +448,7 @@ def score_batch(
             except Exception as error:
                 failures.append(f"{futures[future]}: {error}")
     if failures:
-        raise RuntimeError("OpenRouter batch failed: " + " | ".join(failures))
+        raise BatchScoringError(results, failures)
     return results
 
 
@@ -637,16 +645,29 @@ def main() -> None:
     for batch_index, batch in enumerate(
         batches(pending, int(config["request"]["request_batch_rows"])), start=1
     ):
-        new_rows = score_batch(
-            batch,
-            rendered,
-            token_ids,
-            config,
-            config_sha256,
-            api_key,
-            concurrency,
-            request_start_limiter,
-        )
+        try:
+            new_rows = score_batch(
+                batch,
+                rendered,
+                token_ids,
+                config,
+                config_sha256,
+                api_key,
+                concurrency,
+                request_start_limiter,
+            )
+        except BatchScoringError as error:
+            for row in error.results:
+                completed[row["id"]] = row
+            atomic_write_jsonl(
+                predictions_path, ordered_predictions(records, completed)
+            )
+            print(
+                f"partial batch={batch_index} durable={len(completed)}/"
+                f"{len(records)} failures={len(batch) - len(error.results)}",
+                flush=True,
+            )
+            raise
         for row in new_rows:
             completed[row["id"]] = row
         predictions = ordered_predictions(records, completed)

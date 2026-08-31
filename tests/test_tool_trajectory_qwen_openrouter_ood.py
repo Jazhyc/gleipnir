@@ -5,9 +5,12 @@ from pathlib import Path
 import pytest
 
 from experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood import (
+    BatchScoringError,
+    RequestStartLimiter,
     completion_payload,
     parse_completion_response,
     request_settings,
+    score_batch,
     validate_config,
 )
 from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
@@ -103,3 +106,30 @@ def test_parse_completion_rejects_missing_counterfactual_logprob() -> None:
     }
     with pytest.raises(RuntimeError, match="omitted literal logprobs"):
         parse_completion_response(response, [15, 16])
+
+
+def test_batch_failure_preserves_successful_paid_rows(monkeypatch) -> None:
+    def fake_score_one(record, *_args):
+        if record["id"] == "bad":
+            raise RuntimeError("provider throttle")
+        return {"id": record["id"], "score": 0.25}
+
+    monkeypatch.setattr(
+        "experiments.tool_trajectory_monitoring."
+        "benchmark_qwen_openrouter_ood.score_one",
+        fake_score_one,
+    )
+    records = [{"id": "good"}, {"id": "bad"}]
+    rendered = {"good": ("prompt", 1), "bad": ("prompt", 1)}
+    with pytest.raises(BatchScoringError) as caught:
+        score_batch(
+            records,
+            rendered,
+            [15, 16],
+            frozen_config(),
+            "config-sha",
+            "key",
+            2,
+            RequestStartLimiter(0),
+        )
+    assert caught.value.results == [{"id": "good", "score": 0.25}]
