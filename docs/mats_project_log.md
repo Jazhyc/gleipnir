@@ -14,6 +14,7 @@ follow-up outcomes but do not add personal time.
 | 2026-08-30 | 2 | 5 hours | 11 hours | 9 hours |
 | 2026-08-31 | 3 | 2 hours | 13 hours | 7 hours |
 | 2026-08-31 | 4 | 4 hours | 17 hours | 3 hours |
+| 2026-09-01 | 5 | 0.5 hours | 17.5 hours | 2.5 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -197,3 +198,27 @@ figures, and ran several exploratory follow-ups:
 **Cumulative time:** 17 of 20 hours.
 
 **Remaining:** 3 hours.
+
+## 2026-09-01 — Session 5
+
+**Time:** 00:45–01:15, 0.5 hours
+
+**Commit evidence:** `4c6cf62` through `6d7aab9`, committed 00:55–01:15
+
+Reviewed and communicated the completed Kimi K2.6 binary-logit evaluation:
+
+- Kimi K2.6 reached `0.9194` Mean-OOD pAUROC@20 and `0.9751` Mean-OOD
+  AUROC, becoming the highest-quality open-weight point on the observed
+  frontier. Surprisingly, it exceeded Kimi K3's `0.9084` pAUROC@20 while
+  costing 68.5% less at the paper-comparable uncached price.
+- Checked the source-level qualification before accepting the headline. K2.6
+  was weaker than K3 on four sources and tied on one; its macro improvement was
+  driven entirely by a `+0.1502` gain on SHADE-Arena, and K3 remained stronger
+  on pooled pAUROC@20.
+- Reconciled the paper-comparable Kimi pricing and refined the Pareto-frontier
+  plot labels to present the new point and its comparison with the paper's
+  Kimi-K2.6 SFT result clearly.
+
+**Cumulative time:** 17.5 of 20 hours.
+
+**Remaining:** 2.5 hours.
