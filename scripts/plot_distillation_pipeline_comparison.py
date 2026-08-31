@@ -388,20 +388,10 @@ def plot_pipeline_comparison() -> Figure:
     figure.suptitle(
         "Two approaches to training action-only monitors",
         x=0.5,
-        y=0.99,
+        y=0.98,
         fontsize=21.5,
         fontweight="bold",
         color=INK,
-    )
-    figure.text(
-        0.5,
-        0.952,
-        "The monitored agent's private reasoning is excluded in both approaches",
-        ha="center",
-        va="center",
-        fontsize=11.8,
-        fontweight="bold",
-        color=MUTED_INK,
     )
     figure.text(
         0.5,
@@ -414,7 +404,7 @@ def plot_pipeline_comparison() -> Figure:
         fontweight="bold",
         color=INK,
     )
-    figure.subplots_adjust(left=0.015, right=0.985, top=0.925, bottom=0.045)
+    figure.subplots_adjust(left=0.015, right=0.985, top=0.95, bottom=0.045)
     return figure
 
 

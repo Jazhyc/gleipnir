@@ -30,7 +30,7 @@ def test_pipeline_figure_contains_intended_comparison_without_epoch_details() ->
     assert "Direct decision-distribution distillation" in text
     assert "using ground-truth label" in text
     assert "0 = benign  ·  1 = misaligned" in text
-    assert "private reasoning is excluded" in text
+    assert "private reasoning" not in text
     assert "Deployable action-only monitor" not in text
     assert "epoch" not in text.lower()
     assert "learning rate" not in text.lower()
