@@ -55,10 +55,13 @@ behavior remain consistent.
 
 `tool_trajectory_ood_data_scaling.svg` plots the six matched-data Qwen3.5-9B
 soft-distillation checkpoints from 204 through 8,688 training examples. It
-shows both source-balanced Mean-OOD pAUROC@20 and regular AUROC because their
-observed single-seed peaks occur at different data sizes. The mixed-data 9B and
-4B transfer conditions are intentionally excluded from this matched-data
-scaling curve.
+shows only source-balanced Mean-OOD pAUROC@20 and overlays the Qwen3.5-4B and
+Qwen3.5-27B rationale-SFT scaling curves from Sinha et al. Figure 7. The paper
+values were recovered from the original vector paths, rounded to three
+decimals, and recorded with provenance in the canonical research note. The
+figure explicitly warns that supervision, optimizer budgets, checkpoint
+selection, subsets, and output interfaces differ. The mixed-data Gleipnir 9B
+and 4B transfer conditions are intentionally excluded.
 
 The SVG and PNG are generated directly from the canonical results table in
 `docs/research/tool_trajectory_distillation_ood_scaling.md`:

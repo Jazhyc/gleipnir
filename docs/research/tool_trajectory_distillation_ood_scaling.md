@@ -52,6 +52,52 @@ peaks at 4,008 rows (`0.836543`). The 8,688-row point is below both peaks. This
 supports a real data-sufficiency transition by roughly 1,000 matched examples,
 but not a smooth scaling law or the claim that every additional example helps.
 
+### Comparison with the paper's Qwen3.5 scaling curves
+
+Sinha et al. report Qwen3.5-4B and Qwen3.5-27B rationale-SFT curves at the same
+six nominal row counts and on the same six-source Mean-OOD pAUROC@20 metric.
+The underlying values are not present in the paper's tables or its pinned Hugging
+Face artifact. The values below were therefore reconstructed from the vector
+paths in arXiv v1 Figure 7 and rounded to three decimals; they are approximate
+reference values, not author-released tabular results.
+
+| Backbone | Rows | Mean-OOD pAUROC@20 (digitized) |
+| --- | ---: | ---: |
+| Qwen3.5-4B | 204 | 0.628 |
+| Qwen3.5-4B | 504 | 0.675 |
+| Qwen3.5-4B | 996 | 0.666 |
+| Qwen3.5-4B | 2,004 | 0.708 |
+| Qwen3.5-4B | 4,008 | 0.697 |
+| Qwen3.5-4B | 8,688 | 0.700 |
+| Qwen3.5-27B | 204 | 0.766 |
+| Qwen3.5-27B | 504 | 0.783 |
+| Qwen3.5-27B | 996 | 0.779 |
+| Qwen3.5-27B | 2,004 | 0.772 |
+| Qwen3.5-27B | 4,008 | 0.785 |
+| Qwen3.5-27B | 8,688 | 0.807 |
+
+The source is Sinha et al., *Training Deliberative Monitors for Black-Box
+Scheming Detection*, [arXiv:2605.29601v1, Figure
+7](https://arxiv.org/html/2605.29601v1#S4.SS5). In the v1 source bundle the
+embedded file is
+`figures_new/sft_data_scaling_pauroc_val_ood_all_models_largefont.pdf`, with
+SHA-256
+`e0c3009b3df8b32b4ede0e4619af9b9eeb26e1488099d43bf411ad39a32273df`.
+The digitization maps the vector path coordinates to the labelled OOD-axis tick
+coordinates before rounding, so it does not depend on raster resolution.
+
+This is an intentionally non-causal comparison. The paper trains generated
+rationales with SFT, varies training from 63 epochs at 204 rows to 3 epochs at
+8,688 rows, and selects checkpoints on validation. Gleipnir trains Kimi soft
+decision distributions for exactly one epoch and evaluates the final adapter.
+The subset construction and output interface also differ. What is comparable
+is the nominal unique-row schedule, frozen OOD suite, and aggregate metric—not
+the training compute or intervention. Descriptively, Gleipnir 9B is above the
+paper's 4B curve at every row count and crosses the digitized 27B curve between
+504 and 996 rows, remaining slightly above it thereafter. This suggests strong
+sample efficiency but does not isolate whether the difference comes from soft
+targets, backbone size, training recipe, checkpoint selection, or interface.
+
 ### Low-FPR behavior by OOD source
 
 | Matched rows | AgentDojo | CUA-SHADE | IaC | MLE-Sabotage | Rogue Eval | SHADE-Arena |

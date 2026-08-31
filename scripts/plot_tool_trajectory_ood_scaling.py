@@ -1,4 +1,4 @@
-"""Plot the canonical Qwen3.5-9B soft-distillation OOD scaling curve."""
+"""Compare Gleipnir's 9B OOD scaling with published 4B and 27B curves."""
 
 from __future__ import annotations
 
@@ -15,7 +15,6 @@ os.environ.setdefault(
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from matplotlib.lines import Line2D
 from matplotlib.ticker import FuncFormatter, PercentFormatter
 
 from gleipnir.plotting import ORIGIN_PALETTE, save_figure, set_plot_style
@@ -37,19 +36,33 @@ EXPECTED_COLUMNS = [
     "Pooled pAUROC@20",
     "Pooled AUROC",
 ]
+PAPER_EXPECTED_COLUMNS = [
+    "Backbone",
+    "Rows",
+    "Mean-OOD pAUROC@20 (digitized)",
+]
 MATCHED_ROW_SCHEDULE = [204, 504, 996, 2_004, 4_008, 8_688]
-METRICS = {
-    "mean_ood_pauroc_at_20": {
-        "label": "Mean-OOD pAUROC@20",
+SERIES_STYLES = {
+    "ours_9b": {
+        "label": "Ours · 9B soft logits",
         "color": ORIGIN_PALETTE["Gleipnir"],
         "marker": "D",
         "linestyle": "-",
+        "linewidth": 3.0,
     },
-    "mean_ood_auroc": {
-        "label": "Mean-OOD AUROC",
-        "color": ORIGIN_PALETTE["Paper"],
+    "paper_4b": {
+        "label": "Sinha et al. · 4B rationale SFT",
+        "color": "#7CA4D1",
         "marker": "o",
         "linestyle": (0, (5, 2)),
+        "linewidth": 2.4,
+    },
+    "paper_27b": {
+        "label": "Sinha et al. · 27B rationale SFT",
+        "color": ORIGIN_PALETTE["Paper"],
+        "marker": "s",
+        "linestyle": (0, (5, 2)),
+        "linewidth": 2.6,
     },
 }
 
@@ -67,30 +80,36 @@ def _plain_text(value: str) -> str:
     return value.replace("**", "").replace("`", "").strip()
 
 
-def load_scaling_results(path: str | Path) -> pd.DataFrame:
-    """Load and validate the matched Qwen3.5-9B rows in the results table."""
+def _table_rows(path: str | Path, expected_columns: list[str]) -> list[list[str]]:
+    """Return plain-text rows from the uniquely identified Markdown table."""
     lines = Path(path).read_text(encoding="utf-8").splitlines()
     header_index = next(
         (
             index
             for index, line in enumerate(lines)
-            if _markdown_cells(line) == EXPECTED_COLUMNS
+            if _markdown_cells(line) == expected_columns
         ),
         None,
     )
     if header_index is None:
-        raise ValueError(f"results table header not found in {path}")
+        raise ValueError(f"table header not found in {path}: {expected_columns}")
 
     rows: list[list[str]] = []
     for line in lines[header_index + 2 :]:
         if not line.strip().startswith("|"):
             break
         cells = _markdown_cells(line)
-        if len(cells) != len(EXPECTED_COLUMNS):
+        if len(cells) != len(expected_columns):
             raise ValueError(f"malformed results-table row: {line}")
         rows.append([_plain_text(cell) for cell in cells])
     if not rows:
         raise ValueError(f"results table has no data rows in {path}")
+    return rows
+
+
+def load_scaling_results(path: str | Path) -> pd.DataFrame:
+    """Load and validate the matched Qwen3.5-9B rows in the results table."""
+    rows = _table_rows(path, EXPECTED_COLUMNS)
 
     frame = pd.DataFrame(rows, columns=EXPECTED_COLUMNS).rename(
         columns={
@@ -127,13 +146,38 @@ def load_scaling_results(path: str | Path) -> pd.DataFrame:
     return matched.reset_index(drop=True)
 
 
-def _annotate_peak(
-    axis: plt.Axes,
-    frame: pd.DataFrame,
-    metric: str,
-    offset: tuple[float, float],
-) -> None:
-    style = METRICS[metric]
+def load_paper_scaling_reference(path: str | Path) -> pd.DataFrame:
+    """Load the vector-digitized Sinha et al. Figure 7 reference curves."""
+    rows = _table_rows(path, PAPER_EXPECTED_COLUMNS)
+    frame = pd.DataFrame(rows, columns=PAPER_EXPECTED_COLUMNS).rename(
+        columns={
+            "Backbone": "backbone",
+            "Rows": "rows",
+            "Mean-OOD pAUROC@20 (digitized)": "mean_ood_pauroc_at_20",
+        }
+    )
+    frame["rows"] = pd.to_numeric(frame["rows"].str.replace(",", ""))
+    frame["mean_ood_pauroc_at_20"] = pd.to_numeric(
+        frame["mean_ood_pauroc_at_20"]
+    )
+    if set(frame["backbone"]) != {"Qwen3.5-4B", "Qwen3.5-27B"}:
+        raise ValueError("paper reference must contain Qwen3.5-4B and Qwen3.5-27B")
+    for backbone, group in frame.groupby("backbone"):
+        schedule = group.sort_values("rows")["rows"].tolist()
+        if schedule != MATCHED_ROW_SCHEDULE:
+            raise ValueError(
+                f"paper {backbone} row schedule changed: "
+                f"expected {MATCHED_ROW_SCHEDULE}, got {schedule}"
+            )
+    values = frame["mean_ood_pauroc_at_20"].to_numpy(dtype=float)
+    if not np.isfinite(values).all() or ((values < 0) | (values > 1)).any():
+        raise ValueError("paper scaling metrics must be finite values from zero to one")
+    return frame.sort_values(["backbone", "rows"]).reset_index(drop=True)
+
+
+def _annotate_our_peak(axis: plt.Axes, frame: pd.DataFrame) -> None:
+    style = SERIES_STYLES["ours_9b"]
+    metric = "mean_ood_pauroc_at_20"
     peak = frame.loc[frame[metric].idxmax()]
     x = float(peak["rows"])
     y = float(peak[metric])
@@ -147,17 +191,16 @@ def _annotate_peak(
         linewidth=1.6,
         zorder=4,
     )
-    short_label = "Best pAUROC@20" if metric.endswith("pauroc_at_20") else "Best AUROC"
     axis.annotate(
-        f"{short_label}: {y:.1%}\n{x:,.0f} rows",
+        f"Our best: {y:.1%}\n{x:,.0f} rows",
         xy=(x, y),
-        xytext=offset,
+        xytext=(-18, 18),
         textcoords="offset points",
         fontsize=11.5,
         fontweight="bold",
         color="#111827",
-        ha="left" if offset[0] >= 0 else "right",
-        va="bottom" if offset[1] >= 0 else "top",
+        ha="right",
+        va="bottom",
         bbox={
             "boxstyle": "round,pad=0.25",
             "facecolor": "white",
@@ -174,40 +217,88 @@ def _annotate_peak(
     )
 
 
-def plot_scaling(frame: pd.DataFrame) -> plt.Figure:
-    """Build the publication-ready matched-data OOD scaling plot."""
+def _plot_series(
+    axis: plt.Axes,
+    frame: pd.DataFrame,
+    style_key: str,
+) -> None:
+    style = SERIES_STYLES[style_key]
+    axis.plot(
+        frame["rows"],
+        frame["mean_ood_pauroc_at_20"],
+        label=style["label"],
+        color=style["color"],
+        marker=style["marker"],
+        linestyle=style["linestyle"],
+        linewidth=style["linewidth"],
+        markersize=9.5,
+        markerfacecolor=style["color"] if style_key == "ours_9b" else "white",
+        markeredgecolor="#374151",
+        markeredgewidth=0.8,
+        alpha=0.94,
+        zorder=3 if style_key == "ours_9b" else 2,
+    )
+
+
+def _label_endpoint(
+    axis: plt.Axes,
+    frame: pd.DataFrame,
+    style_key: str,
+    vertical_offset: float,
+) -> None:
+    style = SERIES_STYLES[style_key]
+    endpoint = frame.sort_values("rows").iloc[-1]
+    axis.annotate(
+        style["label"],
+        xy=(float(endpoint["rows"]), float(endpoint["mean_ood_pauroc_at_20"])),
+        xytext=(28, vertical_offset),
+        textcoords="offset points",
+        fontsize=11.5,
+        fontweight="bold",
+        color=style["color"],
+        ha="left",
+        va="center",
+        bbox={
+            "boxstyle": "round,pad=0.15",
+            "facecolor": "white",
+            "edgecolor": "none",
+            "alpha": 0.9,
+        },
+        arrowprops={
+            "arrowstyle": "-",
+            "color": style["color"],
+            "linewidth": 0.9,
+        },
+        zorder=5,
+    )
+
+
+def plot_scaling(frame: pd.DataFrame, paper: pd.DataFrame) -> plt.Figure:
+    """Build the publication-ready OOD pAUROC data-scaling comparison."""
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
 
-    for metric, style in METRICS.items():
-        axis.plot(
-            frame["rows"],
-            frame[metric],
-            label=style["label"],
-            color=style["color"],
-            marker=style["marker"],
-            linestyle=style["linestyle"],
-            linewidth=2.8,
-            markersize=9.5,
-            markeredgecolor="#374151",
-            markeredgewidth=0.7,
-            alpha=0.9,
-            zorder=3,
-        )
+    paper_4b = paper.loc[paper["backbone"].eq("Qwen3.5-4B")]
+    paper_27b = paper.loc[paper["backbone"].eq("Qwen3.5-27B")]
+    _plot_series(axis, paper_4b, "paper_4b")
+    _plot_series(axis, paper_27b, "paper_27b")
+    _plot_series(axis, frame, "ours_9b")
 
-    _annotate_peak(axis, frame, "mean_ood_auroc", (18, 14))
-    _annotate_peak(axis, frame, "mean_ood_pauroc_at_20", (-18, -18))
+    _annotate_our_peak(axis, frame)
+    _label_endpoint(axis, paper_4b, "paper_4b", 0)
+    _label_endpoint(axis, paper_27b, "paper_27b", -13)
+    _label_endpoint(axis, frame, "ours_9b", 13)
 
     axis.set_xticks(MATCHED_ROW_SCHEDULE)
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"{value:,.0f}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
-    axis.set_xlim(MATCHED_ROW_SCHEDULE[0] / 1.25, MATCHED_ROW_SCHEDULE[-1] * 1.2)
-    axis.set_ylim(0.65, 0.98)
-    axis.set_xlabel("Matched tool-trajectory training examples (log scale)")
-    axis.set_ylabel("Source-balanced OOD performance")
+    axis.set_xlim(MATCHED_ROW_SCHEDULE[0] / 1.25, 18_000)
+    axis.set_ylim(0.60, 0.90)
+    axis.set_xlabel("Tool-trajectory training examples (log scale)")
+    axis.set_ylabel("Mean-OOD pAUROC@20")
     axis.set_title(
-        "Qwen3.5-9B OOD performance scales non-monotonically with data",
+        "Soft-logit 9B crosses the paper's 27B rationale-SFT curve near 1K rows",
         loc="left",
         fontsize=20.5,
         fontweight="bold",
@@ -217,8 +308,8 @@ def plot_scaling(frame: pd.DataFrame) -> plt.Figure:
         0.0,
         1.015,
         (
-            "Strict six-source OOD suite · one epoch · one seed per point · "
-            "higher is better"
+            "Same row counts, OOD suite, and metric · different supervision, "
+            "training budgets, and checkpoint selection"
         ),
         transform=axis.transAxes,
         fontsize=11.5,
@@ -227,31 +318,19 @@ def plot_scaling(frame: pd.DataFrame) -> plt.Figure:
     )
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
-
-    legend_handles = [
-        Line2D(
-            [],
-            [],
-            color=style["color"],
-            marker=style["marker"],
-            linestyle=style["linestyle"],
-            markeredgecolor="#374151",
-            markeredgewidth=0.7,
-            linewidth=2.8,
-            markersize=9.5,
-            label=style["label"],
-        )
-        for style in METRICS.values()
-    ]
-    axis.legend(
-        handles=legend_handles,
-        loc="lower right",
-        frameon=True,
-        prop={"size": 13.5, "weight": "bold"},
-        handlelength=2.6,
-        labelspacing=0.65,
+    axis.text(
+        0.0,
+        -0.16,
+        (
+            "Paper reference values are vector-digitized from Sinha et al. "
+            "Figure 7 and rounded to 0.001."
+        ),
+        transform=axis.transAxes,
+        fontsize=10.5,
+        fontweight="bold",
+        color="#6B7280",
     )
-    figure.tight_layout()
+    figure.tight_layout(rect=(0, 0.03, 1, 1))
     return figure
 
 
@@ -278,9 +357,10 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     frame = load_scaling_results(args.source)
+    paper = load_paper_scaling_reference(args.source)
     outputs = args.output or [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
     for output in outputs:
-        save_figure(plot_scaling(frame), output)
+        save_figure(plot_scaling(frame, paper), output)
         print(f"wrote {output}")
 
 
