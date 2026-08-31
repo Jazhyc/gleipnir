@@ -101,8 +101,8 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Claude Sonnet 4.6 prompted"] == {
-        "xytext": (10, -12),
-        "ha": "left",
+        "xytext": (0, -18),
+        "ha": "center",
         "va": "top",
     }
 
