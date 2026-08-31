@@ -13,7 +13,7 @@ follow-up outcomes but do not add personal time.
 | 2026-08-30 | 1 | 6 hours | 6 hours | 14 hours |
 | 2026-08-30 | 2 | 5 hours | 11 hours | 9 hours |
 | 2026-08-31 | 3 | 2 hours | 13 hours | 7 hours |
-| 2026-08-31 | 4 | 3.5 hours | 16.5 hours | 3.5 hours |
+| 2026-08-31 | 4 | 4 hours | 17 hours | 3 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -162,7 +162,7 @@ authors' approach, then began strict-OOD evaluation of the trained adapters:
 
 ## 2026-08-31 — Session 4
 
-**Time:** approximately 20:30–00:00, 3.5 hours
+**Time:** approximately 20:30–00:30, 4 hours
 
 **Commit evidence:** `2568826` through `4df758d`, committed 20:50–23:51
 
@@ -191,7 +191,9 @@ figures, and ran several exploratory follow-ups:
   hosted Qwen3.5-27B compact-prompt ablation as another interface check.
 - Prepared and published reproducible MIT-licensed Gleipnir 4B and 9B adapter
   releases with model cards, provenance, checksums, and serving guidance.
+- Continued into the frozen Kimi K2.6 OOD follow-up; its final result was still
+  pending at sign-off.
 
-**Cumulative time:** 16.5 of 20 hours.
+**Cumulative time:** 17 of 20 hours.
 
-**Remaining:** 3.5 hours.
+**Remaining:** 3 hours.
