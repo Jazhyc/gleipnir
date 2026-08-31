@@ -334,6 +334,17 @@ the binary digit, the final cache-identity full-rubric scores reached Pearson
 This licenses the resumable full run; it is not evidence about OOD performance
 by itself.
 
+The full campaign was paused by the user on 2026-09-01 after OpenRouter's
+Alibaba route repeatedly returned upstream shared-pool `429` and rate-ramp
+`502` errors. The durable compact cache contains 5,787 of 6,395 unique finite
+rows, all attributed to Alibaba, with SHA-256
+`041254ed18918cd55b7cbcae604c9d258cc842014756707d1565ba9e1fed875f`.
+The separate 12-row parity cache has SHA-256
+`0aa867afd61e873e34ca20886942d1c87159c6177c754b11d7a0385de36c4acc`.
+No aggregate result is reported from the incomplete cache. The ignored
+`pause_state.json` beside the cache records the exact restart command and
+durable provider-reported spend.
+
 The Qwen3.5-0.8B lower-bound follow-up was intentionally stopped after systems
 preflight and 12 of 683 optimizer steps. QLoRA microbatch 1 was faster than both
 microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about
