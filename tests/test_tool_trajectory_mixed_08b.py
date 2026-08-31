@@ -29,16 +29,16 @@ def test_mixed_08b_job_is_one_epoch_rank128_soft_only(tmp_path: Path) -> None:
     assert job["rank"] == 128
     assert job["num_train_epochs"] == 1.0
     assert job["max_steps"] == -1
-    assert job["micro_batch_size"] == MICRO_BATCH_SIZE == 8
-    assert job["gradient_accumulation_steps"] == GRADIENT_ACCUMULATION_STEPS == 4
+    assert job["micro_batch_size"] == MICRO_BATCH_SIZE == 1
+    assert job["gradient_accumulation_steps"] == GRADIENT_ACCUMULATION_STEPS == 32
     assert job["effective_batch_size"] == 32
 
     command = training_command(job)
     assert "student.training.soft_loss_weight=1.0" in command
     assert "student.training.direct_loss_weight=0.0" in command
     assert "student.training.completion_loss_weight=0.0" in command
-    assert "student.training.per_device_train_batch_size=8" in command
-    assert "student.training.gradient_accumulation_steps=4" in command
+    assert "student.training.per_device_train_batch_size=1" in command
+    assert "student.training.gradient_accumulation_steps=32" in command
 
 
 def test_mixed_08b_validation_fails_on_recipe_drift(tmp_path: Path) -> None:
@@ -55,8 +55,8 @@ def test_mixed_08b_runtime_recipe_is_explicit(tmp_path: Path) -> None:
         "model": MODEL_ID,
         "model_revision": MODEL_REVISION,
         "rank": 128,
-        "micro_batch_size": 8,
-        "gradient_accumulation_steps": 4,
+        "micro_batch_size": 1,
+        "gradient_accumulation_steps": 32,
         "effective_batch_size": 32,
         "max_length": 29_696,
         "quantization": "nf4-double-quant-bf16",

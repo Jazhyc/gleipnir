@@ -109,10 +109,12 @@ def main() -> None:
                 f"{actual_selection_sha256}"
             )
         full_job = jobs[0]
-        preflight_dir = (result_dir / "preflight" / "rank128-longest32").resolve()
+        preflight_dir = (
+            result_dir / "preflight" / "micro1-rank128-longest32"
+        ).resolve()
         preflight_job = {
             **full_job,
-            "job_name": "preflight-mixed-qwen35-08b-r128-longest32",
+            "job_name": "preflight-micro1-mixed-qwen35-08b-r128-longest32",
             "design_role": "memory_kernel_and_model_compatibility_preflight",
             "train_rows": 32,
             "max_steps": 1,

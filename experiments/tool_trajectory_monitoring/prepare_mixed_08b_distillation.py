@@ -38,7 +38,7 @@ CHAT_TEMPLATE_SHA256 = (
     "273d8e0e683b885071fb17e08d71e5f2a5ddfb5309756181681de4f5a1822d80"
 )
 JOB_NAME = "soft-n21837-mixed-qwen35-08b-seed0"
-MICRO_BATCH_SIZE = 8
+MICRO_BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = EFFECTIVE_BATCH_SIZE // MICRO_BATCH_SIZE
 DEFAULT_DATA_DIR = Path("data/tool_trajectory_monitoring/distillation_scaling")
 DEFAULT_RESULT_DIR = Path("results/tool_trajectory_distillation_mixed_qwen08b")
@@ -210,7 +210,7 @@ def main() -> None:
                 "the objective ceases to be Kimi-soft-only BCE",
                 "the pinned model revision or tokenizer vocabulary drifts",
                 "FLA 0.5.2 is unavailable or a gated-delta kernel falls back",
-                "the rank-128 longest-sequence microbatch-8 preflight OOMs",
+                "the rank-128 longest-sequence microbatch-1 preflight OOMs",
                 "effective batch 32 or the 29,696-token cap changes",
                 "the final FP32 causal master or serving rebase is missing",
                 "base or adapter OOD coverage/parity fails",

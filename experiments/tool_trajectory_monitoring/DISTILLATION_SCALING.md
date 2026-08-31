@@ -107,9 +107,16 @@ The statistical recipe transfers unchanged: seed 0, one epoch, rank 128
 (`alpha=256`), AdamW at `5e-5`, linear decay with 3% warmup, zero weight
 decay/dropout, selected-token soft BCE, NF4 double-quantized QLoRA with BF16
 compute, effective batch 32, and maximum length 29,696. The smaller model uses
-the proven H100 systems batch of microbatch 8 with accumulation 4, subject to a
+an H100 systems batch of microbatch 1 with accumulation 32, subject to a
 rank-128 longest-32 preflight. This changes only how the effective batch is
 packed, not the optimizer exposure.
+
+A matched longest-32 systems benchmark rejected microbatch 8 because padding
+mixed-length examples together made one optimizer step take 189.54 seconds and
+consume about 80 GB. Microbatch 1 with accumulation 32 took 64.15 seconds and
+about 10 GB on the identical rows. The two layouts exported byte-identical FP32
+master and serving adapter hashes, so the lower-padding layout was frozen before
+the full run restarted from step zero.
 
 The 0.8B tokenizer vocabulary is byte-identical to the pinned 4B/9B
 vocabulary. Its revised chat template defaults to non-thinking but renders the

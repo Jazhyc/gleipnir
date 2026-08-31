@@ -274,9 +274,11 @@ estimate. The hypothesis, sample rule, provenance, and launch command are in
 [`GLEIPNIR4B_REASONING_SAMPLE.md`](GLEIPNIR4B_REASONING_SAMPLE.md).
 
 A frozen lower-bound follow-up applies the identical mixed-data statistical
-recipe to Qwen3.5-0.8B, with microbatch 8 and accumulation 4 preserving
-effective batch 32. It will benchmark both the unadapted base and trained
-adapter on the same 6,395 OOD rows. The hypothesis, model/tokenizer hashes,
+recipe to Qwen3.5-0.8B, with microbatch 1 and accumulation 32 preserving
+effective batch 32. A matched longest-32 preflight was 2.95x faster than
+microbatch 8 and produced byte-identical adapter hashes. It will benchmark both
+the unadapted base and trained adapter on the same 6,395 OOD rows. The
+hypothesis, model/tokenizer hashes,
 parity gate, and stop conditions are recorded in
 [`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md); this remains Kimi-soft-only
 training with no hard-label arm.
