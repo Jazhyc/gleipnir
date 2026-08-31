@@ -44,6 +44,10 @@ BASE_TO_METHOD = {
     "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft mixed",
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
 }
+PAPER_COMPARISON_MONITORS = {
+    "Qwen3.5-4B SFT+RL",
+    "Qwen3.5-27B SFT+RL",
+}
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -130,6 +134,7 @@ def _display_label(monitor: str) -> str:
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
+        "Qwen3.5-27B base": "Qwen3.5-27B logits",
         **GLEIPNIR_METHODS,
     }
     display = replacements.get(monitor, monitor)
@@ -258,7 +263,9 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         )
 
     labelled = frame.loc[
-        frame["computed_frontier"] | frame["origin"].eq("Gleipnir")
+        frame["computed_frontier"]
+        | frame["origin"].eq("Gleipnir")
+        | frame["monitor"].isin(PAPER_COMPARISON_MONITORS)
     ].sort_values("cost_per_1k")
     label_bbox = {
         "boxstyle": "round,pad=0.12",

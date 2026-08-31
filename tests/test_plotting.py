@@ -83,6 +83,9 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
     assert _display_label("Kimi K3 binary logits") == "Kimi K3"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
+    assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B logits"
+    assert _display_label("Qwen3.5-4B SFT+RL") == "Qwen3.5-4B SFT+RL"
+    assert _display_label("Qwen3.5-27B SFT+RL") == "Qwen3.5-27B SFT+RL"
     assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
     assert _display_label("Qwen3.5-9B Kimi-soft mixed") == "Gleipnir 9B"
 
