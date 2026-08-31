@@ -51,12 +51,15 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
 
-    assert len(frame) == 26
-    assert frame["computed_frontier"].sum() == 11
+    assert len(frame) == 28
+    assert frame["computed_frontier"].sum() == 8
     assert frame["computed_frontier"].equals(frame["declared_frontier"])
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
     assert kimi["cost_per_1k"] == pytest.approx(25.1177)
     assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
+    mixed_4b = frame.loc[frame["monitor"] == "Qwen3.5-4B Kimi-soft mixed"].iloc[0]
+    assert mixed_4b["cost_per_1k"] == pytest.approx(0.2598)
+    assert mixed_4b["mean_ood_pauroc_at_20"] == pytest.approx(0.7823)
 
 
 def test_plot_applies_documented_filters_without_changing_registry() -> None:
@@ -79,6 +82,7 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
     assert _display_label("Kimi K3 binary logits") == "Kimi K3"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
+    assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Qwen3.5-4B soft-\ndistilled"
 
 
 def test_label_obstacles_sample_the_frontier_between_points() -> None:
@@ -95,12 +99,9 @@ def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None
     registry = tmp_path / "frontier.md"
     source = DEFAULT_SOURCE.read_text(encoding="utf-8")
     registry.write_text(
-        source.replace(
-            "| **Gleipnir** | **Qwen3.5-4B base** |",
-            "| **Gleipnir** | **Qwen3.5-4B base** |",
-        ).replace("| **0.6175** | **yes** |", "| **0.6175** | **no** |", 1),
+        source.replace("| **0.7823** | **yes** |", "| **0.7823** | **no** |", 1),
         encoding="utf-8",
     )
 
-    with pytest.raises(ValueError, match="Qwen3.5-4B base"):
+    with pytest.raises(ValueError, match="Qwen3.5-4B Kimi-soft mixed"):
         load_frontier_registry(registry)

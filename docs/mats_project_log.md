@@ -145,8 +145,15 @@ authors' approach, then began strict-OOD evaluation of the trained adapters:
 - Implemented the evaluation preparation, causal-master and vLLM-serving parity
   canary, sequential one-H100 launcher, metric summarization, and artifact
   checks. Repaired launcher startup and normalized parity records before
-  queueing the campaign. Full adapter results remain pending and have not yet
-  been interpreted.
+  queueing the campaign.
+- Completed and audited all eight full OOD evaluations after the session.
+  Mean-OOD AUROC peaks at 0.9353 with 996 matched rows, while pAUROC@20 peaks
+  at 0.8365 with 4,008 rows. Adding the earlier deception corpus is
+  source-balanced-macro neutral relative to 8,688 matched rows, though pooled
+  AUROC improves by 0.0181. The mixed 4B student reaches 0.7823 pAUROC@20 and
+  0.9086 AUROC at about one third the hosted inference proxy of mixed 9B.
+  Both parity gates passed; four intermittent vLLM GDN spins resumed safely
+  from durable shards, and no OOM occurred.
 
 **Cumulative time:** 13 of 20 hours.
 

@@ -209,8 +209,10 @@ audit is in
 
 The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
 Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
-proxy. It is technically the lowest-cost frontier endpoint but is much weaker
-than the next point; the price-sensitivity and run audit are in
+proxy. It was technically the lowest-cost frontier endpoint but is much weaker
+than the next point in the original baseline-only registry. After adding the
+mixed 4B student it is no longer on the canonical frontier; the
+price-sensitivity and run audit are in
 [`../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md`](../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md).
 
 The paper's complete cost--performance reference table and every future
@@ -222,7 +224,7 @@ change.
 
 ## Soft-distillation OOD scaling evaluation
 
-The completed one-epoch rank-128 soft-only campaign is evaluated on the same
+The completed one-epoch rank-128 soft-only campaign was evaluated on the same
 6,395-row strict OOD suite under the unchanged compact student prompt. The six
 matched Qwen3.5-9B tool-trajectory subsets (`204`, `504`, `996`, `2,004`,
 `4,008`, and `8,688` rows) form the data-scaling curve. The 21,837-row mixed
@@ -240,7 +242,17 @@ score difference at most `0.02`, and a nonzero adapter effect. The run stops on
 parity failure, prompt truncation, missing logprobs, incomplete coverage, OOM,
 or any backend error.
 
-Run the sequential one-H100 campaign with:
+All eight full evaluations and both master-versus-serving parity gates passed.
+The matched 9B curve is non-monotonic: Mean-OOD AUROC peaks at `0.9353` with
+996 training rows, while pAUROC@20 peaks at `0.8365` with 4,008 rows. Adding
+13,149 deception rows to the 8,688 matched rows is macro-neutral
+(`-0.0015` pAUROC@20, effectively unchanged AUROC) but raises pooled AUROC by
+`0.0181`. The mixed 4B adapter reaches `0.7823` pAUROC@20 and `0.9086`
+AUROC at roughly one third the hosted inference proxy of mixed 9B. No OOM
+occurred; four intermittent vLLM FlashInfer GDN spins were recovered from
+durable evaluation shards without changing the frozen backend.
+
+Reproduce or resume the sequential one-H100 campaign with:
 
 ```bash
 python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda

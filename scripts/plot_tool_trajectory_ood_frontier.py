@@ -96,9 +96,7 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
         }
     )
     frame["cost_per_1k"] = pd.to_numeric(frame["cost_per_1k"])
-    frame["mean_ood_pauroc_at_20"] = pd.to_numeric(
-        frame["mean_ood_pauroc_at_20"]
-    )
+    frame["mean_ood_pauroc_at_20"] = pd.to_numeric(frame["mean_ood_pauroc_at_20"])
     declared = frame["declared_frontier"].str.lower()
     if not declared.isin({"yes", "no"}).all():
         raise ValueError("Frontier cells must be either 'yes' or 'no'")
@@ -124,6 +122,8 @@ def _display_label(monitor: str) -> str:
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
+        "Qwen3.5-4B Kimi-soft mixed": "Qwen3.5-4B soft-distilled",
+        "Qwen3.5-9B Kimi-soft mixed": "Qwen3.5-9B soft-distilled",
     }
     display = replacements.get(monitor, monitor)
     display = re.sub(r"\s+base(?=$|\s+\()", "", display)
@@ -133,9 +133,7 @@ def _display_label(monitor: str) -> str:
 def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply documented presentation-only omissions to registry points."""
     is_ours = frame["origin"].eq("Gleipnir")
-    is_logit_interface = frame["interface"].str.contains(
-        "logits", case=False, na=False
-    )
+    is_logit_interface = frame["interface"].str.contains("logits", case=False, na=False)
     included = (
         ~frame["monitor"].isin(EXCLUDED_MONITORS)
         & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
@@ -159,8 +157,7 @@ def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
         end_cost = float(end["cost_per_1k"])
         x_parts.append(
             np.exp(
-                np.log(start_cost)
-                + fractions * (np.log(end_cost) - np.log(start_cost))
+                np.log(start_cost) + fractions * (np.log(end_cost) - np.log(start_cost))
             )
         )
         start_score = float(start["mean_ood_pauroc_at_20"])

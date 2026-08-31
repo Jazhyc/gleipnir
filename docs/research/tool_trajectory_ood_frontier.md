@@ -51,20 +51,22 @@ and at least as accurate, with one strict improvement.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.7823** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
-| Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | yes |
-| Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | yes |
-| Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | yes |
+| Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
+| Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
+| Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
+| **Gleipnir** | **Qwen3.5-9B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.8659** | **0.8212** | **yes** |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
-| Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | yes |
+| Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
@@ -91,8 +93,41 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md)
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
-audits and the exact accounting in
+audits, the completed
+[`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md)
+record, and the exact accounting in
 [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md).
+
+## Kimi-soft mixed student results
+
+The full-mixed Qwen3.5-4B adapter reaches `0.7823` Mean-OOD pAUROC@20 and
+`0.9086` Mean-OOD AUROC. Its compact student prompt averages 8,654.7113 input
+tokens, so the paper's `$0.03/M` input and `$0.15/M` output 4B proxy costs
+`$0.2598/1K`. It becomes the lowest-cost observed frontier point and dominates
+the unadapted 4B full-prompt baseline: it is 8.6% cheaper and improves
+pAUROC@20 by `0.1649`.
+
+The full-mixed Qwen3.5-9B adapter reaches `0.8212` Mean-OOD pAUROC@20 and
+`0.9215` Mean-OOD AUROC. At the frozen dated `$0.10/M` input and `$0.40/M`
+output proxy, the same compact prompt costs `$0.8659/1K`. It is the next
+observed frontier point, improving pAUROC@20 by `0.0388` over mixed 4B at
+`3.33x` the hosted inference proxy. The next stronger point is the unadapted
+Qwen3.5-27B base at `0.8395` and `$1.8476/1K`.
+
+Both adapters were trained for one epoch with rank-128 QLoRA using Kimi K3
+soft probabilities only. Teacher targets used the richer teacher prompt;
+students trained and evaluated with the compact student prompt. Every row in
+the 6,395-example OOD suite was scored, and FP32-master versus rebased-serving
+parity passed before full evaluation. These rows report only inference cost;
+training cost is excluded under the registry contract.
+
+The 9B mixed adapter does not improve source-balanced OOD performance over the
+8,688-row matched-only adapter: Mean-OOD pAUROC changes from `0.8227` to
+`0.8212`, and Mean-OOD AUROC is unchanged at `0.9215`. The added deception
+data therefore helps neither frontier coordinate nor regular macro ranking at
+fixed backbone, despite improving pooled AUROC. Full scaling and source-level
+results are in
+[`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md).
 
 ## Qwen3.5-4B base result
 
@@ -103,11 +138,10 @@ of `$0.03/M` input and `$0.15/M` output. OpenRouter did not list a Qwen3.5-4B
 route on 2026-08-30, so this coordinate is explicitly an Artificial Analysis
 proxy carried forward from the paper, not a current OpenRouter quote.
 
-The 4B base becomes the lowest-cost observed frontier point and dominates the
-GPT-OSS-120B base, improving pAUROC@20 by `0.1386` while costing `13.1%` less.
-It does not dominate the next paper point: GPT-OSS-20B SFT costs `$0.0628/1K`
-more and improves pAUROC@20 by `0.0385`. The matched 9B base gains `0.0801`
-pAUROC@20 but costs `3.33x` as much under its current OpenRouter route.
+The trained mixed 4B student now strictly dominates this point: it is cheaper
+because of its compact prompt and improves pAUROC@20 by `0.1649`. The base
+row remains the matched unadapted reference but is no longer on the observed
+frontier.
 
 ## GPT-OSS-120B base result
 
@@ -150,15 +184,14 @@ At the 2026-08-31 OpenRouter headline `$0.03/$0.17` route it costs
 
 | OpenRouter proxy | Input USD / 1K evaluations | Output USD / 1K evaluations | Total USD / 1K evaluations | Frontier at this price? |
 | --- | ---: | ---: | ---: | :---: |
-| Current headline/lowest listed (`$0.03/$0.17`) | 0.251285 | 0.016601 | **0.267886** | yes |
+| Current headline/lowest listed (`$0.03/$0.17`) | 0.251285 | 0.016601 | **0.267886** | no |
 | Paper-matched (`$0.039/$0.18`) | 0.326671 | 0.017578 | **0.344248** | no |
 | Higher-priced route (`$0.15/$0.60`) | 1.256425 | 0.058593 | **1.315018** | no |
 
-At the canonical rate Qwen3.5-4B base strictly dominates this point: it is
-cheaper (`$0.2842/1K`) and stronger (`0.6175`). At the current lowest GPT-OSS
-route, low reasoning becomes a frontier point because it is cheaper than Qwen
-4B, but it remains well below Qwen3.5-9B's matched-interface `0.6976`. This is
-useful evidence that reasoning helps GPT-OSS, not an operational efficiency win.
+At every listed rate the mixed Qwen3.5-4B student strictly dominates this
+point: it costs `$0.2598/1K` and reaches `0.7823`. The GPT-OSS result remains
+useful evidence that reasoning helps that model family, not an operational
+efficiency win.
 
 ## Qwen3.5-9B base result
 
@@ -184,8 +217,8 @@ Mean-OOD pAUROC@20 and `0.9371` Mean-OOD AUROC at `$1.8476/1K`. The exact
 snapshot, so this is explicitly the paper's hosted proxy rather than a current
 OpenRouter quote.
 
-This is a new observed frontier point. It improves pAUROC@20 by `0.0595` over
-the adjacent lower-cost Nemotron-120B SFT point. It also point-estimate
+This remains an observed frontier point. It improves pAUROC@20 by `0.0183`
+over the adjacent lower-cost mixed Qwen3.5-9B student. It also point-estimate
 dominates the paper's Qwen3.5-27B SFT+RL row, improving pAUROC@20 by `0.0085`
 while costing `33.4%` less. The next higher-quality point, Kimi-K2.6 SFT,
 improves only `0.0015` to `0.841` but costs `5.51x` as much under these dated
