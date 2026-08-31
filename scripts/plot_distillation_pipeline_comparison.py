@@ -24,16 +24,16 @@ DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/distillation_pipeline_comparison.png
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/distillation_pipeline_comparison.svg"
 
 PAPER_STAGES = (
-    "Gemini 2.5 Pro generates\n4 structured rationale candidates",
-    "Check verdict direction",
-    "Label-conditioned regeneration\nup to 3 retries",
-    "Claude Sonnet 4.5 judges candidates\nquality threshold + best-candidate selection",
-    "Student learns the selected rationale\nand ordinal 0–10 score",
-    "Optional GRPO refinement",
+    "Gemini 2.5 Pro samples\n4 structured rationales",
+    "Verdict matches label?",
+    "Incorrect candidate regenerated\nwith label (up to 3 retries)",
+    "Claude Sonnet 4.5 scores candidates\nkeep best if quality ≥ 7/10",
+    "Student is fine-tuned on selected rationale\n+ 0–10 severity score",
+    "Optional GRPO score refinement",
 )
 GLEIPNIR_STAGES = (
-    "Kimi K3 returns the binary\ndecision-token distribution",
-    "Student learns the soft\ndecision distribution",
+    "Kimi K3 provides one soft target\np(0),  p(1)\n0 = benign  ·  1 = misaligned",
+    "Student matches the teacher probabilities\nat the 0/1 decision boundary",
 )
 GROUND_TRUTH_DISCLOSURE = "shown to Gemini\nonly on retry"
 
@@ -210,7 +210,7 @@ def _panel_heading(
 
 def _draw_paper_pipeline(axis: Axes) -> None:
     input_box = Box(0.255, 0.80, 0.32, 0.065)
-    teacher_box = Box(0.225, 0.685, 0.31, 0.085)
+    teacher_box = Box(0.21, 0.685, 0.28, 0.085)
     check_box = Box(0.155, 0.555, 0.17, 0.055)
     retry_box = Box(0.375, 0.555, 0.18, 0.075)
     label_box = Box(0.43, 0.685, 0.085, 0.068)
@@ -255,7 +255,7 @@ def _draw_paper_pipeline(axis: Axes) -> None:
         f"Ground-truth class\n{GROUND_TRUTH_DISCLOSURE}",
         facecolor=LABEL_FILL,
         edgecolor=LABEL_EDGE,
-        fontsize=7.7,
+        fontsize=7.5,
         linewidth=1.4,
     )
     _rounded_box(
@@ -356,9 +356,8 @@ def _draw_paper_pipeline(axis: Axes) -> None:
 
 def _draw_gleipnir_pipeline(axis: Axes) -> None:
     input_box = Box(0.745, 0.80, 0.32, 0.065)
-    teacher_box = Box(0.745, 0.625, 0.35, 0.105)
-    distribution_box = Box(0.745, 0.465, 0.25, 0.06)
-    student_box = Box(0.745, 0.285, 0.35, 0.092)
+    teacher_box = Box(0.745, 0.60, 0.35, 0.125)
+    student_box = Box(0.745, 0.335, 0.35, 0.105)
     monitor_box = Box(0.745, 0.065, 0.30, 0.055)
 
     _rounded_box(
@@ -377,15 +376,6 @@ def _draw_gleipnir_pipeline(axis: Axes) -> None:
     )
     _rounded_box(
         axis,
-        distribution_box,
-        "p(benign),  p(misaligned)",
-        facecolor="white",
-        edgecolor=GLEIPNIR_COLOR,
-        fontsize=11.1,
-        linewidth=1.5,
-    )
-    _rounded_box(
-        axis,
         student_box,
         GLEIPNIR_STAGES[1],
         facecolor=GLEIPNIR_FILL,
@@ -401,29 +391,8 @@ def _draw_gleipnir_pipeline(axis: Axes) -> None:
     )
 
     _vertical_arrow(axis, input_box, teacher_box)
-    _vertical_arrow(axis, teacher_box, distribution_box, color=GLEIPNIR_COLOR)
-    _vertical_arrow(axis, distribution_box, student_box, color=GLEIPNIR_COLOR)
+    _vertical_arrow(axis, teacher_box, student_box, color=GLEIPNIR_COLOR)
     _vertical_arrow(axis, student_box, monitor_box)
-
-    axis.text(
-        0.745,
-        0.175,
-        "No rationale targets · no label-conditioned retries\n"
-        "No external judge",
-        transform=axis.transAxes,
-        ha="center",
-        va="center",
-        fontsize=10.5,
-        fontweight="bold",
-        color=GLEIPNIR_COLOR,
-        bbox={
-            "boxstyle": "round,pad=0.2",
-            "facecolor": "#FFF9F8",
-            "edgecolor": "none",
-            "alpha": 0.95,
-        },
-        zorder=3,
-    )
 
 
 def plot_pipeline_comparison() -> Figure:
@@ -485,7 +454,8 @@ def plot_pipeline_comparison() -> Figure:
     figure.text(
         0.5,
         0.012,
-        "Our approach distills the teacher's decision distribution directly.",
+        "Direct probability targets remove rationale sampling, "
+        "label-conditioned retries, and external judging.",
         ha="center",
         va="bottom",
         fontsize=11.5,

@@ -16,10 +16,10 @@ def _figure_text(figure: object) -> str:
 
 
 def test_pipeline_contract_keeps_ground_truth_in_corrective_retry() -> None:
-    assert "4 structured rationale candidates" in PAPER_STAGES[0]
-    assert "Label-conditioned regeneration" in PAPER_STAGES[2]
+    assert "4 structured rationales" in PAPER_STAGES[0]
+    assert "with label" in PAPER_STAGES[2]
     assert "Claude Sonnet 4.5" in PAPER_STAGES[3]
-    assert "binary" in GLEIPNIR_STAGES[0]
+    assert "p(0),  p(1)" in GLEIPNIR_STAGES[0]
     assert GROUND_TRUTH_DISCLOSURE == "shown to Gemini\nonly on retry"
     assert len(PAPER_STAGES) > len(GLEIPNIR_STAGES)
 
@@ -31,7 +31,7 @@ def test_pipeline_figure_contains_intended_comparison_without_epoch_details() ->
     assert "Filtered rationale distillation" in text
     assert "Direct decision-distribution distillation" in text
     assert "Ground-truth class\nshown to Gemini\nonly on retry" in text
-    assert "p(benign),  p(misaligned)" in text
+    assert "0 = benign  ·  1 = misaligned" in text
     assert "private reasoning is excluded" in text
     assert "epoch" not in text.lower()
     assert "learning rate" not in text.lower()
