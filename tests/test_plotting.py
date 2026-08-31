@@ -7,6 +7,7 @@ from gleipnir.plotting import pareto_frontier_mask
 from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
     _display_label,
+    _improvement_pairs,
     _label_obstacles,
     _markdown_cells,
     load_frontier_registry,
@@ -82,7 +83,24 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
     assert _display_label("Kimi K3 binary logits") == "Kimi K3"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
-    assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Qwen3.5-4B soft-\ndistilled"
+    assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
+    assert _display_label("Qwen3.5-9B Kimi-soft mixed") == "Gleipnir 9B"
+
+
+def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
+    plotted = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
+    pairs = _improvement_pairs(plotted)
+
+    assert [
+        (str(base["monitor"]), str(method["monitor"])) for base, method in pairs
+    ] == [
+        ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft mixed"),
+        ("Qwen3.5-9B base", "Qwen3.5-9B Kimi-soft mixed"),
+    ]
+    assert all(
+        float(method["mean_ood_pauroc_at_20"]) > float(base["mean_ood_pauroc_at_20"])
+        for base, method in pairs
+    )
 
 
 def test_label_obstacles_sample_the_frontier_between_points() -> None:

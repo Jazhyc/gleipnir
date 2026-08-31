@@ -28,6 +28,9 @@ room for future low-cost, high-performing monitors.
 Gleipnir points are included only when their evaluation interface explicitly
 uses logits; other completed Gleipnir interfaces remain in the registry. Plot
 labels omit the redundant `base` suffix without changing canonical model names.
+The two mixed-data soft-distilled students use the presentation names
+`Gleipnir 4B` and `Gleipnir 9B`; dashed red arrows connect their corresponding
+unadapted Qwen3.5 baselines to make the measured adaptation uplift explicit.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:

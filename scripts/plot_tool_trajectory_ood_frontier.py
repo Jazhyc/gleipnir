@@ -36,6 +36,14 @@ EXCLUDED_MONITORS = {
     "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
 }
+GLEIPNIR_METHODS = {
+    "Qwen3.5-4B Kimi-soft mixed": "Gleipnir 4B",
+    "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
+}
+BASE_TO_METHOD = {
+    "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft mixed",
+    "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
+}
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -122,8 +130,7 @@ def _display_label(monitor: str) -> str:
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
-        "Qwen3.5-4B Kimi-soft mixed": "Qwen3.5-4B soft-distilled",
-        "Qwen3.5-9B Kimi-soft mixed": "Qwen3.5-9B soft-distilled",
+        **GLEIPNIR_METHODS,
     }
     display = replacements.get(monitor, monitor)
     display = re.sub(r"\s+base(?=$|\s+\()", "", display)
@@ -166,6 +173,17 @@ def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     return np.concatenate(x_parts), np.concatenate(y_parts)
 
 
+def _improvement_pairs(frame: pd.DataFrame) -> list[tuple[pd.Series, pd.Series]]:
+    """Return available matched base-to-Gleipnir point pairs."""
+    pairs = []
+    for base_monitor, method_monitor in BASE_TO_METHOD.items():
+        base = frame.loc[frame["monitor"].eq(base_monitor)]
+        method = frame.loc[frame["monitor"].eq(method_monitor)]
+        if len(base) == 1 and len(method) == 1:
+            pairs.append((base.iloc[0], method.iloc[0]))
+    return pairs
+
+
 def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame)
@@ -190,6 +208,23 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         alpha=0.82,
         zorder=1,
     )
+
+    for base, method in _improvement_pairs(frame):
+        axis.annotate(
+            "",
+            xy=(method["cost_per_1k"], method["mean_ood_pauroc_at_20"]),
+            xytext=(base["cost_per_1k"], base["mean_ood_pauroc_at_20"]),
+            arrowprops={
+                "arrowstyle": "-|>",
+                "color": ORIGIN_PALETTE["Gleipnir"],
+                "linestyle": (0, (3, 2)),
+                "linewidth": 2.0,
+                "mutation_scale": 14,
+                "shrinkA": 9,
+                "shrinkB": 9,
+            },
+            zorder=2,
+        )
 
     markers = {"Paper": "o", "Gleipnir": "D"}
     for origin, group in frame.groupby("origin", sort=False):
