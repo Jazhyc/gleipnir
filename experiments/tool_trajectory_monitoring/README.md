@@ -298,6 +298,32 @@ the compact-prompt baseline. The richer instruction changes individual scores
 source-balanced aggregate. It also adds 9.38% prompt tokens. See
 [`../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
 
+## Qwen3.5-27B compact-rubric OpenRouter ablation
+
+The frozen hosted-base ablation changes the completed Qwen3.5-27B full-rubric
+condition to the compact student rubric on the same 6,395 strict-OOD rows. It
+uses OpenRouter's dated `qwen/qwen3.5-27b-20260224` route pinned to Alibaba with
+fallbacks disabled. Each request keeps the rubric unchanged as the sole user
+message and allows at most eight tokens to reach its required terminal
+`Prediction:0|1` string. Only the final digit's `0`/`1` top logprobs are scored;
+any rationale or extra prose is rejected. Alibaba and Novita both reject raw
+completions and close assistant-prefill messages, so the fixed prefix is
+generated rather than prefilled. A full-rubric parity canary must therefore
+match the saved local scores before the compact run.
+The projected full cost is `$10.87`, with a frozen `$12.00` stop ceiling.
+
+Before the full run, a balanced 12-row full-rubric canary must match the saved
+local 27B logits at Pearson `>=0.95` and mean absolute difference `<=0.10`; a
+separate compact-rubric canary must satisfy the terminal-token contract. The
+frozen config is `qwen27b_compact_openrouter_ood_benchmark.json`.
+
+The Alibaba canaries passed: all responses were exactly three tokens ending in
+the binary digit, the final cache-identity full-rubric scores reached Pearson
+`0.957254` and mean absolute difference `0.044271` against local vLLM, and all
+12 compact-rubric rows returned both literal-token logprobs without retries.
+This licenses the resumable full run; it is not evidence about OOD performance
+by itself.
+
 The Qwen3.5-0.8B lower-bound follow-up was intentionally stopped after systems
 preflight and 12 of 683 optimizer steps. QLoRA microbatch 1 was faster than both
 microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about
