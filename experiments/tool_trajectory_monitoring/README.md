@@ -184,6 +184,14 @@ teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
 pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
 [`../../docs/findings/tool_trajectory_kimi_ood_benchmark.md`](../../docs/findings/tool_trajectory_kimi_ood_benchmark.md).
 
+The Kimi K2.6 Inceptron follow-up has passed its 600-row quality canary at
+`0.936750` Mean-OOD pAUROC@20 and `0.978933` Mean-OOD AUROC; the definitive
+6,395-row result is pending. It reuses the same full binary prompt, disables
+reasoning, and extracts terminal literal-token logits through a provider-pinned
+OpenRouter route. The exact hypothesis, `$28.3842` projected suite cost,
+`$33.00` ceiling, canary audit, and interpretation contract are in
+[`KIMI_K26_OOD_BENCHMARK.md`](KIMI_K26_OOD_BENCHMARK.md).
+
 The matched unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`
 Mean-OOD pAUROC@20 at `$0.9468/1K` under the dated OpenRouter list-price
 projection. It is not a frontier point. The run audit is in
