@@ -259,9 +259,13 @@ Sinha et al. and approach the much more expensive closed-model frontier.*
 
 ## 4. What does soft distillation teach?
 
-The results in this section are exploratory. They use small samples or a single
-training seed, so we are less certain about their interpretation than the main
-interface and OOD results.
+The results in this section are exploratory. Time and cost limits prevented us
+from running clearly isolated experiments, so several comparisons change more
+than one factor. For example, every point in our scaling experiment trains for
+one epoch, which means that data volume and optimizer steps increase together.
+Sinha et al. repeat smaller subsets to make training compute more comparable.
+Our curve therefore cannot separate the value of more unique data from the
+value of additional optimization.
 
 ### Exploratory explanation-quality analysis
 
