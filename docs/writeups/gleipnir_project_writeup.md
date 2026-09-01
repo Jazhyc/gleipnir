@@ -10,19 +10,22 @@
 ### The problem
 
 Action-only monitors judge whether an AI agent behaved problematically from its
-observable trajectory. They are useful when private reasoning or model internals
-are unavailable, but they must be economical enough to run routinely. Sinha et
-al. established the previous cost--performance frontier by training monitors to
-reason through a trajectory and return a severity score from 0 to 10. This asks
-the model to combine its confidence that a trajectory is problematic with its
-estimated severity. In practice, a monitor's score is thresholded into a
-decision, and better ranking makes it easier to separate problematic
-trajectories from benign ones. We instead use the judge model's relative logits
-for `0` (benign) and `1` (problematic) as the score, directly representing its
-confidence in the binary decision. The broader goal is to make the black-box
-baseline as strong as possible, so future methods using model internals must
-show that privileged information adds value beyond better interfaces and
-training.
+observable trajectory. They are useful when private reasoning or internals are
+unavailable, but must distinguish problematic behavior from benign mistakes
+cheaply enough to run routinely.
+
+Sinha et al. established the previous cost--performance frontier for this task.
+They trained smaller monitors with a multi-stage rationale-distillation
+pipeline and required them to reason through each trajectory before returning
+a severity score from 0 to 10. This combines two distinct questions: confidence
+that the behavior is problematic and its estimated severity.
+
+We test whether these design choices are necessary. We use the judge model's
+relative logits for `0` (benign) and `1` (problematic) as the monitoring score,
+then train smaller models on these probabilities. Stronger black-box monitors
+provide a more credible baseline: future methods using model internals should
+show that their privileged information adds value beyond a better interface and
+training method.
 
 ### Main takeaways
 
