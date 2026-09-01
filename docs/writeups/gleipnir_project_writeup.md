@@ -19,7 +19,10 @@ estimated severity. In practice, a monitor's score is thresholded into a
 decision, and better ranking makes it easier to separate problematic
 trajectories from benign ones. We instead use the judge model's relative logits
 for `0` (benign) and `1` (problematic) as the score, directly representing its
-confidence in the binary decision.
+confidence in the binary decision. The broader goal is to make the black-box
+baseline as strong as possible, so future methods using model internals must
+show that privileged information adds value beyond better interfaces and
+training.
 
 ### Main takeaways
 
@@ -67,8 +70,7 @@ one-trillion-parameter Kimi K2.6, while costs are lower at every scale.
 We cache Kimi K3's binary decision probabilities and train Gleipnir 4B and 9B to
 match them for one epoch. At deployment, both return binary logits without
 generating rationales. Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per
-1,000 evaluations, while Gleipnir 9B reaches `0.8212` at `$0.8659`. These models
-establish a stronger black-box baseline for future monitoring methods.
+1,000 evaluations, while Gleipnir 9B reaches `0.8212` at `$0.8659`.
 
 ![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
