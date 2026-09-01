@@ -40,9 +40,7 @@ confidence in the binary decision.
 
 The matched ablation below holds the Qwen3.5-9B model, monitoring specification,
 and 6,395-example OOD evaluation fixed while varying the score interface and
-whether the judge generates visible reasoning. We then apply the binary-logit
-interface to Qwen3.5-27B and Kimi K2.6; both unadapted models outperform the
-trained counterparts reported by Sinha et al. at lower cost.
+whether the judge generates visible reasoning.
 
 | Interface | Reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | :---: | ---: | ---: |
@@ -51,16 +49,28 @@ trained counterparts reported by Sinha et al. at lower cost.
 | Binary logits | Yes | 0.6923 | $1.0054 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
 
+Applying the binary-logit interface at larger scales produces an even stronger
+result: unadapted Qwen3.5-27B and Kimi K2.6 outperform the trained variants
+reported by Sinha et al. while costing less. Their trained variants generate a
+rationale followed by an ordinal score.
+
+| Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
+| --- | --- | ---: | ---: |
+| Qwen3.5-27B | Binary logits, unadapted | **0.8395** | **$1.8476** |
+| Qwen3.5-27B | Sinha et al. SFT+RL | 0.8310 | $2.7750 |
+| Kimi K2.6 | Binary logits, unadapted | **0.9194** | **$7.9110** |
+| Kimi K2.6 | Sinha et al. SFT | 0.8410 | $10.1750 |
+
 ### Distilling the decision moves the frontier
 
 We use Kimi K3's normalized probabilities for `0` and `1` as soft targets and
 train rank-128 QLoRA adapters for Qwen3.5-4B and 9B for one epoch. Unlike Sinha
 et al.'s pipeline, this requires no rationale candidates, judge model, or RL
-stage. At deployment, the students also return immediate binary logits. Gleipnir
-4B reaches `0.7823` pAUROC@20 at `$0.2598` per 1,000 evaluations, while Gleipnir
-9B reaches `0.8212` at `$0.8659`. The resulting monitors establish a stronger
-black-box baseline that future methods using model internals should be expected
-to beat.
+stage. At deployment, we score the students from their binary decision logits
+without generating a rationale. Gleipnir 4B reaches `0.7823` pAUROC@20 at
+`$0.2598` per 1,000 evaluations, while Gleipnir 9B reaches `0.8212` at
+`$0.8659`. The resulting monitors establish a stronger black-box baseline that
+future methods using model internals should be expected to beat.
 
 ![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
