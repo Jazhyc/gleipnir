@@ -42,22 +42,6 @@ reason through each trajectory before returning an integer from 0 to 10, where
 higher values indicate more severe misalignment. This reasoning-plus-ordinal
 interface is the main design choice we revisit.
 
-Their training process distils this deliberation into smaller models. For each
-training example, Gemini 2.5 Pro generates four candidate rationales. Candidates
-that point in the wrong binary direction can be regenerated with the known
-label, and Claude Sonnet 4.5 scores the remaining rationales for grounding,
-two-sided analysis, calibration, and consistency. The best acceptable rationale
-becomes the supervised fine-tuning target. The paper then optionally continues
-training with reinforcement learning. This produces monitors that have been
-trained to generate both the analysis and the final ordinal score.
-
-The training mixture contains 8,688 balanced trajectories from five sources.
-Evaluation uses 6,395 examples from six separate sources covering computer-use
-sabotage, infrastructure changes, prompt-injection compliance, ML sabotage,
-oversight tampering, and multi-tool exfiltration. These evaluation sources are
-treated as strict OOD data: they are not used to choose prompts, checkpoints,
-thresholds, or stopping rules.
-
 The generated-rationale interface is also practical in a field dominated by
 model APIs. Closed frontier models reliably return text, but providers do not
 consistently expose the logits needed to score a fixed decision boundary. Even
@@ -211,6 +195,11 @@ to identify.
 - Sinha et al.: sample several long rationales per example, judge them with a
   second frontier model, select or regenerate candidates, train on the chosen
   rationale and score, and optionally run RL.
+- More specifically, Gemini 2.5 Pro generates four candidate rationales per
+  example, Claude Sonnet 4.5 judges their quality, and the best acceptable
+  rationale becomes the supervised fine-tuning target.
+- The paper trains on 8,688 balanced trajectories from five sources and
+  evaluates on 6,395 examples from six separate OOD sources.
 - Gleipnir: ask Kimi K3 for the binary decision-token distribution, cache the
   two logits, and train the student to match that distribution.
 - Explain what is removed: no generated teacher rationale is stored as a
