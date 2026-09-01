@@ -71,10 +71,10 @@ one-trillion-parameter Kimi K2.6, while costs are lower at every scale.
 ### Distilling the decision moves the frontier
 
 We cache Kimi K3's binary decision probabilities and train Gleipnir 4B and 9B to
-match them for one epoch. At deployment, both return binary logits without
-generating rationales. Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per
-1,000 evaluations, while Gleipnir 9B reaches `0.8212` at `$0.8659`. Within our
-measured frontier, the Kimi K2.6 monitor reaches `0.9194` at `$7.9110` per 1,000
+match them. At deployment, both return binary logits without generating
+rationales. Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per 1,000
+evaluations, while Gleipnir 9B reaches `0.8212` at `$0.8659`. Within our measured
+frontier, the Kimi K2.6 monitor reaches `0.9194` at `$7.9110` per 1,000
 evaluations; the next stronger evaluated closed-model point, Claude Sonnet 4.6,
 reaches `0.9290` at `$58.8500`.
 
