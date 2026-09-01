@@ -11,6 +11,8 @@
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS
   application project, with cumulative personal time and commit evidence.
+- `writeups/gleipnir_project_writeup.md`: canonical working draft of the
+  project narrative before export to Google Docs.
 - `findings/`: durable per-experiment findings; create one document per track.
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
