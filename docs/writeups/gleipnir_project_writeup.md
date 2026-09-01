@@ -496,3 +496,63 @@ experiments:
 We thank the University of Groningen for providing access to the Hábrók cluster
 for these experiments, and BlueDot Impact's Rapid Grants program for funding
 the cost of caching Kimi K3 logits for the training data.
+
+## Experimental log
+
+The project used 20 hours of main research time followed by a two-hour
+finalization block. Automated cluster runs and autonomous follow-up work are not
+counted as personal project time.
+
+### Session 1 — Research setup and teacher cache
+
+**2026-08-30, 00:00–06:00 (6 hours).** We defined the action-only monitoring
+question, data and evaluation contracts, binary prompts, and stop conditions.
+We built the resumable Kimi K3 logit cache, ran interface and provider canaries,
+materialized the training and held-out data, completed the 8,688-row teacher
+cache, and started the student scaling campaign.
+
+### Session 2 — OOD baselines and interface ablations
+
+**2026-08-30, 20:00–00:00 plus one hour of review (5 hours).** We materialized
+the six-source OOD suite and evaluated Kimi K3, Qwen3.5, and GPT-OSS baselines.
+The matched Qwen3.5-9B ablation exposed the ordinal-interface problem, while the
+27B and visible-reasoning results clarified how model scale and reasoning affect
+the comparison. We also created the first cost-performance registry and plot.
+
+### Session 3 — Distillation evaluation
+
+**2026-08-31, 14:30–16:30 (2 hours).** We created the pipeline-comparison figure
+and froze the evaluation contract for six Qwen3.5-9B scaling adapters and the
+mixed-data 4B and 9B models. All eight strict-OOD evaluations completed with
+serving-parity checks, producing the data-scaling curve and the first trained
+Gleipnir frontier results.
+
+### Session 4 — Analysis, follow-ups, and model release
+
+**2026-08-31, 20:30–00:30 (4 hours).** We consolidated the scaling and transfer
+results, updated the frontier, and ran exploratory explanation-quality and
+prompt-ablation analyses. We stopped an unpromising 0.8B campaign after
+preflight, released the Gleipnir 4B and 9B adapters, and prepared the Kimi K2.6
+follow-up.
+
+### Session 5 — Kimi K2.6 frontier result
+
+**2026-09-01, 00:45–01:15 (0.5 hours).** We reviewed the completed Kimi K2.6
+evaluation, checked its source-level behavior and pricing, and added it to the
+frontier. It outperformed Kimi K3 on the source-balanced metric while being
+substantially cheaper, although the improvement was concentrated in
+SHADE-Arena.
+
+### Session 6 — Main writeup
+
+**2026-09-01 (2.5 hours).** We wrote the full project draft: motivation and
+background, interface experiments, soft distillation, the new frontier,
+exploratory findings, limitations, and future work. We converted the figures to
+Google-Docs-compatible PNGs and completed the main 20-hour project.
+
+### Session 7 — Finalization
+
+**2026-09-01, 21:30–23:30 (2 hours).** We wrote and refined the executive
+summary, polished the frontier figure and legend, added acknowledgements and
+reproducibility links, and appended this experimental log. This produced the
+final Markdown source for export to Google Docs.

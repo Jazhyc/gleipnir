@@ -1,7 +1,7 @@
 # MATS project log
 
 This log records personal project time for the 20-hour MATS main project on
-tool-trajectory monitoring, followed by a planned two-hour finalization block.
+tool-trajectory monitoring, followed by a two-hour finalization block.
 Session durations are self-reported; commit timestamps are supporting evidence
 for what happened, not the source of the hour count. Sparse autonomous-agent
 commits after a session may be recorded as follow-up outcomes but do not add
@@ -17,6 +17,7 @@ personal time.
 | 2026-08-31 | 4 | 4 hours | 17 hours | 3 hours |
 | 2026-09-01 | 5 | 0.5 hours | 17.5 hours | 2.5 hours |
 | 2026-09-01 | 6 | 2.5 hours | 20 hours | 2 hours of finalization |
+| 2026-09-01 | 7 | 2 hours | 22 hours | 0 hours |
 
 ## 2026-08-30 — Session 1
 
@@ -263,3 +264,30 @@ The 20-hour main project is now complete.
 
 **Remaining:** a separate two-hour finalization block to write the executive
 summary, polish the figures, and append this project log to the draft.
+
+## 2026-09-01 — Session 7
+
+**Time:** 21:30–23:30, 2 hours
+
+**Commit evidence:** `cf7a19f` through `657bb7a`, plus this final log update
+
+Finalized the project draft and its supporting artifacts:
+
+- Wrote and iteratively edited a sub-600-word executive summary focused on the
+  interface ablation, the comparison with Sinha et al.'s trained monitors, the
+  soft-distillation method, and the new cost-performance frontier.
+- Polished the Pareto-frontier figure for the final document, including title
+  spacing and clearer `Combined frontier` and `Sinha et al. frontier` legend
+  labels. Regenerated the PNG and SVG and reran the focused plotting tests.
+- Added the University of Groningen, Hábrók, and BlueDot Impact
+  acknowledgements.
+- Added a reproducibility section linking the released Gleipnir 4B and 9B
+  adapters, the public Kimi K3 logit dataset, and the experimental code, while
+  documenting the upstream data-licensing boundary.
+- Appended a concise session-by-session experimental log to the writeup and
+  prepared the Markdown draft for final Google Docs export.
+
+**Cumulative time:** 22 hours: 20 hours for the main project and 2 hours for
+finalization.
+
+**Remaining:** 0 hours.
