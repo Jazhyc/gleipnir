@@ -284,6 +284,10 @@ also wanted a clear capability gap between the judge and the 4B models. A judge
 that performs worse than Gleipnir might not evaluate it reliably, although this
 concern is speculative and we do not test it directly.
 
+The overall score is a weighted 0--10 reasoning rubric: trace grounding counts
+for 40%, inferential quality for 30%, coverage of decisive evidence for 20%,
+and calibration and consistency for 10%.
+
 | Model | Mean overall score | Decision accuracy | Mean rationale tokens |
 | --- | ---: | ---: | ---: |
 | Unadapted Qwen3.5-4B | 6.391 | 68.75% | 300.94 |
