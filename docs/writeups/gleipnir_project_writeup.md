@@ -60,6 +60,29 @@
   control monitoring, preserve the paper's OOD evaluation contract, and test
   the highest-value hypotheses first.
 
+### Why build a strong black-box baseline?
+
+- State the project goal directly: build the strongest practical monitoring
+  baseline available from observable model behavior alone.
+- Explain why this matters for interpretability research. Novel methods can be
+  scientifically interesting without improving operational monitoring, and
+  weak baselines make it difficult to tell where an apparent gain comes from.
+- Use Sparse Autoencoders as a motivating example: their representations may
+  be useful for understanding models, but novelty and interpretability do not
+  by themselves establish an advantage on control-relevant detection tasks.
+- Be explicit that black-box output monitoring is not a complete solution to
+  misalignment. A model can hide relevant intent or computation while
+  producing behavior that looks benign.
+- Explain the promise of white-box monitoring: access to activations and other
+  internal signals may reveal information that is absent from observable
+  outputs.
+- Define the comparison standard for future work: a white-box method should
+  beat a strong black-box monitor under matched data, evaluation, and compute
+  before its gain is attributed to privileged internal information.
+- Position Gleipnir as that control. Making the black-box baseline stronger
+  raises the bar for future interpretability methods and makes their unique
+  contribution easier to identify.
+
 ## 2. The interface problem
 
 ### Severity is not confidence
