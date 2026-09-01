@@ -43,15 +43,11 @@ through the trajectory, and then return an integer from 0 to 10, where higher
 values indicate more severe misalignment. We retain their task and evaluation
 setup but revisit this reasoning-plus-ordinal interface.
 
-The generated-rationale interface is also practical in a field dominated by
-model APIs. Closed frontier models reliably return text, but providers do not
-consistently expose the logits needed to score a fixed decision boundary. Even
-when some log probabilities are available, the supported tokens and request
-formats differ across providers. A rationale followed by an integer score can
-therefore be used across many closed and open models without relying on a
-provider-specific logit interface. We view this as an important reason to take
-the paper's design seriously, even though we test whether it is the best
-interface when logits are available.
+The ordinal interface is a sensible default for API-based evaluation: every
+model returns text, while providers expose log probabilities inconsistently or
+not at all. This likely explains the paper's choice, but it is unclear whether
+a generated integer remains optimal when token logits can expose the monitor's
+relative confidence directly.
 
 ### The evaluation metric
 
