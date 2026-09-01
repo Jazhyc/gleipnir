@@ -30,13 +30,14 @@ within a short project.
 ### The previous cost--performance frontier
 
 Our main reference is Sinha et al.'s [*Training Deliberative Monitors for
-Black-Box Scheming Detection*](https://arxiv.org/abs/2605.29601). They study the
-same basic problem: training smaller open-weight models to detect scheming and
-sabotage from observable agent trajectories without access to the monitored
-agent's reasoning or internals. Their work provides a concrete training
-pipeline, a six-dataset out-of-distribution evaluation suite, and a common cost
-and performance framework. We use that framework so our results can be compared
-with theirs directly.
+Black-Box Scheming Detection*](https://arxiv.org/abs/2605.29601). To our
+knowledge, it is the first paper to establish a cost--performance frontier for
+action-only control monitors while also training smaller open-weight models to
+improve that frontier. The monitors detect scheming and sabotage from observable
+agent trajectories without access to the monitored agent's reasoning or
+internals. The paper provides a concrete training pipeline, a six-dataset OOD
+evaluation suite, and a shared cost and performance framework, making it the
+clearest baseline for our project.
 
 Sinha et al. give the monitor a detailed specification of problematic
 behavior. The specification tells it to identify relevant actions, compare the
