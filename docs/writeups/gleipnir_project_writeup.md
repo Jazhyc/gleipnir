@@ -235,8 +235,8 @@ that Sinha et al. report for their Qwen3.5-4B SFT+RL monitor.
 
 Gleipnir 9B becomes the next frontier point. It reaches `0.8212` at almost the
 same cost as their Qwen3-32B SFT+RL monitor, which reaches `0.7030`. It also
-approaches the unadapted Qwen3.5-27B result at less than half the inference
-cost.
+approaches the unadapted Qwen3.5-27B result using our binary-logit interface at
+less than half the inference cost.
 
 Taken together, our logit-based results dominate every open-model point
 reported by Sinha et al. Kimi K2.6 performs especially well, reaching `0.9194`
