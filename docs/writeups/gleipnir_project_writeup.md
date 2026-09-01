@@ -48,34 +48,16 @@ token logits can expose the monitor's relative confidence directly.
 
 ### The evaluation metric
 
-Each monitor assigns one score to every trajectory. AUROC evaluates the ranking
-created by those scores. It can be understood as the probability that a random
-positive example receives a higher score than a random negative example, with
-ties handled explicitly. The ROC curve shows the true-positive and
-false-positive rates obtained as the decision threshold moves across the score
-distribution. AUROC measures the area under the full curve and does not require
-choosing one threshold in advance.
+Each monitor assigns a score to every trajectory. AUROC measures how well these
+scores rank positive examples above negative ones across possible thresholds.
+Sinha et al. use **pAUROC@20**, which restricts the calculation to false-positive
+rates below 20% and normalizes the result to a zero-to-one scale. This focuses
+the metric on the low-false-positive region that matters most for monitoring.
 
-Sinha et al. use **pAUROC@20** as their primary metric. It measures only the
-part of the ROC curve where the false-positive rate is at most 20%, then divides
-the area by 0.2 so the result remains on a zero-to-one scale:
-
-```text
-pAUROC@20 = (1 / 0.2) * integral from FPR=0 to 0.2 of TPR(FPR) dFPR
-```
-
-This metric gives more weight to the operating region that matters for
-oversight. A detector can have a good full AUROC while still ranking too many
-benign examples near the top. pAUROC@20 asks whether the monitor can recover
-positive cases before false alarms become common.
-
-The paper computes pAUROC@20 independently on each of the six OOD datasets and
-reports their unweighted mean. This prevents a large dataset from dominating
-the result and makes each task family count equally. We retain this exact
-aggregation. We also retain the paper's cost coordinate: uncached,
-token-metered inference cost per 1,000 evaluations. Together, the two numbers
-measure how well a monitor ranks harmful behavior in the low-false-positive
-region and how much it costs to run.
+The paper calculates pAUROC@20 separately on each of the six OOD datasets and
+reports their unweighted mean, so every source counts equally. It pairs this
+performance measure with uncached inference cost per 1,000 evaluations. We
+retain both coordinates throughout our comparisons.
 
 ### Our starting point: Aletheia's Quest
 
