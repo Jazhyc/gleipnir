@@ -37,10 +37,11 @@ improve that frontier. The paper provides a concrete training pipeline, a
 six-dataset OOD evaluation suite, and a shared cost and performance framework,
 making it the clearest baseline for our project.
 
-Sinha et al. give the monitor a detailed scheming specification and ask it to
-reason through each trajectory before returning an integer from 0 to 10, where
-higher values indicate more severe misalignment. This reasoning-plus-ordinal
-interface is the main design choice we revisit.
+A central part of this framework is how each trajectory becomes a score. Sinha
+et al. give the monitor a detailed scheming specification, ask it to reason
+through the trajectory, and then return an integer from 0 to 10, where higher
+values indicate more severe misalignment. We retain their task and evaluation
+setup but revisit this reasoning-plus-ordinal interface.
 
 The generated-rationale interface is also practical in a field dominated by
 model APIs. Closed frontier models reliably return text, but providers do not
