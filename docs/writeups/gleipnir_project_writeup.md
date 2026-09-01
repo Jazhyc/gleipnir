@@ -71,33 +71,12 @@ under Sinha et al.'s evaluation framework.
 
 ### Why build a strong black-box baseline?
 
-The goal of this project is to build the strongest practical monitoring
-baseline we can from observable behavior alone. This is useful even if
-black-box monitoring cannot solve the whole alignment problem.
-
-Interpretability research often values methods because they expose a new object
-of study or offer a new way to describe a model. That scientific value is real,
-but it is different from showing that the method improves monitoring. Sparse
-Autoencoders are a useful example. They may produce representations that are
-easier to inspect, but that does not by itself show that they detect scheming or
-sabotage better than a strong monitor trained on model outputs. If the black-box
-baseline is weak, an apparent white-box gain may come from better training,
-better labels, or a better decision interface rather than privileged access to
-the model's internals.
-
-At the same time, output monitoring has a hard limit. Two models can produce
-the same visible behavior while differing in their hidden goals or
-computations. A model may also learn to conceal the evidence that a black-box
-monitor relies on. White-box methods have a better chance in these cases
-because activations and other internal signals may contain information that is
-absent from the observable trajectory.
-
-That makes a strong black-box baseline an important experimental control. A
-future white-box monitor should be compared with it under matched training
-data, evaluation data, and compute. If the white-box method still wins, we have
-better evidence that the gain comes from privileged internal information. A
-stronger output-only baseline raises that bar and makes the contribution of
-future interpretability methods easier to identify.
+Future monitoring methods may use activations, Sparse Autoencoders, or other
+privileged information from model internals. To show that this information adds
+meaningful value, they should beat a strong output-only monitor under matched
+training data, evaluation, and compute. Otherwise, it is unclear whether an
+improvement comes from internal access or simply from a better training method
+or decision interface. This project aims to provide that black-box baseline.
 
 ## 2. The interface problem
 
