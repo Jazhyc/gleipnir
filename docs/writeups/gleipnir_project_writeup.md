@@ -30,8 +30,9 @@ confidence in the binary decision.
 - **Soft distillation produces strong small monitors.** We train our Gleipnir 4B
   and 9B models to match Kimi K3's binary decision probabilities with BCE,
   without generating rationales or using a judge model or RL.
-- **The intervention moves the Pareto frontier.** Gleipnir 4B is the strongest
-  low-cost monitor, while our Kimi K2.6 binary-logit monitor approaches the
+- **The intervention moves the Pareto frontier.** Our logit-based results
+  dominate every open-model point reported by Sinha et al. Gleipnir 4B is the
+  strongest low-cost monitor, while our Kimi K2.6 monitor approaches the
   stronger closed-model frontier points at a much lower cost.
 
 ### Binary logits are a better interface
