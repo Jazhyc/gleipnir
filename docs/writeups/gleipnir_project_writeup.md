@@ -40,16 +40,15 @@ confidence in the binary decision.
 
 The matched ablation below holds the Qwen3.5-9B model, monitoring specification,
 and 6,395-example OOD evaluation fixed while varying the score interface and
-whether the judge generates visible reasoning.
+whether the judge generates visible reasoning. Ordinal scoring requires
+reasoning to improve pAUROC@20 but remains weaker and costlier than simpler
+binary logits.
 
 | Interface | Reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | :---: | ---: | ---: |
 | Binary logits | No | **0.6976** | **$0.9468** |
 | Ordinal score | No | 0.4858 | $0.9628 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
-
-Ordinal scoring requires reasoning to improve pAUROC@20 but remains weaker and
-costlier than simpler binary logits.
 
 The comparison below moves from Qwen3.5-4B and 27B to the
 one-trillion-parameter Kimi K2.6. Sinha et al.'s trained models use rationales
