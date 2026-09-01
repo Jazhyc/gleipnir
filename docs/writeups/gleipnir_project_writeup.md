@@ -72,10 +72,6 @@ establish a stronger black-box baseline for future monitoring methods.
 
 ![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
-*Executive summary figure. Binary-logit evaluation and soft distillation move
-the open-model cost--performance frontier toward the stronger but much more
-expensive closed monitors.*
-
 ## 1. Background: training control monitors
 
 ### The monitoring problem
