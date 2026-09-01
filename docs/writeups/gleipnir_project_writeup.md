@@ -82,12 +82,11 @@ under Sinha et al.'s evaluation framework.
 
 ### Severity is not confidence
 
-The paper asks monitors to produce a 0--10 severity score, but pAUROC@20
-evaluates a binary ranking: problematic trajectories should score above benign
-ones. Severity and confidence are not the same. A monitor might be uncertain
-whether a severe attack occurred, or highly confident that a less severe
-violation occurred. The ordinal rubric does not specify how these cases should
-be ordered.
+The ordinal interface asks the monitor to combine severity and confidence into
+a single score, but pAUROC@20 evaluates only a binary ranking: problematic
+trajectories should score above benign ones. A monitor might be uncertain that
+a severe attack occurred, or highly confident that a less severe violation
+occurred. The rubric does not specify how these cases should be ordered.
 
 We instead ask for one of two tokens: `0` for benign and `1` for problematic.
 Normalizing their logits gives the model's relative confidence in the binary
