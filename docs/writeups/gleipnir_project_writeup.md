@@ -109,16 +109,21 @@ without asking the model to map confidence onto a severity scale.
 We tested four interfaces with the same unadapted Qwen3.5-9B model and the same
 6,395 OOD examples.
 
-| Interface | Visible reasoning | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Cost per 1K |
-| --- | :---: | ---: | ---: | ---: |
-| Immediate binary logits | No | **0.6976** | **0.8850** | **$0.9468** |
-| Immediate ordinal score | No | 0.4858 | 0.7592 | $0.9628 |
-| Binary logits after reasoning | Yes | 0.6923 | 0.8607 | $1.0054 |
-| Ordinal score after reasoning | Yes | 0.6656 | 0.8610 | $1.0293 |
+| Interface | Visible reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
+| --- | :---: | ---: | ---: |
+| Immediate binary logits | No | **0.6976** | **$0.9468** |
+| Immediate ordinal score | No | 0.4858 | $0.9628 |
+| Binary logits after reasoning | Yes | 0.6923 | $1.0054 |
+| Ordinal score after reasoning | Yes | 0.6656 | $1.0293 |
 
 Immediate binary logits give the best ranking and the lowest cost. Reasoning
 substantially improves the ordinal score, but it still remains below direct
 binary logits. Adding reasoning before the binary decision also does not help.
+
+In the hosted pricing used here, output tokens cost more than input tokens.
+Every interface must process the long trajectory, but immediate binary logits
+require only one output token. Reasoning interfaces also pay to generate the
+rationale, so removing it reduces both token use and cost.
 
 The ordinal result is not explained by having only 11 possible values. Rounding
 the binary probabilities to the nearest tenth retains `0.6835` pAUROC@20,
@@ -128,26 +133,26 @@ the severity rubric, not just the number of score values.
 
 This is a matched result for one unadapted model and one greedy reasoning
 procedure. It does not show that reasoning is always harmful, and it does not
-test the paper's trained rationale monitors.
+test Sinha et al.'s trained rationale monitors.
 
 ### Results across model sizes
 
-We also compared immediate binary logits from unadapted models with the paper's
-trained monitors at three scales.
+We also compared immediate binary logits from unadapted models with Sinha et
+al.'s trained monitors at three scales.
 
-| Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K |
+| Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | --- | ---: | ---: |
 | Qwen3.5-4B | Immediate binary logits | 0.6175 | **$0.2842** |
-| Qwen3.5-4B | Paper SFT+RL, rationale + ordinal | **0.6840** | $0.3580 |
+| Qwen3.5-4B | Sinha et al. SFT+RL, rationale + ordinal | **0.6840** | $0.3580 |
 | Qwen3.5-27B | Immediate binary logits | **0.8395** | **$1.8476** |
-| Qwen3.5-27B | Paper SFT+RL, rationale + ordinal | 0.8310 | $2.7750 |
+| Qwen3.5-27B | Sinha et al. SFT+RL, rationale + ordinal | 0.8310 | $2.7750 |
 | Kimi K2.6 | Immediate binary logits | **0.9194** | **$7.9110** |
-| Kimi K2.6 | Paper SFT, rationale + ordinal | 0.8410 | $10.1750 |
+| Kimi K2.6 | Sinha et al. SFT, rationale + ordinal | 0.8410 | $10.1750 |
 
 For Qwen3.5-27B and Kimi K2.6, the unadapted model with direct binary logits is
-both stronger and cheaper than the paper's trained monitor. This is supporting
-evidence rather than a matched ablation because the prompt and training
-conditions also differ. At 4B, the paper's trained monitor remains stronger.
+both stronger and cheaper than Sinha et al.'s trained monitor. This is
+supporting evidence rather than a matched ablation because the prompt and
+training conditions also differ. At 4B, their trained monitor remains stronger.
 A better interface can move the frontier, but smaller monitors still need
 training. The next section asks how simple that training can be.
 
