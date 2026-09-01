@@ -42,7 +42,7 @@ et al. give the monitor a detailed scheming specification, ask it to reason
 through the trajectory, and then return an integer from 0 to 10, where higher
 values indicate more severe misalignment. This is a sensible default for
 API-based evaluation: every model returns text, while providers expose log
-probabilities inconsistently or not at all. We retain the paper's task and
+probabilities inconsistently. We retain the paper's task and
 evaluation setup but test whether a generated integer remains optimal when
 token logits can expose the monitor's relative confidence directly.
 
