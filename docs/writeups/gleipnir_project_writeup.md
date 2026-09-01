@@ -396,3 +396,9 @@ remains an untested hypothesis. Future work should determine whether the
 embeddings capture control-relevant behavior rather than dataset or task
 identity, and whether they improve the investigation of long, unfamiliar
 incidents.
+
+## Acknowledgements
+
+We thank the University of Groningen for providing access to the Hábrók cluster
+for these experiments, and BlueDot Impact's Rapid Grants program for funding
+the cost of caching Kimi K3 logits for the training data.
