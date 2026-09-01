@@ -191,7 +191,7 @@ This removes rationale generation, judging, candidate selection, and RL. The
 student is trained with a compact task specification and returns immediate
 binary logits at deployment.
 
-![Comparison of rationale distillation and direct decision-distribution distillation](../../figures/distillation_pipeline_comparison.svg)
+![Comparison of rationale distillation and direct decision-distribution distillation](../../figures/distillation_pipeline_comparison.png)
 
 *Figure 1. Sinha et al. filter generated rationales before training. Our method
 distills the binary decision distribution directly.*
@@ -233,7 +233,7 @@ same cost as their Qwen3-32B SFT+RL monitor, which reaches `0.7030`. It also
 approaches the unadapted Qwen3.5-27B result at less than half the inference
 cost.
 
-![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.svg)
+![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
 *Figure 2. Soft-distilled Gleipnir 4B and 9B shift the low-cost end of the
 monitoring frontier beyond the values reported by Sinha et al.*
