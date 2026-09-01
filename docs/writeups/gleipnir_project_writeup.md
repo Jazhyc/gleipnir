@@ -59,6 +59,15 @@ reports their unweighted mean, so every source counts equally. It pairs this
 performance measure with uncached inference cost per 1,000 evaluations. We
 retain both coordinates throughout our comparisons.
 
+### Why build a strong black-box baseline?
+
+Future monitoring methods may use activations, Sparse Autoencoders, or other
+privileged information from model internals. To show that this information adds
+meaningful value, they should beat a strong output-only monitor under matched
+training data, evaluation, and compute. Otherwise, it is unclear whether an
+improvement comes from internal access or simply from a better training method
+or decision interface. This project aims to provide that black-box baseline.
+
 ### Our starting point: Aletheia's Quest
 
 This project did not begin from a blank slate. It carries over hypotheses
@@ -68,15 +77,6 @@ across multiple language-model organisms and datasets. Our methods reached
 first place on the public leaderboard. This project tests how quickly those
 lessons transfer from deception detection to action-only control monitoring
 under Sinha et al.'s evaluation framework.
-
-### Why build a strong black-box baseline?
-
-Future monitoring methods may use activations, Sparse Autoencoders, or other
-privileged information from model internals. To show that this information adds
-meaningful value, they should beat a strong output-only monitor under matched
-training data, evaluation, and compute. Otherwise, it is unclear whether an
-improvement comes from internal access or simply from a better training method
-or decision interface. This project aims to provide that black-box baseline.
 
 ## 2. The interface problem
 
