@@ -46,7 +46,6 @@ whether the judge generates visible reasoning.
 | --- | :---: | ---: | ---: |
 | Binary logits | No | **0.6976** | **$0.9468** |
 | Ordinal score | No | 0.4858 | $0.9628 |
-| Binary logits | Yes | 0.6923 | $1.0054 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
 
 The comparison below moves from Qwen3.5-4B and 27B to the
