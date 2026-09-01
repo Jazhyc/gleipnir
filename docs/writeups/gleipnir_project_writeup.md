@@ -18,9 +18,7 @@ an early alert were not running. It also exposed a practical constraint.
 Frontier labs are under pressure to improve capabilities, while monitoring adds
 compute and operational overhead to development. Rather than accept safeguards
 being narrowed or omitted, we should make monitoring strong and economical
-enough to run by default. This project develops an action-only monitor toward
-that goal; it does not assume the chain-of-thought access used by OpenAI's
-retrospective monitor.
+enough to run by default.
 
 We focus on **action-only monitoring**. The monitor sees the user messages,
 visible assistant text, tool calls and arguments, shell commands, file edits,
