@@ -134,8 +134,8 @@ outperform unadapted models using direct logits.
 
 ### Results across model sizes
 
-We also compared immediate binary logits from unadapted models with Sinha et
-al.'s trained monitors at three scales.
+We compare immediate binary-logit results from unadapted models with the values
+Sinha et al. report for trained monitors at three scales.
 
 | Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | --- | ---: | ---: |
