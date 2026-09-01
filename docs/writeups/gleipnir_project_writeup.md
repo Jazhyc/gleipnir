@@ -291,11 +291,11 @@ the gain falls to `+0.240` on pairs where both models make the same prediction,
 and the interval crosses zero. Much of the full-sample improvement may therefore
 come from better final decisions rather than better explanations on their own.
 
-The supported conclusion is narrow: soft distillation improves the combined
-analysis-and-decision output on this sample, but independent reasoning
-improvement remains uncertain. The judge scores provide a relative ordering,
-not an absolute measure of reasoning quality or hidden-reasoning faithfulness.
-Sinha et al. do not report a comparable score for their trained rationales.
+According to the judge, Gleipnir produces better combined analyses and
+decisions on this sample, but the result does not show that its reasoning
+improved independently of its decision accuracy. The scores only compare the
+two models, and Sinha et al. report no equivalent metric for their trained
+monitors.
 
 We do not include qualitative examples. A useful assessment requires the full
 trajectory, which averages roughly 8,700 tokens, as well as domain knowledge
