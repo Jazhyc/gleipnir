@@ -175,7 +175,7 @@ is an expensive annotation process: each attempt processes a long trajectory
 and generates a long rationale, with several candidates, possible retries, and
 separate judge calls for every example. A decision-logit cache still processes
 the long input but needs only a short binary output, so its cost is dominated by
-input tokens. We did not calculate the exact savings from this difference.
+input tokens.
 
 We distill only the decision. We use Kimi K3 because it was the largest
 frontier model available through OpenRouter that exposed token log
