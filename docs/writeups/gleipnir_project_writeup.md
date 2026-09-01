@@ -160,11 +160,11 @@ training methods for smaller models in the next section.
 
 ### Replacing rationale distillation with decision distillation
 
-Both methods use the same task-specific training set: 8,688 action-only
-trajectories balanced between 4,344 benign and 4,344 problematic examples. The
-five sources are STRIDE, Gloom, CoT-Red-Handed, BashArena, and BashBench. They
-cover enterprise software, operational tasks, coding sabotage, and Linux or
-system-administration work with harmful side objectives.
+Sinha et al.'s method and ours use the same task-specific training set: 8,688
+action-only trajectories balanced between 4,344 benign and 4,344 problematic
+examples. The five sources are STRIDE, Gloom, CoT-Red-Handed, BashArena, and
+BashBench. They cover enterprise software, operational tasks, coding sabotage,
+and Linux or system-administration work with harmful side objectives.
 
 Sinha et al. distill both a rationale and an ordinal score. Gemini 2.5 Pro
 generates four candidates for each trajectory. A candidate whose score points
