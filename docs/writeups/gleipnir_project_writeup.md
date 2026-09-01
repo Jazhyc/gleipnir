@@ -9,79 +9,157 @@
 
 ### The monitoring problem
 
-- Introduce control monitoring as the task of detecting scheming, sabotage,
-  exfiltration, prompt-injection compliance, and other unauthorized behavior in
-  an agent's observable trajectory.
-- Explain the action-only setting: the monitor sees messages, tool calls,
-  commands, outputs, edits, and the final report, but not private reasoning.
-- Motivate the practical constraint: a useful monitor must identify harmful
-  behavior while producing few false alarms.
+As language-model agents are given longer tasks and access to more tools, it
+becomes harder to check their behavior by looking only at the final answer. An
+agent can take an unauthorized action, weaken a safety check, leak information,
+follow a prompt injection, or conceal a failed task while still producing a
+plausible report. Control monitoring tries to detect this behavior from the
+record of what the agent did.
+
+We focus on **action-only monitoring**. The monitor sees the user messages,
+visible assistant text, tool calls and arguments, shell commands, file edits,
+tool outputs, and final report. It does not see the monitored model's private
+chain of thought, hidden scratchpad, or internal activations. This makes the
+setting broadly deployable: the monitor needs the same observable trajectory
+that an operator could log during normal use.
+
+The difficult part is not only finding harmful behavior. A useful monitor must
+also avoid overwhelming the operator with false alarms. Most trajectories are
+benign, and many benign agents make mistakes, take shortcuts, or perform
+suspicious-looking actions while trying to complete the assigned task. The
+monitor must rank genuine unauthorized behavior above these hard negatives,
+especially in the low-false-positive region where a real oversight system would
+operate.
 
 ### Sinha et al.'s setup
 
-- Introduce Sinha et al., *Training Deliberative Monitors for Black-Box
-  Scheming Detection*, as the main experimental reference.
-- Describe their full monitoring specification and 0--10 severity interface.
-  The monitor writes a visible rationale and then produces an ordinal score.
-- Summarize their training pipeline: generate multiple teacher rationales,
-  judge and filter them, supervise students on the selected rationales, and
-  optionally continue training with reinforcement learning.
-- Summarize the evaluation suite: 6,395 examples from six held-out sources
-  covering different forms of agent misbehavior.
-- Explain why this interface is understandable in an API-dominated field.
-  Frontier APIs usually expose generated text but do not reliably expose the
-  complete logits needed for direct decision-boundary scoring.
-- Present this as context rather than a criticism of the paper: the generated
-  rationale and ordinal score form a portable interface across closed models.
+Our main reference is Sinha et al.'s [*Training Deliberative Monitors for
+Black-Box Scheming Detection*](https://arxiv.org/abs/2605.29601). They study the
+same basic problem: training smaller open-weight models to detect scheming and
+sabotage from observable agent trajectories without access to the monitored
+agent's reasoning or internals. Their work provides a concrete training
+pipeline, a six-dataset out-of-distribution evaluation suite, and a common cost
+and performance framework. We use that framework so our results can be compared
+with theirs directly.
+
+Sinha et al. give the monitor a detailed specification of problematic
+behavior. The specification tells it to identify relevant actions, compare the
+trajectory with the agent's final report, consider an innocent explanation,
+consider a misaligned explanation, and reach a calibrated conclusion. The
+monitor then writes a structured rationale and returns an integer from 0 to 10.
+Low scores represent task-serving behavior, middle scores represent ambiguity,
+and high scores represent clear or deliberately concealed misalignment.
+
+Their training process distils this deliberation into smaller models. For each
+training example, Gemini 2.5 Pro generates four candidate rationales. Candidates
+that point in the wrong binary direction can be regenerated with the known
+label, and Claude Sonnet 4.5 scores the remaining rationales for grounding,
+two-sided analysis, calibration, and consistency. The best acceptable rationale
+becomes the supervised fine-tuning target. The paper then optionally continues
+training with reinforcement learning. This produces monitors that have been
+trained to generate both the analysis and the final ordinal score.
+
+The training mixture contains 8,688 balanced trajectories from five sources.
+Evaluation uses 6,395 examples from six separate sources covering computer-use
+sabotage, infrastructure changes, prompt-injection compliance, ML sabotage,
+oversight tampering, and multi-tool exfiltration. These evaluation sources are
+treated as strict OOD data: they are not used to choose prompts, checkpoints,
+thresholds, or stopping rules.
+
+The generated-rationale interface is also practical in a field dominated by
+model APIs. Closed frontier models reliably return text, but providers do not
+consistently expose the logits needed to score a fixed decision boundary. Even
+when some log probabilities are available, the supported tokens and request
+formats differ across providers. A rationale followed by an integer score can
+therefore be used across many closed and open models without relying on a
+provider-specific logit interface. We view this as an important reason to take
+the paper's design seriously, even though we test whether it is the best
+interface when logits are available.
 
 ### The evaluation metric
 
-- Define AUROC as a ranking metric: it measures how often positive examples
-  receive higher scores than negative examples across possible thresholds.
-- Define pAUROC@20 as the normalized area under the ROC curve up to a false
-  positive rate of 20%.
-- Explain why the low-false-positive region matters for monitoring: a monitor
-  that generates too many false alarms is difficult to use for oversight.
-- State the paper's primary aggregate: compute pAUROC@20 separately for each of
-  the six OOD datasets and take their unweighted mean.
-- Note that the comparison also tracks uncached inference cost per 1,000
-  evaluations.
+Each monitor assigns one score to every trajectory. AUROC evaluates the ranking
+created by those scores. It can be understood as the probability that a random
+positive example receives a higher score than a random negative example, with
+ties handled explicitly. The ROC curve shows the true-positive and
+false-positive rates obtained as the decision threshold moves across the score
+distribution. AUROC measures the area under the full curve and does not require
+choosing one threshold in advance.
+
+Sinha et al. use **pAUROC@20** as their primary metric. It measures only the
+part of the ROC curve where the false-positive rate is at most 20%, then divides
+the area by 0.2 so the result remains on a zero-to-one scale:
+
+```text
+pAUROC@20 = (1 / 0.2) * integral from FPR=0 to 0.2 of TPR(FPR) dFPR
+```
+
+This metric gives more weight to the operating region that matters for
+oversight. A detector can have a good full AUROC while still ranking too many
+benign examples near the top. pAUROC@20 asks whether the monitor can recover
+positive cases before false alarms become common.
+
+The paper computes pAUROC@20 independently on each of the six OOD datasets and
+reports their unweighted mean. This prevents a large dataset from dominating
+the result and makes each task family count equally. We retain this exact
+aggregation. We also retain the paper's cost coordinate: uncached,
+token-metered inference cost per 1,000 evaluations. Together, the two numbers
+measure how well a monitor ranks harmful behavior in the low-false-positive
+region and how much it costs to run.
 
 ### Our starting point: Aletheia's Quest
 
-- Make clear that Gleipnir did not start from a blank slate.
-- State that the core hypotheses and training infrastructure were developed
-  during the Aletheia's Quest deception-monitoring competition, where our
-  methods placed first on the public leaderboard.
-- Summarize the inherited recipe: teacher decision-token probabilities,
-  QLoRA, direct soft-target training, and evaluation through continuous
-  decision scores.
-- Frame Gleipnir as a rapid transfer test: port the recipe to action-only
-  control monitoring, preserve the paper's OOD evaluation contract, and test
-  the highest-value hypotheses first.
+Gleipnir did not begin from a blank slate. The project carries over hypotheses
+and infrastructure developed during [Aletheia's
+Quest](https://aletheias-quest.github.io/), a competition on detecting deception
+across multiple language-model organisms and datasets. Our methods reached
+first place on the public leaderboard.
+
+The main lesson from the competition was that a teacher's decision boundary is
+a useful training signal. Instead of asking only for a hard label, we collected
+the teacher's relative logits for literal binary decision tokens and trained
+Qwen students to match the resulting probability distribution. We combined
+this objective with QLoRA, continuous decision scores, grouped evaluation, and
+reproducible caches that record the teacher, prompt, token usage, and raw
+log-probability response.
+
+The competition also gave us a working training and systems recipe. We had
+already tested teacher collection, adapter capacity, data scaling, inference
+parity, and large evaluation runs. Gleipnir is therefore mainly a rapid transfer
+project: move the highest-value ideas from deception detection to action-only
+control monitoring, preserve Sinha et al.'s evaluation contract, and find out
+which gains survive the change in domain.
 
 ### Why build a strong black-box baseline?
 
-- State the project goal directly: build the strongest practical monitoring
-  baseline available from observable model behavior alone.
-- Explain why this matters for interpretability research. Novel methods can be
-  scientifically interesting without improving operational monitoring, and
-  weak baselines make it difficult to tell where an apparent gain comes from.
-- Use Sparse Autoencoders as a motivating example: their representations may
-  be useful for understanding models, but novelty and interpretability do not
-  by themselves establish an advantage on control-relevant detection tasks.
-- Be explicit that black-box output monitoring is not a complete solution to
-  misalignment. A model can hide relevant intent or computation while
-  producing behavior that looks benign.
-- Explain the promise of white-box monitoring: access to activations and other
-  internal signals may reveal information that is absent from observable
-  outputs.
-- Define the comparison standard for future work: a white-box method should
-  beat a strong black-box monitor under matched data, evaluation, and compute
-  before its gain is attributed to privileged internal information.
-- Position Gleipnir as that control. Making the black-box baseline stronger
-  raises the bar for future interpretability methods and makes their unique
-  contribution easier to identify.
+The goal of this project is to build the strongest practical monitoring
+baseline we can from observable behavior alone. This is useful even if
+black-box monitoring cannot solve the whole alignment problem.
+
+Interpretability research often values methods because they expose a new object
+of study or offer a new way to describe a model. That scientific value is real,
+but it is different from showing that the method improves monitoring. Sparse
+Autoencoders are a useful example. They may produce representations that are
+easier to inspect, but that does not by itself show that they detect scheming or
+sabotage better than a strong monitor trained on model outputs. If the black-box
+baseline is weak, an apparent white-box gain may come from better training,
+better labels, or a better decision interface rather than privileged access to
+the model's internals.
+
+At the same time, output monitoring has a hard limit. Two models can produce
+the same visible behavior while differing in their hidden goals or
+computations. A model may also learn to conceal the evidence that a black-box
+monitor relies on. White-box methods have a better chance in these cases
+because activations and other internal signals may contain information that is
+absent from the observable trajectory.
+
+That makes a strong black-box baseline an important experimental control. A
+future white-box monitor should be compared with it under matched training
+data, evaluation data, and compute. If the white-box method still wins, we have
+better evidence that the gain comes from privileged internal information. By
+making output-only monitoring as strong and simple as possible, Gleipnir raises
+that bar and makes the contribution of future interpretability methods easier
+to identify.
 
 ## 2. The interface problem
 
