@@ -24,8 +24,8 @@ confidence in the binary decision.
 ### Main takeaways
 
 - **The interface matters more as models scale.** Against Sinha et al.'s trained
-  ordinal monitors, binary logits without monitoring fine-tuning trail at 4B,
-  lead at 27B, and lead by a wider pAUROC@20 margin for Kimi K2.6.
+  ordinal monitors, base models with binary logits trail at 4B, lead at 27B,
+  and lead by a wider pAUROC@20 margin for Kimi K2.6.
 - **The same interface provides a simple training target.** We cache a strong
   teacher's probabilities for the binary decision and train smaller students to
   match them with BCE. This avoids generating, filtering, and training on long
@@ -48,17 +48,17 @@ whether the judge generates visible reasoning.
 | Binary logits | Yes | 0.6923 | $1.0054 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
 
-At larger scales, binary-logit monitors without monitoring fine-tuning
-outperform Sinha et al.'s trained rationale-and-ordinal variants while costing
-less; their trained 4B monitor remains stronger.
+At larger scales, base models with binary logits outperform Sinha et al.'s
+trained rationale-and-ordinal variants while costing less; their trained 4B
+monitor remains stronger.
 
 | Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | --- | ---: | ---: |
-| Qwen3.5-4B | Binary logits, no fine-tuning | 0.6175 | **$0.2842** |
+| Qwen3.5-4B | Base model, binary logits | 0.6175 | **$0.2842** |
 | Qwen3.5-4B | Sinha et al. SFT+RL | **0.6840** | $0.3580 |
-| Qwen3.5-27B | Binary logits, no fine-tuning | **0.8395** | **$1.8476** |
+| Qwen3.5-27B | Base model, binary logits | **0.8395** | **$1.8476** |
 | Qwen3.5-27B | Sinha et al. SFT+RL | 0.8310 | $2.7750 |
-| Kimi K2.6 | Binary logits, no fine-tuning | **0.9194** | **$7.9110** |
+| Kimi K2.6 | Base model, binary logits | **0.9194** | **$7.9110** |
 | Kimi K2.6 | Sinha et al. SFT | 0.8410 | $10.1750 |
 
 ### Distilling the decision moves the frontier
