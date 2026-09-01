@@ -27,14 +27,12 @@ confidence in the binary decision.
   trained ordinal monitors, base models with binary logits trail at 4B,
   overtake them at 27B, and lead by a wider pAUROC@20 margin with the
   one-trillion-parameter Kimi K2.6.
-- **The same interface provides a simple training target.** We cache a strong
-  teacher's probabilities for the binary decision and train smaller students to
-  match them with BCE. This avoids generating, filtering, and training on long
-  rationales.
-- **The logit-based approach moves the frontier.** Together, our base-model and
-  soft-distilled binary-logit results dominate every open-model point reported
-  by Sinha et al. Gleipnir 4B is the cheapest observed frontier point at
-  `0.7823` pAUROC@20 and `$0.2598` per 1,000 evaluations.
+- **Soft distillation produces strong small monitors.** We train our Gleipnir 4B
+  and 9B models to match Kimi K3's binary decision probabilities with BCE,
+  without generating rationales or using a judge model or RL.
+- **The intervention moves the Pareto frontier.** Gleipnir 4B is the strongest
+  low-cost monitor, while our Kimi K2.6 binary-logit monitor approaches the
+  stronger closed-model frontier points at a much lower cost.
 
 ### Binary logits are a better interface
 
