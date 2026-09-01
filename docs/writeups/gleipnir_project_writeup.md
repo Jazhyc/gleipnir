@@ -2,9 +2,6 @@
 
 ## Simple logit distillation for stronger, more general monitors
 
-> Status: Working draft. This Markdown file is the canonical source for the
-> project writeup until it is exported to Google Docs.
-
 ## Executive summary
 
 ### The problem
@@ -182,7 +179,7 @@ pAUROC@20 need without asking the model to map confidence onto a severity scale.
 
 ### Matched Qwen3.5-9B ablations
 
-We tested four interfaces with the same unadapted Qwen3.5-9B model and the same
+We tested four interfaces with the same Qwen3.5-9B base model and the same
 6,395 OOD examples.
 
 | Interface | Visible reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
@@ -201,15 +198,15 @@ trajectory, but immediate binary logits require only one output token. Reasoning
 interfaces also pay to generate the rationale, so removing it reduces both token
 use and cost.
 
-This is a matched result for one unadapted model and one greedy reasoning
+This is a matched result for one base model and one greedy reasoning
 procedure. Sinha et al.'s trained checkpoints are not public, so we cannot
 repeat the interface ablation on them. SFT may still improve smaller monitors,
 but the next section shows that their trained monitors do not consistently
-outperform unadapted models using direct logits.
+outperform base models using direct logits.
 
 ### Results across model sizes
 
-We compare immediate binary-logit results from unadapted models with the values
+We compare immediate binary-logit results from base models with the values
 Sinha et al. report for trained monitors at three scales.
 
 | Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
@@ -221,7 +218,7 @@ Sinha et al. report for trained monitors at three scales.
 | Kimi K2.6 | Immediate binary logits | **0.9194** | **$7.9110** |
 | Kimi K2.6 | Sinha et al. SFT, rationale + ordinal | 0.8410 | $10.1750 |
 
-For Qwen3.5-27B and Kimi K2.6, the unadapted model with direct binary logits is
+For Qwen3.5-27B and Kimi K2.6, the base model with direct binary logits is
 both stronger and cheaper than Sinha et al.'s trained monitor. Our models
 receive no additional training, which suggests that the larger trained monitors
 are substantially bottlenecked by their reasoning-plus-ordinal interface. At
@@ -306,14 +303,14 @@ training and teacher annotation.
 | Gleipnir 9B | 0.8212 | $0.8659 |
 
 Gleipnir 4B becomes the lowest-cost observed frontier point. It improves over
-the unadapted Qwen3.5-4B baseline by `0.1649` pAUROC@20 while also costing less
+the Qwen3.5-4B base model by `0.1649` pAUROC@20 while also costing less
 because it uses the compact student prompt. It also exceeds the `0.6840` result
 that Sinha et al. report for their Qwen3.5-4B SFT+RL monitor.
 
 Gleipnir 9B becomes the next frontier point. It reaches `0.8212` at almost the
 same cost as their Qwen3-32B SFT+RL monitor, which reaches `0.7030`. It also
-approaches the unadapted Qwen3.5-27B result using our binary-logit interface at
-less than half the inference cost.
+approaches the result from the Qwen3.5-27B base model using our binary-logit
+interface at less than half the inference cost.
 
 Taken together, our logit-based results dominate every open-model point
 reported by Sinha et al. Kimi K2.6 performs especially well, reaching `0.9194`
@@ -351,7 +348,7 @@ whether it improves only the final decision or also the model's visible
 analysis. This matters because an accurate but opaque monitor can hide
 systematic blind spots. On an unfamiliar domain, a score alone does not show
 which evidence drove the classification or why the monitor failed, making
-errors harder to diagnose. We compare Gleipnir 4B with its unadapted backbone
+errors harder to diagnose. We compare Gleipnir 4B with its base model
 on a frozen sample of 64 OOD trajectories. Both models receive the same
 reasoning prompt, and a blinded GPT-5.6 Sol judge scores their complete analysis
 and decision.
