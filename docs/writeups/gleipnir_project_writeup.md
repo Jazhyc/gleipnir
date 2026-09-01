@@ -99,10 +99,11 @@ trajectories should score above benign ones. A monitor might be uncertain that
 a severe attack occurred, or highly confident that a less severe violation
 occurred. The rubric does not specify how these cases should be ordered.
 
-We instead ask for one of two tokens: `0` for benign and `1` for problematic.
-Normalizing their logits gives the model's relative confidence in the binary
-decision. This produces the continuous score that AUROC and pAUROC@20 need
-without asking the model to map confidence onto a severity scale.
+We keep Sinha et al.'s prompt and monitoring specification fixed and change
+only the output format. We ask for one of two tokens: `0` for benign and `1`
+for problematic. Normalizing their logits gives the model's relative confidence
+in the binary decision. This produces the continuous score that AUROC and
+pAUROC@20 need without asking the model to map confidence onto a severity scale.
 
 ### Matched Qwen3.5-9B ablations
 
