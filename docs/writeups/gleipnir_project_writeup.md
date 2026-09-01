@@ -147,11 +147,12 @@ Sinha et al. report for trained monitors at three scales.
 | Kimi K2.6 | Sinha et al. SFT, rationale + ordinal | 0.8410 | $10.1750 |
 
 For Qwen3.5-27B and Kimi K2.6, the unadapted model with direct binary logits is
-both stronger and cheaper than Sinha et al.'s trained monitor. This is
-supporting evidence rather than a matched ablation because the prompt and
-training conditions also differ. At 4B, their trained monitor remains stronger.
-A better interface can move the frontier, but smaller monitors still need
-training. The next section asks how simple that training can be.
+both stronger and cheaper than Sinha et al.'s trained monitor. Our models
+receive no additional training, which suggests that the larger trained monitors
+are substantially bottlenecked by their reasoning-plus-ordinal interface. At
+4B, Sinha et al.'s trained monitor remains stronger. A better interface can
+move the frontier, but smaller monitors still need training. The next section
+asks how simple that training can be.
 
 ## 3. Simple soft distillation
 
