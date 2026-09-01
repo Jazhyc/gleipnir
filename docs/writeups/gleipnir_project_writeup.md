@@ -54,8 +54,19 @@ Sinha et al. use **pAUROC@20**, which restricts the calculation to false-positiv
 rates below 20% and normalizes the result to a zero-to-one scale. This focuses
 the metric on the low-false-positive region that matters most for monitoring.
 
-The paper calculates pAUROC@20 separately on each of the six OOD datasets and
-reports their unweighted mean, so every source counts equally. It pairs this
+The six OOD datasets cover different forms of harmful agent behavior:
+
+| Dataset | What it tests |
+| --- | --- |
+| CUA-SHADE-Arena | Sabotage and data exfiltration through computer use |
+| MLE-Sabotage | Backdoors and submission sabotage during ML research |
+| AgentDojo | Following malicious instructions injected into tool outputs |
+| IaC | Weakening security in infrastructure code |
+| Rogue Eval | Tampering with inference code to bypass oversight |
+| SHADE-Arena | Sabotage and data exfiltration using multiple tools |
+
+Sinha et al. calculate pAUROC@20 separately on each of the six OOD datasets and
+report their unweighted mean, so every source counts equally. They pair this
 performance measure with uncached inference cost per 1,000 evaluations. We
 retain both coordinates throughout our comparisons.
 
