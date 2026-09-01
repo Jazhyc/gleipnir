@@ -177,10 +177,10 @@ frontier model available through OpenRouter that exposed token log
 probabilities at the time of the experiment. It receives the full monitoring
 specification and returns a binary decision with log probabilities for `0` and
 `1`. We normalize and cache these values, then minimize binary cross-entropy
-(BCE) between the student's probability and Kimi K3's probability. Hard labels
-reduce every example to `0` or `1`, while soft targets retain the stronger
-teacher's more nuanced confidence. Our hypothesis is that this richer ranking
-signal generalizes better than hard-label supervision.
+(BCE) between the student's probability and Kimi K3's probability. This gives
+the student access to the stronger teacher's more nuanced confidence. Our
+hypothesis is that distilling this ranking signal generalizes better than
+training on the reasoning chains and ordinal scores used by Sinha et al.
 
 This removes rationale generation, judging, candidate selection, and RL. The
 student is trained with a compact task specification and returns immediate
