@@ -290,12 +290,8 @@ The paired score increases by `0.766`, with a bootstrap 95% interval of
 the gain falls to `+0.240` on pairs where both models make the same prediction,
 and the interval crosses zero. Much of the full-sample improvement may therefore
 come from better final decisions rather than better explanations on their own.
-
-According to the judge, Gleipnir produces better combined analyses and
-decisions on this sample, but the result does not show that its reasoning
-improved independently of its decision accuracy. The scores only compare the
-two models, and Sinha et al. report no equivalent metric for their trained
-monitors.
+Sinha et al. report no equivalent reasoning-quality metric for their trained
+monitors, so we cannot compare this result with theirs.
 
 We do not include qualitative examples. A useful assessment requires the full
 trajectory, which averages roughly 8,700 tokens, as well as domain knowledge
