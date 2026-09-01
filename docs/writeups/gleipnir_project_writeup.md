@@ -64,14 +64,11 @@ one-trillion-parameter Kimi K2.6, while costs are lower at every scale.
 
 ### Distilling the decision moves the frontier
 
-We use Kimi K3's normalized probabilities for `0` and `1` as soft targets and
-train rank-128 QLoRA adapters for Qwen3.5-4B and 9B for one epoch. Unlike Sinha
-et al.'s pipeline, this requires no rationale candidates, judge model, or RL
-stage. At deployment, we score the students from their binary decision logits
-without generating a rationale. Gleipnir 4B reaches `0.7823` pAUROC@20 at
-`$0.2598` per 1,000 evaluations, while Gleipnir 9B reaches `0.8212` at
-`$0.8659`. The resulting monitors establish a stronger black-box baseline that
-future methods using model internals should be expected to beat.
+We cache Kimi K3's binary decision probabilities and train Gleipnir 4B and 9B to
+match them for one epoch. At deployment, both return binary logits without
+generating rationales. Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per
+1,000 evaluations, while Gleipnir 9B reaches `0.8212` at `$0.8659`. These models
+establish a stronger black-box baseline for future monitoring methods.
 
 ![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
