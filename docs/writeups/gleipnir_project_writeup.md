@@ -205,9 +205,9 @@ action-only trajectories used by Sinha et al. and 13,149 deception examples
 from Aletheia's Quest.
 
 The name comes from the Norse myth of Fenrir. The wolf broke the gods' heavy
-chains but was held by Gleipnir, a light ribbon made from six impossible
-ingredients. The analogy is deliberate: a simple training recipe outperforms
-many of the more elaborate monitors on the previous frontier.
+chains but was held by Gleipnir, a light ribbon. The analogy is deliberate: a
+simple training recipe outperforms many of the more elaborate monitors on the
+previous frontier.
 
 We transfer the recipe that worked during the competition: a `5e-5` learning
 rate, an effective batch size of 32, and direct soft-target supervision. We
