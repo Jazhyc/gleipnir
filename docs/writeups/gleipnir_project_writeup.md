@@ -23,10 +23,10 @@ confidence in the binary decision.
 
 ### Main takeaways
 
-- **The output interface matters substantially.** On a matched Qwen3.5-9B
-  evaluation with no generated rationale, the judge's binary decision logits
-  reach `0.6976` Mean-OOD pAUROC@20 compared with `0.4858` for its generated
-  ordinal score, while also reducing cost.
+- **The output interface matters substantially.** Replacing the generated
+  ordinal score with the judge's binary decision logits produces a `+0.2118`
+  absolute gain in Mean-OOD pAUROC@20 in the matched no-rationale ablation,
+  while also reducing cost.
 - **The same interface provides a simple training target.** We cache a strong
   teacher's probabilities for the binary decision and train smaller students to
   match them with BCE. This avoids generating, filtering, and training on long
