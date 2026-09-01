@@ -172,6 +172,13 @@ in the wrong binary direction can be regenerated using the ground-truth label.
 Claude Sonnet 4.5 judges the candidates, and the best acceptable rationale
 becomes the SFT target. Some models then receive an additional RL stage.
 
+This is an expensive annotation process. Each attempt processes a long
+trajectory and generates a long rationale, with several candidates, possible
+retries, and separate judge calls for every example. A decision-logit cache
+still processes the long input but needs only a short binary output, so its cost
+is dominated by input tokens. We did not calculate the exact savings from this
+difference.
+
 We distill only the decision. We use Kimi K3 because it was the largest
 frontier model available through OpenRouter that exposed token log
 probabilities at the time of the experiment. It receives the full monitoring
