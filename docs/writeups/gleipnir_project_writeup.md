@@ -133,8 +133,10 @@ seven of the 11 available integers. The main problem is how the model applies
 the severity rubric, not just the number of score values.
 
 This is a matched result for one unadapted model and one greedy reasoning
-procedure. It does not show that reasoning is always harmful, and it does not
-test Sinha et al.'s trained rationale monitors.
+procedure. Sinha et al.'s trained checkpoints are not public, so we cannot
+repeat the interface ablation on them. SFT may still improve smaller monitors,
+but the next section shows that their trained monitors do not consistently
+outperform unadapted models using direct logits.
 
 ### Results across model sizes
 
