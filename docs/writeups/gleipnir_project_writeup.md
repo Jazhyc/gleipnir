@@ -13,12 +13,12 @@ Action-only monitors judge whether an AI agent behaved problematically from its
 observable trajectory. They are useful when private reasoning or model internals
 are unavailable, but they must be economical enough to run routinely. Sinha et
 al. established the previous cost--performance frontier by training monitors to
-reason through a trajectory and return a severity score from 0 to 10. We ask
-whether this interface is limiting performance. In practice, a monitor's score
-is thresholded into a decision, and better ranking makes it easier to separate
-problematic trajectories from benign ones. An ordinal severity score instead
-asks the model to combine its confidence in this binary distinction with
-estimated severity.
+reason through a trajectory and return a severity score from 0 to 10. This asks
+the model to combine its confidence that a trajectory is problematic with its
+estimated severity. In practice, a monitor's score is thresholded into a
+decision, and better ranking makes it easier to separate problematic
+trajectories from benign ones. We test whether separating confidence from
+severity produces a better monitoring score.
 
 ### Main takeaways
 
