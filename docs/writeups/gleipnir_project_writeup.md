@@ -20,20 +20,14 @@ compute and operational overhead to development. Rather than accept safeguards
 being narrowed or omitted, we should make monitoring strong and economical
 enough to run by default.
 
-We focus on **action-only monitoring**. The monitor sees the user messages,
-visible assistant text, tool calls and arguments, shell commands, file edits,
-tool outputs, and final report. It does not see the monitored model's private
-chain of thought, hidden scratchpad, or internal activations. This makes the
-setting broadly deployable: the monitor needs the same observable trajectory
-that an operator could log during normal use.
-
-The difficult part is not only finding harmful behavior. A useful monitor must
-also avoid overwhelming the operator with false alarms. Most trajectories are
-benign, and many benign agents make mistakes, take shortcuts, or perform
-suspicious-looking actions while trying to complete the assigned task. The
-monitor must rank genuine unauthorized behavior above these hard negatives,
-especially in the low-false-positive region where a real oversight system would
-operate.
+We focus on **action-only monitoring**, where the monitor sees messages, tool
+calls, commands, outputs, edits, and the final report rather than private chain
+of thought or model internals. Raw chain of thought may be unavailable or
+unreliable, while observable actions can be logged consistently. This setting
+also has established benchmarks and methods that let us make useful comparisons
+within a short project. A practical monitor must rank harmful behavior above
+benign mistakes without producing too many false alarms, so we focus on
+performance in the low-false-positive region.
 
 ### Sinha et al.'s setup
 
