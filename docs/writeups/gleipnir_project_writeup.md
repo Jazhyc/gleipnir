@@ -17,8 +17,9 @@ reason through a trajectory and return a severity score from 0 to 10. This asks
 the model to combine its confidence that a trajectory is problematic with its
 estimated severity. In practice, a monitor's score is thresholded into a
 decision, and better ranking makes it easier to separate problematic
-trajectories from benign ones. We test whether separating confidence from
-severity produces a better monitoring score.
+trajectories from benign ones. We instead use the relative logits of `0`
+(benign) and `1` (problematic) as the score, directly representing the model's
+confidence in the binary decision.
 
 ### Main takeaways
 
