@@ -38,21 +38,18 @@ confidence in the binary decision.
 
 ### Binary logits are a better interface
 
-We hold the Qwen3.5-9B model, monitoring specification, and 6,395-example OOD
-evaluation fixed, changing only whether the monitor returns binary logits or an
-ordinal score and whether it first generates visible reasoning. Immediate
-binary logits give the best ranking and lowest cost. Reasoning recovers much of
-the ordinal interface's loss, but neither reasoned condition surpasses the
-immediate binary result. Larger unadapted models show the same pattern: direct
-logits from Qwen3.5-27B and Kimi K2.6 outperform the trained counterparts
-reported by Sinha et al. while costing less.
+The matched ablation below holds the Qwen3.5-9B model, monitoring specification,
+and 6,395-example OOD evaluation fixed while varying the score interface and
+whether the judge generates visible reasoning. We then apply the binary-logit
+interface to Qwen3.5-27B and Kimi K2.6; both unadapted models outperform the
+trained counterparts reported by Sinha et al. at lower cost.
 
 | Interface | Reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | :---: | ---: | ---: |
-| Immediate binary logits | No | **0.6976** | **$0.9468** |
-| Immediate ordinal score | No | 0.4858 | $0.9628 |
-| Binary logits after reasoning | Yes | 0.6923 | $1.0054 |
-| Ordinal score after reasoning | Yes | 0.6656 | $1.0293 |
+| Binary logits | No | **0.6976** | **$0.9468** |
+| Ordinal score | No | 0.4858 | $0.9628 |
+| Binary logits | Yes | 0.6923 | $1.0054 |
+| Ordinal score | Yes | 0.6656 | $1.0293 |
 
 ### Distilling the decision moves the frontier
 
