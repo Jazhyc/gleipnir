@@ -1,10 +1,11 @@
 # MATS project log
 
-This log records personal project time for the 20-hour MATS application work
-on tool-trajectory monitoring. Session durations are self-reported; commit
-timestamps are supporting evidence for what happened, not the source of the
-hour count. Sparse autonomous-agent commits after a session may be recorded as
-follow-up outcomes but do not add personal time.
+This log records personal project time for the 20-hour MATS main project on
+tool-trajectory monitoring, followed by a planned two-hour finalization block.
+Session durations are self-reported; commit timestamps are supporting evidence
+for what happened, not the source of the hour count. Sparse autonomous-agent
+commits after a session may be recorded as follow-up outcomes but do not add
+personal time.
 
 ## Time summary
 
@@ -15,6 +16,7 @@ follow-up outcomes but do not add personal time.
 | 2026-08-31 | 3 | 2 hours | 13 hours | 7 hours |
 | 2026-08-31 | 4 | 4 hours | 17 hours | 3 hours |
 | 2026-09-01 | 5 | 0.5 hours | 17.5 hours | 2.5 hours |
+| 2026-09-01 | 6 | 2.5 hours | 20 hours | 2 hours of finalization |
 
 ## 2026-08-30 — Session 1
 
@@ -222,3 +224,42 @@ Reviewed and communicated the completed Kimi K2.6 binary-logit evaluation:
 **Cumulative time:** 17.5 of 20 hours.
 
 **Remaining:** 2.5 hours.
+
+## 2026-09-01 — Session 6
+
+**Time:** 2.5 hours
+
+**Commit evidence:** `3563dbe` through `d50a5d5`
+
+Completed the main project by turning the research record into a full draft:
+
+- Created the canonical Markdown writeup and developed its title, structure,
+  and direct presentation style through iterative editing.
+- Wrote the background around action-only monitoring, Sinha et al.'s previous
+  cost--performance frontier, the six OOD datasets, pAUROC@20, and the need for
+  a strong black-box baseline.
+- Presented the interface result using matched Qwen3.5-9B ablations and
+  cross-scale comparisons. The writeup explains why ordinal severity mixes
+  severity with confidence, why immediate binary logits align better with the
+  metric, and why avoiding generated rationales reduces inference cost.
+- Documented the Kimi K3 soft-distillation method, the shared 8,688-example
+  action-monitoring training set, the transferred one-epoch QLoRA recipe, and
+  the Gleipnir 4B and 9B models. Added the pipeline comparison and updated
+  frontier figure using Google-Docs-compatible PNGs.
+- Consolidated the new frontier result, including Gleipnir's dominance over
+  the paper's reported open-model points, Kimi K2.6's strong direct-logit
+  result, and the decision not to change teachers after observing the OOD test
+  results.
+- Wrote the exploratory analysis of explanation quality, data scaling, and
+  cross-domain transfer, with explicit limits on what the short project can
+  establish.
+- Added a conclusion covering specialized prefill-only serving, future matched
+  comparisons with white-box probes, and the possible use of monitor embeddings
+  for incident analysis.
+
+The 20-hour main project is now complete.
+
+**Cumulative time:** 20 hours.
+
+**Remaining:** a separate two-hour finalization block to write the executive
+summary, polish the figures, and append this project log to the draft.
