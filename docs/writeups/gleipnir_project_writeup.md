@@ -352,3 +352,44 @@ Under our current recipe, the Aletheia data does not improve source-balanced
 OOD performance. We reused competition hyperparameters and trained for one
 epoch, so this result is provisional. The new interface and training method
 move the frontier, but cross-domain transfer remains unresolved.
+
+## 5. Conclusion and future work
+
+Control monitoring has an interface problem. Reasoning followed by an ordinal
+score is convenient for API evaluation, but it is poorly aligned with a binary
+ranking metric and adds output cost. Direct binary logits perform better across
+our ablations, and soft distillation turns this interface into strong, low-cost
+4B and 9B monitors. These models provide a stronger black-box baseline for
+future monitoring research.
+
+### Prefill-only serving
+
+Our monitor workload is effectively prefill-only: it reads a long trajectory
+and needs only the final logits for `0` and `1`. A specialized provider could
+expose a direct `trajectory -> P(problematic)` endpoint, batch requests by input
+length, project only onto the two decision tokens, and remove sampling,
+streaming, and decode scheduling. This could reduce inference cost beyond the
+chat-API estimates used here, but we have not benchmarked such a system.
+
+### Comparison with white-box probes
+
+The next important comparison is with probes trained on the monitored model's
+internal activations. Probes are harder to evaluate because they require
+white-box access, so this project first establishes the black-box baseline they
+should beat. A matched comparison should use the same data and metric and show
+that access to internal information adds value beyond our output-only monitor.
+
+A probe can have very little marginal cost when the monitored model's
+activations are already available. However, its end-to-end speed is tied to the
+large frontier model that produces those activations. For offline rescoring,
+the smaller Gleipnir monitors can process trajectories much faster and do not
+require access to the monitored model's weights or infrastructure.
+
+### Monitor embeddings for incident analysis
+
+Gleipnir may also be useful beyond binary classification. Its trajectory
+embeddings could be clustered or searched to group similar behaviors and
+surface unusual failure modes during an incident, even without labels. This is
+speculative: we would need to show that the embeddings capture control-relevant
+behavior rather than dataset or task identity. If they do, they could make long
+and unfamiliar incidents easier to investigate.
