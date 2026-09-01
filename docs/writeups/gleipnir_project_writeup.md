@@ -238,10 +238,24 @@ same cost as their Qwen3-32B SFT+RL monitor, which reaches `0.7030`. It also
 approaches the unadapted Qwen3.5-27B result at less than half the inference
 cost.
 
+Taken together, our logit-based results dominate every open-model point
+reported by Sinha et al. Kimi K2.6 performs especially well, reaching `0.9194`
+at `$7.9110` per 1,000 evaluations. The next stronger closed-model point,
+Claude Sonnet 4.6, reaches `0.9290` at `$58.8500`. This is a `0.0096` gain at
+more than seven times the cost.
+
+Kimi K2.6 also unexpectedly outperforms Kimi K3, which reaches `0.9084` at
+`$25.1177`. We expected the larger and more recent K3 to be stronger, and we do
+not know why K2.6 ranks better on this evaluation. In hindsight, K2.6 might
+also have been a better distillation teacher. However, we discovered this only
+after evaluating both models on the OOD test set. Changing the teacher at that
+point would amount to tuning the training method on the test set, so we retain
+K3 as the teacher.
+
 ![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
 
-*Figure 2. Soft-distilled Gleipnir 4B and 9B shift the low-cost end of the
-monitoring frontier beyond the values reported by Sinha et al.*
+*Figure 2. Our binary-logit monitors dominate the open-model points reported by
+Sinha et al. and approach the much more expensive closed-model frontier.*
 
 ## 4. What does soft distillation teach?
 
