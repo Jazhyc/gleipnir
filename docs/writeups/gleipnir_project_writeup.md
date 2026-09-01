@@ -295,7 +295,8 @@ The judge scores the visible analysis from 0 to 10 using four criteria:
 
 A higher overall score means that the written analysis makes a better-supported
 and easier-to-audit case for its classification. It does not mean that the
-classification is correct; decision accuracy is reported separately.
+classification is correct. Decision accuracy is ordinary binary accuracy
+against the reference labels on the 64 sampled trajectories.
 
 | Model | Mean overall score | Decision accuracy | Mean rationale tokens |
 | --- | ---: | ---: | ---: |
