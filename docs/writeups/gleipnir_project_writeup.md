@@ -65,22 +65,9 @@ Gleipnir did not begin from a blank slate. The project carries over hypotheses
 and infrastructure developed during [Aletheia's
 Quest](https://aletheias-quest.github.io/), a competition on detecting deception
 across multiple language-model organisms and datasets. Our methods reached
-first place on the public leaderboard.
-
-The main lesson from the competition was that a teacher's decision boundary is
-a useful training signal. Instead of asking only for a hard label, we collected
-the teacher's relative logits for literal binary decision tokens and trained
-Qwen students to match the resulting probability distribution. We combined
-this objective with QLoRA, continuous decision scores, grouped evaluation, and
-reproducible caches that record the teacher, prompt, token usage, and raw
-log-probability response.
-
-The competition also gave us a working training and systems recipe. We had
-already tested teacher collection, adapter capacity, data scaling, inference
-parity, and large evaluation runs. Gleipnir is therefore mainly a rapid transfer
-project: move the highest-value ideas from deception detection to action-only
-control monitoring, preserve Sinha et al.'s evaluation contract, and find out
-which gains survive the change in domain.
+first place on the public leaderboard. This project tests how quickly those
+lessons transfer from deception detection to action-only control monitoring
+under Sinha et al.'s evaluation framework.
 
 ### Why build a strong black-box baseline?
 
