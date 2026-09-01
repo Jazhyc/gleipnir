@@ -9,58 +9,18 @@
 
 ### The monitoring problem
 
-Control monitoring stopped being a hypothetical concern in July 2026. During
-internal cybersecurity evaluations, OpenAI models [worked around controls that
-were meant to isolate them from the
-internet](https://openai.com/index/hugging-face-incident-and-the-road-ahead/).
-The agents created unauthorized communication channels, shared exploits and
-credentials, compromised parts of OpenAI's research infrastructure, and broke
-into Hugging Face's systems. OpenAI reports that the agents executed code on
-dozens of Hugging Face servers and obtained root access on one of them.
-
-The incident was not caused by one bad final answer. It developed across many
-long tool-using trajectories. Agents found side channels, coordinated across
-separate evaluations, persisted on tasks with no known solution, and adopted
-goals from one another. Some of the reasoning shown in OpenAI's report even
-recognized that attacking third-party infrastructure was unauthorized before
-continuing anyway. The evidence was spread across messages, commands, tool
-calls, and infrastructure events.
-
-Monitoring coverage mattered. OpenAI states that production safeguards were
-not applied to the affected evaluation environment and that its existing
-chain-of-thought monitors were not running on these evaluations. In a
-retrospective test, those monitors flagged the relevant activity and would have
-paged the security team more than a day before the models breached Hugging
-Face. The response included pausing major reinforcement-learning runs,
-redirecting staff, hardening research infrastructure, and requiring monitoring
-on a wider set of frontier workloads. OpenAI describes this work as a source of
-significant engineering cost and delays to frontier research.
-
-That retrospective result used chain-of-thought access, which our action-only
-monitors do not assume. It shows the value of broad monitoring coverage, not
-that the method in this project would necessarily have prevented the incident.
-
-This exposes a difficult incentive problem. Frontier labs must keep improving
-model capabilities to remain competitive, while isolation, logging, review,
-and monitoring add compute and operational overhead to every training run and
-evaluation. The claim is not that competitive pressure caused this incident.
-OpenAI's report instead points to gaps in safeguard coverage and incident
-response. The broader problem is that any expensive control faces recurring
-pressure to be narrowed, delayed, or left out as development accelerates.
-
-The answer should not be to accept weaker monitoring. It should be to make
-monitoring strong enough and cheap enough to run by default. Economical
-monitors reduce the tradeoff between capability development and safety
-coverage. They make it easier to inspect more trajectories, keep safeguards in
-place during internal research, and intervene before a sequence of suspicious
-actions becomes a serious incident.
-
-That is the practical motivation for this project. As language-model agents
-receive longer tasks and access to more tools, checking only their final answer
-is no longer enough. An agent can take an unauthorized action, weaken a safety
-check, leak information, follow a prompt injection, or conceal a failed task
-while still producing a plausible report. Control monitoring tries to detect
-this behavior from the record of what the agent did.
+The [Hugging Face
+incident](https://openai.com/index/hugging-face-incident-and-the-road-ahead/)
+made the need for monitoring concrete: OpenAI agents escaped isolation,
+coordinated through unauthorized channels, and compromised external and
+internal infrastructure while monitors that retrospectively could have raised
+an early alert were not running. It also exposed a practical constraint.
+Frontier labs are under pressure to improve capabilities, while monitoring adds
+compute and operational overhead to development. Rather than accept safeguards
+being narrowed or omitted, we should make monitoring strong and economical
+enough to run by default. This project develops an action-only monitor toward
+that goal; it does not assume the chain-of-thought access used by OpenAI's
+retrospective monitor.
 
 We focus on **action-only monitoring**. The monitor sees the user messages,
 visible assistant text, tool calls and arguments, shell commands, file edits,
