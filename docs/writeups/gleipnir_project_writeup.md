@@ -150,9 +150,11 @@ For Qwen3.5-27B and Kimi K2.6, the unadapted model with direct binary logits is
 both stronger and cheaper than Sinha et al.'s trained monitor. Our models
 receive no additional training, which suggests that the larger trained monitors
 are substantially bottlenecked by their reasoning-plus-ordinal interface. At
-4B, Sinha et al.'s trained monitor remains stronger. A better interface can
-move the frontier, but smaller monitors still need training. The next section
-asks how simple that training can be.
+4B, Sinha et al.'s trained monitor remains stronger. One hypothesis is that
+larger models already have stronger ranking ability, while smaller models are
+more uncertain and benefit more from SFT. Testing this across more model sizes
+and families would be too costly for this short project. We instead compare
+training methods for smaller models in the next section.
 
 ## 3. Simple soft distillation
 
