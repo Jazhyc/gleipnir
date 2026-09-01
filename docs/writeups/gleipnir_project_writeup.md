@@ -295,10 +295,9 @@ The judge scores the visible analysis from 0 to 10 using four criteria:
 
 A higher overall score means that the written analysis makes a better-supported
 and easier-to-audit case for its classification. It does not mean that the
-classification is correct. Decision accuracy is ordinary binary accuracy
-against the reference labels on the 64 sampled trajectories.
+classification is correct; accuracy is reported separately.
 
-| Model | Mean overall score | Decision accuracy | Mean rationale tokens |
+| Model | Mean overall score | Accuracy | Mean rationale tokens |
 | --- | ---: | ---: | ---: |
 | Unadapted Qwen3.5-4B | 6.391 | 68.75% | 300.94 |
 | Gleipnir 4B | 7.156 | 78.12% | 165.02 |
