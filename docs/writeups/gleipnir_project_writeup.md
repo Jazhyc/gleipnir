@@ -259,54 +259,85 @@ Sinha et al. and approach the much more expensive closed-model frontier.*
 
 ## 4. What does soft distillation teach?
 
+The results in this section are exploratory. They use small samples or a single
+training seed, so we are less certain about their interpretation than the main
+interface and OOD results.
+
 ### Exploratory explanation-quality analysis
 
-- Motivate the question: soft distillation never supplies a rationale target,
-  so does it improve only the final score or also the model's visible analysis?
-- Describe the frozen 64-pair exploratory comparison between Gleipnir 4B and
-  its unadapted backbone using a blinded GPT-5.6 Sol judge.
-- Report the main result: mean overall explanation-and-decision score rises
-  from `6.391` to `7.156`, a paired difference of `+0.766` with a bootstrap
-  95% interval of `[+0.109, +1.453]`.
-- Separate decision quality from explanation quality. On pairs where both
-  models make the same prediction, the estimated gain is only `+0.240` and its
-  interval crosses zero.
-- State the supported conclusion: soft distillation improves the complete
-  visible analysis-and-decision output on this sample, but independent
-  reasoning improvement remains inconclusive.
-- Add the main caveats: the judge score gives only a relative ordering, it does
-  not test hidden-reasoning faithfulness, and Sinha et al. do not report a
-  directly comparable metric for the reasoning quality of their monitors.
+Soft distillation never gives the student a rationale target. We therefore ask
+whether it improves only the final decision or also the model's visible
+analysis. We compare Gleipnir 4B with its unadapted backbone on a frozen sample
+of 64 OOD trajectories. Both models receive the same reasoning prompt, and a
+blinded GPT-5.6 Sol judge scores their complete analysis and decision.
+
+We chose GPT-5.6 Sol because it was a strong and economical frontier model. We
+also wanted a clear capability gap between the judge and the 4B models. A judge
+that performs worse than Gleipnir might not evaluate it reliably, although this
+concern is speculative and we do not test it directly.
+
+| Model | Mean overall score | Decision accuracy | Mean rationale tokens |
+| --- | ---: | ---: | ---: |
+| Unadapted Qwen3.5-4B | 6.391 | 68.75% | 300.94 |
+| Gleipnir 4B | 7.156 | 78.12% | 165.02 |
+
+The paired score increases by `0.766`, with a bootstrap 95% interval of
+`[+0.109, +1.453]`. Gleipnir's outputs are also about half as long. However,
+the gain falls to `+0.240` on pairs where both models make the same prediction,
+and the interval crosses zero. Much of the full-sample improvement may therefore
+come from better final decisions rather than better explanations on their own.
+
+The supported conclusion is narrow: soft distillation improves the combined
+analysis-and-decision output on this sample, but independent reasoning
+improvement remains uncertain. The judge scores provide a relative ordering,
+not an absolute measure of reasoning quality or hidden-reasoning faithfulness.
+Sinha et al. do not report a comparable score for their trained rationales.
+
+We do not include qualitative examples. A useful assessment requires the full
+trajectory, which averages roughly 8,700 tokens, as well as domain knowledge
+about the task. Presenting enough context would be unwieldy, and careful manual
+assessment was outside the time available for this project.
 
 ### Data scaling is useful but not smooth
 
-- Present the one-seed Qwen3.5-9B curve over 204, 504, 996, 2,004, 4,008, and
-  8,688 matched training examples.
-- Highlight the transition around 996 examples: Mean-OOD AUROC rises from
-  `0.8846` at 504 rows to `0.9353` at 996 rows.
-- Highlight the non-monotonic result: pAUROC@20 peaks at `0.8365` with 4,008
-  rows and falls to `0.8227` with 8,688 rows.
-- Compare the curve descriptively with Sinha et al.'s digitized Qwen3.5-4B and
-  27B rationale-SFT curves. Gleipnir 9B shows a larger gain and exceeds the
-  paper's 4B curve at every matched row count.
-- Do not make a causal claim from this comparison: the base models, number of
-  epochs, subset construction, checkpoint selection, targets, and interfaces
-  differ.
-- Planned figure: the existing OOD data-scaling plot with the paper's curves
-  shown as approximate references.
+Using one seed, we train one Qwen3.5-9B adapter at each of six data sizes from
+204 to 8,688 matched trajectories. Performance changes little between 204 and
+504 examples, then pAUROC@20 rises from `0.7076` at 504 examples to `0.8111` at
+996. The curve is not monotonic: it peaks at `0.8365` with 4,008 examples and
+falls to `0.8227` with all 8,688 examples. More data helps substantially, but
+each additional example does not produce a constant gain.
+
+![Qwen3.5-9B OOD data scaling](../../figures/tool_trajectory_ood_data_scaling.png)
+
+*Figure 3. One-seed soft-distillation scaling compared with approximate values
+digitized from Sinha et al.'s Qwen3.5 rationale-SFT curves.*
+
+Gleipnir 9B exceeds Sinha et al.'s published 4B curve at every data size and
+crosses their 27B curve between 504 and 996 examples. This suggests a larger
+gain from our training method, but it is not a controlled comparison. The base
+models, epochs, subsets, checkpoint selection, targets, and output interfaces
+all differ. We therefore treat the comparison as evidence for sample efficiency,
+not as an isolated effect of soft distillation.
 
 ### Limits of cross-domain transfer
 
-- Compare the 8,688-row action-only adapter with the 21,837-row mixed adapter
-  that adds 13,149 Aletheia's Quest deception examples.
-- Report the source-balanced result: Mean-OOD pAUROC@20 changes from `0.8227`
-  to `0.8212`, while Mean-OOD AUROC is effectively unchanged.
-- Note that pooled metrics and individual sources move differently, so the
-  result is not evidence that every example or domain is unaffected.
-- State the practical interpretation: adding familiar deception data did not
-  produce noticeable aggregate transfer to the six action-only OOD domains.
-- Keep the conclusion provisional because the campaign uses one seed, one
-  epoch, and inherited rather than newly optimized hyperparameters.
-- End with the main boundary: a better interface and simple distillation move
-  the frontier substantially, but they do not remove model-capacity,
-  data-coverage, or domain-transfer limits.
+Finally, we test whether the 13,149 deception examples from Aletheia's Quest
+transfer to action-only monitoring. Adding them to the 8,688 matched examples
+changes Mean-OOD pAUROC@20 from `0.8227` to `0.8212`, effectively no gain on the
+source-balanced metric.
+
+| Training data | Rows | Mean-OOD pAUROC@20 |
+| --- | ---: | ---: |
+| Action-only trajectories | 8,688 | 0.8227 |
+| Action-only + Aletheia's Quest | 21,837 | 0.8212 |
+
+Individual sources and pooled metrics move in different directions, so this
+does not show that the added data has no effect. It shows that familiar
+deception data does not improve aggregate OOD action-monitoring performance
+under the current recipe. This result uses one seed, one epoch, and inherited
+hyperparameters rather than a new optimization sweep, so the transfer limit is
+provisional.
+
+A better interface and simple distillation move the frontier substantially,
+but they do not remove limits from model capacity, data coverage, or
+cross-domain transfer.
