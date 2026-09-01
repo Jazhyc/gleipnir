@@ -37,13 +37,10 @@ improve that frontier. The paper provides a concrete training pipeline, a
 six-dataset OOD evaluation suite, and a shared cost and performance framework,
 making it the clearest baseline for our project.
 
-Sinha et al. give the monitor a detailed specification of problematic
-behavior. The specification tells it to identify relevant actions, compare the
-trajectory with the agent's final report, consider an innocent explanation,
-consider a misaligned explanation, and reach a calibrated conclusion. The
-monitor then writes a structured rationale and returns an integer from 0 to 10.
-Low scores represent task-serving behavior, middle scores represent ambiguity,
-and high scores represent clear or deliberately concealed misalignment.
+Sinha et al. give the monitor a detailed scheming specification and ask it to
+reason through each trajectory before returning an integer from 0 to 10, where
+higher values indicate more severe misalignment. This reasoning-plus-ordinal
+interface is the main design choice we revisit.
 
 Their training process distils this deliberation into smaller models. For each
 training example, Gemini 2.5 Pro generates four candidate rationales. Candidates
