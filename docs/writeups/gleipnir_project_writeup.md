@@ -5,6 +5,68 @@
 > Status: Working draft. This Markdown file is the canonical source for the
 > project writeup until it is exported to Google Docs.
 
+## Executive summary
+
+### The problem
+
+Action-only monitors judge whether an AI agent behaved problematically from its
+observable trajectory. They are useful when private reasoning or model internals
+are unavailable, but they must be economical enough to run routinely. Sinha et
+al. established the previous cost--performance frontier by training monitors to
+reason through a trajectory and return a severity score from 0 to 10. We ask
+whether this interface is limiting performance. The benchmark evaluates binary
+ranking, so a severity score forces the model to combine confidence and severity
+when only confidence that the trajectory is problematic is needed.
+
+### Main takeaways
+
+- **The output interface matters substantially.** On a matched Qwen3.5-9B
+  evaluation, immediate binary logits improve Mean-OOD pAUROC@20 from `0.4858`
+  for an immediate ordinal score to `0.6976`, while also reducing cost.
+- **The same interface provides a simple training target.** We cache a strong
+  teacher's probabilities for the binary decision and train smaller students to
+  match them with BCE. This avoids generating, filtering, and training on long
+  rationales.
+- **Simple soft distillation moves the frontier.** Gleipnir 4B and 9B dominate
+  every open-model point reported by Sinha et al. Gleipnir 4B reaches `0.7823`
+  pAUROC@20 at `$0.2598` per 1,000 evaluations, making it the cheapest observed
+  frontier point.
+
+### Binary logits are a better interface
+
+We hold the Qwen3.5-9B model, monitoring specification, and 6,395-example OOD
+evaluation fixed, changing only whether the monitor returns binary logits or an
+ordinal score and whether it first generates visible reasoning. Immediate
+binary logits give the best ranking and lowest cost. Reasoning recovers much of
+the ordinal interface's loss, but neither reasoned condition surpasses the
+immediate binary result. Larger unadapted models show the same pattern: direct
+logits from Qwen3.5-27B and Kimi K2.6 outperform the trained counterparts
+reported by Sinha et al. while costing less.
+
+| Interface | Reasoning | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
+| --- | :---: | ---: | ---: |
+| Immediate binary logits | No | **0.6976** | **$0.9468** |
+| Immediate ordinal score | No | 0.4858 | $0.9628 |
+| Binary logits after reasoning | Yes | 0.6923 | $1.0054 |
+| Ordinal score after reasoning | Yes | 0.6656 | $1.0293 |
+
+### Distilling the decision moves the frontier
+
+We use Kimi K3's normalized probabilities for `0` and `1` as soft targets and
+train rank-128 QLoRA adapters for Qwen3.5-4B and 9B for one epoch. Unlike Sinha
+et al.'s pipeline, this requires no rationale candidates, judge model, or RL
+stage. At deployment, the students also return immediate binary logits. Gleipnir
+4B reaches `0.7823` pAUROC@20 at `$0.2598` per 1,000 evaluations, while Gleipnir
+9B reaches `0.8212` at `$0.8659`. The resulting monitors establish a stronger
+black-box baseline that future methods using model internals should be expected
+to beat.
+
+![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.png)
+
+*Executive summary figure. Binary-logit evaluation and soft distillation move
+the open-model cost--performance frontier toward the stronger but much more
+expensive closed monitors.*
+
 ## 1. Background: training control monitors
 
 ### The monitoring problem
