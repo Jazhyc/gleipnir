@@ -469,6 +469,28 @@ embeddings capture control-relevant behavior rather than dataset or task
 identity, and whether they improve the investigation of long, unfamiliar
 incidents.
 
+## 6. Reproducibility
+
+We release the main artifacts needed to reuse the models and reproduce the
+experiments:
+
+- **Models.** [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B) and
+  [Gleipnir 9B](https://huggingface.co/Jazhyc/Gleipnir-9B) are MIT-licensed
+  rank-128 LoRA adapters. Their model cards record the Qwen3.5 backbones,
+  prompts, evaluation results, checksums, and serving instructions.
+- **Data.** The public [Kimi K3 logit
+  dataset](https://huggingface.co/datasets/Jazhyc/gleipnir-kimi-k3-tool-trajectory-logits)
+  contains binary teacher targets for all 8,688 training trajectories, including
+  the raw `0` and `1` log probabilities, normalized probabilities, stable join
+  keys, request provenance, and checksums. It does not redistribute the upstream
+  trajectories or labels because their source repository declares no license.
+  The repository records the pinned source revisions, transformations, and
+  reconstruction procedure for the training and OOD datasets.
+- **Code.** The [Gleipnir repository](https://github.com/Jazhyc/gleipnir)
+  contains the prompts, frozen experiment configurations, cache and data
+  preparation tools, training and evaluation pipelines, metrics, plotting code,
+  tests, and finding records used in this project.
+
 ## Acknowledgements
 
 We thank the University of Groningen for providing access to the Hábrók cluster
