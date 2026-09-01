@@ -271,9 +271,13 @@ value of additional optimization.
 
 Soft distillation never gives the student a rationale target. We therefore ask
 whether it improves only the final decision or also the model's visible
-analysis. We compare Gleipnir 4B with its unadapted backbone on a frozen sample
-of 64 OOD trajectories. Both models receive the same reasoning prompt, and a
-blinded GPT-5.6 Sol judge scores their complete analysis and decision.
+analysis. This matters because an accurate but opaque monitor can hide
+systematic blind spots. On an unfamiliar domain, a score alone does not show
+which evidence drove the classification or why the monitor failed, making
+errors harder to diagnose. We compare Gleipnir 4B with its unadapted backbone
+on a frozen sample of 64 OOD trajectories. Both models receive the same
+reasoning prompt, and a blinded GPT-5.6 Sol judge scores their complete analysis
+and decision.
 
 We chose GPT-5.6 Sol because it was a strong and economical frontier model. We
 also wanted a clear capability gap between the judge and the 4B models. A judge
