@@ -160,13 +160,21 @@ training methods for smaller models in the next section.
 
 ### Replacing rationale distillation with decision distillation
 
+Both methods use the same task-specific training set: 8,688 action-only
+trajectories balanced between 4,344 benign and 4,344 problematic examples. The
+five sources are STRIDE, Gloom, CoT-Red-Handed, BashArena, and BashBench. They
+cover enterprise software, operational tasks, coding sabotage, and Linux or
+system-administration work with harmful side objectives.
+
 Sinha et al. distill both a rationale and an ordinal score. Gemini 2.5 Pro
 generates four candidates for each trajectory. A candidate whose score points
 in the wrong binary direction can be regenerated using the ground-truth label.
 Claude Sonnet 4.5 judges the candidates, and the best acceptable rationale
 becomes the SFT target. Some models then receive an additional RL stage.
 
-We distill only the decision. Kimi K3 receives the full monitoring
+We distill only the decision. We use Kimi K3 because it was the largest
+frontier model available through OpenRouter that exposed token log
+probabilities at the time of the experiment. It receives the full monitoring
 specification and returns a binary decision with log probabilities for `0` and
 `1`. We normalize and cache these values, then train the student to match the
 resulting distribution. This preserves the teacher's confidence without using
