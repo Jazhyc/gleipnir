@@ -160,52 +160,68 @@ training methods for smaller models in the next section.
 
 ### Replacing rationale distillation with decision distillation
 
-- Use the existing pipeline diagram to compare the two methods.
-- Sinha et al.: sample several long rationales per example, judge them with a
-  second frontier model, select or regenerate candidates, train on the chosen
-  rationale and score, and optionally run RL.
-- More specifically, Gemini 2.5 Pro generates four candidate rationales per
-  example, Claude Sonnet 4.5 judges their quality, and the best acceptable
-  rationale becomes the supervised fine-tuning target.
-- The paper trains on 8,688 balanced trajectories from five sources and
-  evaluates on 6,395 examples from six separate OOD sources.
-- Gleipnir: ask Kimi K3 for the binary decision-token distribution, cache the
-  two logits, and train the student to match that distribution.
-- Explain what is removed: no generated teacher rationale is stored as a
-  target, no rationale judge or candidate-selection stage is required, and the
-  student is not trained to reproduce an explanation.
-- Explain what is retained: the teacher receives the full monitoring
-  specification, while the deployed student uses the paper's compact task
-  instruction.
+Sinha et al. distill both a rationale and an ordinal score. Gemini 2.5 Pro
+generates four candidates for each trajectory. A candidate whose score points
+in the wrong binary direction can be regenerated using the ground-truth label.
+Claude Sonnet 4.5 judges the candidates, and the best acceptable rationale
+becomes the SFT target. Some models then receive an additional RL stage.
+
+We distill only the decision. Kimi K3 receives the full monitoring
+specification and returns a binary decision with log probabilities for `0` and
+`1`. We normalize and cache these values, then train the student to match the
+resulting distribution. This preserves the teacher's confidence without using
+a generated rationale as a target.
+
+This removes rationale generation, judging, candidate selection, and RL. The
+student is trained with a compact task specification and returns immediate
+binary logits at deployment.
+
+![Comparison of rationale distillation and direct decision-distribution distillation](../../figures/distillation_pipeline_comparison.svg)
+
+*Figure 1. Sinha et al. filter generated rationales before training. Our method
+distills the binary decision distribution directly.*
 
 ### Training Gleipnir 4B and 9B
 
-- Train Qwen3.5-4B and Qwen3.5-9B rank-128 QLoRA adapters using only Kimi K3's
-  soft binary targets.
-- State the transferred competition recipe: learning rate `5e-5`, effective
-  batch size 32, and direct soft-target supervision.
-- State the deliberate speed choice: one epoch rather than a tuned multi-epoch
-  schedule.
-- Describe the full mixed training set: 8,688 matched action-only trajectories
-  plus 13,149 deception examples from Aletheia's Quest.
-- Make clear that all model and prompt choices were frozen before scoring the
-  six-source OOD suite.
+We use this method to train Qwen3.5-4B and Qwen3.5-9B monitors, which we call
+Gleipnir 4B and Gleipnir 9B. Both are rank-128 QLoRA adapters trained only on
+Kimi K3's soft binary targets. The final training set contains the 8,688
+action-only trajectories used by Sinha et al. and 13,149 deception examples
+from Aletheia's Quest.
+
+We transfer the recipe that worked during the competition: a `5e-5` learning
+rate, an effective batch size of 32, and direct soft-target supervision. We
+train for one epoch to complete the project quickly rather than tuning a longer
+schedule. The models and prompts are fixed before evaluation on the six OOD
+datasets.
 
 ### A new cost--performance frontier
 
-- Introduce the frontier as point-estimate nondominance in Mean-OOD pAUROC@20
-  and uncached inference cost per 1,000 evaluations.
-- Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per 1,000 evaluations. It
-  is the lowest-cost observed frontier point and improves over its unadapted
-  4B baseline by `0.1649`.
-- Gleipnir 9B reaches `0.8212` at `$0.8659`. It is the next Gleipnir frontier
-  point and approaches the unadapted 27B result at less than half the cost.
-- Compare these points with the paper's trained monitors while keeping the
-  shared metric and cost convention explicit.
-- Planned figure: the existing OOD cost--performance frontier, with the base
-  models, Gleipnir adapters, and paper reference points.
-- State the scope: these are research LoRA adapters and cost comparisons, not
-  production-ready safety systems.
+We add our results to the cost--performance frontier established by Sinha et
+al. A monitor is on the frontier when no other evaluated monitor is both
+cheaper and stronger. We use the same Mean-OOD pAUROC@20 metric and uncached
+inference cost per 1,000 evaluations. As in their analysis, this cost excludes
+training and teacher annotation.
+
+| Monitor | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
+| --- | ---: | ---: |
+| Gleipnir 4B | 0.7823 | $0.2598 |
+| Gleipnir 9B | 0.8212 | $0.8659 |
+
+Gleipnir 4B becomes the lowest-cost observed frontier point. It improves over
+the unadapted Qwen3.5-4B baseline by `0.1649` pAUROC@20 while also costing less
+because it uses the compact student prompt. It also exceeds the `0.6840` result
+that Sinha et al. report for their Qwen3.5-4B SFT+RL monitor.
+
+Gleipnir 9B becomes the next frontier point. It reaches `0.8212` at almost the
+same cost as their Qwen3-32B SFT+RL monitor, which reaches `0.7030`. It also
+approaches the unadapted Qwen3.5-27B result at less than half the inference
+cost.
+
+![OOD monitor cost-performance frontier](../../figures/tool_trajectory_ood_frontier.svg)
+
+*Figure 2. Soft-distilled Gleipnir 4B and 9B shift the low-cost end of the
+monitoring frontier beyond the values reported by Sinha et al.*
 
 ## 4. What does soft distillation teach?
 
