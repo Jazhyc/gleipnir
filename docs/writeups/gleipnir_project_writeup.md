@@ -348,13 +348,7 @@ source-balanced metric.
 | Action-only trajectories | 8,688 | 0.8227 |
 | Action-only + Aletheia's Quest | 21,837 | 0.8212 |
 
-Individual sources and pooled metrics move in different directions, so this
-does not show that the added data has no effect. It shows that familiar
-deception data does not improve aggregate OOD action-monitoring performance
-under the current recipe. This result uses one seed, one epoch, and inherited
-hyperparameters rather than a new optimization sweep, so the transfer limit is
-provisional.
-
-A better interface and simple distillation move the frontier substantially,
-but they do not remove limits from model capacity, data coverage, or
-cross-domain transfer.
+Under our current recipe, the Aletheia data does not improve source-balanced
+OOD performance. We reused competition hyperparameters and trained for one
+epoch, so this result is provisional. The new interface and training method
+move the frontier, but cross-domain transfer remains unresolved.
