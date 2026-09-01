@@ -120,10 +120,10 @@ Immediate binary logits give the best ranking and the lowest cost. Reasoning
 substantially improves the ordinal score, but it still remains below direct
 binary logits. Adding reasoning before the binary decision also does not help.
 
-In the hosted pricing used here, output tokens cost more than input tokens.
-Every interface must process the long trajectory, but immediate binary logits
-require only one output token. Reasoning interfaces also pay to generate the
-rationale, so removing it reduces both token use and cost.
+Output tokens cost more than input tokens. Every interface must process the long
+trajectory, but immediate binary logits require only one output token. Reasoning
+interfaces also pay to generate the rationale, so removing it reduces both token
+use and cost.
 
 The ordinal result is not explained by having only 11 possible values. Rounding
 the binary probabilities to the nearest tenth retains `0.6835` pAUROC@20,
