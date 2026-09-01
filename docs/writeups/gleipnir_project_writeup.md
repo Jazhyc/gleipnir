@@ -29,7 +29,8 @@ confidence in the binary decision.
   one-trillion-parameter Kimi K2.6.
 - **Soft distillation produces strong small monitors.** Instead of Sinha et
   al.'s multi-stage rationale generation, judging, and optional RL, we train
-  Gleipnir 4B and 9B to match Kimi K3's binary decision probabilities with BCE.
+  Gleipnir 4B and 9B to match Kimi K3's binary decision probabilities using a
+  standard binary classification loss.
 - **The intervention moves the Pareto frontier.** Our logit-based results
   dominate every open-model point reported by Sinha et al. Gleipnir 4B is the
   strongest low-cost monitor, while our Kimi K2.6 monitor approaches the
