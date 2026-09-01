@@ -82,51 +82,64 @@ under Sinha et al.'s evaluation framework.
 
 ### Severity is not confidence
 
-- Explain that a generated 0--10 score asks the model to combine two different
-  concepts: how severe an action would be and how confident the monitor is that
-  the action occurred.
-- Show why the mapping is unclear. An uncertain but severe attack and a
-  confident but moderate violation can plausibly receive the same ordinal
-  score even though a binary detector should rank them differently.
-- Contrast this with a binary interface. The normalized logits for literal
-  `0` and `1` directly define the model's relative confidence that the
-  trajectory is problematic.
-- Connect the interface to AUROC and pAUROC@20: both metrics need a continuous
-  ranking score, so binary decision logits expose the quantity the evaluator
-  actually uses.
+The paper asks monitors to produce a 0--10 severity score, but pAUROC@20
+evaluates a binary ranking: problematic trajectories should score above benign
+ones. Severity and confidence are not the same. A monitor might be uncertain
+whether a severe attack occurred, or highly confident that a less severe
+violation occurred. The ordinal rubric does not specify how these cases should
+be ordered.
+
+We instead ask for one of two tokens: `0` for benign and `1` for problematic.
+Normalizing their logits gives the model's relative confidence in the binary
+decision. This produces the continuous score that AUROC and pAUROC@20 need
+without asking the model to map confidence onto a severity scale.
 
 ### Matched Qwen3.5-9B ablations
 
-- Compare four frozen conditions on the same model and OOD suite:
-  - immediate binary logits: `0.6976` Mean-OOD pAUROC@20;
-  - immediate ordinal score: `0.4858`;
-  - visible reasoning followed by binary logits: `0.6923`;
-  - visible reasoning followed by an ordinal score: `0.6656`.
-- Emphasize the main result: visible reasoning recovers much of the ordinal
-  interface's loss, but neither reasoned condition beats immediate binary
-  logits on the primary metric.
-- Note that immediate binary logits are also the cheapest of the four
-  conditions.
-- Use the quantization control to rule out a simple explanation based on score
-  resolution: rounding binary probabilities to 11 values retains `0.6835`
-  pAUROC@20, while the model's generated ordinal scores reach only `0.4858`.
-- Keep the conclusion narrow: this tests one Qwen3.5-9B prompting setup and
-  does not show that reasoning is universally harmful.
+We tested four interfaces with the same unadapted Qwen3.5-9B model and the same
+6,395 OOD examples.
 
-### Results at larger scales
+| Interface | Visible reasoning | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Cost per 1K |
+| --- | :---: | ---: | ---: | ---: |
+| Immediate binary logits | No | **0.6976** | **0.8850** | **$0.9468** |
+| Immediate ordinal score | No | 0.4858 | 0.7592 | $0.9628 |
+| Binary logits after reasoning | Yes | 0.6923 | 0.8607 | $1.0054 |
+| Ordinal score after reasoning | Yes | 0.6656 | 0.8610 | $1.0293 |
 
-- Show the Qwen3.5-4B, Qwen3.5-27B, and Kimi K2.6 binary-logit results to
-  establish how the interface behaves across model scales.
-- Highlight Qwen3.5-27B: immediate binary logits reach `0.8395` pAUROC@20 at
-  `$1.8476` per 1,000 evaluations, compared with `0.831` and `$2.775` for the
-  paper's trained Qwen3.5-27B SFT+RL monitor.
-- Highlight Kimi K2.6: immediate binary logits reach `0.9194` at `$7.9110`,
-  compared with `0.841` and `$10.175` for the paper's Kimi K2.6 SFT monitor.
-- Note that the 27B and Kimi comparisons support the interface hypothesis but
-  are not matched causal ablations: the prompt, training, and output procedure
-  also differ from the paper's conditions.
-- Planned evidence: a compact table comparing the 9B interface ablations and
-  the larger binary-logit results.
+Immediate binary logits give the best ranking and the lowest cost. Reasoning
+substantially improves the ordinal score, but it still remains below direct
+binary logits. Adding reasoning before the binary decision also does not help.
+
+The ordinal result is not explained by having only 11 possible values. Rounding
+the binary probabilities to the nearest tenth retains `0.6835` pAUROC@20,
+compared with `0.4858` for generated ordinal scores. The model also uses only
+seven of the 11 available integers. The main problem is how the model applies
+the severity rubric, not just the number of score values.
+
+This is a matched result for one unadapted model and one greedy reasoning
+procedure. It does not show that reasoning is always harmful, and it does not
+test the paper's trained rationale monitors.
+
+### Results across model sizes
+
+We also compared immediate binary logits from unadapted models with the paper's
+trained monitors at three scales.
+
+| Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K |
+| --- | --- | ---: | ---: |
+| Qwen3.5-4B | Immediate binary logits | 0.6175 | **$0.2842** |
+| Qwen3.5-4B | Paper SFT+RL, rationale + ordinal | **0.6840** | $0.3580 |
+| Qwen3.5-27B | Immediate binary logits | **0.8395** | **$1.8476** |
+| Qwen3.5-27B | Paper SFT+RL, rationale + ordinal | 0.8310 | $2.7750 |
+| Kimi K2.6 | Immediate binary logits | **0.9194** | **$7.9110** |
+| Kimi K2.6 | Paper SFT, rationale + ordinal | 0.8410 | $10.1750 |
+
+For Qwen3.5-27B and Kimi K2.6, the unadapted model with direct binary logits is
+both stronger and cheaper than the paper's trained monitor. This is supporting
+evidence rather than a matched ablation because the prompt and training
+conditions also differ. At 4B, the paper's trained monitor remains stronger.
+A better interface can move the frontier, but smaller monitors still need
+training. The next section asks how simple that training can be.
 
 ## 3. Simple soft distillation
 
