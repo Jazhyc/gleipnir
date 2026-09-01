@@ -25,9 +25,7 @@ calls, commands, outputs, edits, and the final report rather than private chain
 of thought or model internals. Raw chain of thought may be unavailable or
 unreliable, while observable actions can be logged consistently. This setting
 also has established benchmarks and methods that let us make useful comparisons
-within a short project. A practical monitor must rank harmful behavior above
-benign mistakes without producing too many false alarms, so we focus on
-performance in the low-false-positive region.
+within a short project.
 
 ### Sinha et al.'s setup
 
