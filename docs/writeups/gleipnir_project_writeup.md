@@ -389,7 +389,8 @@ require access to the monitored model's weights or infrastructure.
 
 Gleipnir may also be useful beyond binary classification. Its trajectory
 embeddings could be clustered or searched to group similar behaviors and
-surface unusual failure modes during an incident, even without labels. This is
-speculative: we would need to show that the embeddings capture control-relevant
-behavior rather than dataset or task identity. If they do, they could make long
-and unfamiliar incidents easier to investigate.
+surface unusual failure modes during an incident, even without labels. This
+remains an untested hypothesis. Future work should determine whether the
+embeddings capture control-relevant behavior rather than dataset or task
+identity, and whether they improve the investigation of long, unfamiliar
+incidents.
