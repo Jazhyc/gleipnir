@@ -23,9 +23,10 @@ confidence in the binary decision.
 
 ### Main takeaways
 
-- **The interface matters more as models scale.** Against Sinha et al.'s trained
-  ordinal monitors, base models with binary logits trail at 4B, lead at 27B,
-  and lead by a wider pAUROC@20 margin for Kimi K2.6.
+- **The interface matters more as judge models scale.** Against Sinha et al.'s
+  trained ordinal monitors, base models with binary logits trail at 4B,
+  overtake them at 27B, and lead by a wider pAUROC@20 margin with the
+  one-trillion-parameter Kimi K2.6.
 - **The same interface provides a simple training target.** We cache a strong
   teacher's probabilities for the binary decision and train smaller students to
   match them with BCE. This avoids generating, filtering, and training on long
@@ -48,9 +49,9 @@ whether the judge generates visible reasoning.
 | Binary logits | Yes | 0.6923 | $1.0054 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
 
-At larger scales, base models with binary logits outperform Sinha et al.'s
-trained rationale-and-ordinal variants while costing less; their trained 4B
-monitor remains stronger.
+The comparison below moves from Qwen3.5-4B and 27B to the
+one-trillion-parameter Kimi K2.6. Sinha et al.'s trained models use rationales
+and ordinal scores; the base models use binary logits.
 
 | Model | Condition | Mean-OOD pAUROC@20 | Cost per 1K evaluations |
 | --- | --- | ---: | ---: |
