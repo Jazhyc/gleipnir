@@ -413,7 +413,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         loc="left",
         fontsize=20.5,
         fontweight="bold",
-        pad=18,
+        pad=28,
     )
     axis.text(
         0.0,
