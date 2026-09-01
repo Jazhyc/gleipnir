@@ -14,11 +14,11 @@ observable trajectory. They are useful when private reasoning or model internals
 are unavailable, but they must be economical enough to run routinely. Sinha et
 al. established the previous cost--performance frontier by training monitors to
 reason through a trajectory and return a severity score from 0 to 10. We ask
-whether this interface is limiting performance. The benchmark evaluates binary
-ranking, and in practice the resulting score is thresholded into a decision.
-Better ranking makes it easier to choose a threshold that separates problematic
-trajectories from benign ones. An ordinal severity score instead asks the model
-to combine its confidence in this binary distinction with estimated severity.
+whether this interface is limiting performance. In practice, a monitor's score
+is thresholded into a decision, and better ranking makes it easier to separate
+problematic trajectories from benign ones. An ordinal severity score instead
+asks the model to combine its confidence in this binary distinction with
+estimated severity.
 
 ### Main takeaways
 
