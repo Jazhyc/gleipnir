@@ -61,7 +61,7 @@ retain both coordinates throughout our comparisons.
 
 ### Our starting point: Aletheia's Quest
 
-Gleipnir did not begin from a blank slate. The project carries over hypotheses
+This project did not begin from a blank slate. It carries over hypotheses
 and infrastructure developed during [Aletheia's
 Quest](https://aletheias-quest.github.io/), a competition on detecting deception
 across multiple language-model organisms and datasets. Our methods reached
@@ -95,10 +95,9 @@ absent from the observable trajectory.
 That makes a strong black-box baseline an important experimental control. A
 future white-box monitor should be compared with it under matched training
 data, evaluation data, and compute. If the white-box method still wins, we have
-better evidence that the gain comes from privileged internal information. By
-making output-only monitoring as strong and simple as possible, Gleipnir raises
-that bar and makes the contribution of future interpretability methods easier
-to identify.
+better evidence that the gain comes from privileged internal information. A
+stronger output-only baseline raises that bar and makes the contribution of
+future interpretability methods easier to identify.
 
 ## 2. The interface problem
 
