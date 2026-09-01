@@ -175,7 +175,7 @@ is an expensive annotation process: each attempt processes a long trajectory
 and generates a long rationale, with several candidates, possible retries, and
 separate judge calls for every example. A decision-logit cache still processes
 the long input but needs only a short binary output, so its cost is dominated by
-input tokens. This should make the training cache cheaper to create, but we did
+input tokens. This should make the training dataset cheaper to create, but we did
 not calculate matched end-to-end savings against Sinha et al.'s annotation
 pipeline.
 
