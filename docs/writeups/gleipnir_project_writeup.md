@@ -31,10 +31,10 @@ confidence in the binary decision.
   teacher's probabilities for the binary decision and train smaller students to
   match them with BCE. This avoids generating, filtering, and training on long
   rationales.
-- **Simple soft distillation moves the frontier.** Gleipnir 4B and 9B dominate
-  every open-model point reported by Sinha et al. Gleipnir 4B reaches `0.7823`
-  pAUROC@20 at `$0.2598` per 1,000 evaluations, making it the cheapest observed
-  frontier point.
+- **Simple soft distillation moves the frontier.** Our trained models, Gleipnir
+  4B and Gleipnir 9B, dominate every open-model point reported by Sinha et al.
+  Gleipnir 4B reaches `0.7823` pAUROC@20 at `$0.2598` per 1,000 evaluations,
+  making it the cheapest observed frontier point.
 
 ### Binary logits are a better interface
 
