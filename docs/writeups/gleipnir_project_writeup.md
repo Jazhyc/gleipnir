@@ -1,6 +1,6 @@
 # Control Monitoring Has an Interface Problem
 
-*Simple logit distillation for stronger, more general monitors*
+*Simple logit distillation for stronger, cheaper monitors*
 
 ## Executive summary
 
