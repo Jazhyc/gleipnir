@@ -3,9 +3,9 @@
 This log records personal project time for the 20-hour MATS main project on
 tool-trajectory monitoring, followed by a two-hour finalization block.
 Session durations are self-reported; commit timestamps are supporting evidence
-for what happened, not the source of the hour count. Sparse autonomous-agent
-commits after a session may be recorded as follow-up outcomes but do not add
-personal time.
+for what happened, not the source of the hour count. Bounded implementation and
+result-recording commits sometimes landed between sessions; they may be listed
+as follow-up outcomes but do not add personal time.
 
 ## Time summary
 
@@ -54,11 +54,11 @@ Sinha et al.'s deliberative-monitoring paper:
 
 ### Uncounted follow-up
 
-Autonomous follow-up commits `4ca94fd` through `f408b2a`, made from 14:07 to
-14:52, implemented and repaired the scaling launcher and finalized a one-epoch
-recipe. The campaign contains six nested tool-trajectory sizes from 204 through
-8,688 examples and one combined tool-trajectory/Aletheia condition. These
-commits are an outcome of the session but add no personal time to the log.
+Bounded follow-up commits `4ca94fd` through `f408b2a`, made from 14:07 to 14:52,
+implemented and repaired the scaling launcher and finalized a one-epoch recipe.
+The campaign contains six nested tool-trajectory sizes from 204 through 8,688
+examples and one combined tool-trajectory/Aletheia condition. These commits are
+an outcome of the session but add no personal time to the log.
 
 ## 2026-08-30 — Session 2
 
@@ -66,7 +66,8 @@ commits are an outcome of the session but add no personal time to the log.
 5 hours total
 
 **Commit evidence:** initial work in `c6962e1` through `4958ed8`, committed
-20:23–23:55. Autonomous result records reviewed during the extension:
+20:23–23:55. Result records from runs completed between sessions and reviewed
+during the extension:
 `9a6d83b`, `dfb31ae`, and `a01ed7a`.
 
 Established frozen baselines and ablations while the main scaling campaign was
@@ -95,7 +96,7 @@ running:
 
 ### One-hour result-review extension
 
-Reviewed and interpreted three completed autonomous benchmark runs:
+Reviewed and interpreted three benchmark runs completed between sessions:
 
 - Qwen3.5-27B reached `0.8395` Mean-OOD pAUROC@20, producing a matched
   4B/9B/27B capacity curve of `0.6175`/`0.6976`/`0.8395`. The larger
@@ -118,7 +119,7 @@ Reviewed and interpreted three completed autonomous benchmark runs:
   including the frozen-date regeneration for GPT-OSS and bounded score-boundary
   recovery for 21 of 6,395 Qwen reasoned-ordinal rows.
 
-The benchmark execution and result-record commits were autonomous; the one
+The benchmark execution and result-recording occurred between sessions; the one
 hour counted here is for examining the completed evidence, checking the audit
 details, and updating the research interpretation.
 

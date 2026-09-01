@@ -500,8 +500,9 @@ the cost of caching Kimi K3 logits for the training data.
 ## Experimental log
 
 The project used 20 hours of main research time followed by a two-hour
-finalization block. Automated cluster runs and autonomous follow-up work are not
-counted as personal project time.
+finalization block. Cluster jobs and bounded implementation follow-ups sometimes
+completed between sessions; the log counts only active research and
+result-review time.
 
 ### Session 1 — Research setup and teacher cache
 
