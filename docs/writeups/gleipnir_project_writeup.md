@@ -48,6 +48,9 @@ whether the judge generates visible reasoning.
 | Ordinal score | No | 0.4858 | $0.9628 |
 | Ordinal score | Yes | 0.6656 | $1.0293 |
 
+Ordinal scoring requires reasoning to improve pAUROC@20 but remains weaker and
+costlier than simpler binary logits.
+
 The comparison below moves from Qwen3.5-4B and 27B to the
 one-trillion-parameter Kimi K2.6. Sinha et al.'s trained models use rationales
 and ordinal scores; the base models use binary logits.
