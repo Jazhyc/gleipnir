@@ -373,7 +373,7 @@ classification is correct; accuracy is reported separately.
 
 | Model | Mean overall score | Accuracy | Mean rationale tokens |
 | --- | ---: | ---: | ---: |
-| Unadapted Qwen3.5-4B | 6.391 | 68.75% | 300.94 |
+| Qwen3.5-4B base model | 6.391 | 68.75% | 300.94 |
 | Gleipnir 4B | 7.156 | 78.12% | 165.02 |
 
 The paired score increases by `0.766`, with a bootstrap 95% interval of
