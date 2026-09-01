@@ -22,10 +22,10 @@ that the behavior is problematic and its estimated severity.
 
 We test whether these design choices are necessary. We use the judge model's
 relative logits for `0` (benign) and `1` (problematic) as the monitoring score,
-then train smaller models on these probabilities. Stronger black-box monitors
-provide a more credible baseline: future methods using model internals should
-show that their privileged information adds value beyond a better interface and
-training method.
+then train smaller models on these probabilities. By improving both the
+interface and training method, we aim to establish a stronger black-box
+baseline against which future methods must show that access to model internals
+adds value.
 
 ### Main takeaways
 
