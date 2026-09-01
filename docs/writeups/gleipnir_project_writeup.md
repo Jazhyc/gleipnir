@@ -126,12 +126,6 @@ trajectory, but immediate binary logits require only one output token. Reasoning
 interfaces also pay to generate the rationale, so removing it reduces both token
 use and cost.
 
-The ordinal result is not explained by having only 11 possible values. Rounding
-the binary probabilities to the nearest tenth retains `0.6835` pAUROC@20,
-compared with `0.4858` for generated ordinal scores. The model also uses only
-seven of the 11 available integers. The main problem is how the model applies
-the severity rubric, not just the number of score values.
-
 This is a matched result for one unadapted model and one greedy reasoning
 procedure. Sinha et al.'s trained checkpoints are not public, so we cannot
 repeat the interface ablation on them. SFT may still improve smaller monitors,
