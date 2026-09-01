@@ -27,7 +27,7 @@ unreliable, while observable actions can be logged consistently. This setting
 also has established benchmarks and methods that let us make useful comparisons
 within a short project.
 
-### Sinha et al.'s setup
+### The previous cost--performance frontier
 
 Our main reference is Sinha et al.'s [*Training Deliberative Monitors for
 Black-Box Scheming Detection*](https://arxiv.org/abs/2605.29601). They study the
