@@ -539,10 +539,8 @@ follow-up.
 ### Session 5 — Kimi K2.6 frontier result
 
 **2026-09-01, 00:45–01:15 (0.5 hours).** We reviewed the completed Kimi K2.6
-evaluation, checked its source-level behavior and pricing, and added it to the
-frontier. It outperformed Kimi K3 on the source-balanced metric while being
-substantially cheaper, although the improvement was concentrated in
-SHADE-Arena.
+evaluation, checked its pricing, and added it to the frontier. It outperformed
+Kimi K3 on the source-balanced metric while being substantially cheaper.
 
 ### Session 6 — Main writeup
 

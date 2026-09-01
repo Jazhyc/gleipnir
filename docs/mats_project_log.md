@@ -215,10 +215,6 @@ Reviewed and communicated the completed Kimi K2.6 binary-logit evaluation:
   AUROC, becoming the highest-quality open-weight point on the observed
   frontier. Surprisingly, it exceeded Kimi K3's `0.9084` pAUROC@20 while
   costing 68.5% less at the paper-comparable uncached price.
-- Checked the source-level qualification before accepting the headline. K2.6
-  was weaker than K3 on four sources and tied on one; its macro improvement was
-  driven entirely by a `+0.1502` gain on SHADE-Arena, and K3 remained stronger
-  on pooled pAUROC@20.
 - Reconciled the paper-comparable Kimi pricing and refined the Pareto-frontier
   plot labels to present the new point and its comparison with the paper's
   Kimi-K2.6 SFT result clearly.
