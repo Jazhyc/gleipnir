@@ -13,6 +13,8 @@
   application project, with cumulative personal time and commit evidence.
 - `writeups/gleipnir_project_writeup.md`: canonical working draft of the
   project narrative before export to Google Docs.
+- `writeups/gleipnir_lesswrong_writeup.md`: faithful copy of the submitted MATS
+  project narrative for small clarity edits before web publication.
 - `findings/`: durable per-experiment findings; create one document per track.
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
