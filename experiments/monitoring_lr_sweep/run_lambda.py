@@ -66,8 +66,8 @@ class Status:
                 "deception_rows": 0,
                 "seed": 0,
                 "rank": 128,
-                "micro_batch_size": 8,
-                "gradient_accumulation_steps": 4,
+                "micro_batch_size": 4,
+                "gradient_accumulation_steps": 8,
                 "effective_batch_size": 32,
                 "quantization": "nf4-double-quant-bf16",
                 "kernels": "fla-0.5.2+causal-conv1d-1.6.2.post1",
@@ -198,10 +198,10 @@ def main() -> None:
         control = next(
             job for job in jobs if float(job["learning_rate"]) == CONTROL_LEARNING_RATE
         )
-        preflight_dir = result_dir / "preflight" / "rank128-longest32-mb8"
+        preflight_dir = result_dir / "preflight" / "rank128-longest32-mb4"
         preflight_job = {
             **control,
-            "job_name": "preflight-r128-longest32-mb8",
+            "job_name": "preflight-r128-longest32-mb4",
             "design_role": "memory_kernel_and_longest_sequence_preflight",
             "train_rows": 32,
             "max_steps": 1,
@@ -334,6 +334,11 @@ def main() -> None:
     except BaseException as error:
         status.update(
             state="failed",
+            preflight=(
+                "failed"
+                if status.value.get("phase") == "longest_sequence_preflight"
+                else status.value.get("preflight")
+            ),
             error=repr(error),
             failed_at_unix=time.time(),
         )

@@ -224,7 +224,7 @@ def main() -> None:
     jobs = make_jobs(data_dir, result_dir)
     atomic_write_jsonl(jobs_path, jobs)
     manifest = {
-        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v1",
+        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v2",
         "training": audit,
         "held_out_id": id_audit,
         "jobs": [job["job_name"] for job in jobs],
