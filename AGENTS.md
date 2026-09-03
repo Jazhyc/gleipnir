@@ -76,8 +76,7 @@ repeat `scontrol ping` with sandbox escalation. Use ordinary `sbatch`/`salloc`
 jobs to hold GPUs: advanced reservations created with `scontrol` require Slurm
 administrator privileges.
 
-The active reserved Lambda Cloud training target is `gleipnir-control`;
-`monitor-foundation` is no longer active. Use `scripts/lambda_cloud.py` for SSH,
+The active reserved Lambda Cloud training target is `gleipnir-improvement`. Use `scripts/lambda_cloud.py` for SSH,
 sync, bootstrap, secret transfer, and artifact collection. Probe and record the
 active target's hardware before freezing a recipe. Never terminate it or launch
 billable capacity without the user's explicit instruction. Pull important
