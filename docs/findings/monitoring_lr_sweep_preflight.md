@@ -14,9 +14,13 @@ in use (74.67 GiB allocated), 1.08 GiB free, and a failed request for another
 3.54 GiB. No learning-rate cell started. The frozen v1 stop condition therefore
 worked as intended.
 
-The v2 recipe uses microbatch 4 with accumulation 8. This preserves effective
-batch 32, one epoch, optimizer steps, scheduler, objective, and every statistical
-comparison in the sweep. It must pass the same longest-sequence preflight before
-training begins. The failed v1 runtime status and full log are retained in the
-ignored result and log trees as `preflight_mb8_failure_status.json` and
-`preflight_mb8_failure.log`.
+The v2 recipe used microbatch 4 with accumulation 8, but it also OOMed on the
+same preflight: 77.58 GiB was in use, 1.59 GiB was free, and a further 1.99 GiB
+allocation failed. No learning-rate cell started.
+
+The v3 recipe therefore uses microbatch 2 with accumulation 16. This preserves
+effective batch 32, one epoch, optimizer steps, scheduler, objective, and every
+statistical comparison in the sweep. It must pass the same longest-sequence
+preflight before training begins. The failed runtime statuses and full logs are
+retained in the ignored result and log trees under the `preflight_mb8_failure`
+and `preflight_mb4_failure` names.

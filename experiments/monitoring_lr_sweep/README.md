@@ -9,15 +9,15 @@ one-seed pruning screen, not a final estimate.
 The intervention is AdamW learning rate: `1e-5`, `2e-5`, `5e-5`, `1e-4`, or
 `2e-4`. The freshly retrained `5e-5` cell is the control. Every cell uses seed 0,
 one epoch, a linear schedule with 3% warmup, no weight decay, rank-128/alpha-256
-QLoRA, microbatch 4 with gradient accumulation 8, and Kimi K3 soft-target BCE at
+QLoRA, microbatch 2 with gradient accumulation 16, and Kimi K3 soft-target BCE at
 only the selected literal `0`/`1` positions. FLA 0.5.2 and causal-conv1d
 1.6.2.post1 must both bind. The two GPU lanes change scheduling only, not the
 statistical design.
 
 The original v1 recipe retained the previously proven microbatch 8 / accumulation
-4 setting, but its frozen 32-longest-row preflight OOMed at 78.09 GiB allocated
-while requesting another 3.54 GiB. Version 2 changes only the microbatch split;
-effective batch size remains 32. See
+4 setting, but its frozen 32-longest-row preflight OOMed. Version 2's microbatch
+4 / accumulation 8 fallback also OOMed. Version 3 changes only the microbatch
+split to 2 / 16; effective batch size remains 32. See
 `docs/findings/monitoring_lr_sweep_preflight.md`.
 
 Training contains no deception rows. It uses the frozen five-source monitoring
@@ -49,6 +49,6 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 ```
 
 The launcher validates and relocates the manifests, performs the rank-128
-microbatch-4 longest-sequence preflight, trains two serial lanes in parallel,
+microbatch-2 longest-sequence preflight, trains two serial lanes in parallel,
 parity-gates the retrained control, evaluates all cells in one persistent vLLM
 engine, and writes the selection under `results/monitoring_lr_sweep/summary/`.
