@@ -65,6 +65,7 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "direct_loss_weight": 0.0,
             "require_causal_conv1d": True,
             "fla_disable_backend_dispatch": True,
+            "triton_version": "3.7.1",
             "train_rows": TRAIN_ROWS,
             "selection_manifest": None,
             "student_rows_sha256": STUDENT_ROWS_SHA256,
@@ -102,6 +103,7 @@ def validate_training_metadata(path: Path, learning_rate: float) -> dict[str, An
         or fla.get("required") is not True
         or fla.get("version") != "0.5.2"
         or fla.get("backend_dispatch_disabled") is not True
+        or fla.get("triton_version") != "3.7.1"
         or not metadata.get("gated_delta_kernel_modules")
     ):
         raise ValueError("training metadata does not prove pinned FLA use")

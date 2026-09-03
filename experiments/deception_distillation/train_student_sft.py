@@ -2428,6 +2428,9 @@ def main(cfg: DictConfig) -> None:
                             "FLA_DISABLE_BACKEND_DISPATCH"
                         )
                         == "1",
+                        "triton_version": os.environ.get(
+                            "GLEIPNIR_TRITON_VERSION"
+                        ),
                     },
                     "gated_delta_kernel_modules": kernel_modules,
                     "causal_conv1d": {

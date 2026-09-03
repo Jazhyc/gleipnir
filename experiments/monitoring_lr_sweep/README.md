@@ -12,7 +12,7 @@ one epoch, a linear schedule with 3% warmup, no weight decay, rank-128/alpha-256
 QLoRA, microbatch 2 with gradient accumulation 16, and Kimi K3 soft-target BCE at
 only the selected literal `0`/`1` positions. FLA 0.5.2 and causal-conv1d
 1.6.2.post1 must both bind. FLA's optional backend dispatcher is disabled so the
-default Triton kernels are used instead of the TileLang implementation that
+default Triton 3.7.1 kernels are used instead of the TileLang implementation that
 failed the v3 long-sequence backward compile. The two GPU lanes change scheduling
 only, not the statistical design.
 
@@ -21,7 +21,9 @@ The original v1 recipe retained the previously proven microbatch 8 / accumulatio
 4 / accumulation 8 fallback also OOMed. Version 3 changes only the microbatch
 split to 2 / 16; effective batch size remains 32. Its TileLang preflight cleared
 the memory bottleneck but hit an internal layout-inference error. Version 4 keeps
-2 / 16 and freezes FLA's default Triton backend. See
+2 / 16 and freezes FLA's default Triton backend. Version 5 pins Triton 3.7.1 in
+an isolated target; its matched preflight completed in 458 seconds and used about
+68.6 GiB at an observed active-step snapshot. See
 `docs/findings/monitoring_lr_sweep_preflight.md`.
 
 Training contains no deception rows. It uses the frozen five-source monitoring

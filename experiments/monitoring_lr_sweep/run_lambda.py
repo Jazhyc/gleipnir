@@ -40,7 +40,8 @@ from gleipnir.qwen35_adapter_rebase import sha256_file  # noqa: E402
 from gleipnir.qwen35_fast_training import (  # noqa: E402
     DEFAULT_CAUSAL_CONV1D_TARGET,
     DEFAULT_FLA_TARGET,
-    ensure_qwen35_fast_kernels,
+    DEFAULT_TRITON_TARGET,
+    ensure_qwen35_long_trajectory_kernels,
 )
 
 DEFAULT_RESULT_DIR = Path("results/monitoring_lr_sweep")
@@ -71,7 +72,7 @@ class Status:
                 "effective_batch_size": 32,
                 "quantization": "nf4-double-quant-bf16",
                 "kernels": "fla-0.5.2+causal-conv1d-1.6.2.post1",
-                "fla_backend": "default-triton-dispatch-bypassed",
+                "fla_backend": "default-triton-3.7.1-dispatch-bypassed",
             },
         }
         self.update()
@@ -166,6 +167,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--causal-conv1d-target", type=Path, default=DEFAULT_CAUSAL_CONV1D_TARGET
     )
+    parser.add_argument("--triton-target", type=Path, default=DEFAULT_TRITON_TARGET)
     parser.add_argument("--gpus", type=int, default=2)
     parser.add_argument("--revision", default=os.environ.get("GLEIPNIR_COMMIT"))
     return parser.parse_args()
@@ -189,8 +191,8 @@ def main() -> None:
     clean_evaluation_environment = runtime_environment("0")
     try:
         status.update(phase="kernel_preflight")
-        fast_environment = ensure_qwen35_fast_kernels(
-            args.fla_target, args.causal_conv1d_target
+        fast_environment = ensure_qwen35_long_trajectory_kernels(
+            args.fla_target, args.causal_conv1d_target, args.triton_target
         )
         if args.revision:
             fast_environment["GLEIPNIR_COMMIT"] = args.revision
@@ -200,7 +202,7 @@ def main() -> None:
         control = next(
             job for job in jobs if float(job["learning_rate"]) == CONTROL_LEARNING_RATE
         )
-        preflight_dir = result_dir / "preflight" / "rank128-longest32-mb2"
+        preflight_dir = result_dir / "preflight" / "rank128-longest32-mb2-triton371"
         preflight_job = {
             **control,
             "job_name": "preflight-r128-longest32-mb2",

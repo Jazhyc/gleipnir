@@ -99,7 +99,7 @@ def main() -> None:
     atomic_write_json(
         output / "summary.json",
         {
-            "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v4",
+            "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v5",
             "rows": rows,
             "selection": selection,
             "strict_ood_consulted": False,

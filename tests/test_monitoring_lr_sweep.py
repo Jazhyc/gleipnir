@@ -29,6 +29,7 @@ def test_jobs_freeze_monitoring_only_one_seed_lr_grid(tmp_path: Path) -> None:
     assert {job["gradient_accumulation_steps"] for job in jobs} == {16}
     assert {job["require_causal_conv1d"] for job in jobs} == {True}
     assert {job["fla_disable_backend_dispatch"] for job in jobs} == {True}
+    assert {job["triton_version"] for job in jobs} == {"3.7.1"}
     assert "student.training.require_causal_conv1d=true" in training_command(jobs[0])
 
 

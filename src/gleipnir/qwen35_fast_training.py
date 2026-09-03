@@ -19,6 +19,9 @@ CAUSAL_CONV1D_VERSION = "1.6.2.post1"
 CAUSAL_CONV1D_PACKAGE = f"causal-conv1d=={CAUSAL_CONV1D_VERSION}"
 DEFAULT_CAUSAL_CONV1D_TARGET = Path("/tmp/gleipnir-qwen35-causal-conv1d")
 DEFAULT_CUDA_HOME = Path("/usr/local/cuda")
+TRITON_VERSION = "3.7.1"
+TRITON_PACKAGE = f"triton=={TRITON_VERSION}"
+DEFAULT_TRITON_TARGET = Path("/tmp/gleipnir-triton-3.7.1")
 FLA_PROBE = """
 import fla
 from fla.ops.gated_delta_rule import (
@@ -63,6 +66,13 @@ print(
     flush=True,
 )
 """.strip()
+TRITON_PROBE = """
+import triton
+
+if triton.__version__ != "3.7.1":
+    raise RuntimeError(f"expected Triton 3.7.1, found {triton.__version__}")
+print(f"qwen_triton_version={triton.__version__}", flush=True)
+""".strip()
 
 
 def fla_environment(
@@ -95,6 +105,20 @@ def causal_conv1d_environment(
     environment["GLEIPNIR_CAUSAL_CONV1D_VERSION"] = CAUSAL_CONV1D_VERSION
     if DEFAULT_CUDA_HOME.is_dir():
         environment.setdefault("CUDA_HOME", DEFAULT_CUDA_HOME.as_posix())
+    return environment
+
+
+def triton_environment(
+    target: Path,
+    base: Mapping[str, str] | None = None,
+) -> dict[str, str]:
+    """Return an environment that imports an isolated pinned Triton build."""
+    environment = dict(os.environ if base is None else base)
+    existing = environment.get("PYTHONPATH")
+    environment["PYTHONPATH"] = (
+        f"{target.resolve()}:{existing}" if existing else target.resolve().as_posix()
+    )
+    environment["GLEIPNIR_TRITON_VERSION"] = TRITON_VERSION
     return environment
 
 
@@ -136,6 +160,26 @@ def causal_conv1d_install_command(
         "--no-deps",
         "--no-build-isolation",
         CAUSAL_CONV1D_PACKAGE,
+    ]
+
+
+def triton_install_command(
+    target: Path,
+    *,
+    python: Path = Path(sys.executable),
+    uv_executable: str = "uv",
+) -> list[str]:
+    """Return the deterministic isolated Triton install command."""
+    return [
+        uv_executable,
+        "pip",
+        "install",
+        "--python",
+        python.absolute().as_posix(),
+        "--target",
+        target.resolve().as_posix(),
+        "--no-deps",
+        TRITON_PACKAGE,
     ]
 
 
@@ -187,9 +231,7 @@ def ensure_causal_conv1d(
     """Build, activate, and execute a BF16 causal-conv1d GPU preflight."""
     target = target.resolve()
     environment = causal_conv1d_environment(target, base)
-    if not (
-        target / f"causal_conv1d-{CAUSAL_CONV1D_VERSION}.dist-info"
-    ).is_dir():
+    if not (target / f"causal_conv1d-{CAUSAL_CONV1D_VERSION}.dist-info").is_dir():
         target.parent.mkdir(parents=True, exist_ok=True)
         build_environment = dict(environment)
         build_environment["CAUSAL_CONV1D_FORCE_BUILD"] = "TRUE"
@@ -224,3 +266,36 @@ def ensure_qwen35_fast_kernels(
         python=python,
         base=environment,
     )
+
+
+def ensure_qwen35_long_trajectory_kernels(
+    fla_target: Path = DEFAULT_FLA_TARGET,
+    causal_conv1d_target: Path = DEFAULT_CAUSAL_CONV1D_TARGET,
+    triton_target: Path = DEFAULT_TRITON_TARGET,
+    *,
+    python: Path = Path(sys.executable),
+) -> dict[str, str]:
+    """Activate FLA, causal-conv1d, and Hopper-safe Triton for long training."""
+    environment = ensure_qwen35_fast_kernels(
+        fla_target,
+        causal_conv1d_target,
+        python=python,
+    )
+    target = triton_target.resolve()
+    if not (target / f"triton-{TRITON_VERSION}.dist-info").is_dir():
+        target.parent.mkdir(parents=True, exist_ok=True)
+        subprocess.run(
+            triton_install_command(
+                target,
+                python=python,
+                uv_executable=_find_uv(),
+            ),
+            check=True,
+        )
+    environment = triton_environment(target, environment)
+    subprocess.run(
+        [python.absolute().as_posix(), "-c", TRITON_PROBE],
+        check=True,
+        env=environment,
+    )
+    return environment

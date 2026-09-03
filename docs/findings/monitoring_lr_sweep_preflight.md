@@ -30,5 +30,12 @@ implementation. Version 4 freezes that setting while retaining microbatch 2 and
 accumulation 16. The training metadata records the setting, and the campaign
 validator requires it. Effective batch 32, epoch count, optimizer steps,
 scheduler, objective, and every statistical comparison remain unchanged. Version
-4 must pass the same longest-sequence preflight before training begins. Failed
-runtime statuses and logs are retained in the ignored artifact trees.
+4 then encountered FLA's Hopper correctness guard because the base environment's
+Triton was older than 3.7.1.
+
+Version 5 adds an isolated Triton 3.7.1 target. A matched microbatch-2,
+accumulation-16 preflight completed the full optimizer step, adapter save, and
+serving rebase in 458 seconds. Both required kernel families remained bound; an
+active-step snapshot showed about 68.6 GiB used. Version 5 records and validates
+the Triton version for every sweep cell. Failed runtime statuses and logs are
+retained in the ignored artifact trees.

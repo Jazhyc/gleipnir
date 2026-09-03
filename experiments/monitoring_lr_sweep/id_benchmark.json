@@ -1,5 +1,5 @@
 {
-  "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-id-v4",
+  "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-id-v5",
   "status": "frozen_evaluation",
   "hypothesis": "At least one predeclared monitoring-only learning rate improves held-out ID ranking over a freshly trained 5e-5 control.",
   "scope": {
