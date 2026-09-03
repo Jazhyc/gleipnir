@@ -328,6 +328,14 @@ while FlashInfer passed (`0.014076`). Freeze FlashInfer for the official run to
 preserve the established numerical contract; the systems result does not
 license changing the evaluation backend after observing full-set scores.
 
+The full evaluation completed on 2026-09-03. Gleipnir improves source-macro
+pAUROC@20 from `0.604755` to `0.869194`, macro AUROC from `0.860769` to
+`0.957679`, and macro Brier from `0.231949` to `0.074303`. Both sources improve.
+Treat this suite as the fixed development comparison set for hyperparameter
+selection and keep the strict OOD suite outside that loop. Full metrics,
+runtime, serving parity, and artifact hashes are in
+[`../../docs/findings/gleipnir4b_held_out_id_baseline.md`](../../docs/findings/gleipnir4b_held_out_id_baseline.md).
+
 ## Gleipnir 4B visible-reasoning audit
 
 The completed paired generation audit compares the mixed-data, soft-only rank-128
