@@ -63,6 +63,13 @@ def validate_config(config: dict[str, Any]) -> None:
     engine = config.get("engine", {})
     if int(engine.get("max_lora_rank", 0)) != 128:
         raise ValueError("serving rank must remain 128")
+    if engine.get("gdn_prefill_backend", "auto") not in {
+        "auto",
+        "flashinfer",
+        "triton",
+        "cutedsl",
+    }:
+        raise ValueError("unknown GDN prefill backend")
     groups = config.get("model_groups", {})
     expected_groups = set(config.get("expected_model_groups", ["9b", "4b"]))
     if not expected_groups or set(groups) != expected_groups:
@@ -224,23 +231,28 @@ def main() -> None:
         logprob_token_ids=token_ids,
         allowed_token_ids=token_ids,
     )
+    llm_kwargs = {
+        "model": group["id"],
+        "tokenizer": group["id"],
+        "revision": group["revision"],
+        "tokenizer_revision": group["revision"],
+        "dtype": group["dtype"],
+        "tensor_parallel_size": int(engine["tensor_parallel_size"]),
+        "gpu_memory_utilization": float(engine["gpu_memory_utilization"]),
+        "max_model_len": int(engine["max_model_len"]),
+        "max_num_seqs": int(engine["max_num_seqs"]),
+        "max_num_batched_tokens": int(engine["max_num_batched_tokens"]),
+        "enable_prefix_caching": bool(engine["enable_prefix_caching"]),
+        "language_model_only": bool(engine["language_model_only"]),
+        "enable_lora": True,
+        "max_lora_rank": int(engine["max_lora_rank"]),
+        "max_loras": int(engine["max_loras"]),
+        "seed": int(engine["seed"]),
+    }
+    if engine.get("gdn_prefill_backend") not in {None, "auto"}:
+        llm_kwargs["gdn_prefill_backend"] = str(engine["gdn_prefill_backend"])
     llm = LLM(
-        model=group["id"],
-        tokenizer=group["id"],
-        revision=group["revision"],
-        tokenizer_revision=group["revision"],
-        dtype=group["dtype"],
-        tensor_parallel_size=int(engine["tensor_parallel_size"]),
-        gpu_memory_utilization=float(engine["gpu_memory_utilization"]),
-        max_model_len=int(engine["max_model_len"]),
-        max_num_seqs=int(engine["max_num_seqs"]),
-        max_num_batched_tokens=int(engine["max_num_batched_tokens"]),
-        enable_prefix_caching=bool(engine["enable_prefix_caching"]),
-        language_model_only=bool(engine["language_model_only"]),
-        enable_lora=True,
-        max_lora_rank=int(engine["max_lora_rank"]),
-        max_loras=int(engine["max_loras"]),
-        seed=int(engine["seed"]),
+        **llm_kwargs,
     )
     prompts = [
         render_margin_prompt(

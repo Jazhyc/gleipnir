@@ -299,6 +299,35 @@ The dedicated scaling analysis belongs in
 Only the completed full-mixed 9B and 4B comparisons are additionally registered
 in the general cost--performance frontier.
 
+## Gleipnir 4B held-out in-distribution evaluation
+
+Before training-hyperparameter selection, evaluate the completed mixed-data
+Gleipnir 4B adapter and its unadapted Qwen3.5-4B backbone on all 3,012 frozen
+held-out rows: 946 STRIDE-test and 2,066 Gloom-Exfiltration trajectories. The
+hypothesis is that the adapter improves source-macro direct-logit ranking under
+the same compact student prompt used for deployment. The primary metric is the
+unweighted two-source macro normalized pAUROC@20; report source-level and macro
+AUROC, calibration, threshold diagnostics, and ties as well. Do not select on
+the pooled metric alone because the larger Gloom-Exfiltration source would
+dominate it.
+
+The unadapted backbone is the baseline. This run evaluates one already-completed
+checkpoint and performs no model selection. Stop on any row, prompt, model,
+adapter, or checksum drift; a failed four-row source/label-balanced canary; a
+missing decision-token logprob; an OOM/backend failure; or any non-finite score.
+The six-source strict-OOD suite remains outside this evaluation. The frozen
+contract is `gleipnir4b_id_benchmark.json`, and the compact-prompt materializer
+is `prepare_distillation_id.py`.
+
+The backend preflight compared vLLM's explicit Triton and FlashInfer GDN
+prefill paths on the same H100 SXM5 and balanced four-row canary. Triton reduced
+cold engine initialization from 364.08 to 119.80 seconds, and its adapter scores
+agreed with FlashInfer within `2e-8`. However, Triton's unadapted-base scores
+failed the predeclared eager-parity mean-error ceiling (`0.020512 > 0.020000`),
+while FlashInfer passed (`0.014076`). Freeze FlashInfer for the official run to
+preserve the established numerical contract; the systems result does not
+license changing the evaluation backend after observing full-set scores.
+
 ## Gleipnir 4B visible-reasoning audit
 
 The completed paired generation audit compares the mixed-data, soft-only rank-128

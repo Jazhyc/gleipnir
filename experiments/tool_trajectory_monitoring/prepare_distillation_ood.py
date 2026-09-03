@@ -58,8 +58,12 @@ def extract_trajectory(rendered: str, prefix: str, suffix: str) -> str:
     return trajectory
 
 
-def materialize_rows(source_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """Rerender the exact OOD trajectories with the compact student prompt."""
+def materialize_rows(
+    source_rows: list[dict[str, Any]],
+    *,
+    expected_rows: int = 6_395,
+) -> list[dict[str, Any]]:
+    """Rerender exact teacher trajectories with the compact student prompt."""
     prompts = load_prompt_set()
     teacher_suffix = f"{prompts.teacher.trajectory_close}\n"
     output = []
@@ -104,8 +108,10 @@ def materialize_rows(source_rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
             }
         )
     identities = [row["id"] for row in output]
-    if len(output) != 6_395 or len(identities) != len(set(identities)):
-        raise ValueError("student OOD suite must contain 6,395 unique rows")
+    if len(output) != expected_rows or len(identities) != len(set(identities)):
+        raise ValueError(
+            f"student evaluation suite must contain {expected_rows:,} unique rows"
+        )
     return output
 
 

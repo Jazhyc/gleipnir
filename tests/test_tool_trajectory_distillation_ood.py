@@ -51,6 +51,46 @@ def test_materialize_rows_preserves_exact_trajectory_and_uses_student_prompt() -
     )
 
 
+def test_materialize_rows_accepts_a_frozen_non_ood_population() -> None:
+    prompts = load_prompt_set()
+    trajectory = "user: inspect held-out task\nassistant: done"
+    teacher_prompt = prompts.teacher.render(trajectory)
+    source = {
+        "id": "held-out-0",
+        "metadata": {
+            "source_dataset": "test_stride",
+            "ground_truth": 0,
+            "rendered_prompt_sha256": hashlib.sha256(
+                teacher_prompt.encode()
+            ).hexdigest(),
+            "trajectory_sha256": hashlib.sha256(trajectory.encode()).hexdigest(),
+        },
+        "prompt": teacher_prompt,
+    }
+
+    rows = materialize_rows([source], expected_rows=1)
+
+    assert rows[0]["id"] == "held-out-0"
+    assert rows[0]["prompt"] == prompts.student.render(trajectory)
+
+
+def test_gleipnir4b_id_config_is_frozen_for_one_model_group() -> None:
+    path = Path(
+        "experiments/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json"
+    )
+    config = json.loads(path.read_text())
+
+    validate_config(config)
+    assert config["scope"]["rows"] == 3_012
+    assert set(config["scope"]["sources"]) == {
+        "test_stride",
+        "gloom_exfiltration",
+    }
+    assert config["expected_model_groups"] == ["4b"]
+    assert config["model_groups"]["4b"]["evaluate_base"] is True
+    assert config["engine"]["gdn_prefill_backend"] == "flashinfer"
+
+
 def frozen_config(tmp_path: Path) -> dict[str, object]:
     jobs = []
     expected = []
