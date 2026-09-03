@@ -2424,6 +2424,10 @@ def main(cfg: DictConfig) -> None:
                         "available": fla_available,
                         "required": require_fla,
                         "version": os.environ.get("GLEIPNIR_FLA_VERSION"),
+                        "backend_dispatch_disabled": os.environ.get(
+                            "FLA_DISABLE_BACKEND_DISPATCH"
+                        )
+                        == "1",
                     },
                     "gated_delta_kernel_modules": kernel_modules,
                     "causal_conv1d": {

@@ -18,9 +18,17 @@ The v2 recipe used microbatch 4 with accumulation 8, but it also OOMed on the
 same preflight: 77.58 GiB was in use, 1.59 GiB was free, and a further 1.99 GiB
 allocation failed. No learning-rate cell started.
 
-The v3 recipe therefore uses microbatch 2 with accumulation 16. This preserves
-effective batch 32, one epoch, optimizer steps, scheduler, objective, and every
-statistical comparison in the sweep. It must pass the same longest-sequence
-preflight before training begins. The failed runtime statuses and full logs are
-retained in the ignored result and log trees under the `preflight_mb8_failure`
-and `preflight_mb4_failure` names.
+The v3 recipe therefore used microbatch 2 with accumulation 16. It cleared the
+memory bottleneck, but the first backward pass failed while compiling FLA's
+optional TileLang `chunk_bwd_dqkwg` implementation: TVM layout inference reported
+conflicting layouts for `b_dq`. This is a backend compiler failure rather than an
+OOM.
+
+FLA 0.5.2's dispatcher explicitly supports `FLA_DISABLE_BACKEND_DISPATCH=1`,
+which bypasses optional backends and uses the operation's default Triton
+implementation. Version 4 freezes that setting while retaining microbatch 2 and
+accumulation 16. The training metadata records the setting, and the campaign
+validator requires it. Effective batch 32, epoch count, optimizer steps,
+scheduler, objective, and every statistical comparison remain unchanged. Version
+4 must pass the same longest-sequence preflight before training begins. Failed
+runtime statuses and logs are retained in the ignored artifact trees.

@@ -28,6 +28,7 @@ def test_jobs_freeze_monitoring_only_one_seed_lr_grid(tmp_path: Path) -> None:
     assert {job["micro_batch_size"] for job in jobs} == {2}
     assert {job["gradient_accumulation_steps"] for job in jobs} == {16}
     assert {job["require_causal_conv1d"] for job in jobs} == {True}
+    assert {job["fla_disable_backend_dispatch"] for job in jobs} == {True}
     assert "student.training.require_causal_conv1d=true" in training_command(jobs[0])
 
 

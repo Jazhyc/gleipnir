@@ -177,6 +177,7 @@ def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
         "soft_loss_weight": 1.0,
         "direct_loss_weight": 0.0,
         "require_causal_conv1d": True,
+        "fla_disable_backend_dispatch": True,
         "train_rows": TRAIN_ROWS,
         "selection_manifest": None,
         "student_rows": (data_dir / "student_rows.jsonl").as_posix(),
@@ -224,7 +225,7 @@ def main() -> None:
     jobs = make_jobs(data_dir, result_dir)
     atomic_write_jsonl(jobs_path, jobs)
     manifest = {
-        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v3",
+        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v4",
         "training": audit,
         "held_out_id": id_audit,
         "jobs": [job["job_name"] for job in jobs],

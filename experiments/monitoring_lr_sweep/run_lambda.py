@@ -71,6 +71,7 @@ class Status:
                 "effective_batch_size": 32,
                 "quantization": "nf4-double-quant-bf16",
                 "kernels": "fla-0.5.2+causal-conv1d-1.6.2.post1",
+                "fla_backend": "default-triton-dispatch-bypassed",
             },
         }
         self.update()
@@ -104,6 +105,7 @@ def gpu_training_environment(base: dict[str, str], gpu: int) -> dict[str, str]:
     cache = f"/tmp/gleipnir-monitoring-lr-gpu-{gpu}"
     environment.update(
         CUDA_VISIBLE_DEVICES=str(gpu),
+        FLA_DISABLE_BACKEND_DISPATCH="1",
         TILELANG_CACHE_DIR=f"{cache}/tilelang",
         TORCHINDUCTOR_CACHE_DIR=f"{cache}/torchinductor",
         TRITON_CACHE_DIR=f"{cache}/triton",
