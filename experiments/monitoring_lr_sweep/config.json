@@ -1,0 +1,53 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v1",
+  "status": "frozen_before_training",
+  "hypothesis": "The 5e-5 learning rate transferred from the earlier recipe is not necessarily optimal for one-epoch, rank-128 Qwen3.5-4B soft distillation on monitoring-only trajectories.",
+  "intervention": "Train AdamW at learning rates 1e-5, 2e-5, 5e-5, 1e-4, and 2e-4 with one seed; all other training fields remain fixed.",
+  "baseline": "A freshly trained monitoring-only AdamW 5e-5 cell under the same fast-kernel and batch recipe.",
+  "training": {
+    "rows": 8688,
+    "data_scope": "monitoring_only",
+    "deception_rows": 0,
+    "student_rows_sha256": "03669ac12452a2b63fe13193611fb99bfaeeb2456e6aaeb0c1be43471ea4387c",
+    "soft_targets_sha256": "1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a",
+    "model": "Qwen/Qwen3.5-4B",
+    "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    "seed": 0,
+    "rank": 128,
+    "lora_alpha": 256,
+    "epochs": 1,
+    "optimizer": "adamw",
+    "learning_rates": [1e-5, 2e-5, 5e-5, 1e-4, 2e-4],
+    "lr_scheduler_type": "linear",
+    "warmup_ratio": 0.03,
+    "weight_decay": 0.0,
+    "micro_batch_size": 8,
+    "gradient_accumulation_steps": 4,
+    "effective_batch_size": 32,
+    "max_length": 29696,
+    "quantization": "4-bit NF4, double quantization, BF16 compute",
+    "objective": "Kimi K3 binary soft-target BCE at selected literal 0/1 logits",
+    "required_kernels": {
+      "flash-linear-attention": "0.5.2",
+      "fla-core": "0.5.2",
+      "causal-conv1d": "1.6.2.post1"
+    }
+  },
+  "selection": {
+    "dataset": "the frozen 3,012-row held-out ID development suite",
+    "primary_metric": "unweighted two-source macro normalized pAUROC@20",
+    "replacement_gate": "Require at least +0.005 macro pAUROC@20 over the retrained 5e-5 control, no source pAUROC@20 regression worse than 0.01, and no macro Brier regression worse than 0.005.",
+    "tie_breakers": ["macro AUROC", "lower macro Brier"],
+    "strict_ood_used_for_selection": false,
+    "promotion_scope": "one-seed pruning only; confirm the selected recipe across seeds before final OOD evaluation"
+  },
+  "stop_conditions": [
+    "Training or ID-development input identity, provenance, row count, or checksum drifts.",
+    "Any deception row enters training or an arm other than Kimi-soft-only AdamW is introduced.",
+    "The rank-128, microbatch-8 longest-sequence preflight OOMs.",
+    "FLA 0.5.2 or causal-conv1d 1.6.2.post1 is unavailable or unbound after model import.",
+    "Quantization, effective batch, epoch count, scheduler, warmup, weight decay, prompt, or selected-token objective differs across cells.",
+    "Any causal master, serving rebase, parity report, ID score, or row is missing, duplicated, truncated, non-finite, or inconsistent.",
+    "The strict OOD suite is consulted before the one-seed selection is frozen."
+  ]
+}

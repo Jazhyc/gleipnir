@@ -71,6 +71,7 @@ student:
     soft_loss_type: bce
     direct_logits_mode: selected_positions
     require_flash_linear_attention: true
+    require_causal_conv1d: false
     soft_target_logit_center: 0.0
     soft_target_logit_scale: 1.0
     soft_huber_delta: 1.0

@@ -71,6 +71,9 @@ def training_command(job: dict[str, Any]) -> list[str]:
         f"{job['gradient_accumulation_steps']}",
         f"student.training.save_steps={job['save_steps']}",
     ]
+    if "require_causal_conv1d" in job:
+        required = str(bool(job["require_causal_conv1d"])).lower()
+        command.append(f"student.training.require_causal_conv1d={required}")
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):
@@ -99,9 +102,7 @@ def main() -> None:
     job = find_job(
         args.jobs.resolve(),
         args.job_name,
-        validate_design=not (
-            args.allow_preflight_job or args.allow_non_scaling_job
-        ),
+        validate_design=not (args.allow_preflight_job or args.allow_non_scaling_job),
     )
     if completed_model(job):
         print(f"completed model already exists; skipping {job['job_name']}")
@@ -112,10 +113,9 @@ def main() -> None:
         json.dumps(job, indent=2, sort_keys=True) + "\n"
     )
     causal_dir = Path(job["causal_adapter_dir"])
-    causal_complete = (
-        (causal_dir / "adapter_model.safetensors").is_file()
-        and (causal_dir / "training_metadata.json").is_file()
-    )
+    causal_complete = (causal_dir / "adapter_model.safetensors").is_file() and (
+        causal_dir / "training_metadata.json"
+    ).is_file()
     if not causal_complete:
         command = training_command(job)
         print("running", " ".join(command), flush=True)
