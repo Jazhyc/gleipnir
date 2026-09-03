@@ -18,7 +18,10 @@ from experiments.adapter_capacity_scaling.core import (
 from experiments.adapter_capacity_scaling.run_lambda import Status
 from experiments.adapter_capacity_scaling.run_train import training_command
 from gleipnir.qwen35_fast_training import (
+    CAUSAL_CONV1D_PACKAGE,
     FLA_PACKAGES,
+    causal_conv1d_environment,
+    causal_conv1d_install_command,
     fla_environment,
     fla_install_command,
 )
@@ -185,6 +188,28 @@ def test_fla_install_is_pinned_and_isolated() -> None:
     assert environment["PYTHONPATH"] == "/tmp/test-fla:/existing"
     assert environment["GLEIPNIR_FLA_VERSION"] == "0.5.2"
     assert environment["PYTORCH_CUDA_ALLOC_CONF"] == "expandable_segments:True"
+
+
+def test_causal_conv1d_install_is_pinned_built_and_isolated() -> None:
+    target = Path("/tmp/test-causal-conv1d")
+    command = causal_conv1d_install_command(
+        target,
+        python=Path("/opt/venv/bin/python"),
+        uv_executable="/usr/bin/uv",
+    )
+    environment = causal_conv1d_environment(
+        target,
+        {"PYTHONPATH": "/tmp/test-fla"},
+    )
+
+    assert command[:3] == ["/usr/bin/uv", "pip", "install"]
+    assert command[-1] == CAUSAL_CONV1D_PACKAGE
+    assert "--no-deps" in command
+    assert "--no-build-isolation" in command
+    assert environment["PYTHONPATH"] == (
+        "/tmp/test-causal-conv1d:/tmp/test-fla"
+    )
+    assert environment["GLEIPNIR_CAUSAL_CONV1D_VERSION"] == "1.6.2.post1"
 
 
 def test_rank256_preflight_requires_production_qlora_metadata(tmp_path) -> None:

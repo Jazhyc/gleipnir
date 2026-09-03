@@ -25,7 +25,11 @@ from experiments.tool_trajectory_monitoring.run_distillation_lambda import (
     verify_job_inputs,
 )
 from gleipnir.qwen35_adapter_rebase import sha256_file
-from gleipnir.qwen35_fast_training import DEFAULT_FLA_TARGET, ensure_fla_kernels
+from gleipnir.qwen35_fast_training import (
+    DEFAULT_CAUSAL_CONV1D_TARGET,
+    DEFAULT_FLA_TARGET,
+    ensure_qwen35_fast_kernels,
+)
 
 DEFAULT_RESULT_DIR = Path("results/tool_trajectory_distillation_mixed_qwen4b")
 DEFAULT_SCALING_RESULT_DIR = Path("results/tool_trajectory_distillation_scaling")
@@ -77,6 +81,11 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument("--fla-target", type=Path, default=DEFAULT_FLA_TARGET)
+    parser.add_argument(
+        "--causal-conv1d-target",
+        type=Path,
+        default=DEFAULT_CAUSAL_CONV1D_TARGET,
+    )
     parser.add_argument("--revision", default=os.environ.get("GLEIPNIR_COMMIT"))
     return parser.parse_args()
 
@@ -104,7 +113,12 @@ def main() -> None:
         if args.revision:
             environment["GLEIPNIR_COMMIT"] = args.revision
         status.update(phase="kernel_preflight")
-        environment.update(ensure_fla_kernels(args.fla_target))
+        environment.update(
+            ensure_qwen35_fast_kernels(
+                args.fla_target,
+                args.causal_conv1d_target,
+            )
+        )
 
         selection = args.preflight_selection.resolve()
         actual_selection_sha256 = sha256_file(selection)

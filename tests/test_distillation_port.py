@@ -7,6 +7,7 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
+    causal_conv1d_kernel_modules,
     collate_eva_features,
     dataset_sampling_weights,
     forward_final_token_hidden,
@@ -222,6 +223,26 @@ def test_gated_delta_kernel_modules_report_bound_implementation() -> None:
 
     assert gated_delta_kernel_modules(model) == [
         "fla.ops.gated_delta_rule.chunk"
+    ]
+
+
+def test_causal_conv1d_kernel_modules_report_fast_and_fallback_paths() -> None:
+    model = torch.nn.Module()
+    fast_child = torch.nn.Module()
+    fallback_child = torch.nn.Module()
+
+    def fake_kernel():
+        return None
+
+    fake_kernel.__module__ = "causal_conv1d.causal_conv1d_interface"
+    fast_child.causal_conv1d_fn = fake_kernel
+    fallback_child.causal_conv1d_fn = None
+    model.add_module("fast", fast_child)
+    model.add_module("fallback", fallback_child)
+
+    assert causal_conv1d_kernel_modules(model) == [
+        "causal_conv1d.causal_conv1d_interface",
+        "torch_fallback",
     ]
 
 

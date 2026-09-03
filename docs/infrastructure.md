@@ -12,24 +12,25 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 
 ## Lambda Cloud
 
-The active reserved training target is `gleipnir-control`, intended for the
-action-only tool-trajectory monitoring track. The former two-H100
-`monitor-foundation` target is no longer active; references to it in historical
-experiment READMEs describe completed campaigns and are not current launch
-instructions.
+The active reserved training target is `gleipnir-improvement`, intended for
+continued action-only tool-trajectory monitoring work. It has two H100 80 GB
+SXM5 GPUs and runs the Lambda Stack 24 Ubuntu 24.04 image. The former
+`gleipnir-control` and `monitor-foundation` targets are no longer active;
+references to them in historical experiment READMEs describe completed
+campaigns and are not current launch instructions.
 
-Probe `gleipnir-control` and record its concrete GPU model and count before
+Probe `gleipnir-improvement` and record its concrete GPU model and count before
 freezing a training recipe. The helper accepts exact console-created titles, so
 it can address the target without renaming or recreating it:
 
 ```bash
-python scripts/lambda_cloud.py instances --campaign gleipnir-control
-python scripts/lambda_cloud.py probe --campaign gleipnir-control
-python scripts/lambda_cloud.py sync-commit --campaign gleipnir-control
-python scripts/lambda_cloud.py bootstrap --campaign gleipnir-control
-python scripts/lambda_cloud.py sync-secrets --campaign gleipnir-control \
+python scripts/lambda_cloud.py instances --campaign gleipnir-improvement
+python scripts/lambda_cloud.py probe --campaign gleipnir-improvement
+python scripts/lambda_cloud.py sync-commit --campaign gleipnir-improvement
+python scripts/lambda_cloud.py bootstrap --campaign gleipnir-improvement
+python scripts/lambda_cloud.py sync-secrets --campaign gleipnir-improvement \
   --name HF_TOKEN --name WANDB_API_KEY --name OPENROUTER_API_KEY
-python scripts/lambda_cloud.py ssh --campaign gleipnir-control
+python scripts/lambda_cloud.py ssh --campaign gleipnir-improvement
 ```
 
 These entries document an already-reserved target; they do not authorize
@@ -47,6 +48,17 @@ This deliberately leaves the locked project environment unchanged while making
 the accelerated gated-delta implementation reproducible after an ephemeral
 instance reboot. The adapter-capacity campaign additionally locks bitsandbytes
 and uses standard NF4 QLoRA so microbatch 8 remains viable at high ranks.
+
+The mixed Qwen3.5-4B launcher also source-builds pinned
+`causal-conv1d==1.6.2.post1` without dependencies into
+`/tmp/gleipnir-qwen35-causal-conv1d`. Its combined preflight executes BF16
+forward and backward on the GPU and requires Transformers to bind both the FLA
+and causal-convolution fast paths before loading the model. On Stack 24, export
+`CUDA_HOME=/usr/local/cuda`: otherwise TileLang can pair the Python environment's
+CUDA 13.2 compiler with its CUDA 13.3 CCCL headers and fail JIT compilation. The
+shared fast-kernel environment sets this automatically when that toolkit path
+exists. The source build is cached by `uv`, but a cold build took about ten
+minutes on `gleipnir-improvement`.
 
 `sync-commit` transfers a committed snapshot. Use `push` for an explicit ignored
 input and `pull` for result collection. The helper never terminates an instance

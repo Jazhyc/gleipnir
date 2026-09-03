@@ -5,6 +5,27 @@ frozen student OOD evaluation complete.
 
 ## Lambda environment status
 
+The current long-lived `gleipnir-improvement` target was probed on 2026-09-03:
+
+- two NVIDIA H100 80GB HBM3 GPUs (SXM5), in Lambda region `us-south-2`;
+- Ubuntu 24.04, NVIDIA driver 580.126.20, system CUDA toolkit 13.0;
+- the locked Python 3.12.14 environment with PyTorch 2.11.0+cu130;
+- pinned FLA 0.5.2 plus a source-built `causal-conv1d==1.6.2.post1` in isolated
+  `/tmp` targets.
+
+Both GPUs passed causal-convolution FP32/BF16 forward/backward checks. A Qwen3.5
+4B-width, 8,192-token BF16 training microbenchmark measured a 2.17x convolution
+speedup and a 1.60x gated-delta-sublayer speedup over Transformers' exact Torch
+convolution fallback. These are kernel and sublayer measurements, not a
+whole-model throughput estimate; retain the longest-sequence training preflight
+before changing projected campaign duration. The mixed-4B launcher now installs
+and probes both fast paths fail-closed and records the bound implementation in
+training metadata.
+
+The following `gleipnir-control` details are retained as the historical
+environment for the completed campaign; that target was terminated on
+2026-09-01.
+
 The already-reserved `gleipnir-control` target was probed and bootstrapped on
 2026-08-30 from commit `0fc7d91aa00f8c03382ec1236995d88efe97f1d0`:
 

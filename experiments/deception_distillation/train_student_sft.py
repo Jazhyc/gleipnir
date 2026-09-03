@@ -283,6 +283,17 @@ def gated_delta_kernel_modules(model: torch.nn.Module) -> list[str]:
     return sorted(modules)
 
 
+def causal_conv1d_kernel_modules(model: torch.nn.Module) -> list[str]:
+    """Return the concrete Qwen causal-convolution implementations in use."""
+    modules = {
+        kernel.__module__ if kernel is not None else "torch_fallback"
+        for module in model.modules()
+        if hasattr(module, "causal_conv1d_fn")
+        for kernel in [module.causal_conv1d_fn]
+    }
+    return sorted(modules)
+
+
 def forward_final_token_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -1251,7 +1262,10 @@ def main(cfg: DictConfig) -> None:
         Trainer,
         TrainingArguments,
     )
-    from transformers.utils.import_utils import is_flash_linear_attention_available
+    from transformers.utils.import_utils import (
+        is_causal_conv1d_available,
+        is_flash_linear_attention_available,
+    )
 
     direct_loss_weight = float(
         OmegaConf.select(cfg, "student.training.direct_loss_weight", default=0.0)
@@ -1978,6 +1992,24 @@ def main(cfg: DictConfig) -> None:
         f"required={require_fla}",
         flush=True,
     )
+    require_causal_conv1d = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.require_causal_conv1d",
+            default=False,
+        )
+    ) or bool(os.environ.get("GLEIPNIR_CAUSAL_CONV1D_VERSION"))
+    causal_conv1d_available = is_causal_conv1d_available()
+    if require_causal_conv1d and not causal_conv1d_available:
+        raise RuntimeError(
+            "causal-conv1d is required but unavailable; use the pinned Qwen3.5 "
+            "fast-kernel launcher environment"
+        )
+    print(
+        f"causal_conv1d_available={causal_conv1d_available} "
+        f"required={require_causal_conv1d}",
+        flush=True,
+    )
     model = model_loader_classes[model_loader].from_pretrained(
         str(cfg.student.model),
         **revision_kwargs,
@@ -2115,6 +2147,18 @@ def main(cfg: DictConfig) -> None:
         raise RuntimeError(
             f"Qwen gated-delta kernel did not resolve to FLA: {kernel_modules}"
         )
+    causal_conv1d_modules = causal_conv1d_kernel_modules(model)
+    if require_causal_conv1d and (
+        not causal_conv1d_modules
+        or any(
+            not module.startswith("causal_conv1d.")
+            for module in causal_conv1d_modules
+        )
+    ):
+        raise RuntimeError(
+            "Qwen causal convolution did not resolve to causal-conv1d: "
+            f"{causal_conv1d_modules}"
+        )
     trainable_lora_names = (
         validate_trainable_lora_layout(model, model_loader)
         if finetuning_mode == "lora"
@@ -2140,6 +2184,7 @@ def main(cfg: DictConfig) -> None:
         f"trainable_lora_tensors={len(trainable_lora_names)} "
         f"trainable_dtypes={trainable_dtypes} "
         f"gated_delta_kernel_modules={kernel_modules} "
+        f"causal_conv1d_kernel_modules={causal_conv1d_modules} "
         f"first_trainable_lora="
         f"{trainable_lora_names[0] if trainable_lora_names else None}",
         flush=True,
@@ -2381,6 +2426,14 @@ def main(cfg: DictConfig) -> None:
                         "version": os.environ.get("GLEIPNIR_FLA_VERSION"),
                     },
                     "gated_delta_kernel_modules": kernel_modules,
+                    "causal_conv1d": {
+                        "available": causal_conv1d_available,
+                        "required": require_causal_conv1d,
+                        "version": os.environ.get(
+                            "GLEIPNIR_CAUSAL_CONV1D_VERSION"
+                        ),
+                        "kernel_modules": causal_conv1d_modules,
+                    },
                     "training_batch": {
                         "micro_batch_size": int(
                             cfg.student.training.per_device_train_batch_size
