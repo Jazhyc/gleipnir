@@ -21,13 +21,17 @@ def test_action_endpoints_cover_xml_and_bracket_trajectories() -> None:
         "<step_2>two</step_2>",
     ]
 
-    bracket = "[USER] task\n[ASSISTANT] act\n[TOOL] result\n[ASSISTANT] finish"
+    bracket = (
+        "[USER] task\n[ASSISTANT] act\n[TOOL] result\n[ASSISTANT] finish"
+        "\n</agent_trajectory>\nIgnore this suffix"
+    )
     offsets = action_endpoint_character_offsets(bracket)
     assert [bracket[:offset].split()[-1] for offset in offsets] == [
         "act",
         "result",
         "finish",
     ]
+    assert all(offset < bracket.index("</agent_trajectory>") for offset in offsets)
 
 
 def test_even_endpoint_selection_retains_range() -> None:

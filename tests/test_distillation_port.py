@@ -52,9 +52,7 @@ class HiddenStateModel(torch.nn.Module):
 
     def forward(self, input_ids, attention_mask, use_cache):
         del input_ids, attention_mask, use_cache
-        return type(
-            "Output", (), {"last_hidden_state": self.hidden_states}
-        )()
+        return type("Output", (), {"last_hidden_state": self.hidden_states})()
 
 
 class HiddenProjectingModel(torch.nn.Module):
@@ -101,9 +99,7 @@ class SelectiveCheckpointModel(torch.nn.Module):
     def __init__(self) -> None:
         super().__init__()
         self.model = torch.nn.Module()
-        self.model.layers = torch.nn.ModuleList(
-            [torch.nn.Module() for _ in range(4)]
-        )
+        self.model.layers = torch.nn.ModuleList([torch.nn.Module() for _ in range(4)])
         for layer in self.model.layers[:3]:
             layer.linear_attn = torch.nn.Module()
         self.config = type(
@@ -292,6 +288,34 @@ def test_selective_compile_wraps_linear_shells_around_disabled_mixers() -> None:
     assert len(disable_calls) == 3
 
 
+def test_selective_compile_wraps_checkpointed_attention_and_linear_shells() -> None:
+    model = SelectiveCheckpointModel()
+    apply_gradient_checkpointing_policy(model, "all")
+    compile_calls = []
+    disable_calls = []
+
+    def fake_compile(function, **kwargs):
+        compile_calls.append((function, kwargs))
+        return function
+
+    def fake_disable(function):
+        disable_calls.append(function)
+        return function
+
+    indices = apply_selective_torch_compile_policy(
+        model,
+        "checkpointed_full_attention_and_linear_shell",
+        backend="inductor",
+        mode="default",
+        dynamic=True,
+        compile_function=fake_compile,
+        disable_function=fake_disable,
+    )
+    assert indices == [0, 1, 2, 3]
+    assert len(compile_calls) == 4
+    assert len(disable_calls) == 3
+
+
 def test_selective_compile_disables_only_shared_linear_kernels() -> None:
     model = SelectiveCheckpointModel()
     apply_gradient_checkpointing_policy(model, "linear_attention_only")
@@ -338,8 +362,7 @@ def test_selective_compile_disables_only_shared_linear_kernels() -> None:
         id(layer.linear_attn.causal_conv1d_fn) for layer in model.model.layers[:3]
     }
     fla_functions = {
-        id(layer.linear_attn.chunk_gated_delta_rule)
-        for layer in model.model.layers[:3]
+        id(layer.linear_attn.chunk_gated_delta_rule) for layer in model.model.layers[:3]
     }
     assert len(causal_functions) == 1
     assert len(fla_functions) == 1
@@ -428,9 +451,7 @@ def test_selected_position_logits_match_full_logits_with_right_padding() -> None
     attention_mask = torch.tensor([[1, 1, 1, 0], [1, 1, 0, 0]])
 
     full_model = PositionSelectingModel(logits)
-    full, _ = forward_final_token_logits(
-        full_model, input_ids, attention_mask, "full"
-    )
+    full, _ = forward_final_token_logits(full_model, input_ids, attention_mask, "full")
     selected_model = PositionSelectingModel(logits)
     selected, _ = forward_final_token_logits(
         selected_model, input_ids, attention_mask, "selected_positions"
@@ -478,9 +499,7 @@ def test_gated_delta_kernel_modules_report_bound_implementation() -> None:
     child.chunk_gated_delta_rule = fake_kernel
     model.add_module("gated_delta", child)
 
-    assert gated_delta_kernel_modules(model) == [
-        "fla.ops.gated_delta_rule.chunk"
-    ]
+    assert gated_delta_kernel_modules(model) == ["fla.ops.gated_delta_rule.chunk"]
 
 
 def test_causal_conv1d_kernel_modules_report_fast_and_fallback_paths() -> None:
@@ -512,9 +531,7 @@ def test_dataset_sampling_weights_match_declared_dataset_mass() -> None:
     square_root, square_root_mass = dataset_sampling_weights(
         dataset_ids, "sqrt_balanced"
     )
-    uniform, uniform_mass = dataset_sampling_weights(
-        dataset_ids, "uniform_dataset"
-    )
+    uniform, uniform_mass = dataset_sampling_weights(dataset_ids, "uniform_dataset")
 
     assert proportional.tolist() == [1.0] * 5
     assert proportional_mass == pytest.approx({0: 0.8, 1: 0.2})

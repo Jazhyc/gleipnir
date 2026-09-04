@@ -180,6 +180,7 @@ def main() -> None:
                     "num_train_epochs": -1,
                     "selection_manifest": selection.as_posix(),
                     "selection_sha256": sha256_file(selection),
+                    "selective_torch_compile_canary_tokens": 2048,
                     "save_steps": 1,
                     "output_dir": output.as_posix(),
                     "causal_adapter_dir": (output / "causal_adapter").as_posix(),

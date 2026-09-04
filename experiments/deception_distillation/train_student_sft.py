@@ -204,11 +204,13 @@ def apply_selective_torch_compile_policy(
         "uncheckpointed_full_attention",
         "full_attention_and_linear_shell",
         "full_attention_and_linear_mixer_segments",
+        "checkpointed_full_attention_and_linear_shell",
     }:
         raise ValueError(
             "student.training.selective_torch_compile_policy must be none, "
             "uncheckpointed_full_attention, full_attention_and_linear_shell, "
-            "or full_attention_and_linear_mixer_segments"
+            "full_attention_and_linear_mixer_segments, or "
+            "checkpointed_full_attention_and_linear_shell"
         )
     if policy == "none":
         return []
@@ -228,12 +230,17 @@ def apply_selective_torch_compile_policy(
             in {
                 "full_attention_and_linear_shell",
                 "full_attention_and_linear_mixer_segments",
+                "checkpointed_full_attention_and_linear_shell",
             }
             and layer_type == "linear_attention"
         )
         if not compile_full and not compile_linear_shell:
             continue
-        if compile_full and bool(getattr(layer, "gradient_checkpointing", False)):
+        if (
+            compile_full
+            and bool(getattr(layer, "gradient_checkpointing", False))
+            and policy != "checkpointed_full_attention_and_linear_shell"
+        ):
             raise ValueError(
                 "selective compilation requires full-attention layers to be "
                 "uncheckpointed"
@@ -242,7 +249,10 @@ def apply_selective_torch_compile_policy(
             linear_attn = getattr(layer, "linear_attn", None)
             if linear_attn is None:
                 raise ValueError("linear-attention layer exposes no token mixer")
-            if policy == "full_attention_and_linear_shell":
+            if policy in {
+                "full_attention_and_linear_shell",
+                "checkpointed_full_attention_and_linear_shell",
+            }:
                 linear_attn.forward = disable_function(linear_attn.forward)
             else:
                 for attribute in ("causal_conv1d_fn", "chunk_gated_delta_rule"):
@@ -343,12 +353,19 @@ def action_endpoint_character_offsets(prompt: str) -> list[int]:
     xml_offsets = [match.end() for match in XML_STEP_END_PATTERN.finditer(prompt)]
     if xml_offsets:
         return xml_offsets
-    markers = list(BRACKET_EVENT_PATTERN.finditer(prompt))
+    trajectory_end = prompt.find("\n</agent_trajectory>")
+    if trajectory_end < 0:
+        trajectory_end = len(prompt)
+    markers = [
+        marker
+        for marker in BRACKET_EVENT_PATTERN.finditer(prompt)
+        if marker.start() < trajectory_end
+    ]
     offsets = []
     for index, marker in enumerate(markers):
         if marker.group(1) not in {"ASSISTANT", "TOOL"}:
             continue
-        end = markers[index + 1].start() if index + 1 < len(markers) else len(prompt)
+        end = markers[index + 1].start() if index + 1 < len(markers) else trajectory_end
         while end > marker.end() and prompt[end - 1].isspace():
             end -= 1
         if end > marker.end():
@@ -3101,7 +3118,11 @@ def main(cfg: DictConfig) -> None:
     disabled_linear_attention_layer_indices = [
         index
         for index, layer_type in enumerate(compile_layer_types)
-        if selective_torch_compile_policy == "full_attention_and_linear_shell"
+        if selective_torch_compile_policy
+        in {
+            "full_attention_and_linear_shell",
+            "checkpointed_full_attention_and_linear_shell",
+        }
         and layer_type == "linear_attention"
     ]
     disabled_linear_attention_kernel_layer_indices = [

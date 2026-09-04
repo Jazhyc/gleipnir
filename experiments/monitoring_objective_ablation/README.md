@@ -31,9 +31,10 @@ not contrastive learning.
 All arms use the selected `2e-5` learning rate, one epoch, seed 0, rank-128
 QLoRA, effective batch 32, the proven selective-checkpointing/compilation
 recipe, and pinned FLA/causal-conv1d kernels. The rationale preflight required a
-recorded execution-only exception: checkpoint all layers and disable selective
-compilation after compiled full-attention backward peaked at 77.5 GiB. MIL
-retains the faster recipe. The exact arms and stop conditions are in
+recorded execution-only exception: checkpoint all layers while retaining
+compiled full-attention and linear shells. The matched recipe peaked at 77.5
+GiB, while fully eager SDPA attempted a 52.2 GiB attention allocation. MIL
+retains the faster proven recipe. The exact arms and stop conditions are in
 `config.yaml`.
 
 ## Evaluation and promotion

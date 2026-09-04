@@ -36,7 +36,9 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "all",
-        "selective_torch_compile_policy": "none",
+        "selective_torch_compile_policy": (
+            "checkpointed_full_attention_and_linear_shell"
+        ),
     },
     {
         "job_name": "soft-rationale-w020",
@@ -46,7 +48,9 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "all",
-        "selective_torch_compile_policy": "none",
+        "selective_torch_compile_policy": (
+            "checkpointed_full_attention_and_linear_shell"
+        ),
     },
     {
         "job_name": "soft-mil-max-w025",
@@ -196,13 +200,19 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
     )
     if metadata.get("checkpointed_layer_indices") != expected_checkpointed:
         raise ValueError("checkpointing policy drifted")
-    expected_compiled = [] if job["kind"] == "rationale" else EXPECTED_COMPILED_LAYERS
-    if compiled.get("compiled_layer_indices") != expected_compiled:
+    if (
+        metadata.get("gradient_checkpointing_policy")
+        != job["gradient_checkpointing_policy"]
+    ):
+        raise ValueError("checkpointing policy identity drifted")
+    if compiled.get("policy") != job["selective_torch_compile_policy"]:
+        raise ValueError("selective compilation policy identity drifted")
+    if compiled.get("compiled_layer_indices") != EXPECTED_COMPILED_LAYERS:
         raise ValueError("compiled layer set drifted")
     unique_graphs = int(
         compiled.get("dynamo_counters", {}).get("stats", {}).get("unique_graphs", 0)
     )
-    if job["kind"] == "mil" and not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
+    if not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
         raise ValueError(f"unexpected Dynamo graph count: {unique_graphs}")
     if (
         int(metadata.get("training_state", {}).get("global_step", -1))
