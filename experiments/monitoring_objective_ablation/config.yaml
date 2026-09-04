@@ -37,9 +37,9 @@ training:
     allocation even after the cap. All arms therefore compile decoder shells
     but hold both full- and linear-attention token mixers behind graph breaks;
     redundant all-ones masks are omitted so SDPA can select its flash kernel. A
-    fail-closed flash-only SDPA policy and a 2048-token eager/compiled logit
-    canary must pass first. The cap preserves every rationale target and full
-    context for over 95% of rows.
+    fail-closed flash-only SDPA policy and a 2048-token BF16-autocast
+    eager/compiled logit canary must pass first. The cap preserves every
+    rationale target and full context for over 95% of rows.
 
 arms:
   - name: soft-rationale-w005

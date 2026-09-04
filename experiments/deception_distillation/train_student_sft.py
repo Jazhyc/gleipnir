@@ -3121,7 +3121,14 @@ def main(cfg: DictConfig) -> None:
         )
         canary_attention_mask = torch.ones_like(canary_input_ids)
         model.eval()
-        with torch.no_grad():
+        with (
+            torch.no_grad(),
+            torch.autocast(
+                device_type=canary_device.type,
+                dtype=torch.bfloat16,
+                enabled=canary_device.type == "cuda",
+            ),
+        ):
             eager_canary_logits, _ = forward_final_token_logits(
                 model,
                 canary_input_ids,
@@ -3141,7 +3148,14 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
-        with torch.no_grad():
+        with (
+            torch.no_grad(),
+            torch.autocast(
+                device_type=canary_device.type,
+                dtype=torch.bfloat16,
+                enabled=canary_device.type == "cuda",
+            ),
+        ):
             compiled_canary_logits, _ = forward_final_token_logits(
                 model,
                 canary_input_ids,
@@ -3153,6 +3167,7 @@ def main(cfg: DictConfig) -> None:
             )
         selective_torch_compile_canary = {
             "tokens": len(canary_ids),
+            "autocast_dtype": "bfloat16",
             **compare_compile_canary_logits(
                 eager_canary_logits,
                 compiled_canary_logits,
