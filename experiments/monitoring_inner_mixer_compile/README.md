@@ -5,11 +5,11 @@
 Can Torch Inductor accelerate the non-kernel segments inside Qwen3.5's 24
 linear-attention mixers? The current control compiles all decoder-layer shells
 but explicitly leaves each complete linear mixer eager. The candidate instead
-places graph breaks only around `causal_conv1d_fn` and
-`chunk_gated_delta_rule`. Inductor may therefore capture the input QKV/Z/A/B
-projections and LoRA paths, reshapes, gates, repeat operations, gated
-normalization, output projection, decoder norms, MLP/LoRA, and residuals. The
-pinned causal-conv1d and FLA kernels themselves remain eager.
+places graph breaks around `causal_conv1d_fn`, `chunk_gated_delta_rule`, and
+FLA's fused gated-normalization forward. Inductor may therefore capture the
+input QKV/Z/A/B projections and LoRA paths, reshapes, gates, repeat operations,
+output projection, decoder norms, MLP/LoRA, and residuals. All pinned
+causal-conv1d and FLA custom kernels themselves remain eager.
 
 Both conditions checkpoint all 24 linear-attention blocks and leave all eight
 full-attention blocks uncheckpointed. They run concurrently on separate H100

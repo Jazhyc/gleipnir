@@ -110,6 +110,16 @@ def validate_training_metadata(
         != expected_disabled_kernels
     ):
         raise ValueError("eager kernel boundary drifted")
+    expected_components = (
+        ["causal_conv1d_fn", "chunk_gated_delta_rule", "norm.forward"]
+        if policy == CANDIDATE_POLICY
+        else []
+    )
+    if (
+        compiled.get("disabled_linear_attention_kernel_components", [])
+        != expected_components
+    ):
+        raise ValueError("eager kernel components drifted")
     if (
         compiled.get("backend") != "inductor"
         or compiled.get("mode") != "default"

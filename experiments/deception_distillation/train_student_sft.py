@@ -251,6 +251,10 @@ def apply_selective_torch_compile_policy(
                         disabled = disable_function(kernel_function)
                         disabled_kernel_functions[identity] = disabled
                     setattr(linear_attn, attribute, disabled)
+                gated_norm = getattr(linear_attn, "norm", None)
+                if gated_norm is None:
+                    raise ValueError("linear-attention layer exposes no gated norm")
+                gated_norm.forward = disable_function(gated_norm.forward)
         layer.forward = compile_function(
             layer.forward,
             backend=backend,
@@ -2797,6 +2801,12 @@ def main(cfg: DictConfig) -> None:
         == "full_attention_and_linear_mixer_segments"
         and layer_type == "linear_attention"
     ]
+    disabled_linear_attention_kernel_components = (
+        ["causal_conv1d_fn", "chunk_gated_delta_rule", "norm.forward"]
+        if selective_torch_compile_policy
+        == "full_attention_and_linear_mixer_segments"
+        else []
+    )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2970,6 +2980,9 @@ def main(cfg: DictConfig) -> None:
                         ),
                         "disabled_linear_attention_kernel_layer_indices": (
                             disabled_linear_attention_kernel_layer_indices
+                        ),
+                        "disabled_linear_attention_kernel_components": (
+                            disabled_linear_attention_kernel_components
                         ),
                         "backend": selective_torch_compile_backend,
                         "mode": selective_torch_compile_mode,

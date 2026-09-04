@@ -307,6 +307,7 @@ def test_selective_compile_disables_only_shared_linear_kernels() -> None:
     for layer in model.model.layers[:3]:
         layer.linear_attn.causal_conv1d_fn = causal_kernel
         layer.linear_attn.chunk_gated_delta_rule = fla_kernel
+        layer.linear_attn.norm = torch.nn.Module()
 
     def fake_compile(function, **kwargs):
         compile_calls.append((function, kwargs))
@@ -331,7 +332,8 @@ def test_selective_compile_disables_only_shared_linear_kernels() -> None:
     )
     assert indices == [0, 1, 2, 3]
     assert len(compile_calls) == 4
-    assert disable_calls == [causal_kernel, fla_kernel]
+    assert disable_calls[:2] == [causal_kernel, fla_kernel]
+    assert len(disable_calls) == 5
     causal_functions = {
         id(layer.linear_attn.causal_conv1d_fn) for layer in model.model.layers[:3]
     }

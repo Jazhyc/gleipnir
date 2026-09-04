@@ -35,6 +35,11 @@ def metadata(policy: str, rate: float) -> dict:
             "disabled_linear_attention_kernel_layer_indices": (
                 EXPECTED_CHECKPOINTED_LAYERS if candidate else []
             ),
+            "disabled_linear_attention_kernel_components": (
+                ["causal_conv1d_fn", "chunk_gated_delta_rule", "norm.forward"]
+                if candidate
+                else []
+            ),
             "backend": "inductor",
             "mode": "default",
             "dynamic": True,
