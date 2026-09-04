@@ -30,7 +30,7 @@ training:
   quantization: nf4-double-quant-bf16
   required_kernels: fla-0.5.2+causal-conv1d-1.6.2.post1+triton-3.7.1
   execution_exception: >-
-    Rationale arms cap only their auxiliary input at 27648 tokens; the primary
+    Rationale arms cap only their auxiliary input at 24576 tokens; the primary
     Kimi input remains at 29696. The original rationale backward peaked at 77.5
     GiB. Disabling compilation made SDPA request a 52.2 GiB allocation, while
     compiling checkpointed full-attention attempted a 45.6 GiB quadratic
@@ -41,11 +41,10 @@ training:
     checkpoint flags. Redundant all-ones masks are omitted. A fail-closed
     flash-only policy and 2048-token BF16-autocast parity canary must pass first.
     Direct base-decoder calls use explicit BF16 autocast because they bypass
-    Accelerate's model wrapper. Each trainer process autotunes its exact
-    objective-length FLA shape before model loading because Triton's selection
-    cache is process-local. This prevents benchmarking during a memory-heavy
-    first backward. The cap preserves every rationale target and full context
-    for over 95% of rows.
+    Accelerate's model wrapper. Sequential rationale training releases the
+    completed auxiliary graph and unused CUDA blocks before constructing the
+    primary Kimi graph. The cap preserves every rationale target and full
+    context for 7796 of 8688 rows (89.74%).
 
 arms:
   - name: soft-rationale-w005

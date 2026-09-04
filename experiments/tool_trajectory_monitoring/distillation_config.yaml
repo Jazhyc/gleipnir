@@ -93,7 +93,6 @@ student:
     require_flash_linear_attention: true
     require_causal_conv1d: false
     require_flash_sdpa: false
-    fla_prewarm_sequence_length: null
     soft_target_logit_center: 0.0
     soft_target_logit_scale: 1.0
     soft_huber_delta: 1.0

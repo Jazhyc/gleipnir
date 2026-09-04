@@ -22,7 +22,7 @@ LEARNING_RATE = 2e-5
 RANK = 128
 LORA_ALPHA = 256
 MAX_LENGTH = 29_696
-RATIONALE_MAX_LENGTH = 27_648
+RATIONALE_MAX_LENGTH = 24_576
 MICRO_BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = 32
 RAW_SOURCE_SHA256 = "43bfc9f78d6584c43135109636f5e1747c694842419a327c3f37614fb9301802"
@@ -137,7 +137,6 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "selective_torch_compile_policy": spec["selective_torch_compile_policy"],
             "train_rows": TRAIN_ROWS,
             "require_flash_sdpa": True,
-            "fla_prewarm_sequence_length": spec["completion_max_length"],
             "soft_targets_sha256": SOFT_TARGETS_SHA256,
         }
         for key, value in expected.items():
@@ -188,13 +187,6 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         or fla.get("triton_version") != "3.7.1"
     ):
         raise ValueError("pinned FLA metadata is missing")
-    prewarm = fla.get("in_process_prewarm", {})
-    if (
-        prewarm.get("status") != "passed"
-        or int(prewarm.get("sequence_length", -1))
-        != int(job["fla_prewarm_sequence_length"])
-    ):
-        raise ValueError("in-process FLA prewarm metadata is missing")
     if (
         causal.get("available") is not True
         or causal.get("required") is not True

@@ -164,7 +164,6 @@ def make_jobs(
             {
                 **common,
                 **spec,
-                "fla_prewarm_sequence_length": int(spec["completion_max_length"]),
                 "output_dir": output.as_posix(),
                 "causal_adapter_dir": (output / "causal_adapter").as_posix(),
                 "model_dir": (output / "model").as_posix(),

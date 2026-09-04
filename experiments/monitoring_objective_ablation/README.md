@@ -31,10 +31,10 @@ not contrastive learning.
 All arms use the selected `2e-5` learning rate, one epoch, seed 0, rank-128
 QLoRA, effective batch 32, the proven selective-checkpointing/compilation
 recipe, and pinned FLA/causal-conv1d kernels. Rationale inputs are capped at
-27,648 tokens while the primary Kimi input remains at 29,696. This preserves
+24,576 tokens while the primary Kimi input remains at 29,696. This preserves
 every rationale target (maximum 1,744 tokens) and full rationale context for
-more than 95% of rows. The cap is needed because the original rationale backward
-peaked at 77.5 GiB. Fully eager SDPA attempted a 52.2 GiB attention allocation,
+7,796 of 8,688 rows (89.74%). The cap is needed because the original rationale
+backward peaked at 77.5 GiB. Fully eager SDPA attempted a 52.2 GiB attention allocation,
 and compiling an all-layer-checkpointed model attempted a 45.6 GiB quadratic
 attention allocation even after the cap. Compiling a shell around the
 full-attention graph break also made flash SDPA ineligible. All arms therefore
@@ -45,12 +45,9 @@ fallbacks. Trainer is explicitly prevented from globally re-enabling
 checkpointing after the selective policy is applied. A 2,048-token
 BF16-autocast eager/compiled logit canary must pass before training. The exact
 base-decoder auxiliary paths also use explicit BF16 autocast because they bypass
-Accelerate's top-level model wrapper. Before model loading, each trainer process
-prewarms its exact objective-length gated-delta forward/backward under the same
-disabled-dispatch FLA path. Keeping the warmup in the trainer is essential
-because Triton's selected configuration is process-local; it avoids benchmarking
-kernels during a nearly full first backward. The exact arms and stop conditions
-are in `config.yaml`.
+Accelerate's top-level model wrapper. Sequential rationale training releases
+the completed auxiliary graph and unused CUDA cache blocks before constructing
+the primary Kimi graph. The exact arms and stop conditions are in `config.yaml`.
 
 ## Evaluation and promotion
 
