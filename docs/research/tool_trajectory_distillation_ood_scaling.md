@@ -139,6 +139,16 @@ support adding this deception corpus as a general way to improve tool-monitor
 OOD performance under the current recipe, although its pooled-ranking benefit
 may matter for deployments whose traffic resembles the observed row mix.
 
+A subsequent evaluation of the same two seed-0 9B adapters on the frozen
+3,012-row held-out ID suite changes the interpretation from a scale-dependent
+null to distribution-dependent transfer. There, mixed-minus-matched is
+`+0.011484` macro pAUROC@20, `+0.007286` macro AUROC, and `-0.011147` macro
+Brier. Gloom pAUROC improves by `+0.024136`, while STRIDE changes by only
+`-0.001167`. The ID result does not overturn the OOD conclusion, and neither
+comparison isolates deception content from the mixed run's additional optimizer
+steps. See
+[`../findings/gleipnir9b_id_data_mixture.md`](../findings/gleipnir9b_id_data_mixture.md).
+
 The 4B mixed adapter trails the 9B mixed adapter by `0.038834` Mean-OOD
 pAUROC@20 and `0.012952` Mean-OOD AUROC, while its hosted inference proxy is
 about one third as expensive (`$0.2598` versus `$0.8659` per 1,000 examples).

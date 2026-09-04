@@ -353,6 +353,17 @@ parity gate must pass before one persistent FlashInfer engine evaluates both
 adapters. The frozen contract is
 `gleipnir9b_id_data_mixture_benchmark.json`; the strict OOD suite is not read.
 
+The evaluation completed on 2026-09-04. Mixed-data training improves macro
+pAUROC@20 from `0.855009` to `0.866493` (`+0.011484`), macro AUROC from
+`0.952393` to `0.959679` (`+0.007286`), and macro Brier from `0.090577` to
+`0.079430`. Gloom pAUROC@20 improves by `+0.024136`; STRIDE changes by
+`-0.001167`. This contrasts with the same pair's macro-neutral strict-OOD
+result, so the current evidence supports distribution-dependent transfer rather
+than a general 9B mixture null. The comparison remains confounded by 683 versus
+272 optimizer steps. Full metrics, paired diagnostics, runtime, parity, and
+artifact hashes are in
+[`../../docs/findings/gleipnir9b_id_data_mixture.md`](../../docs/findings/gleipnir9b_id_data_mixture.md).
+
 ```bash
 GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
   python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda \
