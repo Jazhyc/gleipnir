@@ -1955,7 +1955,10 @@ def main(cfg: DictConfig) -> None:
         for record in records
     ]
     for feature in tokenized:
-        feature["length"] = len(feature.get("direct_input_ids", feature["input_ids"]))
+        length_source = feature.get("direct_input_ids")
+        if length_source is None:
+            length_source = feature["input_ids"]
+        feature["length"] = len(length_source)
     dataset = Dataset.from_list(tokenized)
     sampling_weights, expected_dataset_mass_by_id = dataset_sampling_weights(
         [dataset_id_by_name[str(record.get("dataset", ""))] for record in records],
