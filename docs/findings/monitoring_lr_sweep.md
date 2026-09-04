@@ -81,6 +81,14 @@ six-source OOD suite was not consulted. Advance `2e-5` to replicated
 confirmation against `5e-5`; do not promote it as the general monitoring
 learning rate until that confirmation passes.
 
+A subsequent held-out length audit found strong source-specific length-label
+associations in the training data but only mild, non-directional sensitivity of
+the selected adapter to inert padding. Both independent padding runs missed all
+predeclared materiality thresholds, while a strict historical serving-reuse
+gate failed on a few near-boundary rows. Do not prioritize a length-specific
+regularizer from this evidence; see
+`docs/findings/monitoring_length_shortcut_audit.md`.
+
 All five jobs completed 272 optimizer steps with the required FLA 0.5.2,
 causal-conv1d 1.6.2.post1, Triton 3.7.1, rank-128 NF4 QLoRA, selective
 checkpointing, and decoder-shell compilation. Each cell ran at 0.929–0.938

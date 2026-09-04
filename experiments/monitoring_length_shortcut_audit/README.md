@@ -71,3 +71,22 @@ If sensitivity is material, the next experiment may compare a predeclared
 length-decorrelated sampler with the unchanged `2e-5` recipe. If it is not,
 prefer a generic regularization or training-horizon screen rather than adding a
 length-specific intervention.
+
+## Outcome
+
+Both v1 and the seed-matched v2 completed inference and passed eager-versus-vLLM
+adapter parity, but both stopped at the stricter historical reuse gate because a
+small number of unchanged rows exceeded the frozen maximum-difference limit.
+V2 achieved Pearson `0.999763` and mean absolute difference `0.003424`, but its
+maximum difference was `0.051880`. The confirmatory audit is therefore
+inconclusive by protocol.
+
+The replicated exploratory evidence does not motivate a length-specific
+regularizer. Across v1/v2, short padding changed scores by `0.0105`/`0.0115`
+MAE and long padding by `0.0137`/`0.0143`; neither run crossed any frozen
+materiality threshold. Mean signed shifts were at most `0.00132`, with only
+two or three threshold flips among 256 rows. Padding deltas replicated better
+than the historical-reference discrepancy (`r=0.83` short and `r=0.89` long),
+so this is mild example-level position sensitivity rather than pure serving
+noise, but it is too small and non-directional to justify a targeted training
+ablation. See `docs/findings/monitoring_length_shortcut_audit.md`.
