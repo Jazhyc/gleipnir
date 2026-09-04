@@ -41,8 +41,10 @@ full-attention graph break also made flash SDPA ineligible. All arms therefore
 compile only the 24 linear-attention shells while holding FLA/causal-conv behind
 graph breaks; the 8 full-attention layers remain eager. Unpadded batches omit
 the redundant all-ones attention mask, and the campaign disables all SDPA
-fallbacks. A 2,048-token BF16-autocast eager/compiled logit canary must pass
-before training. The exact arms and stop conditions are in `config.yaml`.
+fallbacks. Trainer is explicitly prevented from globally re-enabling
+checkpointing after the selective policy is applied. A 2,048-token
+BF16-autocast eager/compiled logit canary must pass before training. The exact
+arms and stop conditions are in `config.yaml`.
 
 ## Evaluation and promotion
 

@@ -209,6 +209,8 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         raise ValueError("training batch drifted")
     if metadata.get("checkpointed_layer_indices") != EXPECTED_CHECKPOINTED_LAYERS:
         raise ValueError("checkpointing policy drifted")
+    if metadata.get("trainer_manages_gradient_checkpointing") is not False:
+        raise ValueError("Trainer must not reset the selective checkpoint policy")
     if (
         metadata.get("gradient_checkpointing_policy")
         != job["gradient_checkpointing_policy"]

@@ -37,10 +37,11 @@ training:
     allocation even after the cap. A compiled shell around a full-attention
     graph break also made flash SDPA ineligible. All arms therefore compile only
     linear-attention shells, keep FLA/causal-conv behind graph breaks, and leave
-    full-attention layers eager. Redundant all-ones masks are omitted. A
-    fail-closed flash-only policy and 2048-token BF16-autocast parity canary must
-    pass first. The cap preserves every rationale target and full context for
-    over 95% of rows.
+    full-attention layers eager. Trainer cannot globally reset the selective
+    checkpoint flags. Redundant all-ones masks are omitted. A fail-closed
+    flash-only policy and 2048-token BF16-autocast parity canary must pass first.
+    The cap preserves every rationale target and full context for over 95% of
+    rows.
 
 arms:
   - name: soft-rationale-w005

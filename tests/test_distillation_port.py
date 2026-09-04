@@ -23,6 +23,7 @@ from experiments.deception_distillation.train_student_sft import (
     soft_binary_distillation_losses,
     straight_through_decision_logits,
     tokenize_record,
+    trainer_should_manage_gradient_checkpointing,
 )
 
 
@@ -257,6 +258,15 @@ def test_explicit_checkpointing_uses_only_requested_linear_layers() -> None:
     ]
     with pytest.raises(ValueError, match="restricted to linear attention"):
         apply_gradient_checkpointing_policy(model, "explicit", [3])
+
+
+def test_trainer_manages_only_global_checkpointing() -> None:
+    assert trainer_should_manage_gradient_checkpointing(True, "all") is True
+    assert (
+        trainer_should_manage_gradient_checkpointing(True, "linear_attention_only")
+        is False
+    )
+    assert trainer_should_manage_gradient_checkpointing(False, "all") is False
 
 
 def test_selective_compile_wraps_only_uncheckpointed_full_attention() -> None:

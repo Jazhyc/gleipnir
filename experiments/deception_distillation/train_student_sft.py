@@ -188,6 +188,11 @@ def apply_gradient_checkpointing_policy(
     return checkpointed
 
 
+def trainer_should_manage_gradient_checkpointing(enabled: bool, policy: str) -> bool:
+    """Avoid Trainer resetting a selective per-layer checkpoint policy."""
+    return enabled and policy == "all"
+
+
 def apply_selective_torch_compile_policy(
     model: torch.nn.Module,
     policy: str,
@@ -3001,6 +3006,12 @@ def main(cfg: DictConfig) -> None:
     gradient_checkpointing_enabled = (
         gradient_checkpointing_requested and not fsdp_enabled
     )
+    trainer_manages_gradient_checkpointing = (
+        trainer_should_manage_gradient_checkpointing(
+            gradient_checkpointing_enabled,
+            gradient_checkpointing_policy,
+        )
+    )
     if gradient_checkpointing_enabled:
         model.gradient_checkpointing_enable()
         model.enable_input_require_grads()
@@ -3082,7 +3093,9 @@ def main(cfg: DictConfig) -> None:
         save_total_limit=save_total_limit,
         save_only_model=save_only_model,
         bf16=True,
-        gradient_checkpointing=gradient_checkpointing_enabled,
+        # Trainer calls gradient_checkpointing_enable() again at train startup.
+        # For selective policies that would silently reset every layer to True.
+        gradient_checkpointing=trainer_manages_gradient_checkpointing,
         fsdp=True if fsdp_enabled else None,
         fsdp_config=fsdp_config,
         report_to="none",
@@ -3405,6 +3418,9 @@ def main(cfg: DictConfig) -> None:
                         * int(cfg.student.training.gradient_accumulation_steps),
                     },
                     "gradient_checkpointing": gradient_checkpointing_enabled,
+                    "trainer_manages_gradient_checkpointing": (
+                        trainer_manages_gradient_checkpointing
+                    ),
                     "gradient_checkpointing_policy": gradient_checkpointing_policy,
                     "gradient_checkpointing_layer_indices": (
                         checkpointing_layer_indices
