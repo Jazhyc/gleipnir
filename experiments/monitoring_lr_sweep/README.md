@@ -69,3 +69,30 @@ The launcher validates and relocates the manifests, performs the rank-128
 selected-recipe longest-sequence preflight, trains two serial lanes in parallel,
 parity-gates the retrained control, evaluates all cells in one persistent vLLM
 engine, and writes the selection under `results/monitoring_lr_sweep/summary/`.
+
+## Result
+
+Version 6 completed all five seed-0 cells and the 3,012-row ID evaluation at
+commit `fa3d6fb`. The frozen rule selected `2e-5` over the retrained `5e-5`
+control.
+
+| Learning rate | Macro pAUROC@20 | Macro AUROC | Macro Brier | Gloom pAUROC@20 | STRIDE pAUROC@20 | Eligible |
+| ---: | ---: | ---: | ---: | ---: | ---: | :---: |
+| `1e-5` | 0.865921 | 0.958562 | 0.083537 | 0.780044 | 0.951797 | No |
+| **`2e-5`** | **0.871066** | 0.957643 | **0.079273** | **0.783833** | 0.958300 | **Yes** |
+| `5e-5` control | 0.847144 | 0.951173 | 0.095650 | 0.731865 | 0.962424 | — |
+| `1e-4` | 0.858995 | 0.953651 | 0.090651 | 0.763415 | 0.954575 | Yes |
+| `2e-4` | 0.798329 | 0.937820 | 0.088241 | 0.606458 | 0.990200 | No |
+
+Relative to the control, `2e-5` gains `0.023922` macro pAUROC@20 and
+`0.006470` macro AUROC while lowering macro Brier by `0.016378`. Its source
+changes are `+0.051967` on Gloom and `-0.004124` on STRIDE, within the frozen
+per-source guardrail. Although `1e-5` has the highest macro AUROC, it misses the
+STRIDE guardrail by `0.000626`. The `2e-4` result is strongly imbalanced across
+sources and is rejected.
+
+Each full cell took about 2.57–2.60 hours at 0.929–0.938 examples/s and peaked
+at 24.86 GiB allocated. The complete two-lane campaign, preflight, parity, and
+serial evaluation took 9.19 hours. Serving parity passed. This remains one-seed
+ID-development evidence: retain `5e-5` as the confirmation control, replicate
+`2e-5` across seeds, and do not inspect the strict OOD suite yet.
