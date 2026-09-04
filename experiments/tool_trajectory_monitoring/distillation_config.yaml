@@ -59,6 +59,7 @@ student:
     per_device_train_batch_size: 1
     gradient_accumulation_steps: 32
     gradient_checkpointing: true
+    gradient_checkpointing_policy: all
     torch_compile: false
     logging_steps: 5
     save_strategy: steps

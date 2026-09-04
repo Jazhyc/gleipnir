@@ -36,3 +36,18 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 
 Ignored artifacts are written under `results/monitoring_adamw_throughput/` and
 runtime logs under `logs/lambda/monitoring_adamw_throughput/`.
+
+## Result
+
+Both conditions completed. Standard AdamW reached 0.673 examples/s and fused
+AdamW reached 0.676 examples/s on identical exposure, a 0.45% difference below
+the 3% adoption threshold. Their peak allocations were both 25.36 GiB and their
+steady mean step times were 47.95 and 47.55 seconds respectively. Retain
+`adamw_torch`; long-context model compute, not the once-per-32-microstep
+optimizer update, dominates this recipe.
+
+The direct-only materializer's standard arm was about 0.9% faster than the
+earlier 0.667 examples/s microbatch-1 condition. Treat the GPU-rate difference
+as marginal; retain the cleanup because it removes an entire unused completion
+tokenization, tensor materialization, padding, and host-to-device transfer from
+every soft-direct-only job without changing direct token IDs or the loss.

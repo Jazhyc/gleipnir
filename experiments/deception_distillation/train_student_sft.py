@@ -133,6 +133,32 @@ class CompletionOnlyCollator:
         }
 
 
+def apply_gradient_checkpointing_policy(
+    model: torch.nn.Module, policy: str
+) -> list[int]:
+    """Checkpoint all decoder layers or only Qwen linear-attention layers."""
+    if policy not in {"all", "linear_attention_only"}:
+        raise ValueError(
+            "student.training.gradient_checkpointing_policy must be all or "
+            "linear_attention_only"
+        )
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    text_model = getattr(base, "model", None)
+    layers = getattr(text_model, "layers", None)
+    layer_types = getattr(base.config, "layer_types", None)
+    if layers is None or layer_types is None or len(layers) != len(layer_types):
+        if policy != "all":
+            raise ValueError("selective checkpointing requires Qwen layer metadata")
+        return []
+    checkpointed = []
+    for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
+        enabled = policy == "all" or layer_type == "linear_attention"
+        layer.gradient_checkpointing = enabled
+        if enabled:
+            checkpointed.append(index)
+    return checkpointed
+
+
 REASONING_BLOCK_START = "\n\n<assistant_reasoning>\n"
 REASONING_BLOCK_END = "\n</assistant_reasoning>"
 SOURCE_PROMPT_TEMPLATE_KEY = "_source_prompt_template"
@@ -2041,6 +2067,20 @@ def main(cfg: DictConfig) -> None:
             default=True,
         )
     )
+    gradient_checkpointing_policy = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.gradient_checkpointing_policy",
+            default="all",
+        )
+    )
+    if (
+        not gradient_checkpointing_requested
+        and gradient_checkpointing_policy != "all"
+    ):
+        raise ValueError(
+            "selective checkpointing policy requires gradient checkpointing"
+        )
     lora_initialization = str(
         OmegaConf.select(cfg, "student.lora.init", default="default")
     )
@@ -2341,6 +2381,11 @@ def main(cfg: DictConfig) -> None:
     if gradient_checkpointing_enabled:
         model.gradient_checkpointing_enable()
         model.enable_input_require_grads()
+        checkpointed_layer_indices = apply_gradient_checkpointing_policy(
+            model, gradient_checkpointing_policy
+        )
+    else:
+        checkpointed_layer_indices = []
     save_strategy = str(
         OmegaConf.select(cfg, "student.training.save_strategy", default="no")
     )
@@ -2433,6 +2478,10 @@ def main(cfg: DictConfig) -> None:
         data_collator=collator,
         callbacks=[optimizer_step_timer],
     )
+    if gradient_checkpointing_enabled:
+        checkpointed_layer_indices = apply_gradient_checkpointing_policy(
+            model, gradient_checkpointing_policy
+        )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2593,6 +2642,8 @@ def main(cfg: DictConfig) -> None:
                         * int(cfg.student.training.gradient_accumulation_steps),
                     },
                     "gradient_checkpointing": gradient_checkpointing_enabled,
+                    "gradient_checkpointing_policy": gradient_checkpointing_policy,
+                    "checkpointed_layer_indices": checkpointed_layer_indices,
                     "materialized_training_inputs": {
                         "completion": bool(completion_loss_weight),
                         "direct": uses_direct_forward,

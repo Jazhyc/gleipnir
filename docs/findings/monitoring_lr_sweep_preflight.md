@@ -68,3 +68,9 @@ The longest-32 preflight OOMed on its first microstep: 77.85 GiB was allocated
 and the process occupied 78.91 of 79.18 GiB when another 282 MiB was requested.
 The checkpointed baseline already uses Transformers' non-reentrant checkpoint
 implementation. Retain checkpointing; no benchmark adapter was produced.
+
+Replacing `adamw_torch` with `adamw_torch_fused` was also a null systems result.
+On the same 640 examples and 20 steps, standard and fused AdamW reached 0.673
+and 0.676 examples/s respectively, only a 0.45% gain. Both peaked at 25.36 GiB.
+The optimizer update occurs only once per 32 long-context microsteps and is not
+a material bottleneck, so retain standard AdamW.

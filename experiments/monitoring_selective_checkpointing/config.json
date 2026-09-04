@@ -1,0 +1,9 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-selective-checkpointing-v1",
+  "hypothesis": "Leaving the eight full-attention layers uncheckpointed trades safe H100 memory headroom for at least 5% higher long-context throughput.",
+  "baseline": "results/monitoring_adamw_throughput/runs/adamw-torch/causal_adapter/training_metadata.json",
+  "selection_rows": 640,
+  "optimizer_steps": 20,
+  "gradient_checkpointing_policy": "linear_attention_only",
+  "minimum_relative_improvement": 0.05
+}

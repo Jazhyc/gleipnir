@@ -7,6 +7,7 @@ from experiments.deception_distillation.build_soft_teacher_cache import (
 from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
+    apply_gradient_checkpointing_policy,
     causal_conv1d_kernel_modules,
     collate_eva_features,
     dataset_sampling_weights,
@@ -92,6 +93,27 @@ class CountingTokenizer:
         assert add_special_tokens is False
         self.encoded.append(text)
         return list(range(len(text.split())))
+
+
+class SelectiveCheckpointModel(torch.nn.Module):
+    def __init__(self) -> None:
+        super().__init__()
+        self.model = torch.nn.Module()
+        self.model.layers = torch.nn.ModuleList(
+            [torch.nn.Module() for _ in range(4)]
+        )
+        self.config = type(
+            "Config",
+            (),
+            {
+                "layer_types": [
+                    "linear_attention",
+                    "linear_attention",
+                    "linear_attention",
+                    "full_attention",
+                ]
+            },
+        )()
 
 
 def test_binary_teacher_probability_is_preserved() -> None:
@@ -181,6 +203,18 @@ def test_direct_only_tokenization_does_not_encode_completion() -> None:
     assert "input_ids" not in feature
     assert "labels" not in feature
     assert tokenizer.encoded == ["rendered promptPrediction:"]
+
+
+def test_selective_checkpointing_leaves_full_attention_uncheckpointed() -> None:
+    model = SelectiveCheckpointModel()
+    indices = apply_gradient_checkpointing_policy(model, "linear_attention_only")
+    assert indices == [0, 1, 2]
+    assert [layer.gradient_checkpointing for layer in model.model.layers] == [
+        True,
+        True,
+        True,
+        False,
+    ]
 
 
 def test_eva_collator_returns_a_concrete_dictionary() -> None:
