@@ -30,6 +30,49 @@ macro pAUROC@20), but its Brier score is worse (`0.079273` versus `0.074303`).
 This cross-run comparison is descriptive because both the data mixture and
 training recipe differ.
 
+## Cross-data comparison at the transferred rate
+
+The freshly retrained monitoring-only `5e-5` control can also be compared with
+the released mixed-data Gleipnir 4B on the identical 3,012 rows and prompt. The
+released model contains the same 8,688 monitoring examples plus 13,149
+deception examples.
+
+| Metric | Monitoring-only `5e-5` | Released mixed `5e-5` | Mixed minus monitoring-only |
+| --- | ---: | ---: | ---: |
+| Macro pAUROC@20 | 0.847144 | 0.869194 | +0.022049 |
+| Macro AUROC | 0.951173 | 0.957679 | +0.006506 |
+| Macro Brier | 0.095650 | 0.074303 | -0.021347 |
+| Balanced accuracy | 0.878401 | 0.905482 | +0.027081 |
+| Recall | 0.788214 | 0.850790 | +0.062576 |
+| FPR | 0.031413 | 0.039826 | +0.008413 |
+
+The ranking improvement occurs on both sources: Gloom pAUROC@20 rises by
+`0.040470`, and STRIDE rises by `0.003628`. At the fixed threshold, the mixed
+model corrects 151 control errors while introducing 56 new errors across 207
+prediction flips, a net gain of 95 rows. Scores remain closely related
+(`r=0.9640`) but are on average `0.0380` higher in the mixed model. The upward
+shift is larger for positives than negatives on both sources, explaining the
+large recall gain alongside a smaller FPR increase.
+
+This is useful evidence that deception supervision transfers positively to
+monitoring ID performance at the transferred rate. It is not a clean data-only
+causal estimate. Both runs use the same backbone revision, seed, rank-128 QLoRA,
+AdamW `5e-5`, linear schedule, 3% warmup, effective batch 32, one epoch, and
+selected-position Kimi-soft loss. However, adding deception expands the epoch
+from 272 to 683 optimizer steps and changes where monitoring examples fall on
+the schedule. The new control also uses causal-conv1d, selective checkpointing,
+and decoder-shell compilation, whereas the released run predates those systems
+changes. Those interventions are intended to preserve the objective but can
+alter the numerical training trajectory.
+
+The fact that tuned monitoring-only `2e-5` recovers the released model's ID
+ranking, while the released model retains better Brier and fixed-threshold
+metrics, suggests two working hypotheses: added deception data provides useful
+regularization or positive transfer at `5e-5`, and some of its aggregate ranking
+benefit can instead be recovered by lowering the monitoring-only learning rate.
+Separating transfer from extra updates would require a matched-update mixture
+ablation rather than this cross-run comparison.
+
 ## Scope and next decision
 
 This is a one-seed pruning result on two in-distribution source families. It
