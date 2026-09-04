@@ -37,10 +37,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
-        "gradient_checkpointing_policy": "all",
-        "selective_torch_compile_policy": (
-            "checkpointed_full_attention_and_linear_shell"
-        ),
+        "gradient_checkpointing_policy": "linear_attention_only",
+        "selective_torch_compile_policy": "full_attention_and_linear_shell",
     },
     {
         "job_name": "soft-rationale-w020",
@@ -50,10 +48,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
-        "gradient_checkpointing_policy": "all",
-        "selective_torch_compile_policy": (
-            "checkpointed_full_attention_and_linear_shell"
-        ),
+        "gradient_checkpointing_policy": "linear_attention_only",
+        "selective_torch_compile_policy": "full_attention_and_linear_shell",
     },
     {
         "job_name": "soft-mil-max-w025",
@@ -202,10 +198,7 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         "micro_batch_size": 1,
     }:
         raise ValueError("training batch drifted")
-    expected_checkpointed = (
-        list(range(32)) if job["kind"] == "rationale" else EXPECTED_CHECKPOINTED_LAYERS
-    )
-    if metadata.get("checkpointed_layer_indices") != expected_checkpointed:
+    if metadata.get("checkpointed_layer_indices") != EXPECTED_CHECKPOINTED_LAYERS:
         raise ValueError("checkpointing policy drifted")
     if (
         metadata.get("gradient_checkpointing_policy")
