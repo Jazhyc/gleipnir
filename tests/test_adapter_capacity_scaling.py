@@ -22,6 +22,7 @@ from gleipnir.qwen35_fast_training import (
     FLA_PACKAGES,
     causal_conv1d_environment,
     causal_conv1d_install_command,
+    ensure_fla_kernels,
     fla_environment,
     fla_install_command,
 )
@@ -188,6 +189,27 @@ def test_fla_install_is_pinned_and_isolated() -> None:
     assert environment["PYTHONPATH"] == "/tmp/test-fla:/existing"
     assert environment["GLEIPNIR_FLA_VERSION"] == "0.5.2"
     assert environment["PYTORCH_CUDA_ALLOC_CONF"] == "expandable_segments:True"
+
+
+def test_fla_preflight_preserves_base_environment(tmp_path, monkeypatch) -> None:
+    target = tmp_path / "fla"
+    (target / "flash_linear_attention-0.5.2.dist-info").mkdir(parents=True)
+    observed = {}
+
+    def fake_run(command, *, check, env):
+        observed.update(env)
+
+    monkeypatch.setattr("gleipnir.qwen35_fast_training.subprocess.run", fake_run)
+    environment = ensure_fla_kernels(
+        target,
+        python=Path("/opt/venv/bin/python"),
+        base={"PATH": "/opt/venv/bin:/usr/bin", "CUDA_VISIBLE_DEVICES": "1"},
+    )
+
+    assert environment["PATH"] == "/opt/venv/bin:/usr/bin"
+    assert environment["CUDA_VISIBLE_DEVICES"] == "1"
+    assert environment["PYTHONPATH"] == str(target)
+    assert observed == environment
 
 
 def test_causal_conv1d_install_is_pinned_built_and_isolated() -> None:

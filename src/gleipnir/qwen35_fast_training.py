@@ -199,6 +199,7 @@ def ensure_fla_kernels(
     target: Path = DEFAULT_FLA_TARGET,
     *,
     python: Path = Path(sys.executable),
+    base: Mapping[str, str] | None = None,
 ) -> dict[str, str]:
     """Install, activate, and probe the pinned Qwen gated-delta kernels."""
     target = target.resolve()
@@ -213,7 +214,7 @@ def ensure_fla_kernels(
             ),
             check=True,
         )
-    environment = fla_environment(target)
+    environment = fla_environment(target, base)
     subprocess.run(
         [python.absolute().as_posix(), "-c", FLA_PROBE],
         check=True,

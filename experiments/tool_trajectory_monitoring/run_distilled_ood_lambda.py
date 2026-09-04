@@ -111,7 +111,10 @@ def main() -> None:
             status.update(phase=f"materializing_{evaluation_label}")
             run([sys.executable, "-m", str(materializer)])
         status.update(phase="kernel_preflight")
-        environment.update(ensure_fla_kernels(args.fla_target))
+        environment = ensure_fla_kernels(
+            args.fla_target,
+            base=environment,
+        )
         for model_size, group in config["model_groups"].items():
             parity_job = str(group["parity_job"])
             eager_root = result_dir / "parity" / "eager"
