@@ -25,6 +25,7 @@ MAX_LENGTH = 29_696
 RATIONALE_MAX_LENGTH = 24_576
 MICRO_BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = 32
+EXPECTED_ALL_LAYERS = list(range(32))
 RAW_SOURCE_SHA256 = "43bfc9f78d6584c43135109636f5e1747c694842419a327c3f37614fb9301802"
 
 ARM_SPECS: tuple[dict[str, Any], ...] = (
@@ -36,7 +37,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
-        "gradient_checkpointing_policy": "linear_attention_only",
+        "gradient_checkpointing_policy": "all",
         "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
@@ -47,7 +48,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
-        "gradient_checkpointing_policy": "linear_attention_only",
+        "gradient_checkpointing_policy": "all",
         "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
@@ -58,7 +59,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "max",
-        "gradient_checkpointing_policy": "linear_attention_only",
+        "gradient_checkpointing_policy": "all",
         "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
@@ -69,7 +70,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "logmeanexp",
-        "gradient_checkpointing_policy": "linear_attention_only",
+        "gradient_checkpointing_policy": "all",
         "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
@@ -80,7 +81,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "topk_mean",
-        "gradient_checkpointing_policy": "linear_attention_only",
+        "gradient_checkpointing_policy": "all",
         "selective_torch_compile_policy": "linear_attention_shells_only",
     },
 )
@@ -207,10 +208,10 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         "micro_batch_size": 1,
     }:
         raise ValueError("training batch drifted")
-    if metadata.get("checkpointed_layer_indices") != EXPECTED_CHECKPOINTED_LAYERS:
+    if metadata.get("checkpointed_layer_indices") != EXPECTED_ALL_LAYERS:
         raise ValueError("checkpointing policy drifted")
-    if metadata.get("trainer_manages_gradient_checkpointing") is not False:
-        raise ValueError("Trainer must not reset the selective checkpoint policy")
+    if metadata.get("trainer_manages_gradient_checkpointing") is not True:
+        raise ValueError("Trainer must own the all-layer checkpoint policy")
     if (
         metadata.get("gradient_checkpointing_policy")
         != job["gradient_checkpointing_policy"]

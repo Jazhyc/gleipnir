@@ -35,16 +35,23 @@ training:
     GiB. Disabling compilation made SDPA request a 52.2 GiB allocation, while
     compiling checkpointed full-attention attempted a 45.6 GiB quadratic
     allocation even after the cap. A compiled shell around a full-attention
-    graph break also made flash SDPA ineligible. All arms therefore compile only
-    linear-attention shells, keep FLA/causal-conv behind graph breaks, and leave
-    full-attention layers eager. Trainer cannot globally reset the selective
-    checkpoint flags. Redundant all-ones masks are omitted. A fail-closed
+    graph break also made flash SDPA ineligible. All arms therefore checkpoint
+    every decoder block, compile only linear-attention shells, keep
+    FLA/causal-conv behind graph breaks, and leave full-attention computation
+    eager. Redundant all-ones masks are omitted. A fail-closed
     flash-only policy and 2048-token BF16-autocast parity canary must pass first.
     Direct base-decoder calls use explicit BF16 autocast because they bypass
     Accelerate's model wrapper. Sequential rationale training releases the
     completed auxiliary graph and unused CUDA blocks before constructing the
     primary Kimi graph. The cap preserves every rationale target and full
     context for 7796 of 8688 rows (89.74%).
+
+preflight:
+  rows: 1
+  optimizer_steps: 1
+  gradient_accumulation_steps: 1
+  sampling: sequential-longest-first
+  note: Full runs retain effective batch 32 after both objective paths pass.
 
 arms:
   - name: soft-rationale-w005

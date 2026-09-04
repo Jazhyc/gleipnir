@@ -175,9 +175,12 @@ def main() -> None:
                 {
                     **control,
                     "job_name": f"preflight-{kind}",
-                    "train_rows": 32,
+                    "train_rows": 1,
                     "max_steps": 1,
                     "num_train_epochs": -1,
+                    "gradient_accumulation_steps": 1,
+                    "effective_batch_size": 1,
+                    "train_sampling_strategy": "sequential",
                     "selection_manifest": selection.as_posix(),
                     "selection_sha256": sha256_file(selection),
                     "selective_torch_compile_canary_tokens": 2048,

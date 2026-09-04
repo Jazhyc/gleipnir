@@ -29,7 +29,7 @@ sparse, smooth, and repeated-evidence assumptions. MIL is weak localization,
 not contrastive learning.
 
 All arms use the selected `2e-5` learning rate, one epoch, seed 0, rank-128
-QLoRA, effective batch 32, the proven selective-checkpointing/compilation
+QLoRA, effective batch 32, full-block checkpointing with selective compilation,
 recipe, and pinned FLA/causal-conv1d kernels. Rationale inputs are capped at
 24,576 tokens while the primary Kimi input remains at 29,696. This preserves
 every rationale target (maximum 1,744 tokens) and full rationale context for
@@ -38,8 +38,9 @@ backward peaked at 77.5 GiB. Fully eager SDPA attempted a 52.2 GiB attention all
 and compiling an all-layer-checkpointed model attempted a 45.6 GiB quadratic
 attention allocation even after the cap. Compiling a shell around the
 full-attention graph break also made flash SDPA ineligible. All arms therefore
-compile only the 24 linear-attention shells while holding FLA/causal-conv behind
-graph breaks; the 8 full-attention layers remain eager. Unpadded batches omit
+checkpoint all 32 decoder blocks but compile only the 24 linear-attention shells
+while holding FLA/causal-conv behind graph breaks; the 8 full-attention layers
+remain eager. Unpadded batches omit
 the redundant all-ones attention mask, and the campaign disables all SDPA
 fallbacks. Trainer is explicitly prevented from globally re-enabling
 checkpointing after the selective policy is applied. A 2,048-token
@@ -48,6 +49,10 @@ base-decoder auxiliary paths also use explicit BF16 autocast because they bypass
 Accelerate's top-level model wrapper. Sequential rationale training releases
 the completed auxiliary graph and unused CUDA cache blocks before constructing
 the primary Kimi graph. The exact arms and stop conditions are in `config.yaml`.
+
+Each objective first runs one optimizer step on the single longest held-out
+training example, using sequential sampling and accumulation 1. Full runs start
+only after both preflights pass and retain the frozen effective batch of 32.
 
 ## Evaluation and promotion
 
