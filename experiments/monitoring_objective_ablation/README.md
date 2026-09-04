@@ -45,11 +45,12 @@ fallbacks. Trainer is explicitly prevented from globally re-enabling
 checkpointing after the selective policy is applied. A 2,048-token
 BF16-autocast eager/compiled logit canary must pass before training. The exact
 base-decoder auxiliary paths also use explicit BF16 autocast because they bypass
-Accelerate's top-level model wrapper. Before model loading, the runner also
-prewarms FLA's exact 27,648- and 29,696-token gated-delta forward/backward
-shapes. This populates Triton's shape-specific autotune cache while the GPU is
-otherwise empty instead of benchmarking kernels during a nearly full first
-backward. The exact arms and stop conditions are in `config.yaml`.
+Accelerate's top-level model wrapper. Before model loading, each trainer process
+prewarms its exact objective-length gated-delta forward/backward under the same
+disabled-dispatch FLA path. Keeping the warmup in the trainer is essential
+because Triton's selected configuration is process-local; it avoids benchmarking
+kernels during a nearly full first backward. The exact arms and stop conditions
+are in `config.yaml`.
 
 ## Evaluation and promotion
 

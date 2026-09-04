@@ -137,6 +137,7 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "selective_torch_compile_policy": spec["selective_torch_compile_policy"],
             "train_rows": TRAIN_ROWS,
             "require_flash_sdpa": True,
+            "fla_prewarm_sequence_length": spec["completion_max_length"],
             "soft_targets_sha256": SOFT_TARGETS_SHA256,
         }
         for key, value in expected.items():
@@ -187,6 +188,13 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         or fla.get("triton_version") != "3.7.1"
     ):
         raise ValueError("pinned FLA metadata is missing")
+    prewarm = fla.get("in_process_prewarm", {})
+    if (
+        prewarm.get("status") != "passed"
+        or int(prewarm.get("sequence_length", -1))
+        != int(job["fla_prewarm_sequence_length"])
+    ):
+        raise ValueError("in-process FLA prewarm metadata is missing")
     if (
         causal.get("available") is not True
         or causal.get("required") is not True

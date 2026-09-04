@@ -14,6 +14,9 @@ from experiments.monitoring_objective_ablation import prepare
 from experiments.monitoring_objective_ablation.prewarm_fla import (
     prewarm_gated_delta_rule,
 )
+from experiments.tool_trajectory_monitoring.run_distillation_train import (
+    training_command,
+)
 
 
 def test_action_endpoints_cover_xml_and_bracket_trajectories() -> None:
@@ -131,3 +134,28 @@ def test_rationale_enrichment_preserves_direct_prompt(monkeypatch) -> None:
 def test_fla_prewarm_rejects_invalid_length_before_cuda() -> None:
     with pytest.raises(ValueError, match="sequence_length must be positive"):
         prewarm_gated_delta_rule(0)
+
+
+def test_training_command_forwards_in_process_fla_prewarm() -> None:
+    job = {
+        "job_name": "prewarm-test",
+        "output_dir": "results/prewarm-test",
+        "seed": 0,
+        "student_rows": "data/student.jsonl",
+        "soft_targets": "data/soft.jsonl",
+        "causal_adapter_dir": "results/prewarm-test/adapter",
+        "max_length": 29_696,
+        "rank": 128,
+        "lora_alpha": 256,
+        "learning_rate": 2e-5,
+        "num_train_epochs": 1.0,
+        "max_steps": -1,
+        "micro_batch_size": 1,
+        "gradient_accumulation_steps": 32,
+        "save_steps": 272,
+        "fla_prewarm_sequence_length": 27_648,
+    }
+    assert (
+        "student.training.fla_prewarm_sequence_length=27648"
+        in training_command(job)
+    )

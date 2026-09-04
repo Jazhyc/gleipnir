@@ -41,8 +41,9 @@ training:
     checkpoint flags. Redundant all-ones masks are omitted. A fail-closed
     flash-only policy and 2048-token BF16-autocast parity canary must pass first.
     Direct base-decoder calls use explicit BF16 autocast because they bypass
-    Accelerate's model wrapper. Both exact long FLA shapes are autotuned before
-    model loading so Triton does not benchmark kernels during a memory-heavy
+    Accelerate's model wrapper. Each trainer process autotunes its exact
+    objective-length FLA shape before model loading because Triton's selection
+    cache is process-local. This prevents benchmarking during a memory-heavy
     first backward. The cap preserves every rationale target and full context
     for over 95% of rows.
 

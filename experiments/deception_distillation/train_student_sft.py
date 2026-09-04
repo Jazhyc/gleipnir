@@ -23,6 +23,7 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
+from gleipnir.qwen35_fast_training import prewarm_gated_delta_rule
 from gleipnir.qwen35_loftq import initialize_qwen35_loftq
 from gleipnir.training import (
     MuonAdamW,
@@ -2764,6 +2765,17 @@ def main(cfg: DictConfig) -> None:
         f"flash_required={require_flash_sdpa}",
         flush=True,
     )
+    fla_prewarm_length_value = OmegaConf.select(
+        cfg,
+        "student.training.fla_prewarm_sequence_length",
+        default=None,
+    )
+    fla_prewarm = None
+    if fla_prewarm_length_value is not None:
+        if not require_fla:
+            raise ValueError("FLA prewarm requires flash-linear-attention")
+        fla_prewarm = prewarm_gated_delta_rule(int(fla_prewarm_length_value))
+        torch.cuda.empty_cache()
     model = model_loader_classes[model_loader].from_pretrained(
         str(cfg.student.model),
         **revision_kwargs,
@@ -3400,6 +3412,7 @@ def main(cfg: DictConfig) -> None:
                         )
                         == "1",
                         "triton_version": os.environ.get("GLEIPNIR_TRITON_VERSION"),
+                        "in_process_prewarm": fla_prewarm,
                     },
                     "gated_delta_kernel_modules": kernel_modules,
                     "causal_conv1d": {
