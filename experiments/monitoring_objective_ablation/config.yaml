@@ -40,8 +40,9 @@ training:
     full-attention layers eager. Trainer cannot globally reset the selective
     checkpoint flags. Redundant all-ones masks are omitted. A fail-closed
     flash-only policy and 2048-token BF16-autocast parity canary must pass first.
-    The cap preserves every rationale target and full context for over 95% of
-    rows.
+    Direct base-decoder calls use explicit BF16 autocast because they bypass
+    Accelerate's model wrapper. The cap preserves every rationale target and
+    full context for over 95% of rows.
 
 arms:
   - name: soft-rationale-w005

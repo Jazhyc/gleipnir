@@ -44,7 +44,9 @@ the redundant all-ones attention mask, and the campaign disables all SDPA
 fallbacks. Trainer is explicitly prevented from globally re-enabling
 checkpointing after the selective policy is applied. A 2,048-token
 BF16-autocast eager/compiled logit canary must pass before training. The exact
-arms and stop conditions are in `config.yaml`.
+base-decoder auxiliary paths also use explicit BF16 autocast because they bypass
+Accelerate's top-level model wrapper. The exact arms and stop conditions are in
+`config.yaml`.
 
 ## Evaluation and promotion
 

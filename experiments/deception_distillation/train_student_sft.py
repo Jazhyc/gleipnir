@@ -685,6 +685,15 @@ def omit_redundant_attention_mask(
     return None if bool(attention_mask.bool().all()) else attention_mask
 
 
+def decoder_autocast(input_ids: torch.Tensor) -> Any:
+    """Match Trainer's BF16 model wrapper when calling a base decoder directly."""
+    return torch.autocast(
+        device_type=input_ids.device.type,
+        dtype=torch.bfloat16,
+        enabled=input_ids.device.type == "cuda",
+    )
+
+
 def forward_final_token_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -738,11 +747,12 @@ def forward_final_token_hidden(
     decoder = getattr(base, "model", None)
     if decoder is None:
         raise RuntimeError("causal model exposes no decoder for decision-head mode")
-    outputs = decoder(
-        input_ids=input_ids,
-        attention_mask=omit_redundant_attention_mask(attention_mask),
-        use_cache=False,
-    )
+    with decoder_autocast(input_ids):
+        outputs = decoder(
+            input_ids=input_ids,
+            attention_mask=omit_redundant_attention_mask(attention_mask),
+            use_cache=False,
+        )
     selected_positions, inverse = torch.unique(
         last_positions,
         sorted=True,
@@ -771,11 +781,12 @@ def forward_final_and_mil_binary_logits(
     lm_head = getattr(base, "lm_head", None)
     if decoder is None or lm_head is None or not hasattr(lm_head, "weight"):
         raise RuntimeError("causal model exposes no decoder/LM-head projection")
-    outputs = decoder(
-        input_ids=input_ids,
-        attention_mask=omit_redundant_attention_mask(attention_mask),
-        use_cache=False,
-    )
+    with decoder_autocast(input_ids):
+        outputs = decoder(
+            input_ids=input_ids,
+            attention_mask=omit_redundant_attention_mask(attention_mask),
+            use_cache=False,
+        )
     hidden = outputs.last_hidden_state
     rows = torch.arange(input_ids.shape[0], device=input_ids.device)
     final_hidden = hidden[rows, last_positions]
@@ -810,11 +821,12 @@ def selected_completion_cross_entropy(
     lm_head = getattr(base, "lm_head", None)
     if decoder is None or lm_head is None:
         raise RuntimeError("causal model exposes no decoder/LM head")
-    outputs = decoder(
-        input_ids=input_ids,
-        attention_mask=omit_redundant_attention_mask(attention_mask),
-        use_cache=False,
-    )
+    with decoder_autocast(input_ids):
+        outputs = decoder(
+            input_ids=input_ids,
+            attention_mask=omit_redundant_attention_mask(attention_mask),
+            use_cache=False,
+        )
     shifted_labels = labels[:, 1:]
     supervised = shifted_labels.ne(-100)
     target_ids = shifted_labels[supervised]
