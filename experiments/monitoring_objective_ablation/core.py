@@ -35,6 +35,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
+        "gradient_checkpointing_policy": "all",
+        "selective_torch_compile_policy": "none",
     },
     {
         "job_name": "soft-rationale-w020",
@@ -43,6 +45,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
+        "gradient_checkpointing_policy": "all",
+        "selective_torch_compile_policy": "none",
     },
     {
         "job_name": "soft-mil-max-w025",
@@ -51,6 +55,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "max",
+        "gradient_checkpointing_policy": "linear_attention_only",
+        "selective_torch_compile_policy": "full_attention_and_linear_shell",
     },
     {
         "job_name": "soft-mil-lme-w025",
@@ -59,6 +65,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "logmeanexp",
+        "gradient_checkpointing_policy": "linear_attention_only",
+        "selective_torch_compile_policy": "full_attention_and_linear_shell",
     },
     {
         "job_name": "soft-mil-top3-w025",
@@ -67,6 +75,8 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "topk_mean",
+        "gradient_checkpointing_policy": "linear_attention_only",
+        "selective_torch_compile_policy": "full_attention_and_linear_shell",
     },
 )
 
@@ -117,6 +127,8 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "mil_temperature": 1.0,
             "mil_top_k": 3,
             "mil_max_instances": 8,
+            "gradient_checkpointing_policy": spec["gradient_checkpointing_policy"],
+            "selective_torch_compile_policy": spec["selective_torch_compile_policy"],
             "train_rows": TRAIN_ROWS,
             "soft_targets_sha256": SOFT_TARGETS_SHA256,
         }
@@ -179,14 +191,18 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         "micro_batch_size": 1,
     }:
         raise ValueError("training batch drifted")
-    if metadata.get("checkpointed_layer_indices") != EXPECTED_CHECKPOINTED_LAYERS:
+    expected_checkpointed = (
+        list(range(32)) if job["kind"] == "rationale" else EXPECTED_CHECKPOINTED_LAYERS
+    )
+    if metadata.get("checkpointed_layer_indices") != expected_checkpointed:
         raise ValueError("checkpointing policy drifted")
-    if compiled.get("compiled_layer_indices") != EXPECTED_COMPILED_LAYERS:
+    expected_compiled = [] if job["kind"] == "rationale" else EXPECTED_COMPILED_LAYERS
+    if compiled.get("compiled_layer_indices") != expected_compiled:
         raise ValueError("compiled layer set drifted")
     unique_graphs = int(
         compiled.get("dynamo_counters", {}).get("stats", {}).get("unique_graphs", 0)
     )
-    if not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
+    if job["kind"] == "mil" and not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
         raise ValueError(f"unexpected Dynamo graph count: {unique_graphs}")
     if (
         int(metadata.get("training_state", {}).get("global_step", -1))

@@ -127,8 +127,6 @@ def make_jobs(
         "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
         "effective_batch_size": 32,
         "gradient_checkpointing": True,
-        "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
         "selective_torch_compile_backend": "inductor",
         "selective_torch_compile_mode": "default",
         "selective_torch_compile_dynamic": True,
