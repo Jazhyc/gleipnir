@@ -372,6 +372,34 @@ def test_selective_compile_holds_both_token_mixers_behind_graph_breaks() -> None
     assert len(disable_calls) == 4
 
 
+def test_selective_compile_leaves_full_attention_entirely_eager() -> None:
+    model = SelectiveCheckpointModel()
+    apply_gradient_checkpointing_policy(model, "linear_attention_only")
+    compile_calls = []
+    disable_calls = []
+
+    def fake_compile(function, **kwargs):
+        compile_calls.append((function, kwargs))
+        return function
+
+    def fake_disable(function):
+        disable_calls.append(function)
+        return function
+
+    indices = apply_selective_torch_compile_policy(
+        model,
+        "linear_attention_shells_only",
+        backend="inductor",
+        mode="default",
+        dynamic=True,
+        compile_function=fake_compile,
+        disable_function=fake_disable,
+    )
+    assert indices == [0, 1, 2]
+    assert len(compile_calls) == 3
+    assert len(disable_calls) == 3
+
+
 def test_selective_compile_disables_only_shared_linear_kernels() -> None:
     model = SelectiveCheckpointModel()
     apply_gradient_checkpointing_policy(model, "linear_attention_only")

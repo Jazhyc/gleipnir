@@ -206,13 +206,14 @@ def apply_selective_torch_compile_policy(
         "full_attention_and_linear_mixer_segments",
         "checkpointed_full_attention_and_linear_shell",
         "decoder_shells_without_token_mixers",
+        "linear_attention_shells_only",
     }:
         raise ValueError(
             "student.training.selective_torch_compile_policy must be none, "
             "uncheckpointed_full_attention, full_attention_and_linear_shell, "
             "full_attention_and_linear_mixer_segments, or "
             "checkpointed_full_attention_and_linear_shell, or "
-            "decoder_shells_without_token_mixers"
+            "decoder_shells_without_token_mixers, or linear_attention_shells_only"
         )
     if policy == "none":
         return []
@@ -226,7 +227,9 @@ def apply_selective_torch_compile_policy(
     compiled = []
     disabled_kernel_functions: dict[int, Callable[..., Any]] = {}
     for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
-        compile_full = layer_type == "full_attention"
+        compile_full = (
+            layer_type == "full_attention" and policy != "linear_attention_shells_only"
+        )
         compile_linear_shell = (
             policy
             in {
@@ -234,6 +237,7 @@ def apply_selective_torch_compile_policy(
                 "full_attention_and_linear_mixer_segments",
                 "checkpointed_full_attention_and_linear_shell",
                 "decoder_shells_without_token_mixers",
+                "linear_attention_shells_only",
             }
             and layer_type == "linear_attention"
         )
@@ -261,6 +265,7 @@ def apply_selective_torch_compile_policy(
                 "full_attention_and_linear_shell",
                 "checkpointed_full_attention_and_linear_shell",
                 "decoder_shells_without_token_mixers",
+                "linear_attention_shells_only",
             }:
                 linear_attn.forward = disable_function(linear_attn.forward)
             else:
@@ -3199,6 +3204,7 @@ def main(cfg: DictConfig) -> None:
             "full_attention_and_linear_shell",
             "checkpointed_full_attention_and_linear_shell",
             "decoder_shells_without_token_mixers",
+            "linear_attention_shells_only",
         }
         and layer_type == "linear_attention"
     ]

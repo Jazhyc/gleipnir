@@ -8,7 +8,6 @@ from typing import Any
 
 from experiments.monitoring_lr_sweep.core import (
     EXPECTED_CHECKPOINTED_LAYERS,
-    EXPECTED_COMPILED_LAYERS,
     MAX_UNIQUE_GRAPHS,
     MODEL_ID,
     MODEL_REVISION,
@@ -38,7 +37,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
+        "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
         "job_name": "soft-rationale-w020",
@@ -49,7 +48,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
+        "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
         "job_name": "soft-mil-max-w025",
@@ -60,7 +59,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "max",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
+        "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
         "job_name": "soft-mil-lme-w025",
@@ -71,7 +70,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
+        "selective_torch_compile_policy": "linear_attention_shells_only",
     },
     {
         "job_name": "soft-mil-top3-w025",
@@ -82,7 +81,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "topk_mean",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
+        "selective_torch_compile_policy": "linear_attention_shells_only",
     },
 )
 
@@ -217,7 +216,7 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         raise ValueError("checkpointing policy identity drifted")
     if compiled.get("policy") != job["selective_torch_compile_policy"]:
         raise ValueError("selective compilation policy identity drifted")
-    if compiled.get("compiled_layer_indices") != EXPECTED_COMPILED_LAYERS:
+    if compiled.get("compiled_layer_indices") != EXPECTED_CHECKPOINTED_LAYERS:
         raise ValueError("compiled layer set drifted")
     unique_graphs = int(
         compiled.get("dynamo_counters", {}).get("stats", {}).get("unique_graphs", 0)

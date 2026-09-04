@@ -36,13 +36,13 @@ every rationale target (maximum 1,744 tokens) and full rationale context for
 more than 95% of rows. The cap is needed because the original rationale backward
 peaked at 77.5 GiB. Fully eager SDPA attempted a 52.2 GiB attention allocation,
 and compiling an all-layer-checkpointed model attempted a 45.6 GiB quadratic
-attention allocation even after the cap. All arms therefore compile decoder
-shells while holding both full- and linear-attention token mixers behind graph
-breaks. Unpadded batches omit the redundant all-ones attention mask so SDPA can
-select its H100 flash kernel. The campaign disables all SDPA fallbacks and fails
-closed if flash cannot execute. A 2,048-token BF16-autocast eager/compiled logit
-canary must pass before training. The exact arms and stop conditions are in
-`config.yaml`.
+attention allocation even after the cap. Compiling a shell around the
+full-attention graph break also made flash SDPA ineligible. All arms therefore
+compile only the 24 linear-attention shells while holding FLA/causal-conv behind
+graph breaks; the 8 full-attention layers remain eager. Unpadded batches omit
+the redundant all-ones attention mask, and the campaign disables all SDPA
+fallbacks. A 2,048-token BF16-autocast eager/compiled logit canary must pass
+before training. The exact arms and stop conditions are in `config.yaml`.
 
 ## Evaluation and promotion
 

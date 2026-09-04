@@ -34,12 +34,13 @@ training:
     Kimi input remains at 29696. The original rationale backward peaked at 77.5
     GiB. Disabling compilation made SDPA request a 52.2 GiB allocation, while
     compiling checkpointed full-attention attempted a 45.6 GiB quadratic
-    allocation even after the cap. All arms therefore compile decoder shells
-    but hold both full- and linear-attention token mixers behind graph breaks;
-    redundant all-ones masks are omitted so SDPA can select its flash kernel. A
-    fail-closed flash-only SDPA policy and a 2048-token BF16-autocast
-    eager/compiled logit canary must pass first. The cap preserves every
-    rationale target and full context for over 95% of rows.
+    allocation even after the cap. A compiled shell around a full-attention
+    graph break also made flash SDPA ineligible. All arms therefore compile only
+    linear-attention shells, keep FLA/causal-conv behind graph breaks, and leave
+    full-attention layers eager. Redundant all-ones masks are omitted. A
+    fail-closed flash-only policy and 2048-token BF16-autocast parity canary must
+    pass first. The cap preserves every rationale target and full context for
+    over 95% of rows.
 
 arms:
   - name: soft-rationale-w005
