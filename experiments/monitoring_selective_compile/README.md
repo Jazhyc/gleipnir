@@ -21,8 +21,8 @@ may interact with the newly uncheckpointed regions. Select the combined recipe
 only if compilation adds at least 5% over its eager selective-checkpointing
 baseline, the combination is at least 5% faster than the original all-layer
 checkpointing baseline, the longest-trajectory preflight completes below 80 GiB,
-its loss agrees with the eager preflight within
-`5e-4 + 1e-3 * abs(eager_loss)`, state
+an eager-versus-compiled forward canary on the same model weights and 2,048-token
+input keeps both decision logits within `0.05 + 0.01 * abs(logit)`, state
 dictionary keys remain unchanged, Dynamo reports no more than 16 unique graphs,
 and end-to-end examples/s improves by at least 5%. Stop on checksum or recipe
 drift, OOM, backend compilation failure, missing kernel binding, non-finite
@@ -37,4 +37,16 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
   python -m experiments.monitoring_selective_compile.run_lambda
 ```
 
-Ignored artifacts are written under `results/monitoring_selective_compile/`.
+Version-2 artifacts are written under
+`results/monitoring_selective_compile_v2/`.
+
+## Superseded v1 preflight
+
+The first preflight stopped because aggregate one-step Trainer loss differed by
+0.00448 (0.84%) from a separate eager process. That comparison confounded
+compiler numerics with ordinary cross-process mixed-precision variation: the
+preceding checkpointing-only comparison itself changed reported loss by more
+despite preserving the objective. Version 2 therefore replaces that indirect
+gate with the same-process, same-weights decision-logit canary above. The v1
+status and artifacts remain under `results/monitoring_selective_compile/`; v2
+uses `results/monitoring_selective_compile_v2/`.

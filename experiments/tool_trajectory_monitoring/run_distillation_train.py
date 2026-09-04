@@ -97,6 +97,11 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "selective_torch_compile_dynamic" in job:
         dynamic = str(bool(job["selective_torch_compile_dynamic"])).lower()
         command.append(f"student.training.selective_torch_compile_dynamic={dynamic}")
+    if "selective_torch_compile_canary_tokens" in job:
+        command.append(
+            "student.training.selective_torch_compile_canary_tokens="
+            f"{int(job['selective_torch_compile_canary_tokens'])}"
+        )
     if trainer_optim := job.get("trainer_optim"):
         command.append(f"student.training.optim={trainer_optim}")
     if model := job.get("model"):

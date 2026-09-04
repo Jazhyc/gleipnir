@@ -30,7 +30,7 @@ from experiments.monitoring_selective_compile.core import (
 from experiments.monitoring_training_throughput.core import stable_stratified_selection
 
 DEFAULT_DATA_DIR = Path("data/tool_trajectory_monitoring/distillation_scaling")
-DEFAULT_RESULT_DIR = Path("results/monitoring_selective_compile")
+DEFAULT_RESULT_DIR = Path("results/monitoring_selective_compile_v2")
 
 
 def make_job(data_dir: Path, result_dir: Path, selection: Path) -> dict[str, Any]:
@@ -81,7 +81,7 @@ def main() -> None:
     jobs_path = result_dir / "jobs.jsonl"
     atomic_write_jsonl(jobs_path, [job])
     manifest = {
-        "campaign_id": "gleipnir4b-monitoring-selective-compile-v1",
+        "campaign_id": "gleipnir4b-monitoring-selective-compile-v2",
         "jobs_sha256": sha256_file(jobs_path),
         "selection_sha256": sha256_file(selection),
         "preflight_selection_sha256": sha256_file(longest_path),

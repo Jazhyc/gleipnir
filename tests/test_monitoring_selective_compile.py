@@ -64,6 +64,11 @@ def test_job_changes_only_selective_compilation(tmp_path: Path) -> None:
         "uncheckpointed_full_attention" in command
     )
     assert "student.training.selective_torch_compile_dynamic=true" in command
+    canary_job = {**job, "selective_torch_compile_canary_tokens": 2048}
+    assert (
+        "student.training.selective_torch_compile_canary_tokens=2048"
+        in training_command(canary_job)
+    )
 
 
 def test_summary_requires_five_percent_gain() -> None:

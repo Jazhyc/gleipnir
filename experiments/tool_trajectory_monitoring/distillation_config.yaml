@@ -65,6 +65,9 @@ student:
     selective_torch_compile_backend: inductor
     selective_torch_compile_mode: default
     selective_torch_compile_dynamic: true
+    selective_torch_compile_canary_tokens: 0
+    selective_torch_compile_canary_atol: 0.05
+    selective_torch_compile_canary_rtol: 0.01
     logging_steps: 5
     save_strategy: steps
     save_steps: 124

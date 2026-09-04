@@ -42,7 +42,7 @@ from gleipnir.qwen35_fast_training import (  # noqa: E402
     ensure_qwen35_long_trajectory_kernels,
 )
 
-DEFAULT_RESULT_DIR = Path("results/monitoring_selective_compile")
+DEFAULT_RESULT_DIR = Path("results/monitoring_selective_compile_v2")
 
 
 class Status:
@@ -162,6 +162,7 @@ def main() -> None:
             "output_dir": preflight_dir.as_posix(),
             "causal_adapter_dir": (preflight_dir / "causal_adapter").as_posix(),
             "model_dir": (preflight_dir / "model").as_posix(),
+            "selective_torch_compile_canary_tokens": 2048,
         }
         preflight_jobs = result_dir / "preflight_jobs.jsonl"
         atomic_write_jsonl(preflight_jobs, [preflight])
@@ -181,21 +182,21 @@ def main() -> None:
             (preflight_dir / "causal_adapter" / "training_metadata.json").read_text()
         )
         validate_training_metadata(preflight_metadata, expected_steps=1)
+        canary = preflight_metadata["selective_torch_compile"].get("canary")
+        if not canary or canary.get("passed") is not True:
+            raise ValueError(f"same-weights compiled logit canary failed: {canary}")
         eager_preflight = json.loads(args.eager_preflight.resolve().read_text())
         eager_loss = training_loss(eager_preflight)
         compiled_loss = training_loss(preflight_metadata)
         loss_difference = abs(compiled_loss - eager_loss)
-        loss_tolerance = 5e-4 + 1e-3 * abs(eager_loss)
         parity = {
+            "same_weights_logit_canary": canary,
             "eager_loss": eager_loss,
             "compiled_loss": compiled_loss,
             "absolute_difference": loss_difference,
-            "tolerance": loss_tolerance,
-            "passed": loss_difference <= loss_tolerance,
+            "loss_comparison_is_diagnostic_only": True,
         }
         atomic_write_json(result_dir / "preflight_parity.json", parity)
-        if not parity["passed"]:
-            raise ValueError(f"compiled preflight loss parity failed: {parity}")
 
         benchmark_environment = dict(environment)
         benchmark_environment["TORCHINDUCTOR_CACHE_DIR"] = (

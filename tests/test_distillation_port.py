@@ -11,6 +11,7 @@ from experiments.deception_distillation.train_student_sft import (
     apply_selective_torch_compile_policy,
     causal_conv1d_kernel_modules,
     collate_eva_features,
+    compare_compile_canary_logits,
     dataset_sampling_weights,
     forward_final_token_hidden,
     forward_final_token_logits,
@@ -245,6 +246,25 @@ def test_selective_compile_wraps_only_uncheckpointed_full_attention() -> None:
         "fullgraph": False,
     }
     assert tuple(model.state_dict()) == state_keys
+
+
+def test_compile_canary_compares_selected_logits_and_margin() -> None:
+    result = compare_compile_canary_logits(
+        torch.tensor([[1.0, 2.0]]),
+        torch.tensor([[1.01, 1.98]]),
+        absolute_tolerance=0.05,
+        relative_tolerance=0.01,
+    )
+    assert result["passed"] is True
+    assert result["eager_margin"] == pytest.approx(1.0)
+    assert result["compiled_margin"] == pytest.approx(0.97)
+    failed = compare_compile_canary_logits(
+        torch.tensor([[1.0, 2.0]]),
+        torch.tensor([[1.2, 2.0]]),
+        absolute_tolerance=0.05,
+        relative_tolerance=0.01,
+    )
+    assert failed["passed"] is False
 
 
 def test_eva_collator_returns_a_concrete_dictionary() -> None:

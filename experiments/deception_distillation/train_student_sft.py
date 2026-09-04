@@ -226,6 +226,37 @@ def torch_compile_counter_snapshot() -> dict[str, dict[str, int | float]]:
     }
 
 
+def compare_compile_canary_logits(
+    eager_logits: torch.Tensor,
+    compiled_logits: torch.Tensor,
+    *,
+    absolute_tolerance: float,
+    relative_tolerance: float,
+) -> dict[str, Any]:
+    """Compare selected decision logits under explicit mixed-precision bounds."""
+    if eager_logits.shape != compiled_logits.shape:
+        raise ValueError("eager and compiled canary logits have different shapes")
+    eager = eager_logits.detach().float().cpu()
+    compiled = compiled_logits.detach().float().cpu()
+    differences = (compiled - eager).abs()
+    tolerances = absolute_tolerance + relative_tolerance * torch.maximum(
+        eager.abs(), compiled.abs()
+    )
+    eager_margin = float(eager[0, 1] - eager[0, 0])
+    compiled_margin = float(compiled[0, 1] - compiled[0, 0])
+    return {
+        "eager_logits": eager.tolist(),
+        "compiled_logits": compiled.tolist(),
+        "maximum_absolute_difference": float(differences.max()),
+        "absolute_tolerance": absolute_tolerance,
+        "relative_tolerance": relative_tolerance,
+        "eager_margin": eager_margin,
+        "compiled_margin": compiled_margin,
+        "margin_absolute_difference": abs(compiled_margin - eager_margin),
+        "passed": bool(torch.all(differences <= tolerances)),
+    }
+
+
 REASONING_BLOCK_START = "\n\n<assistant_reasoning>\n"
 REASONING_BLOCK_END = "\n</assistant_reasoning>"
 SOURCE_PROMPT_TEMPLATE_KEY = "_source_prompt_template"
@@ -2463,6 +2494,34 @@ def main(cfg: DictConfig) -> None:
         raise ValueError(
             "global and selective torch compilation cannot both be enabled"
         )
+    selective_torch_compile_canary_tokens = int(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_canary_tokens",
+            default=0,
+        )
+    )
+    selective_torch_compile_canary_atol = float(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_canary_atol",
+            default=0.05,
+        )
+    )
+    selective_torch_compile_canary_rtol = float(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_canary_rtol",
+            default=0.01,
+        )
+    )
+    if selective_torch_compile_canary_tokens < 0:
+        raise ValueError("selective compile canary tokens cannot be negative")
+    if (
+        selective_torch_compile_canary_tokens
+        and selective_torch_compile_policy == "none"
+    ):
+        raise ValueError("selective compile canary requires selective compilation")
     fsdp_enabled = bool(
         OmegaConf.select(cfg, "student.training.fsdp.enabled", default=False)
     )
@@ -2581,13 +2640,76 @@ def main(cfg: DictConfig) -> None:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
             model, gradient_checkpointing_policy
         )
-    selectively_compiled_layer_indices = apply_selective_torch_compile_policy(
-        model,
-        selective_torch_compile_policy,
-        backend=selective_torch_compile_backend,
-        mode=selective_torch_compile_mode,
-        dynamic=selective_torch_compile_dynamic,
-    )
+    selective_torch_compile_canary = None
+    if selective_torch_compile_canary_tokens:
+        if direct_target_ids is None:
+            raise ValueError("selective compile canary requires direct target ids")
+        canary_ids = list(dataset[0]["direct_input_ids"])[
+            -selective_torch_compile_canary_tokens:
+        ]
+        canary_device = next(
+            parameter.device
+            for parameter in model.parameters()
+            if parameter.device.type != "meta"
+        )
+        canary_input_ids = torch.tensor(
+            [canary_ids], dtype=torch.long, device=canary_device
+        )
+        canary_attention_mask = torch.ones_like(canary_input_ids)
+        model.eval()
+        with torch.no_grad():
+            eager_canary_logits, _ = forward_final_token_logits(
+                model,
+                canary_input_ids,
+                canary_attention_mask,
+                direct_logits_mode,
+            )
+            decision_ids = torch.tensor(
+                direct_target_ids,
+                dtype=torch.long,
+                device=eager_canary_logits.device,
+            )
+            eager_canary_logits = eager_canary_logits.index_select(-1, decision_ids)
+        selectively_compiled_layer_indices = apply_selective_torch_compile_policy(
+            model,
+            selective_torch_compile_policy,
+            backend=selective_torch_compile_backend,
+            mode=selective_torch_compile_mode,
+            dynamic=selective_torch_compile_dynamic,
+        )
+        with torch.no_grad():
+            compiled_canary_logits, _ = forward_final_token_logits(
+                model,
+                canary_input_ids,
+                canary_attention_mask,
+                direct_logits_mode,
+            )
+            compiled_canary_logits = compiled_canary_logits.index_select(
+                -1, decision_ids
+            )
+        selective_torch_compile_canary = {
+            "tokens": len(canary_ids),
+            **compare_compile_canary_logits(
+                eager_canary_logits,
+                compiled_canary_logits,
+                absolute_tolerance=selective_torch_compile_canary_atol,
+                relative_tolerance=selective_torch_compile_canary_rtol,
+            ),
+        }
+        if not selective_torch_compile_canary["passed"]:
+            raise ValueError(
+                "selective compilation logit canary failed: "
+                f"{selective_torch_compile_canary}"
+            )
+        model.train()
+    else:
+        selectively_compiled_layer_indices = apply_selective_torch_compile_policy(
+            model,
+            selective_torch_compile_policy,
+            backend=selective_torch_compile_backend,
+            mode=selective_torch_compile_mode,
+            dynamic=selective_torch_compile_dynamic,
+        )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2758,6 +2880,7 @@ def main(cfg: DictConfig) -> None:
                         "dynamic": selective_torch_compile_dynamic,
                         "global_torch_compile": torch_compile,
                         "dynamo_counters": torch_compile_counter_snapshot(),
+                        "canary": selective_torch_compile_canary,
                     },
                     "materialized_training_inputs": {
                         "completion": bool(completion_loss_weight),
