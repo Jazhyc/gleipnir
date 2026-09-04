@@ -74,3 +74,13 @@ On the same 640 examples and 20 steps, standard and fused AdamW reached 0.673
 and 0.676 examples/s respectively, only a 0.45% gain. Both peaked at 25.36 GiB.
 The optimizer update occurs only once per 32 long-context microsteps and is not
 a material bottleneck, so retain standard AdamW.
+
+Selective activation checkpointing was also a null result. Checkpointing the 24
+linear-attention layers while leaving the eight full-attention layers eager
+passed the longest-32 preflight, but reached 0.676 examples/s versus 0.673 for
+all-layer checkpointing on the matched 640 examples. Mean steady optimizer-step
+time improved only 0.50%, from 47.946 to 47.706 seconds, and peak allocated and
+reserved memory were unchanged at byte precision. Retain all-layer
+checkpointing. A subsequent selective-compilation screen may still test the
+combined configuration, but must separately attribute its incremental gain and
+beat the original all-layer baseline.

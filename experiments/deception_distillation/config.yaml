@@ -102,6 +102,10 @@ student:
     torch_compile: false
     torch_compile_backend: inductor
     torch_compile_mode: default
+    selective_torch_compile_policy: none
+    selective_torch_compile_backend: inductor
+    selective_torch_compile_mode: default
+    selective_torch_compile_dynamic: true
     logging_steps: 5
     save_strategy: "no"
     save_steps: 500

@@ -31,3 +31,13 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 
 Ignored artifacts are written under
 `results/monitoring_selective_checkpointing/`.
+
+## Result
+
+The longest-32 preflight completed, and the matched 20-step condition reached
+0.676 examples/s versus 0.673 for all-layer checkpointing: a 0.45% end-to-end
+gain below the 5% threshold. Excluding two warmup steps, mean optimizer-step
+time moved from 47.946 to 47.706 seconds, a similarly negligible 0.50% change.
+Both conditions peaked at exactly 25.364 GiB allocated and 28.424 GiB reserved.
+Retain all-layer checkpointing; the eight full-attention layers are not a
+material checkpoint-recomputation bottleneck under this recipe.

@@ -8,6 +8,7 @@ from experiments.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
     apply_gradient_checkpointing_policy,
+    apply_selective_torch_compile_policy,
     causal_conv1d_kernel_modules,
     collate_eva_features,
     dataset_sampling_weights,
@@ -215,6 +216,35 @@ def test_selective_checkpointing_leaves_full_attention_uncheckpointed() -> None:
         True,
         False,
     ]
+
+
+def test_selective_compile_wraps_only_uncheckpointed_full_attention() -> None:
+    model = SelectiveCheckpointModel()
+    apply_gradient_checkpointing_policy(model, "linear_attention_only")
+    calls = []
+
+    def fake_compile(function, **kwargs):
+        calls.append((function, kwargs))
+        return function
+
+    state_keys = tuple(model.state_dict())
+    indices = apply_selective_torch_compile_policy(
+        model,
+        "uncheckpointed_full_attention",
+        backend="inductor",
+        mode="default",
+        dynamic=True,
+        compile_function=fake_compile,
+    )
+    assert indices == [3]
+    assert len(calls) == 1
+    assert calls[0][1] == {
+        "backend": "inductor",
+        "mode": "default",
+        "dynamic": True,
+        "fullgraph": False,
+    }
+    assert tuple(model.state_dict()) == state_keys
 
 
 def test_eva_collator_returns_a_concrete_dictionary() -> None:

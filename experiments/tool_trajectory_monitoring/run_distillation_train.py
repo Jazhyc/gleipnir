@@ -84,6 +84,19 @@ def training_command(job: dict[str, Any]) -> list[str]:
             "student.training.gradient_checkpointing_policy="
             f"{checkpointing_policy}"
         )
+    if compile_policy := job.get("selective_torch_compile_policy"):
+        command.append(
+            f"student.training.selective_torch_compile_policy={compile_policy}"
+        )
+    if compile_backend := job.get("selective_torch_compile_backend"):
+        command.append(
+            f"student.training.selective_torch_compile_backend={compile_backend}"
+        )
+    if compile_mode := job.get("selective_torch_compile_mode"):
+        command.append(f"student.training.selective_torch_compile_mode={compile_mode}")
+    if "selective_torch_compile_dynamic" in job:
+        dynamic = str(bool(job["selective_torch_compile_dynamic"])).lower()
+        command.append(f"student.training.selective_torch_compile_dynamic={dynamic}")
     if trainer_optim := job.get("trainer_optim"):
         command.append(f"student.training.optim={trainer_optim}")
     if model := job.get("model"):

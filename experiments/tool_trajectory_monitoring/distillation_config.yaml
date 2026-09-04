@@ -61,6 +61,10 @@ student:
     gradient_checkpointing: true
     gradient_checkpointing_policy: all
     torch_compile: false
+    selective_torch_compile_policy: none
+    selective_torch_compile_backend: inductor
+    selective_torch_compile_mode: default
+    selective_torch_compile_dynamic: true
     logging_steps: 5
     save_strategy: steps
     save_steps: 124

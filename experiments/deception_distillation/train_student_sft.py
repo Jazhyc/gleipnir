@@ -9,6 +9,7 @@ import os
 import random
 import time
 from collections import Counter
+from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
@@ -151,12 +152,78 @@ def apply_gradient_checkpointing_policy(
             raise ValueError("selective checkpointing requires Qwen layer metadata")
         return []
     checkpointed = []
-    for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
+    for index, (layer, layer_type) in enumerate(
+        zip(layers, layer_types, strict=True)
+    ):
         enabled = policy == "all" or layer_type == "linear_attention"
         layer.gradient_checkpointing = enabled
         if enabled:
             checkpointed.append(index)
     return checkpointed
+
+
+def apply_selective_torch_compile_policy(
+    model: torch.nn.Module,
+    policy: str,
+    *,
+    backend: str,
+    mode: str,
+    dynamic: bool,
+    compile_function: Callable[..., Callable[..., Any]] = torch.compile,
+) -> list[int]:
+    """Compile only uncheckpointed Qwen full-attention decoder forwards."""
+    if policy not in {"none", "uncheckpointed_full_attention"}:
+        raise ValueError(
+            "student.training.selective_torch_compile_policy must be none or "
+            "uncheckpointed_full_attention"
+        )
+    if policy == "none":
+        return []
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    text_model = getattr(base, "model", None)
+    layers = getattr(text_model, "layers", None)
+    layer_types = getattr(base.config, "layer_types", None)
+    if layers is None or layer_types is None or len(layers) != len(layer_types):
+        raise ValueError("selective compilation requires Qwen layer metadata")
+    state_keys_before = tuple(model.state_dict())
+    compiled = []
+    for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
+        if layer_type != "full_attention":
+            continue
+        if bool(getattr(layer, "gradient_checkpointing", False)):
+            raise ValueError(
+                "selective compilation requires full-attention layers to be "
+                "uncheckpointed"
+            )
+        layer.forward = compile_function(
+            layer.forward,
+            backend=backend,
+            mode=mode,
+            dynamic=dynamic,
+            fullgraph=False,
+        )
+        compiled.append(index)
+    state_keys_after = tuple(model.state_dict())
+    if state_keys_after != state_keys_before or any(
+        "_orig_mod" in key for key in state_keys_after
+    ):
+        raise RuntimeError("selective compilation changed model state-dict keys")
+    return compiled
+
+
+def torch_compile_counter_snapshot() -> dict[str, dict[str, int | float]]:
+    """Return JSON-safe Dynamo counters after an optional compiled run."""
+    counters = getattr(getattr(torch, "_dynamo", None), "utils", None)
+    counters = getattr(counters, "counters", {})
+    return {
+        str(category): {
+            str(name): value
+            for name, value in values.items()
+            if isinstance(value, (int, float))
+        }
+        for category, values in counters.items()
+        if values
+    }
 
 
 REASONING_BLOCK_START = "\n\n<assistant_reasoning>\n"
@@ -2364,6 +2431,38 @@ def main(cfg: DictConfig) -> None:
     torch_compile = bool(
         OmegaConf.select(cfg, "student.training.torch_compile", default=False)
     )
+    selective_torch_compile_policy = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_policy",
+            default="none",
+        )
+    )
+    selective_torch_compile_backend = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_backend",
+            default="inductor",
+        )
+    )
+    selective_torch_compile_mode = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_mode",
+            default="default",
+        )
+    )
+    selective_torch_compile_dynamic = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.selective_torch_compile_dynamic",
+            default=True,
+        )
+    )
+    if torch_compile and selective_torch_compile_policy != "none":
+        raise ValueError(
+            "global and selective torch compilation cannot both be enabled"
+        )
     fsdp_enabled = bool(
         OmegaConf.select(cfg, "student.training.fsdp.enabled", default=False)
     )
@@ -2482,6 +2581,13 @@ def main(cfg: DictConfig) -> None:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
             model, gradient_checkpointing_policy
         )
+    selectively_compiled_layer_indices = apply_selective_torch_compile_policy(
+        model,
+        selective_torch_compile_policy,
+        backend=selective_torch_compile_backend,
+        mode=selective_torch_compile_mode,
+        dynamic=selective_torch_compile_dynamic,
+    )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2644,6 +2750,15 @@ def main(cfg: DictConfig) -> None:
                     "gradient_checkpointing": gradient_checkpointing_enabled,
                     "gradient_checkpointing_policy": gradient_checkpointing_policy,
                     "checkpointed_layer_indices": checkpointed_layer_indices,
+                    "selective_torch_compile": {
+                        "policy": selective_torch_compile_policy,
+                        "compiled_layer_indices": selectively_compiled_layer_indices,
+                        "backend": selective_torch_compile_backend,
+                        "mode": selective_torch_compile_mode,
+                        "dynamic": selective_torch_compile_dynamic,
+                        "global_torch_compile": torch_compile,
+                        "dynamo_counters": torch_compile_counter_snapshot(),
+                    },
                     "materialized_training_inputs": {
                         "completion": bool(completion_loss_weight),
                         "direct": uses_direct_forward,

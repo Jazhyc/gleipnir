@@ -1,0 +1,11 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-selective-compile-v1",
+  "hypothesis": "Compiling only the eight uncheckpointed full-attention decoder forwards adds at least 5% end-to-end throughput without recompilation churn or adapter-layout drift.",
+  "baseline": "results/monitoring_selective_checkpointing/runs/linear-attention-checkpointing/causal_adapter/training_metadata.json",
+  "reference_all_layer_baseline": "results/monitoring_adamw_throughput/runs/adamw-torch/causal_adapter/training_metadata.json",
+  "selection_rows": 640,
+  "optimizer_steps": 20,
+  "selective_torch_compile_policy": "uncheckpointed_full_attention",
+  "minimum_relative_improvement": 0.05,
+  "maximum_unique_graphs": 16
+}
