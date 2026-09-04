@@ -166,6 +166,25 @@ def main() -> None:
             fast_environment["GLEIPNIR_COMMIT"] = args.revision
             clean_evaluation_environment["GLEIPNIR_COMMIT"] = args.revision
 
+        # The auxiliary context cap introduces a new Triton autotune shape. Warm
+        # its FLA backward kernel while the GPU is otherwise empty; autotuning it
+        # during the first model backward can exhaust the remaining H100 memory.
+        for sequence_length in sorted(
+            {int(job["completion_max_length"]) for job in jobs}
+        ):
+            subprocess.run(
+                [
+                    sys.executable,
+                    "-m",
+                    "experiments.monitoring_objective_ablation.prewarm_fla",
+                    "--sequence-length",
+                    str(sequence_length),
+                ],
+                cwd=ROOT,
+                env=gpu_environment(fast_environment, 0),
+                check=True,
+            )
+
         selection = args.preflight_selection.resolve()
         preflight_jobs = []
         for kind in ("rationale", "mil"):

@@ -11,6 +11,9 @@ from experiments.deception_distillation.train_student_sft import (
     selected_completion_cross_entropy,
 )
 from experiments.monitoring_objective_ablation import prepare
+from experiments.monitoring_objective_ablation.prewarm_fla import (
+    prewarm_gated_delta_rule,
+)
 
 
 def test_action_endpoints_cover_xml_and_bracket_trajectories() -> None:
@@ -123,3 +126,8 @@ def test_rationale_enrichment_preserves_direct_prompt(monkeypatch) -> None:
     assert rows[0]["student_target"] == rationale
     assert rows[0]["completion_prompt"] == trajectory
     assert audit["quality_scores"] == {"9": 1}
+
+
+def test_fla_prewarm_rejects_invalid_length_before_cuda() -> None:
+    with pytest.raises(ValueError, match="sequence_length must be positive"):
+        prewarm_gated_delta_rule(0)
