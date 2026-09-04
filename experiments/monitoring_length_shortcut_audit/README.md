@@ -35,6 +35,14 @@ artifact at Pearson `>=0.999`, mean absolute difference `<=0.005`, and maximum
 absolute difference `<=0.02`. The standard eager-versus-vLLM adapter parity
 gate must also pass before the full canary.
 
+The original v1 execution stopped at this gate: Pearson (`0.999766`) and mean
+absolute difference (`0.003591`) passed, but its maximum difference (`0.031209`)
+did not. The audit had inadvertently used engine seed `20260904` rather than the
+reference artifact's `20260903`. V1 artifacts remain preserved at
+`results/monitoring_length_shortcut_audit/`. V2 changes only the engine seed and
+output location; the selected rows, padding intervention, thresholds, and
+analysis are unchanged.
+
 Use only the frozen ID development rows; do not inspect strict OOD data. Stop on
 any source, prompt, model, job-manifest, adapter, or checksum drift; incomplete
 source-label-length strata; a prompt reaching 32,768 tokens; missing decision
@@ -52,9 +60,9 @@ python -m experiments.monitoring_length_shortcut_audit.run mode=prepare
 
 GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
   python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda \
-  --config results/monitoring_length_shortcut_audit/benchmark.json \
-  --result-dir results/monitoring_length_shortcut_audit/evaluation \
-  --status results/monitoring_length_shortcut_audit/evaluation/status.json
+  --config results/monitoring_length_shortcut_audit_v2/benchmark.json \
+  --result-dir results/monitoring_length_shortcut_audit_v2/evaluation \
+  --status results/monitoring_length_shortcut_audit_v2/evaluation/status.json
 
 python -m experiments.monitoring_length_shortcut_audit.run mode=analyze
 ```

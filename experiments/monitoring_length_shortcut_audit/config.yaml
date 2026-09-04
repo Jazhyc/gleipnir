@@ -2,7 +2,7 @@ defaults:
   - _self_
 
 mode: prepare
-campaign_id: gleipnir4b-monitoring-length-shortcut-audit-v1
+campaign_id: gleipnir4b-monitoring-length-shortcut-audit-v2
 status: frozen_before_counterfactual_inference
 
 paths:
@@ -11,7 +11,7 @@ paths:
   training_rows: data/tool_trajectory_monitoring/distillation_scaling/student_rows.jsonl
   soft_targets: data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl
   selected_predictions: results/monitoring_lr_sweep/id_evaluation/4b/adapters/adamw-lr2em05-seed0/predictions.jsonl
-  output_dir: results/monitoring_length_shortcut_audit
+  output_dir: results/monitoring_length_shortcut_audit_v2
 
 expected_sha256:
   id_prompts: ecc8b204be2505d2600c38d1747b87e2ef3c8a53ecd51908a79ad8e86e102389
@@ -72,7 +72,7 @@ benchmark:
   max_num_batched_tokens: 32768
   gpu_memory_utilization: 0.9
   gdn_prefill_backend: flashinfer
-  seed: 20260904
+  seed: 20260903
 
 hydra:
   job:
