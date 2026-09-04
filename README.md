@@ -49,5 +49,10 @@ Reusable plotting conventions live in `src/gleipnir/plotting.py`. See
 [`figures/README.md`](figures/README.md) for the figure registry and exact
 regeneration commands.
 
+Matched monitoring throughput ablations use the config-driven
+`gleipnir.monitoring_systems_screen` runner. New systems screens normally need
+only a frozen JSON contract and experiment README; see
+[`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
+
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.

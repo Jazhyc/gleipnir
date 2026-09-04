@@ -4,7 +4,6 @@
 from __future__ import annotations
 
 import argparse
-import hashlib
 import heapq
 import json
 import math
@@ -32,40 +31,18 @@ from experiments.monitoring_lr_sweep.core import (
     job_name,
     validate_jobs,
 )
+from gleipnir.monitoring_systems_screen import (
+    atomic_write_json,
+    atomic_write_jsonl,
+    read_jsonl,
+    sha256_file,
+)
 
 DEFAULT_DATA_DIR = Path("data/tool_trajectory_monitoring/distillation_scaling")
 DEFAULT_ID_INPUT = Path("data/tool_trajectory_monitoring/distillation_id/prompts.jsonl")
 DEFAULT_RESULT_DIR = Path("results/monitoring_lr_sweep")
 ID_INPUT_SHA256 = "ecc8b204be2505d2600c38d1747b87e2ef3c8a53ecd51908a79ad8e86e102389"
 EXPECTED_SOURCES = {"bash_arena", "bash_bench", "cot_red_handed", "gloom", "stride"}
-
-
-def sha256_file(path: Path) -> str:
-    digest = hashlib.sha256()
-    with path.open("rb") as handle:
-        for block in iter(lambda: handle.read(1024 * 1024), b""):
-            digest.update(block)
-    return digest.hexdigest()
-
-
-def read_jsonl(path: Path) -> list[dict[str, Any]]:
-    return [json.loads(line) for line in path.read_text().splitlines() if line.strip()]
-
-
-def atomic_write_json(path: Path, value: Any) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    temporary.write_text(json.dumps(value, indent=2, sort_keys=True) + "\n")
-    temporary.replace(path)
-
-
-def atomic_write_jsonl(path: Path, rows: list[dict[str, Any]]) -> None:
-    path.parent.mkdir(parents=True, exist_ok=True)
-    temporary = path.with_suffix(path.suffix + ".tmp")
-    with temporary.open("w") as handle:
-        for row in rows:
-            handle.write(json.dumps(row, sort_keys=True) + "\n")
-    temporary.replace(path)
 
 
 def inspect_training_inputs(

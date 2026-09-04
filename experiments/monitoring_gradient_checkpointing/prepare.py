@@ -33,21 +33,12 @@ from experiments.monitoring_lr_sweep.prepare import (
     sha256_file,
 )
 from experiments.monitoring_training_throughput.core import stable_stratified_selection
+from gleipnir.monitoring_systems_screen import (
+    selection_manifest_row as selection_row,
+)
 
 DEFAULT_DATA_DIR = Path("data/tool_trajectory_monitoring/distillation_scaling")
 DEFAULT_RESULT_DIR = Path("results/monitoring_gradient_checkpointing")
-
-
-def selection_row(row: dict[str, Any]) -> dict[str, Any]:
-    """Return the identity and provenance fields used by selection manifests."""
-    return {
-        "dataset": row["dataset"],
-        "index": row["index"],
-        "label": row["label"],
-        "source_dataset": row["source_dataset"],
-        "student_direct_tokens": row["student_direct_tokens"],
-        "trajectory_sha256": row["trajectory_sha256"],
-    }
 
 
 def make_job(data_dir: Path, result_dir: Path, selection_path: Path) -> dict[str, Any]:

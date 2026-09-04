@@ -2,9 +2,7 @@
 
 from __future__ import annotations
 
-import hashlib
 import math
-from collections import defaultdict
 from typing import Any
 
 from experiments.monitoring_lr_sweep.core import (
@@ -16,6 +14,7 @@ from experiments.monitoring_lr_sweep.core import (
     SOFT_TARGETS_SHA256,
     STUDENT_ROWS_SHA256,
 )
+from gleipnir.monitoring_systems_screen import stable_stratified_selection
 
 SEED = 0
 SELECTION_ROWS = 640
@@ -42,46 +41,6 @@ CONDITIONS = (
         "train_sampling_strategy": "group_by_length",
     },
 )
-
-
-def stable_stratified_selection(
-    records: list[dict[str, Any]], count: int = SELECTION_ROWS, seed: int = SEED
-) -> list[dict[str, Any]]:
-    """Select exactly ``count`` rows proportionally across dataset/label strata."""
-    if not 0 < count <= len(records):
-        raise ValueError("selection count must be positive and no larger than input")
-    strata: dict[tuple[str, int], list[dict[str, Any]]] = defaultdict(list)
-    for record in records:
-        strata[(str(record["dataset"]), int(record["label"]))].append(record)
-    exact = {key: count * len(rows) / len(records) for key, rows in strata.items()}
-    quotas = {key: math.floor(value) for key, value in exact.items()}
-    remainder = count - sum(quotas.values())
-    order = sorted(
-        strata,
-        key=lambda key: (-(exact[key] - quotas[key]), key),
-    )
-    for key in order[:remainder]:
-        quotas[key] += 1
-
-    chosen: set[tuple[str, Any]] = set()
-    for key, rows in strata.items():
-        ranked = sorted(
-            rows,
-            key=lambda row: hashlib.sha256(
-                f"{seed}\0{row['dataset']}\0{row['index']}".encode()
-            ).digest(),
-        )
-        chosen.update(
-            (str(row["dataset"]), row["index"]) for row in ranked[: quotas[key]]
-        )
-    selected = [
-        record
-        for record in records
-        if (str(record["dataset"]), record["index"]) in chosen
-    ]
-    if len(selected) != count:
-        raise AssertionError(f"selected {len(selected)} rows instead of {count}")
-    return selected
 
 
 def validate_jobs(jobs: list[dict[str, Any]]) -> None:

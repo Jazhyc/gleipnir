@@ -31,13 +31,21 @@ evaluated or promoted.
 ## Run
 
 ```bash
-python -m experiments.monitoring_inner_mixer_compile.prepare
+python -m gleipnir.monitoring_systems_screen prepare \
+  --config experiments/monitoring_inner_mixer_compile/config.json
 GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
-  python -m experiments.monitoring_inner_mixer_compile.run_lambda
+  python -m gleipnir.monitoring_systems_screen run \
+  --config experiments/monitoring_inner_mixer_compile/config.json
 ```
 
 Ignored artifacts are written under
 `results/monitoring_inner_mixer_compile/`.
+
+The JSON contract contains the shared recipe, condition overrides, metadata
+expectations, preflight, and promotion rule. The reusable runner owns selection
+materialization, checksum validation, isolated compiler caches, GPU lanes,
+atomic status, and summarization; this experiment therefore has no custom
+Python entrypoints.
 
 ## Result
 
