@@ -197,10 +197,12 @@ def apply_selective_torch_compile_policy(
         "none",
         "uncheckpointed_full_attention",
         "full_attention_and_linear_shell",
+        "full_attention_and_linear_mixer_segments",
     }:
         raise ValueError(
             "student.training.selective_torch_compile_policy must be none, "
-            "uncheckpointed_full_attention, or full_attention_and_linear_shell"
+            "uncheckpointed_full_attention, full_attention_and_linear_shell, "
+            "or full_attention_and_linear_mixer_segments"
         )
     if policy == "none":
         return []
@@ -212,10 +214,15 @@ def apply_selective_torch_compile_policy(
         raise ValueError("selective compilation requires Qwen layer metadata")
     state_keys_before = tuple(model.state_dict())
     compiled = []
+    disabled_kernel_functions: dict[int, Callable[..., Any]] = {}
     for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
         compile_full = layer_type == "full_attention"
         compile_linear_shell = (
-            policy == "full_attention_and_linear_shell"
+            policy
+            in {
+                "full_attention_and_linear_shell",
+                "full_attention_and_linear_mixer_segments",
+            }
             and layer_type == "linear_attention"
         )
         if not compile_full and not compile_linear_shell:
@@ -229,7 +236,21 @@ def apply_selective_torch_compile_policy(
             linear_attn = getattr(layer, "linear_attn", None)
             if linear_attn is None:
                 raise ValueError("linear-attention layer exposes no token mixer")
-            linear_attn.forward = disable_function(linear_attn.forward)
+            if policy == "full_attention_and_linear_shell":
+                linear_attn.forward = disable_function(linear_attn.forward)
+            else:
+                for attribute in ("causal_conv1d_fn", "chunk_gated_delta_rule"):
+                    kernel_function = getattr(linear_attn, attribute, None)
+                    if kernel_function is None:
+                        raise ValueError(
+                            f"linear-attention layer exposes no {attribute} kernel"
+                        )
+                    identity = id(kernel_function)
+                    disabled = disabled_kernel_functions.get(identity)
+                    if disabled is None:
+                        disabled = disable_function(kernel_function)
+                        disabled_kernel_functions[identity] = disabled
+                    setattr(linear_attn, attribute, disabled)
         layer.forward = compile_function(
             layer.forward,
             backend=backend,
@@ -2769,6 +2790,13 @@ def main(cfg: DictConfig) -> None:
         if selective_torch_compile_policy == "full_attention_and_linear_shell"
         and layer_type == "linear_attention"
     ]
+    disabled_linear_attention_kernel_layer_indices = [
+        index
+        for index, layer_type in enumerate(compile_layer_types)
+        if selective_torch_compile_policy
+        == "full_attention_and_linear_mixer_segments"
+        and layer_type == "linear_attention"
+    ]
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2939,6 +2967,9 @@ def main(cfg: DictConfig) -> None:
                         "compiled_layer_indices": selectively_compiled_layer_indices,
                         "disabled_linear_attention_layer_indices": (
                             disabled_linear_attention_layer_indices
+                        ),
+                        "disabled_linear_attention_kernel_layer_indices": (
+                            disabled_linear_attention_kernel_layer_indices
                         ),
                         "backend": selective_torch_compile_backend,
                         "mode": selective_torch_compile_mode,

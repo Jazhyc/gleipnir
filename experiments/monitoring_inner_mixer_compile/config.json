@@ -1,0 +1,10 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-inner-mixer-compile-v1",
+  "hypothesis": "Compiling the projection, gating, normalization, and output segments inside every linear mixer improves throughput by at least 5% over shell-only compilation while keeping causal-conv1d and FLA eager.",
+  "optimizer_steps": 8,
+  "dataset_rows": 640,
+  "exposed_examples": 256,
+  "minimum_relative_improvement": 0.01,
+  "maximum_unique_graphs": 24,
+  "same_weights_logit_canary_tokens": 2048
+}

@@ -292,6 +292,57 @@ def test_selective_compile_wraps_linear_shells_around_disabled_mixers() -> None:
     assert len(disable_calls) == 3
 
 
+def test_selective_compile_disables_only_shared_linear_kernels() -> None:
+    model = SelectiveCheckpointModel()
+    apply_gradient_checkpointing_policy(model, "linear_attention_only")
+    compile_calls = []
+    disable_calls = []
+
+    def causal_kernel(*_args, **_kwargs):
+        return None
+
+    def fla_kernel(*_args, **_kwargs):
+        return None
+
+    for layer in model.model.layers[:3]:
+        layer.linear_attn.causal_conv1d_fn = causal_kernel
+        layer.linear_attn.chunk_gated_delta_rule = fla_kernel
+
+    def fake_compile(function, **kwargs):
+        compile_calls.append((function, kwargs))
+        return function
+
+    def fake_disable(function):
+        disable_calls.append(function)
+
+        def disabled(*args, **kwargs):
+            return function(*args, **kwargs)
+
+        return disabled
+
+    indices = apply_selective_torch_compile_policy(
+        model,
+        "full_attention_and_linear_mixer_segments",
+        backend="inductor",
+        mode="default",
+        dynamic=True,
+        compile_function=fake_compile,
+        disable_function=fake_disable,
+    )
+    assert indices == [0, 1, 2, 3]
+    assert len(compile_calls) == 4
+    assert disable_calls == [causal_kernel, fla_kernel]
+    causal_functions = {
+        id(layer.linear_attn.causal_conv1d_fn) for layer in model.model.layers[:3]
+    }
+    fla_functions = {
+        id(layer.linear_attn.chunk_gated_delta_rule)
+        for layer in model.model.layers[:3]
+    }
+    assert len(causal_functions) == 1
+    assert len(fla_functions) == 1
+
+
 def test_compile_canary_compares_selected_logits_and_margin() -> None:
     result = compare_compile_canary_logits(
         torch.tensor([[1.0, 2.0]]),
