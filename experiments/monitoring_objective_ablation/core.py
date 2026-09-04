@@ -137,6 +137,7 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "gradient_checkpointing_policy": spec["gradient_checkpointing_policy"],
             "selective_torch_compile_policy": spec["selective_torch_compile_policy"],
             "train_rows": TRAIN_ROWS,
+            "require_flash_sdpa": True,
             "soft_targets_sha256": SOFT_TARGETS_SHA256,
         }
         for key, value in expected.items():
@@ -176,6 +177,7 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         raise ValueError(f"loss metadata drifted: {losses} != {expected_losses}")
     fla = metadata.get("flash_linear_attention", {})
     causal = metadata.get("causal_conv1d", {})
+    sdpa = metadata.get("sdpa", {})
     compiled = metadata.get("selective_torch_compile", {})
     batch = metadata.get("training_batch", {})
     if (
@@ -192,6 +194,14 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         or causal.get("version") != "1.6.2.post1"
     ):
         raise ValueError("pinned causal-conv1d metadata is missing")
+    if sdpa != {
+        "flash_required": True,
+        "flash_enabled": True,
+        "math_enabled": False,
+        "memory_efficient_enabled": False,
+        "cudnn_enabled": False,
+    }:
+        raise ValueError("fail-closed flash SDPA metadata is missing")
     if batch != {
         "effective_batch_size": 32,
         "gradient_accumulation_steps": 32,

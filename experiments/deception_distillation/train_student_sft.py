@@ -2719,6 +2719,29 @@ def main(cfg: DictConfig) -> None:
         f"required={require_causal_conv1d}",
         flush=True,
     )
+    require_flash_sdpa = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.require_flash_sdpa",
+            default=False,
+        )
+    )
+    if require_flash_sdpa:
+        if not torch.cuda.is_available():
+            raise RuntimeError("required flash SDPA needs CUDA")
+        torch.backends.cuda.enable_flash_sdp(True)
+        torch.backends.cuda.enable_math_sdp(False)
+        torch.backends.cuda.enable_mem_efficient_sdp(False)
+        torch.backends.cuda.enable_cudnn_sdp(False)
+    print(
+        "sdpa_backends="
+        f"flash:{torch.backends.cuda.flash_sdp_enabled()},"
+        f"math:{torch.backends.cuda.math_sdp_enabled()},"
+        f"memory_efficient:{torch.backends.cuda.mem_efficient_sdp_enabled()},"
+        f"cudnn:{torch.backends.cuda.cudnn_sdp_enabled()} "
+        f"flash_required={require_flash_sdpa}",
+        flush=True,
+    )
     model = model_loader_classes[model_loader].from_pretrained(
         str(cfg.student.model),
         **revision_kwargs,
@@ -3338,6 +3361,15 @@ def main(cfg: DictConfig) -> None:
                         "required": require_causal_conv1d,
                         "version": os.environ.get("GLEIPNIR_CAUSAL_CONV1D_VERSION"),
                         "kernel_modules": causal_conv1d_modules,
+                    },
+                    "sdpa": {
+                        "flash_required": require_flash_sdpa,
+                        "flash_enabled": torch.backends.cuda.flash_sdp_enabled(),
+                        "math_enabled": torch.backends.cuda.math_sdp_enabled(),
+                        "memory_efficient_enabled": (
+                            torch.backends.cuda.mem_efficient_sdp_enabled()
+                        ),
+                        "cudnn_enabled": torch.backends.cuda.cudnn_sdp_enabled(),
                     },
                     "training_batch": {
                         "micro_batch_size": int(

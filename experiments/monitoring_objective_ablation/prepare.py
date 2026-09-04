@@ -145,6 +145,7 @@ def make_jobs(
         "mil_top_k": 3,
         "mil_max_instances": 8,
         "require_causal_conv1d": True,
+        "require_flash_sdpa": True,
         "fla_disable_backend_dispatch": True,
         "triton_version": "3.7.1",
         "train_rows": TRAIN_ROWS,

@@ -39,8 +39,9 @@ and compiling an all-layer-checkpointed model attempted a 45.6 GiB quadratic
 attention allocation even after the cap. All arms therefore compile decoder
 shells while holding both full- and linear-attention token mixers behind graph
 breaks. Unpadded batches omit the redundant all-ones attention mask so SDPA can
-select its H100 flash kernel. A 2,048-token eager/compiled logit canary must pass
-before training. The exact arms and stop conditions are in `config.yaml`.
+select its H100 flash kernel. The campaign disables all SDPA fallbacks and fails
+closed if flash cannot execute. A 2,048-token eager/compiled logit canary must
+pass before training. The exact arms and stop conditions are in `config.yaml`.
 
 ## Evaluation and promotion
 
