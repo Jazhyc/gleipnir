@@ -74,6 +74,8 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "require_causal_conv1d" in job:
         required = str(bool(job["require_causal_conv1d"])).lower()
         command.append(f"student.training.require_causal_conv1d={required}")
+    if sampling_strategy := job.get("train_sampling_strategy"):
+        command.append(f"student.training.train_sampling_strategy={sampling_strategy}")
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):

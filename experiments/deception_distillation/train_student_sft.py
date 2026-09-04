@@ -7,6 +7,7 @@ import hashlib
 import json
 import os
 import random
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any
@@ -29,9 +30,19 @@ from gleipnir.training import (
 class CompletionOnlyCollator:
     def __init__(self, pad_token_id: int) -> None:
         self.pad_token_id = pad_token_id
+        self.batches = 0
+        self.examples = 0
+        self.input_tokens = 0
+        self.input_padded_tokens = 0
+        self.direct_tokens = 0
+        self.direct_padded_tokens = 0
 
     def __call__(self, features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
         width = max(len(feature["input_ids"]) for feature in features)
+        self.batches += 1
+        self.examples += len(features)
+        self.input_tokens += sum(len(feature["input_ids"]) for feature in features)
+        self.input_padded_tokens += width * len(features)
         input_ids, attention_mask, labels = [], [], []
         for feature in features:
             padding = width - len(feature["input_ids"])
@@ -45,6 +56,10 @@ class CompletionOnlyCollator:
         }
         if "direct_input_ids" in features[0]:
             direct_width = max(len(feature["direct_input_ids"]) for feature in features)
+            self.direct_tokens += sum(
+                len(feature["direct_input_ids"]) for feature in features
+            )
+            self.direct_padded_tokens += direct_width * len(features)
             direct_input_ids, direct_attention_mask = [], []
             for feature in features:
                 padding = direct_width - len(feature["direct_input_ids"])
@@ -83,6 +98,29 @@ class CompletionOnlyCollator:
                     dtype=torch.float32,
                 )
         return batch
+
+    def padding_statistics(self) -> dict[str, int | float | None]:
+        """Return observed padding work for the batches emitted so far."""
+
+        def fraction(tokens: int, padded_tokens: int) -> float | None:
+            if padded_tokens == 0:
+                return None
+            return 1.0 - tokens / padded_tokens
+
+        return {
+            "batches": self.batches,
+            "examples": self.examples,
+            "input_tokens": self.input_tokens,
+            "input_padded_tokens": self.input_padded_tokens,
+            "input_padding_fraction": fraction(
+                self.input_tokens, self.input_padded_tokens
+            ),
+            "direct_tokens": self.direct_tokens,
+            "direct_padded_tokens": self.direct_padded_tokens,
+            "direct_padding_fraction": fraction(
+                self.direct_tokens, self.direct_padded_tokens
+            ),
+        }
 
 
 REASONING_BLOCK_START = "\n\n<assistant_reasoning>\n"
@@ -1260,12 +1298,54 @@ def main(cfg: DictConfig) -> None:
         AutoTokenizer,
         BitsAndBytesConfig,
         Trainer,
+        TrainerCallback,
         TrainingArguments,
     )
     from transformers.utils.import_utils import (
         is_causal_conv1d_available,
         is_flash_linear_attention_available,
     )
+
+    class OptimizerStepTimer(TrainerCallback):
+        """Measure synchronized wall time for complete optimizer steps."""
+
+        def __init__(self) -> None:
+            self.started_at: float | None = None
+            self.durations: list[float] = []
+
+        @staticmethod
+        def synchronize() -> None:
+            if torch.cuda.is_available():
+                torch.cuda.synchronize()
+
+        def on_step_begin(
+            self, args: Any, state: Any, control: Any, **kwargs: Any
+        ) -> None:
+            self.synchronize()
+            self.started_at = time.perf_counter()
+
+        def on_step_end(
+            self, args: Any, state: Any, control: Any, **kwargs: Any
+        ) -> None:
+            if self.started_at is None:
+                return
+            self.synchronize()
+            self.durations.append(time.perf_counter() - self.started_at)
+            self.started_at = None
+
+        def summary(self, warmup_steps: int = 2) -> dict[str, Any]:
+            steady = self.durations[min(warmup_steps, len(self.durations)) :]
+            return {
+                "durations_seconds": self.durations,
+                "recorded_steps": len(self.durations),
+                "warmup_steps_excluded": min(warmup_steps, len(self.durations)),
+                "steady_steps": len(steady),
+                "steady_mean_seconds": (float(np.mean(steady)) if steady else None),
+                "steady_median_seconds": (float(np.median(steady)) if steady else None),
+                "steady_p90_seconds": (
+                    float(np.percentile(steady, 90)) if steady else None
+                ),
+            }
 
     direct_loss_weight = float(
         OmegaConf.select(cfg, "student.training.direct_loss_weight", default=0.0)
@@ -1346,6 +1426,22 @@ def main(cfg: DictConfig) -> None:
         raise ValueError(
             "student.training.dataset_sampling must be one of: "
             + ", ".join(DATASET_SAMPLING_MODES)
+        )
+    train_sampling_strategy = str(
+        OmegaConf.select(
+            cfg,
+            "student.training.train_sampling_strategy",
+            default="random",
+        )
+    )
+    if train_sampling_strategy not in {
+        "random",
+        "group_by_length",
+        "sequential",
+    }:
+        raise ValueError(
+            "student.training.train_sampling_strategy must be random, "
+            "group_by_length, or sequential"
         )
     dataset_loss_weighting = str(
         OmegaConf.select(
@@ -1839,6 +1935,8 @@ def main(cfg: DictConfig) -> None:
         )
         for record in records
     ]
+    for feature in tokenized:
+        feature["length"] = len(feature.get("direct_input_ids", feature["input_ids"]))
     dataset = Dataset.from_list(tokenized)
     sampling_weights, expected_dataset_mass_by_id = dataset_sampling_weights(
         [dataset_id_by_name[str(record.get("dataset", ""))] for record in records],
@@ -1885,6 +1983,7 @@ def main(cfg: DictConfig) -> None:
         f"paired_batching={paired_batching} "
         f"paired_batching_mode={paired_batching_mode!r} "
         f"dataset_sampling={dataset_sampling!r} "
+        f"train_sampling_strategy={train_sampling_strategy!r} "
         f"dataset_loss_weighting={dataset_loss_weighting!r} "
         f"group_dro_eta={group_dro_eta} "
         f"group_dro_ema={group_dro_ema} "
@@ -2272,6 +2371,8 @@ def main(cfg: DictConfig) -> None:
         logging_steps=int(cfg.student.training.logging_steps),
         seed=int(cfg.seed),
         data_seed=int(cfg.seed),
+        train_sampling_strategy=train_sampling_strategy,
+        length_column_name="length",
         save_strategy=save_strategy,
         save_steps=int(save_steps) if save_steps >= 1 else save_steps,
         save_total_limit=save_total_limit,
@@ -2289,11 +2390,14 @@ def main(cfg: DictConfig) -> None:
     trainer_cls = (
         MuonAuxiliarySFTTrainer if optimizer_name == "muon" else AuxiliarySFTTrainer
     )
+    collator = CompletionOnlyCollator(tokenizer.pad_token_id)
+    optimizer_step_timer = OptimizerStepTimer()
     trainer = trainer_cls(
         model=model,
         args=args,
         train_dataset=dataset,
-        data_collator=CompletionOnlyCollator(tokenizer.pad_token_id),
+        data_collator=collator,
+        callbacks=[optimizer_step_timer],
     )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
@@ -2453,6 +2557,12 @@ def main(cfg: DictConfig) -> None:
                         )
                         * int(cfg.student.training.gradient_accumulation_steps),
                     },
+                    "batching": {
+                        "train_sampling_strategy": train_sampling_strategy,
+                        "length_column_name": "length",
+                        "padding": collator.padding_statistics(),
+                    },
+                    "optimizer_step_timing": optimizer_step_timer.summary(),
                     "training_state": {
                         "global_step": int(trainer.state.global_step),
                         "max_steps": int(trainer.state.max_steps),

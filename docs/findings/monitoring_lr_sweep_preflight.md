@@ -39,3 +39,19 @@ serving rebase in 458 seconds. Both required kernel families remained bound; an
 active-step snapshot showed about 68.6 GiB used. Version 5 records and validates
 the Triton version for every sweep cell. Failed runtime statuses and logs are
 retained in the ignored artifact trees.
+
+## 2026-09-04: stop the sweep for a matched throughput screen
+
+The first two cells were deliberately stopped without checkpoints after the two
+lanes reached 73 and 71 of 272 optimizer steps. Both GPUs were healthy and both
+kernel families were bound, but the steady rate was about 92 seconds per step,
+projecting roughly seven hours per cell. That is slower than the historical
+microbatch-1 full-data run despite causal-conv1d.
+
+The microbatch-2 choice was memory-safe but had not been compared against
+microbatch 1 on representative mixed-length batches. The collator right-pads
+each pair, so padding amplification is the leading hypothesis. Preserve this as
+a negative systems result and run the matched 20-step
+`monitoring_training_throughput` screen before restarting learning-rate work.
+Do not enable naive packing: the hybrid attention/recurrent backbone needs
+explicit state resets and multi-boundary selected-logit handling first.

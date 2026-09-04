@@ -55,6 +55,7 @@ student:
     lr_scheduler_type: linear
     weight_decay: 0.0
     dataset_sampling: proportional
+    train_sampling_strategy: random
     per_device_train_batch_size: 1
     gradient_accumulation_steps: 32
     torch_compile: false

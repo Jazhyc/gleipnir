@@ -1,0 +1,16 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-training-throughput-v1",
+  "hypothesis": "Microbatch 1 or length-grouped microbatch 2 improves end-to-end examples per second over random microbatch 2 on the same long trajectories.",
+  "selection_rows": 640,
+  "optimizer_steps": 20,
+  "effective_batch_size": 32,
+  "conditions": [
+    {"name": "mb1-random", "micro_batch_size": 1, "gradient_accumulation_steps": 32, "train_sampling_strategy": "random"},
+    {"name": "mb2-random", "micro_batch_size": 2, "gradient_accumulation_steps": 16, "train_sampling_strategy": "random"},
+    {"name": "mb2-length-grouped", "micro_batch_size": 2, "gradient_accumulation_steps": 16, "train_sampling_strategy": "group_by_length"}
+  ],
+  "primary_metric": "train_samples_per_second",
+  "minimum_relative_improvement": 0.05,
+  "tie_relative_tolerance": 0.02,
+  "packing": "deferred_until_attention_and_recurrent_state_boundaries_are_implemented"
+}

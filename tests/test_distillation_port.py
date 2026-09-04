@@ -105,6 +105,16 @@ def test_completion_collator_masks_prompt_padding() -> None:
     )
     assert batch["input_ids"].tolist() == [[1, 2], [3, 9]]
     assert batch["labels"].tolist() == [[-100, 2], [3, -100]]
+    assert collator.padding_statistics() == {
+        "batches": 1,
+        "examples": 2,
+        "input_tokens": 3,
+        "input_padded_tokens": 4,
+        "input_padding_fraction": 0.25,
+        "direct_tokens": 0,
+        "direct_padded_tokens": 0,
+        "direct_padding_fraction": None,
+    }
 
 
 def test_eva_collator_returns_a_concrete_dictionary() -> None:
