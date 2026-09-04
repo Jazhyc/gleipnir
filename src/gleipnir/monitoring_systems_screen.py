@@ -2,8 +2,8 @@
 
 This module owns the repeated preparation, validation, preflight, parallel
 execution, status, and throughput-summary machinery used by systems-only
-ablations. Individual hypotheses remain auditable JSON contracts and READMEs;
-they do not need four nearly identical Python entrypoints.
+ablations. Individual hypotheses remain auditable Hydra YAML configurations and
+READMEs; preparation freezes composition into JSON before any execution.
 """
 
 from __future__ import annotations
@@ -124,9 +124,35 @@ class ScreenPaths:
     status: Path
 
 
-def load_config(path: Path) -> dict[str, Any]:
-    """Load and validate the structural parts of a systems-screen contract."""
-    config = json.loads(path.read_text())
+def load_config(
+    path: Path, *, overrides: tuple[str, ...] = ()
+) -> dict[str, Any]:
+    """Load JSON or compose Hydra YAML, then validate the resolved contract."""
+    suffix = path.suffix.lower()
+    if suffix == ".json":
+        if overrides:
+            raise ValueError("Hydra overrides require a YAML authoring config")
+        config = json.loads(path.read_text())
+    elif suffix in {".yaml", ".yml"}:
+        from hydra import compose, initialize_config_dir
+        from omegaconf import OmegaConf
+
+        with initialize_config_dir(
+            version_base=None, config_dir=path.resolve().parent.as_posix()
+        ):
+            composed = compose(config_name=path.stem, overrides=list(overrides))
+        value = OmegaConf.to_container(composed, resolve=True, throw_on_missing=True)
+        if not isinstance(value, dict):
+            raise ValueError("systems-screen config must resolve to a mapping")
+        value.pop("_authoring", None)
+        config = value
+    else:
+        raise ValueError("systems-screen config must be JSON or YAML")
+    return validate_config(config)
+
+
+def validate_config(config: dict[str, Any]) -> dict[str, Any]:
+    """Validate the structural parts of a resolved systems-screen contract."""
     if config.get("systems_screen_schema") != SCHEMA_VERSION:
         raise ValueError("unsupported systems-screen schema")
     conditions = config.get("conditions")
@@ -147,6 +173,14 @@ def load_config(path: Path) -> dict[str, Any]:
     if int(config.get("gpus", 0)) < 1:
         raise ValueError("systems screen requires at least one GPU")
     return config
+
+
+def require_frozen_config(path: Path) -> None:
+    """Reject execution from a mutable authoring config."""
+    if path.name != "resolved_config.json":
+        raise ValueError(
+            "run and summarize require the prepared resolved_config.json snapshot"
+        )
 
 
 def resolve_paths(
@@ -231,12 +265,18 @@ def make_jobs_unchecked(
 def prepare_screen(
     config_path: Path,
     *,
+    overrides: tuple[str, ...] = (),
     data_dir: Path | None = None,
     result_dir: Path | None = None,
 ) -> dict[str, Any]:
     """Audit inputs and write selections, jobs, and a reconstruction manifest."""
-    config = load_config(config_path)
-    paths = resolve_paths(config, data_dir=data_dir, result_dir=result_dir)
+    config = load_config(config_path, overrides=overrides)
+    if data_dir is not None:
+        config["data"]["directory"] = data_dir.resolve().as_posix()
+    if result_dir is not None:
+        config["artifacts"]["result_dir"] = result_dir.resolve().as_posix()
+    paths = resolve_paths(config)
+    frozen_config = paths.result_dir / "resolved_config.json"
     data = config["data"]
     if sha256_file(paths.student_rows) != data["student_rows_sha256"]:
         raise ValueError("student-row checksum drifted")
@@ -245,6 +285,7 @@ def prepare_screen(
     records = read_jsonl(paths.student_rows)
     if len(records) != int(data["rows"]):
         raise ValueError("student-row count drifted")
+    atomic_write_json(frozen_config, config)
     selection_config = config["selection"]
     selected = stable_stratified_selection(
         records, int(selection_config["rows"]), int(selection_config["seed"])
@@ -266,8 +307,15 @@ def prepare_screen(
     atomic_write_jsonl(paths.jobs, jobs)
     manifest = {
         "campaign_id": config["campaign_id"],
-        "config": config_path.resolve().as_posix(),
-        "config_sha256": sha256_file(config_path),
+        "config": frozen_config.resolve().as_posix(),
+        "config_sha256": sha256_file(frozen_config),
+        "authoring_config": config_path.resolve().as_posix(),
+        "authoring_config_sha256": sha256_file(config_path),
+        "hydra_overrides": list(overrides),
+        "path_overrides": {
+            "data_dir": data_dir.resolve().as_posix() if data_dir else None,
+            "result_dir": result_dir.resolve().as_posix() if result_dir else None,
+        },
         "jobs": [job["job_name"] for job in jobs],
         "jobs_sha256": sha256_file(paths.jobs),
         "selection_sha256": selection_sha,
@@ -289,6 +337,7 @@ def validate_prepared_artifacts(
     manifest = json.loads((paths.result_dir / "manifest.json").read_text())
     expected = {
         "campaign_id": config["campaign_id"],
+        "config": config_path.resolve().as_posix(),
         "config_sha256": sha256_file(config_path),
         "jobs_sha256": sha256_file(paths.jobs),
         "selection_sha256": sha256_file(paths.selection),
@@ -528,6 +577,7 @@ def run_screen(config_path: Path, *, revision: str | None = None) -> None:
         ensure_qwen35_long_trajectory_kernels,
     )
 
+    require_frozen_config(config_path)
     config = load_config(config_path)
     paths = resolve_paths(config)
     validate_prepared_artifacts(config_path, config, paths)
@@ -655,6 +705,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, required=True)
     parser.add_argument("--data-dir", type=Path)
     parser.add_argument("--result-dir", type=Path)
+    parser.add_argument(
+        "--override",
+        action="append",
+        default=[],
+        help="Hydra override used only while preparing a YAML config",
+    )
     parser.add_argument("--revision", default=os.environ.get("GLEIPNIR_COMMIT"))
     return parser.parse_args()
 
@@ -667,6 +723,7 @@ def main() -> None:
             json.dumps(
                 prepare_screen(
                     args.config,
+                    overrides=tuple(args.override),
                     data_dir=args.data_dir,
                     result_dir=args.result_dir,
                 ),
@@ -675,10 +732,13 @@ def main() -> None:
             )
         )
     elif args.action == "run":
-        if args.data_dir is not None or args.result_dir is not None:
+        if args.data_dir is not None or args.result_dir is not None or args.override:
             raise ValueError("run uses the frozen config paths")
         run_screen(args.config, revision=args.revision)
     else:
+        if args.override:
+            raise ValueError("summarize uses the frozen config without overrides")
+        require_frozen_config(args.config)
         config = load_config(args.config)
         paths = resolve_paths(
             config, data_dir=args.data_dir, result_dir=args.result_dir

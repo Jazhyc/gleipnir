@@ -51,7 +51,8 @@ regeneration commands.
 
 Matched monitoring throughput ablations use the config-driven
 `gleipnir.monitoring_systems_screen` runner. New systems screens normally need
-only a frozen JSON contract and experiment README; see
+only a Hydra YAML config and experiment README. Preparation resolves defaults
+and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
 
 Start with [the research program](docs/research_program.md), then read the README

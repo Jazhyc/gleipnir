@@ -1,0 +1,56 @@
+defaults:
+  - systems_screen@_global_: qwen35_4b_h100_fast
+  - _self_
+
+hydra:
+  searchpath:
+    - pkg://gleipnir.configs
+
+campaign_id: gleipnir4b-monitoring-inner-mixer-compile-v1
+hypothesis: >-
+  Compiling the projection, gating, and output segments inside every linear
+  mixer improves throughput by at least 5% over shell-only compilation while
+  keeping causal-conv1d and all FLA custom kernels eager.
+
+artifacts:
+  result_dir: results/monitoring_inner_mixer_compile
+
+data:
+  directory: data/tool_trajectory_monitoring/distillation_scaling
+  student_rows: student_rows.jsonl
+  soft_targets: soft_targets.jsonl
+  rows: 8688
+  student_rows_sha256: 03669ac12452a2b63fe13193611fb99bfaeeb2456e6aaeb0c1be43471ea4387c
+  soft_targets_sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+
+conditions:
+  - job_name: linear-shell-compile-control
+    design_role: linear_shell_compile_control
+    overrides:
+      selective_torch_compile_policy: full_attention_and_linear_shell
+    metadata_expectations:
+      selective_torch_compile.policy: full_attention_and_linear_shell
+      selective_torch_compile.disabled_linear_attention_layer_indices: ${_authoring.layer_indices.linear_attention}
+      selective_torch_compile.disabled_linear_attention_kernel_layer_indices: []
+      selective_torch_compile.disabled_linear_attention_kernel_components: []
+
+  - job_name: inner-linear-mixer-compile-candidate
+    design_role: inner_linear_mixer_compile_candidate
+    overrides:
+      selective_torch_compile_policy: full_attention_and_linear_mixer_segments
+    metadata_expectations:
+      selective_torch_compile.policy: full_attention_and_linear_mixer_segments
+      selective_torch_compile.disabled_linear_attention_layer_indices: []
+      selective_torch_compile.disabled_linear_attention_kernel_layer_indices: ${_authoring.layer_indices.linear_attention}
+      selective_torch_compile.disabled_linear_attention_kernel_components:
+        - causal_conv1d_fn
+        - chunk_gated_delta_rule
+        - norm.forward
+
+preflight:
+  condition: inner-linear-mixer-compile-candidate
+
+comparison:
+  control: linear-shell-compile-control
+  candidate: inner-linear-mixer-compile-candidate
+  selection_job_field: selective_torch_compile_policy

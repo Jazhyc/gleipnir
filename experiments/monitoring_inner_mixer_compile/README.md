@@ -32,20 +32,22 @@ evaluated or promoted.
 
 ```bash
 python -m gleipnir.monitoring_systems_screen prepare \
-  --config experiments/monitoring_inner_mixer_compile/config.json
+  --config experiments/monitoring_inner_mixer_compile/config.yaml
 GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
   python -m gleipnir.monitoring_systems_screen run \
-  --config experiments/monitoring_inner_mixer_compile/config.json
+  --config results/monitoring_inner_mixer_compile/resolved_config.json
 ```
 
 Ignored artifacts are written under
 `results/monitoring_inner_mixer_compile/`.
 
-The JSON contract contains the shared recipe, condition overrides, metadata
-expectations, preflight, and promotion rule. The reusable runner owns selection
-materialization, checksum validation, isolated compiler caches, GPU lanes,
-atomic status, and summarization; this experiment therefore has no custom
-Python entrypoints.
+The short Hydra YAML config inherits the proven Qwen3.5 4B/H100 recipe and adds
+the hypothesis-specific data identities, conditions, and promotion rule.
+Preparation resolves interpolation and any `--override key=value` arguments,
+then writes and hashes `resolved_config.json`. GPU execution accepts only that
+frozen JSON snapshot. The reusable runner owns selection materialization,
+checksum validation, isolated compiler caches, GPU lanes, atomic status, and
+summarization; this experiment therefore has no custom Python entrypoints.
 
 ## Result
 

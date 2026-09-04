@@ -1,4 +1,3 @@
-import json
 from pathlib import Path
 
 from gleipnir.monitoring_systems_screen import (
@@ -9,7 +8,7 @@ from gleipnir.monitoring_systems_screen import (
     validate_training_metadata,
 )
 
-CONFIG_PATH = Path("experiments/monitoring_inner_mixer_compile/config.json")
+CONFIG_PATH = Path("experiments/monitoring_inner_mixer_compile/config.yaml")
 CONTROL_NAME = "linear-shell-compile-control"
 CANDIDATE_NAME = "inner-linear-mixer-compile-candidate"
 CONTROL_POLICY = "full_attention_and_linear_shell"
@@ -129,7 +128,15 @@ def test_preflight_requires_compile_canary(tmp_path: Path) -> None:
 
 
 def test_config_freezes_eight_steps() -> None:
-    config = json.loads(CONFIG_PATH.read_text())
+    config = load_config(CONFIG_PATH)
     assert config["systems_screen_schema"] == 1
     assert config["recipe"]["max_steps"] == 8
+    assert config["recipe"]["save_steps"] == 8
     assert config["comparison"]["minimum_relative_improvement"] == 0.01
+    assert "_authoring" not in config
+
+
+def test_hydra_override_is_resolved_before_freezing() -> None:
+    config = load_config(CONFIG_PATH, overrides=("recipe.max_steps=12",))
+    assert config["recipe"]["max_steps"] == 12
+    assert config["recipe"]["save_steps"] == 12

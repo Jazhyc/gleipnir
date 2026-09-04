@@ -6,6 +6,7 @@ import pytest
 from gleipnir.monitoring_systems_screen import (
     load_config,
     prepare_screen,
+    require_frozen_config,
     resolve_paths,
     round_robin_lanes,
     sha256_file,
@@ -95,10 +96,23 @@ def test_prepared_manifest_detects_selection_drift(tmp_path: Path) -> None:
         )
     )
     result_dir = tmp_path / "results"
-    prepare_screen(config_path, data_dir=data_dir, result_dir=result_dir)
-    config = load_config(config_path)
-    paths = resolve_paths(config, data_dir=data_dir, result_dir=result_dir)
-    validate_prepared_artifacts(config_path, config, paths)
+    manifest = prepare_screen(config_path, data_dir=data_dir, result_dir=result_dir)
+    frozen_config = Path(manifest["config"])
+    config = load_config(frozen_config)
+    paths = resolve_paths(config)
+    assert paths.data_dir == data_dir.resolve()
+    assert paths.result_dir == result_dir.resolve()
+    assert manifest["path_overrides"] == {
+        "data_dir": data_dir.resolve().as_posix(),
+        "result_dir": result_dir.resolve().as_posix(),
+    }
+    validate_prepared_artifacts(frozen_config, config, paths)
     paths.selection.write_text(paths.selection.read_text() + "{}\n")
     with pytest.raises(ValueError, match="selection_sha256"):
-        validate_prepared_artifacts(config_path, config, paths)
+        validate_prepared_artifacts(frozen_config, config, paths)
+
+
+def test_run_contract_requires_named_frozen_snapshot(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="resolved_config.json"):
+        require_frozen_config(tmp_path / "config.yaml")
+    require_frozen_config(tmp_path / "resolved_config.json")
