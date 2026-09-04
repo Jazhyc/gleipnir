@@ -30,11 +30,13 @@ training:
   quantization: nf4-double-quant-bf16
   required_kernels: fla-0.5.2+causal-conv1d-1.6.2.post1+triton-3.7.1
   execution_exception: >-
-    Rationale arms checkpoint all 32 decoder layers and compile the
-    checkpointed full-attention plus linear shells. The original matched
-    execution OOMed in compiled full-attention backward at 77.5 GiB; disabling
-    compilation made SDPA request a 52.2 GiB attention allocation. MIL arms
-    retain the proven selective recipe.
+    Rationale arms checkpoint all 32 decoder layers, compile the checkpointed
+    full-attention plus linear shells, and cap only their auxiliary input at
+    27648 tokens. The primary Kimi input remains at 29696. Both the original and
+    all-checkpoint compiled runs peaked at 77.5 GiB at 29696 tokens; disabling
+    compilation made SDPA request a 52.2 GiB attention allocation. The cap
+    preserves every rationale target and full context for over 95% of rows. MIL
+    arms retain the proven selective recipe.
 
 arms:
   - name: soft-rationale-w005

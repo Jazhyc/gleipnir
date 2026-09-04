@@ -1593,6 +1593,7 @@ def tokenize_record(
     tokenizer: Any,
     max_length: int,
     *,
+    completion_max_length: int | None = None,
     prompt_template: str | None = None,
     prompt_template_without_reasoning: str | None = None,
     target_mode: str = "teacher",
@@ -1605,6 +1606,11 @@ def tokenize_record(
     include_mil_target: bool = False,
     mil_max_instances: int = 8,
 ) -> dict[str, Any]:
+    effective_completion_max_length = (
+        max_length if completion_max_length is None else completion_max_length
+    )
+    if not 1 <= effective_completion_max_length <= max_length:
+        raise ValueError("completion_max_length must be in [1, max_length]")
     raw_prompt, _ = student_prompt_with_reasoning_dropout(
         record,
         reasoning_dropout_probability,
@@ -1665,11 +1671,12 @@ def tokenize_record(
             target + (tokenizer.eos_token or ""),
             add_special_tokens=False,
         )
-        if len(target_ids) >= max_length:
+        if len(target_ids) >= effective_completion_max_length:
             raise ValueError(
-                f"target alone exceeds student.max_length for index={record['index']}"
+                "target alone exceeds student.completion_max_length for "
+                f"index={record['index']}"
             )
-        prompt_ids = prompt_ids[-(max_length - len(target_ids)) :]
+        prompt_ids = prompt_ids[-(effective_completion_max_length - len(target_ids)) :]
         tokenized.update(
             input_ids=prompt_ids + target_ids,
             labels=[-100] * len(prompt_ids) + target_ids,
@@ -2426,11 +2433,24 @@ def main(cfg: DictConfig) -> None:
         )[1]
         for record in records
     )
+    max_length = int(cfg.student.max_length)
+    completion_max_length = int(
+        OmegaConf.select(
+            cfg,
+            "student.completion_max_length",
+            default=max_length,
+        )
+    )
+    if not 1 <= completion_max_length <= max_length:
+        raise ValueError(
+            "student.completion_max_length must be in [1, student.max_length]"
+        )
     tokenized = [
         tokenize_record(
             record,
             tokenizer,
-            int(cfg.student.max_length),
+            max_length,
+            completion_max_length=completion_max_length,
             prompt_template=(
                 str(cfg.student.prompt)
                 if (
@@ -3334,6 +3354,10 @@ def main(cfg: DictConfig) -> None:
                     "materialized_training_inputs": {
                         "completion": bool(completion_loss_weight),
                         "direct": uses_direct_forward,
+                    },
+                    "sequence_lengths": {
+                        "completion_max_length": completion_max_length,
+                        "direct_max_length": max_length,
                     },
                     "batching": {
                         "train_sampling_strategy": train_sampling_strategy,

@@ -37,6 +37,7 @@ student:
   reasoning_dropout_probability: 0.0
   reasoning_dropout_seed: ${seed}
   max_length: 29696
+  completion_max_length: ${student.max_length}
   output_dir: ${output_dir}/causal_adapter
   prompt: "unused: cached prompt-set-v1 student prompts are authoritative"
   lora:

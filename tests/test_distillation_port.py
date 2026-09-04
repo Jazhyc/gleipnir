@@ -205,6 +205,31 @@ def test_direct_only_tokenization_does_not_encode_completion() -> None:
     assert tokenizer.encoded == ["rendered promptPrediction:"]
 
 
+def test_completion_length_cap_does_not_shorten_direct_input() -> None:
+    class LongPromptTokenizer(CountingTokenizer):
+        def apply_chat_template(self, *_args, **_kwargs) -> str:
+            return "one two three four five"
+
+    tokenizer = LongPromptTokenizer()
+    feature = tokenize_record(
+        {
+            "index": "row-1",
+            "label": 1,
+            "student_prompt": "evidence",
+            "student_target": "target token",
+            "soft_target": 0.8,
+        },
+        tokenizer,
+        6,
+        completion_max_length=4,
+        include_direct_target=True,
+        include_completion_target=True,
+        dataset_id=0,
+    )
+    assert len(feature["input_ids"]) == 4
+    assert len(feature["direct_input_ids"]) == 5
+
+
 def test_selective_checkpointing_leaves_full_attention_uncheckpointed() -> None:
     model = SelectiveCheckpointModel()
     indices = apply_gradient_checkpointing_policy(model, "linear_attention_only")

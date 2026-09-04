@@ -23,6 +23,7 @@ LEARNING_RATE = 2e-5
 RANK = 128
 LORA_ALPHA = 256
 MAX_LENGTH = 29_696
+RATIONALE_MAX_LENGTH = 27_648
 MICRO_BATCH_SIZE = 1
 GRADIENT_ACCUMULATION_STEPS = 32
 RAW_SOURCE_SHA256 = "43bfc9f78d6584c43135109636f5e1747c694842419a327c3f37614fb9301802"
@@ -32,6 +33,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "job_name": "soft-rationale-w005",
         "kind": "rationale",
         "completion_loss_weight": 0.05,
+        "completion_max_length": RATIONALE_MAX_LENGTH,
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
@@ -44,6 +46,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "job_name": "soft-rationale-w020",
         "kind": "rationale",
         "completion_loss_weight": 0.20,
+        "completion_max_length": RATIONALE_MAX_LENGTH,
         "sequential_objective_backward": True,
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
@@ -56,6 +59,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "job_name": "soft-mil-max-w025",
         "kind": "mil",
         "completion_loss_weight": 0.0,
+        "completion_max_length": MAX_LENGTH,
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "max",
@@ -66,6 +70,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "job_name": "soft-mil-lme-w025",
         "kind": "mil",
         "completion_loss_weight": 0.0,
+        "completion_max_length": MAX_LENGTH,
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "logmeanexp",
@@ -76,6 +81,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "job_name": "soft-mil-top3-w025",
         "kind": "mil",
         "completion_loss_weight": 0.0,
+        "completion_max_length": MAX_LENGTH,
         "sequential_objective_backward": False,
         "mil_loss_weight": 0.25,
         "mil_pooling": "topk_mean",
@@ -123,6 +129,7 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "soft_loss_weight": 1.0,
             "direct_loss_weight": 0.0,
             "completion_logits_mode": "selected_positions",
+            "completion_max_length": spec["completion_max_length"],
             "completion_projection_chunk_size": 128,
             "sequential_objective_backward": spec["sequential_objective_backward"],
             "completion_loss_weight": spec["completion_loss_weight"],
@@ -225,6 +232,11 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
     }
     if metadata.get("materialized_training_inputs") != expected_inputs:
         raise ValueError("training input materialization drifted")
+    if metadata.get("sequence_lengths") != {
+        "completion_max_length": int(job["completion_max_length"]),
+        "direct_max_length": MAX_LENGTH,
+    }:
+        raise ValueError("sequence-length metadata drifted")
     return metadata
 
 

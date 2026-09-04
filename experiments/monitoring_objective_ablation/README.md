@@ -33,9 +33,12 @@ QLoRA, effective batch 32, the proven selective-checkpointing/compilation
 recipe, and pinned FLA/causal-conv1d kernels. The rationale preflight required a
 recorded execution-only exception: checkpoint all layers while retaining
 compiled full-attention and linear shells. The matched recipe peaked at 77.5
-GiB, while fully eager SDPA attempted a 52.2 GiB attention allocation. MIL
-retains the faster proven recipe. The exact arms and stop conditions are in
-`config.yaml`.
+GiB, while fully eager SDPA attempted a 52.2 GiB attention allocation. A second
+matched attempt showed that checkpointing did not reduce that compiled backward
+peak. Rationale inputs are therefore capped at 27,648 tokens while the primary
+Kimi input remains at 29,696. This preserves every rationale target (maximum
+1,744 tokens) and full rationale context for more than 95% of rows. MIL retains
+the faster proven recipe. The exact arms and stop conditions are in `config.yaml`.
 
 ## Evaluation and promotion
 

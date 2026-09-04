@@ -73,6 +73,10 @@ def training_command(job: dict[str, Any]) -> list[str]:
         f"{job['gradient_accumulation_steps']}",
         f"student.training.save_steps={job['save_steps']}",
     ]
+    if "completion_max_length" in job:
+        command.append(
+            f"student.completion_max_length={int(job['completion_max_length'])}"
+        )
     if "require_causal_conv1d" in job:
         required = str(bool(job["require_causal_conv1d"])).lower()
         command.append(f"student.training.require_causal_conv1d={required}")
