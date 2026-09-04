@@ -336,6 +336,31 @@ selection and keep the strict OOD suite outside that loop. Full metrics,
 runtime, serving parity, and artifact hashes are in
 [`../../docs/findings/gleipnir4b_held_out_id_baseline.md`](../../docs/findings/gleipnir4b_held_out_id_baseline.md).
 
+## Gleipnir 9B ID data-mixture comparison
+
+To distinguish the earlier 9B strict-OOD null mixture result from the positive
+4B ID comparison, evaluate the two already-completed seed-0 Qwen3.5-9B
+checkpoints on the same 3,012-row ID suite. The control uses the 8,688
+monitoring examples; the intervention adds all 13,149 deception examples. Both
+use one epoch, AdamW `5e-5`, rank-128 QLoRA, effective batch 32, Kimi-soft-only
+selected-token loss, the same backbone revision, and the frozen compact prompt.
+
+This is an exploratory evaluation, not a new selection surface. Report both
+adapters and do not use the result to tune either checkpoint. The mixed run has
+683 optimizer steps versus 272 for monitoring-only, so it does not isolate data
+diversity from additional updates. A fresh balanced four-row eager-versus-vLLM
+parity gate must pass before one persistent FlashInfer engine evaluates both
+adapters. The frozen contract is
+`gleipnir9b_id_data_mixture_benchmark.json`; the strict OOD suite is not read.
+
+```bash
+GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
+  python -m experiments.tool_trajectory_monitoring.run_distilled_ood_lambda \
+  --config experiments/tool_trajectory_monitoring/gleipnir9b_id_data_mixture_benchmark.json \
+  --result-dir results/gleipnir9b_id_data_mixture \
+  --status results/gleipnir9b_id_data_mixture/status.json
+```
+
 ## Gleipnir 4B visible-reasoning audit
 
 The completed paired generation audit compares the mixed-data, soft-only rank-128

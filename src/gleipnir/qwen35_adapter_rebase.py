@@ -2,14 +2,12 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 import shutil
 from pathlib import Path
 from typing import Any
-
-from safetensors import safe_open
-from safetensors.torch import save_file
 
 SOURCE_PREFIX = "base_model.model.model."
 DESTINATION_PREFIX = "base_model.model.model.language_model."
@@ -42,6 +40,9 @@ def rebase_key(key: str) -> str:
 
 def rebase_adapter(source_dir: Path, destination_dir: Path) -> dict[str, Any]:
     """Create a non-destructive, checksum-tracked rebased adapter copy."""
+    from safetensors import safe_open
+    from safetensors.torch import save_file
+
     source_dir = source_dir.resolve()
     destination_dir = destination_dir.resolve()
     source_weights = source_dir / WEIGHTS_NAME
@@ -101,3 +102,20 @@ def rebase_adapter(source_dir: Path, destination_dir: Path) -> dict[str, Any]:
     }
     manifest_path.write_text(json.dumps(manifest, indent=2, sort_keys=True) + "\n")
     return manifest
+
+
+def main() -> None:
+    """Rebase one causal adapter for serving without retraining it."""
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--source", type=Path, required=True)
+    parser.add_argument("--destination", type=Path, required=True)
+    args = parser.parse_args()
+    print(
+        json.dumps(
+            rebase_adapter(args.source, args.destination), indent=2, sort_keys=True
+        )
+    )
+
+
+if __name__ == "__main__":
+    main()

@@ -91,6 +91,26 @@ def test_gleipnir4b_id_config_is_frozen_for_one_model_group() -> None:
     assert config["engine"]["gdn_prefill_backend"] == "flashinfer"
 
 
+def test_gleipnir9b_id_config_selects_two_existing_adapters() -> None:
+    path = Path(
+        "experiments/tool_trajectory_monitoring/"
+        "gleipnir9b_id_data_mixture_benchmark.json"
+    )
+    config = json.loads(path.read_text())
+
+    validate_config(config)
+    validate_inputs(config)
+    jobs = validate_jobs(config, "9b")
+    assert [job["job_name"] for job in jobs] == [
+        "soft-n08688-seed0",
+        "soft-n21837-mixed-seed0",
+    ]
+    assert config["scope"]["rows"] == 3_012
+    assert config["input_materializer_module"] is None
+    assert config["model_groups"]["9b"]["evaluate_base"] is False
+    assert config["engine"]["gdn_prefill_backend"] == "flashinfer"
+
+
 def frozen_config(tmp_path: Path) -> dict[str, object]:
     jobs = []
     expected = []
@@ -120,8 +140,16 @@ def frozen_config(tmp_path: Path) -> dict[str, object]:
         "scoring": {"tokens": ["0", "1"]},
         "engine": {"max_lora_rank": 128},
         "model_groups": {
-            "9b": {"jobs": str(jobs_path), "expected_jobs": expected},
-            "4b": {"jobs": str(jobs_path), "expected_jobs": expected},
+            "9b": {
+                "jobs": str(jobs_path),
+                "expected_jobs": expected,
+                "parity_job": expected[0],
+            },
+            "4b": {
+                "jobs": str(jobs_path),
+                "expected_jobs": expected,
+                "parity_job": expected[0],
+            },
         },
     }
 

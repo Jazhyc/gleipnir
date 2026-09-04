@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Parity-gate and evaluate distilled OOD adapters on the reserved H100."""
+"""Parity-gate and evaluate frozen distilled adapters on the reserved H100."""
 
 from __future__ import annotations
 
@@ -102,14 +102,14 @@ def main() -> None:
     if args.revision:
         environment["GLEIPNIR_COMMIT"] = args.revision
     try:
-        status.update(phase="materializing_student_ood")
-        run(
-            [
-                sys.executable,
-                "-m",
-                "experiments.tool_trajectory_monitoring.prepare_distillation_ood",
-            ]
+        evaluation_label = str(config.get("evaluation_label", "ood"))
+        materializer = config.get(
+            "input_materializer_module",
+            "experiments.tool_trajectory_monitoring.prepare_distillation_ood",
         )
+        if materializer:
+            status.update(phase=f"materializing_{evaluation_label}")
+            run([sys.executable, "-m", str(materializer)])
         status.update(phase="kernel_preflight")
         environment.update(ensure_fla_kernels(args.fla_target))
         for model_size, group in config["model_groups"].items():
@@ -176,7 +176,7 @@ def main() -> None:
             parity = dict(status.value["parity"])
             parity[model_size] = "passed"
             status.update(
-                phase=f"{model_size}_full_ood",
+                phase=f"{model_size}_full_{evaluation_label}",
                 parity=parity,
                 active_job=f"full-{model_size}",
             )

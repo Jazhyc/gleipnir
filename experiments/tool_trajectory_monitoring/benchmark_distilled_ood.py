@@ -77,6 +77,9 @@ def validate_config(config: dict[str, Any]) -> None:
             "model groups differ from the frozen contract: "
             f"{sorted(groups)} != {sorted(expected_groups)}"
         )
+    for model_size, group in groups.items():
+        if group.get("parity_job") not in group.get("expected_jobs", []):
+            raise ValueError(f"{model_size} parity job is not selected for evaluation")
 
 
 def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
@@ -135,10 +138,19 @@ def validate_jobs(
     config: dict[str, Any], model_size: str, only_job: str | None = None
 ) -> list[dict[str, Any]]:
     group = config["model_groups"][model_size]
-    jobs = load_jsonl(Path(group["jobs"]))
+    jobs_path = Path(group["jobs"])
+    if group.get("jobs_sha256") and sha256_file(jobs_path) != group["jobs_sha256"]:
+        raise ValueError(f"{model_size} evaluation job manifest checksum drifted")
+    available_jobs = load_jsonl(jobs_path)
     expected = list(group["expected_jobs"])
-    if [str(job.get("job_name")) for job in jobs] != expected:
+    manifest_expected = list(group.get("jobs_manifest_expected_jobs", expected))
+    available_names = [str(job.get("job_name")) for job in available_jobs]
+    if available_names != manifest_expected:
         raise ValueError(f"{model_size} evaluation job manifest drifted")
+    by_name = {str(job["job_name"]): job for job in available_jobs}
+    if len(by_name) != len(available_jobs) or not set(expected).issubset(by_name):
+        raise ValueError(f"{model_size} selected evaluation jobs are incomplete")
+    jobs = [by_name[name] for name in expected]
     for job in jobs:
         if (
             job.get("target") != "kimi_soft"
