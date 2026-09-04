@@ -38,3 +38,18 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 
 Ignored artifacts are written under
 `results/monitoring_linear_shell_compile/`.
+
+## Result
+
+The 2026-09-04 run passed the longest-32 preflight and the same-weights
+2,048-token canary. The maximum selected-logit difference was 0.00926 and the
+binary-margin difference was 0.00367. The preflight used eight Dynamo graphs
+and peaked at 23.60 GiB allocated.
+
+Across the frozen eight-step comparison, the full-attention-only control ran at
+0.681 examples/s (375.95 seconds) while the additive linear-shell candidate ran
+at 0.819 examples/s (312.69 seconds). This is a 20.26% end-to-end throughput
+gain with cold compilation included. Mean step time after excluding the first
+two steps fell from 45.52 to 36.63 seconds. The candidate used three Dynamo
+graphs and reduced peak allocation from 25.36 to 24.58 GiB. Adopt
+`full_attention_and_linear_shell`; the result clears the frozen 1% threshold.

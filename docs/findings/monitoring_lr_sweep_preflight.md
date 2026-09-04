@@ -94,3 +94,16 @@ Dynamo emitted one dynamic training graph without shape specialization, and
 peak allocation remained 25.364 GiB. Adopt this compiled region. Subsequent
 throughput screens use eight matched optimizer steps because sub-1% effects are
 not promotion candidates.
+
+Compiling the remaining decoder-layer shells was also material. The candidate
+kept each checkpointed linear-attention token mixer explicitly eager, thereby
+excluding its projections, causal-conv1d, FLA gated-delta scan, gates,
+normalization, and output projection, while Inductor captured the surrounding
+RMSNorm, residual, and MLP/LoRA work. Its longest-32 preflight passed with a
+maximum selected-logit difference of 0.00926 and a binary-margin difference of
+0.00367. In the matched eight-step screen, the full-attention-only control and
+the additive shell candidate reached 0.681 and 0.819 examples/s respectively:
+a 20.26% cold-inclusive gain. Steady mean step time fell from 45.52 to 36.63
+seconds, peak allocation fell from 25.36 to 24.58 GiB, and the candidate used
+three Dynamo graphs. Adopt `full_attention_and_linear_shell` for subsequent
+training experiments.
