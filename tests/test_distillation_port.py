@@ -102,6 +102,7 @@ class SelectiveCheckpointModel(torch.nn.Module):
         self.model.layers = torch.nn.ModuleList([torch.nn.Module() for _ in range(4)])
         for layer in self.model.layers[:3]:
             layer.linear_attn = torch.nn.Module()
+        self.model.layers[3].self_attn = torch.nn.Module()
         self.config = type(
             "Config",
             (),
@@ -339,6 +340,34 @@ def test_selective_compile_wraps_checkpointed_attention_and_linear_shells() -> N
     assert indices == [0, 1, 2, 3]
     assert len(compile_calls) == 4
     assert len(disable_calls) == 3
+
+
+def test_selective_compile_holds_both_token_mixers_behind_graph_breaks() -> None:
+    model = SelectiveCheckpointModel()
+    apply_gradient_checkpointing_policy(model, "linear_attention_only")
+    compile_calls = []
+    disable_calls = []
+
+    def fake_compile(function, **kwargs):
+        compile_calls.append((function, kwargs))
+        return function
+
+    def fake_disable(function):
+        disable_calls.append(function)
+        return function
+
+    indices = apply_selective_torch_compile_policy(
+        model,
+        "decoder_shells_without_token_mixers",
+        backend="inductor",
+        mode="default",
+        dynamic=True,
+        compile_function=fake_compile,
+        disable_function=fake_disable,
+    )
+    assert indices == [0, 1, 2, 3]
+    assert len(compile_calls) == 4
+    assert len(disable_calls) == 4
 
 
 def test_selective_compile_disables_only_shared_linear_kernels() -> None:

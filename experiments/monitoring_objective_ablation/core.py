@@ -38,7 +38,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
+        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
     },
     {
         "job_name": "soft-rationale-w020",
@@ -49,7 +49,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.0,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
+        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
     },
     {
         "job_name": "soft-mil-max-w025",
@@ -60,7 +60,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "max",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
+        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
     },
     {
         "job_name": "soft-mil-lme-w025",
@@ -71,7 +71,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "logmeanexp",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
+        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
     },
     {
         "job_name": "soft-mil-top3-w025",
@@ -82,7 +82,7 @@ ARM_SPECS: tuple[dict[str, Any], ...] = (
         "mil_loss_weight": 0.25,
         "mil_pooling": "topk_mean",
         "gradient_checkpointing_policy": "linear_attention_only",
-        "selective_torch_compile_policy": "full_attention_and_linear_shell",
+        "selective_torch_compile_policy": "decoder_shells_without_token_mixers",
     },
 )
 

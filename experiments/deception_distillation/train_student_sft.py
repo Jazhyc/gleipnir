@@ -205,12 +205,14 @@ def apply_selective_torch_compile_policy(
         "full_attention_and_linear_shell",
         "full_attention_and_linear_mixer_segments",
         "checkpointed_full_attention_and_linear_shell",
+        "decoder_shells_without_token_mixers",
     }:
         raise ValueError(
             "student.training.selective_torch_compile_policy must be none, "
             "uncheckpointed_full_attention, full_attention_and_linear_shell, "
             "full_attention_and_linear_mixer_segments, or "
-            "checkpointed_full_attention_and_linear_shell"
+            "checkpointed_full_attention_and_linear_shell, or "
+            "decoder_shells_without_token_mixers"
         )
     if policy == "none":
         return []
@@ -231,6 +233,7 @@ def apply_selective_torch_compile_policy(
                 "full_attention_and_linear_shell",
                 "full_attention_and_linear_mixer_segments",
                 "checkpointed_full_attention_and_linear_shell",
+                "decoder_shells_without_token_mixers",
             }
             and layer_type == "linear_attention"
         )
@@ -245,6 +248,11 @@ def apply_selective_torch_compile_policy(
                 "selective compilation requires full-attention layers to be "
                 "uncheckpointed"
             )
+        if compile_full and policy == "decoder_shells_without_token_mixers":
+            self_attn = getattr(layer, "self_attn", None)
+            if self_attn is None:
+                raise ValueError("full-attention layer exposes no token mixer")
+            self_attn.forward = disable_function(self_attn.forward)
         if compile_linear_shell:
             linear_attn = getattr(layer, "linear_attn", None)
             if linear_attn is None:
@@ -252,6 +260,7 @@ def apply_selective_torch_compile_policy(
             if policy in {
                 "full_attention_and_linear_shell",
                 "checkpointed_full_attention_and_linear_shell",
+                "decoder_shells_without_token_mixers",
             }:
                 linear_attn.forward = disable_function(linear_attn.forward)
             else:
@@ -3142,6 +3151,7 @@ def main(cfg: DictConfig) -> None:
         in {
             "full_attention_and_linear_shell",
             "checkpointed_full_attention_and_linear_shell",
+            "decoder_shells_without_token_mixers",
         }
         and layer_type == "linear_attention"
     ]
@@ -3156,6 +3166,12 @@ def main(cfg: DictConfig) -> None:
         if selective_torch_compile_policy == "full_attention_and_linear_mixer_segments"
         else []
     )
+    disabled_full_attention_layer_indices = [
+        index
+        for index, layer_type in enumerate(compile_layer_types)
+        if selective_torch_compile_policy == "decoder_shells_without_token_mixers"
+        and layer_type == "full_attention"
+    ]
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -3343,6 +3359,14 @@ def main(cfg: DictConfig) -> None:
                         ),
                         "disabled_linear_attention_kernel_components": (
                             disabled_linear_attention_kernel_components
+                        ),
+                        "disabled_full_attention_layer_indices": (
+                            disabled_full_attention_layer_indices
+                        ),
+                        "disabled_full_attention_components": (
+                            ["self_attn.forward"]
+                            if disabled_full_attention_layer_indices
+                            else []
                         ),
                         "backend": selective_torch_compile_backend,
                         "mode": selective_torch_compile_mode,

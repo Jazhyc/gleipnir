@@ -34,8 +34,9 @@ training:
     Kimi input remains at 29696. The original rationale backward peaked at 77.5
     GiB. Disabling compilation made SDPA request a 52.2 GiB allocation, while
     compiling checkpointed full-attention attempted a 45.6 GiB quadratic
-    allocation even after the cap. All arms therefore retain the proven
-    linear-only checkpointing plus compiled-shell recipe. The cap preserves
+    allocation even after the cap. All arms therefore compile decoder shells
+    but hold both full- and linear-attention token mixers behind graph breaks;
+    a 2048-token eager/compiled logit canary must pass first. The cap preserves
     every rationale target and full context for over 95% of rows.
 
 arms:
