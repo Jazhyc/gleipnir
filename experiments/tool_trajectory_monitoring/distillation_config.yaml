@@ -77,6 +77,7 @@ student:
     completion_loss_weight: 0.0
     completion_logits_mode: full
     completion_projection_chunk_size: 128
+    sequential_objective_backward: false
     direct_loss_weight: 0.0
     pairwise_loss_weight: 0.0
     pairwise_temperature: 1.0

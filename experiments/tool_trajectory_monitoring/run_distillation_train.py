@@ -128,6 +128,9 @@ def training_command(job: dict[str, Any]) -> list[str]:
             "student.training.completion_projection_chunk_size="
             f"{int(job['completion_projection_chunk_size'])}"
         )
+    if "sequential_objective_backward" in job:
+        sequential = str(bool(job["sequential_objective_backward"])).lower()
+        command.append(f"student.training.sequential_objective_backward={sequential}")
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):

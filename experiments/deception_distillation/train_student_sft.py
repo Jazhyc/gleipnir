@@ -1782,6 +1782,13 @@ def main(cfg: DictConfig) -> None:
             default=128,
         )
     )
+    sequential_objective_backward = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.sequential_objective_backward",
+            default=False,
+        )
+    )
     pairwise_loss_weight = float(
         OmegaConf.select(cfg, "student.training.pairwise_loss_weight", default=0.0)
     )
@@ -1986,6 +1993,12 @@ def main(cfg: DictConfig) -> None:
         or mil_loss_weight
         or ordinal_soft_loss_weight
     )
+    if sequential_objective_backward and not (
+        completion_loss_weight and uses_direct_forward
+    ):
+        raise ValueError(
+            "sequential objective backward requires completion and direct losses"
+        )
     group_dro_loss: GroupDROLoss | None = None
 
     class AuxiliarySFTTrainer(Trainer):
@@ -2044,7 +2057,17 @@ def main(cfg: DictConfig) -> None:
                     loss = completion_loss_weight * completion_loss
                 else:
                     outputs = model(**inputs)
-                    loss = completion_loss_weight * outputs.loss
+                    completion_loss = outputs.loss
+                completion_term = completion_loss_weight * completion_loss
+                if sequential_objective_backward:
+                    self.accelerator.backward(
+                        completion_term / self.current_gradient_accumulation_steps
+                    )
+                    loss = completion_term.detach()
+                    del outputs
+                    outputs = None
+                else:
+                    loss = completion_term
             if uses_direct_forward:
                 if any(
                     value is None
@@ -2470,6 +2493,7 @@ def main(cfg: DictConfig) -> None:
         f"completion_loss_weight={completion_loss_weight} "
         f"completion_logits_mode={completion_logits_mode!r} "
         f"completion_projection_chunk_size={completion_projection_chunk_size} "
+        f"sequential_objective_backward={sequential_objective_backward} "
         f"direct_loss_weight={direct_loss_weight} "
         f"pairwise_loss_weight={pairwise_loss_weight} "
         f"soft_loss_weight={soft_loss_weight} "
@@ -3217,6 +3241,9 @@ def main(cfg: DictConfig) -> None:
                         "completion_logits_mode": completion_logits_mode,
                         "completion_projection_chunk_size": (
                             completion_projection_chunk_size
+                        ),
+                        "sequential_objective_backward": (
+                            sequential_objective_backward
                         ),
                         "direct_weight": direct_loss_weight,
                         "pairwise_weight": pairwise_loss_weight,
