@@ -6,6 +6,7 @@ import torch
 
 from experiments.deception_distillation.train_student_sft import (
     action_endpoint_character_offsets,
+    mil_token_positions,
     pool_mil_margins,
     select_evenly_spaced_positions,
     selected_completion_cross_entropy,
@@ -38,6 +39,30 @@ def test_even_endpoint_selection_retains_range() -> None:
     assert select_evenly_spaced_positions(range(10), 4) == [0, 3, 6, 9]
     assert select_evenly_spaced_positions([2, 2, 4], 8) == [2, 4]
     assert select_evenly_spaced_positions(range(10), 1) == [9]
+
+
+def test_mil_positions_allow_chat_template_to_strip_trailing_newline() -> None:
+    class CharacterTokenizer:
+        def __call__(self, text, add_special_tokens, return_offsets_mapping):
+            assert add_special_tokens is False
+            assert return_offsets_mapping is True
+            return {
+                "input_ids": list(range(len(text))),
+                "offset_mapping": [(index, index + 1) for index in range(len(text))],
+            }
+
+    raw = "[USER] task\n[ASSISTANT] action\n</agent_trajectory>\n"
+    serialized = f"<user>{raw.rstrip()}<end><assistant>"
+    token_ids, positions = mil_token_positions(
+        CharacterTokenizer(),
+        serialized,
+        raw,
+        max_length=len(serialized),
+        maximum_instances=8,
+    )
+    assert token_ids == list(range(len(serialized)))
+    expected_raw_end = raw.index("\n</agent_trajectory>")
+    assert positions == [len("<user>") + expected_raw_end - 1]
 
 
 def test_mil_pool_variants() -> None:

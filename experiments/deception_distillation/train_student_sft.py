@@ -421,7 +421,14 @@ def mil_token_positions(
     """Map raw-prompt event endpoints into tail-truncated token positions."""
     raw_start = serialized_prompt.find(raw_prompt)
     if raw_start < 0:
-        raise ValueError("serialized chat prompt does not contain raw prompt")
+        # Qwen3.5's chat template strips trailing whitespace from user content
+        # immediately before its end-of-message marker. Event endpoints always
+        # precede that suffix, so the right-stripped content has identical
+        # coordinates for every position we retain.
+        rendered_raw_prompt = raw_prompt.rstrip()
+        raw_start = serialized_prompt.find(rendered_raw_prompt)
+        if raw_start < 0:
+            raise ValueError("serialized chat prompt does not contain raw prompt")
     encoded = tokenizer(
         serialized_prompt,
         add_special_tokens=False,
