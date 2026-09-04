@@ -1,0 +1,78 @@
+campaign_id: gleipnir4b-monitoring-objective-ablation-v1
+status: frozen_before_training
+
+hypothesis: >-
+  The paper's stored structured monitoring analyses or action-level latent
+  supervision can add evidence-sensitive knowledge to the selected Kimi K3
+  soft-distillation objective and improve held-out ID generalization.
+
+baseline:
+  job: adamw-lr2em05-seed0
+  result: results/monitoring_lr_sweep/summary/summary.json
+  learning_rate: 2.0e-5
+  objective: Kimi K3 binary soft-target BCE
+
+training:
+  rows: 8688
+  data_scope: monitoring_only
+  seed: 0
+  model: Qwen/Qwen3.5-4B
+  model_revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  rank: 128
+  lora_alpha: 256
+  epochs: 1
+  learning_rate: 2.0e-5
+  effective_batch_size: 32
+  micro_batch_size: 1
+  gradient_accumulation_steps: 32
+  max_length: 29696
+  optimizer: adamw_torch
+  quantization: nf4-double-quant-bf16
+  required_kernels: fla-0.5.2+causal-conv1d-1.6.2.post1+triton-3.7.1
+
+arms:
+  - name: soft-rationale-w005
+    soft_loss_weight: 1.0
+    rationale_completion_loss_weight: 0.05
+  - name: soft-rationale-w020
+    soft_loss_weight: 1.0
+    rationale_completion_loss_weight: 0.20
+  - name: soft-mil-max-w025
+    soft_loss_weight: 1.0
+    mil_loss_weight: 0.25
+    pooling: max
+  - name: soft-mil-lme-w025
+    soft_loss_weight: 1.0
+    mil_loss_weight: 0.25
+    pooling: length-normalized-logmeanexp
+    temperature: 1.0
+  - name: soft-mil-top3-w025
+    soft_loss_weight: 1.0
+    mil_loss_weight: 0.25
+    pooling: top-3-mean
+
+mil:
+  instances: deterministic assistant-action and tool-result endpoints
+  maximum_instances_per_trajectory: 8
+  endpoint_sampling: evenly-spaced-including-first-and-last
+  target: same cached Kimi K3 soft probability as the complete trajectory
+  implementation: one causal decoder forward with literal-0/1-row projection
+
+selection:
+  dataset: frozen 3012-row held-out ID suite
+  primary_metric: unweighted two-source macro normalized pAUROC@20
+  minimum_gain: 0.005
+  maximum_source_regression: 0.01
+  maximum_macro_brier_regression: 0.005
+  strict_ood_used: false
+  followup: >-
+    If an arm passes, test the smallest supported combination of the best
+    rationale weight and best MIL pool. Otherwise stop without consulting OOD.
+
+stop_conditions:
+  - Any input checksum, row identity, source balance, or held-out separation drifts.
+  - Kimi soft loss is absent from an arm.
+  - A preflight OOMs or required FLA/causal-conv1d kernels are unavailable.
+  - The training recipe differs across arms outside the declared objective.
+  - An adapter or ID result is incomplete, duplicated, truncated, or non-finite.
+  - The strict OOD suite is consulted before ID selection is frozen.

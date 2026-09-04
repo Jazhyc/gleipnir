@@ -80,6 +80,11 @@ student:
     pairwise_temperature: 1.0
     soft_loss_weight: 1.0
     soft_loss_type: bce
+    mil_loss_weight: 0.0
+    mil_pooling: logmeanexp
+    mil_temperature: 1.0
+    mil_top_k: 3
+    mil_max_instances: 8
     direct_logits_mode: selected_positions
     require_flash_linear_attention: true
     require_causal_conv1d: false

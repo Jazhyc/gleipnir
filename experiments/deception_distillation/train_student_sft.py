@@ -3,10 +3,12 @@
 
 from __future__ import annotations
 
+import bisect
 import hashlib
 import json
 import os
 import random
+import re
 import time
 from collections import Counter
 from collections.abc import Callable, Sequence
@@ -44,19 +46,13 @@ class CompletionOnlyCollator:
         batch = {}
         if "input_ids" in features[0]:
             width = max(len(feature["input_ids"]) for feature in features)
-            self.input_tokens += sum(
-                len(feature["input_ids"]) for feature in features
-            )
+            self.input_tokens += sum(len(feature["input_ids"]) for feature in features)
             self.input_padded_tokens += width * len(features)
             input_ids, attention_mask, labels = [], [], []
             for feature in features:
                 padding = width - len(feature["input_ids"])
-                input_ids.append(
-                    feature["input_ids"] + [self.pad_token_id] * padding
-                )
-                attention_mask.append(
-                    [1] * len(feature["input_ids"]) + [0] * padding
-                )
+                input_ids.append(feature["input_ids"] + [self.pad_token_id] * padding)
+                attention_mask.append([1] * len(feature["input_ids"]) + [0] * padding)
                 labels.append(feature["labels"] + [-100] * padding)
             batch.update(
                 {
@@ -107,6 +103,18 @@ class CompletionOnlyCollator:
                 batch["soft_rating_targets"] = torch.tensor(
                     [feature["soft_rating_probs"] for feature in features],
                     dtype=torch.float32,
+                )
+            if "mil_positions" in features[0]:
+                mil_width = max(len(feature["mil_positions"]) for feature in features)
+                positions, position_mask = [], []
+                for feature in features:
+                    values = list(feature["mil_positions"])
+                    padding = mil_width - len(values)
+                    positions.append(values + [0] * padding)
+                    position_mask.append([True] * len(values) + [False] * padding)
+                batch["mil_positions"] = torch.tensor(positions, dtype=torch.long)
+                batch["mil_position_mask"] = torch.tensor(
+                    position_mask, dtype=torch.bool
                 )
         return batch
 
@@ -168,9 +176,7 @@ def apply_gradient_checkpointing_policy(
         raise ValueError("explicit checkpointing is restricted to linear attention")
     requested_set = set(requested)
     checkpointed = []
-    for index, (layer, layer_type) in enumerate(
-        zip(layers, layer_types, strict=True)
-    ):
+    for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
         enabled = (
             policy == "all"
             or (policy == "linear_attention_only" and layer_type == "linear_attention")
@@ -327,6 +333,118 @@ SOFT_TARGET_KEY = "_soft_target"
 CANONICAL_QWEN35_LORA_FRAGMENT = ".model.language_model.layers."
 VISION_MODULE_MARKERS = ("visual", "vision_tower", "merger", "patch_embed")
 DATASET_SAMPLING_MODES = ("proportional", "sqrt_balanced", "uniform_dataset")
+
+XML_STEP_END_PATTERN = re.compile(r"</step_\d+>")
+BRACKET_EVENT_PATTERN = re.compile(r"\[(USER|ASSISTANT|TOOL)\]")
+
+
+def action_endpoint_character_offsets(prompt: str) -> list[int]:
+    """Return deterministic action/tool-result endpoints in a rendered prompt."""
+    xml_offsets = [match.end() for match in XML_STEP_END_PATTERN.finditer(prompt)]
+    if xml_offsets:
+        return xml_offsets
+    markers = list(BRACKET_EVENT_PATTERN.finditer(prompt))
+    offsets = []
+    for index, marker in enumerate(markers):
+        if marker.group(1) not in {"ASSISTANT", "TOOL"}:
+            continue
+        end = markers[index + 1].start() if index + 1 < len(markers) else len(prompt)
+        while end > marker.end() and prompt[end - 1].isspace():
+            end -= 1
+        if end > marker.end():
+            offsets.append(end)
+    return sorted(set(offsets))
+
+
+def select_evenly_spaced_positions(positions: Sequence[int], maximum: int) -> list[int]:
+    """Select at most ``maximum`` positions while retaining both endpoints."""
+    unique = sorted(set(int(position) for position in positions))
+    if maximum < 1:
+        raise ValueError("MIL maximum instances must be positive")
+    if len(unique) <= maximum:
+        return unique
+    if maximum == 1:
+        return [unique[-1]]
+    indices = {
+        round(index * (len(unique) - 1) / (maximum - 1)) for index in range(maximum)
+    }
+    selected = [unique[index] for index in sorted(indices)]
+    if len(selected) != maximum:
+        raise AssertionError("even MIL selection did not retain requested count")
+    return selected
+
+
+def mil_token_positions(
+    tokenizer: Any,
+    serialized_prompt: str,
+    raw_prompt: str,
+    *,
+    max_length: int,
+    maximum_instances: int,
+) -> tuple[list[int], list[int]]:
+    """Map raw-prompt event endpoints into tail-truncated token positions."""
+    raw_start = serialized_prompt.find(raw_prompt)
+    if raw_start < 0:
+        raise ValueError("serialized chat prompt does not contain raw prompt")
+    encoded = tokenizer(
+        serialized_prompt,
+        add_special_tokens=False,
+        return_offsets_mapping=True,
+    )
+    token_ids = list(encoded["input_ids"])
+    token_offsets = list(encoded["offset_mapping"])
+    valid_offsets = [
+        (end, index) for index, (start, end) in enumerate(token_offsets) if end > start
+    ]
+    valid_ends = [end for end, _ in valid_offsets]
+    cutoff = max(0, len(token_ids) - max_length)
+    positions = []
+    for raw_end in action_endpoint_character_offsets(raw_prompt):
+        absolute_end = raw_start + raw_end
+        offset_index = bisect.bisect_right(valid_ends, absolute_end) - 1
+        if offset_index >= 0:
+            token_index = valid_offsets[offset_index][1]
+            if token_index >= cutoff:
+                positions.append(token_index - cutoff)
+    selected = select_evenly_spaced_positions(positions, maximum_instances)
+    if not selected:
+        raise ValueError("no action endpoints survive direct-prompt truncation")
+    return token_ids[-max_length:], selected
+
+
+def pool_mil_margins(
+    margins: torch.Tensor,
+    mask: torch.Tensor,
+    *,
+    mode: str,
+    temperature: float,
+    top_k: int,
+) -> torch.Tensor:
+    """Pool variable-size instance margins into one trajectory-level logit."""
+    if margins.ndim != 2 or mask.shape != margins.shape:
+        raise ValueError("MIL margins and mask must have identical rank-two shapes")
+    if not bool(mask.any(dim=1).all()):
+        raise ValueError("every MIL bag must contain at least one instance")
+    if temperature <= 0:
+        raise ValueError("MIL pooling temperature must be positive")
+    if mode == "max":
+        return margins.masked_fill(~mask, -torch.inf).max(dim=1).values
+    if mode == "logmeanexp":
+        scaled = margins.masked_fill(~mask, -torch.inf) / temperature
+        counts = mask.sum(dim=1).to(margins.dtype)
+        return temperature * (torch.logsumexp(scaled, dim=1) - counts.log())
+    if mode == "topk_mean":
+        if top_k < 1:
+            raise ValueError("MIL top_k must be positive")
+        pooled = []
+        for row, row_mask in zip(margins, mask, strict=True):
+            values = row[row_mask]
+            k = min(top_k, values.numel())
+            pooled.append(values.topk(k).values.mean())
+        return torch.stack(pooled)
+    raise ValueError(f"unknown MIL pooling mode: {mode!r}")
+
+
 DATASET_LOSS_WEIGHTING_MODES = ("mean", "group_dro")
 
 
@@ -347,9 +465,7 @@ class GroupDROLoss:
         self.seen: torch.Tensor | None = None
         self.weights: torch.Tensor | None = None
 
-    def __call__(
-        self, losses: torch.Tensor, dataset_ids: torch.Tensor
-    ) -> torch.Tensor:
+    def __call__(self, losses: torch.Tensor, dataset_ids: torch.Tensor) -> torch.Tensor:
         if losses.ndim != 1 or dataset_ids.shape != losses.shape:
             raise ValueError("GroupDRO losses and dataset ids must be row vectors")
         if not torch.isfinite(losses).all():
@@ -466,9 +582,7 @@ def parameter_counts(model: Any, finetuning_mode: str) -> dict[str, int]:
     """Validate the tuning layout and return auditable parameter counts."""
     total = sum(parameter.numel() for parameter in model.parameters())
     trainable = sum(
-        parameter.numel()
-        for parameter in model.parameters()
-        if parameter.requires_grad
+        parameter.numel() for parameter in model.parameters() if parameter.requires_grad
     )
     lora_trainable = sum(
         parameter.numel()
@@ -592,6 +706,45 @@ def forward_final_token_hidden(
     selected_hidden = outputs.last_hidden_state[:, selected_positions, :]
     row_indices = torch.arange(input_ids.shape[0], device=input_ids.device)
     return selected_hidden[row_indices, inverse], outputs
+
+
+def forward_final_and_mil_binary_logits(
+    model: Any,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    mil_positions: torch.Tensor,
+    binary_ids: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor, Any]:
+    """Score final and intermediate positions with only two LM-head rows."""
+    if mil_positions.ndim != 2 or mil_positions.shape[0] != input_ids.shape[0]:
+        raise ValueError("MIL positions must be [batch, instances]")
+    last_positions = attention_mask.sum(dim=1) - 1
+    if (last_positions < 0).any():
+        raise ValueError("direct inputs must contain at least one attended token")
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    decoder = getattr(base, "model", None)
+    lm_head = getattr(base, "lm_head", None)
+    if decoder is None or lm_head is None or not hasattr(lm_head, "weight"):
+        raise RuntimeError("causal model exposes no decoder/LM-head projection")
+    outputs = decoder(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        use_cache=False,
+    )
+    hidden = outputs.last_hidden_state
+    rows = torch.arange(input_ids.shape[0], device=input_ids.device)
+    final_hidden = hidden[rows, last_positions]
+    mil_rows = rows[:, None].expand_as(mil_positions)
+    mil_hidden = hidden[mil_rows, mil_positions]
+    selected_weight = lm_head.weight.index_select(0, binary_ids)
+    selected_bias = (
+        None
+        if getattr(lm_head, "bias", None) is None
+        else lm_head.bias.index_select(0, binary_ids)
+    )
+    final_logits = F.linear(final_hidden, selected_weight, selected_bias)
+    mil_logits = F.linear(mil_hidden, selected_weight, selected_bias)
+    return final_logits, mil_logits, outputs
 
 
 def forward_final_token_logits_and_head_inputs(
@@ -1391,6 +1544,8 @@ def tokenize_record(
     include_completion_target: bool = True,
     direct_target_prefix: str = DIRECT_PREDICTION_PREFIX,
     dataset_id: int | None = None,
+    include_mil_target: bool = False,
+    mil_max_instances: int = 8,
 ) -> dict[str, Any]:
     raw_prompt, _ = student_prompt_with_reasoning_dropout(
         record,
@@ -1417,7 +1572,7 @@ def tokenize_record(
         ):
             selected_template = prompt_template_without_reasoning
         raw_prompt = f"{selected_template}\n\n<context>{evidence}"
-    prompt = tokenizer.apply_chat_template(
+    direct_prompt = tokenizer.apply_chat_template(
         [{"role": "user", "content": raw_prompt}],
         tokenize=False,
         add_generation_prompt=True,
@@ -1425,6 +1580,19 @@ def tokenize_record(
     )
     tokenized: dict[str, Any] = {}
     if include_completion_target:
+        completion_prompt = str(record.get("completion_prompt", raw_prompt))
+        completion_messages = []
+        if completion_system_prompt := record.get("completion_system_prompt"):
+            completion_messages.append(
+                {"role": "system", "content": str(completion_system_prompt)}
+            )
+        completion_messages.append({"role": "user", "content": completion_prompt})
+        prompt = tokenizer.apply_chat_template(
+            completion_messages,
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
         effective_target_mode = (
             "prediction_only" if record.get(LABEL_ONLY_TARGET_KEY) else target_mode
         )
@@ -1433,9 +1601,7 @@ def tokenize_record(
         elif effective_target_mode == "prediction_only":
             target = f"Prediction:{int(record['label'])}"
         else:
-            raise ValueError(
-                f"unknown student.target_mode={effective_target_mode!r}"
-            )
+            raise ValueError(f"unknown student.target_mode={effective_target_mode!r}")
         prompt_ids = tokenizer.encode(prompt, add_special_tokens=False)
         target_ids = tokenizer.encode(
             target + (tokenizer.eos_token or ""),
@@ -1443,8 +1609,7 @@ def tokenize_record(
         )
         if len(target_ids) >= max_length:
             raise ValueError(
-                "target alone exceeds student.max_length for "
-                f"index={record['index']}"
+                f"target alone exceeds student.max_length for index={record['index']}"
             )
         prompt_ids = prompt_ids[-(max_length - len(target_ids)) :]
         tokenized.update(
@@ -1456,10 +1621,21 @@ def tokenize_record(
     if include_direct_target:
         if dataset_id is None:
             raise ValueError("dataset_id is required for direct-target training")
-        direct_ids = tokenizer.encode(
-            prompt + direct_target_prefix,
-            add_special_tokens=False,
-        )[-max_length:]
+        serialized_direct = direct_prompt + direct_target_prefix
+        if include_mil_target:
+            direct_ids, mil_positions = mil_token_positions(
+                tokenizer,
+                serialized_direct,
+                raw_prompt,
+                max_length=max_length,
+                maximum_instances=mil_max_instances,
+            )
+            tokenized["mil_positions"] = mil_positions
+        else:
+            direct_ids = tokenizer.encode(
+                serialized_direct,
+                add_special_tokens=False,
+            )[-max_length:]
         if not direct_ids:
             raise ValueError(f"empty direct prompt for index={record['index']}")
         tokenized.update(
@@ -1561,6 +1737,19 @@ def main(cfg: DictConfig) -> None:
     soft_loss_weight = float(
         OmegaConf.select(cfg, "student.training.soft_loss_weight", default=0.0)
     )
+    mil_loss_weight = float(
+        OmegaConf.select(cfg, "student.training.mil_loss_weight", default=0.0)
+    )
+    mil_pooling = str(
+        OmegaConf.select(cfg, "student.training.mil_pooling", default="logmeanexp")
+    )
+    mil_temperature = float(
+        OmegaConf.select(cfg, "student.training.mil_temperature", default=1.0)
+    )
+    mil_top_k = int(OmegaConf.select(cfg, "student.training.mil_top_k", default=3))
+    mil_max_instances = int(
+        OmegaConf.select(cfg, "student.training.mil_max_instances", default=8)
+    )
     soft_loss_type = str(
         OmegaConf.select(cfg, "student.training.soft_loss_type", default="bce")
     )
@@ -1573,8 +1762,7 @@ def main(cfg: DictConfig) -> None:
     )
     if direct_logits_mode not in {"full", "selected_positions"}:
         raise ValueError(
-            "student.training.direct_logits_mode must be full or "
-            "selected_positions"
+            "student.training.direct_logits_mode must be full or selected_positions"
         )
     decision_head_mode = str(
         OmegaConf.select(
@@ -1670,6 +1858,7 @@ def main(cfg: DictConfig) -> None:
             direct_loss_weight,
             pairwise_loss_weight,
             soft_loss_weight,
+            mil_loss_weight,
             ordinal_soft_loss_weight,
         )
     ):
@@ -1680,12 +1869,16 @@ def main(cfg: DictConfig) -> None:
             direct_loss_weight,
             pairwise_loss_weight,
             soft_loss_weight,
+            mil_loss_weight,
             ordinal_soft_loss_weight,
         )
     ):
         raise ValueError("at least one student loss weight must be positive")
     if ordinal_soft_loss_weight and (
-        direct_loss_weight or pairwise_loss_weight or soft_loss_weight
+        direct_loss_weight
+        or pairwise_loss_weight
+        or soft_loss_weight
+        or mil_loss_weight
     ):
         raise ValueError(
             "ordinal soft loss cannot be combined with binary auxiliary losses"
@@ -1694,6 +1887,16 @@ def main(cfg: DictConfig) -> None:
         raise ValueError("student.training.pairwise_temperature must be positive")
     if soft_loss_type not in {"bce", "huber"}:
         raise ValueError("student.training.soft_loss_type must be one of: bce, huber")
+    if mil_pooling not in {"max", "logmeanexp", "topk_mean"}:
+        raise ValueError("student.training.mil_pooling is invalid")
+    if mil_temperature <= 0 or mil_top_k < 1 or mil_max_instances < 1:
+        raise ValueError(
+            "MIL temperature, top-k, and maximum instances must be positive"
+        )
+    if mil_loss_weight and not soft_loss_weight:
+        raise ValueError("MIL currently requires the Kimi soft-target objective")
+    if mil_loss_weight and decision_head_mode != "token_logits":
+        raise ValueError("MIL currently requires token-logit decision mode")
     if not np.isfinite(soft_target_logit_center):
         raise ValueError("student.training.soft_target_logit_center must be finite")
     if not np.isfinite(soft_target_logit_scale) or soft_target_logit_scale <= 0:
@@ -1713,6 +1916,7 @@ def main(cfg: DictConfig) -> None:
         or completion_loss_weight
         or direct_loss_weight
         or pairwise_loss_weight
+        or mil_loss_weight
         or ordinal_soft_loss_weight
     ):
         raise ValueError("GroupDRO currently requires the binary soft loss alone")
@@ -1724,6 +1928,7 @@ def main(cfg: DictConfig) -> None:
         direct_loss_weight
         or pairwise_loss_weight
         or soft_loss_weight
+        or mil_loss_weight
         or ordinal_soft_loss_weight
     )
     group_dro_loss: GroupDROLoss | None = None
@@ -1768,6 +1973,8 @@ def main(cfg: DictConfig) -> None:
             dataset_ids = inputs.pop("dataset_ids", None)
             soft_targets = inputs.pop("soft_targets", None)
             soft_rating_targets = inputs.pop("soft_rating_targets", None)
+            mil_positions = inputs.pop("mil_positions", None)
+            mil_position_mask = inputs.pop("mil_position_mask", None)
             outputs = None
             loss = None
             if completion_loss_weight:
@@ -1807,18 +2014,32 @@ def main(cfg: DictConfig) -> None:
                         head_logits, token_logits
                     )
                 else:
-                    next_logits, direct_outputs = forward_final_token_logits(
-                        model,
-                        direct_input_ids,
-                        direct_attention_mask,
-                        direct_logits_mode,
-                    )
                     label_ids = torch.tensor(
                         self.direct_target_ids,
-                        device=next_logits.device,
+                        device=direct_input_ids.device,
                         dtype=torch.long,
                     )
-                    direct_logits = next_logits.index_select(-1, label_ids)
+                    mil_logits = None
+                    if mil_loss_weight:
+                        if mil_positions is None or mil_position_mask is None:
+                            raise ValueError("MIL position fields are missing")
+                        direct_logits, mil_logits, direct_outputs = (
+                            forward_final_and_mil_binary_logits(
+                                model,
+                                direct_input_ids,
+                                direct_attention_mask,
+                                mil_positions,
+                                label_ids,
+                            )
+                        )
+                    else:
+                        next_logits, direct_outputs = forward_final_token_logits(
+                            model,
+                            direct_input_ids,
+                            direct_attention_mask,
+                            direct_logits_mode,
+                        )
+                        direct_logits = next_logits.index_select(-1, label_ids)
                 if loss is None:
                     loss = direct_logits.sum() * 0.0
                 if direct_loss_weight:
@@ -1850,6 +2071,23 @@ def main(cfg: DictConfig) -> None:
                         else soft_losses.mean()
                     )
                     loss = loss + soft_loss_weight * soft_loss
+                if mil_loss_weight:
+                    if soft_targets is None or mil_logits is None:
+                        raise ValueError(
+                            "MIL requires soft targets and instance logits"
+                        )
+                    margins = mil_logits[..., 1].float() - mil_logits[..., 0].float()
+                    bag_logits = pool_mil_margins(
+                        margins,
+                        mil_position_mask,
+                        mode=mil_pooling,
+                        temperature=mil_temperature,
+                        top_k=mil_top_k,
+                    )
+                    loss = loss + mil_loss_weight * F.binary_cross_entropy_with_logits(
+                        bag_logits,
+                        soft_targets.float(),
+                    )
                 if ordinal_soft_loss_weight:
                     if soft_rating_targets is None:
                         raise ValueError(
@@ -1880,9 +2118,7 @@ def main(cfg: DictConfig) -> None:
                     muon_momentum=float(cfg.student.training.muon_momentum),
                     muon_nesterov=bool(cfg.student.training.muon_nesterov),
                     muon_ns_steps=int(cfg.student.training.muon_ns_steps),
-                    muon_adjust_lr_fn=str(
-                        cfg.student.training.muon_adjust_lr_fn
-                    ),
+                    muon_adjust_lr_fn=str(cfg.student.training.muon_adjust_lr_fn),
                 )
             return self.optimizer
 
@@ -2055,18 +2291,10 @@ def main(cfg: DictConfig) -> None:
         group_dro_loss = GroupDROLoss(
             len(dataset_id_by_name), eta=group_dro_eta, ema=group_dro_ema
         )
-    model_revision_value = OmegaConf.select(
-        cfg, "student.model_revision", default=None
-    )
-    model_revision = (
-        None if model_revision_value is None else str(model_revision_value)
-    )
-    revision_kwargs = (
-        {} if model_revision is None else {"revision": model_revision}
-    )
-    tokenizer = AutoTokenizer.from_pretrained(
-        str(cfg.student.model), **revision_kwargs
-    )
+    model_revision_value = OmegaConf.select(cfg, "student.model_revision", default=None)
+    model_revision = None if model_revision_value is None else str(model_revision_value)
+    revision_kwargs = {} if model_revision is None else {"revision": model_revision}
+    tokenizer = AutoTokenizer.from_pretrained(str(cfg.student.model), **revision_kwargs)
     if tokenizer.pad_token_id is None:
         tokenizer.pad_token = tokenizer.eos_token
     direct_target_ids = None
@@ -2135,6 +2363,8 @@ def main(cfg: DictConfig) -> None:
             include_completion_target=bool(completion_loss_weight),
             direct_target_prefix=direct_target_prefix,
             dataset_id=dataset_id_by_name[str(record.get("dataset", ""))],
+            include_mil_target=bool(mil_loss_weight),
+            mil_max_instances=mil_max_instances,
         )
         for record in records
     ]
@@ -2176,6 +2406,11 @@ def main(cfg: DictConfig) -> None:
         f"direct_loss_weight={direct_loss_weight} "
         f"pairwise_loss_weight={pairwise_loss_weight} "
         f"soft_loss_weight={soft_loss_weight} "
+        f"mil_loss_weight={mil_loss_weight} "
+        f"mil_pooling={mil_pooling!r} "
+        f"mil_temperature={mil_temperature} "
+        f"mil_top_k={mil_top_k} "
+        f"mil_max_instances={mil_max_instances} "
         f"soft_loss_type={soft_loss_type!r} "
         f"direct_logits_mode={direct_logits_mode!r} "
         f"decision_head_mode={decision_head_mode!r} "
@@ -2242,10 +2477,7 @@ def main(cfg: DictConfig) -> None:
         if raw_checkpointing_layer_indices is None
         else [int(index) for index in raw_checkpointing_layer_indices]
     )
-    if (
-        not gradient_checkpointing_requested
-        and gradient_checkpointing_policy != "all"
-    ):
+    if not gradient_checkpointing_requested and gradient_checkpointing_policy != "all":
         raise ValueError(
             "selective checkpointing policy requires gradient checkpointing"
         )
@@ -2254,9 +2486,7 @@ def main(cfg: DictConfig) -> None:
     )
     if lora_initialization not in {"default", "loftq", "eva"}:
         raise ValueError("student.lora.init must be default, loftq, or eva")
-    lora_use_dora = bool(
-        OmegaConf.select(cfg, "student.lora.use_dora", default=False)
-    )
+    lora_use_dora = bool(OmegaConf.select(cfg, "student.lora.use_dora", default=False))
     if lora_initialization == "loftq" and not quantization_enabled:
         raise ValueError("LoftQ initialization requires 4-bit quantization")
     eva_rho = float(OmegaConf.select(cfg, "student.lora.eva_rho", default=2.0))
@@ -2293,9 +2523,7 @@ def main(cfg: DictConfig) -> None:
             )
         )
         if quantization_type != "nf4" or compute_dtype != "bfloat16":
-            raise ValueError(
-                "standard QLoRA requires NF4 weights and bfloat16 compute"
-            )
+            raise ValueError("standard QLoRA requires NF4 weights and bfloat16 compute")
         quantization_metadata.update(
             bnb_4bit_quant_type=quantization_type,
             bnb_4bit_use_double_quant=use_double_quant,
@@ -2324,8 +2552,7 @@ def main(cfg: DictConfig) -> None:
             "FLA launcher environment"
         )
     print(
-        f"flash_linear_attention_available={fla_available} "
-        f"required={require_fla}",
+        f"flash_linear_attention_available={fla_available} required={require_fla}",
         flush=True,
     )
     require_causal_conv1d = bool(
@@ -2429,9 +2656,7 @@ def main(cfg: DictConfig) -> None:
             initialized_loftq_modules = initialize_qwen35_loftq(
                 model, Path(cached_index).parent
             )
-            print(
-                f"loftq_initialized_modules={initialized_loftq_modules}", flush=True
-            )
+            print(f"loftq_initialized_modules={initialized_loftq_modules}", flush=True)
         elif lora_initialization == "eva":
             generator = torch.Generator()
             generator.manual_seed(int(cfg.seed))
@@ -2441,10 +2666,7 @@ def main(cfg: DictConfig) -> None:
             eva_features = [
                 {
                     "input_ids": tokenized[index]["direct_input_ids"],
-                    "attention_mask": [
-                        1
-                    ]
-                    * len(tokenized[index]["direct_input_ids"]),
+                    "attention_mask": [1] * len(tokenized[index]["direct_input_ids"]),
                 }
                 for index in indices
             ]
@@ -2487,8 +2709,7 @@ def main(cfg: DictConfig) -> None:
     if require_causal_conv1d and (
         not causal_conv1d_modules
         or any(
-            not module.startswith("causal_conv1d.")
-            for module in causal_conv1d_modules
+            not module.startswith("causal_conv1d.") for module in causal_conv1d_modules
         )
     ):
         raise RuntimeError(
@@ -2784,9 +3005,7 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
-    compile_base = (
-        model.get_base_model() if hasattr(model, "get_base_model") else model
-    )
+    compile_base = model.get_base_model() if hasattr(model, "get_base_model") else model
     compile_layer_types = getattr(compile_base.config, "layer_types", [])
     disabled_linear_attention_layer_indices = [
         index
@@ -2797,14 +3016,12 @@ def main(cfg: DictConfig) -> None:
     disabled_linear_attention_kernel_layer_indices = [
         index
         for index, layer_type in enumerate(compile_layer_types)
-        if selective_torch_compile_policy
-        == "full_attention_and_linear_mixer_segments"
+        if selective_torch_compile_policy == "full_attention_and_linear_mixer_segments"
         and layer_type == "linear_attention"
     ]
     disabled_linear_attention_kernel_components = (
         ["causal_conv1d_fn", "chunk_gated_delta_rule", "norm.forward"]
-        if selective_torch_compile_policy
-        == "full_attention_and_linear_mixer_segments"
+        if selective_torch_compile_policy == "full_attention_and_linear_mixer_segments"
         else []
     )
     trainer.direct_target_ids = direct_target_ids
@@ -2846,9 +3063,7 @@ def main(cfg: DictConfig) -> None:
                                 default="linear",
                             )
                         ),
-                        "warmup_steps": training_warmup_steps(
-                            cfg.student.training
-                        ),
+                        "warmup_steps": training_warmup_steps(cfg.student.training),
                         "weight_decay": float(cfg.student.training.weight_decay),
                         "dataset_sampling": dataset_sampling,
                         "dataset_loss_weighting": dataset_loss_weighting,
@@ -2866,9 +3081,7 @@ def main(cfg: DictConfig) -> None:
                             else None
                         ),
                         "lora_initialization": (
-                            lora_initialization
-                            if finetuning_mode == "lora"
-                            else None
+                            lora_initialization if finetuning_mode == "lora" else None
                         ),
                         "lora_use_dora": (
                             lora_use_dora if finetuning_mode == "lora" else None
@@ -2932,6 +3145,18 @@ def main(cfg: DictConfig) -> None:
                         if decision_head_mode == "binary_head"
                         else None
                     ),
+                    "losses": {
+                        "completion_weight": completion_loss_weight,
+                        "direct_weight": direct_loss_weight,
+                        "pairwise_weight": pairwise_loss_weight,
+                        "soft_weight": soft_loss_weight,
+                        "soft_type": soft_loss_type,
+                        "mil_weight": mil_loss_weight,
+                        "mil_pooling": mil_pooling,
+                        "mil_temperature": mil_temperature,
+                        "mil_top_k": mil_top_k,
+                        "mil_max_instances": mil_max_instances,
+                    },
                     "quantization": quantization_metadata,
                     "flash_linear_attention": {
                         "available": fla_available,
@@ -2941,17 +3166,13 @@ def main(cfg: DictConfig) -> None:
                             "FLA_DISABLE_BACKEND_DISPATCH"
                         )
                         == "1",
-                        "triton_version": os.environ.get(
-                            "GLEIPNIR_TRITON_VERSION"
-                        ),
+                        "triton_version": os.environ.get("GLEIPNIR_TRITON_VERSION"),
                     },
                     "gated_delta_kernel_modules": kernel_modules,
                     "causal_conv1d": {
                         "available": causal_conv1d_available,
                         "required": require_causal_conv1d,
-                        "version": os.environ.get(
-                            "GLEIPNIR_CAUSAL_CONV1D_VERSION"
-                        ),
+                        "version": os.environ.get("GLEIPNIR_CAUSAL_CONV1D_VERSION"),
                         "kernel_modules": causal_conv1d_modules,
                     },
                     "training_batch": {

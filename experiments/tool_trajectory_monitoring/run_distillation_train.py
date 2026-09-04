@@ -60,9 +60,11 @@ def training_command(job: dict[str, Any]) -> list[str]:
         f"student.max_length={job['max_length']}",
         f"student.lora.r={job['rank']}",
         f"student.lora.alpha={job['lora_alpha']}",
-        "student.training.soft_loss_weight=1.0",
-        "student.training.direct_loss_weight=0.0",
-        "student.training.completion_loss_weight=0.0",
+        f"student.training.soft_loss_weight={float(job.get('soft_loss_weight', 1.0))}",
+        "student.training.direct_loss_weight="
+        f"{float(job.get('direct_loss_weight', 0.0))}",
+        "student.training.completion_loss_weight="
+        f"{float(job.get('completion_loss_weight', 0.0))}",
         f"student.training.learning_rate={job['learning_rate']}",
         f"student.training.num_train_epochs={job['num_train_epochs']}",
         f"student.training.max_steps={job['max_steps']}",
@@ -81,17 +83,13 @@ def training_command(job: dict[str, Any]) -> list[str]:
         command.append(f"student.training.gradient_checkpointing={enabled}")
     if checkpointing_policy := job.get("gradient_checkpointing_policy"):
         command.append(
-            "student.training.gradient_checkpointing_policy="
-            f"{checkpointing_policy}"
+            f"student.training.gradient_checkpointing_policy={checkpointing_policy}"
         )
     checkpointing_indices = job.get("gradient_checkpointing_layer_indices")
     if checkpointing_indices is not None:
-        encoded_indices = ",".join(
-            str(int(index)) for index in checkpointing_indices
-        )
+        encoded_indices = ",".join(str(int(index)) for index in checkpointing_indices)
         command.append(
-            "student.training.gradient_checkpointing_layer_indices="
-            f"[{encoded_indices}]"
+            f"student.training.gradient_checkpointing_layer_indices=[{encoded_indices}]"
         )
     if compile_policy := job.get("selective_torch_compile_policy"):
         command.append(
@@ -113,6 +111,14 @@ def training_command(job: dict[str, Any]) -> list[str]:
         )
     if trainer_optim := job.get("trainer_optim"):
         command.append(f"student.training.optim={trainer_optim}")
+    for key in ("mil_loss_weight", "mil_temperature"):
+        if key in job:
+            command.append(f"student.training.{key}={float(job[key])}")
+    for key in ("mil_top_k", "mil_max_instances"):
+        if key in job:
+            command.append(f"student.training.{key}={int(job[key])}")
+    if mil_pooling := job.get("mil_pooling"):
+        command.append(f"student.training.mil_pooling={mil_pooling}")
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):
