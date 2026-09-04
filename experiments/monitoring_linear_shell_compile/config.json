@@ -1,0 +1,10 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-linear-shell-compile-v1",
+  "hypothesis": "Compiling the checkpointed linear-attention block shells around explicitly eager FLA and causal-conv mixers adds at least 1% throughput over full-attention-only compilation.",
+  "optimizer_steps": 8,
+  "dataset_rows": 640,
+  "exposed_examples": 256,
+  "minimum_relative_improvement": 0.01,
+  "maximum_unique_graphs": 16,
+  "same_weights_logit_canary_tokens": 2048
+}

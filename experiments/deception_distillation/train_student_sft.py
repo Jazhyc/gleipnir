@@ -170,12 +170,17 @@ def apply_selective_torch_compile_policy(
     mode: str,
     dynamic: bool,
     compile_function: Callable[..., Callable[..., Any]] = torch.compile,
+    disable_function: Callable[..., Callable[..., Any]] = torch.compiler.disable,
 ) -> list[int]:
-    """Compile only uncheckpointed Qwen full-attention decoder forwards."""
-    if policy not in {"none", "uncheckpointed_full_attention"}:
+    """Compile selected Qwen layer shells while preserving custom kernels."""
+    if policy not in {
+        "none",
+        "uncheckpointed_full_attention",
+        "full_attention_and_linear_shell",
+    }:
         raise ValueError(
-            "student.training.selective_torch_compile_policy must be none or "
-            "uncheckpointed_full_attention"
+            "student.training.selective_torch_compile_policy must be none, "
+            "uncheckpointed_full_attention, or full_attention_and_linear_shell"
         )
     if policy == "none":
         return []
@@ -188,13 +193,27 @@ def apply_selective_torch_compile_policy(
     state_keys_before = tuple(model.state_dict())
     compiled = []
     for index, (layer, layer_type) in enumerate(zip(layers, layer_types, strict=True)):
-        if layer_type != "full_attention":
+        compile_full = layer_type == "full_attention"
+        compile_linear_shell = (
+            policy == "full_attention_and_linear_shell"
+            and layer_type == "linear_attention"
+        )
+        if not compile_full and not compile_linear_shell:
             continue
-        if bool(getattr(layer, "gradient_checkpointing", False)):
+        if compile_full and bool(getattr(layer, "gradient_checkpointing", False)):
             raise ValueError(
                 "selective compilation requires full-attention layers to be "
                 "uncheckpointed"
             )
+        if compile_linear_shell:
+            if not bool(getattr(layer, "gradient_checkpointing", False)):
+                raise ValueError(
+                    "linear-attention shell compilation requires checkpointing"
+                )
+            linear_attn = getattr(layer, "linear_attn", None)
+            if linear_attn is None:
+                raise ValueError("linear-attention layer exposes no token mixer")
+            linear_attn.forward = disable_function(linear_attn.forward)
         layer.forward = compile_function(
             layer.forward,
             backend=backend,
@@ -2710,6 +2729,11 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
+    disabled_linear_attention_layer_indices = (
+        checkpointed_layer_indices
+        if selective_torch_compile_policy == "full_attention_and_linear_shell"
+        else []
+    )
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2875,6 +2899,9 @@ def main(cfg: DictConfig) -> None:
                     "selective_torch_compile": {
                         "policy": selective_torch_compile_policy,
                         "compiled_layer_indices": selectively_compiled_layer_indices,
+                        "disabled_linear_attention_layer_indices": (
+                            disabled_linear_attention_layer_indices
+                        ),
                         "backend": selective_torch_compile_backend,
                         "mode": selective_torch_compile_mode,
                         "dynamic": selective_torch_compile_dynamic,
