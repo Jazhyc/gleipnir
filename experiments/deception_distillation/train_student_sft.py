@@ -747,6 +747,47 @@ def forward_final_and_mil_binary_logits(
     return final_logits, mil_logits, outputs
 
 
+def selected_completion_cross_entropy(
+    model: Any,
+    input_ids: torch.Tensor,
+    attention_mask: torch.Tensor,
+    labels: torch.Tensor,
+    *,
+    projection_chunk_size: int,
+) -> tuple[torch.Tensor, Any, int]:
+    """Compute exact causal CE without projecting unsupervised prefix positions."""
+    if input_ids.shape != attention_mask.shape or labels.shape != input_ids.shape:
+        raise ValueError("completion input, mask, and labels must share shape")
+    if projection_chunk_size < 1:
+        raise ValueError("completion projection chunk size must be positive")
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    decoder = getattr(base, "model", None)
+    lm_head = getattr(base, "lm_head", None)
+    if decoder is None or lm_head is None:
+        raise RuntimeError("causal model exposes no decoder/LM head")
+    outputs = decoder(
+        input_ids=input_ids,
+        attention_mask=attention_mask,
+        use_cache=False,
+    )
+    shifted_labels = labels[:, 1:]
+    supervised = shifted_labels.ne(-100)
+    target_ids = shifted_labels[supervised]
+    target_hidden = outputs.last_hidden_state[:, :-1][supervised]
+    if target_ids.numel() == 0:
+        raise ValueError("completion batch contains no supervised tokens")
+    loss_sum = target_hidden.sum() * 0.0
+    for start in range(0, target_ids.numel(), projection_chunk_size):
+        end = min(start + projection_chunk_size, target_ids.numel())
+        logits = lm_head(target_hidden[start:end])
+        loss_sum = loss_sum + F.cross_entropy(
+            logits.float(),
+            target_ids[start:end],
+            reduction="sum",
+        )
+    return loss_sum / target_ids.numel(), outputs, int(target_ids.numel())
+
+
 def forward_final_token_logits_and_head_inputs(
     model: Any,
     input_ids: torch.Tensor,
@@ -1731,6 +1772,16 @@ def main(cfg: DictConfig) -> None:
     completion_loss_weight = float(
         OmegaConf.select(cfg, "student.training.completion_loss_weight", default=1.0)
     )
+    completion_logits_mode = str(
+        OmegaConf.select(cfg, "student.training.completion_logits_mode", default="full")
+    )
+    completion_projection_chunk_size = int(
+        OmegaConf.select(
+            cfg,
+            "student.training.completion_projection_chunk_size",
+            default=128,
+        )
+    )
     pairwise_loss_weight = float(
         OmegaConf.select(cfg, "student.training.pairwise_loss_weight", default=0.0)
     )
@@ -1889,6 +1940,10 @@ def main(cfg: DictConfig) -> None:
         raise ValueError("student.training.soft_loss_type must be one of: bce, huber")
     if mil_pooling not in {"max", "logmeanexp", "topk_mean"}:
         raise ValueError("student.training.mil_pooling is invalid")
+    if completion_logits_mode not in {"full", "selected_positions"}:
+        raise ValueError("completion logits mode must be full or selected_positions")
+    if completion_projection_chunk_size < 1:
+        raise ValueError("completion projection chunk size must be positive")
     if mil_temperature <= 0 or mil_top_k < 1 or mil_max_instances < 1:
         raise ValueError(
             "MIL temperature, top-k, and maximum instances must be positive"
@@ -1978,8 +2033,18 @@ def main(cfg: DictConfig) -> None:
             outputs = None
             loss = None
             if completion_loss_weight:
-                outputs = model(**inputs)
-                loss = completion_loss_weight * outputs.loss
+                if completion_logits_mode == "selected_positions":
+                    completion_loss, outputs, _ = selected_completion_cross_entropy(
+                        model,
+                        inputs["input_ids"],
+                        inputs["attention_mask"],
+                        inputs["labels"],
+                        projection_chunk_size=completion_projection_chunk_size,
+                    )
+                    loss = completion_loss_weight * completion_loss
+                else:
+                    outputs = model(**inputs)
+                    loss = completion_loss_weight * outputs.loss
             if uses_direct_forward:
                 if any(
                     value is None
@@ -2403,6 +2468,8 @@ def main(cfg: DictConfig) -> None:
         f"reasoning_rows_dropped={reasoning_rows_dropped} "
         f"reasoning_dropout_probability={reasoning_dropout_probability} "
         f"completion_loss_weight={completion_loss_weight} "
+        f"completion_logits_mode={completion_logits_mode!r} "
+        f"completion_projection_chunk_size={completion_projection_chunk_size} "
         f"direct_loss_weight={direct_loss_weight} "
         f"pairwise_loss_weight={pairwise_loss_weight} "
         f"soft_loss_weight={soft_loss_weight} "
@@ -3147,6 +3214,10 @@ def main(cfg: DictConfig) -> None:
                     ),
                     "losses": {
                         "completion_weight": completion_loss_weight,
+                        "completion_logits_mode": completion_logits_mode,
+                        "completion_projection_chunk_size": (
+                            completion_projection_chunk_size
+                        ),
                         "direct_weight": direct_loss_weight,
                         "pairwise_weight": pairwise_loss_weight,
                         "soft_weight": soft_loss_weight,

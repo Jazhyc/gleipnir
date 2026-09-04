@@ -141,6 +141,8 @@ def make_jobs(
         "max_steps": -1,
         "soft_loss_weight": 1.0,
         "direct_loss_weight": 0.0,
+        "completion_logits_mode": "selected_positions",
+        "completion_projection_chunk_size": 128,
         "mil_temperature": 1.0,
         "mil_top_k": 3,
         "mil_max_instances": 8,

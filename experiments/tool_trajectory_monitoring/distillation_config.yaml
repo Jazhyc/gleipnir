@@ -75,6 +75,8 @@ student:
     save_total_limit: 3
     save_only_model: true
     completion_loss_weight: 0.0
+    completion_logits_mode: full
+    completion_projection_chunk_size: 128
     direct_loss_weight: 0.0
     pairwise_loss_weight: 0.0
     pairwise_temperature: 1.0

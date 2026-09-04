@@ -103,6 +103,8 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "max_steps": -1,
             "soft_loss_weight": 1.0,
             "direct_loss_weight": 0.0,
+            "completion_logits_mode": "selected_positions",
+            "completion_projection_chunk_size": 128,
             "completion_loss_weight": spec["completion_loss_weight"],
             "mil_loss_weight": spec["mil_loss_weight"],
             "mil_pooling": spec["mil_pooling"],
@@ -132,6 +134,8 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
     losses = metadata.get("losses", {})
     expected_losses = {
         "completion_weight": float(job["completion_loss_weight"]),
+        "completion_logits_mode": "selected_positions",
+        "completion_projection_chunk_size": 128,
         "direct_weight": 0.0,
         "pairwise_weight": 0.0,
         "soft_weight": 1.0,

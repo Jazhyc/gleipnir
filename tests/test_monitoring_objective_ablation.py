@@ -1,4 +1,5 @@
 import hashlib
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -7,6 +8,7 @@ from experiments.deception_distillation.train_student_sft import (
     action_endpoint_character_offsets,
     pool_mil_margins,
     select_evenly_spaced_positions,
+    selected_completion_cross_entropy,
 )
 from experiments.monitoring_objective_ablation import prepare
 
@@ -50,6 +52,43 @@ def test_mil_pool_variants() -> None:
         torch.logsumexp(torch.tensor([1.0, 3.0]), dim=0).item()
         - torch.log(torch.tensor(2.0)).item()
     )
+
+
+def test_selected_completion_loss_matches_full_projection() -> None:
+    class Decoder(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.embedding = torch.nn.Embedding(7, 5)
+
+        def forward(self, input_ids, attention_mask, use_cache):
+            del attention_mask, use_cache
+            return SimpleNamespace(last_hidden_state=self.embedding(input_ids))
+
+    class TinyModel(torch.nn.Module):
+        def __init__(self) -> None:
+            super().__init__()
+            self.model = Decoder()
+            self.lm_head = torch.nn.Linear(5, 7, bias=False)
+
+    torch.manual_seed(3)
+    model = TinyModel()
+    input_ids = torch.tensor([[1, 2, 3, 4, 5]])
+    attention_mask = torch.ones_like(input_ids)
+    labels = torch.tensor([[-100, -100, -100, 4, 5]])
+    selected, _, count = selected_completion_cross_entropy(
+        model,
+        input_ids,
+        attention_mask,
+        labels,
+        projection_chunk_size=1,
+    )
+    hidden = model.model(input_ids, attention_mask, False).last_hidden_state
+    full = torch.nn.functional.cross_entropy(
+        model.lm_head(hidden[:, :-1])[labels[:, 1:] != -100],
+        labels[:, 1:][labels[:, 1:] != -100],
+    )
+    assert count == 2
+    assert selected.item() == pytest.approx(full.item(), abs=2e-7)
 
 
 def test_rationale_enrichment_preserves_direct_prompt(monkeypatch) -> None:

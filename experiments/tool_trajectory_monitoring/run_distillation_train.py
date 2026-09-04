@@ -119,6 +119,15 @@ def training_command(job: dict[str, Any]) -> list[str]:
             command.append(f"student.training.{key}={int(job[key])}")
     if mil_pooling := job.get("mil_pooling"):
         command.append(f"student.training.mil_pooling={mil_pooling}")
+    if completion_logits_mode := job.get("completion_logits_mode"):
+        command.append(
+            f"student.training.completion_logits_mode={completion_logits_mode}"
+        )
+    if "completion_projection_chunk_size" in job:
+        command.append(
+            "student.training.completion_projection_chunk_size="
+            f"{int(job['completion_projection_chunk_size'])}"
+        )
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):
