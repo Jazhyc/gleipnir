@@ -84,3 +84,13 @@ reserved memory were unchanged at byte precision. Retain all-layer
 checkpointing. A subsequent selective-compilation screen may still test the
 combined configuration, but must separately attribute its incremental gain and
 beat the original all-layer baseline.
+
+Selective compilation of the eight uncheckpointed full-attention decoder
+forwards was material. A same-weights 2,048-token canary kept decision logits
+within 0.00903 and the binary margin within 0.00803. The matched 20-step run
+reached 0.737 examples/s, 9.02% above eager selective checkpointing and 9.51%
+above the original all-layer baseline. Mean steady step time was 42.481 seconds,
+Dynamo emitted one dynamic training graph without shape specialization, and
+peak allocation remained 25.364 GiB. Adopt this compiled region. Subsequent
+throughput screens use eight matched optimizer steps because sub-1% effects are
+not promotion candidates.
