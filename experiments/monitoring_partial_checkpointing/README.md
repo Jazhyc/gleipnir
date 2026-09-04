@@ -36,3 +36,21 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 
 Ignored artifacts are written under
 `results/monitoring_partial_checkpointing/`.
+
+## Result
+
+The four-checkpoint candidate passed the longest-32 preflight with 23.60 GiB
+peak allocation, well below the 72 GiB ceiling. Its recorded checkpoint set was
+exactly `[2, 10, 18, 26]`, both required kernel families remained bound, and
+Dynamo emitted three graphs.
+
+In the matched eight-step comparison, the all-24-linear checkpoint control ran
+at 0.813 examples/s (314.73 seconds), while the four-checkpoint candidate ran at
+0.819 examples/s (312.46 seconds). The 0.74% gain is below the frozen 1%
+threshold. Mean step time after excluding two warmup steps moved from 36.99 to
+36.67 seconds, and both conditions peaked at exactly 24.582 GiB allocated.
+Reject the candidate and retain `linear_attention_only` checkpointing. The
+per-layer flags are active in Transformers' `GradientCheckpointingLayer`; the
+null memory and speed result indicates that the eager FLA custom-autograd path
+does not retain enough additional activation state for this intervention to be
+material.

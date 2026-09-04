@@ -107,3 +107,16 @@ a 20.26% cold-inclusive gain. Steady mean step time fell from 45.52 to 36.63
 seconds, peak allocation fell from 25.36 to 24.58 GiB, and the candidate used
 three Dynamo graphs. Adopt `full_attention_and_linear_shell` for subsequent
 training experiments.
+
+Partial linear-layer checkpointing was a null result. A candidate retaining
+checkpoints only on linear-attention layers 2, 10, 18, and 26 passed the fixed
+longest-32 preflight at 23.60 GiB allocated. In a matched eight-step comparison,
+the current all-24-linear checkpoint control reached 0.813 examples/s and the
+four-checkpoint candidate reached 0.819 examples/s, a 0.74% gain below the 1%
+promotion threshold. Steady mean step time moved from 36.99 to 36.67 seconds,
+and both peaked at exactly 24.582 GiB allocated. The per-layer checkpoint flags
+were recorded correctly and are consumed by Transformers'
+`GradientCheckpointingLayer`; the result suggests FLA's custom autograd already
+retains little state that this checkpoint intervention can remove. Retain
+`linear_attention_only` checkpointing rather than adding an explicit layer
+list.
