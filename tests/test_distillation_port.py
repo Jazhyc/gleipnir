@@ -31,9 +31,11 @@ class PositionSelectingModel(torch.nn.Module):
         super().__init__()
         self.logits = logits
         self.requested_positions = None
+        self.received_attention_mask = None
 
     def forward(self, input_ids, attention_mask, use_cache, logits_to_keep=None):
-        del input_ids, attention_mask, use_cache
+        del input_ids, use_cache
+        self.received_attention_mask = attention_mask
         self.requested_positions = logits_to_keep
         selected = self.logits
         if logits_to_keep is not None:
@@ -513,6 +515,19 @@ def test_selected_position_logits_match_full_logits_with_right_padding() -> None
 
     assert torch.equal(selected, full)
     assert torch.equal(selected_model.requested_positions, torch.tensor([1, 2]))
+    assert selected_model.received_attention_mask is attention_mask
+
+
+def test_final_logits_omit_an_all_ones_attention_mask() -> None:
+    logits = torch.arange(15, dtype=torch.float32).view(1, 3, 5)
+    model = PositionSelectingModel(logits)
+    input_ids = torch.tensor([[1, 2, 3]])
+    attention_mask = torch.ones_like(input_ids)
+    selected, _ = forward_final_token_logits(
+        model, input_ids, attention_mask, "selected_positions"
+    )
+    assert model.received_attention_mask is None
+    assert torch.equal(selected, logits[:, -1])
 
 
 def test_final_hidden_states_use_the_same_unique_position_gather() -> None:

@@ -666,6 +666,15 @@ def causal_conv1d_kernel_modules(model: torch.nn.Module) -> list[str]:
     return sorted(modules)
 
 
+def omit_redundant_attention_mask(
+    attention_mask: torch.Tensor,
+) -> torch.Tensor | None:
+    """Let causal SDPA use its flash path when a batch contains no padding."""
+    if attention_mask.ndim != 2:
+        raise ValueError("attention mask must have shape [batch, sequence]")
+    return None if bool(attention_mask.bool().all()) else attention_mask
+
+
 def forward_final_token_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -680,7 +689,7 @@ def forward_final_token_logits(
     if mode == "full":
         outputs = model(
             input_ids=input_ids,
-            attention_mask=attention_mask,
+            attention_mask=omit_redundant_attention_mask(attention_mask),
             use_cache=False,
         )
         return outputs.logits[row_indices, last_positions], outputs
@@ -694,7 +703,7 @@ def forward_final_token_logits(
     )
     outputs = model(
         input_ids=input_ids,
-        attention_mask=attention_mask,
+        attention_mask=omit_redundant_attention_mask(attention_mask),
         use_cache=False,
         logits_to_keep=selected_positions,
     )
@@ -721,7 +730,7 @@ def forward_final_token_hidden(
         raise RuntimeError("causal model exposes no decoder for decision-head mode")
     outputs = decoder(
         input_ids=input_ids,
-        attention_mask=attention_mask,
+        attention_mask=omit_redundant_attention_mask(attention_mask),
         use_cache=False,
     )
     selected_positions, inverse = torch.unique(
@@ -754,7 +763,7 @@ def forward_final_and_mil_binary_logits(
         raise RuntimeError("causal model exposes no decoder/LM-head projection")
     outputs = decoder(
         input_ids=input_ids,
-        attention_mask=attention_mask,
+        attention_mask=omit_redundant_attention_mask(attention_mask),
         use_cache=False,
     )
     hidden = outputs.last_hidden_state
@@ -793,7 +802,7 @@ def selected_completion_cross_entropy(
         raise RuntimeError("causal model exposes no decoder/LM head")
     outputs = decoder(
         input_ids=input_ids,
-        attention_mask=attention_mask,
+        attention_mask=omit_redundant_attention_mask(attention_mask),
         use_cache=False,
     )
     shifted_labels = labels[:, 1:]
