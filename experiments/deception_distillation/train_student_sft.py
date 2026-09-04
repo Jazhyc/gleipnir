@@ -9,7 +9,7 @@ import os
 import random
 import time
 from collections import Counter
-from collections.abc import Callable
+from collections.abc import Callable, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -135,27 +135,47 @@ class CompletionOnlyCollator:
 
 
 def apply_gradient_checkpointing_policy(
-    model: torch.nn.Module, policy: str
+    model: torch.nn.Module,
+    policy: str,
+    layer_indices: Sequence[int] | None = None,
 ) -> list[int]:
-    """Checkpoint all decoder layers or only Qwen linear-attention layers."""
-    if policy not in {"all", "linear_attention_only"}:
+    """Checkpoint all, all linear-attention, or explicit decoder layers."""
+    if policy not in {"all", "linear_attention_only", "explicit"}:
         raise ValueError(
-            "student.training.gradient_checkpointing_policy must be all or "
-            "linear_attention_only"
+            "student.training.gradient_checkpointing_policy must be all, "
+            "linear_attention_only, or explicit"
         )
+    if policy == "explicit" and layer_indices is None:
+        raise ValueError("explicit checkpointing requires layer indices")
+    if policy != "explicit" and layer_indices is not None:
+        raise ValueError("checkpointing layer indices require the explicit policy")
     base = model.get_base_model() if hasattr(model, "get_base_model") else model
     text_model = getattr(base, "model", None)
     layers = getattr(text_model, "layers", None)
     layer_types = getattr(base.config, "layer_types", None)
     if layers is None or layer_types is None or len(layers) != len(layer_types):
-        if policy != "all":
+        if policy != "all" or layer_indices is not None:
             raise ValueError("selective checkpointing requires Qwen layer metadata")
         return []
+    requested = list(layer_indices or [])
+    if len(set(requested)) != len(requested):
+        raise ValueError("checkpointing layer indices must be unique")
+    if any(index < 0 or index >= len(layers) for index in requested):
+        raise ValueError("checkpointing layer index is out of range")
+    if policy == "explicit" and any(
+        layer_types[index] != "linear_attention" for index in requested
+    ):
+        raise ValueError("explicit checkpointing is restricted to linear attention")
+    requested_set = set(requested)
     checkpointed = []
     for index, (layer, layer_type) in enumerate(
         zip(layers, layer_types, strict=True)
     ):
-        enabled = policy == "all" or layer_type == "linear_attention"
+        enabled = (
+            policy == "all"
+            or (policy == "linear_attention_only" and layer_type == "linear_attention")
+            or (policy == "explicit" and index in requested_set)
+        )
         layer.gradient_checkpointing = enabled
         if enabled:
             checkpointed.append(index)
@@ -206,10 +226,6 @@ def apply_selective_torch_compile_policy(
                 "uncheckpointed"
             )
         if compile_linear_shell:
-            if not bool(getattr(layer, "gradient_checkpointing", False)):
-                raise ValueError(
-                    "linear-attention shell compilation requires checkpointing"
-                )
             linear_attn = getattr(layer, "linear_attn", None)
             if linear_attn is None:
                 raise ValueError("linear-attention layer exposes no token mixer")
@@ -2191,6 +2207,16 @@ def main(cfg: DictConfig) -> None:
             default="all",
         )
     )
+    raw_checkpointing_layer_indices = OmegaConf.select(
+        cfg,
+        "student.training.gradient_checkpointing_layer_indices",
+        default=None,
+    )
+    checkpointing_layer_indices = (
+        None
+        if raw_checkpointing_layer_indices is None
+        else [int(index) for index in raw_checkpointing_layer_indices]
+    )
     if (
         not gradient_checkpointing_requested
         and gradient_checkpointing_policy != "all"
@@ -2559,7 +2585,9 @@ def main(cfg: DictConfig) -> None:
         model.gradient_checkpointing_enable()
         model.enable_input_require_grads()
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
-            model, gradient_checkpointing_policy
+            model,
+            gradient_checkpointing_policy,
+            checkpointing_layer_indices,
         )
     else:
         checkpointed_layer_indices = []
@@ -2657,7 +2685,9 @@ def main(cfg: DictConfig) -> None:
     )
     if gradient_checkpointing_enabled:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
-            model, gradient_checkpointing_policy
+            model,
+            gradient_checkpointing_policy,
+            checkpointing_layer_indices,
         )
     selective_torch_compile_canary = None
     if selective_torch_compile_canary_tokens:
@@ -2729,11 +2759,16 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
-    disabled_linear_attention_layer_indices = (
-        checkpointed_layer_indices
-        if selective_torch_compile_policy == "full_attention_and_linear_shell"
-        else []
+    compile_base = (
+        model.get_base_model() if hasattr(model, "get_base_model") else model
     )
+    compile_layer_types = getattr(compile_base.config, "layer_types", [])
+    disabled_linear_attention_layer_indices = [
+        index
+        for index, layer_type in enumerate(compile_layer_types)
+        if selective_torch_compile_policy == "full_attention_and_linear_shell"
+        and layer_type == "linear_attention"
+    ]
     trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
@@ -2895,6 +2930,9 @@ def main(cfg: DictConfig) -> None:
                     },
                     "gradient_checkpointing": gradient_checkpointing_enabled,
                     "gradient_checkpointing_policy": gradient_checkpointing_policy,
+                    "gradient_checkpointing_layer_indices": (
+                        checkpointing_layer_indices
+                    ),
                     "checkpointed_layer_indices": checkpointed_layer_indices,
                     "selective_torch_compile": {
                         "policy": selective_torch_compile_policy,

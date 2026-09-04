@@ -84,6 +84,15 @@ def training_command(job: dict[str, Any]) -> list[str]:
             "student.training.gradient_checkpointing_policy="
             f"{checkpointing_policy}"
         )
+    checkpointing_indices = job.get("gradient_checkpointing_layer_indices")
+    if checkpointing_indices is not None:
+        encoded_indices = ",".join(
+            str(int(index)) for index in checkpointing_indices
+        )
+        command.append(
+            "student.training.gradient_checkpointing_layer_indices="
+            f"[{encoded_indices}]"
+        )
     if compile_policy := job.get("selective_torch_compile_policy"):
         command.append(
             f"student.training.selective_torch_compile_policy={compile_policy}"

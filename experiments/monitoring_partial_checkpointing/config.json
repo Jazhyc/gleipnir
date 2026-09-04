@@ -1,0 +1,11 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-partial-checkpointing-v1",
+  "hypothesis": "Keeping only four evenly spaced linear-attention blocks checkpointed improves throughput by at least 1% while preserving at least 7 GiB of H100 allocation headroom on the longest trajectories.",
+  "optimizer_steps": 8,
+  "dataset_rows": 640,
+  "exposed_examples": 256,
+  "candidate_checkpointed_layer_indices": [2, 10, 18, 26],
+  "candidate_uncheckpointed_linear_layers": 20,
+  "maximum_preflight_allocated_gib": 72.0,
+  "minimum_relative_improvement": 0.01
+}

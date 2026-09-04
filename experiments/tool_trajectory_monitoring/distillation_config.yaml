@@ -60,6 +60,7 @@ student:
     gradient_accumulation_steps: 32
     gradient_checkpointing: true
     gradient_checkpointing_policy: all
+    gradient_checkpointing_layer_indices: null
     torch_compile: false
     selective_torch_compile_policy: none
     selective_torch_compile_backend: inductor

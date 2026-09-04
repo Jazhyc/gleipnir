@@ -221,6 +221,20 @@ def test_selective_checkpointing_leaves_full_attention_uncheckpointed() -> None:
     ]
 
 
+def test_explicit_checkpointing_uses_only_requested_linear_layers() -> None:
+    model = SelectiveCheckpointModel()
+    indices = apply_gradient_checkpointing_policy(model, "explicit", [0, 2])
+    assert indices == [0, 2]
+    assert [layer.gradient_checkpointing for layer in model.model.layers] == [
+        True,
+        False,
+        True,
+        False,
+    ]
+    with pytest.raises(ValueError, match="restricted to linear attention"):
+        apply_gradient_checkpointing_policy(model, "explicit", [3])
+
+
 def test_selective_compile_wraps_only_uncheckpointed_full_attention() -> None:
     model = SelectiveCheckpointModel()
     apply_gradient_checkpointing_policy(model, "linear_attention_only")
