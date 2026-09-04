@@ -22,6 +22,10 @@ from experiments.adapter_capacity_scaling.run_lambda import (  # noqa: E402
 )
 from experiments.monitoring_lr_sweep.core import (  # noqa: E402
     CONTROL_LEARNING_RATE,
+    GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_CHECKPOINTING_POLICY,
+    MICRO_BATCH_SIZE,
+    SELECTIVE_TORCH_COMPILE_POLICY,
     job_name,
     learning_rate_lanes,
     validate_jobs,
@@ -67,9 +71,12 @@ class Status:
                 "deception_rows": 0,
                 "seed": 0,
                 "rank": 128,
-                "micro_batch_size": 2,
-                "gradient_accumulation_steps": 16,
+                "micro_batch_size": MICRO_BATCH_SIZE,
+                "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
                 "effective_batch_size": 32,
+                "gradient_checkpointing_policy": GRADIENT_CHECKPOINTING_POLICY,
+                "selective_torch_compile_policy": SELECTIVE_TORCH_COMPILE_POLICY,
+                "optimizer": "adamw_torch",
                 "quantization": "nf4-double-quant-bf16",
                 "kernels": "fla-0.5.2+causal-conv1d-1.6.2.post1",
                 "fla_backend": "default-triton-3.7.1-dispatch-bypassed",
@@ -202,17 +209,18 @@ def main() -> None:
         control = next(
             job for job in jobs if float(job["learning_rate"]) == CONTROL_LEARNING_RATE
         )
-        preflight_dir = result_dir / "preflight" / "rank128-longest32-mb2-triton371"
+        preflight_dir = result_dir / "preflight" / "rank128-longest32-selected-v6"
         preflight_job = {
             **control,
-            "job_name": "preflight-r128-longest32-mb2",
-            "design_role": "memory_kernel_and_longest_sequence_preflight",
+            "job_name": "preflight-r128-longest32-selected-v6",
+            "design_role": "memory_kernel_compile_and_longest_sequence_preflight",
             "train_rows": 32,
             "max_steps": 1,
             "num_train_epochs": -1,
             "selection_manifest": selection.as_posix(),
             "selection_sha256": sha256_file(selection),
             "save_steps": 1,
+            "selective_torch_compile_canary_tokens": 2048,
             "output_dir": preflight_dir.as_posix(),
             "causal_adapter_dir": (preflight_dir / "causal_adapter").as_posix(),
             "model_dir": (preflight_dir / "model").as_posix(),
@@ -230,6 +238,8 @@ def main() -> None:
         validate_training_metadata(
             preflight_dir / "causal_adapter" / "training_metadata.json",
             CONTROL_LEARNING_RATE,
+            expected_steps=1,
+            require_canary=True,
         )
         status.update(phase="training", preflight="passed")
         lanes = learning_rate_lanes(jobs)

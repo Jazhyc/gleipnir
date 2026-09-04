@@ -15,13 +15,16 @@ from typing import Any
 from experiments.monitoring_lr_sweep.core import (
     EFFECTIVE_BATCH_SIZE,
     GRADIENT_ACCUMULATION_STEPS,
+    GRADIENT_CHECKPOINTING_POLICY,
     LEARNING_RATES,
     LORA_ALPHA,
     MAX_LENGTH,
     MICRO_BATCH_SIZE,
     MODEL_ID,
     MODEL_REVISION,
+    OPTIMIZER_STEPS,
     RANK,
+    SELECTIVE_TORCH_COMPILE_POLICY,
     SOFT_TARGETS_SHA256,
     STUDENT_ROWS_SHA256,
     TRAIN_ROWS,
@@ -154,6 +157,8 @@ def validate_id_separation(path: Path, training_hashes: set[str]) -> dict[str, A
 
 def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
     steps = math.ceil(TRAIN_ROWS / EFFECTIVE_BATCH_SIZE)
+    if steps != OPTIMIZER_STEPS:
+        raise ValueError("optimizer-step contract drifted")
     common = {
         "capacity_kind": "lora",
         "data_scope": "monitoring_only",
@@ -168,6 +173,13 @@ def make_jobs(data_dir: Path, result_dir: Path) -> list[dict[str, Any]]:
         "micro_batch_size": MICRO_BATCH_SIZE,
         "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
         "effective_batch_size": EFFECTIVE_BATCH_SIZE,
+        "gradient_checkpointing": True,
+        "gradient_checkpointing_policy": GRADIENT_CHECKPOINTING_POLICY,
+        "selective_torch_compile_policy": SELECTIVE_TORCH_COMPILE_POLICY,
+        "selective_torch_compile_backend": "inductor",
+        "selective_torch_compile_mode": "default",
+        "selective_torch_compile_dynamic": True,
+        "trainer_optim": "adamw_torch",
         "optimizer": "adamw",
         "lr_scheduler_type": "linear",
         "warmup_ratio": 0.03,
@@ -226,7 +238,7 @@ def main() -> None:
     jobs = make_jobs(data_dir, result_dir)
     atomic_write_jsonl(jobs_path, jobs)
     manifest = {
-        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v5",
+        "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v6",
         "training": audit,
         "held_out_id": id_audit,
         "jobs": [job["job_name"] for job in jobs],

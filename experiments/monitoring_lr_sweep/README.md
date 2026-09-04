@@ -9,8 +9,11 @@ one-seed pruning screen, not a final estimate.
 The intervention is AdamW learning rate: `1e-5`, `2e-5`, `5e-5`, `1e-4`, or
 `2e-4`. The freshly retrained `5e-5` cell is the control. Every cell uses seed 0,
 one epoch, a linear schedule with 3% warmup, no weight decay, rank-128/alpha-256
-QLoRA, microbatch 2 with gradient accumulation 16, and Kimi K3 soft-target BCE at
-only the selected literal `0`/`1` positions. FLA 0.5.2 and causal-conv1d
+QLoRA, microbatch 1 with gradient accumulation 32, and Kimi K3 soft-target BCE at
+only the selected literal `0`/`1` positions. The 24 linear-attention layers are
+checkpointed while the eight full-attention layers stay eager. Inductor compiles
+all 32 decoder shells but leaves each complete linear-attention mixer eager. FLA
+0.5.2 and causal-conv1d
 1.6.2.post1 must both bind. FLA's optional backend dispatcher is disabled so the
 default Triton 3.7.1 kernels are used instead of the TileLang implementation that
 failed the v3 long-sequence backward compile. The two GPU lanes change scheduling
@@ -25,6 +28,14 @@ the memory bottleneck but hit an internal layout-inference error. Version 4 keep
 an isolated target; its matched preflight completed in 458 seconds and used about
 68.6 GiB at an observed active-step snapshot. See
 `docs/findings/monitoring_lr_sweep_preflight.md`.
+
+Version 6 adopts the systems recipe selected by the subsequent matched screens:
+microbatch 1 / accumulation 32, linear-attention-only checkpointing, standard
+AdamW, and `full_attention_and_linear_shell` compilation. The compile policy is
+20.26% faster than full-attention-only compilation on the eight-step screen and
+the broader inner-mixer candidate was rejected. Version 6 repeats the
+longest-trajectory preflight with a 2,048-token same-weights logit canary before
+launching any sweep cell.
 
 Training contains no deception rows. It uses the frozen five-source monitoring
 artifact with 10 source-label strata and explicit lineage metadata. Preparation
@@ -55,6 +66,6 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 ```
 
 The launcher validates and relocates the manifests, performs the rank-128
-microbatch-2 longest-sequence preflight, trains two serial lanes in parallel,
+selected-recipe longest-sequence preflight, trains two serial lanes in parallel,
 parity-gates the retrained control, evaluates all cells in one persistent vLLM
 engine, and writes the selection under `results/monitoring_lr_sweep/summary/`.

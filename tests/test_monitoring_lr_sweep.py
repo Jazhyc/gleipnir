@@ -25,12 +25,27 @@ def test_jobs_freeze_monitoring_only_one_seed_lr_grid(tmp_path: Path) -> None:
     assert {job["seed"] for job in jobs} == {0}
     assert {job["data_scope"] for job in jobs} == {"monitoring_only"}
     assert {job["deception_rows"] for job in jobs} == {0}
-    assert {job["micro_batch_size"] for job in jobs} == {2}
-    assert {job["gradient_accumulation_steps"] for job in jobs} == {16}
+    assert {job["micro_batch_size"] for job in jobs} == {1}
+    assert {job["gradient_accumulation_steps"] for job in jobs} == {32}
+    assert {job["gradient_checkpointing_policy"] for job in jobs} == {
+        "linear_attention_only"
+    }
+    assert {job["selective_torch_compile_policy"] for job in jobs} == {
+        "full_attention_and_linear_shell"
+    }
+    assert {job["trainer_optim"] for job in jobs} == {"adamw_torch"}
     assert {job["require_causal_conv1d"] for job in jobs} == {True}
     assert {job["fla_disable_backend_dispatch"] for job in jobs} == {True}
     assert {job["triton_version"] for job in jobs} == {"3.7.1"}
     assert "student.training.require_causal_conv1d=true" in training_command(jobs[0])
+    assert (
+        "student.training.gradient_checkpointing_policy=linear_attention_only"
+        in training_command(jobs[0])
+    )
+    assert (
+        "student.training.selective_torch_compile_policy="
+        "full_attention_and_linear_shell" in training_command(jobs[0])
+    )
 
 
 def test_two_lanes_prioritize_control_and_nearby_rate(tmp_path: Path) -> None:

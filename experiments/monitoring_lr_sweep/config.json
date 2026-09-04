@@ -1,5 +1,5 @@
 {
-  "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v5",
+  "campaign_id": "gleipnir4b-monitoring-only-lr-sweep-v6",
   "status": "frozen_before_training",
   "hypothesis": "The 5e-5 learning rate transferred from the earlier recipe is not necessarily optimal for one-epoch, rank-128 Qwen3.5-4B soft distillation on monitoring-only trajectories.",
   "intervention": "Train AdamW at learning rates 1e-5, 2e-5, 5e-5, 1e-4, and 2e-4 with one seed; all other training fields remain fixed.",
@@ -21,9 +21,12 @@
     "lr_scheduler_type": "linear",
     "warmup_ratio": 0.03,
     "weight_decay": 0.0,
-    "micro_batch_size": 2,
-    "gradient_accumulation_steps": 16,
+    "micro_batch_size": 1,
+    "gradient_accumulation_steps": 32,
     "effective_batch_size": 32,
+    "gradient_checkpointing": "24 linear-attention layers only; eight full-attention layers eager",
+    "selective_torch_compile": "Inductor compiles all 32 decoder shells while each complete linear-attention mixer stays eager",
+    "trainer_optimizer": "adamw_torch",
     "max_length": 29696,
     "quantization": "4-bit NF4, double quantization, BF16 compute",
     "objective": "Kimi K3 binary soft-target BCE at selected literal 0/1 logits",
@@ -46,9 +49,9 @@
   "stop_conditions": [
     "Training or ID-development input identity, provenance, row count, or checksum drifts.",
     "Any deception row enters training or an arm other than Kimi-soft-only AdamW is introduced.",
-    "The rank-128, microbatch-2 longest-sequence preflight OOMs.",
+    "The rank-128 selected-recipe longest-sequence preflight OOMs or its 2,048-token same-weights compile canary fails.",
     "FLA 0.5.2, causal-conv1d 1.6.2.post1, or isolated Triton 3.7.1 is unavailable or unbound after model import, or the recorded FLA backend is not the frozen default Triton path.",
-    "Quantization, effective batch, epoch count, scheduler, warmup, weight decay, prompt, or selected-token objective differs across cells.",
+    "Quantization, microbatch split, checkpointing, compile boundary, optimizer, effective batch, epoch count, scheduler, warmup, weight decay, prompt, or selected-token objective differs across cells.",
     "Any causal master, serving rebase, parity report, ID score, or row is missing, duplicated, truncated, non-finite, or inconsistent.",
     "The strict OOD suite is consulted before the one-seed selection is frozen."
   ]

@@ -20,9 +20,17 @@ SOFT_TARGETS_SHA256 = "1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a
 RANK = 128
 LORA_ALPHA = 256
 MAX_LENGTH = 29_696
-MICRO_BATCH_SIZE = 2
-GRADIENT_ACCUMULATION_STEPS = 16
+MICRO_BATCH_SIZE = 1
+GRADIENT_ACCUMULATION_STEPS = 32
 EFFECTIVE_BATCH_SIZE = 32
+OPTIMIZER_STEPS = math.ceil(TRAIN_ROWS / EFFECTIVE_BATCH_SIZE)
+GRADIENT_CHECKPOINTING_POLICY = "linear_attention_only"
+SELECTIVE_TORCH_COMPILE_POLICY = "full_attention_and_linear_shell"
+EXPECTED_CHECKPOINTED_LAYERS = [
+    index for index in range(32) if (index + 1) % 4 != 0
+]
+EXPECTED_COMPILED_LAYERS = list(range(32))
+MAX_UNIQUE_GRAPHS = 16
 
 
 def job_name(learning_rate: float) -> str:
@@ -55,6 +63,13 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
             "micro_batch_size": MICRO_BATCH_SIZE,
             "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
             "effective_batch_size": EFFECTIVE_BATCH_SIZE,
+            "gradient_checkpointing": True,
+            "gradient_checkpointing_policy": GRADIENT_CHECKPOINTING_POLICY,
+            "selective_torch_compile_policy": SELECTIVE_TORCH_COMPILE_POLICY,
+            "selective_torch_compile_backend": "inductor",
+            "selective_torch_compile_mode": "default",
+            "selective_torch_compile_dynamic": True,
+            "trainer_optim": "adamw_torch",
             "optimizer": "adamw",
             "lr_scheduler_type": "linear",
             "warmup_ratio": 0.03,
@@ -90,7 +105,13 @@ def learning_rate_lanes(jobs: list[dict[str, Any]]) -> list[list[dict[str, Any]]
     return lanes
 
 
-def validate_training_metadata(path: Path, learning_rate: float) -> dict[str, Any]:
+def validate_training_metadata(
+    path: Path,
+    learning_rate: float,
+    *,
+    expected_steps: int = OPTIMIZER_STEPS,
+    require_canary: bool = False,
+) -> dict[str, Any]:
     """Require the proven Qwen3.5 fast-kernel QLoRA recipe after every run."""
     metadata = json.loads(path.read_text())
     fla = metadata.get("flash_linear_attention", {})
@@ -98,6 +119,7 @@ def validate_training_metadata(path: Path, learning_rate: float) -> dict[str, An
     quantization = metadata.get("quantization", {})
     batch = metadata.get("training_batch", {})
     optimization = metadata.get("optimization", {})
+    compiled = metadata.get("selective_torch_compile", {})
     if (
         fla.get("available") is not True
         or fla.get("required") is not True
@@ -131,12 +153,49 @@ def validate_training_metadata(path: Path, learning_rate: float) -> dict[str, An
         "micro_batch_size": MICRO_BATCH_SIZE,
     }:
         raise ValueError("training batch metadata drifted")
+    if (
+        metadata.get("gradient_checkpointing") is not True
+        or metadata.get("gradient_checkpointing_policy")
+        != GRADIENT_CHECKPOINTING_POLICY
+        or metadata.get("checkpointed_layer_indices")
+        != EXPECTED_CHECKPOINTED_LAYERS
+    ):
+        raise ValueError("selective checkpointing metadata drifted")
+    if (
+        compiled.get("policy") != SELECTIVE_TORCH_COMPILE_POLICY
+        or compiled.get("compiled_layer_indices") != EXPECTED_COMPILED_LAYERS
+        or compiled.get("disabled_linear_attention_layer_indices")
+        != EXPECTED_CHECKPOINTED_LAYERS
+        or compiled.get("backend") != "inductor"
+        or compiled.get("mode") != "default"
+        or compiled.get("dynamic") is not True
+        or compiled.get("global_torch_compile") is not False
+    ):
+        raise ValueError("selective compilation metadata drifted")
+    unique_graphs = int(
+        compiled.get("dynamo_counters", {}).get("stats", {}).get("unique_graphs", 0)
+    )
+    if not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
+        raise ValueError(f"unexpected Dynamo graph count: {unique_graphs}")
+    if require_canary and compiled.get("canary", {}).get("passed") is not True:
+        raise ValueError("same-weights compile canary did not pass")
     if not math.isclose(float(optimization.get("learning_rate", -1)), learning_rate):
         raise ValueError("recorded learning rate drifted")
-    if optimization.get("optimizer") != "adamw":
+    if (
+        optimization.get("optimizer") != "adamw"
+        or optimization.get("trainer_optim") != "adamw_torch"
+    ):
         raise ValueError("recorded optimizer drifted")
     if metadata.get("direct_logits_mode") != "selected_positions":
         raise ValueError("selected-position logits contract drifted")
+    if metadata.get("materialized_training_inputs") != {
+        "completion": False,
+        "direct": True,
+    }:
+        raise ValueError("direct-only input materialization drifted")
+    completed = int(metadata.get("training_state", {}).get("global_step", -1))
+    if completed != expected_steps:
+        raise ValueError(f"completed {completed} steps instead of {expected_steps}")
     return metadata
 
 
