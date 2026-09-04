@@ -120,3 +120,20 @@ were recorded correctly and are consumed by Transformers'
 retains little state that this checkpoint intervention can remove. Retain
 `linear_attention_only` checkpointing rather than adding an explicit layer
 list.
+
+Compiling inside the linear-attention mixers was negative. An initial attempt
+to compile FLA's fused gated-normalization forward was stopped before the
+benchmark when TorchDynamo traced into its custom autograd implementation,
+encountered an unknown CUDA device-properties builtin, and warned of potential
+silent incorrectness. The corrected candidate kept causal-conv1d, the FLA
+gated-delta scan, and FLA's fused gated norm eager while compiling the mixer
+projections, tensor transforms, gates, and output projection. Its fixed
+longest-32 preflight passed: the 2,048-token canary differed by at most 0.02165
+in a decision logit and 0.00131 in the binary margin. In the matched eight-step
+screen, the current shell control reached 0.815 examples/s while the inner
+mixer candidate reached 0.798 examples/s, a 2.09% cold-inclusive regression.
+Warmup-excluded step time was essentially tied (36.96 versus 36.87 seconds),
+peak allocation was identical at 24.582 GiB, and the candidate expanded the
+training graph count from three to seven. Retain
+`full_attention_and_linear_shell`; the extra inner graphs do not repay their
+compilation cost and do not provide a meaningful steady-state gain.

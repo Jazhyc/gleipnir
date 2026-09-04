@@ -38,3 +38,24 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 
 Ignored artifacts are written under
 `results/monitoring_inner_mixer_compile/`.
+
+## Result
+
+The first preflight attempt also compiled FLA's fused gated-normalization
+forward. TorchDynamo entered the custom autograd implementation, encountered
+an unknown CUDA device-properties builtin, and warned of potential silent
+incorrectness. That attempt was stopped before benchmarking and its Lambda
+artifacts were retained under the `_unsafe_norm_boundary` suffix. The frozen
+candidate therefore keeps the gated norm eager along with causal-conv1d and
+the gated-delta scan.
+
+The corrected preflight passed at commit `8495c28`: the maximum absolute
+decision-logit difference was 0.02165, the binary-margin difference was
+0.00131, and all three custom-kernel boundaries were recorded. In the matched
+eight-step screen, the shell control reached 0.815 examples/s and the inner
+mixer candidate reached 0.798 examples/s, a 2.09% end-to-end regression. The
+candidate's warmup-excluded mean step time was effectively tied and slightly
+better (36.87 versus 36.96 seconds, 0.23%), but it required seven Dynamo graphs
+instead of three and paid more cold compilation. Peak allocation was unchanged
+at 24.582 GiB. Reject the candidate and retain
+`full_attention_and_linear_shell`.
