@@ -1,0 +1,15 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-gradient-checkpointing-v1",
+  "hypothesis": "Unused H100 memory can replace activation recomputation and improve long-trajectory QLoRA throughput.",
+  "baseline": "results/monitoring_training_throughput/runs/mb1-random/causal_adapter/training_metadata.json",
+  "selection_rows": 640,
+  "optimizer_steps": 20,
+  "effective_batch_size": 32,
+  "intervention": {
+    "name": "mb1-no-gradient-checkpointing",
+    "micro_batch_size": 1,
+    "gradient_accumulation_steps": 32,
+    "gradient_checkpointing": false
+  },
+  "minimum_relative_improvement": 0.05
+}

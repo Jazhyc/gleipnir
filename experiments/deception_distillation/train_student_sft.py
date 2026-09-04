@@ -2012,6 +2012,13 @@ def main(cfg: DictConfig) -> None:
     quantization_enabled = bool(
         OmegaConf.select(cfg, "student.quantization.enabled", default=False)
     )
+    gradient_checkpointing_requested = bool(
+        OmegaConf.select(
+            cfg,
+            "student.training.gradient_checkpointing",
+            default=True,
+        )
+    )
     lora_initialization = str(
         OmegaConf.select(cfg, "student.lora.init", default="default")
     )
@@ -2117,7 +2124,7 @@ def main(cfg: DictConfig) -> None:
     if quantization_enabled:
         model = prepare_model_for_kbit_training(
             model,
-            use_gradient_checkpointing=True,
+            use_gradient_checkpointing=gradient_checkpointing_requested,
         )
     if decision_head_mode == "binary_head":
         if finetuning_mode != "lora" or model_loader != "causal_lm":
@@ -2306,6 +2313,10 @@ def main(cfg: DictConfig) -> None:
         )
     else:
         fsdp_config = None
+    gradient_checkpointing_enabled = (
+        gradient_checkpointing_requested and not fsdp_enabled
+    )
+    if gradient_checkpointing_enabled:
         model.gradient_checkpointing_enable()
         model.enable_input_require_grads()
     save_strategy = str(
@@ -2378,7 +2389,7 @@ def main(cfg: DictConfig) -> None:
         save_total_limit=save_total_limit,
         save_only_model=save_only_model,
         bf16=True,
-        gradient_checkpointing=not fsdp_enabled,
+        gradient_checkpointing=gradient_checkpointing_enabled,
         fsdp=True if fsdp_enabled else None,
         fsdp_config=fsdp_config,
         report_to="none",
@@ -2557,6 +2568,7 @@ def main(cfg: DictConfig) -> None:
                         )
                         * int(cfg.student.training.gradient_accumulation_steps),
                     },
+                    "gradient_checkpointing": gradient_checkpointing_enabled,
                     "batching": {
                         "train_sampling_strategy": train_sampling_strategy,
                         "length_column_name": "length",
