@@ -38,22 +38,32 @@ class CompletionOnlyCollator:
         self.direct_padded_tokens = 0
 
     def __call__(self, features: list[dict[str, Any]]) -> dict[str, torch.Tensor]:
-        width = max(len(feature["input_ids"]) for feature in features)
         self.batches += 1
         self.examples += len(features)
-        self.input_tokens += sum(len(feature["input_ids"]) for feature in features)
-        self.input_padded_tokens += width * len(features)
-        input_ids, attention_mask, labels = [], [], []
-        for feature in features:
-            padding = width - len(feature["input_ids"])
-            input_ids.append(feature["input_ids"] + [self.pad_token_id] * padding)
-            attention_mask.append([1] * len(feature["input_ids"]) + [0] * padding)
-            labels.append(feature["labels"] + [-100] * padding)
-        batch = {
-            "input_ids": torch.tensor(input_ids, dtype=torch.long),
-            "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
-            "labels": torch.tensor(labels, dtype=torch.long),
-        }
+        batch = {}
+        if "input_ids" in features[0]:
+            width = max(len(feature["input_ids"]) for feature in features)
+            self.input_tokens += sum(
+                len(feature["input_ids"]) for feature in features
+            )
+            self.input_padded_tokens += width * len(features)
+            input_ids, attention_mask, labels = [], [], []
+            for feature in features:
+                padding = width - len(feature["input_ids"])
+                input_ids.append(
+                    feature["input_ids"] + [self.pad_token_id] * padding
+                )
+                attention_mask.append(
+                    [1] * len(feature["input_ids"]) + [0] * padding
+                )
+                labels.append(feature["labels"] + [-100] * padding)
+            batch.update(
+                {
+                    "input_ids": torch.tensor(input_ids, dtype=torch.long),
+                    "attention_mask": torch.tensor(attention_mask, dtype=torch.long),
+                    "labels": torch.tensor(labels, dtype=torch.long),
+                }
+            )
         if "direct_input_ids" in features[0]:
             direct_width = max(len(feature["direct_input_ids"]) for feature in features)
             self.direct_tokens += sum(
@@ -1194,6 +1204,7 @@ def tokenize_record(
     reasoning_dropout_probability: float = 0.0,
     reasoning_dropout_seed: int = 0,
     include_direct_target: bool = False,
+    include_completion_target: bool = True,
     direct_target_prefix: str = DIRECT_PREDICTION_PREFIX,
     dataset_id: int | None = None,
 ) -> dict[str, Any]:
@@ -1222,35 +1233,42 @@ def tokenize_record(
         ):
             selected_template = prompt_template_without_reasoning
         raw_prompt = f"{selected_template}\n\n<context>{evidence}"
-    effective_target_mode = (
-        "prediction_only" if record.get(LABEL_ONLY_TARGET_KEY) else target_mode
-    )
-    if effective_target_mode == "teacher":
-        target = record["student_target"]
-    elif effective_target_mode == "prediction_only":
-        target = f"Prediction:{int(record['label'])}"
-    else:
-        raise ValueError(f"unknown student.target_mode={effective_target_mode!r}")
     prompt = tokenizer.apply_chat_template(
         [{"role": "user", "content": raw_prompt}],
         tokenize=False,
         add_generation_prompt=True,
         enable_thinking=False,
     )
-    prompt_ids = tokenizer.encode(prompt, add_special_tokens=False)
-    target_ids = tokenizer.encode(
-        target + (tokenizer.eos_token or ""),
-        add_special_tokens=False,
-    )
-    if len(target_ids) >= max_length:
-        raise ValueError(
-            f"target alone exceeds student.max_length for index={record['index']}"
+    tokenized: dict[str, Any] = {}
+    if include_completion_target:
+        effective_target_mode = (
+            "prediction_only" if record.get(LABEL_ONLY_TARGET_KEY) else target_mode
         )
-    prompt_ids = prompt_ids[-(max_length - len(target_ids)) :]
-    tokenized: dict[str, Any] = {
-        "input_ids": prompt_ids + target_ids,
-        "labels": [-100] * len(prompt_ids) + target_ids,
-    }
+        if effective_target_mode == "teacher":
+            target = record["student_target"]
+        elif effective_target_mode == "prediction_only":
+            target = f"Prediction:{int(record['label'])}"
+        else:
+            raise ValueError(
+                f"unknown student.target_mode={effective_target_mode!r}"
+            )
+        prompt_ids = tokenizer.encode(prompt, add_special_tokens=False)
+        target_ids = tokenizer.encode(
+            target + (tokenizer.eos_token or ""),
+            add_special_tokens=False,
+        )
+        if len(target_ids) >= max_length:
+            raise ValueError(
+                "target alone exceeds student.max_length for "
+                f"index={record['index']}"
+            )
+        prompt_ids = prompt_ids[-(max_length - len(target_ids)) :]
+        tokenized.update(
+            input_ids=prompt_ids + target_ids,
+            labels=[-100] * len(prompt_ids) + target_ids,
+        )
+    elif not include_direct_target:
+        raise ValueError("at least one tokenized training target must be materialized")
     if include_direct_target:
         if dataset_id is None:
             raise ValueError("dataset_id is required for direct-target training")
@@ -1930,6 +1948,7 @@ def main(cfg: DictConfig) -> None:
             reasoning_dropout_probability=reasoning_dropout_probability,
             reasoning_dropout_seed=reasoning_dropout_seed,
             include_direct_target=uses_direct_forward,
+            include_completion_target=bool(completion_loss_weight),
             direct_target_prefix=direct_target_prefix,
             dataset_id=dataset_id_by_name[str(record.get("dataset", ""))],
         )
@@ -2339,9 +2358,10 @@ def main(cfg: DictConfig) -> None:
     save_only_model = bool(
         OmegaConf.select(cfg, "student.training.save_only_model", default=True)
     )
+    trainer_optim = str(cfg.student.training.optim)
     args = TrainingArguments(
         output_dir=output_dir.as_posix(),
-        optim=str(cfg.student.training.optim),
+        optim=trainer_optim,
         num_train_epochs=float(cfg.student.training.num_train_epochs),
         max_steps=int(cfg.student.training.max_steps),
         learning_rate=float(cfg.student.training.learning_rate),
@@ -2440,6 +2460,7 @@ def main(cfg: DictConfig) -> None:
                     "seed": int(cfg.seed),
                     "optimization": {
                         "optimizer": optimizer_name,
+                        "trainer_optim": trainer_optim,
                         "learning_rate": float(cfg.student.training.learning_rate),
                         "lr_scheduler_type": str(
                             OmegaConf.select(
@@ -2569,6 +2590,10 @@ def main(cfg: DictConfig) -> None:
                         * int(cfg.student.training.gradient_accumulation_steps),
                     },
                     "gradient_checkpointing": gradient_checkpointing_enabled,
+                    "materialized_training_inputs": {
+                        "completion": bool(completion_loss_weight),
+                        "direct": uses_direct_forward,
+                    },
                     "batching": {
                         "train_sampling_strategy": train_sampling_strategy,
                         "length_column_name": "length",

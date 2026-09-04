@@ -55,3 +55,16 @@ a negative systems result and run the matched 20-step
 `monitoring_training_throughput` screen before restarting learning-rate work.
 Do not enable naive packing: the hybrid attention/recurrent backbone needs
 explicit state resets and multi-boundary selected-logit handling first.
+
+The matched screen selected random microbatch 1 with accumulation 32. It ran at
+0.667 examples/s and projected 3.62 hours per full sweep cell, versus 0.359
+examples/s and 6.84 hours for random microbatch 2. Length grouping cut the
+microbatch-2 direct-padding fraction from 34.5% to 0.8%, but still reached only
+0.542 examples/s, so padding was important but did not fully explain the
+microbatch-2 regression.
+
+Disabling gradient checkpointing was then tested against the selected recipe.
+The longest-32 preflight OOMed on its first microstep: 77.85 GiB was allocated
+and the process occupied 78.91 of 79.18 GiB when another 282 MiB was requested.
+The checkpointed baseline already uses Transformers' non-reentrant checkpoint
+implementation. Retain checkpointing; no benchmark adapter was produced.

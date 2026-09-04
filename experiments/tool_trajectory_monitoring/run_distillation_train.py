@@ -79,6 +79,8 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "gradient_checkpointing" in job:
         enabled = str(bool(job["gradient_checkpointing"])).lower()
         command.append(f"student.training.gradient_checkpointing={enabled}")
+    if trainer_optim := job.get("trainer_optim"):
+        command.append(f"student.training.optim={trainer_optim}")
     if model := job.get("model"):
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):

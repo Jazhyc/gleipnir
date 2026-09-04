@@ -1,0 +1,12 @@
+{
+  "campaign_id": "gleipnir4b-monitoring-adamw-throughput-v1",
+  "hypothesis": "Fused AdamW improves end-to-end throughput for the large rank-128 adapter.",
+  "selection_rows": 640,
+  "optimizer_steps": 20,
+  "effective_batch_size": 32,
+  "conditions": [
+    {"name": "adamw-torch", "trainer_optim": "adamw_torch"},
+    {"name": "adamw-torch-fused", "trainer_optim": "adamw_torch_fused"}
+  ],
+  "minimum_relative_improvement": 0.03
+}

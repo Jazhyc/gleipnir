@@ -41,3 +41,13 @@ GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
 Ignored artifacts are written under
 `results/monitoring_gradient_checkpointing/` and runtime logs under
 `logs/lambda/monitoring_gradient_checkpointing/`.
+
+## Result
+
+The Stack 24 H100 longest-trajectory preflight failed closed on its first
+microstep. With checkpointing disabled, PyTorch had allocated 77.85 GiB and the
+process occupied 78.91 of 79.18 GiB when a further 282 MiB allocation failed.
+No 20-step throughput condition or adapter was produced. The completed baseline
+already resolves Transformers checkpointing to its recommended non-reentrant
+implementation, so there is no lower-risk checkpointing-mode switch left to
+screen. Retain gradient checkpointing for the full-length recipe.

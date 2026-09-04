@@ -19,6 +19,7 @@ from experiments.deception_distillation.train_student_sft import (
     soft_binary_distillation_loss,
     soft_binary_distillation_losses,
     straight_through_decision_logits,
+    tokenize_record,
 )
 
 
@@ -78,6 +79,21 @@ class DictLikeTokenizer:
         return BatchEncoding(input_ids=torch.tensor([[1]]))
 
 
+class CountingTokenizer:
+    eos_token = "<eos>"
+
+    def __init__(self) -> None:
+        self.encoded: list[str] = []
+
+    def apply_chat_template(self, *_args, **_kwargs) -> str:
+        return "rendered prompt"
+
+    def encode(self, text: str, *, add_special_tokens: bool) -> list[int]:
+        assert add_special_tokens is False
+        self.encoded.append(text)
+        return list(range(len(text.split())))
+
+
 def test_binary_teacher_probability_is_preserved() -> None:
     rows = build_binary_soft_targets(
         [
@@ -115,6 +131,56 @@ def test_completion_collator_masks_prompt_padding() -> None:
         "direct_padded_tokens": 0,
         "direct_padding_fraction": None,
     }
+
+
+def test_collator_omits_unused_completion_tensors() -> None:
+    collator = CompletionOnlyCollator(pad_token_id=9)
+    batch = collator(
+        [
+            {
+                "direct_input_ids": [1, 2],
+                "binary_label": 0,
+                "dataset_id": 0,
+                "soft_target": 0.25,
+            },
+            {
+                "direct_input_ids": [3],
+                "binary_label": 1,
+                "dataset_id": 0,
+                "soft_target": 0.75,
+            },
+        ]
+    )
+    assert set(batch) == {
+        "direct_input_ids",
+        "direct_attention_mask",
+        "binary_labels",
+        "dataset_ids",
+        "soft_targets",
+    }
+    assert batch["direct_input_ids"].tolist() == [[1, 2], [3, 9]]
+    assert collator.padding_statistics()["input_tokens"] == 0
+
+
+def test_direct_only_tokenization_does_not_encode_completion() -> None:
+    tokenizer = CountingTokenizer()
+    feature = tokenize_record(
+        {
+            "index": "row-1",
+            "label": 1,
+            "student_prompt": "evidence",
+            "student_target": "a long teacher completion",
+            "soft_target": 0.8,
+        },
+        tokenizer,
+        100,
+        include_direct_target=True,
+        include_completion_target=False,
+        dataset_id=0,
+    )
+    assert "input_ids" not in feature
+    assert "labels" not in feature
+    assert tokenizer.encoded == ["rendered promptPrediction:"]
 
 
 def test_eva_collator_returns_a_concrete_dictionary() -> None:
