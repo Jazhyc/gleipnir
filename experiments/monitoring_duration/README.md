@@ -53,3 +53,29 @@ python -m experiments.monitoring_duration.run run --revision COMMIT
 
 Artifacts: `results/monitoring_duration/`; logs:
 `logs/lambda/monitoring_duration/`. Each training lane has its own log.
+
+## Completed result (2026-09-06)
+
+Both final 544-step checkpoints completed the full 3,012-row ID evaluation.
+
+| Recipe | Macro pAUROC@20 | Macro AUROC | Macro Brier |
+| --- | ---: | ---: | ---: |
+| Historical 2e-5, one epoch | 0.871066 | 0.957643 | 0.079273 |
+| 1e-5, two epochs | 0.854856 | 0.956150 | 0.081885 |
+| 2e-5, two epochs | 0.882952 | 0.963164 | 0.073997 |
+
+The 2e-5 two-epoch endpoint passes the predeclared exploratory gate: macro
+pAUROC gain +0.011886, Gloom +0.021094, STRIDE +0.002677, and improved macro
+Brier. The 1e-5 endpoint worsens both source rankings. Thus this screen does
+not support a blanket conclusion that longer training overfits: its effect
+depends on the learning-rate/schedule configuration. This is one seed on the
+development set, not a demonstrated OOD gain or automatic recipe promotion.
+
+FlashInfer evaluation stalled twice, at 2,816 saved rows for 1e-5 and 384 for
+2e-5. Only evaluator processes were restarted; all training checkpoints,
+frozen configurations, and completed prediction shards were preserved. The
+backend was unchanged. The remote heartbeat initially logged unchanged state
+without detecting stalls; manual checks recovered both incidents. Resumed
+batch scheduling may cause small numerical differences, so retained outputs
+and recovery records are authoritative. The final aggregate and complete
+prediction artifacts have been collected locally under the campaign root.
