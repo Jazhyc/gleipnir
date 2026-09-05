@@ -4,10 +4,10 @@
 from __future__ import annotations
 
 import argparse
+import json
 import os
 import subprocess
 import sys
-import threading
 import time
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
@@ -20,11 +20,19 @@ if str(ROOT) not in sys.path:
 from experiments.adapter_capacity_scaling.run_lambda import (  # noqa: E402
     runtime_environment,
 )
-from experiments.monitoring_lr_sweep.prepare import atomic_write_json  # noqa: E402
 from experiments.monitoring_objective_ablation.core import (  # noqa: E402
     CAMPAIGN_ID,
     validate_jobs,
     validate_training_metadata,
+)
+from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (  # noqa: E402
+    validate_config as validate_evaluation_config,
+)
+from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (  # noqa: E402
+    validate_inputs as validate_evaluation_inputs,
+)
+from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (  # noqa: E402
+    validate_jobs as validate_evaluation_jobs,
 )
 from experiments.tool_trajectory_monitoring.prepare_distillation_scaling import (  # noqa: E402
     atomic_write_jsonl,
@@ -34,6 +42,7 @@ from experiments.tool_trajectory_monitoring.run_distillation_lambda import (  # 
     run_training_job,
     verify_job_inputs,
 )
+from gleipnir.campaign_status import CampaignStatus as Status  # noqa: E402
 from gleipnir.qwen35_adapter_rebase import sha256_file  # noqa: E402
 from gleipnir.qwen35_fast_training import (  # noqa: E402
     DEFAULT_CAUSAL_CONV1D_TARGET,
@@ -43,46 +52,6 @@ from gleipnir.qwen35_fast_training import (  # noqa: E402
 )
 
 DEFAULT_RESULT_DIR = Path("results/monitoring_objective_ablation")
-
-
-class Status:
-    """Thread-safe campaign status for ten-minute external heartbeats."""
-
-    def __init__(self, path: Path, jobs: list[dict[str, Any]], revision: str | None):
-        self.path = path
-        self.lock = threading.Lock()
-        self.value: dict[str, Any] = {
-            "campaign_id": CAMPAIGN_ID,
-            "state": "running",
-            "phase": "initializing",
-            "started_at_unix": time.time(),
-            "revision": revision,
-            "planned_jobs": [job["job_name"] for job in jobs],
-            "completed_jobs": [],
-            "active_jobs": [],
-            "preflight": "pending",
-            "strict_ood_consulted": False,
-        }
-        self.update()
-
-    def update(self, **values: Any) -> None:
-        with self.lock:
-            self.value.update(values)
-            atomic_write_json(self.path, self.value)
-
-    def start(self, name: str) -> None:
-        with self.lock:
-            if name not in self.value["active_jobs"]:
-                self.value["active_jobs"].append(name)
-            atomic_write_json(self.path, self.value)
-
-    def finish(self, name: str) -> None:
-        with self.lock:
-            if name in self.value["active_jobs"]:
-                self.value["active_jobs"].remove(name)
-            if name not in self.value["completed_jobs"]:
-                self.value["completed_jobs"].append(name)
-            atomic_write_json(self.path, self.value)
 
 
 def gpu_environment(base: dict[str, str], gpu: int) -> dict[str, str]:
@@ -108,21 +77,77 @@ def train_lane(
 ) -> None:
     for job in lane:
         name = str(job["job_name"])
-        status.start(name)
-        run_training_job(
-            jobs_path,
-            name,
-            gpu_environment(environment, gpu),
-            allow_non_scaling_job=True,
-        )
-        validate_training_metadata(
-            Path(job["causal_adapter_dir"]) / "training_metadata.json", job
-        )
-        status.finish(name)
+        with status.job(name, gpu=gpu):
+            run_training_job(
+                jobs_path,
+                name,
+                gpu_environment(environment, gpu),
+                allow_non_scaling_job=True,
+            )
+            validate_training_metadata(
+                Path(job["causal_adapter_dir"]) / "training_metadata.json", job
+            )
 
 
 def run(command: list[str], environment: dict[str, str] | None = None) -> None:
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
+
+
+def run_serving_parity(
+    config_path: Path,
+    result_dir: Path,
+    fast_environment: dict[str, str],
+    serving_environment: dict[str, str],
+) -> None:
+    """Gate ID serving on a bounded causal-master and vLLM comparison."""
+    config = json.loads(config_path.read_text())
+    job = str(config["model_groups"]["4b"]["parity_job"])
+    parity = result_dir / "parity"
+    common = ["--config", config_path.as_posix(), "--model-size", "4b"]
+    run(
+        [
+            sys.executable,
+            "-m",
+            "experiments.tool_trajectory_monitoring.evaluate_distilled_ood_causal",
+            *common,
+            "--output-root",
+            (parity / "eager").as_posix(),
+        ],
+        fast_environment,
+    )
+    run(
+        [
+            sys.executable,
+            "-m",
+            "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
+            *common,
+            "--output-root",
+            (parity / "vllm").as_posix(),
+            "--only-job",
+            job,
+            "--include-base",
+            "--canary-only",
+        ],
+        serving_environment,
+    )
+    run(
+        [
+            sys.executable,
+            "-m",
+            "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity",
+            "--eager-root",
+            (parity / "eager").as_posix(),
+            "--vllm-root",
+            (parity / "vllm").as_posix(),
+            "--model-size",
+            "4b",
+            "--job-name",
+            job,
+            "--output",
+            (parity / "4b.json").as_posix(),
+        ],
+        serving_environment,
+    )
 
 
 def main() -> None:
@@ -154,8 +179,17 @@ def main() -> None:
     jobs = read_jsonl(jobs_path)
     validate_jobs(jobs)
     verify_job_inputs(jobs)
+    evaluation_config = json.loads(args.evaluation_config.read_text())
+    validate_evaluation_config(evaluation_config)
+    validate_evaluation_inputs(evaluation_config)
+    validate_evaluation_jobs(evaluation_config, "4b")
     result_dir = args.result_dir.resolve()
-    status = Status(args.status.resolve(), jobs, args.revision)
+    status = Status(
+        args.status.resolve(),
+        jobs,
+        args.revision,
+        metadata={"campaign_id": CAMPAIGN_ID, "strict_ood_consulted": False},
+    )
     clean_evaluation_environment = runtime_environment("0")
     try:
         status.update(phase="kernel_preflight")
@@ -221,6 +255,13 @@ def main() -> None:
             for future in futures:
                 future.result()
 
+        status.update(phase="serving_parity", active_jobs=[])
+        run_serving_parity(
+            args.evaluation_config.resolve(),
+            result_dir,
+            gpu_environment(fast_environment, 0),
+            clean_evaluation_environment,
+        )
         status.update(phase="id_evaluation", active_jobs=["all-five-objective-arms"])
         run(
             [

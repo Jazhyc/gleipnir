@@ -180,6 +180,35 @@ def test_distillation_ood_accepts_a_separately_frozen_08b_group(
     assert len(validate_jobs(config, "08b")) == 2
 
 
+def test_auxiliary_target_requires_explicit_frozen_opt_in(tmp_path):
+    config = frozen_config(tmp_path)
+    group = config["model_groups"]["9b"]
+    path = Path(group["jobs"])
+    jobs = [json.loads(line) for line in path.read_text().splitlines()]
+    for job in jobs:
+        job["target"] = "kimi_soft_plus_auxiliary"
+    write_jsonl(path, jobs)
+    with pytest.raises(ValueError, match="soft-only"):
+        validate_jobs(config, "9b")
+    group["expected_target"] = "kimi_soft_plus_auxiliary"
+    assert len(validate_jobs(config, "9b")) == 2
+    jobs[0]["soft_loss_weight"] = 0.0
+    write_jsonl(path, jobs)
+    with pytest.raises(ValueError, match="recipe drift"):
+        validate_jobs(config, "9b")
+
+
+def test_multiple_evaluation_jobs_keep_frozen_order(tmp_path):
+    config = frozen_config(tmp_path)
+    expected = config["model_groups"]["9b"]["expected_jobs"]
+    assert [
+        job["job_name"] for job in validate_jobs(config, "9b", expected[::-1])
+    ] == expected
+    for selection in ([], [expected[0], expected[0]], ["missing"]):
+        with pytest.raises(ValueError):
+            validate_jobs(config, "9b", selection)
+
+
 def test_distillation_ood_accepts_frozen_teacher_prompt_inputs(tmp_path: Path) -> None:
     prompts = load_prompt_set()
     rendered = prompts.teacher.render("USER: inspect the deployment")

@@ -15,13 +15,14 @@ import math
 import os
 import subprocess
 import sys
-import threading
 import time
 from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
+
+from gleipnir.campaign_status import CampaignStatus
 
 ROOT = Path(__file__).resolve().parents[2]
 SCHEMA_VERSION = 1
@@ -485,41 +486,6 @@ def summarize_screen(
     }
 
 
-class CampaignStatus:
-    """Thread-safe atomic status for a matched systems screen."""
-
-    def __init__(self, path: Path, jobs: list[dict[str, Any]], revision: str | None):
-        self.path = path
-        self.lock = threading.Lock()
-        self.value: dict[str, Any] = {
-            "state": "running",
-            "phase": "initializing",
-            "started_at_unix": time.time(),
-            "revision": revision,
-            "planned_jobs": [job["job_name"] for job in jobs],
-            "active_jobs": [],
-            "completed_jobs": [],
-            "preflight": "pending",
-        }
-        self.update()
-
-    def update(self, **values: Any) -> None:
-        with self.lock:
-            self.value.update(values)
-            atomic_write_json(self.path, self.value)
-
-    def start(self, name: str) -> None:
-        with self.lock:
-            self.value["active_jobs"].append(name)
-            atomic_write_json(self.path, self.value)
-
-    def finish(self, name: str) -> None:
-        with self.lock:
-            self.value["active_jobs"].remove(name)
-            self.value["completed_jobs"].append(name)
-            atomic_write_json(self.path, self.value)
-
-
 def gpu_environment(base: dict[str, str], gpu: int, cache: Path) -> dict[str, str]:
     """Return an isolated per-condition kernel and compiler environment."""
     environment = dict(base)
@@ -643,26 +609,28 @@ def run_screen(config_path: Path, *, revision: str | None = None) -> None:
 
         def run_condition(index: int, job: dict[str, Any]) -> dict[str, Any]:
             name = str(job["job_name"])
-            status.start(name)
-            run_training_job(
-                paths.jobs,
-                name,
-                gpu_environment(
-                    environment,
-                    index % int(config["gpus"]),
-                    paths.result_dir / "compile_cache" / name,
-                ),
-            )
-            condition_metadata = json.loads(
-                (Path(job["causal_adapter_dir"]) / "training_metadata.json").read_text()
-            )
-            validate_training_metadata(
-                condition_metadata,
-                config,
-                job,
-                expected_steps=int(config["recipe"]["max_steps"]),
-            )
-            status.finish(name)
+            gpu = index % int(config["gpus"])
+            with status.job(name, gpu=gpu):
+                run_training_job(
+                    paths.jobs,
+                    name,
+                    gpu_environment(
+                        environment,
+                        gpu,
+                        paths.result_dir / "compile_cache" / name,
+                    ),
+                )
+                condition_metadata = json.loads(
+                    (
+                        Path(job["causal_adapter_dir"]) / "training_metadata.json"
+                    ).read_text()
+                )
+                validate_training_metadata(
+                    condition_metadata,
+                    config,
+                    job,
+                    expected_steps=int(config["recipe"]["max_steps"]),
+                )
             return {**job, "training_metadata": condition_metadata}
 
         gpu_count = int(config["gpus"])
@@ -678,9 +646,7 @@ def run_screen(config_path: Path, *, revision: str | None = None) -> None:
                 if lane
             ]
             by_name = {
-                job["job_name"]: job
-                for future in futures
-                for job in future.result()
+                job["job_name"]: job for future in futures for job in future.result()
             }
         completed = [by_name[job["job_name"]] for job in jobs]
         status.update(phase="summarizing", active_jobs=[])

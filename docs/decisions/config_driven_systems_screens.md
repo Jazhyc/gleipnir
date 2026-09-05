@@ -49,3 +49,10 @@ training-job fields and selection is based on measured throughput.
 Completed historical experiments are not rewritten merely to reduce file
 count. They can be migrated when reused; new screens should start from the
 shared runner.
+
+Campaign status is factored into `gleipnir.campaign_status` and shared by the
+systems runner and objective ablations. Job scopes include execution and metadata
+validation, publishing failures immediately even if a sibling lane is still
+running. The additive per-job timestamps and GPU assignments support monitoring
+without inferring lane identity from interleaved progress bars. Existing completed
+campaigns retain their historical runners.

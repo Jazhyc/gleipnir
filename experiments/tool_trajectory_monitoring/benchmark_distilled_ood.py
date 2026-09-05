@@ -135,7 +135,7 @@ def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 
 def validate_jobs(
-    config: dict[str, Any], model_size: str, only_job: str | None = None
+    config: dict[str, Any], model_size: str, only_job: str | list[str] | None = None
 ) -> list[dict[str, Any]]:
     group = config["model_groups"][model_size]
     jobs_path = Path(group["jobs"])
@@ -151,9 +151,12 @@ def validate_jobs(
     if len(by_name) != len(available_jobs) or not set(expected).issubset(by_name):
         raise ValueError(f"{model_size} selected evaluation jobs are incomplete")
     jobs = [by_name[name] for name in expected]
+    expected_target = group.get("expected_target", "kimi_soft")
+    if expected_target not in {"kimi_soft", "kimi_soft_plus_auxiliary"}:
+        raise ValueError(f"unsupported frozen training target: {expected_target!r}")
     for job in jobs:
         if (
-            job.get("target") != "kimi_soft"
+            job.get("target") != expected_target
             or float(job.get("soft_loss_weight", -1)) != 1.0
             or float(job.get("direct_loss_weight", -1)) != 0.0
             or int(job.get("rank", -1)) != 128
@@ -161,9 +164,12 @@ def validate_jobs(
         ):
             raise ValueError(f"soft-only recipe drift for {job.get('job_name')!r}")
     if only_job is not None:
-        jobs = [job for job in jobs if job["job_name"] == only_job]
-        if len(jobs) != 1:
+        selected = [only_job] if isinstance(only_job, str) else only_job
+        if not selected or len(selected) != len(set(selected)):
+            raise ValueError("evaluation job selection must be nonempty and unique")
+        if not set(selected).issubset(expected):
             raise ValueError(f"unknown {model_size} evaluation job {only_job!r}")
+        jobs = [job for job in jobs if job["job_name"] in selected]
     return jobs
 
 
@@ -193,7 +199,11 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--model-size", required=True)
     parser.add_argument("--output-root", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument("--only-job")
+    parser.add_argument(
+        "--only-job",
+        action="append",
+        help="Evaluate only this job; repeat to batch completed jobs in one engine.",
+    )
     parser.add_argument("--include-base", action="store_true")
     parser.add_argument("--canary-only", action="store_true")
     parser.add_argument("--force", action="store_true")

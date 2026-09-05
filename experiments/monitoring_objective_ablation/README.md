@@ -77,3 +77,29 @@ python -m experiments.monitoring_objective_ablation.run_lambda
 
 Runtime status and artifacts are written below
 `results/monitoring_objective_ablation/`.
+
+## Runner maintenance (2026-09-05)
+
+Campaign lifecycle reporting now uses `gleipnir.campaign_status`, shared with
+the config-driven systems runner. Status retains the existing summary fields
+and adds per-job GPU assignment, start/end times, errors, and an update timestamp.
+A lane failure is published immediately, including metadata-validation failures,
+even while another lane is still running. The status file has one runner as its
+owner; it is not a resume checkpoint or a cross-process scheduling lock.
+
+The ID configuration now includes the source and manifest checksums from the
+existing LR-screen ID contract. Their omission previously made the evaluator
+fail before inference. This repair changes neither examples nor scoring.
+The runner also explicitly performs the existing bounded causal-master/vLLM
+parity gate, including a nonzero adapter-effect check, before full evaluation.
+The already-running campaign uses its original training revision; its parity
+check is run separately on the free GPU before its scheduled evaluation.
+The evaluator's expected training target is now explicit in the model-group
+configuration (`kimi_soft_plus_auxiliary` here; historical configs still default
+to `kimi_soft`). Repeated `--only-job` options select completed adapters in one
+persistent engine without changing the frozen config hash or manifest order.
+This lets evaluation overlap a remaining training lane and later resume from
+the same prediction artifacts.
+Evaluation config, input provenance, and job compatibility are checked before
+training starts, so these integration errors cannot consume a full campaign
+before surfacing.
