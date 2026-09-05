@@ -5,10 +5,51 @@ from pathlib import Path
 import pytest
 
 from experiments.monitoring_objective_ablation import prepare, run_lambda
-from experiments.monitoring_objective_ablation.core import CONTROL, select_winner
+from experiments.monitoring_objective_ablation.core import (
+    ARM_SPECS,
+    CONTROL,
+    select_winner,
+    validate_loss_metadata,
+)
 from gleipnir.campaign_status import CampaignStatus
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_loss_metadata_accepts_versioned_normalization_without_relaxing_weights():
+    job = ARM_SPECS[0]
+    legacy = {
+        "completion_weight": 0.05,
+        "completion_logits_mode": "selected_positions",
+        "completion_projection_chunk_size": 128,
+        "sequential_objective_backward": True,
+        "direct_weight": 0.0,
+        "pairwise_weight": 0.0,
+        "soft_weight": 1.0,
+        "soft_type": "bce",
+        "mil_weight": 0.0,
+        "mil_pooling": "logmeanexp",
+        "mil_temperature": 1.0,
+        "mil_top_k": 3,
+        "mil_max_instances": 8,
+    }
+    corrected = {
+        **legacy,
+        "accumulation_policy": "explicit_microbatch_mean_v1",
+        "model_accepts_loss_kwargs": False,
+    }
+    validate_loss_metadata(legacy, job)
+    validate_loss_metadata(corrected, job)
+    for override in (
+        {"model_accepts_loss_kwargs": True},
+        {"accumulation_policy": "unknown"},
+        {"completion_weight": 0.20},
+        {"unexpected_loss": 1.0},
+    ):
+        with pytest.raises(ValueError):
+            validate_loss_metadata({**corrected, **override}, job)
+    with pytest.raises(ValueError):
+        validate_loss_metadata({**legacy, "model_accepts_loss_kwargs": False}, job)
 
 
 def test_training_subset_is_ordered_and_fail_closed():

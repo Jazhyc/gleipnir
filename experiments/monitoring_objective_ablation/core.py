@@ -152,12 +152,8 @@ def validate_jobs(jobs: list[dict[str, Any]]) -> None:
         raise ValueError("objective arms do not share one enriched student artifact")
 
 
-def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any]:
-    """Require objective identity and the proven fast-kernel training recipe."""
-    import json
-
-    metadata = json.loads(path.read_text())
-    losses = metadata.get("losses", {})
+def validate_loss_metadata(losses: dict[str, Any], job: dict[str, Any]) -> None:
+    """Accept explicitly versioned normalization and retain legacy diagnostics."""
     expected_losses = {
         "completion_weight": float(job["completion_loss_weight"]),
         "completion_logits_mode": "selected_positions",
@@ -173,8 +169,26 @@ def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any
         "mil_top_k": 3,
         "mil_max_instances": 8,
     }
-    if losses != expected_losses:
+    normalization_fields = {"accumulation_policy", "model_accepts_loss_kwargs"}
+    if normalization_fields & losses.keys():
+        if (
+            losses.get("accumulation_policy") != "explicit_microbatch_mean_v1"
+            or losses.get("model_accepts_loss_kwargs") is not False
+        ):
+            raise ValueError("loss accumulation metadata is incomplete or invalid")
+    objective_fields = {
+        key: value for key, value in losses.items() if key not in normalization_fields
+    }
+    if objective_fields != expected_losses:
         raise ValueError(f"loss metadata drifted: {losses} != {expected_losses}")
+
+
+def validate_training_metadata(path: Path, job: dict[str, Any]) -> dict[str, Any]:
+    """Require objective identity and the proven fast-kernel training recipe."""
+    import json
+
+    metadata = json.loads(path.read_text())
+    validate_loss_metadata(metadata.get("losses", {}), job)
     fla = metadata.get("flash_linear_attention", {})
     causal = metadata.get("causal_conv1d", {})
     sdpa = metadata.get("sdpa", {})
