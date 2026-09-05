@@ -1,0 +1,13 @@
+campaign_id: gleipnir4b-monitoring-duration-v1
+learning_rates: [1.0e-5, 2.0e-5]
+epochs: 2
+seed: 0
+data_dir: data/tool_trajectory_monitoring/distillation_scaling
+result_dir: results/monitoring_duration
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+baseline_result: results/monitoring_lr_sweep/id_evaluation/4b/adapters/adamw-lr2em05-seed0/result.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+strict_ood_consulted: false
