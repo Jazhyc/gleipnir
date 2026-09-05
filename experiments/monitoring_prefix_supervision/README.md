@@ -1,8 +1,8 @@
 # Intermediate tool-action supervision
 
-Status: prompt proposal awaiting user review. No prefix annotation or training
-is launched by this proposal. The existing ID evaluations retain their frozen
-full-trajectory prompts.
+Status: prompt wording approved by the user; full instruction materialized in
+`teacher_prefix.txt`. No prefix annotation or training has launched yet. The
+existing ID evaluations retain their frozen full-trajectory prompts.
 
 ## Hypothesis and intervention
 
@@ -13,9 +13,10 @@ targets at statement-only assistant turns, but retain those statements as
 context in later prefixes. Never expose later actions, full-trajectory labels,
 Kimi targets, or privileged rationales to the prefix teacher.
 
-The proposed prompt changes are in `prompt_proposal.md`. Review and freeze the
-rendered prompt and its hash before annotation. Preserve the original teacher
-rubric rather than changing the meaning of problematic behavior.
+The reviewed changes are recorded in `prompt_proposal.md`; `teacher_prefix.txt`
+contains the complete instruction. Freeze the rendered prompt and its hash
+before annotation. Preserve the original teacher rubric rather than changing
+the meaning of problematic behavior.
 
 ## Selection and execution gates
 
@@ -35,6 +36,39 @@ failures, and resume identity. Stop on leakage, invalid boundaries, missing or
 nonfinite logits, provenance drift, or failed cache correctness checks.
 
 ## Subsequent training proposal
+
+The local candidate-boundary audit is reproducible with
+`python -m experiments.monitoring_prefix_supervision.audit`. It currently finds
+133,947 non-final tool-bearing candidate prefixes: STRIDE 26,791, BashArena
+72,894, BashBench 27,440, and Gloom 6,822. CoT-Red-Handed has none. Excluding
+statement-only turns removed 201 candidates; 12 additional missing step closes
+are unresolved and receive no guessed boundary. These are
+not yet validated annotation counts: 822 BashArena rows trigger conservative
+delimiter/step warnings and need format review. The audit never calls a teacher
+or silently excludes flagged rows from a launched cache.
+
+BashArena step numbers can jump across `<middle_summary>` sections. Ending a
+prefix at the next step opening would leak a later-events summary into the
+preceding action target. Candidate endpoints now use the current `</step_N>`
+instead; the original intervening summary remains context for later actions.
+Seven focused tests include this leakage case and missing-close handling.
+
+Preparation completed with 133,947 references under
+`data/monitoring_prefix_supervision/`. The references, original student rows,
+and approved instruction have been transferred to Lambda and their SHA-256
+hashes verified there against the local manifest. No teacher outputs exist yet.
+The remaining 12 malformed step boundaries are explicitly excluded, not guessed;
+other valid boundaries in those trajectories retain the unchanged visible text.
+
+`cache_canary.py` is staged for a bounded, GPU-idleness-guarded preflight after
+model selection. It scores three growing prefixes from each of four sources,
+comparing reset-per-request against reused-prefix execution in the same engine.
+Require mean probability error <=0.02, maximum <=0.05, and cache hits beyond
+the shared instruction on every second/third prefix. Record cold and reused
+timings before estimating full-campaign throughput. This implementation has
+not yet passed a GPU preflight; merely enabling prefix caching is not evidence
+that it works. The code explicitly requests `mamba_cache_mode=all` and Triton
+GDN, based on the installed vLLM 0.24.0 cache configuration.
 
 After verified cache completion, compare against the existing monitoring-only
 soft-distillation baseline using one epoch, learning rate 2e-5, and seed 0.

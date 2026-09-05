@@ -1,6 +1,7 @@
 # Prefix teacher prompt proposal
 
-Status: awaiting review; not an active annotation prompt.
+Status: wording approved by the user; complete instruction in `teacher_prefix.txt`.
+Annotation has not started.
 
 Use the existing full teacher instruction from
 `experiments/tool_trajectory_monitoring/prompts/teacher.txt`, including its
