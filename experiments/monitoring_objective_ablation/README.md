@@ -2,6 +2,12 @@
 
 Status: five-arm, one-seed ID-development screen frozen before training.
 
+The initial two rationale runs are diagnostic only because their sequential
+auxiliary/direct accumulation normalization was inconsistent. They are excluded
+from promotion and require corrected reruns with the same frozen weights; see
+[`the accumulation audit`](../../docs/findings/monitoring_objective_accumulation.md).
+The MIL-only runs are unaffected by that bug.
+
 ## Question
 
 Can the selected monitoring-only Qwen3.5-4B Kimi-soft recipe gain complementary
@@ -103,3 +109,19 @@ the same prediction artifacts.
 Evaluation config, input provenance, and job compatibility are checked before
 training starts, so these integration errors cannot consume a full campaign
 before surfacing.
+
+Prepare corrected rationale runs without rematerializing data or overwriting
+the original adapters:
+
+```bash
+python -m experiments.monitoring_objective_ablation.prepare \
+  --reuse-jobs results/monitoring_objective_ablation/jobs.jsonl \
+  --rerun-kind rationale \
+  --result-dir results/monitoring_objective_ablation_accumulation_v2
+```
+
+The resulting five-job manifest points only the two rationale entries at new
+directories; MIL entries keep their original paths. CPU accumulation tests cover
+windows of 1, 16, and 32 with and without completion labels. Before corrected
+full training, run a two-microbatch longest-sequence GPU preflight. Reruns use
+the original frozen scientific recipe and distinct per-lane status files.

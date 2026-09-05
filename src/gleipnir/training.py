@@ -9,6 +9,16 @@ import torch
 MUON_LR_ADJUSTMENTS = ("match_rms_adamw", "original", "spectral_unclamped")
 
 
+def configure_mean_loss_accumulation(trainer: Any) -> None:
+    """Tell Trainer our custom loss returns means, not token-count-normalized sums.
+
+    Model forward signatures can advertise loss kwargs even when a custom
+    compute_loss ignores num_items_in_batch. Without this override, completion
+    labels make Trainer skip its gradient-accumulation division.
+    """
+    trainer.model_accepts_loss_kwargs = False
+
+
 def muon_update_scale(
     matrix: torch.Tensor,
     adjustment: str = "match_rms_adamw",

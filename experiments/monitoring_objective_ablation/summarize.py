@@ -22,7 +22,7 @@ from gleipnir.monitoring_systems_screen import atomic_write_json, read_jsonl
 def result_row(job: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     if result.get("job_name") != job["job_name"] or int(result.get("rows", -1)) != 3012:
         raise ValueError(f"incomplete result for {job['job_name']}")
-    validate_training_metadata(
+    training = validate_training_metadata(
         Path(job["causal_adapter_dir"]) / "training_metadata.json", job
     )
     metrics = result["metrics"]["macro"]
@@ -30,6 +30,11 @@ def result_row(job: dict[str, Any], result: dict[str, Any]) -> dict[str, Any]:
     groups = metrics["groups"]
     return {
         "job_name": str(job["job_name"]),
+        "objective_accumulation_valid": (
+            not bool(job["completion_loss_weight"])
+            or training.get("losses", {}).get("accumulation_policy")
+            == "explicit_microbatch_mean_v1"
+        ),
         "kind": str(job["kind"]),
         "completion_loss_weight": float(job["completion_loss_weight"]),
         "mil_loss_weight": float(job["mil_loss_weight"]),

@@ -29,6 +29,13 @@ checkpoint retention. Training metadata records expected dataset exposure,
 optimizer/scheduler settings, LoRA dropout, target scaling, checkpoints, and
 loss/learning-rate history.
 
+The custom trainer returns microbatch-mean losses and explicitly disables
+Transformers' inferred token-count loss normalization. This keeps direct and
+sequential auxiliary gradients on the same accumulation scale; metadata records
+`explicit_microbatch_mean_v1`. See the
+[objective accumulation audit](../../docs/findings/monitoring_objective_accumulation.md)
+for the affected historical rationale runs.
+
 ## Inputs
 
 Materialize training records as JSONL outside Git. Each usable record needs a

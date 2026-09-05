@@ -262,7 +262,8 @@ def select_winner(rows: list[dict[str, Any]]) -> dict[str, Any]:
         }
         row["control_deltas"] = deltas
         row["eligible"] = bool(
-            deltas["macro_pauroc_at_20"] >= 0.005
+            row.get("objective_accumulation_valid", True)
+            and deltas["macro_pauroc_at_20"] >= 0.005
             and min(source_deltas.values()) >= -0.01
             and deltas["macro_brier"] <= 0.005
         )

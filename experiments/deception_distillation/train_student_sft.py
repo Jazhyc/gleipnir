@@ -26,6 +26,7 @@ from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSample
 from gleipnir.qwen35_loftq import initialize_qwen35_loftq
 from gleipnir.training import (
     MuonAdamW,
+    configure_mean_loss_accumulation,
     muon_adamw_param_groups,
 )
 
@@ -3142,6 +3143,7 @@ def main(cfg: DictConfig) -> None:
         data_collator=collator,
         callbacks=[optimizer_step_timer],
     )
+    configure_mean_loss_accumulation(trainer)
     if gradient_checkpointing_enabled:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
             model,
@@ -3387,6 +3389,8 @@ def main(cfg: DictConfig) -> None:
                     ),
                     "losses": {
                         "completion_weight": completion_loss_weight,
+                        "accumulation_policy": "explicit_microbatch_mean_v1",
+                        "model_accepts_loss_kwargs": trainer.model_accepts_loss_kwargs,
                         "completion_logits_mode": completion_logits_mode,
                         "completion_projection_chunk_size": (
                             completion_projection_chunk_size

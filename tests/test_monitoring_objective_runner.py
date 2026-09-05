@@ -4,10 +4,48 @@ from pathlib import Path
 
 import pytest
 
-from experiments.monitoring_objective_ablation import run_lambda
+from experiments.monitoring_objective_ablation import prepare, run_lambda
+from experiments.monitoring_objective_ablation.core import CONTROL, select_winner
 from gleipnir.campaign_status import CampaignStatus
 
 ROOT = Path(__file__).resolve().parents[1]
+
+
+def test_bad_accumulation_cannot_win_even_with_high_id_score():
+    row = {
+        **CONTROL,
+        "job_name": "bad-scaling",
+        "macro_pauroc_at_20": 0.99,
+        "macro_auroc": 0.99,
+        "objective_accumulation_valid": False,
+    }
+    assert select_winner([row])["selected_job"] is None
+
+
+def test_rerun_preparation_preserves_recipe_and_original_artifacts(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(prepare, "validate_jobs", lambda jobs: None)
+    jobs = [
+        {
+            "job_name": name,
+            "kind": kind,
+            "learning_rate": 2e-5,
+            "model_dir": f"original/{name}/model",
+            "causal_adapter_dir": f"original/{name}/causal",
+            "output_dir": f"original/{name}",
+        }
+        for name, kind in [("rationale", "rationale"), ("mil", "mil")]
+    ]
+    source = tmp_path / "original" / "jobs.jsonl"
+    prepare.atomic_write_jsonl(source, jobs)
+    repaired = prepare.prepare_reruns(source, tmp_path / "repair", "rationale")
+    assert repaired[1] == jobs[1]
+    assert repaired[0]["learning_rate"] == jobs[0]["learning_rate"]
+    assert repaired[0]["model_dir"].endswith("repair/runs/rationale/model")
+    assert prepare.read_jsonl(source) == jobs
+    with pytest.raises(ValueError, match="separate"):
+        prepare.prepare_reruns(source, source.parent, "rationale")
 
 
 def test_objective_evaluation_preserves_complete_id_provenance():

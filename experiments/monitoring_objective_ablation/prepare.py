@@ -173,12 +173,61 @@ def make_jobs(
     return jobs
 
 
+def prepare_reruns(
+    source_jobs: Path, result_dir: Path, kind: str
+) -> list[dict[str, Any]]:
+    """Freeze a rerun manifest while referencing unaffected original adapters."""
+    jobs = read_jsonl(source_jobs)
+    validate_jobs(jobs)
+    if kind not in {str(job["kind"]) for job in jobs}:
+        raise ValueError(f"unknown objective kind: {kind}")
+    if result_dir.resolve() == source_jobs.resolve().parent:
+        raise ValueError("reruns require a separate result directory")
+    for job in jobs:
+        if job["kind"] == kind:
+            output = result_dir / "runs" / str(job["job_name"])
+            job.update(
+                output_dir=output.as_posix(),
+                causal_adapter_dir=(output / "causal_adapter").as_posix(),
+                model_dir=(output / "model").as_posix(),
+            )
+    validate_jobs(jobs)
+    destination = result_dir / "jobs.jsonl"
+    if destination.exists() and read_jsonl(destination) != jobs:
+        raise ValueError("existing rerun manifest differs; choose a new directory")
+    atomic_write_jsonl(destination, jobs)
+    config = json.loads((Path(__file__).parent / "id_benchmark.json").read_text())
+    config["model_groups"]["4b"]["jobs"] = destination.as_posix()
+    config["model_groups"]["4b"]["jobs_sha256"] = sha256_file(destination)
+    atomic_write_json(result_dir / "id_benchmark.json", config)
+    atomic_write_json(
+        result_dir / "rerun_manifest.json",
+        {
+            "source_jobs": source_jobs.as_posix(),
+            "source_jobs_sha256": sha256_file(source_jobs),
+            "rerun_kind": kind,
+            "rerun_jobs": [job["job_name"] for job in jobs if job["kind"] == kind],
+            "reused_jobs": [job["job_name"] for job in jobs if job["kind"] != kind],
+            "jobs_sha256": sha256_file(destination),
+            "strict_ood_consulted": False,
+        },
+    )
+    return jobs
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
     parser.add_argument("--data-dir", type=Path, default=DEFAULT_DATA_DIR)
     parser.add_argument("--result-dir", type=Path, default=DEFAULT_RESULT_DIR)
+    parser.add_argument("--reuse-jobs", type=Path)
+    parser.add_argument("--rerun-kind", choices=("rationale", "mil"))
     args = parser.parse_args()
+    if args.reuse_jobs is not None or args.rerun_kind is not None:
+        if args.reuse_jobs is None or args.rerun_kind is None:
+            parser.error("--reuse-jobs and --rerun-kind must be used together")
+        prepare_reruns(args.reuse_jobs, args.result_dir, args.rerun_kind)
+        return
     if sha256_file(args.source) != RAW_SOURCE_SHA256:
         raise ValueError("raw rationale source checksum drifted")
     student_path = args.data_dir / "student_rows.jsonl"
