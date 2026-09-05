@@ -33,8 +33,10 @@ def build_config(settings: dict[str, Any], lengths: list[int]) -> dict[str, Any]
     config = json.loads(Path(settings["template"]).read_text())
     config.update(
         campaign_id=settings["campaign_id"],
-        hypothesis="Local FP8 MoE teacher quality and throughput on fixed ID rows",
-        intervention="Official 122B-A10B FP8 model, TP2, full teacher instruction",
+        hypothesis="Local FP8 teacher quality and throughput on fixed ID rows",
+        intervention=(
+            f"Official {settings['model']['id']}, TP2, full teacher instruction"
+        ),
         model=settings["model"],
         scope=settings["scope"],
         engine={
@@ -55,13 +57,15 @@ def build_config(settings: dict[str, Any], lengths: list[int]) -> dict[str, Any]
     return config
 
 
-def prepare() -> None:
+def prepare(config_name: str = "config") -> None:
     from transformers import AutoTokenizer
 
     with initialize_config_dir(
         version_base=None, config_dir=str(Path(__file__).parent.resolve())
     ):
-        settings = OmegaConf.to_container(compose(config_name="config"), resolve=True)
+        settings = OmegaConf.to_container(
+            compose(config_name=config_name), resolve=True
+        )
     root = Path(settings["result_dir"])
     if (root / "manifest.json").exists():
         raise ValueError("reuse the frozen prepared contract")
@@ -99,7 +103,9 @@ def prepare() -> None:
                     Path(config["scope"]["manifest"]),
                 )
             },
-            "authoring_sha256": sha256_file(Path(__file__).with_name("config.yaml")),
+            "authoring_sha256": sha256_file(
+                Path(__file__).with_name(f"{config_name}.yaml")
+            ),
             "tokenizer_revision": settings["model"]["revision"],
         },
     )
@@ -123,7 +129,7 @@ def run(root: Path) -> None:
     memory = gpu_memory()
     if len(memory) != 2 or max(memory) > 1024:
         raise RuntimeError(f"both GPUs must be idle before loading: {memory}")
-    logs = Path("logs/lambda/qwen122b_id")
+    logs = Path("logs/lambda") / root.name
     logs.mkdir(parents=True, exist_ok=True)
     status: dict[str, Any] = {
         "state": "running",
@@ -205,14 +211,63 @@ def run(root: Path) -> None:
         raise
 
 
+def dependency_ready(dependency: Path) -> bool:
+    """Never start a dependent GPU run on a failed or incomplete predecessor."""
+    state = json.loads((dependency / "status.json").read_text())["state"]
+    if state == "failed":
+        raise RuntimeError(f"predecessor failed: {dependency}")
+    if state != "complete":
+        return False
+    result = json.loads((dependency / "evaluation/result.json").read_text())
+    if result["rows"] != 3012:
+        raise ValueError("predecessor has an incomplete evaluation")
+    return True
+
+
+def wait_for_dependency(root: Path, dependency: Path) -> None:
+    try:
+        while not dependency_ready(dependency):
+            atomic_write_json(
+                root / "status.json",
+                {
+                    "state": "queued",
+                    "phase": "waiting_for_predecessor",
+                    "predecessor": str(dependency),
+                    "updated_at_unix": time.time(),
+                },
+            )
+            print(f"HEARTBEAT waiting for {dependency}", flush=True)
+            time.sleep(600)
+        for _ in range(12):
+            if max(gpu_memory()) <= 1024:
+                return
+            time.sleep(5)
+        raise RuntimeError("predecessor completed but GPUs remain occupied")
+    except BaseException as error:
+        atomic_write_json(
+            root / "status.json",
+            {
+                "state": "failed",
+                "phase": "dependency_gate",
+                "error": repr(error),
+                "updated_at_unix": time.time(),
+            },
+        )
+        raise
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("phase", choices=("prepare", "run"))
     parser.add_argument("--result-dir", type=Path, default=ROOT)
+    parser.add_argument("--config-name", default="config")
+    parser.add_argument("--after-result-dir", type=Path)
     args = parser.parse_args()
     if args.phase == "prepare":
-        prepare()
+        prepare(args.config_name)
     else:
+        if args.after_result_dir:
+            wait_for_dependency(args.result_dir, args.after_result_dir)
         run(args.result_dir)
 
 

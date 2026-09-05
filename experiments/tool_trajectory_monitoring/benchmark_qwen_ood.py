@@ -36,6 +36,7 @@ SUPPORTED_QWEN_MODELS = {
     "Qwen/Qwen3.5-9B",
     "Qwen/Qwen3.5-27B",
     "Qwen/Qwen3.5-122B-A10B-FP8",
+    "Qwen/Qwen3.8-27B-FP8",
 }
 
 
@@ -79,11 +80,11 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("canary rows per source-label must be positive")
     if engine.get("language_model_only") is not True:
         raise ValueError("Qwen benchmark must use the text-only language model")
-    if model_id == "Qwen/Qwen3.5-122B-A10B-FP8":
+    if model_id in {"Qwen/Qwen3.5-122B-A10B-FP8", "Qwen/Qwen3.8-27B-FP8"}:
         if config["model"].get("quantization") != "fp8":
-            raise ValueError("122B benchmark requires official FP8 weights")
+            raise ValueError("local FP8 benchmark requires official FP8 weights")
         if engine.get("tensor_parallel_size") != 2:
-            raise ValueError("122B benchmark requires both reserved GPUs")
+            raise ValueError("local FP8 benchmark requires both reserved GPUs")
 
 
 def optional_engine_kwargs(config: dict[str, Any]) -> dict[str, Any]:

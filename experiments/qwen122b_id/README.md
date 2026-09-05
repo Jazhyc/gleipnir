@@ -45,3 +45,29 @@ python -m experiments.qwen122b_id.run run
 ```
 
 Artifacts: `results/qwen122b_id/`; logs: `logs/lambda/qwen122b_id/`.
+
+## Authorized sequential follow-up: Qwen3.8-27B FP8
+
+On 2026-09-06 the user added Qwen/Qwen3.8-27B-FP8 after the current 122B
+evaluation. Revision 017b9c7af6b5689d5dd426a76e0bc077eb5ca20a has
+30,866,866,928 weight-file bytes. The installed vLLM 0.24.0 supports its
+Qwen3_5ForConditionalGeneration architecture and explicit swish GDN output gate.
+Its tokenizer/chat boundary and full ID token lengths are audited independently.
+
+The additional Hydra config inherits the same FP8/TP2, full-rubric,
+non-thinking, Triton, no-prefix-cache, batch/concurrency, metrics and canary
+contract. Neither this model's quality nor its speed is assumed to exceed the
+122B model. Its smaller weights should free more memory for KV cache, but this
+fixed-concurrency screen is not a maximum-throughput or prefix-cache benchmark.
+Compare both completed ID endpoints; no new annotation, training or OOD work.
+
+Separate artifacts/logs are under `results/qwen38_27b_id/` and
+`logs/lambda/qwen38_27b_id/`. The dependency gate checks predecessor success and
+complete coverage, then waits for GPU release. It fails on predecessor failure
+and never preempts the current run. Queued checks run every ten minutes.
+
+```bash
+python -m experiments.qwen122b_id.run prepare --config-name qwen38_27b
+python -m experiments.qwen122b_id.run run \
+  --result-dir results/qwen38_27b_id --after-result-dir results/qwen122b_id
+```

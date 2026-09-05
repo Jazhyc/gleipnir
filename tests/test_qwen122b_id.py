@@ -93,3 +93,41 @@ def test_supervisor_records_child_outcome(tmp_path, monkeypatch, returncode, exp
     else:
         runner.run(tmp_path)
     assert json.loads((tmp_path / "status.json").read_text())["state"] == expected
+
+
+def test_qwen38_composes_same_scoring_and_engine_contract():
+    from hydra import compose, initialize_config_dir
+
+    with initialize_config_dir(
+        version_base=None, config_dir=str(Path("experiments/qwen122b_id").resolve())
+    ):
+        followup = OmegaConf.to_container(
+            compose(config_name="qwen38_27b"), resolve=True
+        )
+    config = build_config(followup, [1000] * 3012)
+    assert config["model"]["id"] == "Qwen/Qwen3.8-27B-FP8"
+    assert config["model"]["quantization"] == "fp8"
+    assert config["engine"] == build_config(settings(), [1000] * 3012)["engine"]
+    assert followup["result_dir"] == "results/qwen38_27b_id"
+
+
+@pytest.mark.parametrize(
+    "state,rows,ready", [("running", 0, False), ("complete", 3012, True)]
+)
+def test_dependency_waits_for_complete_coverage(tmp_path, state, rows, ready):
+    import json
+
+    from experiments.qwen122b_id.run import dependency_ready
+
+    (tmp_path / "status.json").write_text(json.dumps({"state": state}))
+    (tmp_path / "evaluation").mkdir()
+    (tmp_path / "evaluation/result.json").write_text(json.dumps({"rows": rows}))
+    assert dependency_ready(tmp_path) is ready
+
+
+def test_failed_predecessor_is_not_treated_as_gpu_release(tmp_path):
+    from experiments.qwen122b_id.run import dependency_ready
+
+    (tmp_path / "status.json").write_text('{"state": "failed"}')
+    with pytest.raises(RuntimeError, match="predecessor failed"):
+        dependency_ready(tmp_path)
