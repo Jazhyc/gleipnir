@@ -1,0 +1,31 @@
+campaign_id: qwen35-122b-a10b-fp8-teacher-id-v1
+result_dir: results/qwen122b_id
+template: experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json
+model:
+  id: Qwen/Qwen3.5-122B-A10B-FP8
+  revision: a099dee70ccfcd8d5dda56aaa0b60cb8ecadabc9
+  weight_format: upstream_block_fp8
+  quantization: fp8
+  dtype: bfloat16
+scope:
+  role: held_out_in_distribution_development
+  input: data/tool_trajectory_monitoring/teacher_id_benchmark/prompts.jsonl
+  input_sha256: b4ed4662c0b91e700b0bd5d1bdf2e5c3e4dd9bf66af5497417d589827b122a20
+  manifest: data/tool_trajectory_monitoring/teacher_id_benchmark/prompts.manifest.json
+  rows: 3012
+  sources: [test_stride, gloom_exfiltration]
+  selection_rule: All frozen ID rows; no prompt, threshold, or subset tuning; no OOD.
+engine:
+  tensor_parallel_size: 2
+  max_model_len: 32768
+  gpu_memory_utilization: 0.90
+  max_num_seqs: 8
+  max_num_batched_tokens: 8192
+  enable_prefix_caching: false
+  language_model_only: true
+  gdn_prefill_backend: triton
+  batch_rows: 64
+  canary_rows_per_source_label: 1
+  canary_include_longest: true
+  canary_repeat_singletons: true
+  seed: 20260906

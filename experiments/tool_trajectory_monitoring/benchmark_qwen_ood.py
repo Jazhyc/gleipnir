@@ -28,17 +28,14 @@ from experiments.tool_trajectory_monitoring.qwen_reasoning_core import (
 from gleipnir.binary_evaluation import binary_token_ids
 from gleipnir.qwen35_adapter_rebase import sha256_file
 
-DEFAULT_CONFIG = Path(
-    "experiments/tool_trajectory_monitoring/qwen_ood_benchmark.json"
-)
+DEFAULT_CONFIG = Path("experiments/tool_trajectory_monitoring/qwen_ood_benchmark.json")
 DEFAULT_OUTPUT = Path("results/tool_trajectory_monitoring/qwen35_9b_teacher_ood")
-QWEN_NON_THINKING_ASSISTANT_SUFFIX = (
-    "<|im_start|>assistant\n<think>\n\n</think>\n\n"
-)
+QWEN_NON_THINKING_ASSISTANT_SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 SUPPORTED_QWEN_MODELS = {
     "Qwen/Qwen3.5-4B",
     "Qwen/Qwen3.5-9B",
     "Qwen/Qwen3.5-27B",
+    "Qwen/Qwen3.5-122B-A10B-FP8",
 }
 
 
@@ -82,6 +79,22 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("canary rows per source-label must be positive")
     if engine.get("language_model_only") is not True:
         raise ValueError("Qwen benchmark must use the text-only language model")
+    if model_id == "Qwen/Qwen3.5-122B-A10B-FP8":
+        if config["model"].get("quantization") != "fp8":
+            raise ValueError("122B benchmark requires official FP8 weights")
+        if engine.get("tensor_parallel_size") != 2:
+            raise ValueError("122B benchmark requires both reserved GPUs")
+
+
+def optional_engine_kwargs(config: dict[str, Any]) -> dict[str, Any]:
+    """Expose explicit backend choices without changing historical defaults."""
+    result = {}
+    if "quantization" in config["model"]:
+        result["quantization"] = config["model"]["quantization"]
+    for key in ("gdn_prefill_backend", "enforce_eager"):
+        if key in config["engine"]:
+            result[key] = config["engine"][key]
+    return result
 
 
 def render_margin_prompt(
@@ -105,8 +118,8 @@ def render_margin_prompt(
     return f"{rendered}{decision_prefix}"
 
 
-def main() -> None:
-    args = parse_args()
+def run(args: argparse.Namespace) -> None:
+    """Run a frozen Qwen ID or OOD contract in one persistent engine."""
     config = load_json(args.config)
     validate_config(config)
     records = validate_inputs(config)
@@ -123,9 +136,7 @@ def main() -> None:
     model = config["model"]
     engine = config["engine"]
     prompt_config = config["prompt"]
-    tokenizer = AutoTokenizer.from_pretrained(
-        model["id"], revision=model["revision"]
-    )
+    tokenizer = AutoTokenizer.from_pretrained(model["id"], revision=model["revision"])
     token_ids = binary_token_ids(tokenizer)
     sampling = SamplingParams(
         max_tokens=1,
@@ -134,6 +145,7 @@ def main() -> None:
         logprob_token_ids=token_ids,
         allowed_token_ids=token_ids,
     )
+    engine_started = time.time()
     llm = LLM(
         model=model["id"],
         tokenizer=model["id"],
@@ -148,6 +160,22 @@ def main() -> None:
         enable_prefix_caching=bool(engine["enable_prefix_caching"]),
         language_model_only=bool(engine["language_model_only"]),
         seed=int(engine["seed"]),
+        **optional_engine_kwargs(config),
+    )
+    engine_seconds = time.time() - engine_started
+    actual_quantization = llm.llm_engine.vllm_config.model_config.quantization
+    if model.get("quantization") and actual_quantization != model["quantization"]:
+        raise RuntimeError("loaded quantization differs from the frozen contract")
+    atomic_write_json(
+        args.output / "engine_ready.json",
+        {
+            "config_sha256": config_sha256,
+            "initialization_seconds": engine_seconds,
+            "quantization": actual_quantization,
+            "tensor_parallel_size": int(engine["tensor_parallel_size"]),
+            "vllm_version": vllm.__version__,
+            "torch_version": torch.__version__,
+        },
     )
 
     predictions_path = args.output / "predictions.jsonl"
@@ -158,7 +186,9 @@ def main() -> None:
     )
     completed = validate_existing(existing, records, config_sha256)
 
-    def score_records(batch: list[dict[str, Any]]) -> None:
+    def score_records(
+        batch: list[dict[str, Any]], *, persist: bool = True
+    ) -> list[dict[str, Any]]:
         prompts = [
             render_margin_prompt(
                 tokenizer,
@@ -169,6 +199,7 @@ def main() -> None:
             )
             for row in batch
         ]
+        packed_rows = []
         outputs = llm.generate(prompts, sampling)
         if len(outputs) != len(batch):
             raise RuntimeError("vLLM output count differs from request count")
@@ -181,14 +212,39 @@ def main() -> None:
                 config_sha256,
                 int(engine["max_model_len"]),
             )
-            completed[packed["id"]] = packed
-        atomic_write_jsonl(predictions_path, ordered_predictions(records, completed))
+            packed_rows.append(packed)
+            if persist:
+                completed[packed["id"]] = packed
+        if persist:
+            atomic_write_jsonl(
+                predictions_path, ordered_predictions(records, completed)
+            )
+        return packed_rows
 
     canary = balanced_canary_rows(
         records,
         list(config["scope"]["sources"]),
         rows_per_source_label=int(engine["canary_rows_per_source_label"]),
     )
+    if engine.get("canary_include_longest"):
+        lengths = []
+        for row in records:
+            rendered = render_margin_prompt(
+                tokenizer,
+                str(row["prompt"]),
+                enable_thinking=False,
+                assistant_suffix=prompt_config["assistant_suffix"],
+                decision_prefix=prompt_config["decision_prefix"],
+            )
+            lengths.append(len(tokenizer.encode(rendered, add_special_tokens=False)))
+        if (
+            max(lengths) != engine["audited_max_prompt_tokens"]
+            or sum(lengths) != engine["audited_total_prompt_tokens"]
+        ):
+            raise RuntimeError("Qwen tokenizer length audit differs from frozen config")
+        longest = records[max(range(len(records)), key=lengths.__getitem__)]
+        if longest["id"] not in {row["id"] for row in canary}:
+            canary.append(longest)
     pending_canary = [row for row in canary if str(row["id"]) not in completed]
     started = time.time()
     if pending_canary:
@@ -198,6 +254,35 @@ def main() -> None:
         math.isfinite(float(row["score"])) for row in canary_predictions
     ):
         raise RuntimeError("balanced backend canary failed")
+    if engine.get("canary_repeat_singletons"):
+        repeats = [score_records([row], persist=False)[0] for row in canary]
+        differences = [
+            abs(float(a["score"]) - float(b["score"]))
+            for a, b in zip(canary_predictions, repeats, strict=True)
+        ]
+        mean_error = sum(differences) / len(differences)
+        passed = (
+            all(math.isfinite(x) for x in differences)
+            and mean_error <= 0.02
+            and max(differences) <= 0.05
+        )
+        atomic_write_json(
+            args.output / "canary_batch_parity.json",
+            {
+                "purpose": (
+                    "FP8 batch-versus-singleton numerical consistency; "
+                    "not BF16 quantization parity"
+                ),
+                "config_sha256": config_sha256,
+                "batched": canary_predictions,
+                "singletons": repeats,
+                "mean_absolute_error": mean_error,
+                "max_absolute_error": max(differences),
+                "passed": passed,
+            },
+        )
+        if not passed:
+            raise RuntimeError("FP8 batched-versus-singleton canary failed")
     atomic_write_json(
         args.output / "canary_result.json",
         {
@@ -234,6 +319,8 @@ def main() -> None:
             "torch_version": torch.__version__,
             "gpu_name": torch.cuda.get_device_name(0),
             "elapsed_seconds_this_invocation": time.time() - started,
+            "engine_initialization_seconds": engine_seconds,
+            "actual_quantization": actual_quantization,
         },
         "score": "normalized direct probability for literal 1 versus 0",
         **summarize(predictions),
@@ -249,6 +336,10 @@ def main() -> None:
         f"pooled_pauroc_at_20={pooled['pauroc_at_20']:.6f}",
         flush=True,
     )
+
+
+def main() -> None:
+    run(parse_args())
 
 
 if __name__ == "__main__":
