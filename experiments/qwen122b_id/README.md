@@ -46,6 +46,16 @@ python -m experiments.qwen122b_id.run run
 
 Artifacts: `results/qwen122b_id/`; logs: `logs/lambda/qwen122b_id/`.
 
+The 122B run started successfully on 2026-09-06. The exact ID audit contains
+37,077,317 prompt tokens (maximum 30,325). FP8/TP2 was verified at runtime;
+weights used 57.83 GiB per GPU and the memory profiler retained 10.72 GiB per
+GPU for KV cache. Cold initialization took 642.46 seconds, including compiler
+and DeepGEMM warmup. The five-row balanced-plus-longest canary passed:
+batch/singleton mean absolute probability difference 0.007415, maximum
+0.026606. Full evaluation then started in the same engine. vLLM reported a
+default, rather than shape-tuned, MoE kernel configuration, limiting claims
+about best achievable throughput. These are startup findings, not final scores.
+
 ## Authorized sequential follow-up: Qwen3.8-27B FP8
 
 On 2026-09-06 the user added Qwen/Qwen3.8-27B-FP8 after the current 122B
