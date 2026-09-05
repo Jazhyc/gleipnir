@@ -1,5 +1,33 @@
 # Qwen3.5-122B-A10B FP8 ID teacher screen
 
+## Current findings and follow-up authorization
+
+The user subsequently authorized selecting a prefix teacher from these ID
+screens, preferring measured faster scoring within 0.001 source-macro pAUROC@20
+of the best. Prefix annotation is a separate prompt-reviewed campaign under
+`experiments/monitoring_prefix_supervision/`; the original screen's no-annotation
+stop condition below describes its initial scope, not this later authorization.
+
+The 122B FP8 run completed all 3,012 predictions. Source-macro pAUROC@20 is
+0.8735499224 (Gloom 0.8506562270; STRIDE 0.8964436178), macro AUROC
+0.9674993400, and macro Brier 0.1418375199. Recorded scoring invocation time is
+1,076.56 seconds, separate from 642.46 seconds of engine initialization.
+Complete prediction and result artifacts have been collected locally. The
+supervisor's final prediction-count field is stale; the actual JSONL and result
+both contain 3,012 rows.
+
+Qwen3.8-27B failed the frozen five-row batch/singleton numerical canary:
+MAE 0.0158917046, maximum 0.0567193810 (limit 0.05). The largest difference
+was on the longest Gloom row (0.6791787122 versus 0.6224593312). No full ID
+score exists; do not treat this as a quality comparison or relax the gate after
+observing the failure. Artifacts were collected for diagnosis.
+
+The dependent Qwen3.5-27B queue consequently failed before model loading. After
+verifying no evaluator remained and both GPUs were idle, its unchanged frozen
+evaluation was started independently (supervisor PID 139344). The earlier queue
+status is retained remotely as `dependency_failure_status.json`. This is not a
+retry of Qwen3.8 and does not change either model's numerical acceptance gate.
+
 Frozen question (2026-09-06): can the official FP8 MoE provide useful local
 teacher scores at practical throughput? Evaluate all 3,012 existing ID rows
 (946 STRIDE test, 2,066 Gloom exfiltration). No OOD reads, annotation campaign,

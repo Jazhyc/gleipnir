@@ -63,6 +63,27 @@ parity checks.
 
 ## Compute
 
+### Experiment monitoring
+
+When launching or monitoring a long-running experiment, check startup frequently
+(roughly every 30–60 seconds) until model loading, compilation, and any preflight
+canaries have passed and actual training steps or evaluation outputs are advancing.
+Then schedule agent follow-ups every 10 minutes using the available in-chat
+scheduling/heartbeat mechanism. Each follow-up should inspect progress, logs,
+GPU health, and failures; report meaningful changes and revise the ETA when
+supported by measured throughput. Recheck startup closely for each new queued run.
+Stop the recurring follow-ups when the campaign completes, the user asks to stop
+monitoring, or a blocker requires user input; collect and summarize final results.
+
+These heartbeats must wake the agent to inspect the experiment. A remote queue
+timer, process watchdog, or log message is not a substitute. Verify that scheduling
+succeeded before claiming monitoring is active. If this session has no scheduling
+tool, explicitly tell the user that limitation; active-turn waiting can support
+checks but cannot promise a follow-up after the turn ends. Do not silently replace
+agent follow-ups with a remote polling loop.
+
+### Infrastructure and execution
+
 Use local Slurm GPU jobs for cluster experiments. Default to one `gpushort`
 `rtx_pro_6000` GPU, one CPU, and 32 GB RAM unless the workload requires a
 documented change. Redirect final logs to `logs/slurm/<experiment>/` and remove
