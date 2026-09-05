@@ -186,7 +186,7 @@ def run(root: Path) -> None:
                     pid=child.pid,
                     gpu_memory_peak_observed_mib=peak,
                 )
-                print("HEARTBEAT", json.dumps(status), flush=True)
+                print("PROCESS_WATCHDOG", json.dumps(status), flush=True)
                 if time.time() - last_progress > (1200 if ready else 1800):
                     raise RuntimeError("evaluation stalled without prediction progress")
                 try:
@@ -236,7 +236,7 @@ def wait_for_dependency(root: Path, dependency: Path) -> None:
                     "updated_at_unix": time.time(),
                 },
             )
-            print(f"HEARTBEAT waiting for {dependency}", flush=True)
+            print(f"QUEUE_WAIT for {dependency}", flush=True)
             time.sleep(600)
         for _ in range(12):
             if max(gpu_memory()) <= 1024:

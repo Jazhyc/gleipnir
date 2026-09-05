@@ -95,20 +95,21 @@ def test_supervisor_records_child_outcome(tmp_path, monkeypatch, returncode, exp
     assert json.loads((tmp_path / "status.json").read_text())["state"] == expected
 
 
-def test_qwen38_composes_same_scoring_and_engine_contract():
+@pytest.mark.parametrize("version", ["35", "38"])
+def test_followups_compose_same_scoring_and_engine_contract(version):
     from hydra import compose, initialize_config_dir
 
     with initialize_config_dir(
         version_base=None, config_dir=str(Path("experiments/qwen122b_id").resolve())
     ):
         followup = OmegaConf.to_container(
-            compose(config_name="qwen38_27b"), resolve=True
+            compose(config_name=f"qwen{version}_27b"), resolve=True
         )
     config = build_config(followup, [1000] * 3012)
-    assert config["model"]["id"] == "Qwen/Qwen3.8-27B-FP8"
+    assert config["model"]["id"] == f"Qwen/Qwen3.{version[-1]}-27B-FP8"
     assert config["model"]["quantization"] == "fp8"
     assert config["engine"] == build_config(settings(), [1000] * 3012)["engine"]
-    assert followup["result_dir"] == "results/qwen38_27b_id"
+    assert followup["result_dir"] == f"results/qwen{version}_27b_id"
 
 
 @pytest.mark.parametrize(

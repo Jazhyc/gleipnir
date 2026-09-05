@@ -36,8 +36,14 @@ canary. Initialization has a separate 30-minute no-progress allowance.
 
 Hydra authoring resolves once to a hashed JSON execution contract. The thin
 entrypoint reuses the existing Qwen evaluator, preserves resume identities,
-records GPU-memory samples, and owns a ten-minute progress-checking heartbeat
+records GPU-memory samples, and owns a ten-minute process watchdog
 with a bounded stall failure (not merely a log timestamp).
+This is not an agent heartbeat: neither the watchdog nor the queue timer wakes
+Codex to inspect the experiment. The user clarified that their requested
+heartbeats mean agent-level review after startup, not these process timers.
+No agent-wakeup scheduler is exposed in the current session; do not claim that
+background agent monitoring has been enabled. Keep the watchdog as a separate
+fail-closed process safeguard.
 
 ```bash
 python -m experiments.qwen122b_id.run prepare
@@ -80,4 +86,26 @@ and never preempts the current run. Queued checks run every ten minutes.
 python -m experiments.qwen122b_id.run prepare --config-name qwen38_27b
 python -m experiments.qwen122b_id.run run \
   --result-dir results/qwen38_27b_id --after-result-dir results/qwen122b_id
+```
+
+## Matched 27B generation comparison: Qwen3.5-27B FP8
+
+The user additionally authorized Qwen/Qwen3.5-27B-FP8 on the same ID set to
+test whether Qwen3.8 regresses at the immediate one-token decision interface.
+Revision 97f5941bf617e31c5e237364a8602ce3f03a551a has 30,866,882,312
+weight-file bytes. The `qwen35_27b` Hydra config inherits the exact same
+instruction, FP8/TP2, Triton, no-prefix-cache, batching, canary and metric
+settings. Its independent tokenizer audit must pass. Run after the already
+queued Qwen3.8 benchmark; no current process is interrupted or reordered.
+
+Report paired ID source-macro/per-source ranking and calibration results for
+the two 27B checkpoints. General benchmark strength does not establish this
+interface's quality. No outcome-driven prompt tuning or automatic annotation
+promotion is authorized. Separate artifacts/logs: `results/qwen35_27b_id/`
+and `logs/lambda/qwen35_27b_id/`.
+
+```bash
+python -m experiments.qwen122b_id.run prepare --config-name qwen35_27b
+python -m experiments.qwen122b_id.run run \
+  --result-dir results/qwen35_27b_id --after-result-dir results/qwen38_27b_id
 ```

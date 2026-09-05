@@ -1,0 +1,9 @@
+defaults:
+  - config
+  - _self_
+
+campaign_id: qwen35-27b-fp8-teacher-id-v1
+result_dir: results/qwen35_27b_id
+model:
+  id: Qwen/Qwen3.5-27B-FP8
+  revision: 97f5941bf617e31c5e237364a8602ce3f03a551a
