@@ -55,3 +55,41 @@ def test_historical_backend_defaults_unchanged():
         ).read_text()
     )
     assert optional_engine_kwargs(config) == {}
+
+
+def test_supervisor_rejects_busy_gpus(tmp_path, monkeypatch):
+    from experiments.qwen122b_id import run as runner
+
+    (tmp_path / "manifest.json").write_text('{"files": {}}')
+    monkeypatch.setattr(runner, "gpu_memory", lambda: [70_000, 0])
+    with pytest.raises(RuntimeError, match="must be idle"):
+        runner.run(tmp_path)
+
+
+@pytest.mark.parametrize("returncode,expected", [(0, "complete"), (1, "failed")])
+def test_supervisor_records_child_outcome(tmp_path, monkeypatch, returncode, expected):
+    import json
+
+    from experiments.qwen122b_id import run as runner
+
+    class FakeProcess:
+        def __init__(self, *args, **kwargs):
+            assert kwargs["start_new_session"] is True
+            assert kwargs["env"]["CUDA_VISIBLE_DEVICES"] == "0,1"
+            self.returncode = returncode
+
+        def poll(self):
+            return self.returncode
+
+    monkeypatch.chdir(tmp_path)
+    (tmp_path / "manifest.json").write_text('{"files": {}}')
+    (tmp_path / "evaluation").mkdir()
+    (tmp_path / "evaluation/result.json").write_text('{"rows": 3012}')
+    monkeypatch.setattr(runner, "gpu_memory", lambda: [0, 0])
+    monkeypatch.setattr(runner.subprocess, "Popen", FakeProcess)
+    if returncode:
+        with pytest.raises(RuntimeError, match="exited"):
+            runner.run(tmp_path)
+    else:
+        runner.run(tmp_path)
+    assert json.loads((tmp_path / "status.json").read_text())["state"] == expected
