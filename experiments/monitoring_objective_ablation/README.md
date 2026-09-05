@@ -56,9 +56,10 @@ Accelerate's top-level model wrapper. Sequential rationale training releases
 the completed auxiliary graph and unused CUDA cache blocks before constructing
 the primary Kimi graph. The exact arms and stop conditions are in `config.yaml`.
 
-Each objective first runs one optimizer step on the single longest held-out
-training example, using sequential sampling and accumulation 1. Full runs start
-only after both preflights pass and retain the frozen effective batch of 32.
+Originally each objective first ran one optimizer step on the single longest
+training example, using sequential sampling and accumulation 1. Corrected runs
+instead preflight two longest training examples at accumulation 2, to exercise
+the accumulation path. Full runs retain the frozen effective batch of 32.
 
 ## Evaluation and promotion
 
@@ -125,3 +126,13 @@ directories; MIL entries keep their original paths. CPU accumulation tests cover
 windows of 1, 16, and 32 with and without completion labels. Before corrected
 full training, run a two-microbatch longest-sequence GPU preflight. Reruns use
 the original frozen scientific recipe and distinct per-lane status files.
+
+The same runner supports `--phase train --only-job NAME --gpus 1` for a single
+available GPU, then `--phase evaluate --gpus 0` after all adapters exist. Pass
+the repaired `--jobs`, `--result-dir`, and `--evaluation-config` paths to both
+phases, and a separate `--status` path for each independently launched process.
+Training subsets preserve the complete evaluation manifest; they do not change
+the scientific design. Evaluation always gates serving parity, evaluates all
+five manifest entries, and summarizes. Default `--phase all --gpus 0 1` retains
+the original round-robin lane order. GPU ownership is the caller's responsibility;
+the status record is deliberately not an inter-process GPU scheduler.

@@ -11,6 +11,52 @@ from gleipnir.campaign_status import CampaignStatus
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_training_subset_is_ordered_and_fail_closed():
+    jobs = [{"job_name": name} for name in ("a", "b", "c")]
+    assert run_lambda.select_training_jobs(jobs, ["c", "a"]) == [jobs[0], jobs[2]]
+    for names in ([], ["a", "a"], ["missing"]):
+        with pytest.raises(ValueError):
+            run_lambda.select_training_jobs(jobs, names)
+
+
+def test_selected_training_preflights_accumulation_and_respects_gpu(
+    tmp_path, monkeypatch
+):
+    job = {"job_name": "rationale", "kind": "rationale"}
+    selection = tmp_path / "selection.jsonl"
+    selection.write_text("{}\n{}\n")
+    preflights, lanes = [], []
+
+    def preflight(path, name, environment, **kwargs):
+        row = prepare.read_jsonl(path)[0]
+        preflights.append((row, environment, kwargs))
+        adapter = Path(row["causal_adapter_dir"])
+        adapter.mkdir(parents=True)
+        (adapter / "training_metadata.json").write_text(
+            json.dumps(
+                {
+                    "losses": {
+                        "accumulation_policy": "explicit_microbatch_mean_v1",
+                        "model_accepts_loss_kwargs": False,
+                    }
+                }
+            )
+        )
+
+    monkeypatch.setattr(run_lambda, "run_training_job", preflight)
+    monkeypatch.setattr(run_lambda, "train_lane", lambda *args: lanes.append(args))
+    status = CampaignStatus(tmp_path / "status.json", [job], None)
+    run_lambda.train_selected_jobs(
+        [job], tmp_path / "jobs.jsonl", tmp_path, selection, [1], status, {}
+    )
+    row, environment, kwargs = preflights[0]
+    assert row["train_rows"] == row["gradient_accumulation_steps"] == 2
+    assert row["max_steps"] == 1
+    assert environment["CUDA_VISIBLE_DEVICES"] == "1"
+    assert kwargs == {"preflight": True}
+    assert lanes[0][:2] == ([job], 1)
+
+
 def test_bad_accumulation_cannot_win_even_with_high_id_score():
     row = {
         **CONTROL,

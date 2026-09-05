@@ -93,6 +93,92 @@ def run(command: list[str], environment: dict[str, str] | None = None) -> None:
     subprocess.run(command, cwd=ROOT, env=environment, check=True)
 
 
+def select_training_jobs(
+    jobs: list[dict[str, Any]], names: list[str] | None
+) -> list[dict[str, Any]]:
+    """Select a lane without changing the complete frozen evaluation manifest."""
+    if names is None:
+        return jobs
+    if not names or len(names) != len(set(names)):
+        raise ValueError("training job names must be nonempty and unique")
+    unknown = set(names) - {str(job["job_name"]) for job in jobs}
+    if unknown:
+        raise ValueError(f"unknown training jobs: {sorted(unknown)}")
+    return [job for job in jobs if job["job_name"] in names]
+
+
+def train_selected_jobs(
+    jobs: list[dict[str, Any]],
+    jobs_path: Path,
+    result_dir: Path,
+    selection: Path,
+    gpus: list[int],
+    status: Status,
+    environment: dict[str, str],
+) -> None:
+    """Preflight each selected objective, then run deterministic GPU lanes."""
+    preflight_jobs = []
+    for kind in dict.fromkeys(job["kind"] for job in jobs):
+        control = next(job for job in jobs if job["kind"] == kind)
+        # Job-specific paths permit independently launched lanes in one campaign.
+        output = result_dir / "preflight" / str(control["job_name"])
+        preflight_jobs.append(
+            {
+                **control,
+                "job_name": f"preflight-{control['job_name']}",
+                "train_rows": 2,
+                "max_steps": 1,
+                "num_train_epochs": -1,
+                "gradient_accumulation_steps": 2,
+                "effective_batch_size": 2,
+                "train_sampling_strategy": "sequential",
+                "selection_manifest": selection.as_posix(),
+                "selection_sha256": sha256_file(selection),
+                "selective_torch_compile_canary_tokens": 2048,
+                "save_steps": 1,
+                "output_dir": output.as_posix(),
+                "causal_adapter_dir": (output / "causal_adapter").as_posix(),
+                "model_dir": (output / "model").as_posix(),
+            }
+        )
+    status.update(phase="longest_sequence_preflight", preflight="running")
+    for preflight in preflight_jobs:
+        preflight_path = Path(preflight["output_dir"]) / "jobs.jsonl"
+        atomic_write_jsonl(preflight_path, [preflight])
+        run_training_job(
+            preflight_path,
+            str(preflight["job_name"]),
+            gpu_environment(environment, gpus[0]),
+            preflight=True,
+        )
+        metadata = json.loads(
+            (
+                Path(preflight["causal_adapter_dir"]) / "training_metadata.json"
+            ).read_text()
+        )
+        losses = metadata.get("losses", {})
+        if (
+            losses.get("accumulation_policy") != "explicit_microbatch_mean_v1"
+            or losses.get("model_accepts_loss_kwargs") is not False
+        ):
+            raise ValueError("preflight did not use explicit mean-loss accumulation")
+    status.update(phase="training", preflight="passed")
+    with ThreadPoolExecutor(max_workers=len(gpus)) as executor:
+        futures = [
+            executor.submit(
+                train_lane,
+                jobs[index :: len(gpus)],
+                gpu,
+                jobs_path,
+                status,
+                environment,
+            )
+            for index, gpu in enumerate(gpus)
+        ]
+        for future in futures:
+            future.result()
+
+
 def run_serving_parity(
     config_path: Path,
     result_dir: Path,
@@ -173,7 +259,14 @@ def main() -> None:
     )
     parser.add_argument("--triton-target", type=Path, default=DEFAULT_TRITON_TARGET)
     parser.add_argument("--revision", default=os.environ.get("GLEIPNIR_COMMIT"))
+    parser.add_argument("--phase", choices=("all", "train", "evaluate"), default="all")
+    parser.add_argument("--only-job", action="append", help="Training-only subset")
+    parser.add_argument("--gpus", type=int, nargs="+", default=[0, 1])
     args = parser.parse_args()
+    if len(set(args.gpus)) != len(args.gpus) or min(args.gpus) < 0:
+        parser.error("GPU indices must be distinct and nonnegative")
+    if args.only_job and args.phase != "train":
+        parser.error("--only-job requires --phase train; evaluation uses all arms")
 
     jobs_path = args.jobs.resolve()
     jobs = read_jsonl(jobs_path)
@@ -183,14 +276,16 @@ def main() -> None:
     validate_evaluation_config(evaluation_config)
     validate_evaluation_inputs(evaluation_config)
     validate_evaluation_jobs(evaluation_config, "4b")
+    training_jobs = select_training_jobs(jobs, args.only_job)
     result_dir = args.result_dir.resolve()
     status = Status(
         args.status.resolve(),
-        jobs,
+        training_jobs if args.phase != "evaluate" else [],
         args.revision,
         metadata={"campaign_id": CAMPAIGN_ID, "strict_ood_consulted": False},
     )
-    clean_evaluation_environment = runtime_environment("0")
+    clean_evaluation_environment = runtime_environment(str(args.gpus[0]))
+    os.environ.update(clean_evaluation_environment)
     try:
         status.update(phase="kernel_preflight")
         fast_environment = ensure_qwen35_long_trajectory_kernels(
@@ -200,66 +295,27 @@ def main() -> None:
             fast_environment["GLEIPNIR_COMMIT"] = args.revision
             clean_evaluation_environment["GLEIPNIR_COMMIT"] = args.revision
 
-        selection = args.preflight_selection.resolve()
-        preflight_jobs = []
-        for kind in ("rationale", "mil"):
-            control = next(job for job in jobs if job["kind"] == kind)
-            output = result_dir / "preflight" / kind
-            preflight_jobs.append(
-                {
-                    **control,
-                    "job_name": f"preflight-{kind}",
-                    "train_rows": 1,
-                    "max_steps": 1,
-                    "num_train_epochs": -1,
-                    "gradient_accumulation_steps": 1,
-                    "effective_batch_size": 1,
-                    "train_sampling_strategy": "sequential",
-                    "selection_manifest": selection.as_posix(),
-                    "selection_sha256": sha256_file(selection),
-                    "selective_torch_compile_canary_tokens": 2048,
-                    "save_steps": 1,
-                    "output_dir": output.as_posix(),
-                    "causal_adapter_dir": (output / "causal_adapter").as_posix(),
-                    "model_dir": (output / "model").as_posix(),
-                }
+        if args.phase != "evaluate":
+            train_selected_jobs(
+                training_jobs,
+                jobs_path,
+                result_dir,
+                args.preflight_selection.resolve(),
+                args.gpus,
+                status,
+                fast_environment,
             )
-        preflight_path = result_dir / "preflight_jobs.jsonl"
-        atomic_write_jsonl(preflight_path, preflight_jobs)
-        status.update(phase="longest_sequence_preflight", preflight="running")
-        for preflight in preflight_jobs:
-            run_training_job(
-                preflight_path,
-                str(preflight["job_name"]),
-                gpu_environment(fast_environment, 0),
-                preflight=True,
+        if args.phase == "train":
+            status.update(
+                state="complete", phase="complete", completed_at_unix=time.time()
             )
-        status.update(phase="training", preflight="passed")
-
-        by_name = {str(job["job_name"]): job for job in jobs}
-        lanes = [
-            [
-                by_name["soft-rationale-w005"],
-                by_name["soft-mil-max-w025"],
-                by_name["soft-mil-top3-w025"],
-            ],
-            [by_name["soft-rationale-w020"], by_name["soft-mil-lme-w025"]],
-        ]
-        with ThreadPoolExecutor(max_workers=2) as executor:
-            futures = [
-                executor.submit(
-                    train_lane, lane, gpu, jobs_path, status, fast_environment
-                )
-                for gpu, lane in enumerate(lanes)
-            ]
-            for future in futures:
-                future.result()
+            return
 
         status.update(phase="serving_parity", active_jobs=[])
         run_serving_parity(
             args.evaluation_config.resolve(),
             result_dir,
-            gpu_environment(fast_environment, 0),
+            gpu_environment(fast_environment, args.gpus[0]),
             clean_evaluation_environment,
         )
         status.update(phase="id_evaluation", active_jobs=["all-five-objective-arms"])
