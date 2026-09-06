@@ -301,3 +301,15 @@ authorization in the paired-data manifest. Default validation remains fail-close
 The original two weights, full Kimi supervision, and ID selection rule are
 unchanged. Results must be described as using numerically imperfect prefix
 targets, not evidence that cache agreement was repaired.
+
+## Public prediction-cache backup
+
+Published with user approval on 2026-09-06:
+https://huggingface.co/datasets/Jazhyc/Gleipnir-Prefix-Teacher-Cache
+at commit `b660b46771dc152bf3b3369bdcb90311d5009e9e`.
+The release includes the 133,947-record numeric cache, exact prompt, contract,
+completion record, failed audit, replay diagnostic, and file checksums. It does
+not include trajectory text, Kimi targets, or privileged rationales. The dataset
+card prominently preserves the numerical limitation and source-access caveats.
+`scripts/prepare_hf_prefix_cache.py` stages an allowlisted release after full
+cache validation; `dataset_card.md` is its tracked card source.
