@@ -2,6 +2,18 @@
 
 ## Current findings and follow-up authorization
 
+Qwen3.5-27B FP8 completed all 3,012 rows with macro pAUROC@20
+0.9133745803, macro AUROC 0.9785879965, and macro Brier 0.0858109206.
+Per-source pAUROC@20 is 0.8796745339 (Gloom) and 0.9470746267 (STRIDE).
+Its macro pAUROC advantage over the 122B MoE is 0.0398246579, far outside
+the user's 0.001 speed-tiebreak band. It leads both sources and calibration.
+The recorded scoring invocation took 1,443.58 seconds versus 1,076.56 for
+122B, so the MoE was about 1.34x faster under this fixed no-cache screen;
+that does not override this quality gap or predict prefix-cached throughput.
+Qwen3.5-27B initialization took 95.87 seconds (122B: 642.46); these startup
+times are not matched cold-compilation measurements. Teacher selection still
+awaits the bounded Qwen3.8 eager diagnostic.
+
 The user subsequently authorized selecting a prefix teacher from these ID
 screens, preferring measured faster scoring within 0.001 source-macro pAUROC@20
 of the best. Prefix annotation is a separate prompt-reviewed campaign under
