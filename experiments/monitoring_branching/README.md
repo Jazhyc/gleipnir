@@ -116,3 +116,42 @@ Diagnostics and failures are retained under `results/monitoring_branching/` and
 `logs/lambda/monitoring_branching/`. Optional precision/alignment/endpoint variants
 are systems diagnostics, not teacher-target calibration. No annotation changes,
 threshold loosening, OOD tuning, or long-run launch follows from a failed gate.
+
+The corrected hybrid (independent full endpoint, shared aligned prefixes,
+FP32 two-token projection, two-GPU layer split) passes real parent 0: margin
+error 0.015581, probability error 0.000434, gradient relative L2 0.014387 and
+cosine 0.999897. Next freeze additional positive fixtures by first eligible
+parent per source with 2–10 prefixes and <=4,096 tokens: 487 (BashArena),
+222 (BashBench), 2608 (Gloom), 132 (STRIDE), plus repeat parent 0. Retain
+all previous numerical gates; additionally require first-step Adam adaptive
+update relative L2 <=0.20, computed from identical zero-moment initial states.
+This diagnoses sensitivity near zero gradients, not full optimizer-state parity.
+Then recheck memory/finite updates on 8142 (99 prefixes, longest tokens) and
+7706 (longest-character parent, nine prefixes and larger segment gaps), using
+the exact corrected hybrid variant. No training launch on any failed gate.
+
+## Broader gate stopped: full run remains unlaunched
+
+The frozen `preflight.yaml` series (supervisor 180987) stopped at parent 222;
+no Gloom/positive-STRIDE checks or hybrid memory checks ran after that failure.
+Results/logs are preserved locally and remotely; both GPUs are idle.
+
+| Parent/source | Probability max error | Gradient relative L2 | Gradient cosine | First Adam adaptive-update relative L2 | Gate |
+| --- | ---: | ---: | ---: | ---: | --- |
+| 0 / STRIDE | 0.000434 | 0.014730 | 0.999892 | 0.078272 | Pass |
+| 487 / BashArena | 0.003814 | 0.010206 | 0.999948 | 0.074579 | Pass |
+| 222 / BashBench | 0.000378 | 0.072486 | 0.997390 | 0.160924 | Fail |
+
+BashBench fails only the unchanged 0.05 relative-gradient limit. Its reference
+gradient norm is small (0.042600; absolute gradient L2 difference about 0.003088),
+so relative error is sensitive to small numerical changes near a low-loss
+solution. This is not proof of broken autograd or a harmful training update.
+Conversely, small probability error does not establish matched gradients.
+Keep the failure visible; do not silently introduce a looser tolerance after
+seeing it. The CPU reference remains correct, but production numerical
+equivalence is not established across this bounded screen.
+
+An approximate-training exception would require explicit user agreement before
+finishing the remaining gates/integration and launching. The demonstrated
+two-GPU 99-prefix memory pass belongs to the fully shared variant, not yet the
+corrected independent-endpoint variant. No full-run ETA is established.

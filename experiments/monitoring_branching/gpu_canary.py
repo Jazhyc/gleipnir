@@ -103,9 +103,7 @@ def run(
         ).sum()
 
     if stress_only:
-        print(
-            "stress_forward", parent, len(requests), work_tokens, flush=True
-        )
+        print("stress_forward", parent, len(requests), work_tokens, flush=True)
         for i in range(torch.cuda.device_count()):
             torch.cuda.reset_peak_memory_stats(i)
         started = time.perf_counter()
@@ -170,6 +168,7 @@ def run(
     grads = {n: p.grad.detach().float().cpu().clone() for n, p in params.items()}
     model.zero_grad(set_to_none=True)
     print("branched_forward", flush=True)
+    branch_started = time.perf_counter()
     with torch.autocast("cuda", dtype=torch.bfloat16):
         actual = branched_decision_logits(
             model,
@@ -181,8 +180,12 @@ def run(
         )
         objective = loss(actual)
     objective.backward()
+    for i in range(torch.cuda.device_count()):
+        torch.cuda.synchronize(i)
+    branch_seconds = time.perf_counter() - branch_started
     expected = torch.stack(reference)
     difference, norm, dot, actual_norm = 0.0, 0.0, 0.0, 0.0
+    update_difference, update_norm = 0.0, 0.0
     for name, p in params.items():
         if p.grad is None or not torch.isfinite(p.grad).all():
             raise ValueError(f"invalid gradient: {name}")
@@ -191,6 +194,11 @@ def run(
         norm += float(b.square().sum())
         dot += float((a * b).sum())
         actual_norm += float(a.square().sum())
+        # Exact first-step AdamW adaptive term, with both moment states zero.
+        # Weight decay cancels between identical starting parameters.
+        au, bu = a / (a.abs() + 1e-8), b / (b.abs() + 1e-8)
+        update_difference += float((au - bu).square().sum())
+        update_norm += float(bu.square().sum())
     margins = actual[:, 1].detach().float() - actual[:, 0].detach().float()
     ref_margins = expected[:, 1].float() - expected[:, 0].float()
     result = {
@@ -201,6 +209,9 @@ def run(
         "gradient_relative_l2": (difference / max(norm, 1e-30)) ** 0.5,
         "gradient_cosine": dot / max((norm * actual_norm) ** 0.5, 1e-30),
         "reference_gradient_norm": norm**0.5,
+        "first_adam_update_relative_l2": (update_difference / max(update_norm, 1e-30))
+        ** 0.5,
+        "branch_forward_backward_seconds": branch_seconds,
         "loss": float(objective.detach()),
         "kernels": sorted(set(kernels)),
         "independent_tokens": sum(map(len, requests)),
@@ -217,6 +228,7 @@ def run(
         and result["max_probability_error"] <= 0.02
         and result["gradient_relative_l2"] <= 0.05
         and result["gradient_cosine"] >= 0.995
+        and result["first_adam_update_relative_l2"] <= 0.20
         and norm > 0
     )
     return result

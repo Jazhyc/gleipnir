@@ -1,0 +1,10 @@
+campaign_id: branching-hybrid-preflight-v1
+parity_parents: [0, 487, 222, 2608, 132]
+memory_parents: [8142, 7706]
+prefix_weight: 0.1
+alignment: 64
+checkpoint_segments: true
+independent_endpoint: true
+fp32_head: true
+two_gpu: true
+training_authorized_after_this_only: false
