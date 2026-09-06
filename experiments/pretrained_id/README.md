@@ -18,10 +18,16 @@ Stop on checksum/identity drift, missing/nonfinite logits, truncation, OOM,
 or failed balanced-plus-longest batched/singleton numerical canary.
 
 Each separate Slurm job uses one RTX PRO 6000, one CPU, 32GB host RAM, BF16
-text-only vLLM, FlashInfer, continuous batching, and a four-hour limit.
+text-only vLLM, continuous batching, and a four-hour limit.
 Require `alma9`: the initial 4B job 31242268 landed on AlmaLinux 8 and failed
 before scoring because the locked llguidance wheel requires GLIBC >=2.30.
 The replacement keeps the model/prompt/scoring contract unchanged.
+Startup observation before any scores: this vLLM build does not support
+FlashInfer GDN on RTX PRO 6000 (SM120); its FlashInfer request resolves to
+Triton/FLA. Retain the requested setting in the immutable configuration and
+record the actual backend from logs as Triton/FLA. The numerical canary must
+still pass; historical H100/FlashInfer comparisons are not backend matched.
+Active jobs are 31242407 (4B, roodborst1) and 31242269 (9B, roodborst2).
 No adapter is present; adapter export parity does not apply. Numerical canary
 requires mean absolute batch/singleton score error <=.02 and max <=.05.
 Historical H100 versus current RTX serving hardware remains a comparison caveat.
