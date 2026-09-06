@@ -326,3 +326,23 @@ config identities; final metrics are recomputed on the merged 3,012 rows.
 Shard metrics are explicitly partial and must not be interpreted as full-ID
 results. Training and the completed weight-0.25 evaluation are not rerun.
 The snapshot and per-shard runtimes are retained in merge provenance.
+
+## Final single-prefix screen result
+
+Both 272-step, one-epoch runs completed; training took approximately 3h38m each.
+The two-GPU resumed evaluation completed and merged all 3,012 ID examples with
+the preserved 1,024 predictions. Final artifacts and predictions were collected
+locally under `results/monitoring_prefix_training/`.
+
+| Condition | Macro pAUROC@20 | Delta vs full-only | Macro Brier |
+| --- | ---: | ---: | ---: |
+| Full-only baseline | 0.871066 | — | 0.079273 |
+| Prefix weight 0.25 | 0.873418 | +0.002352 | 0.079751 |
+| Prefix weight 0.5 | 0.856460 | -0.014606 | 0.085594 |
+
+Neither passes the frozen exploratory selection rule. Weight 0.25 improves
+Gloom pAUROC by 0.008817 but reduces STRIDE by 0.004114. Weight 0.5 reduces
+Gloom by 0.020160 and STRIDE by 0.009053; its Brier also regresses. Keep the
+full-only baseline. This single-seed result does not isolate teacher mismatch,
+cache numerical sensitivity, or sparse-boundary sampling as the cause. It does
+not test all-boundary branching, and no OOD data were consulted for selection.
