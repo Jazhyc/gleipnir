@@ -48,7 +48,9 @@ def validate_fresh_audit(
     references: Sequence[dict[str, Any]],
     cached: dict[str, dict[str, Any]],
     contract_hash: str,
-) -> None:
+    *,
+    allow_numerical_failure: bool = False,
+) -> bool:
     """Recompute agreement from raw audit logits and exact frozen selection."""
     expected = {r["id"] for r in select_cache_audit(references)}
     rows = audit["rows"]
@@ -70,5 +72,7 @@ def validate_fresh_audit(
         ):
             raise ValueError("fresh audit score provenance drift")
         errors.append(abs(fresh - target))
-    if max(errors) > 0.05 or sum(errors) / len(errors) > 0.02:
+    passed = max(errors) <= 0.05 and sum(errors) / len(errors) <= 0.02
+    if not passed and not allow_numerical_failure:
         raise ValueError("fresh audit numerical agreement failed")
+    return passed

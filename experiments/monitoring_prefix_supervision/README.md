@@ -3,7 +3,9 @@
 Status: approved prompt materialized in `teacher_prefix.txt`; full prefix
 annotation completed on Lambda with Qwen3.5-27B-FP8, TP2, vLLM 0.28.0,
 FlashInfer GDN, and one active trajectory. The post-cache numerical audit failed;
-the cache is not approved for training. No student training has launched.
+the cache is not numerically validated. The user subsequently authorized using
+it for an exploratory training screen despite that failure. No student training
+has launched yet.
 The existing ID evaluations retain their frozen full-trajectory prompts.
 
 ## Hypothesis and intervention
@@ -284,3 +286,18 @@ Do not relax its limits, overwrite the failed audit, selectively replace only
 the observed outliers, or repeat the audit until it passes. Next diagnostics
 must distinguish repeatable cache-path error from fresh-reference variability
 on the failed cases, preserving both original outputs and the full cache.
+
+The five-case diagnostic found exactly repeated fresh scores, while growing
+replay differed by up to 0.089178 and did not reproduce every original cached
+score. This supports execution-history sensitivity rather than fresh-reference
+noise. Both diagnostic artifacts remain unchanged.
+
+The user explicitly authorized proceeding without recaching on 2026-09-06,
+to test robustness to these imperfect targets. `training.yaml` pins this
+exception to the exact failed-audit and cache-contract hashes. Preparation still
+verifies complete coverage, identity, and raw-score provenance, recomputes the
+failed numerical result, and records `fresh_audit_passed: false` plus the
+authorization in the paired-data manifest. Default validation remains fail-closed.
+The original two weights, full Kimi supervision, and ID selection rule are
+unchanged. Results must be described as using numerically imperfect prefix
+targets, not evidence that cache agreement was repaired.

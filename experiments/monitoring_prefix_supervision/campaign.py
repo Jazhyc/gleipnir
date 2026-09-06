@@ -91,6 +91,7 @@ def prepare() -> None:
         Path(config["references"]),
         Path(config["paired_rows"]),
         seed=config["seed"],
+        numerical_exception=config.get("numerical_exception"),
     )
     jobs = make_jobs(config, paired)
     atomic_write_jsonl(root / "jobs.jsonl", jobs)

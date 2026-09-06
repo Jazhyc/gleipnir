@@ -12,7 +12,7 @@ def test_prepare_training_requires_complete_cache_and_preserves_parents(
     # Numeric/64-row audit validation has separate tests; keep this fixture tiny.
     monkeypatch.setattr(
         "experiments.monitoring_prefix_supervision.prepare_training.validate_fresh_audit",
-        lambda *args: None,
+        lambda *args, **kwargs: True,
     )
     source = tmp_path / "parents.jsonl"
     parents = [

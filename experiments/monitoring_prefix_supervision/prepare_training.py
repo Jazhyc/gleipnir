@@ -16,7 +16,8 @@ def digest(path: Path) -> str:
 
 
 def prepare_training(
-    cache_dir: Path, references_path: Path, output: Path, *, seed: int = 0
+    cache_dir: Path, references_path: Path, output: Path, *, seed: int = 0,
+    numerical_exception: dict | None = None,
 ) -> dict:
     """Keep the original parent population and sample one prefix for epoch zero."""
     contract = json.loads((cache_dir / "contract.json").read_text())
@@ -58,11 +59,18 @@ def prepare_training(
             # Endpoints and parent identities come from authoritative references.
             selected_cache[row["id"]] = {**row, **refs[row["id"]]}
     audit_path = cache_dir / "fresh_audit.json"
-    validate_fresh_audit(
+    if numerical_exception is not None and (
+        numerical_exception.get("audit_sha256") != digest(audit_path)
+        or numerical_exception.get("contract_sha256") != contract_hash
+        or not numerical_exception.get("user_authorization")
+    ):
+        raise ValueError("numerical exception identity or authorization missing")
+    audit_passed = validate_fresh_audit(
         json.loads(audit_path.read_text()),
         list(refs.values()),
         all_cached,
         contract_hash,
+        allow_numerical_failure=numerical_exception is not None,
     )
     parents = [json.loads(line) for line in source.open()]
     parent_ids = [row["prompt_id"] for row in parents]
@@ -89,6 +97,8 @@ def prepare_training(
         "cache_contract_sha256": contract_hash,
         "cache_sha256": digest(cached_path),
         "fresh_audit_sha256": digest(audit_path),
+        "fresh_audit_passed": audit_passed,
+        "numerical_exception": numerical_exception,
         "references_sha256": manifest["references_sha256"],
         "output_sha256": digest(output),
         "full_supervision": "unchanged original fields; no parent duplication",

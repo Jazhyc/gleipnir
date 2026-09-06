@@ -17,3 +17,7 @@ selection:
   max_source_regression: 0.01
   max_brier_regression: 0.005
 strict_ood_consulted: false
+numerical_exception:
+  audit_sha256: a484d0b82934abc16012fbcd9d7de85e3f6615b6376d8d3dcc9929c33d461a53
+  contract_sha256: c97ffbbc5cc9ab25d97c0f6b4735241b81a512eddbae84fcc3a33bfa2d7cbcb8
+  user_authorization: "2026-09-06: begin training regardless of numerical audit failure; test robustness to target noise without recaching."

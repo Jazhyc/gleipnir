@@ -53,6 +53,15 @@ def test_audit_selection_is_score_blind_and_order_independent():
             "contract",
         )
     changed = {**rows[0], "logprob_1": 0.0, "score": binary_score(-1.0, 0.0)}
+    assert validate_fresh_audit(
+        {**audit, "rows": [changed, *rows[1:]]}, refs, cached, "contract",
+        allow_numerical_failure=True,
+    ) is False
+    with pytest.raises(ValueError, match="coverage"):
+        validate_fresh_audit(
+            {**audit, "rows": rows[:-1]}, refs, cached, "contract",
+            allow_numerical_failure=True,
+        )
     with pytest.raises(ValueError, match="numerical"):
         validate_fresh_audit(
             {**audit, "rows": [changed, *rows[1:]]}, refs, cached, "contract"
