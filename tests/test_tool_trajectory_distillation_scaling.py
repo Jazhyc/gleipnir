@@ -130,6 +130,9 @@ def test_training_command_cannot_enable_hard_or_completion_loss(tmp_path) -> Non
         in command
     )
     assert json.loads(json.dumps(job))["target"] == "kimi_soft"
+    assert not any("prefix_loss_weight" in arg for arg in command)
+    job["prefix_loss_weight"] = 0.25
+    assert "student.training.prefix_loss_weight=0.25" in training_command(job)
 
 
 def test_mixed_4b_job_reuses_frozen_soft_recipe_and_pins_model(tmp_path) -> None:

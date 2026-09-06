@@ -209,6 +209,56 @@ def test_direct_only_tokenization_does_not_encode_completion() -> None:
     assert tokenizer.encoded == ["rendered promptPrediction:"]
 
 
+def test_prefix_collation_retains_parent_indices_and_padding() -> None:
+    base = {
+        "direct_input_ids": [1],
+        "binary_label": 0,
+        "dataset_id": 0,
+        "soft_target": 0.9,
+        "prefix_soft_target": 0.3,
+    }
+    features = [{**base, "prefix_input_ids": ids} for ids in ([2, 3], [], [4])]
+    batch = CompletionOnlyCollator(pad_token_id=9)(features)
+    assert batch["prefix_parent_indices"].tolist() == [0, 2]
+    assert batch["prefix_input_ids"].tolist() == [[2, 3], [4, 9]]
+    assert batch["prefix_attention_mask"].tolist() == [[1, 1], [1, 0]]
+    empty = CompletionOnlyCollator(pad_token_id=9)([features[1]])
+    assert empty["prefix_parent_indices"].numel() == 0
+    assert "prefix_input_ids" not in empty
+
+
+def test_prefix_tokenization_is_separate_from_full_target() -> None:
+    record = {
+        "index": "p",
+        "label": 1,
+        "student_prompt": "full",
+        "student_target": "Kimi",
+        "prefix_student_prompt": "prefix",
+        "prefix_soft_target": 0.3,
+    }
+    feature = tokenize_record(
+        record,
+        CountingTokenizer(),
+        100,
+        include_direct_target=True,
+        include_completion_target=False,
+        include_prefix_target=True,
+        dataset_id=0,
+    )
+    assert feature["prefix_input_ids"]
+    assert feature["prefix_soft_target"] == 0.3
+    with pytest.raises(ValueError, match="invalid prefix"):
+        tokenize_record(
+            {**record, "prefix_soft_target": float("nan")},
+            CountingTokenizer(),
+            100,
+            include_direct_target=True,
+            include_completion_target=False,
+            include_prefix_target=True,
+            dataset_id=0,
+        )
+
+
 def test_completion_length_cap_does_not_shorten_direct_input() -> None:
     class LongPromptTokenizer(CountingTokenizer):
         def apply_chat_template(self, *_args, **_kwargs) -> str:

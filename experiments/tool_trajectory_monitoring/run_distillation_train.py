@@ -118,7 +118,7 @@ def training_command(job: dict[str, Any]) -> list[str]:
         )
     if trainer_optim := job.get("trainer_optim"):
         command.append(f"student.training.optim={trainer_optim}")
-    for key in ("mil_loss_weight", "mil_temperature"):
+    for key in ("mil_loss_weight", "mil_temperature", "prefix_loss_weight"):
         if key in job:
             command.append(f"student.training.{key}={float(job[key])}")
     for key in ("mil_top_k", "mil_max_instances"):

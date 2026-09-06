@@ -46,6 +46,10 @@ training/rebasing, and the existing parity/evaluation pipeline. Hydra YAML is
 resolved once into a checksummed JSON contract; runtime does not reread YAML.
 No historical manifests or adapters are overwritten.
 
+The Python `execute` function also accepts explicit job-factory, completion-
+validator, and log-root hooks for the prefix-supervision campaign. Its default
+duration behavior and historical artifact contracts are unchanged.
+
 ```bash
 python -m experiments.monitoring_duration.run prepare
 python -m experiments.monitoring_duration.run run --revision COMMIT

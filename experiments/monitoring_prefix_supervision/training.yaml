@@ -1,0 +1,19 @@
+campaign_id: gleipnir4b-monitoring-prefix-v1
+prefix_loss_weights: [0.25, 0.5]
+learning_rate: 2.0e-5
+epochs: 1
+seed: 0
+sampling_epoch: 0
+parent_rows: 8688
+cache_dir: results/monitoring_prefix_supervision/qwen35_flashinfer_cache
+references: data/monitoring_prefix_supervision/prefix_references.jsonl
+paired_rows: data/monitoring_prefix_supervision/training/paired_seed0.jsonl
+full_soft_targets: data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl
+result_dir: results/monitoring_prefix_training
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+baseline_result: results/monitoring_lr_sweep/id_evaluation/4b/adapters/adamw-lr2em05-seed0/result.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+strict_ood_consulted: false

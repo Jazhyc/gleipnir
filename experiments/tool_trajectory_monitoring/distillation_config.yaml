@@ -85,6 +85,7 @@ student:
     soft_loss_weight: 1.0
     soft_loss_type: bce
     mil_loss_weight: 0.0
+    prefix_loss_weight: 0.0
     mil_pooling: logmeanexp
     mil_temperature: 1.0
     mil_top_k: 3

@@ -175,3 +175,66 @@ At the initial audit, 247 unique finite-logit records covered all four sources,
 eight hours if sustained, not a mature ETA). Both GPU workers were active.
 This session exposes no timed agent scheduler; active continuation checks are
 not a verified ten-minute scheduled heartbeat.
+
+Training preparation now includes `gleipnir.prefix_sampling.sample_parent_prefixes`:
+one uniform candidate per eligible parent, with independent seed/epoch/parent RNG
+identity and sorted IDs. Selection is label-blind and unaffected by parent or
+candidate ordering. Duplicate IDs fail closed. Five focused tests pass. This
+helper does not remove or replace full Kimi targets; paired training integration
+is still pending, and annotation continues without restarting its process.
+
+The shared trainer now has an opt-in `student.training.prefix_loss_weight` path
+under development. Each dataset row remains one parent; an eligible prefix is
+tokenized separately without truncation. Prefix gradients are accumulated before
+the full forward, with coefficient `lambda / ((1 + lambda) * parent_batch_size)`;
+eligible full losses receive `1 / (1 + lambda)`, and prefix-free parents keep
+their full weight. The existing explicit microbatch-mean accumulation policy
+must remain enabled. Other auxiliary objectives and GroupDRO are disallowed for
+this screen. Empty prefix materialization fails closed. CPU regression tests
+are running; paired materialization, exact accumulated-gradient verification,
+and the GPU preflight are still required before any training launch.
+
+CPU validation: 59 focused trainer/sampling/loss/accumulation tests passed on
+Lambda with GPU visibility disabled; seven lightweight sampling/materialization
+tests passed locally. The sequential-normalization test compares gradients with
+the parent-mean objective across accumulation windows 1/3/16/32 and weights
+0.25/0.5. It uses a small Trainer harness, not a real Qwen GPU run.
+`prepare_training.py` requires exact complete-cache coverage and hashes before
+writing paired rows plus a provenance sidecar, preserving all full parent fields.
+The local broader suite also passed (45 tests) after a filesystem I/O delay.
+GPU preflight and campaign launch integration remain pending.
+
+The two-arm training design is frozen in `training.yaml`: lambda 0.25 and 0.5,
+one epoch, LR 2e-5, seed 0, identical sampled prefixes, all 8,688 parents.
+Use the matched v6 monitoring LR/duration recipe (microbatch 1, accumulation 32,
+QLoRA rank 128, selective checkpointing/compilation), rather than silently
+switching back to the generic eager microbatch-8 default. Its measured throughput
+support is recorded in the duration/LR experiments. Each run still requires a
+largest-sequence paired GPU preflight. Select only final ID endpoints against
+the existing one-epoch full-only baseline; require +0.005 macro pAUROC, no source
+loss above 0.01, and no Brier regression above 0.005. No OOD tuning or automatic
+extra weight search. The shared launcher now forwards the optional prefix weight;
+14 launcher/materialization/sampling regression tests passed locally.
+
+`python -m experiments.monitoring_prefix_supervision.campaign` prepares the
+frozen paired-data, job, preflight-selection, and ID-evaluation manifests after
+cache completion. It reuses the existing LR job factory and held-out separation
+audit, keeps the unchanged full soft-target artifact, and fixes 272 optimizer
+steps per arm. This is preparation only; execution orchestration and GPU
+validation are still pending. Do not invoke it on the active incomplete cache.
+
+The `run` action now reuses the duration campaign lifecycle via explicit job
+factory, completed-metadata validator, and log-root hooks. Duration defaults
+remain unchanged. Prefix execution requires the preserved Torch 2.11 training
+environment and two idle GPUs; it does not terminate or wait behind annotation.
+It performs the paired longest-row preflight, two training lanes, serving parity,
+and final ID evaluation, then applies the frozen summary rule. Training metadata
+must prove the prefix coefficient, parent count, accumulation policy, and pinned
+kernel recipe. No GPU execution has been validated for this new objective yet.
+
+After the cache is complete and its workers have exited:
+
+```bash
+.venv/bin/python -m experiments.monitoring_prefix_supervision.campaign prepare
+.venv/bin/python -m experiments.monitoring_prefix_supervision.campaign run --revision COMMIT
+```

@@ -9,6 +9,7 @@ import os
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -211,7 +212,15 @@ def summarize(root: Path, jobs: list[dict[str, Any]], config: dict[str, Any]) ->
     )
 
 
-def execute(root: Path, revision: str | None) -> None:
+def execute(
+    root: Path,
+    revision: str | None,
+    *,
+    job_factory: Callable[[dict[str, Any]], list[dict[str, Any]]] = make_jobs,
+    completed_validator: Callable[..., None] = validate_completed,
+    logs_root: Path = Path("logs/lambda/monitoring_duration"),
+) -> None:
+    """Run two lanes with explicit job/validation hooks for paired-objective reuse."""
     manifest = json.loads((root / "manifest.json").read_text())
     for name, checksum in manifest["files"].items():
         if sha256_file(Path(name)) != checksum:
@@ -219,7 +228,7 @@ def execute(root: Path, revision: str | None) -> None:
     config = json.loads((root / "resolved_config.json").read_text())
     jobs_path = root / "jobs.jsonl"
     jobs = read_jsonl(jobs_path)
-    if jobs != make_jobs(config):
+    if jobs != job_factory(config):
         raise ValueError("job reconstruction drift")
     verify_job_inputs(jobs)
     evaluation_path = root / "id_benchmark.json"
@@ -228,7 +237,7 @@ def execute(root: Path, revision: str | None) -> None:
     validate_inputs(evaluation)
     validate_evaluation_jobs(evaluation, "4b")
     status = CampaignStatus(root / "status.json", jobs, revision)
-    logs = Path("logs/lambda/monitoring_duration")
+    logs = logs_root
     logs.mkdir(parents=True, exist_ok=True)
     serving = runtime_environment("0")
     os.environ.update(serving)
@@ -261,7 +270,7 @@ def execute(root: Path, revision: str | None) -> None:
             gpu_training_environment(fast, 0),
             preflight=True,
         )
-        validate_completed(preflight, preflight=True)
+        completed_validator(preflight, preflight=True)
         status.update(phase="training", preflight="passed")
 
         def lane(job: dict[str, Any], gpu: int) -> None:
@@ -285,7 +294,7 @@ def execute(root: Path, revision: str | None) -> None:
                         stderr=subprocess.STDOUT,
                         check=True,
                     )
-                validate_completed(job)
+                completed_validator(job)
 
         with ThreadPoolExecutor(max_workers=2) as pool:
             futures = [pool.submit(lane, job, gpu) for gpu, job in enumerate(jobs)]

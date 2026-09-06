@@ -117,6 +117,34 @@ class CompletionOnlyCollator:
                 batch["mil_position_mask"] = torch.tensor(
                     position_mask, dtype=torch.bool
                 )
+        if "prefix_input_ids" in features[0]:
+            eligible = [
+                i for i, feature in enumerate(features) if feature["prefix_input_ids"]
+            ]
+            batch["prefix_parent_indices"] = torch.tensor(eligible, dtype=torch.long)
+            if eligible:
+                width = max(len(features[i]["prefix_input_ids"]) for i in eligible)
+                batch["prefix_input_ids"] = torch.tensor(
+                    [
+                        features[i]["prefix_input_ids"]
+                        + [self.pad_token_id]
+                        * (width - len(features[i]["prefix_input_ids"]))
+                        for i in eligible
+                    ],
+                    dtype=torch.long,
+                )
+                batch["prefix_attention_mask"] = torch.tensor(
+                    [
+                        [1] * len(features[i]["prefix_input_ids"])
+                        + [0] * (width - len(features[i]["prefix_input_ids"]))
+                        for i in eligible
+                    ],
+                    dtype=torch.long,
+                )
+                batch["prefix_soft_targets"] = torch.tensor(
+                    [features[i]["prefix_soft_target"] for i in eligible],
+                    dtype=torch.float32,
+                )
         return batch
 
     def padding_statistics(self) -> dict[str, int | float | None]:
@@ -1652,6 +1680,7 @@ def tokenize_record(
     direct_target_prefix: str = DIRECT_PREDICTION_PREFIX,
     dataset_id: int | None = None,
     include_mil_target: bool = False,
+    include_prefix_target: bool = False,
     mil_max_instances: int = 8,
 ) -> dict[str, Any]:
     effective_completion_max_length = (
@@ -1765,6 +1794,29 @@ def tokenize_record(
             tokenized["soft_rating_probs"] = [
                 float(probabilities[str(rating)]) for rating in range(1, 8)
             ]
+    if include_prefix_target:
+        tokenized["prefix_input_ids"] = []
+        tokenized["prefix_soft_target"] = 0.0
+        if record.get("prefix_student_prompt") is not None:
+            rendered = (
+                tokenizer.apply_chat_template(
+                    [{"role": "user", "content": record["prefix_student_prompt"]}],
+                    tokenize=False,
+                    add_generation_prompt=True,
+                    enable_thinking=False,
+                )
+                + direct_target_prefix
+            )
+            prefix_ids = tokenizer.encode(rendered, add_special_tokens=False)
+            if not prefix_ids or len(prefix_ids) > max_length:
+                raise ValueError(
+                    "prefix input is empty or exceeds context; no truncation"
+                )
+            target = float(record["prefix_soft_target"])
+            if not np.isfinite(target) or not 0 <= target <= 1:
+                raise ValueError("invalid prefix soft target")
+            tokenized["prefix_input_ids"] = prefix_ids
+            tokenized["prefix_soft_target"] = target
     return tokenized
 
 
@@ -2072,6 +2124,24 @@ def main(cfg: DictConfig) -> None:
             "sequential objective backward requires completion and direct losses"
         )
     group_dro_loss: GroupDROLoss | None = None
+    prefix_loss_weight = float(
+        OmegaConf.select(cfg, "student.training.prefix_loss_weight", default=0.0)
+    )
+    if not np.isfinite(prefix_loss_weight) or prefix_loss_weight < 0:
+        raise ValueError("prefix loss weight must be finite and nonnegative")
+    if prefix_loss_weight and (
+        not soft_loss_weight
+        or completion_loss_weight
+        or direct_loss_weight
+        or pairwise_loss_weight
+        or mil_loss_weight
+        or ordinal_soft_loss_weight
+        or dataset_loss_weighting != "mean"
+        or decision_head_mode != "token_logits"
+    ):
+        raise ValueError(
+            "prefix supervision requires binary soft token-logit loss alone"
+        )
 
     class AuxiliarySFTTrainer(Trainer):
         """Completion SFT with optional direct-label and within-dataset rank losses."""
@@ -2115,8 +2185,50 @@ def main(cfg: DictConfig) -> None:
             soft_rating_targets = inputs.pop("soft_rating_targets", None)
             mil_positions = inputs.pop("mil_positions", None)
             mil_position_mask = inputs.pop("mil_position_mask", None)
+            prefix_input_ids = inputs.pop("prefix_input_ids", None)
+            prefix_attention_mask = inputs.pop("prefix_attention_mask", None)
+            prefix_soft_targets = inputs.pop("prefix_soft_targets", None)
+            prefix_parent_indices = inputs.pop("prefix_parent_indices", None)
             outputs = None
             loss = None
+            if prefix_loss_weight:
+                if prefix_parent_indices is None:
+                    raise ValueError("prefix supervision fields are missing")
+                if prefix_parent_indices.numel():
+                    prefix_logits, prefix_outputs = forward_final_token_logits(
+                        model,
+                        prefix_input_ids,
+                        prefix_attention_mask,
+                        direct_logits_mode,
+                    )
+                    prefix_ids = torch.tensor(
+                        self.direct_target_ids,
+                        device=prefix_logits.device,
+                        dtype=torch.long,
+                    )
+                    prefix_losses = soft_binary_distillation_losses(
+                        prefix_logits.index_select(-1, prefix_ids),
+                        prefix_soft_targets,
+                        loss_type=soft_loss_type,
+                        target_logit_center=soft_target_logit_center,
+                        target_logit_scale=soft_target_logit_scale,
+                        huber_delta=soft_huber_delta,
+                    )
+                    prefix_term = (
+                        soft_loss_weight
+                        * prefix_loss_weight
+                        / (1 + prefix_loss_weight)
+                        * prefix_losses.sum()
+                        / direct_input_ids.shape[0]
+                    )
+                    if model.training and torch.is_grad_enabled():
+                        self.accelerator.backward(
+                            prefix_term / self.current_gradient_accumulation_steps
+                        )
+                        loss = prefix_term.detach()
+                    else:
+                        loss = prefix_term
+                    del prefix_logits, prefix_outputs, prefix_losses, prefix_term
             if completion_loss_weight:
                 if completion_logits_mode == "selected_positions":
                     completion_loss, outputs, _ = selected_completion_cross_entropy(
@@ -2232,6 +2344,10 @@ def main(cfg: DictConfig) -> None:
                         target_logit_scale=soft_target_logit_scale,
                         huber_delta=soft_huber_delta,
                     )
+                    if prefix_loss_weight and prefix_parent_indices.numel():
+                        weights = torch.ones_like(soft_losses)
+                        weights[prefix_parent_indices] = 1 / (1 + prefix_loss_weight)
+                        soft_losses = soft_losses * weights
                     soft_loss = (
                         group_dro_loss(soft_losses, dataset_ids)
                         if group_dro_loss is not None
@@ -2544,10 +2660,17 @@ def main(cfg: DictConfig) -> None:
             direct_target_prefix=direct_target_prefix,
             dataset_id=dataset_id_by_name[str(record.get("dataset", ""))],
             include_mil_target=bool(mil_loss_weight),
+            include_prefix_target=bool(prefix_loss_weight),
             mil_max_instances=mil_max_instances,
         )
         for record in records
     ]
+    if prefix_loss_weight and not any(
+        feature["prefix_input_ids"] for feature in tokenized
+    ):
+        raise ValueError(
+            "prefix objective requested but no prefix targets were materialized"
+        )
     for feature in tokenized:
         length_source = feature.get("direct_input_ids")
         if length_source is None:
@@ -3403,6 +3526,12 @@ def main(cfg: DictConfig) -> None:
                         "soft_weight": soft_loss_weight,
                         "soft_type": soft_loss_type,
                         "mil_weight": mil_loss_weight,
+                        "prefix_weight": prefix_loss_weight,
+                        "prefix_normalization": "parent_mean_one_sample_v1",
+                        "parents_with_prefix": sum(
+                            bool(feature.get("prefix_input_ids"))
+                            for feature in tokenized
+                        ),
                         "mil_pooling": mil_pooling,
                         "mil_temperature": mil_temperature,
                         "mil_top_k": mil_top_k,
