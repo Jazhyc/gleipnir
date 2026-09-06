@@ -74,6 +74,21 @@ def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
     if sha256_file(input_path) != scope["input_sha256"]:
         raise ValueError("OOD input checksum differs from the frozen config")
     manifest = load_json(manifest_path)
+    if (
+        scope.get("manifest_sha256")
+        and sha256_file(manifest_path) != scope["manifest_sha256"]
+    ):
+        raise ValueError("input manifest checksum differs from the frozen config")
+    if config["prompt"].get("role") == "student" and isinstance(
+        manifest.get("output"), str
+    ):
+        manifest = {
+            "output": {"sha256": manifest["output_sha256"], "rows": manifest["rows"]},
+            "prompt": {
+                "prompt_set_id": manifest["prompt_set_id"],
+                "template_sha256": manifest["student_template_sha256"],
+            },
+        }
     if manifest.get("output", {}).get("sha256") != scope["input_sha256"]:
         raise ValueError("OOD manifest and benchmark config disagree on input hash")
     if int(manifest.get("output", {}).get("rows", -1)) != int(scope["rows"]):

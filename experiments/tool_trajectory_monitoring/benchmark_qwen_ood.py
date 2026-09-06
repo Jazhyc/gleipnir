@@ -32,6 +32,8 @@ DEFAULT_CONFIG = Path("experiments/tool_trajectory_monitoring/qwen_ood_benchmark
 DEFAULT_OUTPUT = Path("results/tool_trajectory_monitoring/qwen35_9b_teacher_ood")
 QWEN_NON_THINKING_ASSISTANT_SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 SUPPORTED_QWEN_MODELS = {
+    "Qwen/Qwen3.5-4B-Base",
+    "Qwen/Qwen3.5-9B-Base",
     "Qwen/Qwen3.5-4B",
     "Qwen/Qwen3.5-9B",
     "Qwen/Qwen3.5-27B",
@@ -62,8 +64,8 @@ def validate_config(config: dict[str, Any]) -> None:
         supported = ", ".join(sorted(SUPPORTED_QWEN_MODELS))
         raise ValueError(f"frozen model must be one of: {supported}")
     prompt = config.get("prompt", {})
-    if prompt.get("role") != "teacher":
-        raise ValueError("benchmark must use the full teacher prompt")
+    if prompt.get("role") not in {"teacher", "student"}:
+        raise ValueError("benchmark must declare teacher or student prompt")
     if prompt.get("enable_thinking") is not False:
         raise ValueError("direct Qwen benchmark must disable native thinking")
     if prompt.get("assistant_suffix") != QWEN_NON_THINKING_ASSISTANT_SUFFIX:
@@ -131,8 +133,9 @@ def run(args: argparse.Namespace) -> None:
     records = validate_inputs(config)
     config_sha256 = sha256_file(args.config)
     prompt_set = load_prompt_set()
-    if prompt_set.teacher.template_sha256 != config["prompt"]["template_sha256"]:
-        raise ValueError("working-tree teacher prompt differs from the frozen config")
+    template = getattr(prompt_set, config["prompt"]["role"])
+    if template.template_sha256 != config["prompt"]["template_sha256"]:
+        raise ValueError("working-tree prompt differs from the frozen config")
 
     import torch
     import vllm
