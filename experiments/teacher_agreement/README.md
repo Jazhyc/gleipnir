@@ -41,3 +41,10 @@ shared evaluator and then computes agreement; never calibrates targets in place.
 were idle before launch. Lambda supervisor PID 167521 uses the original `.venv`;
 log: `logs/lambda/teacher_agreement/run.log`. Three focused statistics tests and
 Ruff checks pass. Final numerical canary and agreement results remain pending.
+
+Completed the same day: all 640 unique IDs passed local re-analysis, including
+exact source-prompt hashes, labels, dataset identities, frozen config SHA and
+raw-logprob-to-probability consistency. Numerical canary passed with mean
+absolute probability difference 0.002924 and maximum 0.014350. Final results:
+`docs/findings/matched_qwen_kimi_teacher_agreement.md`. Both teacher inputs and
+Qwen outputs are retained locally under the ignored result directory.
