@@ -1,5 +1,79 @@
 # Matched Qwen/Kimi full-trajectory agreement
 
+## MiniMax direct-logit capability check (2026-09-07)
+
+The user replaced the GLM investigation with a MiniMax M3 non-thinking
+capability check. No GLM batch was launched. A single original matched prompt
+(`342b86151aa2f9429bf98f33`) succeeded through `minimax/minimax-m3`, pinned to
+`coreweave/fp4`, with reasoning effort none, temperature zero, max_tokens 8,
+top_logprobs 5, no fallback, no explicit caching and evaluation-only filtering.
+The response was `Prediction:0`, 4 completion tokens, **0 reasoning tokens**,
+25,748 input tokens, 1.339 seconds client latency and reported cost $0.0058666212.
+Actual decision logprobs: 0 = -0.029780270531773567;
+1 = -3.529780387878418; binary-normalized positive score = 0.02931222741248963.
+Artifact: `results/teacher_agreement/minimax_m3_coreweave_canary.jsonl` retains
+prompt/settings hashes, raw alternatives, model/provider identity and usage.
+This establishes endpoint capability for one sample, not a completed 640-row
+AUROC/calibration comparison. CoreWeave's FP4 quantization must be disclosed.
+Current endpoint price caps: $0.23/M input, $0.96/M output. No full MiniMax
+batch was launched during this capability check.
+The already-in-flight 4,096-token GLM canary finished with one valid score
+before the attempted cancellation reached it; its artifact is preserved.
+No additional GLM requests were started after the user's switch to MiniMax.
+
+## GLM 5.3 Flash follow-up protocol
+
+User-authorized 2026-09-07: evaluate `z-ai/glm-5.3-flash` through OpenRouter,
+pinned to Wafer without fallbacks, on the same 640 original detailed prompts.
+Hypothesis: this inexpensive teacher may offer a better ranking/calibration
+tradeoff than Qwen. Reuse Kimi and Qwen scores; do not annotate new prefixes,
+train a student, fit a calibrator, or consult ID/OOD selection sets.
+Config: `glm.yaml`; entrypoint: `python -m experiments.teacher_agreement.glm`.
+Use the existing resumable OpenRouter client, temperature zero, reasoning none,
+8-token cap and terminal literal binary logprobs, normalized over 0/1.
+This matches the Kimi API output contract; chat serialization and quantization
+remain model/provider differences. Wafer catalog quantization is unknown.
+Run one canary first, then ten (one per source/label cell); fail closed on
+missing decision alternatives, routing/identity drift or incomplete scoring.
+Both candidate label probabilities must be returned, not fabricated from a
+hard response. Preserve raw logprobs, prompt/settings hashes and usage. Price
+caps are $0.10/M input and $0.35/M output; expected input cost is about $0.70
+using 7.03M Qwen tokens as a proxy. No explicit cache savings are assumed.
+Report pooled and per-source AUROC, equal-width ECE (5/10/20 bins), Brier,
+log loss, confidence/accuracy, ties, threshold diagnostics and actual usage.
+The comparison is descriptive on a balanced training sample, not promotion
+evidence. Stop after one complete 640-row pass; no adaptive prompt tuning.
+
+Initial canary was rejected before inference by OpenRouter's distillable-text
+filter: GLM is not marked as permitting distillation. This follow-up therefore
+explicitly disables that filter for **evaluation only**. Do not reuse its
+outputs as student targets without a separate licensing/terms review. The
+shared client's default remains to require distillation permission.
+
+The subsequent reasoning-disabled canary was also rejected before inference:
+Wafer requires reasoning for GLM. Revised operational diagnostic uses minimal
+reasoning with a bounded 512-token total completion budget in a separate
+`glm53_flash_wafer_minimal` artifact directory. This is **post-reasoning** binary
+calibration, not matched non-thinking logits. Original rubric and terminal
+decision-token scoring remain unchanged. Do not interpret differences as an
+isolated model-quality comparison. If this cap cannot produce a valid terminal
+binary score, stop before the full pass rather than silently increase compute.
+
+The 512-token request exhausted its entire budget on hidden reasoning and
+returned no decision/logprobs (reported cost $0.002701809). The user subsequently
+asked to continue; a new bounded canary uses minimal reasoning, 4,096 tokens,
+and a separate `glm53_flash_wafer_minimal4096` directory. At the configured
+rates, 640 requests at the full output cap add at most about $0.92 in completion
+charges before retries, in addition to input. Do not launch the full pass
+unless the new canaries provide both actual binary logprobs.
+
+Licensing clarification: the model-weight repository currently carries the MIT
+license (`https://huggingface.co/zai-org/GLM-5.3-Flash/raw/main/LICENSE`).
+OpenRouter calls its distillation metadata best-effort and advises checking
+actual terms (`https://openrouter.ai/docs/cookbook/evaluate-and-optimize/distillation`).
+The failed allowlist check does not establish an author prohibition. This run
+remains evaluation-only as requested; no training permission conclusion is drawn.
+
 Hypothesis: confidence-scale and/or ranking differences between the local Qwen
 prefix teacher and Kimi full-endpoint teacher may introduce conflicting student
 supervision. Compare the same full trajectories and original detailed teacher

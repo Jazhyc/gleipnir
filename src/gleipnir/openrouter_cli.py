@@ -61,6 +61,12 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
     )
     parser.add_argument("--provider-only")
     parser.add_argument(
+        "--enforce-distillable-text",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+        help="Require distillation permission; disable only for evaluation-only work.",
+    )
+    parser.add_argument(
         "--provider-max-prompt-price",
         type=float,
         help="Maximum accepted provider prompt price in USD per million tokens.",
@@ -312,6 +318,7 @@ def main(argv: list[str] | None = None) -> int:
         provider_max_prompt_price=args.provider_max_prompt_price,
         provider_max_completion_price=args.provider_max_completion_price,
         allow_fallbacks=args.allow_fallbacks,
+        enforce_distillable_text=args.enforce_distillable_text,
         session_id=session_id,
         cache_prefix=prompt_prefix if args.explicit_cache else "",
         request_timeout=args.request_timeout,

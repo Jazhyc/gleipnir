@@ -1,0 +1,11 @@
+model: z-ai/glm-5.3-flash
+provider: wafer
+input: results/teacher_agreement/prompts.jsonl
+pairs: results/teacher_agreement/paired_scores.jsonl
+output: results/teacher_agreement/glm53_flash_wafer_minimal4096
+concurrency: 8
+max_tokens: 4096
+reasoning_effort: minimal
+max_retries: 2
+max_prompt_price: 0.10
+max_completion_price: 0.35
