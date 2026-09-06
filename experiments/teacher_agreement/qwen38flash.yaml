@@ -1,0 +1,24 @@
+candidate: qwen38flash
+model: qwen/qwen3.8-flash
+provider: alibaba
+provider_name: Alibaba
+input: results/teacher_agreement/prompts.jsonl
+pairs: results/teacher_agreement/paired_scores.jsonl
+output: results/teacher_agreement/qwen38flash_alibaba
+scores: results/teacher_agreement/qwen38flash_alibaba/canary.jsonl
+canary_rows: 1
+concurrency: 8
+max_tokens: 8
+reasoning_effort: none
+max_retries: 2
+max_prompt_price: 0.15
+max_completion_price: 0.47
+additional_baselines:
+  minimax:
+    path: results/teacher_agreement/minimax_m3_coreweave_canary.jsonl
+    model: minimax/minimax-m3
+    provider: CoreWeave
+  kimi26:
+    path: results/teacher_agreement/kimi26_inceptron/canary.jsonl
+    model: moonshotai/kimi-k2.6
+    provider: Inceptron

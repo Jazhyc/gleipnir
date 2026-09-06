@@ -63,6 +63,7 @@ class OpenRouterConfig:
     enforce_distillable_text: bool = True
     session_id: str | None = None
     cache_prefix: str = ""
+    assistant_prefill: str = ""
     request_timeout: float = 180.0
     max_retries: int = 6
     app_url: str = "https://github.com/gleipnir-monitoring/gleipnir"
@@ -186,11 +187,7 @@ def extract_scalar_binary_top_logprobs(
         raise OpenRouterError(f"completion was not a binary scalar: {text!r}")
     prediction = match.group(1)
     position = next(
-        (
-            index
-            for index, row in enumerate(rows)
-            if row.get("token") == prediction
-        ),
+        (index for index, row in enumerate(rows) if row.get("token") == prediction),
         None,
     )
     if position is None:
@@ -287,6 +284,9 @@ def _request_body_settings(config: OpenRouterConfig) -> dict[str, Any]:
 def request_settings(config: OpenRouterConfig) -> dict[str, Any]:
     """Return auditable settings without storing the potentially sensitive prefix."""
     settings = _request_body_settings(config)
+    if config.assistant_prefill:
+        settings["assistant_prefill"] = config.assistant_prefill
+        settings["assistant_partial"] = True
     if config.cache_prefix:
         settings["cache_control"] = {
             "type": "ephemeral",
@@ -327,9 +327,14 @@ def request_payload(record: PromptRecord, config: OpenRouterConfig) -> dict[str,
                 "text": record.prompt[len(config.cache_prefix) :],
             },
         ]
+    messages = [{"role": "user", "content": content}]
+    if config.assistant_prefill:
+        messages.append(
+            {"role": "assistant", "content": config.assistant_prefill, "partial": True}
+        )
     return {
         **_request_body_settings(config),
-        "messages": [{"role": "user", "content": content}],
+        "messages": messages,
     }
 
 

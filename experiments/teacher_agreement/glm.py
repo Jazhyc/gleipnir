@@ -145,6 +145,13 @@ def main() -> None:
         ]
         if args.limit:
             argv += ["--limit", str(args.limit)]
+        if c.get("assistant_prefill"):
+            argv += [
+                "--assistant-prefill",
+                c["assistant_prefill"],
+                "--binary-output-mode",
+                "scalar",
+            ]
         if annotate(argv):
             raise RuntimeError(
                 "incomplete annotation; inspect failures before resuming"

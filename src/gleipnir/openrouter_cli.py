@@ -60,6 +60,7 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         help="Provider to try in order; repeat for fallbacks. Overrides provider sort.",
     )
     parser.add_argument("--provider-only")
+    parser.add_argument("--assistant-prefill", default="")
     parser.add_argument(
         "--enforce-distillable-text",
         action=argparse.BooleanOptionalAction,
@@ -246,9 +247,7 @@ def declared_or_shared_prompt_prefix(records: list[PromptRecord]) -> str:
 
 def automatic_session_id(model: str, prompt_prefix: str) -> str:
     """Derive a stable, non-sensitive OpenRouter sticky-routing identifier."""
-    digest = hashlib.sha256(
-        (model + "\0" + prompt_prefix).encode("utf-8")
-    ).hexdigest()
+    digest = hashlib.sha256((model + "\0" + prompt_prefix).encode("utf-8")).hexdigest()
     return f"gleipnir-teacher-cache-{digest}"
 
 
@@ -321,6 +320,7 @@ def main(argv: list[str] | None = None) -> int:
         enforce_distillable_text=args.enforce_distillable_text,
         session_id=session_id,
         cache_prefix=prompt_prefix if args.explicit_cache else "",
+        assistant_prefill=args.assistant_prefill,
         request_timeout=args.request_timeout,
         max_retries=args.max_retries,
     )
@@ -386,10 +386,9 @@ def main(argv: list[str] | None = None) -> int:
                 if completed_since_checkpoint >= args.checkpoint_every:
                     atomic_write(args.output, cached)
                     completed_since_checkpoint = 0
-            if (
-                completed_since_progress >= args.progress_every
-                or len(set(cached) | set(excluded)) == len(records)
-            ):
+            if completed_since_progress >= args.progress_every or len(
+                set(cached) | set(excluded)
+            ) == len(records):
                 print(
                     f"completed={len(set(cached) | set(excluded))}/{len(records)} "
                     f"shard_rows={len(cached)}",

@@ -18,6 +18,20 @@ from gleipnir.openrouter import (
 )
 
 
+def test_assistant_prefill_is_explicit_and_changes_cache_identity():
+    record = PromptRecord("example", "original rubric", {})
+    config = OpenRouterConfig(
+        model="qwen/test", binary_output_mode="scalar", max_tokens=1
+    )
+    prefilled = replace(config, assistant_prefill="Prediction:")
+    assert request_payload(record, prefilled)["messages"] == [
+        {"role": "user", "content": "original rubric"},
+        {"role": "assistant", "content": "Prediction:", "partial": True},
+    ]
+    assert len(request_payload(record, config)["messages"]) == 1
+    assert request_settings_sha256(config) != request_settings_sha256(prefilled)
+
+
 def response_payload() -> dict:
     return {
         "id": "response-1",

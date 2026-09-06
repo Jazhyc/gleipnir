@@ -1,5 +1,38 @@
 # Matched Qwen/Kimi full-trajectory agreement
 
+## Qwen3.8-Flash matched comparison protocol (2026-09-07)
+
+User requested `qwen/qwen3.8-flash` on the same matched samples, conditional on
+direct-logprob support. Alibaba is the sole catalogued endpoint, advertising
+logprobs/top_logprobs; quantization is unspecified. Hypothesis: the new flash
+teacher may improve inexpensive ranking/calibration over the candidates tested.
+Use `--config experiments/teacher_agreement/qwen38flash.yaml` with the existing
+`experiments.teacher_agreement.glm` prepare/canary/run/analyze entrypoint.
+One original full-prompt canary must return actual terminal 0/1 logprobs and
+zero reasoning tokens before completing all 640 rows. Preserve the existing
+rubric, binary normalization, temperature zero, eight-token cap, reasoning none,
+eight concurrent workers, two bounded transport retries and no fallbacks.
+Freeze all matched inputs and prior MiniMax/K2.6 caches; no new baseline calls.
+Price caps $0.15/M input and $0.47/M output imply roughly $1.05 input using
+the Qwen3.5 token estimate, before tokenizer/cache/retry differences. No explicit
+cache savings assumed. Stop on unsupported direct scoring or incomplete/invalid
+records; do not substitute reasoning, hard labels or elicited probabilities.
+Report all five teachers' pooled/source AUROC, ECE(5/10/20), Brier, log loss,
+ties and threshold diagnostics. Balanced training-population diagnostic only;
+no calibration fitting, student/prefix jobs, GPU use, or ID/OOD selection.
+
+The one-row canary passed, but the larger pass returned free-form explanation
+on at least one row and upstream 429s. Stopped the initial process (PID 1670236)
+without imputing failed scores or reporting a selected-subset metric.
+The next bounded interface canary uses an assistant `Prediction:` prefill
+(`partial: true`) and a one-token cap with scalar 0/1 extraction, in a separate
+`qwen38flash_alibaba_prefill` root and `qwen38flash_prefill.yaml` config.
+This changes chat serialization explicitly, analogous to local Qwen's prefilled
+decision boundary, but preserves the original user rubric. No old scores may
+be mixed into this version. Require 10 source/label canaries before any full
+prefill pass. Provider documentation describes Partial Mode; actual OpenRouter
+support must be established empirically. Stop if prefill or alternatives fail.
+
 ## Kimi K2.6 matched comparison protocol (2026-09-07)
 
 User authorized Kimi K2.6 through Inceptron on the same 640 final-boundary
