@@ -1,0 +1,16 @@
+candidate: minimax
+model: minimax/minimax-m3
+provider: coreweave/fp4
+provider_name: CoreWeave
+input: results/teacher_agreement/prompts.jsonl
+pairs: results/teacher_agreement/paired_scores.jsonl
+output: results/teacher_agreement/minimax_m3_coreweave
+scores: results/teacher_agreement/minimax_m3_coreweave_canary.jsonl
+canary: results/teacher_agreement/minimax_m3_coreweave_canary.jsonl
+canary_rows: 1
+concurrency: 8
+max_tokens: 8
+reasoning_effort: none
+max_retries: 2
+max_prompt_price: 0.23
+max_completion_price: 0.96

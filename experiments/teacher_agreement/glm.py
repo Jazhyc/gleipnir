@@ -19,31 +19,58 @@ def sha(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def validate(rows: list[dict], prompts: dict) -> None:
+def validate(
+    rows: list[dict],
+    prompts: dict,
+    provider: str = "wafer",
+    model: str = "z-ai/glm-5.3-flash",
+    require_nonthinking: bool = False,
+) -> None:
     if len({r["id"] for r in rows}) != len(rows):
         raise ValueError("duplicate output")
     for r in rows:
         p = prompts[r["id"]]
         score, _ = binary_score_from_top_logprobs(r["top_logprobs"])
         if (
-            r["provider"].lower() != "wafer"
-            or not r["model"].startswith("z-ai/glm-5.3-flash")
+            r["provider"].lower() != provider.lower()
+            or not r["model"].startswith(model)
             or r["prompt_sha256"] != hashlib.sha256(p["prompt"].encode()).hexdigest()
             or r["metadata"] != p["metadata"]
             or not np.isfinite(score)
             or not np.isclose(score, r["score"], atol=1e-12, rtol=0)
         ):
             raise ValueError("teacher response identity/score drift")
+        if require_nonthinking and (
+            r["request_settings"]["reasoning"]["effort"] != "none"
+            or r["usage"].get("completion_tokens_details", {}).get("reasoning_tokens")
+            != 0
+        ):
+            raise ValueError("non-thinking telemetry required")
 
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("phase", choices=["prepare", "canary", "run", "analyze"])
     parser.add_argument("--limit", type=int)
+    parser.add_argument(
+        "--config", type=Path, default=Path(__file__).with_name("glm.yaml")
+    )
     args = parser.parse_args()
-    c = yaml.safe_load(Path(__file__).with_name("glm.yaml").read_text())
+    c = yaml.safe_load(args.config.read_text())
     root = Path(c["output"])
-    paths = [Path(c["input"]), Path(c["pairs"]), Path(__file__).with_name("glm.yaml")]
+    paths = [Path(c["input"]), Path(c["pairs"]), args.config]
+    score_path = Path(c.get("scores", root / "scores.jsonl"))
+    candidate = c.get("candidate", "glm")
+
+    def check(rows):
+        validate(
+            rows,
+            prompts,
+            c.get("provider_name", "wafer"),
+            c["model"],
+            c["reasoning_effort"] == "none",
+        )
+
     prompts = {r["id"]: r for r in map(json.loads, paths[0].open())}
     pairs = list(map(json.loads, paths[1].open()))
     if len(prompts) != 640 or {r["id"] for r in pairs} != set(prompts):
@@ -77,11 +104,12 @@ def main() -> None:
     if args.phase in ("canary", "run"):
         canary = args.phase == "canary"
         if not canary:
-            gate = list(map(json.loads, (root / "canary.jsonl").open()))
-            if len(gate) != 10:
-                raise ValueError("ten-row canary required")
-            validate(gate, prompts)
-        destination = root / ("canary.jsonl" if canary else "scores.jsonl")
+            gate_path = Path(c.get("canary", root / "canary.jsonl"))
+            gate = list(map(json.loads, gate_path.open()))
+            if len(gate) < c.get("canary_rows", 10):
+                raise ValueError("required canary missing")
+            check(gate)
+        destination = root / "canary.jsonl" if canary else score_path
         argv = [
             "--input",
             str(root / "canary_prompts.jsonl") if canary else c["input"],
@@ -114,20 +142,22 @@ def main() -> None:
             raise RuntimeError(
                 "incomplete annotation; inspect failures before resuming"
             )
-        validate(list(map(json.loads, destination.open())), prompts)
+        check(list(map(json.loads, destination.open())))
         return
-    scores = list(map(json.loads, (root / "scores.jsonl").open()))
-    validate(scores, prompts)
+    scores = list(map(json.loads, score_path.open()))
+    check(scores)
     if len(scores) != 640 or {r["id"] for r in scores} != set(prompts):
         raise ValueError("incomplete matched scoring")
     indexed = {r["id"]: r for r in scores}
     summary = {}
-    for teacher in ("qwen", "kimi", "glm"):
+    for teacher in ("qwen", "kimi", candidate):
 
         def metrics(selected, teacher=teacher):
             y = [r["label"] for r in selected]
             p = [
-                indexed[r["id"]]["score"] if teacher == "glm" else r[f"{teacher}_score"]
+                indexed[r["id"]]["score"]
+                if teacher == candidate
+                else r[f"{teacher}_score"]
                 for r in selected
             ]
             s = binary_calibration(y, p)
@@ -155,13 +185,13 @@ def main() -> None:
         k: sum(float(r["usage"].get(k) or 0) for r in scores)
         for k in ("prompt_tokens", "completion_tokens", "cost")
     }
-    summary["files"] = {str(p): sha(p) for p in [*paths, root / "scores.jsonl"]}
+    summary["files"] = {str(p): sha(p) for p in [*paths, score_path]}
     atomic_write_json(root / "comparison.json", summary)
     print(
         json.dumps(
             {
                 t: {k: v for k, v in summary[t]["pooled"].items() if k != "bins"}
-                for t in ("qwen", "kimi", "glm")
+                for t in ("qwen", "kimi", candidate)
             },
             indent=2,
         )

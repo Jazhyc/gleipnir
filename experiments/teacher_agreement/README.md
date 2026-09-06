@@ -1,5 +1,24 @@
 # Matched Qwen/Kimi full-trajectory agreement
 
+## MiniMax full comparison protocol (2026-09-07)
+
+User authorized completing all 640 matched rows after the direct-logit canary.
+Hypothesis: MiniMax M3 may improve teacher ranking/calibration over local Qwen.
+Reuse the existing runner with `--config experiments/teacher_agreement/minimax.yaml`
+and phases `prepare`, `run`, `analyze`; the historical module name is `glm`.
+Resume the original canary cache in place (its filename retains `canary`), with
+the same settings hash. Freeze original prompts, matched labels/scores and config.
+Pin CoreWeave FP4, require reasoning none and zero reported reasoning tokens,
+8 output tokens, true terminal 0/1 logprobs, no fallback or prompt changes.
+Eight concurrent requests; bounded two retries for transport/server failures.
+Stop on incomplete scoring or identity/logprob drift; no reasoning fallback.
+Report pooled and source AUROC and ECE (5/10/20 bins), Brier/log loss,
+confidence/accuracy, ties and threshold diagnostics against existing labels.
+This is a source/label-balanced training diagnostic, not held-out promotion.
+No calibrator, student training, new prefix annotations or GPU use is authorized.
+Expected input cost around $1.6 using the existing Qwen-token estimate; actual
+MiniMax tokenizer usage, cache hits and retries can change the bill.
+
 ## MiniMax direct-logit capability check (2026-09-07)
 
 The user replaced the GLM investigation with a MiniMax M3 non-thinking
