@@ -19,6 +19,11 @@ No calibrator, student training, new prefix annotations or GPU use is authorized
 Expected input cost around $1.6 using the existing Qwen-token estimate; actual
 MiniMax tokenizer usage, cache hits and retries can change the bill.
 
+Completed all 640 rows with zero reasoning tokens and valid paired logprobs.
+MiniMax pooled AUROC 0.942275, ECE(10) 0.078941, Brier 0.097374; total reported
+cost $1.416517. See `docs/findings/minimax_matched_teacher_comparison.md` for
+the matched three-teacher comparison, source diagnostics and caveats.
+
 ## MiniMax direct-logit capability check (2026-09-07)
 
 The user replaced the GLM investigation with a MiniMax M3 non-thinking
