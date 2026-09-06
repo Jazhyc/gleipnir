@@ -16,13 +16,16 @@ from gleipnir.prefix_cache import binary_score, validate_resume
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--cache-dir", type=Path, required=True)
+    parser.add_argument("--diagnose-failures", action="store_true")
     parser.add_argument(
         "--references",
         type=Path,
         default=Path("data/monitoring_prefix_supervision/prefix_references.jsonl"),
     )
     args = parser.parse_args()
-    output = args.cache_dir / "fresh_audit.json"
+    output = args.cache_dir / (
+        "failure_replay.json" if args.diagnose_failures else "fresh_audit.json"
+    )
     if output.exists():
         raise FileExistsError(output)
     contract = json.loads((args.cache_dir / "contract.json").read_text())
@@ -43,6 +46,17 @@ def main() -> None:
     if completed != set(refs) or complete["contract_sha256"] != contract_hash:
         raise ValueError("cache incomplete")
     selected = select_cache_audit(list(refs.values()))
+    if args.diagnose_failures:
+        audit = json.loads((args.cache_dir / "fresh_audit.json").read_text())
+        if audit["contract_sha256"] != contract_hash or audit["passed"]:
+            raise ValueError("diagnostic requires the matching failed audit")
+        failed_ids = {
+            r["id"] for r in audit["rows"]
+            if abs(r["score"] - r["cached_score"]) > 0.05
+        }
+        selected = [r for r in selected if r["id"] in failed_ids]
+        if not selected:
+            raise ValueError("no maximum-error failures to diagnose")
     selected_ids = {r["id"] for r in selected}
     cached = {
         r["id"]: r
@@ -118,8 +132,7 @@ def main() -> None:
         logprob_token_ids=ids,
         allowed_token_ids=ids,
     )
-    scored = []
-    for ref in selected:
+    def score(ref: dict) -> dict:
         text = trajectories[ref["parent_prompt_id"]][: ref["end_character"]]
         user = (
             f"{instruction}\n<agent_trajectory>\n{text}"
@@ -139,22 +152,52 @@ def main() -> None:
         )
         if not prompt.endswith(contract["prompt"]["assistant_suffix"]):
             raise ValueError("audit wrapper drift")
-        if not llm.reset_prefix_cache():
-            raise RuntimeError("fresh cache reset failed")
         prediction = llm.generate([prompt + "Prediction:"], sampling, use_tqdm=False)[0]
         probs = prediction.outputs[0].logprobs[0]
         lp0, lp1 = [float(probs[t].logprob) for t in ids]
-        scored.append(
-            {
+        return {
                 "id": ref["id"],
                 "source": ref["source"],
                 "logprob_0": lp0,
                 "logprob_1": lp1,
                 "score": binary_score(lp0, lp1),
-                "cached_score": cached[ref["id"]]["score"],
                 "prompt_tokens": len(prediction.prompt_token_ids),
+                "cached_tokens": prediction.num_cached_tokens,
             }
-        )
+
+    def reset() -> None:
+        if not llm.reset_prefix_cache():
+            raise RuntimeError("fresh cache reset failed")
+
+    scored = []
+    for ref in selected:
+        reset()
+        fresh = score(ref)
+        fresh["cached_score"] = cached[ref["id"]]["score"]
+        if args.diagnose_failures:
+            reset()
+            fresh["cold_repeat"] = score(ref)
+            replay = sorted(
+                (r for r in refs.values()
+                 if r["parent_prompt_id"] == ref["parent_prompt_id"]
+                 and r["end_character"] <= ref["end_character"]),
+                key=lambda r: r["end_character"],
+            )
+            reset()
+            for prior in replay:
+                replay_result = score(prior)
+            fresh["growing_replay"] = replay_result
+            fresh["replayed_prefixes"] = len(replay)
+        scored.append(fresh)
+        print(f"scored={len(scored)}/{len(selected)}", flush=True)
+    if args.diagnose_failures:
+        with output.open("x") as stream:
+            stream.write(json.dumps({
+                "contract_sha256": contract_hash,
+                "diagnostic_only": True,
+                "rows": scored,
+            }, indent=2) + "\n")
+        return
     errors = [abs(r["score"] - r["cached_score"]) for r in scored]
     result = {
         "contract_sha256": contract_hash,

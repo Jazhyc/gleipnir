@@ -1,8 +1,9 @@
 # Intermediate tool-action supervision
 
 Status: approved prompt materialized in `teacher_prefix.txt`; full prefix
-annotation is running on Lambda with Qwen3.5-27B-FP8, TP2, vLLM 0.28.0,
-FlashInfer GDN, and one active trajectory. No student training has launched.
+annotation completed on Lambda with Qwen3.5-27B-FP8, TP2, vLLM 0.28.0,
+FlashInfer GDN, and one active trajectory. The post-cache numerical audit failed;
+the cache is not approved for training. No student training has launched.
 The existing ID evaluations retain their frozen full-trajectory prompts.
 
 ## Hypothesis and intervention
@@ -259,3 +260,27 @@ audit/materialization/sampling tests pass. The GPU audit itself awaits completio
 ```bash
 PYTHONPATH=src .venv-vllm028-prefix/bin/python -m experiments.monitoring_prefix_supervision.audit_cache --cache-dir results/monitoring_prefix_supervision/qwen35_flashinfer_cache
 ```
+
+## Completed cache and failed full-workload audit
+
+Annotation completed on 2026-09-06 at approximately 08:46 UTC. All 133,947
+records were collected locally and passed exact reference/contract/raw-logprob
+validation. Input usage totals 1,199,840,658 tokens, including 1,065,849,568
+cached tokens (88.83%); annotation took 27,508 seconds. Workers exited cleanly.
+The actual recorded runtime SSM cache dtype is **float32**, despite requesting
+`auto`; do not describe the active 0.28 runtime as using BF16 SSM storage.
+
+The fixed 64-prefix fresh audit then failed: MAE 0.010255635, maximum
+0.120145498, with five examples exceeding the unchanged 0.05 maximum limit.
+The largest disagreement was STRIDE (10,386 tokens): fresh probability
+0.348645 versus cached 0.468791. Other failures include Gloom and BashArena,
+and a short 1,764-token STRIDE prefix, so this is not exclusively a
+longest-context phenomenon. The failed artifact is preserved as
+`qwen35_flashinfer_cache/fresh_audit.json`; training remains gated off.
+The audit's lingering process group was stopped after its terminal exception.
+
+The startup canary was insufficient to establish broader numerical agreement.
+Do not relax its limits, overwrite the failed audit, selectively replace only
+the observed outliers, or repeat the audit until it passes. Next diagnostics
+must distinguish repeatable cache-path error from fresh-reference variability
+on the failed cases, preserving both original outputs and the full cache.
