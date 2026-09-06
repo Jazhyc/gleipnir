@@ -92,6 +92,18 @@ about best achievable throughput. These are startup findings, not final scores.
 
 ## Authorized sequential follow-up: Qwen3.8-27B FP8
 
+### Bounded numerical recovery diagnostic
+
+After the compiled Qwen3.8 canary failed, prepare one separate eager-serving
+diagnostic (`qwen38_27b_eager.yaml`). This disables vLLM compilation/CUDA graphs,
+not the optimized attention or GDN kernels. Keep model revision, precision,
+prompt, batching, seed, and the exact five-row numerical gate unchanged. Run
+only after the active Qwen3.5-27B evaluation releases the GPUs. If the canary
+passes, finish the fixed ID endpoint; if it fails, stop this backend diagnostic
+without repeated retries or loosened tolerances. Keep its artifacts separate
+from the failed compiled run. A passing result would be backend-qualified, not
+evidence that the original compiled configuration is reliable.
+
 On 2026-09-06 the user added Qwen/Qwen3.8-27B-FP8 after the current 122B
 evaluation. Revision 017b9c7af6b5689d5dd426a76e0bc077eb5ca20a has
 30,866,866,928 weight-file bytes. The installed vLLM 0.24.0 supports its

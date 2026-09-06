@@ -61,8 +61,9 @@ The remaining 12 malformed step boundaries are explicitly excluded, not guessed;
 other valid boundaries in those trajectories retain the unchanged visible text.
 
 `cache_canary.py` is staged for a bounded, GPU-idleness-guarded preflight after
-model selection. It scores three growing prefixes from each of four sources,
-comparing reset-per-request against reused-prefix execution in the same engine.
+model selection. It scores three growing prefixes from two trajectories in each
+of four sources, comparing reset-per-request against singleton and eight-parent
+batched reused-prefix execution in the same engine.
 Require mean probability error <=0.02, maximum <=0.05, and cache hits beyond
 the shared instruction on every second/third prefix. Record cold and reused
 timings before estimating full-campaign throughput. This implementation has
@@ -76,3 +77,22 @@ Normalize intermediate losses within each original trajectory so long examples
 do not receive extra weight merely because they contain more tool calls.
 Freeze a small loss-weight grid and selection criteria before launching runs.
 Keep full-trajectory Kimi supervision distinct from intermediate local targets.
+
+The full-cache path (`cache.py`, invoked with the canary's `--cache-output`)
+advances up to eight independent trajectories one prefix at a time, appends raw
+decision logprobs with timestamps and token/cache-hit counts, and fsyncs each
+completed batch. Resume checks the frozen model/prompt contract, reference
+identities, duplicates, and normalized probabilities against raw logprobs.
+Malformed/truncated JSONL tails fail closed and require explicit recovery;
+completed valid rows are not regenerated. Mocked end-to-end tests cover
+multi-cohort scheduling, completed-cache reuse, and partial-cache resumption.
+This full path is not yet GPU-validated or launched.
+
+For the subsequent small training screen, the proposed per-trajectory objective
+is `(L_Kimi_full + lambda * mean(L_local_prefix)) / (1 + lambda)`, with lambda
+0.25 and 0.5 alongside the unchanged full-only baseline. Rows without eligible
+prefixes retain their full loss without downweighting. Freeze the sampling and
+optimizer-step budget before launch: expanding 134K prefixes into independent
+training rows would otherwise change both trajectory weighting and training
+duration. Uniformly sampling one prefix per parent supplies an unbiased estimate
+of its mean prefix loss, but the sampling implementation still needs validation.

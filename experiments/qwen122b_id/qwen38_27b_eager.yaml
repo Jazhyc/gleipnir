@@ -1,0 +1,8 @@
+defaults:
+  - qwen38_27b
+  - _self_
+
+campaign_id: qwen38-27b-fp8-teacher-id-eager-v1
+result_dir: results/qwen38_27b_id_eager
+engine:
+  enforce_eager: true
