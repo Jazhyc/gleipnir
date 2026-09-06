@@ -379,3 +379,14 @@ and `logs/lambda/monitoring_prefix_training_low/`; earlier results stay intact.
 .venv/bin/python -m experiments.monitoring_prefix_supervision.campaign prepare --config-name training_low
 .venv/bin/python -m experiments.monitoring_prefix_supervision.campaign run --root results/monitoring_prefix_training_low --revision COMMIT
 ```
+
+Launched on 2026-09-06, supervisor PID 168582, implementation revision
+`3bf3272`. Both GPUs were confirmed idle before launch. Kernel and paired
+longest-sequence preflight passed (loss 0.528873, peak reserved 64,344,817,664
+bytes). Both training lanes passed loading and completed optimizer step 1/272
+around 14:38 UTC, with 100% GPU utilization and about 60 GB reported memory.
+First-step times were 76.01 and 75.49 seconds, including startup overhead;
+the prior matched 3h38m training duration remains a provisional ETA basis.
+The manifest and preflight metadata were backed up locally. No timed agent
+scheduler is available in this session, so automatic ten-minute follow-ups
+are not active; the remote training/evaluation lifecycle continues independently.
