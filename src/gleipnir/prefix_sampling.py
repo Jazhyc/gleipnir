@@ -1,6 +1,7 @@
 """Reproducible, label-blind sampling of one intermediate target per parent."""
 
 import hashlib
+import math
 import random
 from collections.abc import Mapping, Sequence
 from typing import Any
@@ -60,7 +61,7 @@ def attach_sampled_prefix(
     if hashlib.sha256(prefix.encode()).hexdigest() != cached_prefix["prefix_sha256"]:
         raise ValueError("prefix text hash mismatch")
     target = binary_score(cached_prefix["logprob_0"], cached_prefix["logprob_1"])
-    if abs(target - cached_prefix["score"]) > 1e-12:
+    if not math.isclose(target, cached_prefix["score"], abs_tol=1e-12, rel_tol=0):
         raise ValueError("prefix target disagrees with raw logits")
     result.update(
         prefix_student_prompt=(

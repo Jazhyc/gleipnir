@@ -6,7 +6,14 @@ import pytest
 from experiments.monitoring_prefix_supervision.prepare_training import prepare_training
 
 
-def test_prepare_training_requires_complete_cache_and_preserves_parents(tmp_path):
+def test_prepare_training_requires_complete_cache_and_preserves_parents(
+    tmp_path, monkeypatch
+):
+    # Numeric/64-row audit validation has separate tests; keep this fixture tiny.
+    monkeypatch.setattr(
+        "experiments.monitoring_prefix_supervision.prepare_training.validate_fresh_audit",
+        lambda *args: None,
+    )
     source = tmp_path / "parents.jsonl"
     parents = [
         {
@@ -56,6 +63,9 @@ def test_prepare_training_requires_complete_cache_and_preserves_parents(tmp_path
     (cache / "complete.json").write_text(
         json.dumps({"rows": 1, "contract_sha256": contract_hash})
     )
+    with pytest.raises(FileNotFoundError):
+        prepare_training(cache, refs, output)
+    (cache / "fresh_audit.json").write_text("{}")
     result = prepare_training(cache, refs, output)
     assert result["parent_rows"] == 2
     assert result["parents_with_prefix"] == 1

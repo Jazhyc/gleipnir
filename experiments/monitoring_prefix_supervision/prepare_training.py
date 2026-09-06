@@ -6,6 +6,7 @@ import json
 from collections import defaultdict
 from pathlib import Path
 
+from gleipnir.prefix_audit import validate_fresh_audit
 from gleipnir.prefix_cache import validate_resume
 from gleipnir.prefix_sampling import attach_sampled_prefix, sample_parent_prefixes
 
@@ -49,11 +50,20 @@ def prepare_training(
     selected = sample_parent_prefixes(grouped, seed=seed, epoch=0)
     selected_ids = set(selected.values())
     selected_cache = {}
+    all_cached = {}
     for line in cached_path.open():
         row = json.loads(line)
+        all_cached[row["id"]] = row
         if row["id"] in selected_ids:
             # Endpoints and parent identities come from authoritative references.
             selected_cache[row["id"]] = {**row, **refs[row["id"]]}
+    audit_path = cache_dir / "fresh_audit.json"
+    validate_fresh_audit(
+        json.loads(audit_path.read_text()),
+        list(refs.values()),
+        all_cached,
+        contract_hash,
+    )
     parents = [json.loads(line) for line in source.open()]
     parent_ids = [row["prompt_id"] for row in parents]
     if len(set(parent_ids)) != len(parent_ids) or set(grouped) - set(parent_ids):
@@ -78,6 +88,7 @@ def prepare_training(
         "source_sha256": manifest["source_sha256"],
         "cache_contract_sha256": contract_hash,
         "cache_sha256": digest(cached_path),
+        "fresh_audit_sha256": digest(audit_path),
         "references_sha256": manifest["references_sha256"],
         "output_sha256": digest(output),
         "full_supervision": "unchanged original fields; no parent duplication",

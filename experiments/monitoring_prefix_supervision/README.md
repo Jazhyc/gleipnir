@@ -238,3 +238,18 @@ After the cache is complete and its workers have exited:
 .venv/bin/python -m experiments.monitoring_prefix_supervision.campaign prepare
 .venv/bin/python -m experiments.monitoring_prefix_supervision.campaign run --revision COMMIT
 ```
+
+Before paired-data preparation, a post-cache audit is now required. Its selection
+is score-blind: eight longest-character prefixes from distinct parents plus eight
+hash-selected additional parents per source (64 total). Character length is a
+selection proxy, not an asserted token ranking. `audit_cache.py` requires a
+complete cache and idle GPUs, restores the recorded serving runtime/config, and
+resets the prefix cache before each fresh prediction. Numerical limits remain
+MAE <=0.02 and maximum <=0.05. Training preparation independently recomputes these
+errors from raw logits, checks exact sample identity and cache-contract identity,
+and records the audit hash; it does not trust a summary pass flag. Eight focused
+audit/materialization/sampling tests pass. The GPU audit itself awaits completion.
+
+```bash
+PYTHONPATH=src .venv-vllm028-prefix/bin/python -m experiments.monitoring_prefix_supervision.audit_cache --cache-dir results/monitoring_prefix_supervision/qwen35_flashinfer_cache
+```
