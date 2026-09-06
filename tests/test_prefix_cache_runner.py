@@ -2,6 +2,8 @@ import hashlib
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from experiments.monitoring_prefix_supervision.cache import run_cache
 
 
@@ -16,6 +18,13 @@ class Tokenizer:
 class Engine:
     def __init__(self):
         self.batches = []
+        self.llm_engine = SimpleNamespace(
+            vllm_config=SimpleNamespace(
+                cache_config=SimpleNamespace(
+                    enable_prefix_caching=True, mamba_cache_mode="align"
+                )
+            )
+        )
 
     def generate(self, prompts, sampling, **kwargs):
         self.batches.append(prompts)
@@ -39,7 +48,8 @@ class Engine:
         ]
 
 
-def test_full_cache_interleaves_and_resumes(tmp_path):
+@pytest.mark.parametrize("concurrency", [1, 8])
+def test_full_cache_interleaves_and_resumes(tmp_path, concurrency):
     source = tmp_path / "source.jsonl"
     grouped = {}
     records = []
@@ -81,15 +91,18 @@ def test_full_cache_interleaves_and_resumes(tmp_path):
         tmp_path / "output",
         {"passed": True},
     )
-    run_cache(*args)
-    assert len(engine.batches) == 4
-    assert [len(batch) for batch in engine.batches] == [8, 8, 3, 3]
+    run_cache(*args, parallel_trajectories=concurrency)
+    expected_batches = 22 if concurrency == 1 else 4
+    assert len(engine.batches) == expected_batches
+    assert [len(batch) for batch in engine.batches] == (
+        [1] * 22 if concurrency == 1 else [8, 8, 3, 3]
+    )
     output = tmp_path / "output/logits.jsonl"
     rows = [json.loads(line) for line in output.read_text().splitlines()]
     assert len(rows) == len({r["id"] for r in rows}) == 22
-    run_cache(*args)
-    assert len(engine.batches) == 4
+    run_cache(*args, parallel_trajectories=concurrency)
+    assert len(engine.batches) == expected_batches
     # A valid interrupted cache resumes exactly the missing rows.
     output.write_text("".join(json.dumps(r) + "\n" for r in rows[:9]))
-    run_cache(*args)
+    run_cache(*args, parallel_trajectories=concurrency)
     assert len(output.read_text().splitlines()) == 22

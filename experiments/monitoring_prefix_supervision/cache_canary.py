@@ -2,9 +2,12 @@
 
 import argparse
 import hashlib
+import importlib.metadata
 import json
 import math
+import os
 import subprocess
+import sys
 import time
 from collections import defaultdict
 from pathlib import Path
@@ -15,11 +18,29 @@ def sha(path: Path) -> str:
 
 
 def main() -> None:
+    # Match the ID runner's environment before any model/backend import.
+    os.environ["PATH"] = (
+        f"{Path(sys.executable).parent.absolute()}:{os.environ.get('PATH', '')}"
+    )
+    os.environ["CUDA_VISIBLE_DEVICES"] = "0,1"
+    for variable, subdir in (
+        ("TILELANG_CACHE_DIR", "tilelang"),
+        ("TORCHINDUCTOR_CACHE_DIR", "torchinductor"),
+        ("TRITON_CACHE_DIR", "triton"),
+        ("TVM_CACHE_DIR", "tvm"),
+    ):
+        os.environ[variable] = f"/tmp/gleipnir-gpu-0,1/{subdir}"
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--benchmark-config", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--cache-output", type=Path)
+    parser.add_argument("--parallel-trajectories", type=int, choices=(1, 8), default=8)
+    parser.add_argument("--batch-invariant", action="store_true")
+    parser.add_argument(
+        "--mamba-ssm-cache-dtype", choices=("auto", "float32"), default="auto"
+    )
     args = parser.parse_args()
+    os.environ["VLLM_BATCH_INVARIANT"] = "1" if args.batch_invariant else "0"
     if args.output.exists():
         raise FileExistsError(args.output)
     memory = [
@@ -119,6 +140,7 @@ def main() -> None:
         gpu_memory_utilization=0.9,
         enable_prefix_caching=True,
         mamba_cache_mode="all",
+        mamba_ssm_cache_dtype=args.mamba_ssm_cache_dtype,
         gdn_prefill_backend="triton",
         seed=20260906,
         enforce_eager=bool(config["engine"].get("enforce_eager", False)),
@@ -187,7 +209,11 @@ def main() -> None:
     }
     errors = [
         abs(a["score"] - b["score"])
-        for mode in ("growing", "batched_growing")
+        for mode in (
+            ("growing",)
+            if args.parallel_trajectories == 1
+            else ("growing", "batched_growing")
+        )
         for a, b in zip(results["cold"]["rows"], results[mode]["rows"], strict=True)
     ]
     hits = sum(row["cached_tokens"] or 0 for row in results["growing"]["rows"])
@@ -198,19 +224,37 @@ def main() -> None:
         for index, row in enumerate(results[mode]["rows"])
         if index % 3 != 0
     ]
+    selected_mode = "growing" if args.parallel_trajectories == 1 else "batched_growing"
+    source_reuse = {
+        source_name: any(
+            (scored["cached_tokens"] or 0) > rubric_tokens
+            for reference, scored in zip(
+                selected, results[selected_mode]["rows"], strict=True
+            )
+            if reference["source"] == source_name
+        )
+        for source_name in chosen
+    }
     results.update(
         model=model,
+        runtime_versions={
+            name: importlib.metadata.version(name)
+            for name in ("vllm", "torch", "transformers")
+        },
         manifest_sha256=sha(root / "manifest.json"),
         mean_absolute_error=sum(errors) / len(errors),
         max_absolute_error=max(errors),
         cached_tokens=hits,
-        passed=bool(trajectory_hits)
-        and all(hit > rubric_tokens for hit in trajectory_hits)
+        passed=all(source_reuse.values())
         and max(errors) <= 0.05
         and sum(errors) / len(errors) <= 0.02,
         purpose="cache-enabled engine: reset-per-request versus growing-prefix reuse",
         trajectory_reuse_cached_tokens=trajectory_hits,
         rubric_only_token_ceiling=rubric_tokens,
+        source_trajectory_reuse=source_reuse,
+        parallel_trajectories=args.parallel_trajectories,
+        batch_invariant=args.batch_invariant,
+        mamba_ssm_cache_dtype=args.mamba_ssm_cache_dtype,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(results, indent=2) + "\n")
@@ -231,6 +275,7 @@ def main() -> None:
             manifest,
             args.cache_output,
             results,
+            parallel_trajectories=args.parallel_trajectories,
         )
 
 

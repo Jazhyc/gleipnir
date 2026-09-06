@@ -2,6 +2,14 @@
 
 ## Current findings and follow-up authorization
 
+The bounded Qwen3.8 eager diagnostic also failed its unchanged numerical gate:
+five-row MAE 0.1091471453, maximum 0.3699664663. Both processes exited and no
+full Qwen3.8 ID result exists. Compilation removal did not fix consistency;
+this is a serving-reliability failure, not an inferred low benchmark score.
+Select Qwen3.5-27B FP8 as the strongest candidate with a valid completed screen,
+subject to its separate prefix-cache preflight. Do not claim that Qwen3.8's
+underlying model quality has been measured or that it is worse than Qwen3.5.
+
 Qwen3.5-27B FP8 completed all 3,012 rows with macro pAUROC@20
 0.9133745803, macro AUROC 0.9785879965, and macro Brier 0.0858109206.
 Per-source pAUROC@20 is 0.8796745339 (Gloom) and 0.9470746267 (STRIDE).

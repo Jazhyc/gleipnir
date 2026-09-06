@@ -102,3 +102,44 @@ unreduced loss vectors. Four tests verify parent weighting, exact gradient
 scales, invariance to repeated identical prefixes, empty-prefix behavior,
 zero prefix weight, and invalid parent indices. It is not yet integrated into
 the training collator/forward path; no training run has been launched.
+
+## Cache preflight findings and bounded singleton follow-up
+
+The first engine launch failed before scoring because its PATH omitted ninja.
+The corrected launch matches the ID runner's executable and kernel-cache paths.
+Its 24-prefix preflight demonstrated reuse (39,984 cached tokens in singleton
+mode), but the combined singleton/batch gate failed. Singleton maximum error
+was 0.031209; batched maximum was 0.061457, above the unchanged 0.05 cutoff.
+Cold/singleton-growing/batched-growing timings were 5.113/4.037/1.856 seconds.
+Do not approve the failed eight-parent configuration or claim these early-prefix
+timings predict whole-campaign runtime.
+
+Run one separate `--parallel-trajectories 1` preflight on the same examples,
+retaining the MAE <=0.02 and max <=0.05 numerical limits. Only singleton
+comparisons govern this variant; retain batched diagnostics as failed-context
+evidence. Correct the cache-coverage criterion to require observed reuse beyond
+the rubric for every source, not every short early prefix: 784-token cache
+blocks cannot expose a trajectory-specific block in all those short requests.
+Retain per-request hit counts so this correction is auditable. If this variant
+passes, `--cache-output` may start the full unchanged 133,947-reference campaign
+in the same engine at exactly one active trajectory; resume identities include
+the trajectory concurrency. No numerical thresholds are loosened.
+
+The independent singleton repeat failed (maximum error 0.093386). Batch-invariant
+mode failed during initialization because vLLM does not support it for GDN_ATTN.
+Neither variant started annotation. The next bounded test explicitly stores SSM
+states in FP32: installed vLLM defaults these states to the BF16 model dtype.
+Use the same 24 prefixes, singleton concurrency, and unchanged numerical gates;
+record the dtype in the canary and resume contract. This tests recurrent-state
+rounding, not teacher quality. Start full caching only if this test passes.
+
+FP32 SSM canary also failed: MAE 0.011400464, maximum 0.120145485;
+all four sources showed trajectory-specific reuse. No annotation started and
+the failed process group was stopped. FP32 state storage alone is insufficient.
+Upstream PR 51113 fixes align-cache poisoning mainly with speculative decoding;
+this campaign does not use speculative decoding, so applicability is unproven.
+
+An isolated `.venv-vllm028-prefix` now contains vLLM 0.28.0 with Transformers
+5.14.1. The original environment and lockfile remain unchanged. Test the same
+singleton canary with default SSM precision before considering annotation;
+record runtime package versions in both the canary and cache resume identity.

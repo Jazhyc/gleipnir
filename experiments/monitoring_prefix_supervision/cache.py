@@ -22,13 +22,26 @@ def run_cache(
     manifest: dict,
     output: Path,
     canary: dict,
+    *,
+    parallel_trajectories: int = 8,
 ) -> None:
     """Interleave eight parent trajectories, advancing one prefix per parent."""
     if not canary["passed"]:
         raise ValueError("cache preflight did not pass")
+    if parallel_trajectories not in (1, 8):
+        raise ValueError("unsupported trajectory concurrency")
+    actual_cache = llm.llm_engine.vllm_config.cache_config
+    if not actual_cache.enable_prefix_caching or actual_cache.mamba_cache_mode not in (
+        "all",
+        "align",
+    ):
+        raise ValueError("runtime prefix cache configuration is not supported")
     output.mkdir(parents=True, exist_ok=True)
     contract = {
+        "parallel_trajectories": parallel_trajectories,
+        "batch_invariant": bool(canary.get("batch_invariant", False)),
         "model": config["model"],
+        "runtime_versions": canary.get("runtime_versions", {}),
         "manifest": manifest,
         "prompt": {
             "instruction_sha256": manifest["instruction_sha256"],
@@ -46,7 +59,11 @@ def run_cache(
             "dtype": "bfloat16",
             "quantization": "fp8",
             "prefix_caching": True,
-            "mamba_cache_mode": "all",
+            "mamba_cache_mode_requested": "all",
+            "mamba_cache_mode": actual_cache.mamba_cache_mode,
+            "mamba_ssm_cache_dtype": getattr(
+                actual_cache, "mamba_ssm_cache_dtype", "auto"
+            ),
             "gdn_prefill_backend": "triton",
             "max_model_len": 32768,
             "max_num_seqs": 8,
@@ -79,7 +96,7 @@ def run_cache(
     started = time.time()
     with cache_path.open("a") as stream:
         while True:
-            while len(active) < 8:
+            while len(active) < parallel_trajectories:
                 parent = next(parents, None)
                 if parent is None:
                     break
