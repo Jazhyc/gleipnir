@@ -19,6 +19,14 @@ PYTHONPATH=src .venv/bin/python scripts/plot_teacher_score_histograms.py
 
 The script prints the input SHA256 and descriptive summary statistics.
 
+`teacher_final_boundary_calibration.png` and `.svg` show reliability diagrams
+on these same 640 samples, with 10 equal-width bins, bin counts and descriptive
+95% Wilson event-rate intervals. Regenerate with
+`PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.calibration`.
+Detailed pooled/per-source results and 5/10/20-bin ECE sensitivity are written
+to `results/teacher_agreement/calibration.json`. The intervals assume independent
+samples and do not establish held-out or original-population calibration.
+
 ## Tool-trajectory OOD frontier
 
 `tool_trajectory_ood_frontier.svg` is the sharp, resolution-independent primary

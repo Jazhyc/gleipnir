@@ -76,6 +76,42 @@ source-weighted population, and no uncertainty interval was estimated.
 
 ## Artifacts
 
+### Label-based calibration follow-up (2026-09-07)
+
+Same 640 paired full-boundary scores, unchanged targets and existing labels.
+Positive-class ECE weights each equal-width bin's absolute difference between
+mean probability and observed positive fraction by its sample count. Empty
+bins contribute zero. Brier and natural-log loss are proper scoring rules,
+not pure measures of calibration; log loss clips only numerically at 1e-15.
+
+| Diagnostic | Qwen 3.5 27B FP8 | Kimi K3 |
+| --- | ---: | ---: |
+| ECE, 10 equal-width bins | 0.117087 | 0.044054 |
+| ECE, 5 / 20 bins | 0.110206 / 0.122986 | 0.035154 / 0.048228 |
+| Brier | 0.116556 | 0.071498 |
+| Log loss (nats) | 0.522498 | 0.245876 |
+| Accuracy at 0.5 | 0.857813 | 0.910938 |
+| Mean predicted-class confidence | 0.962203 | 0.939829 |
+| Mean confidence minus accuracy | 0.104391 | 0.028891 |
+| Mean positive probability minus prevalence | -0.104908 | -0.026031 |
+
+Both teachers are overconfident on average on this sample, more markedly Qwen.
+Kimi has lower estimated calibration error across all three bin counts. This
+is not evidence that bimodality itself is a defect, nor that a fitted correction
+would improve transfer. The observed label prevalence is 0.5 by construction;
+source/label-balanced sampling alters calibration relative to other deployment
+mixtures. Labels may be imperfect measures of rubric-defined behavior. No
+calibrator is fitted and no new teacher or student run is launched.
+
+Reliability diagrams label bin counts and show descriptive 95% Wilson intervals
+for observed rates (independent-Bernoulli assumption, no grouped uncertainty).
+Sparse middle bins are correspondingly uncertain. Exact numerical tables,
+including per-source diagnostics, live in `results/teacher_agreement/calibration.json`.
+Input paired-score SHA256:
+`126d12f58889603478941b99faa5f2c581a57ffd43e255849e461dde81b85e07`.
+
+### Original agreement artifacts
+
 `results/teacher_agreement/agreement.json` contains pooled, source and provider
 statistics; `paired_scores.jsonl` contains the matched probability/margin pairs.
 Original Kimi logprobs remain in `kimi.jsonl`; raw Qwen logprobs remain in

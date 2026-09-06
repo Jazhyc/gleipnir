@@ -48,3 +48,11 @@ raw-logprob-to-probability consistency. Numerical canary passed with mean
 absolute probability difference 0.002924 and maximum 0.014350. Final results:
 `docs/findings/matched_qwen_kimi_teacher_agreement.md`. Both teacher inputs and
 Qwen outputs are retained locally under the ignored result directory.
+
+Calibration follow-up (2026-09-07): run
+`PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.calibration`
+to compute unmodified-score Brier/log loss, positive-class equal-width ECE
+(5/10/20 bins), confidence/accuracy, source breakdowns and reliability diagrams.
+This is a descriptive label-based diagnostic on the existing balanced sample;
+it fits no correction and makes no new teacher calls. Bin event-rate intervals
+are Wilson intervals assuming independent samples, not grouped confidence bounds.
