@@ -1,8 +1,9 @@
 # Intermediate tool-action supervision
 
-Status: prompt wording approved by the user; full instruction materialized in
-`teacher_prefix.txt`. No prefix annotation or training has launched yet. The
-existing ID evaluations retain their frozen full-trajectory prompts.
+Status: approved prompt materialized in `teacher_prefix.txt`; full prefix
+annotation is running on Lambda with Qwen3.5-27B-FP8, TP2, vLLM 0.28.0,
+FlashInfer GDN, and one active trajectory. No student training has launched.
+The existing ID evaluations retain their frozen full-trajectory prompts.
 
 ## Hypothesis and intervention
 
@@ -163,3 +164,14 @@ The bounded diagnostic did not request annotation. Proceed with the same backend
 and singleton concurrency through the gated full-cache entrypoint; keep the
 original model revision and approved prompt. This small canary is not proof of
 agreement across every long prefix, so retain per-request provenance and failures.
+
+The full-cache repeat preflight reproduced the passing FlashInfer result exactly.
+Annotation began on 2026-09-06 around 01:07 UTC, process 152130, output
+`results/monitoring_prefix_supervision/qwen35_flashinfer_cache/`, log
+`logs/lambda/monitoring_prefix_supervision/qwen35_flashinfer_full.log`.
+At the initial audit, 247 unique finite-logit records covered all four sources,
+2,231,165 prompt tokens and 1,982,736 reused tokens, with maximum prompt length
+26,959. Initial 52.8-second throughput was about 4.7 prefixes/second (roughly
+eight hours if sustained, not a mature ETA). Both GPU workers were active.
+This session exposes no timed agent scheduler; active continuation checks are
+not a verified ten-minute scheduled heartbeat.
