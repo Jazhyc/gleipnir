@@ -346,3 +346,36 @@ Gloom by 0.020160 and STRIDE by 0.009053; its Brier also regresses. Keep the
 full-only baseline. This single-seed result does not isolate teacher mismatch,
 cache numerical sensitivity, or sparse-boundary sampling as the cause. It does
 not test all-boundary branching, and no OOD data were consulted for selection.
+
+## Authorized lower-weight follow-up
+
+2026-09-06: user requested weights 0.05 and 0.1, retaining one sampled prefix
+per eligible trajectory. Hypothesis: weaker auxiliary supervision may retain
+useful intermediate signal while reducing mixed-teacher conflict. This does not
+assume teacher mismatch caused the previous result or that Qwen is inferior
+on every task. This is an adaptive exploratory extension after inspecting the
+0.25/0.5 outcomes, not an independent confirmatory sweep.
+
+`training_low.yaml` inherits the unchanged recipe and frozen selection rule:
+one epoch, LR 2e-5, seed 0, 272 steps, all 8,688 parents, original Kimi endpoint
+targets, same 6,348 sampled prefixes. Reuse requires checksum verification of
+the previous campaign manifest and exact paired-data provenance, including
+the authorized failed-cache-audit exception. Do not recache, resample, rescale
+teacher probabilities, or add full-prefix branching.
+
+Train two lanes on the reserved H100s, one weight per GPU, after kernel and
+longest-paired-sequence preflight. Keep the matched microbatch-1/accumulation-32
+recipe, QLoRA rank 128, and selective checkpointing/compilation. Run serving
+parity then final 3,012-row ID evaluation with the existing shared lifecycle.
+Compare both endpoints with full-only and contextualize alongside 0.25/0.5.
+Require +0.005 macro pAUROC, no source loss above 0.01, and no Brier regression
+above 0.005; no OOD selection, automatic additional grid, or full-prefix launch.
+Stop on preflight, provenance, finite-loss, training, or evaluation failures.
+
+Artifacts and logs are isolated under `results/monitoring_prefix_training_low/`
+and `logs/lambda/monitoring_prefix_training_low/`; earlier results stay intact.
+
+```bash
+.venv/bin/python -m experiments.monitoring_prefix_supervision.campaign prepare --config-name training_low
+.venv/bin/python -m experiments.monitoring_prefix_supervision.campaign run --root results/monitoring_prefix_training_low --revision COMMIT
+```

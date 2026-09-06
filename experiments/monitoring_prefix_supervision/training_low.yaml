@@ -1,0 +1,8 @@
+defaults:
+  - training
+  - _self_
+
+campaign_id: gleipnir4b-monitoring-prefix-low-v1
+prefix_loss_weights: [0.05, 0.1]
+result_dir: results/monitoring_prefix_training_low
+reuse_campaign_manifest: results/monitoring_prefix_training/manifest.json

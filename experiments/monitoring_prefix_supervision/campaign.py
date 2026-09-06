@@ -30,7 +30,7 @@ from gleipnir.monitoring_systems_screen import (
 def make_jobs(config: dict, paired_manifest: dict) -> list[dict]:
     """Change only paired inputs and prefix weight from the proven LR recipe."""
     if (
-        config["prefix_loss_weights"] != [0.25, 0.5]
+        config["prefix_loss_weights"] not in ([0.25, 0.5], [0.05, 0.1])
         or config["learning_rate"] != 2e-5
         or config["epochs"] != 1
         or config["seed"] != 0
@@ -73,12 +73,32 @@ def make_jobs(config: dict, paired_manifest: dict) -> list[dict]:
     return jobs
 
 
-def prepare() -> None:
+def reuse_paired(config: dict) -> dict:
+    """Reuse the exact sampled rows from a checksum-verified earlier campaign."""
+    previous = json.loads(Path(config["reuse_campaign_manifest"]).read_text())
+    for name, checksum in previous["files"].items():
+        if sha256_file(Path(name)) != checksum:
+            raise ValueError(f"previous campaign drift: {name}")
+    path = Path(config["paired_rows"])
+    sidecar = path.with_suffix(path.suffix + ".manifest.json")
+    if str(path) not in previous["files"] or str(sidecar) not in previous["files"]:
+        raise ValueError("paired files missing from previous frozen campaign")
+    paired = json.loads(sidecar.read_text())
+    if (
+        paired != previous["paired_training"]
+        or paired["numerical_exception"] != config.get("numerical_exception")
+        or paired["output_sha256"] != sha256_file(path)
+    ):
+        raise ValueError("paired provenance drift")
+    return paired
+
+
+def prepare(config_name: str = "training") -> None:
     """Prepare only after annotation completion; never launch GPU work here."""
     with initialize_config_dir(
         version_base=None, config_dir=str(Path(__file__).parent.resolve())
     ):
-        config = OmegaConf.to_container(compose(config_name="training"), resolve=True)
+        config = OmegaConf.to_container(compose(config_name=config_name), resolve=True)
     root = Path(config["result_dir"])
     if (root / "manifest.json").exists():
         raise FileExistsError(root / "manifest.json")
@@ -86,12 +106,16 @@ def prepare() -> None:
         DEFAULT_DATA_DIR / "student_rows.jsonl", Path(config["full_soft_targets"])
     )
     heldout = validate_id_separation(DEFAULT_ID_INPUT, audit.pop("trajectory_hashes"))
-    paired = prepare_training(
-        Path(config["cache_dir"]),
-        Path(config["references"]),
-        Path(config["paired_rows"]),
-        seed=config["seed"],
-        numerical_exception=config.get("numerical_exception"),
+    paired = (
+        reuse_paired(config)
+        if config.get("reuse_campaign_manifest")
+        else prepare_training(
+            Path(config["cache_dir"]),
+            Path(config["references"]),
+            Path(config["paired_rows"]),
+            seed=config["seed"],
+            numerical_exception=config.get("numerical_exception"),
+        )
     )
     jobs = make_jobs(config, paired)
     atomic_write_jsonl(root / "jobs.jsonl", jobs)
@@ -130,7 +154,9 @@ def prepare() -> None:
             "training": audit,
             "paired_training": paired,
             "held_out_id": heldout,
-            "authoring_sha256": sha256_file(Path(__file__).with_name("training.yaml")),
+            "authoring_sha256": sha256_file(
+                Path(__file__).with_name(config_name + ".yaml")
+            ),
             "files": {str(path): sha256_file(path) for path in paths},
         },
     )
@@ -182,8 +208,6 @@ def reconstruct_jobs(config: dict) -> list[dict]:
 
 def execute(root: Path, revision: str | None) -> None:
     """Reuse the two-lane lifecycle after checking idle GPUs and training stack."""
-    from experiments.monitoring_duration.run import execute as execute_two_lanes
-
     if not importlib.metadata.version("torch").startswith("2.11.0"):
         raise ValueError("use the preserved training environment, not the vLLM upgrade")
     memory = [
@@ -195,12 +219,14 @@ def execute(root: Path, revision: str | None) -> None:
     ]
     if len(memory) != 2 or max(memory) > 1024:
         raise RuntimeError("both GPUs must be idle; do not interrupt annotation")
+    from experiments.monitoring_duration.run import execute as execute_two_lanes
+
     execute_two_lanes(
         root,
         revision,
         job_factory=reconstruct_jobs,
         completed_validator=validate_completed,
-        logs_root=Path("logs/lambda/monitoring_prefix_training"),
+        logs_root=Path("logs/lambda") / root.name,
     )
 
 
@@ -213,8 +239,9 @@ if __name__ == "__main__":
         "--root", type=Path, default=Path("results/monitoring_prefix_training")
     )
     parser.add_argument("--revision")
+    parser.add_argument("--config-name", default="training")
     args = parser.parse_args()
     if args.action == "prepare":
-        prepare()
+        prepare(args.config_name)
     else:
         execute(args.root, args.revision)
