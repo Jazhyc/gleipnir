@@ -165,6 +165,12 @@ and singleton concurrency through the gated full-cache entrypoint; keep the
 original model revision and approved prompt. This small canary is not proof of
 agreement across every long prefix, so retain per-request provenance and failures.
 
+The saved FlashInfer eight-parent diagnostic did not pass: MAE 0.005613861,
+maximum 0.093385874. Keep the active campaign at singleton concurrency; the
+passing singleton gate is not evidence for safe eight-parent batching. Its
+batched timing also includes an additional kernel compilation, so it is not a
+clean throughput comparison.
+
 The full-cache repeat preflight reproduced the passing FlashInfer result exactly.
 Annotation began on 2026-09-06 around 01:07 UTC, process 152130, output
 `results/monitoring_prefix_supervision/qwen35_flashinfer_cache/`, log
