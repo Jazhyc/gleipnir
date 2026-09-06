@@ -1,0 +1,20 @@
+candidate: kimi26
+model: moonshotai/kimi-k2.6
+provider: inceptron/int4
+provider_name: Inceptron
+input: results/teacher_agreement/prompts.jsonl
+pairs: results/teacher_agreement/paired_scores.jsonl
+output: results/teacher_agreement/kimi26_inceptron
+scores: results/teacher_agreement/kimi26_inceptron/canary.jsonl
+canary_rows: 1
+concurrency: 8
+max_tokens: 8
+reasoning_effort: none
+max_retries: 2
+max_prompt_price: 0.56
+max_completion_price: 3.39
+additional_baselines:
+  minimax:
+    path: results/teacher_agreement/minimax_m3_coreweave_canary.jsonl
+    model: minimax/minimax-m3
+    provider: CoreWeave

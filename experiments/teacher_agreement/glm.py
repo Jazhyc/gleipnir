@@ -59,6 +59,7 @@ def main() -> None:
     c = yaml.safe_load(args.config.read_text())
     root = Path(c["output"])
     paths = [Path(c["input"]), Path(c["pairs"]), args.config]
+    paths.extend(Path(v["path"]) for v in c.get("additional_baselines", {}).values())
     score_path = Path(c.get("scores", root / "scores.jsonl"))
     candidate = c.get("candidate", "glm")
 
@@ -149,14 +150,22 @@ def main() -> None:
     if len(scores) != 640 or {r["id"] for r in scores} != set(prompts):
         raise ValueError("incomplete matched scoring")
     indexed = {r["id"]: r for r in scores}
+    teacher_scores = {candidate: indexed}
+    for name, baseline in c.get("additional_baselines", {}).items():
+        records = list(map(json.loads, Path(baseline["path"]).open()))
+        validate(records, prompts, baseline["provider"], baseline["model"], True)
+        if len(records) != 640 or {r["id"] for r in records} != set(prompts):
+            raise ValueError("incomplete additional baseline")
+        teacher_scores[name] = {r["id"]: r for r in records}
     summary = {}
-    for teacher in ("qwen", "kimi", candidate):
+    teachers = ["qwen", "kimi", *teacher_scores]
+    for teacher in teachers:
 
         def metrics(selected, teacher=teacher):
             y = [r["label"] for r in selected]
             p = [
-                indexed[r["id"]]["score"]
-                if teacher == candidate
+                teacher_scores[teacher][r["id"]]["score"]
+                if teacher in teacher_scores
                 else r[f"{teacher}_score"]
                 for r in selected
             ]
@@ -191,7 +200,7 @@ def main() -> None:
         json.dumps(
             {
                 t: {k: v for k, v in summary[t]["pooled"].items() if k != "bins"}
-                for t in ("qwen", "kimi", candidate)
+                for t in teachers
             },
             indent=2,
         )

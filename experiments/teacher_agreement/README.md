@@ -1,5 +1,24 @@
 # Matched Qwen/Kimi full-trajectory agreement
 
+## Kimi K2.6 matched comparison protocol (2026-09-07)
+
+User authorized Kimi K2.6 through Inceptron on the same 640 final-boundary
+prompts. Hypothesis: the older Kimi teacher may provide a better inexpensive
+ranking/calibration tradeoff than Qwen or MiniMax. Reuse the same config-driven
+runner with `--config experiments/teacher_agreement/kimi26.yaml` and phases
+`prepare`, `canary --limit 1`, `run`, `analyze`. Freeze the original prompt/pair
+hashes and the existing MiniMax cache; report all four teachers on exact IDs.
+Pin `inceptron/int4`, reasoning none, temperature zero, 8-token cap, top-5
+logprobs, eight workers, no fallbacks or explicit cache assumption. Require
+both real decision alternatives and zero reported reasoning tokens. Cache
+resumes the canary in place; settings and prompt hashes must match.
+Catalog caps: $0.56/M input, $3.39/M output; approximately $3.94 input using
+7.03M Qwen tokens as a proxy, before tokenizer differences/cache hits/retries.
+Stop on incomplete or invalid scoring; do not switch to reasoning or tune the
+prompt. Report pooled and per-source AUROC, ECE(5/10/20), Brier, log loss,
+ties and threshold diagnostics. This is evaluation-only on a balanced training
+sample, with no calibration fitting, ID/OOD promotion, student runs or GPU use.
+
 ## MiniMax full comparison protocol (2026-09-07)
 
 User authorized completing all 640 matched rows after the direct-logit canary.
