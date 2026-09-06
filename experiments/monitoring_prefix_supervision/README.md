@@ -96,3 +96,9 @@ optimizer-step budget before launch: expanding 134K prefixes into independent
 training rows would otherwise change both trajectory weighting and training
 duration. Uniformly sampling one prefix per parent supplies an unbiased estimate
 of its mean prefix loss, but the sampling implementation still needs validation.
+
+`gleipnir.prefix_loss.trajectory_prefix_loss` implements this reduction on
+unreduced loss vectors. Four tests verify parent weighting, exact gradient
+scales, invariance to repeated identical prefixes, empty-prefix behavior,
+zero prefix weight, and invalid parent indices. It is not yet integrated into
+the training collator/forward path; no training run has been launched.
