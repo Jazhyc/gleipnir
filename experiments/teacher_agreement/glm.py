@@ -52,11 +52,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("phase", choices=["prepare", "canary", "run", "analyze"])
     parser.add_argument("--limit", type=int)
+    parser.add_argument("--concurrency", type=int, help="Transport-only retry override")
     parser.add_argument(
         "--config", type=Path, default=Path(__file__).with_name("glm.yaml")
     )
     args = parser.parse_args()
     c = yaml.safe_load(args.config.read_text())
+    concurrency = args.concurrency if args.concurrency is not None else c["concurrency"]
+    if concurrency < 1:
+        raise ValueError("concurrency must be positive")
     root = Path(c["output"])
     paths = [Path(c["input"]), Path(c["pairs"]), args.config]
     paths.extend(Path(v["path"]) for v in c.get("additional_baselines", {}).values())
@@ -131,7 +135,9 @@ def main() -> None:
             "--max-retries",
             str(c["max_retries"]),
             "--concurrency",
-            str(min(4, c["concurrency"])) if canary else str(c["concurrency"]),
+            str(min(4, concurrency)) if canary else str(concurrency),
+            "--progress-every",
+            "50",
             "--provider-max-prompt-price",
             str(c["max_prompt_price"]),
             "--provider-max-completion-price",

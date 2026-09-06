@@ -19,6 +19,13 @@ prompt. Report pooled and per-source AUROC, ECE(5/10/20), Brier, log loss,
 ties and threshold diagnostics. This is evaluation-only on a balanced training
 sample, with no calibration fitting, ID/OOD promotion, student runs or GPU use.
 
+Completed 640/640 with zero reasoning tokens. Six HTTP-429 failures from the
+concurrency-eight pass were completed with `run --concurrency 2`; the override
+only changes transport parallelism, not the frozen request settings or scores.
+K2.6 pooled AUROC 0.960449, ECE(10) 0.051102, Brier 0.081665; reported
+successful-row charges $3.380963. See
+`docs/findings/kimi26_matched_teacher_comparison.md` for all four teachers.
+
 ## MiniMax full comparison protocol (2026-09-07)
 
 User authorized completing all 640 matched rows after the direct-logit canary.
