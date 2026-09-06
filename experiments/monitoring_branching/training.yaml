@@ -1,0 +1,37 @@
+campaign_id: gleipnir4b-all-prefix-w010-v1
+result_dir: results/monitoring_branching_training
+job_name: all-prefix-w010-lr2em05-seed0
+learning_rate: 2.0e-5
+epochs: 1
+seed: 0
+prefix_weight: 0.1
+effective_batch: 32
+microbatch: 1
+warmup_ratio: 0.03
+weight_decay: 0.0
+optimizer: adamw_torch
+gradient_clip: 1.0
+checkpoint_every: 32
+alignment: 64
+checkpoint_segments: true
+independent_endpoint: true
+fp32_head: true
+torch_compile: false
+parallelism: two_gpu_layer_split
+strict_ood_consulted: false
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+  baseline_pauroc: 0.8710662298082067
+  sampled_w010_pauroc: 0.8766879959196943
+numerical_exception:
+  user_authorization: "2026-09-06: Interesting. It should be fine. This is an exploratory experiment."
+  failed_diagnostic: results/monitoring_branching/hybrid_preflight_v1/parity-222.json
+  failed_diagnostic_sha256: cb565fe95e2075521dad10e8b4c22b25774beb98a8895875291084aaed6ad85a
+  scope: "Proceed with approximate branching despite 0.072486 relative gradient error; preserve the failed gate. No target alteration, nonfinite/missing gradients, or memory failures authorized."
+cache_exception:
+  audit_sha256: a484d0b82934abc16012fbcd9d7de85e3f6615b6376d8d3dcc9929c33d461a53
+  contract_sha256: c97ffbbc5cc9ab25d97c0f6b4735241b81a512eddbae84fcc3a33bfa2d7cbcb8
+  user_authorization: "2026-09-06: begin training regardless of numerical audit failure; test robustness to target noise without recaching."

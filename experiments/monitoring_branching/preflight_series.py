@@ -1,6 +1,9 @@
 """Bounded source and memory preflights; never silently start full training."""
 
+import argparse
+import hashlib
 import json
+import math
 import subprocess
 import sys
 from pathlib import Path
@@ -12,11 +15,21 @@ from gleipnir.monitoring_systems_screen import atomic_write_json
 
 
 def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--authorized", action="store_true")
+    args = parser.parse_args()
     with initialize_config_dir(
         version_base=None, config_dir=str(Path(__file__).parent.resolve())
     ):
-        config = OmegaConf.to_container(compose(config_name="preflight"), resolve=True)
-    root = Path("results/monitoring_branching/hybrid_preflight_v1")
+        config = OmegaConf.to_container(
+            compose(
+                config_name="authorized_preflight" if args.authorized else "preflight"
+            ),
+            resolve=True,
+        )
+    root = Path("results/monitoring_branching") / (
+        "hybrid_preflight_authorized_v2" if args.authorized else "hybrid_preflight_v1"
+    )
     execute(config, root)
 
 
@@ -37,6 +50,15 @@ def execute(config: dict, root: Path) -> None:
         or config["training_authorized_after_this_only"] is not False
     ):
         raise ValueError("preflight recipe drift")
+    exception = config.get("numerical_exception")
+    if (
+        exception
+        and hashlib.sha256(
+            Path(exception["failed_diagnostic"]).read_bytes()
+        ).hexdigest()
+        != exception["failed_diagnostic_sha256"]
+    ):
+        raise ValueError("exception diagnostic drift")
     root.mkdir(parents=True, exist_ok=False)
     atomic_write_json(root / "config.json", config)
     status = {"state": "running", "completed": [], "active": None}
@@ -65,12 +87,26 @@ def execute(config: dict, root: Path) -> None:
                 if kind == "memory":
                     command.append("--stress-only")
                 with (root / f"{name}.log").open("x") as log:
-                    subprocess.run(
-                        command, stdout=log, stderr=subprocess.STDOUT, check=True
-                    )
+                    subprocess.run(command, stdout=log, stderr=subprocess.STDOUT)
                 result = json.loads((root / f"{name}.json").read_text())
                 if not result["passed"]:
-                    raise RuntimeError(f"preflight failed: {name}")
+                    if not (
+                        exception
+                        and kind == "parity"
+                        and all(
+                            math.isfinite(result[key])
+                            for key in (
+                                "gradient_relative_l2",
+                                "gradient_cosine",
+                                "loss",
+                                "max_probability_error",
+                                "first_adam_update_relative_l2",
+                            )
+                        )
+                        and result["reference_gradient_norm"] > 0
+                    ):
+                        raise RuntimeError(f"preflight failed: {name}")
+                    status.setdefault("numerical_failures_for_review", []).append(name)
                 status["completed"].append(name)
                 print(name, json.dumps(result), flush=True)
         status.update(state="complete", active=None)

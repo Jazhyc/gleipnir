@@ -123,15 +123,22 @@ def run(
             p.grad is None or not torch.isfinite(p.grad).all() for p in params.values()
         ):
             raise RuntimeError("nonfinite or missing stress gradient")
-        optimizer = torch.optim.AdamW(params.values(), lr=2e-5)
+        optimizer = torch.optim.AdamW(params.values(), lr=2e-5, weight_decay=0.0)
         optimizer.step()
-        torch.cuda.synchronize()
+        if any(not torch.isfinite(p).all() for p in params.values()):
+            raise RuntimeError("nonfinite parameter after stress update")
+        for i in range(torch.cuda.device_count()):
+            torch.cuda.synchronize(i)
         return {
             "passed": True,
             "gate": "memory_and_finite_update_only",
             "parent": parent,
             "prefixes": len(requests) - 1,
             "checkpoint_segments": checkpoint_segments,
+            "alignment": alignment,
+            "fp32_head": fp32_head,
+            "independent_endpoint": independent_endpoint,
+            "weight_decay": 0.0,
             "seconds": time.perf_counter() - started,
             "processed_tokens": work_tokens,
             "max_request_tokens": max(map(len, requests)),

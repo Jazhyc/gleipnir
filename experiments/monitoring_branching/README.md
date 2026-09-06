@@ -155,3 +155,66 @@ An approximate-training exception would require explicit user agreement before
 finishing the remaining gates/integration and launching. The demonstrated
 two-GPU 99-prefix memory pass belongs to the fully shared variant, not yet the
 corrected independent-endpoint variant. No full-run ETA is established.
+
+## Explicit exploratory authorization and remaining checks
+
+On 2026-09-06 the user approved proceeding: "Interesting. It should be fine.
+This is an exploratory experiment." `training.yaml` pins the original failed
+BashBench diagnostic SHA and preserves the earlier cache-noise exception.
+This authorizes approximate numerical branching, not target changes, detached
+history, missing/nonfinite gradients, memory failures, or silent gate relabeling.
+The original failed series and tolerances remain unchanged as historical results.
+
+The remaining frozen Gloom and STRIDE fixtures pass the original limits:
+gradient relative L2 0.015113 and 0.011901; cosine 0.999886 and 0.999929.
+The **exact hybrid variant** now passes both memory/finite-update checks:
+parent 8142 (99 prefixes) takes 126.24 seconds and peaks at 76.686/69.648 GB
+allocated; parent 7706 takes 17.88 seconds and peaks at 35.618/31.922 GB.
+These include AdamW with zero weight decay and finite post-update masters.
+Memory headroom is tight; these extremes are not mean-workload ETA estimates.
+
+The training integration lives in reusable `gleipnir.branch_model` and
+`gleipnir.branch_trainer`, with one config-driven experiment entrypoint:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_branching.train prepare
+# Use the isolated, verified production-kernel environment for the GPU phases:
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_branching.train smoke
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_branching.train pipeline
+```
+
+Freeze one epoch, seed 0, LR 2e-5, fresh rank-128/alpha-256 QLoRA masters,
+NF4 double quantization/BF16 compute, zero dropout/weight decay, ordinary AdamW,
+linear schedule with 3% warmup, norm clipping 1.0. Share only prefix history,
+64-token-aligned exact branches, FP32 selected-token projection, functional
+segment checkpoints and ordinary full-endpoint layer checkpoints. Compilation
+is disabled for this new cache-aware path; no throughput equivalence with the
+previous compiled sampled-prefix loop is claimed. Two-GPU **layer** parallelism,
+microbatch one and accumulation 32 give equal parent mass. The final 16-parent
+window normalizes by 16. Shuffle all parents once with a dedicated seed-0 Torch
+generator; this is deterministic but not asserted identical to HF Trainer order.
+
+The eight-parent fresh-adapter integration smoke uses the same first shuffled
+parents, objective and accumulation, with warmup disabled solely to exercise a
+nonzero optimizer update. Smoke weights are discarded. Full training restarts
+from fresh adapters, visits all 8,688 parents and 133,947 prefixes, saves resumable
+adapter/optimizer/scheduler/RNG checkpoints every 32 updates and at the endpoint,
+and checks finite gradients/masters at every update. No classifier head is added.
+Original Kimi endpoint targets and all Qwen cached prefix targets are unchanged.
+
+The pipeline releases training memory before existing causal-master/vLLM serving
+parity, then evaluates the one final adapter on all 3,012 ID rows in a persistent
+vLLM engine. Compare with full-only (0.871066 pAUROC) and sampled-prefix w0.1
+(0.876688); keep the prior exploratory +0.005/no >0.01 source loss/no >0.005
+Brier regression rule versus full-only. No intermediate ID selection or OOD use.
+
+The fresh-adapter integration smoke passed: eight parents, 162 prefixes, 211.39
+seconds, finite gradient norm 30.17 before clipping and a nonzero AdamW update
+at LR 2e-5. Peak allocations were 51.840/45.701 GB. All 169,869,312 trainable
+parameters are FP32 masters. Twenty-seven focused tests pass, including exact
+optimizer-checkpoint roundtrip. The frozen ID descriptor validates all 3,012 rows.
+Full pipeline supervisor 183692 was launched on the reserved two-H100 node;
+training restarts from fresh adapters and does not reuse smoke weights.
+Eight-parent timing suggests roughly 2–3 days, not a settled workload ETA.
+This session has no agent scheduling tool; startup is checked actively, but no
+automatic ten-minute agent follow-ups are claimed after the chat turn ends.
