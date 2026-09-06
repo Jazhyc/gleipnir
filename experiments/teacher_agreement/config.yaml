@@ -1,0 +1,6 @@
+seed: teacher-agreement-v1
+per_source_label: 64
+prompts: data/tool_trajectory_monitoring/teacher_training/prompts.jsonl
+kimi: data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl
+template: results/qwen35_27b_id/benchmark.json
+output: results/teacher_agreement
