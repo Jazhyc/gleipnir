@@ -52,6 +52,21 @@ from gleipnir.qwen35_fast_training import ensure_qwen35_long_trajectory_kernels
 DEFAULT_ROOT = Path("results/monitoring_duration")
 
 
+def two_gpu_lanes(jobs: list[dict[str, Any]]) -> list[list[dict[str, Any]]]:
+    """Balance longer jobs first without ever inventing GPU IDs beyond 0 and 1."""
+    lanes: list[list[dict[str, Any]]] = [[], []]
+    loads = [0.0, 0.0]
+    for job in sorted(
+        jobs,
+        key=lambda j: float(j["train_rows"]) * float(j["num_train_epochs"]),
+        reverse=True,
+    ):
+        gpu = min(range(2), key=lambda g: loads[g])
+        lanes[gpu].append(job)
+        loads[gpu] += float(job["train_rows"]) * float(job["num_train_epochs"])
+    return lanes
+
+
 def make_jobs(config: dict[str, Any]) -> list[dict[str, Any]]:
     """Change only duration/LR and artifact identity from the selected recipe."""
     if (
@@ -145,7 +160,7 @@ def validate_completed(job: dict[str, Any], *, preflight: bool = False) -> None:
     metadata = validate_training_metadata(
         Path(job["causal_adapter_dir"]) / "training_metadata.json",
         job["learning_rate"],
-        expected_steps=1 if preflight else 544,
+        expected_steps=1 if preflight else int(job.get("expected_steps", 544)),
         require_canary=preflight,
     )
     losses = metadata["losses"]
@@ -296,8 +311,15 @@ def execute(
                     )
                 completed_validator(job)
 
+        def run_lane(lane_jobs: list[dict[str, Any]], gpu: int) -> None:
+            for job in lane_jobs:
+                lane(job, gpu)
+
         with ThreadPoolExecutor(max_workers=2) as pool:
-            futures = [pool.submit(lane, job, gpu) for gpu, job in enumerate(jobs)]
+            futures = [
+                pool.submit(run_lane, lane_jobs, gpu)
+                for gpu, lane_jobs in enumerate(two_gpu_lanes(jobs))
+            ]
             for future in futures:
                 future.result()
         status.update(phase="serving_parity")

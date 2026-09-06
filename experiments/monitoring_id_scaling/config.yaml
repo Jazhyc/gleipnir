@@ -1,0 +1,19 @@
+campaign_id: gleipnir4b-monitoring-id-scaling-v1
+fractions: [0.05, 0.10, 0.20, 0.50]
+counts: [434, 869, 1738, 4344]
+learning_rate: 2.0e-5
+epochs: 1
+seed: 0
+data_dir: data/tool_trajectory_monitoring/distillation_scaling
+result_dir: results/monitoring_id_scaling
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+baseline_result: results/monitoring_lr_sweep/id_evaluation/4b/adapters/adamw-lr2em05-seed0/result.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+strict_ood_consulted: false
+predecessor:
+  pid: 184536
+  command_contains: experiments.monitoring_branching.train
+  root: results/monitoring_branching_compute1x
