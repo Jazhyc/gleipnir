@@ -1,0 +1,24 @@
+defaults:
+  - training
+  - _self_
+
+campaign_id: gleipnir4b-all-prefix-compute1x-v1
+result_dir: results/monitoring_branching_compute1x
+job_name: all-prefix-w010-compute1x-lr2em05-seed0
+training_wall_seconds: 6532.9516
+checkpoint_every: 4
+reuse_smoke_from: results/monitoring_branching_training
+selection:
+  baseline_pauroc: 0.8766879959196943
+  full_only_reference_pauroc: 0.8710662298082067
+compute_reference:
+  metadata: results/monitoring_prefix_training_low/runs/prefix-w010-lr2em05-seed0/causal_adapter/training_metadata.json
+  metadata_sha256: a3e1b1f3d82b701b37892f33eea1008470fcfaab795348300e4eb679168b5122
+  gpu_count: 1
+  train_runtime_seconds: 13065.9032
+  reference_score: 0.8766879959196943
+  multiplier: 1.0
+  accounting: "Allocated GPUs times elapsed training-loop time, including tokenization/communication/optimizer and in-loop checkpoint overhead; model setup, export and evaluation reported separately. This is GPU-time, not FLOPs."
+  boundary_policy: "No new parent after the deadline. Finish the in-flight parent and flush a correctly normalized partial optimizer window; report actual GPU time and any one-parent/save overrun."
+  scheduler: "Same 2e-5 peak, 3% linear warmup and linear decay over the time budget, sampled at each optimizer window's elapsed-time midpoint."
+  scope: "Only 1x; no 2x arm or intermediate ID evaluation. Fresh initialization, all prefixes for every visited parent, fewer total parents than the sampled baseline."

@@ -13,15 +13,46 @@ from omegaconf import OmegaConf
 from gleipnir.monitoring_systems_screen import atomic_write_json, sha256_file
 
 
-def prepare() -> Path:
+def prepare(config_name: str = "training") -> Path:
     """Freeze provenance and successful hard gates before allocating the model."""
     with initialize_config_dir(
         version_base=None, config_dir=str(Path(__file__).parent.resolve())
     ):
-        config = OmegaConf.to_container(compose(config_name="training"), resolve=True)
+        config = OmegaConf.to_container(compose(config_name=config_name), resolve=True)
     root = Path(config["result_dir"])
     if root.exists():
         raise FileExistsError(root)
+    additional_paths = []
+    if "compute_reference" in config:
+        reference = config["compute_reference"]
+        reference_path = Path(reference["metadata"])
+        if sha256_file(reference_path) != reference["metadata_sha256"]:
+            raise ValueError("compute baseline metadata drift")
+        metrics = json.loads(reference_path.read_text())["train_metrics"]
+        if (
+            metrics["train_runtime"] != reference["train_runtime_seconds"]
+            or reference["multiplier"] != 1.0
+            or reference["gpu_count"] != 1
+            or config["training_wall_seconds"] * 2 != metrics["train_runtime"]
+        ):
+            raise ValueError("1x compute budget drift")
+        additional_paths.append(reference_path)
+        smoke_root = Path(config["reuse_smoke_from"])
+        smoke_status = smoke_root / "smoke/status.json"
+        smoke = json.loads(smoke_status.read_text())
+        previous = json.loads((smoke_root / "manifest.json").read_text())
+        if smoke["state"] != "complete" or smoke["parents"] != 8:
+            raise ValueError("reused fresh-adapter smoke did not pass")
+        for name in (
+            "branch_model.py",
+            "branch_training.py",
+            "branch_data.py",
+            "prefix_loss.py",
+        ):
+            path = Path("src/gleipnir") / name
+            if sha256_file(path) != previous["files"][str(path)]:
+                raise ValueError("numerical path changed since fresh-adapter smoke")
+        additional_paths.extend([smoke_status, smoke_root / "manifest.json"])
     exception = config["numerical_exception"]
     if (
         sha256_file(Path(exception["failed_diagnostic"]))
@@ -96,6 +127,14 @@ def prepare() -> Path:
         parallelism="two_gpu_layer_split",
         resolved_branch_config=str(root / "resolved_config.json"),
     )
+    if "compute_reference" in config:
+        job.update(
+            training_wall_seconds=config["training_wall_seconds"],
+            compute_reference=config["compute_reference"],
+            lr_scheduler_type="budget_time_linear_midpoint",
+            save_steps=config["checkpoint_every"],
+            stop_rule="1x_gpu_time_not_epoch_completion",
+        )
     root.mkdir(parents=True)
     (root / "jobs.jsonl").write_text(json.dumps(job) + "\n")
     evaluation = json.loads(Path(config["evaluation_template"]).read_text())
@@ -123,8 +162,10 @@ def prepare() -> Path:
         root / "jobs.jsonl",
         root / "id_benchmark.json",
         Path(__file__),
+        Path(__file__).with_name(config_name + ".yaml"),
         Path(__file__).with_name("training.yaml"),
     ]
+    paths.extend(additional_paths)
     paths.extend(
         Path("src/gleipnir") / name
         for name in (
@@ -214,7 +255,8 @@ def training(root: Path, *, smoke: bool, resume: Path | None) -> None:
 def pipeline(root: Path) -> None:
     """Training exits before existing serving parity and persistent ID inference."""
     config = verify(root)
-    smoke = json.loads((root / "smoke/status.json").read_text())
+    smoke_root = Path(config.get("reuse_smoke_from", root))
+    smoke = json.loads((smoke_root / "smoke/status.json").read_text())
     if smoke.get("state") != "complete":
         raise ValueError("fresh-adapter integration smoke has not passed")
     from experiments.monitoring_lr_sweep.run_lambda import gpu_training_environment
@@ -283,9 +325,12 @@ def main() -> None:
         "--root", type=Path, default=Path("results/monitoring_branching_training")
     )
     parser.add_argument("--resume", type=Path)
+    parser.add_argument(
+        "--config-name", choices=("training", "compute1x"), default="training"
+    )
     args = parser.parse_args()
     if args.phase == "prepare":
-        print(prepare())
+        print(prepare(args.config_name))
     elif args.phase == "pipeline":
         pipeline(args.root)
     else:

@@ -218,3 +218,64 @@ training restarts from fresh adapters and does not reuse smoke weights.
 Eight-parent timing suggests roughly 2–3 days, not a settled workload ETA.
 This session has no agent scheduling tool; startup is checked actively, but no
 automatic ten-minute agent follow-ups are claimed after the chat turn ends.
+
+## Replacement: one fixed-compute endpoint, not a full epoch
+
+The user cancelled the multi-day run and its queued evaluation, then explicitly
+restricted the replacement to **1x only**. Supervisor 183692 and child 183972 were
+identity-checked and their process group stopped; both H100s were confirmed idle.
+One optimizer update (32 parents/673 prefixes, 860.43 seconds) had completed;
+additional partial-window work was discarded. Logs/progress/cancellation records
+are preserved, and no model or ID result from this aborted run is promoted.
+
+Hypothesis: all-prefix branching improves ID monitoring at the same nominal
+allocated GPU-time as the existing one-sampled-prefix weight-0.1 recipe. The
+reference is the already evaluated seed-0 sampled model, ID macro pAUROC
+0.876687996, not a newly selected checkpoint. Its frozen training metadata records
+13,065.9032 seconds on one H100: **3.62942 GPU-hours**. Therefore `compute1x.yaml`
+allows **6,532.9516 seconds (1h 48m 53s)** on two H100s. Reuse the historical
+reference rather than spend its training budget a second time. There is no 2x arm.
+
+Intervention: fresh base/rank-128 adapter, weight 0.1, same exact shared-prefix
+objective, kernels, two-device placement, and seed-0 shuffled parent order.
+Process every prefix for each visited parent, but stop by elapsed compute instead
+of requiring all 8,688 parents. This tests compute efficiency: it necessarily
+trades broader trajectory coverage for denser supervision per trajectory.
+It does not isolate supervision density at matched data exposure, nor establish
+what a fully converged all-prefix epoch could achieve. The earlier numerical
+exception remains explicit, and no additional teacher calls are made.
+
+Count wall time inside the training loop times two GPUs, including tokenization,
+communication, optimizer work and periodic checkpoint overhead. Setup, final
+export, inference and preflight cost are separate from this training comparison;
+the cancelled attempt is a sunk experimental cost, not hidden in the 1x budget.
+No new parent begins after the deadline. Finish the in-flight parent, rescale a
+partial accumulation window to its actual parent count before clipping, update,
+and save. Report actual GPU-seconds and any one-parent/save overrun, not an exact
+FLOP match. Budgeted resume is disabled because discarded work needs explicit
+aggregate accounting. All earlier failure/provenance/finite-gradient gates remain.
+
+Use peak LR 2e-5 with the same 3% warmup and linear decay **over the short budget**,
+evaluated at the elapsed-time midpoint of each optimizer window. Do not simply
+cut off the old 272-update schedule during warmup. This scheduler convention is
+frozen before ID evaluation; it is not an extra LR search. Save every four updates
+and at the budget endpoint. Tests cover deadline crossing, no further parent
+execution, correct partial-window gradients, a nonzero first update and reporting
+of consumed two-GPU time. The previous eight-parent fresh-adapter GPU smoke is
+reused only after checking the numerical-path source hashes are unchanged.
+
+One final serving-parity-gated ID evaluation follows, with no intermediate ID
+selection or OOD use. Compare ranking and per-source/calibration diagnostics
+against sampled w0.1; retain the exploratory +0.005/no >0.01 source loss/no >0.005
+Brier regression thresholds, now relative to that sampled reference. Report the
+full-only model separately, and retain negative results.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_branching.train prepare --config-name compute1x
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_branching.train pipeline --root results/monitoring_branching_compute1x
+```
+
+The single 1x pipeline was launched as supervisor 184536. Thirty focused tests
+pass, including a simulated deadline crossing during a partial optimizer window.
+The old full-epoch evaluation is cancelled; only the replacement endpoint is
+queued. Automatic agent heartbeats remain unavailable in this session.

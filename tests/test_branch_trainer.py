@@ -83,3 +83,80 @@ def test_checkpoint_roundtrip_preserves_next_adam_update(monkeypatch, tmp_path):
         opt.step()
     for a, b in zip(original.parameters(), restored.parameters(), strict=True):
         torch.testing.assert_close(a, b, rtol=0, atol=0)
+
+
+def test_budget_schedule_uses_short_horizon():
+    from gleipnir.branch_trainer import budget_lr_multiplier
+
+    assert budget_lr_multiplier(0, 0.03) == 0
+    assert budget_lr_multiplier(0.015, 0.03) == 0.5
+    assert budget_lr_multiplier(0.03, 0.03) == 1
+    assert budget_lr_multiplier(0.515, 0.03) == pytest.approx(0.5)
+    assert budget_lr_multiplier(1.2, 0.03) == 0
+
+
+def test_budget_partial_window_rescales_before_clipping():
+    from gleipnir.branch_trainer import normalize_partial_window
+
+    parameter = torch.nn.Parameter(torch.tensor(1.0))
+    for value in [1.0, 3.0, 5.0]:
+        (parameter * value / 32).backward()
+    normalize_partial_window([parameter], nominal=32, completed=3)
+    assert parameter.grad.item() == pytest.approx(3.0)
+    with pytest.raises(ValueError, match="invalid partial"):
+        normalize_partial_window([parameter], nominal=32, completed=0)
+
+
+def test_budget_stops_between_parents_and_flushes_partial_update(monkeypatch, tmp_path):
+    import contextlib
+    import json
+
+    from gleipnir import branch_trainer
+    from gleipnir.branch_training import plan_branches
+
+    clock = [0.0]
+    visited = []
+    model = torch.nn.Linear(1, 1, bias=False)
+    with torch.no_grad():
+        model.weight.fill_(1.0)
+
+    def forward(model, plan, *args, **kwargs):
+        visited.append(plan)
+        clock[0] += 10.0
+        return torch.stack([model.weight.reshape(()) * 0, model.weight.reshape(())])[
+            None
+        ]
+
+    monkeypatch.setattr(branch_trainer.time, "perf_counter", lambda: clock[0])
+    monkeypatch.setattr(branch_trainer, "branched_decision_logits", forward)
+    monkeypatch.setattr(branch_trainer, "synchronize", lambda: None)
+    monkeypatch.setattr(branch_trainer, "save_checkpoint", lambda *args: None)
+    monkeypatch.setattr(
+        torch, "autocast", lambda *args, **kwargs: contextlib.nullcontext()
+    )
+    monkeypatch.setattr(torch.cuda, "max_memory_allocated", lambda _: 0)
+    dataset = [
+        {"parent_id": i, "plan": plan_branches([[1, 2]]), "targets": [0.3]}
+        for i in range(5)
+    ]
+    config = {
+        "training_wall_seconds": 25.0,
+        "seed": 0,
+        "effective_batch": 32,
+        "learning_rate": 2e-5,
+        "warmup_ratio": 0.03,
+        "alignment": 64,
+        "prefix_weight": 0.1,
+        "checkpoint_every": 4,
+    }
+    result = branch_trainer.train(model, dataset, config, tmp_path)
+    assert len(visited) == 3
+    assert result["parents"] == 3 and result["budget_reached"]
+    assert result["training_gpu_seconds"] == 60
+    assert result["budget_overrun_seconds"] == 5
+    progress = json.loads((tmp_path / "progress.jsonl").read_text())
+    assert progress["gradient_norm"] == pytest.approx(
+        torch.sigmoid(torch.tensor(1.0)).item() - 0.3
+    )
+    assert progress["learning_rate"] > 0
+    assert model.weight.item() < 1.0
