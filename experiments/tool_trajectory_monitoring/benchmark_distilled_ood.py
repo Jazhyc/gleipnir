@@ -88,9 +88,10 @@ def validate_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
     if sha256_file(path) != scope["input_sha256"]:
         raise ValueError("OOD input checksum differs from frozen config")
     manifest_path = Path(scope["manifest"])
-    if scope.get("manifest_sha256") and sha256_file(manifest_path) != scope[
-        "manifest_sha256"
-    ]:
+    if (
+        scope.get("manifest_sha256")
+        and sha256_file(manifest_path) != scope["manifest_sha256"]
+    ):
         raise ValueError("OOD input manifest checksum differs from frozen config")
     manifest = load_json(manifest_path)
     prompt_role = str(config["prompt"]["role"])
@@ -207,6 +208,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--include-base", action="store_true")
     parser.add_argument("--canary-only", action="store_true")
     parser.add_argument("--force", action="store_true")
+    parser.add_argument("--shard-count", type=int, default=1)
+    parser.add_argument("--shard-index", type=int, default=0)
+    parser.add_argument("--resume-snapshot", type=Path)
     return parser.parse_args()
 
 
@@ -237,6 +241,30 @@ def main() -> None:
 
     audited = {job["job_name"]: adapter_metadata(job) for job in jobs}
     config_sha256 = sha256_file(args.config)
+    shard_metadata = None
+    if args.shard_count != 1 or args.resume_snapshot is not None:
+        from gleipnir.evaluation_shards import partition_pending
+
+        if args.canary_only or args.include_base or len(jobs) != 1 or args.force:
+            raise ValueError(
+                "sharded evaluation requires one adapter without force/canary"
+            )
+        if args.resume_snapshot is None:
+            raise ValueError("sharding requires an immutable resume snapshot")
+        rows = partition_pending(
+            rows,
+            load_jsonl(args.resume_snapshot),
+            config_sha256,
+            args.shard_count,
+            args.shard_index,
+            int(engine["batch_rows"]),
+        )
+        shard_metadata = {
+            "index": args.shard_index,
+            "count": args.shard_count,
+            "snapshot_sha256": sha256_file(args.resume_snapshot),
+            "scope": "partial evaluation; merge before interpreting metrics",
+        }
 
     import torch
     import vllm
@@ -347,6 +375,7 @@ def main() -> None:
             "prompt": prompt_config,
             "engine": engine,
             "job_name": name,
+            "evaluation_shard": shard_metadata,
             **metadata,
             "runtime": {
                 "vllm_version": vllm.__version__,

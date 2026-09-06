@@ -313,3 +313,16 @@ not include trajectory text, Kimi targets, or privileged rationales. The dataset
 card prominently preserves the numerical limitation and source-access caveats.
 `scripts/prepare_hf_prefix_cache.py` stages an allowlisted release after full
 cache validation; `dataset_card.md` is its tracked card source.
+
+## Evaluation restart and sharding
+
+The weight-0.5 evaluation stalled after 512 saved rows. The owner authorized a
+restart, then requested two-GPU sample sharding. `resume_evaluation.py` snapshots
+all predictions saved at the handoff, skips those identities, and round-robins
+whole 128-row pending batches across independent TP1 engines. Both retain the
+original evaluation config hash and write isolated shard outputs. A strict merge
+requires exact original coverage, no duplicate IDs, finite scores, and matching
+config identities; final metrics are recomputed on the merged 3,012 rows.
+Shard metrics are explicitly partial and must not be interpreted as full-ID
+results. Training and the completed weight-0.25 evaluation are not rerun.
+The snapshot and per-shard runtimes are retained in merge provenance.
