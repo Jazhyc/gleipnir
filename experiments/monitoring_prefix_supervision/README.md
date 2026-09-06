@@ -390,3 +390,17 @@ the prior matched 3h38m training duration remains a provisional ETA basis.
 The manifest and preflight metadata were backed up locally. No timed agent
 scheduler is available in this session, so automatic ten-minute follow-ups
 are not active; the remote training/evaluation lifecycle continues independently.
+
+The low-weight training runs completed in 3h38m. Weight 0.05 completed all
+3,012 ID rows: macro pAUROC 0.872393 (+0.001327 over baseline), macro Brier
+0.084057 (+0.004785); it misses the frozen improvement gate. Weight 0.1
+stalled after 1,664 saved predictions. On user authorization, stopped the
+verified old supervisor/evaluator/engine (168582/172220/172445); the engine
+required SIGKILL after ignoring SIGTERM. No saved predictions were removed.
+
+The existing resume launcher now accepts `--root` and `--job`, validates job
+membership in the frozen manifest, and retains historical defaults. Five shard
+and campaign regression tests pass. Restart supervisor 173320 preserved the
+1,664-row snapshot and assigned 708/640 remaining rows to GPUs 0/1, with
+unchanged evaluation config and strict final merge. Artifacts remain under
+`results/monitoring_prefix_training_low/evaluation_restart_sharded/`.

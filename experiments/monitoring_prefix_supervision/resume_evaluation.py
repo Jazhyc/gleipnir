@@ -1,5 +1,6 @@
 """Resume one prefix adapter over two independent GPU evaluation workers."""
 
+import argparse
 import json
 import shutil
 import subprocess
@@ -20,8 +21,16 @@ from gleipnir.monitoring_systems_screen import atomic_write_json, atomic_write_j
 
 
 def main() -> None:
-    root = Path("results/monitoring_prefix_training")
-    job = "prefix-w050-lr2em05-seed0"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--root", type=Path, default=Path("results/monitoring_prefix_training")
+    )
+    parser.add_argument("--job", default="prefix-w050-lr2em05-seed0")
+    args = parser.parse_args()
+    root, job = args.root, args.job
+    jobs = [json.loads(s) for s in (root / "jobs.jsonl").read_text().splitlines()]
+    if job not in {j["job_name"] for j in jobs}:
+        raise ValueError("requested job is not in the frozen campaign")
     output = root / "id_evaluation/4b/adapters" / job
     work = root / "evaluation_restart_sharded"
     memory = [
@@ -119,7 +128,6 @@ def main() -> None:
             },
         }
         atomic_write_json(output / "result.json", result)
-        jobs = [json.loads(s) for s in (root / "jobs.jsonl").read_text().splitlines()]
         summarize_campaign(
             root, jobs, json.loads((root / "resolved_config.json").read_text())
         )
