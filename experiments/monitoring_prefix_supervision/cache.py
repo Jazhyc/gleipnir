@@ -64,7 +64,7 @@ def run_cache(
             "mamba_ssm_cache_dtype": getattr(
                 actual_cache, "mamba_ssm_cache_dtype", "auto"
             ),
-            "gdn_prefill_backend": "triton",
+            "gdn_prefill_backend": canary.get("gdn_prefill_backend", "triton"),
             "max_model_len": 32768,
             "max_num_seqs": 8,
             "max_num_batched_tokens": 8192,

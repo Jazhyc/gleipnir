@@ -37,6 +37,9 @@ def main() -> None:
     parser.add_argument("--parallel-trajectories", type=int, choices=(1, 8), default=8)
     parser.add_argument("--batch-invariant", action="store_true")
     parser.add_argument(
+        "--gdn-prefill-backend", choices=("triton", "flashinfer"), default="triton"
+    )
+    parser.add_argument(
         "--mamba-ssm-cache-dtype", choices=("auto", "float32"), default="auto"
     )
     args = parser.parse_args()
@@ -141,7 +144,7 @@ def main() -> None:
         enable_prefix_caching=True,
         mamba_cache_mode="all",
         mamba_ssm_cache_dtype=args.mamba_ssm_cache_dtype,
-        gdn_prefill_backend="triton",
+        gdn_prefill_backend=args.gdn_prefill_backend,
         seed=20260906,
         enforce_eager=bool(config["engine"].get("enforce_eager", False)),
     )
@@ -155,13 +158,13 @@ def main() -> None:
     results = {}
     # Warm kernels before timing; reset between cold requests, not growing prefixes.
     llm.generate(prompts[:1], sampling, use_tqdm=False)
-    for mode in ("cold", "growing"):
+    for mode in ("cold", "cold_repeat", "growing"):
         if not llm.reset_prefix_cache():
             raise RuntimeError("prefix cache reset failed")
         rows = []
         started = time.perf_counter()
         for index, prompt in enumerate(prompts):
-            if mode == "cold" and not llm.reset_prefix_cache():
+            if mode.startswith("cold") and not llm.reset_prefix_cache():
                 raise RuntimeError("cold cache reset failed")
             out = llm.generate([prompt], sampling, use_tqdm=False)[0]
             probs = out.outputs[0].logprobs[0]
@@ -255,6 +258,13 @@ def main() -> None:
         parallel_trajectories=args.parallel_trajectories,
         batch_invariant=args.batch_invariant,
         mamba_ssm_cache_dtype=args.mamba_ssm_cache_dtype,
+        gdn_prefill_backend=args.gdn_prefill_backend,
+        cold_repeat_max_absolute_error=max(
+            abs(a["score"] - b["score"])
+            for a, b in zip(
+                results["cold"]["rows"], results["cold_repeat"]["rows"], strict=True
+            )
+        ),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(results, indent=2) + "\n")

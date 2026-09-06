@@ -150,3 +150,16 @@ No annotation started; failed workers were stopped and results collected.
 Do not promote this upgrade. Before further configuration screens, add repeated
 reset-cache reference scoring to separate reference variability from reuse error;
 repeatedly rerunning the same gate until a pass would not establish reliability.
+
+Repeated reset-cache scoring was exactly stable on all 24 prefixes (maximum
+difference zero); reuse reproduced maximum error 0.074652923. This supports a
+systematic execution-path difference, not random reference noise. The next
+bounded diagnostic changes only GDN prefill from Triton to FlashInfer in the
+isolated 0.28 environment, retaining repeated cold references and all thresholds.
+
+FlashInfer passed the singleton diagnostic: MAE 0.003716594, maximum 0.030967128,
+repeated cold maximum zero, and trajectory-specific reuse in all four sources.
+The bounded diagnostic did not request annotation. Proceed with the same backend
+and singleton concurrency through the gated full-cache entrypoint; keep the
+original model revision and approved prompt. This small canary is not proof of
+agreement across every long prefix, so retain per-request provenance and failures.
