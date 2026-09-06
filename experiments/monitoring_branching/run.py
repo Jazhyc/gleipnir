@@ -8,7 +8,13 @@ from transformers import Qwen3_5ForCausalLM, Qwen3_5TextConfig
 from gleipnir.branch_training import branched_decision_logits, plan_branches
 
 
-def canary() -> dict:
+def canary(
+    *,
+    checkpoint_segments: bool = False,
+    fp32_head: bool = False,
+    independent_endpoint: bool = False,
+    frozen_embeddings: bool = False,
+) -> dict:
     """Compare shared and independent gradients on the same random tiny model."""
     torch.manual_seed(42)
     config = Qwen3_5TextConfig(
@@ -33,6 +39,9 @@ def canary() -> dict:
     )
     config._attn_implementation = "eager"
     model = Qwen3_5ForCausalLM(config).train()
+    if frozen_embeddings:
+        model.get_input_embeddings().weight.requires_grad_(False)
+    embedding_hooks = tuple(model.get_input_embeddings()._forward_hooks)
     # Explicitly bounded CPU reference, never a production kernel fallback.
     from transformers.models.qwen3_5.modeling_qwen3_5 import (
         torch_chunk_gated_delta_rule,
@@ -76,8 +85,16 @@ def canary() -> dict:
         if p.grad is not None
     }
     model.zero_grad(set_to_none=True)
-    actual = branched_decision_logits(model, plan, [0, 1])
+    actual = branched_decision_logits(
+        model,
+        plan,
+        [0, 1],
+        checkpoint_segments=checkpoint_segments,
+        fp32_head=fp32_head,
+        independent_endpoint=independent_endpoint,
+    )
     loss(actual).backward()
+    assert tuple(model.get_input_embeddings()._forward_hooks) == embedding_hooks
     torch.testing.assert_close(actual, reference, atol=2e-5, rtol=2e-4)
     errors = []
     for name, parameter in model.named_parameters():
@@ -92,7 +109,7 @@ def canary() -> dict:
         "max_logit_error": (actual - reference).abs().max().item(),
         "max_gradient_error": max(errors),
         "independent_tokens": sum(map(len, requests)),
-        "branched_tokens": plan.processed_tokens,
+        "branched_tokens": plan.token_work(independent_endpoint=independent_endpoint),
         "gpu_validated": False,
     }
 

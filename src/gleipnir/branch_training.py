@@ -64,18 +64,37 @@ class BranchPlan:
 
     requests: tuple[tuple[int, ...], ...]
     split_positions: tuple[int, ...]
+    alignment: int = 1
 
     @property
     def processed_tokens(self) -> int:
+        return self.token_work()
+
+    def token_work(self, *, independent_endpoint: bool = False) -> int:
+        if independent_endpoint:
+            return (
+                max(self.split_positions[:-1], default=0)
+                + sum(
+                    len(row) - split
+                    for row, split in zip(
+                        self.requests[:-1], self.split_positions[:-1], strict=True
+                    )
+                )
+                + len(self.requests[-1])
+            )
         return max(self.split_positions) + sum(
             len(row) - split
             for row, split in zip(self.requests, self.split_positions, strict=True)
         )
 
 
-def plan_branches(requests: Sequence[Sequence[int]]) -> BranchPlan:
+def plan_branches(
+    requests: Sequence[Sequence[int]], *, alignment: int = 1
+) -> BranchPlan:
     """Preserve exact token sequences, allowing two-token-or-longer continuations."""
     rows = tuple(tuple(int(token) for token in row) for row in requests)
+    if alignment not in (1, 64):
+        raise ValueError("unsupported branch alignment")
     if not rows or any(len(row) < 2 for row in rows):
         raise ValueError("each request needs at least two tokens")
     trunk = rows[-1]
@@ -86,7 +105,8 @@ def plan_branches(requests: Sequence[Sequence[int]]) -> BranchPlan:
             if left != right:
                 break
             common += 1
-        splits.append(min(common, len(row) - 2, len(trunk) - 2))
+        split = min(common, len(row) - 2, len(trunk) - 2)
+        splits.append(split // alignment * alignment)
     # Cached single-token continuations use inference-only kernels. Coalesce
     # adjacent splits instead; their branch suffix simply includes one more token.
     mapping = {}
@@ -95,11 +115,17 @@ def plan_branches(requests: Sequence[Sequence[int]]) -> BranchPlan:
         safe = previous if split - previous < 2 else split
         mapping[split] = safe
         previous = safe
-    return BranchPlan(rows, tuple(mapping[s] for s in splits))
+    return BranchPlan(rows, tuple(mapping[s] for s in splits), alignment)
 
 
 def branched_decision_logits(
-    model: torch.nn.Module, plan: BranchPlan, decision_ids: Sequence[int]
+    model: torch.nn.Module,
+    plan: BranchPlan,
+    decision_ids: Sequence[int],
+    *,
+    checkpoint_segments: bool = False,
+    fp32_head: bool = False,
+    independent_endpoint: bool = False,
 ) -> torch.Tensor:
     """Return one decision-logit vector per request, preserving shared gradients.
 
@@ -108,7 +134,7 @@ def branched_decision_logits(
     The initial prototype intentionally does not support padding or batching.
     """
     base = model.get_base_model() if hasattr(model, "get_base_model") else model
-    if plan != plan_branches(plan.requests):
+    if plan != plan_branches(plan.requests, alignment=plan.alignment):
         raise ValueError("invalid or unsafe branch plan")
     if type(base).__name__ != "Qwen3_5ForCausalLM":
         raise TypeError("branch prototype supports text-only Qwen3.5 causal LM")
@@ -126,27 +152,78 @@ def branched_decision_logits(
         raise ValueError("attention dropout is unsupported")
     device = base.get_input_embeddings().weight.device
     cache = BranchCache(config=base.config)
+
+    def decision(hidden):
+        head = base.get_output_embeddings()
+        if type(head) is not torch.nn.Linear:
+            raise TypeError("selected projection requires an unwrapped linear head")
+        ids = torch.tensor(decision_ids, device=head.weight.device)
+        weight = head.weight.index_select(0, ids)
+        bias = None if head.bias is None else head.bias.index_select(0, ids)
+        if fp32_head:
+            with torch.autocast("cuda", enabled=False):
+                return torch.nn.functional.linear(
+                    hidden.to(weight.device).float(),
+                    weight.float(),
+                    None if bias is None else bias.float(),
+                )[0]
+        return torch.nn.functional.linear(hidden.to(weight.device), weight, bias)[0]
+
+    def segment(tokens, source):
+        # Every invocation, including checkpoint recomputation, gets a private
+        # mutable container. Captured source tensors are immutable graph edges.
+        def forward(ids):
+            destination = source.fork()
+            hidden = base.model(
+                input_ids=ids, past_key_values=destination, use_cache=True
+            ).last_hidden_state
+            return hidden, destination
+
+        if checkpoint_segments:
+            from torch.utils.checkpoint import checkpoint
+
+            return checkpoint(forward, tokens, use_reentrant=False)
+        return forward(tokens)
+
     result = [None] * len(plan.requests)
     position = 0
-    for split in sorted(set(plan.split_positions)):
+    shared_splits = (
+        plan.split_positions[:-1] if independent_endpoint else plan.split_positions
+    )
+    for split in sorted(set(shared_splits)):
         if split > position:
             tokens = torch.tensor([plan.requests[-1][position:split]], device=device)
-            base.model(input_ids=tokens, past_key_values=cache, use_cache=True)
+            _, cache = segment(tokens, cache)
             position = split
         for index, branch_split in enumerate(plan.split_positions):
+            if independent_endpoint and index == len(plan.requests) - 1:
+                continue
             if branch_split != split:
                 continue
-            branch = cache.fork()
             tokens = torch.tensor([plan.requests[index][split:]], device=device)
-            hidden = base.model(
-                input_ids=tokens, past_key_values=branch, use_cache=True
-            ).last_hidden_state[:, -1, :]
-            # Selected-token projection avoids sequence-by-vocabulary logits.
-            head = base.get_output_embeddings()
-            if type(head) is not torch.nn.Linear:
-                raise TypeError("selected projection requires an unwrapped linear head")
-            ids = torch.tensor(decision_ids, device=device)
-            weight = head.weight.index_select(0, ids)
-            bias = None if head.bias is None else head.bias.index_select(0, ids)
-            result[index] = torch.nn.functional.linear(hidden, weight, bias)[0]
+            hidden, _ = segment(tokens, cache)
+            hidden = hidden[:, -1, :]
+            result[index] = decision(hidden)
+    if independent_endpoint:
+        if checkpoint_segments:
+            from functools import partial
+
+            from torch.utils.checkpoint import checkpoint
+
+            # The public enable method installs an embedding-grad hook which
+            # survives disable() on this Transformers version. That would alter
+            # the earlier shared forward during checkpoint recomputation.
+            base._set_gradient_checkpointing(
+                enable=True,
+                gradient_checkpointing_func=partial(checkpoint, use_reentrant=False),
+            )
+        try:
+            tokens = torch.tensor([plan.requests[-1]], device=device)
+            hidden = base.model(input_ids=tokens, use_cache=False).last_hidden_state[
+                :, -1, :
+            ]
+            result[-1] = decision(hidden)
+        finally:
+            if checkpoint_segments:
+                base._set_gradient_checkpointing(enable=False)
     return torch.stack(result)

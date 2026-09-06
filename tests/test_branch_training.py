@@ -20,10 +20,29 @@ def test_plan_preserves_requests_and_avoids_single_token_segments():
         plan_branches([[1]])
 
 
-def test_tiny_qwen_scores_and_gradients():
+def test_aligned_plan_preserves_exact_requests():
+    trunk = list(range(400))
+    requests = [trunk[:130] + [800, 801], trunk + [800, 801]]
+    plan = plan_branches(requests, alignment=64)
+    assert all(split % 64 == 0 for split in plan.split_positions)
+    for row, split in zip(plan.requests, plan.split_positions, strict=True):
+        assert plan.requests[-1][:split] + row[split:] == row
+    assert plan.processed_tokens < sum(map(len, requests))
+
+
+@pytest.mark.parametrize("checkpoint_segments", [False, True])
+@pytest.mark.parametrize("fp32_head", [False, True])
+@pytest.mark.parametrize("independent_endpoint", [False, True])
+def test_tiny_qwen_scores_and_gradients(
+    checkpoint_segments, fp32_head, independent_endpoint
+):
     from experiments.monitoring_branching.run import canary
 
-    assert canary()["passed"]
+    assert canary(
+        checkpoint_segments=checkpoint_segments,
+        fp32_head=fp32_head,
+        independent_endpoint=independent_endpoint,
+    )["passed"]
 
 
 def test_fork_preserves_shared_gradients_without_overwriting_parent():
@@ -56,3 +75,11 @@ def test_fork_preserves_shared_gradients_without_overwriting_parent():
     torch.testing.assert_close(recurrent.grad, torch.full_like(recurrent, 3))
     torch.testing.assert_close(keys.grad, torch.full_like(keys, 5))
     torch.testing.assert_close(values.grad, torch.full_like(values, 6))
+
+
+def test_hybrid_checkpoint_with_frozen_embeddings():
+    from experiments.monitoring_branching.run import canary
+
+    assert canary(
+        checkpoint_segments=True, independent_endpoint=True, frozen_embeddings=True
+    )["passed"]
