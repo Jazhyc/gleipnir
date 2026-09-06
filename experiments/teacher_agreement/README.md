@@ -33,6 +33,14 @@ be mixed into this version. Require 10 source/label canaries before any full
 prefill pass. Provider documentation describes Partial Mode; actual OpenRouter
 support must be established empirically. Stop if prefill or alternatives fail.
 
+Prefill succeeded on 10 canaries and all 640 final rows (exactly one output
+token and zero reasoning each). Three 429 failures completed sequentially,
+without changing request settings. Final pooled AUROC 0.933633, ECE(10)
+0.090544, Brier 0.119205; valid full-pass charges $0.626751. The original
+stopped pass retained 133 rows but is excluded from metrics. See
+`docs/findings/qwen38flash_matched_teacher_comparison.md` for the five-teacher
+comparison, source diagnostics, interface caveats and setup costs.
+
 ## Kimi K2.6 matched comparison protocol (2026-09-07)
 
 User authorized Kimi K2.6 through Inceptron on the same 640 final-boundary
