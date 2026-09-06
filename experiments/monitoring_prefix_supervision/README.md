@@ -143,3 +143,10 @@ An isolated `.venv-vllm028-prefix` now contains vLLM 0.28.0 with Transformers
 5.14.1. The original environment and lockfile remain unchanged. Test the same
 singleton canary with default SSM precision before considering annotation;
 record runtime package versions in both the canary and cache resume identity.
+
+The vLLM 0.28.0 / Torch 2.13.0 / Transformers 5.14.1 singleton test failed:
+MAE 0.005888929, maximum 0.074652923, with reuse verified for every source.
+No annotation started; failed workers were stopped and results collected.
+Do not promote this upgrade. Before further configuration screens, add repeated
+reset-cache reference scoring to separate reference variability from reuse error;
+repeatedly rerunning the same gate until a pass would not establish reliability.
