@@ -404,3 +404,30 @@ and campaign regression tests pass. Restart supervisor 173320 preserved the
 1,664-row snapshot and assigned 708/640 remaining rows to GPUs 0/1, with
 unchanged evaluation config and strict final merge. Artifacts remain under
 `results/monitoring_prefix_training_low/evaluation_restart_sharded/`.
+
+## Completed lower-weight follow-up
+
+The two-GPU restart completed at 2026-09-06 19:33:11 UTC, merging the preserved
+1,664 rows with disjoint 708/640-row shards in about 293 seconds. Both GPUs
+are idle. Final predictions and campaign summary were pulled locally; both
+conditions have exactly 3,012 unique matching ID/source/label identities and
+matching frozen config hashes. Local recomputation reproduces every macro metric.
+
+| Prefix weight | Macro pAUROC@20 | Delta vs full-only | Macro Brier |
+| --- | ---: | ---: | ---: |
+| Full-only | 0.871066 | — | 0.079273 |
+| 0.05 | 0.872393 | +0.001327 | 0.084057 |
+| 0.1 | 0.876688 | +0.005622 | 0.078315 |
+| 0.25 | 0.873418 | +0.002352 | 0.079751 |
+| 0.5 | 0.856460 | -0.014606 | 0.085594 |
+
+Weight 0.1 passes the frozen exploratory gate: Gloom pAUROC improves 0.011718,
+STRIDE changes -0.000474, and macro Brier improves 0.000958. It is the best
+single-prefix candidate among the tested weights, not a confirmed replacement
+for the baseline. Macro recall at 0.5 is slightly lower (0.845091 vs 0.847277),
+and macro FPR slightly higher (0.049487 vs 0.046872); not every metric improves.
+The gain remains modest and the weight search adaptive on a single ID set and
+seed. No confidence interval or seed replication was performed. The imperfect
+prefix cache and teacher mismatch remain limitations, and these results do not
+establish their causal role or demonstrate benefit from all-prefix training.
+No further runs were launched automatically.
