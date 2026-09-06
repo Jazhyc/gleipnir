@@ -3,6 +3,22 @@
 This directory contains publication-ready figures generated from canonical
 repository data rather than hand-maintained plotting copies.
 
+## Matched teacher final-boundary scores
+
+`teacher_final_boundary_histograms.png` and `.svg` compare Qwen3.5-27B-FP8
+and Kimi K3 on the same 640 full training trajectories from the frozen
+teacher-agreement diagnostic. This source/label-balanced subset is not the
+full 8,688-row population. Both panels use identical 0.05-wide bins, axes,
+and binary-normalized probabilities; no prefix predictions are included.
+The input remains an ignored artifact, with provenance and caveats in
+`docs/findings/matched_qwen_kimi_teacher_agreement.md`.
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/plot_teacher_score_histograms.py
+```
+
+The script prints the input SHA256 and descriptive summary statistics.
+
 ## Tool-trajectory OOD frontier
 
 `tool_trajectory_ood_frontier.svg` is the sharp, resolution-independent primary
