@@ -1,0 +1,12 @@
+{
+  "rows": 6395,
+  "teacher_input": "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+  "teacher_sha256": "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9",
+  "student_input": "data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl",
+  "student_sha256": "ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2",
+  "teacher_caches": [
+    "results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl",
+    "results/tool_trajectory_monitoring/kimi_k3_ood_full_remaining_fireworks.jsonl"
+  ],
+  "minimum_overlap_paragraph_chars": 80
+}

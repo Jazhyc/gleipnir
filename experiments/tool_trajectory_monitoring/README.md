@@ -243,6 +243,10 @@ results and interpretation are in
 
 ## Completed OOD baseline and frontier registry
 
+A full input audit found no confirmed private-thinking leakage in the 6,395-row
+OOD suite. It verified source/teacher/student equality and actual Kimi cache
+prompt identities; see [the evidence and limits](../../docs/findings/ood_input_reasoning.md).
+
 The frozen Kimi K3 evaluation covers all 6,395 strict OOD rows. Its full binary
 teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
 pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
