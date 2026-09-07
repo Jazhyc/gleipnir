@@ -27,7 +27,7 @@ FlashInfer GDN on RTX PRO 6000 (SM120); its FlashInfer request resolves to
 Triton/FLA. Retain the requested setting in the immutable configuration and
 record the actual backend from logs as Triton/FLA. The numerical canary must
 still pass; historical H100/FlashInfer comparisons are not backend matched.
-Active jobs are 31242407 (4B, roodborst1) and 31242269 (9B, roodborst2).
+Completed jobs are 31242407 (4B, roodborst1) and 31242269 (9B, roodborst2).
 No adapter is present; adapter export parity does not apply. Numerical canary
 requires mean absolute batch/singleton score error <=.02 and max <=.05.
 Historical H100 versus current RTX serving hardware remains a comparison caveat.
@@ -37,3 +37,9 @@ Entrypoint `python -m experiments.pretrained_id.run --size 4b` resolves the
 shared YAML into a hashed, resumable per-arm JSON contract under results.
 Outputs: `results/pretrained_id/<size>/`; logs: `logs/slurm/pretrained_id/`.
 Monitor startup in-chat, then every ten minutes if an agent scheduler exists.
+
+Both arms completed and were audited on 2026-09-07. Pretrained-only weights
+reduce macro AUROC from .860769 to .751012 (4B) and .898587 to .798188 (9B).
+The 4B ECE improvement does not extend to Brier or ranking; 9B worsens on both.
+See [the finding](../../docs/findings/pretrained_qwen_id.md) for the matched
+comparison, coverage checks, runtime and backend caveat.
