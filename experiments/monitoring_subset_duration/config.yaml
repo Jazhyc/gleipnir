@@ -1,0 +1,20 @@
+campaign_id: gleipnir4b-subset-duration-mil-v1
+result_dir: results/monitoring_subset_duration
+standard_jobs: results/monitoring_id_scaling/jobs.jsonl
+standard_job: soft-pct020-lr2em05-epoch1-seed0
+mil_jobs: results/monitoring_objective_ablation/jobs.jsonl
+mil_job: soft-mil-lme-w025
+prefix_jobs: results/monitoring_prefix_training_low/jobs.jsonl
+prefix_job: prefix-w010-lr2em05-seed0
+prefix_stage_after: all_six_stage1_evaluations
+epochs: [2, 3, 5]
+train_rows: 1738
+learning_rate: 2.0e-5
+seed: 0
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+baseline_result: results/monitoring_id_scaling/id_evaluation/4b/adapters/soft-pct020-lr2em05-epoch1-seed0/result.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+strict_ood_consulted: false

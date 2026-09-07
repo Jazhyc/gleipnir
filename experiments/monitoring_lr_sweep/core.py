@@ -26,9 +26,7 @@ EFFECTIVE_BATCH_SIZE = 32
 OPTIMIZER_STEPS = math.ceil(TRAIN_ROWS / EFFECTIVE_BATCH_SIZE)
 GRADIENT_CHECKPOINTING_POLICY = "linear_attention_only"
 SELECTIVE_TORCH_COMPILE_POLICY = "full_attention_and_linear_shell"
-EXPECTED_CHECKPOINTED_LAYERS = [
-    index for index in range(32) if (index + 1) % 4 != 0
-]
+EXPECTED_CHECKPOINTED_LAYERS = [index for index in range(32) if (index + 1) % 4 != 0]
 EXPECTED_COMPILED_LAYERS = list(range(32))
 MAX_UNIQUE_GRAPHS = 16
 
@@ -111,8 +109,25 @@ def validate_training_metadata(
     *,
     expected_steps: int = OPTIMIZER_STEPS,
     require_canary: bool = False,
+    checkpointing_policy: str = GRADIENT_CHECKPOINTING_POLICY,
+    compilation_policy: str = SELECTIVE_TORCH_COMPILE_POLICY,
 ) -> dict[str, Any]:
     """Require the proven Qwen3.5 fast-kernel QLoRA recipe after every run."""
+    supported_policies = {
+        (GRADIENT_CHECKPOINTING_POLICY, SELECTIVE_TORCH_COMPILE_POLICY): (
+            EXPECTED_CHECKPOINTED_LAYERS,
+            EXPECTED_COMPILED_LAYERS,
+        ),
+        ("all", "linear_attention_shells_only"): (
+            list(range(32)),
+            EXPECTED_CHECKPOINTED_LAYERS,
+        ),
+    }
+    if (checkpointing_policy, compilation_policy) not in supported_policies:
+        raise ValueError("unsupported checkpointing/compilation recipe")
+    checkpointed, compiled_layers = supported_policies[
+        checkpointing_policy, compilation_policy
+    ]
     metadata = json.loads(path.read_text())
     fla = metadata.get("flash_linear_attention", {})
     causal = metadata.get("causal_conv1d", {})
@@ -155,15 +170,13 @@ def validate_training_metadata(
         raise ValueError("training batch metadata drifted")
     if (
         metadata.get("gradient_checkpointing") is not True
-        or metadata.get("gradient_checkpointing_policy")
-        != GRADIENT_CHECKPOINTING_POLICY
-        or metadata.get("checkpointed_layer_indices")
-        != EXPECTED_CHECKPOINTED_LAYERS
+        or metadata.get("gradient_checkpointing_policy") != checkpointing_policy
+        or metadata.get("checkpointed_layer_indices") != checkpointed
     ):
         raise ValueError("selective checkpointing metadata drifted")
     if (
-        compiled.get("policy") != SELECTIVE_TORCH_COMPILE_POLICY
-        or compiled.get("compiled_layer_indices") != EXPECTED_COMPILED_LAYERS
+        compiled.get("policy") != compilation_policy
+        or compiled.get("compiled_layer_indices") != compiled_layers
         or compiled.get("disabled_linear_attention_layer_indices")
         != EXPECTED_CHECKPOINTED_LAYERS
         or compiled.get("backend") != "inductor"
