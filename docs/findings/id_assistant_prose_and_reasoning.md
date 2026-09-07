@@ -104,3 +104,20 @@ Cleaned predictions SHA-256:
 `fe22e5a3a8ffca61d9b3ada08e0589d673e147778e81dedaf0c8379da35606d5`.
 Baseline predictions SHA-256:
 `f62ec78921b008080702f648efd90da0e3d06dd48e3b425eebca1ec23bf5bbde`.
+
+## Follow-up: only identified CoT removed
+
+The completed CoT-only follow-up preserves visible assistant prose and removes
+source-typed reasoning blocks plus named `think` calls. All 3,012 rows passed
+coverage and frozen-input checks. STRIDE pAUROC@20 changes from 0.966052 to
+0.928943; Gloom, whose inputs are unchanged, changes from 0.772335 to 0.771224.
+Macro pAUROC@20 is 0.850083, compared with 0.869194 originally and 0.802982
+under combined prose/CoT removal. Macro AUROC is 0.952674 versus 0.957679
+originally. The much smaller Gloom change is consistent with inference variation.
+
+This confirms sensitivity to identified reasoning on STRIDE, while showing that
+the broader removal's decline cannot be assigned wholly to private CoT. It does
+not measure a model retrained on cleaned inputs. See the
+[CoT-only experiment](../../experiments/id_cot_only_evaluation/README.md) for
+per-source diagnostics and preservation checks, including retention of visible
+text copies identical to reasoning blocks.
