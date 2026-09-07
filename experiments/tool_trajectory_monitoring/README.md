@@ -86,6 +86,16 @@ checkpoint, threshold, subset, or stopping choices. The campaign stop and
 invalidation conditions are recorded in
 [`../../docs/research/tool_transcript_monitoring.md`](../../docs/research/tool_transcript_monitoring.md).
 
+## ID input reasoning correction (2026-09-07)
+
+The frozen ID inputs contain typed STRIDE reasoning flattened into assistant
+prose, plus explicit `think` calls. Reasoning of either kind occurs in 937/946
+STRIDE rows (937/3,012 total ID rows). Prior ID scores therefore describe the
+original full transcripts, not a strict no-reasoning action-only interface.
+The separate cleanup/token audit is recorded in
+[`../../docs/findings/id_assistant_prose_and_reasoning.md`](../../docs/findings/id_assistant_prose_and_reasoning.md).
+The frozen files and existing evaluation configurations are unchanged.
+
 ## Prompt contract
 
 The prompts are plain text so their substantive wording can be reviewed and
@@ -124,10 +134,11 @@ the OpenRouter route can place its ephemeral cache breakpoint immediately
 before variable trajectory text. Never put row IDs, labels, source metadata, or
 other example-specific text before that breakpoint.
 
-The trajectory is untrusted data. It includes the action-only native source
-representation after private reasoning and privileged fields are removed. The
+The trajectory is untrusted data in the native source representation. The
 renderer preserves its contents and only supplies the common opening/closing
-markers. It does not sanitize prompt injections; both prompt variants explicitly
+markers; it does not itself remove private reasoning. The ID audit above found
+reasoning retained in the frozen STRIDE inputs despite the intended action-only
+contract. It does not sanitize prompt injections; both prompt variants explicitly
 instruct the monitor not to follow transcript text.
 
 ## Inspecting and changing prompts

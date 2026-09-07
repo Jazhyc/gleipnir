@@ -1,0 +1,8 @@
+{
+  "input": "data/tool_trajectory_monitoring/distillation_id/prompts.jsonl",
+  "input_sha256": "ecc8b204be2505d2600c38d1747b87e2ef3c8a53ecd51908a79ad8e86e102389",
+  "rows": 3012,
+  "tokenizer": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "transformation": "id-assistant-prose-and-thinking-removal-v1"
+}
