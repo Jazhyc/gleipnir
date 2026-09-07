@@ -89,3 +89,34 @@ needed. Both workers must complete before the shared summary and scaling plot.
 Fourteen focused assignment/scaling tests passed. Runtime assignments and code
 provenance are in `evaluation_split.json`; logs are `evaluation_gpu{0,1}.log`
 under the campaign root and `logs/lambda/monitoring_id_scaling/evaluation_split.log`.
+
+## Completed results (2026-09-07)
+
+All four adapters completed all 3,012 ID rows; both GPU lanes exited and GPUs
+are idle. Predictions, summary and scaling_curve.json were collected locally.
+Audit confirms 3,012 unique matching ID/source/label tuples per arm, finite
+scores, frozen configuration hashes, and exact local metric recomputation.
+
+| Data fraction | Rows | Macro pAUROC@20 | Macro AUROC | Macro Brier | Training seconds |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 5% | 434 | .826454 | .949188 | .101404 | 449.84 |
+| 10% | 869 | .855903 | .955862 | .083515 | 875.66 |
+| 20% | 1738 | .886670 | .965245 | .075539 | 1742.11 |
+| 50% | 4344 | .833644 | .941339 | .088836 | 4271.89 |
+| Historical 100% | 8688 | .871066 | .957643 | .079273 | 9348.04 |
+
+The 20% arm passes the exploratory gate: +.015604 macro pAUROC, with Gloom
++.019900 and STRIDE +.011307, and Brier improvement .003733. It takes about
+29 minutes of training versus the historical 156 minutes. This is the best
+observed one-epoch data fraction, not a proven optimal dataset size. Nested
+subsets, a single seed and a fixed one-epoch schedule confound data content,
+amount, number of optimizer updates and learning-rate evolution. The 50% dip
+is concentrated in Gloom (pAUROC .696837 versus .803732 at 20%); STRIDE remains
+strong (.970450 versus .969607). No automatic additional runs or OOD evaluation.
+
+Threshold tradeoff: 20% macro recall at .5 increases from .847277 to .908383,
+but macro FPR increases from .046872 to .110157; balanced accuracy is slightly
+lower (.899113 versus .900203). Better ranking/Brier is not uniformly better
+performance at the unchanged threshold. Relative to the separately evaluated
+two-epoch full-data endpoint (.882952 pAUROC, .073997 Brier), 20% has slightly
+higher ranking but worse Brier; these small differences are not replicated.
