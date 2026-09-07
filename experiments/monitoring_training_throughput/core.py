@@ -14,7 +14,9 @@ from experiments.monitoring_lr_sweep.core import (
     SOFT_TARGETS_SHA256,
     STUDENT_ROWS_SHA256,
 )
-from gleipnir.monitoring_systems_screen import stable_stratified_selection
+from gleipnir.monitoring_systems_screen import (
+    stable_stratified_selection as stable_stratified_selection,
+)
 
 SEED = 0
 SELECTION_ROWS = 640
