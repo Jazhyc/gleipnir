@@ -29,6 +29,16 @@ checkpoint retention. Training metadata records expected dataset exposure,
 optimizer/scheduler settings, LoRA dropout, target scaling, checkpoints, and
 loss/learning-rate history.
 
+Direct-boundary MIL also has an opt-in two-process `torchrun` launcher. Specify
+`world_size: 2` and the per-rank accumulation explicitly in the job contract;
+the launcher does not silently rescale batches. Selected final/MIL LM-head
+projections dispatch through DDP.forward so its reducer sees every backward.
+Each rank loads its own QLoRA replica on LOCAL_RANK, uses isolated compiler
+caches, and verifies all trainable parameters agree exactly before completion.
+Metadata records global batch and distributed/checkpointing policy. Other
+custom auxiliary objectives are not yet validated for this DDP route and fail
+closed. Eager operation retains the required FLA/causal-conv1d kernels.
+
 The custom trainer returns microbatch-mean losses and explicitly disables
 Transformers' inferred token-count loss normalization. This keeps direct and
 sequential auxiliary gradients on the same accumulation scale; metadata records

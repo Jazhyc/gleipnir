@@ -148,6 +148,23 @@ def training_command(job: dict[str, Any]) -> list[str]:
         if selection is None
         else f"student.selection_manifest={selection}"
     )
+    if "nonreentrant_checkpointing" in job:
+        command.append(
+            "++student.training.nonreentrant_checkpointing="
+            + str(bool(job["nonreentrant_checkpointing"])).lower()
+        )
+    world_size = int(job.get("world_size", 1))
+    if world_size not in {1, 2}:
+        raise ValueError("validated launcher world size must be 1 or 2")
+    if world_size > 1:
+        command = [
+            sys.executable,
+            "-m",
+            "torch.distributed.run",
+            "--standalone",
+            f"--nproc_per_node={world_size}",
+            *command[1:],
+        ]
     return command
 
 

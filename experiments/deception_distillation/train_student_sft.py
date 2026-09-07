@@ -23,6 +23,12 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
+from gleipnir.distributed_training import (
+    install_mil_forward,
+    prepare_rank_caches,
+    verify_distributed_parameters,
+)
+from gleipnir.mil import masked_mil_bce, mil_row_enabled
 from gleipnir.qwen35_loftq import initialize_qwen35_loftq
 from gleipnir.training import (
     MuonAdamW,
@@ -106,7 +112,9 @@ class CompletionOnlyCollator:
                     dtype=torch.float32,
                 )
             if "mil_positions" in features[0]:
-                mil_width = max(len(feature["mil_positions"]) for feature in features)
+                mil_width = max(
+                    1, max(len(feature["mil_positions"]) for feature in features)
+                )
                 positions, position_mask = [], []
                 for feature in features:
                     values = list(feature["mil_positions"])
@@ -807,6 +815,14 @@ def forward_final_and_mil_binary_logits(
     binary_ids: torch.Tensor,
 ) -> tuple[torch.Tensor, torch.Tensor, Any]:
     """Score final and intermediate positions with only two LM-head rows."""
+    if isinstance(model, torch.nn.parallel.DistributedDataParallel):
+        outputs = model(
+            input_ids=input_ids,
+            attention_mask=attention_mask,
+            gleipnir_mil_positions=mil_positions,
+            gleipnir_binary_ids=binary_ids,
+        )
+        return outputs["logits"], outputs["mil_logits"], outputs
     if mil_positions.ndim != 2 or mil_positions.shape[0] != input_ids.shape[0]:
         raise ValueError("MIL positions must be [batch, instances]")
     last_positions = attention_mask.sum(dim=1) - 1
@@ -1764,7 +1780,7 @@ def tokenize_record(
         if dataset_id is None:
             raise ValueError("dataset_id is required for direct-target training")
         serialized_direct = direct_prompt + direct_target_prefix
-        if include_mil_target:
+        if include_mil_target and mil_row_enabled(record):
             direct_ids, mil_positions = mil_token_positions(
                 tokenizer,
                 serialized_direct,
@@ -1778,6 +1794,8 @@ def tokenize_record(
                 serialized_direct,
                 add_special_tokens=False,
             )[-max_length:]
+            if include_mil_target:
+                tokenized["mil_positions"] = []
         if not direct_ids:
             raise ValueError(f"empty direct prompt for index={record['index']}")
         tokenized.update(
@@ -1826,6 +1844,10 @@ def tokenize_record(
     config_name="config",
 )
 def main(cfg: DictConfig) -> None:
+    world_size = int(os.environ.get("WORLD_SIZE", "1"))
+    if world_size > 1:
+        torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
+        prepare_rank_caches(int(os.environ["LOCAL_RANK"]))
     from datasets import Dataset
     from peft import (
         EvaConfig,
@@ -2360,16 +2382,17 @@ def main(cfg: DictConfig) -> None:
                             "MIL requires soft targets and instance logits"
                         )
                     margins = mil_logits[..., 1].float() - mil_logits[..., 0].float()
-                    bag_logits = pool_mil_margins(
+                    loss = loss + mil_loss_weight * masked_mil_bce(
                         margins,
                         mil_position_mask,
-                        mode=mil_pooling,
-                        temperature=mil_temperature,
-                        top_k=mil_top_k,
-                    )
-                    loss = loss + mil_loss_weight * F.binary_cross_entropy_with_logits(
-                        bag_logits,
-                        soft_targets.float(),
+                        soft_targets,
+                        pool=lambda values, mask: pool_mil_margins(
+                            values,
+                            mask,
+                            mode=mil_pooling,
+                            temperature=mil_temperature,
+                            top_k=mil_top_k,
+                        ),
                     )
                 if ordinal_soft_loss_weight:
                     if soft_rating_targets is None:
@@ -2406,6 +2429,14 @@ def main(cfg: DictConfig) -> None:
             return self.optimizer
 
     root = Path(get_original_cwd()).resolve()
+    if world_size > 1 and (
+        not mil_loss_weight
+        or completion_loss_weight
+        or prefix_loss_weight
+        or pairwise_loss_weight
+        or decision_head_mode != "token_logits"
+    ):
+        raise ValueError("DDP currently validated only for direct-boundary MIL")
     random.seed(int(cfg.seed))
     np.random.seed(int(cfg.seed))
     torch.manual_seed(int(cfg.seed))
@@ -3137,11 +3168,8 @@ def main(cfg: DictConfig) -> None:
     )
     if selective_torch_compile_canary_tokens < 0:
         raise ValueError("selective compile canary tokens cannot be negative")
-    if (
-        selective_torch_compile_canary_tokens
-        and selective_torch_compile_policy == "none"
-    ):
-        raise ValueError("selective compile canary requires selective compilation")
+    # With policy=none this is explicitly an eager repeatability canary, not
+    # evidence of compilation parity. Metadata retains that policy unchanged.
     fsdp_enabled = bool(
         OmegaConf.select(cfg, "student.training.fsdp.enabled", default=False)
     )
@@ -3163,7 +3191,17 @@ def main(cfg: DictConfig) -> None:
         )
     )
     if gradient_checkpointing_enabled:
-        model.gradient_checkpointing_enable()
+        model.gradient_checkpointing_enable(
+            gradient_checkpointing_kwargs={
+                "use_reentrant": not bool(
+                    OmegaConf.select(
+                        cfg,
+                        "student.training.nonreentrant_checkpointing",
+                        default=False,
+                    )
+                )
+            }
+        )
         model.enable_input_require_grads()
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
             model,
@@ -3193,6 +3231,8 @@ def main(cfg: DictConfig) -> None:
         OmegaConf.select(cfg, "student.training.save_only_model", default=True)
     )
     trainer_optim = str(cfg.student.training.optim)
+    if world_size > 1:
+        install_mil_forward(model, forward_final_and_mil_binary_logits)
     args = TrainingArguments(
         output_dir=output_dir.as_posix(),
         optim=trainer_optim,
@@ -3246,6 +3286,14 @@ def main(cfg: DictConfig) -> None:
         # Trainer calls gradient_checkpointing_enable() again at train startup.
         # For selective policies that would silently reset every layer to True.
         gradient_checkpointing=trainer_manages_gradient_checkpointing,
+        gradient_checkpointing_kwargs={
+            "use_reentrant": not bool(
+                OmegaConf.select(
+                    cfg, "student.training.nonreentrant_checkpointing", default=False
+                )
+            )
+        },
+        ddp_find_unused_parameters=False if world_size > 1 else None,
         fsdp=True if fsdp_enabled else None,
         fsdp_config=fsdp_config,
         report_to="none",
@@ -3405,6 +3453,7 @@ def main(cfg: DictConfig) -> None:
     )
     output_dir.mkdir(parents=True, exist_ok=True)
     trainer.save_model(output_dir.as_posix())
+    distributed_verification = verify_distributed_parameters(model)
     if trainer.is_world_process_zero():
         tokenizer.save_pretrained(output_dir)
         (output_dir / "training_metadata.json").write_text(
@@ -3503,6 +3552,19 @@ def main(cfg: DictConfig) -> None:
                         ),
                     },
                     "direct_logits_mode": direct_logits_mode,
+                    "mil_population": (
+                        {
+                            "enabled_rows": sum(
+                                bool(row.get("mil_positions")) for row in tokenized
+                            ),
+                            "disabled_rows": sum(
+                                not bool(row.get("mil_positions")) for row in tokenized
+                            ),
+                            "reduction": "eligible_bag_sum_over_all_parents",
+                        }
+                        if mil_loss_weight
+                        else None
+                    ),
                     "decision_head_mode": decision_head_mode,
                     "decision_head_init": decision_head_init,
                     "decision_head_gradient_mode": (
@@ -3574,7 +3636,26 @@ def main(cfg: DictConfig) -> None:
                         "effective_batch_size": int(
                             cfg.student.training.per_device_train_batch_size
                         )
-                        * int(cfg.student.training.gradient_accumulation_steps),
+                        * int(cfg.student.training.gradient_accumulation_steps)
+                        * world_size,
+                    },
+                    "distributed_training": {
+                        **distributed_verification,
+                        "ddp_find_unused_parameters": False if world_size > 1 else None,
+                        "mil_forward_through_ddp": world_size > 1,
+                        "mil_projection_autocast": False,
+                        "cache_policy": (
+                            "seed_existing_triton_then_rank_local"
+                            if world_size > 1
+                            else "existing_cache"
+                        ),
+                        "nonreentrant_checkpointing": bool(
+                            OmegaConf.select(
+                                cfg,
+                                "student.training.nonreentrant_checkpointing",
+                                default=False,
+                            )
+                        ),
                     },
                     "gradient_checkpointing": gradient_checkpointing_enabled,
                     "trainer_manages_gradient_checkpointing": (
@@ -3653,6 +3734,9 @@ def main(cfg: DictConfig) -> None:
             OmegaConf.to_yaml(cfg, resolve=True)
         )
         print(f"saved {finetuning_mode} model to {output_dir}")
+    if world_size > 1:
+        torch.distributed.barrier()
+        torch.distributed.destroy_process_group()
 
 
 if __name__ == "__main__":

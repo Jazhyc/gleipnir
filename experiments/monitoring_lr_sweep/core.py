@@ -111,6 +111,7 @@ def validate_training_metadata(
     require_canary: bool = False,
     checkpointing_policy: str = GRADIENT_CHECKPOINTING_POLICY,
     compilation_policy: str = SELECTIVE_TORCH_COMPILE_POLICY,
+    world_size: int = 1,
 ) -> dict[str, Any]:
     """Require the proven Qwen3.5 fast-kernel QLoRA recipe after every run."""
     supported_policies = {
@@ -122,6 +123,7 @@ def validate_training_metadata(
             list(range(32)),
             EXPECTED_CHECKPOINTED_LAYERS,
         ),
+        ("all", "none"): (list(range(32)), []),
     }
     if (checkpointing_policy, compilation_policy) not in supported_policies:
         raise ValueError("unsupported checkpointing/compilation recipe")
@@ -164,10 +166,18 @@ def validate_training_metadata(
         raise ValueError("QLoRA quantization metadata drifted")
     if batch != {
         "effective_batch_size": EFFECTIVE_BATCH_SIZE,
-        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS,
+        "gradient_accumulation_steps": GRADIENT_ACCUMULATION_STEPS // world_size,
         "micro_batch_size": MICRO_BATCH_SIZE,
     }:
         raise ValueError("training batch metadata drifted")
+    if world_size > 1:
+        distributed = metadata.get("distributed_training", {})
+        if (
+            distributed.get("world_size") != world_size
+            or distributed.get("max_replica_difference") != 0.0
+            or distributed.get("mil_forward_through_ddp") is not True
+        ):
+            raise ValueError("distributed training parity not verified")
     if (
         metadata.get("gradient_checkpointing") is not True
         or metadata.get("gradient_checkpointing_policy") != checkpointing_policy
@@ -178,7 +188,7 @@ def validate_training_metadata(
         compiled.get("policy") != compilation_policy
         or compiled.get("compiled_layer_indices") != compiled_layers
         or compiled.get("disabled_linear_attention_layer_indices")
-        != EXPECTED_CHECKPOINTED_LAYERS
+        != ([] if compilation_policy == "none" else EXPECTED_CHECKPOINTED_LAYERS)
         or compiled.get("backend") != "inductor"
         or compiled.get("mode") != "default"
         or compiled.get("dynamic") is not True
@@ -188,7 +198,11 @@ def validate_training_metadata(
     unique_graphs = int(
         compiled.get("dynamo_counters", {}).get("stats", {}).get("unique_graphs", 0)
     )
-    if not 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS:
+    if not (
+        unique_graphs == 0
+        if compilation_policy == "none"
+        else 1 <= unique_graphs <= MAX_UNIQUE_GRAPHS
+    ):
         raise ValueError(f"unexpected Dynamo graph count: {unique_graphs}")
     if require_canary and compiled.get("canary", {}).get("passed") is not True:
         raise ValueError("same-weights compile canary did not pass")

@@ -1,0 +1,19 @@
+campaign_id: gleipnir4b-mil20-plus-deception-epochs3-v1
+result_dir: results/monitoring_mil_mixture
+data_dir: data/monitoring_mil_mixture
+source_data_dir: data/tool_trajectory_monitoring/distillation_scaling
+source_jobs: results/monitoring_subset_duration/jobs.jsonl
+source_job: mil-pct020-lr2em05-epochs3-seed0
+monitoring_selection: results/monitoring_id_scaling/selections/n1738.jsonl
+monitoring_rows: 1738
+deception_rows: 13149
+epochs: 3
+learning_rate: 2.0e-5
+seed: 0
+evaluation_template: experiments/monitoring_lr_sweep/id_benchmark.json
+baseline_result: results/monitoring_subset_duration/id_evaluation/4b/adapters/mil-pct020-lr2em05-epochs3-seed0/result.json
+selection:
+  min_pauroc_gain: 0.005
+  max_source_regression: 0.01
+  max_brier_regression: 0.005
+strict_ood_consulted: false

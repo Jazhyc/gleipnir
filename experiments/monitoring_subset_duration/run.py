@@ -303,6 +303,7 @@ def validate_completed(job: dict[str, Any], *, preflight: bool = False) -> None:
         require_canary=preflight,
         checkpointing_policy=job["gradient_checkpointing_policy"],
         compilation_policy=job["selective_torch_compile_policy"],
+        world_size=int(job.get("world_size", 1)),
     )
     losses = metadata["losses"]
     expected = {
