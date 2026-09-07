@@ -1,5 +1,17 @@
 # ID-selected three-epoch MIL: frozen OOD evaluation
 
+Status: all 6,395 frozen OOD rows evaluated; completion audited on 2026-09-08.
+
+The selected MIL adapter reached source-macro pAUROC@20 `0.781299`, versus
+released 4B's `0.782350` (difference `-0.001051`); macro AUROC was `0.906762`
+versus `0.908584`. This does not establish an OOD improvement. The comparison
+changes training mixture, duration and objective together and is not an isolated
+MIL effect. Complete predictions, source breakdowns, calibration, threshold
+diagnostics, score ties and merge provenance are retained under
+`results/monitoring_mil_ood/ood_evaluation/4b/adapters/mil-pct020-lr2em05-epochs3-seed0/`.
+The master and evaluation evidence are covered by the
+[campaign inventory](../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+
 Hypothesis: the ID-selected monitoring-only MIL checkpoint transfers better
 than released Gleipnir 4B. Evaluate exactly
 `mil-pct020-lr2em05-epochs3-seed0`: 1,738 monitoring parents, three epochs,

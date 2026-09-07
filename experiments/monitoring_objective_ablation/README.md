@@ -1,12 +1,18 @@
 # Monitoring objective ablation
 
-Status: five-arm, one-seed ID-development screen frozen before training.
+Status: five-arm, one-seed ID-development screen completed; corrected rationale
+reruns and final evaluations verified on 2026-09-08.
 
 The initial two rationale runs are diagnostic only because their sequential
 auxiliary/direct accumulation normalization was inconsistent. They are excluded
-from promotion and require corrected reruns with the same frozen weights; see
+from promotion. Corrected reruns with the same frozen weights are complete; see
 [`the accumulation audit`](../../docs/findings/monitoring_objective_accumulation.md).
 The MIL-only runs are unaffected by that bug.
+
+Corrected rationale weights 0.05 and 0.20 reach historical-ID macro pAUROC@20
+`0.870399` and `0.873341`, versus soft-only `0.871066`. Neither passes the
+predeclared `+0.005` ranking threshold. The linked audit records the final
+calibration metrics, artifact paths, and distinction from the CoT-removed ID set.
 
 ## Question
 

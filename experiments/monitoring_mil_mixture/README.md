@@ -1,5 +1,19 @@
 # Three-epoch MIL with full deception data
 
+Status: the promoted two-GPU run and final ID evaluation completed; completion
+audited on 2026-09-08.
+
+The final run completed 1,398 updates. On all 3,012 historical ID rows, macro
+pAUROC@20 fell from the monitoring-only MIL baseline's `0.895951` to `0.876761`;
+AUROC was `0.957816` and Brier `0.077444`. Gloom pAUROC fell by `0.045623`, while
+STRIDE increased by `0.007242`. This fails the exploratory gate. The comparison
+changes data mixture, update count, schedule and execution, so it does not
+isolate a causal effect of deception data. No OOD evaluation of this mixed
+adapter was run. Full diagnostics are in
+`results/monitoring_mil_mixture_ddp/summary.json`; the final FP32 master and
+predictions are retained in the
+[campaign inventory](../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+
 Hypothesis: full-boundary deception distillation adds complementary supervision
 to the selected 20%-monitoring, three-epoch MIL recipe. User requested one fresh
 seed-0 run, not a continuation of an existing adapter. Retain the exact 1,738

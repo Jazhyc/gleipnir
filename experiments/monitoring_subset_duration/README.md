@@ -1,5 +1,8 @@
 # Duration, MIL and sampled prefixes on the frozen 20% subset
 
+Status: all nine final trainings and ID evaluations completed; completion audited
+on 2026-09-08.
+
 Hypothesis: repeated exposure to the selected 1,738 monitoring parents may
 improve generalization, and weak action-level supervision may change that
 duration dependence. User authorized six fresh seed-0 runs: standard soft-only
@@ -82,3 +85,30 @@ startup handoff. All 21 focused tests passed locally and on Lambda. The exact
 Its 1,270 prefix-eligible parents retain the original fixed sampled targets.
 Frozen manifests and all four lane evaluation configs were collected locally.
 No timed agent heartbeat was scheduled; the remote queue is execution only.
+
+## Completed results
+
+All nine endpoints cover the same 3,012 historical ID rows. The table reports
+two-source macro pAUROC@20; the one-epoch soft-only baseline is `0.886670`.
+
+| Epochs | Soft-only | MIL | Sampled prefix, weight 0.1 |
+|---|---:|---:|---:|
+| 2 | 0.875770 | 0.876487 | 0.867480 |
+| 3 | 0.886438 | 0.895951 | 0.873701 |
+| 5 | 0.890454 | 0.883671 | 0.872681 |
+
+Only three-epoch MIL passes the frozen exploratory gate against that one-epoch
+baseline. Each sampled-prefix result is below its same-duration soft-only
+control. Duration is not monotonically beneficial, and these adaptive,
+single-seed ID results do not establish an optimum or OOD improvement.
+The subsequent separately authorized
+[MIL OOD evaluation](../monitoring_mil_ood/README.md) did not establish a gain
+over released 4B.
+
+`results/monitoring_subset_duration/summary.json` retains all nine rows, including
+source metrics, AUROC, Brier, threshold diagnostics, score ties and gate decisions;
+`stage1_summary.json` retains the initial six-arm comparison. Final masters and
+previously missing predictions were collected in the
+[campaign inventory](../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+These results precede the CoT-removed ID contract and must not be mixed with its
+scores.
