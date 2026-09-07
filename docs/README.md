@@ -1,6 +1,10 @@
 # Documentation index
 
 - `research_program.md`: scope, research questions, and evaluation principles.
+- [Possible monitoring training follow-ups](research/monitoring_training_followups.md):
+  fixed-backbone, existing-teacher-data proposals, their empirical and literature
+  motivation, and a candidate comparison plan; research backlog rather than a
+  launched campaign or selected recipe.
 - `research/tool_transcript_monitoring.md`: operational paper notes, dataset
   provenance, and the proposed exploratory Kimi-logit scaling design for
   action-only agent monitoring.

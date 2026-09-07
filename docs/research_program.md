@@ -46,6 +46,11 @@ visible assistant prose. Freeze its input/manifest hashes in each new campaign.
 
 ## Near-term questions
 
+- With the backbone and teacher cache fixed, can CoT-removed student training,
+  consistency regularization, compact evidence supervision, controlled data
+  exposure, or checkpoint averaging improve transfer? The
+  [possible training follow-ups](research/monitoring_training_followups.md)
+  record the evidence and a proposed screen; these methods are not yet selected.
 - How do soft label margins and rationale supervision scale with teacher quality
   and annotation volume?
 - Does multi-domain joint training improve monitoring abstractions or cause
