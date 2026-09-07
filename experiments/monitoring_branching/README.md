@@ -279,3 +279,25 @@ The single 1x pipeline was launched as supervisor 184536. Thirty focused tests
 pass, including a simulated deadline crossing during a partial optimizer window.
 The old full-epoch evaluation is cancelled; only the replacement endpoint is
 queued. Automatic agent heartbeats remain unavailable in this session.
+
+## Completed 1x result (audited 2026-09-07)
+
+Training, serving parity and all 3,012 ID evaluations completed. The fixed-time
+endpoint reaches macro pAUROC@20 **0.803823**, versus **0.876688** for sampled
+prefix w0.1 and **0.871066** for full-only. Macro AUROC is 0.940761 and Brier
+0.121065 (sampled reference Brier 0.078315). This fails the exploratory gate.
+Gloom/STRIDE pAUROC are 0.719439/0.888208; AUROC 0.908921/0.972601.
+
+The run visited only **336/8,688 parents (3.87%)**, using all **5,516 prefixes**
+on those parents and making 11 optimizer updates. Actual training-loop time
+including final save was 6,548.98 seconds on two H100s: 3.6383 GPU-hours,
+0.245% above the 3.6294 GPU-hour reference (16.03 wall seconds over budget).
+The result is a negative compute-efficiency finding for this implementation,
+not a test of a converged full all-prefix epoch. Limited parent coverage and
+few optimizer updates are plausible limitations, not isolated causal findings.
+Previously authorized numerical/cache exceptions remain in force and documented.
+
+Final predictions and result metadata were pulled into
+`results/monitoring_branching_compute1x/id_evaluation/` and checked for 3,012
+unique finite rows. No 2x or full-epoch replacement was launched. The existing
+data-scaling queue advanced after the successful pipeline completion.
