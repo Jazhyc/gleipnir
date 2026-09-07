@@ -28,8 +28,8 @@
   inventory retained before releasing the single-H100 `gleipnir-control`
   instance.
 - [Improvement campaign inventory](findings/gleipnir_improvement_shutdown_inventory.md):
-  pre-shutdown artifact checks, final ablation outcomes, and work that can resume
-  later without retaining the two-H100 `gleipnir-improvement` instance.
+  verified artifact retention, final ablation outcomes, and confirmed termination
+  of the two-H100 `gleipnir-improvement` instance.
 - `findings/monitoring_length_shortcut_audit.md`: source-specific length cues,
   paired inert-padding sensitivity, and the decision not to prioritize a
   length-specific regularizer.

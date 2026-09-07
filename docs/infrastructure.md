@@ -12,16 +12,18 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 
 ## Lambda Cloud
 
-The active reserved training target is `gleipnir-improvement`, intended for
-continued action-only tool-trajectory monitoring work. It has two H100 80 GB
-SXM5 GPUs and runs the Lambda Stack 24 Ubuntu 24.04 image. The former
-`gleipnir-control` and `monitor-foundation` targets are no longer active;
-references to them in historical experiment READMEs describe completed
-campaigns and are not current launch instructions.
+No Lambda Cloud training target is currently reserved. The two-H100
+`gleipnir-improvement` instance was terminated on 2026-09-08 following explicit
+user authorization and verified artifact collection. See the
+[shutdown inventory](findings/gleipnir_improvement_shutdown_inventory.md).
+The former `gleipnir-control` and `monitor-foundation` targets are also no longer
+active. References to these targets in historical experiment READMEs describe
+completed campaigns and are not current launch instructions.
 
-Probe `gleipnir-improvement` and record its concrete GPU model and count before
-freezing a training recipe. The helper accepts exact console-created titles, so
-it can address the target without renaming or recreating it:
+For any separately authorized future target, probe and record its concrete GPU
+model and count before freezing a training recipe. The helper accepts exact
+console-created titles. These commands document how the former target was
+managed:
 
 ```bash
 python scripts/lambda_cloud.py instances --campaign gleipnir-improvement
@@ -33,8 +35,8 @@ python scripts/lambda_cloud.py sync-secrets --campaign gleipnir-improvement \
 python scripts/lambda_cloud.py ssh --campaign gleipnir-improvement
 ```
 
-These entries document an already-reserved target; they do not authorize
-launching replacement capacity or terminating the instance.
+These historical entries do not authorize launching replacement capacity or
+terminating any other instance.
 
 The Lambda API key remains local. Selected experiment credentials are sent over
 SSH standard input to `~/.config/gleipnir/secrets.env` with mode `600`. The

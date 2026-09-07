@@ -1,8 +1,8 @@
-# `gleipnir-improvement` pre-shutdown inventory
+# `gleipnir-improvement` shutdown inventory
 
-Date: 2026-09-08. Status: artifact collection and verification complete; ready for
-shutdown from an artifact standpoint. The instance remains active. This audit
-does not authorize or perform termination.
+Date: 2026-09-08 (Europe/Amsterdam). Status: artifacts collected and verified;
+termination explicitly authorized and confirmed. The two-H100 instance is no
+longer active.
 
 The audited target is instance `bdd7ae2cf92c4f4386ee307972553d60`,
 `gpu_2x_h100_sxm5`, in Lambda `us-south-2`. Both H100 80GB SXM5 GPUs reported
@@ -160,5 +160,20 @@ Verify the member's manifest checksum, restore the tokenizer from the pinned bas
 revision, regenerate the serving adapter, and pass the matched parity gate before
 evaluation. To inspect the final remote source or an alternate manifest without
 overwriting current files, extract `research_artifacts.tar` into a separate empty
-directory. The inventory applies to this audited snapshot; any later remote work
-requires another collection before termination.
+directory. These recovery steps use retained local artifacts and pinned upstream
+dependencies.
+
+## Termination confirmation
+
+After the user explicitly authorized termination on 2026-09-08
+(Europe/Amsterdam), `scripts/lambda_cloud.py terminate --campaign
+gleipnir-improvement --yes` submitted the request for the audited instance
+`bdd7ae2cf92c4f4386ee307972553d60`. Lambda accepted it and reported
+`terminating`. Follow-up API observations are retained locally in
+`results/lambda_improvement_shutdown_audit/termination_checks.jsonl`.
+
+At 2026-09-07 23:25:56 UTC (2026-09-08 01:25:56 Europe/Amsterdam), the
+campaign-filtered instance query returned no matching instance. At 23:26:16 UTC,
+the full Lambda instance query also returned an empty list, confirming that the
+two-H100 capacity was released. No replacement capacity was launched. The
+checksummed local artifacts listed above were retained before termination.
