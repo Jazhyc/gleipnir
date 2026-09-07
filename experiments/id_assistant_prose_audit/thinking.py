@@ -13,7 +13,10 @@ from experiments.id_assistant_prose_audit.run import HEADER, strip_assistant_pro
 
 
 def strip_thinking_calls(
-    trajectory: str, tool_blocks: list[list[tuple[str, str]]]
+    trajectory: str,
+    tool_blocks: list[list[tuple[str, str]]],
+    *,
+    remove_prose: bool = True,
 ) -> tuple[str, int]:
     """Validate exact source call blocks, then remove only named think calls."""
     matches = list(HEADER.finditer(trajectory))
@@ -40,7 +43,8 @@ def strip_thinking_calls(
         output.append(chunk)
     if block_index != len(tool_blocks):
         raise ValueError("Structured source call count drift")
-    return strip_assistant_prose("".join(output))[0], removed
+    result = "".join(output)
+    return (strip_assistant_prose(result)[0] if remove_prose else result), removed
 
 
 def source_records() -> dict[str, dict[str, Any]]:
@@ -48,17 +52,26 @@ def source_records() -> dict[str, dict[str, Any]]:
     path = Path(
         "data/tool_trajectory_monitoring/source/id_evaluation/stride_test.parquet"
     )
-    expected_sha256 = (
-        "c13af47d00d3a32e9fcecb13df01e9f8bdf6a80e956d25ed00e8cb15dcc1d43b"
-    )
+    expected_sha256 = "c13af47d00d3a32e9fcecb13df01e9f8bdf6a80e956d25ed00e8cb15dcc1d43b"
     if hashlib.sha256(path.read_bytes()).hexdigest() != expected_sha256:
         raise ValueError("Structured STRIDE source checksum drift")
     output = {}
     for row in pq.read_table(path, columns=["id", "trajectory_data"]).to_pylist():
-        texts, tool_blocks = [], []
+        texts, tool_blocks, assistant_blocks = [], [], []
         for message in json.loads(row["trajectory_data"])["messages"]:
             if message["role"] != "assistant":
                 continue
+            blocks = [
+                (
+                    block.get("type"),
+                    block.get("reasoning", block.get("text", "")).strip(),
+                )
+                for block in message.get("content") or []
+                if isinstance(block, dict)
+            ]
+            blocks = [(kind, text) for kind, text in blocks if text]
+            if blocks or message.get("tool_calls"):
+                assistant_blocks.append(blocks)
             for block in message.get("content") or []:
                 if isinstance(block, dict) and block.get("type") == "reasoning":
                     text = block.get("reasoning", "").strip()
@@ -77,6 +90,7 @@ def source_records() -> dict[str, dict[str, Any]]:
                 tool_blocks.append(calls)
         output["test_stride:" + row["id"]] = {
             "reasoning": texts,
+            "assistant_blocks": assistant_blocks,
             "tool_blocks": tool_blocks,
         }
     return output

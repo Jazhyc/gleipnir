@@ -20,14 +20,14 @@ from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
 from gleipnir.evaluation_shards import merge_predictions
 
 
-def main() -> None:
-    config = json.loads(CONFIG.read_text())
+def main(*, config_path: Path = CONFIG, output_root: Path = ROOT) -> None:
+    config = json.loads(config_path.read_text())
     baseline_path = Path(config["baseline"]["predictions"])
     if sha256_file(baseline_path) != config["baseline"]["predictions_sha256"]:
         raise ValueError("Historical baseline predictions drift")
     rows = validate_inputs(config)
-    path = ROOT / "id_evaluation/4b/adapters" / JOB / "predictions.jsonl"
-    cleaned = merge_predictions(rows, [read_jsonl(path)], sha256_file(CONFIG))
+    path = output_root / "id_evaluation/4b/adapters" / JOB / "predictions.jsonl"
+    cleaned = merge_predictions(rows, [read_jsonl(path)], sha256_file(config_path))
     baseline = read_jsonl(baseline_path)
     original = {r["id"]: r for r in baseline}
     if len(original) != len(baseline) or set(original) != {r["id"] for r in cleaned}:
@@ -55,11 +55,11 @@ def main() -> None:
         "baseline": old,
         "cleaned": new,
         "paired": paired,
-        "config_sha256": sha256_file(CONFIG),
+        "config_sha256": sha256_file(config_path),
         "baseline_predictions_sha256": sha256_file(baseline_path),
         "cleaned_predictions_sha256": sha256_file(path),
     }
-    atomic_write_json(ROOT / "comparison.json", result)
+    atomic_write_json(output_root / "comparison.json", result)
     print(json.dumps(result, indent=2))
 
 

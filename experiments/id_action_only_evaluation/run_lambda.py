@@ -26,9 +26,11 @@ from gleipnir.qwen35_fast_training import ensure_qwen35_long_trajectory_kernels
 LOGS = Path("logs/lambda/id_action_only_evaluation")
 
 
-def main() -> None:
-    LOGS.mkdir(parents=True, exist_ok=True)
-    config = json.loads(CONFIG.read_text())
+def main(
+    *, config_path: Path = CONFIG, output_root: Path = ROOT, log_root: Path = LOGS
+) -> None:
+    log_root.mkdir(parents=True, exist_ok=True)
+    config = json.loads(config_path.read_text())
     validate_config(config)
     validate_inputs(config)
     job = validate_jobs(config, "4b")[0]
@@ -55,7 +57,7 @@ def main() -> None:
     if processes or len(hardware.strip().splitlines()) != 3:
         raise RuntimeError("Two idle GPUs required")
     atomic_write_json(
-        ROOT / "hardware.json",
+        output_root / "hardware.json",
         {
             "gpu_query": hardware,
             "compute_processes": processes,
@@ -70,10 +72,10 @@ def main() -> None:
 
     def update(phase: str) -> None:
         status.update(phase=phase, updated_at_unix=time.time())
-        atomic_write_json(ROOT / "status.json", status)
+        atomic_write_json(output_root / "status.json", status)
 
     def run(module: str, args: list[str], env: dict[str, str], log: str) -> None:
-        with (LOGS / log).open("a") as handle:
+        with (log_root / log).open("a") as handle:
             subprocess.run(
                 [sys.executable, "-u", "-m", module, *args],
                 env=env,
@@ -85,8 +87,8 @@ def main() -> None:
     try:
         update("kernel_preflight")
         fast = ensure_qwen35_long_trajectory_kernels()
-        common = ["--config", str(CONFIG), "--model-size", "4b", "--output-root"]
-        parity = ROOT / "parity"
+        common = ["--config", str(config_path), "--model-size", "4b", "--output-root"]
+        parity = output_root / "parity"
         update("cleaned_input_parity")
         with ThreadPoolExecutor(max_workers=2) as pool:
             eager = pool.submit(
@@ -134,11 +136,11 @@ def main() -> None:
             "experiments.monitoring_prefix_supervision.resume_evaluation",
             [
                 "--root",
-                str(ROOT),
+                str(output_root),
                 "--job",
                 JOB,
                 "--config",
-                str(CONFIG),
+                str(config_path),
                 "--fresh",
                 "--skip-id-summary",
             ],
