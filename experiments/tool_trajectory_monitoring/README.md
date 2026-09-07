@@ -96,6 +96,11 @@ The separate cleanup/token audit is recorded in
 [`../../docs/findings/id_assistant_prose_and_reasoning.md`](../../docs/findings/id_assistant_prose_and_reasoning.md).
 The frozen files and existing evaluation configurations are unchanged.
 
+The training-input audit also verifies reasoning in 1,340/1,350 STRIDE training
+rows (1,340/8,688 monitoring rows). All teacher-cache prompt hashes match and
+the same trajectories are present in student training. See
+[`../../docs/findings/training_input_reasoning.md`](../../docs/findings/training_input_reasoning.md).
+
 ## Prompt contract
 
 The prompts are plain text so their substantive wording can be reviewed and

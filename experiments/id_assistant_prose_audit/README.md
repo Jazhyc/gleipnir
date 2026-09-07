@@ -58,3 +58,31 @@ Completed 2026-09-07. Assistant-prose removal reduces full ID input tokens by
 (26.20% STRIDE, 4.63% Gloom). See
 [the finding](../../docs/findings/id_assistant_prose_and_reasoning.md) for reasoning
 prevalence, exact counts and interpretation.
+
+## Training-input follow-up audit
+
+Hypothesis: the same unintended reasoning exposure occurs in monitoring teacher
+and student training inputs. This read-only audit covers all 8,688 monitoring
+examples; the 13,149 additional prior-deception rows are outside its scope.
+Do not modify training prompts or regenerate teacher labels. Stop on any source,
+cache, trajectory or student-text mismatch. No model evaluation or selection is
+part of this audit.
+
+`training_config.json` freezes the teacher inputs, all three completed cache
+shards, the mixed student file, and the original STRIDE train1/train2 shards.
+The raw STRIDE files are downloaded from
+`aksh-n/rich-trajectories-cleaned@92a44c828935c325dc86cb390f874d0ee9345afb`
+into `data/training_reasoning_audit/source/raw_stride/data/`, preserving upstream
+filenames. Match each selected STRIDE row by exact trajectory hash, then verify
+raw typed reasoning verbatim in teacher inputs and cross-check serialized think
+calls against structured source calls. Verify actual submitted cache hashes and
+exact trajectory text in the mixed student inputs.
+
+```bash
+.venv/bin/python -m experiments.id_assistant_prose_audit.training_audit
+```
+
+Completed: 4,213 typed reasoning blocks in 1,269 STRIDE examples, plus 11,696
+think calls in 1,230 STRIDE examples; the union is 1,340/1,350 STRIDE rows and
+1,340/8,688 monitoring rows. All teacher-cache and student-input joins pass.
+See [the finding](../../docs/findings/training_input_reasoning.md).

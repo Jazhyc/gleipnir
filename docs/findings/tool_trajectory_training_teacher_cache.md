@@ -3,6 +3,13 @@
 Date: 2026-08-30. Status: complete training cache. This is an
 in-distribution diagnostic on labeled training data, not a held-out benchmark.
 
+## Input-contract correction (2026-09-07)
+
+The completed requests contain target-agent reasoning in 1,340/1,350 STRIDE
+training examples. These same trajectories were supplied to the student.
+See [the source/cache/student audit](training_input_reasoning.md). The metrics
+below remain measurements of the original reasoning-bearing inputs.
+
 ## Frozen contract
 
 The cache covers all 8,688 rows in the paper author's final class-balanced

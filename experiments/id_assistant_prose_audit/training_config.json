@@ -1,0 +1,25 @@
+{
+  "teacher_prompts": "data/tool_trajectory_monitoring/teacher_training/prompts.jsonl",
+  "teacher_caches": [
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits.jsonl",
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits_morph.jsonl",
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits_fireworks.jsonl"
+  ],
+  "mixed_student_rows": "data/tool_trajectory_monitoring/distillation_scaling/mixed_student_rows.jsonl",
+  "raw_stride_repo": "aksh-n/rich-trajectories-cleaned",
+  "raw_stride_revision": "92a44c828935c325dc86cb390f874d0ee9345afb",
+  "raw_stride_files": [
+    "data/training_reasoning_audit/source/raw_stride/data/train1-00000-of-00001.parquet",
+    "data/training_reasoning_audit/source/raw_stride/data/train2-00000-of-00001.parquet"
+  ],
+  "raw_source_license": "unspecified_by_upstream; internal audit only; do not redistribute",
+  "files": {
+    "data/tool_trajectory_monitoring/teacher_training/prompts.jsonl": "c06833bc0c5e8893ea45e92ec642a71e751749ee1cd0796eb88f7ab38402763f",
+    "data/tool_trajectory_monitoring/distillation_scaling/mixed_student_rows.jsonl": "f9b0a322f277991edae2510b658a2298c0c585d402b39f36d6ac86352bf1a76b",
+    "data/training_reasoning_audit/source/raw_stride/data/train1-00000-of-00001.parquet": "00487f025ecf195da96cd105685623373f78bdbfaf11f9a6cb8721c28650df2a",
+    "data/training_reasoning_audit/source/raw_stride/data/train2-00000-of-00001.parquet": "3b355f67b48c0f25b20d05c6ca3c1faabbdcb86b6f12e0459aac6354f4545f86",
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits.jsonl": "2ee1a01c8ad91b2e1559a9d032162619e06068802b9b746d2c9d107e7dbbe5e5",
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits_morph.jsonl": "46b86e18f82fa173d45abcc4dce095fb3fd832517f6cab094f48c9956095ef4d",
+    "results/tool_trajectory_monitoring/kimi_k3_training_logits_fireworks.jsonl": "8a29c625b08535f3ea88bd23058473059f4e2003e98d3fe4196a59b926b0378c"
+  }
+}
