@@ -229,6 +229,53 @@ def plot_curve(curve: list[dict], destination: Path) -> None:
     save_figure(figure, destination)
 
 
+def write_curve(root: Path, config: dict) -> None:
+    # Include the historical 100% result explicitly in the curve artifact.
+    summary = json.loads((root / "summary.json").read_text())
+    jobs = make_jobs(config)
+    curve = [
+        {
+            "fraction": j["data_fraction"],
+            "train_rows": j["train_rows"],
+            "expected_steps": j["expected_steps"],
+            **r,
+        }
+        for j, r in zip(jobs, summary["rows"], strict=True)
+    ]
+    curve.append(
+        {
+            "fraction": 1.0,
+            "train_rows": 8688,
+            "expected_steps": 272,
+            "historical": True,
+            "result": config["baseline_result"],
+            "metrics": summary["baseline"],
+        }
+    )
+    selections = json.loads((root / "manifest.json").read_text())["selections"]
+    for point, job in zip(curve[:-1], jobs, strict=True):
+        result_path = (
+            root / "id_evaluation/4b/adapters" / job["job_name"] / "result.json"
+        )
+        metadata = json.loads(result_path.read_text())["training_metadata"]
+        point["train_runtime_seconds"] = metadata["train_metrics"]["train_runtime"]
+        point["training_tokens_per_epoch"] = next(
+            s["tokens"] for s in selections if s["rows"] == job["train_rows"]
+        )
+    baseline = json.loads(Path(config["baseline_result"]).read_text())[
+        "training_metadata"
+    ]
+    curve[-1]["train_runtime_seconds"] = baseline["train_metrics"]["train_runtime"]
+    curve[-1]["training_tokens_per_epoch"] = baseline["batching"]["padding"][
+        "direct_tokens"
+    ]
+    atomic_write_json(
+        root / "scaling_curve.json",
+        {"epochs": 1, "seed": 0, "points": curve, "strict_ood_consulted": False},
+    )
+    plot_curve(curve, root / "scaling_curve.svg")
+
+
 def wait_and_run(root: Path, revision: str | None) -> None:
     config = json.loads((root / "resolved_config.json").read_text())
     predecessor = config["predecessor"]
@@ -280,50 +327,7 @@ def wait_and_run(root: Path, revision: str | None) -> None:
             completed_validator=validate_completed,
             logs_root=Path("logs/lambda/monitoring_id_scaling"),
         )
-        # Include the historical 100% result explicitly in the curve artifact.
-        summary = json.loads((root / "summary.json").read_text())
-        jobs = make_jobs(config)
-        curve = [
-            {
-                "fraction": j["data_fraction"],
-                "train_rows": j["train_rows"],
-                "expected_steps": j["expected_steps"],
-                **r,
-            }
-            for j, r in zip(jobs, summary["rows"], strict=True)
-        ]
-        curve.append(
-            {
-                "fraction": 1.0,
-                "train_rows": 8688,
-                "expected_steps": 272,
-                "historical": True,
-                "result": config["baseline_result"],
-                "metrics": summary["baseline"],
-            }
-        )
-        selections = json.loads((root / "manifest.json").read_text())["selections"]
-        for point, job in zip(curve[:-1], jobs, strict=True):
-            result_path = (
-                root / "id_evaluation/4b/adapters" / job["job_name"] / "result.json"
-            )
-            metadata = json.loads(result_path.read_text())["training_metadata"]
-            point["train_runtime_seconds"] = metadata["train_metrics"]["train_runtime"]
-            point["training_tokens_per_epoch"] = next(
-                s["tokens"] for s in selections if s["rows"] == job["train_rows"]
-            )
-        baseline = json.loads(Path(config["baseline_result"]).read_text())[
-            "training_metadata"
-        ]
-        curve[-1]["train_runtime_seconds"] = baseline["train_metrics"]["train_runtime"]
-        curve[-1]["training_tokens_per_epoch"] = baseline["batching"]["padding"][
-            "direct_tokens"
-        ]
-        atomic_write_json(
-            root / "scaling_curve.json",
-            {"epochs": 1, "seed": 0, "points": curve, "strict_ood_consulted": False},
-        )
-        plot_curve(curve, root / "scaling_curve.svg")
+        write_curve(root, config)
         queue.update(state="complete", completed_at=time.time())
     except BaseException as error:
         queue.update(state="failed", error=repr(error))

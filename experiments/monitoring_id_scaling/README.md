@@ -70,3 +70,22 @@ PYTHONPATH=src .venv/bin/python -m experiments.monitoring_id_scaling.run queue
 Do not repeat preparation or start a second queue for this campaign. Inspect
 `results/monitoring_id_scaling/queue_status.json` and
 `logs/lambda/monitoring_id_scaling/queue.log` for its current state.
+
+## Two-GPU evaluation takeover
+
+User authorized splitting the final adapter evaluations across both H100s.
+Paused only queue supervisor 185381, allowed the last 50% trainer and export
+to finish, verified no remaining GPU processes, then replaced the supervisor
+with `python -m experiments.monitoring_id_scaling.resume_evaluation` (PID 191449).
+No training was restarted. The original manifest is unchanged; the recorded
+code-only transition extracts the identical curve-writing function for reuse.
+All other manifested checksums and completed training metadata remain required.
+
+Run the original master/export serving-parity gate, then two persistent TP1
+vLLM engines: GPU0 evaluates 5% and 20%, GPU1 evaluates 10% and 50%. Adapter
+ownership is disjoint, each evaluates all 3,012 rows, and existing predictions
+resume in place. No data sharding/merging or frozen scoring-config change is
+needed. Both workers must complete before the shared summary and scaling plot.
+Fourteen focused assignment/scaling tests passed. Runtime assignments and code
+provenance are in `evaluation_split.json`; logs are `evaluation_gpu{0,1}.log`
+under the campaign root and `logs/lambda/monitoring_id_scaling/evaluation_split.log`.
