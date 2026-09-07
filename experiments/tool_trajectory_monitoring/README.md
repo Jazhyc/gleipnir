@@ -346,6 +346,14 @@ The dedicated scaling analysis belongs in
 Only the completed full-mixed 9B and 4B comparisons are additionally registered
 in the general cost--performance frontier.
 
+## Default for future ID validation
+
+Use `data/id_cot_only_evaluation/prompts.jsonl` for new validation and checkpoint
+selection campaigns. It removes identified CoT while retaining visible assistant
+prose. Use the input/manifest hashes and baseline in the
+[accepted decision](../../docs/decisions/cot_removed_id_validation.md). Historical
+configs below describe their original frozen runs.
+
 ## Gleipnir 4B held-out in-distribution evaluation
 
 Before training-hyperparameter selection, evaluate the completed mixed-data

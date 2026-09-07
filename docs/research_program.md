@@ -40,6 +40,10 @@ with the proposed Kimi K3 logit-distillation comparison, is recorded in
 - Freeze promotion criteria before final evaluations.
 - Preserve raw teacher evidence and immutable prompt hashes for auditability.
 
+For future monitoring validation and checkpoint selection, use the
+[CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
+visible assistant prose. Freeze its input/manifest hashes in each new campaign.
+
 ## Near-term questions
 
 - How do soft label margins and rationale supervision scale with teacher quality
