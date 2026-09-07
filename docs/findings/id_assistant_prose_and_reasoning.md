@@ -60,11 +60,47 @@ it is not a pure visible-prose ablation.
 Cleaned prompts SHA-256:
 `a811f90013442c5f50726bc35c6834fa11c6c0d31e41021aff352a0d928b4847`.
 All 3,012 row IDs, source assignments and labels are preserved. Seven focused
-parsing/preservation tests and Ruff pass. No inference or training was performed.
+parsing/preservation tests and Ruff pass. No training was performed; the subsequent
+frozen-checkpoint evaluation is recorded below.
 
 ## Implication
 
 Historical ID performance remains valid for the exact original prompts, but
 must not be described as a strict no-reasoning/action-only evaluation. The
-cleaned-input classifier performance has not been measured. Any later model
+cleaned-input classifier performance is recorded below. Any later model
 comparison needs fresh inference and separate input/cache identities.
+
+## Completed Gleipnir 4B evaluation
+
+On 2026-09-07, the standard mixed-data rank-128 checkpoint
+`soft-n21837-mixed-qwen35-4b-seed0` completed all 3,012 cleaned ID examples on
+the two reserved Lambda H100s. Both shards completed on attempt zero (1,536 and
+1,476 rows). Master/serving parity passed before inference. The local comparison
+validated frozen input/config hashes, exact row coverage, finite scores, and
+matched IDs, sources and labels against the historical baseline.
+
+| Source | Original pAUROC@20 | Cleaned pAUROC@20 | Original AUROC | Cleaned AUROC |
+| --- | ---: | ---: | ---: | ---: |
+| STRIDE (946) | 0.966052 | 0.918835 | 0.992866 | 0.981051 |
+| Gloom-Exfiltration (2,066) | 0.772335 | 0.687128 | 0.922492 | 0.897623 |
+| Source macro | 0.869194 | 0.802982 | 0.957679 | 0.939337 |
+
+Macro pAUROC@20 falls 0.066212. Macro Brier worsens from 0.074303 to
+0.103670. At the unchanged 0.5 threshold, macro recall falls from 0.850790
+to 0.783150 and macro FPR rises from 0.039826 to 0.053941. There are 226
+prediction flips: 156 positive-to-negative and 70 negative-to-positive.
+Unique scores fall from 1,631 to 1,573. Full pooled and per-source diagnostics
+are in `results/id_action_only_evaluation/comparison.json`.
+
+This establishes sensitivity to the combined removal of assistant prose and
+thinking traces, not the isolated effect of private reasoning. Gloom's larger
+drop occurs under prose removal alone (no explicit think calls were found).
+The model was not retrained for the changed input distribution. No checkpoint
+or threshold was selected using these results, and OOD was not evaluated.
+
+Reproduce with `python -m experiments.id_action_only_evaluation.summarize` after
+collecting predictions; see the experiment README for the frozen protocol.
+Cleaned predictions SHA-256:
+`fe22e5a3a8ffca61d9b3ada08e0589d673e147778e81dedaf0c8379da35606d5`.
+Baseline predictions SHA-256:
+`f62ec78921b008080702f648efd90da0e3d06dd48e3b425eebca1ec23bf5bbde`.
