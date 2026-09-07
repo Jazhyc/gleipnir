@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import math
+import sys
 import time
 from pathlib import Path
 from typing import Any
@@ -211,6 +212,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--shard-count", type=int, default=1)
     parser.add_argument("--shard-index", type=int, default=0)
     parser.add_argument("--resume-snapshot", type=Path)
+    parser.add_argument("--watchdog-child", action="store_true", help=argparse.SUPPRESS)
+    parser.add_argument(
+        "--no-watchdog",
+        action="store_true",
+        help="Disable bounded automatic recovery of no-progress hangs.",
+    )
     return parser.parse_args()
 
 
@@ -416,5 +423,39 @@ def main() -> None:
         )
 
 
+def guarded_main() -> None:
+    """Give every new evaluator isolated, bounded, prediction-aware recovery."""
+    args = parse_args()
+    if args.watchdog_child or args.no_watchdog or args.force:
+        main()
+        return
+    from gleipnir.evaluation_watchdog import run_resumable_evaluation
+
+    config = load_json(args.config)
+    validate_config(config)
+    jobs = validate_jobs(config, args.model_size, args.only_job)
+    output = args.output_root / args.model_size
+    paths = [
+        output / "adapters" / job["job_name"] / "predictions.jsonl" for job in jobs
+    ]
+    if args.include_base or config["model_groups"][args.model_size].get(
+        "evaluate_base"
+    ):
+        paths.append(output / "base/base/predictions.jsonl")
+    identity = hashlib.sha256("\n".join(map(str, paths)).encode()).hexdigest()[:16]
+    run_resumable_evaluation(
+        [
+            sys.executable,
+            "-u",
+            "-m",
+            "experiments.tool_trajectory_monitoring.benchmark_distilled_ood",
+            *sys.argv[1:],
+            "--watchdog-child",
+        ],
+        paths,
+        output / "recovery" / f"{identity}.jsonl",
+    )
+
+
 if __name__ == "__main__":
-    main()
+    guarded_main()

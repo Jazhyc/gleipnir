@@ -1,5 +1,32 @@
 # Binary action-only tool-trajectory monitoring
 
+## Automatic evaluation hang recovery (2026-09-07)
+
+New `benchmark_distilled_ood` CLI invocations now supervise their GPU evaluator
+in an isolated process session. Allow 15 minutes for startup/first new saved
+output, then detect 10 minutes without increasing saved prediction counts,
+checking every 30 seconds. Log messages, file touches and GPU utilization do
+not reset this timer. Only the invocation's selected adapter/base paths count;
+another GPU lane cannot hide a stall.
+
+On a no-progress timeout, send TERM to the owned process group, allow 15 seconds,
+then KILL if necessary. Verify no live owned workers remain before launching
+the identical command. Preserve predictions and let the existing strict cache,
+identity and config checks validate resumption. At most two restarts are allowed
+per invocation; exhaustion fails the campaign. Explicit nonzero exits, corrupt
+caches and decreasing prediction counts fail closed without automatic retries.
+Cancellation also cleans up the owned workers. Never attach to arbitrary GPU
+PIDs or restart training. `--no-watchdog` opts out; destructive `--force` mode
+also disables recovery so retries cannot overwrite saved predictions.
+
+Append-only recovery events (policy, attempt/PID, saved counts, stall, retry,
+failure and completion) live under `<output-root>/<model-size>/recovery/`.
+Backend, prompts, sampling settings, adapters and scientific config hashes are
+unchanged. Resumed batch execution can still introduce small numerical changes;
+retained prediction records and recovery provenance remain authoritative.
+This is a process watchdog, **not an agent monitoring heartbeat**. Already-running
+evaluators are not hot-patched; newly queued evaluations pick up the wrapper.
+
 Status: prompt contract, Kimi K3 and K2.6 OOD baselines, student training, and
 frozen student OOD evaluation complete.
 
