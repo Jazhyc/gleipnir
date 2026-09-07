@@ -84,6 +84,22 @@ Focused tests cover zero MIL contribution from disabled rows, actual Gloo
 gradient reduction, Trainer/Accelerate full and partial accumulation windows,
 launcher arguments, and deliberate replica-divergence rejection.
 
+Attempt4 passed after preserving the FP32 projection and seeding existing Triton
+cache entries before isolating rank-local writes. The accepted eight-step
+comparison is 16.5840 versus 10.4542 seconds/update (steps3–8): 1.5863x throughput.
+The fresh two-GPU full run lives under `results/monitoring_mil_mixture_ddp/` and
+uses eager shells, unchanged fast kernels, accumulation16/rank and globalbatch32.
+See [the systems finding](../../docs/findings/monitoring_mil_ddp.md) for failed
+attempts, precision tests, cache effects, sampler padding and interpretation.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_mil_mixture.run promote-ddp \
+  --screen results/monitoring_mil_mixture/ddp_screen_attempt4 \
+  --result-dir results/monitoring_mil_mixture_ddp
+PYTHONPATH=src .venv/bin/python -m experiments.monitoring_mil_mixture.run run \
+  --result-dir results/monitoring_mil_mixture_ddp
+```
+
 ```bash
 PYTHONPATH=src .venv/bin/python -m experiments.monitoring_mil_mixture.run prepare
 PYTHONPATH=src .venv/bin/python -m experiments.monitoring_mil_mixture.run run
