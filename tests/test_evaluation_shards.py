@@ -3,6 +3,21 @@ import pytest
 from gleipnir.evaluation_shards import merge_predictions, partition_pending
 
 
+def test_fresh_ood_shards_cover_every_row_once():
+    rows = [{"id": str(i)} for i in range(6395)]
+    parts = [partition_pending(rows, [], "frozen", 2, i) for i in range(2)]
+    assert [len(part) for part in parts] == [3200, 3195]
+    scored = [
+        [{**row, "score": 0.5, "config_sha256": "frozen"} for row in part]
+        for part in parts
+    ]
+    merged = merge_predictions(rows, scored, "frozen")
+    assert [r["id"] for r in merged] == [r["id"] for r in rows]
+    scored[0][0]["score"] = float("nan")
+    with pytest.raises(ValueError, match="score drift"):
+        merge_predictions(rows, scored, "frozen")
+
+
 def test_partition_and_merge():
     rows = [{"id": str(i)} for i in range(15)]
 

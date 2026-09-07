@@ -1,4 +1,4 @@
-"""Resume one prefix adapter over two independent GPU evaluation workers."""
+"""Evaluate or resume one frozen adapter over two independent GPU workers."""
 
 import argparse
 import json
@@ -26,12 +26,16 @@ def main() -> None:
         "--root", type=Path, default=Path("results/monitoring_prefix_training")
     )
     parser.add_argument("--job", default="prefix-w050-lr2em05-seed0")
+    parser.add_argument("--config", type=Path)
+    parser.add_argument("--evaluation-dir", default="id_evaluation")
+    parser.add_argument("--fresh", action="store_true")
+    parser.add_argument("--skip-id-summary", action="store_true")
     args = parser.parse_args()
     root, job = args.root, args.job
     jobs = [json.loads(s) for s in (root / "jobs.jsonl").read_text().splitlines()]
     if job not in {j["job_name"] for j in jobs}:
         raise ValueError("requested job is not in the frozen campaign")
-    output = root / "id_evaluation/4b/adapters" / job
+    output = root / args.evaluation_dir / "4b/adapters" / job
     work = root / "evaluation_restart_sharded"
     memory = [
         int(v)
@@ -42,13 +46,18 @@ def main() -> None:
     ]
     if len(memory) != 2 or max(memory) > 1024:
         raise RuntimeError("two idle GPUs required; do not interrupt other workloads")
-    config_path = root / "id_benchmark.json"
+    config_path = args.config or root / "id_benchmark.json"
     config = json.loads(config_path.read_text())
     rows = validate_inputs(config)
     digest = sha256_file(config_path)
     work.mkdir(exist_ok=False)
     snapshot = work / "resume_snapshot.jsonl"
-    shutil.copy2(output / "predictions.jsonl", snapshot)
+    if args.fresh:
+        if (output / "predictions.jsonl").exists():
+            raise FileExistsError("fresh evaluation must not overwrite predictions")
+        atomic_write_jsonl(snapshot, [])
+    else:
+        shutil.copy2(output / "predictions.jsonl", snapshot)
     saved = [json.loads(s) for s in snapshot.read_text().splitlines()]
     assignments = [
         partition_pending(rows, saved, digest, 2, i, config["engine"]["batch_rows"])
@@ -59,7 +68,7 @@ def main() -> None:
     status = json.loads((root / "status.json").read_text())
     status.update(
         state="running",
-        phase="id_evaluation_sharded",
+        phase=f"{args.evaluation_dir}_sharded",
         evaluation_restart={
             "saved_rows": len(saved),
             "shard_rows": [len(a) for a in assignments],
@@ -128,9 +137,10 @@ def main() -> None:
             },
         }
         atomic_write_json(output / "result.json", result)
-        summarize_campaign(
-            root, jobs, json.loads((root / "resolved_config.json").read_text())
-        )
+        if not args.skip_id_summary:
+            summarize_campaign(
+                root, jobs, json.loads((root / "resolved_config.json").read_text())
+            )
         status.update(state="complete", phase="complete", completed_at_unix=time.time())
     except BaseException as error:
         status.update(state="failed", error=repr(error))

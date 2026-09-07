@@ -327,6 +327,11 @@ Shard metrics are explicitly partial and must not be interpreted as full-ID
 results. Training and the completed weight-0.25 evaluation are not rerun.
 The snapshot and per-shard runtimes are retained in merge provenance.
 
+The launcher also supports a fresh frozen evaluation via `--fresh`, an explicit
+`--config`, and `--evaluation-dir`. Non-ID callers must use `--skip-id-summary`
+to avoid the duration campaign's ID-specific summary. Existing resume defaults
+are unchanged; a fresh invocation refuses to overwrite saved predictions.
+
 ## Final single-prefix screen result
 
 Both 272-step, one-epoch runs completed; training took approximately 3h38m each.
