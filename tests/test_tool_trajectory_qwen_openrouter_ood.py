@@ -25,6 +25,15 @@ def frozen_config() -> dict:
     )
 
 
+def qwen35b_a3b_config() -> dict:
+    return load_json(
+        Path(
+            "experiments/tool_trajectory_monitoring/"
+            "qwen35b_a3b_darkbloom_ood_benchmark.json"
+        )
+    )
+
+
 def test_frozen_openrouter_config_is_one_token_compact_ablation() -> None:
     config = frozen_config()
     validate_config(config)
@@ -32,6 +41,19 @@ def test_frozen_openrouter_config_is_one_token_compact_ablation() -> None:
     assert config["request"]["max_tokens"] == 8
     assert config["request"]["allow_fallbacks"] is False
     assert config["request"]["provider_only"] == "Alibaba"
+    assert config["scope"]["rows"] == 6_395
+
+
+def test_qwen35b_a3b_config_freezes_teacher_prompt_and_darkbloom() -> None:
+    config = qwen35b_a3b_config()
+    validate_config(config)
+    assert config["prompt"]["role"] == "teacher"
+    assert config["model"]["provider_endpoint_tag"] == "darkbloom/fp4"
+    assert config["request"]["provider_only"] == "Darkbloom"
+    assert config["request"]["allow_fallbacks"] is False
+    assert config["request"]["assistant_prefill"] == ""
+    assert config["request"]["max_tokens"] == 8
+    assert config["canary"]["rows"] == 100
     assert config["scope"]["rows"] == 6_395
 
 
@@ -48,6 +70,20 @@ def test_chat_payload_keeps_rubric_as_the_only_message() -> None:
     assert payload["provider"]["allow_fallbacks"] is False
     assert "endpoint" not in payload
     assert set(request_settings(config)) - {"endpoint"} <= payload.keys()
+
+
+def test_darkbloom_payload_generates_complete_prediction_line() -> None:
+    config = qwen35b_a3b_config()
+    payload = completion_payload("full teacher prompt", config)
+    assert payload["messages"] == [
+        {"role": "user", "content": "full teacher prompt"},
+    ]
+    assert payload["max_tokens"] == 8
+    assert payload["provider"]["only"] == ["Darkbloom"]
+    assert payload["provider"]["allow_fallbacks"] is False
+    settings = request_settings(config)
+    assert "assistant_prefill" not in settings
+    assert "assistant_partial" not in settings
 
 
 def test_parse_completion_requires_one_binary_token_and_both_logprobs() -> None:
@@ -82,6 +118,37 @@ def test_parse_completion_requires_one_binary_token_and_both_logprobs() -> None:
     response["choices"][0]["message"]["content"] = "Analysis. Prediction:1"
     with pytest.raises(RuntimeError, match="only a terminal binary prediction"):
         parse_completion_response(response, [15, 16])
+
+
+def test_parse_scalar_prefill_response_requires_both_logprobs() -> None:
+    response = {
+        "choices": [
+            {
+                "message": {"content": "1"},
+                "logprobs": {
+                    "content": [
+                        {
+                            "token": "1",
+                            "top_logprobs": [
+                                {"token": "0", "logprob": -2.0},
+                                {"token": "1", "logprob": -0.2},
+                            ],
+                        }
+                    ]
+                },
+            }
+        ]
+    }
+    assert parse_completion_response(
+        response, [15, 16], binary_output_mode="scalar"
+    ) == (
+        "1",
+        -2.0,
+        -0.2,
+        "1",
+        {"0": -2.0, "1": -0.2},
+        0,
+    )
 
 
 def test_parse_completion_rejects_missing_counterfactual_logprob() -> None:

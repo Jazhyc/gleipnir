@@ -131,10 +131,15 @@ def stable_sha256(value: Any) -> str:
     return hashlib.sha256(encoded).hexdigest()
 
 
+def allowed_response_model_ids(config: dict[str, Any]) -> list[str]:
+    model = config["model"]
+    return list(model.get("allowed_response_model_ids", [model["openrouter_id"]]))
+
+
 def request_settings(config: dict[str, Any]) -> dict[str, Any]:
     model = config["model"]
     request = config["request"]
-    return {
+    settings = {
         "endpoint": request["endpoint"],
         "model": model["openrouter_id"],
         "max_tokens": request["max_tokens"],
@@ -157,20 +162,31 @@ def request_settings(config: dict[str, Any]) -> dict[str, Any]:
             },
         },
     }
+    assistant_prefill = str(request.get("assistant_prefill", ""))
+    if assistant_prefill:
+        settings["assistant_prefill"] = assistant_prefill
+        settings["assistant_partial"] = True
+    return settings
 
 
 def validate_config(config: dict[str, Any]) -> None:
     if config.get("status") != "frozen_evaluation":
         raise ValueError("OpenRouter Qwen benchmark config must be frozen")
-    if config.get("model", {}).get("local_id") != "Qwen/Qwen3.5-27B":
-        raise ValueError("local parity model must be Qwen/Qwen3.5-27B")
-    if config.get("model", {}).get("openrouter_id") != (
-        "qwen/qwen3.5-27b-20260224"
+    model = config.get("model", {})
+    if not str(model.get("tokenizer_id", model.get("local_id", ""))).startswith(
+        "Qwen/Qwen3.5-"
     ):
-        raise ValueError("OpenRouter model must use the dated Qwen3.5-27B slug")
+        raise ValueError("benchmark requires a pinned Qwen3.5 tokenizer")
+    if not str(model.get("tokenizer_revision", model.get("local_revision", ""))):
+        raise ValueError("Qwen tokenizer revision must be pinned")
+    if not str(model.get("openrouter_id", "")).startswith("qwen/qwen3.5-"):
+        raise ValueError("OpenRouter model must be a Qwen3.5 route")
+    response_ids = allowed_response_model_ids(config)
+    if not isinstance(response_ids, list) or not response_ids:
+        raise ValueError("allowed OpenRouter response model IDs must be frozen")
     prompt = config.get("prompt", {})
-    if prompt.get("role") != "student":
-        raise ValueError("intervention must use the compact student prompt")
+    if prompt.get("role") not in {"teacher", "student"}:
+        raise ValueError("intervention must declare the teacher or student prompt")
     if prompt.get("enable_thinking") is not False:
         raise ValueError("Qwen native thinking must remain disabled")
     if prompt.get("assistant_suffix") != QWEN_NON_THINKING_ASSISTANT_SUFFIX:
@@ -182,12 +198,24 @@ def validate_config(config: dict[str, Any]) -> None:
     request = config.get("request", {})
     if request.get("endpoint") != "https://openrouter.ai/api/v1/chat/completions":
         raise ValueError("benchmark requires the frozen chat completions endpoint")
-    if request.get("provider_only") != "Alibaba":
-        raise ValueError("frozen provider must be Alibaba")
+    if not str(request.get("provider_only", "")):
+        raise ValueError("a single OpenRouter provider must be pinned")
     if request.get("allow_fallbacks") is not False:
         raise ValueError("provider fallbacks must remain disabled")
-    if int(request.get("max_tokens", -1)) != 8:
-        raise ValueError("benchmark must use the frozen eight-token format budget")
+    output_mode = request.get("binary_output_mode", "prediction_line")
+    if output_mode not in {"prediction_line", "scalar"}:
+        raise ValueError("binary output mode must be prediction_line or scalar")
+    assistant_prefill = str(request.get("assistant_prefill", ""))
+    if output_mode == "scalar":
+        if (
+            assistant_prefill != "Prediction:"
+            or int(request.get("max_tokens", -1)) != 1
+        ):
+            raise ValueError(
+                "scalar scoring requires Prediction: prefill and one token"
+            )
+    elif assistant_prefill or int(request.get("max_tokens", -1)) < 3:
+        raise ValueError("prediction-line scoring requires at least three tokens")
     if int(request.get("top_logprobs", 0)) < 2:
         raise ValueError("request must return at least two top logprobs")
     if float(request.get("maximum_campaign_cost_usd", 0)) <= float(
@@ -215,14 +243,28 @@ def validate_parity_inputs(config: dict[str, Any]) -> list[dict[str, Any]]:
 
 def completion_payload(user_prompt: str, config: dict[str, Any]) -> dict[str, Any]:
     settings = request_settings(config)
+    messages: list[dict[str, Any]] = [{"role": "user", "content": user_prompt}]
+    assistant_prefill = str(config["request"].get("assistant_prefill", ""))
+    if assistant_prefill:
+        messages.append(
+            {"role": "assistant", "content": assistant_prefill, "partial": True}
+        )
     return {
-        **{key: value for key, value in settings.items() if key != "endpoint"},
-        "messages": [{"role": "user", "content": user_prompt}],
+        **{
+            key: value
+            for key, value in settings.items()
+            if key
+            not in {"endpoint", "assistant_prefill", "assistant_partial"}
+        },
+        "messages": messages,
     }
 
 
 def parse_completion_response(
-    data: dict[str, Any], token_ids: list[int]
+    data: dict[str, Any],
+    token_ids: list[int],
+    *,
+    binary_output_mode: str = "prediction_line",
 ) -> tuple[str, float, float, str, dict[str, float], int]:
     try:
         choice = data["choices"][0]
@@ -233,7 +275,12 @@ def parse_completion_response(
         raise RuntimeError(f"malformed OpenRouter completion: {preview}") from error
     if not isinstance(text, str) or not isinstance(rows, list):
         raise RuntimeError("completion text or token-logprob rows had the wrong type")
-    match = re.fullmatch(r"\s*Prediction\s*:\s*([01])\s*", text)
+    pattern = (
+        r"\s*([01])\s*"
+        if binary_output_mode == "scalar"
+        else r"\s*Prediction\s*:\s*([01])\s*"
+    )
+    match = re.fullmatch(pattern, text)
     if match is None:
         raise RuntimeError(
             f"completion was not only a terminal binary prediction: {text!r}"
@@ -320,7 +367,13 @@ def score_one(
                 generated_text,
                 terminal_top_logprobs,
                 label_position,
-            ) = parse_completion_response(data, token_ids)
+            ) = parse_completion_response(
+                data,
+                token_ids,
+                binary_output_mode=request.get(
+                    "binary_output_mode", "prediction_line"
+                ),
+            )
             usage = data.get("usage") or {}
             reported_prompt_tokens = int(usage.get("prompt_tokens") or 0)
             reported_completion_tokens = int(usage.get("completion_tokens") or 0)
@@ -329,6 +382,11 @@ def score_one(
             provider = str(data.get("provider") or "")
             if provider.casefold() != str(request["provider_only"]).casefold():
                 raise RuntimeError(f"unexpected OpenRouter provider: {provider!r}")
+            response_model = str(data.get("model") or "")
+            if response_model not in allowed_response_model_ids(config):
+                raise RuntimeError(
+                    f"unexpected OpenRouter model revision: {response_model!r}"
+                )
             metadata = record["metadata"]
             return {
                 "id": str(record["id"]),
@@ -351,7 +409,7 @@ def score_one(
                 "provider_completion_tokens": reported_completion_tokens,
                 "provider_reported_cost_usd": usage.get("cost"),
                 "provider": provider,
-                "model": data.get("model"),
+                "model": response_model,
                 "response_id": data.get("id"),
                 "openrouter_metadata": data.get("openrouter_metadata"),
                 "source_prompt_sha256": metadata["rendered_prompt_sha256"],
@@ -404,10 +462,15 @@ def validate_existing(
             raise ValueError(f"cached prompt drift for id={record_id!r}")
         if row.get("provider") != config["request"]["provider_only"]:
             raise ValueError(f"cached provider drift for id={record_id!r}")
-        if re.fullmatch(
-            r"\s*Prediction\s*:\s*[01]\s*", str(row.get("generated_text", ""))
-        ) is None:
+        pattern = (
+            r"\s*[01]\s*"
+            if config["request"].get("binary_output_mode") == "scalar"
+            else r"\s*Prediction\s*:\s*[01]\s*"
+        )
+        if re.fullmatch(pattern, str(row.get("generated_text", ""))) is None:
             raise ValueError(f"cached completion drift for id={record_id!r}")
+        if row.get("model") not in allowed_response_model_ids(config):
+            raise ValueError(f"cached model drift for id={record_id!r}")
         if not math.isfinite(float(row.get("score", math.nan))):
             raise ValueError(f"cached non-finite score for id={record_id!r}")
         if record_id in completed:
@@ -498,6 +561,307 @@ def cost_summary(rows: list[dict[str, Any]], config: dict[str, Any]) -> dict[str
     }
 
 
+def _total_cost_ceiling(*summaries: dict[str, Any]) -> float:
+    return sum(float(summary["price_ceiling_projection_usd"]) for summary in summaries)
+
+
+def run_canary_gated_campaign(
+    *,
+    args: argparse.Namespace,
+    config: dict[str, Any],
+    config_sha256: str,
+    records: list[dict[str, Any]],
+    tokenizer: Any,
+    token_ids: list[int],
+    api_key: str,
+    concurrency: int,
+    request_batch_rows: int,
+    request_start_limiter: RequestStartLimiter,
+) -> None:
+    """Run a non-OOD canary, label-blind longest check, then the full suite."""
+    args.output.mkdir(parents=True, exist_ok=True)
+    started = time.time()
+    canary_config = {**config, "scope": config["canary"]}
+    canary_records = validate_inputs(canary_config)
+    if {str(row["id"]) for row in canary_records} & {
+        str(row["id"]) for row in records
+    }:
+        raise ValueError("non-OOD canary and OOD evaluation IDs overlap")
+
+    canary_rendered = render_records(canary_records, tokenizer, config)
+    canary_path = args.output / "canary_predictions.jsonl"
+    canary_existing = (
+        [] if args.force or not canary_path.is_file() else load_jsonl(canary_path)
+    )
+    canary_completed = validate_existing(
+        canary_existing, canary_records, config, config_sha256
+    )
+    pending_canary = [
+        row for row in canary_records if str(row["id"]) not in canary_completed
+    ]
+    if pending_canary:
+        interface_probe = pending_canary.pop(0)
+        for row in score_batch(
+            [interface_probe],
+            canary_rendered,
+            token_ids,
+            config,
+            config_sha256,
+            api_key,
+            1,
+            request_start_limiter,
+        ):
+            canary_completed[row["id"]] = row
+        atomic_write_jsonl(
+            canary_path, ordered_predictions(canary_records, canary_completed)
+        )
+        print(
+            f"canary interface probe complete id={interface_probe['id']}",
+            flush=True,
+        )
+    if pending_canary:
+        try:
+            new_rows = score_batch(
+                pending_canary,
+                canary_rendered,
+                token_ids,
+                config,
+                config_sha256,
+                api_key,
+                concurrency,
+                request_start_limiter,
+            )
+        except BatchScoringError as error:
+            new_rows = error.results
+            for row in new_rows:
+                canary_completed[row["id"]] = row
+            atomic_write_jsonl(
+                canary_path, ordered_predictions(canary_records, canary_completed)
+            )
+            raise
+        for row in new_rows:
+            canary_completed[row["id"]] = row
+        atomic_write_jsonl(
+            canary_path, ordered_predictions(canary_records, canary_completed)
+        )
+    canary_predictions = ordered_predictions(canary_records, canary_completed)
+    canary_summary = summarize(canary_predictions)
+    canary_cost = cost_summary(canary_predictions, config)
+    gate = config["canary"]["pass_conditions"]
+    pooled = canary_summary["metrics"]["pooled"]
+    groups = canary_summary["metrics"]["macro"]["groups"]
+    canary_passed = (
+        len(canary_predictions) == len(canary_records)
+        and float(pooled["auroc"]) >= float(gate["minimum_pooled_auroc"])
+        and all(
+            float(group["auroc"]) >= float(gate["minimum_source_auroc"])
+            for group in groups
+        )
+        and int(pooled["unique_scores"]) >= int(gate["minimum_unique_scores"])
+        and float(canary_cost["price_ceiling_projection_usd"])
+        <= float(gate["maximum_cost_usd"])
+    )
+    atomic_write_json(
+        args.output / "canary_result.json",
+        {
+            "campaign_id": config["campaign_id"],
+            "config_sha256": config_sha256,
+            "purpose": "non_ood_interface_and_quality_gate",
+            "passed": canary_passed,
+            "cost": canary_cost,
+            **canary_summary,
+        },
+    )
+    if not canary_passed:
+        raise RuntimeError("non-OOD OpenRouter canary failed")
+    print(
+        f"canary complete rows={len(canary_predictions)} "
+        f"pooled_auroc={float(pooled['auroc']):.6f} "
+        f"unique_scores={int(pooled['unique_scores'])}",
+        flush=True,
+    )
+
+    rendered = render_records(records, tokenizer, config)
+    audited_lengths = [value[1] for value in rendered.values()]
+    if sum(audited_lengths) != int(config["prompt"]["audited_total_prompt_tokens"]):
+        raise RuntimeError("full OOD total prompt token audit drifted")
+    if max(audited_lengths) != int(config["prompt"]["audited_max_prompt_tokens"]):
+        raise RuntimeError("full OOD maximum prompt token audit drifted")
+    predictions_path = args.output / "predictions.jsonl"
+    existing = (
+        []
+        if args.force or not predictions_path.is_file()
+        else load_jsonl(predictions_path)
+    )
+    completed = validate_existing(existing, records, config, config_sha256)
+    longest_record = max(
+        records,
+        key=lambda row: rendered[str(row["id"])][1],
+    )
+    longest_id = str(longest_record["id"])
+    if longest_id != str(config["longest"]["record_id"]):
+        raise RuntimeError("label-blind longest OOD row identity drifted")
+    if rendered[longest_id][1] != int(
+        config["longest"]["audited_local_prompt_tokens"]
+    ):
+        raise RuntimeError("longest OOD local token audit drifted")
+    if longest_id not in completed:
+        for row in score_batch(
+            [longest_record],
+            rendered,
+            token_ids,
+            config,
+            config_sha256,
+            api_key,
+            1,
+            request_start_limiter,
+        ):
+            completed[row["id"]] = row
+        atomic_write_jsonl(predictions_path, ordered_predictions(records, completed))
+    longest_prediction = completed[longest_id]
+    longest_limit = int(config["longest"]["maximum_prompt_tokens"])
+    longest_passed = (
+        int(longest_prediction["provider_prompt_tokens"]) <= longest_limit
+        and int(longest_prediction["provider_completion_tokens"])
+        <= int(config["request"]["max_tokens"])
+    )
+    atomic_write_json(
+        args.output / "longest_result.json",
+        {
+            "campaign_id": config["campaign_id"],
+            "config_sha256": config_sha256,
+            "purpose": "label_blind_longest_ood_interface_gate",
+            "selection_rule": config["longest"]["selection_rule"],
+            "passed": longest_passed,
+            "id": longest_id,
+            "local_reference_prompt_tokens": rendered[longest_id][1],
+            "provider_prompt_tokens": longest_prediction["provider_prompt_tokens"],
+            "provider_completion_tokens": longest_prediction[
+                "provider_completion_tokens"
+            ],
+            "provider": longest_prediction["provider"],
+            "model": longest_prediction["model"],
+            "cost": cost_summary([longest_prediction], config),
+        },
+    )
+    if not longest_passed:
+        raise RuntimeError("label-blind longest OOD request failed")
+    print(
+        f"longest complete id={longest_id} "
+        f"prompt_tokens={int(longest_prediction['provider_prompt_tokens'])}",
+        flush=True,
+    )
+    if args.stop_after_canary:
+        return
+
+    pending = [row for row in records if str(row["id"]) not in completed]
+    if args.max_new_rows is not None:
+        pending = pending[: args.max_new_rows]
+    cooldowns_used = 0
+    for batch_index, batch in enumerate(batches(pending, request_batch_rows), start=1):
+        remaining_batch = batch
+        while remaining_batch:
+            try:
+                new_rows = score_batch(
+                    remaining_batch,
+                    rendered,
+                    token_ids,
+                    config,
+                    config_sha256,
+                    api_key,
+                    concurrency,
+                    request_start_limiter,
+                )
+            except BatchScoringError as error:
+                for row in error.results:
+                    completed[row["id"]] = row
+                atomic_write_jsonl(
+                    predictions_path, ordered_predictions(records, completed)
+                )
+                remaining_batch = [
+                    row
+                    for row in remaining_batch
+                    if str(row["id"]) not in completed
+                ]
+                print(
+                    f"partial batch={batch_index} durable={len(completed)}/"
+                    f"{len(records)} failures={len(remaining_batch)}",
+                    flush=True,
+                )
+                if (
+                    args.provider_cooldown_seconds == 0
+                    or cooldowns_used >= args.max_provider_cooldowns
+                ):
+                    raise
+                cooldowns_used += 1
+                print(
+                    f"provider cooldown={cooldowns_used}/"
+                    f"{args.max_provider_cooldowns} seconds="
+                    f"{args.provider_cooldown_seconds:.1f}",
+                    flush=True,
+                )
+                time.sleep(args.provider_cooldown_seconds)
+                continue
+            for row in new_rows:
+                completed[row["id"]] = row
+            remaining_batch = []
+        predictions = ordered_predictions(records, completed)
+        full_cost = cost_summary(predictions, config)
+        campaign_cost = _total_cost_ceiling(full_cost, canary_cost)
+        if campaign_cost > float(config["request"]["maximum_campaign_cost_usd"]):
+            raise RuntimeError("campaign cost ceiling exceeded")
+        atomic_write_jsonl(predictions_path, predictions)
+        print(
+            f"batch={batch_index} complete={len(completed)}/{len(records)} "
+            f"cost_ceiling_usd={campaign_cost:.4f}",
+            flush=True,
+        )
+    if args.max_new_rows is not None and len(completed) != len(records):
+        print(
+            f"bounded resume complete={len(completed)}/{len(records)}",
+            flush=True,
+        )
+        return
+    predictions = ordered_predictions(records, completed)
+    if len(predictions) != len(records):
+        raise RuntimeError("full teacher-prompt OOD benchmark is incomplete")
+    costs = cost_summary(predictions, config)
+    result = {
+        "campaign_id": config["campaign_id"],
+        "config_sha256": config_sha256,
+        "model": config["model"],
+        "prompt": config["prompt"],
+        "request_settings": request_settings(config),
+        "providers": dict(Counter(str(row["provider"]) for row in predictions)),
+        "models": dict(Counter(str(row["model"]) for row in predictions)),
+        "cost": costs,
+        "canary_cost": canary_cost,
+        "campaign_price_ceiling_projection_usd": _total_cost_ceiling(
+            costs, canary_cost
+        ),
+        "runtime": {
+            "elapsed_seconds_this_invocation": time.time() - started,
+            "configured_concurrency": int(config["request"]["concurrency"]),
+            "effective_concurrency": concurrency,
+            "effective_request_batch_rows": request_batch_rows,
+            "request_start_interval_seconds": float(
+                args.request_start_interval_seconds
+            ),
+            "provider_cooldown_seconds": float(args.provider_cooldown_seconds),
+            "provider_cooldowns_used": cooldowns_used,
+        },
+        "score": "normalized terminal literal 1 versus 0 OpenRouter logprob",
+        **summarize(predictions),
+    }
+    atomic_write_json(args.output / "result.json", result)
+    macro = result["metrics"]["macro"]["macro"]
+    print(
+        f"complete rows={len(predictions)} macro_auroc={macro['auroc']:.6f} "
+        f"macro_pauroc_at_20={macro['pauroc_at_20']:.6f}",
+        flush=True,
+    )
+
+
 def main() -> None:
     args = parse_args()
     load_dotenv(".env")
@@ -532,26 +896,18 @@ def main() -> None:
         float(args.request_start_interval_seconds)
     )
     records = validate_inputs(config)
-    parity_records = validate_parity_inputs(config)
-    baseline_predictions_path = Path(config["baseline"]["predictions"])
-    if sha256_file(baseline_predictions_path) != config["baseline"][
-        "predictions_sha256"
-    ]:
-        raise ValueError("local full-rubric baseline prediction checksum differs")
     config_sha256 = sha256_file(args.config)
     prompt_set = load_prompt_set()
-    if prompt_set.student.template_sha256 != config["prompt"]["template_sha256"]:
-        raise ValueError("working-tree compact prompt differs from frozen config")
-    if prompt_set.teacher.template_sha256 != config["parity"][
-        "prompt_template_sha256"
-    ]:
-        raise ValueError("working-tree full prompt differs from parity config")
+    prompt_template = getattr(prompt_set, config["prompt"]["role"])
+    if prompt_template.template_sha256 != config["prompt"]["template_sha256"]:
+        raise ValueError("working-tree prompt differs from the frozen config")
 
     from transformers import AutoTokenizer
 
     model = config["model"]
     tokenizer = AutoTokenizer.from_pretrained(
-        model["local_id"], revision=model["local_revision"]
+        model.get("tokenizer_id", model.get("local_id")),
+        revision=model.get("tokenizer_revision", model.get("local_revision")),
     )
     token_ids = [
         tokenizer.encode(token, add_special_tokens=False)[0] for token in ("0", "1")
@@ -561,6 +917,32 @@ def main() -> None:
         for token in ("0", "1")
     ):
         raise ValueError("literal decision token is no longer a single token")
+
+    if "canary" in config:
+        run_canary_gated_campaign(
+            args=args,
+            config=config,
+            config_sha256=config_sha256,
+            records=records,
+            tokenizer=tokenizer,
+            token_ids=token_ids,
+            api_key=api_key,
+            concurrency=concurrency,
+            request_batch_rows=request_batch_rows,
+            request_start_limiter=request_start_limiter,
+        )
+        return
+
+    parity_records = validate_parity_inputs(config)
+    baseline_predictions_path = Path(config["baseline"]["predictions"])
+    if sha256_file(baseline_predictions_path) != config["baseline"][
+        "predictions_sha256"
+    ]:
+        raise ValueError("local full-rubric baseline prediction checksum differs")
+    if prompt_set.teacher.template_sha256 != config["parity"][
+        "prompt_template_sha256"
+    ]:
+        raise ValueError("working-tree full prompt differs from parity config")
 
     args.output.mkdir(parents=True, exist_ok=True)
     started = time.time()
