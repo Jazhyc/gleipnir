@@ -443,15 +443,26 @@ def validate_existing(
 ) -> dict[str, dict[str, Any]]:
     allowed = {str(row["id"]): row for row in records}
     settings_sha256 = stable_sha256(request_settings(config))
+    accepted_specs = [
+        {
+            "config_sha256": config_sha256,
+            "request_settings_sha256": settings_sha256,
+            "provider": config["request"]["provider_only"],
+        },
+        *config.get("resume", {}).get("accepted_result_specs", []),
+    ]
     completed = {}
     for row in rows:
         record_id = str(row.get("id"))
         if record_id not in allowed:
             raise ValueError(f"cached result contains unknown id={record_id!r}")
-        if row.get("config_sha256") != config_sha256:
-            raise ValueError(f"cached config drift for id={record_id!r}")
-        if row.get("request_settings_sha256") != settings_sha256:
-            raise ValueError(f"cached request drift for id={record_id!r}")
+        provenance = {
+            "config_sha256": row.get("config_sha256"),
+            "request_settings_sha256": row.get("request_settings_sha256"),
+            "provider": row.get("provider"),
+        }
+        if provenance not in accepted_specs:
+            raise ValueError(f"cached request provenance drift for id={record_id!r}")
         record = allowed[record_id]
         metadata = record["metadata"]
         if row.get("source") != metadata["source_dataset"]:
@@ -460,8 +471,6 @@ def validate_existing(
             raise ValueError(f"cached label drift for id={record_id!r}")
         if row.get("source_prompt_sha256") != metadata["rendered_prompt_sha256"]:
             raise ValueError(f"cached prompt drift for id={record_id!r}")
-        if row.get("provider") != config["request"]["provider_only"]:
-            raise ValueError(f"cached provider drift for id={record_id!r}")
         pattern = (
             r"\s*[01]\s*"
             if config["request"].get("binary_output_mode") == "scalar"
@@ -477,6 +486,31 @@ def validate_existing(
             raise ValueError(f"cached results contain duplicate id={record_id!r}")
         completed[record_id] = row
     return completed
+
+
+def load_resume_predictions(config: dict[str, Any]) -> list[dict[str, Any]]:
+    """Load an exact, checksummed partial campaign for a provider handoff."""
+    resume = config.get("resume")
+    if not resume:
+        return []
+    source = Path(resume["predictions"])
+    if sha256_file(source) != resume["predictions_sha256"]:
+        raise ValueError("resume prediction checksum differs")
+    rows = load_jsonl(source)
+    if len(rows) != int(resume["rows"]):
+        raise ValueError("resume prediction row count differs")
+    return rows
+
+
+def merge_resume_predictions(
+    existing: list[dict[str, Any]], imported: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Prefer the frozen earlier-provider row when a gate duplicated its ID."""
+    imported_ids = {str(row["id"]) for row in imported}
+    return [
+        *imported,
+        *(row for row in existing if str(row["id"]) not in imported_ids),
+    ]
 
 
 def render_records(
@@ -543,16 +577,33 @@ def cost_summary(rows: list[dict[str, Any]], config: dict[str, Any]) -> dict[str
     completion_tokens = sum(
         int(row["provider_completion_tokens"]) for row in rows
     )
-    projected = (
-        prompt_tokens * float(request["provider_max_prompt_price_per_million"])
-        + completion_tokens
-        * float(request["provider_max_completion_price_per_million"])
-    ) / 1_000_000
+    configured_prices = request.get("provider_prices_per_million")
+    price_by_provider: dict[str, float] = {}
+    for row in rows:
+        provider = str(row["provider"])
+        if configured_prices is None:
+            rates = {
+                "prompt": request["provider_max_prompt_price_per_million"],
+                "completion": request[
+                    "provider_max_completion_price_per_million"
+                ],
+            }
+        else:
+            if provider not in configured_prices:
+                raise ValueError(f"no frozen price for provider {provider!r}")
+            rates = configured_prices[provider]
+        price_by_provider[provider] = price_by_provider.get(provider, 0.0) + (
+            int(row["provider_prompt_tokens"]) * float(rates["prompt"])
+            + int(row["provider_completion_tokens"])
+            * float(rates["completion"])
+        ) / 1_000_000
+    projected = sum(price_by_provider.values())
     reported = [row.get("provider_reported_cost_usd") for row in rows]
     return {
         "prompt_tokens": prompt_tokens,
         "completion_tokens": completion_tokens,
         "price_ceiling_projection_usd": projected,
+        "price_ceiling_projection_by_provider_usd": price_by_provider,
         "provider_reported_cost_usd": (
             sum(float(value) for value in reported if value is not None)
             if any(value is not None for value in reported)
@@ -693,6 +744,7 @@ def run_canary_gated_campaign(
         if args.force or not predictions_path.is_file()
         else load_jsonl(predictions_path)
     )
+    existing = merge_resume_predictions(existing, load_resume_predictions(config))
     completed = validate_existing(existing, records, config, config_sha256)
     longest_record = max(
         records,

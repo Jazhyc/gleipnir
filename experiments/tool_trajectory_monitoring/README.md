@@ -241,30 +241,36 @@ do not scale teacher annotation under the previous cache assumption. Full
 results and interpretation are in
 [`../../docs/findings/tool_trajectory_teacher_canary.md`](../../docs/findings/tool_trajectory_teacher_canary.md).
 
-## Qwen3.5-35B-A3B Darkbloom OOD benchmark
+## Qwen3.5-35B-A3B hosted OOD benchmark
 
 This matched hosted-base experiment tests whether the sparse
 `qwen/qwen3.5-35b-a3b` model approaches or exceeds the completed dense
 Qwen3.5-27B baseline at lower inference cost. It changes the model backend to
-OpenRouter's provider-pinned Darkbloom FP4 endpoint while preserving all 6,395
-OOD rows, the full teacher prompt, disabled thinking, the immediate
-`Prediction:` boundary, literal `0|1` logprobs, and the existing metrics.
-Provider quantization remains a limitation of the comparison.
+OpenRouter's Qwen3.5-35B-A3B route while preserving all 6,395 OOD rows, the
+full teacher prompt, disabled thinking, the immediate `Prediction:` boundary,
+literal `0|1` logprobs, and the existing metrics. Darkbloom FP4 completed
+4,545 rows before its serving throughput fell; a checksummed handoff sends only
+the remaining 1,850 rows to Parasail FP8. The handoff was based on throughput,
+without inspecting OOD labels, scores, or metrics. Every saved row retains its
+actual provider, endpoint metadata, raw selected-token logprobs, and cost.
 
 The frozen contract uses the 100-row non-OOD training-source canary. It requires
 pooled AUROC at least `0.70`, both source AUROCs at least `0.60`, at least ten
-unique scores, complete Darkbloom-only coverage, and no more than `$0.12` at
-the price ceiling. A separate label-blind request checks the 30,382-token
+unique scores, Parasail-only canary coverage, and no more than `$0.20` at the
+price ceiling. Parasail passed with `0.9036` pooled AUROC, `0.9620` source-macro
+AUROC, and 94 unique scores. A separate label-blind request checks the 30,382-token
 longest OOD prompt against the 262,144-token route limit; neither its label nor
 score can affect launch. The full campaign stops on request or artifact drift,
 fallback routing, incomplete coverage, invalid scores, or a projected total
-above `$5.10`.
+above `$6.60`.
 
-Darkbloom is frozen at `$0.08/M` input and `$0.75/M` output with no implicit
+Darkbloom is frozen at `$0.08/M` input and `$0.75/M` output; Parasail is frozen
+at `$0.15/M` input and `$1.00/M` output. Neither route advertises implicit
 caching. The exact tokenizer audit gives 60,539,619 full-suite input tokens.
-Allowing up to eight output tokens for the complete prediction line gives a
-conservative full-evaluation projection of `$4.881540`; the separate canary is
-`$0.094102`.
+The observed handoff projects to `$6.328630` for the OOD rows and `$0.175687`
+for the separate Parasail canary. Quantization and provider differ across the
+handoff, so this run is an operational mixed-route benchmark rather than a
+single-endpoint FP8 or FP4 result.
 
 The first frozen interface attempt used a partial assistant `Prediction:`
 prefill and a one-token cap. Darkbloom ignored that prefill and returned
@@ -274,16 +280,18 @@ charge is `$0.093577`. The preserved failed contract is
 `qwen35b_a3b_darkbloom_prefill_failed_v1.json`. Version 2 tests one complete
 prediction-line response before fanning out the rest of the canary.
 
-Run the gates first, then resume the same output root for the full benchmark:
+The Darkbloom-only contract remains available for provenance. Run the Parasail
+gates first, then use the handoff config to import the exact checksummed partial
+artifact and request only missing rows:
 
 ```bash
 python -m experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood \
-  --config experiments/tool_trajectory_monitoring/qwen35b_a3b_darkbloom_ood_benchmark.json \
-  --output results/tool_trajectory_monitoring/qwen35_35b_a3b_darkbloom_teacher_ood \
+  --config experiments/tool_trajectory_monitoring/qwen35b_a3b_parasail_ood_benchmark.json \
+  --output results/tool_trajectory_monitoring/qwen35_35b_a3b_parasail_teacher_ood \
   --stop-after-canary
 python -m experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood \
-  --config experiments/tool_trajectory_monitoring/qwen35b_a3b_darkbloom_ood_benchmark.json \
-  --output results/tool_trajectory_monitoring/qwen35_35b_a3b_darkbloom_teacher_ood
+  --config experiments/tool_trajectory_monitoring/qwen35b_a3b_parasail_ood_benchmark.json \
+  --output results/tool_trajectory_monitoring/qwen35_35b_a3b_parasail_teacher_ood
 ```
 
 ## Completed OOD baseline and frontier registry

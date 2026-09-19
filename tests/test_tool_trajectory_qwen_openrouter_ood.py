@@ -8,6 +8,8 @@ from experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood import
     BatchScoringError,
     RequestStartLimiter,
     completion_payload,
+    cost_summary,
+    merge_resume_predictions,
     parse_completion_response,
     request_settings,
     score_batch,
@@ -34,6 +36,15 @@ def qwen35b_a3b_config() -> dict:
     )
 
 
+def qwen35b_a3b_mixed_config() -> dict:
+    return load_json(
+        Path(
+            "experiments/tool_trajectory_monitoring/"
+            "qwen35b_a3b_parasail_ood_benchmark.json"
+        )
+    )
+
+
 def test_frozen_openrouter_config_is_one_token_compact_ablation() -> None:
     config = frozen_config()
     validate_config(config)
@@ -55,6 +66,56 @@ def test_qwen35b_a3b_config_freezes_teacher_prompt_and_darkbloom() -> None:
     assert config["request"]["max_tokens"] == 8
     assert config["canary"]["rows"] == 100
     assert config["scope"]["rows"] == 6_395
+
+
+def test_qwen35b_a3b_mixed_config_freezes_provider_handoff() -> None:
+    config = qwen35b_a3b_mixed_config()
+    validate_config(config)
+    assert config["request"]["provider_only"] == "Parasail"
+    assert config["resume"]["rows"] == 4_545
+    assert config["resume"]["predictions_sha256"] == (
+        "d726fbbcdb8b5a58532722f65dad929dad488a39e531987296a485db9fa515d8"
+    )
+    assert set(config["request"]["provider_prices_per_million"]) == {
+        "Darkbloom",
+        "Parasail",
+    }
+
+
+def test_resume_merge_prefers_frozen_earlier_provider_row() -> None:
+    imported = [{"id": "shared", "provider": "Darkbloom"}]
+    existing = [
+        {"id": "shared", "provider": "Parasail"},
+        {"id": "new", "provider": "Parasail"},
+    ]
+    assert merge_resume_predictions(existing, imported) == [
+        {"id": "shared", "provider": "Darkbloom"},
+        {"id": "new", "provider": "Parasail"},
+    ]
+
+
+def test_mixed_provider_cost_uses_each_frozen_route_price() -> None:
+    config = qwen35b_a3b_mixed_config()
+    rows = [
+        {
+            "provider": "Darkbloom",
+            "provider_prompt_tokens": 1_000_000,
+            "provider_completion_tokens": 100,
+            "provider_reported_cost_usd": 0.08,
+        },
+        {
+            "provider": "Parasail",
+            "provider_prompt_tokens": 2_000_000,
+            "provider_completion_tokens": 200,
+            "provider_reported_cost_usd": 0.30,
+        },
+    ]
+    summary = cost_summary(rows, config)
+    assert summary["price_ceiling_projection_by_provider_usd"] == {
+        "Darkbloom": pytest.approx(0.080075),
+        "Parasail": pytest.approx(0.3002),
+    }
+    assert summary["price_ceiling_projection_usd"] == pytest.approx(0.380275)
 
 
 def test_chat_payload_keeps_rubric_as_the_only_message() -> None:
