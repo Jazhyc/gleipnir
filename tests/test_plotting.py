@@ -54,7 +54,7 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     frame = load_frontier_registry(DEFAULT_SOURCE)
 
-    assert len(frame) == 29
+    assert len(frame) == 30
     assert frame["computed_frontier"].sum() == 7
     assert frame["computed_frontier"].equals(frame["declared_frontier"])
     kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
@@ -68,6 +68,12 @@ def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
     mixed_4b = frame.loc[frame["monitor"] == "Qwen3.5-4B Kimi-soft mixed"].iloc[0]
     assert mixed_4b["cost_per_1k"] == pytest.approx(0.2598)
     assert mixed_4b["mean_ood_pauroc_at_20"] == pytest.approx(0.7823)
+    sparse = frame.loc[
+        frame["monitor"] == "Qwen3.5-35B-A3B base (mixed providers)"
+    ].iloc[0]
+    assert sparse["cost_per_1k"] == pytest.approx(0.9896)
+    assert sparse["mean_ood_pauroc_at_20"] == pytest.approx(0.7580)
+    assert not bool(sparse["computed_frontier"])
 
 
 def test_plot_applies_documented_filters_without_changing_registry() -> None:

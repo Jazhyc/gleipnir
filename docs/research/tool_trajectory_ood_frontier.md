@@ -64,6 +64,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
+| **Gleipnir** | **Qwen3.5-35B-A3B base (mixed providers)** | **Full binary specification, terminal `0\|1` logits; Darkbloom FP4 then Parasail FP8** | **0.9896** | **0.7580** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
@@ -89,6 +90,7 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
 [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
+[`tool_trajectory_qwen35b_a3b_ood_benchmark.md`](../findings/tool_trajectory_qwen35b_a3b_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md),
 [`tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md)
@@ -208,6 +210,24 @@ point is also cheaper (`$0.869/1K`) and stronger (`0.703`). The result remains
 important as the matched unadapted Qwen base under Gleipnir's full binary
 specification; it should not be interpreted as evidence against later trained
 Qwen3.5-9B students using the compact deployment prompt.
+
+## Qwen3.5-35B-A3B mixed-provider result
+
+The unadapted sparse model reaches `0.7580` Mean-OOD pAUROC@20 and `0.9050`
+Mean-OOD AUROC using the full teacher prompt and terminal binary logprobs.
+Darkbloom FP4 served 4,545 rows before a throughput-driven handoff to Parasail
+FP8 for the remaining 1,850. The uncached list-price cost is `$0.9896/1K`
+using the actual token totals and each provider's frozen rate. This point is
+dominated by the lower-cost mixed 4B student (`0.7823` at `$0.2598/1K`), and
+falls below the dense Qwen3.5-27B base (`0.8395` at `$1.8476/1K`).
+
+The handoff follows source order: Parasail scored all 850 SHADE-Arena rows and
+1,000 Rogue Eval rows, while Darkbloom scored the other four complete sources
+and 499 Rogue Eval rows. Provider, FP4/FP8 quantization, and source are thus
+confounded; the result cannot establish an isolated sparse-versus-dense model
+effect or a single-provider source curve. The paired 100-row non-OOD canary
+shows Pearson score correlation `0.947`, Spearman `0.965`, and 90% fixed-0.5
+decision agreement. See the [full artifact audit](../findings/tool_trajectory_qwen35b_a3b_ood_benchmark.md).
 
 ## Qwen3.5-27B base result
 
