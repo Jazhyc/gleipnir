@@ -184,3 +184,21 @@ Tensor-pipeline activity is 43.54–46.14%; these kernel counters are **not MFU*
 No serving optimization has been applied. Evidence and limitations are in the
 experiment README, `profile_shapes_2048/shape_summary.json`, and
 `profile_deep_2048/details.txt` under the local inference result directory.
+
+## Isolated BF16 kernel screen: retain the current path
+
+One 256-call measurement window per candidate, using real layer-0 weights and
+seeded synthetic BF16 activations, found no meaningful improvement from BLAS
+preferences or eight Triton tiles. Gate/up default/best times were 1.98465/1.94998
+ms (1.018x); down was 1.05308/1.02503 ms (1.027x). These small differences are
+inconclusive under variable clocks and thermal throttling and do not clear the
+predeclared 10% investigation threshold. No vLLM integration or dataset run.
+
+Down default and non-strict cuBLASLt failed the synthetic maximum-error guard;
+strict PyTorch and Triton passed and were closer to the FP32 reference, but differ
+from default outputs. No judge-score parity is established. The runner initially
+skipped the default down timing and crashed after timing the alternatives. Only
+that missing reference was timed in a separate recovery process; validation
+matched exactly, and no completed timing was repeated. All failures and original
+outputs are preserved. See the experiment README and
+`results/local_inference/gemm_bench_bf16/comparison.json` for the audited comparison.

@@ -1,5 +1,72 @@
 # Local merged Gleipnir 4B baseline
 
+## Isolated BF16 MLP kernel screen
+
+Hypothesis: another BLAS preference or Triton tile improves the two measured MLP
+shapes without changing BF16 input/output or model weights. Use real merged
+layer-0 weights and seeded synthetic normal activations, not an additional judge
+dataset pass. Shapes are (M,N,K)=(2048,18432,2560) and (2048,2560,9216), contiguous
+X[M,K] and W[N,K], computing X @ W.T without bias or activation. Baseline is
+PyTorch functional.linear with default BLAS preference and existing BF16
+reduced-precision-reduction allowance. Compare cuBLASLt preference, strict
+cuBLAS/cuBLASLt with reduced-precision reductions disabled, and eight explicit
+Triton tile configurations using FP32 accumulators. Backend preference is not
+a guarantee of the selected kernel; no serving integration is authorized here.
+
+Compile and validate all candidates first against FP32 GEMM with TF32 disabled.
+Numerical screening limits: relative L2 <=0.005 and max absolute error divided
+by reference RMS <=0.05; all outputs must be finite. These are synthetic kernel
+screening tolerances, not judge-score acceptance criteria. Invalid candidates
+are excluded; retain compilation/resource failures as negative results.
+Warm GPU for three seconds, use fixed randomized candidate order, five warmup
+calls, then one 256-call timed window per candidate with CUDA events and wall
+timing. This averages kernel calls within one measurement, not repeated dataset
+passes. Record pre/post temperatures, SM clocks, and thermal throttling. No
+variance estimate or model-quality promotion is claimed. Prefer >10% speedups
+for further investigation, not small single-window differences. Repeated
+same-buffer cache behavior and synthetic activations limit serving relevance.
+
+Run `.venv/bin/python -m experiments.local_inference.gemm_bench --output
+results/local_inference/gemm_bench_bf16` with the baseline local environment.
+Stop on OOM, nonfinite baseline, or missing measurements. Preserve prior outputs.
+The existing finite default may be timed as a reference despite failing the
+synthetic error guard; retain that failure explicitly, never promote it as passing.
+
+### Result: no meaningful speedup
+
+| Projection | Default ms | Fastest candidate ms | Apparent speedup |
+| --- | ---: | ---: | ---: |
+| Gate/up | 1.98465 | 1.94998 (Triton 64/128/64, 4 warps) | 1.018x |
+| Down | 1.05308 | 1.02503 (Triton 128/64/64, 4 warps) | 1.027x |
+
+Neither clears the predeclared 10% investigation threshold. GPU temperature
+varied roughly 71–84 C, clocks 2520–2775 MHz, with intermittent thermal throttling.
+Keep the existing serving path; no judge dataset pass or vLLM change was made.
+
+All gate/up outputs were bit-identical to default on this input. For down,
+strict PyTorch and all Triton candidates passed with relative L2 versus FP32
+0.001656 and maximum error/reference RMS 0.03670. Default had 0.002334/0.05532;
+cuBLASLt preference with reduced-precision reductions had 0.002025/0.05054.
+Both failed only the 0.05 maximum-error guard. This synthetic guard is not a
+judge-quality verdict. Strict/Triton down outputs differ from default (relative
+L2 0.002625); lower error against FP32 does not establish judge-score parity.
+Strict cuBLAS and cuBLASLt down times were 1.44427 and 1.31766 ms: the custom
+kernel improves on those strict references, not meaningfully on production default.
+
+Recovery disclosure: the initial runner excluded the default down timing after
+its guard failure, timed ten valid alternatives, then crashed when computing a
+speedup without a denominator. Their completed timing rows survive in the log.
+The corrected runner measured **only the missing default down reference** in a
+new process, at 80 C/2760 MHz. All regenerated validation metrics matched exactly;
+no completed timing was repeated. Cross-process thermals further limit inference.
+The non-strict cuBLASLt down candidate remains untimed because it failed screening.
+
+Artifacts under `results/local_inference/`: `gemm_bench_bf16/result.json` retains
+the original partial result; `gemm_bench_down_reference/` records recovery;
+`gemm_bench_bf16/comparison.json` combines them with the original log at
+`logs/local/local_inference/gemm_bench_bf16.log`. Reconstruct the combined record
+with `.venv/bin/python -m experiments.local_inference.summarize_gemm`.
+
 ## GPU profiling diagnostic
 
 ### Shape mapping and deeper counters
