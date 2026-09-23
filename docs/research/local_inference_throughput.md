@@ -1,6 +1,8 @@
 # Local Gleipnir 4B inference campaign preparation
 
-Prepared 2026-09-23. No optimization campaign has been launched.
+Prepared 2026-09-23. The user selected a subset-only campaign and a merged-BF16
+baseline; executable work now lives in
+[`experiments/local_inference`](../../experiments/local_inference/README.md).
 
 ## Machine and environment
 
@@ -54,15 +56,17 @@ positives. Within each group, allocate across prompt-length quartiles and select
 deterministically by a seeded hash of ID; record IDs, prompt hashes, tokenizer
 revision, and exact token counts. Do not truncate long examples to fit memory.
 The proportional estimate is **5,737,215 prompt tokens**; the actual selection
-will differ. Keep a separate longest-input startup canary. Confirm finalists
-on all 3,012 rows; leave strict OOD outside optimization selection.
+will differ. Keep a separate longest-input startup canary. Per the user's
+updated scope, use only these 512 rows throughout, including confirmation;
+leave full-ID and strict OOD outside this campaign.
 
 ## Measurement and drift
 
 Hypothesis: serving changes improve steady-state prefill throughput while
-preserving the same judge's continuous scores and decisions. Begin with BF16
-dynamic LoRA and a persistent vLLM engine; any lower-precision or merged model
-is a separate intervention. Start conservatively on 16 GB: memory utilization
+preserving the same judge's continuous scores and decisions. Establish a BF16
+merged baseline from the published LoRA, first checking original-master/merge
+and serving parity. Future serving interventions use this merged reference.
+Start conservatively on 16 GB: memory utilization
 0.80, maximum sequences 2, batched-token budget 2,048, chunked prefill, and
 32,768 context. These are proposed canary settings, not a verified fit or an
 optimal configuration. Verify supported kernels and master/serving parity
@@ -83,7 +87,7 @@ Freeze numerical and quality tolerances after measuring baseline repeat noise
 and before testing candidates. A 512-row screen can reveal paired drift but
 cannot certify absence of small population-level quality loss. Stop on OOM,
 truncation, missing/nonfinite scores, contract drift, or a failed serving-parity
-canary. No candidate should be promoted before full-set confirmation.
+canary. Confirm repeatability on the frozen subset before choosing a candidate.
 
 ## Runtime budget
 
