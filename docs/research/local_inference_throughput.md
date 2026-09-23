@@ -261,3 +261,19 @@ under the unchanged memory-utilization policy. No repeats or automatic promotion
 Preserve BF16 as reference; this is a promising measured tradeoff, not a quality
 pass. Evidence: `results/local_inference/fp8_channel_diagnostic/comparison.json`
 and the experiment README. Completed 2026-09-24 local time.
+
+## Native INT4 feasibility: hardware works, serving path missing
+
+A CUDA 12.8 SM89 probe executed native signed INT4 x INT4 with INT32 accumulation
+on the RTX 4080. SASS contains `IMMA.16864.S4.S4`; all 128 outputs in each of five
+constant-matrix cases matched exact signed references, including -8 operands.
+The checked-in `experiments/local_inference/int4_smoke.cu` reproduces the probe.
+This is instruction feasibility, not an optimized GEMM or judge benchmark.
+
+Installed vLLM 0.24.0's registry, online schemes, and compressed-tensors dispatch
+provide no standard INT4 W4A4 linear path. The W4A4 implementations are FP4;
+integer paths include weight-only W4A16 and W4A8, which are different experiments.
+No end-to-end INT4 run or accuracy/speedup result exists. Further progress needs
+a custom/integrated backend; propose a separately scoped real-shape kernel screen
+including quantization/scaling costs before model integration. Existing serving
+paths, checkpoints, and data remain unchanged.

@@ -1,5 +1,40 @@
 # Local merged Gleipnir 4B baseline
 
+## Native INT4 feasibility probe
+
+Hypothesis: the RTX 4080 can execute signed INT4 x INT4 tensor instructions, but
+the installed vLLM lacks an INT4 W4A4 serving implementation. Before attempting
+a judge run, compile `int4_smoke.cu` with CUDA 12.8 for SM89, execute five signed
+constant-matrix cases with exact INT32 reference sums, and inspect SASS for native
+S4 integer MMA instructions. Stop on compile/runtime failure or wrong outputs.
+This is only hardware feasibility, not a throughput, quantization-quality, or
+full-GEMM correctness benchmark. No weights, datasets or serving paths change.
+
+Build with `/usr/local/cuda-12.8/bin/nvcc -arch=sm_89 -O3
+experiments/local_inference/int4_smoke.cu -o /tmp/gleipnir_int4_smoke` and inspect
+with `/usr/local/cuda-12.8/bin/cuobjdump --dump-sass /tmp/gleipnir_int4_smoke`.
+
+Result (2026-09-24): native hardware execution **passed** on RTX 4080 SM89.
+Disassembly contains `IMMA.16864.S4.S4 R4, R4.ROW, R8.COL, RZ`. Each of 128
+output elements matched the expected INT32 value in all five cases: 64, -128,
+-3584, 4096, and 0. This rules out lack of native signed INT4 tensor computation
+as the immediate blocker, but says nothing about realistic GEMM throughput.
+The PTX operation is documented in the
+[NVIDIA PTX ISA](https://docs.nvidia.com/cuda/parallel-thread-execution/).
+
+Installed vLLM 0.24.0 exposes no standard native INT4 W4A4 linear serving path:
+the quantization registry and online shorthands lack one, and compressed-tensors
+scheme dispatch handles integer W4A16/W4A8/W8A8 but its W4A4 cases are FP4
+(NVFP4/MXFP4), not INT4. Unsupported integer W4A4 falls through to
+`NotImplementedError`. Do not substitute AWQ/GPTQ weight-only or FP4 and describe
+it as this test. No judge inference, AUROC, or INT4 speedup was measured.
+
+An end-to-end comparison requires a new/custom backend with packing, activation
+quantization, scaling, supported linear-layer integration, and numerical tests.
+That is a separate implementation decision. A bounded real-shape INT4 GEMM
+benchmark, including quantization overhead, is the proposed next feasibility
+step before committing to model integration; it has not been run.
+
 ## Authorized per-channel FP8 diagnostic pass
 
 After reviewing the failed canary, the user explicitly authorized one 32-row
