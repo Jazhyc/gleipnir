@@ -72,8 +72,9 @@ Start conservatively on 16 GB: memory utilization
 optimal configuration. Verify supported kernels and master/serving parity
 including a nonzero adapter effect before scaling.
 
-Repeat the baseline three times to establish its numerical variation. Warm up
-before timing, clear prefix caches between passes, retain identical ordering,
+Per the user's updated scope, take one baseline pass and one pass per candidate;
+target meaningful speedups and do not claim a repeat-noise estimate. Warm up
+before timing, disable prefix caching, retain identical ordering,
 and report initialization separately. Measure wall time, rows/s, prompt tokens/s,
 peak memory, and all paired logit margins and scores. Compare absolute score
 deltas, threshold flips at 0.5, ties, per-source and source-macro pAUROC@20,
@@ -83,8 +84,9 @@ resampling for quality comparisons where grouping metadata is available.
 
 Historical BF16 runs had nonzero repeat variation, so do not interpret every
 changed score as optimization damage or select solely on aggregate AUROC.
-Freeze numerical and quality tolerances after measuring baseline repeat noise
-and before testing candidates. A 512-row screen can reveal paired drift but
+Freeze numerical and quality tolerances before testing candidates, acknowledging
+that the single-pass baseline does not estimate repeat noise. A 512-row screen
+can reveal paired drift but
 cannot certify absence of small population-level quality loss. Stop on OOM,
 truncation, missing/nonfinite scores, contract drift, or a failed serving-parity
 canary. Confirm repeatability on the frozen subset before choosing a candidate.
@@ -101,9 +103,20 @@ The following are planning scenarios, **not measured RTX 4080 performance**:
 | 10,000 | 9.6 min | 56.3 min |
 | 20,000 | 4.8 min | 28.1 min |
 
-Add model loading, compilation, warmup, and serialization. Three timed repeats
-cost three times a single pass; reference and candidate both require passes.
+Add model loading, compilation, warmup, and serialization. The updated campaign
+uses one timed pass per condition; reference and candidate both require passes.
 For context, the historical H100 dynamic-LoRA pass processed 34,631,573 tokens
 in 861.24 seconds (40.2k tokens/s), but that is not a workstation estimate.
 Replace these scenarios with a stratified local pilot once inputs and weights
 are staged, then calculate the estimate from its measured length mix.
+
+## Measured subset baseline
+
+The merged-BF16 baseline is now complete on the fixed 512 rows: **5,760,843
+prompt tokens in 631.65 seconds**, or **9,120.28 prompt tokens/s**. The user
+selected one pass throughout; no repeat-noise estimate is claimed. Macro
+pAUROC@20 is 0.860345 and macro AUROC is 0.958579 on this subset. Software
+thermal throttling was active in all 47 recorded first-pass samples, so this
+timing describes the workstation under its current cooling conditions.
+See the [experiment result](../../experiments/local_inference/README.md) for
+parity checks, per-source metrics, retained artifacts, and startup fixes.

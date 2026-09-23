@@ -40,7 +40,8 @@ def main() -> None:
             and previous["subset_sha256"] == sha256_file(DATA / "subset.jsonl")
             and previous["merge_manifest_sha256"]
             == sha256_file(ROOT / "merged_bf16/merge_manifest.json")
-            and previous["config_sha256"] == sha256_file(CONFIG)
+            and parity_passes(previous["merge_parity"], config["parity"])
+            and previous["adapter_effect"]["max_absolute_error"] > 1e-5
         ):
             print("Reusing passed reference canary", flush=True)
             return

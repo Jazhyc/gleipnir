@@ -1,4 +1,4 @@
-"""Parity-gated three-pass merged-model vLLM baseline on the frozen subset."""
+"""Parity-gated merged-model vLLM baseline on the frozen subset."""
 
 from __future__ import annotations
 
@@ -75,6 +75,7 @@ def main() -> None:
     started = time.perf_counter()
     llm = LLM(model=str(ROOT / "merged_bf16"), **config["engine"])
     initialization = time.perf_counter() - started
+    write_json(output / "initialization.json", {"seconds": initialization})
 
     def generate(selected, *, progress=False):
         outputs = llm.generate(
@@ -189,7 +190,9 @@ def main() -> None:
         "median_prompt_tokens_per_second": totals / duration,
         "median_scores": medians.tolist(),
         "metrics": metric_views(frame),
-        "repeat_stability": {
+        "repeat_stability": None
+        if len(arrays) == 1
+        else {
             "max_score_range": float(np.ptp(matrix, axis=0).max()),
             "mean_score_range": float(np.ptp(matrix, axis=0).mean()),
             "threshold_unstable_rows": int(

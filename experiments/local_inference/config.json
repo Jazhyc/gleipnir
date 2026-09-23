@@ -16,6 +16,6 @@
     "language_model_only": true,
     "seed": 20260923
   },
-  "repeats": 3,
+  "repeats": 1,
   "parity": {"mean_absolute_error": 0.02, "max_absolute_error": 0.10, "min_correlation": 0.99}
 }

@@ -34,14 +34,17 @@ these are baseline-construction tolerances, not future optimization tolerances.
 Stop before full-subset evaluation if a gate fails.
 
 Use one persistent vLLM engine, one constrained decision token, explicitly
-requested 0/1 logprobs, and three warm timed passes over identical input order.
+requested 0/1 logprobs, and one warmed timed pass over the fixed input order.
 Disable prefix caching initially to avoid replay-dependent timings. Record raw
 decision logprobs, margins, scores, per-source/macro ranking and calibration,
-threshold flips, ties, repeat variation, initialization time, and prompt tokens/s.
+threshold diagnostics, ties, initialization time, and prompt tokens/s.
 Stop on missing or nonfinite scores, OOM, truncation, artifact/hash drift, or a
 failed parity gate. Do not change data or quality criteria in response to scores.
 Future optimizations will be compared against this merged baseline on these
-same rows; set their tolerances using baseline repeat noise before tuning.
+same rows. Per the user's update during the first pass, use one measurement per
+condition and target meaningful speedups; repeat noise is not estimated. Small
+speed differences should not be interpreted as improvements. Keep paired score
+drift diagnostics even with single-pass timing.
 
 The workstation has a 16 GB RTX 4080 and 47 GiB RAM. No Slurm or cloud capacity
 is involved. No in-chat scheduling tool is available in this session; monitoring
@@ -84,3 +87,50 @@ monitoring. The first baseline showed software thermal throttling at 87 C;
 compare future configurations under comparable cooling and record telemetry.
 Sampling began partway through its first pass, so those samples are not a full
 startup or first-pass thermal trace.
+
+## Baseline result (2026-09-23)
+
+One complete pass processed all 512 rows and 5,760,843 prompt tokens in
+**631.65 seconds (10m32s)**: **9,120.28 prompt tokens/s**, about 0.81 rows/s.
+This is wall time around `LLM.generate`, including its input rendering and
+output extraction; it excludes initialization and canary warmup. Prefix caching
+was disabled. The run used two concurrent sequences and a 2,048-token prefill
+budget. No repeated-pass noise estimate was made.
+
+| Source | Rows | pAUROC@20 | AUROC | Brier |
+| --- | ---: | ---: | ---: | ---: |
+| STRIDE | 161 | 0.967930 | 0.993197 | 0.038498 |
+| Gloom-Exfiltration | 351 | 0.752760 | 0.923961 | 0.121559 |
+| Source macro | 512 | 0.860345 | 0.958579 | 0.080028 |
+
+The 512 predictions contain 397 distinct scores (115 extra tied rows). These
+are subset results, not a measured improvement over the historical full-ID
+metrics. All IDs, sources, labels, prompt hashes, token counts, decision-logprob
+normalizations, throughput, and aggregate metrics were independently rechecked
+from the saved first-pass artifacts.
+
+The four-row eager merge gate had mean absolute score error 0.004477 and maximum
+0.017909 against the original FP32 master. vLLM versus master had mean error
+0.008683, maximum 0.030490, and correlation 0.999590; neither canary comparison
+flipped a decision at 0.5. The longest 29,475-token subset prompt also passed.
+This is bounded canary evidence, not a full-subset master-versus-merge comparison.
+
+The GPU was thermally limited: all 47 recorded first-pass telemetry samples
+reported software thermal throttling, with peak temperature 89 C and SM clocks
+2,520–2,655 MHz. Hardware thermal slowdown was not observed in these samples.
+Use comparable cooling/thermal conditions for future timing comparisons.
+
+The initial runner had three passes configured; the user reduced the scope
+during pass one. A task-specific watcher stopped the worker immediately after
+`repeat_0.json` was saved. Only one completed pass is retained. The original
+launch config and interruption log are preserved; `summarize.py` audits and
+finalizes this specific saved-pass recovery. The interruption therefore does
+not represent an inference failure. The checked-in config now requests one
+pass directly, and single-pass repeat stability is recorded as null.
+
+Artifacts: `results/local_inference/baseline/result.json`,
+`predictions_0.json`, `repeat_0.json`, `serving_parity.json`,
+`longest_canary.json`, `engine_config.json`, and `gpu_telemetry.jsonl`.
+The merged model is `results/local_inference/merged_bf16/`; the original master
+remains in `results/local_inference/adapter/`. Published adapter revision:
+`411bdb7cf28bf153d03820f242c7f0668762fa6d`.
