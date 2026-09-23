@@ -16,9 +16,15 @@ from experiments.local_inference.core import CONFIG, ROOT, write_json
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--iteration32", action="store_true")
+    selection = parser.add_mutually_exclusive_group()
+    selection.add_argument("--iteration32", action="store_true")
+    selection.add_argument(
+        "--config", type=Path, help="Benchmark existing artifacts only"
+    )
     args = parser.parse_args()
-    config_path = CONFIG.with_name("iteration32.json") if args.iteration32 else CONFIG
+    config_path = args.config or (
+        CONFIG.with_name("iteration32.json") if args.iteration32 else CONFIG
+    )
     config = json.loads(config_path.read_text())
     os.environ.update(config.get("environment", {}))
     # Kernel builders invoke executables such as ninja by name, even when the
@@ -30,12 +36,18 @@ def main() -> None:
     logs.mkdir(parents=True, exist_ok=True)
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
     phases = (
-        ("prepare32", "benchmark")
-        if args.iteration32
-        else ("prepare", "merge", "reference", "benchmark")
+        ("benchmark",)
+        if args.config
+        else (
+            ("prepare32", "benchmark")
+            if args.iteration32
+            else ("prepare", "merge", "reference", "benchmark")
+        )
     )
-    status_path = ROOT / (
-        "iteration32_status.json" if args.iteration32 else "status.json"
+    status_path = (
+        ROOT / f"{config_path.stem}_status.json"
+        if args.config
+        else ROOT / ("iteration32_status.json" if args.iteration32 else "status.json")
     )
     for phase in phases:
         if phase == "benchmark":

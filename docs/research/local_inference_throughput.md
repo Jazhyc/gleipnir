@@ -128,3 +128,16 @@ tokens/s**. A fresh benchmark subprocess with existing compilation caches took
 **4.48 seconds of canary warmup**; the remainder includes validation/imports,
 scoring, persistence, and shutdown. Use `iteration32.json` and `baseline32/`
 for iteration, while preserving the 512-row artifacts for broader checks.
+
+## First prefill-budget screen
+
+Increasing only `max_num_batched_tokens` from 2,048 to 4,096 on the frozen 32
+rows yielded **35.49 vs 35.91 seconds**, or **9,545.95 vs 9,434.42 tokens/s**.
+The 1.18% throughput difference is not a meaningful demonstrated win from one
+pass under thermal throttling. Keep the original baseline as the reference.
+Mean/max absolute score drift was 0.005636/0.030967 with zero threshold flips;
+this is not proof of numerical equivalence or population-level quality parity.
+The candidate's 172.51-second total included new compilation and initial engine
+profiling, unlike the cached 85.30-second baseline. No extra pass was run.
+Full paired evidence and thermal/startup caveats are in the experiment README
+and `results/local_inference/prefill4096/comparison.json`.

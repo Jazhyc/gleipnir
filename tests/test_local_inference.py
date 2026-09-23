@@ -3,11 +3,95 @@
 import json
 import subprocess
 from collections import Counter
+from pathlib import Path
 
 import pytest
 
 from experiments.local_inference import run
+from experiments.local_inference.compare_runs import compare_runs
 from experiments.local_inference.core import compare, parity_passes, select_subset
+
+
+def test_comparison_checks_identity_and_paired_drift(tmp_path):
+    baseline, candidate = tmp_path / "a", tmp_path / "b"
+    result = dict.fromkeys(
+        (
+            "subset_sha256",
+            "merge_manifest_sha256",
+            "reference_sha256",
+            "software",
+            "runner_sha256",
+        ),
+        "same",
+    )
+    result.update(
+        rows=2,
+        prompt_tokens=20,
+        repeats=[{}],
+        median_seconds=2,
+        median_prompt_tokens_per_second=10,
+        metrics={},
+    )
+    rows = [
+        {
+            "id": str(i),
+            "source": "test",
+            "label": i,
+            "prompt_sha256": str(i),
+            "tokens": 10,
+            "score": score,
+            "logit_margin": score,
+        }
+        for i, score in enumerate((0.49, 0.9))
+    ]
+    for root in (baseline, candidate):
+        root.mkdir()
+        (root / "result.json").write_text(json.dumps(result))
+        (root / "process_timing.json").write_text('{"seconds": 3}')
+        (root / "predictions_0.json").write_text(json.dumps(rows))
+    rows[0]["score"] = 0.51
+    (candidate / "predictions_0.json").write_text(json.dumps(rows))
+    report = compare_runs(baseline, candidate)
+    assert report["score_drift"]["threshold_flips"] == 1
+    assert report["scoring_speedup"] == 1
+    rows[0]["prompt_sha256"] = "changed"
+    (candidate / "predictions_0.json").write_text(json.dumps(rows))
+    with pytest.raises(ValueError, match="prediction"):
+        compare_runs(baseline, candidate)
+
+
+def test_prefill_candidate_changes_only_budget_and_output():
+    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    baseline = json.loads((root / "iteration32.json").read_text())
+    candidate = json.loads((root / "prefill4096.json").read_text())
+    assert candidate.pop("output") != baseline.pop("output")
+    assert candidate["engine"]["max_num_batched_tokens"] == 4096
+    candidate["engine"]["max_num_batched_tokens"] = 2048
+    assert candidate == baseline
+
+
+def test_custom_config_only_runs_benchmark(tmp_path, monkeypatch):
+    output = tmp_path / "candidate"
+    config = tmp_path / "candidate.json"
+    config.write_text(json.dumps({"output": str(output)}))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(run, "ROOT", tmp_path / "results")
+    monkeypatch.setattr(run.sys, "argv", ["run", "--config", str(config)])
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(run.subprocess, "run", fake_run)
+    run.main()
+    assert len(calls) == 1
+    assert calls[0][-3:] == [
+        "experiments.local_inference.benchmark",
+        "--config",
+        str(config),
+    ]
+    assert json.loads((output / "process_timing.json").read_text())["returncode"] == 0
 
 
 def test_selection_preserves_quotas_lengths_and_order_independence():

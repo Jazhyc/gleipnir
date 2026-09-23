@@ -1,5 +1,55 @@
 # Local merged Gleipnir 4B baseline
 
+## First optimization: 4,096-token prefill budget
+
+Hypothesis: doubling `max_num_batched_tokens` from 2,048 to 4,096 improves
+prefill efficiency by reducing chunk/scheduling overhead. Change only this
+engine setting; retain the frozen 32-row order, weights, prompt, two concurrent
+sequences, cache settings, canaries, and one timed pass. Compare against
+`baseline32` without rerunning it. This is a development screen, not a held-out
+quality claim or automatic promotion. Report paired score and margin drift,
+threshold flips, metrics, and thermal conditions; stop on existing parity gates,
+OOM, missing/nonfinite outputs, truncation, or artifact drift. No new numerical
+equivalence tolerance or repeat-noise estimate is claimed.
+
+Run `.venv/bin/python -m experiments.local_inference.run --config
+experiments/local_inference/prefill4096.json`. Results are saved separately to
+`results/local_inference/prefill4096/`, with campaign status in
+`results/local_inference/prefill4096_status.json`. Existing results are protected.
+
+Measured result (2026-09-23): **no demonstrated meaningful speedup**. One pass
+scored all 338,780 tokens in 35.4894 seconds versus baseline 35.9089 seconds:
+9,545.95 versus 9,434.42 prompt tokens/s, a 1.0118x throughput ratio (+1.18%).
+With one pass and differing thermal histories, this small difference is
+inconclusive; retain 2,048 as the reference, not an automatic promotion.
+
+Paired score drift: mean absolute 0.005636, maximum 0.030967, p95 0.029793,
+correlation 0.999574, zero threshold flips. Maximum absolute drift among the six
+baseline scores in [0.4, 0.6) was 0.030967. Macro AUROC changed
+0.921488 -> 0.925620; pAUROC@20 0.756198 -> 0.776860; Brier
+0.097959 -> 0.099486. These small-set ranking changes are not evidence of a
+better judge; numerical equivalence is not established. Unique scores were
+30 -> 31. Both serving canary comparisons passed, with unchanged input/model
+identities, and the longest input completed without OOM or truncation.
+
+Whole-process time was 172.51 seconds versus 85.30 seconds. Construction took
+107.48 seconds versus 24.07 seconds: this candidate needed a new compiled graph
+(22.63 seconds torch.compile) and an initial profiling/warmup run (59.85 seconds),
+whereas the baseline reused existing compilation caches. Do not attribute this
+startup difference to steady-state scoring. Canary warmup was 6.59 seconds.
+No second run was made to measure cached candidate startup.
+
+All three scoring telemetry samples showed software thermal throttling at 84 C
+and SM clocks of 2,595–2,670 MHz, compared with baseline 85–87 C. Sampled GPU
+memory was 14,451 MiB (whole-device usage); vLLM reported 3.39 GiB cache capacity
+or 104,261 tokens. The worker and telemetry process exited successfully.
+
+Reproduce the paired audit with `.venv/bin/python -m
+experiments.local_inference.compare_runs results/local_inference/baseline32
+results/local_inference/prefill4096`. `comparison.json` retains per-row scores,
+score/margin deltas, flips, per-source drift, baseline-score bins, and metrics.
+Raw logprobs and launch/engine settings remain in each condition's artifacts.
+
 ## 32-row iteration workload
 
 The user selected 32 rows for fast iteration after the initial 512-row baseline.
