@@ -75,3 +75,12 @@ and starts the vLLM baseline sequentially. Each phase has a separate log under
 `logs/local/local_inference/`; status and results are in
 `results/local_inference/`. Failed attempts must be retained before rerunning
 the baseline; completed timed passes are not silently overwritten or resumed.
+
+For local temperature/clock diagnostics, run
+`.venv/bin/python -m experiments.local_inference.telemetry` in a second process
+after `baseline/status.json` exists. It samples every ten seconds and exits when
+the campaign completes or fails. This is instrument logging, not scheduled agent
+monitoring. The first baseline showed software thermal throttling at 87 C;
+compare future configurations under comparable cooling and record telemetry.
+Sampling began partway through its first pass, so those samples are not a full
+startup or first-pass thermal trace.
