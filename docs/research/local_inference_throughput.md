@@ -330,3 +330,35 @@ needs further error reduction and integration validation. No new judge AUROC
 pass or promotion. Full evidence, limitations, recipes and reproducible commands:
 `experiments/int4_calibration/README.md` and
 `results/int4_calibration/comparison.json`.
+
+## W4A16 versus FP8 kernel screen (2026-09-24)
+
+On the RTX 4080, vLLM 0.24 Marlin W4A16 did not beat CUTLASS FP8 for
+the dominant M=2048 prefill shapes. One 256-call window per condition,
+same process, real layer-0 calibration activations:
+
+| Projection | BF16 ms | FP8 ms | W4A16 group 64 ms | W4A16 group 128 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Gate/up | 2.093 | 1.221 | 2.042 | 2.126 |
+| Down | 1.314 | 0.687 | 1.018 | 1.047 |
+
+W4A16 took 1.48–1.74x FP8's time, despite including FP8's online
+activation quantization. Offline weight packing excluded; output allocation
+included throughout. Weight-plus-scale storage was about 51–53% of FP8,
+but that memory saving did not translate into faster kernels here. This is
+consistent with compute-heavy prefill rather than weight-bandwidth-limited
+decode. Retain FP8 as the practical measured speed option; this result does
+not motivate a whole-model W4A16 export for throughput alone.
+
+Native outputs agreed with quantized FP32 references within 0.37% relative
+L2. Simple round-to-nearest W4A16 had 8.9–9.9% projection reconstruction
+error versus FP8's 3.0–3.2%; this is not calibrated GPTQ/AWQ quality, AUROC,
+or held-out judge drift. No whole-model W4A16 evaluation was performed.
+Thermals were uncontrolled (79–83 C, 2625–2775 MHz, intermittent software
+thermal slowdown); no repeat-based uncertainty estimate. Do not interpret
+small differences between group sizes as robust.
+
+Evidence: `results/local_inference/w4a16_kernel/result.json`; reproducible
+command and protocol in `experiments/local_inference/README.md`. Original
+serving artifacts and defaults remain unchanged. The saved script checksum
+precedes final formatting-only string wrapping and a lint suppression.

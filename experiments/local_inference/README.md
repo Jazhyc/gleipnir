@@ -830,3 +830,24 @@ Artifacts: `results/local_inference/baseline/result.json`,
 The merged model is `results/local_inference/merged_bf16/`; the original master
 remains in `results/local_inference/adapter/`. Published adapter revision:
 `411bdb7cf28bf153d03820f242c7f0668762fa6d`.
+
+## W4A16 kernel screen
+
+Hypothesis: Marlin W4A16 may reduce latency versus FP8 on the two dominant
+layer-0 MLP shapes at M=2048. Compare groups 128 and 64 against BF16 and
+CUTLASS FP8 (including per-token activation quantization) in one process.
+Reuse eight calibration rows from the checksum-verified real-activation
+capture under `results/int4_calibration/capture`; the four held-out rows and
+frozen 32-row judge set remain unused. These are bounded Transformers-captured
+activations, not an assertion of vLLM activation parity.
+
+Run `.venv/bin/python -m experiments.local_inference.w4a16_bench --output
+results/local_inference/w4a16_kernel`. Use one 256-call window per condition,
+five warmup calls, identical three-second BF16 preconditioning, fixed shuffled
+order, CUDA-event and wall timing, and temperature/clock telemetry. Weight
+packing is offline; runtime allocation/dequantization is included. Fail closed
+above 0.005 relative L2 versus each method's quantized FP32 reference. Stop
+after both shapes; do not automatically export or evaluate a quantized model.
+The weight quantizer is simple round-to-nearest, not calibrated GPTQ/AWQ;
+projection error is not judge AUROC. Completed timing windows are saved
+immediately, and existing output directories cannot be overwritten.
