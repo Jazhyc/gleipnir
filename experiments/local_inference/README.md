@@ -72,6 +72,31 @@ Artifacts: `results/local_inference/profile_torch_early/kernel_summary.json`,
 `.venv/bin/python -m experiments.local_inference.profile_summary <trace.json.gz>
 --output <summary.json>`; CPU-only traces are rejected explicitly.
 
+### Hardware-counter permission retest
+
+After the user changed Windows counter permissions, the old profiler no longer
+reported the standalone `ERR_NVGPUCTRPERM` error, but failed with a driver-resource
+or permission error. A current Nsight Compute 2026.3.0.13 package was downloaded
+from NVIDIA's configured apt repository without installing it system-wide.
+Package SHA-256:
+`84feeebbe340239f3d33a9900279cacbb33a6ceb8780f65897574e0c2add9564`.
+The package remains under `.cache/`; extraction was moved to
+`/tmp/gleipnir-ncu-counter-tools-2026.3.0` because this profiler rejects whitespace
+in its installation path, even through a symlink.
+
+Current tooling fails with `Failed to prepare kernel for profiling` / `Unknown
+error on device 0` on both a tiny PyTorch workload and a native CUDA 12.8 kernel
+compiled specifically for SM89. A fresh temporary lock directory did not fix
+the failure. Native CUDA execution without profiling succeeds. No competing
+Nsight/DCGM/engine processes were found. Thus counter access is still unverified;
+do not claim the permission change resolved it, and do not launch a full model
+counter capture yet. The next proposed diagnostic is a user-controlled Windows
+restart to refresh driver/WSL state, not a proven fix. A matching WSL report was
+[resolved after reboot](https://forums.developer.nvidia.com/t/nsight-compute-fails-to-profile-kernels-on-wsl-windows11/287939).
+No system restart, driver update, or further security change was performed.
+Logs: `logs/local/local_inference/counter_smoke_2026_nospace.log`,
+`counter_native_smoke.log`, and `counter_native_fresh_lock.log`.
+
 ## First optimization: 4,096-token prefill budget
 
 Hypothesis: doubling `max_num_batched_tokens` from 2,048 to 4,096 improves
