@@ -1,5 +1,10 @@
 # Local merged Gleipnir 4B baseline
 
+The follow-up testing clipping, rebalancing, rotations, groups and selective
+precision on real activations is documented in
+[`int4_calibration`](../int4_calibration/README.md). It is a numerical/kernel
+screen, not another judge evaluation or serving change.
+
 ## Native INT4 MLP kernel screen
 
 Hypothesis: CUTLASS native signed INT4 GEMM on the two dominant MLP shapes beats

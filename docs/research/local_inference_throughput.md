@@ -299,3 +299,34 @@ no AUROC or end-to-end speedup can be inferred. Two validation-only failed
 attempts were preserved before matching division rounding semantics. Evidence:
 `results/local_inference/int4_gemm_screen_validated/result.json`, associated log,
 and experiment README. The existing model artifacts remain unchanged.
+
+## Real-activation quantization-method screen
+
+All proposed families were tested in `experiments/int4_calibration/`: eight
+calibration and four held-out short trajectories disjoint from iteration32 and
+the original canaries, capturing 256 token positions at six MLP projections
+(layers 0,16,31). Bounded Transformers capture used the Torch gated-delta fallback;
+this is not vLLM activation parity or a full-model quantized evaluation.
+
+Unweighted macro held-out linear-output relative L2 was 52.06% for naive W4A4,
+15.40% for weight-only INT4 and 49.64% for activation-only INT4. Activation
+quantization dominates. Calibration-selected clipping reduced it to 38.10%,
+channel rebalancing to 38.49%, block-Hadamard rotations to 21.92%, and group-64
+quantization to 14.29%. Keeping the three calibration-most-sensitive projections
+in BF16/FP8 with naive INT4 elsewhere gave 23.01%/24.42%. FP8's numerical reference
+was 2.62%, BF16 0.21%. These are reconstruction errors, not AUROC or score drift.
+
+Native layer-0 timings included online transformations/packing/scaling. A fast
+Triton Hadamard rotation plus INT4 took 0.8153/0.5611 ms for gate/up and down,
+versus BF16 2.0846/1.0755 ms (2.557x/1.917x), with uncontrolled thermals and
+separate-process timing. The unfused group-64 implementation took 23.332/10.668 ms
+because it materialized/scaled every partial output; this is not an intrinsic
+limit on a fused grouped kernel. Native integer and scaling checks passed;
+simulation/native rounding discrepancies are explicitly retained. One partial
+timing was recovered without repetition after a validation failure.
+
+FP8 remains the measured end-to-end option; native INT4 has speed potential but
+needs further error reduction and integration validation. No new judge AUROC
+pass or promotion. Full evidence, limitations, recipes and reproducible commands:
+`experiments/int4_calibration/README.md` and
+`results/int4_calibration/comparison.json`.
