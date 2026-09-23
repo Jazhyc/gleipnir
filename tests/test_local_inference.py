@@ -70,6 +70,15 @@ def test_prefill_candidate_changes_only_budget_and_output():
     assert candidate == baseline
 
 
+def test_fp8_candidate_changes_only_quantization_and_output():
+    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    baseline = json.loads((root / "iteration32.json").read_text())
+    candidate = json.loads((root / "fp8.json").read_text())
+    assert candidate.pop("output") != baseline.pop("output")
+    assert candidate["engine"].pop("quantization") == "fp8_per_tensor"
+    assert candidate == baseline
+
+
 def test_custom_config_only_runs_benchmark(tmp_path, monkeypatch):
     output = tmp_path / "candidate"
     config = tmp_path / "candidate.json"

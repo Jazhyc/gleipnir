@@ -1,5 +1,66 @@
 # Local merged Gleipnir 4B baseline
 
+## FP8 online-quantization screen
+
+Hypothesis: native FP8 linear computation improves prefill throughput on RTX 4080.
+Change only `quantization=fp8_per_tensor` from `iteration32.json`; keep BF16
+nonquantized operations, automatic (BF16) KV-cache dtype, 2,048-token budget,
+two sequences, frozen 32-row order, prompts, and original merged checkpoint.
+Online conversion uses per-tensor weight scales and dynamic activation scales;
+verify the selected FP8 linear implementation in startup logs. No calibration
+dataset or checkpoint rewrite. The fixed memory-utilization policy may allocate
+more cache capacity from freed weight memory; record that consequence separately.
+
+Use the unchanged benchmark runner, four original master/merged parity canaries,
+and longest selected input before one timed pass. Retain existing canary limits
+(mean score error <=0.02, max <=0.10, correlation >=0.99); stop on gate failure,
+OOM, missing/nonfinite outputs, truncation, or identity drift. Do not relax gates
+after observing results. Compare all paired scores/margins, threshold flips,
+ranking/calibration metrics, ties, throughput, startup and telemetry against
+`baseline32`, without repeating it. A >10% speedup merits further investigation,
+not automatic promotion. This development slice cannot certify population quality.
+
+Run `.venv/bin/python -m experiments.local_inference.run --config
+experiments/local_inference/fp8.json` with the same offline environment. Preserve
+all artifacts in `results/local_inference/fp8/`, including any failed canary.
+Monitoring is active-turn only; no scheduling tool is available for later wakeups.
+
+### FP8 result: canary rejected, no timed pass
+
+Online per-tensor FP8 loaded and selected `CutlassFP8ScaledMMLinearKernel` on
+2026-09-23. Model allocation decreased from 7.99 to 5.0 GiB; with the same 0.80
+memory-utilization policy, available KV capacity was 6.31 GiB / 194,125 tokens.
+This is not a claim of equivalent whole-device memory reduction: freed memory
+is reused for cache. KV dtype stayed automatic/BF16; attention stayed FA2 and
+gated-delta prefill stayed Triton/FLA.
+
+The four original canaries failed the unchanged numerical gates:
+
+| Reference | Mean absolute score error | Max error | Correlation | 0.5 flips |
+| --- | ---: | ---: | ---: | ---: |
+| FP32 master (eager) | 0.064793 | 0.255398 | 0.866748 | 0 |
+| BF16 merged (eager) | 0.069270 | 0.255398 | 0.888389 | 0 |
+| Existing BF16 vLLM canaries | 0.057170 | 0.224908 | 0.880855 | 0 |
+
+The largest serving-to-serving change was the STRIDE positive canary: score
+0.407333 -> 0.182426, with logit-margin delta -1.125. Unchanged threshold
+decisions do not imply continuous-score parity. These four rows do not establish
+population degradation or rule out other FP8 scaling schemes.
+
+As predeclared, execution stopped before the longest-row canary and 32-row timed
+pass; **no FP8 throughput or full-set ranking result exists**. Engine construction
+took 127.68 seconds, including 42.81 seconds compilation and 58.15 seconds initial
+profiling/warmup. Total failed subprocess time was 158.11 seconds, not comparable
+to a successful cached-baseline total. All workers and telemetry exited.
+
+Keep BF16 as reference. A possible next experiment is finer-grained FP8 weight
+scaling or targeted layer exclusions, with a separately frozen config and the
+same canary gates; neither has been run. Evidence: `fp8/serving_parity.json`,
+`fp8/baseline_canary_comparison.json`, timing/telemetry artifacts under the result
+root, and `logs/local/local_inference/20260923T214702Z-benchmark.log`. The campaign
+status is `fp8_status.json` (failed); the child status remains at its last phase
+(`loading`) because the unmodified benchmark stopped at the gate.
+
 ## Isolated BF16 MLP kernel screen
 
 Hypothesis: another BLAS preference or Triton tile improves the two measured MLP

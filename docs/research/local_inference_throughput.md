@@ -202,3 +202,20 @@ that missing reference was timed in a separate recovery process; validation
 matched exactly, and no completed timing was repeated. All failures and original
 outputs are preserved. See the experiment README and
 `results/local_inference/gemm_bench_bf16/comparison.json` for the audited comparison.
+
+## FP8 per-tensor screen: rejected at canary
+
+Changing only online quantization to `fp8_per_tensor` selected CUTLASS FP8 linear
+kernels and reduced model allocation from 7.99 to 5.0 GiB. However, the four
+original canaries failed the unchanged score-parity gate: mean/max error against
+the merged eager reference was 0.069270/0.255398 (limits 0.02/0.10), correlation
+0.888389 (minimum 0.99). Against the existing BF16 vLLM canaries, mean/max error
+was 0.057170/0.224908; one STRIDE score fell from 0.407333 to 0.182426. There were
+no 0.5-threshold flips, which does not establish continuous-score parity.
+
+Stopped before the longest-row canary and 32-row pass, as specified in advance.
+No throughput comparison exists. Preserve BF16 and do not generalize this failure
+to all FP8 schemes: finer-grained weight scaling and selective exclusions remain
+untested. Full startup cost and failure evidence are recorded in the experiment
+README and `results/local_inference/fp8/`; the original merged weights and all
+earlier results are unchanged.
