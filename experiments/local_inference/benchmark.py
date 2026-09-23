@@ -21,6 +21,7 @@ from experiments.local_inference.core import (
     canary_rows,
     compare,
     digest,
+    parity_override,
     parity_passes,
     read_rows,
     write_json,
@@ -141,11 +142,16 @@ def main() -> None:
         {
             "comparisons": parity,
             "passed": passed,
+            "diagnostic_override_reason": config.get("diagnostic_parity_override"),
             "predictions": canary,
         },
     )
-    if not passed:
-        raise RuntimeError("vLLM serving parity failed")
+    override = parity_override(config, passed)
+    if override:
+        print(
+            f"DIAGNOSTIC ONLY: parity failed; authorized override: {override}",
+            flush=True,
+        )
     longest = max(rows, key=lambda r: r["tokens"])
     write_json(output / "longest_canary.json", generate([longest]))
     warmup_seconds = time.perf_counter() - warmup_started
@@ -194,6 +200,8 @@ def main() -> None:
     duration = float(np.median([r["seconds"] for r in runs]))
     result = {
         "config": config,
+        "serving_parity_passed": passed,
+        "diagnostic_parity_override_applied": override,
         "config_sha256": sha256_file(args.config),
         "subset_sha256": subset_hash,
         "merge_manifest_sha256": merge_hash,

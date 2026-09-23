@@ -9,7 +9,33 @@ import pytest
 
 from experiments.local_inference import run
 from experiments.local_inference.compare_runs import compare_runs
-from experiments.local_inference.core import compare, parity_passes, select_subset
+from experiments.local_inference.core import (
+    compare,
+    parity_override,
+    parity_passes,
+    select_subset,
+)
+
+
+def test_diagnostic_override_is_explicit_and_default_fails_closed():
+    assert parity_override({}, True) is None
+    with pytest.raises(RuntimeError, match="parity failed"):
+        parity_override({}, False)
+    for reason in (True, "", " "):
+        with pytest.raises(ValueError, match="nonempty reason"):
+            parity_override({"diagnostic_parity_override": reason}, False)
+    assert parity_override(
+        {"diagnostic_parity_override": "Authorized diagnostic"}, False
+    )
+
+
+def test_diagnostic_config_preserves_engine_and_gates():
+    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    original = json.loads((root / "fp8_channel.json").read_text())
+    diagnostic = json.loads((root / "fp8_channel_diagnostic.json").read_text())
+    assert diagnostic.pop("diagnostic_parity_override")
+    assert diagnostic.pop("output") != original.pop("output")
+    assert diagnostic == original
 
 
 def test_comparison_checks_identity_and_paired_drift(tmp_path):
@@ -54,6 +80,14 @@ def test_comparison_checks_identity_and_paired_drift(tmp_path):
     report = compare_runs(baseline, candidate)
     assert report["score_drift"]["threshold_flips"] == 1
     assert report["scoring_speedup"] == 1
+    result["runner_sha256"] = "new runner"
+    (candidate / "result.json").write_text(json.dumps(result))
+    with pytest.raises(ValueError, match="runner_sha256"):
+        compare_runs(baseline, candidate)
+    audit = compare_runs(baseline, candidate, runner_change_reason="Only gate handling")
+    assert audit["runner_audit"]["changed"]
+    result["runner_sha256"] = "same"
+    (candidate / "result.json").write_text(json.dumps(result))
     rows[0]["prompt_sha256"] = "changed"
     (candidate / "predictions_0.json").write_text(json.dumps(rows))
     with pytest.raises(ValueError, match="prediction"):

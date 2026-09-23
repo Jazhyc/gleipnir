@@ -1,5 +1,71 @@
 # Local merged Gleipnir 4B baseline
 
+## Authorized per-channel FP8 diagnostic pass
+
+After reviewing the failed canary, the user explicitly authorized one 32-row
+pass to measure AUROC and speed. `fp8_channel_diagnostic.json` retains the failed
+gate and its original limits but records the authorization as a diagnostic-only
+override. It changes no engine, data, prompt, or scoring settings from
+`fp8_channel.json`; only output location and the explicit override differ.
+Re-run the four canaries for normal startup, preserve their actual pass/fail
+status, require finite outputs and the longest-input canary, then one timed pass.
+No BF16 repeat, tolerance relaxation, quality promotion, or additional data.
+Stop on OOM, missing/nonfinite outputs, truncation, or artifact mismatch.
+
+Run `python -m experiments.local_inference.run --config
+experiments/local_inference/fp8_channel_diagnostic.json`. Compare to `baseline32`.
+The runner change only adds explicit parity-override handling and metadata;
+generation, warmup and timed scoring are unchanged. The comparison requires an
+explicit `--runner-change-reason` for this audited hash difference, retaining
+both hashes and all other identity checks. Report AUROC by source and macro,
+score/margin drift, threshold flips, calibration, throughput and startup/thermals.
+One development pass cannot establish quality equivalence or timing variance.
+
+### Diagnostic result (2026-09-24 local time)
+
+One pass completed all 32 rows / 338,780 prompt tokens, with unchanged input and
+checkpoint hashes. Native CUTLASS FP8 per-channel kernels were selected. The
+canary remained failed and its authorized override is recorded explicitly.
+
+| Metric | BF16 baseline | Per-channel FP8 |
+| --- | ---: | ---: |
+| Scoring seconds | 35.9089 | 25.6623 |
+| Prompt tokens/s | 9,434.42 | 13,201.46 |
+| Source-macro AUROC | 0.921488 | 0.925620 |
+| Pooled AUROC | 0.909804 | 0.917647 |
+| Gloom AUROC (22 rows) | 0.842975 | 0.851240 |
+| STRIDE AUROC (10 rows) | 1.000000 | 1.000000 |
+| Source-macro pAUROC@20 | 0.756198 | 0.776860 |
+| Source-macro Brier (lower better) | 0.097959 | 0.099850 |
+| Whole subprocess seconds | 85.3016 | 80.6563 |
+
+Observed scoring throughput increased **39.93% (1.399x)**; scoring latency fell
+28.53%. Both processes reused compilation caches, but FP8 construction still
+took 30.20 seconds versus BF16 24.07 seconds. FP8 warmup took 3.54 seconds;
+whole-process speedup is only 1.058x. Do not confuse startup with warmed scoring.
+
+Mean/max absolute score drift was 0.021872/0.122459 (p95 0.101870), correlation
+0.996112. One Gloom negative (`gloom_exfiltration:1606`) changed from exactly
+0.5 to 0.407333, removing a false positive under the >=0.5 rule. Unique scores
+were 30 -> 31. Macro recall was unchanged; macro FPR decreased 0.090909 ->
+0.045455. Small-set ranking gains do not establish a better judge: Brier worsened,
+continuous scores changed, and the original canary still fails.
+
+Both FP8 scoring telemetry samples reported thermal throttling at 83–84 C and
+2700–2730 MHz, versus BF16's earlier 85–87 C; the comparison is not thermally
+controlled and has no repeat-noise estimate. FP8 sampled whole-device memory
+was 15,170–15,175 MiB: model allocation is lower, but the same automatic memory
+policy allocated 7.32 GiB / 225,404 tokens of KV capacity. This is a consequence
+of the fixed utilization policy, not a separate cache-precision intervention.
+
+Decision: promising throughput/quality tradeoff for further evaluation, not
+automatic promotion or numerical equivalence. BF16 remains the reference.
+All predictions, normalization, token counts and metrics were independently
+checked; workers and telemetry exited. Artifacts are in
+`results/local_inference/fp8_channel_diagnostic/`, especially `comparison.json`,
+`predictions_0.json`, `serving_parity.json`, `result.json`, and timing/telemetry.
+Log: `logs/local/local_inference/20260923T220014Z-benchmark.log`.
+
 ## Per-channel FP8 follow-up
 
 Hypothesis: replacing per-tensor weight scales with per-output-channel scales

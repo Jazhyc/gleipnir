@@ -237,3 +237,27 @@ longest-row canary and timed 32-row pass. No speedup or population-quality claim
 Any diagnostic timing continuation requires an explicit gate/reference decision.
 Evidence and preserved failures are under `results/local_inference/fp8_channel/`;
 BF16 remains the reference and no checkpoint was modified.
+
+## Authorized FP8 diagnostic: 1.399x observed scoring throughput
+
+The user explicitly authorized one diagnostic 32-row pass despite the retained
+canary failure. The runner records that override without changing the numerical
+limits, scoring code, longest-input canary, or identity/nonfinite checks. The
+comparison records an audited runner-hash difference for this gate handling.
+
+Per-channel FP8 processed 338,780 tokens in **25.6623 seconds**, versus BF16
+35.9089 seconds: **13,201.46 vs 9,434.42 tokens/s**, a 39.93% throughput increase.
+Source-macro AUROC changed 0.921488 -> 0.925620; pooled AUROC 0.909804 -> 0.917647.
+Gloom AUROC was 0.842975 -> 0.851240 and STRIDE remained 1.0. Macro pAUROC@20
+was 0.756198 -> 0.776860; macro Brier worsened 0.097959 -> 0.099850.
+
+Mean/max score drift was 0.021872/0.122459, correlation 0.996112, with one Gloom
+negative crossing from exactly 0.5 to 0.407333. The small ranking increase is not
+evidence of population quality improvement or numerical equivalence. Whole-process
+time improved only 85.30 -> 80.66 seconds due to fixed startup costs. Both FP8
+scoring samples showed thermal throttling at 83–84 C versus baseline 85–87 C;
+single-pass timing is not thermally controlled. Freed model memory went to cache
+under the unchanged memory-utilization policy. No repeats or automatic promotion.
+Preserve BF16 as reference; this is a promising measured tradeoff, not a quality
+pass. Evidence: `results/local_inference/fp8_channel_diagnostic/comparison.json`
+and the experiment README. Completed 2026-09-24 local time.

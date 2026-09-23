@@ -1,0 +1,26 @@
+{
+  "seed": 20260923,
+  "base_id": "Qwen/Qwen3.5-4B",
+  "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "adapter_id": "Jazhyc/Gleipnir-4B",
+  "environment": {"VLLM_USE_FLASHINFER_SAMPLER": "0"},
+  "subset_counts": {"test_stride:0": 4, "test_stride:1": 6, "gloom_exfiltration:0": 11, "gloom_exfiltration:1": 11},
+  "input": "data/local_inference/iteration32.jsonl",
+  "manifest": "data/local_inference/iteration32.manifest.json",
+  "output": "results/local_inference/fp8_channel_diagnostic",
+  "diagnostic_parity_override": "User authorized one 32-row diagnostic pass despite the per-channel FP8 canary failure, to measure AUROC and throughput; not a quality pass or promotion.",
+  "engine": {
+    "quantization": "fp8_per_channel",
+    "dtype": "bfloat16",
+    "max_model_len": 32768,
+    "max_num_seqs": 2,
+    "max_num_batched_tokens": 2048,
+    "gpu_memory_utilization": 0.80,
+    "enable_prefix_caching": false,
+    "enable_chunked_prefill": true,
+    "language_model_only": true,
+    "seed": 20260923
+  },
+  "repeats": 1,
+  "parity": {"mean_absolute_error": 0.02, "max_absolute_error": 0.10, "min_correlation": 0.99}
+}

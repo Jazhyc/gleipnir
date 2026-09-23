@@ -9,7 +9,9 @@ from pathlib import Path
 from experiments.local_inference.core import compare, write_json
 
 
-def compare_runs(baseline: Path, candidate: Path) -> dict:
+def compare_runs(
+    baseline: Path, candidate: Path, *, runner_change_reason: str | None = None
+) -> dict:
     """Require identical input/model identities before comparing measurements."""
 
     def read(root, name):
@@ -23,10 +25,14 @@ def compare_runs(baseline: Path, candidate: Path) -> dict:
         "rows",
         "prompt_tokens",
         "software",
-        "runner_sha256",
     ):
         if a[key] != b[key]:
             raise ValueError(f"Unmatched run identity: {key}")
+    runner_changed = a["runner_sha256"] != b["runner_sha256"]
+    if runner_changed and not (runner_change_reason or "").strip():
+        raise ValueError(
+            "Unmatched run identity: runner_sha256; audited reason required"
+        )
     if len(a["repeats"]) != 1 or len(b["repeats"]) != 1:
         raise ValueError("Expected one pass per condition")
     left, right = [read(root, "predictions_0.json") for root in (baseline, candidate)]
@@ -49,6 +55,15 @@ def compare_runs(baseline: Path, candidate: Path) -> dict:
     report = {
         "baseline": str(baseline),
         "candidate": str(candidate),
+        "runner_audit": {
+            "changed": runner_changed,
+            "reason": runner_change_reason,
+            "hashes": [a["runner_sha256"], b["runner_sha256"]],
+        },
+        "candidate_serving_parity_passed": b.get("serving_parity_passed"),
+        "diagnostic_parity_override_applied": b.get(
+            "diagnostic_parity_override_applied"
+        ),
         "score_drift": compare([x["score"] for x in left], [x["score"] for x in right]),
         "scoring_speedup": a["median_seconds"] / b["median_seconds"],
         "scoring_seconds": [a["median_seconds"], b["median_seconds"]],
@@ -88,8 +103,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("baseline", type=Path)
     parser.add_argument("candidate", type=Path)
+    parser.add_argument("--runner-change-reason")
     args = parser.parse_args()
-    report = compare_runs(args.baseline, args.candidate)
+    report = compare_runs(
+        args.baseline, args.candidate, runner_change_reason=args.runner_change_reason
+    )
     write_json(args.candidate / "comparison.json", report)
     print(json.dumps({k: v for k, v in report.items() if k != "paired"}, indent=2))
 

@@ -14,6 +14,16 @@ DATA = Path("data/local_inference")
 CONFIG = Path("experiments/local_inference/config.json")
 
 
+def parity_override(config: dict, passed: bool) -> str | None:
+    """Allow an explicitly documented diagnostic, never relabel a failed gate."""
+    reason = config.get("diagnostic_parity_override")
+    if reason is not None and (not isinstance(reason, str) or not reason.strip()):
+        raise ValueError("Diagnostic parity override requires a nonempty reason")
+    if not passed and reason is None:
+        raise RuntimeError("vLLM serving parity failed")
+    return reason if not passed else None
+
+
 def digest(text: str) -> str:
     return hashlib.sha256(text.encode()).hexdigest()
 
