@@ -26,6 +26,15 @@ completion does not establish score parity. Logs are under
 `logs/slurm/local_inference/`; datasets and models retain the paths documented
 below. Monitor during the active agent turn when no scheduling tool is available.
 
+Cluster preparation completed on 2026-09-24 in Slurm job `31934203` on `node8`
+(5m21s, exit 0, peak RSS 24,013,428 KiB). Both JSONL hashes exactly match the
+4080 artifacts: 512 rows / 5,760,843 tokens and 32 rows / 338,780 tokens.
+The published FP32 master was preserved, its rebased serving tensors verified
+exact, and the safe BF16 merge saved to `results/local_inference/merged_bf16/`
+with its checksum manifest. All RTX PRO 6000 nodes were drained or draining;
+the pending GPU job `31934185` was cancelled before execution. GPU reference
+and vLLM serving parity remain untested on the cluster; no speed result exists.
+
 The follow-up testing clipping, rebalancing, rotations, groups and selective
 precision on real activations is documented in
 [`int4_calibration`](../int4_calibration/README.md). It is a numerical/kernel
