@@ -277,3 +277,25 @@ No end-to-end INT4 run or accuracy/speedup result exists. Further progress needs
 a custom/integrated backend; propose a separately scoped real-shape kernel screen
 including quantization/scaling costs before model integration. Existing serving
 paths, checkpoints, and data remain unchanged.
+
+## Native INT4 MLP screen: faster, but naive quantization is lossy
+
+CUTLASS S4 x S4 -> S32 kernels compiled for SM89 passed exact full-matrix integer
+checks for three tile layouts on both profiled MLP shapes. Real layer-0 weights
+and seeded synthetic BF16 activations were quantized symmetrically to [-7,7],
+per-channel for weights and per-token for activations. No model serving changes.
+
+One 256-call timing window per operation measured the complete online path
+(activation quantization/packing, native GEMM, output scaling to BF16) at
+**0.71555 ms gate/up and 0.28009 ms down**, versus contemporaneous BF16
+1.97995/1.05199 ms: **2.767x/3.756x**. Weight quantization is offline; both paths
+use preallocated buffers. Raw integer GEMM alone was 0.33392/0.14933 ms. No
+dataset pass or repeated timing windows. Clocks/thermals were uncontrolled.
+
+Relative L2 error versus FP32 was **22.18%/25.02%**, versus BF16 0.166%/0.233%.
+This simple scaling recipe is not quality-validated. Large speed potential does
+not justify integration without improved quantization and judge drift checks;
+no AUROC or end-to-end speedup can be inferred. Two validation-only failed
+attempts were preserved before matching division rounding semantics. Evidence:
+`results/local_inference/int4_gemm_screen_validated/result.json`, associated log,
+and experiment README. The existing model artifacts remain unchanged.

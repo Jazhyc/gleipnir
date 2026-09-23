@@ -1,5 +1,75 @@
 # Local merged Gleipnir 4B baseline
 
+## Native INT4 MLP kernel screen
+
+Hypothesis: CUTLASS native signed INT4 GEMM on the two dominant MLP shapes beats
+BF16 even after dynamic activation quantization/packing and output scaling.
+Use the existing real layer-0 weights and seed-20260923 synthetic normal BF16
+inputs for (M,N,K)=(2048,18432,2560) and (2048,2560,9216). Symmetric [-7,7]
+round-to-nearest quantization uses per-output-channel weight scales (offline)
+and per-token activation scales (online); no calibration, clipping optimization,
+rotations, vLLM integration, or judge data pass. Do not claim synthetic error
+predicts AUROC. Stop on compile/runtime failures, nonfinite outputs, or mismatch
+against independent packing, exact quantized integer GEMM, and scaling checks.
+
+Compare three CUTLASS SM80 tensor-op tiles (128/128/128, 128/64/128, 64/128/128),
+compiled for SM89, with INT32 accumulation/output then BF16 rescaling. Measure
+raw GEMM, quantize/pack, rescale, and complete online pipeline separately against
+BF16 torch.mm with the same preallocated-output policy. Weight preparation,
+validation, compilation, and allocation are excluded. One 256-call window per
+operation, randomized fixed order, 3-second BF16 heating and five warmup calls;
+no CUDA graphs or dataset repeats. Record CUDA-event and host wall times plus
+thermals. Report FP32-reference error without a quality pass. Require >10% full
+pipeline gain for interest; no automatic integration or promotion. Reused buffers
+and synthetic inputs limit serving relevance; temperature is uncontrolled.
+
+Build `int4_gemm.cu` with CUDA 12.8 `-arch=sm_89 -O3 --shared -Xcompiler -fPIC`
+and the existing FlashInfer CUTLASS include directory. Run
+`python -m experiments.local_inference.int4_bench --library
+/tmp/gleipnir_int4_gemm.so --output results/local_inference/int4_gemm_screen`.
+Use cuobjdump to verify native S4 instructions before interpreting timings.
+
+### INT4 result: large kernel speedup, large synthetic quantization error
+
+All three tile variants matched every entry of an independent integer reference
+on both full shapes. Packing/scales and rescaled BF16 outputs also matched their
+references. Disassembly confirmed `IMMA.16864.S4.S4.SAT`; no FP16/BF16 GEMM fallback.
+The fastest full pipeline used tile 128/128/128 for both projections.
+
+| Operation (ms/call) | Gate/up | Down |
+| --- | ---: | ---: |
+| BF16 GEMM | 1.97995 | 1.05199 |
+| Native INT4 GEMM, fastest full-pipeline tile | 0.33392 | 0.14933 |
+| Activation quantization + packing | 0.05366 | 0.10639 |
+| INT32 output rescaling to BF16 | 0.37832 | 0.06881 |
+| Complete online INT4 path, directly timed | 0.71555 | 0.28009 |
+| Complete path speedup versus BF16 | **2.767x** | **3.756x** |
+
+Component windows and the complete path have different cache/thermal histories;
+their measured times need not add up. The directly timed complete path is the
+relevant comparison. Host wall times for it were 0.71671/0.28096 ms. Weight
+quantization is offline and excluded; allocation is excluded for both precisions.
+Simple max-abs scaling produced relative L2 errors versus FP32 of **0.22181 and
+0.25018**, compared with BF16 0.001658/0.002334. Maximum error/reference RMS was
+4.34892/6.29647 for INT4. Exact integer arithmetic does not remove quantization
+error: do not interpret these 22–25% errors as judge-score deltas or AUROC changes.
+
+Decision: native INT4 has meaningful speed potential on these shapes, but this
+naive quantization recipe is not quality-validated and is not integrated into
+vLLM. Better activation/weight treatment would be a separate experiment. No
+end-to-end speedup or AUROC result exists. Thermals/clocks varied (62–81 C,
+2520–2790 MHz in before/after samples, no sampled thermal slowdown); short-window
+telemetry is coarse and there is no repeated-window variance estimate.
+
+Two initial attempts stopped before timing: ordinary division produced a packed
+rounding mismatch, then the stricter division exposed the reference's scalar
+reciprocal-multiply shortcut. Both were preserved. The final implementation uses
+explicit rounded FP32 division, checked using FP64 division rounded back to FP32.
+No completed timing was repeated. Final artifacts:
+`results/local_inference/int4_gemm_screen_validated/{protocol.json,result.json}`
+and `logs/local/local_inference/int4_gemm_screen_validated.log`. Failed attempts
+retain `int4_gemm_screen` and `int4_gemm_screen_exact` names.
+
 ## Native INT4 feasibility probe
 
 Hypothesis: the RTX 4080 can execute signed INT4 x INT4 tensor instructions, but
