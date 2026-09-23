@@ -1,9 +1,12 @@
 """Selection and numerical gates fail closed and do not depend on source order."""
 
+import json
+import subprocess
 from collections import Counter
 
 import pytest
 
+from experiments.local_inference import run
 from experiments.local_inference.core import compare, parity_passes, select_subset
 
 
@@ -44,3 +47,49 @@ def test_parity_checks_include_threshold_boundary_and_nonfinite():
         compare([0.2], [float("nan")])
     with pytest.raises(ValueError, match="coverage"):
         compare([0.2], [0.2, 0.3])
+
+
+def test_small_screen_retains_every_source_label_length_bin():
+    rows = [
+        {"id": f"{s}:{label}:{i}", "source": s, "label": label, "tokens": i}
+        for s in ("test_stride", "gloom_exfiltration")
+        for label in (0, 1)
+        for i in range(100)
+    ]
+    counts = {
+        "test_stride:0": 4,
+        "test_stride:1": 6,
+        "gloom_exfiltration:0": 11,
+        "gloom_exfiltration:1": 11,
+    }
+    selected = select_subset(rows, counts, 20260923)
+    assert len(selected) == 32
+    assert Counter(f"{r['source']}:{r['label']}" for r in selected) == counts
+    assert (
+        len({(r["source"], r["label"], r["length_quartile"]) for r in selected}) == 16
+    )
+
+
+def test_existing_benchmark_timing_is_not_overwritten(tmp_path, monkeypatch):
+    output = tmp_path / "baseline"
+    output.mkdir()
+    timing = output / "process_timing.json"
+    timing.write_text('{"seconds": 85.3}\n')
+    config = tmp_path / "config.json"
+    config.write_text(json.dumps({"output": str(output)}))
+    monkeypatch.chdir(tmp_path)
+    monkeypatch.setattr(run, "CONFIG", config)
+    monkeypatch.setattr(run, "ROOT", tmp_path / "results")
+    monkeypatch.setattr(run.sys, "argv", ["run"])
+    monkeypatch.setenv("PATH", run.os.environ["PATH"])
+    calls = []
+
+    def fake_run(command, **kwargs):
+        calls.append(command)
+        return subprocess.CompletedProcess(command, 0)
+
+    monkeypatch.setattr(run.subprocess, "run", fake_run)
+    with pytest.raises(FileExistsError, match="Preserve"):
+        run.main()
+    assert len(calls) == 3
+    assert timing.read_text() == '{"seconds": 85.3}\n'

@@ -1,9 +1,70 @@
 # Local merged Gleipnir 4B baseline
 
+## 32-row iteration workload
+
+The user selected 32 rows for fast iteration after the initial 512-row baseline.
+`iteration32.json` freezes four STRIDE negatives, six STRIDE positives, and
+eleven examples of each Gloom label, selected from the existing 512 rows by the
+same seeded source/label/length-bin procedure. The slice contains 338,780 prompt
+tokens (2,379–27,544 per row). Preserve the 512-row artifact for occasional
+broader checks. Do not interpret small-set AUROC as a precise quality estimate;
+retain paired logprobs, margins, scores, threshold flips, and source coverage.
+
+Hypothesis: the smaller workload gives a substantially faster complete iteration,
+although engine startup may dominate. The intervention changes only dataset
+size: retain the merged weights, serving settings, four original parity rows,
+one longest-selected-row warmup, and one timed pass. Existing parity and failure
+gates still apply. Measure engine initialization, canary warmup, scoring, and
+whole-process wall time separately. Compilation caches are reused naturally;
+this is a fresh-process measurement, not a deliberately cold-cache experiment.
+
+Run `.venv/bin/python -m experiments.local_inference.run --iteration32`.
+Inputs are `data/local_inference/iteration32.jsonl` and its manifest. Results
+are `results/local_inference/baseline32/`; campaign status is
+`results/local_inference/iteration32_status.json`. The ordinary invocation
+retains the historical 512-row preparation workflow. To record thermals during
+this run, invoke `telemetry --output results/local_inference/baseline32 --status
+results/local_inference/iteration32_status.json` through the experiment module.
+
+Measured on 2026-09-23, one pass completed with the following wall times:
+
+| Phase | Seconds |
+| --- | ---: |
+| Main-function preparation/imports and artifact validation | 15.66 |
+| vLLM construction (`LLM(...)`, including worker startup) | 24.07 |
+| Parity and longest-input canary warmup | 4.48 |
+| 32-row scoring, including rendering and output extraction | 35.91 |
+| Complete benchmark subprocess, including shutdown | **85.30** |
+
+The total includes initial module imports and shutdown outside the separately
+timed main-function phases. Throughput is **9,434.42 prompt tokens/s**. Cached
+compiled graphs loaded in 0.859 seconds; vLLM's narrower internal engine-init
+timer was 6.98 seconds, compared with 82.48 seconds in the earlier startup.
+Thus total fixed overhead is material, but cached initialization is much faster
+than the earlier estimate based on the initial setup. Changing compilation
+settings can produce cache misses and increase startup again.
+
+All 32 saved identities, labels, prompt hashes, token counts, normalized scores,
+and metrics were independently checked. Relative to the same rows' existing
+512-row scores, mean absolute score change was 0.005573, maximum 0.030967,
+correlation 0.999578, and there were zero 0.5-threshold flips. This comparison
+changes scheduling/order and run conditions, not model weights. Use the fresh
+32-row predictions as the iteration reference. Small-set macro pAUROC@20 was
+0.756198 and AUROC 0.921488; these are not comparable with full-512 metrics as
+evidence of degradation because the population differs.
+
+Thermal samples during scoring showed 85–87 C and active software thermal
+throttling; the GPU worker exited successfully. No repeat-noise estimate is
+claimed. Input SHA-256:
+`aadb48556b134150e43946ba39d31512498e2d61b8a88a7a24fd9617b5633f03`.
+The measured totals are in `baseline32/result.json` and
+`baseline32/process_timing.json`, alongside the single-pass predictions.
+
 Hypothesis: a BF16 merge of the released Gleipnir 4B LoRA provides an efficient
 fixed-weight baseline for later vLLM serving optimizations on the local RTX 4080.
-This campaign uses only a frozen 512-row ID subset throughout, as requested on
-2026-09-23; neither full-ID confirmation nor strict-OOD selection is in scope.
+The initial baseline used a frozen 512-row ID subset, retained for occasional
+broader checks after selecting 32 rows for iteration. Neither full-ID
+confirmation nor strict-OOD selection is in scope.
 
 Reconstruct CoT-removed trajectories from the checksum-pinned STRIDE and Gloom
 sources using the existing ID loaders and source-aware CoT remover. Preserve the

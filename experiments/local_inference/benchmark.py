@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import math
 import os
@@ -29,7 +30,11 @@ from gleipnir.qwen35_adapter_rebase import sha256_file
 
 
 def main() -> None:
-    config = json.loads(CONFIG.read_text())
+    process_started = time.perf_counter()
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", type=Path, default=CONFIG)
+    args = parser.parse_args()
+    config = json.loads(args.config.read_text())
     os.environ.update(config.get("environment", {}))
     import torch
     import transformers
@@ -37,12 +42,18 @@ def main() -> None:
     from transformers import AutoTokenizer
     from vllm import LLM, SamplingParams
 
-    rows = read_rows()
-    manifest = json.loads((DATA / "manifest.json").read_text())
+    input_path = Path(config.get("input", DATA / "subset.jsonl"))
+    rows = read_rows(input_path)
+    manifest_path = Path(config.get("manifest", DATA / "manifest.json"))
+    manifest = json.loads(manifest_path.read_text())
     reference = json.loads((ROOT / "reference.json").read_text())
-    subset_hash = sha256_file(DATA / "subset.jsonl")
-    if not reference["passed"] or subset_hash != reference["subset_sha256"]:
+    subset_hash = sha256_file(input_path)
+    reference_input = Path(manifest.get("reference_input", input_path))
+    reference_hash = sha256_file(reference_input)
+    if not reference["passed"] or reference_hash != reference["subset_sha256"]:
         raise ValueError("reference gate or identity mismatch")
+    if reference_hash != manifest.get("reference_input_sha256", subset_hash):
+        raise ValueError("reference parent identity mismatch")
     if subset_hash != manifest["subset_sha256"]:
         raise ValueError("subset identity mismatch")
     merge_hash = sha256_file(ROOT / "merged_bf16/merge_manifest.json")
@@ -52,7 +63,7 @@ def main() -> None:
     for name, expected in merge["files"].items():
         if sha256_file(ROOT / "merged_bf16" / name) != expected:
             raise ValueError(f"merged file changed: {name}")
-    output = ROOT / "baseline"
+    output = Path(config.get("output", ROOT / "baseline"))
     output.mkdir(exist_ok=False)
     tokenizer = AutoTokenizer.from_pretrained(ROOT / "merged_bf16")
     ids = binary_token_ids(tokenizer)
@@ -72,6 +83,8 @@ def main() -> None:
         allowed_token_ids=ids,
     )
     write_json(output / "status.json", {"state": "loading"})
+    write_json(output / "launch_config.json", config)
+    preparation_seconds = time.perf_counter() - process_started
     started = time.perf_counter()
     llm = LLM(model=str(ROOT / "merged_bf16"), **config["engine"])
     initialization = time.perf_counter() - started
@@ -112,7 +125,8 @@ def main() -> None:
             )
         return predictions
 
-    canaries = canary_rows(rows)
+    warmup_started = time.perf_counter()
+    canaries = canary_rows(read_rows(reference_input))
     if [r["id"] for r in canaries] != reference["ids"]:
         raise ValueError("canary identity mismatch")
     canary = generate(canaries)
@@ -134,6 +148,8 @@ def main() -> None:
         raise RuntimeError("vLLM serving parity failed")
     longest = max(rows, key=lambda r: r["tokens"])
     write_json(output / "longest_canary.json", generate([longest]))
+    warmup_seconds = time.perf_counter() - warmup_started
+    write_json(output / "warmup.json", {"seconds": warmup_seconds})
     resolved = llm.llm_engine.vllm_config
     write_json(
         output / "engine_config.json",
@@ -178,13 +194,16 @@ def main() -> None:
     duration = float(np.median([r["seconds"] for r in runs]))
     result = {
         "config": config,
-        "config_sha256": sha256_file(CONFIG),
+        "config_sha256": sha256_file(args.config),
         "subset_sha256": subset_hash,
         "merge_manifest_sha256": merge_hash,
         "reference_sha256": sha256_file(ROOT / "reference.json"),
         "rows": len(rows),
         "prompt_tokens": totals,
         "initialization_seconds": initialization,
+        "preparation_seconds": preparation_seconds,
+        "warmup_seconds": warmup_seconds,
+        "main_wall_seconds": time.perf_counter() - process_started,
         "repeats": runs,
         "median_seconds": duration,
         "median_prompt_tokens_per_second": totals / duration,

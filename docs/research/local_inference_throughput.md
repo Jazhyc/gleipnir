@@ -120,3 +120,11 @@ thermal throttling was active in all 47 recorded first-pass samples, so this
 timing describes the workstation under its current cooling conditions.
 See the [experiment result](../../experiments/local_inference/README.md) for
 parity checks, per-source metrics, retained artifacts, and startup fixes.
+
+The user subsequently selected a 32-row stratified slice for iteration. Its
+338,780 tokens took **35.91 seconds** in the measured single pass, or **9,434.42
+tokens/s**. A fresh benchmark subprocess with existing compilation caches took
+**85.30 seconds total**, including **24.07 seconds constructing vLLM** and
+**4.48 seconds of canary warmup**; the remainder includes validation/imports,
+scoring, persistence, and shutdown. Use `iteration32.json` and `baseline32/`
+for iteration, while preserving the 512-row artifacts for broader checks.
