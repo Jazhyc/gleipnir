@@ -1,5 +1,58 @@
 # Local merged Gleipnir 4B baseline
 
+## Per-channel FP8 follow-up
+
+Hypothesis: replacing per-tensor weight scales with per-output-channel scales
+reduces FP8 score drift enough to pass the existing canaries. Installed vLLM's
+`fp8_per_channel` uses `Fp8PtpcOnlineLinearMethod`, with per-channel weights and
+dynamic per-token activations. The prior CUTLASS per-tensor path already used
+per-token activations, so this isolates weight scaling within the supported
+linear paths. No layer exclusions, calibration data, checkpoint edits, cache
+precision changes, or tolerance changes.
+
+Run `python -m experiments.local_inference.run --config
+experiments/local_inference/fp8_channel.json`. Retain the frozen 32-row selection,
+one timed pass, and all other baseline settings. Compare to the saved BF16
+baseline without repeats. Require the original four-row master/merged canary
+limits (mean <=0.02, max <=0.10, correlation >=0.99), then the longest-input
+canary before timing. Stop on gate failure, nonfinite/missing output, OOM,
+truncation, or identity mismatch. Preserve failed per-tensor artifacts. Report
+paired drift, threshold flips, metrics, startup, throughput, memory, and thermals;
+>10% speedup merits investigation, not automatic promotion. No population-level
+quality claim from these development rows. Monitor during this active turn only.
+
+### Per-channel result: improved drift, original gate still fails
+
+CUTLASS FP8 (`Fp8PtpcOnlineLinearMethod`) loaded successfully. Four-row canary
+results, with no 0.5-threshold flips in any comparison:
+
+| Reference | Mean absolute score error | Max error | Correlation |
+| --- | ---: | ---: | ---: |
+| FP32 master (eager) | 0.024373 | 0.060283 | 0.999648 |
+| BF16 merged (eager) | 0.028851 | 0.060283 | 0.997422 |
+| Existing BF16 vLLM canaries | 0.016751 | 0.031552 | 0.998485 |
+
+Only the mean-error criterion fails against the original eager references.
+Against BF16 vLLM, all three numerical limits would pass, but that was not the
+predeclared gate and was not substituted after seeing results. Relative to the
+per-tensor FP8 candidate, serving-to-serving mean/max drift improved from
+0.057170/0.224908 to 0.016751/0.031552. The sensitive STRIDE score is now 0.377541,
+versus 0.407333 BF16 and 0.182426 per-tensor FP8. This is promising canary evidence,
+not a full-workload quality result; all four serving score changes were downward.
+
+Stopped before the longest-input canary and 32-row pass. No throughput result or
+promotion. Changing the gate/reference to permit a diagnostic timing pass needs
+an explicit decision; retain all existing failures. Model allocation stayed
+5.0 GiB, KV capacity 6.31 GiB / 194,125 tokens. Initialization took 123.42 seconds,
+including 40.68 seconds compilation and 58.93 seconds initial profiling/warmup;
+the failed subprocess took 144.96 seconds. GPU worker and telemetry exited.
+
+Evidence: `results/local_inference/fp8_channel/{serving_parity.json,
+baseline_canary_comparison.json,initialization.json,process_timing.json}`,
+`fp8_channel_status.json` (failed), and
+`logs/local/local_inference/20260923T215245Z-benchmark.log`. Child status remains
+at its last phase, `loading`, as in the earlier failed screen.
+
 ## FP8 online-quantization screen
 
 Hypothesis: native FP8 linear computation improves prefill throughput on RTX 4080.

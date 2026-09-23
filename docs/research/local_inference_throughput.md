@@ -219,3 +219,21 @@ to all FP8 schemes: finer-grained weight scaling and selective exclusions remain
 untested. Full startup cost and failure evidence are recorded in the experiment
 README and `results/local_inference/fp8/`; the original merged weights and all
 earlier results are unchanged.
+
+## Per-channel FP8: substantially less drift, still gated
+
+The authorized follow-up changed only weight scaling to per-output-channel;
+the installed CUTLASS paths use dynamic per-token activations in both schemes.
+On the four canaries, mean/max score drift against existing BF16 vLLM improved
+from 0.057170/0.224908 to 0.016751/0.031552, correlation 0.998485, zero threshold
+flips. The previously sensitive STRIDE score was 0.377541 versus BF16 0.407333
+and per-tensor FP8 0.182426.
+
+The original eager-reference gate still fails mean error: 0.024373 versus master
+and 0.028851 versus merged, above 0.02; maximum error and correlation pass.
+The BF16-serving comparison would pass those limits, but substituting that
+reference after observing scores is not a predeclared pass. Stopped before the
+longest-row canary and timed 32-row pass. No speedup or population-quality claim.
+Any diagnostic timing continuation requires an explicit gate/reference decision.
+Evidence and preserved failures are under `results/local_inference/fp8_channel/`;
+BF16 remains the reference and no checkpoint was modified.

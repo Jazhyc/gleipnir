@@ -70,12 +70,16 @@ def test_prefill_candidate_changes_only_budget_and_output():
     assert candidate == baseline
 
 
-def test_fp8_candidate_changes_only_quantization_and_output():
+@pytest.mark.parametrize(
+    ("filename", "scheme"),
+    [("fp8.json", "fp8_per_tensor"), ("fp8_channel.json", "fp8_per_channel")],
+)
+def test_fp8_candidate_changes_only_quantization_and_output(filename, scheme):
     root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
     baseline = json.loads((root / "iteration32.json").read_text())
-    candidate = json.loads((root / "fp8.json").read_text())
+    candidate = json.loads((root / filename).read_text())
     assert candidate.pop("output") != baseline.pop("output")
-    assert candidate["engine"].pop("quantization") == "fp8_per_tensor"
+    assert candidate["engine"].pop("quantization") == scheme
     assert candidate == baseline
 
 
