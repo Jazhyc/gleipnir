@@ -1,6 +1,20 @@
 import pytest
 
+from experiments.local_inference import profile
 from experiments.local_inference.profile_summary import kernel_family, summarize_trace
+
+
+def test_reject_competing_cupti_subscribers(tmp_path, monkeypatch):
+    target = tmp_path / "capture"
+    monkeypatch.setattr(
+        profile.sys,
+        "argv",
+        ["profile", "--output", str(target), "--kind", "cuda", "--early-cupti"],
+    )
+    with pytest.raises(SystemExit) as error:
+        profile.main()
+    assert error.value.code == 2
+    assert not target.exists()
 
 
 def test_conservative_kernel_families():

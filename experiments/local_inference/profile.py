@@ -18,7 +18,10 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--delay", type=int, default=2)
     parser.add_argument("--early-cupti", action="store_true")
+    parser.add_argument("--kind", choices=("torch", "cuda"), default="torch")
     args = parser.parse_args()
+    if args.kind == "cuda" and args.early_cupti:
+        parser.error("Do not combine Nsight capture with the torch CUPTI subscriber")
     args.output.mkdir(parents=True, exist_ok=False)
     config_path = Path("experiments/local_inference/iteration32.json")
     config = json.loads(config_path.read_text())
@@ -45,13 +48,14 @@ def main() -> None:
         allowed_token_ids=ids,
     )
     profiler_config = {
-        "profiler": "torch",
-        "torch_profiler_dir": str(args.output.resolve()),
+        "profiler": args.kind,
         "torch_profiler_with_stack": False,
         "ignore_frontend": True,
         "delay_iterations": args.delay,
         "max_iterations": 16,
     }
+    if args.kind == "torch":
+        profiler_config["torch_profiler_dir"] = str(args.output.resolve())
     write_json(args.output / "profiler_config.json", profiler_config)
     instrumentation = {}
     if args.early_cupti:
@@ -83,6 +87,12 @@ def main() -> None:
             for r, o in zip(chosen, outputs, strict=True)
         ],
     )
+    if args.kind == "cuda":
+        print(
+            "CUDA capture range complete; validate the external Nsight report",
+            flush=True,
+        )
+        return
     counts = Counter()
     for path in args.output.glob("*.pt.trace.json.gz"):
         with gzip.open(path, "rt") as handle:

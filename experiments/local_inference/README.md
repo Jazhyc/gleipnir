@@ -74,6 +74,58 @@ Artifacts: `results/local_inference/profile_torch_early/kernel_summary.json`,
 
 ### Hardware-counter permission retest
 
+After the user restarted Windows, the native canary successfully collected
+hardware counters even with the installed Nsight Compute 2025.1.1. No additional
+permission or driver change was needed. `counter_after_reboot_old.log` records
+the successful eight-counter-pass collection, distinct from benchmark repeats.
+
+Next diagnostic: retain the 2,048-token baseline workload and warmup, use
+`profile --kind cuda` under Nsight with `--profile-from-start off`, and collect
+six launches matching the three dominant GEMM names. Hypothesis: compute versus
+memory throughput counters narrow the dense-linear-algebra bottleneck. This is
+kernel replay, not a throughput or quality comparison; keep clocks uncontrolled
+and disable cache flushing to better retain workload cache conditions. Stop on
+capture/engine failure and require a populated Nsight report before interpreting
+metrics. Sampling early GEMMs is not evidence for every layer or context length.
+
+The bounded capture completed successfully with Nsight Compute 2026.3.0:
+six launches spanning the three dominant GEMM names, eight counter replay passes
+per launch. DRAM throughput was **11.69–14.32%** of peak, compute (SM) throughput
+**43.58–45.68%**, L2 throughput **24.22–34.04%**, and achieved occupancy
+**15.96–16.71%**. All six launches had 16.67% theoretical occupancy. Kernels used
+222–234 registers per thread; the 256-thread kernels were limited to one block
+per SM by registers and shared memory, and the 128-thread kernel to two blocks
+by registers. Nsight flags low compute/memory utilization and suggests examining
+scheduler/warp-state latency. These counters argue against saturated DRAM
+bandwidth in the sampled GEMMs and motivate kernel/tiling/latency-hiding analysis.
+Low occupancy is a resource constraint, not by itself proof of the dominant stall
+or a predicted speedup. Compute is not saturated either. No optimization was
+implemented from this diagnostic.
+
+The profile used uncontrolled clocks and caches, kernel serialization/replay,
+and host-memory backup for device state. Do not use its elapsed time as a
+throughput comparison or equate these metrics with the full 32-row run under
+thermal throttling. Workers exited normally. Artifacts:
+`results/local_inference/gemm_counters_2048.ncu-repz` and
+`profile_counters_2048/{counters.csv,details.txt,scores.json,config.json}`.
+The text report includes Nsight's speculative local speedup estimates; these
+are not measured improvements and should not be reported as such.
+
+The native canary is now tracked as `counter_smoke.cu` so it survives reboots.
+Compile with `/usr/local/cuda-12.8/bin/nvcc -arch=sm_89 -o
+/tmp/gleipnir_counter_smoke experiments/local_inference/counter_smoke.cu`.
+The restored current profiler is at
+`/tmp/gleipnir-ncu-restored/opt/nvidia/nsight-compute/2026.3.0/ncu`;
+re-extract the cached Debian package to a whitespace-free path if needed.
+For the model capture, launch `profile --kind cuda --output <new-directory>`
+under that profiler with `--target-processes all --profile-from-start off
+--set basic --clock-control none --cache-control none --kernel-name-base demangled
+--kernel-name 'regex:.*(gemm_relu_bf16_256x128|ampere_bf16_s16816gemm_bf16_256x128|ampere_bf16_s1688gemm_bf16_128x128).*'
+--launch-count 6 --export <new-report-path>`. Use the baseline offline environment.
+Do not combine this CUDA/Nsight capture mode with `--early-cupti`: that would
+create a competing PyTorch CUPTI subscriber. Export reports via `ncu --import
+<report.ncu-repz> --page raw --csv` or `--page details`.
+
 After the user changed Windows counter permissions, the old profiler no longer
 reported the standalone `ERR_NVGPUCTRPERM` error, but failed with a driver-resource
 or permission error. A current Nsight Compute 2026.3.0.13 package was downloaded

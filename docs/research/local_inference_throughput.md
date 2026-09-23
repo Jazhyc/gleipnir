@@ -158,3 +158,15 @@ by the Windows host, so compute versus memory-bandwidth saturation is not yet
 established. See the experiment README and
 `results/local_inference/profile_torch_early/kernel_summary.json` for evidence,
 reproduction, and limitations.
+
+After the user enabled Windows counter access and rebooted, hardware-counter
+profiling succeeded. A six-launch capture across the three dominant GEMM kernel
+names measured DRAM throughput 11.69–14.32% of peak, compute (SM) throughput
+43.58–45.68%, and achieved occupancy 15.96–16.71%. Registers/shared memory limit
+theoretical occupancy to 16.67%. This argues against saturated DRAM bandwidth
+for these sampled kernels; kernel efficiency/latency hiding is a more promising
+diagnostic direction. Neither low occupancy alone nor Nsight's suggested local
+speedups proves a fix. Capture used serialization/replay and uncontrolled clocks
+and caches, not benchmark conditions. Full evidence:
+`results/local_inference/profile_counters_2048/details.txt` and
+`results/local_inference/gemm_counters_2048.ncu-repz`.
