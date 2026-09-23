@@ -141,3 +141,20 @@ The candidate's 172.51-second total included new compilation and initial engine
 profiling, unlike the cached 85.30-second baseline. No extra pass was run.
 Full paired evidence and thermal/startup caveats are in the experiment README
 and `results/local_inference/prefill4096/comparison.json`.
+
+## GPU profiling finding
+
+A bounded 16-step baseline prefill trace now works by initializing CUPTI inside
+the worker before model loading/graph capture. Late initialization repeatedly
+failed; no driver or permission changes were needed for activity tracing.
+The trace contains 12,944 kernels: GEMM/GEMV consumes 75.51% of summed GPU
+kernel time, FlashAttention 11.21%, named gated-delta/convolution kernels 7.29%,
+KV writes/bookkeeping 0.12%, and other kernels 5.86%. Kernel activity occupies
+98.85% of the sampled first-to-last-kernel interval. Prioritize linear-algebra
+execution over cache-write elimination or host-scheduling changes. This is a
+bounded instrumented window, not a full-workload throughput measurement.
+Cache reads remain part of attention cost. Hardware-counter access is denied
+by the Windows host, so compute versus memory-bandwidth saturation is not yet
+established. See the experiment README and
+`results/local_inference/profile_torch_early/kernel_summary.json` for evidence,
+reproduction, and limitations.

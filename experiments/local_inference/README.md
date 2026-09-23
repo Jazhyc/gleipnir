@@ -1,5 +1,77 @@
 # Local merged Gleipnir 4B baseline
 
+## GPU profiling diagnostic
+
+Hypothesis: a bounded GPU activity trace identifies which kernel families deserve
+optimization after the prefill-budget screen showed no meaningful gain. This is
+not a throughput measurement, repeat, quality promotion, or held-out evaluation.
+Use unchanged 2,048-token baseline settings, warm up on the four original canaries
+plus the longest 32-row input, then submit every fourth frozen row (eight rows)
+and capture at most 16 engine steps after a two-step delay. Keep raw traces in
+ignored results and fail if no CUDA kernel activity is present. Stop on capture
+failure, OOM, invalid outputs, or engine failure; do not interpret CPU dispatch
+times as GPU kernel times. Kernel duration alone does not establish compute versus
+memory-bandwidth saturation; that requires additional hardware-counter evidence.
+
+Run `.venv/bin/python -m experiments.local_inference.profile --early-cupti --output
+results/local_inference/<new-profile-name>` with the same offline environment
+as the baseline. No driver or system security changes are part of this diagnostic.
+
+### Working capture and bottleneck evidence (2026-09-23)
+
+Ordinary late PyTorch-profiler initialization repeatedly returned
+`CUPTI_ERROR_UNKNOWN (999)` inside vLLM and produced CPU-only traces. A tiny
+standalone PyTorch CUDA capture worked, but both delayed and immediate starts
+after model warmup failed in vLLM. A diagnostic worker subclass now initializes
+CUPTI with a two-kernel probe immediately after device setup, before model
+loading/graph capture. The probe stops before model setup; a separate bounded
+inference capture then succeeds. This is an initialization-order workaround;
+the underlying CUPTI/WSL failure mechanism is not established. Production
+benchmark workers and model settings were not changed.
+
+`profile_torch_early` captured **12,944 CUDA kernels across 16 prefill steps**,
+3.3339 seconds summed kernel duration in a 3.3728-second first-to-last-kernel
+interval. Kernel activity occupied 98.85% of that interval. This supports GPU
+kernel execution, not CPU scheduling gaps, as the main cost in the sampled
+window. It does not measure full-run GPU utilization or uninstrumented latency.
+
+| Kernel family (name-based grouping) | Share of summed GPU kernel time |
+| --- | ---: |
+| Matrix multiplication (GEMM/GEMV) | 75.51% |
+| FlashAttention | 11.21% |
+| Named gated-delta / convolution kernels | 7.29% |
+| KV writes and bookkeeping | 0.12% |
+| Other, including fused elementwise/normalization | 5.86% |
+
+The single largest GEMM kernel accounts for 51.10%. KV-cache **reads** are
+included in attention, not the 0.12% write/bookkeeping figure. The evidence
+prioritizes dense linear-algebra execution over removing cache writes or tuning
+CPU scheduling. It does not establish compute-bound versus bandwidth-bound
+GEMMs, nor prove any specific kernel/precision change will improve throughput.
+The capture samples early chunks of eight every-fourth rows, not every context
+length in the complete workload. Scores on the eight completed diagnostic rows
+had mean/max absolute differences 0.007535/0.030490 versus their baseline32
+scores, with no threshold flips; scheduling differs, and this is not a parity
+certification. All diagnostic workers have been stopped.
+
+Separate tooling limits: installed Nsight Systems 2024.6.2 explicitly reports
+that driver CUDA 13.4 is unsupported and its smoke report contains no GPU kernels.
+Nsight Compute 2025.1.1 returns `ERR_NVGPUCTRPERM` on a one-kernel smoke test.
+Hardware-counter profiling therefore needs Windows-host permission, and may
+also require newer tooling. No permissions, drivers, or packages were changed.
+NVIDIA documents Windows counter access under NVIDIA App > System > Advanced >
+Developer > Manage GPU Performance Counters (administrator-controlled); enabling
+non-admin access broadens local profiling access. See the
+[official permission guidance](https://developer.nvidia.com/nvidia-development-tools-solutions-err_nvgpuctrperm-permission-issue-performance-counters).
+
+Artifacts: `results/local_inference/profile_torch_early/kernel_summary.json`,
+`capture_validation.json`, `scores.json`, configs, frozen selection, and
+`rank0.1790197209921988054.pt.trace.json.gz`. CPU-only failures are preserved in
+`profile_torch_retry` and `profile_torch_immediate`; their logs remain under
+`logs/local/local_inference/`. Summarize a trace with
+`.venv/bin/python -m experiments.local_inference.profile_summary <trace.json.gz>
+--output <summary.json>`; CPU-only traces are rejected explicitly.
+
 ## First optimization: 4,096-token prefill budget
 
 Hypothesis: doubling `max_num_batched_tokens` from 2,048 to 4,096 improves
