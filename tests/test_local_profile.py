@@ -2,6 +2,32 @@ import pytest
 
 from experiments.local_inference import profile
 from experiments.local_inference.profile_summary import kernel_family, summarize_trace
+from experiments.local_inference.shape_summary import summarize_shapes
+
+
+def test_shape_correlation_uses_external_id_not_cpu_duration():
+    events = [
+        {
+            "cat": "cpu_op",
+            "name": "aten::mm",
+            "dur": 999,
+            "args": {"External id": 7, "Input Dims": [[2048, 2560], [2560, 18432]]},
+        },
+        {
+            "cat": "kernel",
+            "ph": "X",
+            "name": "gemm",
+            "dur": 12,
+            "args": {"External id": 7},
+        },
+        {"cat": "kernel", "ph": "X", "name": "flash", "dur": 8, "args": {}},
+    ]
+    report = summarize_shapes(events)
+    assert report["shapes"][0]["projection"] == "mlp.gate_up_proj"
+    assert report["shapes"][0]["percent_all_kernel_time"] == 60
+    assert report["matched_mm_seconds"] == 12 / 1e6
+    with pytest.raises(ValueError, match="No GPU"):
+        summarize_shapes(events[:1])
 
 
 def test_reject_competing_cupti_subscribers(tmp_path, monkeypatch):

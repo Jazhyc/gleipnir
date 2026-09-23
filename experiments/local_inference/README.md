@@ -2,6 +2,85 @@
 
 ## GPU profiling diagnostic
 
+### Shape mapping and deeper counters
+
+Hypothesis: pairing actual `aten::mm` input shapes with CUDA kernels and deeper
+scheduler/pipeline counters distinguishes expensive model projections and their
+execution constraints. Capture shapes on the same eight-row, 16-step baseline
+diagnostic using `--early-cupti --record-shapes`, correlating CPU operators and
+GPU kernels by external ID. Map dimensions to the installed model definitions
+and checkpoint weight shapes; report ambiguity rather than guessing module IDs.
+Then collect six matching GEMM launches with Nsight `SchedulerStats`,
+`WarpStateStats`, and `ComputeWorkloadAnalysis` alongside basic counters.
+Stop on engine/capture failure, absent shape correlation, or invalid counters.
+These are instrumentation-only changes: no serving optimization, throughput
+comparison, repeated benchmark pass, or model-quality promotion is in scope.
+
+Completed: the shape-aware trace captured 12,944 GPU kernels and matched all
+2,448 GEMM/GEMV calls to `aten::mm` shapes through external IDs, with zero
+unmatched GEMM time. Mapping uses actual checkpoint shapes plus the installed
+Qwen3.5 stacked-parameter mappings (QKV/Z, gate/up, and B/A fusion). The shape
+table below uses A[M,K] x B[K,N]; the prefill calls all had M=2,048 in this window.
+
+| Projection | K | N | Share of all sampled GPU kernel time |
+| --- | ---: | ---: | ---: |
+| MLP fused gate/up | 2,560 | 18,432 | 30.87% |
+| MLP down | 9,216 | 2,560 | 16.34% |
+| Gated-delta fused QKV/Z input | 2,560 | 12,288 | 15.86% |
+| Attention output (shared shape) | 4,096 | 2,560 | 6.92% |
+| Full-attention QKV, including query gate | 2,560 | 10,240 | 4.32% |
+
+The MLP pair accounts for **47.21%**. The vocabulary head uses M=1 or 2 and
+contributes under 1%; it is not a major target in this workload. This is a
+shape-recording trace, not a new speed measurement or proof of full-run shares.
+The eight scores have mean/max absolute deltas 0.007535/0.030490 versus their
+baseline32 values and zero threshold flips; selection/scheduling differs.
+
+The deeper Nsight capture collected six launches (17 counter replay passes each).
+Their kernel names, launch grids, and order match the first six matching kernels
+in the shape trace: gated-delta input, attention output, MLP gate/up, MLP down,
+gated-delta input, attention output. Thus the MLP rows below are explicitly
+identified; these are not guessed from a CUTLASS name alone.
+
+| Counter | MLP gate/up | MLP down |
+| --- | ---: | ---: |
+| Tensor-pipeline activity, % peak elapsed | 46.14% | 43.54% |
+| DRAM throughput, % peak elapsed | 13.64% | 13.88% |
+| Eligible warps/scheduler/active cycle | 0.103 | 0.093 |
+| Scheduler issue-active cycles | 7.02% | 6.09% |
+| Math-pipe-throttle cycles per issued warp instruction | 23.81 | 27.37 |
+
+Math-pipe throttle contributes about 83% of the MLP between-instruction warp
+cycles; attention-output launches show about 63%. This points to math-pipeline
+pressure with limited ready-warp supply, not bulk DRAM bandwidth saturation.
+Low issue rate is not itself a percentage of lost FLOPs: tensor instructions
+perform substantial work and have different execution/issue rates. Similarly,
+the roughly 44% SM figure is a hardware throughput aggregate, **not MFU**.
+The tensor pipeline is the highest contributor in this deeper capture. Do not
+interpret low occupancy or a sub-100% counter as an available proportional
+speedup; stalls may reflect the selected instruction throughput and tiling.
+See [NVIDIA's metric/stall definitions](https://docs.nvidia.com/nsight-compute/ProfilingGuide/).
+
+Recommended next intervention, not implemented: isolated BF16 GEMM comparisons
+on (M,N,K)=(2048,18432,2560) and (2048,2560,9216), preserving transposed weight
+layout, accumulation semantics, and numerical checks. Compare kernel algorithms
+or tile shapes before integration. The installed CUDA unquantized vLLM path
+dispatches to `torch.nn.functional.linear` (layers/utils.py), so do not assume a
+quantized-linear backend toggle selects these BF16 kernels. Confirm any kernel
+win on the frozen 32-row one-pass workload and paired scores. No kernel, weights,
+precision, or serving setting was changed in this diagnostic.
+
+Reproduce shape analysis using `python -m experiments.local_inference.shape_summary
+<trace.json.gz> --output <summary.json>`. The mapping is explicitly frozen to
+Gleipnir 4B and retains ambiguous attention-output dimensions as one category.
+Artifacts: `results/local_inference/profile_shapes_2048/shape_summary.json` and
+its raw trace; `results/local_inference/gemm_deep_2048.ncu-repz` and
+`profile_deep_2048/{details.txt,counters.csv}`. Deep collection adds
+`--section SchedulerStats --section WarpStateStats --section ComputeWorkloadAnalysis`
+to the basic counter command below. All workers exited successfully. Replay,
+uncontrolled clocks/caches, early-chunk sampling, and host-memory backup caveats
+continue to apply; this is not a workload MFU measurement.
+
 Hypothesis: a bounded GPU activity trace identifies which kernel families deserve
 optimization after the prefill-budget screen showed no meaningful gain. This is
 not a throughput measurement, repeat, quality promotion, or held-out evaluation.

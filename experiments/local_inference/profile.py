@@ -19,6 +19,7 @@ def main() -> None:
     parser.add_argument("--delay", type=int, default=2)
     parser.add_argument("--early-cupti", action="store_true")
     parser.add_argument("--kind", choices=("torch", "cuda"), default="torch")
+    parser.add_argument("--record-shapes", action="store_true")
     args = parser.parse_args()
     if args.kind == "cuda" and args.early_cupti:
         parser.error("Do not combine Nsight capture with the torch CUPTI subscriber")
@@ -50,6 +51,7 @@ def main() -> None:
     profiler_config = {
         "profiler": args.kind,
         "torch_profiler_with_stack": False,
+        "torch_profiler_record_shapes": args.record_shapes,
         "ignore_frontend": True,
         "delay_iterations": args.delay,
         "max_iterations": 16,

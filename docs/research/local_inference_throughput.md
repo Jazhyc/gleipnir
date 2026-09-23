@@ -170,3 +170,17 @@ speedups proves a fix. Capture used serialization/replay and uncontrolled clocks
 and caches, not benchmark conditions. Full evidence:
 `results/local_inference/profile_counters_2048/details.txt` and
 `results/local_inference/gemm_counters_2048.ncu-repz`.
+
+Shape-aware follow-up matched all 2,448 GEMM/GEMV calls in a 16-step sample.
+MLP gate/up (M,N,K = 2048,18432,2560) accounts for 30.87% of sampled GPU kernel
+time, and MLP down (2048,2560,9216) for 16.34%: **47.21% combined**. Gated-delta
+input projection adds 15.86%. The deeper six-launch counter capture identifies
+math-pipe throttle as about 83% of the MLP between-instruction warp cycles,
+with only 0.093–0.103 eligible warps/scheduler/active cycle and 6.09–7.02%
+scheduler issue activity. DRAM throughput remains about 14%. This supports
+testing BF16 kernel algorithms/tiling for those two exact MLP shapes first,
+not optimizing cache writes or assuming a proportional gain from higher occupancy.
+Tensor-pipeline activity is 43.54–46.14%; these kernel counters are **not MFU**.
+No serving optimization has been applied. Evidence and limitations are in the
+experiment README, `profile_shapes_2048/shape_summary.json`, and
+`profile_deep_2048/details.txt` under the local inference result directory.
