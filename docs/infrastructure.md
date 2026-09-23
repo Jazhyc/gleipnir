@@ -1,5 +1,15 @@
 # Infrastructure
 
+## Workstation
+
+Without environment modules, `./setup_dev.sh` installs the locked environment
+using uv-managed Python 3.12 and project-local ignored caches. Activate with
+`source .venv/bin/activate`; set `HF_HOME="$PWD/.cache/huggingface"` in the
+inference shell to reuse the local model cache. Existing cache environment
+overrides remain supported. See the
+[local inference preparation](research/local_inference_throughput.md) for the
+RTX 4080 hardware inventory, proposed ID screening set, and runtime budget.
+
 ## Local cluster
 
 Run `./setup_dev.sh` from a login node, then submit GPU work through Slurm. The
