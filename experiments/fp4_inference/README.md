@@ -680,4 +680,98 @@ test set passed 74 tests; no expensive GPU path was invoked by those tests.
 
 The first independent full BF16 restart passed canaries in 170.519856 s and
 exactly reproduced all 512 original full scores. Retain this observed stability
-without claiming general batch invariance; the matching FP8 restart is running.
+without claiming general batch invariance; matching FP8 results follow.
+
+The matching FP8 restart completed in 135.321289 s (1.2601x its paired BF16),
+with identical 512 scores and raw margins to its initial full start. The held-out
+quality gates passed with unchanged metrics. `two_start_summary.json` verifies
+zero score/margin variation and threshold instability for each method/source
+across these two full starts. The final frozen pair is now being measured.
+
+All three independent full BF16 engines reproduced the same 512 scores; their
+times were 171.021511/170.519856/170.537030 s, median 170.537030 s. Original
+canaries passed each time. The third frozen FP8 engine completed in 135.268001 s.
+All three full FP8 times were 135.557019/135.321289/135.268001 s, median
+135.321289 s: **1.260238x** full-run median throughput improvement, or **20.65%**
+less scoring time. The consolidated `three_start_summary.json` passed every
+original canary/held-out quality gate and verified zero score/margin variation
+and threshold instability within each method/source across three independent
+starts. The five held-out BF16-versus-FP8 threshold changes remain unchanged.
+
+## Frozen selected-recipe bottleneck profile
+
+After the independent full starts, profile the selected MLP FP8 / 8,192 / two
+recipe on the same eight development rows (`iteration32[::4]`), using the existing
+early-CUPTI worker, two-step delay and sixteen-step maximum. Hypothesis: larger
+prefill batches may alter the remaining linear/attention/GDN time shares after
+MLP FP8. Preserve warmup and compile-cache behavior and require actual CUDA
+kernel events. Bind the selected configuration, input selection, source files
+and trace hashes; stop on failed capture. Report conservative named-kernel
+categories and top operations as a diagnostic only. Different prefill budgets
+can cover different token totals in sixteen steps, so do not compare summed
+window durations as serving speedups or infer bandwidth utilization from shares.
+This observation cannot alter the frozen full-split selection.
+
+To reuse the selected recipe in a future authorized allocation, copy
+`configs/fp8_mlp_b8192_full_confirmation.json` and change its output/log paths.
+Create the new output's parent directory. With the checked artifacts available,
+run `python -m experiments.local_inference.run --config <copy>` inside the
+locked development environment and an ordinary GPU Slurm step. The campaign's
+`fp4_inference.run` wrapper deliberately refuses work after its fixed deadline.
+Keep the original FP32 master adapter and BF16 merged source; FP8 weights are
+converted online in vLLM rather than replacing either artifact.
+
+## Frozen power-of-two activation scale diagnostic
+
+Before a bounded final development screen, test the already implemented
+power-of-two activation-global-scale rule on the same disjoint real layer-0
+kernel canary, with Triton packing and independent decoded FP32 arithmetic
+checks. Online range/rounding/packing/GEMM remain included in the timing window.
+Hypothesis: making global scale changes discrete could reduce sensitivity to
+scheduled token groups, although reconstruction may worsen. Arithmetic support
+alone cannot establish numerical stability.
+
+If both kernel checks pass and sufficient allocation time remains, run one
+`gptq_down_pow2` development pass. Change only activation-global scaling in the
+fitted down-FP4/gate-up-FP8 Triton hybrid; keep prepared artifacts, scheduler,
+inputs and all gates unchanged. Preserve failure and do not promote after one
+pass or use full-confirmation outcomes to choose this variant. It is a future
+precision-path diagnostic rather than a replacement for the frozen FP8 recipe.
+
+Both power-of-two arithmetic checks passed (maximum relative L2 0.001660).
+Complete online FP4 gate/up/down times were 0.187297/0.126262 ms, speedups
+2.8384x/2.0034x against matched BF16. These windows do not establish an advantage
+over dynamic scaling. The time-bounded fitted-hybrid serving screen is running.
+
+## Frozen GDN per-channel FP8 development screen
+
+Compare the completed MLP per-channel / GDN block-FP8 diagnostic with native
+per-channel FP8 for both MLP and GDN. Keep full-attention/head BF16, the original
+2,048/two schedule, all inputs and score gates unchanged. The sole difference
+from `fp8_mlp` is removing the GDN ignore pattern; locked vLLM selects native
+per-channel CUTLASS rather than the forced-Triton block method for GDN. Require
+original canaries, development quality and finite output; retain any failure.
+This single-pass format/backend comparison cannot replace the frozen full-split
+recipe or establish independent-start stability.
+
+The fresh GDN block-FP8 screen passed original canaries and development bounds
+with median 7.640186 s over three passes (1.3024x matched BF16). Passes were
+internally exact, but source-wise ranking/calibration differed from its first
+start; retain the recorded between-start drift. It remains separate from the
+frozen full-512 candidate.
+
+Native per-channel MLP+GDN FP8 took 7.178987 s (1.3857x baseline) but failed the
+original master mean-error bound (0.022025 >0.02), with a canary threshold flip.
+Merged parity and aggregate development quality passing do not override that
+failure. Reject this faster format; retain its explicit failed serving gate.
+
+The selected recipe's final bounded profile captured 9,083 CUDA kernel events.
+Named shares were matrix 57.96%, GDN/convolution 16.37%, attention 13.07%, other
+12.28% and KV bookkeeping 0.31%. The checksummed summary preserves the different
+window-coverage limitation; summed GPU duration is not a serving-speed comparison.
+
+Final code/configuration validation passed **76 focused tests** and Ruff. The
+remaining frozen Triton-attention and MLP-FP8/FP32-head configurations were not
+launched in this allocation; no numerical or speed claims follow for them. The
+final GPU budget prioritized the selected-recipe profile and discrete-scale FP4
+screen. Preserve the ten-minute allocation reserve rather than extend the job.

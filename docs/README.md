@@ -21,8 +21,8 @@
   project narrative for small clarity edits before web publication.
 - `findings/`: durable per-experiment findings; create one document per track.
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
-  32-row vLLM throughput, numerical drift and native FP4 kernel experiments on
-  an RTX PRO 6000 allocation.
+  development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
+  engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
 - `findings/lambda_shutdown_inventory.md`: checksummed local artifact inventory

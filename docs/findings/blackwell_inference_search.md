@@ -6,6 +6,36 @@ This campaign uses the existing ordered 32-row development slice (338,780 prompt
 tokens) on Slurm job 32267015, with one RTX PRO 6000 Blackwell Server Edition,
 one CPU and 32 GiB host RAM. GPU work stops at 01:29:21 CEST on 2026-09-30.
 
+## Confirmed serving result
+
+The frozen **MLP-only per-channel FP8, 8,192 batched tokens, two sequences**
+recipe passed the full-512 comparison on **three independent engine starts**.
+Median warmed scoring time fell from **170.537030 to 135.321289 s**:
+**1.2602x throughput**, or **20.65% less scoring time**, for 5,760,843 prompt
+tokens. Every original serving canary passed. Each method exactly reproduced
+its own 512 scores and raw margins across these three starts; this observed
+fixed-recipe repeatability does not imply general batch invariance.
+
+On the frozen 464 held-out rows, macro AUROC changed **0.962116 to 0.961908**
+(loss 0.000207) and Brier **0.076826 to 0.076374** (change -0.000451), inside
+the original 0.01 quality bounds in every pair. Five held-out threshold decisions
+changed between BF16 and FP8. The 32 development rows and all capture/canary
+trajectory groups were excluded before viewing broader outputs. Evidence:
+`three_start_summary.json`, the three bound manifests and paired reports.
+
+Native FP4 achieved **1.40x** diagnostic gain in MLPs and **1.76x** across all
+decoder linears, but failed original score gates. No native FP4 serving layout
+is selected. The measured 43.20% baseline MLP share explains why roughly 3x
+kernel gains do not become roughly 3x whole-model gains; GPU counter access is
+unavailable, so no compute-versus-memory limitation is asserted.
+
+Use `experiments/fp4_inference/configs/fp8_mlp_b8192_full_confirmation.json`
+as the recorded recipe, with a new output path in a future authorized GPU step.
+The original FP32 master adapter, BF16 merge and historical score runner remain
+unchanged. This is confirmation on the existing split, not a final-test or
+cross-model generalization result. Additional postselection diagnostics below
+do not replace this frozen choice.
+
 ## Completed master/merge reference
 
 The original four full prompts passed the unchanged FP32-master versus merged
@@ -877,8 +907,8 @@ The frozen MLP FP8 / 8,192-token / two-sequence recipe scored all **512 rows /
 speedup. Both original serving canaries passed, and the report verified the
 frozen configuration/input/analysis hashes and unchanged score runner. All-512
 mean/max drift was 0.009737/0.092667, correlation 0.998986 and six threshold
-flips. This is one full pass per engine; independent full restarts are frozen
-separately and remain to be measured.
+flips. This is one full pass per engine; independent full restarts are reported
+separately below.
 
 The preselected **464 held-out rows passed the original quality bounds**:
 macro AUROC loss **0.000207** (limit 0.01) and Brier change **-0.000451**
@@ -910,7 +940,7 @@ relative L2 was **0.001973**, below the frozen 0.01 bound. The shape set is boun
 to the complete attributed profile, and source/software/hardware provenance is
 recorded. This establishes arithmetic support on synthetic BF16 values, not
 monitor quality or inference speed. The predeclared all-decoder-linear FP4
-development diagnostic can now proceed; it cannot replace the frozen full-split
+development diagnostic was permitted; it cannot replace the frozen full-split
 selection. Evidence: `decoder_shape_canary/result.json` and its driver log.
 
 ## Completed all-decoder-linear native FP4 diagnostic: rejected
@@ -940,8 +970,101 @@ on its initial full start. Both original canaries passed, and all **512 scores
 exactly matched** the original full vector (zero threshold changes). This is
 two observed independent starts on this fixed full schedule, not a general
 batch-invariance guarantee; the earlier development starts had shown drift.
-The matching frozen full FP8 restart is now running. Evidence:
+The matching frozen full FP8 restart is reported next. Evidence:
 `bf16_full_restart_a/` and its independent-start comparison.
+
+## Completed first independent full FP8 restart pair
+
+The matching FP8 restart took **135.321289 s**, compared with 135.557019 s
+initially, and exactly reproduced all **512 scores and raw margins**. Its paired
+BF16 time was 170.519856 s, giving **1.2601x** speedup and identical held-out
+quality results (AUROC loss 0.000207; Brier change -0.000451). All original
+canaries passed. The audited two-start summary confirms zero score/margin ranges
+and zero threshold instability for both methods, including each source group.
+This supports observed fixed-recipe reproducibility; it is not a guarantee
+across schedules, batch sizes or future hardware/library versions. Evidence:
+`full_restart_a_report.json`, `two_start_summary.json` and the two restart roots.
+
+## Completed third independent full BF16 start
+
+The final BF16 start completed in **170.537030 s**, passing original canaries
+and exactly reproducing all 512 scores again. Across three independent full
+engines, times were 171.021511/170.519856/170.537030 s, median **170.537030 s**.
+The third frozen FP8 start is being measured before consolidating both methods.
+Evidence: `bf16_full_restart_b/` and its independent-start comparison.
+
+## Completed third independent full FP8 start and consolidated confirmation
+
+The final FP8 start took **135.268001 s**, versus 135.557019/135.321289 s
+previously. Across three independent engines per method, BF16 median/range was
+**170.537030 s / 170.519856–171.021511 s**; FP8 was
+**135.321289 s / 135.268001–135.557019 s**. Median speedup was **1.260238x**.
+All three original canary/held-out quality gates passed with identical held-out
+metrics. Both methods had zero score/margin ranges and zero threshold-unstable
+rows across their starts, globally and within each source. The five held-out
+BF16-to-FP8 threshold changes remain explicit; repeatability within a method
+does not imply identical outputs across precision formats. Evidence:
+`full_restart_b_report.json`, `three_start_summary.json` and all six full roots.
+
+## Completed GDN block-FP8 fresh three-pass screen
+
+The fresh engine passed original canaries and the development quality bounds
+in **7.639826/7.640186/7.642310 s**, median **7.640186 s**, or **1.3024x**
+matched three-pass BF16. All three within-engine score/margin vectors were exact.
+Master mean/max error was 0.017868/0.034378, correlation 0.994489; merged
+mean/max was 0.012330/0.030967, correlation 0.998045. Macro
+AUROC/pAUROC/Brier were 0.921488/0.763636/0.100075; versus repeated BF16,
+AUROC loss was 0.004132 and Brier increase 0.000787, within the fixed bounds.
+
+This remains a development diagnostic, since the full-split choice was frozen
+before its first outputs. Between-start drift is retained separately; identical
+passes inside this engine do not establish restart or batch invariance. Evidence:
+`mixed_fp8_gdn_confirm/`, `repeat_comparison.json` and
+`independent_start_drift.json`.
+
+## Completed native per-channel GDN FP8 screen: rejected
+
+Extending native per-channel FP8 from MLPs to GDN, with full-attention/head BF16,
+took **7.178987 s**, or **1.3857x** initial BF16. This was faster than forced-
+Triton block-FP8 GDN, but failed the original master mean-error bound:
+**0.022025 >0.02**, max 0.062176, correlation 0.996000 and one canary threshold
+flip. The merged gate passed (mean 0.016488, same maximum), but it cannot
+override the master failure. The finite diagnostic retained `passed=false`.
+
+Development AUROC/pAUROC/Brier were 0.921488/0.756198/0.098189, with mean/max
+drift 0.011093/0.060283, correlation 0.999243 and one threshold flip. These
+passing aggregate development metrics do not rescue the original serving gate.
+Reject this precision layout. The GDN format/backend tradeoff includes score
+preservation as well as kernel time; no full-split fallback selection follows.
+Evidence: `fp8_mlp_gdn_channel/` and `20260929T232020Z-benchmark.log`.
+
+## Completed selected-recipe bounded GPU profile
+
+The selected 8,192/two MLP FP8 recipe captured **9,083 actual CUDA kernel
+events** on the same eight development trajectories. Named categories were
+**57.96% matrix multiplication, 16.37% GDN/convolution, 13.07% FlashAttention,
+12.28% other and 0.31% KV bookkeeping**. The dominant executed native SM120
+FP8 GEMM accounted for 27.49% of sampled GPU time; substantial BF16 projection
+and recurrent/attention costs remain after MLP optimization.
+
+Summed GPU duration was 1.559190 s. Different prefill budgets cover different
+token totals within the bounded step window, so this cannot be compared with
+the original 0.937302 s window as a serving-speed ratio. Profile scores versus
+the matching eight development outputs had mean/max drift 0.012541/0.060283,
+correlation 0.998253 and zero flips; instrumentation/selection is a separate
+diagnostic. Config, input selection, profiler/source and trace hashes are bound
+in `profile_fp8_b8192/summary.json`. This is not hardware-counter utilization.
+
+## Completed power-of-two FP4 activation-scale arithmetic screen
+
+Both real layer-0 shapes passed independently decoded FP32 arithmetic checks
+with Triton packing and the discrete global-scale rule (maximum relative L2
+**0.001660**). Complete online-path gate/up and down times were
+**0.187297/0.126262 ms**, or **2.8384x/2.0034x** their matched BF16 windows.
+BF16-output reconstruction errors were 0.114755/0.105154. These single windows
+do not demonstrate a speed improvement over the previous dynamic-scale recipe
+or better monitor scores. The frozen fitted-down hybrid serving screen can now
+proceed within the remaining deadline. Evidence: `kernel_power2/result.json`.
 
 ## Proposed quantization-aware distillation follow-up
 

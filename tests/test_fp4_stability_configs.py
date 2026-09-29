@@ -18,6 +18,12 @@ import pytest
         ("baseline", "bf16_no_mp", "VLLM_ENABLE_V1_MULTIPROCESSING", "0"),
         ("fp8_mlp", "fp8_mlp_no_mp", "VLLM_ENABLE_V1_MULTIPROCESSING", "0"),
         ("baseline", "bf16_batch_invariant", "VLLM_BATCH_INVARIANT", "1"),
+        (
+            "gptq_down_fp8_triton",
+            "gptq_down_pow2",
+            "GLEIPNIR_NVFP4_SCALE_MODE",
+            "power2",
+        ),
     ],
 )
 def test_frozen_mechanism_preserves_scoring_and_artifact_identity(
@@ -96,3 +102,14 @@ def test_selective_down_precision_uses_frozen_calibration_ranking():
     )
     assert candidate.pop("output") != original.pop("output")
     assert candidate == original
+
+
+def test_gdn_per_channel_screen_changes_only_gdn_precision():
+    root = Path("experiments/fp4_inference/configs")
+    original = json.loads((root / "fp8_mlp.json").read_text())
+    gdn = json.loads((root / "fp8_mlp_gdn_channel.json").read_text())
+    assert gdn.pop("output") != original.pop("output")
+    original["engine"]["quantization_config"]["ignore"].remove(
+        "re:.*\\.linear_attn\\..*"
+    )
+    assert gdn == original
