@@ -75,3 +75,14 @@ def test_custom_compile_identity_distinguishes_selective_precision():
         ]
         == json.loads(condition_config("baseline").read_text())["engine"]
     )
+
+
+def test_custom_compile_identity_tracks_additional_packer_source(tmp_path):
+    config = json.loads(condition_config("nvfp4_mlp_cutlass").read_text())
+    helper = tmp_path / "packer.py"
+    helper.write_text("first implementation")
+    config["additional_code_files"] = [str(helper)]
+    first = resolve_runtime_config(config)
+    helper.write_text("changed implementation")
+    second = resolve_runtime_config(config)
+    assert first["engine"]["additional_config"] != second["engine"]["additional_config"]

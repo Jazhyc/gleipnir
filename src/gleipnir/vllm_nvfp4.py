@@ -37,6 +37,7 @@ NVFP4_MAX = 6.0 * 448.0
 
 def pack_weight(
     weight: torch.Tensor,
+    packer: str = "cuda",
 ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
     """Pack an unchanged BF16 weight, returning linear block scales and FP32 scale."""
     if weight.ndim != 2 or weight.shape[1] % 64 or weight.shape[0] % 32:
@@ -48,9 +49,16 @@ def pack_weight(
     if not torch.isfinite(weight).all().item():
         raise ValueError("Nonfinite source weight")
     scale = weight.abs().amax().float().clamp_min(1e-12).reshape(1) / NVFP4_MAX
-    packed, blocks = ops.scaled_fp4_quant(
-        weight.contiguous(), scale.reciprocal(), is_sf_swizzled_layout=False
-    )
+    if packer == "cuda":
+        packed, blocks = ops.scaled_fp4_quant(
+            weight.contiguous(), scale.reciprocal(), is_sf_swizzled_layout=False
+        )
+    elif packer == "triton":
+        from gleipnir.nvfp4_pack import pack_nvfp4
+
+        packed, blocks = pack_nvfp4(weight.contiguous(), scale.reciprocal())
+    else:
+        raise ValueError(f"Unsupported NVFP4 packer: {packer}")
     if blocks.shape != (weight.shape[0], weight.shape[1] // 16):
         raise ValueError("Native NVFP4 block-scale coverage mismatch")
     if not torch.isfinite(blocks.float()).all().item():
@@ -64,14 +72,27 @@ def native_linear(
     swizzled_weight_scales: torch.Tensor,
     weight_global_scale: torch.Tensor,
     backend: str,
+    packer: str = "cuda",
+    scale_mode: str = "dynamic",
 ) -> torch.Tensor:
     """Include dynamic activation range, packing and native FP4 GEMM in the path."""
     original_shape = x.shape[:-1]
     matrix = x.reshape(-1, x.shape[-1]).contiguous()
     scale = matrix.abs().amax().float().clamp_min(1e-12).reshape(1) / NVFP4_MAX
-    packed, blocks = ops.scaled_fp4_quant(
-        matrix, scale.reciprocal(), is_sf_swizzled_layout=True, backend=backend
-    )
+    if scale_mode == "power2":
+        scale = torch.exp2(torch.ceil(torch.log2(scale)))
+    elif scale_mode != "dynamic":
+        raise ValueError(f"Unsupported activation global scale: {scale_mode}")
+    if packer == "cuda":
+        packed, blocks = ops.scaled_fp4_quant(
+            matrix, scale.reciprocal(), is_sf_swizzled_layout=True, backend=backend
+        )
+    elif packer == "triton":
+        from gleipnir.nvfp4_pack import pack_nvfp4
+
+        packed, blocks = pack_nvfp4(matrix, scale.reciprocal(), swizzled=True)
+    else:
+        raise ValueError(f"Unsupported NVFP4 packer: {packer}")
     alpha = scale * weight_global_scale
     if backend == "cutlass":
         output = ops.cutlass_scaled_fp4_mm(
@@ -95,9 +116,11 @@ def native_linear(
 class NvFp4OnlineLinearMethod(UnquantizedLinearMethod):
     """Load standard BF16 checkpoint tensors and quantize selected linear layers."""
 
-    def __init__(self, backend: str, prefix: str) -> None:
+    def __init__(self, backend: str, prefix: str, packer: str, scale_mode: str) -> None:
         self.backend = backend
         self.prefix = prefix
+        self.packer = packer
+        self.scale_mode = scale_mode
         if backend == "cutlass" and not cutlass_fp4_supported():
             raise RuntimeError("Native CUTLASS NVFP4 is unavailable")
         if backend == "b12x" and not has_flashinfer_b12x_gemm():
@@ -107,7 +130,7 @@ class NvFp4OnlineLinearMethod(UnquantizedLinearMethod):
         if getattr(layer, "_gleipnir_nvfp4_processed", False):
             return
         source = layer.weight
-        packed, blocks, scale = pack_weight(source)
+        packed, blocks, scale = pack_weight(source, self.packer)
         sample_rows = min(source.shape[0], 16)
         decoded = decode_nvfp4(
             packed[:sample_rows].cpu().numpy(),
@@ -143,7 +166,13 @@ class NvFp4OnlineLinearMethod(UnquantizedLinearMethod):
         self, layer: torch.nn.Module, x: torch.Tensor, bias: torch.Tensor | None = None
     ) -> torch.Tensor:
         output = native_linear(
-            x, layer.weight, layer.weight_scale, layer.weight_global_scale, self.backend
+            x,
+            layer.weight,
+            layer.weight_scale,
+            layer.weight_global_scale,
+            self.backend,
+            self.packer,
+            self.scale_mode,
         )
         return output if bias is None else output + bias
 
@@ -156,6 +185,8 @@ class GleipnirNvFp4Config(QuantizationConfig):
         super().__init__()
         self.scope = os.environ.get("GLEIPNIR_NVFP4_SCOPE", "mlp")
         self.backend = os.environ.get("GLEIPNIR_NVFP4_BACKEND", "cutlass")
+        self.packer = os.environ.get("GLEIPNIR_NVFP4_PACKER", "cuda")
+        self.scale_mode = os.environ.get("GLEIPNIR_NVFP4_SCALE_MODE", "dynamic")
         self.keep_layers = {
             int(x)
             for x in os.environ.get("GLEIPNIR_NVFP4_KEEP_LAYERS", "").split(",")
@@ -163,6 +194,11 @@ class GleipnirNvFp4Config(QuantizationConfig):
         }
         if self.scope not in {"mlp", "all"} or self.backend not in {"cutlass", "b12x"}:
             raise ValueError("Unsupported online NVFP4 scope/backend")
+        if self.packer not in {"cuda", "triton"} or self.scale_mode not in {
+            "dynamic",
+            "power2",
+        }:
+            raise ValueError("Unsupported online NVFP4 packer/scale")
 
     @classmethod
     def get_name(cls) -> str:
@@ -196,4 +232,6 @@ class GleipnirNvFp4Config(QuantizationConfig):
         )
         if keep or not selected:
             return UnquantizedLinearMethod()
-        return NvFp4OnlineLinearMethod(self.backend, prefix)
+        return NvFp4OnlineLinearMethod(
+            self.backend, prefix, self.packer, self.scale_mode
+        )

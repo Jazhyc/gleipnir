@@ -30,7 +30,15 @@ def test_mlp_selection_preserves_attention_vision_and_kept_layers(monkeypatch):
     assert config.get_quant_method(torch.nn.Identity(), "model.layers.16.mlp") is None
 
 
-@pytest.mark.parametrize("field,value", [("SCOPE", "bogus"), ("BACKEND", "emulation")])
+@pytest.mark.parametrize(
+    "field,value",
+    [
+        ("SCOPE", "bogus"),
+        ("BACKEND", "emulation"),
+        ("PACKER", "emulation"),
+        ("SCALE_MODE", "unsafe"),
+    ],
+)
 def test_unsupported_scope_or_fallback_rejected(monkeypatch, field, value):
     monkeypatch.setenv(f"GLEIPNIR_NVFP4_{field}", value)
     with pytest.raises(ValueError, match="Unsupported"):

@@ -175,6 +175,113 @@ in its compile hash. A focused test verifies that selective precision changes
 this identity without mutating the checked-in contract. Runtime configurations
 and their source hash are retained. The retry uses a new `keepends_v2` output.
 
+## Completed selective FP4 retry
+
+The compile-identity fix allowed the mixed layout to load and score all rows.
+Keeping MLP layers 0 and 31 BF16 gave **7.325875 s**, 46,244.31 tokens/s,
+**1.3579x**. Master canary mean/max error fell to 0.081046/0.224908, but
+correlation was 0.933810 with one flip: the original gate still failed.
+Full-split mean/max drift was 0.026114/0.215126, correlation 0.990841 and one
+flip. Macro AUROC/pAUROC/Brier: 0.925620/0.780992/0.094867. Keeping the two
+end layers did not recover score fidelity or improve the full-split worst error.
+No promotion. Evidence: `results/fp4_inference/nvfp4_mlp_keepends_v2/`.
+
+## Completed native B12X kernel screen
+
+FlashInfer B12X passed the same independent quantized FP32 arithmetic gate:
+relative L2 0.001659/0.001657 for gate/up and down. Complete online calls took
+**0.169318/0.115939 ms** versus BF16 0.531860/0.253152 ms, or
+**3.141x/2.183x**. Original BF16 reconstruction errors remained 11.48%/10.51%.
+Timing includes activation range reduction, packing, allocation and GEMM;
+offline weight conversion is excluded. One 256-call window, 55–63 C and
+2,302–2,362 MHz, no sampled software thermal slowdown. These measurements
+do not establish a consistent B12X/CUTLASS winner; compare full-model serving.
+Evidence: `results/fp4_inference/kernel_b12x/result.json`.
+
+## Completed block FP8 startup failure
+
+Online per-block FP8 selected `CutlassFp8BlockScaledMMKernel`, loaded weights
+and compiled, then failed during engine profiling with
+`cutlass_gemm_caller ... c3x/cutlass_gemm_caller.cuh:51, Invalid status`.
+No canary or throughput result was produced. The failing matrix shape and
+specific CUTLASS constraint have not been isolated. Retain all artifacts and
+test the same recipe with the explicit Triton linear backend separately.
+Evidence: `results/fp4_inference/fp8_block/` and
+`logs/slurm/fp4_inference/20260929T202539Z-benchmark.log`.
+
+## Completed full-model B12X FP4 diagnostic
+
+The same MLP-only precision layout on FlashInfer B12X took **7.238406 s**,
+46,803.12 tokens/s, **1.3743x**. It did not beat CUTLASS's 7.113271 s in these
+single passes. Original canary parity failed: master mean/max error
+0.106223/0.224908, correlation 0.964185, one flip. Full-split mean/max drift
+was 0.026731/0.185333, correlation 0.992854 and two flips. Macro
+AUROC/pAUROC/Brier: 0.915289/0.756612/0.099983. Backend rounding changed
+some scores despite matching decoded arithmetic at the kernel canary.
+Neither FP4 backend is a fidelity-qualified replacement. Evidence:
+`results/fp4_inference/nvfp4_mlp_b12x/`.
+
+## Completed Triton block FP8 recovery
+
+Changing only the block FP8 linear backend to Triton recovered startup and
+completed all 32 rows in **8.784008 s**, 38,567.81 tokens/s, **1.1325x**.
+The original canary passed: master mean/max 0.009938/0.034378, correlation
+0.996331 and zero flips; merged mean/max 0.004400/0.016469.
+Full-split mean/max drift was 0.013666/0.113118, correlation 0.997551 and one
+threshold flip. Macro AUROC/pAUROC remained 0.921488/0.756198; Brier
+was 0.102096 (+0.003178), within the frozen screening bound.
+
+This is the first candidate to clear both the >10% speed interest rule and
+the original canary/development quality screens. One pass does not establish
+repeatability, population quality, or full-split score equivalence; its largest
+development score difference exceeds 0.1 despite passing the four-row gate.
+Retain BF16 and confirm this finalist with a matched repeat. Evidence:
+`results/fp4_inference/fp8_block_triton/`.
+
+## Completed disjoint NVFP4 clipping screen
+
+A new Triton packer passed independent nearest-even E2M1 tie/sign checks,
+exact padded scale swizzle checks, and native GEMM versus decoded FP32 checks.
+The largest native implementation error across all recipes/projections/splits
+was 0.001675. At clip 1, decoded weights differed from stock CUDA packing by
+at most 0.007863 relative L2, within the 0.01 predeclared check. It is an
+independently validated alternative, not a claim of bitwise stock equivalence.
+
+The frozen 72-recipe screen selected **unclipped dynamic scaling** (weight and
+activation clip 1.0). Mean calibration output relative L2 across six projections
+was 0.094842; the same selected recipe gave held-out 0.095005. Rounded-up
+power-of-two scaling at clip 1 was 0.094894 on calibration. Group clipping did
+not improve the objective, so no clipped recipe is promoted. Held-out errors
+never selected the recipe; no serving scores or evaluation labels were used.
+The grid completed in 12.75 s after loading/JIT. Next compare complete kernel
+costs for the unclipped Triton packer, preserving the serving fidelity gate.
+Evidence: `results/fp4_inference/quantizer_screen/result.json`.
+
+## Completed MLP-only per-channel FP8 screen
+
+Leaving attention/GDN projections BF16 and using FP8 only in MLPs gave
+**8.049067 s**, 42,089.35 tokens/s, **1.2359x**. Both original canaries passed:
+master mean/max error 0.002004/0.008015, correlation 0.999835, zero flips;
+merged mean/max 0.005421/0.017909. Full-split mean/max drift was
+0.012884/0.089178, correlation 0.998186 and one flip. Macro AUROC/pAUROC
+stayed 0.921488/0.756198; Brier was 0.096286. This is a faster initial
+fidelity-qualified candidate than full-decoder Triton block FP8. Selective
+precision recovered the canary relative to all-decoder per-channel FP8, with
+less speed gain. Confirm this finalist with matched repeats. Evidence:
+`results/fp4_inference/fp8_mlp/`.
+
+## Completed alternative FP4 packer kernel screen
+
+The unclipped Triton packer with native CUTLASS GEMM passed independent decoded
+FP32 references (relative L2 0.001659/0.001657). Complete gate/up and down calls
+took **0.182475/0.122285 ms**, versus BF16 0.531925/0.253392 ms:
+**2.915x/2.072x**. Original BF16 reconstruction was 0.114778/0.105079.
+This did not improve on the stock CUDA packer screen (0.179417/0.111806 ms).
+One timing window per path does not resolve small differences, but there is
+no measured reason to promote the new packer for speed. It remains a validated
+research primitive for altered quantization. Evidence:
+`results/fp4_inference/kernel_triton_pack/result.json`.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

@@ -90,6 +90,10 @@ def resolve_runtime_config(config: dict) -> dict:
         identity = {
             "flags": flags,
             "implementation_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+            "additional_source_sha256": {
+                p: hashlib.sha256(Path(p).read_bytes()).hexdigest()
+                for p in resolved.get("additional_code_files", [])
+            },
         }
         resolved["engine"].setdefault("additional_config", {})["gleipnir_nvfp4"] = (
             identity

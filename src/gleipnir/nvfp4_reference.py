@@ -10,6 +10,19 @@ E2M1_VALUES = np.asarray(
 )
 
 
+def encode_e2m1(values: np.ndarray) -> np.ndarray:
+    """Independently select nearest E2M1 values, preferring even codes at ties."""
+    if not np.isfinite(values).all():
+        raise ValueError("E2M1 input must be finite")
+    distances = np.abs(np.abs(values)[..., None] - E2M1_VALUES[:8])
+    minimum = distances.min(axis=-1, keepdims=True)
+    tied = distances == minimum
+    even = tied & (np.arange(8) % 2 == 0)
+    preferred = np.where(even.any(axis=-1, keepdims=True), even, tied)
+    codes = preferred.argmax(axis=-1).astype(np.uint8)
+    return codes | (np.signbit(values).astype(np.uint8) * 8)
+
+
 def decode_nvfp4(
     packed: np.ndarray, block_scales: np.ndarray, global_scale: float
 ) -> np.ndarray:

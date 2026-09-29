@@ -49,6 +49,10 @@ def main() -> None:
     )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--backend", choices=["cutlass", "b12x"], required=True)
+    parser.add_argument("--packer", choices=["cuda", "triton"], default="cuda")
+    parser.add_argument(
+        "--scale-mode", choices=["dynamic", "power2"], default="dynamic"
+    )
     parser.add_argument("--calls", type=int, default=256)
     args = parser.parse_args()
     if args.calls < 1:
@@ -70,9 +74,12 @@ def main() -> None:
     result = {
         "state": "running",
         "backend": args.backend,
+        "packer": args.packer,
+        "activation_scale_mode": args.scale_mode,
         "capture_manifest_sha256": sha256_file(manifest_path),
         "source_sha256": sha256_file(Path(__file__)),
         "native_method_sha256": sha256_file(Path("src/gleipnir/vllm_nvfp4.py")),
+        "packer_source_sha256": sha256_file(Path("src/gleipnir/nvfp4_pack.py")),
         "calls": args.calls,
         "conditions": [],
         "note": "One 256-call window; activation range/packing included in FP4; "
@@ -83,15 +90,30 @@ def main() -> None:
     for key in ("0_gate_up", "0_down"):
         x = torch.cat([row[key] for row in rows]).cuda().contiguous()
         weight = weights[key].cuda().contiguous()
-        packed, blocks, global_scale = pack_weight(weight)
+        packed, blocks, global_scale = pack_weight(weight, args.packer)
         swizzled = swizzle_blockscale(blocks)
         xs = x.abs().amax().float().clamp_min(1e-12).reshape(1) / NVFP4_MAX
-        xpacked, xblocks = ops.scaled_fp4_quant(x, xs.reciprocal(), False)
+        if args.scale_mode == "power2":
+            xs = torch.exp2(torch.ceil(torch.log2(xs)))
+        if args.packer == "cuda":
+            xpacked, xblocks = ops.scaled_fp4_quant(x, xs.reciprocal(), False)
+        else:
+            from gleipnir.nvfp4_pack import pack_nvfp4
+
+            xpacked, xblocks = pack_nvfp4(x, xs.reciprocal())
         quantized_reference = (
             decode(xpacked, xblocks, xs) @ decode(packed, blocks, global_scale).t()
         )
         original_reference = x.float() @ weight.float().t()
-        output = native_linear(x, packed, swizzled, global_scale, args.backend)
+        output = native_linear(
+            x,
+            packed,
+            swizzled,
+            global_scale,
+            args.backend,
+            args.packer,
+            args.scale_mode,
+        )
         if not torch.isfinite(output).all().item():
             raise ValueError("Nonfinite native output")
         implementation_error = relative_error(output, quantized_reference)
@@ -110,7 +132,14 @@ def main() -> None:
         operations = {
             "bf16": partial(torch.nn.functional.linear, x, weight),
             "nvfp4": partial(
-                native_linear, x, packed, swizzled, global_scale, args.backend
+                native_linear,
+                x,
+                packed,
+                swizzled,
+                global_scale,
+                args.backend,
+                args.packer,
+                args.scale_mode,
             ),
         }
         order = list(operations)

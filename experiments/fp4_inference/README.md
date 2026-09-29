@@ -161,3 +161,91 @@ The first selective-FP4 attempt failed on a reused AOT graph with a different
 parameter layout. Custom quantizer flags and source SHA-256 now enter the
 vLLM compile hash through a preserved resolved configuration. The failed
 `nvfp4_mlp_keepends` artifacts remain; its retry is `nvfp4_mlp_keepends_v2`.
+
+The retry completed in 7.325875 s (**1.3579x**), confirming the cache fix.
+Keeping layers 0 and 31 BF16 reduced master canary mean error to 0.081046,
+but parity still failed. Full-split mean/max drift was 0.026114/0.215126,
+with one flip; macro AUROC/pAUROC/Brier: 0.925620/0.780992/0.094867.
+This precision allocation does not recover the required fidelity.
+
+## Completed B12X kernel screen
+
+Independent quantized-reference error matched CUTLASS at 0.001659/0.001657.
+Gate/up and down complete FP4 calls took 0.169318/0.115939 ms versus BF16
+0.531860/0.253152 ms (**3.141x/2.183x**). One window does not establish a
+backend winner; the full-model B12X condition is the next comparison.
+Evidence: `kernel_b12x/result.json`.
+
+## Block FP8 startup failure and alternate paths
+
+Stock per-block FP8 selected `CutlassFp8BlockScaledMMKernel` but failed during
+initial profiling with CUTLASS `Invalid status`, before any canary or timed pass.
+Artifacts remain in `fp8_block/`. Test the same precision/schedule with the
+explicit Triton linear backend (`fp8_block_triton`) to distinguish the native
+CUTLASS path from the quantization recipe; the failing shape is not yet isolated.
+
+Additional exploration freezes separate baseline-schedule conditions for BF16
+FlashInfer attention, Triton attention, and FlashInfer with FP8 E4M3 KV cache
+(dynamic scale calculation). Compare the actual selected backend, original
+canaries, and full-split diagnostics. An MLP-only per-channel FP8 condition
+keeps attention/GDN projections BF16 to test whether fidelity loss originates
+outside the MLP. All numerical gate failures remain diagnostic-only.
+
+## Completed Triton block FP8 and B12X serving screens
+
+Triton recovered the failed block-FP8 recipe: 8.784008 s (**1.1325x**), with
+both original canaries passing. Macro AUROC/pAUROC were unchanged, Brier rose
+by 0.003178, and full-split mean/max drift was 0.013666/0.113118 with one flip.
+It clears the initial interest and quality screens; matched repeats are now
+justified for this finalist. It is not yet a repeatability or equivalence result.
+
+Full-model B12X FP4 took 7.238406 s (**1.3743x**) and failed canary parity.
+Full-split mean/max drift was 0.026731/0.185333 with two flips, and macro
+AUROC was 0.915289. The one-pass backend comparison does not favor B12X;
+neither native FP4 path satisfies the fidelity gate.
+
+## Frozen quantizer calibration screen
+
+Hypothesis: a nearest-even Triton FP4 packer with slightly clipped group-16
+ranges can reduce reconstruction error, while power-of-two global scales can
+reduce sensitivity to batch composition. Compare dynamic versus rounded-up
+power-of-two global scales, and weight/activation group-max fractions
+`1.0, 0.95, 0.9, 0.85, 0.8, 0.75`. This is 72 fixed recipes, evaluated on
+the six captured projections. Select the single recipe with lowest mean
+relative output L2 across eight calibration trajectories. Held-out reconstruction
+measurements cannot select the recipe; no monitor scores or evaluation labels
+enter this screen. Global scale rounding only increases covered range.
+
+Before selection, require independent nearest-even/sign checks, exact padded
+scale swizzle checks, <=0.01 reconstruction disagreement against stock packing
+at clip 1, finite output, and native GEMM agreement <=0.01 relative L2 against
+decoded FP32 references. Include all online quantization costs when timing a
+later serving candidate. Preserve all candidate errors and captured input hashes.
+Stop on any validation failure. This screen measures reconstruction, not
+end-to-end score fidelity; the unchanged serving gate remains required.
+
+```bash
+python -m experiments.fp4_inference.quantizer_screen \
+  --output results/fp4_inference/quantizer_screen
+```
+
+The completed screen selected unclipped dynamic scaling: calibration mean
+relative L2 0.094842, held-out 0.095005. Clipping did not improve reconstruction.
+Native implementation error stayed <=0.001675; stock versus alternative packer
+weight disagreement stayed <=0.007863. Preserve this negative result.
+
+Next compare the validated unclipped Triton packer with the CUDA packer at the
+same real shapes and 256-call protocol (`kernel_canary --packer triton`). A
+separate power-of-two activation-scale condition tests batch sensitivity;
+rounding increases covered range. Source hashes for every custom helper enter
+the compile identity, and custom packing remains explicit in configuration.
+
+Completed Triton packing took 0.182475/0.122285 ms for gate/up and down
+(2.915x/2.072x versus BF16), without improving on stock CUDA packing. It stays
+an experimental primitive, not a speed promotion.
+
+MLP-only per-channel FP8 completed in 8.049067 s (**1.2359x**) and passed
+both original canaries. Macro AUROC/pAUROC stayed unchanged, Brier was
+0.096286, full-split mean/max score drift 0.012884/0.089178 and one flip.
+It is the faster fidelity-qualified screen candidate so far. Matched repeats
+are justified for MLP FP8 and Triton block FP8; retain the BF16 reference.
