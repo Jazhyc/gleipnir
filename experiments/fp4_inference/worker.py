@@ -3,6 +3,7 @@
 from vllm.model_executor.layers.quantization import get_quantization_config
 from vllm.v1.worker.gpu_worker import Worker
 
+from gleipnir.vllm_fp32_logits import install_fp32_logits
 from gleipnir.vllm_nvfp4 import GleipnirNvFp4Config
 
 
@@ -12,6 +13,11 @@ class Fp4Worker(Worker):
     def __init__(self, *args, **kwargs):
         assert get_quantization_config("gleipnir_nvfp4") is GleipnirNvFp4Config
         super().__init__(*args, **kwargs)
+
+    def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        super().load_model(load_dummy_weights=load_dummy_weights)
+        if getattr(self.vllm_config.quant_config, "fp32_logits", "0") == "1":
+            install_fp32_logits(self.model_runner.get_model())
 
 
 class Fp4ProfileWorker(Fp4Worker):

@@ -6,9 +6,37 @@ import torch
 from vllm.logger import init_logger
 from vllm.model_executor.layers.vocab_parallel_embedding import (
     UnquantizedEmbeddingMethod,
+    VocabParallelEmbedding,
 )
 
-logger = init_logger(__name__)
+logger = init_logger("vllm.gleipnir.fp32_logits")
+
+
+def install_fp32_logits(model: torch.nn.Module) -> list[str]:
+    """Install on loaded output heads, including tied embeddings without a config."""
+    installed = []
+    seen = set()
+    for name, module in model.named_modules():
+        head = getattr(module, "lm_head", None)
+        if not isinstance(head, VocabParallelEmbedding) or id(head) in seen:
+            continue
+        if type(head.quant_method) not in {
+            UnquantizedEmbeddingMethod,
+            Fp32LogitsMethod,
+        }:
+            raise ValueError("FP32 logits require an unquantized vocabulary head")
+        if head.weight.ndim != 2 or head.weight.dtype not in {
+            torch.bfloat16,
+            torch.float16,
+        }:
+            raise ValueError("FP32 logits require BF16/FP16 vocabulary weights")
+        head.quant_method = Fp32LogitsMethod()
+        installed.append(f"{name}.lm_head".lstrip("."))
+        seen.add(id(head))
+    if len(installed) != 1:
+        raise ValueError(f"Expected one vocabulary head, found {installed}")
+    logger.info("Installed FP32 output projection on loaded head %s", installed[0])
+    return installed
 
 
 class Fp32LogitsMethod(UnquantizedEmbeddingMethod):

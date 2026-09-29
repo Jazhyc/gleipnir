@@ -493,6 +493,31 @@ projection execution must log its output shape and `torch.float32` dtype before
 interpreting the corrected matched pair. The runtime deadline now allows 20 s
 for process termination before the ten-minute allocation reserve begins.
 
+The constructor-only retry `bf16_fp32_logits_v3` also lacked execution proof:
+the locked Qwen3.5 constructor does not pass `quant_config` to its embedding.
+It completed as another invalid mechanism control. The next retry uses a checked
+post-load hook before warmup, preserving the original weight object and tied
+embedding alias. Its success still depends on the actual FP32 execution log.
+
+`bf16_fp32_logits_v3` took 9.852743 s with coarse margins and is excluded as
+an intervention measurement. The post-load `bf16_fp32_logits_v4` took 9.924612 s
+and passed both score gates (master mean/max 0.006469/0.011163; merged
+0.004654/0.011154). Its fractional margins show the projection changed, but the
+explicit execution log was silent because `init_logger(__name__)` was outside
+vLLM's configured namespace. This is a logging failure, not evidence that the
+worker lacked the flag. The next matched runs use a logger under `vllm` and
+read the transferred quantization config rather than depending on environment
+propagation. Both paths and the tied weight/lookup identity have focused tests.
+
+The config-based post-load `bf16_fp32_logits_v5` passed both original canaries:
+master mean/max 0.006465/0.013253, correlation 0.999726; merged mean/max
+0.003620/0.009085, correlation 0.999804. It took **9.901755 s** (1.0046x),
+with full-development mean/max drift 0.004185/0.019510 and one threshold flip.
+Distinct scores increased from 30 to 32. Macro AUROC/pAUROC stayed
+0.921488/0.756198; Brier was 0.098538. Fractional margins are consistent with
+the native FP32 method; visible installation/dtype proof is required on the next
+matched run and three-pass control. Evidence: `bf16_fp32_logits_v5/`.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

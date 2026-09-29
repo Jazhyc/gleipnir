@@ -368,6 +368,20 @@ untied heads did not install this intervention in `bf16_fp32_logits_v2` or
 preserve ordinary lookup, and require an actual FP32 projection execution log.
 The direct GPU method canary already passed with relative L2 below 0.000004.
 
+The locked model constructor also omits `quant_config` on the tied embedding,
+so the constructor-only `bf16_fp32_logits_v3` did not install the intervention.
+Use a checked post-load hook before engine warmup; require exactly one ordinary
+BF16/FP16 vocabulary head and keep its original weight object and embedding alias.
+Actual execution proof is still required for `bf16_fp32_logits_v4` and
+`gptq_nvfp4_fp32_logits_v3` before interpreting their measurements.
+
+The post-load control produced fractional margins, but its execution logger
+was outside vLLM's configured namespace. Use `vllm.gleipnir.fp32_logits` for
+visible dtype proof and read the worker's transferred quantizer config. The
+`bf16_fp32_logits_v5` control passed with 32 distinct scores, mean/max drift
+0.004185/0.019510 and unchanged AUROC, at 9.901755 s. Three-pass head precision
+confirmation also requires visible installation and execution proof.
+
 Use `cluster/slurm/fp4_inference_step.sh` in a detached `srun` step within the
 existing allocation so tool-session refreshes do not interrupt serving. The
 campaign runner reserves 20 seconds for termination before its fixed stop time;
@@ -395,3 +409,24 @@ FP32 references and finite output before timing. Use one 256-call window per
 condition, five warmups and three-second BF16 heating. Record thermals/clocks.
 This explores a different low-precision path and row-count tradeoff; these
 microbenchmarks do not establish full-split serving performance or quality.
+
+## Frozen broader-split confirmation rule
+
+Select one final serving candidate using only the existing 32 development rows,
+original canaries, disjoint activation screens and matched three-pass timing
+and stability confirmation. Record the choice and complete configuration hashes
+before viewing additional score labels. Then run unchanged BF16 and the frozen
+candidate on the canonical ordered 512-row subset (5,760,843 prompt tokens),
+with the same full prompts, response constraint, decision logprobs and score
+runner. Do not tune or select a fallback using this confirmation.
+
+Report all-512 throughput and metrics, and separately compute held-out metrics
+after excluding all 32 development rows, all 12 activation-capture rows and the
+four parity canaries. Also exclude any row sharing either original or transformed
+trajectory hashes with these used rows. Freeze that exclusion manifest before
+launch. Preserve source/label counts and report source-wise ranking, Brier,
+threshold changes, ties and score drift. This is confirmation within the existing
+split, not a final-test promotion or cross-model generalization result. If its
+AUROC loss exceeds 0.01 or Brier increase exceeds 0.01, retain and report the
+negative result with no deployment recommendation. The one-pass broader timing
+does not replace the three-pass development stability check.
