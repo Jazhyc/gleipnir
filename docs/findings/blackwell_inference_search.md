@@ -635,6 +635,60 @@ initial interest and quality screen, but requires a separate three-pass and
 independent-start confirmation before selection. Evidence:
 `results/fp4_inference/fp8_mlp_b8192_s2/`.
 
+## Completed Triton activation-packer fitted hybrid screen
+
+Holding fitted FP4 down weights, FP8 gate/up and the original scheduler fixed,
+switching CUDA to the independently validated Triton activation packer took
+**7.782019 s**, **1.2783x**. Both original canaries passed: master mean/max
+0.011119/0.034378, correlation 0.995087; merged mean/max 0.007702/0.016469,
+correlation 0.998028. Development mean/max drift was 0.017702/0.215123,
+correlation 0.993984 and zero threshold flips. Macro AUROC/pAUROC/Brier:
+0.921488/0.756198/0.093238. The development screen passed, although one
+individual score moved substantially. Freeze a separate three-pass restart
+confirmation; this initial result does not establish that the packer fixes the
+previous CUDA hybrid's between-start failure. Evidence:
+`results/fp4_inference/gptq_down_fp8_triton/`.
+
+## Completed synchronous BF16 engine screen
+
+Disabling v1 engine multiprocessing passed both original canaries and produced
+development scores exactly matching the earlier three-pass BF16 engine. It
+took **10.209538 s**, **0.9743x** the initial baseline; asynchronous scheduling
+was still reported by vLLM. This flag changes the offline engine process path,
+not the model's numerical precision or an established batch-invariance property.
+The unchanged scores are one between-start observation, not a reproducibility
+guarantee. No speed benefit was demonstrated. Evidence: `bf16_no_mp/`.
+
+## Completed synchronous MLP FP8 engine screen
+
+The matching MLP FP8 condition passed original canaries and exactly reproduced
+the initial MLP FP8 development scores, but took **8.308580 s**, compared with
+the asynchronous path's 8.049067 s initial pass and 8.051037 s repeated median.
+Its 1.1973x speedup against BF16 is lower than the confirmed asynchronous FP8
+gain. Both synchronous screens preserve scores observed in earlier engines;
+neither demonstrates that process topology resolves numerical variability.
+Retain the default process path. Evidence: `fp8_mlp_no_mp/`.
+
+## Fused SiLU/FP8 kernel validation failure and compiler evidence
+
+The bounded hand-written Triton SiLU/multiply plus per-token E4M3 packer
+failed its first layer-0/M=128 stock-path arithmetic check: decoded-activation
+relative L2 **0.011620 > 0.005**. Native CUTLASS multiplication of its quantized
+outputs was correct against independent FP32 decoding (relative L2 0.001655),
+so the failure precedes GEMM. Stop before all timing and serving integration,
+as declared; this does not establish a speed result or a specific rounding cause.
+The original partial result, failure receipt and exact source snapshots are in
+`results/fp4_inference/silu_kernel/`, with the Slurm failure in its driver log.
+
+The earlier real vLLM MLP FP8 profile already contains
+`triton_red_fused__to_copy_abs_clamp_cutlass_scaled_mm_div_max_mul_reciprocal_silu_slice_unsqueeze_4`
+(384 calls, 14.012 ms summed GPU time). Thus the installed compiler already
+fuses this SiLU/FP8 activation path. A stock two-CUDA-kernel comparison would
+not by itself demonstrate an improvement over the compiled serving baseline.
+Separately, the locked RMSNorm/quant matcher rejects the model's FP32 Gemma
+norm weights paired with BF16 inputs; enabling its flag alone is not evidence
+of executed fusion. Keep the existing compiled serving path.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would

@@ -440,6 +440,13 @@ FlashInfer with FP8 KV storage passed original score gates but took 10.530073 s
 recurrent hybrid and used default unit scales. Report that actual behavior;
 it is not a calibrated-cache result and did not pass the speed screen.
 
+The next frozen MLP FP8 scheduler screen compares 8,192/eight, 16,384/two and
+16,384/eight after the initial 8,192/two condition. Require the original
+canaries and development quality bounds, then three-pass timing for a selected
+finalist. Freeze `fp8_mlp_b8192_confirm` as the matched repeat of the completed
+8,192/two condition. Larger-budget recipes are selected only on development
+evidence; full-512 confirmation cannot guide budget or precision choices.
+
 MLP-only FP8 with an 8,192-token prefill budget and two sequences passed the
 initial score gates in 7.818977 s (1.2722x baseline), with unchanged macro AUROC,
 Brier increase 0.001111 and one threshold flip. Its 2.94% gain over the original
@@ -457,6 +464,46 @@ depends on scheduled token groups, so do not claim batch invariance for it.
 The official [vLLM batch-invariance documentation](https://docs.vllm.ai/en/latest/features/batch_invariance/)
 is advisory; actual locked Qwen3.5 kernel execution and original gates decide
 support. No batch-invariance guarantee is inferred from the environment flag.
+
+The fitted-down hybrid with Triton activation packing passed the initial master
+and merged canaries in 7.782019 s (1.2783x), with master mean error 0.011119.
+Development AUROC was unchanged and Brier fell 0.005680; maximum individual
+drift was 0.215123. Freeze `gptq_down_fp8_triton_confirm` with three passes in a
+new engine before interpreting this as a stable candidate or a packer fix.
+
+The synchronous BF16 screen passed parity and exactly matched the earlier
+three-pass engine's development scores, but took 10.209538 s (0.9743x initial
+baseline). Asynchronous scheduling remained enabled. One matching start does
+not establish general reproducibility or a speed benefit.
+
+The matching synchronous MLP FP8 screen passed original canaries and exactly
+reproduced earlier FP8 scores in 8.308580 s. This was slower than the default
+FP8 path's 8.051037 s repeated median, so retain the default process topology.
+
+## Frozen fused FP8 activation kernel screen
+
+Hypothesis: combining SiLU/multiply and dynamic per-token FP8 packing can reduce
+online down-projection overhead while preserving the stock BF16 intermediate
+rounding, E4M3 scales and native CUTLASS GEMM. Use only the existing eight
+calibration trajectories, real layer 0/16/31 gate/up weights, and M=128/2048.
+Require <=0.005 relative L2 against independently decoded quantized FP32 GEMM
+and <=0.005 disagreement from the stock CUDA activation/packing path. Record
+all errors before timing; stop on nonfinite output or any arithmetic failure.
+Use five warmups, matched three-second heating and one 256-call timing window;
+include online activation/packing/allocation/down GEMM. Gate/up projection and
+offline weight conversion are excluded identically. Expand to a serving screen
+only if the mean M=2048 complete-call speedup exceeds 1.05x. Compare against
+the actual compiled vLLM path before attributing a serving improvement to fusion.
+The kernel window alone cannot establish monitor-score parity.
+
+The fused activation kernel failed its first stock-path arithmetic gate
+(relative L2 0.011620 > 0.005), before timing. Native GEMM versus decoded
+quantized inputs passed (0.001655). Preserve this negative and exclude it from
+serving. The real earlier MLP FP8 profile already shows an Inductor-fused
+SiLU/quantization kernel, so a two-CUDA-kernel microbenchmark would not establish
+an improvement over compiled serving. See the finding document for evidence.
+
+## Final confirmation selection
 
 Select one final serving candidate using only the existing 32 development rows,
 original canaries, disjoint activation screens and matched three-pass timing
