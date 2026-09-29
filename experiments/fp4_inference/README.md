@@ -430,6 +430,29 @@ its first independent start; BF16 showed between-start max score drift 0.030967.
 Use `repeat_analysis.py` to audit identities, all repeat files and stored medians,
 then report timings, source-wise drift, metrics and original selection gates.
 
+The fitted FP4-down hybrid's three-pass engine was internally stable but failed
+the original master canary on restart (mean 0.022632 > 0.02; correlation
+0.987979 < 0.99). Its 1.2808x repeated speedup and passing development metrics
+do not override that failure. It is rejected as a confirmed serving candidate.
+
+FlashInfer with FP8 KV storage passed original score gates but took 10.530073 s
+(0.9447x baseline). Locked vLLM disabled requested KV-scale calibration for the
+recurrent hybrid and used default unit scales. Report that actual behavior;
+it is not a calibrated-cache result and did not pass the speed screen.
+
+Before broader confirmation, test two additional stability mechanisms. Keep
+fitted down weights, FP8 gate/up, original schedule and kernels fixed while
+changing only CUDA to independently validated Triton activation packing
+(`gptq_down_fp8_triton`). Separately test synchronous offline engine scheduling
+(`VLLM_ENABLE_V1_MULTIPROCESSING=0`) for BF16 and MLP FP8, and the locked
+vLLM batch-invariance mode for BF16. These are prospective development screens
+motivated by the measured BF16 between-start drift; use one initial pass and
+repeat only passing finalists. Native FP4's tensor-global activation scale
+depends on scheduled token groups, so do not claim batch invariance for it.
+The official [vLLM batch-invariance documentation](https://docs.vllm.ai/en/latest/features/batch_invariance/)
+is advisory; actual locked Qwen3.5 kernel execution and original gates decide
+support. No batch-invariance guarantee is inferred from the environment flag.
+
 Select one final serving candidate using only the existing 32 development rows,
 original canaries, disjoint activation screens and matched three-pass timing
 and stability confirmation. Record the choice and complete configuration hashes

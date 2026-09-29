@@ -584,6 +584,44 @@ differences partly reflect BF16's between-start drift, and are not claims of
 training gains. Evidence: `fp8_mlp_confirm/repeat_comparison.json` and
 `independent_start_drift.json`.
 
+## Completed three-pass fitted FP4 hybrid confirmation: rejected
+
+Fitted FP4 down plus FP8 gate/up took **7.765169/7.769123/7.773791 s**,
+median **7.769123 s**, **1.2808x** versus repeated BF16. Scores and margins
+were identical within its three-pass engine. However, the second independent
+start **failed** the original master canary: mean **0.022632 > 0.02** and
+correlation **0.987979 < 0.99**, maximum 0.049461. The merged canary passed
+(mean/max 0.019215/0.031552, correlation 0.993386). The initial pass's borderline
+master mean 0.019111 did not provide enough margin to survive restart.
+
+The development quality screen alone passed (macro AUROC loss 0.004132 and
+Brier increase 0.007172 against repeated BF16), but the complete selection
+gate is failed. Across hybrid engine starts, mean/max score drift was
+0.015497/0.091250 and one threshold flip. Reject this layout as a confirmed
+serving candidate; zero within-engine noise cannot override between-start
+fidelity failure. MLP FP8 remains the confirmed passing candidate. Evidence:
+`gptq_down_fp8_confirm/repeat_comparison.json` and `independent_start_drift.json`.
+
+## Completed FlashInfer attention with FP8 KV cache
+
+BF16 weights with FlashInfer attention and E4M3 KV storage passed both original
+canaries (master mean/max 0.013160/0.030490, correlation 0.999898; merged
+mean/max 0.007623/0.030490, correlation 0.999578). However, warmed scoring took
+**10.530073 s**, **0.9447x** the baseline: it was slower. Full-development
+mean/max drift was 0.006210/0.030967, correlation 0.999520 and zero flips.
+Macro AUROC/pAUROC/Brier were 0.925620/0.757025/0.095181. This path does not
+meet the >10% speed screen.
+
+The requested `calculate_kv_scales=true` was explicitly disabled by locked
+vLLM for the recurrent hybrid model because dummy-profile recurrent states give
+unreliable scales. Actual scale behavior was the default 1.0, so this is a
+**unit-scale FP8 KV** measurement, not a calibrated-cache result. The actual
+BF16-query/E4M3-KV head-256 FlashInfer CUDA specialization compiled on the
+allocated CPU, with `MAX_JOBS=1`; initialization took 182.317 s. Its real
+one-token outputs and score gates passed after compilation. No cache-precision
+deployment recommendation follows from memory-format support alone. Evidence:
+`bf16_flashinfer_fp8kv/` and `20260929T220625Z-benchmark.log`.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would
