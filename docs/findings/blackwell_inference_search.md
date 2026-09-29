@@ -622,6 +622,19 @@ one-token outputs and score gates passed after compilation. No cache-precision
 deployment recommendation follows from memory-format support alone. Evidence:
 `bf16_flashinfer_fp8kv/` and `20260929T220625Z-benchmark.log`.
 
+## Completed larger-budget MLP FP8 screen
+
+Keeping MLP per-channel FP8, two sequences and the original scoring contract,
+raising the prefill budget from 2,048 to 8,192 took **7.818977 s**, **1.2722x**
+versus the initial BF16 baseline and 1.0294x versus initial MLP FP8. Both
+original canaries passed. Development mean/max score drift was
+0.008938/0.062177, correlation 0.999234 and one threshold flip. Macro
+AUROC/pAUROC/Brier were 0.921488/0.756198/0.100029; AUROC was unchanged and
+Brier increased 0.001111. There were 31 distinct scores. This passes the
+initial interest and quality screen, but requires a separate three-pass and
+independent-start confirmation before selection. Evidence:
+`results/fp4_inference/fp8_mlp_b8192_s2/`.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would

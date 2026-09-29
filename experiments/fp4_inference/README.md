@@ -440,6 +440,11 @@ FlashInfer with FP8 KV storage passed original score gates but took 10.530073 s
 recurrent hybrid and used default unit scales. Report that actual behavior;
 it is not a calibrated-cache result and did not pass the speed screen.
 
+MLP-only FP8 with an 8,192-token prefill budget and two sequences passed the
+initial score gates in 7.818977 s (1.2722x baseline), with unchanged macro AUROC,
+Brier increase 0.001111 and one threshold flip. Its 2.94% gain over the original
+MLP FP8 condition needs matched repeats before choosing the final configuration.
+
 Before broader confirmation, test two additional stability mechanisms. Keep
 fitted down weights, FP8 gate/up, original schedule and kernels fixed while
 changing only CUDA to independently validated Triton activation packing
