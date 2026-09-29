@@ -60,6 +60,7 @@ def main() -> None:
         print(f"Starting {phase}; log={path}", flush=True)
         command = [sys.executable, "-u", "-m", f"experiments.local_inference.{phase}"]
         if phase == "benchmark":
+            command[-1] = config.get("benchmark_module", command[-1])
             command.extend(["--config", str(config_path)])
         started = time.perf_counter()
         with path.open("x") as handle:

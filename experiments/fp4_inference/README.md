@@ -66,6 +66,27 @@ the baseline schedule, followed by per-channel FP8 at the proposed 8,192/eight
 schedule. Each configuration is frozen before launch. Quantization diagnostics
 explicitly retain failed canaries; the BF16 reference cannot override its gate.
 
+NVFP4 exploration loads the original BF16 checkpoint through the standard
+loader and converts only MLP weights initially. Use E2M1 packed values, one
+E4M3 scale per 16 weights and a global FP32 scale `amax/(6*448)`. Activations
+compute the same global range dynamically for each invocation, avoiding fixed
+range clipping and evaluation-data calibration. Include that reduction and
+packing cost in timing. Reject nonfinite scales or sample weight reconstruction
+relative L2 >0.25; before serving require native GEMM agreement within 0.01
+relative L2 against independently decoded quantized FP32 inputs/weights.
+Compare native vLLM CUTLASS with FlashInfer B12X on identical projections.
+Do not treat quantized-reference correctness as BF16 numerical parity.
+
+Recreate the existing disjoint twelve-row activation capture with
+`python -m experiments.int4_calibration.capture --output
+results/fp4_inference/capture`. The capture selects eight calibration and four
+held-out rows, excluding iteration32/original canaries, and records all hashes.
+This bounded SDPA/Torch-fallback hook pass is a documented exception to serving
+evaluation. Run `kernel_canary --backend cutlass` or `--backend b12x`, each with
+its own output directory. Use layer-0 gate/up and down calibration activations,
+one 256-call timing window, five warmups and three seconds BF16 preconditioning;
+compare native output to independent packed-value decoding and FP32 matmul.
+
 Inside the allocation, after activating the locked environment and CUDA 13.2:
 
 ```bash
@@ -101,3 +122,13 @@ Cold initialization was 210.770 s; warmup 4.080 s; whole process 247.430 s.
 FlashAttention 2 and Triton/FLA GDN were selected. One scoring telemetry sample
 showed 58 C, 2,377 MHz, 100% utilization and no thermal slowdown. Full evidence
 and qualifications are in the finding document and `results/fp4_inference/baseline/`.
+
+## Completed scheduler screen
+
+4,096/two, 8,192/two and 8,192/eight took 9.751906, 9.545245 and 9.561936 s
+respectively: only 1.0201x, 1.0422x and 1.0403x versus the baseline. All serving
+canaries passed; macro AUROC/pAUROC were unchanged. The 4,096 condition had one
+near-threshold flip; both 8,192 conditions had none. No condition cleared the
+>10% interest threshold, and concurrency added no demonstrated gain. Retain
+the baseline and prioritize quantization/kernel paths. Full paired diagnostics
+and per-condition qualifications are in the finding document.

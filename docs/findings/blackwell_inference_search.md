@@ -55,6 +55,50 @@ this short pass. Workers exited successfully. Evidence:
 `results/fp4_inference/baseline/` (including `prediction_audit.json`) and
 `logs/slurm/fp4_inference/20260929T195517Z-benchmark.log`.
 
+## Completed 4,096-token BF16 screen
+
+Keeping two sequences and increasing only the prefill budget gave 9.751906 s,
+34,739.87 tokens/s: **1.0201x**, below the >10% interest rule and inconclusive
+with one pass. Canary parity passed. Paired full-split score drift had
+mean/max 0.005816/0.031209, correlation 0.999545 and one threshold flip.
+Macro AUROC/pAUROC were unchanged; Brier increased to 0.101238. Scores went
+from 30 to 31 distinct values. The flip reduced macro FPR to 0.045455.
+No scoring telemetry sample was captured for this condition, limiting thermal
+comparison. Preserve the baseline; do not promote this small gain. Evidence:
+`results/fp4_inference/bf16_b4096_s2/comparison.json` and its process artifacts.
+
+## Completed 8,192-token / two-sequence BF16 screen
+
+Increasing the budget to 8,192 at two sequences gave **9.545245 s**,
+35,492.02 tokens/s, **1.0422x** versus the baseline. This remains below the
+interest threshold. Serving parity passed; full-split mean/max score drift
+was 0.003801/0.030490, correlation 0.999666, zero flips. Macro AUROC/pAUROC
+were unchanged; Brier was 0.096458. Automatic telemetry captured 21 samples
+across startup and scoring. No robust speed gain or quality improvement is
+claimed from this single pass. Evidence: `results/fp4_inference/bf16_b8192_s2/`.
+
+## Completed 8,192-token / eight-sequence BF16 screen
+
+Increasing concurrency to eight at the same budget gave **9.561936 s**,
+35,430.06 tokens/s, **1.0403x** versus baseline and slightly slower than the
+two-sequence 8,192 condition. Canary parity passed. Paired mean/max score drift
+was 0.002927/0.030967, correlation 0.999760 and zero flips. Macro AUROC and
+pAUROC stayed unchanged; Brier was 0.099932, with 30 distinct scores.
+The concurrency increase provides no demonstrated speed benefit. Prioritize
+linear precision/kernel exploration while retaining both schedules as controls.
+Evidence: `results/fp4_inference/bf16_b8192_s8/`.
+
+## Completed disjoint activation capture
+
+The existing capture recipe completed all twelve full trajectories, preserving
+eight calibration/four held-out rows and 256 token positions at six projections
+(layers 0,16,31). Scoring-split and serving-canary identity exclusion was checked.
+The capture manifest records parent/input/merge hashes and checksums for each
+activation file and the weights. It used bounded SDPA/Torch gated-delta fallback
+hooks, not vLLM activations. It supplies native FP4 validation and reconstruction
+data without modifying weights or observing scoring labels. Evidence:
+`results/fp4_inference/capture/manifest.json` and the activation-capture log.
+
 ## Kernel routing evidence
 
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
