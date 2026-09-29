@@ -139,6 +139,36 @@ constitute a different supervision method and would not supply the underlying
 two-token distribution. All four error responses had no usage object; no
 successful inference was performed in this compatibility canary.
 
+## GPT-6 Sol: both binary scores available with reasoning disabled
+
+A subsequent three-request Responses canary repeated the original synthetic
+inputs with `model="gpt-6-sol"`, `reasoning={"effort": "none"}`,
+`temperature=1`, `top_p=1`, `top_logprobs=20`, and the logprob include field.
+The manifest and a three-request stop rule were recorded before sending calls.
+No prompts were changed or selected based on outcomes.
+
+All three requests returned HTTP 200, echoed the requested model/settings,
+reported zero reasoning tokens, and supplied 20 alternative token scores
+including both literal `0` and `1`:
+
+| Example | `logprob(0)` | `logprob(1)` | Normalized `P(1)` |
+| --- | ---: | ---: | ---: |
+| benign | +0.000008 | -14.927895 | 0.000000329 |
+| concealment | -13.363712 | -0.000015 | 0.999998429 |
+| uncertain | -0.000973 | -6.939995 | 0.000968279 |
+
+The tiny positive raw logprob on the benign example is preserved, as with the
+initial Luna numerical anomaly; require a recorded numerical tolerance policy
+before accepting such values in a scaled cache. The normalized scores in this
+table describe the returned pair and do not establish calibration. Sol's
+different decision on the uncertain input is descriptive, not evidence of
+comparative monitoring quality from this synthetic compatibility check.
+
+This verifies the binary score interface on GPT-6 Sol, unlike GPT-6.1 Sol's
+mandatory-reasoning interface. Three synthetic inputs do not establish complete
+coverage on actual trajectories. The successful calls processed 201 input and
+15 output tokens, with no cache reads or writes.
+
 ## Artifacts and sources
 
 Ignored local artifacts:
@@ -159,11 +189,16 @@ Ignored local artifacts:
   and `responses.jsonl`: frozen Sol/Astra restriction check and all four raw
   HTTP-400 responses. Response SHA-256:
   `8a6637c6b33478d8a6490ebc1743943b0742f6e5e9b12fa400b2aa5772a92c32`.
+- `results/openai_decision_api_probe/sol6_20260929T231728Z/manifest.json` and
+  `responses.jsonl`: frozen GPT-6 Sol compatibility check and three raw
+  successful responses. Response SHA-256:
+  `6f8583b3167bcedd7b175566085e9ddd8a00f2fffa2a5e73a30bfb3ea4b00b3b`.
 
 Official sources checked during the investigation:
 
 - [GPT-6 API parameter guidance](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart).
 - [GPT-6 Luna model](https://developers.openai.com/api/docs/models/gpt-6-luna).
+- [GPT-6 Sol model](https://developers.openai.com/api/docs/models/gpt-6-sol).
 - [GPT-6.1 Sol model](https://developers.openai.com/api/docs/models/gpt-6.1-sol).
 - [GPT-6 Astra model](https://developers.openai.com/api/docs/models/gpt-6-astra).
 - [Published pricing](https://developers.openai.com/api/docs/pricing).
