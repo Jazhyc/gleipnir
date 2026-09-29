@@ -152,3 +152,12 @@ retained under the predeclared diagnostic override. Full-split mean/max drift
 was 0.024838/0.185333 with two flips. Macro AUROC/pAUROC/Brier was
 0.929752/0.801653/0.096866. This is speed potential with insufficient fidelity;
 no promotion. Evidence: `nvfp4_mlp_cutlass/` and the finding document.
+
+Per-channel FP8 took 6.959485 s (**1.4294x**) but also failed the original
+canary (master mean 0.027231). Its full-split mean/max drift was
+0.022805/0.117002 with one flip. It remains diagnostic-only.
+
+The first selective-FP4 attempt failed on a reused AOT graph with a different
+parameter layout. Custom quantizer flags and source SHA-256 now enter the
+vLLM compile hash through a preserved resolved configuration. The failed
+`nvfp4_mlp_keepends` artifacts remain; its retry is `nvfp4_mlp_keepends_v2`.

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import datetime
 import hashlib
 import json
@@ -76,12 +77,40 @@ def condition_config(name: str) -> Path:
     return path
 
 
+def resolve_runtime_config(config: dict) -> dict:
+    """Include custom quantizer flags and source identity in vLLM's compile hash."""
+    resolved = copy.deepcopy(config)
+    if resolved["engine"].get("quantization") == "gleipnir_nvfp4":
+        flags = {
+            k: v
+            for k, v in resolved.get("environment", {}).items()
+            if k.startswith("GLEIPNIR_NVFP4_")
+        }
+        source = Path("src/gleipnir/vllm_nvfp4.py")
+        identity = {
+            "flags": flags,
+            "implementation_sha256": hashlib.sha256(source.read_bytes()).hexdigest(),
+        }
+        resolved["engine"].setdefault("additional_config", {})["gleipnir_nvfp4"] = (
+            identity
+        )
+    return resolved
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--condition", required=True)
     args = parser.parse_args()
     path = condition_config(args.condition)
     config = json.loads(path.read_text())
+    source_config_hash = hashlib.sha256(path.read_bytes()).hexdigest()
+    resolved_config = resolve_runtime_config(config)
+    if resolved_config != config:
+        config = resolved_config
+        encoded = json.dumps(config, sort_keys=True).encode()
+        identity = hashlib.sha256(encoded).hexdigest()[:12]
+        path = ROOT / "resolved_configs" / f"{args.condition}_{identity}.json"
+        write_json(path, config)
     output = Path(config["output"])
     if output.exists():
         raise FileExistsError(f"Preserve existing output: {output}")
@@ -136,6 +165,8 @@ def main() -> None:
             "seconds": time.perf_counter() - started,
             "slurm_job_id": os.environ.get("SLURM_JOB_ID"),
             "code_sha256": code_hashes,
+            "source_config_sha256": source_config_hash,
+            "resolved_config": str(path),
         },
     )
     if returncode:

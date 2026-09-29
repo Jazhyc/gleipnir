@@ -7,7 +7,11 @@ from pathlib import Path
 import pytest
 
 from experiments.fp4_inference import run
-from experiments.fp4_inference.run import condition_config, remaining_seconds
+from experiments.fp4_inference.run import (
+    condition_config,
+    remaining_seconds,
+    resolve_runtime_config,
+)
 
 
 def test_deadline_leaves_ten_minutes_before_gpu_expiry():
@@ -35,7 +39,7 @@ def test_blackwell_baseline_preserves_historical_serving_contract():
 def test_launcher_creates_parent_and_records_process_result(tmp_path, monkeypatch):
     output = tmp_path / "new_campaign" / "baseline"
     config = tmp_path / "baseline.json"
-    config.write_text(json.dumps({"output": str(output)}))
+    config.write_text(json.dumps({"output": str(output), "engine": {}}))
     monkeypatch.setattr(run, "condition_config", lambda name: config)
     monkeypatch.setattr(run, "remaining_seconds", lambda: 600)
     monkeypatch.setattr(run, "ROOT", tmp_path / "receipts")
@@ -56,3 +60,18 @@ def test_launcher_creates_parent_and_records_process_result(tmp_path, monkeypatc
     receipt = json.loads((tmp_path / "receipts/baseline_execution.json").read_text())
     assert receipt["returncode"] == 0
     assert not receipt["deadline_reached"]
+
+
+def test_custom_compile_identity_distinguishes_selective_precision():
+    original = json.loads(condition_config("nvfp4_mlp_cutlass").read_text())
+    selective = json.loads(condition_config("nvfp4_mlp_keepends").read_text())
+    a, b = [resolve_runtime_config(c) for c in (original, selective)]
+    assert "additional_config" not in original["engine"]
+    assert a["engine"]["additional_config"] != b["engine"]["additional_config"]
+    assert a["engine"]["additional_config"]["gleipnir_nvfp4"]["implementation_sha256"]
+    assert (
+        resolve_runtime_config(json.loads(condition_config("baseline").read_text()))[
+            "engine"
+        ]
+        == json.loads(condition_config("baseline").read_text())["engine"]
+    )

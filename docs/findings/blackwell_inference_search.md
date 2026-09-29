@@ -148,6 +148,33 @@ execution receipt. Decoder-layer selection, packing and deadline tests passed
 (24 focused tests). Evidence: `results/fp4_inference/nvfp4_mlp_cutlass/` and
 `logs/slurm/fp4_inference/20260929T201408Z-benchmark.log`.
 
+## Completed per-channel FP8 diagnostic
+
+Stock online FP8 with per-channel weights and per-token activations took
+**6.959485 s**, **48,678.89 tokens/s**, **1.4294x**. It was slightly faster than
+MLP-only FP4 in these single passes, because FP8 also accelerates other decoder
+projections. The original canary failed its mean-error bound: master mean/max
+0.027231/0.062176, correlation 0.992531 and one flip; merged mean 0.021694.
+Full-split mean/max drift was 0.022805/0.117002, correlation 0.996916 and one
+flip. Macro AUROC/pAUROC/Brier was 0.925620/0.776860/0.096712, with 31 distinct
+scores. Retain this as a diagnostic tradeoff, not a parity-passing replacement.
+Evidence: `results/fp4_inference/fp8_channel/`.
+
+## Selective FP4 startup failure and cache identity fix
+
+The first attempt keeping MLP layers 0 and 31 in BF16 failed before canaries
+with `KeyError: weight_scale` while loading an AOT-compiled forward. The cache
+key had omitted environment-based custom quantizer flags, so it reused the
+all-MLP-FP4 graph for a different parameter layout. No throughput or quality
+result exists for this failed attempt; all artifacts remain under
+`nvfp4_mlp_keepends/`.
+
+The launcher now resolves custom configurations with all quantizer flags and
+the implementation SHA-256 in `engine.additional_config`, which vLLM includes
+in its compile hash. A focused test verifies that selective precision changes
+this identity without mutating the checked-in contract. Runtime configurations
+and their source hash are retained. The retry uses a new `keepends_v2` output.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,
