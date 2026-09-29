@@ -775,3 +775,13 @@ remaining frozen Triton-attention and MLP-FP8/FP32-head configurations were not
 launched in this allocation; no numerical or speed claims follow for them. The
 final GPU budget prioritized the selected-recipe profile and discrete-scale FP4
 screen. Preserve the ten-minute allocation reserve rather than extend the job.
+
+The final discrete-scale hybrid wrote complete scores and passed its initial
+canary/development bounds in 7.760295 s (1.2819x baseline). It has no restart or
+broader confirmation. The hard deadline interrupted shutdown after score output:
+return code 124, `deadline_reached=true`, no `process_timing.json`. Preserve this
+incomplete process and use `initial_pass_analysis.json` without inventing timing
+or promoting the layout. Campaign workers stopped before the requested cutoff;
+GPU idle was verified at 23:29:34 UTC. Holding job 32267015 still expires at
+01:39:21 CEST, with no extension. The selected recipe remains the fully confirmed
+MLP-only FP8 configuration.

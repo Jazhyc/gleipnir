@@ -1066,6 +1066,34 @@ do not demonstrate a speed improvement over the previous dynamic-scale recipe
 or better monitor scores. The frozen fitted-down hybrid serving screen can now
 proceed within the remaining deadline. Evidence: `kernel_power2/result.json`.
 
+## Final discrete-scale FP4 score screen and deadline shutdown
+
+The fitted-down FP4 / gate-up FP8 hybrid with power-of-two activation-global
+scales wrote all 32 scores in **7.760295 s**, a **1.2819x** initial BF16 timing
+ratio. Original canaries passed on this single start: master mean/max
+0.017407/0.034378, correlation 0.997644; merged mean/max 0.013990/0.030490,
+correlation 0.999383. Development AUROC/pAUROC/Brier were
+0.923554/0.766529/0.101453; AUROC change +0.002066 and Brier increase 0.002535
+passed the initial bounds. Mean/max development drift was 0.022069/0.117002,
+correlation 0.995604 and one threshold flip. Threshold diagnostics include macro
+FPR 0.136364 versus baseline 0.090909; retain that deterioration.
+
+Scoring finished before the cutoff, but the campaign deadline interrupted
+process shutdown: receipt return code **124**, `deadline_reached=true`, and
+`process_timing.json` absent. Do not fabricate that missing timing or present
+the process as successful. `initial_pass_analysis.json` audits complete score
+outputs and retains `completed_process=false`, `selected_for_serving=false`.
+No independent restart or broader confirmation was run. This is a candidate
+for a separately authorized follow-up, not a selected FP4 serving layout.
+
+The deadline launcher stopped campaign workers before the requested 23:29:21
+UTC cutoff. A 23:29:34 UTC observation verified **zero GPU memory, zero GPU
+utilization and no serving/profile workers**. The ordinary holding allocation
+remained job 32267015, expiring **01:39:21 CEST / 23:39:21 UTC**, with no extension
+or new capacity. Final focused validation: **76 tests and Ruff passed**. The
+selected full-split recipe remains MLP-only FP8, with all three independent
+paired confirmations passing. No QAT training was launched.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would
