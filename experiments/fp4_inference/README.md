@@ -382,6 +382,11 @@ visible dtype proof and read the worker's transferred quantizer config. The
 0.004185/0.019510 and unchanged AUROC, at 9.901755 s. Three-pass head precision
 confirmation also requires visible installation and execution proof.
 
+Verified all-MLP fitted FP4 with FP32 logits failed both canaries (master
+mean/max 0.050242/0.178143) and development AUROC loss (0.016529), despite
+1.3739x throughput. Actual full-vocabulary output dtype was logged. This negative
+result does not promote all-MLP FP4 or replace the passing fitted-down finalist.
+
 Use `cluster/slurm/fp4_inference_step.sh` in a detached `srun` step within the
 existing allocation so tool-session refreshes do not interrupt serving. The
 campaign runner reserves 20 seconds for termination before its fixed stop time;
@@ -409,6 +414,12 @@ FP32 references and finite output before timing. Use one 256-call window per
 condition, five warmups and three-second BF16 heating. Record thermals/clocks.
 This explores a different low-precision path and row-count tradeoff; these
 microbenchmarks do not establish full-split serving performance or quality.
+
+All six Marlin arithmetic checks passed (relative L2 <=0.001661). Gate/up
+speedups at M=1/128/2048 were 1.8224x/1.0636x/0.9165x; down speedups were
+1.0878x/0.8765x/0.9077x. This weight-only path is interesting for very small
+row counts but did not improve large prefill. Preserve the negative large-M
+result and keep native W4A4 for the current serving finalists.
 
 ## Frozen broader-split confirmation rule
 

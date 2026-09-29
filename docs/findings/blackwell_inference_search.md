@@ -518,6 +518,42 @@ Distinct scores increased from 30 to 32. Macro AUROC/pAUROC stayed
 the native FP32 method; visible installation/dtype proof is required on the next
 matched run and three-pass control. Evidence: `bf16_fp32_logits_v5/`.
 
+## Completed fitted FP4 with verified FP32 full-vocabulary logits
+
+The checked post-load hook installed the tied head, and actual native projection
+execution logged shape `(2, 248320)` and `torch.float32` before scoring.
+Fitted FP4 in all MLP projections with Triton activation packing took
+**7.240453 s**, **1.3739x** versus the original BF16 baseline and **1.3676x**
+versus the FP32-head BF16 control. It failed both original canaries: master
+mean/max 0.050242/0.178143, correlation 0.937434; merged mean/max
+0.055780/0.178143, correlation 0.921582. This is a verified negative intervention,
+not another routing failure.
+
+Versus the matched head control, full-development mean/max drift was
+0.032917/0.232513, correlation 0.990350, one threshold flip and 32 distinct
+scores. Macro AUROC/pAUROC/Brier were 0.904959/0.714876/0.104921: AUROC loss
+0.016529 exceeded 0.01. Removing the coarse head rounding and disabling reduced
+intermediate reductions did not rescue this FP4 layout. Both components changed
+together in the frozen pair, so this result does not isolate their causal effects.
+Keep the passing fitted-down hybrid as a finalist. Evidence:
+`gptq_nvfp4_fp32_logits_v4/`, including separate baseline and head comparisons.
+
+## Completed Marlin FP4 weight-only kernel screen
+
+Native Marlin W4A16 passed all six independently decoded weight-only FP32
+arithmetic checks (relative L2 0.001602–0.001660 < 0.005). On the real gate/up
+shape, speedups over BF16 at M=1/128/2048 were **1.8224x/1.0636x/0.9165x**;
+on the down shape, **1.0878x/0.8765x/0.9077x**. This path has a useful small-M
+tradeoff but is slower than BF16 on both large prefill shapes in these windows.
+It does not justify replacing native W4A4 in this long-prompt workload.
+
+Each measurement used 256 complete calls with online padding/allocation/GEMM
+included, five warmups and matched three-second BF16 heating. Native preparation
+and weight repacking were offline. Temperature and clocks were recorded around
+each window, with no observed thermal slowdown in those samples. These are
+single kernel windows, not a serving-quality result or a decode throughput
+benchmark. Evidence: `results/fp4_inference/marlin/result.json`.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,
