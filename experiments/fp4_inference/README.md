@@ -132,3 +132,23 @@ near-threshold flip; both 8,192 conditions had none. No condition cleared the
 >10% interest threshold, and concurrency added no demonstrated gain. Retain
 the baseline and prioritize quantization/kernel paths. Full paired diagnostics
 and per-condition qualifications are in the finding document.
+
+## Completed native CUTLASS FP4 screen
+
+Native implementation error against independently decoded quantized FP32
+references was 0.166% for each real layer-0 projection. Complete online FP4
+timing (activation amax/packing/allocation/GEMM) was 0.179417/0.111806 ms versus
+BF16 0.531873/0.253100 ms: **2.964x/2.264x**. Offline weight conversion excluded.
+BF16 reconstruction error was 11.48%/10.51%, which is quantization error rather
+than a kernel mismatch. One 256-call window and uncontrolled 54–64 C thermals;
+no full-model quality claim. Evidence: `kernel_cutlass/result.json`.
+
+## Completed full-model MLP FP4 diagnostic
+
+All 64 decoder MLP projections ran native CUTLASS FP4; other paths stayed BF16.
+The 32-row pass took 7.113271 s (47,626.47 tokens/s), **1.3985x**. Original
+canary parity failed (master mean/max error 0.125850/0.255398 and one flip),
+retained under the predeclared diagnostic override. Full-split mean/max drift
+was 0.024838/0.185333 with two flips. Macro AUROC/pAUROC/Brier was
+0.929752/0.801653/0.096866. This is speed potential with insufficient fidelity;
+no promotion. Evidence: `nvfp4_mlp_cutlass/` and the finding document.

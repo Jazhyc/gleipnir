@@ -99,8 +99,56 @@ hooks, not vLLM activations. It supplies native FP4 validation and reconstructio
 data without modifying weights or observing scoring labels. Evidence:
 `results/fp4_inference/capture/manifest.json` and the activation-capture log.
 
-## Kernel routing evidence
+## Completed native CUTLASS FP4 canary and kernel screen
 
+Native CUTLASS NVFP4 passed independent packed-value decoding plus FP32 GEMM
+references on both real layer-0 shapes. Implementation relative L2 was
+0.001659/0.001657 for gate/up and down, within the predeclared 0.01 bound.
+Relative reconstruction error against original BF16 weights/activations was
+**0.114780/0.105079**; this quantization error remains distinct from correct
+native execution. No judge-score equivalence follows from these checks.
+
+One 256-call window per condition, including activation amax reduction,
+quantization/packing, allocation and GEMM, gave:
+
+| Projection | BF16 ms | Complete native FP4 ms | Speedup |
+| --- | ---: | ---: | ---: |
+| Gate/up (2048,18432,2560) | 0.531873 | 0.179417 | 2.964x |
+| Down (2048,2560,9216) | 0.253100 | 0.111806 | 2.264x |
+
+Offline weight conversion was excluded; output allocation was included for
+both precisions. Same-process timing, five warmups and three-second BF16
+preconditioning were used. Before/after samples showed 54–64 C, 2,310–2,370 MHz
+and no software thermal slowdown. No repeated-window variance is estimated.
+This motivates a full-model MLP FP4 diagnostic while leaving BF16 as reference.
+Evidence: `results/fp4_inference/kernel_cutlass/result.json` and kernel-cutlass log.
+
+## Completed full-model MLP FP4 diagnostic
+
+The native online CUTLASS method converted the 64 decoder MLP projections,
+leaving attention/GDN projections, embeddings and the language head in BF16.
+It loaded successfully, compiled, produced finite canaries/longest-input output,
+and completed all 32 rows in **7.113271 s**, **47,626.47 tokens/s**, **1.3985x**.
+Engine construction took 91.794 s; reported model allocation was 5.01 GiB.
+
+The original serving gate **failed**: versus the master, mean/max canary
+score error was 0.125850/0.255398, correlation 0.968362 and one flip. The
+predeclared diagnostic override is recorded; failed parity was not relabeled.
+Against the matched full-split BF16 outputs, mean/max drift was
+0.024838/0.185333, correlation 0.992819 and two flips. Macro AUROC/pAUROC/Brier
+were 0.929752/0.801653/0.096866, with 31 distinct scores. These small development
+ranking changes do not establish a better monitor or justify promotion.
+
+The scoring sample showed 54 C, 2,362 MHz and no software thermal slowdown.
+This confirms an end-to-end speed opportunity, with inadequate score fidelity.
+Keep BF16 as reference and explore selective precision, quantization scaling and
+other native backends. The code uses native FP4 kernels, rejects emulation,
+checks weight reconstruction, and records its additional source hashes in the
+execution receipt. Decoder-layer selection, packing and deadline tests passed
+(24 focused tests). Evidence: `results/fp4_inference/nvfp4_mlp_cutlass/` and
+`logs/slurm/fp4_inference/20260929T201408Z-benchmark.log`.
+
+## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,
 but its online quantization registry has FP8/MXFP8 and no NVFP4 shorthand.
