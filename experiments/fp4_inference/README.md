@@ -533,6 +533,35 @@ canaries, development quality bounds and >10% warmed gain, followed by a fresh
 three-pass confirmation before any full-split selection. Stop on missing or
 wrong precision, nonfinite output or artifact identity failure.
 
+The loaded dtype audit confirmed the selective layout, but the 7.963925 s
+diagnostic failed both serving canaries and the development AUROC-loss bound
+(0.010331 > 0.01). Reject it. Calibration reconstruction ranking did not provide
+an adequate proxy for the monitor's final-score sensitivity.
+
+## Frozen Blackwell shape-attribution follow-up
+
+The user asked why the RTX 4080 INT4 kernel gains exceed some observed Blackwell
+whole-model gains. Repeat the same baseline eight-row, sixteen-step GPU profile
+with CPU operator shapes enabled. Correlate actual GEMM/GEMV kernels to matrix
+shapes through external IDs using the existing `shape_summary.py`; map shapes
+to unchanged checkpoint/model projections. Stop attribution on absent GPU
+events, invalid correlation or unaccounted GEMM time. Preserve trace/config/input
+hashes and report MLP versus attention/GDN projection shares. This is an
+instrumented partial window, not a fresh serving benchmark or a compute-versus-
+memory counter measurement. Historical INT4 single-kernel gains cannot be
+treated as an RTX 4080 full-model result; no native W4A4 vLLM run occurred there.
+
+The eight-sequence/8,192 MLP FP8 condition passed original gates in 7.798921 s
+(1.2755x initial baseline), with unchanged AUROC, Brier 0.096856, one threshold
+flip and maximum score drift 0.143609. Its small scheduler advantage needs repeats.
+
+The shape-aware Blackwell profile matched all 2,448 GEMM/GEMV calls with zero
+unmatched GEMM time. MLP gate/up and down were 28.81% and 14.40% of total sampled
+GPU time, totaling 43.20%. A 3x improvement of that fraction alone gives about
+1.405x overall, explaining the observed kernel/whole-model gap. This is a
+partial-profile illustration, not memory-bandwidth diagnosis. The historical
+4080 INT4 speedups were isolated kernel pipelines, with no INT4 vLLM run.
+
 ## Final confirmation selection
 
 Select one final serving candidate using only the existing 32 development rows,

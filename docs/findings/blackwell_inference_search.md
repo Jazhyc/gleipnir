@@ -730,6 +730,74 @@ rows. Between initial and repeated 8,192 engines, mean/max score drift was
 variation, not an exact reproducibility claim. Evidence:
 `fp8_mlp_b8192_confirm/repeat_comparison.json` and `independent_start_drift.json`.
 
+## Calibration-selected FP4 down precision screen: rejected
+
+The loaded-weight audit proved exactly 24 packed-uint8 native FP4 down
+projections and eight E4M3 FP8 down projections, with the declared calibration
+ranking and all gate/up projections FP8. Warmed scoring took **7.963925 s**.
+Both original canaries failed: master mean/max 0.026663/0.062176, correlation
+0.990514; merged mean/max 0.023246/0.062176, correlation 0.995258. Each had
+one threshold flip. The development macro AUROC **0.911157** loses 0.010331
+against the initial baseline, exceeding 0.01; Brier was 0.102231. Reject this
+layout without further confirmation.
+
+Protecting locally high-reconstruction-error layers did not recover final-score
+fidelity. The activation screen's calibration-only ranking is not a sufficient
+proxy for monitor-score sensitivity or accumulated hybrid-model errors. This
+negative strengthens the case for testing an end-to-end teacher-distribution
+objective in a separately authorized QAD pilot, without establishing that
+training would succeed. Evidence: `gptq_selective_down8/` and the explicit
+loaded-precision audit in `20260929T222749Z-benchmark.log`.
+
+## Completed eight-sequence MLP FP8 scheduler screen
+
+Keeping the 8,192-token budget and MLP FP8, eight sequences took **7.798921 s**,
+**1.2755x** the initial baseline. Both original canaries passed (master mean/max
+0.005537/0.017909; merged effectively identical to the eager merged reference).
+Development mean/max drift was 0.015356/0.143609, correlation 0.997032 and one
+threshold flip. Macro AUROC/pAUROC/Brier were 0.921488/0.756198/0.096856.
+The initial selection screen passed, but its speed advantage over 8,192/two
+is small and remains a one-pass result. Evidence: `fp8_mlp_b8192_s8/`.
+
+## Completed Blackwell projection-shape attribution
+
+The requested eight-row/sixteen-step BF16 shape-aware capture contained 13,328
+GPU events and matched all 2,448 GEMM/GEMV calls, with **zero unmatched GEMM
+time**. Summed GPU duration was 0.937302 s, of which 0.665634 s was mapped
+matrix multiplication. Shapes were checked against the unchanged model/fusion
+mapping, including the shared attention-output shape.
+
+| Projection | Share of all sampled GPU kernel time |
+| --- | ---: |
+| MLP gate/up | 28.81% |
+| MLP down | 14.40% |
+| GDN QKV/Z input | 15.18% |
+| Shared attention output | 6.81% |
+| Full-attention QKV/query gate | 3.95% |
+| Vocabulary head | 1.53% |
+| GDN B/A input | 0.34% |
+
+The MLP pair accounts for **43.20%**, versus 47.21% in the historical RTX 4080
+shape capture. As an illustrative inference from this partial window, speeding
+only 43.20% by 3x gives `1 / (0.568 + 0.432/3) = 1.405x`. This explains why
+roughly 3x isolated linear-kernel gains can coexist with roughly 1.4x complete
+FP4 diagnostic scoring gains. It is not a calibrated full-run performance model
+or hardware-counter evidence of compute versus memory limitation.
+
+The historical 4080 **2.767x/3.756x INT4** numbers were complete individual
+kernel pipelines with synthetic inputs and reused/preallocated buffers, not a
+native W4A4 vLLM inference run. Blackwell's comparable FP4 windows were
+2.964x/2.264x on real calibration inputs with online allocations included. The
+32-row BF16 serving baseline was already roughly 3.61x faster here (9.947606 s
+versus 35.9089 s). Different formats, inputs, allocation policies and uncontrolled
+single-window thermals prevent interpreting small cross-GPU ratio differences.
+
+Profile scores had mean/max drift 0.003884/0.029793 against corresponding
+baseline rows, correlation 0.999641 and zero flips; profiling/selection changes
+remain separate from serving timing and quality selection. Evidence:
+`profile_bf16_shapes/shape_summary.json`, its checksummed trace/config/selection,
+and the earlier RTX 4080 records in `experiments/local_inference/README.md`.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would
