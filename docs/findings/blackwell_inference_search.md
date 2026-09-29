@@ -933,6 +933,16 @@ and three threshold flips. Reject this layout; the higher speed is not usable
 serving performance. Evidence: `nvfp4_all_cutlass/`, the comparison/parity and
 successful execution receipt, plus `20260929T225827Z-benchmark.log`.
 
+## Completed first independent full BF16 restart
+
+The identical frozen recipe completed in **170.519856 s**, versus 171.021511 s
+on its initial full start. Both original canaries passed, and all **512 scores
+exactly matched** the original full vector (zero threshold changes). This is
+two observed independent starts on this fixed full schedule, not a general
+batch-invariance guarantee; the earlier development starts had shown drift.
+The matching frozen full FP8 restart is now running. Evidence:
+`bf16_full_restart_a/` and its independent-start comparison.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would

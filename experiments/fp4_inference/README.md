@@ -677,3 +677,7 @@ unchanged serving configurations and one pass per independent engine. It reports
 timing medians/ranges, score/margin ranges and threshold-unstable rows while
 retaining every per-pair quality/canary failure. The current focused campaign
 test set passed 74 tests; no expensive GPU path was invoked by those tests.
+
+The first independent full BF16 restart passed canaries in 170.519856 s and
+exactly reproduced all 512 original full scores. Retain this observed stability
+without claiming general batch invariance; the matching FP8 restart is running.

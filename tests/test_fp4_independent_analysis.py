@@ -54,6 +54,10 @@ def test_independent_ranges_and_gate_failure_are_preserved(tmp_path, monkeypatch
         pytest.approx(0.01)
     )
     assert result["all_confirmation_gates_passed"]
+    assert set(result["methods"]["candidate"]["variation_by_source"]) == {"0", "1", "2"}
+    assert result["methods"]["candidate"]["variation_by_source"]["1"][
+        "max_score_range"
+    ] == pytest.approx(0.01)
     runs[baselines[1]][0]["serving_parity_passed"] = False
     assert not analysis.analyze(baselines, candidates, manifests)[
         "all_confirmation_gates_passed"

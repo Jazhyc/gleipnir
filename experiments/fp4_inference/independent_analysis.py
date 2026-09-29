@@ -63,10 +63,16 @@ def analyze(
             "minimum_seconds": min(times),
             "maximum_seconds": max(times),
             "variation": variation,
+            "variation_by_source": {},
             "all_original_canaries_passed": all(
                 r[0]["serving_parity_passed"] for r in loaded
             ),
         }
+        for source in sorted({r["source"] for r in rows}):
+            mask = [r["source"] == source for r in rows]
+            grouped = stability(scores[:, mask], margins[:, mask])
+            grouped["independent_starts"] = grouped.pop("passes")
+            methods[method]["variation_by_source"][source] = grouped
     return {
         "analysis_sha256": sha256_file(Path(__file__)),
         "manifest_sha256": [sha256_file(m) for m in manifests],
