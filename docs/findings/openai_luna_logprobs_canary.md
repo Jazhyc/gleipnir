@@ -114,6 +114,31 @@ release planned in the coming days. Its announcement supplies no probability
 contract. These observations apply to existing direct inference endpoints and
 do not establish Decisions API behavior or account access.
 
+## GPT-6.1 Sol and GPT-6 Astra: logprobs unavailable
+
+A separate four-request synthetic Responses canary checked `gpt-6.1-sol` and
+`gpt-6-astra`. Its manifest was frozen before execution. For each model, one
+request used allowed reasoning effort `low` plus the logprob include field and
+top-five alternatives; another used reasoning effort `none` without requesting
+logprobs, isolating the reasoning-setting restriction. All requests used the
+same original short instruction to return `0`, capped output at 32 tokens, and
+omitted `temperature` and `top_p`. There were no retries or dataset inputs.
+
+Both models returned HTTP 400 for both conditions:
+
+- `low` plus logprobs: `unsupported_parameter` on `include`, with message
+  `logprobs are not supported with reasoning models.`
+- `none` without logprobs: `unsupported_value` on `reasoning.effort`, with
+  allowed efforts `low`, `medium`, `high`, `xhigh`, and `max`.
+
+These live results match the official model and migration guidance: mandatory
+reasoning prevents using the `none` mode that enables Luna's token logprobs.
+Neither tested model currently supports our direct binary-logprob teacher
+interface through the standard API. Asking for a generated probability would
+constitute a different supervision method and would not supply the underlying
+two-token distribution. All four error responses had no usage object; no
+successful inference was performed in this compatibility canary.
+
 ## Artifacts and sources
 
 Ignored local artifacts:
@@ -130,10 +155,16 @@ Ignored local artifacts:
   `responses.jsonl`: frozen matched `top_p=1` follow-up and raw responses.
   Response SHA-256:
   `cba64e102c0b1260510038ba0add1d2bfbb94b72a1140ac5ad1fd415cd705f70`.
+- `results/openai_decision_api_probe/sol_astra_20260929T231614Z/manifest.json`
+  and `responses.jsonl`: frozen Sol/Astra restriction check and all four raw
+  HTTP-400 responses. Response SHA-256:
+  `8a6637c6b33478d8a6490ebc1743943b0742f6e5e9b12fa400b2aa5772a92c32`.
 
 Official sources checked during the investigation:
 
 - [GPT-6 API parameter guidance](https://developers.openai.com/api/docs/guides/latest-model#migration-quickstart).
 - [GPT-6 Luna model](https://developers.openai.com/api/docs/models/gpt-6-luna).
+- [GPT-6.1 Sol model](https://developers.openai.com/api/docs/models/gpt-6.1-sol).
+- [GPT-6 Astra model](https://developers.openai.com/api/docs/models/gpt-6-astra).
 - [Published pricing](https://developers.openai.com/api/docs/pricing).
 - [DevDay Decisions API announcement](https://openai.com/index/devday-2026-recap/).
