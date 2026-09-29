@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import re
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -30,6 +31,7 @@ from vllm.utils.flashinfer import (
     has_flashinfer_b12x_gemm,
 )
 
+from gleipnir.nvfp4_artifact import NvFp4Artifact
 from gleipnir.nvfp4_reference import decode_nvfp4
 
 logger = init_logger(__name__)
@@ -117,11 +119,19 @@ def native_linear(
 class NvFp4OnlineLinearMethod(UnquantizedLinearMethod):
     """Load standard BF16 checkpoint tensors and quantize selected linear layers."""
 
-    def __init__(self, backend: str, prefix: str, packer: str, scale_mode: str) -> None:
+    def __init__(
+        self,
+        backend: str,
+        prefix: str,
+        packer: str,
+        scale_mode: str,
+        artifact: NvFp4Artifact | None = None,
+    ) -> None:
         self.backend = backend
         self.prefix = prefix
         self.packer = packer
         self.scale_mode = scale_mode
+        self.artifact = artifact
         if backend == "cutlass" and not cutlass_fp4_supported():
             raise RuntimeError("Native CUTLASS NVFP4 is unavailable")
         if backend == "b12x" and not has_flashinfer_b12x_gemm():
@@ -131,7 +141,11 @@ class NvFp4OnlineLinearMethod(UnquantizedLinearMethod):
         if getattr(layer, "_gleipnir_nvfp4_processed", False):
             return
         source = layer.weight
-        packed, blocks, scale = pack_weight(source, self.packer)
+        packed, blocks, scale = (
+            self.artifact.load(self.prefix, source)
+            if self.artifact is not None
+            else pack_weight(source, self.packer)
+        )
         sample_rows = min(source.shape[0], 16)
         decoded = decode_nvfp4(
             packed[:sample_rows].cpu().numpy(),
@@ -210,6 +224,16 @@ class GleipnirNvFp4Config(QuantizationConfig):
             raise ValueError("Unsupported online NVFP4 projection/other precision")
         if self.scope == "all" and self.projections != "all":
             raise ValueError("Projection selection requires MLP scope")
+        prepared = os.environ.get("GLEIPNIR_NVFP4_PREPARED", "")
+        self.artifact = None
+        if prepared:
+            if self.scope != "mlp":
+                raise ValueError("Prepared NVFP4 artifact requires MLP scope")
+            self.artifact = NvFp4Artifact(
+                Path(prepared),
+                os.environ.get("GLEIPNIR_NVFP4_PREPARED_SHA256", ""),
+                os.environ.get("GLEIPNIR_NVFP4_MERGE_SHA256", ""),
+            )
 
     @classmethod
     def get_name(cls) -> str:
@@ -255,5 +279,5 @@ class GleipnirNvFp4Config(QuantizationConfig):
                 return Fp8PtpcOnlineLinearMethod()
             return UnquantizedLinearMethod()
         return NvFp4OnlineLinearMethod(
-            self.backend, prefix, self.packer, self.scale_mode
+            self.backend, prefix, self.packer, self.scale_mode, self.artifact
         )

@@ -336,6 +336,89 @@ projection clears fidelity, even though gate/up accounts for more speed gain.
 Retain both diagnostics; do not infer a safe FP4 projection from ranking gains.
 Evidence: `results/fp4_inference/nvfp4_gate_up_cutlass/`.
 
+## Completed mixed channel/block FP8 diagnostic
+
+Per-channel MLP FP8 plus explicitly forced Triton block FP8 in the remaining
+decoder linears loaded successfully and took **7.554153 s**, 44,846.85 tokens/s,
+**1.3168x**. Original canary parity failed: master mean/max
+0.043870/0.117002, correlation 0.999980, zero flips. Full-split mean/max drift
+was 0.018962/0.086512, correlation 0.997103 and two flips. Macro
+AUROC/pAUROC/Brier: 0.929752/0.780992/0.102662. Combining two separately
+passing precision recipes does not preserve their canary behavior; retain MLP
+FP8 as the stronger fidelity candidate. Component scopes remain frozen probes.
+Evidence: `results/fp4_inference/mixed_fp8/`.
+
+## Completed FP4-down / FP8-gate hybrid diagnostic
+
+Using FP4 down and per-channel FP8 gate/up gave **7.782110 s**,
+43,533.18 tokens/s, **1.2783x**. The original master canary mean error
+improved to 0.028193 but still exceeded 0.02; maximum 0.093386, correlation
+0.999351, one flip. Full-split mean/max drift was 0.013864/0.062419,
+correlation 0.998326 and two flips. Macro AUROC/pAUROC/Brier:
+0.919421/0.756612/0.097598. This is the best full-split fidelity among tested
+FP4 layouts so far, but still fails the original gate and is not promoted.
+Evidence: `results/fp4_inference/nvfp4_down_fp8_gate/`.
+
+## Completed six-projection Hessian-feedback screen
+
+The Triton feedback implementation passed exact packed-code/scale comparison
+with an independent small NumPy reference. All native GEMM checks against
+decoded FP32 references passed (maximum relative L2 0.001666).
+Fixed-order, damping-0.01, 128-column GPTQ-style weight feedback reduced mean
+W4A4 calibration reconstruction error from **0.094842 to 0.069032** (27.2%).
+Held-out mean fell from **0.095005 to 0.090320** (4.9%). Gains were much smaller
+on held-out inputs and two down projections worsened slightly, so calibration
+error is not a population or judge-quality claim.
+
+The fixed expansion gate passed: >=10% calibration improvement and <=2%
+held-out worsening. Proceed to all decoder MLP projections on the same twelve
+disjoint trajectories, with eight calibration rows only for fitting, then freeze
+the artifact before the unchanged serving gates. No hyperparameter adjustment
+or selection used evaluation labels. This adapts second-order weight feedback
+from [GPTQ](https://arxiv.org/abs/2210.17323) to native NVFP4 groups, rather
+than claiming original GPTQ benchmark results. Evidence:
+`results/fp4_inference/gptq_screen/result.json`.
+
+## Completed attention-scope mixed FP8 screen
+
+MLP per-channel FP8 plus attention-projection Triton block FP8, with GDN
+projections BF16, took **7.898270 s**, 42,892.94 tokens/s, **1.2595x**.
+Both original canaries passed: master mean/max 0.014942/0.030490,
+correlation 0.999746, zero flips. Full-split mean/max drift was
+0.013984/0.113118, correlation 0.998037 and one flip. Macro AUROC/pAUROC
+stayed 0.921488/0.756198; Brier was 0.103558 (+0.004640), within the screen.
+Its gain over MLP-only FP8 is small and unconfirmed, so retain both candidates.
+Evidence: `results/fp4_inference/mixed_fp8_attn/`.
+
+## Completed all-layer disjoint capture
+
+The same twelve complete trajectories / 34,068 prompt tokens were captured
+at all 32 MLP layers, adding coverage without changing IDs, split assignment,
+uniform positions, input/merge hashes or prompt lengths. The twelve bounded
+forwards took 6.496 s excluding loading and artifact writes. Transformers
+SDPA/Torch fallback remains a hook-only exception. All 64 projection keys
+and source hashes are retained. Original six captured weight matrices must
+match exactly before export fitting proceeds. Evidence:
+`results/fp4_inference/capture_all/manifest.json`.
+
+## Completed all-MLP Hessian-feedback export
+
+The fixed recipe fitted all 64 projections on the eight calibration trajectories.
+Every native decoded-reference check passed (maximum relative L2 0.001858),
+and sample original-weight reconstruction stayed below 0.25 (maximum 0.231951).
+Mean output reconstruction across all projections was 0.077270 calibration
+versus 0.102604 held-out. This larger gap limits generalization claims; no score
+fidelity is established by the export. Summed per-projection fit/audit/write
+work was 8.877 s after input loading.
+
+The frozen manifest SHA-256 is
+`9209b3da693baeb31ec15e3a6133361373d731d726da636dfcdecc6593484ab7`.
+It binds the merge, calibration, algorithm and all packed files. The serving
+loader requires that manifest hash, per-file hash, exact original BF16 weight
+bytes, projection coverage, shapes/dtypes and finite positive scales before
+using any fitted tensor. The FP32 master and BF16 merge are unchanged. Fitted
+weights remain ignored. Evidence: `results/fp4_inference/gptq_all/manifest.json`.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

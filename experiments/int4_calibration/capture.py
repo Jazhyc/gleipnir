@@ -37,9 +37,24 @@ def select(rows: list[dict], excluded: list[dict]) -> list[dict]:
     return chosen
 
 
+def parse_layers(specification: str, count: int) -> list[int]:
+    """Select explicit or all decoder layers without changing trajectory selection."""
+    if specification == "all":
+        return list(range(count))
+    values = [int(v) for v in specification.split(",")]
+    if (
+        not values
+        or len(values) != len(set(values))
+        or any(v < 0 or v >= count for v in values)
+    ):
+        raise ValueError("Invalid or duplicate capture layers")
+    return sorted(values)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--layers", default="0,16,31")
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     rows = read_rows()
@@ -54,12 +69,16 @@ def main() -> None:
     merge = json.loads((ROOT / "merged_bf16/merge_manifest.json").read_text())
     for name, expected in merge["files"].items():
         assert sha256_file(ROOT / "merged_bf16" / name) == expected
+    model_config = json.loads((ROOT / "merged_bf16/config.json").read_text())
+    text_config = model_config.get("text_config", model_config)
+    layers = parse_layers(args.layers, text_config["num_hidden_layers"])
     record = {
         "subset_sha256": sha256_file(DATA / "subset.jsonl"),
         "iteration32_sha256": sha256_file(DATA / "iteration32.jsonl"),
         "merge_manifest_sha256": sha256_file(ROOT / "merged_bf16/merge_manifest.json"),
         "rows": [{k: v for k, v in r.items() if k != "prompt"} for r in selected],
-        "layers": [0, 16, 31],
+        "layers": layers,
+        "source_sha256": sha256_file(Path(__file__)),
         "positions_per_row": 256,
         "backend": "Transformers BF16 SDPA causal-LM; bounded hooks only",
         "torch": torch.__version__,
@@ -111,7 +130,7 @@ def main() -> None:
         start = time.perf_counter()
         with torch.inference_mode():
             result = model(**inputs, use_cache=False, logits_to_keep=1)
-        assert len(captured) == 6
+        assert len(captured) == 2 * len(layers)
         assert torch.isfinite(result.logits).all()
         torch.save(captured, args.output / f"row_{i}.pt")
         record["completed"].append(

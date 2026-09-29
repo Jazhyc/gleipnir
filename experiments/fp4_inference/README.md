@@ -296,3 +296,53 @@ The isolated FP4 projections both failed parity. Down-only took 9.047070 s
 flips. Gate/up-only took 7.852298 s (1.2668x), with canary mean/max
 0.057448/0.117002 and two full-split flips. Gate/up provides more speed gain;
 neither projection is fidelity-qualified in this basic online FP4 recipe.
+
+## Frozen Hessian-feedback FP4 screen
+
+The basic FP4 precision layouts missed score fidelity. Test fixed-order
+GPTQ-style weight error feedback using only the eight disjoint calibration
+trajectories. Use covariance `X.T @ X / n`, diagonal damping 0.01 times mean
+diagonal, inverse-Hessian upper Cholesky, 128-column feedback blocks, native
+16-value weight groups with E4M3 scales, and the original global weight scale.
+No activation ordering, hyperparameter sweep, teacher targets, or label objective.
+Keep ordinary dynamic FP4 activations. Require an independent small NumPy
+feedback reference with exact packed codes/scales and native GEMM agreement
+<=0.01 relative L2 against decoded FP32 inputs/weights.
+
+First screen all six existing captured projections. Expand to all MLP layers
+only if mean calibration W4A4 output relative L2 improves by at least 10% and
+held-out mean error does not exceed stock by more than 2%. This is a fixed
+numerical gate, not model promotion. Stop on Cholesky/nonfinite/packing failures;
+preserve partial results. A later full-model artifact needs source/calibration
+checksums, independent reconstruction checks and unchanged serving gates.
+
+```bash
+python -m experiments.fp4_inference.gptq_screen \
+  --output results/fp4_inference/gptq_screen
+```
+
+The six-projection screen passed independent exact packing and native arithmetic
+checks. Calibration mean error improved 27.2% (0.094842 → 0.069032); held-out
+mean improved 4.9% (0.095005 → 0.090320). This clears the fixed expansion rule.
+The same twelve trajectories may now be captured at all 32 MLP layers; eight
+calibration rows fit every projection with the already frozen recipe. Four
+held-out rows only audit reconstruction. Record each packed artifact checksum,
+all 64 projections, source-weight reconstruction <=0.25 and native agreement
+<=0.01 before marking the export complete. Preserve the original BF16 weights.
+
+```bash
+python -m experiments.int4_calibration.capture --layers all \
+  --output results/fp4_inference/capture_all
+python -m experiments.fp4_inference.gptq_export \
+  --output results/fp4_inference/gptq_all
+```
+
+The complete 64-projection export is checksum-bound to the original BF16 merge
+and disjoint capture. Serving requires the frozen manifest hash, each packed
+file hash, exact original weight-byte identity, expected shapes/dtypes and finite
+scales, followed by the original reconstruction and score gates. Compare
+`gptq_nvfp4_triton` (the same activation packer as the numerical screen) with
+`gptq_nvfp4_cuda` (stock CUDA activation packing), keeping prepared weights
+identical. Native CUTLASS GEMM stays fixed. Frozen prepared-weight hybrid
+conditions retain FP8 in the sibling projection. Artifact/source hashes enter
+runtime and compiler identity; no fitted or original weights are committed.
