@@ -52,6 +52,28 @@ def test_cpu_weight_cannot_silently_use_emulation():
         vllm_nvfp4.pack_weight(torch.zeros((32, 64), dtype=torch.bfloat16))
 
 
+def test_all_scope_selects_decoder_linears_and_preserves_head(monkeypatch):
+    monkeypatch.setenv("GLEIPNIR_NVFP4_SCOPE", "all")
+    monkeypatch.setattr(vllm_nvfp4, "LinearBase", torch.nn.Linear)
+    native = object()
+    monkeypatch.setattr(vllm_nvfp4, "NvFp4OnlineLinearMethod", lambda *args: native)
+    config = vllm_nvfp4.GleipnirNvFp4Config()
+    layer = torch.nn.Linear(64, 32)
+    for prefix in (
+        "model.layers.16.mlp.gate_up_proj",
+        "model.layers.16.linear_attn.in_proj_ba",
+        "model.layers.16.linear_attn.in_proj_qkvz",
+        "model.layers.16.linear_attn.out_proj",
+        "model.layers.3.self_attn.qkv_proj",
+        "model.layers.3.self_attn.o_proj",
+    ):
+        assert config.get_quant_method(layer, prefix) is native
+    for prefix in ("lm_head", "visual.blocks.0.mlp.fc1"):
+        assert isinstance(
+            config.get_quant_method(layer, prefix), vllm_nvfp4.UnquantizedLinearMethod
+        )
+
+
 def test_hybrid_selects_down_fp4_gate_up_fp8_and_attention_bf16(monkeypatch):
     monkeypatch.setenv("GLEIPNIR_NVFP4_SCOPE", "mlp")
     monkeypatch.setenv("GLEIPNIR_NVFP4_PROJECTIONS", "down")

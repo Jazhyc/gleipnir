@@ -36,6 +36,16 @@ def test_full_confirmation_preserves_selected_serving_configuration(source, targ
     assert full == selected
 
 
+@pytest.mark.parametrize("method", ["bf16", "fp8_mlp_b8192"])
+@pytest.mark.parametrize("suffix", ["a", "b"])
+def test_independent_full_starts_preserve_the_frozen_choice(method, suffix):
+    root = Path("experiments/fp4_inference/configs")
+    frozen = json.loads((root / f"{method}_full_confirmation.json").read_text())
+    restart = json.loads((root / f"{method}_full_restart_{suffix}.json").read_text())
+    assert restart.pop("output") != frozen.pop("output")
+    assert restart == frozen
+
+
 def row(identity, original, transformed):
     return {
         "id": identity,

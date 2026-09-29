@@ -619,3 +619,61 @@ Full configs are `bf16_full_confirmation.json` (SHA256
 `70d297832eb410a193a6ce77e8332ea714fd79731bbeb5905b9f3b69d97b6da6`) and
 `fp8_mlp_b8192_full_confirmation.json` (SHA256
 `c0e6b57c1941ae5ba4acc7409f439f9e46d0df3a02afc4ba6f1e9c2416a00931`).
+
+The frozen full BF16 baseline completed all 512 rows / 5,760,843 tokens in
+171.021511 s (33,684.90 prompt tokens/s), with original canaries passing and
+successful worker cleanup. The completed frozen FP8 comparison and preselected
+held-out metrics are reported below.
+
+Before the first full FP8 outcomes, freeze two additional independent starts
+of each identical serving recipe (`*_full_restart_a/b`), changing only output
+paths. Their exclusions/configuration/analysis hashes are bound by
+`full_restart_a_manifest.json` and `full_restart_b_manifest.json`. Run them if
+the existing allocation permits, without tuning or fallback selection from
+their results. Report independent-start timing range/median and score drift
+separately from the earlier three passes inside one development engine.
+
+The first frozen full pair completed and passed: BF16 171.021511 s versus FP8
+135.557019 s, **1.2616x** warmed speedup. The 464 held-out rows had macro AUROC
+loss 0.000207 and Brier change -0.000451, inside the original 0.01 bounds.
+Held-out mean/max drift was 0.009575/0.092667, correlation 0.999013 and five
+threshold flips. All-512 drift had six flips. Preserve those individual changes;
+the result is not exact output equivalence. Detailed source/ranking/calibration
+and threshold metrics are in `final_confirmation_report.json` and the finding.
+
+## Frozen wider FP4 diagnostic
+
+Hypothesis: native FP4 in all decoder linear projections can expose a larger
+arithmetic speed ceiling than MLP-only FP4. The shape-aware trace attributes
+another 26.28% of sampled time to attention/GDN projections. Keep the original
+2,048/two schedule, CUDA packing, dynamic tensor-global scales, CUTLASS backend,
+embeddings and vocabulary head fixed. Quantize all decoder `LinearBase` layers
+using the existing `all` scope, with online weights rather than the MLP-only
+prepared artifact. This development diagnostic cannot replace the frozen
+broader-confirmation candidate.
+
+Before serving, `shape_canary.py` must bind all four extra N/K shapes to the
+observed trace and pass native GEMM versus independently decoded FP32 inputs
+at M=1/128/2048 (relative L2 <=0.01; finite output). It uses synthetic BF16
+values, establishing arithmetic support only. Record all source/profile hashes,
+hardware/software and per-shape errors; stop on any failure. Then one ordered
+32-row diagnostic retains unchanged serving/quality gates, including the
+explicit finite-failure override and no promotion after failure. No full-split
+precision selection follows from this exploration.
+
+All twelve extra-shape arithmetic checks passed, maximum relative L2 0.001973.
+Proceed with the single all-decoder-linear development diagnostic; arithmetic
+support does not waive the original score or quality gates.
+
+All-decoder-linear FP4 completed in 5.659865 s (1.7576x initial BF16), but failed
+both serving gates badly (master mean/max 0.128132/0.370277, correlation 0.198104)
+and development AUROC loss (0.016529 >0.01). Its higher diagnostic speed confirms
+that accelerating more projections can improve total time; it is rejected for
+serving. Preserve the failed gate and do not promote on this speed result.
+
+The additional full-start analysis uses `independent_analysis.py`: it rechecks
+each bound exclusion/configuration manifest, exact row/result identities,
+unchanged serving configurations and one pass per independent engine. It reports
+timing medians/ranges, score/margin ranges and threshold-unstable rows while
+retaining every per-pair quality/canary failure. The current focused campaign
+test set passed 74 tests; no expensive GPU path was invoked by those tests.

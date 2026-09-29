@@ -798,6 +798,12 @@ remain separate from serving timing and quality selection. Evidence:
 `profile_bf16_shapes/shape_summary.json`, its checksummed trace/config/selection,
 and the earlier RTX 4080 records in `experiments/local_inference/README.md`.
 
+The installed CUDA 13.2 Nsight Compute availability probe returned
+`ERR_NVGPUCTRPERM`: this cluster user cannot access GPU performance counters.
+No counter metrics were collected and no driver or permission changes were
+attempted. Keep the projection attribution separate from compute-versus-memory
+diagnosis. Evidence: `results/fp4_inference/ncu_availability.json`.
+
 ## Completed 16,384-token MLP FP8 scheduler screens
 
 Both the two-sequence and eight-sequence conditions passed the original serving
@@ -841,8 +847,8 @@ batched tokens and two sequences**. Both original canaries passed across two
 independent starts; the three-pass median was 7.847283 s, **1.2681x** matched
 repeated BF16. The larger budgets offered less than 1% single-pass advantage,
 while the fitted/selective native FP4 layouts did not survive original gates.
-The still-running GDN precision screen is a development diagnostic, separate
-from this frozen choice.
+At selection time, GDN precision outputs had not been viewed. That screen
+remains a development diagnostic, separate from this frozen choice.
 
 The confirmation analysis, canonical inputs and both serving configurations are
 bound before launch by `final_confirmation_manifest.json` (SHA256
@@ -852,6 +858,80 @@ original/transformed trajectory hashes: **464 of 512** rows remain (Gloom
 161 negative/160 positive; STRIDE 55/88). The full paired run keeps all prompts
 and the original score runner; only these excluded-row metrics may support the
 broader quality conclusion. It cannot guide a new precision/scheduler selection.
+
+## Completed canonical full-split BF16 baseline
+
+The frozen original BF16 configuration scored all **512 rows / 5,760,843 prompt
+tokens** in **171.021511 s**, or **33,684.90 prompt tokens/s**. Both original
+serving canaries passed. Engine initialization took 24.528173 s with the existing
+compile cache; rendering, warmup and process startup remain outside warmed
+scoring time. All workers exited and device memory returned to zero before the
+frozen FP8 candidate started. The paired confirmation below uses only the
+preselected 464 held-out rows for broader quality conclusions. Evidence:
+`bf16_full_confirmation/` and its successful execution receipt.
+
+## Completed frozen full-split FP8 confirmation
+
+The frozen MLP FP8 / 8,192-token / two-sequence recipe scored all **512 rows /
+5,760,843 tokens in 135.557019 s**, versus 171.021511 s BF16: **1.2616x** warmed
+speedup. Both original serving canaries passed, and the report verified the
+frozen configuration/input/analysis hashes and unchanged score runner. All-512
+mean/max drift was 0.009737/0.092667, correlation 0.998986 and six threshold
+flips. This is one full pass per engine; independent full restarts are frozen
+separately and remain to be measured.
+
+The preselected **464 held-out rows passed the original quality bounds**:
+macro AUROC loss **0.000207** (limit 0.01) and Brier change **-0.000451**
+(maximum increase 0.01). Mean/max held-out drift was 0.009575/0.092667,
+correlation 0.999013 and five flips (three Gloom, two STRIDE).
+
+| Held-out view | Rows | BF16 / FP8 AUROC | BF16 / FP8 pAUROC@20 | BF16 / FP8 Brier |
+| --- | ---: | ---: | ---: | ---: |
+| Source macro | 464 | 0.962116 / 0.961908 | 0.870276 / 0.873951 | 0.076826 / 0.076374 |
+| Gloom | 321 | 0.931153 / 0.930532 | 0.774127 / 0.778377 | 0.115247 / 0.115021 |
+| STRIDE | 143 | 0.993079 / 0.993285 | 0.966426 / 0.969525 | 0.038405 / 0.037728 |
+
+At threshold 0.5, Gloom FPR/recall changed from 0.068323/0.725000 to
+0.062112/0.737500; STRIDE changed from 0.018182/0.943182 to 0/0.931818.
+Source-wise distinct scores were Gloom 248/249 and STRIDE 138/137 (BF16/FP8).
+Both held-out vectors had 367 distinct scores and 97 tied rows; all-512 vectors
+had 394/395 distinct scores and 118/117 tied rows.
+These discrete threshold changes are retained even though aggregate quality
+passes. The evidence supports this frozen serving layout on the existing split;
+it does not establish identical outputs or cross-model generalization. Evidence:
+`final_confirmation_report.json`, `final_confirmation_manifest.json` and both
+full serving directories with successful execution receipts.
+
+## Completed remaining decoder-shape FP4 arithmetic checks
+
+All twelve native CUTLASS FP4 checks passed against independently decoded FP32
+inputs at the four observed attention/GDN N/K shapes and M=1/128/2048. Maximum
+relative L2 was **0.001973**, below the frozen 0.01 bound. The shape set is bound
+to the complete attributed profile, and source/software/hardware provenance is
+recorded. This establishes arithmetic support on synthetic BF16 values, not
+monitor quality or inference speed. The predeclared all-decoder-linear FP4
+development diagnostic can now proceed; it cannot replace the frozen full-split
+selection. Evidence: `decoder_shape_canary/result.json` and its driver log.
+
+## Completed all-decoder-linear native FP4 diagnostic: rejected
+
+Native CUTLASS FP4 in all decoder linear projections, with the original
+2,048/two scheduler, took **5.659865 s**, or **1.7576x** initial BF16. The
+loaded model used 3.32 GiB before KV allocation. This exceeds the MLP-only
+FP4 diagnostic's 1.3985x gain and is consistent with accelerating a larger
+fraction of linear work; it does not establish a memory-bandwidth bottleneck.
+The shape arithmetic checks had passed, so packed-GEMM implementation support
+is separate from this monitor-quality failure.
+
+Both original serving gates failed badly: master mean/max error
+**0.128132/0.370277**, correlation **0.198104**; merged mean/max
+0.133669/0.370277, correlation 0.156185. The finite diagnostic override remained
+explicitly failed. Development macro AUROC/pAUROC/Brier were
+0.904959/0.739669/0.102393; AUROC loss **0.016529** also exceeds the fixed 0.01
+bound. Development mean/max drift was 0.051352/0.331133, correlation 0.972236
+and three threshold flips. Reject this layout; the higher speed is not usable
+serving performance. Evidence: `nvfp4_all_cutlass/`, the comparison/parity and
+successful execution receipt, plus `20260929T225827Z-benchmark.log`.
 
 ## Proposed quantization-aware distillation follow-up
 
