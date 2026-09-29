@@ -173,6 +173,11 @@ def main() -> None:
         default=Path("experiments/openai_monitoring_ood/config.json"),
     )
     parser.add_argument("--stop-after-canary", action="store_true")
+    parser.add_argument(
+        "--tokens-per-minute",
+        type=int,
+        help="Operational request pacing; preserves model settings and 40 workers.",
+    )
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     template = load_prompt_set().teacher
@@ -228,7 +233,27 @@ def main() -> None:
         budget_usd=execution["budget_usd"],
         max_attempts=execution["max_attempts"],
         timeout_seconds=execution["timeout_seconds"],
+        tokens_per_minute=args.tokens_per_minute,
     )
+    with (root / "execution_events.jsonl").open("a") as handle:
+        handle.write(
+            json.dumps(
+                {
+                    "started_at_utc": datetime.now(UTC).isoformat(),
+                    "concurrency": execution["concurrency"],
+                    "tokens_per_minute": args.tokens_per_minute,
+                    "token_pacing_estimate": "1.05 * stored Kimi tokens + 48",
+                    "source_sha256": {
+                        str(p): file_hash(p)
+                        for p in (
+                            Path(__file__),
+                            Path("src/gleipnir/openai_monitor.py"),
+                        )
+                    },
+                }
+            )
+            + "\n"
+        )
     workers = execution["concurrency"]
     score_rows(client, canary, root / "canary_predictions.jsonl", workers)
     score_rows(client, [longest], root / "longest_predictions.jsonl", workers)

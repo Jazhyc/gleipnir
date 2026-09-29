@@ -17,6 +17,25 @@ import requests
 from gleipnir.openrouter import RETRYABLE_STATUS_CODES, retry_delay_seconds
 
 
+class TokenStartLimiter:
+    """Pace request starts under a shared token rate with forty worker slots."""
+
+    def __init__(self, tokens_per_minute: int) -> None:
+        if tokens_per_minute <= 0:
+            raise ValueError("token rate must be positive")
+        self.rate = tokens_per_minute / 60
+        self.lock = threading.Lock()
+        self.next_start = 0.0
+
+    def wait(self, tokens: float) -> None:
+        """Reserve one start time; count every HTTP attempt toward the limit."""
+        with self.lock:
+            now = time.perf_counter()
+            start = max(now, self.next_start)
+            self.next_start = start + tokens / self.rate
+        time.sleep(max(0.0, start - time.perf_counter()))
+
+
 def digest(value: Any) -> str:
     """Return a stable JSON identity."""
     return hashlib.sha256(
@@ -100,6 +119,7 @@ class AuditedClient:
         budget_usd: float,
         max_attempts: int,
         timeout_seconds: float,
+        tokens_per_minute: int | None = None,
     ) -> None:
         self.key = key
         self.settings = settings
@@ -109,6 +129,9 @@ class AuditedClient:
         self.budget_usd = budget_usd
         self.lock = threading.Lock()
         self.local = threading.local()
+        self.start_limiter = (
+            TokenStartLimiter(tokens_per_minute) if tokens_per_minute else None
+        )
         self.reserved = 0.0
         self.spent_bound = 0.0
         self.attempt_path = root / "attempts.jsonl"
@@ -132,6 +155,8 @@ class AuditedClient:
         if not hasattr(self.local, "session"):
             self.local.session = requests.Session()
         for attempt in range(1, self.max_attempts + 1):
+            if self.start_limiter:
+                self.start_limiter.wait(token_proxy * 1.05 + 32 + 16)
             with self.lock:
                 if self.spent_bound + self.reserved + estimate > self.budget_usd:
                     raise RuntimeError("campaign conservative budget bound exhausted")
@@ -224,5 +249,15 @@ class AuditedClient:
                 status = record.get("http_status", "transport")
                 reason = record.get("parse_failure", "request failed")
                 raise RuntimeError(f"id={row['id']} status={status}: {reason}")
-            time.sleep(retry_delay_seconds(attempt, response))
+            # Retry-After is a minimum; avoid forty synchronized one-second loops.
+            delay = max(
+                retry_delay_seconds(attempt, response),
+                retry_delay_seconds(attempt, None),
+            )
+            if response is not None:
+                try:
+                    delay = max(delay, float(response.headers.get("Retry-After", 0)))
+                except ValueError:
+                    pass
+            time.sleep(delay)
         raise AssertionError("unreachable")

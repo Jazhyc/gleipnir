@@ -28,6 +28,19 @@ suite. No OOD result changes the prompt, threshold, or selection rule.
 PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run
 ```
 
+The first full pass saved 319 valid OOD rows before exhausting transient retries
+against the account's 2M tokens/minute limit. Resume with 40 worker slots and
+paced starts, counting 105% of the stored Kimi tokens plus a 48-token allowance:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --tokens-per-minute 1800000
+```
+
+Pacing and source hashes are recorded in `execution_events.jsonl`. These are
+operational resumption settings; request semantics and cache identities remain
+frozen. Retry waits honor at least Retry-After and exponential backoff.
+
 `OPENAI_API_KEY` is loaded from the ignored `.env`; never logged. Every HTTP
 attempt, including parse failures and transient retries, is appended to ignored
 `attempts.jsonl`. Valid scores are flushed individually to `predictions.jsonl`.
