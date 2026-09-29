@@ -68,3 +68,24 @@ def test_triton_hybrid_confirmation_changes_only_output_and_repeats():
     assert candidate.pop("repeats") == 3
     assert original.pop("repeats") == 1
     assert candidate == original
+
+
+def test_selective_down_precision_uses_frozen_calibration_ranking():
+    root = Path("experiments/fp4_inference/configs")
+    original = json.loads((root / "gptq_down_fp8_triton.json").read_text())
+    candidate = json.loads((root / "gptq_selective_down8.json").read_text())
+    selection = candidate.pop("precision_selection")
+    ranking = selection["ranking_calibration"]
+    assert ranking == sorted(
+        ranking, key=lambda r: (r["relative_l2"], r["layer"]), reverse=True
+    )
+    selected = sorted(r["layer"] for r in ranking[:8])
+    assert selected == selection["fp8_down_layers"]
+    assert set(selected).isdisjoint(selection["native_fp4_down_layers"])
+    assert set(selected + selection["native_fp4_down_layers"]) == set(range(32))
+    assert not selection["uses_heldout_reconstruction_or_monitor_labels"]
+    assert candidate["environment"].pop("GLEIPNIR_NVFP4_FP8_LAYERS") == ",".join(
+        map(str, selected)
+    )
+    assert candidate.pop("output") != original.pop("output")
+    assert candidate == original

@@ -480,6 +480,10 @@ The matching synchronous MLP FP8 screen passed original canaries and exactly
 reproduced earlier FP8 scores in 8.308580 s. This was slower than the default
 FP8 path's 8.051037 s repeated median, so retain the default process topology.
 
+Batch-invariance mode failed after loading and before warmup with the locked
+backend's explicit `GDN_ATTN` unsupported error. Preserve the failed startup;
+this mode provides no numerical or throughput measurement for Qwen3.5 here.
+
 ## Frozen fused FP8 activation kernel screen
 
 Hypothesis: combining SiLU/multiply and dynamic per-token FP8 packing can reduce
@@ -502,6 +506,32 @@ quantized inputs passed (0.001655). Preserve this negative and exclude it from
 serving. The real earlier MLP FP8 profile already shows an Inductor-fused
 SiLU/quantization kernel, so a two-CUDA-kernel microbenchmark would not establish
 an improvement over compiled serving. See the finding document for evidence.
+
+The Triton hybrid's fresh three-pass engine failed the master canary again
+(mean 0.021178 > 0.02), despite identical within-engine scores and a 7.793463 s
+median. Reject the layout as a confirmed candidate; packing alone did not
+resolve the observed restart sensitivity.
+
+The 8,192/two MLP FP8 fresh-engine confirmation passed both original canaries:
+7.831891/7.847283/7.869111 s, median 7.847283 s (1.2681x repeated BF16).
+The fixed development quality screen passed. One low-probability row had a
+0.002980 score range, with no threshold instability; do not describe these
+larger-budget repeats as exactly invariant. The original 2,048/two FP8 repeats
+remain exact in the recorded runs.
+
+## Frozen calibration-selected FP4 precision screen
+
+Hypothesis: protect the eight down projections with largest **calibration-only**
+fitted BF16-output relative L2, leaving 24 fitted down projections as native
+FP4, all gate/up projections as FP8 and attention/GDN/head as BF16. Use the
+existing all-layer capture and fitted artifact, never held-out reconstruction
+or monitor labels to select layers. Freeze the full calibration ranking in
+`gptq_selective_down8.json`: FP8 down layers 12,14,20,21,23,24,25,27.
+Use the original 2,048/two scheduler and Triton activation packing. Prove the
+loaded down-weight dtypes layer by layer before compiling. Require unchanged
+canaries, development quality bounds and >10% warmed gain, followed by a fresh
+three-pass confirmation before any full-split selection. Stop on missing or
+wrong precision, nonfinite output or artifact identity failure.
 
 ## Final confirmation selection
 

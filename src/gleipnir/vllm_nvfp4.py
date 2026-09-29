@@ -214,6 +214,17 @@ class GleipnirNvFp4Config(QuantizationConfig):
             for x in os.environ.get("GLEIPNIR_NVFP4_KEEP_LAYERS", "").split(",")
             if x
         }
+        self.fp8_layers = {
+            int(x)
+            for x in os.environ.get("GLEIPNIR_NVFP4_FP8_LAYERS", "").split(",")
+            if x
+        }
+        if self.fp8_layers and (
+            self.scope != "mlp"
+            or self.other_mlp_precision != "fp8_channel"
+            or min(self.fp8_layers) < 0
+        ):
+            raise ValueError("FP8 layer fallback requires MLP scope and FP8 precision")
         if self.scope not in {"none", "mlp", "all"} or self.backend not in {
             "cutlass",
             "b12x",
@@ -282,6 +293,8 @@ class GleipnirNvFp4Config(QuantizationConfig):
         )
         if keep:
             return UnquantizedLinearMethod()
+        if selected and projection_match and int(index.group(1)) in self.fp8_layers:
+            return Fp8PtpcOnlineLinearMethod()
         if not selected or not projection_match:
             if (
                 index is not None
@@ -293,3 +306,28 @@ class GleipnirNvFp4Config(QuantizationConfig):
         return NvFp4OnlineLinearMethod(
             self.backend, prefix, self.packer, self.scale_mode, self.artifact
         )
+
+
+def audit_layer_fallback(model: torch.nn.Module, config: GleipnirNvFp4Config) -> dict:
+    """Require loaded down-weight dtypes to prove the requested precision layout."""
+    actual = {}
+    for name, module in model.named_modules():
+        index = re.search(r"(?:^|\.)layers\.(\d+)\.mlp\.down_proj$", name)
+        if index is not None:
+            layer = int(index.group(1))
+            if layer in actual:
+                raise ValueError("Duplicate down projection in precision audit")
+            actual[layer] = module.weight.dtype
+    if not actual or not config.fp8_layers <= set(actual):
+        raise ValueError("Missing requested FP8 fallback layers")
+    for layer, dtype in actual.items():
+        expected = (
+            torch.bfloat16
+            if layer in config.keep_layers
+            else torch.float8_e4m3fn
+            if layer in config.fp8_layers
+            else torch.uint8
+        )
+        if dtype != expected:
+            raise ValueError(f"Loaded precision differs from request at layer {layer}")
+    return {str(layer): str(dtype) for layer, dtype in sorted(actual.items())}

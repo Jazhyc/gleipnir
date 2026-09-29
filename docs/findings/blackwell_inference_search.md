@@ -689,6 +689,47 @@ Separately, the locked RMSNorm/quant matcher rejects the model's FP32 Gemma
 norm weights paired with BF16 inputs; enabling its flag alone is not evidence
 of executed fusion. Keep the existing compiled serving path.
 
+## Batch-invariance startup rejection on Qwen3.5 GDN
+
+The locked `VLLM_BATCH_INVARIANT=1` BF16 preflight loaded weights, then failed
+before warmup or scoring with **`VLLM batch_invariant mode is not supported for
+GDN_ATTN.`** The beta mode cannot represent this model's gated-delta attention
+in this version. Preserve the 34.861 s failed startup and its logs; there is no
+serving timing, score result or batch-invariance claim. Do not bypass the
+backend's explicit support check. Evidence: `bf16_batch_invariant/`, its
+execution receipt, and `20260929T222249Z-benchmark.log`.
+
+## Triton-packed FP4 hybrid three-pass confirmation: rejected
+
+The fresh-engine passes took **7.787093/7.793463/7.797013 s**, median
+**7.793463 s**, **1.2768x** repeated BF16. Within-engine scores and margins
+were identical, but the original master canary failed: mean **0.021178 > 0.02**,
+maximum 0.049461 and correlation 0.993994. The merged gate passed (mean/max
+0.017761/0.031552, correlation 0.997485). Thus changing activation packing did
+not establish a restart-stable FP4 layout. Reject it as a confirmed candidate.
+
+The development quality screen alone passed (AUROC loss 0.002066, Brier
+change -0.000073 versus repeated BF16). Across the two Triton-hybrid starts,
+mean/max score drift was 0.015649/0.246090, correlation 0.993181 and zero flips.
+Neither favorable aggregate metrics nor zero within-engine noise override the
+canary failure. Evidence: `gptq_down_fp8_triton_confirm/`.
+
+## Completed larger-budget MLP FP8 three-pass confirmation
+
+The fresh 8,192/two MLP FP8 engine passed both original canaries. Warmed times
+were **7.831891/7.847283/7.869111 s**, median **7.847283 s**, **1.2681x**
+against repeated BF16. The original 2,048/two FP8 median was 8.051037 s,
+so the matched-budget gain is modest (1.0260x). Macro AUROC loss 0.004132 and
+Brier increase 0.000741 against repeated BF16 pass the fixed development screen;
+pAUROC change -0.020661 remains reported.
+
+Unlike the original FP8 layout's exact repeats, one low-probability row varied:
+maximum score range **0.002980**, raw-margin range 0.125, no threshold-unstable
+rows. Between initial and repeated 8,192 engines, mean/max score drift was
+0.000093/0.002980, correlation 0.999999 and no flips. This is small measured
+variation, not an exact reproducibility claim. Evidence:
+`fp8_mlp_b8192_confirm/repeat_comparison.json` and `independent_start_drift.json`.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would
