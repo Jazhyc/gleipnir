@@ -282,6 +282,60 @@ no measured reason to promote the new packer for speed. It remains a validated
 research primitive for altered quantization. Evidence:
 `results/fp4_inference/kernel_triton_pack/result.json`.
 
+## Completed FlashInfer BF16 attention screen
+
+Replacing FlashAttention with FlashInfer attention at the baseline schedule
+gave **9.928109 s**, 34,123.32 tokens/s, **1.0020x**. Both original canaries
+passed; full-split mean/max drift was 0.004111/0.030490, correlation 0.999702
+and zero flips. Macro AUROC/pAUROC stayed unchanged, Brier was 0.098282.
+This does not clear the speed interest rule and supplies no measured advantage
+over the default attention backend. Evidence:
+`results/fp4_inference/bf16_flashinfer/`.
+
+## Completed Blackwell bounded GPU profiles
+
+Early CUPTI probes succeeded and the identical sixteen-step diagnostic captures
+contained 13,328 BF16 and 13,456 MLP-FP8 CUDA kernel events. By heuristic kernel
+name grouping, summed durations were:
+
+| Category | BF16 share | MLP FP8 share |
+| --- | ---: | ---: |
+| Linear GEMMs | 70.94% | 63.81% |
+| Attention | 11.38% | 14.16% |
+| GDN and convolution | 9.85% | 11.92% |
+| Fused elementwise/reduction | 5.83% | 7.60% |
+| Other | 1.99% | 2.50% |
+
+Duration sums were 936.858/752.162 ms. These are instrumented partial traces,
+not serving elapsed times or an end-to-end speed estimate. Template type names
+inside attention kernels are not counted as GEMMs; a focused classifier test
+guards this. Linears remain the primary target, motivating mixed channel/block
+FP8 outside MLPs while retaining exploration of attention and GDN kernels.
+Evidence: `profile_bf16/` and `profile_fp8_mlp/` under campaign results, with
+checksum-recorded traces and `kernel_summary.json`.
+
+## Completed down-only FP4 diagnostic
+
+Keeping gate/up BF16 and quantizing only down projections took **9.047070 s**,
+37,446.38 tokens/s, **1.0995x**, just below the frozen interest threshold.
+Canary parity failed: master mean/max error 0.046753/0.124353, correlation
+0.999482, one flip. Full-split mean/max drift was 0.018998/0.092667,
+correlation 0.997239 and three flips. Macro AUROC/pAUROC/Brier:
+0.933884/0.801653/0.096522. Isolating down projections improved the worst
+drift relative to all-MLP FP4 but still misses fidelity, with insufficient speed.
+Evidence: `results/fp4_inference/nvfp4_down_cutlass/`.
+
+## Completed gate/up-only FP4 diagnostic
+
+Keeping down projections BF16 and using FP4 gate/up gave **7.852298 s**,
+43,144.06 tokens/s, **1.2668x**. Original canary parity failed: master
+mean/max error 0.057448/0.117002, correlation 0.880189, zero flips. Full-split
+mean/max drift was 0.024930/0.168882, correlation 0.991734 and two flips.
+Macro AUROC/pAUROC/Brier: 0.931818/0.777273/0.090961. Neither isolated
+projection clears fidelity, even though gate/up accounts for more speed gain.
+Retain both diagnostics; do not infer a safe FP4 projection from ranking gains.
+Evidence: `results/fp4_inference/nvfp4_gate_up_cutlass/`.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

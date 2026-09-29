@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import copy
 import gzip
+import importlib
 import json
 import os
 import sys
@@ -13,9 +15,26 @@ from pathlib import Path
 from experiments.local_inference.core import ROOT, canary_rows, read_rows, write_json
 
 
+def profiling_engine(config: dict, early_cupti: bool) -> dict:
+    """Preserve serving settings while selecting the explicit diagnostic worker."""
+    engine = copy.deepcopy(config["engine"])
+    if early_cupti:
+        engine["worker_cls"] = (
+            "experiments.fp4_inference.worker.Fp4ProfileWorker"
+            if engine.get("quantization") == "gleipnir_nvfp4"
+            else "experiments.local_inference.profile_worker.EarlyCuptiWorker"
+        )
+    return engine
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=Path("experiments/local_inference/iteration32.json"),
+    )
     parser.add_argument("--delay", type=int, default=2)
     parser.add_argument("--early-cupti", action="store_true")
     parser.add_argument("--kind", choices=("torch", "cuda"), default="torch")
@@ -24,12 +43,18 @@ def main() -> None:
     if args.kind == "cuda" and args.early_cupti:
         parser.error("Do not combine Nsight capture with the torch CUPTI subscriber")
     args.output.mkdir(parents=True, exist_ok=False)
-    config_path = Path("experiments/local_inference/iteration32.json")
+    config_path = args.config
     config = json.loads(config_path.read_text())
+    if config["engine"].get("quantization") == "gleipnir_nvfp4":
+        from experiments.fp4_inference.run import resolve_runtime_config
+
+        config = resolve_runtime_config(config)
     os.environ.update(config["environment"])
     os.environ["PATH"] = (
         str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"]
     )
+    if config.get("benchmark_module"):
+        importlib.import_module(config["benchmark_module"])
     from transformers import AutoTokenizer
     from vllm import LLM, SamplingParams
 
@@ -59,17 +84,13 @@ def main() -> None:
     if args.kind == "torch":
         profiler_config["torch_profiler_dir"] = str(args.output.resolve())
     write_json(args.output / "profiler_config.json", profiler_config)
-    instrumentation = {}
-    if args.early_cupti:
-        instrumentation["worker_cls"] = (
-            "experiments.local_inference.profile_worker.EarlyCuptiWorker"
-        )
+    engine = profiling_engine(config, args.early_cupti)
+    instrumentation = {"worker_cls": engine.get("worker_cls", "auto")}
     write_json(args.output / "instrumentation.json", instrumentation)
     llm = LLM(
         model=str(ROOT / "merged_bf16"),
         profiler_config=profiler_config,
-        **instrumentation,
-        **config["engine"],
+        **engine,
     )
     try:
         warmup = canary_rows(read_rows()) + [max(rows, key=lambda r: r["tokens"])]

@@ -12,3 +12,13 @@ class Fp4Worker(Worker):
     def __init__(self, *args, **kwargs):
         assert get_quantization_config("gleipnir_nvfp4") is GleipnirNvFp4Config
         super().__init__(*args, **kwargs)
+
+
+class Fp4ProfileWorker(Fp4Worker):
+    """Initialize the diagnostic CUPTI subscriber with custom registration intact."""
+
+    def init_device(self) -> None:
+        super().init_device()
+        from experiments.local_inference.profile_worker import probe_cupti
+
+        probe_cupti(self.device)

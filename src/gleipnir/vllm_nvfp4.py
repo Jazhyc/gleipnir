@@ -20,6 +20,7 @@ from vllm.model_executor.layers.quantization.base_config import (
     QuantizationConfig,
     QuantizeMethodBase,
 )
+from vllm.model_executor.layers.quantization.online.fp8 import Fp8PtpcOnlineLinearMethod
 from vllm.model_executor.layers.quantization.utils.nvfp4_utils import (
     cutlass_fp4_supported,
     swizzle_blockscale,
@@ -187,6 +188,10 @@ class GleipnirNvFp4Config(QuantizationConfig):
         self.backend = os.environ.get("GLEIPNIR_NVFP4_BACKEND", "cutlass")
         self.packer = os.environ.get("GLEIPNIR_NVFP4_PACKER", "cuda")
         self.scale_mode = os.environ.get("GLEIPNIR_NVFP4_SCALE_MODE", "dynamic")
+        self.projections = os.environ.get("GLEIPNIR_NVFP4_PROJECTIONS", "all")
+        self.other_mlp_precision = os.environ.get(
+            "GLEIPNIR_NVFP4_OTHER_MLP_PRECISION", "bf16"
+        )
         self.keep_layers = {
             int(x)
             for x in os.environ.get("GLEIPNIR_NVFP4_KEEP_LAYERS", "").split(",")
@@ -199,6 +204,12 @@ class GleipnirNvFp4Config(QuantizationConfig):
             "power2",
         }:
             raise ValueError("Unsupported online NVFP4 packer/scale")
+        if self.projections not in {"all", "gate_up", "down"} or (
+            self.other_mlp_precision not in {"bf16", "fp8_channel"}
+        ):
+            raise ValueError("Unsupported online NVFP4 projection/other precision")
+        if self.scope == "all" and self.projections != "all":
+            raise ValueError("Projection selection requires MLP scope")
 
     @classmethod
     def get_name(cls) -> str:
@@ -230,7 +241,18 @@ class GleipnirNvFp4Config(QuantizationConfig):
         selected = index is not None and (
             ".mlp." in prefix if self.scope == "mlp" else "lm_head" not in prefix
         )
-        if keep or not selected:
+        projection_match = self.projections == "all" or prefix.endswith(
+            f".{self.projections}_proj"
+        )
+        if keep:
+            return UnquantizedLinearMethod()
+        if not selected or not projection_match:
+            if (
+                index is not None
+                and ".mlp." in prefix
+                and self.other_mlp_precision == "fp8_channel"
+            ):
+                return Fp8PtpcOnlineLinearMethod()
             return UnquantizedLinearMethod()
         return NvFp4OnlineLinearMethod(
             self.backend, prefix, self.packer, self.scale_mode

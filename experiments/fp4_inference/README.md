@@ -249,3 +249,50 @@ both original canaries. Macro AUROC/pAUROC stayed unchanged, Brier was
 0.096286, full-split mean/max score drift 0.012884/0.089178 and one flip.
 It is the faster fidelity-qualified screen candidate so far. Matched repeats
 are justified for MLP FP8 and Triton block FP8; retain the BF16 reference.
+
+## Frozen bounded profiling comparison
+
+Capture BF16 and MLP-only FP8 with the same eight every-fourth development
+rows, longest-input/original-canary warmup, two delayed steps and at most sixteen
+profiled engine steps. Require an early two-kernel CUPTI probe and nonzero CUDA
+kernel events in the final trace; CPU durations cannot substitute. This
+instrumented partial workload diagnoses kernels and does not estimate serving
+throughput or quality. The profile preserves each condition's precision and
+scheduling settings. Record kernel duration sums separately from elapsed time.
+
+```bash
+python -m experiments.local_inference.profile \
+  --config experiments/fp4_inference/configs/fp8_mlp.json \
+  --output results/fp4_inference/profile_fp8_mlp --early-cupti
+```
+
+## Frozen selective precision and finalist confirmation
+
+Separate the two MLP projections: FP4 gate/up with BF16 down, FP4 down with
+BF16 gate/up, and each FP4 projection with per-channel/per-token FP8 in its
+sibling. Attention/GDN and kept layers stay BF16. These four fixed conditions
+test whether one projection carries most fidelity loss and whether a hybrid
+recovers more FP4 speed than the MLP-only FP8 finalist. They retain the original
+canary gates and explicit diagnostic override; no precision choice observes
+the final test set. Validate selector behavior before launching.
+
+Increase the MLP FP8 prefill budget alone to 8,192 at two sequences. Confirm
+BF16, MLP FP8 and Triton block FP8 with three warmed passes per persistent
+engine at the baseline schedule, preserving fixed order and prefix cache off.
+These justified finalist repeats report median/range and paired score variation;
+they do not turn a four-row gate into population equivalence.
+
+The Blackwell profile showed 63.81% of summed kernel durations in linears after
+MLP FP8, so also freeze mixed FP8 recipes: fast per-channel MLP FP8 plus Triton
+block FP8 in all other decoder projections, then separate attention-only and
+GDN-only block precision. Preserve embeddings, head and vision in BF16.
+Use stock online quantization arithmetic, explicitly require the per-layer
+Triton block kernel, and verify the selected final backend. Source/flags enter
+compile identity. These test whether smaller activation groups recover the
+full-decoder per-channel FP8 canary while accelerating the remaining linears.
+
+The isolated FP4 projections both failed parity. Down-only took 9.047070 s
+(1.0995x), with master canary mean/max 0.046753/0.124353 and three full-split
+flips. Gate/up-only took 7.852298 s (1.2668x), with canary mean/max
+0.057448/0.117002 and two full-split flips. Gate/up provides more speed gain;
+neither projection is fidelity-qualified in this basic online FP4 recipe.

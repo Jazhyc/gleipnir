@@ -37,6 +37,8 @@ def test_mlp_selection_preserves_attention_vision_and_kept_layers(monkeypatch):
         ("BACKEND", "emulation"),
         ("PACKER", "emulation"),
         ("SCALE_MODE", "unsafe"),
+        ("PROJECTIONS", "bogus"),
+        ("OTHER_MLP_PRECISION", "int4"),
     ],
 )
 def test_unsupported_scope_or_fallback_rejected(monkeypatch, field, value):
@@ -48,3 +50,25 @@ def test_unsupported_scope_or_fallback_rejected(monkeypatch, field, value):
 def test_cpu_weight_cannot_silently_use_emulation():
     with pytest.raises(ValueError, match="CUDA"):
         vllm_nvfp4.pack_weight(torch.zeros((32, 64), dtype=torch.bfloat16))
+
+
+def test_hybrid_selects_down_fp4_gate_up_fp8_and_attention_bf16(monkeypatch):
+    monkeypatch.setenv("GLEIPNIR_NVFP4_SCOPE", "mlp")
+    monkeypatch.setenv("GLEIPNIR_NVFP4_PROJECTIONS", "down")
+    monkeypatch.setenv("GLEIPNIR_NVFP4_OTHER_MLP_PRECISION", "fp8_channel")
+    monkeypatch.setenv("GLEIPNIR_NVFP4_KEEP_LAYERS", "0")
+    monkeypatch.setattr(vllm_nvfp4, "LinearBase", torch.nn.Linear)
+    fp4, fp8 = object(), object()
+    monkeypatch.setattr(vllm_nvfp4, "NvFp4OnlineLinearMethod", lambda *args: fp4)
+    monkeypatch.setattr(vllm_nvfp4, "Fp8PtpcOnlineLinearMethod", lambda: fp8)
+    config = vllm_nvfp4.GleipnirNvFp4Config()
+    layer = torch.nn.Linear(64, 32)
+    assert config.get_quant_method(layer, "model.layers.16.mlp.down_proj") is fp4
+    assert config.get_quant_method(layer, "model.layers.16.mlp.gate_up_proj") is fp8
+    for prefix in (
+        "model.layers.0.mlp.down_proj",
+        "model.layers.16.self_attn.qkv_proj",
+    ):
+        assert isinstance(
+            config.get_quant_method(layer, prefix), vllm_nvfp4.UnquantizedLinearMethod
+        )

@@ -4,6 +4,7 @@ import importlib
 
 from experiments.local_inference.benchmark import main
 
+importlib.import_module("gleipnir.vllm_nvfp4")
+
 if __name__ == "__main__":
-    importlib.import_module("gleipnir.vllm_nvfp4")
     main()
