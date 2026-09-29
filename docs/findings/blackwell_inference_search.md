@@ -554,6 +554,64 @@ each window, with no observed thermal slowdown in those samples. These are
 single kernel windows, not a serving-quality result or a decode throughput
 benchmark. Evidence: `results/fp4_inference/marlin/result.json`.
 
+## Completed three-pass BF16 confirmation
+
+The second independent BF16 engine passed the original canaries. Its three
+warmed passes were **9.936403/9.950902/9.965627 s** (median **9.950902 s**),
+matching the initial 9.947606 s baseline. Scores and raw margins were identical
+within this engine, with zero score range or threshold instability.
+
+Across the independent starts, mean/max score drift was **0.004611/0.030967**,
+correlation 0.999683 and zero flips. Macro AUROC/pAUROC/Brier on the second
+start were 0.925620/0.776860/0.099289. This shows that zero within-engine repeat
+noise does not establish identical outputs after restarting vLLM. Candidate
+reports must preserve both the initial baseline and the matched repeated
+baseline rather than treating changed rankings as a training improvement.
+Evidence: `results/fp4_inference/bf16_confirm/`, including `independent_start.json`.
+
+## Completed three-pass MLP FP8 confirmation
+
+MLP-only per-channel FP8 passed both original canaries again. Warmed times were
+**8.046348/8.051037/8.058522 s**, median **8.051037 s**, **1.2360x** versus
+the matched three-pass BF16 median. Scores and margins were identical across
+all three passes, and scores exactly matched its first independent engine.
+Master canary mean/max stayed 0.002004/0.008015; merged 0.005421/0.017909.
+
+Macro AUROC/pAUROC/Brier were 0.921488/0.756198/0.096286. Versus the repeated
+BF16 baseline, AUROC loss 0.004132 and Brier change -0.003002 pass the fixed
+development screen; pAUROC change -0.020661 remains reported. These relative
+differences partly reflect BF16's between-start drift, and are not claims of
+training gains. Evidence: `fp8_mlp_confirm/repeat_comparison.json` and
+`independent_start_drift.json`.
+
+## Proposed quantization-aware distillation follow-up
+
+The user raised QAT during this campaign. A proposed task-focused pilot would
+use 512–2,048 representative **training** trajectories plus separate validation,
+not the serving development or confirmation rows. At the existing workload's
+average prompt length this is about 6–23 million input tokens per pass; this is
+a planning range, not a demonstrated data requirement. Our eight calibration
+trajectories establish only a small fitting screen and are insufficient evidence
+for end-to-end training.
+
+Freeze the original BF16 monitor as a local teacher, cache its binary decision
+distribution with full prompt/model/settings provenance, and train higher
+precision master parameters or adapters while fake-quantizing merged weights
+and activations to the deployed NVFP4 block/scaling/rounding rules. Matching
+the final binary distribution targets monitoring-score preservation without
+requiring new human labels. Cache teacher targets separately from hard labels;
+keep gradients and FP32 master adapters in higher precision. Export actual
+native FP4 tensors and recheck vLLM score agreement after training.
+
+This proposal follows the distinction between task-loss QAT and teacher-KL
+quantization-aware distillation in the
+[NVFP4 QAD report](https://arxiv.org/abs/2601.20088) and the prepare/convert
+description in [PyTorch's QAT workflow](https://docs.pytorch.org/ao/stable/workflows/qat.html).
+It is narrower than general language-model capability recovery. Exact training
+and serving scale/chunk alignment, straight-through gradient behavior, kernel
+availability, memory and throughput need a fresh preflight. No QAT run or new
+dependency installation has been launched in this inference campaign.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

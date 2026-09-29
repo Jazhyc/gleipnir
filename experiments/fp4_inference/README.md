@@ -423,6 +423,13 @@ result and keep native W4A4 for the current serving finalists.
 
 ## Frozen broader-split confirmation rule
 
+Three-pass BF16 times were 9.936403/9.950902/9.965627 s; MLP FP8 times were
+8.046348/8.051037/8.058522 s (1.2360x median speedup). Both had zero score
+and raw-margin variation within their engines. MLP FP8 also exactly matched
+its first independent start; BF16 showed between-start max score drift 0.030967.
+Use `repeat_analysis.py` to audit identities, all repeat files and stored medians,
+then report timings, source-wise drift, metrics and original selection gates.
+
 Select one final serving candidate using only the existing 32 development rows,
 original canaries, disjoint activation screens and matched three-pass timing
 and stability confirmation. Record the choice and complete configuration hashes
