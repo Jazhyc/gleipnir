@@ -60,10 +60,17 @@ def test_mlp_fp8_scheduler_screen_preserves_precision_and_scoring(
     assert candidate == original
 
 
-def test_triton_hybrid_confirmation_changes_only_output_and_repeats():
+@pytest.mark.parametrize(
+    "source,target",
+    [
+        ("gptq_down_fp8_triton", "gptq_down_fp8_triton_confirm"),
+        ("mixed_fp8_gdn", "mixed_fp8_gdn_confirm"),
+    ],
+)
+def test_precision_confirmation_changes_only_output_and_repeats(source, target):
     root = Path("experiments/fp4_inference/configs")
-    original = json.loads((root / "gptq_down_fp8_triton.json").read_text())
-    candidate = json.loads((root / "gptq_down_fp8_triton_confirm.json").read_text())
+    original = json.loads((root / f"{source}.json").read_text())
+    candidate = json.loads((root / f"{target}.json").read_text())
     assert candidate.pop("output") != original.pop("output")
     assert candidate.pop("repeats") == 3
     assert original.pop("repeats") == 1

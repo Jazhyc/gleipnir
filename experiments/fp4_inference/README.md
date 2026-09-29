@@ -562,7 +562,25 @@ GPU time, totaling 43.20%. A 3x improvement of that fraction alone gives about
 partial-profile illustration, not memory-bandwidth diagnosis. The historical
 4080 INT4 speedups were isolated kernel pipelines, with no INT4 vLLM run.
 
+The 16,384/two and 16,384/eight MLP FP8 screens also passed original canaries
+and the development quality bounds. Times were 7.835435 and 7.779751 s
+(1.2696x and 1.2787x initial BF16). Two sequences gave unchanged macro AUROC,
+Brier 0.096726 and two threshold flips; eight sequences gave AUROC 0.925620,
+Brier 0.095105 and one flip. These single-pass gains are less than 1% beyond
+the repeated 8,192/two median, so retain the repeat-confirmed schedule for
+broader confirmation unless another precision screen supplies stronger evidence.
+
 ## Final confirmation selection
+
+The GDN-only block-FP8 addition to per-channel MLP FP8 passed the initial
+development screen in 7.645032 s (1.3012x baseline). Original master mean/max
+error was 0.008595/0.034378, correlation 0.996160; merged mean/max was
+0.005178/0.016469, correlation 0.998921. Macro AUROC/pAUROC/Brier were
+0.925620/0.764463/0.097983. One development threshold changed and maximum drift
+was 0.151355. Preserve it as a promising single-pass development diagnostic;
+the final choice was already frozen without seeing these outputs. Freeze a
+fresh three-pass `mixed_fp8_gdn_confirm` to inspect timing/restart stability,
+with no selection using broader-confirmation scores.
 
 Select one final serving candidate using only the existing 32 development rows,
 original canaries, disjoint activation screens and matched three-pass timing
@@ -582,3 +600,22 @@ split, not a final-test promotion or cross-model generalization result. If its
 AUROC loss exceeds 0.01 or Brier increase exceeds 0.01, retain and report the
 negative result with no deployment recommendation. The one-pass broader timing
 does not replace the three-pass development stability check.
+
+At 22:49 UTC, freeze MLP-only per-channel FP8, 8,192 batched tokens and two
+sequences as the sole broader-confirmation candidate. It passed the original
+canaries on two independent starts and three matched passes; its 1.2681x
+repeated median gain is supported more strongly than the larger-budget
+single-pass differences. Additional GDN/backend screens remain development
+diagnostics and cannot replace this choice using confirmation outcomes.
+
+`confirmation.py` binds the source configuration hashes and analysis source to
+the trajectory exclusion manifest, rejects changed inputs/lineage/configuration,
+and audits exact ordered prediction identity before computing metrics. The
+frozen manifest is `results/fp4_inference/final_confirmation_manifest.json`,
+SHA256 `685ba9d162c63c85e508298adba773f5f6ae0706ae8e651bf4b01de78195caf8`.
+It contains 464 held-out rows (Gloom negative/positive 161/160, STRIDE 55/88),
+after excluding 48 used trajectories. No extra rows share their trajectory hashes.
+Full configs are `bf16_full_confirmation.json` (SHA256
+`70d297832eb410a193a6ce77e8332ea714fd79731bbeb5905b9f3b69d97b6da6`) and
+`fp8_mlp_b8192_full_confirmation.json` (SHA256
+`c0e6b57c1941ae5ba4acc7409f439f9e46d0df3a02afc4ba6f1e9c2416a00931`).

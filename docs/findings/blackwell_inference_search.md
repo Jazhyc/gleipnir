@@ -798,6 +798,61 @@ remain separate from serving timing and quality selection. Evidence:
 `profile_bf16_shapes/shape_summary.json`, its checksummed trace/config/selection,
 and the earlier RTX 4080 records in `experiments/local_inference/README.md`.
 
+## Completed 16,384-token MLP FP8 scheduler screens
+
+Both the two-sequence and eight-sequence conditions passed the original serving
+canaries and development quality screen. Their warmed scoring times were
+**7.835435 s** and **7.779751 s**, respectively, or **1.2696x/1.2787x** the initial
+BF16 baseline. The two-sequence macro AUROC/pAUROC/Brier were
+0.921488/0.756198/0.096726, with mean/max score drift 0.011425/0.060283 and two
+threshold flips. Eight sequences gave 0.925620/0.756198/0.095105, with mean/max
+drift 0.011372/0.089178 and one flip.
+
+These are single-pass results. Their improvement over the independently
+repeat-confirmed 8,192/two median (7.847283 s) is less than 1%, so they do not
+justify replacing that confirmed schedule before the broader-split comparison.
+No batch-invariance claim follows from passing the original four canaries.
+Evidence: `fp8_mlp_b16384_s2/` and `fp8_mlp_b16384_s8/`, their comparisons and
+successful execution receipts.
+
+## Completed GDN block-FP8 development screen
+
+Adding forced-Triton 128x128 block FP8 to GDN projections, while retaining
+per-channel MLP FP8 and BF16 full-attention/head, took **7.645032 s**, or
+**1.3012x** initial BF16. Original canaries passed: master mean/max error
+0.008595/0.034378, correlation 0.996160; merged mean/max 0.005178/0.016469,
+correlation 0.998921. Macro AUROC/pAUROC/Brier were
+0.925620/0.764463/0.097983. Development mean/max drift was 0.013465/0.151355,
+correlation 0.996820, with one threshold flip and 31 unique scores.
+
+The locked source actually selected the Triton block-FP8 kernel and warned that
+shape-specific tuning configurations were absent for all three GDN shapes.
+This suggests a future kernel-tuning opportunity; it does not prove that tuning
+would improve full serving. This condition passes only an initial development
+screen, with no independent-start confirmation yet. Its outputs were read after
+freezing the full-split choice, so they do not replace that selection. Evidence:
+`mixed_fp8_gdn/`, the passing parity report and
+`20260929T224738Z-benchmark.log`.
+
+## Frozen full-split selection
+
+Before viewing broader scores, select **MLP-only per-channel FP8 with 8,192
+batched tokens and two sequences**. Both original canaries passed across two
+independent starts; the three-pass median was 7.847283 s, **1.2681x** matched
+repeated BF16. The larger budgets offered less than 1% single-pass advantage,
+while the fitted/selective native FP4 layouts did not survive original gates.
+The still-running GDN precision screen is a development diagnostic, separate
+from this frozen choice.
+
+The confirmation analysis, canonical inputs and both serving configurations are
+bound before launch by `final_confirmation_manifest.json` (SHA256
+`685ba9d162c63c85e508298adba773f5f6ae0706ae8e651bf4b01de78195caf8`).
+Exclude development, capture and parity trajectories, including connected
+original/transformed trajectory hashes: **464 of 512** rows remain (Gloom
+161 negative/160 positive; STRIDE 55/88). The full paired run keeps all prompts
+and the original score runner; only these excluded-row metrics may support the
+broader quality conclusion. It cannot guide a new precision/scheduler selection.
+
 ## Proposed quantization-aware distillation follow-up
 
 The user raised QAT during this campaign. A proposed task-focused pilot would
