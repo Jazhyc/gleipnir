@@ -58,6 +58,14 @@ startup every 30–60 seconds and each completed condition before choosing the n
 
 ## Run
 
+Initial exploitation conditions increase the prefill budget 2,048 → 4,096 →
+8,192 at two sequences, then eight sequences at 8,192, then 16,384 tokens at
+eight sequences. This permits attributing budget and concurrency changes.
+Initial exploration compares per-channel/per-token FP8 and per-block FP8 at
+the baseline schedule, followed by per-channel FP8 at the proposed 8,192/eight
+schedule. Each configuration is frozen before launch. Quantization diagnostics
+explicitly retain failed canaries; the BF16 reference cannot override its gate.
+
 Inside the allocation, after activating the locked environment and CUDA 13.2:
 
 ```bash
@@ -82,3 +90,14 @@ The first serving attempt stopped before model loading on a missing campaign
 output parent. Its artifacts are retained under `baseline_startup_failure`;
 the launcher creates the parent before retrying. No serving measurement came
 from the failed attempt.
+
+## Completed BF16 baseline
+
+The new baseline passed both serving gates and scored all 32 rows in 9.947606 s
+(34,056.44 prompt tokens/s). Macro AUROC/pAUROC@20/Brier:
+0.921488/0.756198/0.098918, with 30 unique scores. Master-serving mean/max
+score error: 0.004477/0.017909, correlation 0.998958, no canary flips.
+Cold initialization was 210.770 s; warmup 4.080 s; whole process 247.430 s.
+FlashAttention 2 and Triton/FLA GDN were selected. One scoring telemetry sample
+showed 58 C, 2,377 MHz, 100% utilization and no thermal slowdown. Full evidence
+and qualifications are in the finding document and `results/fp4_inference/baseline/`.
