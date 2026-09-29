@@ -2,6 +2,9 @@
 
 Date: 2026-09-30 (Europe/Amsterdam; requests on 2026-09-29 UTC).
 Status: completed synthetic API compatibility check, not a monitoring benchmark.
+Follow-up corrected the initial missing-score diagnosis: explicit `top_p=1`
+restored both label scores on all three Responses examples. The earlier requests
+had echoed an effective default `top_p=0.98`.
 
 ## Question and design
 
@@ -58,12 +61,49 @@ sequential canary does not establish production latency or throughput.
 
 Direct GPT-6 Luna supports logprobs on both Responses and Chat Completions with
 reasoning effort `none`; a live reasoning-`low` request rejected logprobs.
-This makes Luna a possible direct-logprob teacher candidate, subject to a
-representative format and coverage canary. The observed missing counter-label
-scores prevent treating it as a drop-in source of complete binary distributions.
-Keep incomplete rows marked as parse/coverage failures; do not reconstruct a
-missing label as one minus the chosen token probability or substitute a hard
-decision or elicited confidence.
+The initial conclusion that Luna could not supply complete binary targets was
+premature: the initial probe did not disable the effective nucleus cutoff.
+Explicit `top_p=1` resolves missing label scores on the tested Responses inputs,
+making Luna a possible direct-logprob teacher candidate. A representative format
+and coverage canary is still required: a top-k interface does not guarantee named
+token scores on every possible prompt. Keep incomplete rows marked as
+parse/coverage failures; do not reconstruct a missing label as one minus the
+chosen token probability or substitute a hard decision or elicited confidence.
+
+## Follow-up: isolate the effective nucleus cutoff
+
+Inspection of the raw initial Responses objects revealed `temperature=1.0` and
+`top_p=0.98`; both parameters had been omitted from the requests. The one-token
+and two-token alternative lists were consistent with nucleus truncation. The
+follow-up froze a three-request manifest before execution and repeated exactly
+the original instructions, inputs, and settings, adding only explicit `top_p=1`.
+The effective temperature remained `1.0`. The stop rule was three requests or
+the first HTTP/transport error.
+
+| Example | Alternatives returned | `logprob(0)` | `logprob(1)` | Normalized `P(1)` |
+| --- | ---: | ---: | ---: | ---: |
+| benign | 19 | -0.000175 | -8.644638 | 0.000176068 |
+| concealment | 18 | -10.198551 | -0.000034 | 0.999962776 |
+| uncertain | 19 | -3.376644 | -0.034763 | 0.965837960 |
+
+Every request succeeded, echoed `top_p=1.0`, and returned both literal scores.
+The two labels occupied ranks 1 and 2 in every returned list: the missing label
+is therefore not intrinsically outside the top 20 on these inputs. The observed
+change strongly supports the effective nucleus cutoff as the cause of the
+original missing alternatives. This is an inference from matched API requests,
+not a claim about undocumented server internals.
+
+The uncertain score changed between calls, so this follow-up establishes
+coverage, not exact numerical parity across settings or repetitions. These
+three requests processed 201 input and 15 output tokens, with zero reasoning or
+cache tokens. Both-label coverage at explicit `top_p=1` has been verified on
+Responses; the Chat Completions follow-up has not been repeated at that setting.
+
+For a Responses teacher canary, use `reasoning={"effort": "none"}`,
+`temperature=1`, `top_p=1`, `include=["message.output_text.logprobs"]`, and
+`top_logprobs=20`, and validate literal-score coverage and numeric validity on
+every row. Do not assume backend defaults provide the same score distribution
+as an explicit untruncated request.
 
 The ambiguous example was assigned a high problematic score despite limited
 evidence. This illustrates why compatibility alone supplies no evidence of
@@ -86,6 +126,10 @@ Ignored local artifacts:
   SHA-256: `bdd9a71b5f8d30e76f7984adefcf6841b3fb77f7ecfc50736884a3469c8b455a`.
 - `results/openai_decision_api_probe/20260929T230728Z/chat_followup_request.json`
   and `chat_followup_response.json`: recorded adaptive request and raw response.
+- `results/openai_decision_api_probe/top_p_20260929T231345Z/manifest.json` and
+  `responses.jsonl`: frozen matched `top_p=1` follow-up and raw responses.
+  Response SHA-256:
+  `cba64e102c0b1260510038ba0add1d2bfbb94b72a1140ac5ad1fd415cd705f70`.
 
 Official sources checked during the investigation:
 
