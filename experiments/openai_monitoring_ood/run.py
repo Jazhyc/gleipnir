@@ -178,6 +178,12 @@ def main() -> None:
         type=int,
         help="Operational request pacing; preserves model settings and 40 workers.",
     )
+    parser.add_argument(
+        "--coverage-repeats",
+        type=int,
+        default=0,
+        help="Bound identical repeats only when a literal label is absent from top20.",
+    )
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     template = load_prompt_set().teacher
@@ -234,6 +240,7 @@ def main() -> None:
         max_attempts=execution["max_attempts"],
         timeout_seconds=execution["timeout_seconds"],
         tokens_per_minute=args.tokens_per_minute,
+        coverage_repeats=args.coverage_repeats,
     )
     with (root / "execution_events.jsonl").open("a") as handle:
         handle.write(
@@ -242,6 +249,7 @@ def main() -> None:
                     "started_at_utc": datetime.now(UTC).isoformat(),
                     "concurrency": execution["concurrency"],
                     "tokens_per_minute": args.tokens_per_minute,
+                    "coverage_repeats": args.coverage_repeats,
                     "token_pacing_estimate": "1.05 * stored Kimi tokens + 48",
                     "source_sha256": {
                         str(p): file_hash(p)

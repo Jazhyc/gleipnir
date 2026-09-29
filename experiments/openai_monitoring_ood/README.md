@@ -37,6 +37,23 @@ PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
   --tokens-per-minute 1800000
 ```
 
+At 1,461 saved rows, one AgentDojo response omitted the opposite literal label
+from top20 even with `top_p=1`. The run stopped and preserved that failure.
+A separately frozen, bounded identical-request check recovered both scores on
+its first repeat. Resume with at most three identical coverage repeats:
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --tokens-per-minute 1800000 --coverage-repeats 3
+```
+
+This operational amendment accepts the first response satisfying the original
+format and numeric coverage contract. It never inspects a label or performance
+metric, changes a prompt or request field, or imputes a missing probability.
+Preserve and count every failed response and recovery. Numerical nondeterminism
+between identical calls means recovered distributions can differ; report this
+limitation. The original seven-attempt HTTP ceiling also bounds coverage repeats.
+
 Pacing and source hashes are recorded in `execution_events.jsonl`. These are
 operational resumption settings; request semantics and cache identities remain
 frozen. Retry waits honor at least Retry-After and exponential backoff.

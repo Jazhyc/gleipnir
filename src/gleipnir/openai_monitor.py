@@ -120,12 +120,14 @@ class AuditedClient:
         max_attempts: int,
         timeout_seconds: float,
         tokens_per_minute: int | None = None,
+        coverage_repeats: int = 0,
     ) -> None:
         self.key = key
         self.settings = settings
         self.root = root
         self.max_attempts = max_attempts
         self.timeout_seconds = timeout_seconds
+        self.coverage_repeats = coverage_repeats
         self.budget_usd = budget_usd
         self.lock = threading.Lock()
         self.local = threading.local()
@@ -154,6 +156,7 @@ class AuditedClient:
         ) / 1e6
         if not hasattr(self.local, "session"):
             self.local.session = requests.Session()
+        coverage_repeats = 0
         for attempt in range(1, self.max_attempts + 1):
             if self.start_limiter:
                 self.start_limiter.wait(token_proxy * 1.05 + 32 + 16)
@@ -169,6 +172,7 @@ class AuditedClient:
                 "request_sha256": request_hash,
                 "prompt_sha256": hashlib.sha256(row["prompt"].encode()).hexdigest(),
                 "request_settings_sha256": digest(self.settings),
+                "coverage_repeat_index": coverage_repeats,
             }
             response = None
             retry = False
@@ -200,6 +204,14 @@ class AuditedClient:
                         record["parsed"] = parse_response(raw, self.settings)
                     except (KeyError, TypeError, ValueError) as error:
                         record["parse_failure"] = str(error)
+                        if (
+                            str(error)
+                            == "terminal top-logprobs omitted a literal decision token"
+                            and coverage_repeats < self.coverage_repeats
+                        ):
+                            coverage_repeats += 1
+                            retry = True
+                            record["coverage_repeat_planned"] = coverage_repeats
             except requests.RequestException as error:
                 record["transport_error"] = str(error).replace(self.key, "[REDACTED]")
                 # A timeout can hide a billed response: retain the reservation.
@@ -228,6 +240,7 @@ class AuditedClient:
                     "service_tier": raw["service_tier"],
                     "request_id": record["request_id"],
                     "response_id": raw["id"],
+                    "coverage_repeats": coverage_repeats,
                     "latency_seconds": record["latency_seconds"],
                     "usage": {
                         "prompt_tokens": usage["input_tokens"],
