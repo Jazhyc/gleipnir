@@ -419,6 +419,80 @@ bytes, projection coverage, shapes/dtypes and finite positive scales before
 using any fitted tensor. The FP32 master and BF16 merge are unchanged. Fitted
 weights remain ignored. Evidence: `results/fp4_inference/gptq_all/manifest.json`.
 
+## Completed fitted FP4 serving diagnostics
+
+Prepared weights with Triton activation packing took **7.191664 s**,
+47,107.32 tokens/s, **1.3832x**. The original master canary passed
+(mean/max 0.015244/0.030490, correlation 0.996503, zero flips), but the merged
+canary mean **0.020782** exceeded the unchanged 0.02 bound. Its maximum was
+0.037297 and correlation 0.992028. The combined gate remains **failed**.
+Full-split mean/max drift was 0.021444/0.086512, correlation 0.996980 and
+one flip. Macro AUROC/pAUROC/Brier: 0.923554/0.766529/0.106803.
+This substantially improved canary fidelity relative to naive FP4, with no
+promotion because the complete original gate did not pass.
+
+The identical prepared weights with stock CUDA activation packing took
+**7.064651 s**, 47,954.24 tokens/s, **1.4081x**, but fidelity worsened:
+master mean/max 0.036185/0.143609, correlation 0.978087; merged mean 0.041722.
+Full-split mean/max 0.027818/0.123876, three flips. Macro AUROC/pAUROC/Brier:
+0.907025/0.710744/0.115066, outside both development quality bounds.
+Independently correct native arithmetic does not make these packers identical;
+small packing differences propagate through the model. Evidence:
+`results/fp4_inference/gptq_nvfp4_triton/` and `gptq_nvfp4_cuda/`.
+
+## Completed fitted FP4-down / FP8-gate hybrid
+
+Prepared FP4 down projections plus per-channel FP8 gate/up completed in
+**7.682589 s**, 44,097.11 tokens/s, **1.2948x**. Both original canaries passed:
+master mean/max 0.019111/0.034378, correlation 0.992937, zero flips; merged
+mean/max 0.015694/0.030967, correlation 0.996787. The master mean is close
+to its fixed 0.02 limit, so confirmation matters.
+
+Full-split mean/max drift was 0.018450/0.061457, correlation 0.997443 and
+**zero flips**. Macro AUROC/pAUROC/Brier: 0.919421/0.745868/0.102922.
+AUROC loss 0.002066 and Brier increase 0.004004 satisfy the frozen development
+screen; pAUROC declined 0.010331 and remains reported. This is the first
+native FP4-containing condition to clear all declared selection gates. It is
+a finalist, not a repeatability or population-equivalence result. Evidence:
+`results/fp4_inference/gptq_nvfp4_down_fp8_gate/`.
+
+## Completed reverse fitted hybrid diagnostic
+
+Prepared FP4 gate/up with per-channel FP8 down took **7.353427 s**, **1.3528x**.
+The master canary passed (mean/max 0.010069/0.040275, correlation 0.994847),
+but the merged correlation **0.989657** failed the unchanged 0.99 requirement.
+Merged mean/max were 0.015606/0.058184. Full development drift was mean/max
+0.019600/0.086512, correlation 0.997257, zero flips. Macro AUROC/pAUROC/Brier
+were 0.925620/0.780992/0.096612. This faster layout remains a failed diagnostic;
+its development metrics do not override the canary. Evidence:
+`results/fp4_inference/gptq_nvfp4_gate_up_fp8_down/`.
+
+## FP32 output projection mechanism audit and interrupted session
+
+The direct native GPU projection canary returned finite FP32 output and
+relative L2 0.000003238/0.000002826 against independent FP32 references on
+real captured inputs. Evidence: `results/fp4_inference/logits_canary/result.json`.
+However, Qwen3.5 ties its output head to `VocabParallelEmbedding`; selecting
+only `ParallelLMHead` did not install the method. The first completed full-model
+controls therefore do **not** measure the intended FP32-head intervention.
+Keep their artifacts and exclude them from selection under that interpretation:
+`bf16_fp32_logits_v2` took 9.851273 s and passed the ordinary score gates;
+`gptq_nvfp4_fp32_logits` took 7.183757 s and failed them. Their coarse raw
+margins and the locked model source exposed the routing error.
+
+The earlier `bf16_fp32_logits` process ended when its interactive tool session
+disappeared, before model startup and result creation. The saved interruption
+receipt records the absent worker and idle GPU. Subsequent runs use detached
+`srun` steps inside the same allocation, with logs and deadline enforcement.
+This protects runtime across tool-session refreshes; monitoring still requires
+the active agent because no in-chat scheduling tool is available.
+
+The corrected selector covers tied embeddings and untied heads. Inherited
+embedding lookup stays unchanged; a focused test checks it. Actual full-vocabulary
+projection execution must log its output shape and `torch.float32` dtype before
+interpreting the corrected matched pair. The runtime deadline now allows 20 s
+for process termination before the ten-minute allocation reserve begins.
+
 ## Kernel routing evidence
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
 linear methods and FlashInfer B12X, CUTLASS and other NVFP4 kernel adapters,

@@ -52,7 +52,7 @@ def test_launcher_creates_parent_and_records_process_result(tmp_path, monkeypatc
             self.pid = 123
 
         def wait(self, timeout):
-            assert timeout == 600
+            assert timeout == 580
             return 0
 
     monkeypatch.setattr(run.subprocess, "Popen", Process)

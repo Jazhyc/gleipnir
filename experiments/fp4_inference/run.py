@@ -20,6 +20,7 @@ from experiments.local_inference.core import write_json
 STOP_UTC = datetime.datetime(2026, 9, 29, 23, 29, 21, tzinfo=datetime.UTC)
 CONFIGS = Path(__file__).with_name("configs")
 ROOT = Path("results/fp4_inference")
+TERMINATION_MARGIN_SECONDS = 20
 
 
 def record_telemetry(output: Path, stopped: threading.Event) -> None:
@@ -123,7 +124,7 @@ def main() -> None:
     output = Path(config["output"])
     if output.exists():
         raise FileExistsError(f"Preserve existing output: {output}")
-    budget = remaining_seconds()
+    budget = remaining_seconds() - TERMINATION_MARGIN_SECONDS
     if budget < 120:
         raise RuntimeError("Insufficient usable time before the campaign GPU deadline")
     output.parent.mkdir(parents=True, exist_ok=True)
@@ -170,6 +171,7 @@ def main() -> None:
             "condition": args.condition,
             "returncode": returncode,
             "deadline_utc": STOP_UTC.isoformat(),
+            "termination_margin_seconds": TERMINATION_MARGIN_SECONDS,
             "deadline_reached": timed_out,
             "seconds": time.perf_counter() - started,
             "slurm_job_id": os.environ.get("SLURM_JOB_ID"),

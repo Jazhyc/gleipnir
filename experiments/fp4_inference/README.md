@@ -346,3 +346,52 @@ scales, followed by the original reconstruction and score gates. Compare
 identical. Native CUTLASS GEMM stays fixed. Frozen prepared-weight hybrid
 conditions retain FP8 in the sibling projection. Artifact/source hashes enter
 runtime and compiler identity; no fitted or original weights are committed.
+
+## Frozen logits-precision stability screen
+
+BF16 logits have coarse margins and tied scores. Test retaining FP32 output
+from the full-vocabulary head matmul while preserving BF16/FP16 head weights
+and inputs. Explicitly disable reduced-precision BF16/FP16 intermediate reductions
+for this matched pair. No vocabulary selection, prompt/sampling change, score
+rescaling, or canary-limit change. First require finite FP32 output and <=0.001
+relative L2 against independent FP32 matmul on real captured inputs. Then compare
+an all-BF16/head-FP32 control with the frozen fitted-FP4/head-FP32 condition
+(Triton activation packing). Keep both original eager references and the old
+BF16 serving baseline for diagnostics. Record ties and raw margins as well as
+latency and quality. The custom registry's `scope=none` explicitly means no
+FP4 decoder projections in the control; it is not an FP4 speed measurement.
+
+Qwen3.5 ties the head to its vocabulary embedding. The initial selector for
+untied heads did not install this intervention in `bf16_fp32_logits_v2` or
+`gptq_nvfp4_fp32_logits`; retain both as mechanism failures. Corrected conditions
+`bf16_fp32_logits_v3` and `gptq_nvfp4_fp32_logits_v2` cover tied embeddings,
+preserve ordinary lookup, and require an actual FP32 projection execution log.
+The direct GPU method canary already passed with relative L2 below 0.000004.
+
+Use `cluster/slurm/fp4_inference_step.sh` in a detached `srun` step within the
+existing allocation so tool-session refreshes do not interrupt serving. The
+campaign runner reserves 20 seconds for termination before its fixed stop time;
+bounded module calls use the same reserve. Inspect live steps, logs and GPU
+telemetry in the active agent turn. No recurring agent wakeup is available.
+
+The fitted FP4-down/FP8-gate hybrid passed both original canaries and the
+development screen at **1.2948x**, with zero full-split flips and max score drift
+0.061457. Master canary mean 0.019111 is close to 0.02; repeat confirmation is
+required. Macro AUROC/Brier met their bounds; pAUROC declined 0.010331.
+Freeze a three-pass baseline-schedule confirmation and an 8,192-token/two-sequence
+scheduling condition for this new finalist. Keep all quality limits unchanged.
+
+The reverse fitted hybrid (FP4 gate/up, FP8 down) was faster at 1.3528x but
+failed merged-canary correlation (0.989657 < 0.99); it remains diagnostic only.
+
+## Frozen Marlin FP4 weight-only kernel screen
+
+Compare native Marlin W4A16 (BF16 activations, fused FP4 weight dequantization,
+FP32 reduction) with BF16 at M=1,128,2048 for both real layer-0 MLP shapes.
+Reuse the eight checksum-verified calibration captures and original weights;
+offline weight packing/repacking is excluded, online padding/allocation/GEMM
+included. Require <=0.005 relative L2 against independently decoded weight-only
+FP32 references and finite output before timing. Use one 256-call window per
+condition, five warmups and three-second BF16 heating. Record thermals/clocks.
+This explores a different low-precision path and row-count tradeoff; these
+microbenchmarks do not establish full-split serving performance or quality.

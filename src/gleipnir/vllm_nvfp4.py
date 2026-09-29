@@ -26,6 +26,7 @@ from vllm.model_executor.layers.quantization.utils.nvfp4_utils import (
     cutlass_fp4_supported,
     swizzle_blockscale,
 )
+from vllm.model_executor.layers.vocab_parallel_embedding import VocabParallelEmbedding
 from vllm.utils.flashinfer import (
     flashinfer_scaled_fp4_mm,
     has_flashinfer_b12x_gemm,
@@ -33,6 +34,7 @@ from vllm.utils.flashinfer import (
 
 from gleipnir.nvfp4_artifact import NvFp4Artifact
 from gleipnir.nvfp4_reference import decode_nvfp4
+from gleipnir.vllm_fp32_logits import Fp32LogitsMethod
 
 logger = init_logger(__name__)
 NVFP4_MAX = 6.0 * 448.0
@@ -199,6 +201,7 @@ class GleipnirNvFp4Config(QuantizationConfig):
     def __init__(self) -> None:
         super().__init__()
         self.scope = os.environ.get("GLEIPNIR_NVFP4_SCOPE", "mlp")
+        self.fp32_logits = os.environ.get("GLEIPNIR_NVFP4_FP32_LOGITS", "0")
         self.backend = os.environ.get("GLEIPNIR_NVFP4_BACKEND", "cutlass")
         self.packer = os.environ.get("GLEIPNIR_NVFP4_PACKER", "cuda")
         self.scale_mode = os.environ.get("GLEIPNIR_NVFP4_SCALE_MODE", "dynamic")
@@ -211,8 +214,13 @@ class GleipnirNvFp4Config(QuantizationConfig):
             for x in os.environ.get("GLEIPNIR_NVFP4_KEEP_LAYERS", "").split(",")
             if x
         }
-        if self.scope not in {"mlp", "all"} or self.backend not in {"cutlass", "b12x"}:
+        if self.scope not in {"none", "mlp", "all"} or self.backend not in {
+            "cutlass",
+            "b12x",
+        }:
             raise ValueError("Unsupported online NVFP4 scope/backend")
+        if self.fp32_logits not in {"0", "1"}:
+            raise ValueError("Unsupported FP32 logits flag")
         if self.packer not in {"cuda", "triton"} or self.scale_mode not in {
             "dynamic",
             "power2",
@@ -258,12 +266,16 @@ class GleipnirNvFp4Config(QuantizationConfig):
     def get_quant_method(
         self, layer: torch.nn.Module, prefix: str
     ) -> QuantizeMethodBase | None:
+        if isinstance(layer, VocabParallelEmbedding) and self.fp32_logits == "1":
+            return Fp32LogitsMethod()
         if not isinstance(layer, LinearBase):
             return None
         index = re.search(r"(?:^|\.)layers\.(\d+)\.", prefix)
         keep = index is not None and int(index.group(1)) in self.keep_layers
-        selected = index is not None and (
-            ".mlp." in prefix if self.scope == "mlp" else "lm_head" not in prefix
+        selected = (
+            self.scope != "none"
+            and index is not None
+            and (".mlp." in prefix if self.scope == "mlp" else "lm_head" not in prefix)
         )
         projection_match = self.projections == "all" or prefix.endswith(
             f".{self.projections}_proj"
