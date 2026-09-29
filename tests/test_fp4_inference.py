@@ -6,6 +6,7 @@ from pathlib import Path
 
 import pytest
 
+from experiments.fp4_inference import run
 from experiments.fp4_inference.run import condition_config, remaining_seconds
 
 
@@ -29,3 +30,29 @@ def test_blackwell_baseline_preserves_historical_serving_contract():
     blackwell.pop("log_dir")
     assert blackwell.pop("output") != historical.pop("output")
     assert blackwell == historical
+
+
+def test_launcher_creates_parent_and_records_process_result(tmp_path, monkeypatch):
+    output = tmp_path / "new_campaign" / "baseline"
+    config = tmp_path / "baseline.json"
+    config.write_text(json.dumps({"output": str(output)}))
+    monkeypatch.setattr(run, "condition_config", lambda name: config)
+    monkeypatch.setattr(run, "remaining_seconds", lambda: 600)
+    monkeypatch.setattr(run, "ROOT", tmp_path / "receipts")
+    monkeypatch.setattr(run.sys, "argv", ["run", "--condition", "baseline"])
+
+    class Process:
+        def __init__(self, command, **kwargs):
+            assert output.parent.is_dir()
+            assert kwargs["start_new_session"]
+            self.pid = 123
+
+        def wait(self, timeout):
+            assert timeout == 600
+            return 0
+
+    monkeypatch.setattr(run.subprocess, "Popen", Process)
+    run.main()
+    receipt = json.loads((tmp_path / "receipts/baseline_execution.json").read_text())
+    assert receipt["returncode"] == 0
+    assert not receipt["deadline_reached"]

@@ -77,3 +77,8 @@ base-to-master adapter effect 0.421917. The bounded reference used the Torch
 gated-delta fallback and SDPA. No serving throughput is established by this
 artifact check. Evidence: `results/local_inference/reference.json` and the
 reference log. The new BF16 serving baseline has started.
+
+The first serving attempt stopped before model loading on a missing campaign
+output parent. Its artifacts are retained under `baseline_startup_failure`;
+the launcher creates the parent before retrying. No serving measurement came
+from the failed attempt.

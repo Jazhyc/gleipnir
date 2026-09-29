@@ -48,6 +48,7 @@ def main() -> None:
     budget = remaining_seconds()
     if budget < 120:
         raise RuntimeError("Insufficient usable time before the campaign GPU deadline")
+    output.parent.mkdir(parents=True, exist_ok=True)
     os.environ.update(config.get("environment", {}))
     os.environ["PATH"] = (
         str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"]

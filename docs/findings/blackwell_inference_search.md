@@ -25,6 +25,12 @@ Evidence: `results/local_inference/reference.json` and
 `logs/slurm/fp4_inference/reference.log`. The BF16 vLLM reference is running;
 no Blackwell serving-throughput result exists yet.
 
+The first serving attempt stopped before engine construction because the
+historical benchmark expects its output parent directory to exist. The new
+campaign launcher now creates that parent; the failed process-timing artifact
+and execution receipt are preserved as `baseline_startup_failure` artifacts.
+No GPU timing or prediction was produced by that attempt.
+
 ## Kernel routing evidence
 
 The installed locked vLLM 0.24.0 source has ModelOpt/compressed-tensors NVFP4
