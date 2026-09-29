@@ -1,5 +1,40 @@
 # Local merged Gleipnir 4B baseline
 
+## Cluster artifact preparation
+
+To resume on RTX PRO 6000, recreate both the historical 512-row workload and
+its 32-row iteration slice, then produce the BF16 merge from the same release.
+This preparation runs no timed benchmark and changes no selection or parity
+criteria. Require the historical dataset hashes, safe merge, and the existing
+four-row base/master/merged eager canary with nonzero adapter effect; stop on
+any mismatch or failed gate. A future vLLM run must still pass its serving gate.
+
+```bash
+.venv/bin/python -m experiments.local_inference.fetch \
+  --adapter-revision 411bdb7cf28bf153d03820f242c7f0668762fa6d
+sbatch cluster/slurm/prepare_local_inference.sh
+# When RTX capacity is available, reuse the artifacts and check score parity:
+sbatch --partition=gpushort --gpus-per-node=rtx_pro_6000:1 \
+  cluster/slurm/prepare_local_inference.sh --reference
+```
+
+The Slurm launcher defaults to CPU-only preparation on `regularshort` with
+32 GB RAM. Eight CPUs match the existing merge/reference scripts' eight Torch
+threads. The second invocation requests one `gpushort` RTX PRO 6000 for the
+bounded reference check; verified datasets and merge are reused. CPU-only
+completion does not establish score parity. Logs are under
+`logs/slurm/local_inference/`; datasets and models retain the paths documented
+below. Monitor during the active agent turn when no scheduling tool is available.
+
+Cluster preparation completed on 2026-09-24 in Slurm job `31934203` on `node8`
+(5m21s, exit 0, peak RSS 24,013,428 KiB). Both JSONL hashes exactly match the
+4080 artifacts: 512 rows / 5,760,843 tokens and 32 rows / 338,780 tokens.
+The published FP32 master was preserved, its rebased serving tensors verified
+exact, and the safe BF16 merge saved to `results/local_inference/merged_bf16/`
+with its checksum manifest. All RTX PRO 6000 nodes were drained or draining;
+the pending GPU job `31934185` was cancelled before execution. GPU reference
+and vLLM serving parity remain untested on the cluster; no speed result exists.
+
 The follow-up testing clipping, rebalancing, rotations, groups and selective
 precision on real activations is documented in
 [`int4_calibration`](../int4_calibration/README.md). It is a numerical/kernel

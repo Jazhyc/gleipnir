@@ -1,5 +1,6 @@
 """Stage pinned public inputs and record the resolved release revision."""
 
+import argparse
 import json
 import shutil
 from concurrent.futures import ThreadPoolExecutor
@@ -17,13 +18,25 @@ CONFIG = Path("experiments/local_inference/config.json")
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--adapter-revision", help="Pin an existing release for reproduction"
+    )
+    args = parser.parse_args()
     config = json.loads(CONFIG.read_text())
     ROOT.mkdir(parents=True, exist_ok=True)
     identity = ROOT / "downloads.json"
     if identity.exists():
         info = json.loads(identity.read_text())
+        if args.adapter_revision and info["adapter_revision"] != args.adapter_revision:
+            raise ValueError(
+                "existing adapter revision differs from requested revision"
+            )
     else:
-        info = {"adapter_revision": HfApi().model_info(config["adapter_id"]).sha}
+        info = {
+            "adapter_revision": args.adapter_revision
+            or HfApi().model_info(config["adapter_id"]).sha
+        }
     identity.write_text(json.dumps(info, indent=2) + "\n")
 
     def model(which: str) -> None:
