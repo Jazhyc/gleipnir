@@ -5,6 +5,7 @@ import pytest
 
 from gleipnir.monitoring_systems_screen import (
     add_missing_token_lengths,
+    compiler_cache_directory,
     load_config,
     prepare_screen,
     require_frozen_config,
@@ -15,6 +16,26 @@ from gleipnir.monitoring_systems_screen import (
     stable_stratified_selection,
     validate_prepared_artifacts,
 )
+
+
+def test_shared_compiler_cache_is_explicit_and_separate_for_each_gpu(
+    tmp_path: Path,
+) -> None:
+    config = load_config(Path("experiments/b200_training_throughput/config.yaml"))
+    paths = resolve_paths(config, result_dir=tmp_path / "results")
+    assert compiler_cache_directory(config, paths, "control", 0) == (
+        paths.result_dir / "compile_cache" / "control"
+    )
+    config["compiler_cache_root"] = str(tmp_path / "shared-cache")
+    assert compiler_cache_directory(config, paths, "control", 0) == (
+        compiler_cache_directory(config, paths, "candidate", 0)
+    )
+    assert compiler_cache_directory(config, paths, "control", 0) != (
+        compiler_cache_directory(config, paths, "control", 1)
+    )
+    config["compiler_cache_root"] = ""
+    with pytest.raises(ValueError, match="nonempty"):
+        compiler_cache_directory(config, paths, "control", 0)
 
 
 def test_mixed_source_length_inference_preserves_prompts_and_available_provenance():

@@ -65,3 +65,12 @@ prompts, labels, and teacher targets. Selection manifests retain available
 provenance fields without inventing monitoring-specific fields for other sources.
 Training jobs may specify `hydra_log_dir` to place per-job Hydra logs under the
 active remote platform's log tree.
+
+Cold screens still isolate compiler caches by condition by default. An explicit
+`compiler_cache_root` in the frozen configuration enables reuse across conditions
+and campaigns, with separate `gpu-N` subdirectories. Use it for warmed iteration
+benchmarks on a matching GPU and software stack; preserve cache provenance and
+do not compare a cold control against warmed candidates as a training speedup.
+PyTorch/Triton cache validation still decides which compiled artifacts match
+changed graphs. Complete matched loops are the relevant timing measure when
+length grouping places the longest batches first.

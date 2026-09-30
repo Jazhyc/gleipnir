@@ -525,8 +525,20 @@ def summarize_screen(
     }
 
 
+def compiler_cache_directory(
+    config: dict[str, Any], paths: ScreenPaths, condition: str, gpu: int
+) -> Path:
+    """Keep cold screens isolated or reuse an explicitly configured GPU cache."""
+    shared = config.get("compiler_cache_root")
+    if shared is None:
+        return paths.result_dir / "compile_cache" / condition
+    if not isinstance(shared, str) or not shared.strip():
+        raise ValueError("compiler_cache_root must be a nonempty path string")
+    return (ROOT / shared).resolve() / f"gpu-{gpu}"
+
+
 def gpu_environment(base: dict[str, str], gpu: int, cache: Path) -> dict[str, str]:
-    """Return an isolated per-condition kernel and compiler environment."""
+    """Return the selected GPU's kernel and compiler environment."""
     environment = dict(base)
     environment.update(
         CUDA_VISIBLE_DEVICES=str(gpu),
@@ -629,7 +641,9 @@ def run_screen(config_path: Path, *, revision: str | None = None) -> None:
             preflight_jobs,
             preflight["job_name"],
             gpu_environment(
-                environment, 0, paths.result_dir / "compile_cache" / "preflight"
+                environment,
+                0,
+                compiler_cache_directory(config, paths, "preflight", 0),
             ),
             preflight=True,
         )
@@ -656,7 +670,7 @@ def run_screen(config_path: Path, *, revision: str | None = None) -> None:
                     gpu_environment(
                         environment,
                         gpu,
-                        paths.result_dir / "compile_cache" / name,
+                        compiler_cache_directory(config, paths, name, gpu),
                     ),
                 )
                 condition_metadata = json.loads(
