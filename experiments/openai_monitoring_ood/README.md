@@ -102,6 +102,14 @@ startup and progress but cannot promise follow-ups after the turn ends.
 
 ## GPT-5.6 Luna matched comparison
 
+Status: completed and audited on all 6,395 rows on 2026-09-30. Mean-OOD
+pAUROC@20/AUROC are **0.839729/0.948568**. Reported cache reads/writes cost
+**$2.077900/1K** for OOD requests and **$13.314461** including canaries.
+Eighty workers with 1.9M TPM pacing produced zero HTTP errors. One malformed
+completed response recovered on its first identical retry. See the
+[finding](../../docs/findings/openai_56_luna_ood_benchmark.md) for source results
+and the worse fixed-threshold false-positive behavior despite ranking gains.
+
 The user authorized a full matched benchmark and increased concurrency on
 2026-09-30. `config_56_luna.json` freezes the hypothesis that the older Luna
 may score monitoring examples better under the same zero-reasoning interface.
@@ -136,7 +144,8 @@ its observed cache writes and reads. The conservative campaign stop bound is
 $20 including canaries and all recovery attempts. Actual token volumes can
 differ between models.
 
-Logs: `logs/local/openai_monitoring_ood/run_56_luna_v1.log`.
+Logs: `logs/local/openai_monitoring_ood/run_56_luna_v1.log` and
+`logs/local/openai_monitoring_ood/run_56_luna_v1_resume.log`.
 Artifacts: `results/openai_56_luna_ood_benchmark/run_v1/`.
 Preserve raw failed requests and audit complete IDs, settings, prompts, scores,
 usage and artifact hashes before reporting final results. This session has no
