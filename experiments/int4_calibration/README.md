@@ -14,6 +14,12 @@ Capture 256 uniformly spaced token positions including endpoints for layers
 0,16,31, at gate/up inputs and down inputs. No prompt truncation. Eight calibration
 and four held-out rows give 2048/1024 activation vectors per projection.
 
+The separate Blackwell FP4 campaign extends coverage with `capture --layers all`
+after its fixed numerical gate passes. This preserves trajectory/position/split
+selection and hashes, adds source identity, and writes a separate artifact tree.
+The default three-layer capture remains unchanged. See
+[`fp4_inference`](../fp4_inference/README.md) for that campaign's protocol.
+
 Use Transformers causal-LM BF16 SDPA only for this bounded activation capture,
 since hooks are needed; this is an explicit exception to persistent-vLLM scoring.
 Load the original merged model unchanged; preserve checkpoint/input/prompt hashes,

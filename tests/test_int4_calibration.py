@@ -1,7 +1,16 @@
+import pytest
 import torch
 
-from experiments.int4_calibration.capture import select
+from experiments.int4_calibration.capture import parse_layers, select
 from experiments.int4_calibration.screen import hadamard, quant, rotation
+
+
+def test_capture_layer_extension_preserves_default_and_checks_bounds():
+    assert parse_layers("0,16,31", 32) == [0, 16, 31]
+    assert parse_layers("all", 32) == list(range(32))
+    for value in ("-1", "32", "0,0"):
+        with pytest.raises(ValueError, match="Invalid"):
+            parse_layers(value, 32)
 
 
 def test_rotation_preserves_product_with_signs():

@@ -40,8 +40,13 @@ ownership are excluded from the primary coordinate. Record them separately.
 The paper rows below are the published three-seed means rounded to three decimal
 places. Gleipnir's Qwen rows are deterministic temperature-zero evaluations;
 the GPT-OSS low-reasoning row uses one frozen sampling seed before the
-binary-logit boundary. They are comparable in dataset, metric, and uncached
-cost convention, but do not reproduce the paper's trained interfaces.
+binary-logit boundary. GPT-6 Luna is one Standard API run at temperature 1,
+with reasoning disabled and actual terminal binary token logprobs. They are
+comparable in dataset, metric, and uncached cost convention, but do not reproduce
+the paper's trained interfaces. Jev 1.13 returns a native binary probability
+from raw trajectory state and a frozen Noul question. Its information and
+instruction interface differs from the full teacher chat prompt; its point
+compares complete monitor configurations, not an isolated model substitution.
 
 ## Reference table
 
@@ -57,10 +62,12 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
+| **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
-| **Gleipnir** | **Qwen3.5-9B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.8659** | **0.8212** | **yes** |
+| **Gleipnir** | **GPT-6 Luna binary logprobs** | **Full binary specification, terminal `0\|1` logprobs, reasoning disabled** | **0.8355** | **0.8365** | **no** |
+| **Gleipnir** | **Qwen3.5-9B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.8659** | **0.8212** | **no** |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
@@ -68,7 +75,7 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
-| **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **yes** |
+| **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -97,6 +104,8 @@ Gleipnir rows are backed by the completed
 and
 [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md) and
 [`tool_trajectory_kimi_k26_ood_benchmark.md`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md)
+and [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
+and [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
 audits, the completed
 [`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md)
 record, and the exact accounting in
@@ -113,10 +122,12 @@ pAUROC@20 by `0.1649`.
 
 The full-mixed Qwen3.5-9B adapter reaches `0.8212` Mean-OOD pAUROC@20 and
 `0.9215` Mean-OOD AUROC. At the frozen dated `$0.10/M` input and `$0.40/M`
-output proxy, the same compact prompt costs `$0.8659/1K`. It is the next
-observed frontier point, improving pAUROC@20 by `0.0388` over mixed 4B at
-`3.33x` the hosted inference proxy. The next stronger point is the unadapted
-Qwen3.5-27B base at `0.8395` and `$1.8476/1K`.
+output proxy, the same compact prompt costs `$0.8659/1K`. It improves
+pAUROC@20 by `0.0388` over mixed 4B at `3.33x` the hosted inference proxy.
+GPT-6 Luna dominates it at the dated API prices: `0.8365` at `$0.8355/1K`.
+With Jev's retained result included, the next observed frontier point above
+mixed 4B is Jev 1.13 at `0.8495` and `$0.3887/1K`, followed by Kimi K2.6.
+The 9B result remains a matched student comparison.
 
 Both adapters were trained for one epoch with rank-128 QLoRA using Kimi K3
 soft probabilities only. Teacher targets used the richer teacher prompt;
@@ -239,12 +250,13 @@ Mean-OOD pAUROC@20 and `0.9371` Mean-OOD AUROC at `$1.8476/1K`. The exact
 snapshot, so this is explicitly the paper's hosted proxy rather than a current
 OpenRouter quote.
 
-This remains an observed frontier point. It improves pAUROC@20 by `0.0183`
-over the adjacent lower-cost mixed Qwen3.5-9B student. It also point-estimate
+Jev 1.13 now dominates this point at `0.8495` and `$0.3887/1K`. Qwen27B
+remains stronger than GPT-6 Luna by `0.0029` pAUROC and mixed Qwen3.5-9B by
+`0.0183`. It also point-estimate
 dominates the paper's Qwen3.5-27B SFT+RL row, improving pAUROC@20 by `0.0085`
-while costing `33.4%` less. The next higher-quality point, Kimi-K2.6 SFT,
-improves only `0.0015` to `0.841` but costs `5.51x` as much under these dated
-hosted-price coordinates.
+while costing `33.4%` less. The next higher-quality frontier point, Kimi K2.6
+binary logits, improves by `0.0799` to `0.9194` at `$7.9110/1K` under these
+dated hosted-price coordinates.
 
 Within the strictly matched Qwen3.5 base series, the curve rises from `0.6175`
 at 4B to `0.6976` at 9B and `0.8395` at 27B. The 9B-to-27B gain (`0.1418`) is
@@ -313,6 +325,68 @@ Exact means of 9,473.7113 input tokens and 387.0719 logical output tokens cost
 more expensive than direct binary logits and slightly weaker, so it is strictly
 dominated. This is evidence about one greedy non-thinking rationale under the
 full binary specification, not native thinking or trained deliberation.
+
+## GPT-6 Luna Standard API frontier movement
+
+The complete, audited single-run benchmark reaches `0.8365439238` Mean-OOD
+pAUROC@20 with the full teacher prompt, no reasoning, and terminal binary
+logprobs. Standard short-context prices checked on 2026-09-30 are `$0.10/M`
+input and `$0.50/M` output. The 6,395 accepted responses report exactly
+53,206,252 input and 44,766 billed output tokens, averaging 8,319.976857 and
+7.000156 tokens. The primary uncached coordinate is **`$0.835497764/1K`**:
+
+```text
+((53,206,252 * 0.10 + 44,766 * 0.50) / 1,000,000) * 1,000 / 6,395
+```
+
+This follows the registry's successful-evaluation convention. It excludes
+the three failed HTTP-200 responses, all HTTP-429 attempts, non-OOD canaries,
+cache reads and cache-write premiums. Those operational costs remain in the
+[benchmark finding](../findings/openai_luna_ood_benchmark.md). Including OOD
+recovery usage instead would give `$0.836167/1K`; that is not the plot coordinate.
+
+Before Jev's retained result was added, Luna became the next frontier point
+after Gleipnir 4B. It dominates Gleipnir
+9B's dated hosted proxy: it costs about 3.5% less while improving pAUROC by
+`0.0153`. Qwen3.5-27B has `0.0029` higher pAUROC at about 2.21 times the cost.
+Jev 1.13 now dominates both points at `0.8495` and `$0.3887/1K`.
+These are point-estimate comparisons, without a
+paired significance claim, and hosted list prices do not establish self-hosted
+cost or a deployment preference.
+
+Luna's SHADE-Arena FPR is 91.67% at the frozen 0.5 threshold. Ranking and cost
+alone therefore do not establish a calibrated deployment monitor. Top-20
+logprobs also failed to include both literal scores once; that response and
+two output-cap failures recovered on first identical repeats. All raw failures
+and the recorded bounded recovery policy are retained in the audit.
+
+GPT-5.6 Luna is excluded from this registry and plot at the user's request;
+its completed benchmark remains in its separate finding.
+
+## Jev 1.13 native-probability frontier movement
+
+At the user's request on 2026-09-30, add the retained 2026-09-19 evaluation
+of `typesafe/jev-1.13`, served as `typesafe/jev-1.13-20260917` by TypeSafe.
+All 6,395 frozen IDs are present exactly once; saved states match the original
+full trajectories. An independent artifact audit reproduces all source metrics,
+the request/config/question hashes, and the provider-reported cost.
+
+Jev reaches `0.8495130129` Mean-OOD pAUROC@20 and `0.9268991833` Mean-OOD
+AUROC. At the recorded `$0.042/M` input and `$0/M` output rates, its
+59,178,752 input tokens cost `$2.485507584` over the suite, or
+**`$0.388664204/1K`**. Reported output usage is 147,085 tokens; the output
+charge is zero. The native probability comes from raw trajectory state plus
+the frozen Noul question rather than full teacher chat-prompt logprobs.
+
+Jev inserts a frontier point between Gleipnir 4B and Kimi K2.6, dominating
+GPT-6 Luna, Gleipnir 9B, and Qwen27B on these dated point estimates. It retains
+95 unique scores, so ties are much more frequent than for token-logprob
+monitors. SHADE-Arena remains weak at `0.4415` pAUROC. Two full responses
+report input usage slightly above the configured 32,000-token window; saved
+records do not establish whether the provider internally truncated them.
+The [finding](../findings/tool_trajectory_jev_ood_benchmark.md) preserves this
+context discrepancy and the different native interface. Do not infer a
+prompt-matched model advantage or calibrated deployment performance.
 
 ## Kimi K2.6 Inceptron frontier movement
 
@@ -424,6 +498,8 @@ variability.
 - [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md)
 - [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md)
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
+- [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
+- [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 - [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
 - [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md)

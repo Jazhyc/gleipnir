@@ -32,7 +32,7 @@ def main() -> None:
     os.environ["PATH"] = (
         str(Path(sys.executable).parent) + os.pathsep + os.environ["PATH"]
     )
-    logs = Path("logs/local/local_inference")
+    logs = Path(config.get("log_dir", "logs/local/local_inference"))
     logs.mkdir(parents=True, exist_ok=True)
     stamp = datetime.datetime.now(datetime.UTC).strftime("%Y%m%dT%H%M%SZ")
     phases = (
@@ -60,6 +60,7 @@ def main() -> None:
         print(f"Starting {phase}; log={path}", flush=True)
         command = [sys.executable, "-u", "-m", f"experiments.local_inference.{phase}"]
         if phase == "benchmark":
+            command[-1] = config.get("benchmark_module", command[-1])
             command.extend(["--config", str(config_path)])
         started = time.perf_counter()
         with path.open("x") as handle:

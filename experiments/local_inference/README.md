@@ -40,6 +40,17 @@ precision on real activations is documented in
 [`int4_calibration`](../int4_calibration/README.md). It is a numerical/kernel
 screen, not another judge evaluation or serving change.
 
+The 2026-09-29 RTX PRO 6000 interactive search is recorded separately in
+[`fp4_inference`](../fp4_inference/README.md). Its cluster eager master/merge
+gate passed; the new Blackwell serving baseline and optimization conditions
+retain the historical inputs while recording separate result directories.
+
+The bounded profiler accepts `--config` to preserve a campaign condition's
+precision and schedule. `--early-cupti` initializes CUDA tracing before model
+loading, including an explicitly registered custom FP4 diagnostic worker when
+needed. This remains a separate, instrumented diagnostic rather than a timed
+serving pass; require actual CUDA kernel events before interpreting the trace.
+
 ## Native INT4 MLP kernel screen
 
 Hypothesis: CUTLASS native signed INT4 GEMM on the two dominant MLP shapes beats
