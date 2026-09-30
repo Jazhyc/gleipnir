@@ -15,6 +15,8 @@
   prompt, Standard API, complete 6,395-row audit, cost, and bounded API recoveries.
 - [GPT-5.6 Luna OOD benchmark](findings/openai_56_luna_ood_benchmark.md): matched
   full teacher prompt, 80 workers, complete audit, ranking and calibration tradeoffs.
+- [Jev 1.13 OOD benchmark](findings/tool_trajectory_jev_ood_benchmark.md): retained
+  native probability evaluation, complete artifact audit, exact cost and context caveat.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

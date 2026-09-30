@@ -50,6 +50,11 @@ PAPER_COMPARISON_MONITORS = {
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
+    "Jev 1.13 native probabilities": {
+        "xytext": (0, 18),
+        "ha": "center",
+        "va": "bottom",
+    },
     "GPT-6 Luna binary logprobs": {
         "xytext": (-5, 8),
         "ha": "right",
@@ -175,6 +180,7 @@ def _display_label(monitor: str) -> str:
         "Kimi K2.6 binary logits": "Kimi K2.6",
         "Kimi K3 binary logits": "Kimi K3",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
+        "Jev 1.13 native probabilities": "Jev 1.13",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
@@ -191,7 +197,7 @@ def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
     """Apply documented presentation-only omissions to registry points."""
     is_ours = frame["origin"].eq("Gleipnir")
     is_binary_score_interface = frame["interface"].str.contains(
-        "logits|logprobs", case=False, na=False
+        "logits|logprobs|native binary probability", case=False, na=False
     )
     included = (
         ~frame["monitor"].isin(EXCLUDED_MONITORS)

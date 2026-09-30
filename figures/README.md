@@ -50,9 +50,9 @@ Models below `0.60` Mean-OOD pAUROC@20 are also retained in the registry but
 omitted from this presentation so the operationally relevant upper frontier has
 room for future low-cost, high-performing monitors.
 Gleipnir points are included only when their evaluation interface explicitly
-uses logits or logprobs; other completed Gleipnir interfaces remain in the
-registry. Plot labels omit the redundant `base` suffix without changing canonical
-model names.
+uses logits, logprobs, or a native binary probability; other completed
+interfaces remain in the registry. Plot labels omit the redundant `base` suffix
+without changing canonical model names.
 The MoE point uses the presentation label `Qwen3.5-35B-A3B`; provider provenance
 is recorded in the canonical registry.
 The two mixed-data soft-distilled students use the presentation names
@@ -69,10 +69,18 @@ Gleipnir students displace.
 
 GPT-6 Luna is included at `$0.8355/1K` and `0.8365` Mean-OOD pAUROC@20,
 using the accepted responses' token usage and ordinary uncached Standard rates.
-Retries and cache writes are excluded under the registry contract. It enters
-the frontier and dominates Gleipnir 9B at these dated prices; the 9B point and
+Retries and cache writes are excluded under the registry contract. It dominates
+Gleipnir 9B at these dated prices; the 9B point and
 its matched adaptation arrow remain visible. The plot supports actual returned
-binary token logprobs as well as logits. GPT-5.6 Luna is not included.
+binary token logprobs and native probabilities as well as logits. GPT-5.6 Luna
+is not included.
+
+Jev 1.13 is included from the complete retained native Decisions benchmark at
+`$0.3887/1K` and `0.8495` Mean-OOD pAUROC@20. It enters the frontier between
+Gleipnir 4B and Kimi K2.6, dominating GPT-6 Luna and Qwen27B as well as
+Gleipnir 9B. All comparison points remain visible. The native state/question
+interface and two provider-usage/context discrepancies are documented in
+`docs/findings/tool_trajectory_jev_ood_benchmark.md`.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:

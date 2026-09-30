@@ -1,6 +1,6 @@
 # Tool-trajectory monitor inference economics
 
-Status: exact Qwen, Kimi, and GPT-6 Luna evaluation accounting, updated
+Status: exact Qwen, Kimi, GPT-6 Luna, and Jev evaluation accounting, updated
 2026-09-30. This note prices monitor inference only. It does not price Kimi
 annotation, Qwen training, or self-hosted total cost of ownership.
 
@@ -52,6 +52,7 @@ The dated hosted-price snapshots used here are:
 | Kimi K2.6 on Inceptron | OpenRouter `moonshotai/kimi-k2.6` | 0.53 | 3.39 | 0.17 |
 | Kimi K3 on Makora | OpenRouter `moonshotai/kimi-k3` | 2.55 | 12.75 | 0.256 |
 | GPT-6 Luna | Direct OpenAI Standard, short context, checked 2026-09-30 | 0.10 | 0.50 | 0.01 |
+| Jev 1.13 | OpenRouter TypeSafe, frozen 2026-09-19 and checked 2026-09-30 | 0.042 | 0.00 | not assumed |
 
 These are mutable hosted prices, not claims about underlying GPU cost. Record a
 new dated row rather than silently replacing this snapshot when prices change.
@@ -96,6 +97,33 @@ the binary 9B run while losing `0.2118` pAUROC@20. Visible reasoning recovers
 extraction costs 6.2% more and changes pAUROC@20 by `-0.0054`; it is also
 strictly dominated. Both ordinal arms remain dominated as well.
 
+## Jev 1.13 native decision exact accounting
+
+The retained TypeSafe run covers the same 6,395 frozen OOD examples through
+OpenRouter's native Decisions API. The raw trajectory is supplied as state;
+a separate frozen Noul question supplies the rubric and returns a probability.
+This changes the prompt and interface as well as the model. Its complete saved
+cache was independently audited on 2026-09-30 before adding the frontier point.
+
+Saved input usage is 59,178,752 tokens, averaging 9,253.909617 per example.
+Output usage is exactly 23 tokens per example, totaling 147,085, but the frozen
+TypeSafe rate charges output at zero. Every retained per-row cost equals its
+input tokens times `$0.042/M`:
+
+```text
+full_suite_USD = 59,178,752 * 0.042 / 1,000,000 = 2.485507584
+USD_per_1K = 2.485507584 * 1,000 / 6,395 = 0.3886642039093042
+```
+
+The [current model listing](https://openrouter.ai/typesafe/jev-1.13), checked
+on 2026-09-30, confirms `$0.042/M` input and free output. The primary point
+is therefore `$0.3887/1K` at `0.849513` Mean-OOD pAUROC@20. It enters the
+frontier between Gleipnir 4B and Kimi K2.6, dominating the dated GPT-6 Luna,
+Gleipnir 9B, and Qwen27B coordinates. Keep the native interface, 95 distinct
+scores, and two responses with reported input usage above the configured 32K
+window explicit; cached answers cannot rule out provider truncation. See the
+[finding](../findings/tool_trajectory_jev_ood_benchmark.md) for the exact audit.
+
 ## Direct GPT-6 Luna monitor exact accounting
 
 The full Standard Responses benchmark completed and independently audited all
@@ -115,8 +143,10 @@ primary frontier, regardless of its actual cache disposition:
 | **Accepted uncached total** | **53,251,018** | — | **5.3430082** | **0.835497764** |
 
 The performance coordinate is `0.8365439238` Mean-OOD pAUROC@20. This point
-enters the observed frontier between Gleipnir 4B and Qwen3.5-27B, displacing
-Gleipnir 9B's `$0.8659/1K`, `0.8212` point at these dated hosted prices.
+initially entered the observed frontier between Gleipnir 4B and Qwen3.5-27B,
+displacing Gleipnir 9B's `$0.8659/1K`, `0.8212` point at these dated hosted
+prices. With Jev's retained result added, Luna is now dominated by Jev's
+`$0.3887/1K`, `0.8495` point.
 This does not establish self-hosted cost or calibration: Luna's SHADE-Arena
 FPR remains 91.67% at the fixed 0.5 threshold.
 
@@ -287,6 +317,7 @@ speed.
 ## Sources
 
 - [OpenAI Standard pricing](https://developers.openai.com/api/docs/pricing)
+- [OpenRouter Jev 1.13 pricing and context](https://openrouter.ai/typesafe/jev-1.13)
 - [Sinha et al., Appendix E cost accounting](https://arxiv.org/html/2605.29601v1#A5)
 - [Sinha et al., Qwen3.5-4B hosted proxy price](https://arxiv.org/html/2605.29601v1#A5.SS4)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b/pricing)
