@@ -11,6 +11,8 @@
 - `research/tool_trajectory_inference_economics.md`: paper-compatible marginal
   inference-cost accounting for Qwen3.5 and the completed Kimi K3 and K2.6
   API baselines, plus a future prefill-only serving optimization backlog.
+- [GPT-6 Luna OOD benchmark](findings/openai_luna_ood_benchmark.md): full teacher
+  prompt, Standard API, complete 6,395-row audit, cost, and bounded API recoveries.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

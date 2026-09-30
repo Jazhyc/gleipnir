@@ -114,6 +114,14 @@ release planned in the coming days. Its announcement supplies no probability
 contract. These observations apply to existing direct inference endpoints and
 do not establish Decisions API behavior or account access.
 
+The subsequent [full-teacher OOD benchmark](openai_luna_ood_benchmark.md)
+completed all 6,395 rows under the same untruncated Responses settings. One
+AgentDojo request nevertheless omitted the opposite literal token from top20;
+its first identical repeat recovered both scores. Two output-cap failures also
+recovered unchanged. This confirms that `top_p=1` fixes the initial nucleus
+cutoff but does not guarantee first-call named-token coverage. The benchmark
+retains every failure and reports its bounded recovery policy.
+
 ## GPT-6.1 Sol and GPT-6 Astra: logprobs unavailable
 
 A separate four-request synthetic Responses canary checked `gpt-6.1-sol` and

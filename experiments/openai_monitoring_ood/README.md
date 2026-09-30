@@ -5,6 +5,13 @@ suite with the unchanged full teacher prompt. This is inference benchmarking,
 not student training or distillation. Compare with the existing Kimi K3,
 Kimi K2.6, and Qwen3.5-27B full-prompt binary-logprob baselines.
 
+Status: completed on all 6,395 rows and audited on 2026-09-30. Mean-OOD
+pAUROC@20 is **0.836544**, and Mean-OOD AUROC is **0.928957**. Ordinary-input
+comparison cost is **$0.836167/1K**; usage with reported cache reads/writes is
+**$1.038409/1K**, including recovery attempts. See the
+[finding](../../docs/findings/openai_luna_ood_benchmark.md) for per-source
+results, SHADE-Arena's high false-positive rate, and complete provenance.
+
 The frozen hypothesis, intervention, baselines, selection rule, request settings,
 and stop conditions are in `config.json`. Use Standard processing
 (`service_tier=default`) and 40 concurrent workers. Reasoning is disabled,
@@ -25,7 +32,8 @@ select based on model quality. The longest-prompt score is reused in the full
 suite. No OOD result changes the prompt, threshold, or selection rule.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --tokens-per-minute 1800000 --coverage-repeats 3 --incomplete-repeats 3
 ```
 
 The first full pass saved 319 valid OOD rows before exhausting transient retries
