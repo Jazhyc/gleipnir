@@ -36,6 +36,8 @@ with sdpa_kernel(SDPBackend.MATH):
         enable_gqa=True,
     ).transpose(1, 2)
 candidate = flash_attn_func(q, k, v, causal=True)
+if isinstance(candidate, tuple):
+    candidate = candidate[0]
 gradient = torch.randn_like(candidate)
 reference.backward(gradient.float())
 candidate.backward(gradient)
