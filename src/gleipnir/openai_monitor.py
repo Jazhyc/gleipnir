@@ -121,6 +121,7 @@ class AuditedClient:
         timeout_seconds: float,
         tokens_per_minute: int | None = None,
         coverage_repeats: int = 0,
+        incomplete_repeats: int = 0,
     ) -> None:
         self.key = key
         self.settings = settings
@@ -128,6 +129,7 @@ class AuditedClient:
         self.max_attempts = max_attempts
         self.timeout_seconds = timeout_seconds
         self.coverage_repeats = coverage_repeats
+        self.incomplete_repeats = incomplete_repeats
         self.budget_usd = budget_usd
         self.lock = threading.Lock()
         self.local = threading.local()
@@ -157,6 +159,7 @@ class AuditedClient:
         if not hasattr(self.local, "session"):
             self.local.session = requests.Session()
         coverage_repeats = 0
+        incomplete_repeats = 0
         for attempt in range(1, self.max_attempts + 1):
             if self.start_limiter:
                 self.start_limiter.wait(token_proxy * 1.05 + 32 + 16)
@@ -173,6 +176,7 @@ class AuditedClient:
                 "prompt_sha256": hashlib.sha256(row["prompt"].encode()).hexdigest(),
                 "request_settings_sha256": digest(self.settings),
                 "coverage_repeat_index": coverage_repeats,
+                "incomplete_repeat_index": incomplete_repeats,
             }
             response = None
             retry = False
@@ -212,6 +216,25 @@ class AuditedClient:
                             coverage_repeats += 1
                             retry = True
                             record["coverage_repeat_planned"] = coverage_repeats
+                        elif (
+                            raw.get("status") == "incomplete"
+                            and raw.get("incomplete_details", {}).get("reason")
+                            == "max_output_tokens"
+                            and raw.get("model") == self.settings["model"]
+                            and all(
+                                raw.get(k) == self.settings[k]
+                                for k in ("temperature", "top_p", "service_tier")
+                            )
+                            and raw.get("reasoning", {}).get("effort") == "none"
+                            and raw.get("usage", {})
+                            .get("output_tokens_details", {})
+                            .get("reasoning_tokens")
+                            == 0
+                            and incomplete_repeats < self.incomplete_repeats
+                        ):
+                            incomplete_repeats += 1
+                            retry = True
+                            record["incomplete_repeat_planned"] = incomplete_repeats
             except requests.RequestException as error:
                 record["transport_error"] = str(error).replace(self.key, "[REDACTED]")
                 # A timeout can hide a billed response: retain the reservation.
@@ -241,6 +264,7 @@ class AuditedClient:
                     "request_id": record["request_id"],
                     "response_id": raw["id"],
                     "coverage_repeats": coverage_repeats,
+                    "incomplete_repeats": incomplete_repeats,
                     "latency_seconds": record["latency_seconds"],
                     "usage": {
                         "prompt_tokens": usage["input_tokens"],

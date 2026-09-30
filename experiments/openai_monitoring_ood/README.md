@@ -54,6 +54,18 @@ Preserve and count every failed response and recovery. Numerical nondeterminism
 between identical calls means recovered distributions can differ; report this
 limitation. The original seven-attempt HTTP ceiling also bounds coverage repeats.
 
+Two SHADE-Arena responses later reached the original 16-token cap after adding
+extra output to a prediction. The first recovered on its first identical repeat.
+The final resumption also permits at most three unchanged repeats of explicitly
+incomplete `max_output_tokens` responses, only with matching model/settings and
+zero reasoning tokens. Do not increase the output cap or extract scores from a
+partial response. Every accepted response must satisfy the original contract.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --tokens-per-minute 1800000 --coverage-repeats 3 --incomplete-repeats 3
+```
+
 Pacing and source hashes are recorded in `execution_events.jsonl`. These are
 operational resumption settings; request semantics and cache identities remain
 frozen. Retry waits honor at least Retry-After and exponential backoff.

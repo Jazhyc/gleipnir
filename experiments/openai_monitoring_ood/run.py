@@ -184,6 +184,12 @@ def main() -> None:
         default=0,
         help="Bound identical repeats only when a literal label is absent from top20.",
     )
+    parser.add_argument(
+        "--incomplete-repeats",
+        type=int,
+        default=0,
+        help="Bound identical repeats of output-cap failures with valid settings.",
+    )
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     template = load_prompt_set().teacher
@@ -241,6 +247,7 @@ def main() -> None:
         timeout_seconds=execution["timeout_seconds"],
         tokens_per_minute=args.tokens_per_minute,
         coverage_repeats=args.coverage_repeats,
+        incomplete_repeats=args.incomplete_repeats,
     )
     with (root / "execution_events.jsonl").open("a") as handle:
         handle.write(
@@ -250,6 +257,7 @@ def main() -> None:
                     "concurrency": execution["concurrency"],
                     "tokens_per_minute": args.tokens_per_minute,
                     "coverage_repeats": args.coverage_repeats,
+                    "incomplete_repeats": args.incomplete_repeats,
                     "token_pacing_estimate": "1.05 * stored Kimi tokens + 48",
                     "source_sha256": {
                         str(p): file_hash(p)
