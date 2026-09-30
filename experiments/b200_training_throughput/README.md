@@ -32,6 +32,17 @@ padding, memory, and projected one-epoch time for all 21,837 rows. Prefer gains
 of at least 5%; a ten-update result is provisional and does not establish
 model-quality equivalence or uncached production throughput.
 
+During the first run, the user questioned the excessive startup delay. The
+control's first update took 855.69 seconds with empty compiler caches. Before
+either candidate started, their Triton and Inductor cache directories were
+linked to the control's persistent cache on the same GPU/software stack. The
+operational intervention is recorded in `runtime_cache_reuse.json`. This
+reuses compatible kernels while allowing changed graphs to compile normally.
+Cold-inclusive control/candidate throughput is consequently confounded by
+cache state: the shared runner's automatic cold-throughput selection must not
+be treated as the recommendation. Compare warm update times and verify the
+selected recipe with a cached repeat, preserving the initial cold measurements.
+
 The user authorized optimization on existing B200 Pod `alzfug70g5237b`, at
 $6.79/hour, leaving it running afterward. Reuse persistent pinned kernels;
 no additional billable capacity is launched. Logs go to
