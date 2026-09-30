@@ -8,6 +8,29 @@ from experiments.runpod_gleipnir4b_id import run as campaign
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        "gdn_prefill_backend: flashinfer",
+        "Using Triton/FLA GDN prefill kernel (requested=flashinfer)",
+        "Using FLASHINFER attention backend",
+    ],
+)
+def test_requested_backend_and_attention_backend_do_not_prove_gdn_activation(
+    tmp_path, text: str
+) -> None:
+    log = tmp_path / "vllm.log"
+    log.write_text(text)
+    with pytest.raises(RuntimeError, match="did not activate"):
+        campaign.require_flashinfer_prefill(log)
+
+
+def test_active_flashinfer_gdn_backend_passes(tmp_path) -> None:
+    log = tmp_path / "vllm.log"
+    log.write_text("Using FlashInfer GDN prefill kernel (requested=flashinfer)")
+    campaign.require_flashinfer_prefill(log)
+
+
+@pytest.mark.parametrize(
     "predictions",
     [
         [],

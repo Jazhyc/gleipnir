@@ -23,6 +23,11 @@ the B200 has ample capacity without reserving 90% of its larger memory.
 Kernel, identity, checksum, parity, truncation, OOM, nonfinite, or coverage
 failures stop the run. No model promotion is performed.
 
+Bootstrap reinstalls the locked CUTLASS CUDA-13 wheel last and checks its
+integrity to avoid the overlapping base/CUDA-13 wheel installation race.
+Before full inference, require the serving log to confirm active FlashInfer
+GDN prefill; a requested backend alone does not establish activation.
+
 User authorized one B200 at at most $8/hour, with B300 fallback only after
 notification, no region constraint, and leaving the Pod running after completion.
 Pod `alzfug70g5237b` uses one B200 in `US-NC-2`, quoted $6.79/hour, official

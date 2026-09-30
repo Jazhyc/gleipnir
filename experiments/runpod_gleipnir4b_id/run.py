@@ -37,6 +37,12 @@ LOGS = Path("logs/runpod/runpod_gleipnir4b_id")
 JOB = "soft-n21837-mixed-qwen35-4b-seed0"
 
 
+def require_flashinfer_prefill(log: Path) -> None:
+    """Reject a requested FlashInfer backend that silently selected a fallback."""
+    if "Using FlashInfer GDN prefill kernel" not in log.read_text():
+        raise RuntimeError("vLLM did not activate the required FlashInfer GDN prefill")
+
+
 def prepare() -> None:
     """Relocate only the frozen job paths, preserving scientific provenance."""
     config = load_json(CONFIG)
@@ -216,6 +222,7 @@ def run() -> None:
             serving,
             "parity_vllm.log",
         )
+        require_flashinfer_prefill(LOGS / "parity_vllm.log")
         call(
             "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity",
             [
@@ -240,6 +247,7 @@ def run() -> None:
             serving,
             "evaluation.log",
         )
+        require_flashinfer_prefill(LOGS / "evaluation.log")
         summarize()
         status.update(
             state="complete", elapsed_seconds=time.time() - status["started_at_unix"]

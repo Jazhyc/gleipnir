@@ -126,6 +126,17 @@ vLLM 0.24.0. The first campaign is
 canary, causal-master/serving parity, then the canonical CoT-removed ID set.
 It does not establish a B200 training-throughput recipe.
 
+The cold source build of pinned causal-conv1d took 12m43s; it is needed for
+the bounded Transformers master-parity path, while full inference uses vLLM.
+The kernel canary passed BF16 forward/backward on B200 with FLA 0.5.2 and
+causal-conv1d 1.6.2.post1. The initial locked install exposed the upstream
+[CUTLASS shared-file conflict](https://github.com/NVIDIA/cutlass/issues/3170):
+vLLM detected divergent CUDA-13 wheel files and selected Triton/FLA GDN prefill.
+That attempt was stopped before full evaluation. Bootstrap now reinstalls the
+locked CUDA-13 CUTLASS wheel last and verifies its RECORD hashes. The runner
+requires explicit activation of FlashInfer GDN prefill in the serving log.
+vLLM compilation caches also live in the persistent workspace.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
