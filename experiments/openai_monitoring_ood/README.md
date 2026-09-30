@@ -141,3 +141,20 @@ Artifacts: `results/openai_56_luna_ood_benchmark/run_v1/`.
 Preserve raw failed requests and audit complete IDs, settings, prompts, scores,
 usage and artifact hashes before reporting final results. This session has no
 scheduled agent-heartbeat tool; monitoring uses active-turn progress checks.
+
+The GPT-5.6 run stopped at 2,629 saved rows after a completed response appended
+extra characters to `Prediction:1`. Before resumption, record a bounded
+amendment allowing at most three identical retries for completed malformed
+prediction text, only with matching model/settings and zero reasoning tokens.
+This does not accept partial or malformed outputs, alter the request, or choose
+by label or quality. Retain every attempt and the first fully valid response.
+The original seven-attempt HTTP ceiling remains. The initial invalid response
+is preserved in `attempts.jsonl`; the amendment is in
+`completed_format_recovery_plan.json` and `execution_events.jsonl`.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --config experiments/openai_monitoring_ood/config_56_luna.json \
+  --tokens-per-minute 1900000 --coverage-repeats 3 --incomplete-repeats 3 \
+  --format-repeats 3
+```

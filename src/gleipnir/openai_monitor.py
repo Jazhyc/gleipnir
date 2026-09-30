@@ -134,6 +134,7 @@ class AuditedClient:
         tokens_per_minute: int | None = None,
         coverage_repeats: int = 0,
         incomplete_repeats: int = 0,
+        format_repeats: int = 0,
     ) -> None:
         self.key = key
         self.pricing = DEFAULT_PRICING if pricing is None else pricing
@@ -152,6 +153,7 @@ class AuditedClient:
         self.timeout_seconds = timeout_seconds
         self.coverage_repeats = coverage_repeats
         self.incomplete_repeats = incomplete_repeats
+        self.format_repeats = format_repeats
         self.budget_usd = budget_usd
         self.lock = threading.Lock()
         self.local = threading.local()
@@ -183,6 +185,7 @@ class AuditedClient:
             self.local.session = requests.Session()
         coverage_repeats = 0
         incomplete_repeats = 0
+        format_repeats = 0
         for attempt in range(1, self.max_attempts + 1):
             if self.start_limiter:
                 self.start_limiter.wait(token_proxy * 1.05 + 32 + 16)
@@ -200,6 +203,7 @@ class AuditedClient:
                 "request_settings_sha256": digest(self.settings),
                 "coverage_repeat_index": coverage_repeats,
                 "incomplete_repeat_index": incomplete_repeats,
+                "format_repeat_index": format_repeats,
             }
             response = None
             retry = False
@@ -239,6 +243,28 @@ class AuditedClient:
                             coverage_repeats += 1
                             retry = True
                             record["coverage_repeat_planned"] = coverage_repeats
+                        elif (
+                            str(error)
+                            == (
+                                "completion or token text violated "
+                                "the prediction contract"
+                            )
+                            and raw.get("status") == "completed"
+                            and raw.get("model") == self.settings["model"]
+                            and all(
+                                raw.get(k) == self.settings[k]
+                                for k in ("temperature", "top_p", "service_tier")
+                            )
+                            and raw.get("reasoning", {}).get("effort") == "none"
+                            and raw.get("usage", {})
+                            .get("output_tokens_details", {})
+                            .get("reasoning_tokens")
+                            == 0
+                            and format_repeats < self.format_repeats
+                        ):
+                            format_repeats += 1
+                            retry = True
+                            record["format_repeat_planned"] = format_repeats
                         elif (
                             raw.get("status") == "incomplete"
                             and raw.get("incomplete_details", {}).get("reason")
@@ -288,6 +314,7 @@ class AuditedClient:
                     "response_id": raw["id"],
                     "coverage_repeats": coverage_repeats,
                     "incomplete_repeats": incomplete_repeats,
+                    "format_repeats": format_repeats,
                     "latency_seconds": record["latency_seconds"],
                     "usage": {
                         "prompt_tokens": usage["input_tokens"],

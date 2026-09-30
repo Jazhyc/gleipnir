@@ -201,6 +201,12 @@ def main() -> None:
         default=0,
         help="Bound identical repeats of output-cap failures with valid settings.",
     )
+    parser.add_argument(
+        "--format-repeats",
+        type=int,
+        default=0,
+        help="Bound unchanged retries of completed malformed predictions only.",
+    )
     args = parser.parse_args()
     config = json.loads(args.config.read_text())
     template = load_prompt_set().teacher
@@ -260,6 +266,7 @@ def main() -> None:
         tokens_per_minute=args.tokens_per_minute,
         coverage_repeats=args.coverage_repeats,
         incomplete_repeats=args.incomplete_repeats,
+        format_repeats=args.format_repeats,
     )
     with (root / "execution_events.jsonl").open("a") as handle:
         handle.write(
@@ -270,6 +277,7 @@ def main() -> None:
                     "tokens_per_minute": args.tokens_per_minute,
                     "coverage_repeats": args.coverage_repeats,
                     "incomplete_repeats": args.incomplete_repeats,
+                    "format_repeats": args.format_repeats,
                     "token_pacing_estimate": "1.05 * stored Kimi tokens + 48",
                     "source_sha256": {
                         str(p): file_hash(p)
