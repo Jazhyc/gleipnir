@@ -1,5 +1,7 @@
 from pathlib import Path
 
+import pytest
+
 from gleipnir.monitoring_systems_screen import (
     load_config,
     make_jobs,
@@ -89,9 +91,10 @@ def test_jobs_are_matched_eight_step_conditions(tmp_path: Path) -> None:
     jobs = make_jobs(config, paths, "selection-digest")
     assert [job["job_name"] for job in jobs] == [CONTROL_NAME, CANDIDATE_NAME]
     assert {job["max_steps"] for job in jobs} == {8}
-    assert {
-        job["selective_torch_compile_policy"] for job in jobs
-    } == {CONTROL_POLICY, CANDIDATE_POLICY}
+    assert {job["selective_torch_compile_policy"] for job in jobs} == {
+        CONTROL_POLICY,
+        CANDIDATE_POLICY,
+    }
     assert jobs[1]["selective_torch_compile_policy"] == CANDIDATE_POLICY
 
 
@@ -134,6 +137,33 @@ def test_config_freezes_eight_steps() -> None:
     assert config["recipe"]["save_steps"] == 8
     assert config["comparison"]["minimum_relative_improvement"] == 0.01
     assert "_authoring" not in config
+
+
+def test_backend_preflight_requires_matching_passed_parity(tmp_path: Path) -> None:
+    config = load_config(CONFIG_PATH)
+    job = make_jobs(config, resolve_paths(config, result_dir=tmp_path), "selection")[0]
+    job.update(
+        attn_implementation="flash_attention_4",
+        attention_backend_canary_reference="sdpa",
+    )
+    data = metadata(CONTROL_POLICY, 1.0)
+    data["selective_torch_compile"]["canary"] = {"passed": True}
+    for parity in (
+        None,
+        {"passed": False},
+        {"passed": True, "reference": "eager", "candidate": "flash_attention_4"},
+    ):
+        data["attention_backend"] = {"canary": parity}
+        with pytest.raises(ValueError, match="attention backend canary"):
+            validate_training_metadata(
+                data, config, job, expected_steps=8, require_canary=True
+            )
+    data["attention_backend"]["canary"] = {
+        "passed": True,
+        "reference": "sdpa",
+        "candidate": "flash_attention_4",
+    }
+    validate_training_metadata(data, config, job, expected_steps=8, require_canary=True)
 
 
 def test_hydra_override_is_resolved_before_freezing() -> None:

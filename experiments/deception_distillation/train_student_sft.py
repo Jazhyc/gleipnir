@@ -23,6 +23,10 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
+from gleipnir.attention_backends import (
+    attention_loader_kwargs,
+    compare_attention_backends,
+)
 from gleipnir.distributed_training import (
     install_mil_forward,
     prepare_rank_caches,
@@ -2833,6 +2837,13 @@ def main(cfg: DictConfig) -> None:
         raise ValueError("student.lora.eva_rows must be positive")
     quantization_metadata: dict[str, Any] = {"enabled": quantization_enabled}
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
+    attention_implementation = OmegaConf.select(cfg, "student.attn_implementation")
+    attention_backend_version = OmegaConf.select(
+        cfg, "student.training.attention_backend_version"
+    )
+    model_kwargs.update(
+        attention_loader_kwargs(attention_implementation, attention_backend_version)
+    )
     if quantization_enabled:
         if model_loader != "causal_lm" or finetuning_mode != "lora":
             raise ValueError("4-bit QLoRA requires causal_lm LoRA training")
@@ -3322,6 +3333,10 @@ def main(cfg: DictConfig) -> None:
             checkpointing_layer_indices,
         )
     selective_torch_compile_canary = None
+    attention_backend_canary = None
+    attention_canary_reference = OmegaConf.select(
+        cfg, "student.training.attention_backend_canary_reference"
+    )
     if selective_torch_compile_canary_tokens:
         if direct_target_ids is None:
             raise ValueError("selective compile canary requires direct target ids")
@@ -3338,6 +3353,49 @@ def main(cfg: DictConfig) -> None:
         )
         canary_attention_mask = torch.ones_like(canary_input_ids)
         model.eval()
+        if attention_canary_reference:
+            # Check both an unpadded sequence and unequal-length right padding.
+            short_length = max(1, len(canary_ids) // 2)
+            padded_ids = canary_input_ids.repeat(2, 1)
+            padded_ids[1, short_length:] = tokenizer.pad_token_id
+            padded_mask = canary_attention_mask.repeat(2, 1)
+            padded_mask[1, short_length:] = 0
+
+            def backend_canary_forward() -> torch.Tensor:
+                with (
+                    torch.no_grad(),
+                    torch.autocast(
+                        device_type=canary_device.type,
+                        dtype=torch.bfloat16,
+                        enabled=canary_device.type == "cuda",
+                    ),
+                ):
+                    logits, _ = forward_final_token_logits(
+                        model, padded_ids, padded_mask, direct_logits_mode
+                    )
+                    return logits[:, direct_target_ids].detach().clone()
+
+            attention_backend_canary = compare_attention_backends(
+                model,
+                reference=str(attention_canary_reference),
+                candidate=str(attention_implementation),
+                forward=backend_canary_forward,
+                compare=lambda reference, candidate: compare_compile_canary_logits(
+                    reference,
+                    candidate,
+                    absolute_tolerance=selective_torch_compile_canary_atol,
+                    relative_tolerance=selective_torch_compile_canary_rtol,
+                ),
+            )
+            attention_backend_canary["sequence_lengths"] = [
+                len(canary_ids),
+                short_length,
+            ]
+            if not attention_backend_canary["passed"]:
+                raise ValueError(
+                    f"attention backend parity failed: {attention_backend_canary}"
+                )
+            print(f"attention_backend_canary={attention_backend_canary}", flush=True)
         with (
             torch.no_grad(),
             torch.autocast(
@@ -3616,6 +3674,12 @@ def main(cfg: DictConfig) -> None:
                         "required": require_causal_conv1d,
                         "version": os.environ.get("GLEIPNIR_CAUSAL_CONV1D_VERSION"),
                         "kernel_modules": causal_conv1d_modules,
+                    },
+                    "attention_backend": {
+                        "requested": attention_implementation,
+                        "resolved": model.config._attn_implementation,
+                        "version": attention_backend_version,
+                        "canary": attention_backend_canary,
                     },
                     "sdpa": {
                         "flash_required": require_flash_sdpa,

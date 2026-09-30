@@ -41,6 +41,7 @@ teacher:
     Prediction:__GROUND_TRUTH__
 
 student:
+  attn_implementation: null
   model: Qwen/Qwen3.5-9B
   model_revision: null
   model_loader: causal_lm
@@ -84,6 +85,8 @@ student:
     target_modules: [q_proj, k_proj, v_proj, o_proj, gate_proj, up_proj, down_proj]
     exclude_modules: null
   training:
+    attention_backend_version: null
+    attention_backend_canary_reference: null
     optimizer: adamw
     optim: adamw_torch
     num_train_epochs: 1.0

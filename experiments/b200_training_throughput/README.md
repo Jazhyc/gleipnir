@@ -83,3 +83,19 @@ longest 32 rows, including the existing same-weights numerical canary. Use
 reuse before launching. Keep the 5% gain gate. If the larger batch looks promising,
 repeat it with its new graphs cached before recommending it. Compare complete
 loops rather than dropping their longest batches as warmup.
+
+The FA4 intervention uses `fa4_config.yaml`: matched SDPA and
+`flash_attention_4` conditions at microbatch 1, accumulation 32, retaining all
+24 linear checkpoints. The eight full-attention layers change backend; the
+FLA layers, prompts, objective, sample, and compilation policy stay fixed.
+Pin FA4 4.0.0b33 and its CuTe dependencies in an isolated overlay using
+`fa4_bootstrap.sh`, preserving the locked serving environment. Both conditions
+use that same overlay and persistent compiler cache. Before timing, require
+BF16 GQA forward/backward agreement with FP32 math attention at the actual
+model head dimensions, then same-model SDPA/FA4 decision-logit agreement on
+two unequal-length padded sequences, the compile canary, and the longest-32
+training update. Existing logit tolerances are 0.05 absolute plus 0.01 relative;
+the kernel probe requires relative L2 error <=0.02 forward and <=0.05 backward.
+Stop on any failed check or existing failure criterion. Use the 5% gain gate;
+repeat a promising FA4 timing with its new kernels cached. Record cold FA4
+startup separately from steady performance. No inference backend changes.

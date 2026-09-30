@@ -9,6 +9,36 @@ from gleipnir.monitoring_systems_screen import load_config, make_jobs, resolve_p
 
 CONFIG = Path("experiments/b200_training_throughput/config.yaml")
 WARM_CONFIG = CONFIG.with_name("warm_config.yaml")
+FA4_CONFIG = CONFIG.with_name("fa4_config.yaml")
+
+
+def test_fa4_screen_changes_only_full_attention_backend() -> None:
+    config = load_config(FA4_CONFIG)
+    original = load_config(CONFIG)
+    assert config["selection"] == original["selection"]
+    assert config["data"] == original["data"]
+    jobs = make_jobs(config, resolve_paths(config), "fixed-selection")
+    assert [j["attn_implementation"] for j in jobs] == ["sdpa", "flash_attention_4"]
+    for job in jobs:
+        assert job["micro_batch_size"] == 1
+        assert job["gradient_accumulation_steps"] == 32
+        assert job["gradient_checkpointing_policy"] == "linear_attention_only"
+        assert job["max_steps"] == 10 and job["train_rows"] == 320
+        assert (
+            f"student.attn_implementation={job['attn_implementation']}"
+            in training_command(job)
+        )
+    candidate = jobs[1]
+    assert candidate["attention_backend_version"] == "4.0.0b33"
+    assert candidate["attention_backend_canary_reference"] == "sdpa"
+    assert "student.training.attention_backend_version=4.0.0b33" in training_command(
+        candidate
+    )
+    assert (
+        "student.training.attention_backend_canary_reference=sdpa"
+        in training_command(candidate)
+    )
+    assert config["preflight"]["condition"] == candidate["job_name"]
 
 
 def test_warmed_continuation_preserves_cohort_and_bounds_checkpoint_removal() -> None:

@@ -77,6 +77,11 @@ def training_command(job: dict[str, Any]) -> list[str]:
         command.append(
             f"student.completion_max_length={int(job['completion_max_length'])}"
         )
+    if implementation := job.get("attn_implementation"):
+        command.append(f"student.attn_implementation={implementation}")
+    for key in ("attention_backend_version", "attention_backend_canary_reference"):
+        if value := job.get(key):
+            command.append(f"student.training.{key}={value}")
     if "require_causal_conv1d" in job:
         required = str(bool(job["require_causal_conv1d"])).lower()
         command.append(f"student.training.require_causal_conv1d={required}")

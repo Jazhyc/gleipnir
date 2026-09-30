@@ -472,6 +472,14 @@ def validate_training_metadata(
     canary = compiled.get("canary") or {}
     if require_canary and canary.get("passed") is not True:
         raise ValueError("same-weights compile canary did not pass")
+    if require_canary and job.get("attention_backend_canary_reference"):
+        parity = metadata.get("attention_backend", {}).get("canary") or {}
+        if (
+            parity.get("passed") is not True
+            or parity.get("reference") != job["attention_backend_canary_reference"]
+            or parity.get("candidate") != job.get("attn_implementation")
+        ):
+            raise ValueError("same-weights attention backend canary did not pass")
 
 
 def summarize_screen(
