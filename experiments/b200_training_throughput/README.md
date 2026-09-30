@@ -99,3 +99,5 @@ the kernel probe requires relative L2 error <=0.02 forward and <=0.05 backward.
 Stop on any failed check or existing failure criterion. Use the 5% gain gate;
 repeat a promising FA4 timing with its new kernels cached. Record cold FA4
 startup separately from steady performance. No inference backend changes.
+The launcher explicitly enables FA4's opt-in persistent CuTe kernel cache on
+the network volume; its default is an in-process cache only.

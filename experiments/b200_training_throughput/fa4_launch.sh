@@ -5,6 +5,8 @@ source .cache-runtime.env
 : "${GLEIPNIR_COMMIT:?Supply the synced source commit}"
 export FLA_DISABLE_BACKEND_DISPATCH=1
 export PYTHONPATH="/workspace/gleipnir/.cache/kernels/fa4:${PYTHONPATH:-}"
+export FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED=1
+export FLASH_ATTENTION_CUTE_DSL_CACHE_DIR=/workspace/gleipnir/.cache/training/fa4_4.0.0b33_cute
 mkdir -p logs/runpod/b200_training_throughput_fa4
 # GPU probes are serialized after the preceding screen completes.
 .venv/bin/python experiments/b200_training_throughput/fa4_kernel_canary.py \
@@ -30,6 +32,8 @@ result = root / 'results/b200_training_throughput_fa4'
     'recorded_at_unix': time.time(), 'source': str(old),
     'destination': str(destination), 'cache_state': 'existing SDPA/FLA caches; FA4 initially cold',
     'overlay': str(root / '.cache/kernels/fa4'),
+    'fa4_persistent_cache_enabled': True,
+    'fa4_persistent_cache_dir': str(root / '.cache/training/fa4_4.0.0b33_cute'),
     'selection_rule': 'complete matched loops; warmed repeat of FA4 if initially promising',
 }, indent=2) + '\n')
 PY
