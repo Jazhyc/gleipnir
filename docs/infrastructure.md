@@ -137,6 +137,12 @@ locked CUDA-13 CUTLASS wheel last and verifies its RECORD hashes. The runner
 requires explicit activation of FlashInfer GDN prefill in the serving log.
 vLLM compilation caches also live in the persistent workspace.
 
+The first full ID evaluation completed: 3,012 finite predictions, passing
+master/serving parity, and macro AUROC 0.953021 / pAUROC@20 0.851445.
+The Pod was verified RUNNING after artifact collection. See the
+[B200 finding](findings/runpod_b200_gleipnir4b_id.md) for numerical agreement,
+calibration, measured inference throughput, and the cold-start limitations.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

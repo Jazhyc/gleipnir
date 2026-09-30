@@ -161,6 +161,7 @@ def main() -> None:
                 "--no-group",
                 "--partial",
                 "--timeout=60",
+                *(["--exclude=*.tmp"] if args.action == "pull" and directory else []),
                 "-e",
                 transport,
                 source,

@@ -56,3 +56,12 @@ Outputs: `results/runpod_gleipnir4b_id/`; logs:
 `logs/runpod/runpod_gleipnir4b_id/`. Monitor startup closely in the active agent
 turn. A remote process or watchdog does not replace scheduled agent follow-ups;
 do not claim future monitoring without a verified agent scheduler.
+
+Completed 2026-09-30: kernel canary and master/serving parity passed; all
+3,012 ID examples were evaluated with active FlashInfer GDN prefill. Macro
+AUROC is 0.953021 and pAUROC@20 0.851445 (historical 0.952674/0.850083).
+Whole-set historical score correlation is 0.999765, with MAE 0.003326 and
+10 threshold disagreements. Scoring took 11m02s excluding startup. The Pod
+remains running. See the
+[finding](../../docs/findings/runpod_b200_gleipnir4b_id.md) for calibration,
+source metrics, numerical limits, startup repairs, and artifact checksums.
