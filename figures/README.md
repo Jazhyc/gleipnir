@@ -50,8 +50,9 @@ Models below `0.60` Mean-OOD pAUROC@20 are also retained in the registry but
 omitted from this presentation so the operationally relevant upper frontier has
 room for future low-cost, high-performing monitors.
 Gleipnir points are included only when their evaluation interface explicitly
-uses logits; other completed Gleipnir interfaces remain in the registry. Plot
-labels omit the redundant `base` suffix without changing canonical model names.
+uses logits or logprobs; other completed Gleipnir interfaces remain in the
+registry. Plot labels omit the redundant `base` suffix without changing canonical
+model names.
 The two mixed-data soft-distilled students use the presentation names
 `Gleipnir 4B` and `Gleipnir 9B`; dashed red arrows connect their corresponding
 unadapted Qwen3.5 baselines to make the measured adaptation uplift explicit.
@@ -63,6 +64,13 @@ A muted blue dotted line recomputes the Sinha et al. frontier from their visible
 points; the solid dark line is the combined frontier after adding our results.
 Their separation at low cost shows which historical frontier points the
 Gleipnir students displace.
+
+GPT-6 Luna is included at `$0.8355/1K` and `0.8365` Mean-OOD pAUROC@20,
+using the accepted responses' token usage and ordinary uncached Standard rates.
+Retries and cache writes are excluded under the registry contract. It enters
+the frontier and dominates Gleipnir 9B at these dated prices; the 9B point and
+its matched adaptation arrow remain visible. The plot supports actual returned
+binary token logprobs as well as logits. GPT-5.6 Luna is not included.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:

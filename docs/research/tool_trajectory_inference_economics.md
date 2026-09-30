@@ -1,8 +1,8 @@
 # Tool-trajectory monitor inference economics
 
-Status: exact Qwen and Kimi evaluation accounting, updated 2026-09-01. This note prices
-monitor inference only. It does not price Kimi annotation, Qwen training, or
-self-hosted total cost of ownership.
+Status: exact Qwen, Kimi, and GPT-6 Luna evaluation accounting, updated
+2026-09-30. This note prices monitor inference only. It does not price Kimi
+annotation, Qwen training, or self-hosted total cost of ownership.
 
 ## Paper accounting convention
 
@@ -51,6 +51,7 @@ The dated hosted-price snapshots used here are:
 | Kimi-K2.6 paper proxy | Paper Table 3 Kimi API price | 0.95 | 4.00 | not assumed |
 | Kimi K2.6 on Inceptron | OpenRouter `moonshotai/kimi-k2.6` | 0.53 | 3.39 | 0.17 |
 | Kimi K3 on Makora | OpenRouter `moonshotai/kimi-k3` | 2.55 | 12.75 | 0.256 |
+| GPT-6 Luna | Direct OpenAI Standard, short context, checked 2026-09-30 | 0.10 | 0.50 | 0.01 |
 
 These are mutable hosted prices, not claims about underlying GPU cost. Record a
 new dated row rather than silently replacing this snapshot when prices change.
@@ -94,6 +95,41 @@ the binary 9B run while losing `0.2118` pAUROC@20. Visible reasoning recovers
 `0.0320` lower. Applying visible reasoning before the same binary-logit
 extraction costs 6.2% more and changes pAUROC@20 by `-0.0054`; it is also
 strictly dominated. Both ordinal arms remain dominated as well.
+
+## Direct GPT-6 Luna monitor exact accounting
+
+The full Standard Responses benchmark completed and independently audited all
+6,395 frozen rows, preserving the full teacher prompt and normalizing returned
+terminal literal `0` and `1` logprobs. Reasoning was disabled. The accepted
+responses report 53,206,252 input and 44,766 output tokens, with zero reasoning
+tokens: means of 8,319.976857 input and 7.000156 billed output tokens.
+
+The 2026-09-30 Standard snapshot is `$0.10/M` ordinary input and `$0.50/M`
+output. Price every accepted input token at ordinary uncached rates for the
+primary frontier, regardless of its actual cache disposition:
+
+| Component | Tokens | Rate (USD / M) | Full-suite USD | USD / 1K evaluations |
+| --- | ---: | ---: | ---: | ---: |
+| Input | 53,206,252 | 0.10 | 5.3206252 | 0.831997686 |
+| Output | 44,766 | 0.50 | 0.0223830 | 0.003500078 |
+| **Accepted uncached total** | **53,251,018** | — | **5.3430082** | **0.835497764** |
+
+The performance coordinate is `0.8365439238` Mean-OOD pAUROC@20. This point
+enters the observed frontier between Gleipnir 4B and Qwen3.5-27B, displacing
+Gleipnir 9B's `$0.8659/1K`, `0.8212` point at these dated hosted prices.
+This does not establish self-hosted cost or calibration: Luna's SHADE-Arena
+FPR remains 91.67% at the fixed 0.5 threshold.
+
+Three failed OOD outputs recovered under the recorded bounded identical-request
+policy. Counting their input/output usage gives `$0.836167/1K` at ordinary
+uncached rates, versus the successful-evaluation plot coordinate above.
+Reported cache reads and writes give `$1.038409/1K` including those attempts;
+the entire campaign including canaries costs `$6.653762` from usage and rates.
+Cache writes are priced at `$0.125/M`. These operational sensitivities and
+all failures are retained in the
+[finding](../findings/openai_luna_ood_benchmark.md); they are not the plot's
+uncached successful-inference coordinate. GPT-5.6 Luna is not added to the
+frontier at the user's request.
 
 ## Direct Kimi K2.6 monitor exact accounting
 
@@ -250,6 +286,7 @@ speed.
 
 ## Sources
 
+- [OpenAI Standard pricing](https://developers.openai.com/api/docs/pricing)
 - [Sinha et al., Appendix E cost accounting](https://arxiv.org/html/2605.29601v1#A5)
 - [Sinha et al., Qwen3.5-4B hosted proxy price](https://arxiv.org/html/2605.29601v1#A5.SS4)
 - [OpenRouter Qwen3.5-9B pricing](https://openrouter.ai/qwen/qwen3.5-9b/pricing)
