@@ -97,6 +97,35 @@ matched its remote SHA-256. The same path transferred a 116 MiB LoRA adapter in
 15 seconds with a matching checksum. The proxy uses only the Python standard
 library and is applied automatically to SSH, rsync, push, pull, and code sync.
 
+## Runpod
+
+The user authorized one B200 at at most $8/hour on 2026-09-30, with no region
+restriction, a B300 fallback only after notification that B200 is unavailable,
+and keeping the Pod running after setup and ID inference. Pod `alzfug70g5237b`
+(`gleipnir-b200`) was provisioned in `US-NC-2` at $6.79/hour with 100 GB standard
+network volume `ixbh81vf9c` ($7/month) mounted at `/workspace` and a 50 GB
+container disk ($5/month while running). This is independent of the historical
+Lambda targets. Network volumes can grow but cannot shrink.
+
+The official Runpod MCP manages the Pod lifecycle. `scripts/runpod_cloud.py`
+handles real SSH and rsync from a sanitized live Pod snapshot in ignored
+`.runpod/pod.json`. The external SSH port can change after a restart; refresh
+the snapshot from `get-pod` before reconnecting. Keep `RUNPOD_API_KEY` local in
+the ignored `.env`; no account API key is copied to the Pod. Code sync excludes
+credentials and ignored model/data artifacts, which are transferred explicitly.
+Runpod network storage rejects chown, so rsync uses `--no-owner --no-group`.
+
+The official CUDA-13 image from template `a9dk3g7cny` is
+`runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster`. Bootstrap with
+`scripts/bootstrap_runpod.sh`: install the checked-in lock using Python 3.12,
+keep the virtualenv and caches under `/workspace/gleipnir`, and verify a BF16
+GPU matmul before model loading. Bootstrap recorded a B200 (183,359 MiB),
+driver 580.126.09, CUDA 13.0, PyTorch 2.11.0+cu130, Transformers 5.14.1, and
+vLLM 0.24.0. The first campaign is
+[`runpod_gleipnir4b_id`](../experiments/runpod_gleipnir4b_id/README.md): kernel
+canary, causal-master/serving parity, then the canonical CoT-removed ID set.
+It does not establish a B200 training-throughput recipe.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

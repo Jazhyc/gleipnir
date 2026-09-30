@@ -3,6 +3,8 @@
 .env.*
 !.env.example
 .lambda/
+.runpod/
+.cache-runtime.env
 
 # Python and tooling
 .venv/
