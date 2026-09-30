@@ -56,3 +56,12 @@ validation, publishing failures immediately even if a sibling lane is still
 running. The additive per-job timestamps and GPU assignments support monitoring
 without inferring lane identity from interleaved progress bars. Existing completed
 campaigns retain their historical runners.
+
+The B200 mixed-training screen adds opt-in
+`selection.infer_missing_token_lengths` for source rows without cached lengths.
+Preparation uses the pinned recipe tokenizer and records the inference in its
+manifest; it changes sampling metadata only, preserving source artifact hashes,
+prompts, labels, and teacher targets. Selection manifests retain available
+provenance fields without inventing monitoring-specific fields for other sources.
+Training jobs may specify `hydra_log_dir` to place per-job Hydra logs under the
+active remote platform's log tree.

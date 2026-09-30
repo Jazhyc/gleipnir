@@ -142,6 +142,8 @@ def training_command(job: dict[str, Any]) -> list[str]:
         command.append(f"student.model={model}")
     if model_revision := job.get("model_revision"):
         command.append(f"student.model_revision={model_revision}")
+    if hydra_log_dir := job.get("hydra_log_dir"):
+        command.append(f"hydra.run.dir={hydra_log_dir}/{job['job_name']}")
     selection = job.get("selection_manifest")
     command.append(
         "student.selection_manifest=null"

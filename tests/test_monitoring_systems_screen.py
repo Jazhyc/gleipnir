@@ -4,15 +4,48 @@ from pathlib import Path
 import pytest
 
 from gleipnir.monitoring_systems_screen import (
+    add_missing_token_lengths,
     load_config,
     prepare_screen,
     require_frozen_config,
     resolve_paths,
     round_robin_lanes,
+    selection_manifest_row,
     sha256_file,
     stable_stratified_selection,
     validate_prepared_artifacts,
 )
+
+
+def test_mixed_source_length_inference_preserves_prompts_and_available_provenance():
+    class Tokenizer:
+        def apply_chat_template(self, messages, **kwargs):
+            assert kwargs["enable_thinking"] is False
+            return messages[0]["content"]
+
+        def encode(self, prompt, **kwargs):
+            assert kwargs["add_special_tokens"] is False
+            return list(prompt)
+
+    rows = [
+        {
+            "dataset": "monitoring",
+            "index": "a",
+            "label": 1,
+            "student_prompt": "original",
+            "student_direct_tokens": 99,
+            "trajectory_sha256": "preserved",
+        },
+        {"dataset": "deception", "index": 2, "label": 0, "student_prompt": "cached"},
+    ]
+    assert add_missing_token_lengths(rows, Tokenizer()) == 1
+    assert rows[0]["student_direct_tokens"] == 99
+    assert rows[1]["student_prompt"] == "cached"
+    assert rows[1]["student_direct_tokens"] == len("cachedPrediction:")
+    selected = selection_manifest_row(rows[1])
+    assert selected["index"] == 2 and selected["label"] == 0
+    assert "trajectory_sha256" not in selected
+    assert selection_manifest_row(rows[0])["trajectory_sha256"] == "preserved"
 
 
 def test_stable_selection_is_proportional_and_deterministic() -> None:

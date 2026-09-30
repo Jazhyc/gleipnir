@@ -108,7 +108,27 @@ def selection_manifest_row(row: dict[str, Any]) -> dict[str, Any]:
             "student_direct_tokens",
             "trajectory_sha256",
         )
+        if key in row
     }
+
+
+def add_missing_token_lengths(records: list[dict[str, Any]], tokenizer: Any) -> int:
+    """Add sampling-only lengths without changing cached prompts or labels."""
+    added = 0
+    for row in records:
+        if "student_direct_tokens" in row:
+            continue
+        prompt = tokenizer.apply_chat_template(
+            [{"role": "user", "content": row["student_prompt"]}],
+            tokenize=False,
+            add_generation_prompt=True,
+            enable_thinking=False,
+        )
+        row["student_direct_tokens"] = len(
+            tokenizer.encode(prompt + "Prediction:", add_special_tokens=False)
+        )
+        added += 1
+    return added
 
 
 @dataclass(frozen=True)
@@ -288,6 +308,24 @@ def prepare_screen(
         raise ValueError("student-row count drifted")
     atomic_write_json(frozen_config, config)
     selection_config = config["selection"]
+    inferred_lengths = None
+    if selection_config.get("infer_missing_token_lengths") and any(
+        "student_direct_tokens" not in row for row in records
+    ):
+        from transformers import AutoTokenizer
+
+        recipe = config["recipe"]
+        tokenizer = AutoTokenizer.from_pretrained(
+            recipe["model"], revision=recipe["model_revision"]
+        )
+        inferred_lengths = {
+            "rows": add_missing_token_lengths(records, tokenizer),
+            "model": recipe["model"],
+            "revision": recipe["model_revision"],
+            "enable_thinking": False,
+            "decision_prefix": "Prediction:",
+            "scope": "sampling metadata only; source training artifacts unchanged",
+        }
     selected = stable_stratified_selection(
         records, int(selection_config["rows"]), int(selection_config["seed"])
     )
@@ -321,6 +359,7 @@ def prepare_screen(
         "jobs_sha256": sha256_file(paths.jobs),
         "selection_sha256": selection_sha,
         "preflight_selection_sha256": sha256_file(paths.preflight_selection),
+        "inferred_token_lengths": inferred_lengths,
     }
     atomic_write_json(paths.result_dir / "manifest.json", manifest)
     return manifest
