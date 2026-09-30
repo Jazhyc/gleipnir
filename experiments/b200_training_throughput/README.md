@@ -110,3 +110,12 @@ Use the same FA4 overlay as the preceding attention comparison, explicitly
 requesting SDPA for both batching conditions. Keep the same sample and 5% gate.
 Only a complete warmed loop and successful longest-row preflight support
 recommending batch 2; its isolated fast updates are insufficient.
+
+The first FA4 preflight completed its longest-row update and numerical canaries
+but failed the frozen limit with 32 Dynamo graphs; neither timing condition ran.
+Logs identify static `module.layer_idx` specialization across full-attention
+layers. `fa4_dynamic_config.yaml` is a separate follow-up, enabling Torch's
+`allow_unspec_int_on_nn_module` for both SDPA and FA4. Keep the same 24-graph
+bound and all correctness gates. This is a matched compiler intervention,
+not a relaxed acceptance criterion. Use `fa4_dynamic_launch.sh` after the
+failed campaign ends; it retains the failed artifacts and verified kernel probe.

@@ -3152,6 +3152,12 @@ def main(cfg: DictConfig) -> None:
             default=True,
         )
     )
+    allow_unspec_int_on_nn_module = bool(
+        OmegaConf.select(
+            cfg, "student.training.allow_unspec_int_on_nn_module", default=False
+        )
+    )
+    torch._dynamo.config.allow_unspec_int_on_nn_module = allow_unspec_int_on_nn_module
     if torch_compile and selective_torch_compile_policy != "none":
         raise ValueError(
             "global and selective torch compilation cannot both be enabled"
@@ -3753,6 +3759,7 @@ def main(cfg: DictConfig) -> None:
                         "backend": selective_torch_compile_backend,
                         "mode": selective_torch_compile_mode,
                         "dynamic": selective_torch_compile_dynamic,
+                        "allow_unspec_int_on_nn_module": allow_unspec_int_on_nn_module,
                         "global_torch_compile": torch_compile,
                         "dynamo_counters": torch_compile_counter_snapshot(),
                         "canary": selective_torch_compile_canary,

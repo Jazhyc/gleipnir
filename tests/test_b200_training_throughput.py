@@ -55,6 +55,20 @@ def test_fa4_screen_changes_only_full_attention_backend() -> None:
     assert config["preflight"]["condition"] == candidate["job_name"]
 
 
+def test_fa4_dynamic_followup_keeps_graph_limit_and_matched_compiler_setting() -> None:
+    original = load_config(FA4_CONFIG)
+    config = load_config(CONFIG.with_name("fa4_dynamic_config.yaml"))
+    assert config["data"] == original["data"]
+    assert config["selection"] == original["selection"]
+    assert config["maximum_unique_graphs"] == original["maximum_unique_graphs"] == 24
+    for job in make_jobs(config, resolve_paths(config), "fixed-selection"):
+        assert job["allow_unspec_int_on_nn_module"] is True
+        assert (
+            "student.training.allow_unspec_int_on_nn_module=true"
+            in training_command(job)
+        )
+
+
 def test_warmed_continuation_preserves_cohort_and_bounds_checkpoint_removal() -> None:
     original = load_config(CONFIG)
     config = load_config(WARM_CONFIG)
