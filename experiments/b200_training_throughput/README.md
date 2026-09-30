@@ -101,3 +101,12 @@ repeat a promising FA4 timing with its new kernels cached. Record cold FA4
 startup separately from steady performance. No inference backend changes.
 The launcher explicitly enables FA4's opt-in persistent CuTe kernel cache on
 the network volume; its default is an in-process cache only.
+
+The grouped batch-2 first pass completed with 5.22% padding and 142.51 GiB
+peak allocation, but compilation still inflated many of its ten updates.
+`batching_repeat_config.yaml` repeats the matched control and grouped batch 2
+with those kernels cached and performs the longest-32 preflight for batch 2.
+Use the same FA4 overlay as the preceding attention comparison, explicitly
+requesting SDPA for both batching conditions. Keep the same sample and 5% gate.
+Only a complete warmed loop and successful longest-row preflight support
+recommending batch 2; its isolated fast updates are insufficient.

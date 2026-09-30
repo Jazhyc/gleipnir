@@ -12,6 +12,20 @@ WARM_CONFIG = CONFIG.with_name("warm_config.yaml")
 FA4_CONFIG = CONFIG.with_name("fa4_config.yaml")
 
 
+def test_batched_repeat_requires_its_own_longest_row_preflight() -> None:
+    config = load_config(CONFIG.with_name("batching_repeat_config.yaml"))
+    original = load_config(CONFIG)
+    assert config["selection"] == original["selection"]
+    assert config["data"] == original["data"]
+    assert config["preflight"]["condition"] == "length-grouped-b2"
+    jobs = make_jobs(config, resolve_paths(config), "fixed-selection")
+    for job in jobs:
+        assert job["attn_implementation"] == "sdpa"
+        assert job["gradient_checkpointing_policy"] == "linear_attention_only"
+        assert job["max_steps"] == 10 and job["train_rows"] == 320
+        assert job["micro_batch_size"] * job["gradient_accumulation_steps"] == 32
+
+
 def test_fa4_screen_changes_only_full_attention_backend() -> None:
     config = load_config(FA4_CONFIG)
     original = load_config(CONFIG)
