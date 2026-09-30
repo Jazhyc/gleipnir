@@ -53,6 +53,8 @@ Gleipnir points are included only when their evaluation interface explicitly
 uses logits or logprobs; other completed Gleipnir interfaces remain in the
 registry. Plot labels omit the redundant `base` suffix without changing canonical
 model names.
+The MoE point uses the presentation label `Qwen3.5-35B-A3B`; provider provenance
+is recorded in the canonical registry.
 The two mixed-data soft-distilled students use the presentation names
 `Gleipnir 4B` and `Gleipnir 9B`; dashed red arrows connect their corresponding
 unadapted Qwen3.5 baselines to make the measured adaptation uplift explicit.

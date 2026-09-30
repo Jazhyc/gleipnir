@@ -50,6 +50,22 @@ PAPER_COMPARISON_MONITORS = {
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
+    "GPT-6 Luna binary logprobs": {
+        "xytext": (-5, 8),
+        "ha": "right",
+        "va": "bottom",
+    },
+    "Qwen3.5-9B Kimi-soft mixed": {
+        "xytext": (0, -10),
+        "ha": "center",
+        "va": "top",
+    },
+    "Qwen3.5-35B-A3B base (mixed providers)": {
+        "xytext": (12, -16),
+        "ha": "left",
+        "va": "top",
+    },
+    "Qwen3.5-9B base": {"xytext": (12, -3), "ha": "left", "va": "top"},
     "Kimi K3 binary logits": {
         "xytext": (0, -18),
         "ha": "center",
@@ -163,6 +179,7 @@ def _display_label(monitor: str) -> str:
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
         "Qwen3.5-27B base": "Qwen3.5-27B",
+        "Qwen3.5-35B-A3B base (mixed providers)": "Qwen3.5-35B-A3B",
         **GLEIPNIR_METHODS,
     }
     display = replacements.get(monitor, monitor)
