@@ -8,6 +8,27 @@ from experiments.tool_trajectory_monitoring.run_distillation_train import (
 from gleipnir.monitoring_systems_screen import load_config, make_jobs, resolve_paths
 
 CONFIG = Path("experiments/b200_training_throughput/config.yaml")
+WARM_CONFIG = CONFIG.with_name("warm_config.yaml")
+
+
+def test_warmed_continuation_preserves_cohort_and_bounds_checkpoint_removal() -> None:
+    original = load_config(CONFIG)
+    config = load_config(WARM_CONFIG)
+    assert config["selection"] == original["selection"]
+    assert config["data"] == original["data"]
+    assert config["artifacts"]["result_dir"] != original["artifacts"]["result_dir"]
+    jobs = make_jobs(config, resolve_paths(config), "fixed-selection")
+    assert config["preflight"]["condition"] == "half-checkpoint-b1"
+    half = next(j for j in jobs if j["job_name"] == "half-checkpoint-b1")
+    indices = half["gradient_checkpointing_layer_indices"]
+    assert len(indices) == 12
+    assert set(indices) <= set(
+        original["metadata_expectations"]["checkpointed_layer_indices"]
+    )
+    for job in jobs:
+        assert job["max_steps"] == 10 and job["train_rows"] == 320
+        assert job["micro_batch_size"] * job["gradient_accumulation_steps"] == 32
+        assert job["rank"] == 128 and job["gradient_checkpointing"] is True
 
 
 def test_all_conditions_use_ten_updates_and_the_same_effective_batch() -> None:

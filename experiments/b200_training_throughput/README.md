@@ -42,6 +42,14 @@ Cold-inclusive control/candidate throughput is consequently confounded by
 cache state: the shared runner's automatic cold-throughput selection must not
 be treated as the recommendation. Compare warm update times and verify the
 selected recipe with a cached repeat, preserving the initial cold measurements.
+For that verification, freeze a second job manifest from every successfully
+validated condition, retaining the same names, 320-row selection, seed, batch,
+rank, objective, and training settings while assigning separate output/log
+directories. Run those jobs serially after the original screen finishes, using
+the shared warmed cache. Compare the complete ten-update Trainer runtimes;
+excluding the first two updates can bias length-grouped cases by dropping their
+longest batches. A failed original condition is recorded and excluded from
+recommendation rather than rerun with altered settings.
 
 The user authorized optimization on existing B200 Pod `alzfug70g5237b`, at
 $6.79/hour, leaving it running afterward. Reuse persistent pinned kernels;
@@ -63,3 +71,15 @@ kernel targets to the already verified persistent installs. Initial ETA for a
 single ten-update training loop is minutes; loading, tokenization, compilation,
 preflight, and other conditions are separate. Agent startup checks stay active
 in this turn. No after-turn scheduling capability has been verified.
+
+The initial control completed, but full checkpoint removal exhausted GPU memory
+after one update (176.05 GiB allocated; 178.00 GiB process use). The shared runner
+stopped the campaign; microbatch 4 was never launched. Preserve that failed
+campaign. `warm_config.yaml` defines a separate continuation with the same fixed
+sample: a warmed control, checkpoints on 12 of the 24 linear layers, and grouped
+microbatch 2 with accumulation 16. Preflight the half-checkpoint recipe on the
+longest 32 rows, including the existing same-weights numerical canary. Use
+`warm_launch.sh` with the synced commit in `GLEIPNIR_COMMIT`; it records cache
+reuse before launching. Keep the 5% gain gate. If the larger batch looks promising,
+repeat it with its new graphs cached before recommending it. Compare complete
+loops rather than dropping their longest batches as warmup.
