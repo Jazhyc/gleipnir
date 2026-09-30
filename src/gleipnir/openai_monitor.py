@@ -16,9 +16,16 @@ import requests
 
 from gleipnir.openrouter import RETRYABLE_STATUS_CODES, retry_delay_seconds
 
+DEFAULT_PRICING = {
+    "input_usd_per_million": 0.10,
+    "cached_input_usd_per_million": 0.01,
+    "cache_write_usd_per_million": 0.125,
+    "output_usd_per_million": 0.50,
+}
+
 
 class TokenStartLimiter:
-    """Pace request starts under a shared token rate with forty worker slots."""
+    """Pace request starts under a shared token rate across worker slots."""
 
     def __init__(self, tokens_per_minute: int) -> None:
         if tokens_per_minute <= 0:
@@ -100,10 +107,14 @@ def parse_response(raw: dict[str, Any], settings: dict[str, Any]) -> dict[str, A
     }
 
 
-def conservative_cost(usage: dict[str, Any]) -> float:
+def conservative_cost(
+    usage: dict[str, Any], pricing: dict[str, Any] | None = None
+) -> float:
     """Price every input token at the cache-write rate as a budget bound."""
+    prices = DEFAULT_PRICING if pricing is None else pricing
     return (
-        usage.get("input_tokens", 0) * 0.125 + usage.get("output_tokens", 0) * 0.50
+        usage.get("input_tokens", 0) * prices["cache_write_usd_per_million"]
+        + usage.get("output_tokens", 0) * prices["output_usd_per_million"]
     ) / 1e6
 
 
@@ -119,11 +130,22 @@ class AuditedClient:
         budget_usd: float,
         max_attempts: int,
         timeout_seconds: float,
+        pricing: dict[str, Any] | None = None,
         tokens_per_minute: int | None = None,
         coverage_repeats: int = 0,
         incomplete_repeats: int = 0,
     ) -> None:
         self.key = key
+        self.pricing = DEFAULT_PRICING if pricing is None else pricing
+        for field in DEFAULT_PRICING:
+            price = self.pricing[field]
+            if not math.isfinite(price) or price < 0:
+                raise ValueError(f"invalid configured price: {field}")
+        if self.pricing["cache_write_usd_per_million"] < max(
+            self.pricing["input_usd_per_million"],
+            self.pricing["cached_input_usd_per_million"],
+        ):
+            raise ValueError("cache-write price must bound all input prices")
         self.settings = settings
         self.root = root
         self.max_attempts = max_attempts
@@ -153,8 +175,9 @@ class AuditedClient:
             "kimi_raw_prompt_tokens", len(row["prompt"].encode())
         )
         estimate = (
-            (token_proxy * 1.30 + 32) * 0.125
-            + self.settings["max_output_tokens"] * 0.50
+            (token_proxy * 1.30 + 32) * self.pricing["cache_write_usd_per_million"]
+            + self.settings["max_output_tokens"]
+            * self.pricing["output_usd_per_million"]
         ) / 1e6
         if not hasattr(self.local, "session"):
             self.local.session = requests.Session()
@@ -200,7 +223,7 @@ class AuditedClient:
                     raw = {"non_json_body": response.text[:1000]}
                 record["raw_response"] = raw
                 record["conservative_cost_usd"] = conservative_cost(
-                    raw.get("usage") or {}
+                    raw.get("usage") or {}, self.pricing
                 )
                 retry = response.status_code in RETRYABLE_STATUS_CODES
                 if response.status_code == 200:

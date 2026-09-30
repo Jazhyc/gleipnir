@@ -99,3 +99,45 @@ Logs: `logs/local/openai_monitoring_ood/run_v1.log`.
 Artifacts: `results/openai_luna_ood_benchmark/run_v1/`.
 This session has no scheduled agent-heartbeat tool. Active-turn checks cover
 startup and progress but cannot promise follow-ups after the turn ends.
+
+## GPT-5.6 Luna matched comparison
+
+The user authorized a full matched benchmark and increased concurrency on
+2026-09-30. `config_56_luna.json` freezes the hypothesis that the older Luna
+may score monitoring examples better under the same zero-reasoning interface.
+Only the requested model changes; the prompt, rows, score normalization,
+threshold, metrics, canary selection, and previously recorded bounded recovery
+policy remain identical. Compare against completed GPT-6 Luna, Qwen27B,
+and Kimi baselines without choosing settings on OOD results.
+
+Use 80 workers, twice the previous concurrency. Before launching the full suite,
+read the GPT-5.6 Luna canary's actual rate-limit headers. Initial pacing is
+1.9M estimated tokens/minute, at most 95% of the reported model-specific TPM.
+Record any operational pacing adjustment before resuming unchanged requests.
+The previous GPT-6 Luna run had 264 HTTP 429 errors at a 2M TPM limit;
+increasing worker count does not remove that quota.
+
+```bash
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --config experiments/openai_monitoring_ood/config_56_luna.json \
+  --tokens-per-minute 1900000 --coverage-repeats 3 --incomplete-repeats 3 \
+  --stop-after-canary
+PYTHONPATH=src .venv/bin/python -m experiments.openai_monitoring_ood.run \
+  --config experiments/openai_monitoring_ood/config_56_luna.json \
+  --tokens-per-minute 1900000 --coverage-repeats 3 --incomplete-repeats 3
+```
+
+Standard short-context prices checked on 2026-09-30 are $0.20/M ordinary input,
+$0.02/M cached input, $0.25/M cache writes, and $1.20/M output. Budget enforcement
+and final accounting now use the frozen configuration's prices; the original
+GPT-6 Luna defaults remain for compatibility with its audit. Reusing the
+previous run's token volumes projects $10.70 at ordinary rates or $13.29 with
+its observed cache writes and reads. The conservative campaign stop bound is
+$20 including canaries and all recovery attempts. Actual token volumes can
+differ between models.
+
+Logs: `logs/local/openai_monitoring_ood/run_56_luna_v1.log`.
+Artifacts: `results/openai_56_luna_ood_benchmark/run_v1/`.
+Preserve raw failed requests and audit complete IDs, settings, prompts, scores,
+usage and artifact hashes before reporting final results. This session has no
+scheduled agent-heartbeat tool; monitoring uses active-turn progress checks.

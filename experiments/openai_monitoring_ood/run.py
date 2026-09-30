@@ -20,7 +20,7 @@ from experiments.tool_trajectory_monitoring.teacher_canary import (
     load_jsonl,
     summarize_scored_rows,
 )
-from gleipnir.openai_monitor import AuditedClient, digest
+from gleipnir.openai_monitor import DEFAULT_PRICING, AuditedClient, digest
 
 
 def file_hash(path: Path) -> str:
@@ -107,8 +107,15 @@ def score_rows(
     return [scores[r["id"]] for r in rows]
 
 
-def usage_cost(attempts: list[dict[str, Any]]) -> dict[str, Any]:
+def usage_cost(
+    attempts: list[dict[str, Any]], pricing: dict[str, Any] | None = None
+) -> dict[str, Any]:
     """Include usage from failed parses and retries in operational accounting."""
+    prices = DEFAULT_PRICING if pricing is None else pricing
+    input_rate = prices["input_usd_per_million"]
+    cached_rate = prices["cached_input_usd_per_million"]
+    write_rate = prices["cache_write_usd_per_million"]
+    output_rate = prices["output_usd_per_million"]
     usages = [(r.get("raw_response") or {}).get("usage") or {} for r in attempts]
     inputs = sum(u.get("input_tokens", 0) for u in usages)
     outputs = sum(u.get("output_tokens", 0) for u in usages)
@@ -132,23 +139,27 @@ def usage_cost(attempts: list[dict[str, Any]]) -> dict[str, Any]:
         "cache_write_tokens": writes if writes_known else None,
         "usage_priced_standard_usd": (
             (
-                (inputs - cached - writes) * 0.10
-                + cached * 0.01
-                + writes * 0.125
-                + outputs * 0.50
+                (inputs - cached - writes) * input_rate
+                + cached * cached_rate
+                + writes * write_rate
+                + outputs * output_rate
             )
             / 1e6
         )
         if writes_known
         else None,
         "reasoning_tokens": reasoning,
-        "uncached_standard_usd": (inputs * 0.10 + outputs * 0.50) / 1e6,
+        "uncached_standard_usd": (inputs * input_rate + outputs * output_rate) / 1e6,
         "cache_adjusted_standard_usd_without_write_premium": (
-            (inputs - cached) * 0.10 + cached * 0.01 + outputs * 0.50
+            (inputs - cached) * input_rate
+            + cached * cached_rate
+            + outputs * output_rate
         )
         / 1e6,
         "all_uncached_tokens_as_writes_usd": (
-            (inputs - cached) * 0.125 + cached * 0.01 + outputs * 0.50
+            (inputs - cached) * write_rate
+            + cached * cached_rate
+            + outputs * output_rate
         )
         / 1e6,
         "conservative_budget_bound_usd": sum(
@@ -176,7 +187,7 @@ def main() -> None:
     parser.add_argument(
         "--tokens-per-minute",
         type=int,
-        help="Operational request pacing; preserves model settings and 40 workers.",
+        help="Operational request pacing; preserves model settings and worker count.",
     )
     parser.add_argument(
         "--coverage-repeats",
@@ -245,6 +256,7 @@ def main() -> None:
         budget_usd=execution["budget_usd"],
         max_attempts=execution["max_attempts"],
         timeout_seconds=execution["timeout_seconds"],
+        pricing=config["pricing"],
         tokens_per_minute=args.tokens_per_minute,
         coverage_repeats=args.coverage_repeats,
         incomplete_repeats=args.incomplete_repeats,
@@ -307,8 +319,8 @@ def main() -> None:
     attempts = load_jsonl(root / "attempts.jsonl")
     score_ids = {s["id"] for s in scores}
     benchmark_attempts = [r for r in attempts if r["id"] in score_ids]
-    summary["campaign_accounting"] = usage_cost(attempts)
-    summary["benchmark_accounting"] = usage_cost(benchmark_attempts)
+    summary["campaign_accounting"] = usage_cost(attempts, config["pricing"])
+    summary["benchmark_accounting"] = usage_cost(benchmark_attempts, config["pricing"])
     summary["benchmark_accounting"]["uncached_usd_per_1000"] = (
         summary["benchmark_accounting"]["uncached_standard_usd"] * 1000 / len(scores)
     )
