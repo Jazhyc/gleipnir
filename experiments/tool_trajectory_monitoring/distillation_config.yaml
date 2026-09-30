@@ -51,6 +51,7 @@ student:
     attention_backend_version: null
     attention_backend_canary_reference: null
     allow_unspec_int_on_nn_module: false
+    eager_attention_interface: false
     optimizer: adamw
     optim: adamw_torch
     num_train_epochs: 1.0

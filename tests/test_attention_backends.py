@@ -3,6 +3,35 @@ import pytest
 from gleipnir import attention_backends as ab
 
 
+def test_eager_interface_wraps_only_the_requested_registered_backend(
+    monkeypatch,
+) -> None:
+    import torch
+    from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+    original = ALL_ATTENTION_FUNCTIONS["sdpa"]
+    seen = []
+
+    def sentinel(*args, **kwargs):
+        return None
+
+    monkeypatch.setattr(
+        torch.compiler,
+        "disable",
+        lambda function: sentinel if function is original else None,
+    )
+    monkeypatch.setattr(
+        ALL_ATTENTION_FUNCTIONS,
+        "register",
+        lambda name, function: seen.append((name, function)),
+    )
+    result = ab.install_eager_attention_interface("sdpa")
+    assert seen == [("sdpa", sentinel)]
+    assert result["module"] == original.__module__
+    with pytest.raises(ValueError):
+        ab.install_eager_attention_interface(None)
+
+
 def test_attention_selection_requires_installed_pinned_fa4(monkeypatch) -> None:
     monkeypatch.setattr(ab, "version", lambda _: "4.0.0b33")
     assert ab.attention_loader_kwargs(None) == {}

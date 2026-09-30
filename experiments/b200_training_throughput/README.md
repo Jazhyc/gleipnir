@@ -119,3 +119,13 @@ layers. `fa4_dynamic_config.yaml` is a separate follow-up, enabling Torch's
 bound and all correctness gates. This is a matched compiler intervention,
 not a relaxed acceptance criterion. Use `fa4_dynamic_launch.sh` after the
 failed campaign ends; it retains the failed artifacts and verified kernel probe.
+
+The dynamic-integer follow-up completed its update but produced 44 graphs:
+it removed index specialization while exposing FA4's Python kernel interface
+to more tracing. It also failed before timing conditions began.
+`fa4_interface_config.yaml` instead keeps the selected attention interface
+outside Torch compilation for both SDPA and FA4, preserving compiled surrounding
+layers and native GPU kernels. Dynamic module integers return to their original
+default. Retain the 24-graph limit, same-weight backend and compilation canaries,
+longest-row update, fixed cohort, and 5% gain gate. Use
+`fa4_interface_launch.sh`; neither failed integration attempt is recommended.

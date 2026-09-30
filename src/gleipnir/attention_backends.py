@@ -42,3 +42,19 @@ def compare_attention_backends(
         return {"reference": reference, "candidate": candidate, **result}
     finally:
         model.set_attn_implementation(candidate)
+
+
+def install_eager_attention_interface(implementation: str) -> dict[str, str]:
+    """Keep the external kernel router opaque while compiling surrounding layers."""
+    import torch
+    from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+    if implementation not in {"sdpa", "flash_attention_4"}:
+        raise ValueError("an eager attention interface requires an explicit backend")
+    interface = ALL_ATTENTION_FUNCTIONS[implementation]
+    ALL_ATTENTION_FUNCTIONS.register(implementation, torch.compiler.disable(interface))
+    return {
+        "implementation": implementation,
+        "module": interface.__module__,
+        "qualname": interface.__qualname__,
+    }

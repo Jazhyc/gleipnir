@@ -119,6 +119,9 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "allow_unspec_int_on_nn_module" in job:
         enabled = str(bool(job["allow_unspec_int_on_nn_module"])).lower()
         command.append(f"student.training.allow_unspec_int_on_nn_module={enabled}")
+    if "eager_attention_interface" in job:
+        enabled = str(bool(job["eager_attention_interface"])).lower()
+        command.append(f"student.training.eager_attention_interface={enabled}")
     if "selective_torch_compile_canary_tokens" in job:
         command.append(
             "student.training.selective_torch_compile_canary_tokens="

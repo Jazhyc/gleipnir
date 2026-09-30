@@ -69,6 +69,20 @@ def test_fa4_dynamic_followup_keeps_graph_limit_and_matched_compiler_setting() -
         )
 
 
+def test_fa4_interface_followup_matches_both_kernel_routers() -> None:
+    config = load_config(CONFIG.with_name("fa4_interface_config.yaml"))
+    original = load_config(FA4_CONFIG)
+    assert config["selection"] == original["selection"]
+    assert config["data"] == original["data"]
+    assert config["maximum_unique_graphs"] == 24
+    for job in make_jobs(config, resolve_paths(config), "fixed-selection"):
+        assert job["eager_attention_interface"] is True
+        assert job.get("allow_unspec_int_on_nn_module", False) is False
+        assert "student.training.eager_attention_interface=true" in training_command(
+            job
+        )
+
+
 def test_warmed_continuation_preserves_cohort_and_bounds_checkpoint_removal() -> None:
     original = load_config(CONFIG)
     config = load_config(WARM_CONFIG)

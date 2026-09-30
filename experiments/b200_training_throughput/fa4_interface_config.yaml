@@ -1,0 +1,82 @@
+defaults:
+  - systems_screen@_global_: qwen35_4b_h100_fast
+  - _self_
+
+hydra:
+  searchpath:
+    - pkg://gleipnir.configs
+
+campaign_id: gleipnir4b-b200-training-throughput-v6-fa4-eager-interface
+hypothesis: >-
+  FlashAttention 4 improves B200 throughput in the eight full-attention layers
+  while preserving the existing 24 FLA linear layers and training recipe.
+  Keep both backend interfaces opaque to Torch compilation; compile the same
+  surrounding layers and retain the frozen graph and numerical gates.
+compiler_cache_root: .cache/training/qwen35_4b_b200_fa4
+gpus: 1
+
+artifacts:
+  result_dir: results/b200_training_throughput_fa4_interface
+
+data:
+  directory: data/tool_trajectory_monitoring/distillation_scaling
+  student_rows: mixed_student_rows.jsonl
+  soft_targets: mixed_soft_targets.jsonl
+  rows: 21837
+  student_rows_sha256: f9b0a322f277991edae2510b658a2298c0c585d402b39f36d6ac86352bf1a76b
+  soft_targets_sha256: 50f163f88b42ff8b6fc04d5ff1334766d6326895ad89c87501a93eeaeae137ee
+
+selection:
+  rows: 320
+  seed: 0
+  preflight_rows: 32
+  infer_missing_token_lengths: true
+
+recipe:
+  hydra_log_dir: logs/runpod/b200_training_throughput_fa4_interface/hydra
+  data_scope: mixed_monitoring_and_deception
+  deception_rows: 13149
+  eager_attention_interface: true
+  max_steps: 10
+  selective_torch_compile_policy: full_attention_and_linear_shell
+
+metadata_expectations:
+  attention_backend.interface_eager: true
+  quantization:
+    enabled: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_compute_dtype: bfloat16
+  selective_torch_compile.policy: full_attention_and_linear_shell
+  selective_torch_compile.disabled_linear_attention_layer_indices: ${_authoring.layer_indices.linear_attention}
+  selective_torch_compile.disabled_linear_attention_kernel_layer_indices: []
+  selective_torch_compile.disabled_linear_attention_kernel_components: []
+
+conditions:
+  - job_name: sdpa-b1
+    design_role: matched_sdpa_control
+    overrides:
+      attn_implementation: sdpa
+    metadata_expectations:
+      attention_backend.requested: sdpa
+      attention_backend.resolved: sdpa
+
+  - job_name: fa4-b1
+    design_role: flash_attention_4_candidate
+    overrides:
+      attn_implementation: flash_attention_4
+      attention_backend_version: 4.0.0b33
+      attention_backend_canary_reference: sdpa
+    metadata_expectations:
+      attention_backend.requested: flash_attention_4
+      attention_backend.resolved: flash_attention_4
+      attention_backend.version: 4.0.0b33
+
+preflight:
+  condition: fa4-b1
+
+comparison:
+  control: sdpa-b1
+  candidate: fa4-b1
+  selection_job_field: attn_implementation
+  minimum_relative_improvement: 0.05

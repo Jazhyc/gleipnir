@@ -26,6 +26,7 @@ from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSample
 from gleipnir.attention_backends import (
     attention_loader_kwargs,
     compare_attention_backends,
+    install_eager_attention_interface,
 )
 from gleipnir.distributed_training import (
     install_mil_forward,
@@ -2844,6 +2845,16 @@ def main(cfg: DictConfig) -> None:
     model_kwargs.update(
         attention_loader_kwargs(attention_implementation, attention_backend_version)
     )
+    eager_attention_interface = bool(
+        OmegaConf.select(
+            cfg, "student.training.eager_attention_interface", default=False
+        )
+    )
+    attention_interface_metadata = (
+        install_eager_attention_interface(attention_implementation)
+        if eager_attention_interface
+        else None
+    )
     if quantization_enabled:
         if model_loader != "causal_lm" or finetuning_mode != "lora":
             raise ValueError("4-bit QLoRA requires causal_lm LoRA training")
@@ -3685,6 +3696,8 @@ def main(cfg: DictConfig) -> None:
                         "requested": attention_implementation,
                         "resolved": model.config._attn_implementation,
                         "version": attention_backend_version,
+                        "interface_eager": eager_attention_interface,
+                        "interface": attention_interface_metadata,
                         "canary": attention_backend_canary,
                     },
                     "sdpa": {
