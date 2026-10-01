@@ -7,7 +7,7 @@ import pytest
 import torch
 import yaml
 
-from experiments.fp4_stability.run import validate_config
+from experiments.fp4_stability.run import campaign_stages, validate_config
 from gleipnir.fouroversix_training import (
     FrozenFourOverSixLinear,
     FrozenFp4Runtime,
@@ -17,7 +17,11 @@ from gleipnir.fouroversix_training import (
 
 def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
     root = Path(__file__).parent
-    for name in ["config.yaml", "row_dequantized_diagnostic.yaml"]:
+    for name in [
+        "config.yaml",
+        "row_dequantized_diagnostic.yaml",
+        "precision_cast_diagnostic.yaml",
+    ]:
         config = yaml.safe_load((root / name).read_text())
         validate_config(config)
         assert config["diagnostics_only"]
@@ -25,6 +29,9 @@ def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
             validate_config({**config, "steps": 10})
         with pytest.raises(ValueError, match="ten matched"):
             validate_config({**config, "steps": 1000})
+    training = yaml.safe_load((root / "row_dequantized_training.yaml").read_text())
+    validate_config(training)
+    assert not training["diagnostics_only"] and training["steps"] == 10
 
 
 def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
@@ -55,6 +62,22 @@ def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
     assert original.weight.grad is None
     assert calls == ["native_forward"]
     assert runtime.forward_calls == runtime.backward_calls == 1
+
+
+def test_ten_update_campaign_requires_global_preflight_before_each_condition():
+    source, longest = {"selection": "320"}, {"selection": "global32"}
+    stages = campaign_stages(
+        {"steps": 10, "conditions": ["fouroversix", "bf16"]}, source, longest
+    )
+    assert [(s["name"], s["steps"], s["source"]) for s in stages] == [
+        ("fouroversix-global-preflight", 1, longest),
+        ("fouroversix", 10, source),
+        ("bf16-global-preflight", 1, longest),
+        ("bf16", 10, source),
+    ]
+    assert campaign_stages(
+        {"steps": 1, "conditions": ["fouroversix"]}, longest, longest
+    ) == [dict(name="fouroversix", precision="fouroversix", source=longest, steps=1)]
 
 
 def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():

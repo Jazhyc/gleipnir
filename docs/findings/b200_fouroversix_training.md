@@ -6,6 +6,10 @@ Status: native kernel canaries passed; both full-model preflights failed the
 same-weight compilation gate. Stopped after the requested boundary change.
 No recipe promotion.
 
+Resumed work and matched compiler controls are recorded in
+[`fp4_training_stability.md`](fp4_training_stability.md). The infrastructure
+and stop observations below describe the preceding pilot.
+
 Subsequent infrastructure action: the user authorized stopping the B200 on
 2026-10-01. Pod `alzfug70g5237b` was stopped and read back as **EXITED**; network
 volume `ixbh81vf9c` is retained. See the shutdown/resume record below.

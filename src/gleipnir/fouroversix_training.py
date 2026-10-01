@@ -247,9 +247,11 @@ def install_mlp_precision(
         "gradient_rounding": "stochastic"
         if precision == "fouroversix" and backward_mode == "fp4"
         else None,
-        "activation_scaling": "per_token_unfused"
-        if row_scaled_activations
-        else "per_tensor",
+        "activation_scaling": (
+            "per_token_unfused" if row_scaled_activations else "per_tensor"
+        )
+        if precision == "fouroversix"
+        else None,
         "backward_mode": backward_mode if precision == "fouroversix" else "bf16",
         "backward_uses_forward_quantized_weight": (
             precision == "fouroversix" and backward_mode == "dequantized_bf16"

@@ -102,7 +102,7 @@ def run_precision_training_screen(
                 ]
             },
         },
-        "preflight_selection": "longest_32_of_materialized_input_population",
+        "preflight_selection": "longest_32_of_supplied_selection",
         "common_probe": (
             "eager_singletons; native candidate uses original BF16 MLP masters; "
             "controls retain their own NF4 or BF16 MLP bases"
@@ -287,7 +287,7 @@ def run_precision_training_screen(
             metadata["mlp"]["precision"] == "fouroversix"
             and report["native_calls"]["backward"] <= 0
         ):
-            raise ValueError("native FP4 backward was not exercised")
+            raise ValueError("frozen FP4-base input gradients were not exercised")
         report["dynamo_counters"] = {
             name: dict(values) for name, values in torch._dynamo.utils.counters.items()
         }

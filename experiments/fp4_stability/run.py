@@ -45,6 +45,30 @@ def validate_config(config: dict) -> None:
         raise ValueError("unknown diagnostic compiler backend")
 
 
+def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
+    """Require an actual global-longest update before every ten-update condition."""
+    stages = []
+    for precision in config["conditions"]:
+        if config["steps"] == 10:
+            stages.append(
+                dict(
+                    name=f"{precision}-global-preflight",
+                    precision=precision,
+                    source=global_longest,
+                    steps=1,
+                )
+            )
+        stages.append(
+            dict(
+                name=precision,
+                precision=precision,
+                source=source,
+                steps=config["steps"],
+            )
+        )
+    return stages
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, required=True)
@@ -63,6 +87,14 @@ def main() -> None:
         else next(job for job in jobs if job["job_name"] == config["condition_source"])
     )
     verify_inputs(source)
+    global_jobs = [
+        json.loads(line)
+        for line in (ROOT / config["preflight_jobs"]).read_text().splitlines()
+        if line
+    ]
+    if len(global_jobs) != 1:
+        raise ValueError("expected the frozen global-longest-32 selection")
+    verify_inputs(global_jobs[0])
     environment = triton_environment(
         DEFAULT_TRITON_TARGET,
         causal_conv1d_environment(
@@ -74,13 +106,20 @@ def main() -> None:
     )
     environment["FLA_DISABLE_BACKEND_DISPATCH"] = "1"
     environment["OMP_NUM_THREADS"] = "4"
+    environment["TORCHINDUCTOR_EMULATE_PRECISION_CASTS"] = (
+        "1" if config.get("emulate_precision_casts", False) else "0"
+    )
     cache = ROOT / config["compiler_cache"]
     cache.mkdir(parents=True, exist_ok=True)
     environment = gpu_environment(environment, 0, cache)
     contract = {
         "config": config,
         "source_job": source,
+        "global_longest_job": global_jobs[0],
         "inputs_verified": True,
+        "inductor_emulate_precision_casts": config.get(
+            "emulate_precision_casts", False
+        ),
         "source_revision": os.environ.get("GLEIPNIR_COMMIT"),
         "source_sha256": {
             str(path.relative_to(ROOT)): sha256_file(path)
@@ -120,9 +159,11 @@ def main() -> None:
                 stderr=subprocess.STDOUT,
                 check=True,
             )
-        for precision in config["conditions"]:
-            destination = output / precision
-            job = make_job(source, destination, precision, config["steps"])
+        for specification in campaign_stages(config, source, global_jobs[0]):
+            precision = specification["precision"]
+            stage_steps = specification["steps"]
+            destination = output / specification["name"]
+            job = make_job(specification["source"], destination, precision, stage_steps)
             command = training_command(job) + [
                 f"++student.quantization.mlp_precision={precision}",
                 f"++student.quantization.fp4_backward_mode={config['backward_mode']}",
@@ -131,22 +172,25 @@ def main() -> None:
                 "++student.training.adapter_init_seed=0",
                 "++student.training.precision_screen.enabled=true",
                 f"++student.training.precision_screen.output_dir={destination}",
-                f"++student.training.precision_screen.steps={config['steps']}",
+                f"++student.training.precision_screen.steps={stage_steps}",
                 f"++student.training.precision_screen.diagnostics_only={str(config['diagnostics_only']).lower()}",
                 f"student.training.selective_torch_compile_backend={config['compile_backend']}",
             ]
-            if config["steps"] == 1:
+            if stage_steps == 1:
                 command.append("student.training.warmup_ratio=0.0")
             stage = {
+                "name": specification["name"],
                 "precision": precision,
+                "steps": stage_steps,
+                "selection_manifest": specification["source"]["selection_manifest"],
                 "command": command,
                 "status": "running",
                 "started_unix": time.time(),
             }
             status["stages"].append(stage)
             publish()
-            print(f"starting_stage={precision}", flush=True)
-            with (logs / f"{precision}.log").open("w") as handle:
+            print(f"starting_stage={specification['name']}", flush=True)
+            with (logs / f"{specification['name']}.log").open("w") as handle:
                 result = subprocess.run(
                     command,
                     cwd=ROOT,
@@ -161,9 +205,7 @@ def main() -> None:
             )
             publish()
             if result.returncode:
-                raise RuntimeError(
-                    f"{precision} failed; inspect {logs / f'{precision}.log'}"
-                )
+                raise RuntimeError(f"{specification['name']} failed; inspect {logs}")
         status["status"] = "complete"
     except Exception as error:
         status.update(status="failed", error=f"{type(error).__name__}: {error}")

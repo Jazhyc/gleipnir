@@ -45,6 +45,15 @@ from short trajectories; separate grouped held-out validation remains required.
 Inspect startup every 30–60 seconds. No in-chat scheduler is available, so
 monitoring applies during the active turn only.
 
+The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
+and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
+Torch source documents that default fusion can remove intermediate BF16
+downcast/upcast pairs; the option preserves eager rounding boundaries. This is
+a compiler hypothesis, not an established cause of the previous failure.
+Ten-update campaigns automatically run a separate one-update global-longest-32
+stage first for each precision condition, with zero warmup. Any failed stage
+stops the campaign before the next stage.
+
 Initial implementation validation: 13 focused CPU tests passed using Torch
 2.11.0+cpu and other exact locked dependencies in isolated `/tmp` overlays;
 local CUDA/native dependency reads were stalling on Lustre. Ruff and shell syntax

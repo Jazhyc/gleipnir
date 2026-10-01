@@ -96,7 +96,7 @@ def main() -> None:
     )
     native(inputs).float().square().mean().backward()
     if inputs.grad is None or not bool(torch.isfinite(inputs.grad).all()):
-        raise ValueError("stochastic native backward failed")
+        raise ValueError("configured input-gradient path produced nonfinite values")
     torch.cuda.synchronize()
     import fouroversix
     import fouroversix._C
@@ -116,7 +116,8 @@ def main() -> None:
     report = {
         "status": "passed",
         "cases": results,
-        "stochastic_backward_finite": True,
+        "stochastic_backward_finite": True if args.backward_mode == "fp4" else None,
+        "configured_backward_finite": True,
         "native_forward_calls": runtime.forward_calls,
         "native_backward_calls": runtime.backward_calls
         if args.backward_mode == "fp4"
