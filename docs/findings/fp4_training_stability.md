@@ -712,3 +712,33 @@ is a hypothesis, not an established cause. Require the same seven operand gates
 before model loading, followed by the unchanged native/model/gradient gates,
 global-longest update and thirty warmed measured steps. Stop at any failed gate;
 select only a >=5% complete-step improvement over the 12.479-second baseline.
+
+The guarded candidate at `1ac8d00` completes all gates. Its seven isolated
+cases have zero logical scale disagreements and zero native-output difference.
+Both repeated eager/compiled model losses equal their preferred baseline
+values; longest-input backwards and the global nonzero-LR update pass. The
+global update takes **69.934439 s**.
+
+Thirty warmed steps average **12.458150 s**, median 12.271146 s, range
+9.193135–16.696765 s. Pass means are 12.624979/12.546135/12.203336 s, all with
+zero new graphs. The **0.167%** mean reduction fails the predeclared 5% useful
+gain criterion. Peak allocated memory remains exactly **138.638038 GiB**;
+reserved is 142.175781 GiB. Warm-up takes 145.955048 s and adds six graphs.
+Keep the strict selector in subsequent independent experiments. Faster isolated
+packing and repaired canary parity do not establish a useful complete-step
+speedup or held-out quality.
+
+The collected audit verifies all fifteen source hashes against `1ac8d00` and
+identical GPU/software, initialization, trainable names, source jobs, example
+order, physical partitions, token counts, checkpoints and LR sequences against
+the preferred baseline. All 96 native bases and decoded-BF16 backwards run,
+with zero FP4 backwards. Final replay hashes differ; bitwise training-trajectory
+parity is not claimed. The tile-wide strict fallback is part of this recorded
+contract, rather than a general proof of elementwise batch independence.
+
+Reports, logs and both FP32 masters are collected locally under
+`results/fp4_row_inductor_fp16_guarded_timing/` and its Runpod log directory, and
+remain on persistent storage. Local/remote checkpoint SHA-256 match:
+
+- Cohort: `0032a8f424adef7f46fc3ed4e1b4a4e3923c70f581f420e44be68b6dea7e360a`.
+- Global: `60e3b008195c9a2193bf99943bd51f9b4713b5ff22af350d3ec42f7c44fb4d18`.
