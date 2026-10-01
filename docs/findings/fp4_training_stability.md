@@ -783,3 +783,43 @@ checkpoint checksums match:
 
 - Cohort: `3d4c8f093884d898d682c3a6ec228f8c80558096feffa9cc254b33631c553b39`.
 - Global: `a4f3206054ec8af7111fbafc76eee090bdabbc72c35422310f3812c24b56e3fd`.
+
+## Compiler-visible native projections
+
+`row_inductor_visible_timing.yaml` at `7616ae7` replaces Python-disabled frozen
+projections with opaque compiler-visible forward/dX operators. Their real
+kernels preserve the existing row normalization, CUTLASS output/rescaling and
+decoded-BF16 backward. Fake kernels describe output metadata only; per-runtime
+CPU tensor keys support graph reuse without GPU `.item()` or projection-specific
+integer guards. Keys are process-local and rebuilt on model construction.
+
+All twelve native Inductor cases have exact outputs and input gradients. Both
+repeated eager/compiled model gates equal their preferred baseline losses.
+Longest-input backwards and the global nonzero-LR update pass; global update
+takes **70.407244 s**. All 96 native bases and BF16 backwards run, with zero
+FP4 backwards.
+
+Thirty measured steps average **12.137727 s**, median 11.875517 s, range
+9.177585–16.107747 s. Replay means are 12.189854/12.092683/12.130643 s, each
+adding zero graphs. Every matched batch mean improves (1.81–5.30%); aggregate
+step-time reduction is **2.735%**, with **10,828.5 actual tokens/s**. This is a
+small measured improvement but falls below the predeclared 5% useful-gain
+criterion. Keep it opt-in rather than carrying it into the next independent
+memory-policy comparison. Warm-up adds five graphs and takes 142.541145 s;
+steady total is 20 graphs rather than 24. Peak allocated memory is **138.789386
+GiB** versus 138.638038 GiB; reserved is 142.488281 GiB.
+
+The collected audit verifies all seventeen source hashes against `7616ae7`,
+identical GPU/software, initialization/trainables, source jobs, order, token
+counts, partitions, checkpoints and LR sequences. Final replay hashes differ;
+bitwise complete trajectories, held-out quality and serving parity are not
+claimed. The predeclared wider BF16 full-attention compilation follow-up uses
+the preferred eager-native bases and first requires a forward-only diagnostic
+with the stable RMSNorm/SiLU fences and precision-cast preservation.
+
+Reports, logs, canaries and FP32 masters are collected under
+`results/fp4_row_inductor_visible_timing/` and its Runpod log directory, and remain
+on persistent storage. Local/remote checkpoint SHA-256 match:
+
+- Cohort: `b554f9c5ac158f9ca4cbb3e4ed61e8fb5cbc07729339af9a9585b4bd0dedb40e`.
+- Global: `09a1f42c5ba13feaf2cf35e6cb42dc7730c7e87d342ba52d52e35b7c7e5dd8d5`.
