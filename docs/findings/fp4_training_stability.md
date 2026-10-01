@@ -872,5 +872,19 @@ Collected `analysis.json` verifies all twenty source/config hashes against
 `da0ac64`, the four checkpoint indices, passed canaries, released reference
 bytes and empty optimizer-step list. Reports and logs persist under
 `results/fp4_row_inductor_offload_4cp_timing/` and its Runpod log directory.
-The predeclared eight-checkpoint fallback is the next capacity test; its outcome
-must be recorded before choosing a timing recipe.
+The predeclared eight-checkpoint fallback passes the longest-input backward and
+global nonzero-LR update. The update takes **69.068986 s** with **160.521597 GiB**
+peak allocated memory. Eager/compiled losses remain exact and its gradient norm
+is finite. Final artifact writes then exhaust the persistent volume quota,
+confirmed independently by an `OSError: [Errno 122] Disk quota exceeded` write
+probe. Its screen remains `running` and campaign status is empty; do not count
+it as a complete timing campaign. Preserve reports, logged update and checkpoint
+under `results/fp4_row_inductor_offload_8cp_timing/`; the collected analysis
+verifies its twenty source hashes against `da0ac64` and labels the interruption.
+
+Clearing the rebuildable uv package cache releases **11.8 GiB** and restores
+writes, preserving the installed environment, model/data, compiler/kernel caches
+and all experiment artifacts. The unchanged training policy retries in a fresh
+directory via `row_inductor_offload_8cp_retry_timing.yaml` at `5f1b273`. The
+conditional 24,576-token physical-budget configuration uses the same eight
+checkpoint indices. Record completed timing before selecting either recipe.
