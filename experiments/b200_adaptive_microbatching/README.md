@@ -1,5 +1,12 @@
 # Adaptive B200 physical microbatches
 
+Current recipe decision: after the completed execution audit, the user selected
+compiled 16,384-token/max-8 adaptive batching for future B200 training. Use
+`systems_screen@_global_: qwen35_4b_b200_adaptive` as the authoring profile.
+The [decision record](../../docs/decisions/b200_adaptive_training_recipe.md)
+distinguishes this explicit choice from the historical screen contracts below;
+their failed parity gates remain intact. No new training run is launched.
+
 Hypothesis: keeping long traces as singletons while batching short traces reduces
 training time relative to the validated half-checkpoint batch-1 recipe. The
 intervention changes physical batching within each optimizer update, preserving

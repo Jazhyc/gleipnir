@@ -1,5 +1,11 @@
 # B200 gradients, actual updates and short learning curves
 
+Subsequent decision (2026-10-01): after reviewing these results, the user
+explicitly selected compiled adaptive batching as the recipe for future B200
+training. The [decision record](../decisions/b200_adaptive_training_recipe.md)
+records its settings and evidence limits. The audit contract and decisions at
+completion below remain a historical record.
+
 Date: 2026-10-01. Status: all three user-authorized checks completed on the
 existing B200. Close short-run losses coexist with different gradients and
 parameter updates. The original gradient gate and selected recipe are unchanged.

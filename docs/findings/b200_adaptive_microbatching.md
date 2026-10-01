@@ -1,5 +1,10 @@
 # Adaptive B200 physical microbatches
 
+Subsequent decision (2026-10-01): the user explicitly selected compiled
+16,384-token/max-8 adaptive batching for future training. See the
+[decision record](../decisions/b200_adaptive_training_recipe.md). This choice
+does not change the historical parity failures and diagnostic decisions below.
+
 Date: 2026-10-01. Status: implementation tested; bounded batching, singleton
 repeatability, matched-loss, compiler-autocast and actual-update/learning-curve
 audits completed. No adaptive candidate passes the original gradient gate;

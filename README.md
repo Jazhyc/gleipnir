@@ -54,8 +54,12 @@ Matched monitoring throughput ablations use the config-driven
 only a Hydra YAML config and experiment README. Preparation resolves defaults
 and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
-The provisional 4B B200 recipe and its matched checkpoint, batching, and FA4
-results are recorded in
+The user-selected recipe for future 4B B200 training uses selectively compiled
+adaptive physical batches with a 16,384 padded-token budget, maximum 8 traces,
+and logical batch 32. See the
+[recipe decision](docs/decisions/b200_adaptive_training_recipe.md) and
+[matched execution audit](docs/findings/b200_execution_audit.md).
+The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 [`docs/findings/b200_training_throughput.md`](docs/findings/b200_training_throughput.md).
 
 Start with [the research program](docs/research_program.md), then read the README

@@ -1,0 +1,20 @@
+# User-selected future B200 recipe, 2026-10-01.
+# See docs/decisions/b200_adaptive_training_recipe.md.
+# Historical systems screens keep their frozen profiles and parity gates.
+defaults:
+  - qwen35_4b_b200_fast
+  - _self_
+
+recipe:
+  micro_batch_size: 32
+  gradient_accumulation_steps: 1
+  effective_batch_size: 32
+  adaptive_microbatching:
+    enabled: true
+    max_padded_tokens: 16384
+    max_micro_batch_size: 8
+    profile: false
+
+metadata_expectations:
+  losses.accumulation_policy: sum_per_example_over_logical_batch_v1
+  adaptive_microbatching.loss_normalization: sum_per_example_over_logical_batch_v1

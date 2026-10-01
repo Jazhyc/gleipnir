@@ -1,5 +1,10 @@
 # B200 training throughput: ten-update iteration
 
+For future training, the user subsequently selected the compiled adaptive
+profile `systems_screen@_global_: qwen35_4b_b200_adaptive`; see the
+[recipe decision](../../docs/decisions/b200_adaptive_training_recipe.md).
+The fixed-batch contracts and results below remain historical reproductions.
+
 Hypothesis: the B200's larger memory permits less activation recomputation or
 larger length-grouped microbatches and improves on the optimized H100 recipe.
 This systems screen uses the released 4B model's 21,837-row mixed training

@@ -1,5 +1,10 @@
 # B200 training throughput and attention backend screen
 
+Subsequent decision (2026-10-01): the user selected compiled adaptive batching
+for future training after a separate matched execution audit. See the
+[recipe decision](../decisions/b200_adaptive_training_recipe.md). The fixed-batch
+measurements, selection and ETA below describe this earlier systems screen.
+
 Date: 2026-09-30 / 2026-10-01. Contract:
 [`b200_training_throughput`](../../experiments/b200_training_throughput/README.md).
 The user authorized short systems benchmarks on the existing B200, leaving the
