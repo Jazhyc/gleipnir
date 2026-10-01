@@ -222,7 +222,8 @@ def main() -> None:
             f"{ROOT / FLASHQLA_TARGET}:{environment['PYTHONPATH']}"
         )
         environment["TILELANG_CACHE_DIR"] = str(
-            ROOT / ".cache/training/flashqla/tilelang"
+            ROOT
+            / config.get("flashqla_compiler_cache", ".cache/training/flashqla/tilelang")
         )
     environment["OMP_NUM_THREADS"] = "4"
     environment["TORCHINDUCTOR_EMULATE_PRECISION_CASTS"] = (

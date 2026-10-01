@@ -123,6 +123,16 @@ def load_flashqla() -> tuple[Callable, dict[str, Any]]:
     for filename, expected in manifest["package_sha256"].items():
         if hashlib.sha256((target / filename).read_bytes()).hexdigest() != expected:
             raise ValueError(f"FlashQLA source drift: {filename}")
+    compiler_patches = manifest.get("compiler_patches", [])
+    for patch in compiler_patches:
+        if (
+            hashlib.sha256((target / patch["path"]).read_bytes()).hexdigest()
+            != patch["after_sha256"]
+        ):
+            raise ValueError("TileLang compiler patch drift")
+        script = Path("experiments/fp4_stability/patch_tilelang_fp16.py")
+        if hashlib.sha256(script.read_bytes()).hexdigest() != patch["script_sha256"]:
+            raise ValueError("TileLang compiler patch script drift")
     software = {
         name: importlib.metadata.version(name)
         for name in ("flash-qla", "tilelang", "apache-tvm-ffi")
@@ -140,6 +150,7 @@ def load_flashqla() -> tuple[Callable, dict[str, Any]]:
         software=software,
         archive_sha256=manifest["archive_sha256"],
         package_sha256=manifest["package_sha256"],
+        compiler_patches=compiler_patches,
     )
 
 

@@ -548,3 +548,14 @@ and its own no-update model diagnostic, with unchanged thresholds and
 matched FLA cast controls on failure. Only a passing policy may start its
 global-longest update and warmed timing configuration. Timing scope and
 fresh original-FLA baseline remain as declared above. No gate relaxation.
+
+The FP16 isolated screen initially fails CUDA compilation before numerical
+checks: TileLang 0.1.12 emits `cutlass::half_t` arguments for a masked
+store, but `copy_sm100.h` only supplies a CUDA `half` packing helper.
+`patch_tilelang_fp16.py` adds the identical bit-packing body as a
+`cutlass::half_t` overload in the isolated target. It rejects unknown original
+header hashes and records before/after/script hashes in the install manifest;
+backend loading verifies the patch. Original FlashQLA sources and main
+environment remain unchanged. Preserve the failed receipt, rerun all seven
+FP16 shapes with fresh `fp16-pack-v1` caches, and require the same gates
+before the no-update model diagnostic.
