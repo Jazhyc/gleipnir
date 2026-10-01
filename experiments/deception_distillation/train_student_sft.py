@@ -3556,6 +3556,10 @@ def main(cfg: DictConfig) -> None:
             reference_weights_on_cpu=bool(
                 precision_screen_cfg.get("reference_weights_on_cpu", False)
             ),
+            gated_delta_backend=str(
+                precision_screen_cfg.get("gated_delta_backend", "fla")
+            ),
+            flashqla_auto_cp=bool(precision_screen_cfg.get("flashqla_auto_cp", False)),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

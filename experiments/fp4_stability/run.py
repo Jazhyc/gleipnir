@@ -36,6 +36,17 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    if config.get("gated_delta_backend", "fla") not in {"fla", "flashqla"}:
+        raise ValueError("unknown gated-delta backend")
+    if (
+        config.get("flashqla_auto_cp", False)
+        and config.get("gated_delta_backend", "fla") != "flashqla"
+    ):
+        raise ValueError("automatic FlashQLA partitioning requires FlashQLA")
+    if config.get("gated_delta_backend", "fla") == "flashqla" and not config.get(
+        "flashqla_canary"
+    ):
+        raise ValueError("FlashQLA requires a recorded isolated canary")
     if config["steps"] not in {1, 10}:
         raise ValueError("retain one preflight update or ten matched updates")
     if (
@@ -151,6 +162,14 @@ def main() -> None:
     args = parser.parse_args()
     config = yaml.safe_load(args.config.read_text())
     validate_config(config)
+    flashqla_canary = None
+    if config.get("gated_delta_backend", "fla") == "flashqla":
+        flashqla_canary = ROOT / config["flashqla_canary"]
+        canary = json.loads(flashqla_canary.read_text())
+        if canary["status"] != "passed" or canary["auto_cp"] != config.get(
+            "flashqla_auto_cp", False
+        ):
+            raise ValueError("FlashQLA isolated canary failed or policy mismatched")
     output = ROOT / config["output"]
     output.mkdir(parents=True, exist_ok=False)
     logs = ROOT / config["logs"]
@@ -181,6 +200,15 @@ def main() -> None:
         f"{ROOT / config['kernel_target']}:{environment['PYTHONPATH']}"
     )
     environment["FLA_DISABLE_BACKEND_DISPATCH"] = "1"
+    if config.get("gated_delta_backend", "fla") == "flashqla":
+        from gleipnir.flashqla_training import FLASHQLA_TARGET
+
+        environment["PYTHONPATH"] = (
+            f"{ROOT / FLASHQLA_TARGET}:{environment['PYTHONPATH']}"
+        )
+        environment["TILELANG_CACHE_DIR"] = str(
+            ROOT / ".cache/training/flashqla/tilelang"
+        )
     environment["OMP_NUM_THREADS"] = "4"
     environment["TORCHINDUCTOR_EMULATE_PRECISION_CASTS"] = (
         "1" if config.get("emulate_precision_casts", False) else "0"
@@ -209,6 +237,7 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_fast_selector.py",
                 ROOT / "src/gleipnir/fp4_compiler_ops.py",
                 ROOT / "src/gleipnir/fp4_memory.py",
+                ROOT / "src/gleipnir/flashqla_training.py",
                 ROOT / "experiments/fp4_stability/memory_recipe.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
@@ -229,6 +258,8 @@ def main() -> None:
             filename: sha256_file(initial_adapter / filename)
             for filename in ["adapter_config.json", "adapter_model.safetensors"]
         }
+    if flashqla_canary is not None:
+        contract["flashqla_canary_sha256"] = sha256_file(flashqla_canary)
     (output / "contract.json").write_text(json.dumps(contract, indent=2) + "\n")
     status = {"status": "running", "stages": []}
 
@@ -398,6 +429,10 @@ def main() -> None:
                 f"{config.get('gradient_validation', 'per_tensor')}",
                 "++student.training.precision_screen.reference_weights_on_cpu="
                 f"{str(config.get('reference_weights_on_cpu', False)).lower()}",
+                "++student.training.precision_screen.gated_delta_backend="
+                f"{config.get('gated_delta_backend', 'fla')}",
+                "++student.training.precision_screen.flashqla_auto_cp="
+                f"{str(config.get('flashqla_auto_cp', False)).lower()}",
             ]
             if config.get("compile_policy"):
                 command.append(

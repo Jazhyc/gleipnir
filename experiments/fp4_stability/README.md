@@ -425,3 +425,39 @@ instrumented GPU durations are attribution evidence, not ordinary step timings.
 The detailed findings identify full-attention dispatch, FLA recomputation/fusion,
 and surrounding pointwise/cast work as new investigation targets; no backend,
 checkpoint, quantization or training default is changed by this analysis.
+
+## FlashQLA backend screen
+
+Hypothesis: replacing only FLA's BF16 chunk Gated DeltaNet training kernel with
+Qwen FlashQLA reduces warmed native FP4 LoRA step time. Pin FlashQLA source
+`da06429d54b0f577de0a638f451ac8f0b395e0ac`, TileLang 0.1.12 and TVM-FFI
+0.1.11 in a separate target; retain locked Torch, Triton, FLA and Conv1d. Hash
+the downloaded source and installed package. `bootstrap_flashqla.sh` installs
+this target without modifying the main environment.
+
+First run `flashqla_canary.py` with automatic intra-card partitioning disabled.
+Compare BF16 q/k/v/beta and FP32 gates, q/k normalization, 32 heads of dimension
+128, singleton lengths 257/4096/16384/29696 and padded physical sizes 2/4/8.
+Require output relative L2 <= 0.01 and each q/k/v/g/beta gradient relative L2
+<= 0.02 against pinned FLA. Measure ten warm-up calls plus thirty complete
+forward and forward/backward calls for each backend and shape. These isolated
+measurements are not a whole-model speed estimate. No optimizer updates here.
+
+Only after that passes, run `row_flashqla_timing.yaml`, copied from the preferred
+strict-selector FP4 recipe. Require unchanged initial master/data/order hashes,
+FLA-vs-FlashQLA native-model loss agreement (absolute 0.01 + 1% reference), and
+aggregate unclipped FP32 adapter-gradient relative L2 <= 0.05 on the padded
+2048/128-token canary before any updates. Record all tensor gradient errors.
+Retain existing compiler, global-longest, gradient/update/memory gates, twelve
+checkpoints, 16,384-token adaptive policy, full ten-step warm-up and thirty
+measured steps. Stop on any failure. Require >=5% lower whole-step mean against
+the established 12.479019-second FP4 baseline before selecting a useful gain;
+there is no held-out quality selection or pure-BF16 control in this screen.
+
+If ordinary FlashQLA passes, repeat the isolated canary with `--auto-cp`, then
+test `row_flashqla_auto_cp_timing.yaml` as a separate intervention only if all
+its parity gates pass. Automatic partitioning may change long singleton
+execution; it does not alter dense multi-example semantics or the batching
+policy. Preserve all failed receipts and retain the original FLA configuration.
+Startup and runs are checked during the active turn; this session has no
+in-chat follow-up scheduler.

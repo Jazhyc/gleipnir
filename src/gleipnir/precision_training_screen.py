@@ -106,6 +106,8 @@ def run_precision_training_screen(
     profile_batch: int | None = None,
     gradient_validation: str = "per_tensor",
     reference_weights_on_cpu: bool = False,
+    gated_delta_backend: str = "fla",
+    flashqla_auto_cp: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -122,6 +124,10 @@ def run_precision_training_screen(
         raise ValueError("profiling requires one of ten warmed training batches")
     if gradient_validation not in {"per_tensor", "clip_norm"}:
         raise ValueError("unknown adapter gradient validation mode")
+    if gated_delta_backend not in {"fla", "flashqla"}:
+        raise ValueError("unknown gated-delta backend")
+    if flashqla_auto_cp and gated_delta_backend != "flashqla":
+        raise ValueError("automatic FlashQLA partitioning requires FlashQLA")
     named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
     parameters = [p for _, p in named]
     if not parameters or any(p.dtype != torch.float32 for p in parameters):
@@ -250,6 +256,19 @@ def run_precision_training_screen(
     publish()
     try:
         restore()
+        if gated_delta_backend == "flashqla":
+            from gleipnir.flashqla_training import install_with_model_canary
+
+            report["attention_backend_canary"] = install_with_model_canary(
+                model,
+                [collator([item]) for item in probe]
+                + [collator([probe[0], probe[-1]])],
+                loss_forward,
+                auto_cp=flashqla_auto_cp,
+            )
+            publish()
+            if not report["attention_backend_canary"]["passed"]:
+                raise ValueError("FlashQLA model loss/gradient canary failed")
         report["before_native_probe"] = evaluate(dense=False)
         report["before_common_probe"] = evaluate(dense=True)
         if reference_weights_on_cpu:
