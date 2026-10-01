@@ -572,3 +572,70 @@ The experimental packing canary in the experiment README tests the first gap
 without broadening quantization or changing the training arithmetic. Native FP4
 backward is not required to follow the blog's final recipe. Selective BF16 final
 layers are a separate possible stability experiment, not an implemented policy.
+
+## Tiled activation packing follow-up
+
+The one-program-per-row normalization/packing candidate passes small cases but
+fails exact packed parity at `(513, 9216)`. Prohibiting floating-point fusion
+also fails: four block-scale bytes and 29 packed-value bytes differ, despite
+exact row maxima. Both variants are rejected and their sources/receipts remain
+under `results/fp4_packing_kernel_canary/` and
+`results/fp4_packing_no_fma_canary/`. Keeping the original quantization tile shape
+resolves the observed mismatch; these results do not isolate its compiler cause.
+
+The passing tiled variant computes row maxima separately, then fuses FP32
+normalization, the BF16 rounding boundary and upstream 4/6 selection/packing
+in the pinned 16x64 TMA tiles. It directly supplies the packed activation to
+CUTLASS, eliminating the intermediate normalized BF16 matrix. Rescaling and
+decoded-weight BF16 backward remain unchanged. All seven isolated cases match
+row maxima, FP4 values, FP8 scales including padding and rescaled GEMM outputs
+exactly. Initial warmed call timings improve 1.12–1.62x at the model widths;
+these event timings include host dispatch gaps, not just GPU kernel duration.
+
+`row_inductor_packed_timing.yaml` retains the preferred recipe's exact initial
+adapters, inputs, physical partitions, checkpoint policy, compiler boundaries,
+gradient checks, optimizer and scheduler. The integrated native canary passes
+batch sizes 1/2/4/8, finite decoded-weight backward and zero outlier-row error.
+Global/cohort eager and compiled repeated losses equal 1.4450643062591553 and
+1.2848907709121704 respectively. Both longest-input backwards and the global
+nonzero-LR optimizer update pass; that update takes 71.355 s versus 71.272 s
+previously. Warm-up and every replay change the FP32 master adapters.
+
+| Measured replay | Preferred recipe seconds/step | Tiled packing seconds/step | New graphs |
+| --- | ---: | ---: | ---: |
+| 1 | 12.368 | 12.892 | 0 |
+| 2 | 12.566 | 13.021 | 0 |
+| 3 | 12.503 | 12.759 | 0 |
+
+All thirty measured steps average **12.890800 s**, median **12.568111 s**,
+range **9.630355–17.274396 s**, versus preferred **12.479019 s**. This is a
+**3.300% regression**, delivering **10,195.9 actual tokens/s** rather than
+10,532.3. The predeclared 5% useful-gain criterion fails. Peak allocated memory
+is unchanged at **138.638038 GiB**; reserved memory is **143.250 GiB** versus
+143.289 GiB. Warm-up takes **196.314 s** with six new graphs; total graphs then
+remain at 24. Isolated packing-call gains do not establish lower complete-step
+time or meaningful peak-memory savings. No attribution to a particular GPU
+instruction, bitwise gradient parity, held-out quality or serving parity is made.
+
+Keep `row_inductor_fused_timing.yaml` as the preferred bounded FP4 configuration.
+The new path is opt-in and requires per-token fused scaling, native FP4, BF16
+backward and successful packing canaries. Attention, BF16 LoRA computation and
+FP32 adapter masters retain their existing scope. Following the blog further
+should target its optimized selector and tensor handling rather than assuming
+that its attention or backward uses FP4. The blog's TransformerEngine path is a
+separate backend to pin and validate before any replacement claim.
+
+The audit `results/fp4_row_inductor_packed_timing/analysis.json` verifies all
+twelve source/config hashes against `2ce0f97`; the launcher records parent
+`e4c4012` plus those exact hashes. GPU/software, initialization, trainable names,
+source jobs, example order, every physical partition, token counts and LR
+sequences match the preferred baseline. Every same-batch mean is slower
+(0.62–5.97%). Final master hashes differ across replays; deterministic complete
+training trajectories are not claimed.
+
+Reports, logs, canaries and both FP32 checkpoints are collected locally and
+remain on the persistent network volume. Local checkpoint checksums equal the
+remote receipt: cohort `966e98108e69768e8ff387aa867c9f306212bdd3d976f0a4258a3073ab00b8e4`;
+global `941e242fe4d306a581aad828862cf898440981c16b63b1c622de7e627c86aa44`.
+Thirty-two focused CPU tests, Ruff and diff checks pass. The campaign is complete;
+the B200 is idle with no further run queued.

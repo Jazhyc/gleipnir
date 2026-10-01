@@ -243,3 +243,14 @@ packing speed does not establish training throughput or quality. Defaults and
 all failed row-packing receipts remain intact. Row maxima still use a separate
 kernel; the intervention eliminates the normalized BF16 matrix rather than
 claiming the blog's entire fused stack.
+
+Completed: native packed-input forward/BF16 backward, both exact eager/compiled
+model gates, longest-input backwards, the global optimizer update and all warmed
+replays pass. Measured pass means are 12.892/13.021/12.759 s, **12.891 s overall**:
+**3.30% slower** than the preferred 12.479-second recipe. No measured pass adds
+graphs. Peak allocated memory remains exactly 138.638 GiB. Faster isolated
+packing therefore does not establish a full-step speed or memory benefit.
+Keep `row_inductor_fused_timing.yaml` as the preferred bounded FP4 recipe; tiled
+packing remains an experimental option. This experiment is complete, the B200
+is idle, and no further run is queued. Receipts and limitations are in the
+[finding](../../docs/findings/fp4_training_stability.md#tiled-activation-packing-follow-up).
