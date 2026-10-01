@@ -215,6 +215,68 @@ def install_with_model_canary(
             gradients=gradients,
             passed=passed,
         )
+        if not passed and backend == "flashqla" and bf16_boundary:
+            # Keep the original pass/fail result. These bounded failure probes
+            # never update adapters and cannot authorize training past the gate.
+            try:
+                cast_fla = make_bf16_boundary(originals[0][1])
+                model.zero_grad(set_to_none=True)
+                for module in modules:
+                    module.chunk_gated_delta_rule = cast_fla
+                with torch.no_grad():
+                    cast_losses = [float(loss_forward(b).detach()) for b in batches]
+                loss_forward(batches[-1]).backward()
+                cast_gradients = {
+                    name: tensor_comparison(p.grad, reference)
+                    for (name, p), reference in zip(
+                        named, reference_gradients, strict=True
+                    )
+                    if p.grad is not None
+                }
+                cast_l2 = (
+                    sum(x["error_norm"] ** 2 for x in cast_gradients.values())
+                    / max(
+                        sum(x["reference_norm"] ** 2 for x in cast_gradients.values()),
+                        1e-24,
+                    )
+                ) ** 0.5
+                receipt["fla_bf16_failure_control"] = dict(
+                    losses=cast_losses,
+                    gradient_relative_l2=cast_l2,
+                    gradients=cast_gradients,
+                    all_gradients_present=len(cast_gradients) == len(named),
+                )
+                model.zero_grad(set_to_none=True)
+                shadows = []
+                for index, (module, original) in enumerate(originals):
+
+                    def shadow(*args, original=original, index=index, **kwargs):
+                        reference_output, reference_state = original(*args, **kwargs)
+                        candidate_output, _ = kernel(*args, **kwargs)
+                        cast_output, _ = cast_fla(*args, **kwargs)
+                        shadows.append(
+                            dict(
+                                linear_layer=index,
+                                output_shape=list(reference_output.shape),
+                                flashqla=tensor_comparison(
+                                    candidate_output, reference_output
+                                ),
+                                fla_bf16=tensor_comparison(
+                                    cast_output, reference_output
+                                ),
+                            )
+                        )
+                        return reference_output, reference_state
+
+                    module.chunk_gated_delta_rule = shadow
+                # Returning original FLA outputs prevents candidate error from
+                # changing later-layer inputs during these shadow comparisons.
+                with torch.no_grad():
+                    for i in sorted({0, len(batches) // 2, len(batches) - 1}):
+                        loss_forward(batches[i])
+                receipt["shadow_outputs_on_original_path"] = shadows
+            except Exception as error:
+                receipt["failure_diagnostic_error"] = f"{type(error).__name__}: {error}"
         return receipt
     finally:
         model.zero_grad(set_to_none=True)

@@ -91,7 +91,10 @@ def test_auto_partitioning_requires_flashqla():
 
 
 @pytest.mark.parametrize("factor,passed", [(1.001, True), (2.0, False)])
-def test_model_gate_preserves_or_restores_kernel(monkeypatch, factor, passed):
+@pytest.mark.parametrize("bf16_boundary", [False, True])
+def test_model_gate_preserves_or_restores_kernel(
+    monkeypatch, factor, passed, bf16_boundary
+):
     import gleipnir.flashqla_training as backend
 
     def reference(q, *args, **kwargs):
@@ -119,7 +122,11 @@ def test_model_gate_preserves_or_restores_kernel(monkeypatch, factor, passed):
     )
     model = Model()
     result = backend.install_with_model_canary(
-        model, [torch.tensor(1.0), torch.tensor(2.0)], model, auto_cp=False
+        model,
+        [torch.tensor(1.0), torch.tensor(2.0)],
+        model,
+        auto_cp=False,
+        bf16_boundary=bf16_boundary,
     )
     assert result["passed"] is passed
     assert model.training
@@ -129,3 +136,11 @@ def test_model_gate_preserves_or_restores_kernel(monkeypatch, factor, passed):
         (layer.chunk_gated_delta_rule is reference) is (not passed)
         for layer in model.layers
     )
+    if bf16_boundary and not passed:
+        assert "failure_diagnostic_error" not in result
+        assert result["fla_bf16_failure_control"]["gradient_relative_l2"] == 0
+        assert len(result["shadow_outputs_on_original_path"]) == 48
+        assert all(
+            row["fla_bf16"]["relative_l2"] == 0
+            for row in result["shadow_outputs_on_original_path"]
+        )

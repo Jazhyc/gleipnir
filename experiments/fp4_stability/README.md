@@ -485,3 +485,12 @@ Require useful whole-step improvement at the existing 5% threshold, and report
 the combined dtype/backend change separately from the matched-backend result.
 The original failed attempt remains intact. No automatic partitioning training
 will run until the ordinary boundary policy has passed these gates.
+
+The explicit FlashQLA boundary fails full-model loss and adapter-gradient gates
+(aggregate relative L2 about 1.01) before updates. Cancel the timing controls and
+automatic-partitioning training follow-ups. `row_flashqla_boundary_diagnostic.yaml`
+repeats only the bounded model diagnostic with no updates. On failure it also
+compares the identical boundary using FLA and records per-linear-layer shadow
+output errors on three probe batches. Shadow calls return original FLA outputs,
+keeping later-layer inputs matched. This isolates boundary effects from backend
+effects without collecting raw activations or weakening any gate.
