@@ -112,6 +112,7 @@ def run_precision_training_screen(
     gated_delta_boundary_policy: str = "bf16",
     flashqla_layer_indices: list[int] | None = None,
     flashqla_layer_sweep: list[list[int]] | None = None,
+    ten_step_learning_comparison: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -132,6 +133,25 @@ def run_precision_training_screen(
         raise ValueError("unknown gated-delta backend")
     if flashqla_auto_cp and gated_delta_backend != "flashqla":
         raise ValueError("automatic FlashQLA partitioning requires FlashQLA")
+    if ten_step_learning_comparison and (
+        steps != 10
+        or timing_repeats
+        or diagnostics_only
+        or profile_batch is not None
+        or gated_delta_backend not in {"fla", "flashqla"}
+        or flashqla_layer_indices is not None
+        or flashqla_layer_sweep is not None
+        or metadata.get("fp32_projection")
+        or metadata.get("mlp", {}).get("precision") != "nf4"
+    ):
+        raise ValueError(
+            "ten-step comparison requires ten uniform updates with current head"
+        )
+    original_kernels = [
+        (m, m.chunk_gated_delta_rule)
+        for m in model.modules()
+        if hasattr(m, "chunk_gated_delta_rule")
+    ]
     named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
     parameters = [p for _, p in named]
     if not parameters or any(p.dtype != torch.float32 for p in parameters):
@@ -167,6 +187,7 @@ def run_precision_training_screen(
         "order": order,
         "steps": [],
         "timing_repeats": timing_repeats,
+        "ten_step_learning_comparison": ten_step_learning_comparison,
         "profile_batch": profile_batch,
         "gradient_validation": gradient_validation,
         "logical_batch_size": 32,
@@ -211,9 +232,22 @@ def run_precision_training_screen(
         torch.cuda.manual_seed_all(seed)
         model.train()
 
+    @contextmanager
+    def common_attention(dense):
+        saved = []
+        if dense and ten_step_learning_comparison:
+            saved = [(m, m.chunk_gated_delta_rule) for m, _ in original_kernels]
+            for module, kernel in original_kernels:
+                module.chunk_gated_delta_rule = kernel
+        try:
+            yield
+        finally:
+            for module, kernel in saved:
+                module.chunk_gated_delta_rule = kernel
+
     def evaluate(*, dense: bool):
         model.eval()
-        with use_forwards(original_forwards), torch.no_grad():
+        with common_attention(dense), use_forwards(original_forwards), torch.no_grad():
             if dense:
                 with dense_mlp_evaluation(model):
                     losses = [
@@ -276,6 +310,7 @@ def run_precision_training_screen(
                     bf16_boundary=gated_delta_bf16_boundary,
                     boundary_policy=gated_delta_boundary_policy,
                     layer_indices=indices,
+                    ten_step_learning_comparison=ten_step_learning_comparison,
                 )
                 report.setdefault("attention_backend_layer_sweep", []).append(
                     report["attention_backend_canary"]
@@ -283,7 +318,12 @@ def run_precision_training_screen(
                 publish()
                 if report["attention_backend_canary"]["passed"]:
                     break
-            if not report["attention_backend_canary"]["passed"]:
+            if not (
+                report["attention_backend_canary"]["passed"]
+                or report["attention_backend_canary"].get(
+                    "accepted_for_ten_step_learning_comparison", False
+                )
+            ):
                 raise ValueError("FlashQLA model loss/gradient canary failed")
         report["before_native_probe"] = evaluate(dense=False)
         report["before_common_probe"] = evaluate(dense=True)
@@ -383,6 +423,32 @@ def run_precision_training_screen(
         report["preflight_passed"] = True
         print(f"precision_preflight={preflight}", flush=True)
         publish()
+        if ten_step_learning_comparison:
+            report["compile_warmup"] = []
+            for step in range(steps):
+                torch.cuda.synchronize(device)
+                warm_start = time.perf_counter()
+                indices = order[step * 32 : (step + 1) * 32]
+                measurement = backward([features[i] for i in indices])
+                norm = torch.nn.utils.clip_grad_norm_(
+                    parameters, max_grad_norm, error_if_nonfinite=True
+                )
+                if float(norm) <= 0:
+                    raise ValueError("compile warmup adapter gradient is zero")
+                torch.cuda.synchronize(device)
+                measurement.update(
+                    batch=step + 1,
+                    seconds=time.perf_counter() - warm_start,
+                    optimizer_updates=0,
+                )
+                report["compile_warmup"].append(measurement)
+                print(f"compile_warmup={json.dumps(measurement)}", flush=True)
+                publish()
+            restore()
+            report["compile_warmup_master_unchanged"] = (
+                tensor_digest(parameters) == initial_digest
+            )
+            publish()
         report["timing_passes"] = []
         for pass_index in range(1 + timing_repeats):
             # Replay the identical learning trajectory, including the LR-zero
@@ -429,6 +495,8 @@ def run_precision_training_screen(
                         "unique_graphs"
                     ],
                 )
+                if ten_step_learning_comparison:
+                    measurement["common_probe"] = evaluate(dense=True)
                 current["steps"].append(measurement)
                 print(
                     f"precision_pass={pass_index} "
@@ -440,6 +508,8 @@ def run_precision_training_screen(
             current["new_dynamo_graphs"] = (
                 torch._dynamo.utils.counters["stats"]["unique_graphs"] - graph_start
             )
+            if ten_step_learning_comparison:
+                report["timing_summary"] = timing_summary([current])
             current["final_master_sha256"] = tensor_digest(parameters)
             if current["final_master_sha256"] == initial_digest:
                 raise ValueError("optimizer replay produced no adapter change")

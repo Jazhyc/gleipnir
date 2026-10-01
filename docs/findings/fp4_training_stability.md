@@ -1249,8 +1249,7 @@ Helper, entrypoint, patch-script and header snapshots all verify.
 The FP16-core NF4 whole-model diagnostic also fails before updates:
 gradient relative L2 **0.400802**, versus **0.387613** for cast FLA.
 All gradients are finite; several singleton loss gaps still exceed the
-original tolerance. Receipt: `results/nf4_flashqla_fp16_precise_diagnostic/
-nf4/screen.json` (one uninterrupted path), SHA-256
+original tolerance. Receipt: `results/nf4_flashqla_fp16_precise_diagnostic/nf4/screen.json`, SHA-256
 `9e7acd021290b1e6d0574822d4849885df7bacd998ff7f30728f198cb011f963`.
 All 21 source/config hashes verify against `ce389fd`. No full-replacement
 optimizer updates or accepted whole-model timings occur in any variant.
@@ -1264,3 +1263,55 @@ This addresses error propagation without relaxing thresholds; it must be
 reported as partial FlashQLA. No timing run starts unless its selected
 subset passes. Layer selection/restoration and bounded configuration checks
 bring focused CPU validation to 61 passing tests.
+
+The BF16 partial-layer screen finishes at the expected failed gate, with
+zero updates. All subsets fail at least one forward loss; aggregate
+gradient relative L2 falls sharply for late-layer-only replacement:
+
+| Final linear-attention layers replaced | Gradient relative L2 | All gates pass |
+| --- | ---: | --- |
+| 12 | 0.079262 | No |
+| 8 | 0.016508 | No |
+| 4 | 0.016642 | No |
+| 2 | 0.014503 | No |
+| 1 | 0.010786 | No |
+
+Receipt `results/nf4_flashqla_bf16_layer_diagnostic/nf4/screen.json` has
+SHA-256 `9a1f20c6384763bee9aad6b4266b1efc7348442f6ec0b6c980d045fea1a66d9b`.
+All 21 source/config hashes verify against `5326e12`; launch revision
+names the preceding `ce389fd`. Preserve every case; no subset is accepted.
+
+Forward losses change in coarse increments (roughly 0.025 or 0.051 on
+these probes). Source inspection finds the screen's outer BF16 autocast
+also includes the final LM-head projection; casting its result to FP32
+for the loss does not undo prior rounding. The next separate arithmetic
+intervention explicitly runs the frozen head outside autocast in FP32,
+leaving decoder precision, head weights, loss definition, data and FP32
+LoRA masters unchanged. The matching FLA reference uses the same FP32 head.
+The wrapper records the actual original output dtype on its first call.
+This is motivated by the existing MIL projection precision finding; do not
+claim causality or old-recipe quality parity before matched evidence.
+
+Test uniform FlashQLA first (all 24 linear layers), then the predeclared
+late-layer subsets only if needed. Retain all original loss/gradient
+thresholds, and give both timing arms the FP32 projection if any case
+passes. Validation: 63 focused CPU tests pass.
+
+The FP32-head/partial-layer diagnostic was interrupted at the user's request
+before any optimizer updates. Its final-eight-layer canary passed with gradient
+relative L2 0.016405, but the changed head/subset has no measured training result
+and is not promoted. Preserve its interrupted receipt under
+`results/nf4_flashqla_fp32_head_diagnostic/`.
+
+The user narrowed the experiment to exactly ten uniform FlashQLA optimizer
+calls and a matched current-recipe FLA control. The new configs retain the
+current BF16 head and frozen initial adapters/cohort. They explicitly allow
+finite uniform FlashQLA training despite the recorded strict parity failure;
+this exception is confined to the ten-step learning diagnostic. All ten ordered
+batches warm compilation with backward only and unchanged adapters, followed by
+ten optimizer calls (nine nonzero learning rates). Common original-FLA probe
+loss is recorded outside synchronized step timing. No head changes, subset
+sweeps, separate preflight updates, timing replays or held-out promotion.
+Focused CPU validation: 70 passed; six combinations skipped because the bounded
+comparison excludes partial layers/profiling. Both configs are frozen before
+launch; collect loss, timing, memory and compilation receipts before concluding.

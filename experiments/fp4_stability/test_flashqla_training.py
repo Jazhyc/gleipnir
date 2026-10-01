@@ -157,12 +157,15 @@ def test_boundary_policy_rejects_unknown_or_inactive_policy():
         )
 
 
+@pytest.mark.parametrize("ten_step_comparison", [False, True])
 @pytest.mark.parametrize("factor,passed", [(1.001, True), (2.0, False)])
 @pytest.mark.parametrize("bf16_boundary", [False, True])
 @pytest.mark.parametrize("partial", [False, True])
 def test_model_gate_preserves_or_restores_kernel(
-    monkeypatch, factor, passed, bf16_boundary, partial
+    monkeypatch, factor, passed, bf16_boundary, partial, ten_step_comparison
 ):
+    if partial and ten_step_comparison:
+        pytest.skip("ten-step comparison requires all layers")
     import gleipnir.flashqla_training as backend
 
     def reference(q, *args, **kwargs):
@@ -199,6 +202,7 @@ def test_model_gate_preserves_or_restores_kernel(
         auto_cp=False,
         bf16_boundary=bf16_boundary,
         layer_indices=[29, 30] if partial else None,
+        ten_step_learning_comparison=ten_step_comparison,
     )
     assert result["passed"] is passed
     assert model.training
@@ -206,9 +210,12 @@ def test_model_gate_preserves_or_restores_kernel(
     assert model.weight.grad is None
     assert result["replaced_layers"] == (2 if partial else 24)
     for layer in model.layers:
-        changed = passed and (not partial or layer.layer_idx in [29, 30])
+        changed = (passed or ten_step_comparison) and (
+            not partial or layer.layer_idx in [29, 30]
+        )
         assert (layer.chunk_gated_delta_rule is reference) is (not changed)
-    if bf16_boundary and not passed:
+    assert result["accepted_for_ten_step_learning_comparison"] is ten_step_comparison
+    if bf16_boundary and not passed and not ten_step_comparison:
         assert "failure_diagnostic_error" not in result
         # BF16 casts round the 1/24 gradient contributions in this toy mean.
         assert result["fla_bf16_failure_control"]["gradient_relative_l2"] < 0.005

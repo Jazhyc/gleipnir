@@ -190,10 +190,17 @@ def install_with_model_canary(
     bf16_boundary: bool = False,
     boundary_policy: str = "bf16",
     layer_indices: list[int] | None = None,
+    ten_step_learning_comparison: bool = False,
 ) -> dict[str, Any]:
     """Compare native-model losses and unclipped master gradients before updates."""
+    import math
+
     import torch
 
+    if ten_step_learning_comparison and (
+        backend != "flashqla" or layer_indices is not None
+    ):
+        raise ValueError("ten-step comparison requires uniform FlashQLA")
     if backend == "flashqla":
         print(f"attention_canary loading={backend} layers={layer_indices}", flush=True)
         function, receipt = load_flashqla()
@@ -237,6 +244,7 @@ def install_with_model_canary(
         reference_gradients.append(p.grad.detach().cpu().clone())
     model.zero_grad(set_to_none=True)
     passed = False
+    keep_kernel = False
     print("attention_canary reference_gradients_complete", flush=True)
     try:
         for module in modules:
@@ -283,7 +291,20 @@ def install_with_model_canary(
             gradients=gradients,
             passed=passed,
         )
-        if not passed and backend == "flashqla" and bf16_boundary:
+        finite = all(
+            math.isfinite(x) for x in reference_losses + candidate_losses
+        ) and all(x["finite"] for x in gradients.values())
+        if ten_step_learning_comparison and not finite:
+            raise FloatingPointError("nonfinite ten-step attention canary")
+        receipt["accepted_for_ten_step_learning_comparison"] = (
+            ten_step_learning_comparison and finite
+        )
+        if (
+            not passed
+            and backend == "flashqla"
+            and bf16_boundary
+            and not ten_step_learning_comparison
+        ):
             # Keep the original pass/fail result. These bounded failure probes
             # never update adapters and cannot authorize training past the gate.
             try:
@@ -347,10 +368,11 @@ def install_with_model_canary(
                 receipt["shadow_outputs_on_original_path"] = shadows
             except Exception as error:
                 receipt["failure_diagnostic_error"] = f"{type(error).__name__}: {error}"
+        keep_kernel = passed or receipt["accepted_for_ten_step_learning_comparison"]
         return receipt
     finally:
         model.zero_grad(set_to_none=True)
         model.train(training)
-        if not passed:
+        if not keep_kernel:
             for module, original in originals:
                 module.chunk_gated_delta_rule = original

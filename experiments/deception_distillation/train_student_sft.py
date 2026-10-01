@@ -3574,6 +3574,9 @@ def main(cfg: DictConfig) -> None:
             ),
             flashqla_layer_indices=precision_screen_cfg.get("flashqla_layer_indices"),
             flashqla_layer_sweep=precision_screen_cfg.get("flashqla_layer_sweep"),
+            ten_step_learning_comparison=bool(
+                precision_screen_cfg.get("ten_step_learning_comparison", False)
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

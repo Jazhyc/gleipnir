@@ -220,11 +220,14 @@ def test_timing_summary_weights_tokens_and_rejects_unmatched_replays():
         timing_summary([{**passes[0], "steps": passes[0]["steps"][:-1]}])
 
 
+@pytest.mark.parametrize("ten_step_comparison", [False, True])
 @pytest.mark.parametrize("profile_batch", [None, 5])
 @pytest.mark.parametrize("gradient_validation", ["per_tensor", "clip_norm"])
 def test_timing_replays_restore_adapters_optimizer_and_schedule(
-    monkeypatch, tmp_path, profile_batch, gradient_validation
+    monkeypatch, tmp_path, profile_batch, gradient_validation, ten_step_comparison
 ):
+    if ten_step_comparison and profile_batch is not None:
+        pytest.skip("bounded comparison excludes profiling")
     from gleipnir import precision_training_screen as screen
     from gleipnir.adaptive_microbatching import MicrobatchPolicy
 
@@ -271,12 +274,22 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
         steps=10,
         max_grad_norm=1.0,
-        metadata={"mlp": {"precision": "bf16"}},
-        timing_repeats=3,
+        metadata={"mlp": {"precision": "nf4" if ten_step_comparison else "bf16"}},
+        timing_repeats=0 if ten_step_comparison else 3,
+        ten_step_learning_comparison=ten_step_comparison,
         profile_batch=profile_batch,
         gradient_validation=gradient_validation,
     )
     assert report["status"] == "complete"
+    if ten_step_comparison:
+        assert len(optimizers) == 1
+        assert report["compile_warmup_master_unchanged"]
+        assert len(report["compile_warmup"]) == 10
+        assert all(row["optimizer_updates"] == 0 for row in report["compile_warmup"])
+        assert int(optimizers[0].state[model.weight]["step"]) == 10
+        assert report["timing_summary"]["measured_steps"] == 10
+        assert all("common_probe" in row for row in report["steps"])
+        return
     assert len(optimizers) == 4
     assert len(profiled) == int(profile_batch is not None)
     assert len({id(item.state) for item in optimizers}) == 4
@@ -594,3 +607,22 @@ def test_failed_gate_never_updates_adapters(
     assert report["compile_canary"]["eager_repeat_loss"] == 1.0
     assert report["compile_canary"]["compiled_repeat_loss"] == 2.0
     assert report["steps"] == []
+
+
+def test_explicit_ten_step_comparison_has_no_extra_optimizer_stage():
+    root = Path(__file__).parent
+    for name in ["nf4_flashqla_ten_step_comparison", "nf4_fla_ten_step_comparison"]:
+        config = yaml.safe_load((root / f"{name}.yaml").read_text())
+        validate_config(config)
+        stages = campaign_stages(config, {"selection": "320"}, {"selection": "longest"})
+        assert len(stages) == 1 and stages[0]["steps"] == 10
+        for overrides in [
+            {"steps": 1},
+            {"timing_repeats": 3},
+            {"fp32_lm_head": True},
+            {"conditions": ["bf16"]},
+            {"flashqla_layer_indices": [30]},
+            {"diagnostics_only": True},
+        ]:
+            with pytest.raises(ValueError, match="ten-step comparison"):
+                validate_config({**config, **overrides})

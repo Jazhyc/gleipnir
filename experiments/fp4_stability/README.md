@@ -592,3 +592,31 @@ Only that subset may start global-longest update and warmed timings.
 Its fresh FLA timing control also uses the FP32 head, so the backend
 comparison stays matched. No equivalence to the old BF16-head
 trajectory or held-out quality is asserted. Stop if every subset fails.
+
+## Uniform FlashQLA ten-step comparison (2026-10-02)
+
+At the user's request, stop the partial-layer and FP32-head sweep. Test whether
+uniform FlashQLA gives useful short-run loss and faster steps with the current
+NF4/BF16 LoRA recipe. Run `nf4_flashqla_ten_step_comparison.yaml` first, then
+`nf4_fla_ten_step_comparison.yaml`, sequentially on the existing B200.
+All 24 GDN layers use FlashQLA, BF16 Q/K/V with FP32 gates and external FP32
+Q/K normalization; the eight full-attention layers retain SDPA. Both arms retain
+the current BF16 head, rank-128 FP32 adapters, 12 checkpointed layers, adaptive
+16384-token/max-eight physical batches, compiled linear shell/full attention,
+frozen 320 examples and initial adapter hash. No FP16 or layer subsets.
+
+This is explicitly a bounded learning diagnostic: preserve the historical strict
+loss/gradient canary result, even when it fails, but allow exactly ten optimizer
+calls with finite losses and all adapter gradients. The first scheduled learning
+rate is zero; nine calls have nonzero rates. No separate optimizer preflight or
+replay. Memory preflight and ten ordered compile-warmup backward passes make zero
+optimizer calls and must preserve initial masters. Stop on nonfinite/missing
+loss/gradient, zero gradient, OOM, runtime failure, or data/master/source drift.
+Record compilation/warmup separately and include every measured step, including
+lazy optimizer allocation and any remaining graph compilation.
+
+Compare per-step training loss and an eight-example fixed probe before/after
+each step. Common probes use original eager FLA in both arms, outside step timing,
+so loss reflects adapter learning on the same evaluator. Selection is the frozen
+training cohort; no held-out promotion or long-run stability conclusion from ten
+steps. These two runs are the complete requested experiment.

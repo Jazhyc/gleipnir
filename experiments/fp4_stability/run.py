@@ -36,6 +36,18 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    if config.get("ten_step_learning_comparison", False) and (
+        config["steps"] != 10
+        or config["diagnostics_only"]
+        or config["conditions"] != ["nf4"]
+        or config.get("timing_repeats", 0)
+        or config.get("flashqla_layer_indices") is not None
+        or config.get("flashqla_layer_sweep") is not None
+        or config.get("fp32_lm_head", False)
+        or config.get("profile_batch") is not None
+        or config.get("gated_delta_backend", "fla") not in {"fla", "flashqla"}
+    ):
+        raise ValueError("ten-step comparison requires uniform NF4 with current head")
 
     def check_layers(indices):
         return (
@@ -169,7 +181,11 @@ def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[di
     """Require an actual global-longest update before every ten-update condition."""
     stages = []
     for precision in config["conditions"]:
-        if config["steps"] == 10 and not config.get("diagnostics_only", False):
+        if (
+            config["steps"] == 10
+            and not config.get("diagnostics_only", False)
+            and not config.get("ten_step_learning_comparison", False)
+        ):
             stages.append(
                 dict(
                     name=f"{precision}-global-preflight",
@@ -480,6 +496,8 @@ def main() -> None:
                 f"{str(config.get('gated_delta_bf16_boundary', False)).lower()}",
                 "++student.training.precision_screen.gated_delta_boundary_policy="
                 f"{config.get('gated_delta_boundary_policy', 'bf16')}",
+                "++student.training.precision_screen.ten_step_learning_comparison="
+                f"{str(config.get('ten_step_learning_comparison', False)).lower()}",
                 "++student.training.precision_screen.fp32_lm_head="
                 f"{str(config.get('fp32_lm_head', False)).lower()}",
             ]
