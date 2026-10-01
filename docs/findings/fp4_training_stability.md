@@ -683,3 +683,32 @@ Local and remote checkpoint SHA-256 match:
 
 The next independent candidate uses the optimized FP16 activation selector,
 starting from the preferred recipe without activation sharing.
+
+## FP16 activation-selector gate
+
+The independent Triton candidate at `80178f4` uses FP16 candidate products and
+FP32 scaled-target MSE, inspired by official TransformerEngine PR3068. Strict
+frozen-weight packing is unchanged. Its seven operand cases are deterministic
+and finite, with 99.9805–100% logical block-scale agreement and identical
+reported aggregate activation squared error. Those aggregate measurements do
+not establish identical operands or outputs.
+
+The `(16384, 9216)` outlier case changes 453 block scales and has native-output
+relative L2 **0.003665291**, exceeding the predeclared **0.002** limit. The
+candidate stops before model loading or optimizer updates. Preserve this
+failure; the acceptance limit is unchanged. Passed model-width cases show
+1.42–1.95x lower isolated packing-call wall time, which is not a complete-step
+speed result. The standard-library audit verifies all fifteen recorded source
+hashes against `80178f4`. Reports and logs are collected under
+`results/fp4_row_inductor_fp16_selector_timing/` and its Runpod log directory.
+
+The guarded follow-up `row_inductor_fp16_guarded_timing.yaml` tests whether
+near-tied choices explain the output mismatch. When the FP16 error difference
+is at most `1e-4 * (error4 + error6)`, recompute that entire 16x64 tile using the
+pinned strict selector. Zero-error blocks already choose six on both paths.
+Floating-point fusion is enabled to match the upstream strict kernel setting;
+this also changes the candidate arithmetic contract. The near-tie explanation
+is a hypothesis, not an established cause. Require the same seven operand gates
+before model loading, followed by the unchanged native/model/gradient gates,
+global-longest update and thirty warmed measured steps. Stop at any failed gate;
+select only a >=5% complete-step improvement over the 12.479-second baseline.

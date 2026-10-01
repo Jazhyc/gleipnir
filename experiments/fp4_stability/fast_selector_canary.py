@@ -15,7 +15,10 @@ from fouroversix.utils import MatmulBackend, QuantizeBackend
 
 from experiments.fp4_stability.packing_kernel_canary import measure
 from gleipnir.fouroversix_training import FOUROVERSIX_VERSION
-from gleipnir.fp4_fast_selector import quantize_normalized_fp16_selector
+from gleipnir.fp4_fast_selector import (
+    FP16_SELECTOR_TIE_RELATIVE_BAND,
+    quantize_normalized_fp16_selector,
+)
 from gleipnir.fp4_row_kernels import normalize_rows, rescale_rows
 
 
@@ -40,6 +43,7 @@ def main() -> None:
         "status": "running",
         "gpu": torch.cuda.get_device_name(),
         "fouroversix": FOUROVERSIX_VERSION,
+        "strict_tie_guard_relative_band": FP16_SELECTOR_TIE_RELATIVE_BAND,
         "selector": "fp16_candidate_product_fp32_scaled_target_and_mse",
         "upstream_arithmetic_reference": "NVIDIA/TransformerEngine PR3068",
         "upstream_merge_commit": "b972fa899eddf69fa7812736d24e479e23a83d3d",

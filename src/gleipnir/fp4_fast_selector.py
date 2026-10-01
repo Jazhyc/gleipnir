@@ -16,10 +16,15 @@ import triton
 import triton.language as tl
 from fouroversix.kernels.triton.fp4 import convert_to_e2m1x2_and_quantized_fp16
 from fouroversix.kernels.triton.fp8 import convert_e4m3_to_high_precision
-from fouroversix.kernels.triton.quantize import prepare_inputs_for_block_scaling
+from fouroversix.kernels.triton.quantize import (
+    nvfp4_fouroversix_quantization_kernel,
+    prepare_inputs_for_block_scaling,
+)
 from fouroversix.quantize.quantized_tensor import QuantizedTensor
 from fouroversix.utils import DataType, ScaleRule
 from triton.tools.tensor_descriptor import TensorDescriptor
+
+FP16_SELECTOR_TIE_RELATIVE_BAND = 1e-4
 
 
 @triton.jit
@@ -54,7 +59,14 @@ def _candidate(X, AMAX, EXPANSION: tl.constexpr, MAJOR: tl.constexpr):
 
 
 @triton.jit
-def _pack_fast_tiles(X_DESC, V_DESC, SF_DESC, AMAX, MAJOR: tl.constexpr):
+def _pack_fast_tiles(
+    X_DESC,
+    V_DESC,
+    SF_DESC,
+    AMAX,
+    MAJOR: tl.constexpr,
+    TIE_BAND: tl.constexpr,
+):
     row_block, column_block = tl.program_id(0), tl.program_id(1)
     output_scales = tl.zeros((8, 16, 4), tl.uint8)
     tile_indices = tl.arange(0, 8)[:, None, None]
@@ -72,6 +84,24 @@ def _pack_fast_tiles(X_DESC, V_DESC, SF_DESC, AMAX, MAJOR: tl.constexpr):
             pick4[:, :, None], p4.reshape(16, 4, 8), p6.reshape(16, 4, 8)
         ).reshape(16, 32)
         block_scales = tl.where(pick4, s4, s6)
+        error_sum = err4 + err6
+        ambiguous = (error_sum > 0) & (tl.abs(err4 - err6) <= TIE_BAND * error_sum)
+        # Exact strict comparisons on ambiguous tiles avoid changing near-tied
+        # choices. All-zero groups already choose six on both paths.
+        if tl.sum(tl.sum(ambiguous.to(tl.int32), axis=1), axis=0) > 0:
+            packed, block_scales = nvfp4_fouroversix_quantization_kernel(
+                x,
+                AMAX,
+                BLOCK_SIZE_M=16,
+                BLOCK_SIZE_N=64,
+                ROUND_STYLE="nearest",
+                SCALE_TYPE="nv",
+                SCALE_GROUP_SIZE=16,
+                SCALE_RULE="mse",
+                BLOCK_SCALE_2D=False,
+                RBITS=-1,
+                MAJOR_COMPUTE_CAPABILITY=MAJOR,
+            )
         V_DESC.store([row_start, column_block * 32], packed)
         output_scales = tl.where(
             tile_indices == tile, block_scales[None, :, :], output_scales
@@ -115,8 +145,9 @@ def quantize_normalized_fp16_selector(
         TensorDescriptor.from_tensor(scales, [512]),
         amax,
         major,
+        FP16_SELECTOR_TIE_RELATIVE_BAND,
         num_warps=4,
-        enable_fp_fusion=False,
+        enable_fp_fusion=True,
     )
     return QuantizedTensor(
         values,
