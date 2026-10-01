@@ -100,6 +100,15 @@ Native quantization and per-token scaling remain unfused in this prototype.
 bash experiments/fp4_stability/launch.sh experiments/fp4_stability/row_aot_timing.yaml
 ```
 
+Completed: the three measured pass means are 15.541/15.897/15.600 seconds per
+step, with zero new Dynamo graphs in each. All thirty measured steps average
+15.679 s (median 15.440 s), delivering 8,382.6 actual tokens/s on the frozen
+cohort. The reused-cache warm-up pass takes 177.174 s of step work. Matching
+initialization/workload and source hashes pass the collected analysis; final
+adapter hashes differ across replays, so bitwise trajectory identity is not
+claimed. See the [finding](../../docs/findings/fp4_training_stability.md#warmed-fp4-timing-benchmark)
+for scope, memory, provenance and excluded setup costs.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16

@@ -367,3 +367,58 @@ For another FP4 experiment, retain native CUTLASS/Triton, MSE 4/6 weight scaling
 initial PEFT adapter plus its expected full master hash for every precision
 comparison. Preserve original failed Inductor recipes for reproduction; the
 user-selected default NF4/Inductor recipe is not changed by this finding.
+
+## Warmed FP4 timing benchmark
+
+The user requested a proper timing estimate, then restricted this benchmark to
+FP4 only. `row_aot_timing.yaml` retains the native per-token W4A4 forward,
+decoded-weight BF16 backward, exact initial adapters, AOT backend, twelve
+checkpoints and adaptive batching. Native canaries and both global/cohort
+eager-AOT gates pass; each eager/compiled repeated loss matches exactly. The
+global-longest preflight includes an actual nonzero-LR update before timing.
+
+In one model process, warm all ten frozen logical batches once, then measure
+three complete replays. Each pass restores the same initial master hash and
+creates fresh AdamW state and a fresh ten-step scheduler. Every pass uses the
+same membership, ordering, token counts, padding, physical partitions and LR
+sequence, with one LR-zero step and nine nonzero-LR updates. This repeats
+1,314,331 actual tokens per pass; it does not sample thirty distinct batches.
+Final adapter hashes differ across replays, so matching initialization and work
+must not be described as bitwise deterministic training trajectories.
+
+| Measured replay | Mean seconds per step | New Dynamo graphs |
+| --- | ---: | ---: |
+| 1 | 15.541 | 0 |
+| 2 | 15.897 | 0 |
+| 3 | 15.600 | 0 |
+
+Across all thirty measured steps, mean time is **15.679 s**, median **15.440 s**,
+range **11.394–20.153 s**, and token-weighted throughput **8,382.6 actual
+tokens/s** (2.041 examples/s). The full measured step work totals 470.380 s.
+Batch lengths explain much of the range; same-batch means are retained in the
+report. Measured peak allocated memory is **135.196 GiB**, reserved
+**137.430 GiB**. All losses and adapter gradients are finite, aggregate gradients
+are nonzero, adapters change after every replay, and native forward/decoded-BF16
+backward calls are exercised with zero FP4 backward calls.
+
+The separate warm-up pass takes 177.174 s of step work, including first steps
+35.357/17.505 s and eight new graphs. Total graphs remain 33 throughout all
+measured passes. Existing disk caches were preserved, so this is process warm-up
+with reused caches, not a pristine-cache compile-time benchmark. It supersedes
+the earlier steps-3-to-10 estimate of 18.2 s for estimating warmed work on this
+cohort. Do not infer a pure compile-time difference from total pass times.
+
+CUDA synchronization brackets forward, backward, finite-gradient checks,
+clipping, AdamW and scheduling. Report I/O, model loading, numerical gates,
+preflight, state restoration, probes and export are excluded. Fresh optimizer
+allocation is included once per ten-step measured pass. These are instrumented
+training-step timings for the stable AOT prototype, not end-to-end campaign or
+epoch ETAs, an Inductor timing, or evidence of a speedup over another precision.
+
+`results/fp4_row_aot_timing/analysis.json` verifies matching workload/initialization,
+all numerical gates and the six executable/config hashes against commit
+`44e8b2d`. The launch receipt records its parent `9e84c94` plus those exact source
+hashes because the scoped feature commit followed successful startup. Reports,
+logs and FP32 checkpoints remain on persistent storage and are collected locally.
+Twenty-three focused CPU tests, Ruff and diff checks pass. The benchmark has
+completed; the B200 is running idle with no further training queued.
