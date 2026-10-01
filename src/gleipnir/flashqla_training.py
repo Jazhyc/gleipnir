@@ -86,7 +86,8 @@ def tensor_comparison(actual, reference) -> dict[str, float | bool]:
     """Measure relative L2 without hiding nonfinite tensors or zero references."""
     import torch
 
-    a, r = actual.float(), reference.to(actual.device).float()
+    a = actual.detach().float()
+    r = reference.detach().to(actual.device).float()
     finite = bool(torch.isfinite(a).all() & torch.isfinite(r).all())
     if not finite:
         return dict(
