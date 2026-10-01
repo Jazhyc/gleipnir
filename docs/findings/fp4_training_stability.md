@@ -639,3 +639,47 @@ remote receipt: cohort `966e98108e69768e8ff387aa867c9f306212bdd3d976f0a4258a3073
 global `941e242fe4d306a581aad828862cf898440981c16b63b1c622de7e627c86aa44`.
 Thirty-two focused CPU tests, Ruff and diff checks pass. The campaign is complete;
 the B200 is idle with no further run queued.
+
+## Shared gate/up activation packing
+
+The first sequential throughput candidate shares each MLP gate projection's
+normalized packed FP4 activations, block scales and FP32 row maxima with its up
+projection. Matching weak tensor identity and version prevents reuse for changed
+inputs; the up projection consumes the entry once. Original higher-precision
+LoRA inputs and decoded-BF16 base dX arithmetic remain unchanged. Native output
+and input-gradient comparisons are exact across three widths and both ordinary
+and non-reentrant checkpointed execution.
+
+`row_inductor_shared_timing.yaml`, source `22332c6`, passes both exact repeated
+eager/compiled model gates, longest-input backwards, the global optimizer update
+and all warmed replays. Global update: **70.830987 s**. The full cohort records
+**22,288 sharing hits**, zero misses and zero pending entries. All 96 native
+bases run; no FP4 backward is used.
+
+Thirty measured steps average **12.586694 s**, median **12.208393 s**, range
+**9.224992–16.922683 s**, compared with preferred **12.479019 s**. Pass means
+are 12.565226/12.707675/12.487181 s. The 0.863% aggregate regression does not
+pass the predeclared 5% improvement rule. This is not evidence of a useful
+complete-step speedup; retain the original preferred recipe and leave sharing
+opt-in. Peak allocated memory is unchanged at **138.638038 GiB**; peak reserved
+is 142.468750 GiB. Warm-up takes 147.493574 s with six new graphs; all thirty
+measured steps add zero graphs. Warm-up cache differences are excluded from the
+speed comparison.
+
+The collected standard-library audit verifies every source hash against
+`22332c6`, identical GPU/software, initialization, trainable names, source jobs,
+example order, physical partitions, token counts and LR sequence against the
+preferred baseline. All gradient/update gates pass. Final replay hashes differ,
+so bitwise trajectory parity and held-out quality are not claimed. Forty focused
+CPU tests pass; the subsequent selector preparation also passes 43 tests.
+
+Reports, logs and FP32 masters are collected locally under
+`results/fp4_row_inductor_shared_timing/` and
+`logs/runpod/fp4_row_inductor_shared_timing/`, and remain on the persistent volume.
+Local and remote checkpoint SHA-256 match:
+
+- Cohort: `fdb84724ad2fb0db094d2b5e292d3d79b6c37d0fef05cd1c9ba1abcda7f11980`.
+- Global: `be5a1b1d4f3f1545b2965f3fc1b78898dcdb3172852919533d63d5e779383c81`.
+
+The next independent candidate uses the optimized FP16 activation selector,
+starting from the preferred recipe without activation sharing.
