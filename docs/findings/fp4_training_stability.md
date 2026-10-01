@@ -823,3 +823,26 @@ on persistent storage. Local/remote checkpoint SHA-256 match:
 
 - Cohort: `b554f9c5ac158f9ca4cbb3e4ed61e8fb5cbc07729339af9a9585b4bd0dedb40e`.
 - Global: `09a1f42c5ba13feaf2cf35e6cb42dc7730c7e87d342ba52d52e35b7c7e5dd8d5`.
+
+## Wider BF16 attention compilation rejected
+
+`row_inductor_attention_diagnostic.yaml` at `71cbf50` restores
+`full_attention_and_linear_shell` compilation, retaining eager RMSNorm/MLP SiLU,
+BF16 precision-cast preservation, strict FP4 packing and the preferred
+eager-native bases. Fused-row and native kernel preflights pass.
+
+The forward-only model gate fails: repeated eager loss is **1.284890771**, while
+both compiled calls produce **1.237992048**, a **-3.650%** change outside the
+unchanged `0.01 + 0.01 * abs(eager)` tolerance. Prefixes 0/1/4/8 retain the eager
+loss; prefixes 16/32 produce 1.237992048 and prefix 24 produces 1.294600964.
+The nonmonotonic prefix pattern does not identify the responsible operation.
+Do not infer that BF16 attention arithmetic is invariant under this compilation
+policy merely because its storage/compute dtype remains BF16.
+
+The initial FP32 adapter hash is unchanged, with zero optimizer updates. This
+is a completed diagnostic with a rejected numerical gate, not a passing training
+campaign. The conditional full timing configuration is not launched. Retain
+`decoder_shells_without_token_mixers` for the independent memory-policy test.
+Collected `analysis.json` verifies all seventeen source/config hashes against
+`71cbf50`; reports and logs persist under
+`results/fp4_row_inductor_attention_diagnostic/` and its Runpod log directory.
