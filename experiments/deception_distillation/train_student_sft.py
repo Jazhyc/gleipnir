@@ -2882,6 +2882,13 @@ def main(cfg: DictConfig) -> None:
     if eva_rows < 1:
         raise ValueError("student.lora.eva_rows must be positive")
     quantization_metadata: dict[str, Any] = {"enabled": quantization_enabled}
+    mlp_precision = str(
+        OmegaConf.select(cfg, "student.quantization.mlp_precision", default="nf4")
+    )
+    if mlp_precision not in {"nf4", "bf16", "fouroversix"}:
+        raise ValueError(f"unknown MLP precision: {mlp_precision}")
+    if mlp_precision != "nf4" and not quantization_enabled:
+        raise ValueError("selective MLP precision requires the QLoRA loading path")
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
     attention_implementation = OmegaConf.select(cfg, "student.attn_implementation")
     attention_backend_version = OmegaConf.select(
@@ -2901,6 +2908,8 @@ def main(cfg: DictConfig) -> None:
         else None
     )
     if quantization_enabled:
+        from gleipnir.fouroversix_training import mlp_loading_skip_patterns
+
         if model_loader != "causal_lm" or finetuning_mode != "lora":
             raise ValueError("4-bit QLoRA requires causal_lm LoRA training")
         if not torch.cuda.is_available():
@@ -2939,6 +2948,7 @@ def main(cfg: DictConfig) -> None:
                 bnb_4bit_quant_type=quantization_type,
                 bnb_4bit_use_double_quant=use_double_quant,
                 bnb_4bit_compute_dtype=torch.bfloat16,
+                llm_int8_skip_modules=mlp_loading_skip_patterns(mlp_precision),
             ),
             device_map={"": torch.cuda.current_device()},
         )
@@ -3064,6 +3074,12 @@ def main(cfg: DictConfig) -> None:
                 init_lora_weights="eva",
                 eva_config=EvaConfig(rho=eva_rho, tau=eva_tau),
             )
+        adapter_init_seed = OmegaConf.select(
+            cfg, "student.training.adapter_init_seed", default=None
+        )
+        if adapter_init_seed is not None:
+            torch.manual_seed(int(adapter_init_seed))
+            torch.cuda.manual_seed_all(int(adapter_init_seed))
         model = get_peft_model(
             model,
             LoraConfig(**lora_config_kwargs),
@@ -3124,6 +3140,23 @@ def main(cfg: DictConfig) -> None:
             init_adapter.as_posix(),
             is_trainable=True,
         )
+    mlp_precision_metadata = None
+    if (
+        OmegaConf.select(cfg, "student.quantization.mlp_precision", default=None)
+        is not None
+    ):
+        from gleipnir.fouroversix_training import install_mlp_precision
+
+        mlp_precision_metadata = install_mlp_precision(model, mlp_precision)
+        print(f"mlp_precision={mlp_precision_metadata}", flush=True)
+    eager_mlp_interface = bool(
+        OmegaConf.select(cfg, "student.training.eager_mlp_interface", default=False)
+    )
+    if eager_mlp_interface:
+        from gleipnir.fouroversix_training import install_eager_mlp_interfaces
+
+        eager_mlp_modules = install_eager_mlp_interfaces(model)
+        print(f"eager_mlp_modules={eager_mlp_modules}", flush=True)
     kernel_modules = gated_delta_kernel_modules(model)
     if require_fla and (
         not kernel_modules
@@ -3405,6 +3438,58 @@ def main(cfg: DictConfig) -> None:
             gradient_checkpointing_policy,
             checkpointing_layer_indices,
         )
+    precision_screen_cfg = OmegaConf.select(
+        cfg, "student.training.precision_screen", default=None
+    )
+    if precision_screen_cfg is not None and bool(precision_screen_cfg.enabled):
+        from torch._functorch import config as functorch_config
+
+        from gleipnir.precision_training_screen import run_precision_training_screen
+
+        if not adaptive_enabled or world_size != 1 or optimizer_name != "adamw":
+            raise ValueError("precision screen requires single-device adaptive AdamW")
+
+        def precision_loss_forward(batch):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+
+        def precision_optimizer_factory():
+            trainer.optimizer = None
+            return trainer.create_optimizer()
+
+        run_precision_training_screen(
+            model=model,
+            features=[dict(dataset[i]) for i in range(len(dataset))],
+            collator=collator,
+            loss_forward=precision_loss_forward,
+            optimizer_factory=precision_optimizer_factory,
+            scheduler_factory=lambda optimizer, steps: trainer.create_scheduler(
+                steps, optimizer
+            ),
+            install_compile=lambda: apply_selective_torch_compile_policy(
+                model,
+                selective_torch_compile_policy,
+                backend=selective_torch_compile_backend,
+                mode=selective_torch_compile_mode,
+                dynamic=selective_torch_compile_dynamic,
+            ),
+            output=Path(str(precision_screen_cfg.output_dir)),
+            seed=int(cfg.seed),
+            policy=adaptive_policy,
+            steps=int(precision_screen_cfg.steps),
+            max_grad_norm=float(args.max_grad_norm),
+            metadata={
+                "mlp": mlp_precision_metadata,
+                "quantization": quantization_metadata,
+                "checkpointed_layer_indices": checkpointed_layer_indices,
+                "gated_delta_kernel_modules": kernel_modules,
+                "causal_conv1d_kernel_modules": causal_conv1d_modules,
+                "compile_policy": selective_torch_compile_policy,
+                "eager_mlp_interface": eager_mlp_interface,
+                "backward_pass_autocast": (functorch_config.backward_pass_autocast),
+            },
+        )
+        return
     execution_audit_cfg = OmegaConf.select(
         cfg, "student.training.execution_audit", default=None
     )
@@ -3885,6 +3970,7 @@ def main(cfg: DictConfig) -> None:
                         "mil_max_instances": mil_max_instances,
                     },
                     "quantization": quantization_metadata,
+                    "mlp_precision": mlp_precision_metadata,
                     "flash_linear_attention": {
                         "available": fla_available,
                         "required": require_fla,

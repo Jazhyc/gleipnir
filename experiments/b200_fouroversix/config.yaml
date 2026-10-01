@@ -1,0 +1,12 @@
+steps: 10
+seed: 0
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+preflight_jobs: results/b200_adaptive_microbatching/preflight_jobs.jsonl
+condition_source: singleton
+output: results/b200_fouroversix
+logs: logs/runpod/b200_fouroversix
+kernel_target: .cache/kernels/fouroversix-1.0.5
+conditions: [nf4, bf16, fouroversix]
+max_padded_tokens: 16384
+max_micro_batch_size: 8
+minimum_relative_speed_gain: 0.05

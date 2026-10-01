@@ -1,0 +1,14 @@
+# Preserve the failed compiled-MLP campaign; isolate the complete MLP boundary.
+steps: 10
+seed: 0
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+preflight_jobs: results/b200_adaptive_microbatching/preflight_jobs.jsonl
+condition_source: singleton
+output: results/b200_fouroversix_eager_mlp
+logs: logs/runpod/b200_fouroversix_eager_mlp
+kernel_target: .cache/kernels/fouroversix-1.0.5
+conditions: [nf4, nf4-eager-mlp, bf16, fouroversix]
+eager_mlp_interfaces: [native-global-preflight, nf4-eager-mlp, bf16, fouroversix]
+max_padded_tokens: 16384
+max_micro_batch_size: 8
+minimum_relative_speed_gain: 0.05
