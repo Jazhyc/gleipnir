@@ -11,6 +11,7 @@ from typing import Any
 
 FLASHQLA_REVISION = "da06429d54b0f577de0a638f451ac8f0b395e0ac"
 FLASHQLA_TARGET = Path(".cache/kernels/flashqla-da06429")
+BOUNDARY_POLICIES = {"bf16", "bf16_fp32_gates_norm", "fp16_fp32_gates_norm"}
 
 
 def make_flashqla_kernel(function: Callable, *, auto_cp: bool) -> Callable:
@@ -50,23 +51,57 @@ def make_flashqla_kernel(function: Callable, *, auto_cp: bool) -> Callable:
 
 def make_bf16_boundary(function: Callable) -> Callable:
     """Cast GDN operands explicitly and restore output dtype; retain FP32 gates."""
+    return make_precision_boundary(function, policy="bf16")
+
+
+def _normalize_qk_fp32(x):
+    from fla.modules.l2norm import l2norm
+
+    return l2norm(x.float())
+
+
+def make_precision_boundary(function: Callable, *, policy: str) -> Callable:
+    """Preserve optional FP32 gates/normalization around a half-precision kernel."""
     import torch
 
+    if policy not in BOUNDARY_POLICIES:
+        raise ValueError("unknown GDN boundary policy")
     input_dtypes = []
+    preserve_fp32 = policy != "bf16"
+    dtype = torch.float16 if policy.startswith("fp16") else torch.bfloat16
 
-    def kernel(q, k, v, g, beta, *args, **kwargs):
+    def kernel(
+        q,
+        k,
+        v,
+        g,
+        beta,
+        scale=None,
+        initial_state=None,
+        output_final_state=False,
+        use_qk_l2norm_in_kernel=False,
+        cu_seqlens=None,
+        state_v_first=False,
+    ):
         signature = [str(x.dtype) for x in (q, k, v, g, beta)]
         if signature not in input_dtypes:
             input_dtypes.append(signature)
         output_dtype = q.dtype
+        if preserve_fp32 and use_qk_l2norm_in_kernel:
+            q, k = _normalize_qk_fp32(q), _normalize_qk_fp32(k)
+            use_qk_l2norm_in_kernel = False
         output, state = function(
-            q.to(torch.bfloat16),
-            k.to(torch.bfloat16),
-            v.to(torch.bfloat16),
+            q.to(dtype),
+            k.to(dtype),
+            v.to(dtype),
             g.float(),
-            beta.to(torch.bfloat16),
-            *args,
-            **kwargs,
+            beta.float() if preserve_fp32 else beta.to(dtype),
+            scale=scale,
+            initial_state=initial_state,
+            output_final_state=output_final_state,
+            use_qk_l2norm_in_kernel=use_qk_l2norm_in_kernel,
+            cu_seqlens=cu_seqlens,
+            state_v_first=state_v_first,
         )
         return output.to(output_dtype), state
 
@@ -142,6 +177,7 @@ def install_with_model_canary(
     auto_cp: bool,
     backend: str = "flashqla",
     bf16_boundary: bool = False,
+    boundary_policy: str = "bf16",
 ) -> dict[str, Any]:
     """Compare native-model losses and unclipped master gradients before updates."""
     import torch
@@ -162,7 +198,7 @@ def install_with_model_canary(
     if backend == "fla_bf16":
         kernel = originals[0][1]
     if bf16_boundary:
-        kernel = make_bf16_boundary(kernel)
+        kernel = make_precision_boundary(kernel, policy=boundary_policy)
     named = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     training = model.training
     model.eval()
@@ -205,6 +241,7 @@ def install_with_model_canary(
         receipt.update(
             backend=backend,
             bf16_boundary=bf16_boundary,
+            boundary_policy=boundary_policy,
             original_input_dtypes=getattr(kernel, "input_dtypes", None),
             auto_cp=auto_cp,
             replaced_layers=len(modules),
@@ -219,7 +256,9 @@ def install_with_model_canary(
             # Keep the original pass/fail result. These bounded failure probes
             # never update adapters and cannot authorize training past the gate.
             try:
-                cast_fla = make_bf16_boundary(originals[0][1])
+                cast_fla = make_precision_boundary(
+                    originals[0][1], policy=boundary_policy
+                )
                 model.zero_grad(set_to_none=True)
                 for module in modules:
                     module.chunk_gated_delta_rule = cast_fla

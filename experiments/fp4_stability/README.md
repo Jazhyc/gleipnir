@@ -529,3 +529,22 @@ gate, nonfinite value, OOM, or new measured compiler graph. Require >=5% lower
 mean whole-step time against the fresh NF4/FLA control to select a useful gain.
 No held-out quality selection is performed; these training probes cannot
 establish long-run quality parity. Preserve failed receipts and original FLA.
+
+The initial NF4 diagnostic fails before updates: FlashQLA gradient relative L2
+is 0.667101 and FLA with identical BF16 casts is 0.489265. Both original
+and candidate gates receive FP32 q/k/v/g/beta. NF4 reduces amplification
+relative to the prior FP4 result but does not make this boundary acceptable.
+
+The next bounded policies preserve beta and g in FP32 and apply the pinned
+FLA FP32 Q/K L2 normalization before converting kernel operands. Disable
+in-kernel normalization to avoid normalizing twice. Test `bf16_precise` first;
+if it fails, test `fp16_precise` as the more precise mantissa alternative
+supported by FlashQLA. The latter keeps NF4 base storage/BF16 projection
+compute and FP32 adapters, but its GDN q/k/v core uses FP16; label that
+explicitly in any result. FP16 range overflow must fail the finite-value gates.
+
+Each policy needs its own seven-shape isolated output/all-gradient canary
+and its own no-update model diagnostic, with unchanged thresholds and
+matched FLA cast controls on failure. Only a passing policy may start its
+global-longest update and warmed timing configuration. Timing scope and
+fresh original-FLA baseline remain as declared above. No gate relaxation.

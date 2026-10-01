@@ -109,6 +109,7 @@ def run_precision_training_screen(
     gated_delta_backend: str = "fla",
     flashqla_auto_cp: bool = False,
     gated_delta_bf16_boundary: bool = False,
+    gated_delta_boundary_policy: str = "bf16",
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -268,6 +269,7 @@ def run_precision_training_screen(
                 auto_cp=flashqla_auto_cp,
                 backend=gated_delta_backend,
                 bf16_boundary=gated_delta_bf16_boundary,
+                boundary_policy=gated_delta_boundary_policy,
             )
             publish()
             if not report["attention_backend_canary"]["passed"]:

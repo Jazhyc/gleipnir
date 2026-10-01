@@ -90,6 +90,73 @@ def test_auto_partitioning_requires_flashqla():
         validate_config(config)
 
 
+@pytest.mark.parametrize(
+    "policy,dtype",
+    [
+        ("bf16_fp32_gates_norm", torch.bfloat16),
+        ("fp16_fp32_gates_norm", torch.float16),
+    ],
+)
+def test_precise_boundary_preserves_gates_and_normalizes_before_cast(
+    monkeypatch, policy, dtype
+):
+    import gleipnir.flashqla_training as helper
+
+    normalizer_inputs, calls = [], []
+
+    def normalize(x):
+        normalizer_inputs.append(x.dtype)
+        return x / (x.square().sum(-1, keepdim=True) + 1e-6).sqrt()
+
+    monkeypatch.setattr(helper, "_normalize_qk_fp32", normalize)
+
+    def kernel(q, k, v, g, beta, **kwargs):
+        calls.append(([x.dtype for x in (q, k, v, g, beta)], kwargs))
+        assert not kwargs["use_qk_l2norm_in_kernel"]
+        assert torch.allclose(q.float().square().sum(-1), torch.ones(2), atol=0.01)
+        return q + k + v + beta[..., None] + g[..., None], None
+
+    q, k, v = [
+        torch.tensor([[3.0, 4.0], [4.0, 3.0]], requires_grad=True) for _ in range(3)
+    ]
+    g, beta = [
+        torch.tensor([0.1234567, 0.8765432], requires_grad=True) for _ in range(2)
+    ]
+    output, _ = helper.make_precision_boundary(kernel, policy=policy)(
+        q, k, v, g, beta, use_qk_l2norm_in_kernel=True
+    )
+    assert normalizer_inputs == [torch.float32, torch.float32]
+    assert calls[0][0] == [dtype] * 3 + [torch.float32] * 2
+    assert output.dtype == torch.float32
+    output.sum().backward()
+    assert all(
+        x.grad is not None and torch.isfinite(x.grad).all() for x in [q, k, v, g, beta]
+    )
+    assert torch.equal(beta.grad, torch.full_like(beta, 2))
+
+
+def test_boundary_policy_rejects_unknown_or_inactive_policy():
+    from pathlib import Path
+
+    from gleipnir.flashqla_training import make_precision_boundary
+
+    with pytest.raises(ValueError, match="unknown GDN"):
+        make_precision_boundary(lambda: None, policy="fp4")
+    config = yaml.safe_load(
+        (Path(__file__).parent / "nf4_flashqla_timing.yaml").read_text()
+    )
+    with pytest.raises(ValueError, match="inactive GDN"):
+        validate_config({**config, "gated_delta_boundary_policy": "fp4"})
+    with pytest.raises(ValueError, match="inactive GDN"):
+        validate_config(
+            {
+                **config,
+                "gated_delta_boundary_policy": "fp16_fp32_gates_norm",
+                "gated_delta_bf16_boundary": False,
+            }
+        )
+
+
 @pytest.mark.parametrize("factor,passed", [(1.001, True), (2.0, False)])
 @pytest.mark.parametrize("bf16_boundary", [False, True])
 def test_model_gate_preserves_or_restores_kernel(

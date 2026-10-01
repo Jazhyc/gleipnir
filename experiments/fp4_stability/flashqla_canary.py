@@ -13,9 +13,10 @@ import torch.nn.functional as functional
 from fla.ops.gated_delta_rule import chunk_gated_delta_rule as fla_kernel
 
 from gleipnir.flashqla_training import (
+    BOUNDARY_POLICIES,
     load_flashqla,
-    make_bf16_boundary,
     make_flashqla_kernel,
+    make_precision_boundary,
     tensor_comparison,
 )
 from gleipnir.monitoring_systems_screen import sha256_file
@@ -28,18 +29,28 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--auto-cp", action="store_true")
     parser.add_argument("--bf16-boundary", action="store_true")
+    parser.add_argument(
+        "--boundary-policy", choices=sorted(BOUNDARY_POLICIES), default="bf16"
+    )
     args = parser.parse_args()
+    if args.boundary_policy != "bf16" and not args.bf16_boundary:
+        parser.error("boundary policy requires --bf16-boundary")
     args.output.parent.mkdir(parents=True, exist_ok=True)
     function, receipt = load_flashqla()
     candidate = make_flashqla_kernel(function, auto_cp=args.auto_cp)
     if args.bf16_boundary:
-        candidate = make_bf16_boundary(candidate)
-    fla_bf16 = make_bf16_boundary(fla_kernel) if args.bf16_boundary else None
+        candidate = make_precision_boundary(candidate, policy=args.boundary_policy)
+    fla_bf16 = (
+        make_precision_boundary(fla_kernel, policy=args.boundary_policy)
+        if args.bf16_boundary
+        else None
+    )
     report = dict(
         status="running",
         backend=receipt,
         auto_cp=args.auto_cp,
         bf16_boundary=args.bf16_boundary,
+        boundary_policy=args.boundary_policy,
         input_dtype="float32" if args.bf16_boundary else "bfloat16",
         gpu=torch.cuda.get_device_name(),
         torch=torch.__version__,

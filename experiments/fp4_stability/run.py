@@ -36,6 +36,13 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    from gleipnir.flashqla_training import BOUNDARY_POLICIES
+
+    policy = config.get("gated_delta_boundary_policy", "bf16")
+    if policy not in BOUNDARY_POLICIES or (
+        policy != "bf16" and not config.get("gated_delta_bf16_boundary", False)
+    ):
+        raise ValueError("unknown or inactive GDN boundary policy")
     if config.get("gated_delta_backend", "fla") not in {"fla", "flashqla", "fla_bf16"}:
         raise ValueError("unknown gated-delta backend")
     if (
@@ -174,6 +181,10 @@ def main() -> None:
             "bf16_boundary", False
         ):
             raise ValueError("FlashQLA canary BF16 boundary mismatch")
+        if config.get("gated_delta_boundary_policy", "bf16") != canary.get(
+            "boundary_policy", "bf16"
+        ):
+            raise ValueError("FlashQLA canary boundary policy mismatch")
     output = ROOT / config["output"]
     output.mkdir(parents=True, exist_ok=False)
     logs = ROOT / config["logs"]
@@ -439,6 +450,8 @@ def main() -> None:
                 f"{str(config.get('flashqla_auto_cp', False)).lower()}",
                 "++student.training.precision_screen.gated_delta_bf16_boundary="
                 f"{str(config.get('gated_delta_bf16_boundary', False)).lower()}",
+                "++student.training.precision_screen.gated_delta_boundary_policy="
+                f"{config.get('gated_delta_boundary_policy', 'bf16')}",
             ]
             if config.get("compile_policy"):
                 command.append(

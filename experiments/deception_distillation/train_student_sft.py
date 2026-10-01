@@ -3563,6 +3563,9 @@ def main(cfg: DictConfig) -> None:
             gated_delta_bf16_boundary=bool(
                 precision_screen_cfg.get("gated_delta_bf16_boundary", False)
             ),
+            gated_delta_boundary_policy=str(
+                precision_screen_cfg.get("gated_delta_boundary_policy", "bf16")
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,
