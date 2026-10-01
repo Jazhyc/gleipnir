@@ -1,0 +1,16 @@
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+preflight_jobs: results/b200_adaptive_microbatching/preflight_jobs.jsonl
+condition_source: singleton
+output: results/fp4_row_precision_cast_diagnostic
+logs: logs/runpod/fp4_row_precision_cast_diagnostic
+kernel_target: .cache/kernels/fouroversix-1.0.5
+compiler_cache: .cache/training/fp4_forward_diagnostic/gpu-0
+compiler_cache_state: reused_with_precision_casts_enabled
+conditions: [fouroversix]
+diagnostics_only: true
+diagnostic_selection: matched_320
+steps: 10
+backward_mode: dequantized_bf16
+row_scaled_activations: true
+emulate_precision_casts: true
+compile_backend: inductor

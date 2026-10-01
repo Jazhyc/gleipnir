@@ -1,5 +1,6 @@
 """Check the conservative backward contract independently of CUDA packing."""
 
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -32,6 +33,11 @@ def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
     training = yaml.safe_load((root / "row_dequantized_training.yaml").read_text())
     validate_config(training)
     assert not training["diagnostics_only"] and training["steps"] == 10
+    matched_diagnostic = yaml.safe_load(
+        (root / "row_precision_cast_diagnostic.yaml").read_text()
+    )
+    validate_config(matched_diagnostic)
+    assert matched_diagnostic["diagnostics_only"]
 
 
 def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
@@ -78,6 +84,11 @@ def test_ten_update_campaign_requires_global_preflight_before_each_condition():
     assert campaign_stages(
         {"steps": 1, "conditions": ["fouroversix"]}, longest, longest
     ) == [dict(name="fouroversix", precision="fouroversix", source=longest, steps=1)]
+    assert campaign_stages(
+        {"steps": 10, "conditions": ["fouroversix"], "diagnostics_only": True},
+        source,
+        longest,
+    ) == [dict(name="fouroversix", precision="fouroversix", source=source, steps=10)]
 
 
 def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():
@@ -95,7 +106,10 @@ def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():
     assert torch.equal(scales, torch.tensor([[1.0], [4.0]]))
 
 
-def test_diagnostic_records_failed_gate_without_updates(monkeypatch, tmp_path: Path):
+@pytest.mark.parametrize("diagnostics_only", [False, True])
+def test_failed_gate_never_updates_adapters(
+    monkeypatch, tmp_path: Path, diagnostics_only
+):
     from gleipnir import precision_training_screen as screen
     from gleipnir.adaptive_microbatching import MicrobatchPolicy
 
@@ -129,7 +143,7 @@ def test_diagnostic_records_failed_gate_without_updates(monkeypatch, tmp_path: P
     def forbidden(*args):
         pytest.fail("diagnostics must not create an optimizer or scheduler")
 
-    report = screen.run_precision_training_screen(
+    arguments = dict(
         model=model,
         features=[{"direct_input_ids": list(range(16))} for _ in range(32)],
         collator=lambda items: items,
@@ -143,12 +157,22 @@ def test_diagnostic_records_failed_gate_without_updates(monkeypatch, tmp_path: P
         steps=1,
         max_grad_norm=1.0,
         metadata={},
-        diagnostics_only=True,
+        diagnostics_only=diagnostics_only,
     )
-    assert report["status"] == "diagnosed"
+    if diagnostics_only:
+        report = screen.run_precision_training_screen(**arguments)
+        assert report["status"] == "diagnosed"
+        assert report["prefix_compile_losses"][0]["loss"] == 1.0
+        assert report["prefix_compile_losses"][1]["loss"] == 2.0
+        assert report["master_unchanged"]
+    else:
+        with pytest.raises(ValueError, match="compilation loss canary failed"):
+            screen.run_precision_training_screen(**arguments)
+        report = json.loads((tmp_path / "screen.json").read_text())
+        assert report["status"] == "failed"
+        assert all(layer.weight.item() == 1.0 for layer in model.layers)
+        assert all(layer.weight.grad is None for layer in model.layers)
     assert report["compile_canary"]["passed"] is False
     assert report["compile_canary"]["eager_repeat_loss"] == 1.0
     assert report["compile_canary"]["compiled_repeat_loss"] == 2.0
-    assert report["prefix_compile_losses"][0]["loss"] == 1.0
-    assert report["prefix_compile_losses"][1]["loss"] == 2.0
-    assert report["master_unchanged"] and report["steps"] == []
+    assert report["steps"] == []

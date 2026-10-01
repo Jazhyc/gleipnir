@@ -33,7 +33,11 @@ def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     if config["steps"] not in {1, 10}:
         raise ValueError("retain one preflight update or ten matched updates")
-    if config["diagnostics_only"] and config["steps"] != 1:
+    if (
+        config["diagnostics_only"]
+        and config["steps"] != 1
+        and config.get("diagnostic_selection") != "matched_320"
+    ):
         raise ValueError("forward diagnostics must use the global preflight selection")
     if not config["conditions"] or any(
         name not in {"nf4", "bf16", "fouroversix"} for name in config["conditions"]
@@ -49,7 +53,7 @@ def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[di
     """Require an actual global-longest update before every ten-update condition."""
     stages = []
     for precision in config["conditions"]:
-        if config["steps"] == 10:
+        if config["steps"] == 10 and not config.get("diagnostics_only", False):
             stages.append(
                 dict(
                     name=f"{precision}-global-preflight",

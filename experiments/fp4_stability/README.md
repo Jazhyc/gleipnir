@@ -53,6 +53,10 @@ a compiler hypothesis, not an established cause of the previous failure.
 Ten-update campaigns automatically run a separate one-update global-longest-32
 stage first for each precision condition, with zero warmup. Any failed stage
 stops the campaign before the next stage.
+`row_precision_cast_diagnostic.yaml` explicitly selects the matched 320 rows
+with diagnostics only. Its ten-batch selection size never authorizes optimizer
+updates or queues a global optimizer preflight. This checks input-dependent
+compiler consistency after the first matched-cohort gate failure.
 
 Initial implementation validation: 13 focused CPU tests passed using Torch
 2.11.0+cpu and other exact locked dependencies in isolated `/tmp` overlays;

@@ -94,3 +94,60 @@ and optimized NF4 MLPs. Each condition must first complete the separate global
 longest-32 backward and one nonzero-LR update. Ten matched updates on the frozen
 320-example training selection follow only when its preflight passes. The
 compiler's BF16 cast emulation remains disabled in this comparison.
+
+## Successful global-longest training preflight
+
+The native stage completed the global-longest backward preflight and one actual
+AdamW update with learning rate 5e-5. The 32 traces contain 922,511 tokens;
+the longest is 29,337 tokens. All physical batches are singletons, as required
+by the 16,384-token budget for oversized traces. All FP32 adapter gradients
+are present and finite. Gradient norm is 26.2123 in the preflight and 26.2148
+before the actual norm-one clipped update. Master hash changes from the matched
+initial hash to
+`b74da89836f96b9eaa3cfc79719bf16440fc13ea60759dcb155ef3393faa46f4`.
+
+The warmed actual update takes 74.5843 seconds. Peak PyTorch allocation is
+143,678,906,880 bytes (133.8 GiB), with 144,663,642,112 reserved bytes.
+Driver memory snapshots were higher, around 150 GiB during compilation;
+allocator peaks do not account for every driver allocation. Cold backward
+compilation precedes this timing and is substantial. Do not compare this update
+with the old ten-step timing on a different cohort.
+
+Counts are 96 native bases, 10,368 FP4 forward calls, 6,144 decoded-BF16
+input-gradient calls and zero FP4 backward calls. Dynamo reports 26 unique
+graphs and no unimplemented frames; recorded graph breaks are the intentional
+native-base and linear-attention boundaries. The native training-probe mean
+improves from 1.400628 to 0.950714; the original-master common-probe mean improves
+from 1.371738 to 0.991351. This establishes a finite adapter update and effect
+on training probes, not held-out generalization or convergence.
+
+Evidence: `results/fp4_row_dequantized_training/fouroversix-global-preflight/`.
+The campaign's executable source hashes match commit
+`94d82eb59ee9678cc37f8d8063329e6625f05f87` via its collected commit receipt.
+
+## Matched-cohort gate still fails
+
+The next stage reloads the same original FP32 adapters on the frozen 320-example
+selection. Its eager/eager-repeat loss is **1.2848907709121704** and
+compiled/compiled-repeat loss is **1.1839299201965332**, a 7.86% difference.
+The gate fails before its backward preflight or optimizer updates. The runner
+stops the entire campaign; BF16 and NF4 optimizer controls do not run. This
+negative result shows that the global-pair gate pass was insufficient evidence
+of general compiler consistency. Preserve both reports; do not relax the gate.
+
+The compiler follow-up first keeps original tensor-scaled FP4 arithmetic and
+enables the pinned PyTorch option `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`.
+The [pinned source](https://github.com/pytorch/pytorch/blob/v2.11.0/torch/_inductor/config.py)
+documents preservation of intermediate lower-precision rounding boundaries.
+An explicit matched-320 forward-only diagnostic then tests this option with
+per-token scaling and decoded backward. Its `steps: 10` sizes the frozen input
+selection; `diagnostics_only: true` prohibits all backward and optimizer work.
+
+With original tensor-scaled FP4 and cast preservation enabled, the original
+pair passes: eager/eager-repeat **1.352499008178711**, compiled/compiled-repeat
+**1.3524880409240723**. This controlled change removes the previously reproduced
+14.9% gap on that pair without changing its FP4 scaling. Mixed prefixes remain
+variable (0/1/4/8/16/24/32 losses
+1.352499/1.253806/1.505310/1.435058/1.274435/1.353217/1.352488), so this is not
+an operator-level equivalence result. No backward or optimizer update occurs.
+Evidence: `results/fp4_precision_cast_diagnostic/` and corresponding logs.
