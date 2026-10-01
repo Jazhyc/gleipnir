@@ -185,6 +185,113 @@ def test_ten_update_campaign_requires_global_preflight_before_each_condition():
     ) == [dict(name="fouroversix", precision="fouroversix", source=source, steps=10)]
 
 
+def test_timing_summary_weights_tokens_and_rejects_unmatched_replays():
+    from copy import deepcopy
+
+    from gleipnir.precision_training_screen import timing_summary
+
+    passes = [
+        {
+            "new_dynamo_graphs": 0,
+            "steps": [
+                {
+                    "seconds": duration,
+                    "actual_tokens": 100 * (i + 1),
+                    "dataset_indices": [i],
+                    "padded_tokens": 100 * (i + 1),
+                    "physical_sizes": [1],
+                    "learning_rate": 0.0 if i == 0 else 5e-5,
+                }
+                for i in range(10)
+            ],
+        }
+        for duration in [1.0, 2.0, 3.0]
+    ]
+    summary = timing_summary(passes)
+    assert summary["measured_steps"] == 30
+    assert summary["mean_step_seconds"] == summary["median_step_seconds"] == 2.0
+    assert summary["actual_tokens_per_second"] == 16500 / 60
+    assert summary["per_batch_mean_seconds"] == [2.0] * 10
+    bad = deepcopy(passes)
+    bad[1]["steps"][0]["learning_rate"] = 5e-5
+    with pytest.raises(ValueError, match="learning_rate"):
+        timing_summary(bad)
+    with pytest.raises(ValueError, match="complete ten-step"):
+        timing_summary([{**passes[0], "steps": passes[0]["steps"][:-1]}])
+
+
+def test_timing_replays_restore_adapters_optimizer_and_schedule(monkeypatch, tmp_path):
+    from gleipnir import precision_training_screen as screen
+    from gleipnir.adaptive_microbatching import MicrobatchPolicy
+
+    monkeypatch.setattr(torch.cuda, "get_device_name", lambda device: "cpu mock")
+    monkeypatch.setattr(
+        torch.cuda,
+        "get_device_properties",
+        lambda device: SimpleNamespace(total_memory=0),
+    )
+    for name in ["synchronize", "reset_peak_memory_stats", "manual_seed_all"]:
+        monkeypatch.setattr(torch.cuda, name, lambda *args: None)
+    for name in ["max_memory_allocated", "max_memory_reserved"]:
+        monkeypatch.setattr(torch.cuda, name, lambda *args: 0)
+    monkeypatch.setattr(screen.importlib.metadata, "version", lambda name: "mock")
+    model = torch.nn.Linear(1, 1, bias=False)
+    with torch.no_grad():
+        model.weight.fill_(1.0)
+    optimizers = []
+
+    def optimizer_factory():
+        optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
+        optimizers.append(optimizer)
+        return optimizer
+
+    report = screen.run_precision_training_screen(
+        model=model,
+        features=[{"direct_input_ids": [1, 2]} for _ in range(320)],
+        collator=lambda items: items,
+        loss_forward=lambda batch: model(torch.ones(1, 1)).square().mean(),
+        optimizer_factory=optimizer_factory,
+        scheduler_factory=lambda optimizer, steps: torch.optim.lr_scheduler.LambdaLR(
+            optimizer, lambda step: 0.0 if step == 0 else (10 - step) / 9
+        ),
+        install_compile=lambda: [],
+        output=tmp_path,
+        seed=0,
+        policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
+        steps=10,
+        max_grad_norm=1.0,
+        metadata={"mlp": {"precision": "bf16"}},
+        timing_repeats=3,
+    )
+    assert report["status"] == "complete"
+    assert len(optimizers) == 4
+    assert len({id(item.state) for item in optimizers}) == 4
+    assert report["timing_passes"][0]["kind"] == "warmup"
+    assert report["timing_summary"]["measured_steps"] == 30
+    assert len({p["final_master_sha256"] for p in report["timing_passes"]}) == 1
+    for replay in report["timing_passes"]:
+        assert replay["initial_master_sha256"] == report["initial_master_sha256"]
+        assert replay["steps"][0]["learning_rate"] == 0.0
+        assert replay["steps"][1]["learning_rate"] == 5e-5
+        assert [step["mean_loss"] for step in replay["steps"]] == [
+            step["mean_loss"] for step in report["timing_passes"][0]["steps"]
+        ]
+
+
+def test_timing_config_is_fp4_only_and_bounded():
+    config = yaml.safe_load((Path(__file__).parent / "row_aot_timing.yaml").read_text())
+    validate_config(config)
+    assert config["conditions"] == ["fouroversix"]
+    assert config["timing_repeats"] == 3
+    for overrides in [
+        {"timing_repeats": 100},
+        {"diagnostics_only": True},
+        {"steps": 1},
+    ]:
+        with pytest.raises(ValueError, match="timing benchmark|global preflight"):
+            validate_config({**config, **overrides})
+
+
 def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():
     inputs = torch.tensor(
         [[0.0, 0.0, 0.0, 0.0], [1.0, 2.0, -4.0, 0.0]], dtype=torch.bfloat16

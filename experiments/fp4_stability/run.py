@@ -51,6 +51,13 @@ def validate_config(config: dict) -> None:
         config.get("expected_initial_master_sha256")
     ):
         raise ValueError("initial adapter requires its expected master hash")
+    if config.get("timing_repeats", 0) not in {0, 3} or (
+        config.get("timing_repeats", 0)
+        and (config["steps"] != 10 or config["diagnostics_only"])
+    ):
+        raise ValueError(
+            "timing benchmark requires ten steps and three measured replays"
+        )
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -197,6 +204,11 @@ def main() -> None:
             ]
             if stage_steps == 1:
                 command.append("student.training.warmup_ratio=0.0")
+            elif config.get("timing_repeats", 0):
+                command.append(
+                    "++student.training.precision_screen.timing_repeats="
+                    f"{config['timing_repeats']}"
+                )
             if config.get("initial_adapter"):
                 command.extend(
                     [

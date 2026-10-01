@@ -71,6 +71,35 @@ training viability; Inductor parity, activation-memory savings, matched speedup
 and held-out quality remain unestablished. Full evidence and reproduction limits
 are in [the finding](../../docs/findings/fp4_training_stability.md).
 
+## FP4 timing replay
+
+`row_aot_timing.yaml` benchmarks only the stable native FP4 configuration.
+Hypothesis: the earlier first-pass times overstate repeated step cost because
+of compilation and kernel-cache work. Retain all arithmetic, data, initial
+adapter hash, batch policy, twelve checkpoints and AOT backend. There are no
+additional precision controls or held-out evaluations in this benchmark.
+
+After the usual native kernel, numerical and global-longest update gates, run
+the entire frozen ten-batch cohort once as warm-up and three times as measured
+replays in the same process. Restore the exact initial FP32 adapters and create
+fresh AdamW state and a fresh ten-step scheduler for every pass. Each pass has
+one LR-zero step and nine nonzero-LR updates. Do not select or discard slower
+batches. Stop after forty cohort steps or on any existing failure condition.
+
+Synchronize CUDA around each complete logical step, including forward,
+backward, finite checks, clipping, optimizer and scheduler. Report every step,
+warm-up and measured pass times, token-weighted throughput, batch-specific
+means, memory and Dynamo graph counts. Report writing, restoration, model
+loading, probes and checkpoint export are outside step timing. Loop wall time
+also includes report writing. Compilation graphs must stop growing during
+measured passes before treating them as warm. Existing disk caches are reused;
+the first pass measures this process's warm-up, not a pristine-cache startup.
+Native quantization and per-token scaling remain unfused in this prototype.
+
+```bash
+bash experiments/fp4_stability/launch.sh experiments/fp4_stability/row_aot_timing.yaml
+```
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16

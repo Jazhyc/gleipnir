@@ -3477,6 +3477,7 @@ def main(cfg: DictConfig) -> None:
 
         def precision_optimizer_factory():
             trainer.optimizer = None
+            trainer.lr_scheduler = None
             return trainer.create_optimizer()
 
         run_precision_training_screen(
@@ -3506,6 +3507,7 @@ def main(cfg: DictConfig) -> None:
             expected_initial_master_sha256=precision_screen_cfg.get(
                 "expected_initial_master_sha256"
             ),
+            timing_repeats=int(precision_screen_cfg.get("timing_repeats", 0)),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

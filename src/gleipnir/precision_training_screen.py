@@ -6,6 +6,7 @@ import gc
 import importlib.metadata
 import json
 import math
+import statistics
 import time
 from collections.abc import Callable
 from contextlib import contextmanager
@@ -19,6 +20,52 @@ import torch.nn.functional as functional
 from gleipnir.adaptive_microbatching import MicrobatchPolicy
 from gleipnir.fouroversix_training import FrozenFourOverSixLinear, native_call_counts
 from gleipnir.training_execution_audit import tensor_digest, use_forwards
+
+
+def timing_summary(passes: list[dict[str, Any]]) -> dict[str, Any]:
+    """Aggregate complete measured passes without dropping slower batches."""
+    if not passes or any(len(item["steps"]) != 10 for item in passes):
+        raise ValueError("timing requires complete ten-step measured passes")
+    reference = passes[0]["steps"]
+    for item in passes:
+        for actual, expected in zip(item["steps"], reference, strict=True):
+            for key in (
+                "dataset_indices",
+                "actual_tokens",
+                "padded_tokens",
+                "physical_sizes",
+                "learning_rate",
+            ):
+                if actual[key] != expected[key]:
+                    raise ValueError(f"timing replay mismatch: {key}")
+    measurements = [step for item in passes for step in item["steps"]]
+    seconds = [step["seconds"] for step in measurements]
+    if any(not math.isfinite(value) or value <= 0 for value in seconds):
+        raise ValueError("timing requires finite positive step durations")
+    total = sum(seconds)
+    return {
+        "measured_steps": len(seconds),
+        "mean_step_seconds": statistics.mean(seconds),
+        "median_step_seconds": statistics.median(seconds),
+        "min_step_seconds": min(seconds),
+        "max_step_seconds": max(seconds),
+        "total_step_seconds": total,
+        "actual_tokens_per_second": sum(s["actual_tokens"] for s in measurements)
+        / total,
+        "examples_per_second": 32 * len(seconds) / total,
+        "pass_mean_step_seconds": [
+            statistics.mean(s["seconds"] for s in item["steps"]) for item in passes
+        ],
+        "per_batch_mean_seconds": [
+            statistics.mean(item["steps"][i]["seconds"] for item in passes)
+            for i in range(10)
+        ],
+        "new_dynamo_graphs": sum(item["new_dynamo_graphs"] for item in passes),
+        "scope": (
+            "synchronized forward/backward/clip/AdamW/scheduler and finite checks; "
+            "excludes report I/O, resets, probes and export"
+        ),
+    }
 
 
 @contextmanager
@@ -54,10 +101,17 @@ def run_precision_training_screen(
     diagnostics_only: bool = False,
     capture_native_operands: bool = False,
     expected_initial_master_sha256: str | None = None,
+    timing_repeats: int = 0,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
         raise ValueError("precision screen requires one or ten complete batches of 32")
+    if timing_repeats not in {0, 3} or (
+        timing_repeats and (steps != 10 or diagnostics_only)
+    ):
+        raise ValueError(
+            "timing benchmark requires ten steps and three measured replays"
+        )
     named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
     parameters = [p for _, p in named]
     if not parameters or any(p.dtype != torch.float32 for p in parameters):
@@ -92,6 +146,7 @@ def run_precision_training_screen(
         "trainable_names": [n for n, _ in named],
         "order": order,
         "steps": [],
+        "timing_repeats": timing_repeats,
         "logical_batch_size": 32,
         "gpu": torch.cuda.get_device_name(device),
         "gpu_total_bytes": torch.cuda.get_device_properties(device).total_memory,
@@ -262,39 +317,73 @@ def run_precision_training_screen(
         )
         report["preflight"] = preflight
         restore()
-        optimizer = optimizer_factory()
-        scheduler = scheduler_factory(optimizer, steps)
         report["preflight_passed"] = True
         print(f"precision_preflight={preflight}", flush=True)
         publish()
-        torch.cuda.reset_peak_memory_stats(device)
-        torch.cuda.synchronize(device)
-        start = time.perf_counter()
-        for step in range(steps):
-            indices = order[step * 32 : (step + 1) * 32]
+        report["timing_passes"] = []
+        for pass_index in range(1 + timing_repeats):
+            # Replay the identical learning trajectory, including the LR-zero
+            # first step and lazy AdamW allocation, with fresh optimizer state.
+            restore()
+            optimizer = optimizer_factory()
+            scheduler = scheduler_factory(optimizer, steps)
+            current = {
+                "kind": "warmup" if timing_repeats and pass_index == 0 else "measured",
+                "pass_index": pass_index,
+                "initial_master_sha256": tensor_digest(parameters),
+                "steps": [],
+            }
+            if timing_repeats:
+                report["timing_passes"].append(current)
+            report["steps"] = current["steps"]
+            graph_start = torch._dynamo.utils.counters["stats"]["unique_graphs"]
+            torch.cuda.reset_peak_memory_stats(device)
             torch.cuda.synchronize(device)
-            step_start = time.perf_counter()
-            measurement = backward([features[i] for i in indices])
-            norm = torch.nn.utils.clip_grad_norm_(
-                parameters, max_grad_norm, error_if_nonfinite=True
+            start = time.perf_counter()
+            for step in range(steps):
+                indices = order[step * 32 : (step + 1) * 32]
+                torch.cuda.synchronize(device)
+                step_start = time.perf_counter()
+                measurement = backward([features[i] for i in indices])
+                norm = torch.nn.utils.clip_grad_norm_(
+                    parameters, max_grad_norm, error_if_nonfinite=True
+                )
+                if float(norm) <= 0:
+                    raise ValueError("training adapter gradient is zero")
+                lr = optimizer.param_groups[0]["lr"]
+                optimizer.step()
+                scheduler.step()
+                torch.cuda.synchronize(device)
+                measurement.update(
+                    step=step + 1,
+                    dataset_indices=indices,
+                    gradient_norm=float(norm),
+                    learning_rate=lr,
+                    seconds=time.perf_counter() - step_start,
+                    peak_allocated_bytes=torch.cuda.max_memory_allocated(device),
+                    peak_reserved_bytes=torch.cuda.max_memory_reserved(device),
+                    dynamo_unique_graphs=torch._dynamo.utils.counters["stats"][
+                        "unique_graphs"
+                    ],
+                )
+                current["steps"].append(measurement)
+                print(
+                    f"precision_pass={pass_index} "
+                    f"precision_step={json.dumps(measurement)}",
+                    flush=True,
+                )
+                publish()
+            current["loop_seconds"] = time.perf_counter() - start
+            current["new_dynamo_graphs"] = (
+                torch._dynamo.utils.counters["stats"]["unique_graphs"] - graph_start
             )
-            lr = optimizer.param_groups[0]["lr"]
-            optimizer.step()
-            scheduler.step()
-            torch.cuda.synchronize(device)
-            measurement.update(
-                step=step + 1,
-                dataset_indices=indices,
-                gradient_norm=float(norm),
-                learning_rate=lr,
-                seconds=time.perf_counter() - step_start,
-                peak_allocated_bytes=torch.cuda.max_memory_allocated(device),
-                peak_reserved_bytes=torch.cuda.max_memory_reserved(device),
-            )
-            report["steps"].append(measurement)
-            print(f"precision_step={json.dumps(measurement)}", flush=True)
+            current["final_master_sha256"] = tensor_digest(parameters)
+            if current["final_master_sha256"] == initial_digest:
+                raise ValueError("optimizer replay produced no adapter change")
+            report["training_seconds"] = current["loop_seconds"]
             publish()
-        report["training_seconds"] = time.perf_counter() - start
+        if timing_repeats:
+            report["timing_summary"] = timing_summary(report["timing_passes"][1:])
         report["after_native_probe"] = evaluate(dense=False)
         report["after_common_probe"] = evaluate(dense=True)
         final_digest = tensor_digest(parameters)
