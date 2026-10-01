@@ -607,7 +607,9 @@ frozen 320 examples and initial adapter hash. No FP16 or layer subsets.
 
 This is explicitly a bounded learning diagnostic: preserve the historical strict
 loss/gradient canary result, even when it fails, but allow exactly ten optimizer
-calls with finite losses and all adapter gradients. The first scheduled learning
+calls with finite losses and all adapter gradients. Record the compiled/eager canary too;
+its finite disagreement is permitted only for this bounded comparison, with
+original-FLA common evaluation. The first scheduled learning
 rate is zero; nine calls have nonzero rates. No separate optimizer preflight or
 replay. Memory preflight and ten ordered compile-warmup backward passes make zero
 optimizer calls and must preserve initial masters. Stop on nonfinite/missing

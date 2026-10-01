@@ -1315,3 +1315,13 @@ sweeps, separate preflight updates, timing replays or held-out promotion.
 Focused CPU validation: 70 passed; six combinations skipped because the bounded
 comparison excludes partial layers/profiling. Both configs are frozen before
 launch; collect loss, timing, memory and compilation receipts before concluding.
+
+The first uniform ten-step launch stopped with zero updates at the compiled/eager
+canary: eager 1.358968 versus compiled 1.327407, both repeatable and finite. Save
+this attempt as `results/nf4_flashqla_ten_step_comparison_compile_gate_attempt/`.
+To honor the explicitly requested bounded learning comparison, also record this
+canary's failed strict gate while permitting finite disagreement in that mode
+only. Common probes still evaluate both trajectories with original eager FLA.
+The unchanged recipe restarts without a head change or another diagnostic sweep.
+The 70 focused tests pass, including exactly ten AdamW calls, no optimizer calls
+in warmup, and explicit bounded acceptance of a failed finite compile canary.

@@ -259,6 +259,12 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         optimizers.append(optimizer)
         return optimizer
 
+    def install_compile():
+        if ten_step_comparison:
+            original = model.forward
+            model.forward = lambda x: original(x) * 1.1
+        return []
+
     report = screen.run_precision_training_screen(
         model=model,
         features=[{"direct_input_ids": [1, 2]} for _ in range(320)],
@@ -268,7 +274,7 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         scheduler_factory=lambda optimizer, steps: torch.optim.lr_scheduler.LambdaLR(
             optimizer, lambda step: 0.0 if step == 0 else (10 - step) / 9
         ),
-        install_compile=lambda: [],
+        install_compile=install_compile,
         output=tmp_path,
         seed=0,
         policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
@@ -282,6 +288,8 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
     )
     assert report["status"] == "complete"
     if ten_step_comparison:
+        assert not report["compile_canary"]["passed"]
+        assert report["compile_canary"]["accepted_for_ten_step_learning_comparison"]
         assert len(optimizers) == 1
         assert report["compile_warmup_master_unchanged"]
         assert len(report["compile_warmup"]) == 10

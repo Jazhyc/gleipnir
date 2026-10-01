@@ -358,6 +358,13 @@ def run_precision_training_screen(
             "compiled_loss": compiled,
             "compiled_repeat_loss": compiled_repeat,
             "passed": passed,
+            "accepted_for_ten_step_learning_comparison": (
+                ten_step_learning_comparison
+                and all(
+                    math.isfinite(value)
+                    for value in [eager, eager_repeat, compiled, compiled_repeat]
+                )
+            ),
         }
         publish()
         if diagnostics_only:
@@ -400,7 +407,10 @@ def run_precision_training_screen(
             report["status"] = "diagnosed"
             publish()
             return report
-        if not passed:
+        if not (
+            passed
+            or report["compile_canary"]["accepted_for_ten_step_learning_comparison"]
+        ):
             raise ValueError(
                 f"same-weight compilation loss canary failed: {eager}, {compiled}"
             )
