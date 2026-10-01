@@ -1,0 +1,9 @@
+steps: 10
+logical_batch_size: 32
+max_padded_tokens: 16384
+max_microbatch_size: 8
+backward_pass_autocast: same_as_forward
+seed: 0
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+condition_source: singleton
+output: results/b200_execution_audit

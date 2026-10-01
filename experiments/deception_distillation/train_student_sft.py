@@ -3405,6 +3405,53 @@ def main(cfg: DictConfig) -> None:
             gradient_checkpointing_policy,
             checkpointing_layer_indices,
         )
+    execution_audit_cfg = OmegaConf.select(
+        cfg, "student.training.execution_audit", default=None
+    )
+    if execution_audit_cfg is not None and bool(execution_audit_cfg.enabled):
+        from gleipnir.training_execution_audit import run_execution_audit
+
+        if not adaptive_enabled or world_size != 1 or optimizer_name != "adamw":
+            raise ValueError("execution audit requires single-device adaptive AdamW")
+
+        def audit_loss_forward(batch):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+
+        def audit_optimizer_factory():
+            trainer.optimizer = None
+            return trainer.create_optimizer()
+
+        def audit_scheduler_factory(optimizer, steps):
+            trainer.lr_scheduler = None
+            return trainer.create_scheduler(steps, optimizer=optimizer)
+
+        run_execution_audit(
+            model=model,
+            features=[dict(dataset[i]) for i in range(len(dataset))],
+            collator=CompletionOnlyCollator(tokenizer.pad_token_id),
+            loss_forward=audit_loss_forward,
+            optimizer_factory=audit_optimizer_factory,
+            scheduler_factory=audit_scheduler_factory,
+            install_compile=lambda: apply_selective_torch_compile_policy(
+                model,
+                selective_torch_compile_policy,
+                backend=selective_torch_compile_backend,
+                mode=selective_torch_compile_mode,
+                dynamic=selective_torch_compile_dynamic,
+            ),
+            output=Path(str(execution_audit_cfg.output_dir)),
+            seed=int(cfg.seed),
+            steps=int(execution_audit_cfg.steps),
+            logical_batch_size=32,
+            max_padded_tokens=16384,
+            max_microbatch_size=8,
+            max_grad_norm=float(trainer.args.max_grad_norm),
+            counters=torch_compile_counter_snapshot,
+        )
+        trainer.optimizer = None
+        trainer.lr_scheduler = None
+        return
     selective_torch_compile_canary = None
     attention_backend_canary = None
     attention_canary_reference = OmegaConf.select(

@@ -135,3 +135,58 @@ The scoped backward-autocast override also fails (relative L2 0.647156, cosine
 Retain both negative diagnostics, the original gate and fixed-batch recipe.
 Fixed-physical-batch cross-backend gradients and actual AdamW updates remain
 unmeasured; the findings distinguish those from these batching comparisons.
+
+## Authorized gradient, actual-update and ten-step execution audit
+
+The user explicitly requested all three remaining checks on 2026-10-01. This
+new diagnostic contract authorizes optimizer updates even when gradient parity
+fails. It preserves the failed timing campaign and its 0.05 gate, and does not
+promote a recipe or authorize full training or held-out quality selection.
+
+Hypothesis: close forward losses may coexist with gradient differences; actual
+AdamW updates and short learning trajectories will establish whether the
+differences materially change this bounded training workload. Compare four
+conditions: eager/compiled crossed with singleton/adaptive physical batching.
+Compiled execution uses the existing `same_as_forward` backward assumption;
+the separately preserved `off` diagnostic did not meet parity. Model, targets,
+rank, FP32 adapters, quantization, checkpoint policy and seed remain fixed.
+
+`execution_audit.yaml` freezes ten logical updates of 32 traces from the existing
+matched 320-row selection. Freeze one seed-0 permutation and sort only within
+each logical batch. Singletons and 16,384-padded-token/max-8 adaptive partitions
+see identical update membership. Trajectories retain untruncated materialized
+inputs at the existing 29,696-token cap, Trainer AdamW groups/defaults, clipping,
+linear scheduler and 3% warmup. In the ten-step schedule the first LR is zero;
+record it rather than presenting that step as a nonzero update comparison.
+
+The gradient/update probe uses the eight longest rows of this matched cohort,
+tail-truncated to `[2048,2048,2048,2048,1024,512,256,128]`. These are explicitly a
+new probe selection, not the historical global-longest-eight canary. Fixed
+partition gradient comparisons isolate eager/compiled execution at singleton
+and batch-8 shapes. Repeated same-backend gradients establish variability. The
+actual probe update uses fresh Trainer AdamW state, clipping, and the configured
+base LR 5e-5 without a scheduler, so its delta is nonzero. Compare all trainable
+gradient and update elements, norms, cosine, relative L2, maxima and sign changes.
+
+Restore and hash identical FP32 masters before every probe/trajectory; create
+fresh optimizer/scheduler state. Measure before/after losses and each trajectory
+step on the same eight training probes through one eager singleton eval path.
+Report every step's training loss, probe losses, LR, gradient norm, timing,
+partition and example membership, plus cumulative parameter-update comparisons.
+Save diagnostic final FP32 masters on the volume. No serving artifact is exported.
+
+Stop on OOM, nonfinite tensors, input/hash/restoration drift or runtime error;
+retain failures and completed measurements. Ten steps are diagnostic evidence,
+not final-quality equivalence. No throughput gain or epoch ETA is promoted from
+these runs. All conditions run even if the gradient comparison misses the old
+gate, because measuring subsequent updates is now explicitly authorized.
+Inspect startup every 30–60 seconds and actual step records thereafter. No
+after-turn scheduling mechanism is available; active-turn checks cover this
+campaign and no later wakeup is promised. Leave the existing $6.79/hour Pod
+running afterward.
+
+```bash
+GLEIPNIR_COMMIT=COMMITTED_REVISION .venv/bin/python \
+  experiments/b200_adaptive_microbatching/run_execution_audit.py \
+  --config experiments/b200_adaptive_microbatching/execution_audit.yaml
+```
