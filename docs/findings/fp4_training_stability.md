@@ -846,3 +846,31 @@ campaign. The conditional full timing configuration is not launched. Retain
 Collected `analysis.json` verifies all seventeen source/config hashes against
 `71cbf50`; reports and logs persist under
 `results/fp4_row_inductor_attention_diagnostic/` and its Runpod log directory.
+
+## Reference offload and checkpoint capacity
+
+The memory-policy intervention at `da0ac64` moves the original frozen BF16 MLP
+reference parameters to CPU after initial probes. Packed FP4 forward weights
+and decoded BF16 backward weights stay on GPU. The 96 bases release exactly
+**4,529,848,320 bytes (4.21875 GiB)** of allocated GPU reference weights, matching
+the observed allocation decrease. The decoded cache remains necessary for the
+selected BF16 dX backward; it is not the original unquantized reference weight.
+These GPU caches are rebuilt on model construction, rather than restored as
+training state from persistent storage. Dense reference probes temporarily copy
+one CPU weight back to the input device outside measured training steps.
+
+`row_inductor_offload_4cp_timing.yaml` reduces checkpointed layers from twelve to
+`[0, 10, 21, 29]`, retaining the strict selector, eager token mixers and original
+16,384 padded-token physical batching budget. Native, fused-row and exact
+offload output/input-gradient/FP32-adapter-gradient canaries pass. Global repeated
+eager and compiled losses all equal **1.445064306**. The longest-input backward
+then fails with a CUDA OOM: a 460 MiB request at 176.12 GiB allocated, 1.42 GiB
+reserved but unallocated, and 39.75 MiB free. No optimizer step runs. This is a
+capacity rejection, not a measured timing result or failed arithmetic gate.
+
+Collected `analysis.json` verifies all twenty source/config hashes against
+`da0ac64`, the four checkpoint indices, passed canaries, released reference
+bytes and empty optimizer-step list. Reports and logs persist under
+`results/fp4_row_inductor_offload_4cp_timing/` and its Runpod log directory.
+The predeclared eight-checkpoint fallback is the next capacity test; its outcome
+must be recorded before choosing a timing recipe.
