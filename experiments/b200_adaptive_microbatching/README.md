@@ -94,3 +94,10 @@ the baseline remains unchanged regardless. Retain the 0.05 gate, no optimizer
 updates, original frozen job, and a separate output directory. This can rule out
 large nondeterminism for these inputs, but cannot establish cross-shape kernel
 correctness or compiled-path repeatability.
+
+The singleton repeatability audit passed: relative gradient L2 0.005119,
+cosine 0.999987, and exactly identical mean losses. This is much smaller than
+the cross-shape discrepancy, but does not identify its cause or validate an
+adaptive policy. The installed FLA includes the known Blackwell forward-state
+guard; other upstream race reports concern different hardware/load and were
+not reproduced here. Keep the original recipe and parity threshold.

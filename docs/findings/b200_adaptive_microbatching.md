@@ -1,8 +1,8 @@
 # Adaptive B200 physical microbatches
 
-Date: 2026-10-01. Status: implementation tested; batching probes completed with
-no passing candidate; identical-shape kernel repeatability audit in progress.
-No adaptive timing result or recipe promotion.
+Date: 2026-10-01. Status: implementation tested; bounded batching probes and
+singleton repeatability audit completed. No passing adaptive candidate,
+adaptive timing result, or recipe promotion. Root cause remains unresolved.
 
 The user authorized empirical optimization with ten-update workloads on the
 existing B200. The [experiment contract](../../experiments/b200_adaptive_microbatching/README.md)
@@ -100,3 +100,33 @@ from `results/b200_adaptive_microbatching_diagnostic_probes/`; all failed screen
 and diagnostic logs remain under `logs/runpod/b200_adaptive_microbatching/`.
 The GPU is idle after the bounded probes. Pod `alzfug70g5237b` is left running
 as requested at $6.79/hour; no additional capacity was provisioned.
+
+## Identical-shape repeatability and kernel audit
+
+Source `43361ba34fdf4a7ddc151f7205ce2790126751a1` passed 23 focused tests and
+ran the same eager eight-input canary with maximum physical size 1. Reference
+and actual passes now use identical singleton shapes, ordering and weighting.
+Relative gradient L2 error **0.005119** passes the unchanged 0.05 gate; cosine
+is **0.999987**, maximum absolute error **0.002380**, and both mean losses are
+exactly **1.0665998309850693**. Reference/actual gradient norms are 23.422508
+and 23.424437. No optimizer updates occurred. Collected artifacts are in
+`results/b200_adaptive_microbatching_diagnostic_repeatability/` with
+`logs/runpod/b200_adaptive_microbatching/diagnostic_repeatability.log`.
+
+The cross-shape eager discrepancy is roughly 27 times this repeatability error.
+This rules out singleton repeat-to-repeat variation as the sole explanation for
+the larger difference. It does not test repeatability of batch 8 or the compiled
+path, prove a padding bug, or identify which operator causes the discrepancy.
+Loss weighting is mathematically partition-invariant and independently tested;
+BF16/quantized shape-dependent kernels and compiled execution remain plausible
+causes. Relative gradient L2 is not relative loss error or a quality metric.
+
+The installed pinned FLA 0.5.2 source includes the Blackwell forward-state
+two-warp guard from [FLA PR 953](https://github.com/fla-org/flash-linear-attention/pull/953).
+A later [output-kernel race report](https://github.com/fla-org/flash-linear-attention/issues/1228)
+concerns GB300/sm103, Triton 3.6/3.7 and a different model/load. Our output-kernel
+source still contains an eight-warp autotune entry, but the report does not
+establish that our B200/sm100 run is affected. No workaround or dependency upgrade
+was applied. `kernel_source_audit.json` records installed source hashes and guards.
+The fixed batch-1 recipe remains selected, and the Pod is idle and left running
+at the live-verified $6.79/hour.
