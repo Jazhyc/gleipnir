@@ -74,3 +74,12 @@ do not compare a cold control against warmed candidates as a training speedup.
 PyTorch/Triton cache validation still decides which compiled artifacts match
 changed graphs. Complete matched loops are the relevant timing measure when
 length grouping places the longest batches first.
+
+Adaptive physical batching is a separate explicit job field,
+`adaptive_microbatching`. The Trainer-facing batch represents a whole optimizer
+update (accumulation 1), while metadata distinguishes its logical size from
+variable physical sizes. Validation checks each update's example coverage,
+power-of-two physical sizes, padded-token limits, and the preflight gradient
+canary. Synchronized profiling must be followed by a cached repeat without
+profiling before selecting a faster policy. The initial B200 experiment keeps
+the same 32 examples per update and changes only their physical partition.

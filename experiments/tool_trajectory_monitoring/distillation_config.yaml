@@ -52,6 +52,11 @@ student:
     attention_backend_canary_reference: null
     allow_unspec_int_on_nn_module: false
     eager_attention_interface: false
+    adaptive_microbatching:
+      enabled: false
+      max_padded_tokens: 16384
+      max_micro_batch_size: 8
+      profile: true
     optimizer: adamw
     optim: adamw_torch
     num_train_epochs: 1.0

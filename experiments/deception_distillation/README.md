@@ -46,6 +46,18 @@ sequential auxiliary gradients on the same accumulation scale; metadata records
 [objective accumulation audit](../../docs/findings/monitoring_objective_accumulation.md)
 for the affected historical rationale runs.
 
+Opt-in `student.training.adaptive_microbatching` supports single-device,
+dropout-free binary hard/soft training. Set `per_device_train_batch_size` to the
+desired logical optimizer batch and `gradient_accumulation_steps: 1`. Trainer
+splits each logical batch into length-sorted physical microbatches, bounded by
+`max_padded_tokens` and a power-of-two `max_micro_batch_size`. Long inputs remain
+singletons. Weight each microbatch mean by its fraction of the logical batch;
+metadata records `sum_per_example_over_logical_batch_v1`, realized partitions,
+padding, timing and peak memory. A partial final batch uses its actual size.
+Auxiliary, dataset-reweighted, distributed, dropout and in-training evaluation
+paths fail closed. See the [B200 profiling experiment](../b200_adaptive_microbatching/README.md)
+for the empirical selection protocol; token budgets are not memory guarantees.
+
 ## Inputs
 
 Materialize training records as JSONL outside Git. Each usable record needs a

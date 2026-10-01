@@ -34,6 +34,16 @@ usual division, so their normalization is unchanged. Historical completion-based
 causal-model runs need separate audit; this finding alone does not invalidate
 historical soft-only results or establish anything about their quality.
 
+The opt-in adaptive physical-microbatch path uses a distinct normalization:
+`sum_per_example_over_logical_batch_v1`. Trainer receives one logical optimizer
+batch with accumulation 1; each physical mean is multiplied by its actual
+example count divided by the actual logical count. This preserves equal trace
+weights with unequal physical sizes, including a partial final batch. The real
+Trainer/Accelerate CPU tests compare both losses and pre-optimizer gradients
+against singleton partitions and an analytic whole-batch gradient. This route
+initially supports dropout-free binary hard/soft means only, keeping auxiliary
+objectives on the existing validated accumulation path.
+
 Corrected rationale runs retain the original data, seed, LR, one-epoch schedule,
 adapter rank, memory recipe, and frozen ID promotion thresholds. They use new
 artifact directories and are compared alongside the original valid MIL runs.

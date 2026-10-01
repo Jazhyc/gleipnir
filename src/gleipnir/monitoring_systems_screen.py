@@ -423,6 +423,54 @@ def validate_training_metadata(
         "gradient_accumulation_steps": job["gradient_accumulation_steps"],
         "effective_batch_size": job["effective_batch_size"],
     }
+    adaptive = job.get("adaptive_microbatching", {})
+    if adaptive.get("enabled"):
+        expected_batch.update(
+            micro_batch_size=None,
+            gradient_accumulation_steps=None,
+            logical_batch_size=job["effective_batch_size"],
+        )
+        recorded = metadata.get("adaptive_microbatching", {})
+        policy = {k: adaptive[k] for k in ("max_padded_tokens", "max_micro_batch_size")}
+        if recorded.get("policy") != policy:
+            raise ValueError("adaptive microbatch policy drifted")
+        sizes = recorded.get("logical_batch_sizes", [])
+        if sizes != [job["effective_batch_size"]] * expected_steps:
+            raise ValueError("adaptive optimizer batches changed example counts")
+        records = recorded.get("records", [])
+        coverage = [0] * expected_steps
+        covered_indices = [[] for _ in range(expected_steps)]
+        for record in records:
+            update, examples = record["update"], record["examples"]
+            if not 1 <= update <= expected_steps:
+                raise ValueError("adaptive physical batch has an invalid update")
+            if (
+                examples < 1
+                or examples & (examples - 1)
+                or examples > policy["max_micro_batch_size"]
+            ):
+                raise ValueError("adaptive physical batch size exceeded its policy")
+            padded = examples * record["max_length"]
+            if (
+                padded != record["padded_tokens"]
+                or not 0 < record["tokens"] <= padded
+                or (examples > 1 and padded > policy["max_padded_tokens"])
+            ):
+                raise ValueError("adaptive physical batch exceeded its token budget")
+            if not math.isfinite(record["seconds"]) or record["seconds"] < 0:
+                raise ValueError("adaptive physical batch has invalid timing")
+            coverage[update - 1] += examples
+            indices = record.get("logical_indices", [])
+            if len(indices) != examples:
+                raise ValueError("adaptive physical batches lack example identities")
+            covered_indices[update - 1].extend(indices)
+        if coverage != sizes or any(
+            sorted(indices) != list(range(size))
+            for indices, size in zip(covered_indices, sizes, strict=True)
+        ):
+            raise ValueError("adaptive physical batches have incomplete coverage")
+        if require_canary and not recorded.get("gradient_canary", {}).get("passed"):
+            raise ValueError("adaptive gradient parity did not pass")
     if metadata.get("training_batch") != expected_batch:
         raise ValueError("training batch metadata drifted")
     kernels = config["kernels"]

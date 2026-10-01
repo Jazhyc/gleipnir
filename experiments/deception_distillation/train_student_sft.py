@@ -23,6 +23,11 @@ from hydra.utils import get_original_cwd
 from omegaconf import DictConfig, OmegaConf
 from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSampler
 
+from gleipnir.adaptive_microbatching import (
+    AdaptiveMicrobatchTrainerMixin,
+    MicrobatchPolicy,
+    gradient_partition_canary,
+)
 from gleipnir.attention_backends import (
     attention_loader_kwargs,
     compare_attention_backends,
@@ -2170,6 +2175,37 @@ def main(cfg: DictConfig) -> None:
             "prefix supervision requires binary soft token-logit loss alone"
         )
 
+    adaptive_cfg = OmegaConf.select(cfg, "student.training.adaptive_microbatching")
+    adaptive_enabled = bool(adaptive_cfg and adaptive_cfg.enabled)
+    adaptive_policy = None
+    if adaptive_enabled:
+        if (
+            world_size != 1
+            or completion_loss_weight
+            or pairwise_loss_weight
+            or mil_loss_weight
+            or ordinal_soft_loss_weight
+            or prefix_loss_weight
+            or paired_batching
+            or dataset_sampling != "proportional"
+            or dataset_loss_weighting != "mean"
+            or sequential_objective_backward
+            or train_sampling_strategy != "random"
+            or not (soft_loss_weight or direct_loss_weight)
+            or float(cfg.student.lora.dropout) != 0
+        ):
+            raise ValueError(
+                "adaptive microbatching requires one-device, dropout-free, "
+                "randomly sampled per-example binary losses"
+            )
+        if int(cfg.student.training.gradient_accumulation_steps) != 1:
+            raise ValueError(
+                "adaptive Trainer batches must be logical optimizer batches"
+            )
+        adaptive_policy = MicrobatchPolicy(
+            int(adaptive_cfg.max_padded_tokens), int(adaptive_cfg.max_micro_batch_size)
+        )
+
     class AuxiliarySFTTrainer(Trainer):
         """Completion SFT with optional direct-label and within-dataset rank losses."""
 
@@ -3333,6 +3369,12 @@ def main(cfg: DictConfig) -> None:
     trainer_cls = (
         MuonAuxiliarySFTTrainer if optimizer_name == "muon" else AuxiliarySFTTrainer
     )
+    if adaptive_enabled:
+        trainer_cls = type(
+            "AdaptiveAuxiliarySFTTrainer",
+            (AdaptiveMicrobatchTrainerMixin, trainer_cls),
+            {},
+        )
     collator = CompletionOnlyCollator(tokenizer.pad_token_id)
     optimizer_step_timer = OptimizerStepTimer()
     trainer = trainer_cls(
@@ -3343,6 +3385,11 @@ def main(cfg: DictConfig) -> None:
         callbacks=[optimizer_step_timer],
     )
     configure_mean_loss_accumulation(trainer)
+    trainer.direct_target_ids = direct_target_ids
+    if adaptive_enabled:
+        trainer.enable_adaptive_microbatching(
+            adaptive_policy, collator, profile=bool(adaptive_cfg.profile)
+        )
     if gradient_checkpointing_enabled:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
             model,
@@ -3481,6 +3528,30 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
+    adaptive_gradient_canary = None
+    if adaptive_enabled and selective_torch_compile_canary_tokens:
+        canary_features = []
+        for index, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
+            feature = dict(dataset[index % len(dataset)])
+            feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
+            canary_features.append(feature)
+
+        def canary_loss_forward(batch):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+
+        adaptive_gradient_canary = gradient_partition_canary(
+            model,
+            canary_features,
+            CompletionOnlyCollator(tokenizer.pad_token_id),
+            canary_loss_forward,
+            adaptive_policy,
+        )
+        print(f"adaptive_gradient_canary={adaptive_gradient_canary}", flush=True)
+        if not adaptive_gradient_canary["passed"]:
+            raise ValueError(
+                f"adaptive gradient parity failed: {adaptive_gradient_canary}"
+            )
     compile_base = model.get_base_model() if hasattr(model, "get_base_model") else model
     compile_layer_types = getattr(compile_base.config, "layer_types", [])
     disabled_linear_attention_layer_indices = [
@@ -3512,7 +3583,6 @@ def main(cfg: DictConfig) -> None:
         if selective_torch_compile_policy == "decoder_shells_without_token_mixers"
         and layer_type == "full_attention"
     ]
-    trainer.direct_target_ids = direct_target_ids
     train_output = trainer.train()
     train_metrics = {
         key: value.item() if hasattr(value, "item") else value
@@ -3649,7 +3719,11 @@ def main(cfg: DictConfig) -> None:
                     ),
                     "losses": {
                         "completion_weight": completion_loss_weight,
-                        "accumulation_policy": "explicit_microbatch_mean_v1",
+                        "accumulation_policy": (
+                            "sum_per_example_over_logical_batch_v1"
+                            if adaptive_enabled
+                            else "explicit_microbatch_mean_v1"
+                        ),
                         "model_accepts_loss_kwargs": trainer.model_accepts_loss_kwargs,
                         "completion_logits_mode": completion_logits_mode,
                         "completion_projection_chunk_size": (
@@ -3712,16 +3786,35 @@ def main(cfg: DictConfig) -> None:
                     "training_batch": {
                         "micro_batch_size": int(
                             cfg.student.training.per_device_train_batch_size
-                        ),
+                        )
+                        if not adaptive_enabled
+                        else None,
                         "gradient_accumulation_steps": int(
                             cfg.student.training.gradient_accumulation_steps
-                        ),
+                        )
+                        if not adaptive_enabled
+                        else None,
                         "effective_batch_size": int(
                             cfg.student.training.per_device_train_batch_size
                         )
                         * int(cfg.student.training.gradient_accumulation_steps)
                         * world_size,
+                        **(
+                            {
+                                "logical_batch_size": int(
+                                    args.per_device_train_batch_size
+                                )
+                            }
+                            if adaptive_enabled
+                            else {}
+                        ),
                     },
+                    "adaptive_microbatching": {
+                        **trainer.adaptive_microbatch_metadata(),
+                        "gradient_canary": adaptive_gradient_canary,
+                    }
+                    if adaptive_enabled
+                    else {"enabled": False},
                     "distributed_training": {
                         **distributed_verification,
                         "ddp_find_unused_parameters": False if world_size > 1 else None,
@@ -3799,12 +3892,18 @@ def main(cfg: DictConfig) -> None:
                     },
                     "train_metrics": train_metrics,
                     "peak_cuda_memory_allocated_bytes": (
-                        torch.cuda.max_memory_allocated()
+                        max(
+                            torch.cuda.max_memory_allocated(),
+                            getattr(trainer, "microbatch_peak_allocated", 0),
+                        )
                         if torch.cuda.is_available()
                         else None
                     ),
                     "peak_cuda_memory_reserved_bytes": (
-                        torch.cuda.max_memory_reserved()
+                        max(
+                            torch.cuda.max_memory_reserved(),
+                            getattr(trainer, "microbatch_peak_reserved", 0),
+                        )
                         if torch.cuda.is_available()
                         else None
                     ),

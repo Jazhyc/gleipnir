@@ -1,0 +1,65 @@
+# Adaptive B200 physical microbatches
+
+Hypothesis: keeping long traces as singletons while batching short traces reduces
+training time relative to the validated half-checkpoint batch-1 recipe. The
+intervention changes physical batching within each optimizer update, preserving
+the same 32 examples per update, teacher targets, rank, seed, objective, and LR.
+No full training campaign or ID/OOD quality selection is authorized or performed.
+
+Reuse the preceding B200 screen's fixed stratified 320-row mixed-training cohort
+and longest-32 preflight. Trainer sees logical batches of 32 with accumulation 1.
+Inside `training_step`, sort only those 32 features by actual materialized input
+length, then split them into power-of-two microbatches. Each microbatch mean is
+weighted by its example count divided by the actual logical-batch size. Clip,
+step AdamW, and advance the scheduler only after the complete logical batch.
+Partial final batches use their actual example count. Prompts remain independent
+sequences; this is not concatenation or sequence packing.
+
+The matched singleton control uses the same logical-batch path and within-update
+ordering. Candidates have padded-token budgets of 8,192 (maximum physical batch
+4) and 16,384 (maximum batch 8). A sequence longer than its budget is permitted
+only as a singleton, retaining the 29,696-token context cap. These budgets are
+bounded trial policies, not analytical memory guarantees. All use SDPA, twelve
+linear checkpoints, rank-128 NF4 QLoRA/BF16 compute, FP32 adapters, selected-position
+logits, FLA 0.5.2, and the existing selective compilation policy.
+
+Before timing, require the existing compile canary and longest-32 training update,
+plus a same-weights gradient canary comparing singleton and adaptive partitions
+over eight unequal-length inputs up to 2,048 tokens. Compare every trainable
+gradient, require a nonzero reference norm and global relative L2 error <=0.05,
+clear gradients afterward, and perform no optimizer update. This also exercises
+batch 8 at the aggressive budget. The representative screen profiles the
+intermediate lengths; stop on OOM, nonfinite output, checksum drift, incomplete
+coverage, failed parity, or more than 24 Dynamo graphs. Preserve failures and
+freeze any revised policy as a separate campaign; do not silently retry smaller
+batches.
+
+The first pass records synchronized per-microbatch elapsed time and peak memory,
+alongside complete optimizer-update timings, graph counts, padding, realized
+microbatch sizes, and logical coverage. Memory-stat resets preserve an aggregate
+high-water mark for the campaign. Profiling synchronization applies to every
+condition; promising candidates require a complete cached repeat with profiling
+disabled before recommendation. Compare full loops, not isolated short updates.
+Require at least 5% throughput gain over the matched control. The two budgets
+are selected only by systems measurements; no validation/test scores are used.
+
+Initial support is single-device, dropout-free per-example binary hard/soft
+losses with proportional random sampling and no in-training evaluation. Auxiliary
+completion, pairwise, MIL, prefix, ordinal, dataset-reweighted and distributed
+objectives fail closed. Existing fixed-microbatch training retains its behavior.
+
+The user authorized empirical iteration on existing B200 Pod `alzfug70g5237b`
+at $6.79/hour, leaving it running afterward. Reuse the persistent compatible
+cache; do not launch additional capacity. Keep FP32 masters on the volume and
+collect contracts, metadata, summaries, and logs locally. Source revisions and
+cache provenance accompany each run. Active-turn startup checks occur every
+30–60 seconds; this session has no verified after-turn agent scheduler.
+
+```bash
+.venv/bin/python -m gleipnir.monitoring_systems_screen prepare \
+  --config experiments/b200_adaptive_microbatching/config.yaml
+.venv/bin/python -m gleipnir.monitoring_systems_screen run \
+  --config results/b200_adaptive_microbatching/resolved_config.json
+```
+
+Prepare on the Pod and use `launch.sh` with the synced commit in `GLEIPNIR_COMMIT`.

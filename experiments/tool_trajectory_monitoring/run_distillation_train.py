@@ -122,6 +122,16 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "eager_attention_interface" in job:
         enabled = str(bool(job["eager_attention_interface"])).lower()
         command.append(f"student.training.eager_attention_interface={enabled}")
+    if adaptive := job.get("adaptive_microbatching"):
+        for key in ("enabled", "max_padded_tokens", "max_micro_batch_size", "profile"):
+            if key in adaptive:
+                value = adaptive[key]
+                encoded = (
+                    str(value).lower() if isinstance(value, bool) else str(int(value))
+                )
+                command.append(
+                    f"student.training.adaptive_microbatching.{key}={encoded}"
+                )
     if "selective_torch_compile_canary_tokens" in job:
         command.append(
             "student.training.selective_torch_compile_canary_tokens="
