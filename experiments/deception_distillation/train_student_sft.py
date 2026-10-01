@@ -3512,6 +3512,12 @@ def main(cfg: DictConfig) -> None:
         if not adaptive_enabled or world_size != 1 or optimizer_name != "adamw":
             raise ValueError("precision screen requires single-device adaptive AdamW")
 
+        fp32_projection_metadata = None
+        if precision_screen_cfg.get("fp32_lm_head", False):
+            from gleipnir.fp32_projection import install_fp32_lm_head
+
+            fp32_projection_metadata = install_fp32_lm_head(model)
+
         def precision_loss_forward(batch):
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
                 return trainer.compute_loss(model, trainer._prepare_inputs(batch))
@@ -3580,6 +3586,7 @@ def main(cfg: DictConfig) -> None:
                 "eager_rmsnorm_interfaces": eager_rmsnorm_interfaces,
                 "eager_mlp_activation_interfaces": eager_mlp_activation_interfaces,
                 "backward_pass_autocast": (functorch_config.backward_pass_autocast),
+                "fp32_projection": fp32_projection_metadata,
             },
         )
         return

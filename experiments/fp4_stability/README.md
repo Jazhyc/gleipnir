@@ -573,3 +573,22 @@ apply to every subset. Only a passing subset may launch a global-longest
 update and the original warmed timing protocol against the unchanged NF4/FLA
 control. This workload selection is a systems screen, not held-out quality
 selection. Stop if every subset fails; never train a rejected subset.
+
+All BF16 subsets fail a forward-loss gate despite 1--2% gradient errors
+for the smaller subsets. The next diagnostic addresses the independent
+classification projection boundary: outer screen BF16 autocast includes
+the LM head, which can round margins before the FP32 loss. Opt-in
+`fp32_lm_head` runs the frozen head in FP32 outside autocast, without
+changing the decoder, weights, loss objective, selected positions, or
+master adapters. Observe and record the original head output dtype on
+the first call. This follows the high-precision projection concern in
+`docs/findings/monitoring_mil_ddp.md`; it is a distinct arithmetic recipe
+from previous screens and must not erase their failures.
+
+With the same FP32-head original-FLA reference, test all 24 then the
+final 12, 8, 4, 2, and 1 BF16 FlashQLA linear-attention layers. Retain
+all original loss/gradient gates and stop at the first passing subset.
+Only that subset may start global-longest update and warmed timings.
+Its fresh FLA timing control also uses the FP32 head, so the backend
+comparison stays matched. No equivalence to the old BF16-head
+trajectory or held-out quality is asserted. Stop if every subset fails.

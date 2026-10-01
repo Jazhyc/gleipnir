@@ -280,6 +280,7 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_compiler_ops.py",
                 ROOT / "src/gleipnir/fp4_memory.py",
                 ROOT / "src/gleipnir/flashqla_training.py",
+                ROOT / "src/gleipnir/fp32_projection.py",
                 ROOT / "experiments/fp4_stability/memory_recipe.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
@@ -479,6 +480,8 @@ def main() -> None:
                 f"{str(config.get('gated_delta_bf16_boundary', False)).lower()}",
                 "++student.training.precision_screen.gated_delta_boundary_policy="
                 f"{config.get('gated_delta_boundary_policy', 'bf16')}",
+                "++student.training.precision_screen.fp32_lm_head="
+                f"{str(config.get('fp32_lm_head', False)).lower()}",
             ]
             if config.get("compile_policy"):
                 command.append(
