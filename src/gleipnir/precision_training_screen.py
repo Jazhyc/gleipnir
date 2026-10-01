@@ -108,6 +108,7 @@ def run_precision_training_screen(
     reference_weights_on_cpu: bool = False,
     gated_delta_backend: str = "fla",
     flashqla_auto_cp: bool = False,
+    gated_delta_bf16_boundary: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -124,7 +125,7 @@ def run_precision_training_screen(
         raise ValueError("profiling requires one of ten warmed training batches")
     if gradient_validation not in {"per_tensor", "clip_norm"}:
         raise ValueError("unknown adapter gradient validation mode")
-    if gated_delta_backend not in {"fla", "flashqla"}:
+    if gated_delta_backend not in {"fla", "flashqla", "fla_bf16"}:
         raise ValueError("unknown gated-delta backend")
     if flashqla_auto_cp and gated_delta_backend != "flashqla":
         raise ValueError("automatic FlashQLA partitioning requires FlashQLA")
@@ -256,7 +257,7 @@ def run_precision_training_screen(
     publish()
     try:
         restore()
-        if gated_delta_backend == "flashqla":
+        if gated_delta_backend != "fla":
             from gleipnir.flashqla_training import install_with_model_canary
 
             report["attention_backend_canary"] = install_with_model_canary(
@@ -265,6 +266,8 @@ def run_precision_training_screen(
                 + [collator([probe[0], probe[-1]])],
                 loss_forward,
                 auto_cp=flashqla_auto_cp,
+                backend=gated_delta_backend,
+                bf16_boundary=gated_delta_bf16_boundary,
             )
             publish()
             if not report["attention_backend_canary"]["passed"]:

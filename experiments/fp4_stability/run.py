@@ -36,7 +36,7 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
-    if config.get("gated_delta_backend", "fla") not in {"fla", "flashqla"}:
+    if config.get("gated_delta_backend", "fla") not in {"fla", "flashqla", "fla_bf16"}:
         raise ValueError("unknown gated-delta backend")
     if (
         config.get("flashqla_auto_cp", False)
@@ -170,6 +170,10 @@ def main() -> None:
             "flashqla_auto_cp", False
         ):
             raise ValueError("FlashQLA isolated canary failed or policy mismatched")
+        if config.get("gated_delta_bf16_boundary", False) != canary.get(
+            "bf16_boundary", False
+        ):
+            raise ValueError("FlashQLA canary BF16 boundary mismatch")
     output = ROOT / config["output"]
     output.mkdir(parents=True, exist_ok=False)
     logs = ROOT / config["logs"]
@@ -433,6 +437,8 @@ def main() -> None:
                 f"{config.get('gated_delta_backend', 'fla')}",
                 "++student.training.precision_screen.flashqla_auto_cp="
                 f"{str(config.get('flashqla_auto_cp', False)).lower()}",
+                "++student.training.precision_screen.gated_delta_bf16_boundary="
+                f"{str(config.get('gated_delta_bf16_boundary', False)).lower()}",
             ]
             if config.get("compile_policy"):
                 command.append(

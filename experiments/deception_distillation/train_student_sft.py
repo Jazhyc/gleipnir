@@ -3560,6 +3560,9 @@ def main(cfg: DictConfig) -> None:
                 precision_screen_cfg.get("gated_delta_backend", "fla")
             ),
             flashqla_auto_cp=bool(precision_screen_cfg.get("flashqla_auto_cp", False)),
+            gated_delta_bf16_boundary=bool(
+                precision_screen_cfg.get("gated_delta_bf16_boundary", False)
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

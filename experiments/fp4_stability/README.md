@@ -468,3 +468,20 @@ execution; it does not alter dense multi-example semantics or the batching
 policy. Preserve all failed receipts and retain the original FLA configuration.
 Startup and runs are checked during the active turn; this session has no
 in-chat follow-up scheduler.
+
+The initial whole-model attempt stops before updates because its q operands
+reach GDN in FP32; FlashQLA supports BF16/FP16 inputs. Do not infer the actual
+GDN input dtype from the surrounding BF16 matmul compute setting. The separate
+`--bf16-boundary` isolated follow-up compares FP32 FLA against explicit BF16
+q/k/v/beta operands with FP32 gates and FP32 returned outputs. Record actual
+model input dtypes. Include an FLA control with the identical boundary to isolate
+casts from the backend change. Preserve the same output/gradient/model gates.
+
+`row_flashqla_bf16_boundary_timing.yaml` uses that boundary and its new isolated
+receipt. Only if it passes all model gates may either timing control run:
+`row_fla_bf16_boundary_timing.yaml` isolates the backend at matched dtypes, while
+`row_flashqla_fla_control_timing.yaml` retains the original FLA input path.
+Require useful whole-step improvement at the existing 5% threshold, and report
+the combined dtype/backend change separately from the matched-backend result.
+The original failed attempt remains intact. No automatic partitioning training
+will run until the ordinary boundary policy has passed these gates.

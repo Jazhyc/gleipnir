@@ -5,7 +5,11 @@ import torch
 import yaml
 
 from experiments.fp4_stability.run import validate_config
-from gleipnir.flashqla_training import make_flashqla_kernel, tensor_comparison
+from gleipnir.flashqla_training import (
+    make_bf16_boundary,
+    make_flashqla_kernel,
+    tensor_comparison,
+)
 
 
 def test_wrapper_preserves_all_supported_arguments():
@@ -54,6 +58,24 @@ def test_relative_l2_and_nonfinite():
 
 def test_zero_reference_does_not_hide_error():
     assert tensor_comparison(torch.ones(1), torch.zeros(1))["relative_l2"] == 1e12
+
+
+def test_boundary_keeps_gates_fp32_and_backpropagates():
+    observed = []
+
+    def kernel(q, k, v, g, beta, **kwargs):
+        observed.append([x.dtype for x in (q, k, v, g, beta)])
+        return q + k + v + beta, None
+
+    tensors = [torch.ones(2, requires_grad=True) for _ in range(5)]
+    boundary = make_bf16_boundary(kernel)
+    output, state = boundary(*tensors, output_final_state=False)
+    assert output.dtype == torch.float32 and state is None
+    assert observed == [[torch.bfloat16] * 3 + [torch.float32, torch.bfloat16]]
+    output.sum().backward()
+    assert tensors[0].grad.dtype == torch.float32
+    assert torch.equal(tensors[0].grad, torch.ones(2))
+    assert boundary.input_dtypes == [["torch.float32"] * 5]
 
 
 def test_auto_partitioning_requires_flashqla():

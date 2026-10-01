@@ -48,6 +48,32 @@ def make_flashqla_kernel(function: Callable, *, auto_cp: bool) -> Callable:
     return chunk_gated_delta_rule
 
 
+def make_bf16_boundary(function: Callable) -> Callable:
+    """Cast GDN operands explicitly and restore output dtype; retain FP32 gates."""
+    import torch
+
+    input_dtypes = []
+
+    def kernel(q, k, v, g, beta, *args, **kwargs):
+        signature = [str(x.dtype) for x in (q, k, v, g, beta)]
+        if signature not in input_dtypes:
+            input_dtypes.append(signature)
+        output_dtype = q.dtype
+        output, state = function(
+            q.to(torch.bfloat16),
+            k.to(torch.bfloat16),
+            v.to(torch.bfloat16),
+            g.float(),
+            beta.to(torch.bfloat16),
+            *args,
+            **kwargs,
+        )
+        return output.to(output_dtype), state
+
+    kernel.input_dtypes = input_dtypes
+    return kernel
+
+
 def load_flashqla() -> tuple[Callable, dict[str, Any]]:
     """Verify isolated source identity and versions before selecting the backend."""
     import flash_qla
@@ -109,18 +135,34 @@ def tensor_comparison(actual, reference) -> dict[str, float | bool]:
 
 
 def install_with_model_canary(
-    model, batches: list, loss_forward: Callable, *, auto_cp: bool
+    model,
+    batches: list,
+    loss_forward: Callable,
+    *,
+    auto_cp: bool,
+    backend: str = "flashqla",
+    bf16_boundary: bool = False,
 ) -> dict[str, Any]:
     """Compare native-model losses and unclipped master gradients before updates."""
     import torch
 
-    function, receipt = load_flashqla()
+    if backend == "flashqla":
+        function, receipt = load_flashqla()
+        kernel = make_flashqla_kernel(function, auto_cp=auto_cp)
+    elif backend == "fla_bf16" and bf16_boundary and not auto_cp:
+        kernel, receipt = None, dict(backend="fla_bf16")
+    else:
+        raise ValueError("unsupported backend/boundary configuration")
     modules = [m for m in model.modules() if hasattr(m, "chunk_gated_delta_rule")]
     originals = [(m, m.chunk_gated_delta_rule) for m in modules]
     if len(modules) != 24 or any(
         not f.__module__.startswith("fla.ops.") for _, f in originals
     ):
         raise ValueError("expected all 24 Qwen4B layers to use pinned FLA")
+    if backend == "fla_bf16":
+        kernel = originals[0][1]
+    if bf16_boundary:
+        kernel = make_bf16_boundary(kernel)
     named = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
     training = model.training
     model.eval()
@@ -135,7 +177,6 @@ def install_with_model_canary(
             raise FloatingPointError(f"missing/nonfinite FLA gradient: {name}")
         reference_gradients.append(p.grad.detach().cpu().clone())
     model.zero_grad(set_to_none=True)
-    kernel = make_flashqla_kernel(function, auto_cp=auto_cp)
     passed = False
     try:
         for module in modules:
@@ -162,6 +203,9 @@ def install_with_model_canary(
             and relative_l2 <= 0.05
         )
         receipt.update(
+            backend=backend,
+            bf16_boundary=bf16_boundary,
+            original_input_dtypes=getattr(kernel, "input_dtypes", None),
             auto_cp=auto_cp,
             replaced_layers=len(modules),
             reference_losses=reference_losses,

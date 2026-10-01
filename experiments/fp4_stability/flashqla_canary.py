@@ -14,6 +14,7 @@ from fla.ops.gated_delta_rule import chunk_gated_delta_rule as fla_kernel
 
 from gleipnir.flashqla_training import (
     load_flashqla,
+    make_bf16_boundary,
     make_flashqla_kernel,
     tensor_comparison,
 )
@@ -26,14 +27,20 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--auto-cp", action="store_true")
+    parser.add_argument("--bf16-boundary", action="store_true")
     args = parser.parse_args()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     function, receipt = load_flashqla()
     candidate = make_flashqla_kernel(function, auto_cp=args.auto_cp)
+    if args.bf16_boundary:
+        candidate = make_bf16_boundary(candidate)
+    fla_bf16 = make_bf16_boundary(fla_kernel) if args.bf16_boundary else None
     report = dict(
         status="running",
         backend=receipt,
         auto_cp=args.auto_cp,
+        bf16_boundary=args.bf16_boundary,
+        input_dtype="float32" if args.bf16_boundary else "bfloat16",
         gpu=torch.cuda.get_device_name(),
         torch=torch.__version__,
         cuda=torch.version.cuda,
@@ -55,11 +62,9 @@ def main() -> None:
         for case_index, (batch, length) in enumerate(SHAPES):
             torch.manual_seed(10 + case_index)
             shape = (batch, length, 32, 128)
-            q, k, v = [
-                torch.randn(shape, device="cuda", dtype=torch.bfloat16)
-                for _ in range(3)
-            ]
-            a = torch.randn(shape[:-1], device="cuda", dtype=torch.bfloat16)
+            dtype = torch.float32 if args.bf16_boundary else torch.bfloat16
+            q, k, v = [torch.randn(shape, device="cuda", dtype=dtype) for _ in range(3)]
+            a = torch.randn(shape[:-1], device="cuda", dtype=dtype)
             g = -functional.softplus(a.float())
             beta = torch.randn_like(a).sigmoid()
             # Include zeroed tails, as masked hidden states feed the padded recipe.
@@ -102,6 +107,18 @@ def main() -> None:
                 for x in case["gradients"].values()
             )
             case["passed"] = passed
+            if fla_bf16 is not None:
+                cast_output, cast_gradients = run(fla_bf16, backward=True)
+                cast_metrics = [tensor_comparison(cast_output, reference)] + [
+                    tensor_comparison(a, r)
+                    for a, r in zip(cast_gradients, reference_gradients, strict=True)
+                ]
+                case["fla_bf16_comparison"] = cast_metrics
+                case["passed"] = passed = passed and all(
+                    x["finite"] and x["relative_l2"] <= (0.01 if i == 0 else 0.02)
+                    for i, x in enumerate(cast_metrics)
+                )
+                del cast_output, cast_gradients
             publish()
             print(
                 f"case={batch}x{length} parity={passed} "
@@ -117,6 +134,8 @@ def main() -> None:
                 case["timing"][phase] = {}
                 # Alternate order across shapes to limit systematic ordering effects.
                 pairs = [("fla", fla_kernel), ("flashqla", candidate)]
+                if fla_bf16 is not None:
+                    pairs.append(("fla_bf16", fla_bf16))
                 if case_index % 2:
                     pairs.reverse()
                 for name, kernel in pairs:
