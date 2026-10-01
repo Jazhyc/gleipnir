@@ -888,3 +888,39 @@ and all experiment artifacts. The unchanged training policy retries in a fresh
 directory via `row_inductor_offload_8cp_retry_timing.yaml` at `5f1b273`. The
 conditional 24,576-token physical-budget configuration uses the same eight
 checkpoint indices. Record completed timing before selecting either recipe.
+
+## Eight-checkpoint warmed timing
+
+`row_inductor_offload_8cp_retry_timing.yaml` at `5f1b273` completes all standalone,
+exact repeated eager/compiled model, longest-input backward and update gates.
+Its global update takes **69.273487 s**, with **160.521597 GiB** peak allocated.
+All 96 FP4 bases run, with 60,960 forward calls and 47,232 decoded-BF16 backward
+calls; zero FP4 backwards. Twelve checkpoints in the preferred baseline become
+eight, while the strict selector, eager native/token-mixer boundaries and
+16,384-token batching policy remain unchanged.
+
+Thirty measured steps average **11.995786 s**, median 11.744045 s, range
+9.009857–15.793477 s. Replay means are **12.019676/11.988539/11.979145 s**,
+each adding zero graphs. All ten matched batch means improve by 1.77–6.59%,
+but aggregate reduction is **3.872%**, below the predeclared 5% useful-gain gate.
+Actual throughput is **10,956.6 tokens/s**. Warm-up takes 141.484255 s and adds
+six graphs, reaching 24. Peak measured allocated memory rises from 138.638038
+to **157.855171 GiB** (reserved 161.875 GiB): the 4.21875 GiB weight release is
+spent on saved activations as recomputation decreases. Weight offload is not
+equivalent to a lower whole-step memory peak.
+
+The collected audit verifies all twenty source/config hashes against `5f1b273`,
+identical initialization/trainables, GPU/software, source jobs, indices, actual
+and padded tokens, physical partitions and LR sequences, and explicitly records
+the changed checkpoint indices. Final replay hashes differ; complete bitwise
+trajectories, held-out quality and serving parity are not claimed. Do not adopt
+the checkpoint-only intervention under the frozen selection rule. Its separate
+24,576-token physical-budget follow-up retains the eight-checkpoint layout and
+requires the same numerical gates and full replay protocol.
+
+Reports, logs, canaries and FP32 masters persist under
+`results/fp4_row_inductor_offload_8cp_retry_timing/` and are collected locally.
+Local/remote checkpoint SHA-256 match:
+
+- Cohort: `0f33213e0c79dc0b49486f881b16508ca7c3487c448a108154cd13cf9eccc256`.
+- Global: `1dbddcb43aba5fa2316af6c80f83abe64593597296f0f35bf61e166b4d220298`.
