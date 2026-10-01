@@ -151,3 +151,22 @@ variable (0/1/4/8/16/24/32 losses
 1.352499/1.253806/1.505310/1.435058/1.274435/1.353217/1.352488), so this is not
 an operator-level equivalence result. No backward or optimizer update occurs.
 Evidence: `results/fp4_precision_cast_diagnostic/` and corresponding logs.
+
+Cast preservation does not resolve the row-scaled matched-cohort case:
+eager/eager-repeat **1.2848907709121704**, compiled/compiled-repeat
+**1.3769714832305908**. No backward or optimizer update runs. Evidence:
+`results/fp4_row_precision_cast_diagnostic/`. Do not select this option as the
+general fix based on its original-pair success.
+
+The `aot_eager` control, preserving per-token native forward and decoded BF16
+backward, matches eager loss **1.2848907709121704** exactly on both repeated
+calls and all 0/1/4/8/16/24/32 compiled prefixes. Evidence:
+`results/fp4_row_aot_diagnostic/`. This narrows the disagreement to Inductor's
+generated path in the tested configuration. It is a forward diagnostic, not a
+performance benchmark or a training recipe selection.
+
+The next diagnostic observes inputs, normalized quantizer inputs, decoded
+quantized activations, row scales and outputs in the first four native MLPs.
+It records strides and value differences, with an explicit check that observation
+preserves both original losses. Only aggregate metrics are saved; activation
+tensors stay in process memory and are discarded when the diagnostic exits.

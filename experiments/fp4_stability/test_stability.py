@@ -38,9 +38,12 @@ def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
     )
     validate_config(matched_diagnostic)
     assert matched_diagnostic["diagnostics_only"]
+    for filename in ["row_aot_diagnostic.yaml", "row_operand_diagnostic.yaml"]:
+        validate_config(yaml.safe_load((root / filename).read_text()))
 
 
-def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
+@pytest.mark.parametrize("observe", [False, True])
+def test_dequantized_backward_uses_forward_weight_not_master_or_transpose(observe):
     torch.manual_seed(19)
     original = torch.nn.Linear(16, 32, bias=False, dtype=torch.bfloat16)
     original.requires_grad_(False)
@@ -60,6 +63,9 @@ def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
         dequantized_weight=decoded,
     )
     layer = FrozenFourOverSixLinear(original, runtime)
+    observations = []
+    if observe:
+        runtime.observer = lambda *args: observations.append(args[0].detach().clone())
     inputs = torch.randn(2, 7, 16, dtype=torch.bfloat16, requires_grad=True)
     gradient = torch.randn(2, 7, 32, dtype=torch.bfloat16)
     layer(inputs).backward(gradient)
@@ -68,6 +74,23 @@ def test_dequantized_backward_uses_forward_weight_not_master_or_transpose():
     assert original.weight.grad is None
     assert calls == ["native_forward"]
     assert runtime.forward_calls == runtime.backward_calls == 1
+    assert len(observations) == int(observe)
+    if observe:
+        torch.testing.assert_close(observations[0], inputs.detach())
+
+
+def test_operand_metrics_record_value_drift_and_reject_different_shapes():
+    from gleipnir.fp4_compiler_diagnostic import tensor_difference
+
+    eager = torch.tensor([1.0, 2.0, 3.0, 4.0], dtype=torch.bfloat16)
+    compiled = eager.float() + torch.tensor([0.0, 0.0, 0.0, 1.0])
+    metrics = tensor_difference(eager, compiled)
+    assert metrics["unequal_fraction"] == 0.25
+    assert metrics["maximum_absolute_difference"] == 1.0
+    assert metrics["relative_l2"] == pytest.approx(1 / 30**0.5)
+    assert metrics["eager_dtype"] != metrics["compiled_dtype"]
+    with pytest.raises(ValueError, match="shapes differ"):
+        tensor_difference(eager, compiled.reshape(2, 2))
 
 
 def test_ten_update_campaign_requires_global_preflight_before_each_condition():

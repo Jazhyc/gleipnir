@@ -52,6 +52,7 @@ def run_precision_training_screen(
     max_grad_norm: float,
     metadata: dict[str, Any],
     diagnostics_only: bool = False,
+    capture_native_operands: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -196,6 +197,18 @@ def run_precision_training_screen(
         }
         publish()
         if diagnostics_only:
+            if capture_native_operands:
+                from gleipnir.fp4_compiler_diagnostic import compare_native_operands
+
+                report["native_operand_comparison"] = compare_native_operands(
+                    model=model,
+                    batch=batch,
+                    loss_forward=loss_forward,
+                    original_forwards=original_forwards,
+                    eager_loss=eager,
+                    compiled_loss=compiled,
+                )
+                publish()
             base = model.get_base_model() if hasattr(model, "get_base_model") else model
             layers = base.model.layers
             original_by_id = {

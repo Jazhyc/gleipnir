@@ -3493,6 +3493,9 @@ def main(cfg: DictConfig) -> None:
             policy=adaptive_policy,
             steps=int(precision_screen_cfg.steps),
             diagnostics_only=bool(precision_screen_cfg.get("diagnostics_only", False)),
+            capture_native_operands=bool(
+                precision_screen_cfg.get("capture_native_operands", False)
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

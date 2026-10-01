@@ -50,6 +50,7 @@ class FrozenFp4Runtime:
     backward_calls: int = 0
     dequantized_weight: torch.Tensor | None = None
     row_scaled_activations: bool = False
+    observer: Callable | None = None
 
 
 def normalize_activation_rows(
@@ -79,6 +80,8 @@ class FrozenFp4Function(torch.autograd.Function):
         )
         if scales is not None:
             output = (output.float() * scales).to(torch.bfloat16)
+        if runtime.observer is not None:
+            runtime.observer(inputs, flattened, scales, output)
         return output.reshape(*inputs.shape[:-1], output.shape[-1])
 
     @staticmethod

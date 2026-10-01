@@ -129,6 +129,7 @@ def main() -> None:
             str(path.relative_to(ROOT)): sha256_file(path)
             for path in [
                 ROOT / "src/gleipnir/fouroversix_training.py",
+                ROOT / "src/gleipnir/fp4_compiler_diagnostic.py",
                 ROOT / "src/gleipnir/precision_training_screen.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -178,6 +179,8 @@ def main() -> None:
                 f"++student.training.precision_screen.output_dir={destination}",
                 f"++student.training.precision_screen.steps={stage_steps}",
                 f"++student.training.precision_screen.diagnostics_only={str(config['diagnostics_only']).lower()}",
+                "++student.training.precision_screen.capture_native_operands="
+                f"{str(config.get('capture_native_operands', False)).lower()}",
                 f"student.training.selective_torch_compile_backend={config['compile_backend']}",
             ]
             if stage_steps == 1:
