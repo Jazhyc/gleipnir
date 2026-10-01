@@ -1178,3 +1178,89 @@ the same actual-model gates before optimizer work or timing.
 A future NF4-vs-FP4 comparison must give both recipes the selected attention
 backend; this backend can affect both precision recipes. Validation: 46 focused
 CPU tests, Ruff and shell syntax checks pass.
+
+## NF4/BF16 FlashQLA integration
+
+The user requested NF4 storage/BF16 compute as the first integration target.
+The original NF4 projections still send FP32 q/k/v/g/beta to GDN; this is not
+specific to the native FP4 MLP replacement. The initial no-update model
+diagnostic uses the selected NF4 compile policy, twelve checkpoints, adaptive
+batching, and the same frozen FP32 initial masters as the FP4 screen.
+
+The plain BF16 q/k/v/beta boundary fails on NF4 as well. Adapter-gradient
+relative L2 is **0.667101** for FlashQLA and **0.489265** for FLA with
+identical casts, against the unchanged 0.05 gate. Maximum forward-loss gap is
+0.052118 absolute / 3.53% relative; all 256 gradients are finite. The 72
+matched-input shadow calls have mean output error 0.003181 for FlashQLA and
+0.003265 for cast FLA. Zero optimizer updates occur. This failure is smaller
+than the FP4 case but still unacceptable under the predeclared gate.
+
+Receipt: `results/nf4_flashqla_boundary_diagnostic/nf4/screen.json`, SHA-256
+`85c3923d0c3dc3490871edb9afa84ec888247618b81b542ea48665420efb1a2c`.
+All 21 source/config hashes reconcile with `d74c742`, although the launch
+Git field names the preceding implementation commit `9cd075f`. The derived
+analysis records the verified revision; logs and receipts are collected.
+
+The follow-up preserves beta/g in FP32 and uses the pinned FLA FP32 Q/K L2
+normalization before casting only the kernel operands; disable in-kernel
+normalization so it executes once. This precision boundary is differentiable
+and leaves FP32 master adapters intact. The first policy retains BF16 GDN
+q/k/v; a predeclared FP16-core fallback offers more mantissa precision while
+retaining NF4 storage and BF16 projection compute. It must be labeled as such.
+
+The revised BF16 isolated canary passes all seven shapes, maximum output
+relative L2 **0.004654** and maximum individual operand-gradient error
+**0.005178**. Its matching FLA-cast control also passes. Receipt:
+`results/nf4_flashqla_bf16_precise_canary/canary.json`, SHA-256
+`6def4ca42735636c92676beb5d959cf52074cc515e161dc69b761f2e21718465`. Frozen helper and entrypoint snapshots match the receipt.
+The revised BF16 full-model diagnostic still fails before updates: FlashQLA
+gradient relative L2 **0.448167**, cast FLA **0.383393**. The largest
+absolute loss gap remains 0.052118; preserving gates/normalization reduces
+the gradient discrepancy but is insufficient. All gradients remain finite.
+The receipt `results/nf4_flashqla_bf16_precise_diagnostic/nf4/screen.json`
+has SHA-256 `b44d9191c31232b9c32c718c1798ee0ce9b36c4cfe88779435eb027a71247da4`.
+All 21 source/config hashes verify against `72b19ec`. Continue only the
+predeclared FP16-core isolated/model diagnostic; BF16 timings are canceled.
+
+The first FP16 isolated attempt fails before numerical checks because
+TileLang emits `cutlass::half_t` into a masked 256-bit output store whose
+`pack_float16x4` helper accepts CUDA `half`. Sixteen C++ conversion errors
+occur at the same generated line. Preserve its receipt/log under
+`results/nf4_flashqla_fp16_precise_canary/`.
+
+The scoped fix at `ce389fd` adds an overload with the identical bit-packing
+body for `cutlass::half_t`; it retains the original overload and does not
+change FlashQLA math. Only the isolated TileLang target is patched.
+Original header SHA-256 is
+`da858d5cf8a7f5f780aced7a914059135d3ef9011dc9198d51d3d52624118f4f`,
+patched header SHA-256
+`a63307562f4c1d8b191a8da0f29bc2de19523a0bde42c67993a56b32396849f9`.
+The script rejects unknown originals, verifies idempotence and drift, and
+records both hashes plus its own hash in the install manifest. Backend
+loading verifies those identities; the locked main environment is intact.
+
+The patched FP16 canary, using fresh `fp16-pack-v1` compiler caches, passes
+all seven shapes and every operand-gradient gate. Maximum output relative
+L2 is **0.001603**, maximum individual gradient error **0.003192**. Its
+matched FLA precision-boundary control also passes. Receipt:
+`results/nf4_flashqla_fp16_precise_patched_canary/canary.json`, SHA-256
+`b25cd727bdc1ffc23fab73e8442dddc07f30772b2d8ae3b10ea2eb2a16187369`.
+Helper, entrypoint, patch-script and header snapshots all verify.
+The FP16-core NF4 whole-model diagnostic also fails before updates:
+gradient relative L2 **0.400802**, versus **0.387613** for cast FLA.
+All gradients are finite; several singleton loss gaps still exceed the
+original tolerance. Receipt: `results/nf4_flashqla_fp16_precise_diagnostic/
+nf4/screen.json` (one uninterrupted path), SHA-256
+`9e7acd021290b1e6d0574822d4849885df7bacd998ff7f30728f198cb011f963`.
+All 21 source/config hashes verify against `ce389fd`. No full-replacement
+optimizer updates or accepted whole-model timings occur in any variant.
+Validation: 51 focused CPU tests for the precision/compiler changes.
+
+A separate strict partial-layer diagnostic now tests BF16 kernel operands
+with FP32 gates/normalization only in the final 12, 8, 4, 2, then 1
+linear-attention layers, stopping at the first passing original-FLA
+loss/gradient gate. Earlier layers retain original FLA and FP32 operands.
+This addresses error propagation without relaxing thresholds; it must be
+reported as partial FlashQLA. No timing run starts unless its selected
+subset passes. Layer selection/restoration and bounded configuration checks
+bring focused CPU validation to 61 passing tests.

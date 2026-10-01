@@ -110,6 +110,8 @@ def run_precision_training_screen(
     flashqla_auto_cp: bool = False,
     gated_delta_bf16_boundary: bool = False,
     gated_delta_boundary_policy: str = "bf16",
+    flashqla_layer_indices: list[int] | None = None,
+    flashqla_layer_sweep: list[list[int]] | None = None,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -261,17 +263,26 @@ def run_precision_training_screen(
         if gated_delta_backend != "fla":
             from gleipnir.flashqla_training import install_with_model_canary
 
-            report["attention_backend_canary"] = install_with_model_canary(
-                model,
-                [collator([item]) for item in probe]
-                + [collator([probe[0], probe[-1]])],
-                loss_forward,
-                auto_cp=flashqla_auto_cp,
-                backend=gated_delta_backend,
-                bf16_boundary=gated_delta_bf16_boundary,
-                boundary_policy=gated_delta_boundary_policy,
-            )
-            publish()
+            if flashqla_layer_sweep and not diagnostics_only:
+                raise ValueError("layer sweep permits diagnostics only")
+            for indices in flashqla_layer_sweep or [flashqla_layer_indices]:
+                report["attention_backend_canary"] = install_with_model_canary(
+                    model,
+                    [collator([item]) for item in probe]
+                    + [collator([probe[0], probe[-1]])],
+                    loss_forward,
+                    auto_cp=flashqla_auto_cp,
+                    backend=gated_delta_backend,
+                    bf16_boundary=gated_delta_bf16_boundary,
+                    boundary_policy=gated_delta_boundary_policy,
+                    layer_indices=indices,
+                )
+                report.setdefault("attention_backend_layer_sweep", []).append(
+                    report["attention_backend_canary"]
+                )
+                publish()
+                if report["attention_backend_canary"]["passed"]:
+                    break
             if not report["attention_backend_canary"]["passed"]:
                 raise ValueError("FlashQLA model loss/gradient canary failed")
         report["before_native_probe"] = evaluate(dense=False)

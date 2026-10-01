@@ -559,3 +559,17 @@ backend loading verifies the patch. Original FlashQLA sources and main
 environment remain unchanged. Preserve the failed receipt, rerun all seven
 FP16 shapes with fresh `fp16-pack-v1` caches, and require the same gates
 before the no-update model diagnostic.
+
+Both revised whole-model boundaries fail: BF16 gradient error 0.448167
+(cast FLA 0.383393), FP16 0.400802 (cast FLA 0.387613). They make no
+updates. Full replacement timing configurations are canceled. The next
+no-update screen retains BF16 GDN operands/FP32 gates and normalization but
+limits replacement to the final 12, 8, 4, 2, then 1 linear-attention layers
+in descending order, stopping at the first passing loss/gradient gate.
+All earlier attention layers retain original FLA and its FP32 operands.
+The selected subset must be explicitly recorded; this is partial FlashQLA.
+The same original-FLA reference, all 256 adapter gradients, and strict gates
+apply to every subset. Only a passing subset may launch a global-longest
+update and the original warmed timing protocol against the unchanged NF4/FLA
+control. This workload selection is a systems screen, not held-out quality
+selection. Stop if every subset fails; never train a rejected subset.

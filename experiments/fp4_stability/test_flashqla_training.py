@@ -159,8 +159,9 @@ def test_boundary_policy_rejects_unknown_or_inactive_policy():
 
 @pytest.mark.parametrize("factor,passed", [(1.001, True), (2.0, False)])
 @pytest.mark.parametrize("bf16_boundary", [False, True])
+@pytest.mark.parametrize("partial", [False, True])
 def test_model_gate_preserves_or_restores_kernel(
-    monkeypatch, factor, passed, bf16_boundary
+    monkeypatch, factor, passed, bf16_boundary, partial
 ):
     import gleipnir.flashqla_training as backend
 
@@ -174,8 +175,11 @@ def test_model_gate_preserves_or_restores_kernel(
             super().__init__()
             self.weight = torch.nn.Parameter(torch.tensor(1.0))
             self.layers = torch.nn.ModuleList([torch.nn.Module() for _ in range(24)])
-            for layer in self.layers:
+            for index, layer in zip(
+                [i for i in range(32) if i % 4 != 3], self.layers, strict=True
+            ):
                 layer.chunk_gated_delta_rule = reference
+                layer.layer_idx = index
 
         def forward(self, value):
             q = value * self.weight
@@ -194,21 +198,44 @@ def test_model_gate_preserves_or_restores_kernel(
         model,
         auto_cp=False,
         bf16_boundary=bf16_boundary,
+        layer_indices=[29, 30] if partial else None,
     )
     assert result["passed"] is passed
     assert model.training
     assert model.weight.item() == 1.0
     assert model.weight.grad is None
-    assert all(
-        (layer.chunk_gated_delta_rule is reference) is (not passed)
-        for layer in model.layers
-    )
+    assert result["replaced_layers"] == (2 if partial else 24)
+    for layer in model.layers:
+        changed = passed and (not partial or layer.layer_idx in [29, 30])
+        assert (layer.chunk_gated_delta_rule is reference) is (not changed)
     if bf16_boundary and not passed:
         assert "failure_diagnostic_error" not in result
         # BF16 casts round the 1/24 gradient contributions in this toy mean.
         assert result["fla_bf16_failure_control"]["gradient_relative_l2"] < 0.005
-        assert len(result["shadow_outputs_on_original_path"]) == 48
+        assert len(result["shadow_outputs_on_original_path"]) == (4 if partial else 48)
         assert all(
             row["fla_bf16"]["relative_l2"] == 0
             for row in result["shadow_outputs_on_original_path"]
+        )
+
+
+@pytest.mark.parametrize("indices", [[], [3], [32], [30, 29], [True], [29, 29]])
+def test_layer_selection_rejects_invalid_decoder_layers(indices):
+    from pathlib import Path
+
+    config = yaml.safe_load(
+        (
+            Path(__file__).parent / "nf4_flashqla_bf16_precise_diagnostic.yaml"
+        ).read_text()
+    )
+    with pytest.raises(ValueError, match="decoder-layer"):
+        validate_config({**config, "flashqla_layer_indices": indices})
+    validate_config({**config, "flashqla_layer_sweep": [[29, 30], [30]]})
+    with pytest.raises(ValueError, match="diagnostic-only"):
+        validate_config(
+            {
+                **config,
+                "diagnostics_only": False,
+                "flashqla_layer_sweep": [[29, 30], [30]],
+            }
         )

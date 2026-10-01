@@ -189,11 +189,13 @@ def install_with_model_canary(
     backend: str = "flashqla",
     bf16_boundary: bool = False,
     boundary_policy: str = "bf16",
+    layer_indices: list[int] | None = None,
 ) -> dict[str, Any]:
     """Compare native-model losses and unclipped master gradients before updates."""
     import torch
 
     if backend == "flashqla":
+        print(f"attention_canary loading={backend} layers={layer_indices}", flush=True)
         function, receipt = load_flashqla()
         kernel = make_flashqla_kernel(function, auto_cp=auto_cp)
     elif backend == "fla_bf16" and bf16_boundary and not auto_cp:
@@ -206,6 +208,15 @@ def install_with_model_canary(
         not f.__module__.startswith("fla.ops.") for _, f in originals
     ):
         raise ValueError("expected all 24 Qwen4B layers to use pinned FLA")
+    if layer_indices is not None:
+        layer_indices = list(layer_indices)
+        available = {m.layer_idx for m in modules}
+        if not layer_indices or set(layer_indices) - available:
+            raise ValueError(
+                "requested FlashQLA layers are not linear-attention layers"
+            )
+        originals = [(m, f) for m, f in originals if m.layer_idx in layer_indices]
+        modules = [m for m, _ in originals]
     if backend == "fla_bf16":
         kernel = originals[0][1]
     if bf16_boundary:
@@ -216,6 +227,7 @@ def install_with_model_canary(
     reference_losses = []
     with torch.no_grad():
         reference_losses = [float(loss_forward(b).detach()) for b in batches]
+    print("attention_canary reference_losses_complete", flush=True)
     model.zero_grad(set_to_none=True)
     loss_forward(batches[-1]).backward()
     reference_gradients = []
@@ -225,11 +237,13 @@ def install_with_model_canary(
         reference_gradients.append(p.grad.detach().cpu().clone())
     model.zero_grad(set_to_none=True)
     passed = False
+    print("attention_canary reference_gradients_complete", flush=True)
     try:
         for module in modules:
             module.chunk_gated_delta_rule = kernel
         with torch.no_grad():
             candidate_losses = [float(loss_forward(b).detach()) for b in batches]
+        print("attention_canary candidate_losses_complete", flush=True)
         loss_forward(batches[-1]).backward()
         gradients = {}
         for (name, p), reference in zip(named, reference_gradients, strict=True):
@@ -249,6 +263,11 @@ def install_with_model_canary(
             and all(x["finite"] for x in gradients.values())
             and relative_l2 <= 0.05
         )
+        print(
+            f"attention_canary layers={layer_indices} passed={passed} "
+            f"gradient_relative_l2={relative_l2}",
+            flush=True,
+        )
         receipt.update(
             backend=backend,
             bf16_boundary=bf16_boundary,
@@ -256,6 +275,7 @@ def install_with_model_canary(
             original_input_dtypes=getattr(kernel, "input_dtypes", None),
             auto_cp=auto_cp,
             replaced_layers=len(modules),
+            layer_indices=layer_indices,
             reference_losses=reference_losses,
             candidate_losses=candidate_losses,
             gradient_relative_l2=relative_l2,

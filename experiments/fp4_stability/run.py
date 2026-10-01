@@ -36,6 +36,32 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+
+    def check_layers(indices):
+        return (
+            isinstance(indices, list)
+            and bool(indices)
+            and all(type(i) is int and 0 <= i < 32 and i % 4 != 3 for i in indices)
+            and indices == sorted(set(indices))
+        )
+
+    if config.get("flashqla_layer_indices") is not None and not check_layers(
+        config["flashqla_layer_indices"]
+    ):
+        raise ValueError("invalid FlashQLA decoder-layer selection")
+    sweep = config.get("flashqla_layer_sweep")
+    if sweep is not None and (
+        not config.get("diagnostics_only", False)
+        or not isinstance(sweep, list)
+        or not sweep
+        or not all(check_layers(indices) for indices in sweep)
+        or config.get("flashqla_layer_indices") is not None
+    ):
+        raise ValueError("invalid diagnostic-only FlashQLA layer sweep")
+    if (
+        sweep is not None or config.get("flashqla_layer_indices") is not None
+    ) and config.get("gated_delta_backend") != "flashqla":
+        raise ValueError("layer selection requires FlashQLA")
     from gleipnir.flashqla_training import BOUNDARY_POLICIES
 
     policy = config.get("gated_delta_boundary_policy", "bf16")
@@ -459,6 +485,12 @@ def main() -> None:
                     "student.training.selective_torch_compile_policy="
                     f"{config['compile_policy']}"
                 )
+            for key in ["flashqla_layer_indices", "flashqla_layer_sweep"]:
+                if config.get(key) is not None:
+                    command.append(
+                        f"++student.training.precision_screen.{key}="
+                        + json.dumps(config[key], separators=(",", ":"))
+                    )
             if stage_steps == 1:
                 command.append("student.training.warmup_ratio=0.0")
             elif config.get("timing_repeats", 0):
