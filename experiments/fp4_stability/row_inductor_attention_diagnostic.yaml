@@ -1,0 +1,25 @@
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+preflight_jobs: results/b200_adaptive_microbatching/preflight_jobs.jsonl
+condition_source: singleton
+output: results/fp4_row_inductor_attention_diagnostic
+logs: logs/runpod/fp4_row_inductor_attention_diagnostic
+kernel_target: .cache/kernels/fouroversix-1.0.5
+compiler_cache: .cache/training/fp4_forward_diagnostic/gpu-0
+compiler_cache_state: reused_after_inductor_boundaries_diagnostic
+conditions:
+- fouroversix
+diagnostics_only: true
+steps: 10
+timing_repeats: 0
+backward_mode: dequantized_bf16
+row_scaled_activations: true
+fused_row_scaling: true
+gradient_validation: clip_norm
+emulate_precision_casts: true
+compile_backend: inductor
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+eager_rmsnorm_interfaces: true
+eager_mlp_activation_interfaces: true
+compile_policy: full_attention_and_linear_shell
+diagnostic_selection: matched_320
