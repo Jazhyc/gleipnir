@@ -1,0 +1,29 @@
+jobs: results/b200_adaptive_microbatching/jobs.jsonl
+preflight_jobs: results/b200_adaptive_microbatching/preflight_jobs.jsonl
+condition_source: singleton
+output: results/fp4_row_inductor_offload_4cp_timing
+logs: logs/runpod/fp4_row_inductor_offload_4cp_timing
+kernel_target: .cache/kernels/fouroversix-1.0.5
+compiler_cache: .cache/training/fp4_forward_diagnostic/gpu-0
+compiler_cache_state: reused_after_rejected_attention_diagnostic
+conditions:
+- fouroversix
+diagnostics_only: false
+steps: 10
+timing_repeats: 3
+backward_mode: dequantized_bf16
+row_scaled_activations: true
+fused_row_scaling: true
+gradient_validation: clip_norm
+emulate_precision_casts: true
+compile_backend: inductor
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+eager_rmsnorm_interfaces: true
+eager_mlp_activation_interfaces: true
+compile_policy: decoder_shells_without_token_mixers
+reference_weights_on_cpu: true
+checkpoint_layer_indices: [0, 10, 21, 29]
+adaptive_token_budget: 16384
+activation_selector: strict
+compiler_visible_native: false

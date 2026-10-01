@@ -339,3 +339,27 @@ If it fails or yields no useful gain, a separately gated follow-up may restore
 `full_attention_and_linear_shell` compilation while retaining the proven eager
 RMSNorm/SiLU fences and BF16 precision casts. That changes execution boundaries,
 not attention precision; freeze a forward-only diagnostic before any updates.
+
+For candidate four, `row_inductor_offload_4cp_timing.yaml` offloads the original
+frozen BF16 MLP references after the initial native/dense probes, preserving
+native packed forward weights and the exact decoded-BF16 backward cache on GPU.
+Subsequent dense probes relocate one reference at a time outside timing. The
+integrated compile/backward/update gates run with references already on CPU.
+Record bytes released and allocated memory before/after offload; never move or
+cast the FP32 master adapters. A standalone native canary requires exact
+outputs, dX and adapter gradients, unchanged packed/decoded pointers and exact
+dense reference outputs before/after offload.
+
+The concrete combined intervention reduces twelve checkpoints to
+`[0, 10, 21, 29]`, retaining the 16,384-token physical budget, maximum eight
+examples, effective batch 32, initialization and order. If the global-longest
+or cohort preflight OOMs, stop that run and test the predeclared eight-layer
+fallback `[0, 5, 8, 13, 16, 21, 24, 29]` in its separate configuration/output.
+Do not train past an OOM or numerical failure. Once a checkpoint configuration
+passes, a separate follow-up may increase only its physical padded-token budget
+to 24,576 (oversized singleton exception retained). Record changed partitions
+and padding, compare the same actual tokens/order/LR sequence, and require the
+same complete gates and thirty measured steps. Adopt only >=5% lower complete
+step mean; attribute combined gains to the recorded memory/recomputation policy,
+not to the FP4 GEMMs alone. Carry forward only a selected preceding compiler
+candidate; otherwise retain the preferred strict eager-native boundaries.

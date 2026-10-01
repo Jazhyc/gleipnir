@@ -3553,6 +3553,9 @@ def main(cfg: DictConfig) -> None:
             gradient_validation=str(
                 precision_screen_cfg.get("gradient_validation", "per_tensor")
             ),
+            reference_weights_on_cpu=bool(
+                precision_screen_cfg.get("reference_weights_on_cpu", False)
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

@@ -13,6 +13,10 @@ from pathlib import Path
 import yaml
 
 from experiments.b200_fouroversix.run import make_job, verify_inputs
+from experiments.fp4_stability.memory_recipe import (
+    apply_memory_recipe,
+    validate_memory_recipe,
+)
 from experiments.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
@@ -31,6 +35,7 @@ ROOT = Path(__file__).resolve().parents[2]
 
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
+    validate_memory_recipe(config)
     if config["steps"] not in {1, 10}:
         raise ValueError("retain one preflight update or ten matched updates")
     if (
@@ -203,11 +208,14 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_quantization_kernels.py",
                 ROOT / "src/gleipnir/fp4_fast_selector.py",
                 ROOT / "src/gleipnir/fp4_compiler_ops.py",
+                ROOT / "src/gleipnir/fp4_memory.py",
+                ROOT / "experiments/fp4_stability/memory_recipe.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/shared_activation_canary.py",
                 ROOT / "experiments/fp4_stability/fast_selector_canary.py",
                 ROOT / "experiments/fp4_stability/compiler_op_canary.py",
+                ROOT / "experiments/fp4_stability/reference_offload_canary.py",
                 ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -229,6 +237,26 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("reference_weights_on_cpu", False):
+            offload_command = [
+                sys.executable,
+                "experiments/fp4_stability/reference_offload_canary.py",
+                "--output",
+                str(output / "reference_offload_canary.json"),
+                "--activation-selector",
+                config.get("activation_selector", "strict"),
+            ]
+            if config.get("compiler_visible_native", False):
+                offload_command.append("--compiler-visible-native")
+            with (logs / "reference-offload-canary.log").open("w") as handle:
+                subprocess.run(
+                    offload_command,
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         if config.get("compiler_visible_native", False):
             with (logs / "compiler-op-canary.log").open("w") as handle:
                 subprocess.run(
@@ -338,6 +366,7 @@ def main() -> None:
             stage_steps = specification["steps"]
             destination = output / specification["name"]
             job = make_job(specification["source"], destination, precision, stage_steps)
+            job = apply_memory_recipe(job, config)
             command = training_command(job) + [
                 f"++student.quantization.mlp_precision={precision}",
                 f"++student.quantization.fp4_backward_mode={config['backward_mode']}",
@@ -367,6 +396,8 @@ def main() -> None:
                 f"{str(config.get('compiler_visible_native', False)).lower()}",
                 "++student.training.precision_screen.gradient_validation="
                 f"{config.get('gradient_validation', 'per_tensor')}",
+                "++student.training.precision_screen.reference_weights_on_cpu="
+                f"{str(config.get('reference_weights_on_cpu', False)).lower()}",
             ]
             if config.get("compile_policy"):
                 command.append(
@@ -399,6 +430,7 @@ def main() -> None:
                 "steps": stage_steps,
                 "selection_manifest": specification["source"]["selection_manifest"],
                 "command": command,
+                "execution_job": job,
                 "status": "running",
                 "started_unix": time.time(),
             }

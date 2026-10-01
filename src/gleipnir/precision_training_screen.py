@@ -76,7 +76,8 @@ def dense_mlp_evaluation(model: torch.nn.Module):
         if isinstance(module, FrozenFourOverSixLinear):
 
             def dense(inputs, layer=module):
-                return functional.linear(inputs.to(layer.weight.dtype), layer.weight)
+                weight = layer.weight.to(inputs.device)
+                return functional.linear(inputs.to(weight.dtype), weight)
 
             forwards.append((module, dense))
     with use_forwards(forwards):
@@ -104,6 +105,7 @@ def run_precision_training_screen(
     timing_repeats: int = 0,
     profile_batch: int | None = None,
     gradient_validation: str = "per_tensor",
+    reference_weights_on_cpu: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -250,6 +252,17 @@ def run_precision_training_screen(
         restore()
         report["before_native_probe"] = evaluate(dense=False)
         report["before_common_probe"] = evaluate(dense=True)
+        if reference_weights_on_cpu:
+            from gleipnir.fp4_memory import offload_reference_weights
+
+            torch.cuda.synchronize(device)
+            before_bytes = torch.cuda.memory_allocated(device)
+            report["reference_offload"] = offload_reference_weights(model)
+            report["reference_offload"]["allocated_bytes_before"] = before_bytes
+            report["reference_offload"]["allocated_bytes_after"] = (
+                torch.cuda.memory_allocated(device)
+            )
+            publish()
         canary = [dict(probe[0]), dict(probe[-1])]
         batch = collator(canary)
         model.eval()
