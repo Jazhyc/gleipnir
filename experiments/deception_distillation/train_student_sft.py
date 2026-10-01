@@ -3459,7 +3459,14 @@ def main(cfg: DictConfig) -> None:
     if precision_screen_cfg is not None and bool(precision_screen_cfg.enabled):
         from torch._functorch import config as functorch_config
 
+        from gleipnir.fouroversix_training import install_eager_rmsnorm_interfaces
         from gleipnir.precision_training_screen import run_precision_training_screen
+
+        eager_rmsnorm_interfaces = (
+            install_eager_rmsnorm_interfaces(model)
+            if bool(precision_screen_cfg.get("eager_rmsnorm_interfaces", False))
+            else []
+        )
 
         if not adaptive_enabled or world_size != 1 or optimizer_name != "adamw":
             raise ValueError("precision screen requires single-device adaptive AdamW")
@@ -3505,6 +3512,7 @@ def main(cfg: DictConfig) -> None:
                 "causal_conv1d_kernel_modules": causal_conv1d_modules,
                 "compile_policy": selective_torch_compile_policy,
                 "eager_mlp_interface": eager_mlp_interface,
+                "eager_rmsnorm_interfaces": eager_rmsnorm_interfaces,
                 "backward_pass_autocast": (functorch_config.backward_pass_autocast),
             },
         )

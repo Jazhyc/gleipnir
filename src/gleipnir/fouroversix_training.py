@@ -291,3 +291,17 @@ def install_eager_mlp_interfaces(model: nn.Module) -> list[str]:
     for _, module in selected:
         module.forward = torch.compiler.disable(module.forward)
     return [name for name, _ in selected]
+
+
+def install_eager_rmsnorm_interfaces(model: nn.Module) -> list[str]:
+    """Retain native eager Qwen normalization at quantization-sensitive boundaries."""
+    selected = [
+        (name, module)
+        for name, module in model.named_modules()
+        if module.__class__.__name__ == "Qwen3_5RMSNorm"
+    ]
+    if not selected:
+        raise ValueError("no Qwen3.5 RMSNorm interfaces found")
+    for _, module in selected:
+        module.forward = torch.compiler.disable(module.forward)
+    return [name for name, _ in selected]

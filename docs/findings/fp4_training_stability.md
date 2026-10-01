@@ -170,3 +170,19 @@ quantized activations, row scales and outputs in the first four native MLPs.
 It records strides and value differences, with an explicit check that observation
 preserves both original losses. Only aggregate metrics are saved; activation
 tensors stay in process memory and are discarded when the diagnostic exits.
+
+The first-four-layer trace preserves both original losses exactly. All observed
+inputs and quantizer inputs have identical contiguous strides across paths.
+The first native gate/up projection already receives different FP32 values:
+relative L2 **0.0002089822**, maximum absolute difference **0.01527095**.
+After BF16 conversion and row normalization, relative L2 is **0.0006408381**;
+decoded FP4 activation relative L2 rises to **0.005456348**. By layer 3's down
+projection it reaches **0.2006488**. This measures amplification of upstream
+numerical drift, not a stride reinterpretation in the observed tensors.
+Evidence: `results/fp4_row_operand_diagnostic/`.
+
+The targeted follow-up keeps Qwen RMSNorm interfaces eager and preserves BF16
+rounding in the remaining Inductor operations, while retaining native MLPs,
+checkpointing, adaptive batching and the selected compiler policy. It records
+all exact normalization module names and repeats the native operand trace.
+RMSNorm's contribution remains a hypothesis until this intervention is measured.

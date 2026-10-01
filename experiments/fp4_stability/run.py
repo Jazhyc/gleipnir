@@ -181,6 +181,8 @@ def main() -> None:
                 f"++student.training.precision_screen.diagnostics_only={str(config['diagnostics_only']).lower()}",
                 "++student.training.precision_screen.capture_native_operands="
                 f"{str(config.get('capture_native_operands', False)).lower()}",
+                "++student.training.precision_screen.eager_rmsnorm_interfaces="
+                f"{str(config.get('eager_rmsnorm_interfaces', False)).lower()}",
                 f"student.training.selective_torch_compile_backend={config['compile_backend']}",
             ]
             if stage_steps == 1:

@@ -38,7 +38,11 @@ def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
     )
     validate_config(matched_diagnostic)
     assert matched_diagnostic["diagnostics_only"]
-    for filename in ["row_aot_diagnostic.yaml", "row_operand_diagnostic.yaml"]:
+    for filename in [
+        "row_aot_diagnostic.yaml",
+        "row_operand_diagnostic.yaml",
+        "row_eager_norm_diagnostic.yaml",
+    ]:
         validate_config(yaml.safe_load((root / filename).read_text()))
 
 
@@ -91,6 +95,33 @@ def test_operand_metrics_record_value_drift_and_reject_different_shapes():
     assert metrics["eager_dtype"] != metrics["compiled_dtype"]
     with pytest.raises(ValueError, match="shapes differ"):
         tensor_difference(eager, compiled.reshape(2, 2))
+
+
+def test_eager_norm_boundary_preserves_parameters_and_leaves_gated_norm(monkeypatch):
+    from gleipnir.fouroversix_training import install_eager_rmsnorm_interfaces
+
+    class Qwen3_5RMSNorm(torch.nn.Linear):
+        pass
+
+    class Qwen3_5RMSNormGated(torch.nn.Linear):
+        pass
+
+    model = torch.nn.ModuleDict(
+        {
+            "input_norm": Qwen3_5RMSNorm(2, 2),
+            "gated_norm": Qwen3_5RMSNormGated(2, 2),
+        }
+    )
+    keys = list(model.state_dict())
+    parameters = list(model.parameters())
+    disabled = []
+    monkeypatch.setattr(torch.compiler, "disable", lambda fn: disabled.append(fn) or fn)
+    assert install_eager_rmsnorm_interfaces(model) == ["input_norm"]
+    assert len(disabled) == 1
+    assert list(model.state_dict()) == keys
+    assert all(p is q for p, q in zip(parameters, model.parameters(), strict=True))
+    with pytest.raises(ValueError, match="no Qwen3.5"):
+        install_eager_rmsnorm_interfaces(torch.nn.Linear(2, 2))
 
 
 def test_ten_update_campaign_requires_global_preflight_before_each_condition():
