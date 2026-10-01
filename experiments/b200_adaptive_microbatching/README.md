@@ -101,3 +101,14 @@ the cross-shape discrepancy, but does not identify its cause or validate an
 adaptive policy. The installed FLA includes the known Blackwell forward-state
 guard; other upstream race reports concern different hardware/load and were
 not reproduced here. Keep the original recipe and parity threshold.
+
+Matched loss audit: run `diagnose.py --mode compiled` with the original maximum
+8 and a new output directory to collect the enhanced loss/logit diagnostics
+missing from the initial compiled failure. Compare both singleton and batch-8
+mean losses and per-example decision logits against the recorded eager run,
+with unchanged frozen inputs, seed, weights and teacher targets. Hypothesis:
+forward-loss agreement can be much closer than gradient agreement. No optimizer
+update occurs; preserve the existing 0.05 gradient gate and baseline selection.
+A small mean-loss gap cannot alone establish equivalent subsequent updates or
+learning trajectories. Stop after the eight-input canary or any nonfinite/OOM
+failure; this audit does not authorize a full training campaign.
