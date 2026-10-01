@@ -73,6 +73,16 @@ def validate_config(config: dict) -> None:
         "row_scaled_activations", False
     ):
         raise ValueError("fused row scaling requires per-token activations")
+    if config.get("fused_activation_packing", False) and not (
+        config.get("row_scaled_activations", False)
+        and config.get("fused_row_scaling", False)
+        and config["backward_mode"] == "dequantized_bf16"
+        and config["conditions"] == ["fouroversix"]
+        and not config.get("capture_native_operands", False)
+    ):
+        raise ValueError(
+            "fused packing requires unobserved native per-token BF16 backward"
+        )
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -159,7 +169,9 @@ def main() -> None:
                 ROOT / "src/gleipnir/precision_training_screen.py",
                 ROOT / "src/gleipnir/fp4_performance.py",
                 ROOT / "src/gleipnir/fp4_row_kernels.py",
+                ROOT / "src/gleipnir/fp4_quantization_kernels.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
+                ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
                 ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -181,6 +193,23 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("fused_activation_packing", False):
+            with (logs / "packing-kernel-canary.log").open("w") as handle:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/fp4_stability/packing_kernel_canary.py",
+                        "--implementation",
+                        "tiled",
+                        "--output",
+                        str(output / "packing_kernel_canary.json"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         if config.get("fused_row_scaling", False):
             with (logs / "row-kernel-canary.log").open("w") as handle:
                 subprocess.run(
@@ -208,6 +237,8 @@ def main() -> None:
             canary_command.append("--row-scaled-activations")
         if config.get("fused_row_scaling", False):
             canary_command.append("--fused-row-scaling")
+        if config.get("fused_activation_packing", False):
+            canary_command.append("--fused-activation-packing")
         with (logs / "kernel-canary.log").open("w") as handle:
             subprocess.run(
                 canary_command,
@@ -241,6 +272,8 @@ def main() -> None:
                 f"student.training.selective_torch_compile_backend={config['compile_backend']}",
                 "++student.quantization.fp4_fused_row_scaling="
                 f"{str(config.get('fused_row_scaling', False)).lower()}",
+                "++student.quantization.fp4_fused_activation_packing="
+                f"{str(config.get('fused_activation_packing', False)).lower()}",
                 "++student.training.precision_screen.gradient_validation="
                 f"{config.get('gradient_validation', 'per_tensor')}",
             ]

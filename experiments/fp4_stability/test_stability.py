@@ -372,6 +372,81 @@ def test_fused_scaling_wrapper_preserves_forward_and_decoded_backward(monkeypatc
     torch.testing.assert_close(gradients[0], gradients[1], rtol=0, atol=0)
 
 
+def test_packed_wrapper_passes_prepacked_input_and_preserves_backward(monkeypatch):
+    import sys
+
+    calls = []
+
+    def pack(inputs, fixed_amax, *, implementation):
+        assert implementation == "tiled"
+        normalized, scales = normalize_activation_rows(inputs)
+        payload = SimpleNamespace(decoded=normalized)
+        calls.append(payload)
+        return payload, scales
+
+    monkeypatch.setitem(
+        sys.modules,
+        "gleipnir.fp4_quantization_kernels",
+        SimpleNamespace(quantize_activation_rows=pack),
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "gleipnir.fp4_row_kernels",
+        SimpleNamespace(
+            rescale_rows=lambda output, scales: (output.float() * scales).to(
+                torch.bfloat16
+            )
+        ),
+    )
+    original = torch.nn.Linear(16, 32, bias=False, dtype=torch.bfloat16)
+    original.requires_grad_(False)
+
+    def matmul(payload, weight, *, input_config):
+        assert payload is calls[-1]
+        return payload.decoded @ weight.T
+
+    runtime = FrozenFp4Runtime(
+        original.weight,
+        None,
+        SimpleNamespace(kwargs={"x_amax": torch.ones(1)}),
+        None,
+        matmul,
+        dequantized_weight=original.weight,
+        row_scaled_activations=True,
+        fused_row_scaling=True,
+        fused_activation_packing=True,
+    )
+    layer = FrozenFourOverSixLinear(original, runtime)
+    inputs = torch.randn(2, 7, 16, dtype=torch.bfloat16, requires_grad=True)
+    normalized, scales = normalize_activation_rows(inputs.detach().reshape(-1, 16))
+    expected = ((normalized @ original.weight.T).float() * scales).to(torch.bfloat16)
+    output = layer(inputs)
+    torch.testing.assert_close(output.reshape(-1, 32), expected, rtol=0, atol=0)
+    gradient = torch.randn_like(output)
+    output.backward(gradient)
+    torch.testing.assert_close(inputs.grad, gradient @ original.weight, rtol=0, atol=0)
+    assert len(calls) == 1 and original.weight.grad is None
+    runtime.observer = lambda *args: None
+    with pytest.raises(ValueError, match="observation"):
+        layer(inputs)
+
+
+def test_packing_campaign_rejects_inconsistent_precision_and_observation():
+    config = yaml.safe_load(
+        (Path(__file__).parent / "row_inductor_packed_timing.yaml").read_text()
+    )
+    validate_config(config)
+    for overrides in [
+        {"row_scaled_activations": False},
+        {"fused_row_scaling": False},
+        {"backward_mode": "fp4"},
+        {"conditions": ["bf16"]},
+        {"capture_native_operands": True},
+    ]:
+        with pytest.raises(ValueError, match="per-token|fused packing"):
+            validate_config({**config, **overrides})
+
+
 def test_timing_config_is_fp4_only_and_bounded():
     config = yaml.safe_load((Path(__file__).parent / "row_aot_timing.yaml").read_text())
     validate_config(config)

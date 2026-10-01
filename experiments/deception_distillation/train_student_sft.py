@@ -3167,6 +3167,13 @@ def main(cfg: DictConfig) -> None:
                     cfg, "student.quantization.fp4_fused_row_scaling", default=False
                 )
             ),
+            fused_activation_packing=bool(
+                OmegaConf.select(
+                    cfg,
+                    "student.quantization.fp4_fused_activation_packing",
+                    default=False,
+                )
+            ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(

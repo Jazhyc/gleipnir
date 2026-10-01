@@ -52,6 +52,7 @@ class FrozenFp4Runtime:
     row_scaled_activations: bool = False
     observer: Callable | None = None
     fused_row_scaling: bool = False
+    fused_activation_packing: bool = False
 
 
 def normalize_activation_rows(
@@ -70,10 +71,20 @@ class FrozenFp4Function(torch.autograd.Function):
         ctx.input_shape = inputs.shape
         ctx.input_dtype = inputs.dtype
         runtime.forward_calls += 1
+        if runtime.fused_activation_packing and runtime.observer is not None:
+            raise ValueError("operand observation does not support fused packing")
         flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
         scales = None
         if runtime.row_scaled_activations:
-            if runtime.fused_row_scaling:
+            if runtime.fused_activation_packing:
+                from gleipnir.fp4_quantization_kernels import quantize_activation_rows
+
+                flattened, scales = quantize_activation_rows(
+                    flattened,
+                    runtime.activation_config.kwargs["x_amax"],
+                    implementation="tiled",
+                )
+            elif runtime.fused_row_scaling:
                 from gleipnir.fp4_row_kernels import normalize_rows
 
                 flattened, scales = normalize_rows(flattened)
@@ -138,6 +149,7 @@ def native_runtime(
     backward_mode: str = "fp4",
     row_scaled_activations: bool = False,
     fused_row_scaling: bool = False,
+    fused_activation_packing: bool = False,
 ) -> FrozenFp4Runtime:
     """Fail closed on package/hardware mismatch and prohibit reference fallback."""
     if importlib.metadata.version("fouroversix") != FOUROVERSIX_VERSION:
@@ -146,6 +158,14 @@ def native_runtime(
         raise ValueError(f"unknown FP4 backward mode: {backward_mode}")
     if fused_row_scaling and not row_scaled_activations:
         raise ValueError("fused row scaling requires per-token activations")
+    if fused_activation_packing and not (
+        row_scaled_activations
+        and fused_row_scaling
+        and backward_mode == "dequantized_bf16"
+    ):
+        raise ValueError(
+            "fused packing requires fused per-token scaling and BF16 backward"
+        )
     if weight.device.type != "cuda" or torch.cuda.get_device_capability() not in {
         (10, 0),
         (10, 3),
@@ -203,6 +223,7 @@ def native_runtime(
         dequantized_weight=decoded_weight,
         row_scaled_activations=row_scaled_activations,
         fused_row_scaling=fused_row_scaling,
+        fused_activation_packing=fused_activation_packing,
     )
 
 
@@ -213,10 +234,13 @@ def install_mlp_precision(
     backward_mode: str = "fp4",
     row_scaled_activations: bool = False,
     fused_row_scaling: bool = False,
+    fused_activation_packing: bool = False,
 ) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
         raise ValueError(f"unknown MLP precision: {precision}")
+    if fused_activation_packing and precision != "fouroversix":
+        raise ValueError("fused activation packing requires native FP4 MLPs")
     selected = [
         (name, module)
         for name, module in model.named_modules()
@@ -244,11 +268,13 @@ def install_mlp_precision(
                     if backward_mode == "fp4"
                     and not row_scaled_activations
                     and not fused_row_scaling
+                    and not fused_activation_packing
                     else native_runtime(
                         module.weight,
                         backward_mode=backward_mode,
                         row_scaled_activations=row_scaled_activations,
                         fused_row_scaling=fused_row_scaling,
+                        fused_activation_packing=fused_activation_packing,
                     ),
                 ),
             )
@@ -270,7 +296,13 @@ def install_mlp_precision(
         if precision == "fouroversix" and backward_mode == "fp4"
         else None,
         "activation_scaling": (
-            ("per_token_fused" if fused_row_scaling else "per_token_unfused")
+            (
+                "per_token_tiled_packing"
+                if fused_activation_packing
+                else "per_token_fused"
+                if fused_row_scaling
+                else "per_token_unfused"
+            )
             if row_scaled_activations
             else "per_tensor"
         )

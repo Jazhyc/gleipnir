@@ -200,3 +200,46 @@ and gradient gates, partial checkpoints, adaptive batching and full warmed
 protocol. This does not change the default NF4 recipe. Full receipts and limits
 are in [the finding](../../docs/findings/fp4_training_stability.md#faster-warmed-fp4-training).
 The B200 remains running idle; no additional campaign is queued.
+
+## Fused activation packing canary
+
+Hypothesis: fusing the per-token FP32 maximum, BF16 normalization boundary,
+MSE 4/6 selection and Blackwell packing removes an intermediate activation
+matrix and a kernel launch without changing the stable recipe's arithmetic.
+This follows the blog's integration direction, not its full-model MoE/RL
+training scope. Its final expert forward passes use FP4, while backward GEMMs
+use higher precision and the final approximately 15% of layers remain BF16.
+Our LoRA branches and frozen-base BF16 input gradients remain unchanged.
+
+`packing_kernel_canary.py` compares a one-program-per-row candidate with the
+current fused normalization followed by the pinned FourOverSix quantizer on
+the existing B200. Require exact row maxima, packed FP4 bytes, FP8 scale bytes
+including padding, and rescaled CUTLASS outputs for zeros, outlier rows,
+irregular row counts and both Qwen MLP input widths. Record warmed timing for
+the complete normalization/packing operation. Stop after these isolated cases;
+do not load the model or update adapters. A failed bitwise gate or slower
+representative large matrices rejects this candidate. Keep the winning
+12.479-second training recipe unchanged until a candidate passes and a separate
+matched full-model replay establishes its benefit. This kernel retains the
+upstream FP32 MSE selector; the blog's faster FP16 selector is a separate change.
+
+The first row candidate fails packed parity at width 9,216. A second canary
+prohibiting floating-point fusion still changes four selected block scales in
+the 513-row case and is also rejected. Preserve both receipts. The next isolated
+`--implementation tiled` probe retains the pinned 16x64 quantization tiles,
+computes row maxima separately, and fuses normalization into packing without
+materializing the normalized matrix. Its acceptance gates and stop condition
+remain the same; isolated timing does not establish training throughput.
+
+The tiled canary passes all seven cases with exact packed operands and output.
+`row_inductor_packed_timing.yaml` tests this explicit opt-in against the complete
+12.479-second optimized recipe. Retain all initial adapters, sources, native
+and model gates, BF16 backward, checkpointing, adaptive batching, compiler
+boundaries and gradient checks. Re-run the packing canary before model loading,
+then the global-longest update, ten warm-up steps and three measured ten-step
+replays. Stop on the existing failure gates or after these bounded passes.
+Require at least 5% lower matched mean step time for a useful gain; isolated
+packing speed does not establish training throughput or quality. Defaults and
+all failed row-packing receipts remain intact. Row maxima still use a separate
+kernel; the intervention eliminates the normalized BF16 matrix rather than
+claiming the blog's entire fused stack.

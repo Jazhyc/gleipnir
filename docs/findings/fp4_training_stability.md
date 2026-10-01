@@ -548,3 +548,27 @@ locally and remain on the persistent network volume. Collected checkpoint SHA-25
 values match the remote copies. Thirty focused CPU tests, Ruff, configuration
 validation and diff checks pass. The campaign is complete; the B200 is running
 idle and no further experiment is queued.
+
+## Precision scope of the 4-bitter Lesson
+
+The [blog's final recipe](https://humansand.ai/blog/nvfp4-rl) is mixed precision:
+NVFP4 weights and activations in expert forward GEMMs; BF16 backward GEMMs
+using decoded forward operands; higher precision for non-expert components,
+shared experts and approximately the final 15% of layers. It updates base
+weights in MoE RL, whereas our dense Qwen3.5 experiment updates LoRA adapters.
+The blog's 97% expert-parameter illustration is explicitly for DeepSeek-V3-style
+models; it does not measure our model's FP4 coverage or the fraction of backward
+work performed in FP4.
+
+Our current recipe already has per-token activation scaling, MSE 4/6 for both
+operands and decoded-forward-weight BF16 input gradients. Frozen base weights
+need no weight gradients, so retaining decoded activations for their weight
+gradients would not help. LoRA branches differentiate their own higher-precision
+forward inputs. This distinction matters when adapting the blog's backward rule.
+
+The practical remaining gaps are fused activation packing, the faster 4/6
+selection kernel, and avoiding redundant resident or saved representations.
+The experimental packing canary in the experiment README tests the first gap
+without broadening quantization or changing the training arithmetic. Native FP4
+backward is not required to follow the blog's final recipe. Selective BF16 final
+layers are a separate possible stability experiment, not an implemented policy.
