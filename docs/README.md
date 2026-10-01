@@ -29,6 +29,10 @@
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
   development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
   engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
+- [B200 Four Over Six training handoff](findings/b200_fouroversix_training.md#resume-checklist-and-stability-candidates):
+  completed native kernel checks, two failed full-model compilation gates,
+  artifact/code state, and untested per-token scaling, dequantized BF16 backward
+  and final-layer precision proposals for resuming the deferred investigation.
 - `findings/competition_poster_evidence.md`: frozen deception-monitor evidence
   tables and reporting qualifications for the competition poster.
 - `findings/lambda_shutdown_inventory.md`: checksummed local artifact inventory

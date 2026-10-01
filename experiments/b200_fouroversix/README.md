@@ -97,3 +97,9 @@ and logs are preserved, and the existing B200 Pod remains running. See
 [`b200_fouroversix_training`](../../docs/findings/b200_fouroversix_training.md)
 for the completed finding. Do not promote this integration or infer training
 speed, activation-memory savings or convergence from the isolated kernel tests.
+
+Before resuming, read the
+[handoff and proposed stability changes](../../docs/findings/b200_fouroversix_training.md#resume-checklist-and-stability-candidates).
+It records the source/artifact/kernel state, the humans& recipe differences and
+the order of bounded diagnostics. Those changes are proposals; the existing
+training recipe and failed gates remain recorded as executed.
