@@ -203,3 +203,63 @@ checkpointed layers, adaptive batches, frozen inputs and FP32 master adapters.
 Each condition must pass its global-longest update before ten matched updates.
 This isolates practical training viability from the unresolved Inductor
 disagreement. It does not establish the original optimized recipe's performance.
+
+## AOT training campaign
+
+`results/fp4_row_aot_training/contract.json` matches all six executable/config
+hashes in commit `21e8cb5`; the verified receipt is saved locally and on the
+persistent volume. Native kernel canaries passed again before model loading.
+
+The native global-longest stage completes its backward preflight and one update
+at learning rate 5e-5. Repeated eager/compiled losses all equal
+**1.4450643062591553**. The update processes 922,511 tokens, has finite gradient
+norm **25.28337479**, takes **85.7544 seconds**, and peaks at
+**147,515,253,248 allocated bytes** (137.4 GiB). FP32 master hash changes from
+the shared initial hash to
+`66ae8c473153e743aba99828a5e9720e49cad637d850ebe4e60fe4690c5a999d`.
+The common training-probe mean decreases **1.371738 -> 0.961143**; native probe
+decreases **1.400628 -> 1.003383**. Counts: 96 native modules, 10,368 native
+forward calls, 6,144 decoded-BF16 backward calls and zero FP4 backward calls.
+Dynamo records 25 unique graphs and no unsupported operations. The report and
+FP32 master checkpoint have been collected locally.
+
+The matched-cohort eager/compiled/repeat losses all equal
+**1.2848907709121704**. Its separate longest-32 backward also passes: 711,225
+tokens, longest 28,733, finite nonzero norm **25.73112488**, peak allocated
+**144,567,890,432 bytes**. It compiles fresh FLA/Triton kernels for new sequence
+shapes before optimizer updates. Record this cold work separately from measured
+warm-step throughput; this first native pass cannot support a matched speedup
+claim against subsequent controls that reuse its kernel cache.
+
+The native ten-step trajectory completes all ten steps, with nine nonzero-LR
+updates after the recorded zero-LR warmup step. Every adapter gradient remains
+finite and physical batch sizes include 1/2/4/8. The steps process **1,314,331
+actual tokens** and peak at **145,166,090,240 allocated bytes** (135.2 GiB).
+The common training probe decreases **1.165299 -> 0.779105**; the native probe
+decreases **1.205408 -> 0.828045**. The final FP32 master hash is
+`907c7a4550773790705437751baeb9cfcedd2a2daa4cd4adb43daa279d5b2f55`.
+The report and FP32 checkpoint have been collected locally.
+
+Counts: 96 native bases, 21,324 native forward calls, 14,112 decoded-BF16
+backward calls and zero FP4 backward calls. Dynamo records 33 unique graphs and
+no unsupported operations. Complete loop time is **495.593 seconds**, including
+cold work. Individual step times are
+275.68/74.14/14.86/14.74/20.77/16.74/14.67/21.26/30.07/12.50 seconds.
+The first two steps dominate cold compilation; subsequent steps vary in tokens
+and cache work, so they are not interchangeable performance samples.
+
+Matched BF16/NF4 controls are pending. These updates establish bounded
+long-context LoRA training viability, not convergence, held-out quality, full
+parameter FP4 training or an Inductor recipe fix. Native MLP forward operands
+are W4A4; decoded backward, attention compute and stored residual/checkpoint
+activations remain higher precision.
+
+During the first native trajectory, a recorded cache helper reused five missing
+complete native Triton entries from the preserved same-B200 cache at
+`.cache/training/qwen35_4b_b200_fa4/gpu-0/triton`. It excluded Inductor-generated
+groups and incomplete groups, preserved existing entries, and atomically
+published copied directories with no replacement. The helper and copied keys
+are saved in `results/fp4_row_aot_training/cache_seed_receipt.json` and the
+associated ignored script. This is cache reuse, not a kernel source change.
+Initial native step times include cold compilation and this intervention;
+do not compare their aggregate time against warm controls as a precision speedup.
