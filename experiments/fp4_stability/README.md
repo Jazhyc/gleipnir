@@ -376,3 +376,26 @@ the persistent volume quota before cohort timing began. Preserve that interrupte
 directory and rerun the unchanged training policy with
 `row_inductor_offload_8cp_retry_timing.yaml` after clearing rebuildable package
 download caches. Storage interruption is not a numerical or GPU-capacity failure.
+
+The sequential campaign is complete. Each passing timing condition uses ten
+warm-up steps followed by three measured ten-step replays, with no measured
+compilation events. Results against the 12.479019-second FP4 baseline:
+
+| Intervention | Mean seconds/step | Step-time reduction | Selection |
+| --- | ---: | ---: | --- |
+| Shared gate/up packing | 12.586694 | -0.863% | Keep disabled |
+| Guarded FP16 selector | 12.458150 | 0.167% | Opt-in |
+| Compiler-visible native projections | 12.137727 | 2.735% | Opt-in |
+| CPU reference weights, eight checkpoints, 16,384-token budget | 11.995786 | 3.872% | Opt-in |
+| Same eight checkpoints, 24,576-token budget | 13.745459 | -10.149% | Keep smaller budget |
+
+The original FP16 selector failed its output gate, four checkpoints exceeded
+capacity, and wider full-attention compilation failed model loss agreement;
+those candidates have no accepted training timing. None of the completed
+interventions clears the predeclared 5% useful-gain threshold. Retain
+`row_inductor_fused_timing.yaml` as the preferred bounded FP4 recipe. Individual
+gains do not predict a combined recipe or establish a matched pure-BF16 speed,
+held-out quality or serving result. See
+`docs/findings/fp4_training_stability.md` for source revisions, gates, memory,
+partitions, collected artifact checksums and limitations. No run remains queued;
+the B200 is idle and all campaign artifacts are collected and saved persistently.

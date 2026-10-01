@@ -924,3 +924,54 @@ Local/remote checkpoint SHA-256 match:
 
 - Cohort: `0f33213e0c79dc0b49486f881b16508ca7c3487c448a108154cd13cf9eccc256`.
 - Global: `1dbddcb43aba5fa2316af6c80f83abe64593597296f0f35bf61e166b4d220298`.
+
+## Larger physical batches rejected
+
+`row_inductor_offload_8cp_24k_timing.yaml` at `5f1b273` retains the eight
+checkpoints and CPU reference weights, raising only the physical padded-token
+budget from 16,384 to 24,576. All standalone, exact repeated eager/compiled,
+longest-input backward and update gates pass. The global update takes
+**69.038855 s**, with **160.521597 GiB** peak allocated memory. The cohort has
+the same initialization, 320 examples, order, 1,314,331 actual tokens per replay,
+effective batch 32, maximum physical batch eight and LR sequence.
+
+Physical batches decrease from **115 to 102 per replay**, while padded tokens
+increase from **1,411,298 to 1,447,858 (2.591%)**. Thirty measured steps average
+**13.745459 s**, median 13.328680 s, range 9.797941–18.809362 s. Replay means
+are **13.740951/13.746868/13.748559 s**, each with zero new graphs. This is
+**10.149% slower** than the preferred 12.479019-second FP4 baseline and **14.586%
+slower** than the eight-checkpoint smaller-budget run. Throughput is **9,561.9
+actual tokens/s**. The changed partitions do not improve complete-step time;
+counts and padding alone do not attribute the slowdown to a particular kernel.
+Do not adopt the larger budget.
+
+Warm-up takes **221.226338 s** and adds six graphs, reaching 24; its first
+69.22-second step includes compilation and is excluded from timing. Peak measured
+allocated memory is **157.855171 GiB**, reserved 161.853516 GiB. All 96 native
+bases run, with 54,720 forwards, 42,240 decoded-BF16 backwards and zero FP4
+backwards. The original reference offload still releases exactly 4.21875 GiB.
+
+Collected `analysis.json` verifies all twenty source/config hashes against
+`5f1b273`, initialization/trainables, GPU/software, source jobs, actual tokens,
+order and LR, and records the changed checkpoint and physical-batch policies.
+Partitions and padding are identical across this campaign's four replays;
+local/remote FP32 master checksums match. Final replay hashes differ. Reports,
+logs, canaries and masters are collected locally and persist under
+`results/fp4_row_inductor_offload_8cp_24k_timing/`. Checkpoint SHA-256:
+
+- Cohort: `8f16721501c7bd7556bb986b64a6fb63e80988c1f1c0a5c1e0a6a42fa86a044d`.
+- Global: `1ac23556bd413918cd7f8cf38317cef151de40294d94a08423c17a18d70a98c9`.
+
+## Sequential campaign selection
+
+All four proposed interventions and their predeclared follow-ups are complete.
+Against the same 12.479019-second FP4 baseline, shared packing is 0.863% slower,
+the guarded FP16 selector is 0.167% faster, compiler-visible native projections
+are 2.735% faster, and reference offload plus eight checkpoints is 3.872% faster.
+Four checkpoints exceed capacity; wider attention compilation fails its forward
+numerical gate; larger physical batches are 10.149% slower. None meets the frozen
+5% useful-gain criterion, so retain `row_inductor_fused_timing.yaml` as the
+preferred bounded recipe. Keep passing alternatives opt-in and preserve negative
+results. Their individual gains do not establish the performance of a combined
+recipe, a pure-BF16 comparison, held-out training quality or serving parity.
+The B200 is idle after artifact collection; no training run remains queued.
