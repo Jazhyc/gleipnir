@@ -485,3 +485,66 @@ records parent `21bab07`. Reports and logs are collected and persist remotely.
 The predeclared follow-up `row_inductor_fused_timing.yaml` combines these eager
 boundaries with fused row scaling and clip-norm gradient validation, retaining
 all global/cohort gates and the original FP4 warmed three-replay protocol.
+
+## Faster warmed FP4 training
+
+`row_inductor_fused_timing.yaml` completes the global-longest adapter update,
+ten warm-up steps and three matched ten-step replays on the existing B200.
+Both global/cohort eager and compiled repeated losses match exactly. All
+adapter gradients pass the missing-gradient and finite, nonzero aggregate-norm
+checks; every replay changes the FP32 master adapters. Native W4A4 forward and
+decoded-weight BF16 backward remain exercised, with zero FP4 backward calls.
+
+The intervention combines fused normalization/rescaling, cast-preserving
+Inductor with the passing eager boundaries above, and `gradient_validation:
+clip_norm`. The latter retains `clip_grad_norm_(error_if_nonfinite=True)` before
+every update and explicitly checks missing gradients, avoiding redundant
+individual finite-check host waits. It does not disable nonfinite rejection.
+
+| Measured replay | Original AOT seconds/step | Optimized Inductor seconds/step | New optimized graphs |
+| --- | ---: | ---: | ---: |
+| 1 | 15.541 | 12.368 | 0 |
+| 2 | 15.897 | 12.566 | 0 |
+| 3 | 15.600 | 12.503 | 0 |
+
+All thirty measured steps average **12.479 s**, median **12.258 s**, range
+**9.379–16.348 s**. Against the collected original FP4 benchmark's 15.679 s,
+this is **20.411% lower step time**, **1.256 times throughput**, and **10,532.3
+actual tokens/s** (2.564 examples/s). Every same-batch mean improves by
+18.258–22.073%. Total measured step work falls from 470.380 to 374.371 seconds.
+The predeclared 5% improvement criterion passes. This combined intervention
+does not isolate the gain from each change, and does not benchmark another
+precision or establish a whole-epoch speedup.
+
+The collected audit verifies identical source inputs, GPU/software, initial
+adapters, trainable names, example permutation, every physical partition,
+actual/padded tokens and LR sequence against the original FP4 benchmark. The
+three passes replay the same ten batches; final adapter hashes differ between
+replays, so bitwise gradient or trajectory parity is not claimed. No held-out
+quality or serving comparison is performed.
+
+Measured peak allocated memory is **138.638 GiB**, reserved **143.289 GiB**,
+compared with original AOT 135.196/137.430 GiB. This is a speed improvement with
+higher peak memory. Original BF16 reference weights, packed FP4 weights and the
+decoded BF16 backward cache remain resident; saved activations remain 16/32-bit.
+The warm-up pass takes **190.187 s** of step work versus original 177.174 s,
+with six new Dynamo graphs. Total graphs then stay at 24 through measured
+passes, versus original 33. Graph counts do not measure all kernel warm-up work;
+no cold-start or pure compilation-time improvement is asserted. Timed scope
+still includes forward/backward, clipping, finite rejection, AdamW and scheduling,
+and excludes loading, preflight, resets, probes, report I/O and export.
+
+Use this configuration for the next bounded FP4 trial, retaining fresh output
+paths, the explicit initial adapter/hash, both longest-input gates, checkpoint
+and batching policies, native canaries and complete warmed replay. The original
+user-selected NF4 recipe and historical failed Inductor conditions are preserved.
+The separate fused-AOT candidate was not launched because this Inductor
+configuration passed the declared performance gate.
+
+`results/fp4_row_inductor_fused_timing/analysis.json` verifies all ten source/config
+hashes against `9212d27`; the launcher records parent `9a3133a` plus those exact
+hashes. Reports, native/row canaries, logs and both FP32 checkpoints are collected
+locally and remain on the persistent network volume. Collected checkpoint SHA-256
+values match the remote copies. Thirty focused CPU tests, Ruff, configuration
+validation and diff checks pass. The campaign is complete; the B200 is running
+idle and no further experiment is queued.

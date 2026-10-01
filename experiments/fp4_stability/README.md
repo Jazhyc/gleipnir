@@ -182,3 +182,21 @@ checks; full-model numerical agreement and optimizer behavior are separate gates
 ```bash
 bash experiments/fp4_stability/launch.sh experiments/fp4_stability/config.yaml
 ```
+
+## Optimized FP4 timing outcome
+
+The Inductor boundary diagnostic matches eager exactly at all tested prefixes.
+`row_inductor_fused_timing.yaml` then passes both model gates, longest-input
+backwards and the global update, plus the full warm-up and three matched replays.
+Measured pass means are 12.368/12.566/12.503 s: **12.479 s overall**, versus
+15.679 s for original FP4 AOT (**20.4% lower step time; 1.256x throughput**).
+All measured passes add zero Dynamo graphs. Peak allocated memory increases
+135.196 -> 138.638 GiB. The combined intervention does not isolate each gain;
+quality, serving parity and cold-start speed remain untested.
+
+For the next bounded FP4 experiment, copy this configuration to a fresh output
+path and retain its initialization, native/bitwise kernel canaries, numerical
+and gradient gates, partial checkpoints, adaptive batching and full warmed
+protocol. This does not change the default NF4 recipe. Full receipts and limits
+are in [the finding](../../docs/findings/fp4_training_stability.md#faster-warmed-fp4-training).
+The B200 remains running idle; no additional campaign is queued.
