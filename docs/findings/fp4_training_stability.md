@@ -742,3 +742,44 @@ remain on persistent storage. Local/remote checkpoint SHA-256 match:
 
 - Cohort: `0032a8f424adef7f46fc3ed4e1b4a4e3923c70f581f420e44be68b6dea7e360a`.
 - Global: `60e3b008195c9a2193bf99943bd51f9b4713b5ff22af350d3ec42f7c44fb4d18`.
+
+## Optimized Inductor profile
+
+`row_inductor_profile.yaml` at `7616ae7` profiles the preferred strict-selector
+FP4 recipe after ten warm-up steps. Native and exact repeated eager/compiled
+model gates, both longest-input backwards and the global optimizer update pass.
+Global update: 71.335668 s. The single instrumented batch has 188,965 actual tokens,
+202,576 padded tokens and thirteen physical batches, matching the earlier
+profile's logical workload. Profiling performs no optimizer update and leaves
+the warm-up final adapter hash unchanged; it adds no compiler graphs.
+
+Chrome-trace analysis excludes enclosing GPU annotations and counts **126,394
+kernel launches**, **15.566277 s** summed kernel activity, **15.555028 s** union
+of kernel intervals and 0.075721 s of copies/memsets. Instrumented wall duration
+is **22.900770 s**; neither it nor the warm-up times are the thirty-step timing
+selection. Kernel activity by enclosing CPU scope is:
+
+| Scope | Kernels | Summed kernel seconds |
+| --- | ---: | ---: |
+| Native FP4 forward | 11,440 | 1.188083 |
+| Decoded-BF16 base backward | 2,080 | 0.643553 |
+| FLA | 7,956 | 3.939547 |
+| Other | 104,918 | 9.795093 |
+
+The 1,716 activation quantization kernels total 0.560 s. The two leading SDPA
+backward kernels each total approximately 1.69 s; substantial other work remains
+in casts, adds, multiplies and dense operations. These observations support
+testing compiler boundaries and recomputation. Recorded GPU durations include
+profiling effects and overlap; they do not predict an additive end-to-end saving.
+The profile is of the preferred optimized recipe, replacing the earlier AOT
+profile as the current attribution reference.
+
+Collected `profile_audit.json` verifies all seventeen source hashes against
+`7616ae7`, identical initialization/trainables, GPU/software, order, actual and
+padded tokens, physical batches, checkpoints and LR sequences against the
+preferred baseline. Reports, raw trace, logs and FP32 masters are collected
+locally and persist under `results/fp4_row_inductor_profile/`. Local and remote
+checkpoint checksums match:
+
+- Cohort: `3d4c8f093884d898d682c3a6ec228f8c80558096feffa9cc254b33631c553b39`.
+- Global: `a4f3206054ec8af7111fbafc76eee090bdabbc72c35422310f3812c24b56e3fd`.
