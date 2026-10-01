@@ -494,3 +494,13 @@ compares the identical boundary using FLA and records per-linear-layer shadow
 output errors on three probe batches. Shadow calls return original FLA outputs,
 keeping later-layer inputs matched. This isolates boundary effects from backend
 effects without collecting raw activations or weakening any gate.
+
+The failure diagnostic completes with all 72 shadow comparisons. FLA with the
+same BF16 boundary also fails the full-model gradient gate (relative L2 1.184213
+versus FlashQLA 1.009446). Mean per-layer output errors are only 0.003301 and
+0.003198 respectively when inputs are matched by returning original FLA outputs.
+This recipe amplifies small local changes; the isolated screen does not identify
+the individual source of that amplification. No optimizer updates or accepted
+whole-model timings were produced. Keep the original FLA recipe; collected
+artifacts and full provenance are in the finding. The B200 is idle and no
+follow-up is queued. Forty-six focused CPU tests pass.

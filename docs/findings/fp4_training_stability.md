@@ -1065,3 +1065,116 @@ with a more annotated profile before changing fusion/checkpoint boundaries.
 Quantization remains a smaller measured target. Store the detailed receipt as
 `results/fp4_row_inductor_profile/profile_breakdown.json`. This is one instrumented
 batch with profiling overhead, not a new ordinary-step timing or quality result.
+
+## FlashQLA kernel screen and input-dtype boundary
+
+The pinned experimental FlashQLA install uses source
+`da06429d54b0f577de0a638f451ac8f0b395e0ac` (0.1.3+da06429), TileLang 0.1.12
+and TVM-FFI 0.1.11, in `.cache/kernels/flashqla-da06429`. The main locked
+environment, FLA 0.5.2, Triton 3.7.1, Conv1d and native FP4 package are unchanged.
+Source archives, installed Python/CSV checksums and compiler caches persist on
+the network volume. This screen uses the same B200; automatic intra-card
+partitioning is disabled in the following results.
+
+The initial BF16-only isolated screen passes all seven shapes, output relative
+L2 <= 0.01 and every q/k/v/g/beta gradient relative L2 <= 0.02. Actual maxima
+are 0.004388 output and 0.005765 gradient. Ten warm-up calls and thirty measured
+calls per backend/phase exclude first compilation. Forward+backward latency
+falls 28.96--44.68% against BF16-input FLA. The receipt is
+`results/fp4_flashqla_canary/canary.json`, SHA-256
+`ecd104c10842e51323c581efa712ad875171b95b8fd4dde6960e33293479186c`.
+Frozen helper/entrypoint snapshots reconcile with the receipt source hashes.
+
+The first whole-model attempt, `row_flashqla_timing.yaml` at `7839961`, stops
+before any optimizer update: FlashQLA rejects q's input dtype with
+`FlashQLA only supports bfloat16 and float16`. The reference model passes its
+original initial adapter identity and native arithmetic gates; the new backend
+never reaches its compile/global-update gates. Preserve the failed run under
+`results/fp4_flashqla_timing/`. BF16 projection compute does not guarantee BF16
+GDN interface operands. Do not use the BF16-only kernel timing as a matched
+estimate of this original model path.
+
+The explicit follow-up at `4a60ec0` casts q/k/v/beta to BF16, retains FP32 g,
+and returns o in the original q dtype; casts remain differentiable to FP32
+master adapters. The FP32-input isolated screen compares original FLA, FLA
+with the identical boundary, and FlashQLA with that boundary, including casts
+and allocations in the synchronized latency. Both candidates must pass the
+same original-FLA output and all-gradient gates before whole-model use.
+All seven shapes pass; FlashQLA maximum output relative L2 is 0.005205 and
+maximum individual gradient relative L2 0.006000.
+
+| Physical shape | Original FLA, ms | FLA + BF16 boundary, ms | FlashQLA + boundary, ms |
+| --- | ---: | ---: | ---: |
+| 1 x 257 | 7.127 | 7.615 | 5.793 |
+| 1 x 4,096 | 7.253 | 8.137 | 5.475 |
+| 1 x 16,384 | 14.172 | 10.108 | 7.240 |
+| 1 x 29,696 | 24.156 | 16.895 | 9.615 |
+| 2 x 8,192 | 13.954 | 8.575 | 5.783 |
+| 4 x 4,096 | 14.023 | 8.297 | 5.521 |
+| 8 x 2,048 | 13.472 | 8.354 | 5.664 |
+
+These are isolated forward+backward means, not complete optimizer-step times.
+FlashQLA reduces latency 18.72--60.63% against the original FP32-input FLA and
+23.93--43.09% against FLA with matched casts. Casting alone slows the two short
+singletons but helps the longer/multi-example shapes. Synthetic zeroed tails
+are included for padded shapes; no raw model activations are collected.
+Receipt: `results/fp4_flashqla_fp32_canary/canary.json`, SHA-256
+`813d86ecbb2ff0b67df84624573f0ec9ed3a289d89d7f026667da3ee366b81eb`.
+Helper and entrypoint snapshots match its source hashes.
+
+`row_flashqla_bf16_boundary_timing.yaml` is the separate whole-model follow-up.
+It retains the original strict FP4 arithmetic, twelve checkpoints, batching,
+initialization and ten-warm/thirty-measured protocol. Before updates, record
+actual GDN input dtypes and require native-model loss agreement plus aggregate
+unclipped FP32 master-gradient relative L2 <= 0.05 against original FLA.
+The model run fails before any optimizer update. Actual q/k/v/g/beta inputs
+are all FP32. All 256 master gradients are finite, but aggregate relative L2 is
+**1.009731**, versus the 0.05 gate. Forward losses also fail: one singleton
+changes **1.179026 -> 0.828410** and the padded canary changes
+**1.445064 -> 1.477198**. Large errors affect early MLP and full-attention LoRA
+B gradients, not only the replaced GDN modules. Both arithmetic preflights and
+the initial master identity pass. Twenty-one source/config hashes reconcile
+with `4a60ec0`. The collected failed receipt is
+`results/fp4_flashqla_bf16_boundary_timing/`; it has zero optimizer steps and
+no accepted whole-step timing. Cancel the predeclared training controls and
+automatic-partitioning follow-ups rather than training past these gates.
+
+`row_flashqla_boundary_diagnostic.yaml` adds a bounded failure analysis with no
+updates: compare the same BF16 boundary using FLA on the same losses and
+reference gradients, then compare each linear layer's candidate outputs on
+three probe batches. Shadow calls return original FLA outputs so later-layer
+inputs stay matched. The diagnostic at `a858ddc` finishes at the expected failed
+gate, with zero updates and no diagnostic errors. FLA with the same boundary
+also fails: aggregate gradient relative L2 is **1.184213**, compared with
+**1.009446** for FlashQLA on this replay. All gradients are present and finite.
+Original-FLA and FlashQLA forward losses repeat exactly across the two model
+attempts; their gradient error totals are close but not bitwise identical.
+
+The 72 shadow comparisons cover all 24 linear layers on three probe batches,
+with original-FLA outputs returned through the model:
+
+| Candidate | Mean local output relative L2 | Maximum local output relative L2 |
+| --- | ---: | ---: |
+| FlashQLA + boundary | 0.003198 | 0.007502 |
+| FLA + boundary | 0.003301 | 0.007484 |
+
+All local outputs are finite. Small local changes coexist with large end-to-end
+loss/gradient differences. The precision boundary alone is already problematic
+for this hybrid FP4 recipe; this evidence does not isolate MLP quantization,
+normalization, an individual operand, or their interactions as the amplifier.
+Do not label FlashQLA's backward implementation broken from these results, or
+claim the isolated kernel gain is a stable training-speed improvement.
+
+The receipt is `results/fp4_flashqla_boundary_diagnostic/fouroversix/screen.json`,
+SHA-256 `2951d8734430d668fd002df0c93a453a880451a318a0e2a2cd85e6feb2650be8`.
+It omits the launch-time Git revision, but all 21 source/config hashes verify
+against `a858ddc`; the separate analysis records that verified revision. All
+receipts, logs and source snapshots are collected and remain persistently saved.
+The B200 is healthy and idle; no timing/control/automatic-partitioning run is
+queued. Retain the preferred strict FP4/FLA configuration and the original
+NF4 default. A future candidate needs a more faithful precision boundary plus
+the same actual-model gates before optimizer work or timing.
+
+A future NF4-vs-FP4 comparison must give both recipes the selected attention
+backend; this backend can affect both precision recipes. Validation: 46 focused
+CPU tests, Ruff and shell syntax checks pass.
