@@ -1,0 +1,5 @@
+seed: 0
+lengths: [7, 5]
+forward_tolerance: 0.00001
+cross_gradient_tolerance: 0.00000001
+output: results/monitoring_sequence_packing/cpu_isolation.json
