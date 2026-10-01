@@ -3188,6 +3188,13 @@ def main(cfg: DictConfig) -> None:
                     default="strict",
                 )
             ),
+            compiler_visible_native=bool(
+                OmegaConf.select(
+                    cfg,
+                    "student.quantization.fp4_compiler_visible_native",
+                    default=False,
+                )
+            ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(

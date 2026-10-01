@@ -60,6 +60,14 @@ def validate_config(config: dict) -> None:
         raise ValueError(
             "FP16 selector requires unobserved native fused rows and BF16 backward"
         )
+    if config.get("compiler_visible_native", False) and not (
+        config["conditions"] == ["fouroversix"]
+        and config["backward_mode"] == "dequantized_bf16"
+        and not config.get("capture_native_operands", False)
+    ):
+        raise ValueError(
+            "compiler-visible native requires unobserved FP4 and BF16 backward"
+        )
     if bool(config.get("initial_adapter")) != bool(
         config.get("expected_initial_master_sha256")
     ):
@@ -194,10 +202,12 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_row_kernels.py",
                 ROOT / "src/gleipnir/fp4_quantization_kernels.py",
                 ROOT / "src/gleipnir/fp4_fast_selector.py",
+                ROOT / "src/gleipnir/fp4_compiler_ops.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/shared_activation_canary.py",
                 ROOT / "experiments/fp4_stability/fast_selector_canary.py",
+                ROOT / "experiments/fp4_stability/compiler_op_canary.py",
                 ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -219,6 +229,23 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("compiler_visible_native", False):
+            with (logs / "compiler-op-canary.log").open("w") as handle:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/fp4_stability/compiler_op_canary.py",
+                        "--output",
+                        str(output / "compiler_op_canary.json"),
+                        "--activation-selector",
+                        config.get("activation_selector", "strict"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         if config.get("activation_selector", "strict") == "fp16":
             with (logs / "fast-selector-canary.log").open("w") as handle:
                 subprocess.run(
@@ -336,6 +363,8 @@ def main() -> None:
                 f"{str(config.get('share_gate_up_activations', False)).lower()}",
                 "++student.quantization.fp4_activation_selector="
                 f"{config.get('activation_selector', 'strict')}",
+                "++student.quantization.fp4_compiler_visible_native="
+                f"{str(config.get('compiler_visible_native', False)).lower()}",
                 "++student.training.precision_screen.gradient_validation="
                 f"{config.get('gradient_validation', 'per_tensor')}",
             ]

@@ -325,6 +325,7 @@ def install_mlp_precision(
     fused_activation_packing: bool = False,
     share_gate_up_activations: bool = False,
     activation_selector: str = "strict",
+    compiler_visible_native: bool = False,
 ) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
@@ -333,6 +334,15 @@ def install_mlp_precision(
         raise ValueError("fused activation packing requires native FP4 MLPs")
     if activation_selector != "strict" and precision != "fouroversix":
         raise ValueError("alternative selector requires native FP4 MLPs")
+    projection_type = FrozenFourOverSixLinear
+    if compiler_visible_native:
+        if precision != "fouroversix" or backward_mode != "dequantized_bf16":
+            raise ValueError(
+                "compiler-visible native projection requires FP4 and BF16 backward"
+            )
+        from gleipnir.fp4_compiler_ops import CompilerVisibleFourOverSixLinear
+
+        projection_type = CompilerVisibleFourOverSixLinear
     if share_gate_up_activations and not (
         precision == "fouroversix"
         and row_scaled_activations
@@ -361,7 +371,7 @@ def install_mlp_precision(
             setattr(
                 model.get_submodule(parent_name),
                 attribute,
-                FrozenFourOverSixLinear(
+                projection_type(
                     module,
                     native_runtime(module.weight)
                     if backward_mode == "fp4"
@@ -433,7 +443,9 @@ def install_mlp_precision(
             precision == "fouroversix" and backward_mode == "dequantized_bf16"
         ),
         "frozen_weight_gradient": False,
-        "native_boundary_eager": precision == "fouroversix",
+        "native_boundary_eager": precision == "fouroversix"
+        and not compiler_visible_native,
+        "compiler_visible_native": compiler_visible_native,
         "shared_gate_up_activation_modules": paired_modules,
         "activation_selector": activation_selector,
         "weight_selector": "strict",

@@ -288,6 +288,13 @@ replays; require >=5% lower complete-step mean before adopting a useful speedup.
 Report regressions and failed gates. No held-out quality promotion or external
 serving change is authorized by these short systems experiments.
 
+The shared-activation candidate completes all gates and thirty measured steps
+at 12.586694 s/step versus 12.479019 s/step: no useful speedup, with unchanged
+138.638038 GiB peak allocated memory. Keep sharing disabled in subsequent
+independent candidates. The transient cache contains packed activations/scales
+for one unchanged gate/up input only; frozen packed and decoded-backward weight
+caches persist across steps.
+
 The concrete selector candidate is `row_inductor_fp16_selector_timing.yaml`.
 It retains separate exact row normalization and strict frozen-weight packing,
 while packing normalized activations with native `mul.rn.f16x2` candidate
@@ -300,3 +307,35 @@ finite outputs and deterministic packed operands on all seven frozen cases.
 Retain the existing native and full-model gates. Record actual disagreements;
 if any gate fails, stop this candidate before model loading. Carry shared gate/up
 packing forward only if its preceding complete-step experiment passes selection.
+
+The initial selector at `80178f4` fails the final outlier output gate (0.3665%
+relative L2 versus the 0.2% limit) and stops before model loading. The guarded
+follow-up at `1ac8d00` restores the strict comparison on near-tied 16x64 tiles,
+using a relative error band of `1e-4` and upstream-compatible floating-point
+fusion. Its seven isolated operand/output cases pass, with exact outputs on
+those cases; full-model warmed timing remains a separate selection gate.
+The source commits and full receipts preserve both numerical contracts.
+
+For candidate three, `row_inductor_profile.yaml` first profiles the preferred
+arithmetic on warmed batch five without an optimizer update or quality claim.
+Then `row_inductor_visible_timing.yaml` replaces Python-disabled frozen bases
+with compiler-visible opaque forward/dX operators. Real kernels retain the
+existing exact row normalization, native CUTLASS output and BF16 decoded-weight
+backward; fake kernels describe only output metadata. Per-runtime CPU tensor
+keys avoid integer specialization across projections and any GPU `.item()`.
+These process-local runtime keys are rebuilt on model construction and are not
+portable exported graph artifacts. Keep eager RMSNorm/SiLU/token-mixer fences
+and precision-cast preservation. Require exact native Inductor output/gradient
+canaries at three widths and batch 1/2/4/8, unchanged complete-model gates, global
+update and the full warm-up/three-replay protocol. Stop at any failed gate or
+bounded completion; select only >=5% lower complete-step time.
+
+Official TE row-scaled recipe PR2931 at merge
+`c74e5aa37a65eda5c1680562119d466c123ca6ae` uses a separate FP32 output-scale
+multiply in its dense path; its cuBLAS entry rejects row-scaled NVFP4 tensors.
+A library migration therefore does not itself establish a fused dense epilogue
+for this recipe. The opaque-operator test targets compiler boundaries instead.
+If it fails or yields no useful gain, a separately gated follow-up may restore
+`full_attention_and_linear_shell` compilation while retaining the proven eager
+RMSNorm/SiLU fences and BF16 precision casts. That changes execution boundaries,
+not attention precision; freeze a forward-only diagnostic before any updates.
