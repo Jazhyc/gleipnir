@@ -399,3 +399,29 @@ held-out quality or serving result. See
 `docs/findings/fp4_training_stability.md` for source revisions, gates, memory,
 partitions, collected artifact checksums and limitations. No run remains queued;
 the B200 is idle and all campaign artifacts are collected and saved persistently.
+
+## Attribution of the optimized trace
+
+Reanalyze the existing warmed profile without another GPU run:
+
+```bash
+.venv/bin/python -S experiments/fp4_stability/profile_breakdown.py \
+  results/fp4_row_inductor_profile
+```
+
+The entrypoint writes `profile_breakdown.json`, hashes the raw trace, and requires
+exact coarse-scope call counts plus duration agreement with `profile_analysis.json`.
+Nested CPU external IDs label asynchronous GPU kernels; only GPU kernel events
+contribute durations, excluding enclosing annotations. It partitions the former
+`other` bucket by observable kernel/operator families and separates original FLA
+forward, forward calls nested in backward (checkpoint replay), and FLA backward.
+It also records state-kernel launch grids and individual FP4 forward kernels.
+Missing external IDs remain explicit; ambiguous multiple CPU processes fail.
+
+The existing profile omits tensor shapes, Python stacks and module annotations,
+so generic `aten::mm`, copies and pointwise operations cannot be assigned to
+specific LoRA branches or layers. No optimizer update is profiled. These summed
+instrumented GPU durations are attribution evidence, not ordinary step timings.
+The detailed findings identify full-attention dispatch, FLA recomputation/fusion,
+and surrounding pointwise/cast work as new investigation targets; no backend,
+checkpoint, quantization or training default is changed by this analysis.

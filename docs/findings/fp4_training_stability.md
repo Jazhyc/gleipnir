@@ -975,3 +975,93 @@ preferred bounded recipe. Keep passing alternatives opt-in and preserve negative
 results. Their individual gains do not establish the performance of a combined
 recipe, a pure-BF16 comparison, held-out training quality or serving parity.
 The B200 is idle after artifact collection; no training run remains queued.
+
+## Detailed optimized-profile attribution
+
+`experiments/fp4_stability/profile_breakdown.py` reanalyzes the already collected
+optimized Inductor trace. No new GPU experiment or optimizer update is launched.
+The trace SHA-256 is
+`50f8629950ea7075bad4270a727ef17bc007ff6fee1a1365875f742f0e100441`.
+All 126,394 GPU kernels map to CPU external IDs. Calls and summed durations
+reconcile with each original coarse scope; CPU/annotation durations are never
+added to GPU durations. The 9.795093-second `other` bucket partitions as follows:
+
+| Observable operation family | Kernel calls | Summed GPU seconds |
+| --- | ---: | ---: |
+| Full-attention backward | 232 | 3.397447 |
+| Eager pointwise operations | 41,576 | 1.756229 |
+| Casts and tensor copies | 15,684 | 1.180349 |
+| Other matrix multiplication | 17,628 | 1.117802 |
+| Compiled pointwise operations | 13,832 | 0.806079 |
+| Full-attention forward | 104 | 0.767809 |
+| Causal Conv1d | 780 | 0.221179 |
+| Layout/indexing | 1,117 | 0.182789 |
+| Reductions | 3,660 | 0.180699 |
+| Normalization | 780 | 0.123195 |
+| Weight dequantization | 9,464 | 0.060910 |
+| Remaining named kernels | 61 | 0.000606 |
+
+Full attention accounts for **4.165257 s**, independently of FLA's 3.939547 s.
+Flash SDPA forward runs 64 times (0.532175 s), while memory-efficient SDPA
+forward runs 40 times (0.235634 s). Their backward CPU operators launch kernels
+totalling 1.706662 and 1.690785 s respectively. Mixed dispatch is observed;
+tensor shapes and mask arguments were not recorded, so the dispatch cause is
+not established. The older FA4 negative timing was a different fixed-singleton
+NF4/checkpoint workload. It does not settle performance on this padded native
+FP4 cohort. Any new comparison must preserve mask semantics, eager attention
+boundaries and the numerical/backward/update gates.
+
+The largest generic CPU-operator attributions are `aten::copy_` (1.180349 s),
+`aten::mm` (1.117733 s), `aten::mul` (0.885840 s), and `aten::add_` (0.417662 s).
+Pointwise operations total **2.562307 s** across **55,408 kernels**. Names do not
+identify model modules: the existing trace has no input shapes, Python stacks
+or module annotations. Do not call all these kernels LoRA, optimizer work or
+quantization. In particular, this profile performs no optimizer update.
+
+FLA phase attribution uses a forward CPU scope nested inside an autograd
+backward scope to identify outer checkpoint replay:
+
+| FLA phase | Kernel calls | Summed GPU seconds |
+| --- | ---: | ---: |
+| Original forward | 2,808 | 0.961489 |
+| Outer checkpoint forward replay | 1,404 | 0.480863 |
+| Backward | 3,744 | 2.497194 |
+
+The FLA backward additionally reconstructs intermediates internally:
+`chunk_gated_delta_rule_fwd_kernel_h_blockdim64` takes **0.374450 s** and
+`recompute_w_u_fwd_kernel` takes **0.261197 s**, both already included in the
+2.497194-second backward total. Installed FLA 0.5.2 explicitly recomputes them;
+its autograd context does not retain h/w/u. Other large backward kernels are
+`prepare_wy_repr_bwd_kernel` (0.782174 s), `chunk_gated_delta_rule_bwd_kernel_dhu_blockdim64`
+(0.478951 s), and `chunk_bwd_kernel_dqkwg` (0.401398 s). Selective retention of
+expensive FLA intermediates is a distinct hypothesis from removing entire layer
+checkpoints; its memory and correctness are untested. Do not assume the previous
+four-checkpoint OOM permits it, or add internal and outer replay times twice.
+
+Native FP4 forward's 1.188083 s includes **0.559620 s** activation packing,
+**0.197589 s** row normalization, **0.127973 s** output rescaling and **0.256116 s**
+native GEMM, with small remaining operations. Each main component runs 1,716
+times. Preparing/rescaling operands costs substantially more profiled activity
+than the FP4 GEMM. The preceding tiled packing and guarded selector tests did
+not yield useful whole-step gains. A different fused epilogue or packing design
+needs shape-specific measurements and must preserve the established BF16
+rounding boundaries; merely reducing launches does not establish improvement.
+
+An upstream candidate is [Qwen FlashQLA](https://github.com/QwenLM/FlashQLA),
+version 0.1.3 at `da06429d54b0f577de0a638f451ac8f0b395e0ac` (2026-09-30).
+Its [entrypoint source](https://github.com/QwenLM/FlashQLA/blob/da06429d54b0f577de0a638f451ac8f0b395e0ac/flash_qla/ops/gated_delta_rule/chunk/__init__.py)
+includes SM100 forward/backward, q/k normalization, variable-length sequences
+and grouped q/k head handling. The library combines operator fusion with
+optional intra-card sequence partitioning. Its published comparisons use FLA
+0.5.0 and different kernel/software workloads, so they are not a speed estimate
+against our FLA 0.5.2 recipe. Benchmark the exact 128-dimensional, 32-value-head
+Qwen4B inputs, outputs and all gradients before a model comparison; test ordinary
+execution and automatic partitioning separately. It has not been installed or
+benchmarked here, and no dependency/default is changed.
+
+The resulting priority is to test an optimized Gated DeltaNet backend and
+investigate full-attention dispatch, then isolate pointwise/cast module origins
+with a more annotated profile before changing fusion/checkpoint boundaries.
+Quantization remains a smaller measured target. Store the detailed receipt as
+`results/fp4_row_inductor_profile/profile_breakdown.json`. This is one instrumented
+batch with profiling overhead, not a new ordinary-step timing or quality result.
