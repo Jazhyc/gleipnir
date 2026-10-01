@@ -363,3 +363,16 @@ same complete gates and thirty measured steps. Adopt only >=5% lower complete
 step mean; attribute combined gains to the recorded memory/recomputation policy,
 not to the FP4 GEMMs alone. Carry forward only a selected preceding compiler
 candidate; otherwise retain the preferred strict eager-native boundaries.
+
+The four-checkpoint global backward exhausted GPU capacity after passing its
+arithmetic gates. The eight-checkpoint fallback passed the longest-input
+backward. Its conditional larger-budget follow-up is frozen separately in
+`row_inductor_offload_8cp_24k_timing.yaml`: retain those eight indices and change
+only the physical padded-token budget to 24,576. Launch it only after the
+eight-checkpoint 16,384-token timing campaign completes successfully.
+
+The first eight-checkpoint global update passed, but artifact writes exhausted
+the persistent volume quota before cohort timing began. Preserve that interrupted
+directory and rerun the unchanged training policy with
+`row_inductor_offload_8cp_retry_timing.yaml` after clearing rebuildable package
+download caches. Storage interruption is not a numerical or GPU-capacity failure.
