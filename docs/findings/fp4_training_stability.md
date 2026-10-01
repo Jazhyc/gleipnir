@@ -186,3 +186,20 @@ rounding in the remaining Inductor operations, while retaining native MLPs,
 checkpointing, adaptive batching and the selected compiler policy. It records
 all exact normalization module names and repeats the native operand trace.
 RMSNorm's contribution remains a hypothesis until this intervention is measured.
+
+Keeping all 81 plain Qwen RMSNorm interfaces eager while preserving casts gives
+eager loss **1.2848907709121704** and compiled loss **1.2379920482635498** on the
+matched-cohort pair. The original gate still fails; this is not a general fix.
+The operand observer preserves both losses exactly and all observed tensors in
+the first four MLPs match exactly, including decoded FP4 activations. Compiled
+prefixes 0/1/4/8 also match eager exactly. Prefixes 16/24/32 give
+1.237992/1.294601/1.237992. Thus the intervention removes the observed early
+drift but leaves later differences; it does not locate their exact operator.
+Evidence: `results/fp4_row_eager_norm_diagnostic/`, collected locally.
+
+The next bounded training test uses `aot_eager`, which previously matched eager
+exactly, for all three MLP precision conditions. It preserves the twelve
+checkpointed layers, adaptive batches, frozen inputs and FP32 master adapters.
+Each condition must pass its global-longest update before ten matched updates.
+This isolates practical training viability from the unresolved Inductor
+disagreement. It does not establish the original optimized recipe's performance.

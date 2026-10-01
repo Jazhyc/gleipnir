@@ -45,6 +45,14 @@ from short trajectories; separate grouped held-out validation remains required.
 Inspect startup every 30–60 seconds. No in-chat scheduler is available, so
 monitoring applies during the active turn only.
 
+`row_aot_training.yaml` tests the bounded trajectory with `aot_eager` after
+that backend matched eager exactly on the matched-cohort forward diagnostic.
+Native FP4, BF16 and NF4 MLP conditions share this backend, initial adapters,
+data, checkpointing and adaptive batching. Each first performs the global-longest
+update, followed by ten matched updates. This tests optimizer stability while
+Inductor numerical consistency remains unresolved; timings do not compare
+against the original optimized Inductor recipe.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16
