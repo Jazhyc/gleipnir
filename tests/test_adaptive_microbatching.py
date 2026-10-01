@@ -157,14 +157,15 @@ def test_real_trainer_preserves_gradients_and_partial_optimizer_batches(
         assert adaptive[0] == pytest.approx(float(model.weight.grad), abs=1e-6)
 
 
-def test_gradient_canary_clears_gradients_and_restores_eval_mode():
+@pytest.mark.parametrize("maximum_size", [1, 4])
+def test_gradient_canary_clears_gradients_and_restores_eval_mode(maximum_size):
     model = ToyModel().eval()
     result = gradient_partition_canary(
         model,
         features(8),
         collate,
         lambda batch: loss_for(model, batch),
-        MicrobatchPolicy(256, 4),
+        MicrobatchPolicy(256, maximum_size),
     )
     assert result["passed"] is True
     assert result["reference_gradient_norm"] > 0

@@ -1,7 +1,8 @@
 # Adaptive B200 physical microbatches
 
-Date: 2026-10-01. Status: implementation tested; first GPU correctness preflight
-failed, diagnosis in progress. No adaptive timing result or recipe promotion.
+Date: 2026-10-01. Status: implementation tested; batching probes completed with
+no passing candidate; identical-shape kernel repeatability audit in progress.
+No adaptive timing result or recipe promotion.
 
 The user authorized empirical optimization with ten-update workloads on the
 existing B200. The [experiment contract](../../experiments/b200_adaptive_microbatching/README.md)
@@ -60,3 +61,42 @@ right-padding mask handling; all variants retain the same eight inputs and
 weights and restore the original model methods afterward. The same diagnostic
 also checks smaller physical maxima 4 and 2, explicitly recording each policy
 instead of silently reducing the original benchmark's batch size.
+
+## Completed bounded probes and decision
+
+Source `1af8a04e9c8b9614031265272e2d7ce6455c578f` passed 22 focused diagnostic
+tests, including scoped restoration of model methods and FP32 projection under
+outer BF16 autocast. The same eager model then ran all six probes without any
+optimizer update. The repeated baseline reproduced the preceding result:
+relative L2 error 0.137673, cosine 0.990492. All probes retain the 0.05 gate.
+
+| Physical maximum | Projection | Right-padding mask | Gradient relative L2 | Cosine |
+| --- | --- | --- | ---: | ---: |
+| 8 | FP32 head | Preserved | 0.139650 | 0.990205 |
+| 8 | Original BF16 head | Omitted in diagnostic | 0.092214 | 0.995745 |
+| 8 | FP32 head | Omitted in diagnostic | 0.093845 | 0.995598 |
+| 4 | Original BF16 head | Preserved | 0.133771 | 0.991012 |
+| 2 | Original BF16 head | Preserved | 0.134385 | 0.990930 |
+| 2 | FP32 head | Omitted in diagnostic | 0.093331 | 0.995643 |
+
+Reducing physical size alone does not meet the gradient threshold. FP32 output
+projection does not resolve the discrepancy. Omitting the causal right-padding
+mask reduces it, but still does not pass. This is evidence of sensitivity to
+execution details, not a demonstrated upstream bug or an accumulation-weighting
+error. The normalization tests establish the latter independently on CPU.
+No precision/mask probe is enabled for ordinary training or recommended as a
+recipe. The eight-input tail-truncation stress test is also distinct from a
+model-quality evaluation; no held-out scores were consulted.
+
+The scientific stop condition was reached: **keep the validated fixed batch-1
+B200 recipe**. The implementation and profiling records remain opt-in and
+experimental. The ten-update conditions and longest-32 optimizer update did not
+run because the gradient canary precedes them. There is no adaptive throughput
+estimate and no evidence for a revised epoch ETA. The previous provisional
+3.52-hour compute estimate remains unchanged; setup/export are additional.
+
+Artifacts and complete decision-logit/gradient diagnostics were collected locally
+from `results/b200_adaptive_microbatching_diagnostic_probes/`; all failed screen
+and diagnostic logs remain under `logs/runpod/b200_adaptive_microbatching/`.
+The GPU is idle after the bounded probes. Pod `alzfug70g5237b` is left running
+as requested at $6.79/hour; no additional capacity was provisioned.

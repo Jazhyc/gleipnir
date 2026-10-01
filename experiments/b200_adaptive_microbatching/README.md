@@ -78,3 +78,19 @@ isolate FP32 LM-head projection, omission of causal right-padding masks, and
 their combination, plus conservative physical maxima 4 and 2. These are bounded
 same-weight canaries only. Restore model
 methods after each probe, retain the original failure and report all variants.
+
+The batching probes are complete: maxima 2, 4 and 8 all miss the 0.05
+gradient-parity gate; the best mask/precision probe is 0.09221. No timed training
+condition ran, and no adaptive policy is promoted. Keep the validated batch-1
+recipe. Implementation remains opt-in/experimental. See the
+[recorded findings](../../docs/findings/b200_adaptive_microbatching.md) for every
+probe, artifacts and limits on this conclusion.
+
+Kernel audit: run `diagnose.py --mode eager --maximum-microbatch-size 1` on the
+same eight inputs to establish the identical-shape repeatability noise floor.
+Both reference and actual gradients then use the same singleton partition and
+order. Hypothesis: repeatability error is much smaller than cross-shape error;
+the baseline remains unchanged regardless. Retain the 0.05 gate, no optimizer
+updates, original frozen job, and a separate output directory. This can rule out
+large nondeterminism for these inputs, but cannot establish cross-shape kernel
+correctness or compiled-path repeatability.

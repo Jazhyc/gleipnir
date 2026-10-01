@@ -46,6 +46,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--mode", choices=("eager", "compiled"), required=True)
     parser.add_argument("--precision-mask-probes", action="store_true")
+    parser.add_argument("--maximum-microbatch-size", type=int, choices=(1, 2, 4, 8))
     args = parser.parse_args()
     original_jobs = [
         json.loads(line) for line in args.jobs.read_text().splitlines() if line
@@ -55,6 +56,11 @@ def main() -> None:
     output = args.output.resolve()
     output.mkdir(parents=True, exist_ok=False)
     job = diagnostic_job(original_jobs[0], output, args.mode)
+    if args.maximum_microbatch_size is not None:
+        job["adaptive_microbatching"] = {
+            **job["adaptive_microbatching"],
+            "max_micro_batch_size": args.maximum_microbatch_size,
+        }
     command = training_command(job)
     command.append("student.training.adaptive_microbatching.canary_only=true")
     if args.precision_mask_probes:
