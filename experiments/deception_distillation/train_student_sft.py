@@ -26,6 +26,7 @@ from torch.utils.data import DataLoader, SequentialSampler, WeightedRandomSample
 from gleipnir.adaptive_microbatching import (
     AdaptiveMicrobatchTrainerMixin,
     MicrobatchPolicy,
+    diagnostic_decoder_overrides,
     gradient_partition_canary,
 )
 from gleipnir.attention_backends import (
@@ -3580,6 +3581,49 @@ def main(cfg: DictConfig) -> None:
             adaptive_policy,
         )
         adaptive_gradient_canary["forward_calls"] = canary_forward_calls
+        if bool(
+            OmegaConf.select(
+                cfg,
+                "student.training.adaptive_microbatching.diagnostic_variants",
+                default=False,
+            )
+        ):
+            if not adaptive_cfg.canary_only:
+                raise ValueError("precision/mask probes are diagnostic-only")
+            variants = {}
+            for fp32_head, maskless, maximum in [
+                (True, False, 8),
+                (False, True, 8),
+                (True, True, 8),
+                (False, False, 4),
+                (False, False, 2),
+                (True, True, 2),
+            ]:
+                canary_forward_calls = []
+                probe_policy = MicrobatchPolicy(
+                    adaptive_policy.max_padded_tokens, maximum
+                )
+                with diagnostic_decoder_overrides(
+                    model, fp32_head=fp32_head, maskless=maskless
+                ):
+                    result = gradient_partition_canary(
+                        model,
+                        canary_features,
+                        CompletionOnlyCollator(tokenizer.pad_token_id),
+                        canary_loss_forward,
+                        probe_policy,
+                    )
+                result["forward_calls"] = canary_forward_calls
+                result["maximum_microbatch_size"] = maximum
+                variants[f"fp32_head={fp32_head},maskless={maskless},max={maximum}"] = (
+                    result
+                )
+                print(
+                    f"adaptive_diagnostic_variant={fp32_head},{maskless},{maximum} "
+                    f"result={result}",
+                    flush=True,
+                )
+            adaptive_gradient_canary["diagnostic_variants"] = variants
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "adaptive_gradient_canary.json").write_text(
             json.dumps(adaptive_gradient_canary, indent=2) + "\n"

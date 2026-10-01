@@ -39,3 +39,24 @@ Compare eager and compiled paths with the same eight inputs and record logits,
 losses, gradient norms/cosine and parameter differences before changing any
 policy. Keep the existing B200 recipe and its provisional 3.52-hour epoch compute
 estimate until matched measurements justify a change.
+
+## Eager diagnostic
+
+Source `ffd3e1f29e3079e4681730bd4f002ffd8699aa6d` passed 21 focused tests of the
+enhanced diagnostics and ran the same canary without compilation. It still
+fails the 0.05 relative gradient threshold: error **0.137635**, cosine **0.990498**,
+reference norm **23.42287**, actual norm **23.07239**, maximum absolute error
+**0.059845**. Reference and batched mean losses are **1.066600** and **1.068279**
+(0.157% difference). Decision-logit differences reach 0.0625, with a margin
+difference up to 0.125. Attention dropout is zero in the frozen backbone config.
+This does not establish a padding bug or justify loosening the gate; BF16
+execution and compilation sensitivity need to be separated. The largest gradient
+differences occur in early full-attention and MLP adapters.
+
+Artifacts: `results/b200_adaptive_microbatching_diagnostic_eager/` and
+`logs/runpod/b200_adaptive_microbatching/diagnostic_eager.log`. No optimizer
+updates occurred. The next bounded diagnostic isolates LM-head precision and
+right-padding mask handling; all variants retain the same eight inputs and
+weights and restore the original model methods afterward. The same diagnostic
+also checks smaller physical maxima 4 and 2, explicitly recording each policy
+instead of silently reducing the original benchmark's batch size.

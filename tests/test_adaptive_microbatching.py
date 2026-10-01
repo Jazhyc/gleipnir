@@ -13,6 +13,7 @@ from experiments.tool_trajectory_monitoring.run_distillation_train import (
 from gleipnir.adaptive_microbatching import (
     AdaptiveMicrobatchTrainerMixin,
     MicrobatchPolicy,
+    diagnostic_decoder_overrides,
     gradient_partition_canary,
 )
 from gleipnir.monitoring_systems_screen import (
@@ -204,6 +205,29 @@ def test_gradient_canary_rejects_nonmean_loss():
     )
     assert result["passed"] is False
     assert model.weight.grad is None
+
+
+def test_precision_mask_probe_is_scoped_and_preserves_fp32_head_gradients():
+    class Decoder(torch.nn.Module):
+        def forward(self, *, attention_mask):
+            return attention_mask
+
+    model = torch.nn.Module()
+    model.model = Decoder()
+    model.lm_head = torch.nn.Linear(3, 2).to(torch.bfloat16)
+    decoder_forward, head_forward = model.model.forward, model.lm_head.forward
+    hidden = torch.ones(2, 3, requires_grad=True)
+    with diagnostic_decoder_overrides(model, fp32_head=True, maskless=True):
+        assert model.model(attention_mask=torch.tensor([[1, 1, 0]])) is None
+        with torch.autocast(device_type="cpu", dtype=torch.bfloat16):
+            logits = model.lm_head(hidden)
+        assert logits.dtype == torch.float32
+        logits.sum().backward()
+        assert hidden.grad is not None
+        with pytest.raises(ValueError, match="right padding"):
+            model.model(attention_mask=torch.tensor([[0, 1, 1]]))
+    assert model.model.forward == decoder_forward
+    assert model.lm_head.forward == head_forward
 
 
 def test_nonfinite_training_loss_fails_before_optimizer_update(tmp_path):

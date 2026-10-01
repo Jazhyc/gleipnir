@@ -45,6 +45,7 @@ def main() -> None:
     parser.add_argument("--jobs", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--mode", choices=("eager", "compiled"), required=True)
+    parser.add_argument("--precision-mask-probes", action="store_true")
     args = parser.parse_args()
     original_jobs = [
         json.loads(line) for line in args.jobs.read_text().splitlines() if line
@@ -56,6 +57,10 @@ def main() -> None:
     job = diagnostic_job(original_jobs[0], output, args.mode)
     command = training_command(job)
     command.append("student.training.adaptive_microbatching.canary_only=true")
+    if args.precision_mask_probes:
+        command.append(
+            "++student.training.adaptive_microbatching.diagnostic_variants=true"
+        )
     contract = {
         "job": job,
         "command": command,

@@ -71,3 +71,10 @@ and the same frozen preflight job. It runs the eight-input canary only, recordin
 decision logits, mean losses, gradient norms/cosine and the largest parameter
 differences. `--mode compiled` provides the matched compiled diagnostic. Neither
 diagnostic trains or selects a new recipe; failure keeps the parity threshold.
+
+The eager diagnostic also fails (relative L2 0.13763, cosine 0.99050); its mean
+loss changes by 0.157%. The next diagnostic adds `--precision-mask-probes` to
+isolate FP32 LM-head projection, omission of causal right-padding masks, and
+their combination, plus conservative physical maxima 4 and 2. These are bounded
+same-weight canaries only. Restore model
+methods after each probe, retain the original failure and report all variants.

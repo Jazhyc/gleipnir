@@ -5,10 +5,12 @@ from __future__ import annotations
 import math
 import time
 from collections.abc import Callable, Sequence
+from contextlib import contextmanager
 from dataclasses import asdict, dataclass
 from typing import Any
 
 import torch
+import torch.nn.functional as F
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,37 @@ class LogicalBatchCollator:
 
     def __call__(self, features: list[dict[str, Any]]) -> dict[str, Any]:
         return {"logical_batch": LogicalBatch(features)}
+
+
+@contextmanager
+def diagnostic_decoder_overrides(model, *, fp32_head: bool, maskless: bool):
+    """Temporarily isolate head precision and right-padding masking in a canary."""
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    decoder, head = base.model, base.lm_head
+    decoder_forward, head_forward = decoder.forward, head.forward
+
+    def project(hidden):
+        with torch.autocast(device_type=hidden.device.type, enabled=False):
+            bias = head.bias.float() if head.bias is not None else None
+            return F.linear(hidden.float(), head.weight.float(), bias)
+
+    def decode(*args, **kwargs):
+        mask = kwargs.get("attention_mask")
+        if mask is not None and (
+            mask.ndim != 2 or bool((mask[:, 1:] > mask[:, :-1]).any())
+        ):
+            raise ValueError("maskless diagnostics require causal right padding")
+        kwargs["attention_mask"] = None
+        return decoder_forward(*args, **kwargs)
+
+    try:
+        if fp32_head:
+            head.forward = project
+        if maskless:
+            decoder.forward = decode
+        yield
+    finally:
+        decoder.forward, head.forward = decoder_forward, head_forward
 
 
 class AdaptiveMicrobatchTrainerMixin:
