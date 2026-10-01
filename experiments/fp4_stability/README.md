@@ -454,6 +454,13 @@ measured steps. Stop on any failure. Require >=5% lower whole-step mean against
 the established 12.479019-second FP4 baseline before selecting a useful gain;
 there is no held-out quality selection or pure-BF16 control in this screen.
 
+After ordinary FlashQLA completes, `row_flashqla_fla_control_timing.yaml` repeats
+the unchanged preferred FP4 recipe with FLA on the same B200. This fresh control
+uses the same gates, initialization, work and thirty-step timing protocol; report
+it alongside the historical baseline to check timing drift. This is an FP4/FLA
+control, not an NF4-vs-FP4 comparison. A future precision comparison must give
+both recipes the selected attention backend.
+
 If ordinary FlashQLA passes, repeat the isolated canary with `--auto-cp`, then
 test `row_flashqla_auto_cp_timing.yaml` as a separate intervention only if all
 its parity gates pass. Automatic partitioning may change long singleton
