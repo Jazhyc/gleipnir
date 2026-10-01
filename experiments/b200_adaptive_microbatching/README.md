@@ -190,3 +190,14 @@ GLEIPNIR_COMMIT=COMMITTED_REVISION .venv/bin/python \
   experiments/b200_adaptive_microbatching/run_execution_audit.py \
   --config experiments/b200_adaptive_microbatching/execution_audit.yaml
 ```
+
+The execution audit completed all four probes and forty trajectory steps without
+OOM or unexpected compiler fallback. Fixed-partition eager/compiled gradients
+differ by 10–11% relative L2 and actual AdamW updates by 32–34%, while final
+common probe losses span 0.927562–0.940055 (1.35%). Adaptive policies realized
+physical sizes 1, 2, 4 and 8. Step-compute timings are promising but exclude
+evaluation/setup/reset/export and share warm caches; no full-loop gain or ETA
+is promoted. These cohort-specific probes differ from the historical stress
+inputs. See the [complete findings](../../docs/findings/b200_execution_audit.md)
+for curves, individual-example limits, provenance and retained checkpoints.
+The original parity gate and fixed-batch selection remain unchanged.

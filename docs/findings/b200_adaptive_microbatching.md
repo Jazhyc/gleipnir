@@ -1,9 +1,11 @@
 # Adaptive B200 physical microbatches
 
 Date: 2026-10-01. Status: implementation tested; bounded batching, singleton
-repeatability, matched-loss and compiler-autocast audits completed. No passing
-adaptive candidate,
-adaptive timing result, or recipe promotion. Root cause remains unresolved.
+repeatability, matched-loss, compiler-autocast and actual-update/learning-curve
+audits completed. No adaptive candidate passes the original gradient gate;
+no timing-screen result or recipe promotion. Root cause remains unresolved.
+The separately authorized [execution audit](b200_execution_audit.md) finds
+close ten-step mean losses despite different gradients and updates.
 
 The user authorized empirical optimization with ten-update workloads on the
 existing B200. The [experiment contract](../../experiments/b200_adaptive_microbatching/README.md)
@@ -196,3 +198,23 @@ L2 alone does not establish worse final quality. Do not silently relax the
 original parity gate or launch its failed timing campaign. No full campaign is
 validated by these forward checks; compile and batching numerical behavior
 remain unresolved.
+
+## Completed actual-update and learning-curve audit
+
+The user subsequently authorized all three remaining checks, including optimizer
+updates despite the failed gradient screen. Source
+`5767c3b56eb57519ef6ecc4de2beaf5a1ee28f30` passed 49 focused CPU tests and
+completed four gradient/update probes plus four matched ten-step trajectories.
+Fixed-partition eager/compiled gradient relative L2 is 0.102–0.111 and actual
+clipped AdamW update error is 0.324–0.337. Final mean losses on a common eager
+training-probe path span 0.927562–0.940055, a 1.35% spread. There were no OOMs
+or unexpected compiler fallbacks.
+
+These probes select eight rows from the matched 320-row cohort, unlike the
+historical global-longest-eight stress inputs above. They do not invalidate
+the earlier failures. Adaptive policies realized physical sizes 1, 2, 4 and 8;
+their step-compute timings are promising but are not a validated complete-loop
+benchmark or revised ETA. See the [execution findings](b200_execution_audit.md)
+for all comparisons, per-example limits, provenance and artifacts. Keep the
+original 0.05 gate and selected fixed-batch recipe; no held-out quality or full
+training campaign was run.
