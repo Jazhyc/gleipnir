@@ -103,6 +103,7 @@ def run_precision_training_screen(
     expected_initial_master_sha256: str | None = None,
     timing_repeats: int = 0,
     profile_batch: int | None = None,
+    gradient_validation: str = "per_tensor",
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -117,6 +118,8 @@ def run_precision_training_screen(
         steps != 10 or diagnostics_only or not 1 <= profile_batch <= 10
     ):
         raise ValueError("profiling requires one of ten warmed training batches")
+    if gradient_validation not in {"per_tensor", "clip_norm"}:
+        raise ValueError("unknown adapter gradient validation mode")
     named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
     parameters = [p for _, p in named]
     if not parameters or any(p.dtype != torch.float32 for p in parameters):
@@ -153,6 +156,7 @@ def run_precision_training_screen(
         "steps": [],
         "timing_repeats": timing_repeats,
         "profile_batch": profile_batch,
+        "gradient_validation": gradient_validation,
         "logical_batch_size": 32,
         "gpu": torch.cuda.get_device_name(device),
         "gpu_total_bytes": torch.cuda.get_device_properties(device).total_memory,
@@ -225,8 +229,13 @@ def run_precision_training_screen(
             total += float(loss.detach()) * fraction
             (loss * fraction).backward()
         for parameter in parameters:
-            if parameter.grad is None or not bool(torch.isfinite(parameter.grad).all()):
+            if parameter.grad is None or (
+                gradient_validation == "per_tensor"
+                and not bool(torch.isfinite(parameter.grad).all())
+            ):
                 raise FloatingPointError("missing or nonfinite adapter gradient")
+        # clip_norm checks the aggregate norm with error_if_nonfinite=True
+        # immediately afterward in every caller, before any optimizer update.
         return {
             "mean_loss": total,
             "physical_sizes": [len(i) for i in partition],

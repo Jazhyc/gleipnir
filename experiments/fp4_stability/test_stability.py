@@ -221,8 +221,9 @@ def test_timing_summary_weights_tokens_and_rejects_unmatched_replays():
 
 
 @pytest.mark.parametrize("profile_batch", [None, 5])
+@pytest.mark.parametrize("gradient_validation", ["per_tensor", "clip_norm"])
 def test_timing_replays_restore_adapters_optimizer_and_schedule(
-    monkeypatch, tmp_path, profile_batch
+    monkeypatch, tmp_path, profile_batch, gradient_validation
 ):
     from gleipnir import precision_training_screen as screen
     from gleipnir.adaptive_microbatching import MicrobatchPolicy
@@ -273,6 +274,7 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         metadata={"mlp": {"precision": "bf16"}},
         timing_repeats=3,
         profile_batch=profile_batch,
+        gradient_validation=gradient_validation,
     )
     assert report["status"] == "complete"
     assert len(optimizers) == 4
@@ -288,6 +290,86 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         assert [step["mean_loss"] for step in replay["steps"]] == [
             step["mean_loss"] for step in report["timing_passes"][0]["steps"]
         ]
+
+
+@pytest.mark.parametrize("gradient_validation", ["per_tensor", "clip_norm"])
+def test_nonfinite_gradient_fails_before_optimizer(
+    monkeypatch, tmp_path, gradient_validation
+):
+    from gleipnir import precision_training_screen as screen
+    from gleipnir.adaptive_microbatching import MicrobatchPolicy
+
+    monkeypatch.setattr(torch.cuda, "get_device_name", lambda device: "cpu mock")
+    monkeypatch.setattr(
+        torch.cuda,
+        "get_device_properties",
+        lambda device: SimpleNamespace(total_memory=0),
+    )
+    monkeypatch.setattr(torch.cuda, "reset_peak_memory_stats", lambda device: None)
+    monkeypatch.setattr(screen.importlib.metadata, "version", lambda name: "mock")
+    model = torch.nn.Linear(1, 1, bias=False)
+    model.weight.register_hook(lambda gradient: torch.full_like(gradient, float("inf")))
+
+    def forbidden(*args):
+        pytest.fail("nonfinite gradients must fail before optimizer construction")
+
+    with pytest.raises(
+        (FloatingPointError, RuntimeError), match="nonfinite|non-finite"
+    ):
+        screen.run_precision_training_screen(
+            model=model,
+            features=[{"direct_input_ids": [1]} for _ in range(32)],
+            collator=lambda items: items,
+            loss_forward=lambda batch: model(torch.ones(1, 1)).square().mean(),
+            optimizer_factory=forbidden,
+            scheduler_factory=forbidden,
+            install_compile=lambda: [],
+            output=tmp_path,
+            seed=0,
+            policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
+            steps=1,
+            max_grad_norm=1.0,
+            metadata={"mlp": {"precision": "bf16"}},
+            gradient_validation=gradient_validation,
+        )
+
+
+def test_fused_scaling_wrapper_preserves_forward_and_decoded_backward(monkeypatch):
+    import sys
+
+    fake = SimpleNamespace(
+        normalize_rows=normalize_activation_rows,
+        rescale_rows=lambda outputs, scales: (outputs.float() * scales).to(
+            torch.bfloat16
+        ),
+    )
+    monkeypatch.setitem(sys.modules, "gleipnir.fp4_row_kernels", fake)
+    original = torch.nn.Linear(16, 32, bias=False, dtype=torch.bfloat16)
+    original.requires_grad_(False)
+    layers = []
+    for fused in [False, True]:
+        runtime = FrozenFp4Runtime(
+            original.weight,
+            None,
+            None,
+            None,
+            lambda inputs, weight, **kwargs: inputs @ weight.T,
+            dequantized_weight=original.weight,
+            row_scaled_activations=True,
+            fused_row_scaling=fused,
+        )
+        layers.append(FrozenFourOverSixLinear(original, runtime))
+    values = torch.randn(2, 7, 16, dtype=torch.bfloat16)
+    values[0, 0] = 0
+    outputs, gradients = [], []
+    for layer in layers:
+        inputs = values.clone().requires_grad_()
+        output = layer(inputs)
+        output.float().sum().backward()
+        outputs.append(output.detach())
+        gradients.append(inputs.grad)
+    torch.testing.assert_close(outputs[0], outputs[1], rtol=0, atol=0)
+    torch.testing.assert_close(gradients[0], gradients[1], rtol=0, atol=0)
 
 
 def test_timing_config_is_fp4_only_and_bounded():
@@ -309,6 +391,47 @@ def test_timing_config_is_fp4_only_and_bounded():
     for overrides in [{"profile_batch": 11}, {"steps": 1}]:
         with pytest.raises(ValueError, match="profiling requires"):
             validate_config({**profile, **overrides})
+    fused = yaml.safe_load(
+        (Path(__file__).parent / "row_aot_fused_timing.yaml").read_text()
+    )
+    validate_config(fused)
+    with pytest.raises(ValueError, match="per-token"):
+        validate_config({**fused, "row_scaled_activations": False})
+    with pytest.raises(ValueError, match="validation mode"):
+        validate_config({**fused, "gradient_validation": "disabled"})
+    validate_config(
+        yaml.safe_load(
+            (
+                Path(__file__).parent / "row_inductor_boundaries_diagnostic.yaml"
+            ).read_text()
+        )
+    )
+
+
+def test_eager_mlp_activation_boundary_preserves_parameters(monkeypatch):
+    from gleipnir.fouroversix_training import install_eager_mlp_activation_interfaces
+
+    model = torch.nn.ModuleDict(
+        {
+            "layer": torch.nn.ModuleDict(
+                {
+                    "mlp": torch.nn.ModuleDict(
+                        {
+                            "act_fn": torch.nn.SiLU(),
+                            "projection": torch.nn.Linear(2, 2),
+                        }
+                    )
+                }
+            ),
+            "other": torch.nn.SiLU(),
+        }
+    )
+    parameters = list(model.parameters())
+    disabled = []
+    monkeypatch.setattr(torch.compiler, "disable", lambda fn: disabled.append(fn) or fn)
+    assert install_eager_mlp_activation_interfaces(model) == ["layer.mlp.act_fn"]
+    assert len(disabled) == 1
+    assert all(p is q for p, q in zip(parameters, model.parameters(), strict=True))
 
 
 def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():

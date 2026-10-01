@@ -64,6 +64,15 @@ def validate_config(config: dict) -> None:
         or not 1 <= config["profile_batch"] <= 10
     ):
         raise ValueError("profiling requires one of ten warmed training batches")
+    if config.get("gradient_validation", "per_tensor") not in {
+        "per_tensor",
+        "clip_norm",
+    }:
+        raise ValueError("unknown adapter gradient validation mode")
+    if config.get("fused_row_scaling", False) and not config.get(
+        "row_scaled_activations", False
+    ):
+        raise ValueError("fused row scaling requires per-token activations")
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -149,6 +158,9 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_compiler_diagnostic.py",
                 ROOT / "src/gleipnir/precision_training_screen.py",
                 ROOT / "src/gleipnir/fp4_performance.py",
+                ROOT / "src/gleipnir/fp4_row_kernels.py",
+                ROOT / "experiments/fp4_stability/row_kernel_canary.py",
+                ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
                 args.config.resolve(),
@@ -169,6 +181,21 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("fused_row_scaling", False):
+            with (logs / "row-kernel-canary.log").open("w") as handle:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/fp4_stability/row_kernel_canary.py",
+                        "--output",
+                        str(output / "row_kernel_canary.json"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         canary_command = [
             sys.executable,
             "experiments/b200_fouroversix/kernel_canary.py",
@@ -179,6 +206,8 @@ def main() -> None:
         ]
         if config.get("row_scaled_activations", False):
             canary_command.append("--row-scaled-activations")
+        if config.get("fused_row_scaling", False):
+            canary_command.append("--fused-row-scaling")
         with (logs / "kernel-canary.log").open("w") as handle:
             subprocess.run(
                 canary_command,
@@ -207,8 +236,19 @@ def main() -> None:
                 f"{str(config.get('capture_native_operands', False)).lower()}",
                 "++student.training.precision_screen.eager_rmsnorm_interfaces="
                 f"{str(config.get('eager_rmsnorm_interfaces', False)).lower()}",
+                "++student.training.precision_screen.eager_mlp_activation_interfaces="
+                f"{str(config.get('eager_mlp_activation_interfaces', False)).lower()}",
                 f"student.training.selective_torch_compile_backend={config['compile_backend']}",
+                "++student.quantization.fp4_fused_row_scaling="
+                f"{str(config.get('fused_row_scaling', False)).lower()}",
+                "++student.training.precision_screen.gradient_validation="
+                f"{config.get('gradient_validation', 'per_tensor')}",
             ]
+            if config.get("compile_policy"):
+                command.append(
+                    "student.training.selective_torch_compile_policy="
+                    f"{config['compile_policy']}"
+                )
             if stage_steps == 1:
                 command.append("student.training.warmup_ratio=0.0")
             elif config.get("timing_repeats", 0):

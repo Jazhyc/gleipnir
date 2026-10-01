@@ -26,6 +26,7 @@ def main() -> None:
         "--backward-mode", choices=["fp4", "dequantized_bf16"], default="fp4"
     )
     parser.add_argument("--row-scaled-activations", action="store_true")
+    parser.add_argument("--fused-row-scaling", action="store_true")
     args = parser.parse_args()
     torch.manual_seed(0)
     layer = torch.nn.Linear(256, 512, bias=False, device="cuda", dtype=torch.bfloat16)
@@ -34,6 +35,7 @@ def main() -> None:
         layer.weight,
         backward_mode=args.backward_mode,
         row_scaled_activations=args.row_scaled_activations,
+        fused_row_scaling=args.fused_row_scaling,
     )
     stochastic = runtime.gradient_config
     runtime.gradient_config = dataclasses.replace(
@@ -135,6 +137,7 @@ def main() -> None:
         "matmul_backend": "cutlass",
         "backward_mode": args.backward_mode,
         "row_scaled_activations": args.row_scaled_activations,
+        "fused_row_scaling": args.fused_row_scaling,
         "row_independence_relative_l2": row_independence,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

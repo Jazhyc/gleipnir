@@ -3162,6 +3162,11 @@ def main(cfg: DictConfig) -> None:
                     default=False,
                 )
             ),
+            fused_row_scaling=bool(
+                OmegaConf.select(
+                    cfg, "student.quantization.fp4_fused_row_scaling", default=False
+                )
+            ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(
@@ -3459,12 +3464,20 @@ def main(cfg: DictConfig) -> None:
     if precision_screen_cfg is not None and bool(precision_screen_cfg.enabled):
         from torch._functorch import config as functorch_config
 
-        from gleipnir.fouroversix_training import install_eager_rmsnorm_interfaces
+        from gleipnir.fouroversix_training import (
+            install_eager_mlp_activation_interfaces,
+            install_eager_rmsnorm_interfaces,
+        )
         from gleipnir.precision_training_screen import run_precision_training_screen
 
         eager_rmsnorm_interfaces = (
             install_eager_rmsnorm_interfaces(model)
             if bool(precision_screen_cfg.get("eager_rmsnorm_interfaces", False))
+            else []
+        )
+        eager_mlp_activation_interfaces = (
+            install_eager_mlp_activation_interfaces(model)
+            if bool(precision_screen_cfg.get("eager_mlp_activation_interfaces", False))
             else []
         )
 
@@ -3509,6 +3522,9 @@ def main(cfg: DictConfig) -> None:
             ),
             timing_repeats=int(precision_screen_cfg.get("timing_repeats", 0)),
             profile_batch=precision_screen_cfg.get("profile_batch"),
+            gradient_validation=str(
+                precision_screen_cfg.get("gradient_validation", "per_tensor")
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,
@@ -3519,6 +3535,7 @@ def main(cfg: DictConfig) -> None:
                 "compile_policy": selective_torch_compile_policy,
                 "eager_mlp_interface": eager_mlp_interface,
                 "eager_rmsnorm_interfaces": eager_rmsnorm_interfaces,
+                "eager_mlp_activation_interfaces": eager_mlp_activation_interfaces,
                 "backward_pass_autocast": (functorch_config.backward_pass_autocast),
             },
         )

@@ -125,6 +125,27 @@ then complete a warmed timing replay on identical data. Require at least 5%
 lower step time before calling an intervention a useful throughput improvement.
 No other precision condition or held-out quality experiment is launched.
 
+Candidates, frozen before their runs:
+
+- `row_aot_fused_timing.yaml`: fuse each row's FP32 maximum/division/BF16 cast,
+  and fuse output FP32 rescaling/BF16 cast. Use round-to-nearest FP32 division
+  and prohibit arithmetic reassociation. Require bitwise parity with the
+  existing row helpers for zeros, outliers and representative dimensions before
+  the native/model canaries. Check missing adapter gradients explicitly and use
+  the existing norm-one clip with `error_if_nonfinite=True` to reject all
+  nonfinite gradients before updates, avoiding 256 individual host waits. Match
+  the original warmed timing's full cohort and three-replay protocol. Defaults
+  remain unchanged. This combines two overhead interventions; a total speed
+  change does not isolate their individual effects.
+- `row_inductor_boundaries_diagnostic.yaml`: retain original unfused arithmetic
+  while preserving casts and keeping plain RMSNorm, MLP SiLU and both token
+  mixers eager. Compile remaining decoder shells with Inductor. Hypothesis:
+  these fences prevent small fused arithmetic differences from being amplified
+  by FP4 quantization. This is a forward-only matched-cohort/prefix diagnostic;
+  stop without any optimizer work regardless of the gate outcome. A passing
+  candidate still requires the global-longest update and warmed replay before
+  a performance claim. Preserve failed original Inductor diagnostics.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16

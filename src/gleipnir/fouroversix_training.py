@@ -51,6 +51,7 @@ class FrozenFp4Runtime:
     dequantized_weight: torch.Tensor | None = None
     row_scaled_activations: bool = False
     observer: Callable | None = None
+    fused_row_scaling: bool = False
 
 
 def normalize_activation_rows(
@@ -72,14 +73,24 @@ class FrozenFp4Function(torch.autograd.Function):
         flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
         scales = None
         if runtime.row_scaled_activations:
-            flattened, scales = normalize_activation_rows(flattened)
+            if runtime.fused_row_scaling:
+                from gleipnir.fp4_row_kernels import normalize_rows
+
+                flattened, scales = normalize_rows(flattened)
+            else:
+                flattened, scales = normalize_activation_rows(flattened)
         output = runtime.matmul(
             flattened,
             runtime.weight,
             input_config=runtime.activation_config,
         )
         if scales is not None:
-            output = (output.float() * scales).to(torch.bfloat16)
+            if runtime.fused_row_scaling:
+                from gleipnir.fp4_row_kernels import rescale_rows
+
+                output = rescale_rows(output, scales)
+            else:
+                output = (output.float() * scales).to(torch.bfloat16)
         if runtime.observer is not None:
             runtime.observer(inputs, flattened, scales, output)
         return output.reshape(*inputs.shape[:-1], output.shape[-1])
@@ -126,12 +137,15 @@ def native_runtime(
     *,
     backward_mode: str = "fp4",
     row_scaled_activations: bool = False,
+    fused_row_scaling: bool = False,
 ) -> FrozenFp4Runtime:
     """Fail closed on package/hardware mismatch and prohibit reference fallback."""
     if importlib.metadata.version("fouroversix") != FOUROVERSIX_VERSION:
         raise RuntimeError("Four Over Six requires the isolated pinned 1.0.5 release")
     if backward_mode not in {"fp4", "dequantized_bf16"}:
         raise ValueError(f"unknown FP4 backward mode: {backward_mode}")
+    if fused_row_scaling and not row_scaled_activations:
+        raise ValueError("fused row scaling requires per-token activations")
     if weight.device.type != "cuda" or torch.cuda.get_device_capability() not in {
         (10, 0),
         (10, 3),
@@ -188,6 +202,7 @@ def native_runtime(
         matmul,
         dequantized_weight=decoded_weight,
         row_scaled_activations=row_scaled_activations,
+        fused_row_scaling=fused_row_scaling,
     )
 
 
@@ -197,6 +212,7 @@ def install_mlp_precision(
     *,
     backward_mode: str = "fp4",
     row_scaled_activations: bool = False,
+    fused_row_scaling: bool = False,
 ) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
@@ -225,11 +241,14 @@ def install_mlp_precision(
                 FrozenFourOverSixLinear(
                     module,
                     native_runtime(module.weight)
-                    if backward_mode == "fp4" and not row_scaled_activations
+                    if backward_mode == "fp4"
+                    and not row_scaled_activations
+                    and not fused_row_scaling
                     else native_runtime(
                         module.weight,
                         backward_mode=backward_mode,
                         row_scaled_activations=row_scaled_activations,
+                        fused_row_scaling=fused_row_scaling,
                     ),
                 ),
             )
@@ -251,7 +270,9 @@ def install_mlp_precision(
         if precision == "fouroversix" and backward_mode == "fp4"
         else None,
         "activation_scaling": (
-            "per_token_unfused" if row_scaled_activations else "per_tensor"
+            ("per_token_fused" if fused_row_scaling else "per_token_unfused")
+            if row_scaled_activations
+            else "per_tensor"
         )
         if precision == "fouroversix"
         else None,
@@ -302,6 +323,20 @@ def install_eager_rmsnorm_interfaces(model: nn.Module) -> list[str]:
     ]
     if not selected:
         raise ValueError("no Qwen3.5 RMSNorm interfaces found")
+    for _, module in selected:
+        module.forward = torch.compiler.disable(module.forward)
+    return [name for name, _ in selected]
+
+
+def install_eager_mlp_activation_interfaces(model: nn.Module) -> list[str]:
+    """Preserve eager SiLU arithmetic at FP4 down-projection input boundaries."""
+    selected = [
+        (name, module)
+        for name, module in model.named_modules()
+        if name.endswith(".mlp.act_fn")
+    ]
+    if not selected:
+        raise ValueError("no decoder MLP activation interfaces found")
     for _, module in selected:
         module.forward = torch.compiler.disable(module.forward)
     return [name for name, _ in selected]
