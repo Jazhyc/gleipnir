@@ -6,6 +6,10 @@ Status: native kernel canaries passed; both full-model preflights failed the
 same-weight compilation gate. Stopped after the requested boundary change.
 No recipe promotion.
 
+Subsequent infrastructure action: the user authorized stopping the B200 on
+2026-10-01. Pod `alzfug70g5237b` was stopped and read back as **EXITED**; network
+volume `ixbh81vf9c` is retained. See the shutdown/resume record below.
+
 ## Intervention and controls
 
 Use the existing Runpod B200 and selected twelve-checkpoint, selectively compiled,
@@ -214,3 +218,60 @@ a successful global preflight. A future forward-only diagnostic needs a bounded
 entrypoint and fresh output rather than launching that whole queue implicitly.
 Retain the existing compilation loss limit, `0.01 + 0.01 * abs(eager_loss)`;
 stochastic backward noise cannot explain a gate that never invokes backward.
+
+## Subsequent B200 shutdown and restart state
+
+On 2026-10-01 the user requested shutting down compute and returning later.
+Runpod's stop action succeeded and a separate `get-pod` read confirmed **EXITED**
+with `start` available. The Pod was not terminated. A separate volume read
+confirmed the 100 GB STANDARD network volume `ixbh81vf9c`
+(`gleipnir-b200-workspace`, `US-NC-2`) remains present.
+
+Before stopping, `findmnt` verified `/workspace` is backed by
+`mfs#us-nc-2.runpod.net:9421[/networkvolumes/ixbh81vf9c]`. The virtualenv packages,
+Hugging Face weights, all four kernel overlays, training compiler caches,
+datasets, results and logs are on this mount. The selected compiler-cache link
+resolves inside the volume to
+`results/b200_training_throughput/compile_cache/h100-recipe-b1`. No GPU process
+was active at preservation time. Earlier statements that the Pod was left running
+describe the experiment's completion; this shutdown supersedes that state.
+
+Container-local dependencies were also preserved before stopping:
+
+- `/root/.cache/vllm` and `/root/.nv/ComputeCache`;
+- `/usr/bin/python3.12`, `/usr/lib/python3.12`, `/usr/include/python3.12`.
+
+Archive: `/workspace/gleipnir/.cache/runtime-resume/container-runtime-20261001.tar.gz`,
+31,766,142 bytes, with 1,564 regular files checked against their original SHA-256
+digests. Archive SHA-256:
+`e80c02715a3dcdf42d8b1a7f870f59b5238f6d53b4f24e291492d92f233c3741`.
+A local copy at the same repository-relative path passed the archive checksum.
+Local ignored `results/b200_shutdown/preservation.json` records paths,
+resolutions, versions and checks; `stop_receipt.json` records the API read-back.
+The preservation manifest is also on the volume. The local stop receipt was
+written after SSH shutdown, so it is not yet copied back to the Pod.
+
+On a later authorized resume, start the same Pod, verify it reacquired a B200,
+and refresh `.runpod/pod.json` from a live read before SSH. That local snapshot
+now records EXITED with the old SSH mappings removed. Preserve the existing
+CUDA-13 image and verify Python 3.12.3 plus the recorded software/kernel versions
+before reusing compilation caches. The virtualenv's interpreter resolves to
+`/usr/bin/python3.12`, outside the volume; verify the new container provides it
+and use the preserved runtime archive if recovery is needed. Restore additional
+container-local caches from the archive as needed, preserving its checksums.
+
+Recreate these missing temporary links after a fresh container starts:
+
+```bash
+ln -s /workspace/gleipnir/.cache/kernels/fla /tmp/gleipnir-qwen35-fla
+ln -s /workspace/gleipnir/.cache/kernels/causal_conv1d /tmp/gleipnir-qwen35-causal-conv1d
+ln -s /workspace/gleipnir/.cache/kernels/triton /tmp/gleipnir-triton-3.7.1
+cd /workspace/gleipnir
+source .cache-runtime.env
+```
+
+Then verify pinned FLA/causal-conv1d and native Four Over Six before model import,
+and follow the bounded diagnostic order above. No new capacity or future run
+was launched. Stopping ends GPU compute billing; retained storage continues
+billing. Runpod documents the container-disk reset and persistent-volume behavior
+in [Manage Pods](https://docs.runpod.io/pods/manage-pods#stop-a-pod).

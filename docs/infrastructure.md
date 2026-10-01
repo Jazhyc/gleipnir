@@ -143,6 +143,17 @@ The Pod was verified RUNNING after artifact collection. See the
 [B200 finding](findings/runpod_b200_gleipnir4b_id.md) for numerical agreement,
 calibration, measured inference throughput, and the cold-start limitations.
 
+On 2026-10-01, after the B200 training/kernel diagnostics and artifact collection,
+the user explicitly requested shutting down compute. Pod `alzfug70g5237b` was
+stopped and read back as **EXITED**. Network volume `ixbh81vf9c` remains present;
+weights, environments, kernel/compiler caches, datasets and artifacts were
+verified on `/workspace` before stopping. Small container-local caches and the
+Python runtime were archived there and checksummed locally. GPU compute billing
+ended; retained storage still bills. Before a later authorized start, read the
+[shutdown and restart record](findings/b200_fouroversix_training.md#subsequent-b200-shutdown-and-restart-state),
+refresh live SSH metadata and restore the temporary kernel links. No Pod or
+network volume was deleted.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
