@@ -12,6 +12,7 @@ import torch
 from gleipnir.fouroversix_training import (
     FrozenFourOverSixLinear,
     native_runtime,
+    normalize_activation_rows,
 )
 
 
@@ -21,11 +22,19 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--backward-mode", choices=["fp4", "dequantized_bf16"], default="fp4"
+    )
+    parser.add_argument("--row-scaled-activations", action="store_true")
     args = parser.parse_args()
     torch.manual_seed(0)
     layer = torch.nn.Linear(256, 512, bias=False, device="cuda", dtype=torch.bfloat16)
     layer.requires_grad_(False)
-    runtime = native_runtime(layer.weight)
+    runtime = native_runtime(
+        layer.weight,
+        backward_mode=args.backward_mode,
+        row_scaled_activations=args.row_scaled_activations,
+    )
     stochastic = runtime.gradient_config
     runtime.gradient_config = dataclasses.replace(
         stochastic, round_style=RoundStyle.nearest
@@ -39,9 +48,11 @@ def main() -> None:
         grad = torch.randn(batch_size, 17, 512, device="cuda", dtype=torch.bfloat16)
         output = native(inputs)
         output.backward(grad)
-        xq = quantize_to_fp4(
-            inputs.detach().reshape(-1, 256), runtime.activation_config
-        )
+        quantizer_inputs = inputs.detach().reshape(-1, 256)
+        scales = None
+        if args.row_scaled_activations:
+            quantizer_inputs, scales = normalize_activation_rows(quantizer_inputs)
+        xq = quantize_to_fp4(quantizer_inputs, runtime.activation_config)
         gq = quantize_to_fp4(grad.reshape(-1, 512), runtime.gradient_config)
 
         def decoded(tensor):
@@ -53,7 +64,13 @@ def main() -> None:
             )
 
         expected = decoded(xq) @ decoded(runtime.weight).T
-        expected_grad = decoded(gq) @ decoded(runtime.transposed_weight).T
+        if scales is not None:
+            expected *= scales
+        expected_grad = (
+            grad.reshape(-1, 512).float() @ runtime.dequantized_weight.float()
+            if runtime.dequantized_weight is not None
+            else decoded(gq) @ decoded(runtime.transposed_weight).T
+        )
         forward_error = float(
             (output.detach().float().reshape(-1, 512) - expected).norm()
             / expected.norm()
@@ -84,12 +101,29 @@ def main() -> None:
     import fouroversix
     import fouroversix._C
 
+    row_independence = None
+    if args.row_scaled_activations:
+        values = torch.randn(17, 256, device="cuda", dtype=torch.bfloat16)
+        alone = native(values)
+        together = native(torch.cat([values, torch.full_like(values, 1024)]))[:17]
+        row_independence = float(
+            (alone.float() - together.float()).norm() / alone.float().norm()
+        )
+        if row_independence > 0.02:
+            raise ValueError(
+                f"per-token quantization depends on other rows: {row_independence}"
+            )
     report = {
         "status": "passed",
         "cases": results,
         "stochastic_backward_finite": True,
         "native_forward_calls": runtime.forward_calls,
-        "native_backward_calls": runtime.backward_calls,
+        "native_backward_calls": runtime.backward_calls
+        if args.backward_mode == "fp4"
+        else 0,
+        "dequantized_bf16_backward_calls": runtime.backward_calls
+        if args.backward_mode == "dequantized_bf16"
+        else 0,
         "gpu": torch.cuda.get_device_name(),
         "capability": torch.cuda.get_device_capability(),
         "torch": torch.__version__,
@@ -98,6 +132,9 @@ def main() -> None:
         "extension_path": fouroversix._C.__file__,
         "quantize_backend": "triton",
         "matmul_backend": "cutlass",
+        "backward_mode": args.backward_mode,
+        "row_scaled_activations": args.row_scaled_activations,
+        "row_independence_relative_l2": row_independence,
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")

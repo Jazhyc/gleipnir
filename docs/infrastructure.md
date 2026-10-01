@@ -99,6 +99,31 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 
 ## Runpod
 
+On 2026-10-01 the user authorized resuming FP4 training work, then explicitly
+selected B300 after B200 capacity exhausted. New Pod `mqj2vv2h99ldie`
+(`gleipnir-b300-fp4`) was allocated in US-WA-2 at $7.89/hour with a 100 GB Pod
+volume mounted at `/workspace` and a 30 GB container disk. That region does not
+support network volumes. The Pod volume survives stopping but is deleted on
+termination; its listed storage cost is $10/month running or $20/month stopped,
+plus $3/month container storage while running. The former B200 network volume
+`ixbh81vf9c` remains intact in US-NC-2 and the former Pod remains stopped.
+
+The new container was still initializing at the initial checks, with no runtime
+or direct SSH mapping. Do not treat allocation as verified hardware or a started
+experiment. Use `--pod-file .runpod/b300.json` with `scripts/runpod_cloud.py`
+after saving sanitized live SSH metadata. The B300 experiment contract is
+[`fp4_stability`](../experiments/fp4_stability/README.md). Restore local
+frozen inputs and rebuild isolated pinned kernels; no cross-region volume
+migration has occurred. Preserve historical B200 cache/results identities.
+
+The user subsequently reserved B200 `o87sut99lu3ljs` in US-NC-2, on the same
+physical host `hgmwgcbuiv4y` as original Pod `alzfug70g5237b`. The reserved Pod
+had no volume, and Runpod forbids adding a network mount after Pod creation.
+After stopping the B300 and the empty reservation Pod, the original B200 Pod
+successfully resumed with its existing network volume on 2026-10-01. Both unused
+Pods are stopped, not terminated. No data migration is required. Verify live
+runtime/SSH mapping and the persistent environment before launching diagnostics.
+
 The user authorized one B200 at at most $8/hour on 2026-09-30, with no region
 restriction, a B300 fallback only after notification that B200 is unavailable,
 and keeping the Pod running after setup and ID inference. Pod `alzfug70g5237b`

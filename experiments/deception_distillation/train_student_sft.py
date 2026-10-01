@@ -3147,7 +3147,22 @@ def main(cfg: DictConfig) -> None:
     ):
         from gleipnir.fouroversix_training import install_mlp_precision
 
-        mlp_precision_metadata = install_mlp_precision(model, mlp_precision)
+        mlp_precision_metadata = install_mlp_precision(
+            model,
+            mlp_precision,
+            backward_mode=str(
+                OmegaConf.select(
+                    cfg, "student.quantization.fp4_backward_mode", default="fp4"
+                )
+            ),
+            row_scaled_activations=bool(
+                OmegaConf.select(
+                    cfg,
+                    "student.quantization.fp4_row_scaled_activations",
+                    default=False,
+                )
+            ),
+        )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(
         OmegaConf.select(cfg, "student.training.eager_mlp_interface", default=False)
@@ -3477,6 +3492,7 @@ def main(cfg: DictConfig) -> None:
             seed=int(cfg.seed),
             policy=adaptive_policy,
             steps=int(precision_screen_cfg.steps),
+            diagnostics_only=bool(precision_screen_cfg.get("diagnostics_only", False)),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

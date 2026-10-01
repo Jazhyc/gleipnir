@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import importlib.metadata
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Any
 
 import torch
@@ -48,6 +48,17 @@ class FrozenFp4Runtime:
     matmul: Callable
     forward_calls: int = 0
     backward_calls: int = 0
+    dequantized_weight: torch.Tensor | None = None
+    row_scaled_activations: bool = False
+
+
+def normalize_activation_rows(
+    inputs: torch.Tensor,
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Unfused per-token normalization with a fixed quantizer global maximum of one."""
+    scales = inputs.float().abs().amax(dim=-1, keepdim=True)
+    scales = torch.where(scales == 0, torch.ones_like(scales), scales)
+    return (inputs.float() / scales).to(torch.bfloat16), scales
 
 
 class FrozenFp4Function(torch.autograd.Function):
@@ -57,22 +68,34 @@ class FrozenFp4Function(torch.autograd.Function):
         ctx.input_shape = inputs.shape
         ctx.input_dtype = inputs.dtype
         runtime.forward_calls += 1
+        flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
+        scales = None
+        if runtime.row_scaled_activations:
+            flattened, scales = normalize_activation_rows(flattened)
         output = runtime.matmul(
-            inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16),
+            flattened,
             runtime.weight,
             input_config=runtime.activation_config,
         )
+        if scales is not None:
+            output = (output.float() * scales).to(torch.bfloat16)
         return output.reshape(*inputs.shape[:-1], output.shape[-1])
 
     @staticmethod
     def backward(ctx: Any, gradient: torch.Tensor):
         runtime = ctx.runtime
         runtime.backward_calls += 1
-        result = runtime.matmul(
-            gradient.reshape(-1, gradient.shape[-1]).to(torch.bfloat16),
-            runtime.transposed_weight,
-            input_config=runtime.gradient_config,
-        )
+        flattened = gradient.reshape(-1, gradient.shape[-1]).to(torch.bfloat16)
+        if runtime.dequantized_weight is not None:
+            # Frozen bases need dX only. Differentiate the forward's decoded
+            # quantized weight, rather than an independently quantized transpose.
+            result = flattened @ runtime.dequantized_weight
+        else:
+            result = runtime.matmul(
+                flattened,
+                runtime.transposed_weight,
+                input_config=runtime.gradient_config,
+            )
         return result.reshape(ctx.input_shape).to(ctx.input_dtype), None
 
 
@@ -95,12 +118,22 @@ class FrozenFourOverSixLinear(nn.Linear):
         return FrozenFp4Function.apply(inputs, self.runtime)
 
 
-def native_runtime(weight: torch.Tensor) -> FrozenFp4Runtime:
+def native_runtime(
+    weight: torch.Tensor,
+    *,
+    backward_mode: str = "fp4",
+    row_scaled_activations: bool = False,
+) -> FrozenFp4Runtime:
     """Fail closed on package/hardware mismatch and prohibit reference fallback."""
     if importlib.metadata.version("fouroversix") != FOUROVERSIX_VERSION:
         raise RuntimeError("Four Over Six requires the isolated pinned 1.0.5 release")
-    if weight.device.type != "cuda" or torch.cuda.get_device_capability() != (10, 0):
-        raise RuntimeError("this native training pilot is validated only on B200/SM100")
+    if backward_mode not in {"fp4", "dequantized_bf16"}:
+        raise ValueError(f"unknown FP4 backward mode: {backward_mode}")
+    if weight.device.type != "cuda" or torch.cuda.get_device_capability() not in {
+        (10, 0),
+        (10, 3),
+    }:
+        raise RuntimeError("native pilot requires B200/SM100 or B300/SM103 canaries")
     from fouroversix import ModuleQuantizationConfig, fp4_matmul, quantize_to_fp4
     from fouroversix.utils import MatmulBackend, QuantizeBackend
 
@@ -112,7 +145,28 @@ def native_runtime(weight: torch.Tensor) -> FrozenFp4Runtime:
         matmul_backend=MatmulBackend.cutlass,
     )
     forward_weight = quantize_to_fp4(weight, config.get_weight_config())
-    backward_weight = quantize_to_fp4(weight, config.get_weight_config(transpose=True))
+    activation_config = config.get_activation_config()
+    if row_scaled_activations:
+        activation_config = replace(
+            activation_config,
+            kwargs={"x_amax": torch.ones(1, device=weight.device, dtype=torch.float32)},
+        )
+    backward_weight = (
+        quantize_to_fp4(weight, config.get_weight_config(transpose=True))
+        if backward_mode == "fp4"
+        else None
+    )
+    decoded_weight = None
+    if backward_mode == "dequantized_bf16":
+        from fouroversix.quantize import dequantize
+
+        # One-time exact packed-weight decoding; forward remains native CUTLASS.
+        decoded_weight = dequantize(
+            forward_weight,
+            backend=QuantizeBackend.pytorch,
+            dtype=torch.bfloat16,
+            intermediate_dtype=torch.float32,
+        ).contiguous()
 
     def matmul(inputs, packed_weight, *, input_config):
         return fp4_matmul(
@@ -126,13 +180,21 @@ def native_runtime(weight: torch.Tensor) -> FrozenFp4Runtime:
     return FrozenFp4Runtime(
         forward_weight,
         backward_weight,
-        config.get_activation_config(),
+        activation_config,
         config.get_gradient_config(),
         matmul,
+        dequantized_weight=decoded_weight,
+        row_scaled_activations=row_scaled_activations,
     )
 
 
-def install_mlp_precision(model: nn.Module, precision: str) -> dict[str, Any]:
+def install_mlp_precision(
+    model: nn.Module,
+    precision: str,
+    *,
+    backward_mode: str = "fp4",
+    row_scaled_activations: bool = False,
+) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
         raise ValueError(f"unknown MLP precision: {precision}")
@@ -157,7 +219,16 @@ def install_mlp_precision(model: nn.Module, precision: str) -> dict[str, Any]:
             setattr(
                 model.get_submodule(parent_name),
                 attribute,
-                FrozenFourOverSixLinear(module, native_runtime(module.weight)),
+                FrozenFourOverSixLinear(
+                    module,
+                    native_runtime(module.weight)
+                    if backward_mode == "fp4" and not row_scaled_activations
+                    else native_runtime(
+                        module.weight,
+                        backward_mode=backward_mode,
+                        row_scaled_activations=row_scaled_activations,
+                    ),
+                ),
             )
         converted.append(name)
     return {
@@ -173,7 +244,16 @@ def install_mlp_precision(model: nn.Module, precision: str) -> dict[str, Any]:
         "matmul_backend": "cutlass" if precision == "fouroversix" else None,
         "scale_rule": "mse_4_over_6" if precision == "fouroversix" else None,
         "weight_scale_2d": precision == "fouroversix",
-        "gradient_rounding": "stochastic" if precision == "fouroversix" else None,
+        "gradient_rounding": "stochastic"
+        if precision == "fouroversix" and backward_mode == "fp4"
+        else None,
+        "activation_scaling": "per_token_unfused"
+        if row_scaled_activations
+        else "per_tensor",
+        "backward_mode": backward_mode if precision == "fouroversix" else "bf16",
+        "backward_uses_forward_quantized_weight": (
+            precision == "fouroversix" and backward_mode == "dequantized_bf16"
+        ),
         "frozen_weight_gradient": False,
         "native_boundary_eager": precision == "fouroversix",
     }
@@ -185,6 +265,16 @@ def native_call_counts(model: nn.Module) -> dict[str, int]:
         "modules": len(layers),
         "forward": sum(m.runtime.forward_calls for m in layers),
         "backward": sum(m.runtime.backward_calls for m in layers),
+        "fp4_backward": sum(
+            m.runtime.backward_calls
+            for m in layers
+            if m.runtime.dequantized_weight is None
+        ),
+        "dequantized_bf16_backward": sum(
+            m.runtime.backward_calls
+            for m in layers
+            if m.runtime.dequantized_weight is not None
+        ),
     }
 
 

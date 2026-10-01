@@ -51,6 +51,7 @@ def run_precision_training_screen(
     steps: int,
     max_grad_norm: float,
     metadata: dict[str, Any],
+    diagnostics_only: bool = False,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -177,18 +178,55 @@ def run_precision_training_screen(
         model.eval()
         with torch.no_grad():
             eager = float(loss_forward(batch).detach())
+            eager_repeat = float(loss_forward(batch).detach())
         report["compiled_layers"] = install_compile()
         with torch.no_grad():
             compiled = float(loss_forward(batch).detach())
-        if abs(eager - compiled) > 0.01 + 0.01 * abs(eager):
+            compiled_repeat = float(loss_forward(batch).detach())
+        passed = all(
+            math.isfinite(value) and abs(eager - value) <= 0.01 + 0.01 * abs(eager)
+            for value in [eager_repeat, compiled, compiled_repeat]
+        )
+        report["compile_canary"] = {
+            "eager_loss": eager,
+            "eager_repeat_loss": eager_repeat,
+            "compiled_loss": compiled,
+            "compiled_repeat_loss": compiled_repeat,
+            "passed": passed,
+        }
+        publish()
+        if diagnostics_only:
+            base = model.get_base_model() if hasattr(model, "get_base_model") else model
+            layers = base.model.layers
+            original_by_id = {
+                id(module): forward for module, forward in original_forwards
+            }
+            compiled_forwards = [layer.forward for layer in layers]
+            prefix_losses = []
+            for count in [0, 1, 4, 8, 16, 24, len(layers)]:
+                forwards = [
+                    (
+                        layer,
+                        compiled_forwards[i]
+                        if i < count
+                        else original_by_id[id(layer)],
+                    )
+                    for i, layer in enumerate(layers)
+                ]
+                with use_forwards(forwards), torch.no_grad():
+                    value = float(loss_forward(batch).detach())
+                prefix_losses.append({"compiled_prefix_layers": count, "loss": value})
+            report["prefix_compile_losses"] = prefix_losses
+            report["diagnostics_only"] = True
+            report["native_calls"] = native_call_counts(model)
+            report["master_unchanged"] = tensor_digest(parameters) == initial_digest
+            report["status"] = "diagnosed"
+            publish()
+            return report
+        if not passed:
             raise ValueError(
                 f"same-weight compilation loss canary failed: {eager}, {compiled}"
             )
-        report["compile_canary"] = {
-            "eager_loss": eager,
-            "compiled_loss": compiled,
-            "passed": True,
-        }
         model.train()
         longest = sorted(features, key=lambda item: -len(item["direct_input_ids"]))[:32]
         torch.cuda.reset_peak_memory_stats(device)
