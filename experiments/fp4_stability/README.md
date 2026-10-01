@@ -53,6 +53,14 @@ update, followed by ten matched updates. This tests optimizer stability while
 Inductor numerical consistency remains unresolved; timings do not compare
 against the original optimized Inductor recipe.
 
+The first NF4 pass is a finite-training result but has different initial adapter
+values despite the same seed. `row_aot_nf4_matched.yaml` repeats that condition
+from an explicit standard PEFT initialization artifact whose complete tensor hash
+equals the native/BF16 initial hash. It retains the global update and ten-step
+stop condition. The runner records initialization file checksums and the screen
+fails before GPU preflight if the loaded master hash differs. Same seed alone
+does not establish matching initialization across dense/quantized module classes.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16

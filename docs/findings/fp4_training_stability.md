@@ -18,7 +18,7 @@ FLA/fla-core 0.5.2, causal-conv1d 1.6.2.post1, Triton 3.7.1 and Four Over Six
 Use the frozen global longest-32 selection and selected 320 training examples,
 rank-128/alpha-256 FP32 LoRA masters, the selected twelve checkpoints,
 16,384 padded tokens/max-eight adaptive physical batches and logical batch 32.
-Attention retains NF4 storage and BF16 compute. All initial master hashes match
+Attention retains NF4 storage and BF16 compute. Native/BF16 initial hashes match
 `a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
 The loss gate remains `abs(eager - compiled) <= 0.01 + 0.01 * abs(eager)`.
 
@@ -263,3 +263,53 @@ are saved in `results/fp4_row_aot_training/cache_seed_receipt.json` and the
 associated ignored script. This is cache reuse, not a kernel source change.
 Initial native step times include cold compilation and this intervention;
 do not compare their aggregate time against warm controls as a precision speedup.
+
+## Interpreting training memory
+
+The stable native wrapper retains the original BF16 MLP weights for reference
+probes, packed FP4 forward weights/scales, and a BF16 cache decoded from those
+packed weights for backward. The BF16 MLP control retains only the original
+MLP weights. This makes the native path's resident weight budget larger in the
+current implementation. The packed upstream `QuantizedTensor` contains values,
+scales and amax; it does not contain another hidden master-weight tensor.
+
+W4A4 describes forward GEMM operands. It does not imply four-bit storage of
+saved residuals, checkpoint activations, LoRA activations, or optimizer states.
+Per-token normalization/rescaling and different compiler boundaries also change
+temporary allocations. The extra weight cache explains only part of the measured
+FP4/BF16 peak gap; its full attribution requires a saved-tensor/allocator profile.
+
+Compute dtype also does not determine stored activation dtype. Pinned
+[bitsandbytes 0.50.0](https://github.com/bitsandbytes-foundation/bitsandbytes/blob/0.50.0/bitsandbytes/nn/modules.py#L626-L637)
+casts the four-bit linear result back to its input dtype, and
+[PEFT 0.19.1](https://github.com/huggingface/peft/blob/v0.19.1/src/peft/tuners/lora/layer.py)
+preserves the base result dtype after adding LoRA. Thus FP32 normalization outputs
+can propagate FP32 MLP activations through an NF4/BF16-compute path. This is a
+relevant precision mechanism, not a measured attribution of the entire memory
+gap. Do not infer memory savings solely from weight bits or BF16 compute settings.
+
+## NF4 initialization audit
+
+The initial three-condition AOT campaign finishes every global update and all ten
+cohort steps. Its NF4 condition is **not a matched initialization control**:
+it starts from hash
+`e2944ee2eb7be34c86ccc0e82e75ac282158cabc101258c2db15ea5eed432a49`,
+despite the explicit seed zero. Parameter names and ordering match exactly, so
+this is a value difference. Native and BF16 match on initialization, example
+order, token counts, physical partitions, learning rates and initial common
+probe values. Preserve the original NF4 result as an unmatched finite-trajectory
+record, not as a paired precision comparison.
+
+The correction uses a standard PEFT initial adapter artifact and checks its
+expected full tensor hash before any screen model/GPU work. File checksums enter
+the execution contract. The artifact exporter uses the native one-update,
+zero-weight-decay checkpoint: reset B to its initial zero and retain A, but
+require the complete recovered tensor hash to equal the original initial hash
+before export. This exact hash check is mandatory; no approximate inversion or
+unverified assumption about unchanged A is accepted.
+
+`row_aot_nf4_matched.yaml` repeats the separate global update and ten cohort steps
+with the shared initialization. No native/BF16 arithmetic changes are needed;
+their completed trajectories remain valid controls. The corrected NF4 result is
+pending. The new guard is tested to fail before model calls or optimizer creation
+in both diagnostic and training modes.

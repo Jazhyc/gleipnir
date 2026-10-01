@@ -53,6 +53,7 @@ def run_precision_training_screen(
     metadata: dict[str, Any],
     diagnostics_only: bool = False,
     capture_native_operands: bool = False,
+    expected_initial_master_sha256: str | None = None,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -64,6 +65,11 @@ def run_precision_training_screen(
     device = parameters[0].device
     initial = [p.detach().cpu().clone() for p in parameters]
     initial_digest = tensor_digest(initial)
+    if (
+        expected_initial_master_sha256 is not None
+        and initial_digest != expected_initial_master_sha256
+    ):
+        raise ValueError("initial adapter hash mismatch before precision preflight")
     order = torch.randperm(
         len(features), generator=torch.Generator().manual_seed(seed)
     ).tolist()

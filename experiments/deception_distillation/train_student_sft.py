@@ -3503,6 +3503,9 @@ def main(cfg: DictConfig) -> None:
             capture_native_operands=bool(
                 precision_screen_cfg.get("capture_native_operands", False)
             ),
+            expected_initial_master_sha256=precision_screen_cfg.get(
+                "expected_initial_master_sha256"
+            ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,

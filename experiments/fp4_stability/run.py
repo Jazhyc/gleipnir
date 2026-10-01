@@ -47,6 +47,10 @@ def validate_config(config: dict) -> None:
         raise ValueError("unknown backward precision")
     if config["compile_backend"] not in {"inductor", "aot_eager", "eager"}:
         raise ValueError("unknown diagnostic compiler backend")
+    if bool(config.get("initial_adapter")) != bool(
+        config.get("expected_initial_master_sha256")
+    ):
+        raise ValueError("initial adapter requires its expected master hash")
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -137,6 +141,12 @@ def main() -> None:
             ]
         },
     }
+    if config.get("initial_adapter"):
+        initial_adapter = ROOT / config["initial_adapter"]
+        contract["initial_adapter_sha256"] = {
+            filename: sha256_file(initial_adapter / filename)
+            for filename in ["adapter_config.json", "adapter_model.safetensors"]
+        }
     (output / "contract.json").write_text(json.dumps(contract, indent=2) + "\n")
     status = {"status": "running", "stages": []}
 
@@ -187,6 +197,14 @@ def main() -> None:
             ]
             if stage_steps == 1:
                 command.append("student.training.warmup_ratio=0.0")
+            if config.get("initial_adapter"):
+                command.extend(
+                    [
+                        f"student.init_adapter={ROOT / config['initial_adapter']}",
+                        "++student.training.precision_screen.expected_initial_master_sha256="
+                        f"{config['expected_initial_master_sha256']}",
+                    ]
+                )
             stage = {
                 "name": specification["name"],
                 "precision": precision,

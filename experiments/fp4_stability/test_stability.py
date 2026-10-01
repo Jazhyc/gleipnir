@@ -44,6 +44,10 @@ def test_configs_are_bounded_and_invalid_campaign_fails_before_loading():
         "row_eager_norm_diagnostic.yaml",
     ]:
         validate_config(yaml.safe_load((root / filename).read_text()))
+    matched_nf4 = yaml.safe_load((root / "row_aot_nf4_matched.yaml").read_text())
+    validate_config(matched_nf4)
+    with pytest.raises(ValueError, match="expected master hash"):
+        validate_config({**matched_nf4, "expected_initial_master_sha256": None})
 
 
 @pytest.mark.parametrize("observe", [False, True])
@@ -95,6 +99,42 @@ def test_operand_metrics_record_value_drift_and_reject_different_shapes():
     assert metrics["eager_dtype"] != metrics["compiled_dtype"]
     with pytest.raises(ValueError, match="shapes differ"):
         tensor_difference(eager, compiled.reshape(2, 2))
+
+
+@pytest.mark.parametrize("diagnostics_only", [False, True])
+def test_initialization_mismatch_fails_before_gpu_or_model_work(
+    tmp_path, diagnostics_only
+):
+    from gleipnir.adaptive_microbatching import MicrobatchPolicy
+    from gleipnir.precision_training_screen import run_precision_training_screen
+
+    model = torch.nn.Linear(2, 2, bias=False)
+    before = model.weight.detach().clone()
+
+    def forbidden(*args):
+        pytest.fail("initialization mismatch must fail before model or optimizer work")
+
+    with pytest.raises(ValueError, match="initial adapter hash mismatch"):
+        run_precision_training_screen(
+            model=model,
+            features=[{"direct_input_ids": [1]} for _ in range(32)],
+            collator=forbidden,
+            loss_forward=forbidden,
+            optimizer_factory=forbidden,
+            scheduler_factory=forbidden,
+            install_compile=forbidden,
+            output=tmp_path,
+            seed=0,
+            policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
+            steps=1,
+            max_grad_norm=1.0,
+            metadata={},
+            diagnostics_only=diagnostics_only,
+            expected_initial_master_sha256="0" * 64,
+        )
+    torch.testing.assert_close(model.weight, before, rtol=0, atol=0)
+    assert model.weight.grad is None
+    assert not (tmp_path / "screen.json").exists()
 
 
 def test_eager_norm_boundary_preserves_parameters_and_leaves_gated_norm(monkeypatch):
