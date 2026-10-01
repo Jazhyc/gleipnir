@@ -125,3 +125,13 @@ a forward-loss change. The wrapper scopes the override to the subprocess;
 ordinary training settings and the original gate remain unchanged. Preserve
 both results even if the hypothesis fails. Stop after the canary, with no
 optimizer updates or recipe promotion.
+
+The matched loss audit completed: compiled losses are 0.4411% below eager for
+singleton accumulation and 0.3039% below for batch 8. Forward probabilities
+differ by at most 0.014056 on these eight inputs. The within-compiled batching
+gradient comparison still fails (relative L2 0.753615, cosine 0.659332).
+The scoped backward-autocast override also fails (relative L2 0.647156, cosine
+0.764318). Neither ran an optimizer update or established learning equivalence.
+Retain both negative diagnostics, the original gate and fixed-batch recipe.
+Fixed-physical-batch cross-backend gradients and actual AdamW updates remain
+unmeasured; the findings distinguish those from these batching comparisons.

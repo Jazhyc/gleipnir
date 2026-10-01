@@ -1,7 +1,8 @@
 # Adaptive B200 physical microbatches
 
-Date: 2026-10-01. Status: implementation tested; bounded batching probes and
-singleton repeatability audit completed. No passing adaptive candidate,
+Date: 2026-10-01. Status: implementation tested; bounded batching, singleton
+repeatability, matched-loss and compiler-autocast audits completed. No passing
+adaptive candidate,
 adaptive timing result, or recipe promotion. Root cause remains unresolved.
 
 The user authorized empirical optimization with ten-update workloads on the
@@ -130,3 +131,68 @@ establish that our B200/sm100 run is affected. No workaround or dependency upgra
 was applied. `kernel_source_audit.json` records installed source hashes and guards.
 The fixed batch-1 recipe remains selected, and the Pod is idle and left running
 at the live-verified $6.79/hour.
+
+## Matched eager/compiled forward losses
+
+Source `94176ac799ba0eed9bf55b757227cfeeec202901` ran the enhanced compiled
+eight-input canary against the same frozen job and seed, without optimizer
+updates. The earlier eager diagnostic provides the matched forward reference.
+
+| Physical batching | Eager mean loss | Compiled mean loss | Compiled relative difference |
+| --- | ---: | ---: | ---: |
+| Eight accumulated singletons | 1.066599831 | 1.061895311 | -0.4411% |
+| One padded batch of eight | 1.068278551 | 1.065031767 | -0.3039% |
+
+Maximum decision-logit and decision-margin differences are both 0.0625 for
+each batching mode. Maximum absolute binary-probability gaps are 0.014056 for
+singletons and 0.011747 for batch 8. Individual singleton losses can differ by
+up to 0.050507, so close averages alone do not establish per-example identity.
+These are forward diagnostics on eight truncated training inputs, not a
+learning-curve or held-out-quality result.
+
+The new within-compiled singleton-versus-batch-8 gradient check fails:
+relative L2 **0.753615**, cosine **0.659332**, norms **32.500166** and
+**23.102878**. Preserve this separately from the original 0.519511 failure;
+it does not constitute a controlled identical-shape repeatability test.
+The relative loss agreement cannot validate the corresponding backward path.
+We have not directly compared eager and compiled gradient vectors at fixed
+physical batching. The gradient norm difference is a diagnostic clue, not
+such a cross-backend parity measurement.
+
+Artifacts: `results/b200_adaptive_microbatching_diagnostic_compiled_loss/`,
+including the derived `eager_compiled_comparison.json`, and
+`logs/runpod/b200_adaptive_microbatching/diagnostic_compiled_loss.log`.
+
+## Scoped compiler backward-autocast audit
+
+The pinned Torch source defaults to `backward_pass_autocast="same_as_forward"`,
+while the canary applies BF16 forward autocast and calls backward outside it.
+[PyTorch's documented compiled-autograd semantics](https://docs.pytorch.org/docs/2.11/user_guide/torch_compiler/torch.compiler_backward.html)
+prescribe `"off"` for that pattern and warn that a mismatched assumption can
+silently affect correctness. Source `2822fbabd1efdec313ed6c168e0a29f6465cab0c`
+passed 25 focused tests, including setting/argument restoration after success
+and failure. An isolated subprocess then reran the compiled eight-input canary
+with that override and unchanged original job. Ordinary training was unchanged.
+
+The override **does not resolve parity**: relative gradient L2 **0.647156**,
+cosine **0.764318**, reference/actual norms **32.495305**/**23.059149**.
+Singleton loss remains exactly **1.0618953108787537**; batch-8 loss is
+**1.058821678161621**. That batched forward change means this is not empirical
+proof that only backward numerics changed. Without controlled repeats, do not
+attribute the smaller discrepancy solely to the setting. All results remain
+below the required level of gradient agreement; no optimizer update occurred.
+
+Artifacts: `results/b200_adaptive_microbatching_diagnostic_backward_off/` and
+`logs/runpod/b200_adaptive_microbatching/diagnostic_backward_off.log`. Both new
+diagnostics were collected locally. The GPU is idle; the live-read Pod remains
+running at $6.79/hour as requested.
+
+The next practical checks are fixed-physical-batch eager/compiled gradient
+comparison, actual clipped AdamW update direction and magnitude, and post-update
+loss on a common execution path. A separately predeclared bounded matched
+learning-curve diagnostic would test whether differences materially affect
+training. Equal starting loss does not establish equal updates, and gradient
+L2 alone does not establish worse final quality. Do not silently relax the
+original parity gate or launch its failed timing campaign. No full campaign is
+validated by these forward checks; compile and batching numerical behavior
+remain unresolved.
