@@ -220,7 +220,10 @@ def test_timing_summary_weights_tokens_and_rejects_unmatched_replays():
         timing_summary([{**passes[0], "steps": passes[0]["steps"][:-1]}])
 
 
-def test_timing_replays_restore_adapters_optimizer_and_schedule(monkeypatch, tmp_path):
+@pytest.mark.parametrize("profile_batch", [None, 5])
+def test_timing_replays_restore_adapters_optimizer_and_schedule(
+    monkeypatch, tmp_path, profile_batch
+):
     from gleipnir import precision_training_screen as screen
     from gleipnir.adaptive_microbatching import MicrobatchPolicy
 
@@ -239,6 +242,13 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(monkeypatch, tmp
     with torch.no_grad():
         model.weight.fill_(1.0)
     optimizers = []
+    profiled = []
+
+    def profile_action(action, output):
+        profiled.append(action())
+        return {"scope": "mock backward only"}
+
+    monkeypatch.setattr("gleipnir.fp4_performance.profile_backward", profile_action)
 
     def optimizer_factory():
         optimizer = torch.optim.AdamW(model.parameters(), lr=5e-5)
@@ -262,9 +272,11 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(monkeypatch, tmp
         max_grad_norm=1.0,
         metadata={"mlp": {"precision": "bf16"}},
         timing_repeats=3,
+        profile_batch=profile_batch,
     )
     assert report["status"] == "complete"
     assert len(optimizers) == 4
+    assert len(profiled) == int(profile_batch is not None)
     assert len({id(item.state) for item in optimizers}) == 4
     assert report["timing_passes"][0]["kind"] == "warmup"
     assert report["timing_summary"]["measured_steps"] == 30
@@ -290,6 +302,13 @@ def test_timing_config_is_fp4_only_and_bounded():
     ]:
         with pytest.raises(ValueError, match="timing benchmark|global preflight"):
             validate_config({**config, **overrides})
+    profile = yaml.safe_load(
+        (Path(__file__).parent / "row_aot_profile.yaml").read_text()
+    )
+    validate_config(profile)
+    for overrides in [{"profile_batch": 11}, {"steps": 1}]:
+        with pytest.raises(ValueError, match="profiling requires"):
+            validate_config({**profile, **overrides})
 
 
 def test_row_scaling_is_independent_of_other_tokens_and_handles_zero():

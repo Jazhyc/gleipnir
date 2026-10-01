@@ -102,6 +102,7 @@ def run_precision_training_screen(
     capture_native_operands: bool = False,
     expected_initial_master_sha256: str | None = None,
     timing_repeats: int = 0,
+    profile_batch: int | None = None,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -112,6 +113,10 @@ def run_precision_training_screen(
         raise ValueError(
             "timing benchmark requires ten steps and three measured replays"
         )
+    if profile_batch is not None and (
+        steps != 10 or diagnostics_only or not 1 <= profile_batch <= 10
+    ):
+        raise ValueError("profiling requires one of ten warmed training batches")
     named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
     parameters = [p for _, p in named]
     if not parameters or any(p.dtype != torch.float32 for p in parameters):
@@ -147,6 +152,7 @@ def run_precision_training_screen(
         "order": order,
         "steps": [],
         "timing_repeats": timing_repeats,
+        "profile_batch": profile_batch,
         "logical_batch_size": 32,
         "gpu": torch.cuda.get_device_name(device),
         "gpu_total_bytes": torch.cuda.get_device_properties(device).total_memory,
@@ -382,6 +388,26 @@ def run_precision_training_screen(
                 raise ValueError("optimizer replay produced no adapter change")
             report["training_seconds"] = current["loop_seconds"]
             publish()
+            if pass_index == 0 and profile_batch is not None:
+                from gleipnir.fp4_performance import profile_backward
+
+                indices = order[(profile_batch - 1) * 32 : profile_batch * 32]
+
+                def profile_action(indices=indices):
+                    measurement = backward([features[i] for i in indices])
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        parameters, max_grad_norm, error_if_nonfinite=True
+                    )
+                    measurement["gradient_norm"] = float(norm)
+                    return measurement
+
+                report["profile"] = profile_backward(profile_action, output)
+                model.zero_grad(set_to_none=True)
+                if tensor_digest(parameters) != current["final_master_sha256"]:
+                    raise ValueError(
+                        "profiling changed adapters without an optimizer step"
+                    )
+                publish()
         if timing_repeats:
             report["timing_summary"] = timing_summary(report["timing_passes"][1:])
         report["after_native_probe"] = evaluate(dense=False)

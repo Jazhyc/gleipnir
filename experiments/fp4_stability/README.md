@@ -109,6 +109,22 @@ adapter hashes differ across replays, so bitwise trajectory identity is not
 claimed. See the [finding](../../docs/findings/fp4_training_stability.md#warmed-fp4-timing-benchmark)
 for scope, memory, provenance and excluded setup costs.
 
+## FP4 overhead profile
+
+Hypothesis: unfused per-token scaling, surrounding AOT arithmetic and repeated
+gradient-check synchronization contribute to the warmed 15.679-second step.
+`row_aot_profile.yaml` retains the exact stable FP4 recipe and all preflight
+gates, warms the full ten-batch cohort once, then profiles batch five's
+forward/backward/finite checks/clipping with CPU and CUDA events. Profiling does
+not update parameters or enter timing statistics. It starts from the completed
+warm-up adapters and verifies that their full hash is unchanged afterward.
+No activation values or private inputs are exported in the trace. Stop after
+one profile or any existing numerical/kernel/memory gate failure. Candidate
+changes must pass their own arithmetic canaries and the unchanged model gates,
+then complete a warmed timing replay on identical data. Require at least 5%
+lower step time before calling an intervention a useful throughput improvement.
+No other precision condition or held-out quality experiment is launched.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16

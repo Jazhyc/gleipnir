@@ -58,6 +58,12 @@ def validate_config(config: dict) -> None:
         raise ValueError(
             "timing benchmark requires ten steps and three measured replays"
         )
+    if config.get("profile_batch") is not None and (
+        config["steps"] != 10
+        or config["diagnostics_only"]
+        or not 1 <= config["profile_batch"] <= 10
+    ):
+        raise ValueError("profiling requires one of ten warmed training batches")
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -142,6 +148,7 @@ def main() -> None:
                 ROOT / "src/gleipnir/fouroversix_training.py",
                 ROOT / "src/gleipnir/fp4_compiler_diagnostic.py",
                 ROOT / "src/gleipnir/precision_training_screen.py",
+                ROOT / "src/gleipnir/fp4_performance.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
                 args.config.resolve(),
@@ -208,6 +215,11 @@ def main() -> None:
                 command.append(
                     "++student.training.precision_screen.timing_repeats="
                     f"{config['timing_repeats']}"
+                )
+            if stage_steps == 10 and config.get("profile_batch") is not None:
+                command.append(
+                    "++student.training.precision_screen.profile_batch="
+                    f"{config['profile_batch']}"
                 )
             if config.get("initial_adapter"):
                 command.extend(

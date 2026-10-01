@@ -3508,6 +3508,7 @@ def main(cfg: DictConfig) -> None:
                 "expected_initial_master_sha256"
             ),
             timing_repeats=int(precision_screen_cfg.get("timing_repeats", 0)),
+            profile_batch=precision_screen_cfg.get("profile_batch"),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "mlp": mlp_precision_metadata,
