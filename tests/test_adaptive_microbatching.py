@@ -6,6 +6,9 @@ import pytest
 import torch
 from transformers import Trainer, TrainerCallback, TrainingArguments
 
+from experiments.b200_adaptive_microbatching.autocast_canary import (
+    run_training_canary,
+)
 from experiments.b200_adaptive_microbatching.diagnose import diagnostic_job
 from experiments.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
@@ -44,6 +47,33 @@ def test_partition_covers_examples_and_respects_actual_padding_budget():
 def test_invalid_policies_fail_closed(budget, size):
     with pytest.raises(ValueError):
         MicrobatchPolicy(budget, size)
+
+
+@pytest.mark.parametrize("raise_error", [False, True])
+def test_autocast_canary_scopes_compiler_assumption_and_arguments(
+    tmp_path, raise_error
+):
+    import sys
+
+    import torch._functorch.config as compiler_config
+
+    original_argv = sys.argv
+    original_setting = compiler_config.backward_pass_autocast
+    entry = tmp_path / "entry.py"
+    entry.write_text(
+        "import sys\n"
+        "import torch._functorch.config as config\n"
+        "assert config.backward_pass_autocast == 'off'\n"
+        "assert sys.argv[1:] == ['--config-name', 'frozen', 'seed=0']\n"
+        + ("raise RuntimeError('canary failure')\n" if raise_error else "")
+    )
+    if raise_error:
+        with pytest.raises(RuntimeError, match="canary failure"):
+            run_training_canary(entry, ["--config-name", "frozen", "seed=0"], "off")
+    else:
+        run_training_canary(entry, ["--config-name", "frozen", "seed=0"], "off")
+    assert compiler_config.backward_pass_autocast == original_setting
+    assert sys.argv is original_argv
 
 
 @pytest.mark.parametrize("lengths", [[], [0], [4, -1]])

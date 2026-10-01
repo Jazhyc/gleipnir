@@ -47,6 +47,7 @@ def main() -> None:
     parser.add_argument("--mode", choices=("eager", "compiled"), required=True)
     parser.add_argument("--precision-mask-probes", action="store_true")
     parser.add_argument("--maximum-microbatch-size", type=int, choices=(1, 2, 4, 8))
+    parser.add_argument("--backward-autocast", choices=("off", "same_as_forward"))
     args = parser.parse_args()
     original_jobs = [
         json.loads(line) for line in args.jobs.read_text().splitlines() if line
@@ -67,10 +68,18 @@ def main() -> None:
         command.append(
             "++student.training.adaptive_microbatching.diagnostic_variants=true"
         )
+    if args.backward_autocast is not None:
+        command = [
+            command[0],
+            str(Path(__file__).with_name("autocast_canary.py")),
+            args.backward_autocast,
+            *command[1:],
+        ]
     contract = {
         "job": job,
         "command": command,
         "canary_only": True,
+        "backward_pass_autocast_override": args.backward_autocast,
         "original_jobs_sha256": sha256_file(args.jobs),
         "revision": os.environ["GLEIPNIR_COMMIT"],
         "kernel_probe": "reuse preceding successful pinned-kernel preflight",

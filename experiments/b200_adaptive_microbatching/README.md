@@ -112,3 +112,16 @@ update occurs; preserve the existing 0.05 gradient gate and baseline selection.
 A small mean-loss gap cannot alone establish equivalent subsequent updates or
 learning trajectories. Stop after the eight-input canary or any nonfinite/OOM
 failure; this audit does not authorize a full training campaign.
+
+Compiler-autocast audit: the pinned Torch 2.11 source defaults to
+`backward_pass_autocast="same_as_forward"`, while the gradient canary uses BF16
+forward autocast and backward outside autocast. The
+[PyTorch semantics documentation](https://docs.pytorch.org/docs/2.11/user_guide/torch_compiler/torch.compiler_backward.html)
+prescribes `"off"` for that pattern. After the unmodified compiled loss audit,
+run a separately frozen `--mode compiled --backward-autocast off` canary with
+the same eight inputs, loss, checkpoint policy, budget and maximum. Hypothesis:
+matching the assumption reduces compiled gradient discrepancy without requiring
+a forward-loss change. The wrapper scopes the override to the subprocess;
+ordinary training settings and the original gate remain unchanged. Preserve
+both results even if the hypothesis fails. Stop after the canary, with no
+optimizer updates or recipe promotion.
