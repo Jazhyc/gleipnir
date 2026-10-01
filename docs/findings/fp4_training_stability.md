@@ -422,3 +422,66 @@ hashes because the scoped feature commit followed successful startup. Reports,
 logs and FP32 checkpoints remain on persistent storage and are collected locally.
 Twenty-three focused CPU tests, Ruff and diff checks pass. The benchmark has
 completed; the B200 is running idle with no further training queued.
+
+## Warmed FP4 overhead profile
+
+`row_aot_profile.yaml` retains the stable unfused AOT recipe, warms all ten
+batches and profiles batch five's forward/backward/finite checks/clipping.
+Both numerical gates match eager exactly, both longest-input preflights pass,
+and the ten warm-up updates complete. The profiled backward leaves the adapter
+hash unchanged; it performs no optimizer update. Batch five contains 188,965
+actual tokens, 202,576 padded tokens and thirteen adaptive physical batches.
+
+The CPU/CUDA trace records 149,478 kernel launches and 18.352 seconds of kernel
+activity. This is an instrumented diagnostic, not a new step-time estimate:
+profiler wall time is 28.560 seconds and the corresponding ordinary warm-up
+step takes 20.041 seconds. The trace includes GPU user annotations. Exclude
+those ranges and do not sum CPU operator attribution with GPU kernel events;
+the original raw `profile.json` lists both.
+
+Attributing recorded GPU kernels/copies to their enclosing CPU function scopes
+assigns 3.451 seconds to native FP4 forward, 0.643 seconds to decoded BF16
+backward, 3.942 seconds to FLA functions and 10.637 seconds to the remaining
+work. Inside native FP4 forward, the 1,716 CUTLASS matmuls total 0.256 seconds
+and quantization totals 0.560 seconds. Most remaining activity in that scope is
+casts, division, multiplication and row reduction. Recorded durations include
+profiler effects and do not predict an additive step saving, but support testing
+fused row scaling and better compilation around the native GEMMs.
+
+The isolated fused-row CUDA canary passes **bitwise** normalization, FP32-scale
+and rescaling comparisons on shapes `(1,256)`, `(128,2560)`, `(513,9216)`,
+`(16384,2560)` and `(256,9216)`, with zero and outlier rows. Full model gates and
+matched training timing remain separate requirements. The new implementation
+preserves FP32 division rounding and BF16 boundaries; it does not fuse the
+Four Over Six quantizer or change native GEMM/backward arithmetic.
+
+Reports, trace, FP32 checkpoints and logs are collected under
+`results/fp4_row_aot_profile/` and `logs/runpod/fp4_row_aot_profile/` and remain
+on persistent storage. The collected `analysis.json` excludes annotations and
+verifies all seven source/config hashes against `21bab07`; the launch receipt
+records parent `abf9954` plus those hashes. The isolated canary is preserved as
+`results/fp4_fused_row_canary.json`. Optimization candidates are predeclared in
+the experiment README; no new precision control or held-out quality run is
+included in this overhead investigation.
+
+## Inductor boundaries passing forward parity
+
+`row_inductor_boundaries_diagnostic.yaml` preserves BF16 intermediate casts,
+keeps the 81 plain RMSNorm interfaces and 32 MLP activation interfaces eager,
+and uses `decoder_shells_without_token_mixers`: both gated-delta and full
+attention token mixers remain eager while decoder shells compile with Inductor.
+Original per-token scaling and native quantization arithmetic remain unchanged.
+
+Eager, repeated eager, Inductor and repeated Inductor canary losses all equal
+**1.2848907709121704**. Every compiled prefix (0, 1, 4, 8, 16, 24 and 32 layers)
+also gives exactly that value. The initial master hash is unchanged and there
+are zero optimizer updates. This passes a previously failing full-model forward
+check with narrower boundaries; it does not identify which additional fence
+resolved the discrepancy or establish identical training gradients.
+
+The receipt in `results/fp4_row_inductor_boundaries_diagnostic/analysis.json`
+verifies all ten source/config hashes against `9a3133a`; its launch revision
+records parent `21bab07`. Reports and logs are collected and persist remotely.
+The predeclared follow-up `row_inductor_fused_timing.yaml` combines these eager
+boundaries with fused row scaling and clip-norm gradient validation, retaining
+all global/cohort gates and the original FP4 warmed three-replay protocol.

@@ -146,6 +146,15 @@ Candidates, frozen before their runs:
   candidate still requires the global-longest update and warmed replay before
   a performance claim. Preserve failed original Inductor diagnostics.
 
+`row_inductor_fused_timing.yaml` combines the fused row/clip-norm candidate
+with the eager boundaries and cast-preserving Inductor policy. Launch only
+after the forward-only boundary diagnostic passes; retain the global-longest
+update, full ten-batch warm-up and three exact-workload replays. Compare its
+measured thirty steps with the stable 15.679-second FP4 baseline, requiring
+at least 5% lower mean time before recording a useful performance gain.
+Stop on every existing kernel, loss, gradient, memory or adapter-update gate.
+This combined intervention does not isolate each optimization.
+
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned
 Torch source documents that default fusion can remove intermediate BF16
