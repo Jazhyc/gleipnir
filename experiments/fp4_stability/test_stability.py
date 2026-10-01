@@ -102,7 +102,7 @@ def test_operand_metrics_record_value_drift_and_reject_different_shapes():
 
 
 @pytest.mark.parametrize("diagnostics_only", [False, True])
-def test_initialization_mismatch_fails_before_gpu_or_model_work(
+def test_initialization_mismatch_fails_before_model_or_optimizer_calls(
     tmp_path, diagnostics_only
 ):
     from gleipnir.adaptive_microbatching import MicrobatchPolicy

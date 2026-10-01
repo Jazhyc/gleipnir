@@ -47,7 +47,7 @@ monitoring applies during the active turn only.
 
 `row_aot_training.yaml` tests the bounded trajectory with `aot_eager` after
 that backend matched eager exactly on the matched-cohort forward diagnostic.
-Native FP4, BF16 and NF4 MLP conditions share this backend, initial adapters,
+Native FP4, BF16 and NF4 MLP conditions share this backend, initialization seed,
 data, checkpointing and adaptive batching. Each first performs the global-longest
 update, followed by ten matched updates. This tests optimizer stability while
 Inductor numerical consistency remains unresolved; timings do not compare
@@ -60,6 +60,16 @@ equals the native/BF16 initial hash. It retains the global update and ten-step
 stop condition. The runner records initialization file checksums and the screen
 fails before GPU preflight if the loaded master hash differs. Same seed alone
 does not establish matching initialization across dense/quantized module classes.
+
+Completed outcome: native per-token W4A4 MLP forward plus decoded-weight BF16
+backward passes the global-longest update and ten cohort steps with `aot_eager`.
+BF16 and corrected NF4 controls also pass, with exact initial adapter, order,
+batch and learning-rate matching. Cohort peak allocated memory is 135.2 GiB
+native, 116.7 GiB BF16 and 134.8 GiB NF4. Native common training-probe loss falls
+1.165299 -> 0.779105. Twenty focused tests pass. This establishes bounded LoRA
+training viability; Inductor parity, activation-memory savings, matched speedup
+and held-out quality remain unestablished. Full evidence and reproduction limits
+are in [the finding](../../docs/findings/fp4_training_stability.md).
 
 The separate `precision_cast_diagnostic.yaml` retains the original FP4 scaling
 and backward while setting `TORCHINDUCTOR_EMULATE_PRECISION_CASTS=1`. The pinned

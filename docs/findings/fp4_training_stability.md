@@ -5,6 +5,12 @@ Date: 2026-10-01. Experiment:
 This continues the [initial native FP4 pilot](b200_fouroversix_training.md).
 No recipe promotion or held-out quality claim follows from forward diagnostics.
 
+Outcome: native W4A4 MLP forward with per-token scaling and decoded-weight BF16
+backward completes bounded long-context LoRA updates using `aot_eager`, retaining
+the selected partial checkpoints and adaptive batches. Inductor consistency
+remains unresolved. This prototype establishes training viability, not a memory
+or throughput improvement over the selected optimized recipe.
+
 ## Infrastructure and matched controls
 
 The original B200 Pod `alzfug70g5237b` resumed in US-NC-2 on its original host,
@@ -248,7 +254,8 @@ cold work. Individual step times are
 The first two steps dominate cold compilation; subsequent steps vary in tokens
 and cache work, so they are not interchangeable performance samples.
 
-Matched BF16/NF4 controls are pending. These updates establish bounded
+Matched BF16 and corrected NF4 controls also complete; see the final comparison.
+These updates establish bounded
 long-context LoRA training viability, not convergence, held-out quality, full
 parameter FP4 training or an Inductor recipe fix. Native MLP forward operands
 are W4A4; decoded backward, attention compute and stored residual/checkpoint
@@ -301,8 +308,9 @@ probe values. Preserve the original NF4 result as an unmatched finite-trajectory
 record, not as a paired precision comparison.
 
 The correction uses a standard PEFT initial adapter artifact and checks its
-expected full tensor hash before any screen model/GPU work. File checksums enter
-the execution contract. The artifact exporter uses the native one-update,
+expected full tensor hash before screen probes, backward or optimizer work.
+File checksums enter the execution contract. The artifact exporter uses the native
+one-update,
 zero-weight-decay checkpoint: reset B to its initial zero and retain A, but
 require the complete recovered tensor hash to equal the original initial hash
 before export. This exact hash check is mandatory; no approximate inversion or
@@ -310,6 +318,52 @@ unverified assumption about unchanged A is accepted.
 
 `row_aot_nf4_matched.yaml` repeats the separate global update and ten cohort steps
 with the shared initialization. No native/BF16 arithmetic changes are needed;
-their completed trajectories remain valid controls. The corrected NF4 result is
-pending. The new guard is tested to fail before model calls or optimizer creation
-in both diagnostic and training modes.
+their completed trajectories remain valid controls. The corrected NF4 result
+completes both stages. The new guard is tested to fail before model calls or
+optimizer creation in both diagnostic and training modes.
+
+## Completed matched comparison
+
+`results/fp4_row_aot_training/analysis.json` selects native/BF16 from that campaign
+and NF4 from `results/fp4_row_aot_nf4_matched/`. It explicitly excludes the first
+unmatched NF4 trajectory. All conditions have the same initial master tensor
+hash, trainable names, GPU/software, example permutation, probe inputs, adaptive
+policy, per-step token counts/physical partitions and learning rates. Each passes
+its global-longest update and ten cohort steps, including nine nonzero-LR cohort
+updates. Each cohort processes 1,314,331 actual tokens. All gradients are finite
+and nonzero in aggregate, every final master hash changes, and unsupported
+compiler-operation counters are empty.
+
+| MLP path | Global update peak GiB | Cohort peak GiB | Training probe before -> after | Loop seconds including cache work |
+| --- | ---: | ---: | ---: | ---: |
+| Native W4A4 / decoded BF16 backward | 137.4 | 135.2 | 1.165299 -> 0.779105 | 495.593 |
+| Original BF16 | 118.6 | 116.7 | 1.165299 -> 0.825084 | 152.886 |
+| NF4 storage / BF16 compute | 137.1 | 134.8 | 1.246726 -> 0.937017 | 174.937 |
+
+Memory is whole-model peak **allocated** memory, not driver/process or reserved
+memory. All conditions retain NF4 attention storage and BF16 attention compute.
+The native common probe uses original BF16 MLP masters; BF16 uses those same
+masters, while NF4 retains its NF4 MLP bases. Thus NF4 probe scores also reflect
+different base arithmetic; do not interpret this table as held-out quality
+ranking or serving parity. None of these runs accesses the final test set.
+The first native trajectory pays substantial cold compilation and recorded cache
+seeding; no matched throughput gain follows from the loop times. A future systems
+claim needs a cached repeat, and quality selection needs grouped held-out tests.
+
+Corrected NF4 final master hash:
+`fa1d82481df532983901992fd00de09d4f695fc2c1fb45d852f09e0f2deb4d6c`.
+Its global master hash:
+`96c8c6602d6564c27d97f881bcc943b17aa634d882abeb0c3b33122feee359bc`.
+Its six source/config hashes match commit `376fb78`; its initial adapter file
+checksums match the exact recovery receipt. Reports, FP32 checkpoints, logs,
+initialization artifacts and receipts are preserved on the network volume and
+collected locally. Twenty focused tests, Ruff and diff checks pass. The B200 is
+left running and idle; no additional training is queued.
+
+For another FP4 experiment, retain native CUTLASS/Triton, MSE 4/6 weight scaling,
+`row_scaled_activations: true`, `backward_mode: dequantized_bf16`,
+`compile_backend: aot_eager`, the twelve checkpoint indices and adaptive
+16,384-token/max-eight policy. Use a fresh output path and an explicit shared
+initial PEFT adapter plus its expected full master hash for every precision
+comparison. Preserve original failed Inductor recipes for reproduction; the
+user-selected default NF4/Inductor recipe is not changed by this finding.
