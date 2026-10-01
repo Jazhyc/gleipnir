@@ -54,6 +54,9 @@ Matched monitoring throughput ablations use the config-driven
 only a Hydra YAML config and experiment README. Preparation resolves defaults
 and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
+The provisional 4B B200 recipe and its matched checkpoint, batching, and FA4
+results are recorded in
+[`docs/findings/b200_training_throughput.md`](docs/findings/b200_training_throughput.md).
 
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.

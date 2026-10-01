@@ -81,6 +81,28 @@ updates were about 9–10 seconds, but repeated new compilation/autotuning paths
 inflated many other updates. Neither its cold-inclusive time nor a subset of
 fast updates establishes a warmed gain. A separate matched cached repeat with
 its own longest-32 preflight is required before recommending this condition.
+That repeat's batch-2 preflight passed: 393.75 seconds for the longest-32 update,
+145.44 GiB peak allocation, ten Dynamo graphs, and compile-canary maximum logit
+difference 0.0625 with unchanged first-row decision margin. It processed
+922,511 actual tokens with 0.045% padding. The representative timing comparison
+is still separate from this demanding memory preflight.
+
+The complete cached comparison also finished:
+
+| Condition | Complete Trainer loop | Peak allocated | Dynamo graphs |
+| --- | ---: | ---: | ---: |
+| Random batch 1 x 32, all checkpoints | 362.09 s | 58.82 GiB | 6 |
+| Grouped batch 2 x 16, all checkpoints | 460.08 s | 142.51 GiB | 8 |
+
+Batch 2 is 27.1% longer than its matched control, despite reducing its initial
+1,079.71-second loop to 460.08 seconds through cache reuse. Its update times are
+`[196.23,9.28,47.48,23.79,57.59,8.90,45.49,9.23,48.49,8.98]` seconds. Mask and
+layer-type changes still trigger fresh-process graph capture beyond the first
+update. The short grouped updates cannot stand in for the complete workload.
+Padding remains 5.22% (1,386,740 padded versus 1,314,331 actual tokens), and the
+loss is finite at 0.676149. Reject this batching intervention for the current
+recipe. The cached campaign is `results/b200_training_throughput_batching_repeat/`,
+source `2fc1b0e4d5e472e50a641098f92b88a66f6b11da`.
 
 ## Attention backend interpretation
 
@@ -158,6 +180,48 @@ remain in `results/b200_training_throughput_fa4/` and
 `results/b200_training_throughput_fa4_dynamic/`; logs use the corresponding
 `logs/runpod/` directories. FP32 master adapters remain on the network volume;
 frozen contracts, metadata, selections, and logs are collected locally.
+
+## Provisional B200 recipe and ETA
+
+Select microbatch 1, accumulation 32, SDPA, and the 12 explicit linear
+checkpoints above. Keep rank-128 FP32 master adapters, NF4/double quantization,
+BF16 compute, FLA 0.5.2, selected-position logits, and the compiled surrounding
+layer policy. Neither no-checkpointing, grouped batch 2, nor the tested batch-1
+FA4 intervention supersedes the validated half-checkpoint gain. No combined
+batching/FA4/half-checkpoint recipe is tested or recommended.
+
+The reusable profile is
+`src/gleipnir/configs/systems_screen/qwen35_4b_b200_fast.yaml`.
+`experiments/b200_training_throughput/selected_config.yaml` supplies the frozen
+mixed-data, matched-control reproduction contract, still limited to ten updates.
+Its composed training fields, data, sample, objective, and graph bound were
+audited against both completed warmed conditions. The shared cache path retains
+its historical `fa4` suffix; selecting this SDPA profile does not require FA4.
+The H100 profile is unchanged. Recheck the longest-row preflight for another
+rank, context limit, dataset, or backend.
+
+Ten updates of steady compute project to 185.56 seconds (3m06s), but the observed
+fresh-process half-checkpoint Trainer loop took 339.03 seconds (5m39s), including
+graph capture. Its complete worker took 525.54 seconds (8m46s), including loading,
+saving, and adapter rebasing; the matched control worker took 507.08 seconds.
+Thus the measured training-loop gain does not establish a short-job wall-time
+gain across variable setup/export overhead. The warm checkpoint campaign source
+is `42fd81f71343655e7a61bc655bc3a816d8b22ed3`.
+
+One epoch over 21,837 examples at effective batch 32 is 683 optimizer updates.
+Scaling the matched random-order mean of 18.556 seconds gives approximately
+3.52 hours of training compute and $23.90 in GPU charges at $6.79/hour. Add
+model/data setup, fresh-process capture, saving, and any difference between
+this 320-row cohort and full-population lengths/order. This is a planning
+projection, not a measured full epoch or a quality promotion. No full campaign
+was launched.
+
+Validation: 51 focused backend, configuration, compile, and training-command
+tests passed; Ruff and launcher shell syntax checks passed. Final profile
+composition was also checked against the completed conditions. Every successful
+campaign's frozen manifests, metadata, summaries, and logs are collected locally;
+FP32 weights and persistent kernels remain on the Pod. The agent has no verified
+after-turn scheduling tool; active-turn monitoring ends with this completed screen.
 
 Hardware and billing are described in the
 [completed ID setup finding](runpod_b200_gleipnir4b_id.md): one B200 Pod at

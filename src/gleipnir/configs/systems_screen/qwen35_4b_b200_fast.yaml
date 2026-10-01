@@ -1,0 +1,37 @@
+# Provisional rank-128 recipe from the matched B200 mixed-data screen.
+# See docs/findings/b200_training_throughput.md; preserve the longest-row preflight.
+defaults:
+  - qwen35_4b_h100_fast
+  - _self_
+
+gpus: 1
+compiler_cache_root: .cache/training/qwen35_4b_b200_fa4
+
+selection:
+  rows: 320
+
+recipe:
+  max_steps: 10
+  attn_implementation: sdpa
+  eager_attention_interface: false
+  allow_unspec_int_on_nn_module: false
+  selective_torch_compile_policy: full_attention_and_linear_shell
+  gradient_checkpointing_policy: explicit
+  gradient_checkpointing_layer_indices: [0, 2, 5, 8, 10, 13, 16, 18, 21, 24, 26, 29]
+
+metadata_expectations:
+  gradient_checkpointing_policy: explicit
+  gradient_checkpointing_layer_indices: [0, 2, 5, 8, 10, 13, 16, 18, 21, 24, 26, 29]
+  checkpointed_layer_indices: [0, 2, 5, 8, 10, 13, 16, 18, 21, 24, 26, 29]
+  attention_backend.requested: sdpa
+  attention_backend.resolved: sdpa
+  attention_backend.interface_eager: false
+  quantization:
+    enabled: true
+    bnb_4bit_quant_type: nf4
+    bnb_4bit_use_double_quant: true
+    bnb_4bit_compute_dtype: bfloat16
+  selective_torch_compile.policy: full_attention_and_linear_shell
+  selective_torch_compile.disabled_linear_attention_layer_indices: ${_authoring.layer_indices.linear_attention}
+  selective_torch_compile.disabled_linear_attention_kernel_layer_indices: []
+  selective_torch_compile.disabled_linear_attention_kernel_components: []

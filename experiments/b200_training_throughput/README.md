@@ -136,3 +136,20 @@ FA4's last-eight mean was 20.67 seconds versus SDPA's 20.10 seconds. This falls
 below the 5% gain gate and does not justify an additional promising-candidate
 repeat or backend switch. Keep SDPA; native FA4 correctness is established for
 these bounded checks, but no training-speed benefit was measured.
+
+The cached batch-2 repeat also passed its longest-row preflight (145.44 GiB,
+ten graphs), then completed in 460.08 seconds versus its matched control's
+362.09 seconds. Its 27.1% longer loop rejects the batching intervention.
+Select the validated half-checkpoint batch-1 recipe: 339.03 seconds per complete
+ten-update Trainer loop, 18.56 seconds per later update, and 131.41 GiB peak
+allocation. The observed full worker took 8m46s including setup and export;
+this is distinct from its 5m39s training loop and projected 3m06s steady compute.
+
+Use the reusable `systems_screen@_global_: qwen35_4b_b200_fast` profile when
+authoring a B200 experiment. `selected_config.yaml` provides a matched short
+reproduction with the fixed mixed-data cohort, longest-row preflight, and 5%
+gate; it does not launch a full training epoch. Full-population compute projects
+to about 3.52 hours per epoch, with startup/export and cohort uncertainty added.
+Keep the H100 profile unchanged. See the
+[complete finding](../../docs/findings/b200_training_throughput.md) for failed
+conditions, source revisions, artifacts, attention interpretation, and limitations.
