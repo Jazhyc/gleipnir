@@ -3181,6 +3181,13 @@ def main(cfg: DictConfig) -> None:
                     default=False,
                 )
             ),
+            activation_selector=str(
+                OmegaConf.select(
+                    cfg,
+                    "student.quantization.fp4_activation_selector",
+                    default="strict",
+                )
+            ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(

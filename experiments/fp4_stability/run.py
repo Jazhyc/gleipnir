@@ -47,6 +47,19 @@ def validate_config(config: dict) -> None:
         raise ValueError("unknown backward precision")
     if config["compile_backend"] not in {"inductor", "aot_eager", "eager"}:
         raise ValueError("unknown diagnostic compiler backend")
+    if config.get("activation_selector", "strict") not in {"strict", "fp16"}:
+        raise ValueError("unknown activation selector")
+    if config.get("activation_selector", "strict") == "fp16" and not (
+        config["conditions"] == ["fouroversix"]
+        and config.get("row_scaled_activations", False)
+        and config.get("fused_row_scaling", False)
+        and not config.get("fused_activation_packing", False)
+        and not config.get("capture_native_operands", False)
+        and config["backward_mode"] == "dequantized_bf16"
+    ):
+        raise ValueError(
+            "FP16 selector requires unobserved native fused rows and BF16 backward"
+        )
     if bool(config.get("initial_adapter")) != bool(
         config.get("expected_initial_master_sha256")
     ):
@@ -180,9 +193,11 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_performance.py",
                 ROOT / "src/gleipnir/fp4_row_kernels.py",
                 ROOT / "src/gleipnir/fp4_quantization_kernels.py",
+                ROOT / "src/gleipnir/fp4_fast_selector.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/shared_activation_canary.py",
+                ROOT / "experiments/fp4_stability/fast_selector_canary.py",
                 ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -204,6 +219,21 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("activation_selector", "strict") == "fp16":
+            with (logs / "fast-selector-canary.log").open("w") as handle:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/fp4_stability/fast_selector_canary.py",
+                        "--output",
+                        str(output / "fast_selector_canary.json"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         if config.get("share_gate_up_activations", False):
             with (logs / "shared-activation-canary.log").open("w") as handle:
                 subprocess.run(
@@ -258,6 +288,8 @@ def main() -> None:
             str(output / "kernel_canary.json"),
             "--backward-mode",
             config["backward_mode"],
+            "--activation-selector",
+            config.get("activation_selector", "strict"),
         ]
         if config.get("row_scaled_activations", False):
             canary_command.append("--row-scaled-activations")
@@ -302,6 +334,8 @@ def main() -> None:
                 f"{str(config.get('fused_activation_packing', False)).lower()}",
                 "++student.quantization.fp4_share_gate_up_activations="
                 f"{str(config.get('share_gate_up_activations', False)).lower()}",
+                "++student.quantization.fp4_activation_selector="
+                f"{config.get('activation_selector', 'strict')}",
                 "++student.training.precision_screen.gradient_validation="
                 f"{config.get('gradient_validation', 'per_tensor')}",
             ]

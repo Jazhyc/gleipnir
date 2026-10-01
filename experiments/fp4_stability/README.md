@@ -287,3 +287,16 @@ recipe. Stop each timing campaign after one ten-step warm-up and three measured
 replays; require >=5% lower complete-step mean before adopting a useful speedup.
 Report regressions and failed gates. No held-out quality promotion or external
 serving change is authorized by these short systems experiments.
+
+The concrete selector candidate is `row_inductor_fp16_selector_timing.yaml`.
+It retains separate exact row normalization and strict frozen-weight packing,
+while packing normalized activations with native `mul.rn.f16x2` candidate
+products and an FP32 target/error sum. Arithmetic is inspired by official
+TransformerEngine PR3068 (merge `b972fa899eddf69fa7812736d24e479e23a83d3d`);
+this independent Triton implementation does not assert bit parity with TE.
+Before training, require >=99.9% agreement of logical (unpadded) block scales,
+<=0.1% increase in activation squared error, <=0.2% relative native output L2,
+finite outputs and deterministic packed operands on all seven frozen cases.
+Retain the existing native and full-model gates. Record actual disagreements;
+if any gate fails, stop this candidate before model loading. Carry shared gate/up
+packing forward only if its preceding complete-step experiment passes selection.

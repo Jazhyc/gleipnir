@@ -28,6 +28,9 @@ def main() -> None:
     parser.add_argument("--row-scaled-activations", action="store_true")
     parser.add_argument("--fused-row-scaling", action="store_true")
     parser.add_argument("--fused-activation-packing", action="store_true")
+    parser.add_argument(
+        "--activation-selector", choices=["strict", "fp16"], default="strict"
+    )
     args = parser.parse_args()
     torch.manual_seed(0)
     layer = torch.nn.Linear(256, 512, bias=False, device="cuda", dtype=torch.bfloat16)
@@ -38,6 +41,7 @@ def main() -> None:
         row_scaled_activations=args.row_scaled_activations,
         fused_row_scaling=args.fused_row_scaling,
         fused_activation_packing=args.fused_activation_packing,
+        activation_selector=args.activation_selector,
     )
     stochastic = runtime.gradient_config
     runtime.gradient_config = dataclasses.replace(
@@ -56,7 +60,7 @@ def main() -> None:
         scales = None
         if args.row_scaled_activations:
             quantizer_inputs, scales = normalize_activation_rows(quantizer_inputs)
-        xq = quantize_to_fp4(quantizer_inputs, runtime.activation_config)
+        xq = runtime.activation_packer(quantizer_inputs, runtime.activation_config)
         gq = quantize_to_fp4(grad.reshape(-1, 512), runtime.gradient_config)
 
         def decoded(tensor):

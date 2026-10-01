@@ -92,12 +92,15 @@ class FrozenFp4Runtime:
     activation_cache: PairedActivationCache | None = None
     activation_cache_role: str | None = None
     activation_pack_calls: int = 0
+    activation_selector: str = "strict"
 
 
 def prepare_forward_activation(
     inputs: torch.Tensor, runtime: FrozenFp4Runtime
 ) -> tuple[Any, torch.Tensor | None]:
     """Prepare exact forward operands, optionally sharing gate/up packing."""
+    if runtime.activation_selector == "fp16" and runtime.observer is not None:
+        raise ValueError("operand observation does not support FP16 selector")
 
     def prepare():
         flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
@@ -117,7 +120,10 @@ def prepare_forward_activation(
                 flattened, scales = normalize_rows(flattened)
             else:
                 flattened, scales = normalize_activation_rows(flattened)
-        if runtime.activation_cache is not None:
+        if (
+            runtime.activation_cache is not None
+            or runtime.activation_selector == "fp16"
+        ):
             runtime.activation_pack_calls += 1
             if not runtime.fused_activation_packing:
                 flattened = runtime.activation_packer(
@@ -215,6 +221,7 @@ def native_runtime(
     row_scaled_activations: bool = False,
     fused_row_scaling: bool = False,
     fused_activation_packing: bool = False,
+    activation_selector: str = "strict",
 ) -> FrozenFp4Runtime:
     """Fail closed on package/hardware mismatch and prohibit reference fallback."""
     if importlib.metadata.version("fouroversix") != FOUROVERSIX_VERSION:
@@ -223,6 +230,15 @@ def native_runtime(
         raise ValueError(f"unknown FP4 backward mode: {backward_mode}")
     if fused_row_scaling and not row_scaled_activations:
         raise ValueError("fused row scaling requires per-token activations")
+    if activation_selector not in {"strict", "fp16"}:
+        raise ValueError("unknown activation selector")
+    if activation_selector == "fp16" and not (
+        row_scaled_activations
+        and fused_row_scaling
+        and backward_mode == "dequantized_bf16"
+        and not fused_activation_packing
+    ):
+        raise ValueError("FP16 selector requires separate fused rows and BF16 backward")
     if fused_activation_packing and not (
         row_scaled_activations
         and fused_row_scaling
@@ -279,6 +295,11 @@ def native_runtime(
             out_dtype=config.output_dtype,
         )
 
+    packer = quantize_to_fp4
+    if activation_selector == "fp16":
+        from gleipnir.fp4_fast_selector import quantize_normalized_fp16_selector
+
+        packer = quantize_normalized_fp16_selector
     return FrozenFp4Runtime(
         forward_weight,
         backward_weight,
@@ -289,7 +310,8 @@ def native_runtime(
         row_scaled_activations=row_scaled_activations,
         fused_row_scaling=fused_row_scaling,
         fused_activation_packing=fused_activation_packing,
-        activation_packer=quantize_to_fp4,
+        activation_packer=packer,
+        activation_selector=activation_selector,
     )
 
 
@@ -302,12 +324,15 @@ def install_mlp_precision(
     fused_row_scaling: bool = False,
     fused_activation_packing: bool = False,
     share_gate_up_activations: bool = False,
+    activation_selector: str = "strict",
 ) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
         raise ValueError(f"unknown MLP precision: {precision}")
     if fused_activation_packing and precision != "fouroversix":
         raise ValueError("fused activation packing requires native FP4 MLPs")
+    if activation_selector != "strict" and precision != "fouroversix":
+        raise ValueError("alternative selector requires native FP4 MLPs")
     if share_gate_up_activations and not (
         precision == "fouroversix"
         and row_scaled_activations
@@ -343,12 +368,14 @@ def install_mlp_precision(
                     and not row_scaled_activations
                     and not fused_row_scaling
                     and not fused_activation_packing
+                    and activation_selector == "strict"
                     else native_runtime(
                         module.weight,
                         backward_mode=backward_mode,
                         row_scaled_activations=row_scaled_activations,
                         fused_row_scaling=fused_row_scaling,
                         fused_activation_packing=fused_activation_packing,
+                        activation_selector=activation_selector,
                     ),
                 ),
             )
@@ -408,6 +435,8 @@ def install_mlp_precision(
         "frozen_weight_gradient": False,
         "native_boundary_eager": precision == "fouroversix",
         "shared_gate_up_activation_modules": paired_modules,
+        "activation_selector": activation_selector,
+        "weight_selector": "strict",
     }
 
 
