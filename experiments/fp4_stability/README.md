@@ -254,3 +254,36 @@ Keep `row_inductor_fused_timing.yaml` as the preferred bounded FP4 recipe; tiled
 packing remains an experimental option. This experiment is complete, the B200
 is idle, and no further run is queued. Receipts and limitations are in the
 [finding](../../docs/findings/fp4_training_stability.md#tiled-activation-packing-follow-up).
+
+## Sequential FP4 throughput candidates
+
+The user authorized testing the following candidates in order. Baseline is the
+completed 12.479-second `row_inductor_fused_timing.yaml` replay; retain FP32
+rank-128 LoRA masters, higher-precision attention and decoded-BF16 base backward.
+
+1. `row_inductor_shared_timing.yaml`: share exact normalized/packed activation
+   operands between each MLP's gate/up frozen bases. Identity and tensor-version
+   checks reject unrelated or mutated inputs; each up consumes the entry once.
+   Keep higher-precision LoRA branches untouched. Require exact native output
+   and dX parity, checkpoint recomputation checks, unchanged full-model gates,
+   the global-longest update and the established thirty measured steps.
+2. Test a blog-style FP16 4/6 selector with FP32 error accumulation, first in
+   isolated operand/output canaries. This is a numerical-contract change; do
+   not assert bitwise agreement with the original strict FP32 selector. Record
+   block-choice disagreements and error before the existing model gates.
+3. Test fewer launches/intermediates around the native forward path, beginning
+   with a profile of the preferred configuration. Require unchanged arithmetic
+   or explicitly recorded operand differences, and full training gates.
+4. Remove redundant resident original BF16 base weights after reference probes,
+   then test the resulting budget with fewer checkpoints or larger physical
+   batches. Preserve effective batch, initialization and example order; record
+   physical partitions and the changed memory/recomputation policy. Quantizing
+   saved LoRA activations is a separate method and is not implicitly enabled.
+
+Run GPU candidates sequentially. Freeze each concrete intervention/config before
+its GPU test. Stop a candidate on native, model, gradient, input-identity or OOM
+failure and continue the next independent candidate from the last accepted
+recipe. Stop each timing campaign after one ten-step warm-up and three measured
+replays; require >=5% lower complete-step mean before adopting a useful speedup.
+Report regressions and failed gates. No held-out quality promotion or external
+serving change is authorized by these short systems experiments.

@@ -3174,6 +3174,13 @@ def main(cfg: DictConfig) -> None:
                     default=False,
                 )
             ),
+            share_gate_up_activations=bool(
+                OmegaConf.select(
+                    cfg,
+                    "student.quantization.fp4_share_gate_up_activations",
+                    default=False,
+                )
+            ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
     eager_mlp_interface = bool(

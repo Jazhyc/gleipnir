@@ -8,6 +8,7 @@ only input gradients for frozen bases, using the upstream quantizer and GEMM.
 from __future__ import annotations
 
 import importlib.metadata
+import weakref
 from collections.abc import Callable
 from dataclasses import dataclass, replace
 from typing import Any
@@ -20,6 +21,40 @@ FOUROVERSIX_SDIST_SHA256 = (
     "51ab69c8c09e63d7575213f446f56bcbc9c36011ddca4c5d7b923710e1e6cb00"
 )
 MLP_PROJECTIONS = {"gate_proj", "up_proj", "down_proj"}
+
+
+class PairedActivationCache:
+    """Consume a gate projection's packed operand once, for the same up input.
+
+    The weak input reference and tensor version reject changed or unrelated
+    inputs. Every producer replaces the entry, every consumer clears it, and
+    backward retains neither the entry nor the source activation.
+    """
+
+    def __init__(self) -> None:
+        self.entry: tuple | None = None
+        self.hits = 0
+        self.misses = 0
+
+    def produce(self, inputs: torch.Tensor, prepare: Callable) -> tuple:
+        self.entry = None
+        payload = prepare()
+        if not inputs.is_inference():
+            self.entry = (weakref.ref(inputs), inputs._version, payload)
+        return payload
+
+    def consume(self, inputs: torch.Tensor, prepare: Callable) -> tuple:
+        entry, self.entry = self.entry, None
+        if (
+            entry is not None
+            and entry[0]() is inputs
+            and not inputs.is_inference()
+            and entry[1] == inputs._version
+        ):
+            self.hits += 1
+            return entry[2]
+        self.misses += 1
+        return prepare()
 
 
 def mlp_loading_skip_patterns(precision: str) -> list[str] | None:
@@ -53,6 +88,52 @@ class FrozenFp4Runtime:
     observer: Callable | None = None
     fused_row_scaling: bool = False
     fused_activation_packing: bool = False
+    activation_packer: Callable | None = None
+    activation_cache: PairedActivationCache | None = None
+    activation_cache_role: str | None = None
+    activation_pack_calls: int = 0
+
+
+def prepare_forward_activation(
+    inputs: torch.Tensor, runtime: FrozenFp4Runtime
+) -> tuple[Any, torch.Tensor | None]:
+    """Prepare exact forward operands, optionally sharing gate/up packing."""
+
+    def prepare():
+        flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
+        scales = None
+        if runtime.row_scaled_activations:
+            if runtime.fused_activation_packing:
+                from gleipnir.fp4_quantization_kernels import quantize_activation_rows
+
+                flattened, scales = quantize_activation_rows(
+                    flattened,
+                    runtime.activation_config.kwargs["x_amax"],
+                    implementation="tiled",
+                )
+            elif runtime.fused_row_scaling:
+                from gleipnir.fp4_row_kernels import normalize_rows
+
+                flattened, scales = normalize_rows(flattened)
+            else:
+                flattened, scales = normalize_activation_rows(flattened)
+        if runtime.activation_cache is not None:
+            runtime.activation_pack_calls += 1
+            if not runtime.fused_activation_packing:
+                flattened = runtime.activation_packer(
+                    flattened, runtime.activation_config
+                )
+        return flattened, scales
+
+    if runtime.activation_cache is None:
+        return prepare()
+    if runtime.observer is not None:
+        raise ValueError("operand observation does not support shared packing")
+    if runtime.activation_cache_role == "gate":
+        return runtime.activation_cache.produce(inputs, prepare)
+    if runtime.activation_cache_role == "up":
+        return runtime.activation_cache.consume(inputs, prepare)
+    raise ValueError("unknown shared activation role")
 
 
 def normalize_activation_rows(
@@ -73,23 +154,7 @@ class FrozenFp4Function(torch.autograd.Function):
         runtime.forward_calls += 1
         if runtime.fused_activation_packing and runtime.observer is not None:
             raise ValueError("operand observation does not support fused packing")
-        flattened = inputs.reshape(-1, inputs.shape[-1]).to(torch.bfloat16)
-        scales = None
-        if runtime.row_scaled_activations:
-            if runtime.fused_activation_packing:
-                from gleipnir.fp4_quantization_kernels import quantize_activation_rows
-
-                flattened, scales = quantize_activation_rows(
-                    flattened,
-                    runtime.activation_config.kwargs["x_amax"],
-                    implementation="tiled",
-                )
-            elif runtime.fused_row_scaling:
-                from gleipnir.fp4_row_kernels import normalize_rows
-
-                flattened, scales = normalize_rows(flattened)
-            else:
-                flattened, scales = normalize_activation_rows(flattened)
+        flattened, scales = prepare_forward_activation(inputs, runtime)
         output = runtime.matmul(
             flattened,
             runtime.weight,
@@ -224,6 +289,7 @@ def native_runtime(
         row_scaled_activations=row_scaled_activations,
         fused_row_scaling=fused_row_scaling,
         fused_activation_packing=fused_activation_packing,
+        activation_packer=quantize_to_fp4,
     )
 
 
@@ -235,12 +301,20 @@ def install_mlp_precision(
     row_scaled_activations: bool = False,
     fused_row_scaling: bool = False,
     fused_activation_packing: bool = False,
+    share_gate_up_activations: bool = False,
 ) -> dict[str, Any]:
     """Keep attention unchanged and convert only the frozen decoder MLP bases."""
     if precision not in {"nf4", "bf16", "fouroversix"}:
         raise ValueError(f"unknown MLP precision: {precision}")
     if fused_activation_packing and precision != "fouroversix":
         raise ValueError("fused activation packing requires native FP4 MLPs")
+    if share_gate_up_activations and not (
+        precision == "fouroversix"
+        and row_scaled_activations
+        and fused_row_scaling
+        and backward_mode == "dequantized_bf16"
+    ):
+        raise ValueError("shared packing requires native fused per-token BF16 backward")
     selected = [
         (name, module)
         for name, module in model.named_modules()
@@ -279,6 +353,25 @@ def install_mlp_precision(
                 ),
             )
         converted.append(name)
+    paired_modules = []
+    if share_gate_up_activations:
+        for name, module in model.named_modules():
+            if not name.endswith(".mlp") and name != "mlp":
+                continue
+            pair = []
+            for role in ["gate", "up"]:
+                projection = getattr(module, f"{role}_proj", None)
+                base = getattr(projection, "base_layer", projection)
+                if not isinstance(base, FrozenFourOverSixLinear):
+                    raise ValueError(f"missing native {role} projection in {name}")
+                pair.append(base)
+            cache = PairedActivationCache()
+            for role, base in zip(["gate", "up"], pair, strict=True):
+                base.runtime.activation_cache = cache
+                base.runtime.activation_cache_role = role
+            paired_modules.append(name)
+        if not paired_modules:
+            raise ValueError("no complete MLP gate/up pairs found")
     return {
         "precision": precision,
         "modules": [name for name, _ in selected],
@@ -314,6 +407,7 @@ def install_mlp_precision(
         ),
         "frozen_weight_gradient": False,
         "native_boundary_eager": precision == "fouroversix",
+        "shared_gate_up_activation_modules": paired_modules,
     }
 
 
@@ -332,6 +426,24 @@ def native_call_counts(model: nn.Module) -> dict[str, int]:
             m.runtime.backward_calls
             for m in layers
             if m.runtime.dequantized_weight is not None
+        ),
+        "shared_activation_pack_calls": sum(
+            m.runtime.activation_pack_calls for m in layers
+        ),
+        "shared_activation_hits": sum(
+            m.runtime.activation_cache.hits
+            for m in layers
+            if m.runtime.activation_cache_role == "gate"
+        ),
+        "shared_activation_misses": sum(
+            m.runtime.activation_cache.misses
+            for m in layers
+            if m.runtime.activation_cache_role == "gate"
+        ),
+        "pending_shared_activation_entries": sum(
+            int(m.runtime.activation_cache.entry is not None)
+            for m in layers
+            if m.runtime.activation_cache_role == "gate"
         ),
     }
 

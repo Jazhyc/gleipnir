@@ -83,6 +83,16 @@ def validate_config(config: dict) -> None:
         raise ValueError(
             "fused packing requires unobserved native per-token BF16 backward"
         )
+    if config.get("share_gate_up_activations", False) and not (
+        config.get("row_scaled_activations", False)
+        and config.get("fused_row_scaling", False)
+        and config["backward_mode"] == "dequantized_bf16"
+        and config["conditions"] == ["fouroversix"]
+        and not config.get("capture_native_operands", False)
+    ):
+        raise ValueError(
+            "shared packing requires unobserved native per-token BF16 backward"
+        )
 
 
 def campaign_stages(config: dict, source: dict, global_longest: dict) -> list[dict]:
@@ -172,6 +182,7 @@ def main() -> None:
                 ROOT / "src/gleipnir/fp4_quantization_kernels.py",
                 ROOT / "experiments/fp4_stability/row_kernel_canary.py",
                 ROOT / "experiments/fp4_stability/packing_kernel_canary.py",
+                ROOT / "experiments/fp4_stability/shared_activation_canary.py",
                 ROOT / "experiments/b200_fouroversix/kernel_canary.py",
                 ROOT / "experiments/deception_distillation/train_student_sft.py",
                 Path(__file__),
@@ -193,6 +204,21 @@ def main() -> None:
 
     publish()
     try:
+        if config.get("share_gate_up_activations", False):
+            with (logs / "shared-activation-canary.log").open("w") as handle:
+                subprocess.run(
+                    [
+                        sys.executable,
+                        "experiments/fp4_stability/shared_activation_canary.py",
+                        "--output",
+                        str(output / "shared_activation_canary.json"),
+                    ],
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         if config.get("fused_activation_packing", False):
             with (logs / "packing-kernel-canary.log").open("w") as handle:
                 subprocess.run(
@@ -274,6 +300,8 @@ def main() -> None:
                 f"{str(config.get('fused_row_scaling', False)).lower()}",
                 "++student.quantization.fp4_fused_activation_packing="
                 f"{str(config.get('fused_activation_packing', False)).lower()}",
+                "++student.quantization.fp4_share_gate_up_activations="
+                f"{str(config.get('share_gate_up_activations', False)).lower()}",
                 "++student.training.precision_screen.gradient_validation="
                 f"{config.get('gradient_validation', 'per_tensor')}",
             ]
