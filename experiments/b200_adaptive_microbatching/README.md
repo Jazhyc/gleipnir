@@ -63,3 +63,11 @@ cache provenance accompany each run. Active-turn startup checks occur every
 ```
 
 Prepare on the Pod and use `launch.sh` with the synced commit in `GLEIPNIR_COMMIT`.
+
+The first GPU preflight stopped before any optimizer update: batch 8 over unequal
+lengths produced relative gradient L2 error 0.51951 (threshold 0.05). Preserve
+that failed screen. The next bounded diagnostic uses `diagnose.py --mode eager`
+and the same frozen preflight job. It runs the eight-input canary only, recording
+decision logits, mean losses, gradient norms/cosine and the largest parameter
+differences. `--mode compiled` provides the matched compiled diagnostic. Neither
+diagnostic trains or selects a new recipe; failure keeps the parity threshold.

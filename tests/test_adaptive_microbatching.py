@@ -6,6 +6,7 @@ import pytest
 import torch
 from transformers import Trainer, TrainerCallback, TrainingArguments
 
+from experiments.b200_adaptive_microbatching.diagnose import diagnostic_job
 from experiments.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
@@ -167,8 +168,29 @@ def test_gradient_canary_clears_gradients_and_restores_eval_mode():
     assert result["passed"] is True
     assert result["reference_gradient_norm"] > 0
     assert result["relative_l2_error"] < 1e-6
+    assert result["gradient_cosine_similarity"] == pytest.approx(1)
+    assert result["actual_mean_loss"] == pytest.approx(result["reference_mean_loss"])
     assert model.weight.grad is None
     assert model.training is False
+
+
+def test_eager_diagnostic_preserves_inputs_and_per_example_objective(tmp_path):
+    _, original, _ = adaptive_contract()
+    diagnostic = diagnostic_job(original, tmp_path, "eager")
+    for key in (
+        "student_rows",
+        "soft_targets",
+        "selection_sha256",
+        "rank",
+        "seed",
+        "soft_loss_weight",
+        "direct_loss_weight",
+        "adaptive_microbatching",
+    ):
+        assert diagnostic[key] == original[key]
+    assert diagnostic["max_steps"] == 1
+    assert diagnostic["selective_torch_compile_policy"] == "none"
+    assert original["selective_torch_compile_policy"] != "none"
 
 
 def test_gradient_canary_rejects_nonmean_loss():

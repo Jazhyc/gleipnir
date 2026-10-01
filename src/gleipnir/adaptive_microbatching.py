@@ -187,14 +187,21 @@ def gradient_partition_canary(
     relative_tolerance: float = 0.05,
 ) -> dict[str, Any]:
     """Compare all trainable gradients for singleton versus adaptive partitions."""
-    parameters = [p for p in model.parameters() if p.requires_grad]
+    named_parameters = [
+        (name, p) for name, p in model.named_parameters() if p.requires_grad
+    ]
+    parameters = [p for _, p in named_parameters]
     was_training = model.training
     reference = []
+    reference_losses = []
+    actual_losses = []
     try:
         model.train()
         model.zero_grad(set_to_none=True)
         for feature in features:
-            (loss_forward(collator([feature])) / len(features)).backward()
+            loss = loss_forward(collator([feature]))
+            reference_losses.append(float(loss.detach()))
+            (loss / len(features)).backward()
         reference = [
             None if p.grad is None else p.grad.detach().cpu().clone()
             for p in parameters
@@ -203,14 +210,15 @@ def gradient_partition_canary(
         lengths = [len(f["direct_input_ids"]) for f in features]
         partition = policy.partition(lengths)
         for indices in partition:
-            (
-                loss_forward(collator([features[i] for i in indices]))
-                * (len(indices) / len(features))
-            ).backward()
+            loss = loss_forward(collator([features[i] for i in indices]))
+            actual_losses.append(float(loss.detach()) * len(indices) / len(features))
+            (loss * (len(indices) / len(features))).backward()
         norm_squared = error_squared = 0.0
+        actual_norm_squared = dot_product = 0.0
         maximum_error = 0.0
         compared = 0
-        for parameter, ref in zip(parameters, reference, strict=True):
+        differences = []
+        for (name, parameter), ref in zip(named_parameters, reference, strict=True):
             if (ref is None) != (parameter.grad is None):
                 raise ValueError(
                     "gradient partition changed which parameters receive gradients"
@@ -219,8 +227,19 @@ def gradient_partition_canary(
                 continue
             actual = parameter.grad.detach().float().cpu()
             difference = actual - ref.float()
-            norm_squared += float(ref.float().square().sum())
-            error_squared += float(difference.square().sum())
+            ref_norm = float(ref.float().square().sum())
+            error_norm = float(difference.square().sum())
+            norm_squared += ref_norm
+            error_squared += error_norm
+            actual_norm_squared += float(actual.square().sum())
+            dot_product += float((actual * ref.float()).sum())
+            differences.append(
+                {
+                    "parameter": name,
+                    "error_norm": math.sqrt(error_norm),
+                    "reference_norm": math.sqrt(ref_norm),
+                }
+            )
             maximum_error = max(maximum_error, float(difference.abs().max()))
             compared += ref.numel()
         relative_error = (
@@ -234,6 +253,17 @@ def gradient_partition_canary(
             "maximum_absolute_error": maximum_error,
             "compared_parameters": compared,
             "reference_gradient_norm": math.sqrt(norm_squared),
+            "actual_gradient_norm": math.sqrt(actual_norm_squared),
+            "gradient_cosine_similarity": (
+                dot_product / math.sqrt(norm_squared * actual_norm_squared)
+                if norm_squared > 0 and actual_norm_squared > 0
+                else None
+            ),
+            "reference_mean_loss": sum(reference_losses) / len(features),
+            "actual_mean_loss": sum(actual_losses),
+            "largest_gradient_differences": sorted(
+                differences, key=lambda d: -d["error_norm"]
+            )[:8],
             "examples": len(features),
             "physical_microbatch_sizes": [len(x) for x in partition],
         }

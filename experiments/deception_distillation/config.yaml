@@ -91,6 +91,7 @@ student:
     eager_attention_interface: false
     adaptive_microbatching:
       enabled: false
+      canary_only: false
       max_padded_tokens: 16384
       max_micro_batch_size: 8
       profile: true

@@ -2205,6 +2205,14 @@ def main(cfg: DictConfig) -> None:
         adaptive_policy = MicrobatchPolicy(
             int(adaptive_cfg.max_padded_tokens), int(adaptive_cfg.max_micro_batch_size)
         )
+        if adaptive_cfg.canary_only and not int(
+            OmegaConf.select(
+                cfg, "student.training.selective_torch_compile_canary_tokens", default=0
+            )
+        ):
+            raise ValueError(
+                "canary-only diagnostics require a positive canary token count"
+            )
 
     class AuxiliarySFTTrainer(Trainer):
         """Completion SFT with optional direct-label and within-dataset rank losses."""
@@ -3535,10 +3543,34 @@ def main(cfg: DictConfig) -> None:
             feature = dict(dataset[index % len(dataset)])
             feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
             canary_features.append(feature)
+        canary_forward_calls = []
 
         def canary_loss_forward(batch):
+            prepared = trainer._prepare_inputs(batch)
+            mask = prepared["direct_attention_mask"]
+            positions = mask.sum(dim=1) - 1
+            rows = torch.arange(mask.shape[0], device=mask.device)
+            _, inverse = torch.unique(positions, sorted=True, return_inverse=True)
             with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+                loss, outputs = trainer.compute_loss(
+                    model, prepared, return_outputs=True
+                )
+            selected = (
+                inverse if direct_logits_mode == "selected_positions" else positions
+            )
+            logits = getattr(outputs, "logits", None)
+            if logits is not None:
+                logits = (
+                    logits[rows, selected][:, direct_target_ids].detach().float().cpu()
+                )
+            canary_forward_calls.append(
+                {
+                    "examples": mask.shape[0],
+                    "decision_logits": logits.tolist() if logits is not None else None,
+                    "mean_loss": float(loss.detach()),
+                }
+            )
+            return loss
 
         adaptive_gradient_canary = gradient_partition_canary(
             model,
@@ -3547,11 +3579,24 @@ def main(cfg: DictConfig) -> None:
             canary_loss_forward,
             adaptive_policy,
         )
+        adaptive_gradient_canary["forward_calls"] = canary_forward_calls
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "adaptive_gradient_canary.json").write_text(
+            json.dumps(adaptive_gradient_canary, indent=2) + "\n"
+        )
         print(f"adaptive_gradient_canary={adaptive_gradient_canary}", flush=True)
         if not adaptive_gradient_canary["passed"]:
             raise ValueError(
                 f"adaptive gradient parity failed: {adaptive_gradient_canary}"
             )
+        if bool(
+            OmegaConf.select(
+                cfg,
+                "student.training.adaptive_microbatching.canary_only",
+                default=False,
+            )
+        ):
+            return
     compile_base = model.get_base_model() if hasattr(model, "get_base_model") else model
     compile_layer_types = getattr(compile_base.config, "layer_types", [])
     disabled_linear_attention_layer_indices = [
