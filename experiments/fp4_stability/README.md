@@ -504,3 +504,28 @@ the individual source of that amplification. No optimizer updates or accepted
 whole-model timings were produced. Keep the original FLA recipe; collected
 artifacts and full provenance are in the finding. The B200 is idle and no
 follow-up is queued. Forty-six focused CPU tests pass.
+
+## NF4 + BF16 FlashQLA follow-up
+
+Hypothesis: the original NF4/BF16 LoRA recipe tolerates the explicit BF16
+GDN boundary better than the hybrid FP4 MLP recipe, allowing FlashQLA kernel
+savings to reduce complete optimizer-step latency. The user requested this
+precision recipe first. No native FP4 MLP replacement is enabled.
+
+`nf4_flashqla_boundary_diagnostic.yaml` makes no optimizer updates and retains
+the existing loss tolerance (0.01 absolute plus 1% relative), finite gradients,
+and aggregate adapter-gradient relative L2 <= 0.05 against original FLA.
+Its failure controls compare FLA with identical casts and local shadow outputs.
+If it passes, `nf4_flashqla_timing.yaml` and `nf4_fla_timing.yaml` compare
+FlashQLA with its BF16 boundary against original FLA, preserving the selected
+NF4 compiler policy, twelve checkpoints, adaptive physical token budget 16,384
+and maximum batch 8, logical batch 32, initial FP32 masters, frozen model/data,
+and original NF4 compiler precision behavior.
+
+Each timing condition must pass its own global-longest one-update preflight,
+then complete ten warm-up steps and three matched ten-step measured replays.
+Reset masters and optimizer/scheduler state between replays. Stop on any failed
+gate, nonfinite value, OOM, or new measured compiler graph. Require >=5% lower
+mean whole-step time against the fresh NF4/FLA control to select a useful gain.
+No held-out quality selection is performed; these training probes cannot
+establish long-run quality parity. Preserve failed receipts and original FLA.
