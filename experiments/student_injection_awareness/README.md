@@ -48,6 +48,8 @@ Prepare locally, sync code/data to the existing authorized B200, then run:
 .venv/bin/python -m experiments.student_injection_awareness.train --size 4b --variant regular
 .venv/bin/python -m experiments.student_injection_awareness.train --size 4b --variant injection_aware
 .venv/bin/python -m experiments.student_injection_awareness.evaluate --size 4b --backend reference
+VLLM_CACHE_ROOT="$PWD/.cache/vllm/student_injection_awareness_v1" \
+TORCHINDUCTOR_CACHE_DIR="$PWD/.cache/torchinductor/student_injection_awareness_v1" \
 .venv/bin/python -m experiments.student_injection_awareness.evaluate --size 4b --backend vllm
 .venv/bin/python -m experiments.student_injection_awareness.publish --size 4b
 ```
@@ -60,6 +62,10 @@ Run reference canaries in the pinned FLA/convolution environment; run vLLM in
 the serving environment, without the isolated training Triton on its import
 path. The evaluator holds one persistent engine for both adapters and both
 splits, retaining exact prediction and artifact identities for safe resumption.
+Use the campaign compiler cache directories above: copied vLLM compiler
+artifacts can retain absolute paths from their original cache root and fail
+to load after relocation. Keep the failed logs when recovering with fresh
+cache directories.
 Publication runs locally using `HF_TOKEN` from ignored `.env`, after artifact
 collection. Repeat the same commands with `--size 9b` after the 4B stage.
 

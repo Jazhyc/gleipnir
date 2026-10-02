@@ -119,3 +119,20 @@ The remote verification receipt is
 The completed adapters and receipts were collected locally, and the local
 integrity check passed. Bounded eager reference scoring has started.
 Serving parity, complete ID/OOD scores and publication remain pending.
+
+## Serving startup recovery
+
+Bounded eager reference scoring completed on the fixed 20 training examples
+per instruction using original pinned FLA kernels. All scores were finite;
+maximum adapter effects were 0.88874 for regular and 0.87298 for aware. These
+checks establish an adapter effect on the parity cohort, not held-out quality.
+
+The first vLLM startup failed before any evaluation rows were produced. Its
+copied compiler artifacts referenced missing files beneath `/root/.cache/vllm/`
+while the current cache root was on the network volume. The failure log is
+preserved as `logs/runpod/student_injection_awareness/eval_vllm4b.failed_stale_cache.log`.
+The retry uses fresh campaign directories for `VLLM_CACHE_ROOT` and
+`TORCHINDUCTOR_CACHE_DIR`, preserving the model, engine settings, parity gates
+and evaluation inputs. Its recovery receipt is
+`results/student_injection_awareness/4b/serving_cache_recovery.json`.
+The retry has started; serving parity and complete quality results remain pending.
