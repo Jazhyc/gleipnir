@@ -101,6 +101,7 @@ class AdaptiveMicrobatchTrainerMixin:
         physical_collator: Callable,
         *,
         profile: bool,
+        require_finite_gradients: bool = False,
     ) -> None:
         if self.args.world_size != 1 or self.args.n_gpu > 1:
             raise ValueError("adaptive microbatching currently requires one device")
@@ -118,6 +119,7 @@ class AdaptiveMicrobatchTrainerMixin:
         self.physical_collator = physical_collator
         self.data_collator = LogicalBatchCollator()
         self.microbatch_profile = profile
+        self.require_finite_gradients = require_finite_gradients
         self.microbatch_records: list[dict[str, Any]] = []
         self.logical_batch_sizes: list[int] = []
         self._microbatch_loss_weight = 1.0
@@ -191,6 +193,11 @@ class AdaptiveMicrobatchTrainerMixin:
             total_loss = loss if total_loss is None else total_loss + loss
         if not torch.isfinite(total_loss).item():
             raise FloatingPointError("nonfinite adaptive logical-batch loss")
+        if self.require_finite_gradients:
+            gradients = [p.grad for p in model.parameters() if p.requires_grad]
+            if not gradients or any(g is None for g in gradients):
+                raise FloatingPointError("missing adaptive adapter gradient")
+            torch.nn.utils.get_total_norm(gradients, error_if_nonfinite=True)
         return total_loss
 
     def adaptive_microbatch_metadata(self) -> dict[str, Any]:
@@ -203,6 +210,7 @@ class AdaptiveMicrobatchTrainerMixin:
             "physical_microbatch_sizes": sorted(
                 {r["examples"] for r in self.microbatch_records}
             ),
+            "require_finite_gradients": self.require_finite_gradients,
             "profiling": "synchronized"
             if self.microbatch_profile
             else "unsynchronized_wall",
@@ -279,6 +287,13 @@ def gradient_partition_canary(
             math.sqrt(error_squared / norm_squared) if norm_squared > 0 else math.inf
         )
         return {
+            "finite": all(math.isfinite(x) for x in reference_losses + actual_losses)
+            and math.isfinite(norm_squared)
+            and norm_squared > 0
+            and math.isfinite(actual_norm_squared)
+            and actual_norm_squared > 0
+            and all(x is not None for x in reference)
+            and all(p.grad is not None for p in parameters),
             "passed": math.isfinite(relative_error)
             and relative_error <= relative_tolerance,
             "relative_l2_error": relative_error,

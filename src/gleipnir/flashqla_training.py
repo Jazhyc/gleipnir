@@ -1,4 +1,4 @@
-"""Opt-in, pinned FlashQLA training diagnostics for the native FP4 screen."""
+"""Pinned FlashQLA support and recorded canaries for B200 LoRA training."""
 
 from __future__ import annotations
 
@@ -191,6 +191,7 @@ def install_with_model_canary(
     boundary_policy: str = "bf16",
     layer_indices: list[int] | None = None,
     ten_step_learning_comparison: bool = False,
+    selected_recipe: bool = False,
 ) -> dict[str, Any]:
     """Compare native-model losses and unclipped master gradients before updates."""
     import math
@@ -201,6 +202,16 @@ def install_with_model_canary(
         backend != "flashqla" or layer_indices is not None
     ):
         raise ValueError("ten-step comparison requires uniform FlashQLA")
+    if selected_recipe and (
+        backend != "flashqla"
+        or layer_indices is not None
+        or auto_cp
+        or not bf16_boundary
+        or boundary_policy != "bf16_fp32_gates_norm"
+    ):
+        raise ValueError(
+            "selected recipe requires uniform BF16 FlashQLA with FP32 gates/norm"
+        )
     if backend == "flashqla":
         print(f"attention_canary loading={backend} layers={layer_indices}", flush=True)
         function, receipt = load_flashqla()
@@ -229,6 +240,10 @@ def install_with_model_canary(
     if bf16_boundary:
         kernel = make_precision_boundary(kernel, policy=boundary_policy)
     named = [(n, p) for n, p in model.named_parameters() if p.requires_grad]
+    if selected_recipe and (
+        not named or any(p.dtype != torch.float32 for _, p in named)
+    ):
+        raise ValueError("selected FlashQLA recipe requires FP32 master adapters")
     training = model.training
     model.eval()
     reference_losses = []
@@ -294,16 +309,31 @@ def install_with_model_canary(
         finite = all(
             math.isfinite(x) for x in reference_losses + candidate_losses
         ) and all(x["finite"] for x in gradients.values())
-        if ten_step_learning_comparison and not finite:
-            raise FloatingPointError("nonfinite ten-step attention canary")
+        if (ten_step_learning_comparison or selected_recipe) and not finite:
+            raise FloatingPointError("nonfinite FlashQLA model canary")
         receipt["accepted_for_ten_step_learning_comparison"] = (
             ten_step_learning_comparison and finite
         )
+        receipt["finite"] = (
+            finite
+            and any(x["reference_norm"] > 0 for x in gradients.values())
+            and any(
+                float(torch.linalg.vector_norm(p.grad.detach().float())) > 0
+                for _, p in named
+            )
+        )
+        if selected_recipe and not selected_recipe_canary_accepted(
+            receipt, selected=True
+        ):
+            raise FloatingPointError(
+                "selected recipe has no finite nonzero adapter gradients"
+            )
         if (
             not passed
             and backend == "flashqla"
             and bf16_boundary
             and not ten_step_learning_comparison
+            and not selected_recipe
         ):
             # Keep the original pass/fail result. These bounded failure probes
             # never update adapters and cannot authorize training past the gate.
@@ -368,7 +398,11 @@ def install_with_model_canary(
                 receipt["shadow_outputs_on_original_path"] = shadows
             except Exception as error:
                 receipt["failure_diagnostic_error"] = f"{type(error).__name__}: {error}"
-        keep_kernel = passed or receipt["accepted_for_ten_step_learning_comparison"]
+        keep_kernel = (
+            passed
+            or receipt["accepted_for_ten_step_learning_comparison"]
+            or receipt.get("accepted_for_selected_recipe", False)
+        )
         return receipt
     finally:
         model.zero_grad(set_to_none=True)
@@ -376,3 +410,21 @@ def install_with_model_canary(
         if not keep_kernel:
             for module, original in originals:
                 module.chunk_gated_delta_rule = original
+
+
+def selected_recipe_canary_accepted(receipt: dict[str, Any], *, selected: bool) -> bool:
+    """Record finite acceptance separately from the strict parity result."""
+    if selected:
+        receipt["accepted_for_selected_recipe"] = receipt.get("finite") is True
+        return receipt["accepted_for_selected_recipe"]
+    return receipt.get("passed") is True
+
+
+def flashqla_environment(environment: dict[str, str]) -> dict[str, str]:
+    """Expose the isolated pinned install to the training child process."""
+    return {
+        **environment,
+        "PYTHONPATH": str(FLASHQLA_TARGET.resolve())
+        + ":"
+        + environment.get("PYTHONPATH", ""),
+    }

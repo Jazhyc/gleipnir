@@ -1399,3 +1399,11 @@ their receipts. Results and logs are collected locally and persist on the pod's
 network volume. No further training is launched; the B200 is idle. Validation
 remains 70 focused tests passed, six unsupported combinations skipped, Ruff
 passed. The failed zero-update compile-gate attempt is preserved separately.
+
+
+After the ten-step loss/timing explanation, the user explicitly selected uniform
+FlashQLA as the default B200 NF4/BF16 LoRA recipe. The decision is recorded in
+`docs/decisions/b200_flashqla_training_recipe.md`. This supersedes the earlier
+statement that no default was promoted, through user selection rather than a
+new held-out quality result. Ordinary training records finite acceptance separately
+from failed strict parity, and preserves historical diagnostic contracts.

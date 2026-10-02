@@ -712,3 +712,13 @@ def test_group_dro_upweights_the_higher_loss_group() -> None:
     assert weighted > losses.mean()
     assert snapshot is not None
     assert snapshot["weights"][1] > snapshot["weights"][0]
+
+
+def test_compile_logit_canary_rejects_infinite_logits():
+    result = compare_compile_canary_logits(
+        torch.tensor([[1.0, 2.0]]),
+        torch.tensor([[1.0, float("inf")]]),
+        absolute_tolerance=0.05,
+        relative_tolerance=0.01,
+    )
+    assert not result["passed"] and not result["finite"]

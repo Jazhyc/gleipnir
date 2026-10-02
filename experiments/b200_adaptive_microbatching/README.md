@@ -2,7 +2,10 @@
 
 Current recipe decision: after the completed execution audit, the user selected
 compiled 16,384-token/max-8 adaptive batching for future B200 training. Use
-`systems_screen@_global_: qwen35_4b_b200_adaptive` as the authoring profile.
+`systems_screen@_global_: qwen35_4b_b200_default` for the current authoring
+profile, which adds user-selected uniform FlashQLA. The preceding
+`qwen35_4b_b200_adaptive` profile preserves original FLA. See the
+[FlashQLA decision](../../docs/decisions/b200_flashqla_training_recipe.md).
 The [decision record](../../docs/decisions/b200_adaptive_training_recipe.md)
 distinguishes this explicit choice from the historical screen contracts below;
 their failed parity gates remain intact. No new training run is launched.

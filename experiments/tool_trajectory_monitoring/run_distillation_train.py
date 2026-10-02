@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -122,6 +123,9 @@ def training_command(job: dict[str, Any]) -> list[str]:
     if "eager_attention_interface" in job:
         enabled = str(bool(job["eager_attention_interface"])).lower()
         command.append(f"student.training.eager_attention_interface={enabled}")
+    for key in ("gated_delta_backend", "gated_delta_parity_policy"):
+        if key in job:
+            command.append(f"++student.training.{key}={job[key]}")
     if adaptive := job.get("adaptive_microbatching"):
         for key in ("enabled", "max_padded_tokens", "max_micro_batch_size", "profile"):
             if key in adaptive:
@@ -223,7 +227,12 @@ def main() -> None:
     if not causal_complete:
         command = training_command(job)
         print("running", " ".join(command), flush=True)
-        subprocess.run(command, cwd=ROOT, check=True)
+        environment = dict(os.environ)
+        if job.get("gated_delta_backend", "fla") == "flashqla":
+            from gleipnir.flashqla_training import flashqla_environment
+
+            environment = flashqla_environment(environment)
+        subprocess.run(command, cwd=ROOT, env=environment, check=True)
     manifest = rebase_adapter(causal_dir, Path(job["model_dir"]))
     print(
         f"rebased {job['job_name']} source={manifest['source_sha256']} "

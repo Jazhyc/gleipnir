@@ -119,6 +119,15 @@ For direct-boundary objectives, avoid materializing full-sequence vocabulary
 logits when it prevents the proven batch; use a matched, recorded selected-token
 projection consistently across the campaign.
 
+For single-B200 Qwen3.5-4B NF4/BF16 LoRA training, use the user-selected
+`systems_screen@_global_: qwen35_4b_b200_default` profile: all 24 GDN layers
+use pinned FlashQLA with BF16 Q/K/V and FP32 gates/normalization; full attention
+uses SDPA. Keep the twelve-layer checkpoint policy, adaptive 16,384-token/max-8
+physical batches, logical batch 32, and FP32 master adapters. Record failed
+strict parity separately from explicit `selected_finite` acceptance; reject
+missing/nonfinite gradients before updates. Preserve original-FLA comparison
+profiles and historical gates. See `docs/decisions/b200_flashqla_training_recipe.md`.
+
 For frozen text-only evaluation of standard base or PEFT LoRA models, default to
 one persistent vLLM engine with continuous batching, a constrained one-token
 response, and explicitly requested decision-token logprobs. Do not carry an

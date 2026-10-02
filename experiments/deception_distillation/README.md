@@ -58,6 +58,15 @@ Auxiliary, dataset-reweighted, distributed, dropout and in-training evaluation
 paths fail closed. See the [B200 profiling experiment](../b200_adaptive_microbatching/README.md)
 for the empirical selection protocol; token budgets are not memory guarantees.
 
+For the user-selected B200 recipe, `student.training.gated_delta_backend=flashqla`
+and `student.training.gated_delta_parity_policy=selected_finite` install pinned
+FlashQLA in all 24 GDN layers with BF16 operands and FP32 gates/normalization.
+Use the reusable `qwen35_4b_b200_default` profile and worker so the isolated
+package is exposed before import. Record all strict parity results; the selected
+policy accepts finite numerical differences, and every optimizer batch rejects
+missing/nonfinite gradients. SDPA, causal-conv1d and FP32 master adapters remain
+part of the recipe. See the [decision](../../docs/decisions/b200_flashqla_training_recipe.md).
+
 ## Inputs
 
 Materialize training records as JSONL outside Git. Each usable record needs a

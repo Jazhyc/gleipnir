@@ -388,6 +388,7 @@ def compare_compile_canary_logits(
     eager_margin = float(eager[0, 1] - eager[0, 0])
     compiled_margin = float(compiled[0, 1] - compiled[0, 0])
     return {
+        "finite": bool(torch.isfinite(eager).all() and torch.isfinite(compiled).all()),
         "eager_logits": eager.tolist(),
         "compiled_logits": compiled.tolist(),
         "maximum_absolute_difference": float(differences.max()),
@@ -396,7 +397,11 @@ def compare_compile_canary_logits(
         "eager_margin": eager_margin,
         "compiled_margin": compiled_margin,
         "margin_absolute_difference": abs(compiled_margin - eager_margin),
-        "passed": bool(torch.all(differences <= tolerances)),
+        "passed": bool(
+            torch.isfinite(eager).all()
+            and torch.isfinite(compiled).all()
+            and torch.all(differences <= tolerances)
+        ),
     }
 
 
@@ -3478,7 +3483,13 @@ def main(cfg: DictConfig) -> None:
     trainer.direct_target_ids = direct_target_ids
     if adaptive_enabled:
         trainer.enable_adaptive_microbatching(
-            adaptive_policy, collator, profile=bool(adaptive_cfg.profile)
+            adaptive_policy,
+            collator,
+            profile=bool(adaptive_cfg.profile),
+            require_finite_gradients=OmegaConf.select(
+                cfg, "student.training.gated_delta_backend", default="fla"
+            )
+            == "flashqla",
         )
     if gradient_checkpointing_enabled:
         checkpointed_layer_indices = apply_gradient_checkpointing_policy(
@@ -3640,6 +3651,78 @@ def main(cfg: DictConfig) -> None:
         trainer.optimizer = None
         trainer.lr_scheduler = None
         return
+    from gleipnir.flashqla_training import selected_recipe_canary_accepted
+
+    gated_delta_backend = str(
+        OmegaConf.select(cfg, "student.training.gated_delta_backend", default="fla")
+    )
+    gated_delta_parity_policy = str(
+        OmegaConf.select(
+            cfg, "student.training.gated_delta_parity_policy", default="strict"
+        )
+    )
+    if gated_delta_backend not in {
+        "fla",
+        "flashqla",
+    } or gated_delta_parity_policy not in {"strict", "selected_finite"}:
+        raise ValueError("unknown gated-delta backend or parity policy")
+    selected_flashqla_recipe = (
+        gated_delta_backend == "flashqla"
+        and gated_delta_parity_policy == "selected_finite"
+    )
+    if gated_delta_parity_policy != "strict" and not selected_flashqla_recipe:
+        raise ValueError("selected finite policy requires FlashQLA")
+    gated_delta_metadata = {
+        "backend": "fla",
+        "parity_policy": gated_delta_parity_policy,
+    }
+    if gated_delta_backend == "flashqla":
+        if (
+            not adaptive_enabled
+            or world_size != 1
+            or finetuning_mode != "lora"
+            or mlp_precision_metadata["precision"] != "nf4"
+        ):
+            raise ValueError("FlashQLA recipe requires single-device adaptive NF4 LoRA")
+        from gleipnir.flashqla_training import install_with_model_canary
+
+        probe_features = []
+        for i, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
+            feature = dict(dataset[i % len(dataset)])
+            feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
+            probe_features.append(feature)
+
+        def kernel_loss_forward(batch):
+            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+
+        gated_delta_metadata = install_with_model_canary(
+            model,
+            [collator([feature]) for feature in probe_features]
+            + [collator([probe_features[0], probe_features[-1]])],
+            kernel_loss_forward,
+            auto_cp=False,
+            bf16_boundary=True,
+            boundary_policy="bf16_fp32_gates_norm",
+            selected_recipe=selected_flashqla_recipe,
+        )
+        gated_delta_metadata["parity_policy"] = gated_delta_parity_policy
+        output_dir.mkdir(parents=True, exist_ok=True)
+        (output_dir / "gated_delta_canary.json").write_text(
+            json.dumps(gated_delta_metadata, indent=2, allow_nan=False) + "\n"
+        )
+        if not selected_recipe_canary_accepted(
+            gated_delta_metadata, selected=selected_flashqla_recipe
+        ):
+            raise ValueError("FlashQLA model canary failed")
+        kernel_modules = gated_delta_kernel_modules(model)
+        print(
+            "gated_delta_backend=flashqla "
+            f"layers={gated_delta_metadata['replaced_layers']} "
+            f"strict_parity_passed={gated_delta_metadata['passed']}",
+            flush=True,
+        )
+
     selective_torch_compile_canary = None
     attention_backend_canary = None
     attention_canary_reference = OmegaConf.select(
@@ -3758,7 +3841,9 @@ def main(cfg: DictConfig) -> None:
                 relative_tolerance=selective_torch_compile_canary_rtol,
             ),
         }
-        if not selective_torch_compile_canary["passed"]:
+        if not selected_recipe_canary_accepted(
+            selective_torch_compile_canary, selected=selected_flashqla_recipe
+        ):
             raise ValueError(
                 "selective compilation logit canary failed: "
                 f"{selective_torch_compile_canary}"
@@ -3859,12 +3944,15 @@ def main(cfg: DictConfig) -> None:
                     flush=True,
                 )
             adaptive_gradient_canary["diagnostic_variants"] = variants
+        adaptive_canary_accepted = selected_recipe_canary_accepted(
+            adaptive_gradient_canary, selected=selected_flashqla_recipe
+        )
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "adaptive_gradient_canary.json").write_text(
             json.dumps(adaptive_gradient_canary, indent=2) + "\n"
         )
         print(f"adaptive_gradient_canary={adaptive_gradient_canary}", flush=True)
-        if not adaptive_gradient_canary["passed"]:
+        if not adaptive_canary_accepted:
             raise ValueError(
                 f"adaptive gradient parity failed: {adaptive_gradient_canary}"
             )
@@ -4085,6 +4173,7 @@ def main(cfg: DictConfig) -> None:
                         "triton_version": os.environ.get("GLEIPNIR_TRITON_VERSION"),
                     },
                     "gated_delta_kernel_modules": kernel_modules,
+                    "gated_delta_backend": gated_delta_metadata,
                     "causal_conv1d": {
                         "available": causal_conv1d_available,
                         "required": require_causal_conv1d,

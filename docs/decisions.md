@@ -1,5 +1,16 @@
 # Decision log
 
+## 2026-10-02 — Select uniform FlashQLA for B200 NF4/BF16 LoRA
+
+- Use `systems_screen@_global_: qwen35_4b_b200_default`, with all 24 GDN layers
+  on FlashQLA, SDPA full attention and the selected checkpoint/adaptive batching
+  recipe. The user selected the measured 12.99% lower step time and close
+  ten-step losses. Retain original-FLA profiles and failed strict parity records.
+- Ordinary training records finite acceptance explicitly and rejects missing or
+  nonfinite gradients before updates. This decision does not establish held-out
+  quality equivalence or long-run stability. See the
+  [recipe decision](decisions/b200_flashqla_training_recipe.md).
+
 ## 2026-09-04 — Advance `2e-5` for monitoring-only LR confirmation
 
 - The five-cell seed-0 Qwen3.5-4B screen selected AdamW `2e-5` over the freshly

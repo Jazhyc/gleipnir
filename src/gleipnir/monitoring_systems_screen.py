@@ -469,7 +469,15 @@ def validate_training_metadata(
             for indices, size in zip(covered_indices, sizes, strict=True)
         ):
             raise ValueError("adaptive physical batches have incomplete coverage")
-        if require_canary and not recorded.get("gradient_canary", {}).get("passed"):
+        from gleipnir.flashqla_training import selected_recipe_canary_accepted
+
+        selected_flashqla = (
+            job.get("gated_delta_backend") == "flashqla"
+            and job.get("gated_delta_parity_policy") == "selected_finite"
+        )
+        if require_canary and not selected_recipe_canary_accepted(
+            recorded.get("gradient_canary", {}), selected=selected_flashqla
+        ):
             raise ValueError("adaptive gradient parity did not pass")
     if metadata.get("training_batch") != expected_batch:
         raise ValueError("training batch metadata drifted")
@@ -518,7 +526,25 @@ def validate_training_metadata(
     if not 1 <= unique_graphs <= int(config["maximum_unique_graphs"]):
         raise ValueError(f"unexpected Dynamo graph count: {unique_graphs}")
     canary = compiled.get("canary") or {}
-    if require_canary and canary.get("passed") is not True:
+    from gleipnir.flashqla_training import selected_recipe_canary_accepted
+
+    selected_flashqla = (
+        job.get("gated_delta_backend") == "flashqla"
+        and job.get("gated_delta_parity_policy") == "selected_finite"
+    )
+    if job.get("gated_delta_backend") == "flashqla":
+        backend = metadata.get("gated_delta_backend", {})
+        if (
+            backend.get("backend") != "flashqla"
+            or backend.get("replaced_layers") != 24
+            or backend.get("boundary_policy") != "bf16_fp32_gates_norm"
+            or backend.get("auto_cp") is not False
+            or not selected_recipe_canary_accepted(backend, selected=selected_flashqla)
+        ):
+            raise ValueError("FlashQLA kernel metadata or model canary drifted")
+    if require_canary and not selected_recipe_canary_accepted(
+        canary, selected=selected_flashqla
+    ):
         raise ValueError("same-weights compile canary did not pass")
     if require_canary and job.get("attention_backend_canary_reference"):
         parity = metadata.get("attention_backend", {}).get("canary") or {}

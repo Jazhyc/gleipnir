@@ -131,8 +131,17 @@ def features(count):
     ]
 
 
-def run_trainer(tmp_path, rows, maximum_size):
+def run_trainer(
+    tmp_path,
+    rows,
+    maximum_size,
+    *,
+    require_finite_gradients=False,
+    corrupt_gradients=False,
+):
     model = ToyModel()
+    if corrupt_gradients:
+        model.weight.register_hook(lambda grad: grad * float("nan"))
     capture = CaptureGradients()
     trainer = AdaptiveTrainer(
         model=model,
@@ -157,7 +166,10 @@ def run_trainer(tmp_path, rows, maximum_size):
     )
     configure_mean_loss_accumulation(trainer)
     trainer.enable_adaptive_microbatching(
-        MicrobatchPolicy(256, maximum_size), collate, profile=False
+        MicrobatchPolicy(256, maximum_size),
+        collate,
+        profile=False,
+        require_finite_gradients=require_finite_gradients,
     )
     output = trainer.train()
     return (
@@ -167,13 +179,19 @@ def run_trainer(tmp_path, rows, maximum_size):
     )
 
 
+@pytest.mark.parametrize("require_finite_gradients", [False, True])
 @pytest.mark.parametrize("count", [32, 48])
 def test_real_trainer_preserves_gradients_and_partial_optimizer_batches(
-    tmp_path, count
+    tmp_path, count, require_finite_gradients
 ):
     rows = features(count)
     singleton, reference_loss, reference = run_trainer(tmp_path / "single", rows, 1)
-    adaptive, actual_loss, metadata = run_trainer(tmp_path / "adaptive", rows, 4)
+    adaptive, actual_loss, metadata = run_trainer(
+        tmp_path / "adaptive",
+        rows,
+        4,
+        require_finite_gradients=require_finite_gradients,
+    )
     assert metadata["logical_batch_sizes"] == ([32] if count == 32 else [32, 16])
     assert reference["logical_batch_sizes"] == metadata["logical_batch_sizes"]
     assert len(adaptive) == (1 if count == 32 else 2)
@@ -330,4 +348,21 @@ def test_metadata_rejects_invalid_physical_batches(fault):
     with pytest.raises(ValueError, match="adaptive"):
         validate_training_metadata(
             metadata, config, job, expected_steps=2, require_canary=True
+        )
+
+
+def test_selected_recipe_rejects_nonfinite_backward_before_optimizer(
+    monkeypatch, tmp_path
+):
+    def forbidden(*args, **kwargs):
+        pytest.fail("nonfinite gradients must stop before optimizer update")
+
+    monkeypatch.setattr(torch.optim.AdamW, "step", forbidden)
+    with pytest.raises(RuntimeError, match="non-finite"):
+        run_trainer(
+            tmp_path,
+            features(32),
+            4,
+            require_finite_gradients=True,
+            corrupt_gradients=True,
         )

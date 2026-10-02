@@ -635,3 +635,10 @@ stability. Both runs stop at ten calls and save verified FP32 masters. Full
 matched rows, timings, memory, source hashes and limitations are in
 [`docs/findings/fp4_training_stability.md`](../../docs/findings/fp4_training_stability.md)
 and `results/nf4_flashqla_ten_step_comparison/comparison.json`.
+
+
+After reviewing these results, the user selected uniform FlashQLA as the B200
+NF4/BF16 LoRA default. Ordinary training now uses `qwen35_4b_b200_default` and
+its explicit `selected_finite` canary policy. This is separate from the frozen
+ten-step diagnostic and does not change historical failed receipts. See the
+[default recipe decision](../../docs/decisions/b200_flashqla_training_recipe.md).
