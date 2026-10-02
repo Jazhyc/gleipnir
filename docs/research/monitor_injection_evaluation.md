@@ -108,7 +108,9 @@ terminated and its log/exit receipt retained before full benchmark scoring.
 Commit `bd114be7e646affdb5a06a5bfaa720bbc644e830`, pushed to the same branch,
 adds explicit package-version and bound convolution-kernel guards and records
 the source commit in prediction identities. Both FLA and causal-convolution
-import paths are now supplied. The corrected 4B reference has produced scores
-for both base-model instructions and is checking the adapters. Full quality
-results and the crossed comparisons remain pending; these reference scores
-establish no injection-benchmark effect.
+import paths are now supplied. The corrected reference completed all six cells
+at each size. The full 4B grid then completed all 31,104 predictions, passed all
+serving gates and passed an independent local completion audit. The 9B vLLM
+grid is running with the corrected environment and established runtime caches.
+Results and preserved startup recoveries are recorded in the
+[finding](../findings/monitor_injection_evaluation.md).
