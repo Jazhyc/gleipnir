@@ -136,3 +136,36 @@ The retry uses fresh campaign directories for `VLLM_CACHE_ROOT` and
 and evaluation inputs. Its recovery receipt is
 `results/student_injection_awareness/4b/serving_cache_recovery.json`.
 The retry has started; serving parity and complete quality results remain pending.
+
+## Regular 4B ID evaluation completed
+
+The fresh-cache vLLM engine passed the regular adapter's serving gate. On the
+20-example training cohort, adapter correlation with the FP32 causal master was
+0.999824 and mean absolute score difference was 0.003586; base-model values were
+0.999553 and 0.004753. Maximum adapter effects were 0.888744 in eager inference
+and 0.898995 in vLLM. This establishes the recorded bounded serving agreement,
+not general gradient parity.
+
+All 3,012 canonical ID examples were scored: 946 test STRIDE and 2,066 Gloom
+exfiltration. Local verification checked the complete ID membership, labels,
+sources, prompt hashes, configuration identity and finite scores. Actual input
+tokens matched the pre-evaluation audit exactly: 33,750,959 total and 29,513
+maximum, with no truncation. The measured evaluation loop took 658.27 seconds;
+this excludes initial prompt preparation and engine startup.
+
+| ID source | Rows | pAUROC@20 | AUROC |
+| --- | ---: | ---: | ---: |
+| Gloom exfiltration | 2,066 | 0.763290 | 0.918684 |
+| Test STRIDE | 946 | 0.929255 | 0.984104 |
+| Source macro | 3,012 | 0.846273 | 0.951394 |
+| Pooled | 3,012 | 0.816665 | 0.942615 |
+
+At the fixed 0.5 threshold, source-macro recall was 0.830638 and FPR 0.051326.
+Source-macro Brier score was 0.089216 and pooled Brier 0.097827. Pooled ECE
+was 0.058943 and log loss 0.318370. There were 1,569 unique scores and 1,443
+tied rows. The complete calibration bins and
+threshold diagnostics are in
+`results/student_injection_awareness/4b/regular/id/result.json`; predictions
+and this result were collected locally. Regular OOD evaluation is advancing
+in the same persistent engine. The awareness intervention's matched ID/OOD
+comparison and publication remain pending.
