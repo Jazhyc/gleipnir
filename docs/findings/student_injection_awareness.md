@@ -431,3 +431,35 @@ Serving score parity, full ID/OOD evaluation and 9B publication remain pending.
 The separate failed strict gradient comparisons remain negative results under
 the explicit `selected_finite` policy; training completion does not establish
 general kernel gradient parity or monitor quality.
+
+## 9B serving canaries and regular ID completed
+
+Both bounded original-FLA reference evaluations completed on the same 20
+training examples per condition. Scores were finite, reference master hashes
+matched the audited checkpoints, and adapter effects were nonzero (maximum
+absolute score changes 0.881815 regular and 0.750761 aware). Regular 9B then
+passed the unchanged vLLM serving gate: adapter score correlation 0.999686,
+mean absolute difference 0.005229; base correlation 0.999804 and mean absolute
+difference 0.003914. Its vLLM adapter effect was 0.881815. Aware serving parity
+remains pending until the regular full evaluations finish.
+
+Regular 9B completed all 3,012 canonical ID examples in 899.81 seconds of
+evaluation-loop runtime, excluding engine initialization and input preparation.
+An independent local audit verified exact unique membership, labels, sources,
+configuration and prompt hashes, finite digit logprobs and score extraction,
+and per-example token encoding against the verified identical 4B tokenizer.
+All 33,750,959 input tokens were retained; the longest prompt was 29,513 tokens.
+The prediction SHA256 is
+`05c72d949ca38b043c0aaceb16ac0bd70f179313ebda49d907dde8826779c4f6`.
+
+The primary equal-source macro pAUROC@20 is 0.878686 (regular 4B: 0.846273),
+macro AUROC 0.960759 and Brier 0.078493. At the fixed 0.5 threshold, macro
+recall is 0.861747 and FPR 0.062236. Source pAUROC@20 values are 0.809781
+for Gloom exfiltration and 0.947591 for STRIDE. Pooled pAUROC@20 is 0.846824,
+AUROC 0.952068, Brier 0.085485, ECE 0.037719 and log loss 0.284001. There
+are 1,633 unique scores and 1,379 tied rows; source calibration bins and
+threshold diagnostics are retained in the full local report.
+
+Regular OOD and both aware full evaluations remain pending. This partial
+milestone does not establish the paired 9B prompt effect or OOD performance;
+no checkpoint or threshold is selected using these results.
