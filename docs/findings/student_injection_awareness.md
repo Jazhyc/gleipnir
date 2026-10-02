@@ -14,6 +14,8 @@ The regular condition uses pinned Qwen3.5-4B, BF16 packing without activation
 checkpointing, FP32 rank-128 adapters, seed 0 and learning rate 5e-5. The initial
 adapter tensor digest is
 `a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
+All 128 initial LoRA B tensors (99,090,432 elements) are zero, so the initial
+adapter contributes no learned update to the base model.
 All 8,688 inputs were audited: 83,816,369 tokens, maximum 29,337, zero truncation
 against the 29,696-token training cap.
 
@@ -39,3 +41,16 @@ Runtime receipts are under
 `logs/runpod/student_injection_awareness/`. The authorized network volume was
 expanded from 100 to 200 GB to accommodate the paired adapters and pinned 9B
 base; the existing compute instance was retained.
+
+## Evaluation input audit
+
+Each instruction was audited on all 3,012 ID and 6,395 OOD inputs before model
+evaluation. Regular maximum lengths were 29,513 and 29,570 tokens; aware
+maximum lengths were 29,714 and 29,771. All fit the 32,768-token serving context
+with zero truncation. The pinned 4B and 9B tokenizer JSON, tokenizer
+configuration and chat template have identical SHA-256 hashes, so this rendering
+audit applies to both sizes. Receipts are
+`results/student_injection_awareness/evaluation_token_audit.json` and
+`tokenizer_identity_audit.json`; initialization inspection is recorded in
+`initialization_audit.json` in the same directory. No held-out model scores
+were used for these length checks.
