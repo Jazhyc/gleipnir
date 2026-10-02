@@ -27,6 +27,12 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     if not enabled:
         return False
     quantization = student.get("quantization", {})
+    compile_policy = training.get("selective_torch_compile_policy")
+    supported_compile_policy = compile_policy == "full_attention_and_linear_shell" or (
+        compile_policy == "checkpointed_full_attention_and_linear_shell"
+        and training.get("gradient_checkpointing") is True
+        and training.get("nonreentrant_checkpointing") is True
+    )
     if not (
         quantization.get("full_bf16_lora")
         and not quantization.get("enabled", True)
@@ -37,8 +43,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         and training.get("gated_delta_backend") == "flashqla"
         and training.get("adaptive_microbatching", {}).get("enabled")
         and not training.get("torch_compile", False)
-        and training.get("selective_torch_compile_policy")
-        == "full_attention_and_linear_shell"
+        and supported_compile_policy
         and training.get("selective_torch_compile_canary_tokens", 0) > 0
         and student.get("lora", {}).get("dropout") == 0
     ):

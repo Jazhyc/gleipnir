@@ -106,6 +106,24 @@ def test_unsupported_packing_stops_before_model_loading(field, value):
         validate_packed_training_config(config)
 
 
+@pytest.mark.parametrize("checkpointing", [False, True])
+@pytest.mark.parametrize("nonreentrant", [False, True])
+def test_checkpointed_packing_requires_nonreentrant_checkpointing(
+    checkpointing, nonreentrant
+):
+    config = student_config()
+    config["training"].update(
+        selective_torch_compile_policy="checkpointed_full_attention_and_linear_shell",
+        gradient_checkpointing=checkpointing,
+        nonreentrant_checkpointing=nonreentrant,
+    )
+    if checkpointing and nonreentrant:
+        assert validate_packed_training_config(config)
+    else:
+        with pytest.raises(ValueError, match="verified BF16 FlashQLA recipe"):
+            validate_packed_training_config(config)
+
+
 class ToyModel(torch.nn.Module):
     def __init__(self):
         super().__init__()

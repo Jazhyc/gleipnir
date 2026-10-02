@@ -132,6 +132,8 @@ def test_model_pairs_keep_recipe_and_targets_fixed():
 
 
 def test_checkpointed_campaign_launch_uses_supported_compile_policy():
+    from gleipnir.packed_training import validate_packed_training_config
+
     config = yaml.safe_load(CONFIG.read_text())
     with initialize_config_dir(
         version_base=None, config_dir=str(ROOT / "src/gleipnir/configs/systems_screen")
@@ -142,6 +144,18 @@ def test_checkpointed_campaign_launch_uses_supported_compile_policy():
     for variant in ("regular", "injection_aware"):
         job = make_job(config, recipe, "9b", variant)
         command = training_command(job)
+        with initialize_config_dir(
+            version_base=None,
+            config_dir=str(ROOT / "experiments/tool_trajectory_monitoring"),
+        ):
+            student = OmegaConf.to_container(
+                compose(
+                    config_name="distillation_config",
+                    overrides=command[command.index("--config-name") + 2 :],
+                ).student,
+                resolve=True,
+            )
+        assert validate_packed_training_config(student)
         assert "student.training.gradient_checkpointing=true" in command
         assert "student.training.gradient_checkpointing_policy=all" in command
         assert "++student.training.nonreentrant_checkpointing=true" in command

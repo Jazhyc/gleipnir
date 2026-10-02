@@ -297,3 +297,29 @@ checkpointing and the supported checkpointed compilation policy. Training
 inputs, soft teacher targets, learning rate, full-epoch stopping rule and
 evaluation gates are unchanged. Startup gates and training results remain
 pending; there are no 9B quality claims yet.
+
+## 9B packed-runtime startup guard recovery
+
+The first 9B attempt completed its input audit (8,688 rows, 83,816,369 tokens,
+maximum 29,337, zero truncation), then failed before model loading or optimizer
+updates. `validate_packed_training_config` accepted only the uncheckpointed
+`full_attention_and_linear_shell` compilation policy, rejecting the trainer's
+supported `checkpointed_full_attention_and_linear_shell` route. This was a
+startup configuration failure, not an OOM or numerical training failure.
+
+The runtime now accepts that route only when gradient checkpointing and
+nonreentrant checkpointing are both explicitly true. BF16/FlashQLA settings,
+objective restrictions, eager and compiled packing isolation gates, longest-row
+backward preflight and finite-gradient checks are unchanged. This shared fix
+applies to both 9B conditions. The full composed 9B launch configuration now
+passes the startup guard in a regression test; false checkpointing combinations
+remain rejected. All 15 focused local checks passed; Ruff lint/format checks
+passed. The remote source hash matches the tested local file.
+
+The failed log is preserved as
+`logs/runpod/student_injection_awareness/train_9b.failed_packing_compile_guard.log`.
+Its SHA256 is `b5c3ee5a35fbcb7f3fbfe6f04089397a47313dea5b3308e2d2791fba76199ec1`.
+The original job, execution contract, token audit and failure receipt are
+collected locally under `results/student_injection_awareness/9b/startup_recovery/`.
+The corrected matched pair has restarted; model loading and native training
+canaries remain pending. No benchmark rows or training settings were reduced.

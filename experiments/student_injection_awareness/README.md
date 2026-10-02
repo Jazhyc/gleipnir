@@ -17,6 +17,10 @@ because its larger base/activations need a separate longest-batch preflight.
 Use nonreentrant checkpointing and the supported checkpointed shell compilation
 policy for both 9B conditions; the uncheckpointed compile policy rejects
 checkpointed full-attention layers.
+The packed-runtime guard also requires both gradient checkpointing and
+nonreentrant checkpointing when accepting this compilation policy. Both
+conditions still run the strict eager/compiled packing canaries and longest-row
+memory preflight before any optimizer update.
 Preserve strict eager/compiled packing isolation gates, FlashQLA finite-policy
 receipts, compiler cache limits and finite-gradient checks. Do not shrink the
 token budget or truncate examples after a failed gate.
