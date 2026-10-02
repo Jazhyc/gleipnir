@@ -349,3 +349,31 @@ The regular condition has completed its first optimizer updates. The first
 update took 30.87 seconds, including startup costs; warmed full-epoch timing,
 training completion, paired initialization, serving parity and quality results
 remain pending. GPU ECC checks showed zero volatile uncorrected errors.
+
+## Regular 9B training completed
+
+The regular condition completed all 272 optimizer updates and one full epoch
+over the unchanged 8,688 trajectories. Packed execution consumed 83,816,369
+tokens in 4,550 physical forwards, with zero padding or truncation. Training
+runtime was 6,229.54 seconds; after excluding the first two updates, mean update
+time was 22.69 seconds (median 22.54, p90 28.16). Mean training loss was
+0.222823. Peak allocated memory was 35.7395 GiB. All reported losses and
+gradient norms were finite; volatile uncorrected GPU ECC remained zero.
+
+The final master tensor digest is
+`41c6b4bbb8331e76a4f5dbec3f5a1c270524017178e8aa811d36b05bdf196dc1`,
+different from the recorded seed-0 initialization. A CPU artifact audit checked
+all 256 tensors (232,783,872 elements) for FP32 storage and finite values,
+verified both file hashes against the rebase manifest, and confirmed exact
+tensor equality after rebasing the adapter for serving. The master file SHA256
+is `5976ef206a8ed2d66cd536c7b14d3eb3d97d14e6b168cae16dac410a1fd6501f`;
+the serving file SHA256 is
+`3dfc9a9ca9b96c3126cb53c0f984728eaf7377de598656c34ea38b326e587df5`.
+The audit also verified the complete update count and unchanged teacher cache
+hash. Receipts remain under `results/student_injection_awareness/9b/regular/`.
+
+The aware condition started automatically in the same launch chain, completed
+its input audit and started native initialization. Its startup gates, paired initialization,
+training completion and both conditions' serving parity and quality results
+remain pending. The separate failed strict gradient comparisons recorded above
+remain negative results; the artifact checks do not establish serving parity.
