@@ -178,3 +178,23 @@ partial-layer/ten-step policy combinations. Isolation cases include lengths
 `[7,5]`, `[1,3]` and `[63,65]`;
 nonfinite negative controls also fail the audit. Ruff and diff checks passed.
 No after-turn monitoring or automatic B200 launch is scheduled by this document.
+
+## BF16 LoRA integration (October 2)
+
+The user selected regular BF16 LoRA after the completed matched recipe comparison.
+The opt-in B200 screen now uses that frozen BF16 base, FP32 rank-128 adapters,
+uniform FlashQLA with FP32 normalization/gates and BF16 Q/K/V, and the existing
+checkpoint/compile policies. It passes one explicit layout to positions, native
+convolution and gated-delta recurrence. Full attention executes causal SDPA
+separately for each segment, with the same compilation-opaque router installed
+for the padded control. This avoids a quadratic dense mask over long packs.
+
+The screen retains original example targets and equal example weighting, packs
+only within the logical update, and selects one final-input-token projection
+per example. The default training path remains padded. Identical-shape prefix
+perturbation, checkpointed input-gradient isolation and matched singleton
+monitoring-loss/adapter-gradient gates run before optimizer updates and again
+after compilation. Tolerances and the bounded matched timing protocol are in
+the [experiment README](../../experiments/monitoring_sequence_packing/README.md).
+GPU acceptance remains pending until those artifacts pass; CPU evidence alone
+does not authorize promotion or imply held-out quality parity.

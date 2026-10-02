@@ -1,8 +1,8 @@
 # Independent monitoring sequences in packed Qwen3.5 training
 
-Status: CPU diagnostic and integration design only. Do not start B200 work until
-the current FlashQLA/FLA experiment is complete. This experiment does not change
-the ordinary training recipe or enable sequence packing in its runner.
+Status: CPU diagnostic passed; opt-in B200 BF16 LoRA integration under validation.
+The preceding BF16 experiment has completed. Packing remains confined to this
+bounded screen until the native isolation and numerical parity gates pass.
 
 ## Hypothesis and contract
 
@@ -16,7 +16,7 @@ on A. Shared model-parameter gradients are expected and are not a leakage test.
 
 The intervention is an opt-in boundary-aware collator and packed readout. Keep
 the same logical updates of 32 equally weighted examples, source/teacher hashes,
-prompt rendering, truncation, seed, FP32 rank-128 adapters, NF4/BF16, optimizer,
+prompt rendering, truncation, seed, FP32 rank-128 adapters, frozen BF16 base, optimizer,
 learning-rate schedule and checkpoint policy. Never divide the monitoring loss
 by token count or number of packed rows. Keep oversized examples intact as
 singletons. Sorting/packing is confined to the current logical update.
@@ -86,8 +86,34 @@ recomputation must receive identical boundaries. Verify a nonzero adapter effect
 Only after those gates pass, compare complete warmed training loops on the
 existing stratified 320-example mixed cohort. Require at least 5% lower complete
 loop time over a matched backend/control; report real/padded tokens, physical
-calls, peak memory, compile count and setup costs separately. This stage is not
-implemented or scheduled by the CPU entrypoint.
+calls, peak memory, compile count and setup costs separately. The CPU entrypoint
+does not launch or schedule this stage.
 
 See the [source audit and integration design](../../docs/research/monitoring_sequence_packing.md)
 for model/kernel changes and the prior Phoenix rejection.
+
+## Bounded BF16 B200 entrypoint
+
+```bash
+bash experiments/fp4_stability/launch.sh experiments/monitoring_sequence_packing/bf16_gpu.yaml
+```
+
+This reuses the completed BF16 LoRA recipe, its pinned FlashQLA precision
+boundary, original initial adapter and hashed 320-example cohort. The screen
+installs segmented causal SDPA for full attention, passes `seq_idx` to native
+convolution and cumulative lengths to FlashQLA, and resets positions per example.
+The same SDPA router is installed for both controls. No dense long-context mask
+is constructed. Packing is best-fit within each logical update of 32 examples,
+with a 16,384-token budget and intact oversized singletons.
+
+Before either trajectory, and again after compilation, check identical-shape
+prefix perturbations (maximum absolute decision-logit drift 1e-6), checkpointed
+cross-example input gradients (maximum 1e-8, nonzero own-example effect), and
+packed versus singleton monitoring losses (absolute 0.02 plus relative 0.02)
+and adapter gradients (relative L2 0.05). Any failure stops before optimizer
+updates. Neither isolation nor speed alone establishes held-out quality parity.
+Each condition includes longest-example preflight, ten no-update warmup batches
+and ten measured updates with fresh AdamW state. Report setup separately from
+measured steps, preserve FP32 masters and compare all ten batches. Artifacts go
+under `results/bf16_sequence_packing/`; logs go under
+`logs/runpod/bf16_sequence_packing/`.

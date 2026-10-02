@@ -5,7 +5,14 @@ import torch
 
 from experiments.monitoring_sequence_packing import audit_cpu
 from experiments.monitoring_sequence_packing.audit_cpu import run_audit
-from gleipnir.packed_sequences import PackedSequenceLayout
+from gleipnir.packed_sequences import (
+    PackedSequenceLayout,
+    collate_packed_monitoring,
+    forward_packed_monitoring_logits,
+    installed_segmented_sdpa,
+    packed_partition,
+    segmented_sdpa_interface,
+)
 
 
 @pytest.mark.parametrize("lengths", [(), (0,), (-1, 2), (True,), (1.5,), (2**31,)])
@@ -77,3 +84,98 @@ def test_audit_rejects_nonfinite_negative_controls(monkeypatch):
     )
     assert not result["passed"]
     assert not any(case["finite"] for case in result["cases"].values())
+
+
+def test_packing_keeps_complete_examples_and_every_target():
+    features = [
+        dict(
+            direct_input_ids=list(range(n)),
+            binary_label=i % 2,
+            dataset_id=i,
+            soft_target=i / 10,
+        )
+        for i, n in enumerate([11, 5, 3, 2])
+    ]
+    groups = packed_partition([len(f["direct_input_ids"]) for f in features], 8)
+    assert groups == [[0], [1, 2], [3]]
+    assert sorted(i for group in groups for i in group) == list(range(4))
+    batch = collate_packed_monitoring([features[1], features[2]])
+    assert batch["packed_lengths"] == (5, 3)
+    assert batch["dataset_ids"].tolist() == [1, 2]
+    assert batch["direct_input_ids"].shape == (1, 8)
+    assert "direct_attention_mask" not in batch
+    with pytest.raises(ValueError, match="direct binary"):
+        collate_packed_monitoring([dict(features[0], input_ids=[1])])
+
+
+def test_segmented_sdpa_matches_dense_mask_and_has_zero_cross_gradient():
+    def original(module, query, key, value, mask, **kwargs):
+        result = torch.nn.functional.scaled_dot_product_attention(
+            query, key, value, attn_mask=mask, is_causal=kwargs.get("is_causal", False)
+        )
+        return result.transpose(1, 2), None
+
+    torch.manual_seed(0)
+    q, k, v = [torch.randn(1, 2, 8, 4, requires_grad=True) for _ in range(3)]
+    layout = PackedSequenceLayout((3, 5))
+    actual, _ = segmented_sdpa_interface(original)(
+        None, q, k, v, None, **layout.kernel_kwargs()
+    )
+    expected, _ = original(None, q, k, v, layout.dense_causal_mask())
+    torch.testing.assert_close(actual, expected)
+    actual[:, 3:].sum().backward()
+    assert all(t.grad[:, :, :3].abs().max() == 0 for t in [q, k, v])
+    ordinary, _ = segmented_sdpa_interface(original)(
+        None, q, k, v, layout.dense_causal_mask()
+    )
+    torch.testing.assert_close(ordinary, expected)
+
+
+def test_real_qwen_packed_readout_preserves_every_example():
+    from transformers import Qwen3_5ForCausalLM
+
+    text = audit_cpu.tiny_model(0)
+    model = Qwen3_5ForCausalLM(text.config).float().eval()
+    ids = torch.arange(8)[None]
+    with pytest.raises(ValueError, match="isolated SDPA"):
+        forward_packed_monitoring_logits(model, ids, (3, 5))
+    with audit_cpu.reference_boundaries(model.model, convolution=True, recurrence=True):
+        with installed_segmented_sdpa(), torch.no_grad():
+            logits, _ = forward_packed_monitoring_logits(model, ids, (3, 5))
+            singletons = torch.cat(
+                [
+                    model(input_ids=ids[:, :3], logits_to_keep=1).logits[0],
+                    model(input_ids=ids[:, 3:], logits_to_keep=1).logits[0],
+                ]
+            )
+    assert logits.shape == (2, model.config.vocab_size)
+    torch.testing.assert_close(logits, singletons, atol=1e-5, rtol=1e-5)
+
+
+def test_packing_config_preserves_the_completed_bf16_recipe():
+    from pathlib import Path
+
+    import yaml
+
+    from experiments.fp4_stability.run import validate_config
+
+    root = Path(__file__).parents[1] / "experiments"
+    baseline = yaml.safe_load(
+        (root / "fp4_stability/bf16_flashqla_ten_step_comparison.yaml").read_text()
+    )
+    config = yaml.safe_load(
+        (root / "monitoring_sequence_packing/bf16_gpu.yaml").read_text()
+    )
+    validate_config(config)
+    assert {key for key in config if config[key] != baseline.get(key)} == {
+        "output",
+        "logs",
+        "sequence_packing",
+    }
+    for override in [
+        {"full_bf16_lora": False},
+        {"gated_delta_backend": "fla"},
+        {"flashqla_auto_cp": True},
+    ]:
+        with pytest.raises(ValueError, match="sequence packing requires"):
+            validate_config(dict(config, **override))

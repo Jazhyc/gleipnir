@@ -1,0 +1,232 @@
+"""Opt-in BF16 packing comparison with strict cross-example isolation gates."""
+
+from __future__ import annotations
+
+import json
+import math
+from collections.abc import Callable
+from pathlib import Path
+from typing import Any
+
+import torch
+
+from gleipnir.packed_sequences import (
+    collate_packed_monitoring,
+    forward_packed_monitoring_logits,
+    installed_segmented_sdpa,
+    packed_partition,
+)
+from gleipnir.precision_training_screen import run_precision_training_screen
+from gleipnir.training_execution_audit import tensor_digest, use_forwards
+
+
+def packing_isolation_canary(
+    model: torch.nn.Module,
+    features: list[dict[str, Any]],
+    collator: Callable,
+    loss_forward: Callable,
+) -> dict:
+    """Test identical-shape independence and matched singleton adapter gradients.
+
+    Tolerances are fixed before GPU execution. Identical-shape perturbations
+    permit 1e-6 absolute logit drift and 1e-8 cross-input gradients; numerical
+    singleton/packing parity permits 2% loss drift and 0.05 gradient relative L2.
+    """
+    device = next(model.parameters()).device
+    parameters = [p for p in model.parameters() if p.requires_grad]
+    rows = []
+    was_training = model.training
+    try:
+        for lengths in [(1, 3), (63, 65), (127, 129)]:
+            items = [dict(features[i]) for i in range(2)]
+            for item, length in zip(items, lengths, strict=True):
+                item["direct_input_ids"] = item["direct_input_ids"][-length:]
+            lengths = tuple(len(f["direct_input_ids"]) for f in items)
+            ids = collate_packed_monitoring(items)["direct_input_ids"].to(device)
+            altered = ids.clone()
+            altered[:, : lengths[0]] = (
+                altered[:, : lengths[0]] + 17
+            ) % model.config.vocab_size
+            model.eval()
+            with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
+                before, _ = forward_packed_monitoring_logits(model, ids, lengths)
+                repeat, _ = forward_packed_monitoring_logits(model, ids, lengths)
+                after, _ = forward_packed_monitoring_logits(model, altered, lengths)
+            repeat_diff = float((before[1].float() - repeat[1].float()).abs().max())
+            perturb_diff = float((before[1].float() - after[1].float()).abs().max())
+            if (
+                not torch.isfinite(before).all()
+                or max(repeat_diff, perturb_diff) > 1e-6
+            ):
+                raise ValueError(f"packed decision leakage: {lengths}, {perturb_diff}")
+            # Training mode enables the configured checkpoint recomputation.
+            model.train()
+            model.zero_grad(set_to_none=True)
+            embeds = model.get_input_embeddings()(ids).detach().requires_grad_(True)
+            with torch.autocast("cuda", dtype=torch.bfloat16):
+                logits, _ = forward_packed_monitoring_logits(
+                    model, ids, lengths, inputs_embeds=embeds
+                )
+                logits[1].float().square().mean().backward()
+            if embeds.grad is None or not torch.isfinite(embeds.grad).all():
+                raise ValueError("missing/nonfinite packed input gradients")
+            cross = float(embeds.grad[:, : lengths[0]].float().abs().max())
+            own = float(embeds.grad[:, lengths[0] :].float().abs().max())
+            if cross > 1e-8 or own <= 0:
+                raise ValueError(f"packed input gradient leakage: {cross}, own={own}")
+            rows.append(
+                {
+                    "lengths": lengths,
+                    "repeat_max_abs": repeat_diff,
+                    "perturb_max_abs": perturb_diff,
+                    "cross_input_grad_max_abs": cross,
+                    "own_input_grad_max_abs": own,
+                }
+            )
+        # Equal example weighting and the actual monitoring objective, same backend.
+        model.eval()
+        model.zero_grad(set_to_none=True)
+        independent_loss = 0.0
+        for item in items:
+            loss = loss_forward(collator([item])) / len(items)
+            independent_loss += float(loss.detach())
+            loss.backward()
+        independent = [p.grad.detach().float().clone() for p in parameters]
+        model.zero_grad(set_to_none=True)
+        packed_loss = loss_forward(collate_packed_monitoring(items))
+        packed_loss.backward()
+        if any(p.grad is None or not torch.isfinite(p.grad).all() for p in parameters):
+            raise ValueError("missing/nonfinite packed adapter gradients")
+        numerator = sum(
+            (p.grad.float() - g).square().sum()
+            for p, g in zip(parameters, independent, strict=True)
+        )
+        denominator = sum(g.square().sum() for g in independent)
+        relative = float(torch.sqrt(numerator / denominator.clamp_min(1e-30)))
+        packed_value = float(packed_loss.detach())
+        if (
+            not all(
+                math.isfinite(v) for v in [packed_value, independent_loss, relative]
+            )
+            or abs(packed_value - independent_loss)
+            > 0.02 + 0.02 * abs(independent_loss)
+            or relative > 0.05
+        ):
+            raise ValueError(
+                f"packing numerical parity failed: losses "
+                f"{independent_loss}/{packed_value}, gradient rel L2={relative}"
+            )
+        return {
+            "passed": True,
+            "cases": rows,
+            "independent_loss": independent_loss,
+            "packed_loss": packed_value,
+            "adapter_gradient_relative_l2": relative,
+            "tolerances": {
+                "logits_absolute": 1e-6,
+                "cross_input_gradient": 1e-8,
+                "loss_absolute": 0.02,
+                "loss_relative": 0.02,
+                "gradient_relative_l2": 0.05,
+            },
+        }
+    finally:
+        model.zero_grad(set_to_none=True)
+        model.train(was_training)
+
+
+def run_packed_training_screen(**kwargs: Any) -> dict:
+    """Replay the existing ten-update BF16 recipe with padded and packed batches."""
+    metadata = kwargs["metadata"]
+    if not (
+        metadata.get("quantization", {}).get("full_bf16_lora", {}).get("verified")
+        and kwargs.get("gated_delta_backend") == "flashqla"
+        and not kwargs.get("flashqla_auto_cp")
+        and kwargs["steps"] == 10
+        and kwargs.get("ten_step_learning_comparison")
+    ):
+        raise ValueError(
+            "packing screen requires the verified uniform BF16 FlashQLA ten-step recipe"
+        )
+    model = kwargs["model"]
+    output = Path(kwargs["output"])
+    output.mkdir(parents=True, exist_ok=True)
+    original_forwards = [(m, m.forward) for m in model.modules()]
+    kernels = [
+        (m, m.chunk_gated_delta_rule)
+        for m in model.modules()
+        if hasattr(m, "chunk_gated_delta_rule")
+    ]
+    convolutions = [m.causal_conv1d_fn for m, _ in kernels]
+    if not convolutions or any(
+        fn is None or "causal_conv1d" not in fn.__module__ for fn in convolutions
+    ):
+        raise ValueError(
+            "packed training requires the native boundary-aware convolution"
+        )
+    named = [(name, p) for name, p in model.named_parameters() if p.requires_grad]
+    initial = [p.detach().cpu().clone() for _, p in named]
+    report = {
+        "status": "running",
+        "initial_master_sha256": tensor_digest(initial),
+        "convolution_kernels": sorted({fn.__module__ for fn in convolutions}),
+        "conditions": {},
+    }
+
+    def publish():
+        (output / "packing_comparison.json").write_text(
+            json.dumps(report, indent=2, allow_nan=False) + "\n"
+        )
+
+    def reset():
+        model.zero_grad(set_to_none=True)
+        with torch.no_grad():
+            for (_, p), value in zip(named, initial, strict=True):
+                p.copy_(value)
+        for module, kernel in kernels:
+            module.chunk_gated_delta_rule = kernel
+
+    try:
+        publish()
+        with installed_segmented_sdpa():
+            # Fail before either optimizer trajectory if the installed kernels leak.
+            # The existing runner installs the selected FlashQLA precision boundary
+            # before invoking this gate, and invokes it again after compilation.
+            for condition in ["padded", "packed"]:
+                reset()
+                if condition == "packed":
+                    # Release the first trajectory's AdamW states before preflight.
+                    kwargs["optimizer_factory"]()
+                options = dict(kwargs, output=output / condition)
+                options["packing_canary"] = lambda: packing_isolation_canary(
+                    model,
+                    sorted(
+                        kwargs["features"], key=lambda f: -len(f["direct_input_ids"])
+                    ),
+                    kwargs["collator"],
+                    kwargs["loss_forward"],
+                )
+                if condition == "packed":
+                    options["collator"] = collate_packed_monitoring
+                    options["partition_strategy"] = lambda lengths: packed_partition(
+                        lengths, kwargs["policy"].max_padded_tokens
+                    )
+                with use_forwards(original_forwards):
+                    report["conditions"][condition] = run_precision_training_screen(
+                        **options
+                    )
+                publish()
+        padded = report["conditions"]["padded"]["timing_summary"]
+        packed = report["conditions"]["packed"]["timing_summary"]
+        report["step_time_reduction_fraction"] = (
+            1 - packed["mean_step_seconds"] / padded["mean_step_seconds"]
+        )
+        report["status"] = "complete"
+        publish()
+        return report
+    except Exception as error:
+        report.update(status="failed", error=f"{type(error).__name__}: {error}")
+        publish()
+        raise
+    finally:
+        reset()

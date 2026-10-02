@@ -2256,6 +2256,7 @@ def main(cfg: DictConfig) -> None:
         ):
             direct_input_ids = inputs.pop("direct_input_ids", None)
             direct_attention_mask = inputs.pop("direct_attention_mask", None)
+            packed_lengths = inputs.pop("packed_lengths", None)
             binary_labels = inputs.pop("binary_labels", None)
             dataset_ids = inputs.pop("dataset_ids", None)
             soft_targets = inputs.pop("soft_targets", None)
@@ -2341,7 +2342,6 @@ def main(cfg: DictConfig) -> None:
                     value is None
                     for value in (
                         direct_input_ids,
-                        direct_attention_mask,
                         binary_labels,
                         dataset_ids,
                     )
@@ -2349,6 +2349,15 @@ def main(cfg: DictConfig) -> None:
                     raise ValueError(
                         "direct-target fields are missing from training batch"
                     )
+                if packed_lengths is None and direct_attention_mask is None:
+                    raise ValueError("direct attention mask is missing")
+                if packed_lengths is not None and (
+                    decision_head_mode != "token_logits"
+                    or mil_loss_weight
+                    or pairwise_loss_weight
+                    or prefix_loss_weight
+                ):
+                    raise ValueError("packing supports direct binary LM-head loss only")
                 if decision_head_mode == "binary_head":
                     next_logits, hidden, direct_outputs = (
                         forward_final_token_logits_and_head_inputs(
@@ -2389,12 +2398,23 @@ def main(cfg: DictConfig) -> None:
                             )
                         )
                     else:
-                        next_logits, direct_outputs = forward_final_token_logits(
-                            model,
-                            direct_input_ids,
-                            direct_attention_mask,
-                            direct_logits_mode,
-                        )
+                        if packed_lengths is not None:
+                            from gleipnir.packed_sequences import (
+                                forward_packed_monitoring_logits,
+                            )
+
+                            next_logits, direct_outputs = (
+                                forward_packed_monitoring_logits(
+                                    model, direct_input_ids, tuple(packed_lengths)
+                                )
+                            )
+                        else:
+                            next_logits, direct_outputs = forward_final_token_logits(
+                                model,
+                                direct_input_ids,
+                                direct_attention_mask,
+                                direct_logits_mode,
+                            )
                         direct_logits = next_logits.index_select(-1, label_ids)
                 if loss is None:
                     loss = direct_logits.sum() * 0.0
@@ -3526,6 +3546,11 @@ def main(cfg: DictConfig) -> None:
             install_eager_rmsnorm_interfaces,
         )
         from gleipnir.precision_training_screen import run_precision_training_screen
+
+        if precision_screen_cfg.get("sequence_packing", False):
+            from gleipnir.packed_training_screen import run_packed_training_screen
+
+            run_precision_training_screen = run_packed_training_screen
 
         eager_rmsnorm_interfaces = (
             install_eager_rmsnorm_interfaces(model)

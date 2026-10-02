@@ -1,13 +1,16 @@
 """Explicit packed boundaries for bounded isolation diagnostics.
 
-These utilities do not enable packing in the training runner. Native recurrent
+Packing is enabled only by the bounded BF16 training screen. Native recurrent
 and convolution kernels must honor the supplied boundaries independently.
 """
 
 from __future__ import annotations
 
+from collections.abc import Callable, Sequence
+from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import accumulate
+from typing import Any
 
 import torch
 
@@ -81,3 +84,143 @@ class PackedSequenceLayout:
             "full_attention": self.dense_causal_mask(device),
             "linear_attention": None,
         }
+
+
+def collate_packed_monitoring(features: Sequence[dict[str, Any]]) -> dict:
+    """Flatten direct binary monitoring prompts, retaining every example target."""
+    if not features or any(
+        "input_ids" in f
+        or "mil_positions" in f
+        or "prefix_input_ids" in f
+        or "soft_rating_probs" in f
+        for f in features
+    ):
+        raise ValueError("packing supports direct binary monitoring only")
+    lengths = tuple(len(f["direct_input_ids"]) for f in features)
+    PackedSequenceLayout(lengths)
+    batch = {
+        "direct_input_ids": torch.tensor(
+            [[token for f in features for token in f["direct_input_ids"]]],
+            dtype=torch.long,
+        ),
+        "packed_lengths": lengths,
+        "binary_labels": torch.tensor([f["binary_label"] for f in features]),
+        "dataset_ids": torch.tensor([f["dataset_id"] for f in features]),
+    }
+    if all("soft_target" in f for f in features):
+        batch["soft_targets"] = torch.tensor(
+            [f["soft_target"] for f in features], dtype=torch.float32
+        )
+    elif any("soft_target" in f for f in features):
+        raise ValueError("mixed missing soft targets in packed batch")
+    return batch
+
+
+def packed_partition(lengths: Sequence[int], budget: int) -> list[list[int]]:
+    """Best-fit complete examples within one logical update; retain long singletons."""
+    PackedSequenceLayout(tuple(lengths))
+    if budget < 1:
+        raise ValueError("packing token budget must be positive")
+    groups: list[list[int]] = []
+    totals: list[int] = []
+    for i in sorted(range(len(lengths)), key=lambda j: -lengths[j]):
+        fits = [j for j, total in enumerate(totals) if total + lengths[i] <= budget]
+        if fits:
+            j = max(fits, key=lambda j: totals[j])
+            groups[j].append(i)
+            totals[j] += lengths[i]
+        else:
+            groups.append([i])
+            totals.append(lengths[i])
+    return groups
+
+
+def segmented_sdpa_interface(original: Callable) -> Callable:
+    """Dispatch unpadded attention independently inside each original sequence."""
+
+    def attention(module, query, key, value, attention_mask, **kwargs):
+        cumulative = kwargs.get("cu_seq_lens_q")
+        if cumulative is None:
+            return original(module, query, key, value, attention_mask, **kwargs)
+        if query.shape[0] != 1 or attention_mask is not None:
+            raise ValueError("segmented SDPA requires one unpadded flattened row")
+        if not torch.equal(cumulative, kwargs["cu_seq_lens_k"]):
+            raise ValueError("packed self attention requires matching Q/K boundaries")
+        cuts = cumulative.tolist()
+        if cuts[0] != 0 or cuts[-1] != query.shape[2]:
+            raise ValueError("attention boundaries do not cover the input")
+        options = {
+            k: v
+            for k, v in kwargs.items()
+            if k
+            not in {
+                "cu_seq_lens_q",
+                "cu_seq_lens_k",
+                "max_length_q",
+                "max_length_k",
+                "position_ids",
+                "seq_idx",
+            }
+        }
+        options["is_causal"] = True
+        outputs = []
+        for start, end in zip(cuts[:-1], cuts[1:], strict=True):
+            if end <= start:
+                raise ValueError("empty packed attention sequence")
+            output, _ = original(
+                module,
+                query[:, :, start:end],
+                key[:, :, start:end],
+                value[:, :, start:end],
+                None,
+                **options,
+            )
+            outputs.append(output)
+        return torch.cat(outputs, dim=1), None
+
+    return attention
+
+
+@contextmanager
+def installed_segmented_sdpa():
+    """Keep the native router opaque to compilation, restoring its global binding."""
+    from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+    original = ALL_ATTENTION_FUNCTIONS["sdpa"]
+    router = torch.compiler.disable(segmented_sdpa_interface(original))
+    router._gleipnir_packed_boundaries = True
+    ALL_ATTENTION_FUNCTIONS.register("sdpa", router)
+    try:
+        yield
+    finally:
+        ALL_ATTENTION_FUNCTIONS.register("sdpa", original)
+
+
+def forward_packed_monitoring_logits(
+    model: Any,
+    input_ids: torch.Tensor,
+    lengths: tuple[int, ...],
+    *,
+    inputs_embeds: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, Any]:
+    """Select every example's decision boundary without projecting all tokens."""
+    from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
+
+    if not getattr(
+        ALL_ATTENTION_FUNCTIONS["sdpa"], "_gleipnir_packed_boundaries", False
+    ):
+        raise ValueError("packed readout requires the isolated SDPA router")
+    layout = PackedSequenceLayout(lengths)
+    if input_ids.shape != (1, layout.total_tokens):
+        raise ValueError("packed input shape disagrees with sequence lengths")
+    kwargs = layout.kernel_kwargs(input_ids.device)
+    kwargs["attention_mask"] = {"full_attention": None, "linear_attention": None}
+    kwargs["logits_to_keep"] = layout.decision_positions(input_ids.device)
+    if inputs_embeds is None:
+        kwargs["input_ids"] = input_ids
+    else:
+        kwargs["inputs_embeds"] = inputs_embeds
+    outputs = model(**kwargs)
+    if outputs.logits.shape[:2] != (1, len(lengths)):
+        raise ValueError("packed model did not preserve every decision boundary")
+    return outputs.logits[0], outputs

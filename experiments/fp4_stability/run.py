@@ -36,6 +36,12 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    if config.get("sequence_packing", False) and not (
+        config.get("full_bf16_lora", False)
+        and config.get("gated_delta_backend") == "flashqla"
+        and not config.get("flashqla_auto_cp", False)
+    ):
+        raise ValueError("sequence packing requires the uniform BF16 FlashQLA recipe")
     if config.get("full_bf16_lora", False) and not (
         config.get("ten_step_learning_comparison", False)
         and config["conditions"] == ["bf16"]
@@ -297,6 +303,8 @@ def main() -> None:
                 ROOT / "src/gleipnir/fouroversix_training.py",
                 ROOT / "src/gleipnir/fp4_compiler_diagnostic.py",
                 ROOT / "src/gleipnir/precision_training_screen.py",
+                ROOT / "src/gleipnir/packed_training_screen.py",
+                ROOT / "src/gleipnir/packed_sequences.py",
                 ROOT / "src/gleipnir/bf16_lora.py",
                 ROOT / "src/gleipnir/fp4_performance.py",
                 ROOT / "src/gleipnir/fp4_row_kernels.py",
@@ -510,6 +518,10 @@ def main() -> None:
                 "++student.training.precision_screen.fp32_lm_head="
                 f"{str(config.get('fp32_lm_head', False)).lower()}",
             ]
+            if config.get("sequence_packing", False):
+                command.append(
+                    "++student.training.precision_screen.sequence_packing=true"
+                )
             if config.get("full_bf16_lora", False):
                 command.extend(
                     [

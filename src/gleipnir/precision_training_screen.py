@@ -113,6 +113,8 @@ def run_precision_training_screen(
     flashqla_layer_indices: list[int] | None = None,
     flashqla_layer_sweep: list[list[int]] | None = None,
     ten_step_learning_comparison: bool = False,
+    partition_strategy: Callable | None = None,
+    packing_canary: Callable | None = None,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -274,7 +276,7 @@ def run_precision_training_screen(
     def backward(items):
         model.zero_grad(set_to_none=True)
         lengths = [len(item["direct_input_ids"]) for item in items]
-        partition = policy.partition(lengths)
+        partition = (partition_strategy or policy.partition)(lengths)
         total = 0.0
         for indices in partition:
             loss = loss_forward(collator([items[i] for i in indices]))
@@ -295,9 +297,9 @@ def run_precision_training_screen(
             "mean_loss": total,
             "physical_sizes": [len(i) for i in partition],
             "actual_tokens": sum(lengths),
-            "padded_tokens": sum(
-                len(i) * max(lengths[j] for j in i) for i in partition
-            ),
+            "padded_tokens": sum(lengths)
+            if partition_strategy
+            else sum(len(i) * max(lengths[j] for j in i) for i in partition),
         }
 
     publish()
@@ -336,6 +338,9 @@ def run_precision_training_screen(
                 raise ValueError("FlashQLA model loss/gradient canary failed")
         report["before_native_probe"] = evaluate(dense=False)
         report["before_common_probe"] = evaluate(dense=True)
+        if packing_canary is not None:
+            report["packing_eager_canary"] = packing_canary()
+            publish()
         if reference_weights_on_cpu:
             from gleipnir.fp4_memory import offload_reference_weights
 
@@ -376,6 +381,9 @@ def run_precision_training_screen(
             ),
         }
         publish()
+        if packing_canary is not None:
+            report["packing_compiled_canary"] = packing_canary()
+            publish()
         if diagnostics_only:
             if capture_native_operands:
                 from gleipnir.fp4_compiler_diagnostic import compare_native_operands
