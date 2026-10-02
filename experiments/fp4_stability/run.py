@@ -21,7 +21,10 @@ from experiments.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.monitoring_systems_screen import gpu_environment, sha256_file
-from gleipnir.packed_training_screen import validate_learning_tolerance
+from gleipnir.packed_training_screen import (
+    validate_compile_cache_limit,
+    validate_learning_tolerance,
+)
 from gleipnir.qwen35_fast_training import (
     DEFAULT_CAUSAL_CONV1D_TARGET,
     DEFAULT_FLA_TARGET,
@@ -41,6 +44,10 @@ def validate_config(config: dict) -> None:
     validate_learning_tolerance(learning_tolerance)
     if learning_tolerance is not None and not config.get("sequence_packing", False):
         raise ValueError("packing learning tolerance requires the packing screen")
+    cache_limit = config.get("packing_compile_cache_limit")
+    validate_compile_cache_limit(cache_limit)
+    if cache_limit is not None and not config.get("sequence_packing", False):
+        raise ValueError("packing compile cache limit requires the packing screen")
     for key in ["bf16_reduced_precision_reduction", "bf16_split_k_reduction"]:
         reduction = config.get(key)
         if reduction is not None and (
@@ -560,6 +567,11 @@ def main() -> None:
                 command.append(
                     "++student.training.precision_screen.packing_learning_gradient_tolerance="
                     f"{config['packing_learning_gradient_tolerance']}"
+                )
+            if config.get("packing_compile_cache_limit") is not None:
+                command.append(
+                    "++student.training.precision_screen.packing_compile_cache_limit="
+                    f"{config['packing_compile_cache_limit']}"
                 )
             if config.get("bf16_reduced_precision_reduction") is not None:
                 command.append(

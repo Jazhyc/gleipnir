@@ -89,6 +89,16 @@ initial adapters, example order, targets, optimizer and common-backend probes
 permit a trajectory comparison; longer training and held-out validation are
 still required before promotion.
 
+The first learning attempt accepted the exact same 0.143217 compiled gradient
+result. Its boundary-canary variants then exhausted Torch's default eight-graph
+recompile limit during longest-example preflight; a linear decoder shell fell
+back to eager because the keyword count differed. It was interrupted before
+optimizer updates, retaining a separate interruption receipt. The corrected
+`bf16_learning_cached_gpu.yaml` explicitly raises the shared limit to 64 and
+enables `fail_on_recompile_limit_hit`, so this diagnostic cannot silently time
+an eager fallback after cache exhaustion. This changes compiler cache policy
+equally for both controls, preserving model, precision and learning settings.
+
 ## Artifacts and limits
 
 The matched eager trajectories completed ten steps each (the first with zero
@@ -129,6 +139,6 @@ states and ten identical logical updates per condition.
 The eager canaries use two training examples truncated for bounded kernel tests;
 their loss/gradient agreement is a systems check, not task-quality evidence.
 There is no held-out quality result. Full-campaign promotion still requires the
-frozen validation contract. Focused regressions passed: 99 tests, eight intentional unsupported
+frozen validation contract. Focused regressions passed: 108 tests, eight intentional unsupported
 policy skips. The [experiment README](../../experiments/monitoring_sequence_packing/README.md)
 records hypotheses, gates, stop conditions, and executable configurations.

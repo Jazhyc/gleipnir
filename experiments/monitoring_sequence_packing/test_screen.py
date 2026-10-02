@@ -21,9 +21,12 @@ def test_layer_diagnostics_preserve_sequence_order_and_failure_receipt():
 
 @pytest.mark.parametrize("fail", [False, True])
 @pytest.mark.parametrize("learning_tolerance", [None, 0.15])
+@pytest.mark.parametrize("cache_limit", [None, 64])
 def test_conditions_share_initial_weights_and_restore_bindings(
-    monkeypatch, tmp_path, fail, learning_tolerance
+    monkeypatch, tmp_path, fail, learning_tolerance, cache_limit
 ):
+    original_cache_limit = torch._dynamo.config.recompile_limit
+    original_fail_on_limit = torch._dynamo.config.fail_on_recompile_limit_hit
     model = torch.nn.Linear(1, 1, bias=False)
     model.weight.data.fill_(2)
     original_forward = model.forward
@@ -48,6 +51,12 @@ def test_conditions_share_initial_weights_and_restore_bindings(
     )
 
     def run(**options):
+        assert torch._dynamo.config.recompile_limit == (
+            cache_limit or original_cache_limit
+        )
+        assert torch._dynamo.config.fail_on_recompile_limit_hit == (
+            True if cache_limit is not None else original_fail_on_limit
+        )
         condition = options["output"].name
         assert model.weight.item() == 2
         assert model.chunk_gated_delta_rule is kernel
@@ -83,6 +92,7 @@ def test_conditions_share_initial_weights_and_restore_bindings(
         metadata={
             "quantization": {"full_bf16_lora": {"verified": True}},
             "packing_learning_gradient_tolerance": learning_tolerance,
+            "packing_compile_cache_limit": cache_limit,
         },
         gated_delta_backend="flashqla",
         flashqla_auto_cp=False,
@@ -108,6 +118,14 @@ def test_conditions_share_initial_weights_and_restore_bindings(
     assert model.weight.item() == 2
     assert model.forward == original_forward
     assert model.chunk_gated_delta_rule is kernel
+    assert torch._dynamo.config.recompile_limit == original_cache_limit
+    assert torch._dynamo.config.fail_on_recompile_limit_hit == original_fail_on_limit
+
+
+@pytest.mark.parametrize("value", [True, 129, 7, 64.0, "64"])
+def test_compile_cache_limit_stays_bounded(value):
+    with pytest.raises(ValueError):
+        screen.validate_compile_cache_limit(value)
 
 
 def receipt():

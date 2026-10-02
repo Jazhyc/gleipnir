@@ -3645,6 +3645,9 @@ def main(cfg: DictConfig) -> None:
                 "packing_learning_gradient_tolerance": precision_screen_cfg.get(
                     "packing_learning_gradient_tolerance"
                 ),
+                "packing_compile_cache_limit": precision_screen_cfg.get(
+                    "packing_compile_cache_limit"
+                ),
                 "mlp": mlp_precision_metadata,
                 "quantization": quantization_metadata,
                 "checkpointed_layer_indices": checkpointed_layer_indices,

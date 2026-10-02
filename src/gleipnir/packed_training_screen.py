@@ -58,6 +58,12 @@ def validate_learning_tolerance(value: float | None) -> None:
         )
 
 
+def validate_compile_cache_limit(value: int | None) -> None:
+    """Keep additional compiler variants bounded for the packing diagnostic."""
+    if value is not None and (type(value) is not int or not 8 <= value <= 128):
+        raise ValueError("packing compile cache limit must be an integer from 8 to 128")
+
+
 def _accept_canary(receipt: dict, learning_tolerance: float | None) -> dict:
     validate_learning_tolerance(learning_tolerance)
     reference = receipt["independent_loss"]
@@ -240,6 +246,13 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
     metadata = kwargs["metadata"]
     learning_tolerance = metadata.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(learning_tolerance)
+    cache_limit = metadata.get("packing_compile_cache_limit")
+    validate_compile_cache_limit(cache_limit)
+    compile_options = (
+        {"recompile_limit": cache_limit, "fail_on_recompile_limit_hit": True}
+        if cache_limit is not None
+        else {}
+    )
     if not (
         metadata.get("quantization", {}).get("full_bf16_lora", {}).get("verified")
         and kwargs.get("gated_delta_backend") == "flashqla"
@@ -271,6 +284,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
     report = {
         "status": "running",
         "learning_gradient_tolerance": learning_tolerance,
+        "compile_cache_intervention": compile_options,
         "initial_master_sha256": tensor_digest(initial),
         "convolution_kernels": sorted({fn.__module__ for fn in convolutions}),
         "conditions": {},
@@ -291,7 +305,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
 
     try:
         publish()
-        with installed_segmented_sdpa():
+        with installed_segmented_sdpa(), torch._dynamo.config.patch(compile_options):
             # Fail before either optimizer trajectory if the installed kernels leak.
             # The existing runner installs the selected FlashQLA precision boundary
             # before invoking this gate, and invokes it again after compilation.

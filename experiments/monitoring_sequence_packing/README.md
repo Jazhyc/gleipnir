@@ -192,3 +192,14 @@ peak allocated memory. Every loss and gradient norm remained finite. Its probes
 used each training collator and had slightly different starting losses, so their
 final values (0.79265 padded, 0.76925 packed) are rough stability diagnostics.
 See the [finding](../../docs/findings/bf16_sequence_packing.md) for scope and limits.
+
+The initial compiled learning attempt reproduced the 14.3217% gradient
+disagreement and accepted it for the diagnostic. During longest-example
+preflight, Torch exhausted `recompile_limit=8` for the linear decoder shell
+(different `kwargs` counts after boundary canaries) and fell back to eager.
+The attempt was interrupted with zero optimizer updates; its receipts remain
+under `results/bf16_sequence_packing_learning/` with an interruption record.
+`bf16_learning_cached_gpu.yaml` retains the same recipe and explicitly sets
+`packing_compile_cache_limit: 64` in both controls. It also enables
+`fail_on_recompile_limit_hit` so cache exhaustion fails instead of silently
+changing execution. Both settings are recorded and restored after the screen.

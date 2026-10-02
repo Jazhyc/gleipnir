@@ -204,3 +204,12 @@ def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
     ]:
         with pytest.raises(ValueError):
             validate_config(dict(config, **override))
+    cached = yaml.safe_load((root / "bf16_learning_cached_gpu.yaml").read_text())
+    validate_config(cached)
+    assert {key for key in cached if cached[key] != config.get(key)} == {
+        "output",
+        "logs",
+        "packing_compile_cache_limit",
+    }
+    with pytest.raises(ValueError):
+        validate_config(dict(cached, packing_compile_cache_limit=129))
