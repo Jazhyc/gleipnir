@@ -1325,3 +1325,77 @@ only. Common probes still evaluate both trajectories with original eager FLA.
 The unchanged recipe restarts without a head change or another diagnostic sweep.
 The 70 focused tests pass, including exactly ten AdamW calls, no optimizer calls
 in warmup, and explicit bounded acceptance of a failed finite compile canary.
+
+
+### Completed uniform FlashQLA ten-step learning/timing comparison
+
+Both arms complete exactly ten optimizer calls (nine with nonzero LR), with no
+updates in the memory preflight or ten ordered warmup backward passes. Match all
+320 examples, 1,314,331 actual tokens, shuffled indices, physical partitions,
+padded tokens, initial master hash, LR schedule, rank-128 adapters, 12-layer
+checkpointing, current BF16 head and compiler policy. All 22 source/config
+hashes per arm verify against `992c4f8`; FlashQLA's launch revision is unset,
+so the source hashes establish its identity. Both initial common probes equal
+**1.2467260063**. Compare common loss with original eager FLA on eight fixed,
+truncated training-cohort examples; probe time is excluded from step timing.
+
+| Metric | Current NF4/BF16 + FLA | NF4/BF16 + uniform FlashQLA |
+| --- | ---: | ---: |
+| Mean synchronized step time (s) | 10.420161 | 9.066682 |
+| Median step time (s) | 9.848146 | 8.721489 |
+| Step time range (s) | 8.002–13.839 | 7.014–11.622 |
+| Actual tokens/s | 12613.3 | 14496.3 |
+| Mean training-batch loss | 0.688320618 | 0.688021956 |
+| Final common probe loss | 0.926934831 | 0.912150823 |
+| Measured peak allocated memory (GiB) | 130.776 | 132.091 |
+| New Dynamo graphs during measured steps | 0 | 0 |
+| Backward-only warmup time (s) | 113.454 | 114.279 |
+| Entire stage wall time, including imports/load/canaries/warmup/export (s) | 596.834 | 606.878 |
+
+FlashQLA reduces measured step time by **12.989%** (1.1493× throughput), and is
+faster on every paired batch. Mean training loss differs by only -0.000299.
+Its final common loss is 0.014784 lower (about 1.60%), an observation on the
+small training probe rather than a quality advantage. Both trajectories remain
+finite and show short-run learning. Gradient parity disagreement alone does not
+predict catastrophic failure over these ten steps. This supports further
+matched validation of uniform FlashQLA; it does not establish long-run stability,
+held-out performance, numerical equivalence or promotion of the default recipe.
+
+All 24 GDN layers use FlashQLA with BF16 Q/K/V, FP32 gates and external FP32 Q/K
+normalization; all eight softmax-attention layers retain SDPA. No FP16 GDN, FP32
+head override or partial-layer rollout. FlashQLA's strict whole-model gradient
+gate remains false (relative L2 0.195302), and its compiled/eager loss gate remains
+false (1.327407 versus 1.358968). Both finite failures were explicitly permitted
+only for this bounded learning diagnostic and remain in the receipt. The FLA
+compile canary passes exactly. Both arms emit one Dynamo recompilation-budget
+warning during setup under the existing policy; no new graphs appear in the
+measured pass, and this timing describes the resulting recipe, including its
+fallbacks. No compiler-policy repair or extra timing replay is part of this run.
+
+| Step | FLA time (s) | FlashQLA time (s) | FLA common loss | FlashQLA common loss |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 9.653 | 8.700 | 1.246726 | 1.246726 |
+| 2 | 11.590 | 9.919 | 1.199941 | 1.199658 |
+| 3 | 9.314 | 7.855 | 1.228531 | 1.224761 |
+| 4 | 9.198 | 7.587 | 1.091919 | 1.074316 |
+| 5 | 13.839 | 11.622 | 0.981849 | 0.970595 |
+| 6 | 10.044 | 8.743 | 0.949739 | 0.933475 |
+| 7 | 8.761 | 7.702 | 0.935647 | 0.936196 |
+| 8 | 12.283 | 11.534 | 0.946867 | 0.928434 |
+| 9 | 11.519 | 9.991 | 0.921861 | 0.917202 |
+| 10 | 8.002 | 7.014 | 0.926935 | 0.912151 |
+
+Receipts:
+- `results/nf4_fla_ten_step_comparison/nf4/screen.json`, SHA-256
+  `7f0cc60308abf80608a43c87093932c748644f5553ab7ae1749724e04f5c04a9`.
+- `results/nf4_flashqla_ten_step_comparison/nf4/screen.json`, SHA-256
+  `2cb20e98e0899838dab3a48d387401ce97b437dd38fd0b063b83992d9fd73ec7`.
+- `results/nf4_flashqla_ten_step_comparison/comparison.json` holds the paired
+  loss/timing rows and source/master/partition/schedule checks.
+
+Both saved `fp32_master.pt` artifacts are checked after collection: 256 FP32
+adapter tensors, 169,869,312 elements, named order and final tensor digest match
+their receipts. Results and logs are collected locally and persist on the pod's
+network volume. No further training is launched; the B200 is idle. Validation
+remains 70 focused tests passed, six unsupported combinations skipped, Ruff
+passed. The failed zero-update compile-gate attempt is preserved separately.

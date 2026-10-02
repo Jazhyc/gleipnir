@@ -622,3 +622,16 @@ each step. Common probes use original eager FLA in both arms, outside step timin
 so loss reflects adapter learning on the same evaluator. Selection is the frozen
 training cohort; no held-out promotion or long-run stability conclusion from ten
 steps. These two runs are the complete requested experiment.
+
+
+Completed result: uniform FlashQLA **9.0667 s/step** versus matched current FLA
+**10.4202 s/step**, a **12.99%** time reduction; every paired batch is faster.
+Mean training losses are **0.688022 / 0.688321** (FlashQLA / FLA). Common fixed
+probe loss starts at **1.246726** and ends at **0.912151 / 0.926935**. Both measured
+passes compile zero new graphs. Preserve FlashQLA's failed strict loss/gradient
+parity results; the explicitly bounded finite-only learning test completes.
+Ten steps provide evidence of short-run learning, not held-out quality or long-run
+stability. Both runs stop at ten calls and save verified FP32 masters. Full
+matched rows, timings, memory, source hashes and limitations are in
+[`docs/findings/fp4_training_stability.md`](../../docs/findings/fp4_training_stability.md)
+and `results/nf4_flashqla_ten_step_comparison/comparison.json`.
