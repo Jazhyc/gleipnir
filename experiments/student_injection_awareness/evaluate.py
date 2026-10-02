@@ -162,7 +162,28 @@ def reference(config: dict, size: str) -> None:
         print(f"reference_complete {size} {variant}", flush=True)
 
 
-def serving(config: dict, size: str) -> None:
+def evaluation_contract(
+    config: dict,
+    input_sha256: str,
+    serving_sha256: str,
+    size: str,
+    variant: str,
+    gdn_prefill_backend: str = "flashinfer",
+) -> str:
+    """Prevent prediction reuse across an explicitly changed serving backend."""
+    values = {
+        "config": config,
+        "input_sha256": input_sha256,
+        "serving_sha256": serving_sha256,
+        "size": size,
+        "variant": variant,
+    }
+    if gdn_prefill_backend != "flashinfer":
+        values["serving_runtime"] = {"gdn_prefill_backend": gdn_prefill_backend}
+    return digest(json.dumps(values, sort_keys=True))
+
+
+def serving(config: dict, size: str, gdn_prefill_backend: str = "flashinfer") -> None:
     import numpy as np
     import torch
     import vllm
@@ -199,7 +220,7 @@ def serving(config: dict, size: str) -> None:
         max_lora_rank=128,
         max_loras=1,
         seed=0,
-        gdn_prefill_backend="flashinfer",
+        gdn_prefill_backend=gdn_prefill_backend,
     )
     for number, variant in enumerate(VARIANTS, start=1):
         directory = OUTPUT / size / variant
@@ -266,6 +287,7 @@ def serving(config: dict, size: str) -> None:
                 "served": served,
                 "limits": limits,
                 "serving_sha256": rebase["destination_sha256"],
+                "gdn_prefill_backend": gdn_prefill_backend,
             },
         )
         if not passed:
@@ -282,17 +304,13 @@ def serving(config: dict, size: str) -> None:
                 raise ValueError("evaluation input or instruction drift")
             rows = read_rows(path)
             prompts = render(tokenizer, rows)
-            contract = digest(
-                json.dumps(
-                    {
-                        "config": config,
-                        "input_sha256": file_hash(path),
-                        "serving_sha256": rebase["destination_sha256"],
-                        "size": size,
-                        "variant": variant,
-                    },
-                    sort_keys=True,
-                )
+            contract = evaluation_contract(
+                config,
+                file_hash(path),
+                rebase["destination_sha256"],
+                size,
+                variant,
+                gdn_prefill_backend,
             )
             target = directory / split
             predictions_path = target / "predictions.jsonl"
@@ -370,6 +388,7 @@ def serving(config: dict, size: str) -> None:
                         "vllm": vllm.__version__,
                         "torch": torch.__version__,
                         "gpu": torch.cuda.get_device_name(0),
+                        "gdn_prefill_backend": gdn_prefill_backend,
                         "seconds_this_invocation": time.time() - start,
                     },
                     **summarize(predictions),
@@ -382,6 +401,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--size", choices=("4b", "9b"), required=True)
     parser.add_argument("--backend", choices=("reference", "vllm"), required=True)
+    parser.add_argument(
+        "--gdn-prefill-backend", choices=("flashinfer", "triton"), default="flashinfer"
+    )
     args = parser.parse_args()
     config = yaml.safe_load(CONFIG.read_text())
     manifest = json.loads((DATA / "manifest.json").read_text())
@@ -390,7 +412,7 @@ def main() -> None:
     if args.backend == "reference":
         reference(config, args.size)
     else:
-        serving(config, args.size)
+        serving(config, args.size, args.gdn_prefill_backend)
 
 
 if __name__ == "__main__":

@@ -463,3 +463,45 @@ threshold diagnostics are retained in the full local report.
 Regular OOD and both aware full evaluations remain pending. This partial
 milestone does not establish the paired 9B prompt effect or OOD performance;
 no checkpoint or threshold is selected using these results.
+
+## 9B FlashInfer serving stall and consistent backend recovery
+
+The first 9B vLLM attempt stalled during regular OOD after saving 1,920/6,395
+predictions. Within the next 128-row batch, 95 requests completed before
+progress stopped. Repeated observations confirmed an unchanged log for over
+four minutes despite a live worker: GPU utilization 100%, memory utilization
+0%, power about 237 W and temperature 32 degrees C. Volatile uncorrected ECC
+remained zero. The exact stuck kernel is unknown: `py-spy` attachment was denied
+by the container's ptrace permissions. This is distinct from the earlier
+compiler-cache relocation failure.
+
+The failed log SHA256 is
+`834de093026e2d169f55fd7a6c7716812b24357b605fad47d5f2872f7406fb1b`.
+The log, telemetry, complete first-attempt regular ID result and partial OOD
+predictions are retained under
+`results/student_injection_awareness/9b/runtime_recovery/flashinfer_stall/`.
+The failed worker was explicitly stopped and GPU process release verified;
+the container does not support psutil's pidfd-based wait, so an explicit
+same-worker kill and GPU process check were used after graceful termination.
+
+An [upstream FlashInfer GDN hang report](https://github.com/flashinfer-ai/flashinfer/issues/3329)
+describes a similar spin-wait signature and a Triton prefill workaround, but
+uses different hardware, shapes and MTP. It motivates a recovery candidate;
+it does not identify our failure's cause. The replacement persistent vLLM run
+uses Triton GDN prefill for both 9B conditions. All four 9B suites will be rerun
+from the beginning after the unchanged original-FLA/master serving gates.
+The first-attempt ID metrics above are archived historical results pending
+the consistent replacement evaluation.
+
+The evaluator records the explicit GDN backend in parity and runtime receipts
+and gives a backend override a distinct prediction contract, preventing mixed
+cache reuse. Default FlashInfer identities, including the completed 4B results,
+are preserved. Inputs, prompt hashes, BF16 base weights, FP32 adapters, batching,
+one-token scoring and parity thresholds remain frozen. Training is complete
+and unaffected. The replacement engine loaded, compiled and warmed up, then
+regular 9B passed serving parity: adapter correlation 0.999784 and mean absolute
+difference 0.003099; base correlation 0.999665 and mean absolute difference
+0.005366. Its served maximum adapter effect was 0.871565. The 13 focused
+contract/publication tests passed, including invalidation of cached predictions
+when the backend changes, and Ruff passed. Full replacement evaluations and
+aware serving parity remain pending.

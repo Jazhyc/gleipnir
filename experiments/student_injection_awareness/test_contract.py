@@ -1,5 +1,6 @@
 """Check that the prompt intervention cannot silently change the teaching signal."""
 
+import json
 from dataclasses import replace
 
 import pytest
@@ -7,6 +8,7 @@ import yaml
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
+from experiments.student_injection_awareness.evaluate import evaluation_contract
 from experiments.student_injection_awareness.prepare import (
     CONFIG,
     ROOT,
@@ -69,6 +71,24 @@ def test_regular_render_is_byte_identical():
     assert (
         rerender_training([row], templates()["regular"])[0]["student_prompt"]
         == row["student_prompt"]
+    )
+
+
+def test_serving_backend_change_invalidates_prediction_identity():
+    config = {"engine": {"max_num_seqs": 16}}
+    values = {
+        "config": config,
+        "input_sha256": "input",
+        "serving_sha256": "adapter",
+        "size": "9b",
+        "variant": "regular",
+    }
+    original = digest(json.dumps(values, sort_keys=True))
+    assert evaluation_contract(config, "input", "adapter", "9b", "regular") == original
+    changed = evaluation_contract(config, "input", "adapter", "9b", "regular", "triton")
+    assert changed != original
+    assert changed != evaluation_contract(
+        config, "input", "adapter", "9b", "injection_aware", "triton"
     )
 
 

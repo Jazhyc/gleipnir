@@ -72,6 +72,12 @@ to load after relocation. Keep the failed logs when recovering with fresh
 cache directories.
 Publication runs locally using `HF_TOKEN` from ignored `.env`, after artifact
 collection. Repeat the same commands with `--size 9b` after the 4B stage.
+After an observed FlashInfer serving stall, the 9B evaluation recovery uses
+`--gdn-prefill-backend triton`. Archive the previous evaluation outputs before
+changing this backend and rerun both conditions and both complete suites. The
+backend is recorded in parity and runtime receipts and changes prediction-cache
+identity; the frozen inputs, BF16 weights, batching, digit scoring and parity
+limits remain the same. A backend override does not change training or targets.
 Public uploads use an explicit allowlist: the two adapter layouts and loading
 configs, license and model card (including the student instruction). Full
 training metadata, provenance, evaluation reports, parity receipts and release
