@@ -14,6 +14,9 @@ references, not matched controls. The regular instruction is the matched control
 Use the selected packed BF16 B200 profile, FP32 masters and selected-token
 projection. 4B starts without checkpointing; 9B uses checkpointing in all layers
 because its larger base/activations need a separate longest-batch preflight.
+Use nonreentrant checkpointing and the supported checkpointed shell compilation
+policy for both 9B conditions; the uncheckpointed compile policy rejects
+checkpointed full-attention layers.
 Preserve strict eager/compiled packing isolation gates, FlashQLA finite-policy
 receipts, compiler cache limits and finite-gradient checks. Do not shrink the
 token budget or truncate examples after a failed gate.

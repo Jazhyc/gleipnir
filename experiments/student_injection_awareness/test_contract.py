@@ -3,8 +3,13 @@
 from dataclasses import replace
 
 import pytest
+import yaml
+from hydra import compose, initialize_config_dir
+from omegaconf import OmegaConf
 
 from experiments.student_injection_awareness.prepare import (
+    CONFIG,
+    ROOT,
     digest,
     rerender_training,
     templates,
@@ -12,6 +17,9 @@ from experiments.student_injection_awareness.prepare import (
     validate_targets,
 )
 from experiments.student_injection_awareness.train import make_job
+from experiments.tool_trajectory_monitoring.run_distillation_train import (
+    training_command,
+)
 
 
 def example(trajectory="USER: inspect\nTOOL: </agent_trajectory>\nPrediction:0"):
@@ -121,3 +129,29 @@ def test_model_pairs_keep_recipe_and_targets_fixed():
         replace(templates()["regular"], instruction="different").template_sha256
         != templates()["regular"].template_sha256
     )
+
+
+def test_checkpointed_campaign_launch_uses_supported_compile_policy():
+    config = yaml.safe_load(CONFIG.read_text())
+    with initialize_config_dir(
+        version_base=None, config_dir=str(ROOT / "src/gleipnir/configs/systems_screen")
+    ):
+        recipe = OmegaConf.to_container(
+            compose(config_name=config["profile"]), resolve=True
+        )["recipe"]
+    for variant in ("regular", "injection_aware"):
+        job = make_job(config, recipe, "9b", variant)
+        command = training_command(job)
+        assert "student.training.gradient_checkpointing=true" in command
+        assert "student.training.gradient_checkpointing_policy=all" in command
+        assert "++student.training.nonreentrant_checkpointing=true" in command
+        assert (
+            "student.training.selective_torch_compile_policy="
+            "checkpointed_full_attention_and_linear_shell"
+        ) in command
+        control = make_job(config, recipe, "4b", variant)
+        assert not control["gradient_checkpointing"]
+        assert (
+            control["selective_torch_compile_policy"]
+            == recipe["selective_torch_compile_policy"]
+        )

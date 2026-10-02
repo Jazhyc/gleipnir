@@ -42,7 +42,7 @@ from gleipnir.qwen35_fast_training import (
 def make_job(config: dict, recipe: dict, size: str, variant: str) -> dict:
     model = config["models"][size]
     output = OUTPUT / size / variant
-    return {
+    job = {
         **recipe,
         "job_name": f"{size}-{variant}",
         "model": model["id"],
@@ -63,6 +63,12 @@ def make_job(config: dict, recipe: dict, size: str, variant: str) -> dict:
         "model_dir": str(output / "model"),
         "hydra_log_dir": str(ROOT / "logs/runpod/student_injection_awareness/hydra"),
     }
+    if model["checkpointing"]:
+        job["selective_torch_compile_policy"] = (
+            "checkpointed_full_attention_and_linear_shell"
+        )
+        job["nonreentrant_checkpointing"] = True
+    return job
 
 
 def environment() -> dict[str, str]:
