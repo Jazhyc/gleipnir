@@ -79,3 +79,18 @@ The teacher-target file hash remains
 The completed master, export and receipts were collected locally; artifact
 verification is in `results/student_injection_awareness/4b/regular/artifact_integrity.json`.
 Serving score parity, ID/OOD evaluation and publication are still pending.
+
+## Injection-aware 4B startup
+
+The second condition audited all 8,688 inputs: 85,562,657 tokens, maximum
+29,538, zero truncation. Its initial master tensor digest matches the regular
+condition exactly. Strict eager and compiled packing checks passed, with
+gradient relative L2 differences 0.00745419 and 0.00823637. The longest-input
+preflight passed on 32 examples totaling 928,943 tokens, peaking at
+161,086,033,920 allocated bytes, before optimizer updates began.
+
+The separate FlashQLA/FLA and adaptive partition comparisons again failed
+strict parity (relative L2 differences 0.57791144 and 0.17648131), were finite,
+and used the existing selected finite acceptance policy. Failed strict results
+remain explicit in their receipts. Teacher targets are unchanged. Training is
+underway; there is no completed paired quality comparison yet.
