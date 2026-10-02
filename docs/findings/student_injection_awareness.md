@@ -92,5 +92,30 @@ preflight passed on 32 examples totaling 928,943 tokens, peaking at
 The separate FlashQLA/FLA and adaptive partition comparisons again failed
 strict parity (relative L2 differences 0.57791144 and 0.17648131), were finite,
 and used the existing selected finite acceptance policy. Failed strict results
-remain explicit in their receipts. Teacher targets are unchanged. Training is
-underway; there is no completed paired quality comparison yet.
+remain explicit in their receipts. Teacher targets are unchanged. These
+startup checks do not establish held-out quality.
+
+## Injection-aware 4B training completed
+
+The injection-aware condition completed the same fixed epoch and 272 updates,
+covering all 8,688 examples and 85,562,657 direct tokens with zero padding.
+It used 4,616 physical calls, compared with 4,550 for the regular instruction.
+Recorded training runtime was 3,471.49 seconds. Excluding the first two updates,
+mean update time was 12.54 seconds, median 12.65 and p90 15.49. Peak allocated
+GPU memory was 150.98 GiB. Mean training loss was 0.23312 and the final
+five-update report at step 270 was 0.19855. Neither the similar mean training
+losses nor these batch reports establish an ID/OOD effect of the instruction.
+
+Both conditions have the same initial master tensor digest and teacher-target
+file hash. The aware final tensor digest is
+`6d72b20a2f7e756410fcb20f0818915963d016021cb74c4fda565c24ab9cb09a`.
+All 256 tensors (169,869,312 elements) are finite FP32 and exactly equal to
+their rebased serving counterparts. Master file SHA-256 is
+`d880686818a56ece8efedbd5dca9eb4a8067dd468686c5849024c307466e7a4f`;
+serving file SHA-256 is
+`999182e8da1706c26a0bcc8bad2cde691c28fa4ad586ad2df0ba146a42de326b`.
+The remote verification receipt is
+`results/student_injection_awareness/4b/injection_aware/artifact_integrity.json`.
+The completed adapters and receipts were collected locally, and the local
+integrity check passed. Bounded eager reference scoring has started.
+Serving parity, complete ID/OOD scores and publication remain pending.
