@@ -12,12 +12,14 @@ from gleipnir.bf16_lora import bf16_lora_metadata, configure_bf16_reductions
 
 def test_bf16_reduction_policy_controls_split_k_separately():
     before = configure_bf16_reductions()
+    before_library = torch.backends.cuda.preferred_blas_library()
     try:
         assert configure_bf16_reductions(
             allow_reduced_precision=False, allow_split_k=False
         ) == {
             "allow_reduced_precision": False,
             "allow_split_k": False,
+            "blas_library": "cublaslt",
         }
         with pytest.raises(ValueError, match="disabling split-K"):
             configure_bf16_reductions(allow_reduced_precision=True)
@@ -35,6 +37,7 @@ def test_bf16_reduction_policy_controls_split_k_separately():
             allow_reduced_precision=before["allow_reduced_precision"],
             allow_split_k=before["allow_split_k"],
         )
+        torch.backends.cuda.preferred_blas_library(before_library)
 
 
 def make_model():

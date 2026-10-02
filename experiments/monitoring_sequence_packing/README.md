@@ -138,3 +138,8 @@ Both controls use identical settings, and all original gates remain fixed.
 The packing launcher skips the unrelated FP4 arithmetic preflight because this
 screen has no FP4 modules; native convolution/recurrence checks still run on
 the real BF16 model before training. This changes setup, outside measured steps.
+
+Torch requires the cuBLASLt backend when split-K is disabled; the first no-split-K
+attempt failed at that runtime requirement with zero updates. The BF16 control
+helper now explicitly selects and records cuBLASLt for this setting.
+`bf16_no_splitk_lt_gpu.yaml` runs that corrected common backend configuration.

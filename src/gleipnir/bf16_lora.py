@@ -12,7 +12,7 @@ def configure_bf16_reductions(
     *,
     allow_reduced_precision: bool | None = None,
     allow_split_k: bool | None = None,
-) -> dict[str, bool]:
+) -> dict[str, bool | str]:
     """Record and optionally constrain GEMM reductions without changing storage."""
     if any(
         value is not None and type(value) is not bool
@@ -29,11 +29,17 @@ def configure_bf16_reductions(
         selected_split_k = split_k if allow_split_k is None else allow_split_k
         if selected_reduction and not selected_split_k:
             raise ValueError("disabling split-K requires disabled precision reductions")
+        if not selected_split_k:
+            # Torch enforces this at the first CUDA GEMM, rather than at the setter.
+            torch.backends.cuda.preferred_blas_library("cublaslt")
         backend.allow_bf16_reduced_precision_reduction = (
             selected_reduction,
             selected_split_k,
         )
     return {
+        "blas_library": str(torch.backends.cuda.preferred_blas_library())
+        .split(".")[-1]
+        .lower(),
         "allow_reduced_precision": backend.allow_bf16_reduced_precision_reduction,
         "allow_split_k": backend.allow_bf16_reduced_precision_reduction_split_k,
     }
