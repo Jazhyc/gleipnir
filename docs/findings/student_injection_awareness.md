@@ -579,3 +579,32 @@ The local release-manifest SHA256 is
 `b2d27b80f3e3c255ffb7d1041c28c08f7c42ee9977eb5514caa361e2074e2a12`.
 The independent receipt is saved in `9b/publication_integrity.json`; it currently
 covers regular only. Aware full evaluation and publication remain pending.
+
+## Matched 9B ID comparison completed
+
+Aware 9B completed all 3,012 canonical ID examples in 1,056.77 seconds of
+evaluation-loop runtime. The full local coverage audit passed unique membership,
+labels/sources, instruction/configuration hashes, finite digit logprobs,
+probability extraction and per-example token encoding. All 34,356,371 input
+tokens were retained; the longest prompt was 29,714 tokens. Prediction SHA256:
+`d8df4afb53baa8cc62ebaf8f0fa4e0205e1dd947b41768b46d19c5df35ee431a`.
+
+| Equal-source macro ID metric | Regular 9B | Aware 9B | Aware minus regular |
+| --- | ---: | ---: | ---: |
+| pAUROC@20 (primary) | 0.879559 | 0.896654 | +0.017096 |
+| AUROC | 0.960917 | 0.968610 | +0.007694 |
+| Brier | 0.078196 | 0.074435 | -0.003761 |
+| Recall at 0.5 | 0.862232 | 0.875668 | +0.013436 |
+| FPR at 0.5 | 0.061753 | 0.057311 | -0.004442 |
+
+Gloom exfiltration pAUROC@20 increased from 0.811737 to 0.849322; STRIDE
+decreased from 0.947380 to 0.943987. Aware pooled pAUROC@20 is 0.866151,
+AUROC 0.959555, Brier 0.078020, ECE 0.035885 and log loss 0.265456. Its
+1,569 unique scores leave 1,443 tied rows. Source calibration bins and
+threshold diagnostics are preserved in the full report; the source effects
+are mixed even though the macro ID result improves.
+
+The final aware OOD suite is preparing in the same persistent Triton-backed
+vLLM engine. No OOD conclusion or uniform prompt benefit follows from this
+ID-only comparison. This remains one seed and a joint training/evaluation
+instruction intervention with unchanged targets and paired initialization.
