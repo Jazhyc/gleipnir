@@ -608,3 +608,87 @@ The final aware OOD suite is preparing in the same persistent Triton-backed
 vLLM engine. No OOD conclusion or uniform prompt benefit follows from this
 ID-only comparison. This remains one seed and a joint training/evaluation
 instruction intervention with unchanged targets and paired initialization.
+
+## Matched 9B full comparison completed
+
+Aware 9B completed all 6,395 strict OOD examples in 1,537.56 seconds of
+evaluation-loop runtime. Its full local coverage audit passed exact unique
+membership, labels/sources, prompt/backend identity, finite digit logprobs,
+probability extraction and per-example token encoding. All 56,632,274 prompt
+tokens were retained, with a longest prompt of 29,771 tokens. Prediction SHA256:
+`2f9f8de29c8faa7386a48587f5543f7602dcc5861b2960a937ea0651c5345ba2`.
+
+| Equal-source macro OOD metric | Regular 9B | Aware 9B | Aware minus regular |
+| --- | ---: | ---: | ---: |
+| pAUROC@20 (primary) | 0.837368 | 0.822471 | -0.014897 |
+| AUROC | 0.926803 | 0.926663 | -0.000140 |
+| Brier | 0.129929 | 0.135797 | +0.005868 |
+| Recall at 0.5 | 0.708062 | 0.663122 | -0.044940 |
+| FPR at 0.5 | 0.047912 | 0.031235 | -0.016677 |
+
+| OOD source | Regular pAUROC@20 | Aware pAUROC@20 | Delta | Aware AUROC | Aware Brier |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| agentdojo | 0.918773 | 0.888809 | -0.029964 | 0.976866 | 0.073666 |
+| cua_shade_arena | 0.813916 | 0.835003 | +0.021087 | 0.937043 | 0.140675 |
+| iac | 0.930296 | 0.885225 | -0.045070 | 0.973323 | 0.188753 |
+| mle_sabotage | 0.998980 | 0.996939 | -0.002041 | 0.999388 | 0.033300 |
+| rogue_eval | 0.965763 | 0.942221 | -0.023543 | 0.984809 | 0.132235 |
+| shade_arena | 0.396482 | 0.386632 | -0.009849 | 0.688552 | 0.246154 |
+
+Aware pooled OOD pAUROC@20 is 0.759137, AUROC 0.932370, Brier 0.145362,
+ECE 0.155193 and log loss 0.453241. It has 1,817 unique scores and 4,578 tied
+rows. The pooled ranking improvements do not carry through to the primary
+equal-source macro pAUROC, which declines by 0.014897. Five of six source
+pAUROC values decline; CUA Shade Arena improves. At the fixed 0.5 threshold,
+macro FPR decreases by 0.016677 and recall decreases by 0.044940. Overall OOD
+Brier and pooled ECE worsen, while source calibration effects are mixed. Full
+source bins and threshold diagnostics are retained in the reports.
+
+All four replacement 9B evaluation audits passed, and the paired summary
+verified the same initialization and unchanged teacher targets. The successful
+final log contains all four evaluation-complete events and no traceback or
+error. The persistent engine finished and released the GPU; vLLM performed
+its normal abort-mode destructor teardown after request processing completed.
+
+The intervention did not produce a uniform generalization improvement: 4B
+primary scores are nearly unchanged with worse calibration, while 9B improves
+ID primary pAUROC by 0.017096 and reduces OOD primary pAUROC by 0.014897.
+This is one seed and changes the instruction during both training and
+evaluation; it neither isolates training-time resistance nor establishes
+robustness against deliberate collusion attacks. Final checkpoints and
+0.5 diagnostics stay fixed; no test-set promotion or threshold tuning follows.
+The strict training-kernel gradient comparisons remain failed results under
+explicit `selected_finite` acceptance, separate from the passed mandatory
+packing and serving gates.
+
+Aware 9B is publicly published at
+[Jazhyc/Gleipnir-9B-ToolTrajectories-InjectionAware](https://huggingface.co/Jazhyc/Gleipnir-9B-ToolTrajectories-InjectionAware),
+revision `6a0b8326df16fd56c1c65671a139229a0255c463`. Independent remote
+verification of both 9B releases passed actual public head identity, exact
+six-file coverage plus `.gitattributes`, both LFS weight checksums and downloaded
+small-file hashes. The aware local release-manifest SHA256 is
+`615bf7f80004054c5441f464ceb08ec33a222edc398145d4984aee2176f0df59`.
+Both 4B public releases also passed a fresh independent verification.
+
+The final all-condition audit passed all four models: frozen BF16 bases and
+finite FP32 masters with current matching weight hashes, exact serving rebases,
+learning rate 5e-5 and soft BCE only, all 8,688 rows and 272 updates each,
+mandatory packing/memory/serving gates, identical teacher bytes and paired
+initializations, full ID/OOD coverage and published artifact identities. The
+failed strict general gradient comparisons remain explicit negative results.
+The receipt is `results/student_injection_awareness/completion_audit.json`;
+`campaign_summary.json` and both size summaries collect the completed results.
+All important weights, metadata, predictions, parity/coverage receipts and
+successful/failed runtime logs are collected locally.
+
+A final B200 health snapshot at 2026-10-02 15:08:36 UTC records no active
+compute processes, zero volatile/aggregate corrected and uncorrected DRAM/SRAM
+ECC counts, no channel/TPC repairs pending and recovery action `None`. GPU and
+memory temperatures were 31 and 32 degrees C. Retired-page fields remain
+unavailable and row-remapper data absent; no zero-count claim is made for them.
+The JSON and original XML are collected locally under `9b/gpu_health_final.*`.
+
+The campaign is complete, with no queued experiment or active evaluation
+worker. The existing authorized B200 remains available. The user returned before
+9B completion, so the conditional 4-bit serving follow-up does not apply and
+has not been launched.

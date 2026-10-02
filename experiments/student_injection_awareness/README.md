@@ -90,3 +90,32 @@ Omitting `--variant` publishes both conditions.
 
 Systems receipts and eventual quality results are recorded in
 [the campaign finding](../../docs/findings/student_injection_awareness.md).
+
+
+## Completed campaign
+
+All four models completed one epoch over 8,688 trajectories with the same
+cached targets and learning rate 5e-5. Every condition completed all 3,012 ID
+and 6,395 OOD examples without truncation. Both model pairs passed serving
+score parity; all four public adapter releases were independently verified.
+The values below are equal-source macro pAUROC@20, the frozen primary metric.
+
+| Public adapter | ID | OOD | Training-loop runtime |
+| --- | ---: | ---: | ---: |
+| [4B regular](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-Regular) | 0.846273 | 0.776238 | 1h 5m 16s |
+| [4B aware](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-InjectionAware) | 0.847301 | 0.775323 | 57m 51s |
+| [9B regular](https://huggingface.co/Jazhyc/Gleipnir-9B-ToolTrajectories-Regular) | 0.879559 | 0.837368 | 1h 43m 50s |
+| [9B aware](https://huggingface.co/Jazhyc/Gleipnir-9B-ToolTrajectories-InjectionAware) | 0.896654 | 0.822471 | 1h 45m 18s |
+
+Awareness left 4B primary scores nearly unchanged and worsened calibration.
+At 9B it improved ID primary pAUROC by 0.017096 and reduced OOD primary
+pAUROC by 0.014897. Source effects are mixed. This is one seed and changes the
+instruction in both training and evaluation; it does not establish isolated
+training-time resistance or robustness against deliberate collusion attacks.
+The separate failed strict training-kernel gradient comparisons remain recorded
+under the user-selected finite-gradient acceptance recipe. All mandatory
+packing and serving gates passed. 4B used FlashInfer GDN serving; both 9B
+conditions used Triton after the documented runtime stall, limiting pure
+backbone-size attribution across sizes. No promotion or threshold tuning was
+performed. Full metrics, source calibration, ties, hardware and failure receipts
+are recorded in the campaign finding and ignored local result artifacts.
