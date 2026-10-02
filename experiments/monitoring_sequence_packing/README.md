@@ -126,3 +126,15 @@ reductions removes this shape-dependent numerical drift. This intervention is
 applied to both controls, with the same BF16 storage/activations and FP32 masters.
 The gate and its tolerances remain unchanged. Receipts now retain layerwise
 activation differences and all successful isolation cases even on later failure.
+
+Disabling reduced-precision GEMM reductions alone reproduced the original values
+exactly. Its retained receipts show zero cross-example influence/gradients and
+an exact first-layer recurrent-mixer match. The first discrepancy appears in
+the first MLP/residual output (maximum 0.00048828125), then grows through depth.
+`bf16_no_splitk_gpu.yaml` additionally disables split-K GEMM reductions: the
+installed Torch API's boolean `False` preserves split-K, whereas `(False, False)`
+disables both controls. This keeps the same BF16 parameters and activations.
+Both controls use identical settings, and all original gates remain fixed.
+The packing launcher skips the unrelated FP4 arithmetic preflight because this
+screen has no FP4 modules; native convolution/recurrence checks still run on
+the real BF16 model before training. This changes setup, outside measured steps.

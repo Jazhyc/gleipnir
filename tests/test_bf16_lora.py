@@ -7,7 +7,34 @@ import torch
 import yaml
 
 from experiments.fp4_stability.run import campaign_stages, validate_config
-from gleipnir.bf16_lora import bf16_lora_metadata
+from gleipnir.bf16_lora import bf16_lora_metadata, configure_bf16_reductions
+
+
+def test_bf16_reduction_policy_controls_split_k_separately():
+    before = configure_bf16_reductions()
+    try:
+        assert configure_bf16_reductions(
+            allow_reduced_precision=False, allow_split_k=False
+        ) == {
+            "allow_reduced_precision": False,
+            "allow_split_k": False,
+        }
+        with pytest.raises(ValueError, match="disabling split-K"):
+            configure_bf16_reductions(allow_reduced_precision=True)
+        assert configure_bf16_reductions()["allow_split_k"] is False
+        assert (
+            configure_bf16_reductions(allow_reduced_precision=True, allow_split_k=True)[
+                "allow_split_k"
+            ]
+            is True
+        )
+        with pytest.raises(ValueError, match="booleans"):
+            configure_bf16_reductions(allow_split_k="false")
+    finally:
+        configure_bf16_reductions(
+            allow_reduced_precision=before["allow_reduced_precision"],
+            allow_split_k=before["allow_split_k"],
+        )
 
 
 def make_model():

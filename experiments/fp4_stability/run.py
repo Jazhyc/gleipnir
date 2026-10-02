@@ -36,11 +36,17 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
-    reduction = config.get("bf16_reduced_precision_reduction")
-    if reduction is not None and (
-        type(reduction) is not bool or not config.get("sequence_packing", False)
+    for key in ["bf16_reduced_precision_reduction", "bf16_split_k_reduction"]:
+        reduction = config.get(key)
+        if reduction is not None and (
+            type(reduction) is not bool or not config.get("sequence_packing", False)
+        ):
+            raise ValueError("BF16 reduction intervention requires the packing screen")
+    if (
+        config.get("bf16_split_k_reduction") is False
+        and config.get("bf16_reduced_precision_reduction") is not False
     ):
-        raise ValueError("BF16 reduction intervention requires the packing screen")
+        raise ValueError("disabling split-K requires disabled precision reductions")
     if config.get("sequence_packing", False) and not (
         config.get("full_bf16_lora", False)
         and config.get("gated_delta_backend") == "flashqla"
@@ -464,15 +470,33 @@ def main() -> None:
             canary_command.append("--fused-row-scaling")
         if config.get("fused_activation_packing", False):
             canary_command.append("--fused-activation-packing")
-        with (logs / "kernel-canary.log").open("w") as handle:
-            subprocess.run(
-                canary_command,
-                cwd=ROOT,
-                env=environment,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                check=True,
+        if config.get("sequence_packing", False) and config.get(
+            "full_bf16_lora", False
+        ):
+            (output / "kernel_canary.json").write_text(
+                json.dumps(
+                    {
+                        "status": "not_applicable",
+                        "reason": (
+                            "Packing uses a verified BF16 frozen base, no FP4 modules; "
+                            "native convolution and recurrence are gated in the model "
+                            "screen."
+                        ),
+                    },
+                    indent=2,
+                )
+                + "\n"
             )
+        else:
+            with (logs / "kernel-canary.log").open("w") as handle:
+                subprocess.run(
+                    canary_command,
+                    cwd=ROOT,
+                    env=environment,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
         for specification in campaign_stages(config, source, global_jobs[0]):
             precision = specification["precision"]
             stage_steps = specification["steps"]
@@ -532,6 +556,11 @@ def main() -> None:
                     "++student.training.precision_screen."
                     "bf16_reduced_precision_reduction="
                     f"{str(config['bf16_reduced_precision_reduction']).lower()}"
+                )
+            if config.get("bf16_split_k_reduction") is not None:
+                command.append(
+                    "++student.training.precision_screen.bf16_split_k_reduction="
+                    f"{str(config['bf16_split_k_reduction']).lower()}"
                 )
             if config.get("full_bf16_lora", False):
                 command.extend(

@@ -8,6 +8,37 @@ import torch
 from torch import nn
 
 
+def configure_bf16_reductions(
+    *,
+    allow_reduced_precision: bool | None = None,
+    allow_split_k: bool | None = None,
+) -> dict[str, bool]:
+    """Record and optionally constrain GEMM reductions without changing storage."""
+    if any(
+        value is not None and type(value) is not bool
+        for value in [allow_reduced_precision, allow_split_k]
+    ):
+        raise ValueError("BF16 reduction controls must be booleans")
+    backend = torch.backends.cuda.matmul
+    reduction = backend.allow_bf16_reduced_precision_reduction
+    split_k = backend.allow_bf16_reduced_precision_reduction_split_k
+    if allow_reduced_precision is not None or allow_split_k is not None:
+        selected_reduction = (
+            reduction if allow_reduced_precision is None else allow_reduced_precision
+        )
+        selected_split_k = split_k if allow_split_k is None else allow_split_k
+        if selected_reduction and not selected_split_k:
+            raise ValueError("disabling split-K requires disabled precision reductions")
+        backend.allow_bf16_reduced_precision_reduction = (
+            selected_reduction,
+            selected_split_k,
+        )
+    return {
+        "allow_reduced_precision": backend.allow_bf16_reduced_precision_reduction,
+        "allow_split_k": backend.allow_bf16_reduced_precision_reduction_split_k,
+    }
+
+
 def bf16_lora_metadata(model: nn.Module) -> dict[str, Any]:
     """Fail closed on quantized bases or non-FP32 master adapters."""
     quantized = [
