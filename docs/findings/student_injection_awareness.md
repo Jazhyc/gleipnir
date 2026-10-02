@@ -232,3 +232,68 @@ This single-seed comparison changes the instruction in both training and
 evaluation and does not isolate learned resistance from test-time elicitation.
 It does not establish a uniform ID benefit. Aware OOD evaluation is advancing;
 the complete ID/OOD comparison, uploads and 9B campaign remain pending.
+
+## Matched 4B OOD comparison completed
+
+Both 4B conditions now have complete ID and OOD results. The aware condition
+scored all 6,395 OOD examples. Local verification checked complete membership,
+labels, sources, prompt hashes, configuration identity and finite scores.
+Lengths matched the independent audit: 56,632,274 tokens total, maximum 29,771,
+with zero truncation. The measured evaluation loop took 999.86 seconds,
+excluding initial preparation and engine startup. All four evaluations used
+one persistent vLLM engine after the documented cache recovery; it exited
+normally after the last result. Predictions, results, adapters and runtime logs
+have been collected locally.
+
+| OOD view | Regular pAUROC@20 | Aware pAUROC@20 | Aware minus regular | Regular AUROC | Aware AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| AgentDojo | 0.676676 | 0.824868 | +0.148191 | 0.920209 | 0.955834 |
+| CUA Shade Arena | 0.777495 | 0.777092 | -0.000404 | 0.895061 | 0.908190 |
+| IAC | 0.916043 | 0.910398 | -0.005644 | 0.979077 | 0.977892 |
+| MLE sabotage | 1.000000 | 1.000000 | 0.000000 | 1.000000 | 1.000000 |
+| Rogue Eval | 0.947882 | 0.940592 | -0.007290 | 0.986700 | 0.984058 |
+| Shade Arena | 0.339330 | 0.198990 | -0.140340 | 0.705038 | 0.632088 |
+| Source macro | 0.776238 | 0.775323 | -0.000914 | 0.914348 | 0.909677 |
+| Pooled | 0.624621 | 0.638546 | +0.013925 | 0.898344 | 0.899471 |
+
+Primary OOD performance changed little: the AgentDojo improvement was offset
+by deterioration on Shade Arena and smaller decreases elsewhere. Macro AUROC
+fell by 0.004670. At the unchanged 0.5 threshold, macro FPR fell from 0.094816
+to 0.068390 while recall fell from 0.721999 to 0.632569. Macro Brier worsened
+from 0.138607 to 0.161174; pooled ECE increased from 0.099895 to 0.149339 and
+log loss from 0.455545 to 0.510851. The aware scores had 1,632 unique values
+and 4,763 tied rows. Complete calibration bins and per-source threshold
+diagnostics remain in the result JSON.
+
+The paired summary verifies identical initial adapters and cached teacher
+targets, both serving parity gates, and full evaluation coverage. These
+single-seed results do not establish a general benefit from the explicit
+warning. Both conditions are retained for release; no prompt, threshold or
+checkpoint was selected using these test results. Publication and the matched
+9B campaign remain pending.
+
+## 4B publication and 9B startup
+
+Both 4B adapters were published and verified at the returned remote revision:
+
+- [Regular](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-Regular),
+  revision `3ade2aa9fe731cd7d502eb435088e76f9b31d215`.
+- [Injection-aware](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-InjectionAware),
+  revision `841dd32ce3940078b2a26ce47f84014bb2746019`.
+
+Automatic approval review rejected the initial broader publication payload.
+The uploader was narrowed to an explicit six-file allowlist: both adapter
+weights and loading configurations, license and model card with the student
+instruction. No training metadata, provenance, evaluation reports, parity
+receipts or release manifests were uploaded. The narrower upload was approved.
+Remote verification checked exact allowed file coverage (apart from generated
+`.gitattributes`) and both weight LFS SHA256 values before writing each receipt.
+Full research artifacts and upload receipts remain local. Focused publication
+tests passed (3 tests); Ruff lint and format checks passed.
+
+The matched 9B pair has started on the existing B200, with pinned cached
+`Qwen/Qwen3.5-9B`, fresh seed-0 initialization, all-layer nonreentrant
+checkpointing and the supported checkpointed compilation policy. Training
+inputs, soft teacher targets, learning rate, full-epoch stopping rule and
+evaluation gates are unchanged. Startup gates and training results remain
+pending; there are no 9B quality claims yet.

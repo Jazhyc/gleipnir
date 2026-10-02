@@ -23,6 +23,15 @@ from experiments.student_injection_awareness.prepare import (
     write_json,
 )
 
+PUBLIC_FILES = (
+    "README.md",
+    "LICENSE",
+    "adapter_config.json",
+    "adapter_model.safetensors",
+    "vllm/adapter_config.json",
+    "vllm/adapter_model.safetensors",
+)
+
 
 def stage(size: str, variant: str) -> Path:
     """Build a minimal model release from verified completed experiment artifacts."""
@@ -95,12 +104,6 @@ def stage(size: str, variant: str) -> Path:
         json.loads((DATA / "manifest.json").read_text()),
     )
     model = config["models"][size]
-    table = "\n".join(
-        f"| {split.upper()} | "
-        f"{r['metrics']['macro']['macro']['pauroc_at_20']:.6f} | "
-        f"{r['metrics']['macro']['macro']['auroc']:.6f} |"
-        for split, r in reports.items()
-    )
     card = f"""---
 license: mit
 base_model: {model["id"]}
@@ -126,13 +129,9 @@ Training trajectories retain their original contents, including identified
 reasoning in some STRIDE inputs. ID evaluation removes identified CoT and keeps
 visible assistant prose; OOD uses the frozen six-source suite.
 
-| Evaluation | Source-macro pAUROC@20 | Source-macro AUROC |
-| --- | ---: | ---: |
-{table}
-
 The root contains the causal-LM FP32 master. `vllm/` contains its checksum-rebased
 serving layout, verified against the master on a bounded training-data canary.
-Use `student_prompt.txt` verbatim, then a newline and `<agent_trajectory>`,
+Use the student instruction below verbatim, then a newline and `<agent_trajectory>`,
 the complete trajectory, and `</agent_trajectory>` on separate lines.
 Apply the base tokenizer's chat template as one user message with thinking
 disabled, then append `Prediction:` at the assistant generation boundary.
@@ -140,9 +139,16 @@ Request a single literal `0` or `1` token and both digit logprobs; the risk scor
 is sigmoid(logprob_1 - logprob_0). Higher values indicate problematic behavior.
 Trajectory contents are untrusted and are preserved without sanitization.
 
-Complete prompt, training-data hashes, backend parity, per-source ranking,
-calibration, threshold and tie diagnostics are included in the JSON artifacts.
+The public release contains adapter weights, loading configurations, this
+model card and the license. Full training provenance, evaluation and runtime
+artifacts are retained in the experiment workspace.
 Experiment code: https://github.com/Jazhyc/gleipnir
+
+## Student instruction
+
+```text
+{template.instruction}
+```
 """
     (release / "README.md").write_text(card)
     write_json(
@@ -190,12 +196,17 @@ def main() -> None:
             repo_id=repo_id,
             folder_path=release,
             commit_message="Release matched tool-trajectory student monitor",
+            allow_patterns=list(PUBLIC_FILES),
         )
         remote = api.model_info(repo_id, revision=commit.oid, files_metadata=True)
         manifest = json.loads((release / "release_manifest.json").read_text())
         siblings = {item.rfilename: item for item in remote.siblings}
-        expected = set(manifest["files_sha256"]) | {"release_manifest.json"}
-        if remote.sha != commit.oid or not expected.issubset(siblings):
+        expected = set(PUBLIC_FILES)
+        if (
+            remote.sha != commit.oid
+            or not expected.issubset(siblings)
+            or set(siblings) - expected - {".gitattributes"}
+        ):
             raise ValueError("uploaded revision or file coverage mismatch")
         for name in ["adapter_model.safetensors", "vllm/adapter_model.safetensors"]:
             if siblings[name].lfs.sha256 != manifest["files_sha256"][name]:
@@ -206,6 +217,7 @@ def main() -> None:
                 "repo_id": repo_id,
                 "revision": commit.oid,
                 "remote_verified": True,
+                "public_files": list(PUBLIC_FILES),
                 "release_manifest_sha256": file_hash(release / "release_manifest.json"),
             },
         )

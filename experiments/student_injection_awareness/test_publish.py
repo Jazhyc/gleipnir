@@ -42,6 +42,11 @@ def test_upload_requires_remote_adapter_checksums(tmp_path, monkeypatch, corrupt
             calls.append(kwargs)
 
         def upload_folder(self, **kwargs):
+            assert kwargs["allow_patterns"] == list(publish.PUBLIC_FILES)
+            assert not any(
+                "metadata" in name or "provenance" in name or "evaluation" in name
+                for name in kwargs["allow_patterns"]
+            )
             return SimpleNamespace(oid="revision")
 
         def model_info(self, repo_id, **kwargs):
@@ -49,7 +54,11 @@ def test_upload_requires_remote_adapter_checksums(tmp_path, monkeypatch, corrupt
             return SimpleNamespace(
                 sha="revision",
                 siblings=[
-                    SimpleNamespace(rfilename="release_manifest.json", lfs=None),
+                    *[
+                        SimpleNamespace(rfilename=name, lfs=None)
+                        for name in publish.PUBLIC_FILES
+                        if not name.endswith(".safetensors")
+                    ],
                     SimpleNamespace(
                         rfilename="adapter_model.safetensors",
                         lfs=SimpleNamespace(sha256="wrong" if corrupt else "master"),

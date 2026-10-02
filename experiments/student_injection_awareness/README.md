@@ -68,6 +68,11 @@ to load after relocation. Keep the failed logs when recovering with fresh
 cache directories.
 Publication runs locally using `HF_TOKEN` from ignored `.env`, after artifact
 collection. Repeat the same commands with `--size 9b` after the 4B stage.
+Public uploads use an explicit allowlist: the two adapter layouts and loading
+configs, license and model card (including the student instruction). Full
+training metadata, provenance, evaluation reports, parity receipts and release
+manifests remain local. Remote revision, exact file coverage and both adapter
+LFS checksums are verified before recording successful publication.
 
 Systems receipts and eventual quality results are recorded in
 [the campaign finding](../../docs/findings/student_injection_awareness.md).
