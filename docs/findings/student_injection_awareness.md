@@ -395,3 +395,39 @@ Both were finite and accepted only under the unchanged explicit
 `selected_finite` policy. The negative results are retained independently of
 the mandatory packing gates. The first optimizer updates are advancing; full
 training completion, serving parity and full benchmark results remain pending.
+
+## Matched 9B training completed
+
+Both conditions completed all 272 optimizer updates and one full epoch over
+the unchanged 8,688 trajectories. The aware condition consumed 85,562,657
+tokens in 4,616 physical forwards, with zero padding or truncation. Its training
+runtime was 6,317.56 seconds (1h 45m 18s), compared with 6,229.54 seconds
+(1h 43m 50s) for regular 9B. Excluding the first two aware updates, mean update
+time was 23.02 seconds (median 22.89, p90 28.43). Mean training loss was
+0.224380 and peak allocated memory was 35.8480 GiB. Reported losses and gradient
+norms were finite throughout both runs.
+
+The aware final master tensor digest is
+`f0edb8589bb6e841d85b88a56ce20fd7a3ffbce5fee1424ccfee5b6fa4d046eb`,
+different from the verified common initialization. The artifact audit checked
+all 256 tensors (232,783,872 elements) for finite FP32 values and exact serving
+rebase equality, verified both hashes against the rebase manifest, and checked
+the full update count, row/token coverage and unchanged teacher-cache hash.
+The aware master file SHA256 is
+`c12a313b759d5af39c015c1bc705bf6b1051984b1cfe32287eea080f324e0a75`;
+its serving file SHA256 is
+`8ce27cefe83079f5d9f4d7c038ffb6b7dfb45561c4cb1759e7c3bc0216320cd8`.
+Both 9B artifact audits passed. The full training log is collected locally.
+
+A GPU health snapshot during aware training is collected under
+`results/student_injection_awareness/9b/gpu_health_aware_training.json`.
+It records zero volatile and aggregate corrected/uncorrected DRAM and SRAM
+ECC errors, no pending repairs and recovery action `None`; GPU and memory
+temperatures were 56 and 51 degrees C. Retired-page values were unavailable,
+and row-remapper data was absent; no zero-count claim is made for those fields.
+
+The bounded original-FLA reference canaries have started on the existing B200.
+Serving score parity, full ID/OOD evaluation and 9B publication remain pending.
+The separate failed strict gradient comparisons remain negative results under
+the explicit `selected_finite` policy; training completion does not establish
+general kernel gradient parity or monitor quality.
