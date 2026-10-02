@@ -77,7 +77,10 @@ def environment() -> dict[str, str]:
     )
     env = gpu_environment(env, 0, ROOT / ".cache/training/student_injection_awareness")
     env.update(
-        FLA_DISABLE_BACKEND_DISPATCH="1", OMP_NUM_THREADS="4", WANDB_MODE="disabled"
+        FLA_DISABLE_BACKEND_DISPATCH="1",
+        OMP_NUM_THREADS="4",
+        WANDB_MODE="disabled",
+        PYTHONUNBUFFERED="1",
     )
     return env
 
