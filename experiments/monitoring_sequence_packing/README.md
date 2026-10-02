@@ -150,3 +150,9 @@ and zero cross-example dependence. The compiled run then stopped on a diagnostic
 hook collection error with zero updates. Layer hooks are now confined to eager
 execution; all compiled loss/readout/input-gradient/adapter-gradient gates remain
 unchanged. `bf16_checked_gpu.yaml` repeats the corrected complete protocol.
+
+The corrected compiled check retained zero sequence leakage but failed numerical
+parity (gradient relative L2 0.0880173; singleton/packed losses
+0.949228942/0.957633674). No updates ran. `bf16_casts_gpu.yaml` additionally
+preserves intermediate precision casts in Inductor for both conditions, while
+retaining the same compile/checkpoint policies and fixed gates.
