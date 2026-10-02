@@ -117,3 +117,12 @@ and ten measured updates with fresh AdamW state. Report setup separately from
 measured steps, preserve FP32 masters and compare all ten batches. Artifacts go
 under `results/bf16_sequence_packing/`; logs go under
 `logs/runpod/bf16_sequence_packing/`.
+
+The first B200 attempt reached the numerical gate after all three isolation
+cases passed. Its packed/singleton losses were 0.939848/0.957634 and adapter
+gradient relative L2 was 0.0581823, exceeding 0.05; it stopped with zero updates.
+`bf16_stable_gpu.yaml` tests whether disabling PyTorch's intermediate BF16 GEMM
+reductions removes this shape-dependent numerical drift. This intervention is
+applied to both controls, with the same BF16 storage/activations and FP32 masters.
+The gate and its tolerances remain unchanged. Receipts now retain layerwise
+activation differences and all successful isolation cases even on later failure.

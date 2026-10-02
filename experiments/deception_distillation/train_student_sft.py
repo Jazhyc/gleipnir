@@ -3567,6 +3567,13 @@ def main(cfg: DictConfig) -> None:
             raise ValueError("precision screen requires single-device adaptive AdamW")
 
         fp32_projection_metadata = None
+        bf16_reduction_policy = precision_screen_cfg.get(
+            "bf16_reduced_precision_reduction"
+        )
+        if bf16_reduction_policy is not None:
+            torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = bool(
+                bf16_reduction_policy
+            )
         if precision_screen_cfg.get("fp32_lm_head", False):
             from gleipnir.fp32_projection import install_fp32_lm_head
 
@@ -3633,6 +3640,9 @@ def main(cfg: DictConfig) -> None:
             ),
             max_grad_norm=float(args.max_grad_norm),
             metadata={
+                "bf16_reduced_precision_reduction": (
+                    torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction
+                ),
                 "mlp": mlp_precision_metadata,
                 "quantization": quantization_metadata,
                 "checkpointed_layer_indices": checkpointed_layer_indices,

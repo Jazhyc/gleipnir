@@ -20,6 +20,34 @@ from gleipnir.precision_training_screen import run_precision_training_screen
 from gleipnir.training_execution_audit import tensor_digest, use_forwards
 
 
+class PackingCanaryError(ValueError):
+    """Retain successful isolation measurements when a later parity gate fails."""
+
+    def __init__(self, message: str, receipt: dict) -> None:
+        super().__init__(message)
+        self.receipt = receipt
+
+
+def _layer_comparison(reference: dict, candidate: dict) -> list[dict]:
+    results = []
+    for name, tensors in reference.items():
+        expected = torch.cat(tensors, dim=1).float()
+        actual = candidate[name][0].float()
+        if actual.shape != expected.shape:
+            raise ValueError(f"diagnostic layer shape mismatch: {name}")
+        difference = actual - expected
+        results.append(
+            {
+                "module": name,
+                "max_absolute": float(difference.abs().max()),
+                "relative_l2": float(
+                    difference.norm() / expected.norm().clamp_min(1e-30)
+                ),
+            }
+        )
+    return results
+
+
 def packing_isolation_canary(
     model: torch.nn.Module,
     features: list[dict[str, Any]],
@@ -86,15 +114,41 @@ def packing_isolation_canary(
         # Equal example weighting and the actual monitoring objective, same backend.
         model.eval()
         model.zero_grad(set_to_none=True)
+        activations: dict = {}
+        independent_activations: dict = {}
+        packed_activations: dict = {}
+        hooks = []
+        for name, module in model.named_modules():
+            parts = name.split(".")
+            if (
+                (len(parts) >= 2 and parts[-2] == "layers" and parts[-1].isdigit())
+                or name.endswith(".layers.0.linear_attn.in_proj_qkv")
+                or name.endswith(".layers.0.input_layernorm")
+                or name.endswith(".layers.0.linear_attn")
+                or name.endswith(".model.norm")
+                or name.endswith(".lm_head")
+            ):
+
+                def capture(module, args, output, name=name):
+                    tensor = output[0] if isinstance(output, tuple) else output
+                    activations.setdefault(name, []).append(tensor.detach().cpu())
+
+                hooks.append(module.register_forward_hook(capture))
         independent_loss = 0.0
-        for item in items:
-            loss = loss_forward(collator([item])) / len(items)
-            independent_loss += float(loss.detach())
-            loss.backward()
-        independent = [p.grad.detach().float().clone() for p in parameters]
-        model.zero_grad(set_to_none=True)
-        packed_loss = loss_forward(collate_packed_monitoring(items))
-        packed_loss.backward()
+        try:
+            activations = independent_activations
+            for item in items:
+                loss = loss_forward(collator([item])) / len(items)
+                independent_loss += float(loss.detach())
+                loss.backward()
+            independent = [p.grad.detach().float().clone() for p in parameters]
+            model.zero_grad(set_to_none=True)
+            activations = packed_activations
+            packed_loss = loss_forward(collate_packed_monitoring(items))
+            packed_loss.backward()
+        finally:
+            for hook in hooks:
+                hook.remove()
         if any(p.grad is None or not torch.isfinite(p.grad).all() for p in parameters):
             raise ValueError("missing/nonfinite packed adapter gradients")
         numerator = sum(
@@ -104,24 +158,13 @@ def packing_isolation_canary(
         denominator = sum(g.square().sum() for g in independent)
         relative = float(torch.sqrt(numerator / denominator.clamp_min(1e-30)))
         packed_value = float(packed_loss.detach())
-        if (
-            not all(
-                math.isfinite(v) for v in [packed_value, independent_loss, relative]
-            )
-            or abs(packed_value - independent_loss)
-            > 0.02 + 0.02 * abs(independent_loss)
-            or relative > 0.05
-        ):
-            raise ValueError(
-                f"packing numerical parity failed: losses "
-                f"{independent_loss}/{packed_value}, gradient rel L2={relative}"
-            )
-        return {
-            "passed": True,
+        receipt = {
+            "passed": False,
             "cases": rows,
             "independent_loss": independent_loss,
             "packed_loss": packed_value,
             "adapter_gradient_relative_l2": relative,
+            "layers": _layer_comparison(independent_activations, packed_activations),
             "tolerances": {
                 "logits_absolute": 1e-6,
                 "cross_input_gradient": 1e-8,
@@ -130,6 +173,21 @@ def packing_isolation_canary(
                 "gradient_relative_l2": 0.05,
             },
         }
+        if (
+            not all(
+                math.isfinite(v) for v in [packed_value, independent_loss, relative]
+            )
+            or abs(packed_value - independent_loss)
+            > 0.02 + 0.02 * abs(independent_loss)
+            or relative > 0.05
+        ):
+            raise PackingCanaryError(
+                f"packing numerical parity failed: losses "
+                f"{independent_loss}/{packed_value}, gradient rel L2={relative}",
+                receipt,
+            )
+        receipt["passed"] = True
+        return receipt
     finally:
         model.zero_grad(set_to_none=True)
         model.train(was_training)
@@ -226,6 +284,8 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
         return report
     except Exception as error:
         report.update(status="failed", error=f"{type(error).__name__}: {error}")
+        if isinstance(error, PackingCanaryError):
+            report["failed_canary"] = error.receipt
         publish()
         raise
     finally:

@@ -36,6 +36,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    reduction = config.get("bf16_reduced_precision_reduction")
+    if reduction is not None and (
+        type(reduction) is not bool or not config.get("sequence_packing", False)
+    ):
+        raise ValueError("BF16 reduction intervention requires the packing screen")
     if config.get("sequence_packing", False) and not (
         config.get("full_bf16_lora", False)
         and config.get("gated_delta_backend") == "flashqla"
@@ -521,6 +526,12 @@ def main() -> None:
             if config.get("sequence_packing", False):
                 command.append(
                     "++student.training.precision_screen.sequence_packing=true"
+                )
+            if config.get("bf16_reduced_precision_reduction") is not None:
+                command.append(
+                    "++student.training.precision_screen."
+                    "bf16_reduced_precision_reduction="
+                    f"{str(config['bf16_reduced_precision_reduction']).lower()}"
                 )
             if config.get("full_bf16_lora", False):
                 command.extend(
