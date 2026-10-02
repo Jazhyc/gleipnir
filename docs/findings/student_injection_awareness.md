@@ -54,3 +54,28 @@ audit applies to both sizes. Receipts are
 `tokenizer_identity_audit.json`; initialization inspection is recorded in
 `initialization_audit.json` in the same directory. No held-out model scores
 were used for these length checks.
+
+## Regular 4B training completed
+
+The regular condition completed the fixed one epoch: 272 optimizer updates,
+all 8,688 examples and 83,816,369 direct tokens, with zero padding. Recorded
+training runtime was 3,916.06 seconds. Excluding the first two updates, mean
+update time was 12.49 seconds, median 12.33 and p90 15.41; this exclusion does
+not remove every compilation event. Peak allocated GPU memory was 150.02 GiB.
+Mean training loss was 0.23312; the first five-update report was 0.70117 and
+the last five-update report at step 270 was 0.19723. These are training reports
+on different batches, not held-out quality evidence.
+
+The final FP32 master tensor digest is
+`871446f2bb31e973f0bbf3ec2edc7e1dcbe4114b774e79be6e0b4c68b1d94eab`,
+different from initialization. All 256 tensors (169,869,312 elements) are finite
+FP32, and the serving export retains their exact values under rebased names.
+Master file SHA-256 is
+`ef2ed374f7f07dfcf1455fc3c78a7722a7ce128dac0263deb79e8cc27560b873`;
+serving file SHA-256 is
+`2d6a96428ff904b6254f7b20924650e6c4da2b93046673b6937fc76189029924`.
+The teacher-target file hash remains
+`1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a`.
+The completed master, export and receipts were collected locally; artifact
+verification is in `results/student_injection_awareness/4b/regular/artifact_integrity.json`.
+Serving score parity, ID/OOD evaluation and publication are still pending.
