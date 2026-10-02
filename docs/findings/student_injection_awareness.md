@@ -323,3 +323,29 @@ The original job, execution contract, token audit and failure receipt are
 collected locally under `results/student_injection_awareness/9b/startup_recovery/`.
 The corrected matched pair has restarted; model loading and native training
 canaries remain pending. No benchmark rows or training settings were reduced.
+
+## Regular 9B native gates and training startup
+
+The retry loaded the pinned causal-LM 9B base and verified 8,953,803,264 frozen
+BF16 elements and 232,783,872 trainable FP32 LoRA elements in 256 tensors.
+All 24 GDN layers use FlashQLA. Both mandatory packing isolation gates passed:
+eager adapter-gradient relative L2 was 0.008496 and compiled was 0.007835,
+within the unchanged 0.05 tolerance. The longest-32 backward preflight passed
+with 922,511 actual tokens, maximum 29,337, nonzero finite gradient norm
+13.216311, unchanged masters and peak allocated memory 34.2383 GiB.
+Collected native receipts are under
+`results/student_injection_awareness/9b/regular/causal_adapter/`.
+
+The fresh seed-0 initial master digest is
+`5ba0b3d6e44c20a1a1ccfd2d5923b6d90a5dd930e02321ff832cb471984bcf79`.
+It remains to be matched against the aware condition's actual initialization.
+The separate FlashQLA-versus-FLA strict gradient result failed (relative L2
+0.226489), as did the broader adaptive-partition comparison (0.307071).
+Both were finite and accepted only by the existing explicit `selected_finite`
+policy; these negative strict results are preserved. They do not alter the
+mandatory packing gates or establish general gradient parity.
+
+The regular condition has completed its first optimizer updates. The first
+update took 30.87 seconds, including startup costs; warmed full-epoch timing,
+training completion, paired initialization, serving parity and quality results
+remain pending. GPU ECC checks showed zero volatile uncorrected errors.
