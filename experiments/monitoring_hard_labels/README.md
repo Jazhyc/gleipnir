@@ -67,3 +67,9 @@ reuses `results/student_injection_awareness/4b/regular/causal_adapter/training_m
 The version-1 startup was stopped before optimizer updates; all diagnostic
 receipts and logs remain under `startup_diagnostics_before_user_skip/`.
 The compiled training policy and runtime finite-gradient checks remain active.
+
+For an evaluation-only recovery after all training/reference receipts exist, use
+`python -m experiments.monitoring_hard_labels.run --resume-evaluation`.
+This preserves completed training and reference scores; serving still verifies
+their adapter/prompt identities and serving parity. The launcher explicitly adds
+the virtualenv and CUDA executable directories to `PATH` for FlashInfer JIT.

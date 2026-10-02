@@ -1,6 +1,7 @@
 # Tool-trajectory hard-label strength screen
 
-Status: prepared and submitted on the existing authorized B200, 2026-10-02.
+Status: all four training runs completed; ID evaluation is in progress after
+an evaluation-only launcher recovery, 2026-10-03 (Amsterdam time).
 Quality results are pending; this record does not change the selected objective.
 
 Completed tool-trajectory students previously used Kimi K3 soft targets only.
@@ -11,8 +12,9 @@ new user-authorized monitoring screen explicitly introduces source hard labels.
 Freeze four normalized hard fractions 0, 0.1, 0.3 and 1 at LR 2e-5. Use the
 regular compact student prompt, 8,688 monitoring rows, one epoch/272 updates,
 seed 0, rank 128/alpha 256 and a shared initial FP32 adapter. Preserve the
-selected packed BF16 B200 recipe and every isolation, memory, finite-gradient
-and serving gate. Source labels are separate from unchanged cached soft targets.
+selected packed BF16 B200 recipe. Version 2 reuses prior startup validation as
+documented below, retaining finite-gradient and serving checks. Source labels
+are separate from unchanged cached soft targets.
 The hard-only launch omits the teacher artifact from the trainer configuration
 while preserving the cache and its checksum in campaign provenance.
 
@@ -96,3 +98,29 @@ in progress; no quality result is available yet. The collected current kernel
 receipt explicitly records `performed_this_run=false` and the reference SHA256
 `91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f`,
 with no fresh `passed` or `finite` field.
+
+## Training completed and evaluation-only recovery
+
+All four candidates completed 272 updates with the frozen loss weights, LR,
+initial adapter and training population. Their training runtime receipts report
+4,208.57 seconds (hard fraction 0), 3,424.86 (0.1), 3,431.71 (0.3) and 3,395.91
+(1). Training and eager master-reference JSON receipts were collected locally.
+No ID ranking/calibration conclusion is available yet.
+
+The first vLLM process failed during FlashInfer initialization because its
+executable `PATH` omitted `.venv/bin`, hiding the already-installed `ninja`.
+This is an evaluation launcher defect; no training checkpoint failed. Preserve
+the original `campaign.missing_ninja.log`, `vllm.missing_ninja.log` and
+`evaluation_failure_missing_ninja.json`. The launcher now explicitly includes
+the virtualenv and CUDA binary directories. `--resume-evaluation` requires all
+completed training/reference receipts and resumes only vLLM and summary, so it
+does not repeat training or master references. Existing adapter/prompt identity
+and serving checks remain mandatory. The recovery PID is 72968 on the same Pod;
+no capacity or lifecycle operation was performed.
+
+Six focused resume/contract checks and scoped Ruff passed. The resumed engine
+loaded its cached graphs, completed FlashInfer warmup and passed soft-only
+master/serving parity. Full ID scoring remains pending/in progress; no quality
+selection is made from this startup result. All four completed training metadata
+receipts passed the frozen objective/recipe audit locally, using a checksum-
+identical local reference path for the remote receipt.

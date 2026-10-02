@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import fcntl
 import os
 import subprocess
@@ -17,12 +18,25 @@ from experiments.monitoring_hard_labels.prepare import (
 from gleipnir.monitoring_campaign_runtime import training_environment
 
 
-def run() -> None:
+def run(*, resume_evaluation: bool = False) -> None:
     verify_preparation()
+    if resume_evaluation:
+        for variant in FRACTIONS:
+            directory = OUTPUT / "4b" / variant
+            for name in ("complete.json", "parity_reference.json"):
+                if not (directory / name).is_file():
+                    raise ValueError(f"evaluation resume requires {variant}/{name}")
     logs = ROOT / "logs/runpod/monitoring_hard_labels"
     logs.mkdir(parents=True, exist_ok=True)
     serving_env = dict(os.environ)
     serving_env.update(
+        PATH=os.pathsep.join(
+            [
+                str(ROOT / ".venv/bin"),
+                f"{os.environ.get('CUDA_HOME', '/usr/local/cuda')}/bin",
+                os.environ.get("PATH", ""),
+            ]
+        ),
         VLLM_CACHE_ROOT=str(ROOT / ".cache/vllm/monitoring_hard_labels_v1"),
         TORCHINDUCTOR_CACHE_DIR=str(
             ROOT / ".cache/torchinductor/monitoring_hard_labels_v1"
@@ -61,6 +75,8 @@ def run() -> None:
             ),
         ]
     )
+    if resume_evaluation:
+        stages = stages[-2:]
     for stage, module, args, env in stages:
         write_json(OUTPUT / "status.json", {"stage": stage, "status": "running"})
         print(f"campaign_stage {stage}", flush=True)
@@ -89,10 +105,17 @@ def run() -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument(
+        "--resume-evaluation",
+        action="store_true",
+        help="Resume serving and summary using completed training/reference receipts",
+    )
+    args = parser.parse_args()
     OUTPUT.mkdir(parents=True, exist_ok=True)
     with (OUTPUT / "campaign.lock").open("a") as lock:
         fcntl.flock(lock.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
-        run()
+        run(resume_evaluation=args.resume_evaluation)
 
 
 if __name__ == "__main__":
