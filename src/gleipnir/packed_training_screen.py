@@ -53,6 +53,8 @@ def packing_isolation_canary(
     features: list[dict[str, Any]],
     collator: Callable,
     loss_forward: Callable,
+    *,
+    capture_layers: bool = True,
 ) -> dict:
     """Test identical-shape independence and matched singleton adapter gradients.
 
@@ -118,7 +120,7 @@ def packing_isolation_canary(
         independent_activations: dict = {}
         packed_activations: dict = {}
         hooks = []
-        for name, module in model.named_modules():
+        for name, module in model.named_modules() if capture_layers else []:
             parts = name.split(".")
             if (
                 (len(parts) >= 2 and parts[-2] == "layers" and parts[-1].isdigit())
@@ -165,6 +167,9 @@ def packing_isolation_canary(
             "packed_loss": packed_value,
             "adapter_gradient_relative_l2": relative,
             "layers": _layer_comparison(independent_activations, packed_activations),
+            "layer_diagnostics": "eager_only"
+            if capture_layers
+            else "omitted_under_compile",
             "tolerances": {
                 "logits_absolute": 1e-6,
                 "cross_input_gradient": 1e-8,
@@ -256,13 +261,17 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
                     # Release the first trajectory's AdamW states before preflight.
                     kwargs["optimizer_factory"]()
                 options = dict(kwargs, output=output / condition)
-                options["packing_canary"] = lambda: packing_isolation_canary(
-                    model,
-                    sorted(
-                        kwargs["features"], key=lambda f: -len(f["direct_input_ids"])
-                    ),
-                    kwargs["collator"],
-                    kwargs["loss_forward"],
+                options["packing_canary"] = lambda *, compiled: (
+                    packing_isolation_canary(
+                        model,
+                        sorted(
+                            kwargs["features"],
+                            key=lambda f: -len(f["direct_input_ids"]),
+                        ),
+                        kwargs["collator"],
+                        kwargs["loss_forward"],
+                        capture_layers=not compiled,
+                    )
                 )
                 if condition == "packed":
                     options["collator"] = collate_packed_monitoring

@@ -143,3 +143,10 @@ Torch requires the cuBLASLt backend when split-K is disabled; the first no-split
 attempt failed at that runtime requirement with zero updates. The BF16 control
 helper now explicitly selects and records cuBLASLt for this setting.
 `bf16_no_splitk_lt_gpu.yaml` runs that corrected common backend configuration.
+
+That corrected backend passed the eager model canary: every recorded layer
+output and the loss matched exactly, with adapter gradient relative L2 0.00888195
+and zero cross-example dependence. The compiled run then stopped on a diagnostic
+hook collection error with zero updates. Layer hooks are now confined to eager
+execution; all compiled loss/readout/input-gradient/adapter-gradient gates remain
+unchanged. `bf16_checked_gpu.yaml` repeats the corrected complete protocol.

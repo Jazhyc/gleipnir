@@ -339,7 +339,7 @@ def run_precision_training_screen(
         report["before_native_probe"] = evaluate(dense=False)
         report["before_common_probe"] = evaluate(dense=True)
         if packing_canary is not None:
-            report["packing_eager_canary"] = packing_canary()
+            report["packing_eager_canary"] = packing_canary(compiled=False)
             publish()
         if reference_weights_on_cpu:
             from gleipnir.fp4_memory import offload_reference_weights
@@ -382,7 +382,7 @@ def run_precision_training_screen(
         }
         publish()
         if packing_canary is not None:
-            report["packing_compiled_canary"] = packing_canary()
+            report["packing_compiled_canary"] = packing_canary(compiled=True)
             publish()
         if diagnostics_only:
             if capture_native_operands:

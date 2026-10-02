@@ -37,6 +37,12 @@ def test_conditions_share_initial_weights_and_restore_bindings(
     model.chunk_gated_delta_rule = kernel
     model.causal_conv1d_fn = convolve
     calls = []
+    capture_modes = []
+    monkeypatch.setattr(
+        screen,
+        "packing_isolation_canary",
+        lambda *args, capture_layers: capture_modes.append(capture_layers),
+    )
 
     def run(**options):
         condition = options["output"].name
@@ -44,6 +50,8 @@ def test_conditions_share_initial_weights_and_restore_bindings(
         assert model.chunk_gated_delta_rule is kernel
         assert model.forward == original_forward
         assert options["packing_canary"] is not None
+        options["packing_canary"](compiled=False)
+        options["packing_canary"](compiled=True)
         if condition == "packed":
             assert options["partition_strategy"]([5, 3, 2]) == [[0, 1], [2]]
             assert options["collator"] is screen.collate_packed_monitoring
@@ -76,9 +84,11 @@ def test_conditions_share_initial_weights_and_restore_bindings(
         with pytest.raises(ValueError, match="gate failure"):
             screen.run_packed_training_screen(**options)
         assert calls == ["padded"]
+        assert capture_modes == [True, False]
     else:
         report = screen.run_packed_training_screen(**options)
         assert calls == ["padded", "packed"]
+        assert capture_modes == [True, False, True, False]
         assert report["step_time_reduction_fraction"] == 0.5
     assert model.weight.item() == 2
     assert model.forward == original_forward
