@@ -203,3 +203,30 @@ under `results/bf16_sequence_packing_learning/` with an interruption record.
 `packing_compile_cache_limit: 64` in both controls. It also enables
 `fail_on_recompile_limit_hit` so cache exhaustion fails instead of silently
 changing execution. Both settings are recorded and restored after the screen.
+
+That corrected compiled comparison completed both trajectories with no fallback
+warnings and no new Dynamo graphs during measured steps. Its packing canaries
+passed the strict 5% gate (gradient relative L2 0.00885904); both compiled losses
+were 0.957633674. Mean updates were 7.7928 seconds padded and 5.7163 packed
+(26.65% reduction), with about 98.04 GiB peak allocated in both. Shared probes
+started identically at 1.20367 and ended at 0.77854/0.77345; every loss/gradient
+norm remained finite. The improvement over the earlier gradient receipt is
+observed, but cache-limit causality is not established by these two runs.
+
+## No-checkpoint follow-up
+
+After the compiled comparison, the user requested testing removal of gradient
+checkpointing to use B200 memory and reduce recomputation. Hypothesis: the
+unchanged physical batches fit without checkpointing and complete faster.
+`bf16_no_checkpoint_gpu.yaml` repeats both compiled padded/packed controls with
+checkpointing disabled, preserving the same initial adapter, cohort, order,
+optimizer, precision boundary and compiler cache controls. The source job records
+`gradient_checkpointing=false`, policy `all` (inactive) and no layer selection;
+the model receipt must have an empty checkpointed-layer list.
+
+Run the existing longest-32 preflight first, including the 28,733-token maximum
+in this cohort. Stop on OOM, nonfinite values or any isolation/parity failure
+beyond the declared diagnostic policy; do not shrink batches to hide an OOM.
+Compare complete update times and peak allocated memory against the checkpointed
+compiled controls. Require at least 5% lower update time before recommending the
+memory intervention. No held-out selection changes or quality promotion occur.

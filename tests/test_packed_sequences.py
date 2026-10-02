@@ -213,3 +213,10 @@ def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
     }
     with pytest.raises(ValueError):
         validate_config(dict(cached, packing_compile_cache_limit=129))
+    no_checkpoint = yaml.safe_load((root / "bf16_no_checkpoint_gpu.yaml").read_text())
+    validate_config(no_checkpoint)
+    assert {key for key in no_checkpoint if no_checkpoint[key] != cached.get(key)} == {
+        "output",
+        "logs",
+        "disable_gradient_checkpointing",
+    }

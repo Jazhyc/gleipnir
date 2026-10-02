@@ -1,4 +1,4 @@
-"""Explicit bounded memory-policy overrides for the FP4 throughput screen."""
+"""Explicit bounded memory-policy overrides for precision throughput screens."""
 
 from __future__ import annotations
 
@@ -6,10 +6,24 @@ from typing import Any
 
 
 def validate_memory_recipe(config: dict[str, Any]) -> None:
-    """Require native cached backward before changing its memory budget."""
+    """Validate bounded BF16 checkpoint and native FP4 memory interventions."""
     enabled = config.get("reference_weights_on_cpu", False)
     indices = config.get("checkpoint_layer_indices")
     budget = config.get("adaptive_token_budget")
+    disable_checkpointing = config.get("disable_gradient_checkpointing", False)
+    if type(disable_checkpointing) is not bool:
+        raise ValueError("disable_gradient_checkpointing must be boolean")
+    if disable_checkpointing and not (
+        config.get("full_bf16_lora", False)
+        and config.get("ten_step_learning_comparison", False)
+        and config.get("conditions") == ["bf16"]
+        and config.get("steps") == 10
+        and not config.get("diagnostics_only", False)
+        and not enabled
+        and indices is None
+        and budget is None
+    ):
+        raise ValueError("disabling checkpointing requires the bounded BF16 comparison")
     if (indices is not None or budget is not None) and not enabled:
         raise ValueError("memory-policy overrides require reference-weight offload")
     if enabled and not (
@@ -35,6 +49,10 @@ def apply_memory_recipe(job: dict[str, Any], config: dict[str, Any]) -> dict[str
     """Keep sources and effective batch intact while recording physical changes."""
     validate_memory_recipe(config)
     result = dict(job)
+    if config.get("disable_gradient_checkpointing", False):
+        result["gradient_checkpointing"] = False
+        result["gradient_checkpointing_policy"] = "all"
+        result["gradient_checkpointing_layer_indices"] = None
     if config.get("checkpoint_layer_indices") is not None:
         result["gradient_checkpointing"] = True
         result["gradient_checkpointing_policy"] = "explicit"

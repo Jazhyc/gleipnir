@@ -1,7 +1,7 @@
 # BF16 LoRA sequence packing on B200
 
-Status: native eager isolation/parity and matched timing passed; an explicitly
-authorized compiled learning diagnostic is under validation. Packing remains
+Status: eager and corrected compiled packing passed isolation, packing parity
+and bounded learning/timing checks; a no-checkpoint comparison is running. Packing remains
 opt-in; ordinary training uses adaptive padding.
 
 ## Matched recipe and boundaries
@@ -99,7 +99,49 @@ enables `fail_on_recompile_limit_hit`, so this diagnostic cannot silently time
 an eager fallback after cache exhaustion. This changes compiler cache policy
 equally for both controls, preserving model, precision and learning settings.
 
+The corrected run's initial compiled canary passed strict parity: both losses
+were 0.957633674 and gradient relative L2 was 0.00885904. This is an observed
+improvement in singleton/packed agreement after the cache intervention, not
+proof of improved accuracy against eager or a localized explanation of the
+old discrepancy. The earlier run's first explicit cache-exhaustion warning
+appears after its numerical canary, and the generated continuation-graph traces
+differ between runs. Identical generic compile-canary losses (eager 1.287744,
+compiled 1.320180) also show that ordinary compiled/eager disagreement remains.
+Root-cause attribution needs controlled graph/kernel replay; cache size alone
+is not a numerical-accuracy setting. Torch's [recompilation documentation](https://docs.pytorch.org/docs/2.11/user_guide/torch_compiler/compile/programming_model.recompilation.html)
+explains the compile-versus-eager fallback behavior.
+
 ## Artifacts and limits
+
+The corrected compiled comparison completed ten steps per control with no
+cache-fallback warning and zero additional Dynamo graphs during measured steps.
+Both initial adapter digests, all dataset indices, learning rates and actual
+token counts matched. The shared padded/original-backend probe began at exactly
+1.203672633 in both conditions; all losses/gradient norms remained finite and
+both FP32 master digests changed.
+
+| Compiled control with checkpointing | Adaptive padding | Packing |
+| --- | ---: | ---: |
+| Mean synchronized update seconds | 7.7928 | 5.7163 |
+| Physical forward/backward calls | 115 | 74 |
+| Peak allocated memory, GiB | 98.0445 | 98.0446 |
+| Final shared-probe loss | 0.77854 | 0.77345 |
+
+Packing reduced update time by 26.65% (36.32% greater throughput). The maximum
+absolute difference between stepwise mean probe losses was 0.03025, with final
+difference 0.00509. The gradient norms were 3.77–27.46 padded and 3.93–27.17 packed.
+This supports early learning stability and systems efficiency on this cohort;
+it does not establish longer convergence or held-out task-quality equivalence.
+Although the 15% diagnostic allowance remained configured, both packing
+canaries passed the original 5% gate, so this trajectory does not directly
+demonstrate training stability with a 14.3% canary disagreement.
+
+The user requested a follow-up without gradient checkpointing.
+`bf16_no_checkpoint_gpu.yaml` retains the compiled recipe and both layouts,
+changing only model checkpointing and output destinations. The first test is
+the unchanged longest-32 preflight; an OOM stops the comparison without shrinking
+its token budget or examples. Setup and measured memory/time will be compared
+with the table above. Its result remains pending.
 
 The matched eager trajectories completed ten steps each (the first with zero
 learning rate), preserving the same initial adapter digest, data order, learning
@@ -139,6 +181,6 @@ states and ten identical logical updates per condition.
 The eager canaries use two training examples truncated for bounded kernel tests;
 their loss/gradient agreement is a systems check, not task-quality evidence.
 There is no held-out quality result. Full-campaign promotion still requires the
-frozen validation contract. Focused regressions passed: 108 tests, eight intentional unsupported
+frozen validation contract. Focused regressions passed: 122 tests, eight intentional unsupported
 policy skips. The [experiment README](../../experiments/monitoring_sequence_packing/README.md)
 records hypotheses, gates, stop conditions, and executable configurations.
