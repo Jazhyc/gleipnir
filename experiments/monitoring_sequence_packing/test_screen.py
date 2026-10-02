@@ -19,11 +19,12 @@ def test_layer_diagnostics_preserve_sequence_order_and_failure_receipt():
     assert error.receipt["layers"] == result
 
 
+@pytest.mark.parametrize("packing_only", [False, True, None])
 @pytest.mark.parametrize("fail", [False, True])
 @pytest.mark.parametrize("learning_tolerance", [None, 0.15])
 @pytest.mark.parametrize("cache_limit", [None, 64])
 def test_conditions_share_initial_weights_and_restore_bindings(
-    monkeypatch, tmp_path, fail, learning_tolerance, cache_limit
+    monkeypatch, tmp_path, fail, learning_tolerance, cache_limit, packing_only
 ):
     original_cache_limit = torch._dynamo.config.recompile_limit
     original_fail_on_limit = torch._dynamo.config.fail_on_recompile_limit_hit
@@ -98,23 +99,31 @@ def test_conditions_share_initial_weights_and_restore_bindings(
         flashqla_auto_cp=False,
         ten_step_learning_comparison=True,
     )
+    if packing_only is not None:
+        options["metadata"]["packing_only"] = packing_only
+    conditions = ["padded", "packed"] if packing_only is False else ["packed"]
     if fail:
         with pytest.raises(ValueError, match="gate failure"):
             screen.run_packed_training_screen(**options)
-        assert calls == ["padded"]
+        assert calls == conditions[:1]
         assert capture_modes == [
             (True, learning_tolerance),
             (False, learning_tolerance),
         ]
     else:
         report = screen.run_packed_training_screen(**options)
-        assert calls == ["padded", "packed"]
-        assert (
-            capture_modes
-            == [(True, learning_tolerance), (False, learning_tolerance)] * 2
-        )
+        assert calls == conditions
+        assert capture_modes == [
+            (True, learning_tolerance),
+            (False, learning_tolerance),
+        ] * len(conditions)
         assert report["learning_gradient_tolerance"] == learning_tolerance
-        assert report["step_time_reduction_fraction"] == 0.5
+        assert report["packing_only"] is (packing_only is not False)
+        if packing_only is False:
+            assert report["step_time_reduction_fraction"] == 0.5
+        else:
+            assert "step_time_reduction_fraction" not in report
+            assert set(report["conditions"]) == {"packed"}
     assert model.weight.item() == 2
     assert model.forward == original_forward
     assert model.chunk_gated_delta_rule is kernel

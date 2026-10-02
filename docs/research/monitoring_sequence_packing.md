@@ -1,8 +1,9 @@
 # Boundary-safe Qwen3.5 sequence packing
 
-Date: 2026-10-02. Status: local source audit, CPU isolation diagnostic and proposed
-B200 integration. The user requested investigation now and B200 work after the
-current experiment completes. No GPU work is started by this investigation.
+Date: 2026-10-02. The initial source/CPU audit preceded the authorized B200 work.
+Subsequent BF16 packing canaries and matched eager/compiled training comparisons
+completed, including a no-checkpoint follow-up. See the
+[BF16 finding](../findings/bf16_sequence_packing.md) for results and limits.
 
 ## Prior evidence
 
@@ -196,5 +197,11 @@ perturbation, checkpointed input-gradient isolation and matched singleton
 monitoring-loss/adapter-gradient gates run before optimizer updates and again
 after compilation. Tolerances and the bounded matched timing protocol are in
 the [experiment README](../../experiments/monitoring_sequence_packing/README.md).
-GPU acceptance remains pending until those artifacts pass; CPU evidence alone
-does not authorize promotion or imply held-out quality parity.
+The real-model GPU isolation checks passed with zero measured cross-example
+effects. Corrected compiled packing passed the 5% singleton/packed gradient gate
+and reduced update time by 26.65% on the matched cohort. Removing model
+checkpointing reduced packed update time a further 9.99%, fitting at 147.14 GiB
+peak allocated memory. These bounded results support an opt-in systems recipe;
+longer training and frozen held-out quality validation are still required.
+The earlier compiler-related numerical discrepancies remain recorded with
+unresolved cache-causality attribution in the finding.

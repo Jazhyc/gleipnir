@@ -3642,6 +3642,7 @@ def main(cfg: DictConfig) -> None:
             max_grad_norm=float(args.max_grad_norm),
             metadata={
                 "bf16_matmul": bf16_matmul_metadata,
+                "packing_only": precision_screen_cfg.get("packing_only", True),
                 "packing_learning_gradient_tolerance": precision_screen_cfg.get(
                     "packing_learning_gradient_tolerance"
                 ),

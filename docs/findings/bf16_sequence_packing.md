@@ -1,8 +1,9 @@
 # BF16 LoRA sequence packing on B200
 
 Status: eager and corrected compiled packing passed isolation, packing parity
-and bounded learning/timing checks; a no-checkpoint comparison is running. Packing remains
-opt-in; ordinary training uses adaptive padding.
+and bounded learning/timing checks, including the no-checkpoint follow-up. Packing remains
+confined to the bounded screen; new comparisons use packing only by user
+instruction. Historical paired reports remain available as baselines.
 
 ## Matched recipe and boundaries
 
@@ -141,7 +142,32 @@ The user requested a follow-up without gradient checkpointing.
 changing only model checkpointing and output destinations. The first test is
 the unchanged longest-32 preflight; an OOM stops the comparison without shrinking
 its token budget or examples. Setup and measured memory/time will be compared
-with the table above. Its result remains pending.
+with the table above.
+
+The no-checkpoint comparison completed with no checkpointed layers in either
+model receipt, no cache-fallback warnings and no new measured Dynamo graphs.
+Initial adapter hashes, all batches, learning rates, physical partitions and
+common-probe starting values matched the checkpointed runs. Both longest-32
+preflights passed. Compiled singleton/packed canary losses were equal at
+0.949228942; gradient relative L2 was 0.00697903. All tested cross-example logit
+effects and input gradients were exactly zero, and every training loss and
+gradient norm was finite.
+
+| Compiled control without checkpointing | Adaptive padding | Packing |
+| --- | ---: | ---: |
+| Mean synchronized update seconds | 7.1180 | 5.1452 |
+| Peak allocated memory, GiB | 147.1394 | 147.1395 |
+| Final shared-probe loss | 0.78949 | 0.77271 |
+
+Disabling checkpointing reduced padded update time by 8.66% and packed update
+time by 9.99%, exceeding the prospective 5% gate for both. It used approximately
+49.10 GiB more allocated memory, while the unchanged cohort still fit on the
+B200. Packing alone reduced no-checkpoint update time by 27.71%; combining
+packing and no checkpointing reduced time by 33.97% against the compiled padded
+checkpointed control. The no-checkpoint packed probe ended within 0.00075 of
+checkpointed packing's probe; this remains a small training-cohort diagnostic,
+not held-out quality equivalence. The configuration is a supported opt-in
+candidate for a longer validated campaign, not a default-recipe promotion.
 
 The matched eager trajectories completed ten steps each (the first with zero
 learning rate), preserving the same initial adapter digest, data order, learning
@@ -158,7 +184,8 @@ both final master digests changed.
 
 Packing reduced measured update time by 22.89% (29.68% greater throughput),
 exceeding the predeclared 5% speed gate. Padding already wasted only 6.87% of
-processed tokens, so fewer physical calls also contribute to the gain. Memory
+processed tokens; the gain is consistent with fewer physical calls as well as
+removed padding, without isolating their contributions. Memory
 was effectively unchanged; intact long examples dominate the peak. Setup,
 probes and artifact export are outside the synchronized update measurement.
 This is one ten-step trajectory per condition, not repeated confidence evidence.
@@ -172,8 +199,14 @@ probes, eliminating this avoidable layout difference.
 
 Earlier receipts/logs are retained locally under the corresponding
 `results/bf16_sequence_packing*` and `logs/runpod/bf16_sequence_packing*` trees.
-The corrected protocol writes `results/bf16_sequence_packing_checked/`, including
-separate padded/packed reports and FP32 masters on successful completion. Setup
+Completed reports and both FP32 masters per run are under
+`results/bf16_sequence_packing_eager/`,
+`results/bf16_sequence_packing_learning_cached/` and
+`results/bf16_sequence_packing_no_checkpoint/`. Each has a configuration/source
+contract, trajectory summary and plot; the no-checkpoint run additionally has
+a matched checkpoint comparison. Locally collected artifacts are checksummed.
+Earlier strict failures and the interrupted cache-exhaustion attempt remain
+separate, preserving negative results. Setup
 and compilation are outside synchronized measured training steps. The baseline
 is the same BF16/backend/reduction recipe in the same process, with fresh AdamW
 states and ten identical logical updates per condition.

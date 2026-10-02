@@ -32,3 +32,4 @@ fp32_lm_head: false
 full_bf16_lora: true
 
 sequence_packing: true
+packing_only: false

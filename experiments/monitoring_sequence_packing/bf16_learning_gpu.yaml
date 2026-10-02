@@ -32,6 +32,7 @@ fp32_lm_head: false
 full_bf16_lora: true
 
 sequence_packing: true
+packing_only: false
 packing_learning_gradient_tolerance: 0.15
 
 bf16_reduced_precision_reduction: false

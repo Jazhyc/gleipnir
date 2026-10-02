@@ -40,6 +40,11 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    if "packing_only" in config and (
+        type(config["packing_only"]) is not bool
+        or not config.get("sequence_packing", False)
+    ):
+        raise ValueError("packing_only requires a boolean and the packing screen")
     learning_tolerance = config.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(learning_tolerance)
     if learning_tolerance is not None and not config.get("sequence_packing", False):
@@ -562,6 +567,10 @@ def main() -> None:
             if config.get("sequence_packing", False):
                 command.append(
                     "++student.training.precision_screen.sequence_packing=true"
+                )
+                command.append(
+                    "++student.training.precision_screen.packing_only="
+                    f"{str(config.get('packing_only', True)).lower()}"
                 )
             if config.get("packing_learning_gradient_tolerance") is not None:
                 command.append(

@@ -127,6 +127,48 @@ def test_invalid_memory_policy_stops_before_model_loading(overrides):
         validate_memory_recipe({**config, **overrides})
 
 
+def test_larger_bf16_physical_batch_preserves_checkpointing_and_logical_batch():
+    source = {
+        "gradient_checkpointing": True,
+        "gradient_checkpointing_policy": "explicit",
+        "gradient_checkpointing_layer_indices": [0, 2, 5],
+        "micro_batch_size": 32,
+        "gradient_accumulation_steps": 1,
+        "selection_sha256": "frozen",
+        "adaptive_microbatching": {
+            "enabled": True,
+            "max_padded_tokens": 16384,
+            "max_micro_batch_size": 8,
+        },
+    }
+    before = deepcopy(source)
+    config = {
+        "full_bf16_lora": True,
+        "ten_step_learning_comparison": True,
+        "conditions": ["bf16"],
+        "steps": 10,
+        "adaptive_token_budget": 32768,
+    }
+    actual = apply_memory_recipe(source, config)
+    assert source == before
+    assert actual == dict(
+        source,
+        adaptive_microbatching={
+            "enabled": True,
+            "max_padded_tokens": 32768,
+            "max_micro_batch_size": 8,
+        },
+    )
+    for override in [
+        {"steps": 20},
+        {"full_bf16_lora": False},
+        {"adaptive_token_budget": 65536},
+        {"disable_gradient_checkpointing": True},
+    ]:
+        with pytest.raises(ValueError):
+            validate_memory_recipe(dict(config, **override))
+
+
 def test_dense_reference_probe_restores_native_forward_after_failure():
     from gleipnir.fouroversix_training import FrozenFourOverSixLinear, FrozenFp4Runtime
     from gleipnir.precision_training_screen import dense_mlp_evaluation

@@ -1,8 +1,8 @@
 # Independent monitoring sequences in packed Qwen3.5 training
 
-Status: CPU diagnostic passed; opt-in B200 BF16 LoRA integration under validation.
-The preceding BF16 experiment has completed. Packing remains confined to this
-bounded screen until the native isolation and numerical parity gates pass.
+Status: CPU and native B200 isolation checks passed, with completed eager and
+compiled BF16 LoRA comparisons. New comparisons use packing only. Longer
+training and held-out quality validation remain pending.
 
 ## Hypothesis and contract
 
@@ -230,3 +230,38 @@ beyond the declared diagnostic policy; do not shrink batches to hide an OOM.
 Compare complete update times and peak allocated memory against the checkpointed
 compiled controls. Require at least 5% lower update time before recommending the
 memory intervention. No held-out selection changes or quality promotion occur.
+
+The follow-up passed with zero checkpointed layers, zero measured sequence
+leakage and compiled canary gradient relative L2 0.00697903. Both longest-example
+preflights and all ten-step trajectories completed without nonfinite values or
+compiler fallback. Mean updates were 7.1180 seconds padded and 5.1452 packed,
+8.66%/9.99% below their checkpointed controls. Peak allocated memory rose from
+98.04 to 147.14 GiB and fit the existing B200. The initial hashes, logical batches,
+physical partitions, learning rates and shared-probe starting values matched.
+This supports the no-checkpoint configuration as an opt-in systems candidate;
+longer convergence and frozen held-out quality checks remain necessary.
+
+## Larger physical batches with checkpointing
+
+The user proposed spending memory on larger batches instead of disabling
+checkpointing. Hypothesis: fewer physical calls with checkpointing retained
+outweigh recomputation cost. `bf16_larger_batch_gpu.yaml` retains the original
+12 checkpointed layers and doubles the physical token budget from 16,384 to
+32,768, using packing only as requested. Packed rows are already
+single batch rows with variable example counts; their size is controlled by
+the token budget. The logical batch remains 32 with unchanged initial adapters,
+cohort/order, targets, learning rate and optimizer schedule.
+
+Run longest-32 preflight and the same ten warmup/ten measured updates with
+packing. Stop on OOM, nonfinite values, leakage or the recorded
+packing gates, without shrinking the declared batch. Compare update time,
+physical calls and peak allocated memory against the existing packed
+checkpointed 16,384-token run and the packed no-checkpoint run. Require at
+least 5% lower packed update time than 5.1452 seconds (the no-checkpoint result)
+before favoring the larger checkpointed batch. Preserve all negative results;
+this is a systems comparison and makes no held-out quality claim.
+
+New comparisons default to `packing_only: true`; the launcher forwards this
+explicitly and receipts record it. Historical paired configurations retain
+`packing_only: false` for reproducibility. Independent singleton numerical and
+sequence-isolation canaries remain mandatory, as does the shared bounded probe.

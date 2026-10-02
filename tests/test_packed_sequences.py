@@ -171,6 +171,7 @@ def test_packing_config_preserves_the_completed_bf16_recipe():
         "output",
         "logs",
         "sequence_packing",
+        "packing_only",
     }
     for override in [
         {"full_bf16_lora": False},
@@ -220,3 +221,29 @@ def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
         "logs",
         "disable_gradient_checkpointing",
     }
+    larger = yaml.safe_load((root / "bf16_larger_batch_gpu.yaml").read_text())
+    validate_config(larger)
+    assert {key for key in larger if larger[key] != cached.get(key)} == {
+        "output",
+        "logs",
+        "adaptive_token_budget",
+        "packing_only",
+    }
+
+
+@pytest.mark.parametrize("value", ["true", None, 1])
+def test_packing_only_requires_boolean(value):
+    from pathlib import Path
+
+    import yaml
+
+    from experiments.fp4_stability.run import validate_config
+
+    config = yaml.safe_load(
+        (
+            Path(__file__).parents[1]
+            / "experiments/monitoring_sequence_packing/bf16_larger_batch_gpu.yaml"
+        ).read_text()
+    )
+    with pytest.raises(ValueError, match="packing_only"):
+        validate_config(dict(config, packing_only=value))

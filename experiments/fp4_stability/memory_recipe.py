@@ -10,21 +10,24 @@ def validate_memory_recipe(config: dict[str, Any]) -> None:
     enabled = config.get("reference_weights_on_cpu", False)
     indices = config.get("checkpoint_layer_indices")
     budget = config.get("adaptive_token_budget")
-    disable_checkpointing = config.get("disable_gradient_checkpointing", False)
-    if type(disable_checkpointing) is not bool:
-        raise ValueError("disable_gradient_checkpointing must be boolean")
-    if disable_checkpointing and not (
+    bounded_bf16 = (
         config.get("full_bf16_lora", False)
         and config.get("ten_step_learning_comparison", False)
         and config.get("conditions") == ["bf16"]
         and config.get("steps") == 10
         and not config.get("diagnostics_only", False)
         and not enabled
-        and indices is None
-        and budget is None
+    )
+    disable_checkpointing = config.get("disable_gradient_checkpointing", False)
+    if type(disable_checkpointing) is not bool:
+        raise ValueError("disable_gradient_checkpointing must be boolean")
+    if disable_checkpointing and not (
+        bounded_bf16 and indices is None and budget is None
     ):
         raise ValueError("disabling checkpointing requires the bounded BF16 comparison")
-    if (indices is not None or budget is not None) and not enabled:
+    if (indices is not None or budget is not None) and not (
+        enabled or (bounded_bf16 and indices is None)
+    ):
         raise ValueError("memory-policy overrides require reference-weight offload")
     if enabled and not (
         config["conditions"] == ["fouroversix"]
@@ -41,8 +44,11 @@ def validate_memory_recipe(config: dict[str, Any]) -> None:
         or indices != sorted(set(indices))
     ):
         raise ValueError("checkpoint override requires sorted unique Qwen4B layers")
-    if budget is not None and (type(budget) is not int or budget not in {16384, 24576}):
-        raise ValueError("adaptive budget must be a predeclared 16384 or 24576 tokens")
+    allowed_budgets = {16384, 24576, 32768} if bounded_bf16 else {16384, 24576}
+    if budget is not None and (
+        type(budget) is not int or budget not in allowed_budgets
+    ):
+        raise ValueError("adaptive budget must be a predeclared bounded token count")
 
 
 def apply_memory_recipe(job: dict[str, Any], config: dict[str, Any]) -> dict[str, Any]:

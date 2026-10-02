@@ -242,8 +242,11 @@ def packing_isolation_canary(
 
 
 def run_packed_training_screen(**kwargs: Any) -> dict:
-    """Replay the existing ten-update BF16 recipe with padded and packed batches."""
+    """Replay the ten-update BF16 recipe, using packing by default."""
     metadata = kwargs["metadata"]
+    packing_only = metadata.get("packing_only", True)
+    if type(packing_only) is not bool:
+        raise ValueError("packing_only must be a boolean")
     learning_tolerance = metadata.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(learning_tolerance)
     cache_limit = metadata.get("packing_compile_cache_limit")
@@ -283,6 +286,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
     initial = [p.detach().cpu().clone() for _, p in named]
     report = {
         "status": "running",
+        "packing_only": packing_only,
         "learning_gradient_tolerance": learning_tolerance,
         "compile_cache_intervention": compile_options,
         "initial_master_sha256": tensor_digest(initial),
@@ -309,9 +313,9 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
             # Fail before either optimizer trajectory if the installed kernels leak.
             # The existing runner installs the selected FlashQLA precision boundary
             # before invoking this gate, and invokes it again after compilation.
-            for condition in ["padded", "packed"]:
+            for condition in ["packed"] if packing_only else ["padded", "packed"]:
                 reset()
-                if condition == "packed":
+                if report["conditions"]:
                     # Release the first trajectory's AdamW states before preflight.
                     kwargs["optimizer_factory"]()
                 options = dict(kwargs, output=output / condition)
@@ -339,11 +343,12 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
                         **options
                     )
                 publish()
-        padded = report["conditions"]["padded"]["timing_summary"]
-        packed = report["conditions"]["packed"]["timing_summary"]
-        report["step_time_reduction_fraction"] = (
-            1 - packed["mean_step_seconds"] / padded["mean_step_seconds"]
-        )
+        if "padded" in report["conditions"]:
+            padded = report["conditions"]["padded"]["timing_summary"]
+            packed = report["conditions"]["packed"]["timing_summary"]
+            report["step_time_reduction_fraction"] = (
+                1 - packed["mean_step_seconds"] / padded["mean_step_seconds"]
+            )
         report["status"] = "complete"
         publish()
         return report
