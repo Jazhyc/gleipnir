@@ -110,7 +110,9 @@ adds explicit package-version and bound convolution-kernel guards and records
 the source commit in prediction identities. Both FLA and causal-convolution
 import paths are now supplied. The corrected reference completed all six cells
 at each size. The full 4B grid then completed all 31,104 predictions, passed all
-serving gates and passed an independent local completion audit. The 9B vLLM
-grid is running with the corrected environment and established runtime caches.
-Results and preserved startup recoveries are recorded in the
+serving gates and passed an independent local completion audit. The corrected
+9B grid also completed all six cells. The final independent audit passed all
+62,208 predictions, all twelve serving gates and the unchanged upstream metric
+calculations, with zero truncation. Both engines exited successfully and the
+GPU is idle. Results and preserved startup recoveries are recorded in the
 [finding](../findings/monitor_injection_evaluation.md).

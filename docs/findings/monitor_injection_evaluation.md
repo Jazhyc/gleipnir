@@ -7,6 +7,9 @@ the matched tool-trajectory-only students, with no additional training,
 checkpoint selection or attack generation. Implementation is in
 [monitor-injection-evals](https://github.com/mkenney2/monitor-injection-evals/tree/feat/gleipnir-vllm-grid),
 evaluation commit `bd114be7e646affdb5a06a5bfaa720bbc644e830`.
+All twelve cells completed and passed the independent audit. The
+[public-remote results report](https://github.com/mkenney2/monitor-injection-evals/blob/feat/gleipnir-vllm-grid/reports/gleipnir_grid.md)
+contains every model/prompt/template comparison and prediction checksum.
 
 ## Audited 4B results, 2026-10-02
 
@@ -51,9 +54,62 @@ injected negatives, so perfect injected-positive sensitivity does not establish
 that a model distinguishes the malicious code from the injection text itself.
 
 The 4B completion audit and full per-template metrics are retained under the
-sibling checkout's ignored `results/gleipnir-grid-v1/` tree. The 9B bounded
-references have completed; its full vLLM grid is running. No 9B quality
-conclusion follows from the reference cohort.
+sibling checkout's ignored `results/gleipnir-grid-v1/` tree.
+
+## Audited 9B results
+
+All six 9B cells completed with the same frozen membership and inputs. The
+independent audit passed the same coverage, identity, extraction and token
+checks, and recomputed each serving correlation, mean absolute difference and
+nonzero adapter effect. All twelve gates across both sizes passed: minimum
+correlation 0.999353 and maximum mean absolute difference 0.008156. Frozen
+tokenizer files match across all four adapters; the independent renderer
+matched all 40 training-canary prompt hashes. No benchmark row was truncated.
+
+| 9B weights | Student instruction | Vanilla AUROC | Vanilla TPR@2% | Mean injection AUROC | Mean injection TPR@2% | Mean matched delta |
+| --- | --- | ---: | ---: | ---: | ---: | ---: |
+| Base | Regular | 0.9175 | 50.7% | 0.9505 | 38.6% | -0.0063 |
+| Base | Aware | 0.9188 | 49.6% | 0.9622 | 20.4% | -0.0021 |
+| Regular-trained | Regular | 0.9314 | 63.2% | 0.9985 | 100.0% | +0.0349 |
+| Regular-trained | Aware | 0.9209 | 58.3% | 0.9996 | 100.0% | +0.0371 |
+| Aware-trained | Regular | 0.9235 | 55.6% | 0.9973 | 99.4% | +0.0435 |
+| Aware-trained | Aware | 0.9237 | 57.0% | 0.9995 | 100.0% | +0.0544 |
+
+The base 9B warning improves mean injection AUROC but reduces mean TPR by
+18.24 percentage points. GPT-4.1 injection TPR falls from 83.62% to 21.33%,
+while the other two templates improve. The mean matched AUROC gap hides this
+family difference; neither ranking improvement nor a smaller mean gap implies
+better strict-operating-point sensitivity.
+
+Regular-trained 9B detects every injected positive under both instructions.
+Aware-trained 9B with the regular instruction misses 11 of 647 GPT-4o injected
+positives, while detecting all GPT-4 and GPT-4.1 positives. With the aware
+instruction it detects all three families. This catalog therefore does not
+establish an injection-specific benefit from awareness training over the
+already near-ceiling regular-trained baseline. Aware-trained 9B also has lower
+vanilla sensitivity than regular-trained 9B under both instructions, unlike
+the 4B comparison. Adding the warning to regular-trained 9B reduces vanilla
+TPR by 4.95 percentage points. The effects depend on size, weights, instruction
+and attack family; no uniform improvement follows.
+
+## Completed artifacts and runtime
+
+All 62,208 predictions passed the final local audit, including exact upstream
+threshold recomputation and injection-minus-neutral comparisons on the same
+647 problem IDs. The two prompt files contain 8,207,435 and 9,249,419 tokens
+per cell respectively, with maxima 16,321 and 16,522. Full predictions,
+logprobs, metrics/ROC curves, reference/serving vectors, token audits and
+successful/failed logs have been collected locally in the sibling checkout.
+The final receipt is `results/gleipnir-grid-v1/completion_audit.json`, SHA-256
+`7abf7721eb5892337c76495e09a5f24b7fd1dbb19136df48b4fdbd6fce670172`.
+
+Aggregate scoring/metric-loop runtime was 22.04 minutes for 4B and 26.11
+minutes for 9B. These are evaluation times, excluding input preparation,
+model loading, compilation, warmup and parity checks. Both persistent engine
+stages exited with code 0. The final 9B log completed at 17:20:04 UTC; a
+post-exit GPU snapshot recorded zero allocated memory, 0% utilization, 31°C
+and zero volatile uncorrected ECC errors. The authorized B200 remains
+available, with no active or queued benchmark worker.
 
 ## Serving recovery
 
