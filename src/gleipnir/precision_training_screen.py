@@ -382,7 +382,9 @@ def run_precision_training_screen(
         }
         publish()
         if packing_canary is not None:
-            report["packing_compiled_canary"] = packing_canary(compiled=True)
+            report["packing_compiled_canary"] = packing_canary(
+                compiled=bool(report["compiled_layers"])
+            )
             publish()
         if diagnostics_only:
             if capture_native_operands:

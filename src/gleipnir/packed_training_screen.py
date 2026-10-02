@@ -162,6 +162,7 @@ def packing_isolation_canary(
         packed_value = float(packed_loss.detach())
         receipt = {
             "passed": False,
+            "execution_mode": "eager" if capture_layers else "compiled",
             "cases": rows,
             "independent_loss": independent_loss,
             "packed_loss": packed_value,

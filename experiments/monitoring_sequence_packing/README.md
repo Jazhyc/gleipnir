@@ -156,3 +156,11 @@ parity (gradient relative L2 0.0880173; singleton/packed losses
 0.949228942/0.957633674). No updates ran. `bf16_casts_gpu.yaml` additionally
 preserves intermediate precision casts in Inductor for both conditions, while
 retaining the same compile/checkpoint policies and fixed gates.
+
+Preserving casts also failed compiled numerical parity (gradient relative L2
+0.143217; singleton/packed losses 0.949228942/0.967125356), with no leakage and
+zero updates. `bf16_eager_gpu.yaml` therefore measures the validated native eager
+implementation against a matched eager padding control. Torch model compilation
+is disabled in both; native convolution/FlashQLA kernels remain enabled and
+checkpointing, data, adapter, optimizer and all gates remain unchanged. This
+condition does not promote or imply acceptance of compiled packing.
