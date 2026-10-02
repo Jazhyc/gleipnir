@@ -10,12 +10,19 @@ from experiments.student_injection_awareness import publish
 
 
 @pytest.mark.parametrize("corrupt", [False, True])
-def test_upload_requires_remote_adapter_checksums(tmp_path, monkeypatch, corrupt):
+@pytest.mark.parametrize("selected", [None, "regular", "injection_aware"])
+def test_upload_requires_remote_adapter_checksums(
+    tmp_path, monkeypatch, corrupt, selected
+):
     calls = []
     output = tmp_path / "results"
     monkeypatch.setattr(publish, "OUTPUT", output)
     monkeypatch.setattr(publish, "dotenv_values", lambda _: {"HF_TOKEN": "mock-token"})
-    monkeypatch.setattr(sys, "argv", ["publish", "--size", "4b"])
+    argv = ["publish", "--size", "4b"]
+    if selected:
+        argv.extend(["--variant", selected])
+    variants = (selected,) if selected else publish.VARIANTS
+    monkeypatch.setattr(sys, "argv", argv)
 
     def stage(size, variant):
         release = tmp_path / f"{size}-{variant}"
@@ -74,13 +81,16 @@ def test_upload_requires_remote_adapter_checksums(tmp_path, monkeypatch, corrupt
     if corrupt:
         with pytest.raises(ValueError, match="uploaded adapter checksum mismatch"):
             publish.main()
-        assert not (output / "4b/regular/upload.json").exists()
+        assert not (output / "4b" / variants[0] / "upload.json").exists()
     else:
         publish.main()
-        assert len(calls) == 2
+        assert len(calls) == len(variants)
+        assert [c["repo_id"] for c in calls] == [
+            f"test-namespace/4b-{variant}" for variant in variants
+        ]
         assert all(c["repo_id"].startswith("test-namespace/") for c in calls)
         assert all(c["private"] is False and c["exist_ok"] is False for c in calls)
-        for variant in publish.VARIANTS:
+        for variant in variants:
             receipt = json.loads((output / "4b" / variant / "upload.json").read_text())
             assert receipt["remote_verified"] is True
 

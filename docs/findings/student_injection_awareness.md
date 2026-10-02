@@ -527,3 +527,55 @@ These values supersede the archived first-attempt regular ID result for the
 paired 9B comparison. The backend changed solely to recover the observed
 runtime stall, before inspecting replacement quality. Regular OOD, aware parity,
 both aware full suites and 9B publication remain pending.
+
+## Full regular 9B evaluation and aware serving parity completed
+
+Regular 9B completed all 6,395 strict OOD examples in 1,523.34 seconds of
+evaluation-loop runtime. The local audit passed complete unique membership,
+labels/sources, prompt and backend-specific configuration hashes, finite
+logprobs and extracted probabilities, and every example's token encoding.
+All 55,346,879 prompt tokens were retained, with maximum length 29,570. OOD
+prediction SHA256:
+`bc1a3e32f0c2765659cb683c7b92e4975b25be6fd5cba827fef0a922af5a13e8`.
+Both regular full-suite coverage receipts passed and are collected locally.
+
+Primary equal-source macro OOD pAUROC@20 is 0.837368, AUROC 0.926803 and
+Brier 0.129929. At threshold 0.5, macro recall is 0.708062 and FPR 0.047912.
+Pooled pAUROC@20 is 0.740115, AUROC 0.928193, Brier 0.134148, ECE 0.128152
+and log loss 0.424799. There are 2,263 unique scores and 4,132 tied rows.
+
+| OOD source | Rows | pAUROC@20 | AUROC | Brier | Recall at 0.5 | FPR at 0.5 |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| AgentDojo | 1,500 | 0.918773 | 0.982399 | 0.061657 | 0.953333 | 0.101333 |
+| CUA Shade Arena | 955 | 0.813916 | 0.932872 | 0.153357 | 0.632353 | 0.012526 |
+| IAC | 1,443 | 0.930296 | 0.984580 | 0.153316 | 0.579021 | 0.000000 |
+| MLE sabotage | 148 | 0.998980 | 0.999796 | 0.040470 | 0.928571 | 0.000000 |
+| Rogue Eval | 1,499 | 0.965763 | 0.991145 | 0.117959 | 0.674232 | 0.000000 |
+| Shade Arena | 850 | 0.396482 | 0.670028 | 0.252814 | 0.480861 | 0.173611 |
+
+Regular 9B exceeds regular 4B's primary macro pAUROC on these frozen suites,
+but source outcomes and calibration are uneven. For example, OOD pooled ECE
+is worse, and Shade Arena AUROC remains low. Cross-size comparisons also use
+different serving GDN backends after the documented recovery, limiting pure
+backbone-size attribution. No promotion or threshold retuning follows from this
+single-seed result. The matched 9B prompt comparison remains pending.
+
+Aware 9B passed the unchanged Triton serving gate: adapter correlation
+0.999804 and mean absolute difference 0.003316; base correlation 0.999716 and
+mean absolute difference 0.004490. The maximum served adapter effect is
+0.750761. Its full ID/OOD evaluations are now queued in the same persistent
+engine. The regular upload has started using the six-file public allowlist;
+the publisher's optional single-condition selection passed all seven mocked
+publication tests and Ruff.
+
+Regular 9B is publicly published at
+[Jazhyc/Gleipnir-9B-ToolTrajectories-Regular](https://huggingface.co/Jazhyc/Gleipnir-9B-ToolTrajectories-Regular),
+revision `536efd527adc283aa8c237a0f58808079aa7ed02`. An independent remote read
+verified the actual public head, the exact six allowed files plus Hub
+`.gitattributes`, both adapter LFS checksums and downloaded small-file hashes
+against the local manifest. Private provenance, training/runtime metadata,
+evaluation/parity reports and manifests are absent from the public repository.
+The local release-manifest SHA256 is
+`b2d27b80f3e3c255ffb7d1041c28c08f7c42ee9977eb5514caa361e2074e2a12`.
+The independent receipt is saved in `9b/publication_integrity.json`; it currently
+covers regular only. Aware full evaluation and publication remain pending.

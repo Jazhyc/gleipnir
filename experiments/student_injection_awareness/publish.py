@@ -170,6 +170,7 @@ Experiment code: https://github.com/Jazhyc/gleipnir
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--size", choices=("4b", "9b"), required=True)
+    parser.add_argument("--variant", choices=VARIANTS)
     args = parser.parse_args()
     values = dotenv_values(ROOT / ".env")
     token = values.get("HF_TOKEN")
@@ -177,7 +178,7 @@ def main() -> None:
         raise RuntimeError("HF_TOKEN is unavailable")
     api = HfApi(token=token)
     namespace = api.whoami()["name"]
-    for variant in VARIANTS:
+    for variant in (args.variant,) if args.variant else VARIANTS:
         release = stage(args.size, variant)
         repo_id = f"{namespace}/{release.name}"
         previous = OUTPUT / args.size / variant / "upload.json"

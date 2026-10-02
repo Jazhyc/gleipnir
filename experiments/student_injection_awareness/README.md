@@ -83,6 +83,10 @@ configs, license and model card (including the student instruction). Full
 training metadata, provenance, evaluation reports, parity receipts and release
 manifests remain local. Remote revision, exact file coverage and both adapter
 LFS checksums are verified before recording successful publication.
+Add `--variant regular` (or `--variant injection_aware`) to the publisher
+command to publish a condition as soon as its own full audits finish while
+the other evaluates.
+Omitting `--variant` publishes both conditions.
 
 Systems receipts and eventual quality results are recorded in
 [the campaign finding](../../docs/findings/student_injection_awareness.md).
