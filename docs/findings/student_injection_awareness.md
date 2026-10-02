@@ -203,3 +203,32 @@ The injection-aware adapter also passed serving parity: adapter correlation
 and 0.007212. Both backends had a maximum adapter effect of 0.872977. Its ID
 evaluation is advancing in the same vLLM engine. The regular baseline is
 complete; a matched awareness comparison and publication remain pending.
+
+## Matched 4B ID comparison
+
+The aware condition also completed all 3,012 ID examples. Local checks verified
+complete membership, labels, sources, prompt hashes and configuration identity;
+all scores were finite. Input lengths matched the independent audit exactly:
+34,356,371 tokens total, maximum 29,714, with zero truncation. Its evaluation
+loop took 668.10 seconds, excluding initial prompt preparation and startup.
+The result, predictions and local coverage receipt were collected under
+`results/student_injection_awareness/4b/injection_aware/id/`.
+
+| ID view | Regular pAUROC@20 | Aware pAUROC@20 | Aware minus regular | Regular AUROC | Aware AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Gloom exfiltration | 0.763290 | 0.753582 | -0.009708 | 0.918684 | 0.909249 |
+| Test STRIDE | 0.929255 | 0.941021 | +0.011765 | 0.984104 | 0.986722 |
+| Source macro | 0.846273 | 0.847301 | +0.001029 | 0.951394 | 0.947986 |
+| Pooled | 0.816665 | 0.816798 | +0.000133 | 0.942615 | 0.940485 |
+
+The primary ID score changed little, with opposite source effects. Macro
+AUROC decreased by 0.003408. At the unchanged 0.5 threshold, macro FPR fell
+from 0.051326 to 0.032391 while recall fell from 0.830638 to 0.781863.
+Macro Brier worsened from 0.089216 to 0.099054; pooled ECE increased from
+0.058943 to 0.098971 and log loss from 0.318370 to 0.355671. The aware scores
+had 1,483 unique values and 1,529 tied rows.
+
+This single-seed comparison changes the instruction in both training and
+evaluation and does not isolate learned resistance from test-time elicitation.
+It does not establish a uniform ID benefit. Aware OOD evaluation is advancing;
+the complete ID/OOD comparison, uploads and 9B campaign remain pending.
