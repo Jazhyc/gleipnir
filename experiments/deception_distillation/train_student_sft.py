@@ -3741,6 +3741,31 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     )
     if gated_delta_parity_policy != "strict" and not selected_flashqla_recipe:
         raise ValueError("selected finite policy requires FlashQLA")
+    startup_validation = None
+    startup_reference = OmegaConf.select(
+        cfg, "student.training.startup_validation_reference", default=None
+    )
+    if startup_reference is not None:
+        from gleipnir.validated_startup import validation_reference
+
+        if not packing_enabled or not selected_flashqla_recipe:
+            raise ValueError(
+                "validation reuse supports the selected packed recipe only"
+            )
+        reference_path = Path(str(startup_reference))
+        if not reference_path.is_absolute():
+            reference_path = root / reference_path
+        startup_validation = validation_reference(reference_path)
+        if (
+            startup_validation["model"] != str(cfg.student.model)
+            or startup_validation["model_revision"] != model_revision
+        ):
+            raise ValueError("validation reference model identity drift")
+        print(
+            "startup_validation=reused; beginning training without repeated probes",
+            flush=True,
+        )
+
     gated_delta_metadata = {
         "backend": "fla",
         "parity_policy": gated_delta_parity_policy,
@@ -3757,32 +3782,37 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             )
         from gleipnir.flashqla_training import install_with_model_canary
 
-        probe_features = []
-        for i, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
-            feature = dict(dataset[i % len(dataset)])
-            feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
-            probe_features.append(feature)
+        if startup_validation:
+            from gleipnir.validated_startup import install_validated_flashqla
 
-        def kernel_loss_forward(batch):
-            with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
-                return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+            gated_delta_metadata = install_validated_flashqla(model, startup_validation)
+        else:
+            probe_features = []
+            for i, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
+                feature = dict(dataset[i % len(dataset)])
+                feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
+                probe_features.append(feature)
 
-        gated_delta_metadata = install_with_model_canary(
-            model,
-            [collator([feature]) for feature in probe_features]
-            + [collator([probe_features[0], probe_features[-1]])],
-            kernel_loss_forward,
-            auto_cp=False,
-            bf16_boundary=True,
-            boundary_policy="bf16_fp32_gates_norm",
-            selected_recipe=selected_flashqla_recipe,
-        )
+            def kernel_loss_forward(batch):
+                with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    return trainer.compute_loss(model, trainer._prepare_inputs(batch))
+
+            gated_delta_metadata = install_with_model_canary(
+                model,
+                [collator([feature]) for feature in probe_features]
+                + [collator([probe_features[0], probe_features[-1]])],
+                kernel_loss_forward,
+                auto_cp=False,
+                bf16_boundary=True,
+                boundary_policy="bf16_fp32_gates_norm",
+                selected_recipe=selected_flashqla_recipe,
+            )
         gated_delta_metadata["parity_policy"] = gated_delta_parity_policy
         output_dir.mkdir(parents=True, exist_ok=True)
         (output_dir / "gated_delta_canary.json").write_text(
             json.dumps(gated_delta_metadata, indent=2, allow_nan=False) + "\n"
         )
-        if not selected_recipe_canary_accepted(
+        if not startup_validation and not selected_recipe_canary_accepted(
             gated_delta_metadata, selected=selected_flashqla_recipe
         ):
             raise ValueError("FlashQLA model canary failed")
@@ -3790,7 +3820,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         print(
             "gated_delta_backend=flashqla "
             f"layers={gated_delta_metadata['replaced_layers']} "
-            f"strict_parity_passed={gated_delta_metadata['passed']}",
+            "strict_parity_passed="
+            f"{gated_delta_metadata.get('passed', 'not_repeated')}",
             flush=True,
         )
 
@@ -3820,14 +3851,21 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             )
             print(f"packing_{key}={receipt}", flush=True)
 
-        check_packing(compiled=False)
+        if startup_validation:
+            from gleipnir.validated_startup import skipped_diagnostic
+
+            packing_metadata["startup_validation"] = startup_validation
+            for name in ("eager_canary", "compiled_canary", "preflight"):
+                packing_metadata[name] = skipped_diagnostic(startup_validation, name)
+        else:
+            check_packing(compiled=False)
 
     selective_torch_compile_canary = None
     attention_backend_canary = None
     attention_canary_reference = OmegaConf.select(
         cfg, "student.training.attention_backend_canary_reference"
     )
-    if selective_torch_compile_canary_tokens:
+    if selective_torch_compile_canary_tokens and not startup_validation:
         if direct_target_ids is None:
             raise ValueError("selective compile canary requires direct target ids")
         canary_ids = list(dataset[0]["direct_input_ids"])[
@@ -3956,11 +3994,15 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
-    if packing_enabled:
+    if packing_enabled and not startup_validation:
         check_packing(compiled=True)
 
     adaptive_gradient_canary = None
-    if adaptive_enabled and selective_torch_compile_canary_tokens:
+    if (
+        adaptive_enabled
+        and selective_torch_compile_canary_tokens
+        and not startup_validation
+    ):
         canary_features = []
         for index, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
             feature = dict(dataset[index % len(dataset)])
@@ -4108,7 +4150,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         if selective_torch_compile_policy == "decoder_shells_without_token_mixers"
         and layer_type == "full_attention"
     ]
-    if packing_enabled:
+    if packing_enabled and not startup_validation:
         from gleipnir.packed_training import packed_memory_preflight
 
         packing_metadata["preflight"] = packed_memory_preflight(
@@ -4154,6 +4196,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     "model": str(cfg.student.model),
                     "model_revision": model_revision,
                     "commit": os.environ.get("GLEIPNIR_COMMIT"),
+                    "startup_validation": startup_validation,
                     "seed": int(cfg.seed),
                     "optimization": {
                         "optimizer": optimizer_name,

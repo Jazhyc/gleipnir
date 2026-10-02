@@ -2,6 +2,17 @@
 
 Status: selected by explicit user instruction, 2026-10-02.
 
+Startup validation update, 2026-10-02: the user explicitly requested reusing
+validation for an unchanged recipe instead of repeating diagnostic gates on
+every run. Reuse the recorded kernel/packing/partition/memory receipts and mark
+checks as not performed in the new run, with reference identity and checksum.
+The fresh-validation procedure below applies when a recipe or its hardware,
+kernels, precision, batching, packing or supported context envelope materially
+changes, after relevant failures, or on request. Supported binary loss mixtures
+and LR sweeps can reuse validation. Keep finite/missing-gradient checks during
+updates and adapter-specific serving parity. See `AGENTS.md` and
+`experiments/monitoring_hard_labels/README.md`.
+
 Use `systems_screen@_global_: qwen35_4b_b200_default` for new single-B200
 Qwen3.5-4B binary monitoring training. The user selected the fastest completed
 packed recipe after reviewing the checkpointing/batch-size comparison. This

@@ -82,6 +82,22 @@ tool, explicitly tell the user that limitation; active-turn waiting can support
 checks but cannot promise a follow-up after the turn ends. Do not silently replace
 agent follow-ups with a remote polling loop.
 
+### Reuse validated training recipes
+
+Standing user preference, 2026-10-02: once a recipe has been validated, reuse
+its recorded startup validation and begin ordinary training without repeating
+numerical comparison canaries, packing isolation probes or longest-batch memory
+preflights. This instruction supersedes the repeated-startup-gate requirements
+below for unchanged validated recipes. Supported hard/soft binary loss mixtures
+and learning-rate sweeps do not by themselves require repeating those probes.
+Rerun diagnostics when hardware, kernel/compiler versions, precision, batching,
+packing code, supported objective family or context/memory envelope materially
+changes, when failures give reason to doubt the recipe, or when requested.
+Keep input/provenance checks and finite/missing-gradient checks during updates.
+Record the validation reference and its checksum; mark reused/skipped checks
+explicitly instead of claiming a new pass. Preserve historical failed receipts.
+Serving artifacts still need adapter-specific score parity before evaluation.
+
 ### Infrastructure and execution
 
 Use local Slurm GPU jobs for cluster experiments. Default to one `gpushort`

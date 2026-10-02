@@ -555,3 +555,13 @@ metrics exist, and the attempt is excluded from the scaling curves and frontier.
 The frozen recipe and stop rationale are recorded in
 [`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md) and the corresponding
 [systems finding](../../docs/findings/tool_trajectory_qwen08b_stopped_systems_preflight.md).
+
+## Hard-label strength follow-up (2026-10-02)
+
+The new [monitoring-only screen](../monitoring_hard_labels/README.md) tests
+normalized hard-label fractions 0, 0.1, 0.3 and 1 at LR 2e-5 on Qwen3.5-4B,
+using the selected packed BF16 B200 recipe and canonical CoT-removed ID only.
+It explicitly introduces source hard-label supervision after the historical
+soft-only campaigns. The fresh matched soft-only control, fixed one-epoch
+checkpoints and frozen ID guardrails prevent historical recipe/input changes
+from being attributed to hard labels. Strict OOD remains outside selection.
