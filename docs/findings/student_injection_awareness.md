@@ -169,3 +169,37 @@ threshold diagnostics are in
 and this result were collected locally. Regular OOD evaluation is advancing
 in the same persistent engine. The awareness intervention's matched ID/OOD
 comparison and publication remain pending.
+
+## Regular 4B OOD evaluation completed
+
+All 6,395 frozen OOD examples were scored. Local verification checked complete
+membership, labels, sources, prompt hashes, configuration identity and finite
+scores. Actual input lengths again matched the independent audit: 55,346,879
+tokens total, maximum 29,570, with zero truncation. The measured evaluation
+loop took 991.04 seconds, excluding initial prompt preparation and engine
+startup. The result, predictions and local coverage receipt are under
+`results/student_injection_awareness/4b/regular/ood/`.
+
+| OOD source | Rows | pAUROC@20 | AUROC |
+| --- | ---: | ---: | ---: |
+| AgentDojo | 1,500 | 0.676676 | 0.920209 |
+| CUA Shade Arena | 955 | 0.777495 | 0.895061 |
+| IAC | 1,443 | 0.916043 | 0.979077 |
+| MLE sabotage | 148 | 1.000000 | 1.000000 |
+| Rogue Eval | 1,499 | 0.947882 | 0.986700 |
+| Shade Arena | 850 | 0.339330 | 0.705038 |
+| Source macro | 6,395 | 0.776238 | 0.914348 |
+| Pooled | 6,395 | 0.624621 | 0.898344 |
+
+At the fixed 0.5 threshold, source-macro recall was 0.721999 and FPR 0.094816.
+AgentDojo FPR was 0.400000; Shade Arena recall was 0.428230. The source spread
+limits any claim based only on the aggregate. Source-macro Brier was 0.138607;
+pooled Brier was 0.147491, ECE 0.099895 and log loss 0.455545. There were
+1,927 unique scores and 4,468 tied rows. Full per-source calibration bins and
+threshold diagnostics remain in the result JSON.
+
+The injection-aware adapter also passed serving parity: adapter correlation
+0.999759 and mean absolute score difference 0.003326; base values 0.999170
+and 0.007212. Both backends had a maximum adapter effect of 0.872977. Its ID
+evaluation is advancing in the same vLLM engine. The regular baseline is
+complete; a matched awareness comparison and publication remain pending.
