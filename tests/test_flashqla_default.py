@@ -31,6 +31,13 @@ def test_selected_profile_composes_and_forwards_the_backend():
         **reference["recipe"],
         "gated_delta_backend": "flashqla",
         "gated_delta_parity_policy": "selected_finite",
+        "full_bf16_lora": True,
+        "sequence_packing": True,
+        "packing_compile_cache_limit": 64,
+        "selective_torch_compile_canary_tokens": 256,
+        "gradient_checkpointing": False,
+        "gradient_checkpointing_policy": "all",
+        "gradient_checkpointing_layer_indices": None,
     }
     assert "gated_delta_backend" not in original["recipe"]
     assert "gated_delta_backend" not in reference["recipe"]
@@ -39,6 +46,11 @@ def test_selected_profile_composes_and_forwards_the_backend():
     )
     for job in make_jobs(selected, resolve_paths(selected), "fixed"):
         command = training_command(job)
+        assert "student.quantization.enabled=false" in command
+        assert "++student.quantization.full_bf16_lora=true" in command
+        assert "++student.training.sequence_packing=true" in command
+        assert "++student.training.packing_compile_cache_limit=64" in command
+        assert "student.training.gradient_checkpointing=false" in command
         assert "++student.training.gated_delta_backend=flashqla" in command
         assert "++student.training.gated_delta_parity_policy=selected_finite" in command
     env = {"PYTHONPATH": "pinned-fla:project", "CUDA_VISIBLE_DEVICES": "0"}

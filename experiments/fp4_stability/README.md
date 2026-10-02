@@ -643,6 +643,11 @@ its explicit `selected_finite` canary policy. This is separate from the frozen
 ten-step diagnostic and does not change historical failed receipts. See the
 [default recipe decision](../../docs/decisions/b200_flashqla_training_recipe.md).
 
+Subsequent user selection: the current B200 default is packed unquantized BF16
+LoRA without model checkpointing; see the
+[packed default decision](../../docs/decisions/b200_packed_bf16_training_recipe.md).
+The recipes and screens in this history retain their original contracts.
+
 ## Fully BF16 LoRA with FlashQLA: ten-step screen
 
 Hypothesis: removing NF4 storage/dequantization from all frozen base weights

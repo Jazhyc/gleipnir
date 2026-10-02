@@ -1860,6 +1860,15 @@ def tokenize_record(
     config_name="config",
 )
 def main(cfg: DictConfig) -> None:
+    from gleipnir.packed_training import packed_training_runtime
+
+    with packed_training_runtime(
+        OmegaConf.to_container(cfg.student, resolve=True)
+    ) as runtime:
+        train(cfg, runtime)
+
+
+def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     world_size = int(os.environ.get("WORLD_SIZE", "1"))
     if world_size > 1:
         torch.cuda.set_device(int(os.environ["LOCAL_RANK"]))
@@ -2183,6 +2192,7 @@ def main(cfg: DictConfig) -> None:
 
     adaptive_cfg = OmegaConf.select(cfg, "student.training.adaptive_microbatching")
     adaptive_enabled = bool(adaptive_cfg and adaptive_cfg.enabled)
+    packing_enabled = packing_metadata["enabled"]
     adaptive_policy = None
     if adaptive_enabled:
         if (
@@ -2920,11 +2930,8 @@ def main(cfg: DictConfig) -> None:
         or mlp_precision != "bf16"
         or finetuning_mode != "lora"
         or model_loader != "causal_lm"
-        or not OmegaConf.select(
-            cfg, "student.training.precision_screen.enabled", default=False
-        )
     ):
-        raise ValueError("full BF16 LoRA requires an unquantized causal LoRA screen")
+        raise ValueError("full BF16 LoRA requires unquantized causal LoRA training")
     if mlp_precision != "nf4" and not quantization_enabled and not full_bf16_lora:
         raise ValueError("selective MLP precision requires the QLoRA loading path")
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
@@ -3520,9 +3527,12 @@ def main(cfg: DictConfig) -> None:
     configure_mean_loss_accumulation(trainer)
     trainer.direct_target_ids = direct_target_ids
     if adaptive_enabled:
+        from gleipnir.packed_sequences import collate_packed_monitoring
+
         trainer.enable_adaptive_microbatching(
             adaptive_policy,
-            collator,
+            collate_packed_monitoring if packing_enabled else collator,
+            sequence_packing=packing_enabled,
             profile=bool(adaptive_cfg.profile),
             require_finite_gradients=OmegaConf.select(
                 cfg, "student.training.gated_delta_backend", default="fla"
@@ -3740,9 +3750,11 @@ def main(cfg: DictConfig) -> None:
             not adaptive_enabled
             or world_size != 1
             or finetuning_mode != "lora"
-            or mlp_precision_metadata["precision"] != "nf4"
+            or not (quantization_enabled or full_bf16_lora)
         ):
-            raise ValueError("FlashQLA recipe requires single-device adaptive NF4 LoRA")
+            raise ValueError(
+                "FlashQLA recipe requires single-device adaptive NF4 or BF16 LoRA"
+            )
         from gleipnir.flashqla_training import install_with_model_canary
 
         probe_features = []
@@ -3781,6 +3793,34 @@ def main(cfg: DictConfig) -> None:
             f"strict_parity_passed={gated_delta_metadata['passed']}",
             flush=True,
         )
+
+    if packing_enabled:
+        from gleipnir.packed_sequences import packed_partition
+        from gleipnir.packed_training_screen import packing_isolation_canary
+        from gleipnir.training_execution_audit import tensor_digest
+
+        packing_features = sorted(tokenized, key=lambda f: -len(f["direct_input_ids"]))
+        packing_metadata["initial_master_sha256"] = tensor_digest(
+            [p for p in model.parameters() if p.requires_grad]
+        )
+
+        def check_packing(*, compiled):
+            receipt = packing_isolation_canary(
+                model,
+                packing_features,
+                collator,
+                kernel_loss_forward,
+                capture_layers=not compiled,
+            )
+            key = "compiled_canary" if compiled else "eager_canary"
+            packing_metadata[key] = receipt
+            output_dir.mkdir(parents=True, exist_ok=True)
+            (output_dir / "packing_canary.json").write_text(
+                json.dumps(packing_metadata, indent=2, allow_nan=False) + "\n"
+            )
+            print(f"packing_{key}={receipt}", flush=True)
+
+        check_packing(compiled=False)
 
     selective_torch_compile_canary = None
     attention_backend_canary = None
@@ -3916,6 +3956,9 @@ def main(cfg: DictConfig) -> None:
             mode=selective_torch_compile_mode,
             dynamic=selective_torch_compile_dynamic,
         )
+    if packing_enabled:
+        check_packing(compiled=True)
+
     adaptive_gradient_canary = None
     if adaptive_enabled and selective_torch_compile_canary_tokens:
         canary_features = []
@@ -3927,6 +3970,9 @@ def main(cfg: DictConfig) -> None:
 
         def canary_loss_forward(batch):
             prepared = trainer._prepare_inputs(batch)
+            if "packed_lengths" in prepared:
+                with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    return trainer.compute_loss(model, prepared)
             mask = prepared["direct_attention_mask"]
             positions = mask.sum(dim=1) - 1
             rows = torch.arange(mask.shape[0], device=mask.device)
@@ -3958,6 +4004,14 @@ def main(cfg: DictConfig) -> None:
             CompletionOnlyCollator(tokenizer.pad_token_id),
             canary_loss_forward,
             adaptive_policy,
+            candidate_collator=collate_packed_monitoring if packing_enabled else None,
+            partition_strategy=(
+                lambda lengths: packed_partition(
+                    lengths, adaptive_policy.max_padded_tokens
+                )
+            )
+            if packing_enabled
+            else None,
         )
         adaptive_gradient_canary["forward_calls"] = canary_forward_calls
         if bool(
@@ -4054,7 +4108,26 @@ def main(cfg: DictConfig) -> None:
         if selective_torch_compile_policy == "decoder_shells_without_token_mixers"
         and layer_type == "full_attention"
     ]
+    if packing_enabled:
+        from gleipnir.packed_training import packed_memory_preflight
+
+        packing_metadata["preflight"] = packed_memory_preflight(
+            model,
+            tokenized,
+            kernel_loss_forward,
+            token_budget=adaptive_policy.max_padded_tokens,
+            logical_batch_size=int(args.per_device_train_batch_size),
+        )
+        (output_dir / "packing_canary.json").write_text(
+            json.dumps(packing_metadata, indent=2, allow_nan=False) + "\n"
+        )
+        print(f"packing_preflight={packing_metadata['preflight']}", flush=True)
+
     train_output = trainer.train()
+    if packing_enabled:
+        packing_metadata["final_master_sha256"] = tensor_digest(
+            [p for p in model.parameters() if p.requires_grad]
+        )
     train_metrics = {
         key: value.item() if hasattr(value, "item") else value
         for key, value in train_output.metrics.items()
@@ -4220,6 +4293,7 @@ def main(cfg: DictConfig) -> None:
                         "mil_max_instances": mil_max_instances,
                     },
                     "quantization": quantization_metadata,
+                    "sequence_packing": packing_metadata,
                     "mlp_precision": mlp_precision_metadata,
                     "flash_linear_attention": {
                         "available": fla_available,
@@ -4354,7 +4428,20 @@ def main(cfg: DictConfig) -> None:
                     "batching": {
                         "train_sampling_strategy": train_sampling_strategy,
                         "length_column_name": "length",
-                        "padding": collator.padding_statistics(),
+                        "padding": {
+                            "scope": "packed_training_only",
+                            "batches": len(trainer.microbatch_records),
+                            "examples": sum(trainer.logical_batch_sizes),
+                            "direct_tokens": sum(
+                                r["tokens"] for r in trainer.microbatch_records
+                            ),
+                            "direct_padded_tokens": sum(
+                                r["tokens"] for r in trainer.microbatch_records
+                            ),
+                            "direct_padding_fraction": 0.0,
+                        }
+                        if packing_enabled
+                        else collator.padding_statistics(),
                     },
                     "optimizer_step_timing": optimizer_step_timer.summary(),
                     "training_state": {

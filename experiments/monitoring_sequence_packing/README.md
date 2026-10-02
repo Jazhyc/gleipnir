@@ -279,3 +279,27 @@ sequence-isolation canaries remain mandatory, as does the shared bounded probe.
 For future comparisons use the packing-only configuration above (with a new
 output/log destination). Paired configurations in this README document historical
 protocols and should only be used for an explicitly requested replay.
+
+## Selected default and ordinary Trainer validation
+
+The user selected packed BF16 LoRA without model checkpointing as the B200
+training default. Use `qwen35_4b_b200_default` for newly authored training jobs;
+see the [decision](../../docs/decisions/b200_packed_bf16_training_recipe.md).
+Ordinary training uses the same packed collator/router and example weighting,
+with strict eager/compiled isolation gates and longest-actual-input preflight.
+Historical paired screen configurations above remain reproduction contracts.
+
+Hypothesis for the integration smoke: the ordinary Trainer preserves the tested
+packing boundaries, precision and optimizer behavior. Reuse the exact initial
+master and 320-row selection; run two ordinary updates, requiring zero padding,
+finite master gradients, no checkpointed layers and a nonzero adapter change.
+Stop on any strict packing failure, kernel/config drift, OOM or nonfinite value.
+There is no new padding trajectory or held-out checkpoint selection. This smoke
+validates wiring; the completed ten-step runs supply performance evidence.
+
+```bash
+.venv/bin/python -m experiments.monitoring_sequence_packing.default_recipe_smoke
+```
+
+Artifacts: `results/bf16_packed_default_smoke/`; logs:
+`logs/runpod/bf16_packed_default_smoke/`. Result pending.

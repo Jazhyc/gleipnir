@@ -86,11 +86,7 @@ def stable_stratified_selection(
         chosen.update(
             (str(row["dataset"]), row["index"]) for row in ranked[: quotas[key]]
         )
-    selected = [
-        row
-        for row in records
-        if (str(row["dataset"]), row["index"]) in chosen
-    ]
+    selected = [row for row in records if (str(row["dataset"]), row["index"]) in chosen]
     if len(selected) != count:
         raise AssertionError(f"selected {len(selected)} rows instead of {count}")
     return selected
@@ -145,9 +141,7 @@ class ScreenPaths:
     status: Path
 
 
-def load_config(
-    path: Path, *, overrides: tuple[str, ...] = ()
-) -> dict[str, Any]:
+def load_config(path: Path, *, overrides: tuple[str, ...] = ()) -> dict[str, Any]:
     """Load JSON or compose Hydra YAML, then validate the resolved contract."""
     suffix = path.suffix.lower()
     if suffix == ".json":
@@ -434,8 +428,18 @@ def validate_training_metadata(
         policy = {k: adaptive[k] for k in ("max_padded_tokens", "max_micro_batch_size")}
         if recorded.get("policy") != policy:
             raise ValueError("adaptive microbatch policy drifted")
+        packing = job.get("sequence_packing", False)
+        if recorded.get("sequence_packing", False) != packing:
+            raise ValueError("adaptive packing mode drifted")
         sizes = recorded.get("logical_batch_sizes", [])
-        if sizes != [job["effective_batch_size"]] * expected_steps:
+        logical_size = job["effective_batch_size"]
+        rows = int(job.get("train_rows", logical_size * expected_steps))
+        batches_per_epoch = math.ceil(rows / logical_size)
+        expected_sizes = [
+            min(logical_size, rows - (step % batches_per_epoch) * logical_size)
+            for step in range(expected_steps)
+        ]
+        if sizes != expected_sizes:
             raise ValueError("adaptive optimizer batches changed example counts")
         records = recorded.get("records", [])
         coverage = [0] * expected_steps
@@ -446,14 +450,16 @@ def validate_training_metadata(
                 raise ValueError("adaptive physical batch has an invalid update")
             if (
                 examples < 1
-                or examples & (examples - 1)
-                or examples > policy["max_micro_batch_size"]
+                or (not packing and examples & (examples - 1))
+                or (not packing and examples > policy["max_micro_batch_size"])
+                or examples > sizes[update - 1]
             ):
                 raise ValueError("adaptive physical batch size exceeded its policy")
-            padded = examples * record["max_length"]
+            padded = record["tokens"] if packing else examples * record["max_length"]
             if (
                 padded != record["padded_tokens"]
-                or not 0 < record["tokens"] <= padded
+                or not 0 < record["max_length"] <= record["tokens"] <= padded
+                or record["tokens"] > examples * record["max_length"]
                 or (examples > 1 and padded > policy["max_padded_tokens"])
             ):
                 raise ValueError("adaptive physical batch exceeded its token budget")
@@ -479,6 +485,13 @@ def validate_training_metadata(
             recorded.get("gradient_canary", {}), selected=selected_flashqla
         ):
             raise ValueError("adaptive gradient parity did not pass")
+    if job.get("sequence_packing", False):
+        packing_metadata = metadata.get("sequence_packing", {})
+        if not packing_metadata.get("enabled") or not all(
+            packing_metadata.get(key, {}).get("passed") is True
+            for key in ["eager_canary", "compiled_canary", "preflight"]
+        ):
+            raise ValueError("packed training isolation/preflight gates did not pass")
     if metadata.get("training_batch") != expected_batch:
         raise ValueError("training batch metadata drifted")
     kernels = config["kernels"]
@@ -564,9 +577,7 @@ def summarize_screen(
     expected_steps = int(config["recipe"]["max_steps"])
     for job in jobs:
         metadata = job["training_metadata"]
-        validate_training_metadata(
-            metadata, config, job, expected_steps=expected_steps
-        )
+        validate_training_metadata(metadata, config, job, expected_steps=expected_steps)
         timing = metadata["optimizer_step_timing"]
         conditions[job["job_name"]] = {
             "samples_per_second": float(
@@ -574,9 +585,7 @@ def summarize_screen(
             ),
             "train_runtime_seconds": float(metadata["train_metrics"]["train_runtime"]),
             "steady_mean_step_seconds": float(timing["steady_mean_seconds"]),
-            "peak_cuda_memory_gib": float(
-                metadata["peak_cuda_memory_allocated_bytes"]
-            )
+            "peak_cuda_memory_gib": float(metadata["peak_cuda_memory_allocated_bytes"])
             / 2**30,
             "unique_graphs": int(
                 metadata["selective_torch_compile"]["dynamo_counters"]["stats"][

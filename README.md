@@ -54,13 +54,13 @@ Matched monitoring throughput ablations use the config-driven
 only a Hydra YAML config and experiment README. Preparation resolves defaults
 and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
-The user-selected recipe for future 4B B200 training is
-`systems_screen@_global_: qwen35_4b_b200_default`: NF4/BF16 LoRA with uniform
-FlashQLA in all 24 linear-attention layers, SDPA full attention, partial
-checkpointing and selectively compiled adaptive physical batches with a 16,384 padded-token budget, maximum 8 traces,
-and logical batch 32. See the
-[recipe decision](docs/decisions/b200_flashqla_training_recipe.md) and
-[matched execution audit](docs/findings/b200_execution_audit.md).
+The user-selected recipe for future single-B200 Qwen3.5-4B training is
+`systems_screen@_global_: qwen35_4b_b200_default`: packed BF16 LoRA with FP32
+master adapters, uniform FlashQLA, segmented causal SDPA, no model checkpointing
+and selectively compiled physical rows with a 16,384-token budget and logical
+batch 32. See the
+[recipe decision](docs/decisions/b200_packed_bf16_training_recipe.md) for mandatory
+startup gates, supported scope and historical profiles.
 The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 [`docs/findings/b200_training_throughput.md`](docs/findings/b200_training_throughput.md).
 

@@ -126,6 +126,19 @@ def training_command(job: dict[str, Any]) -> list[str]:
     for key in ("gated_delta_backend", "gated_delta_parity_policy"):
         if key in job:
             command.append(f"++student.training.{key}={job[key]}")
+    if job.get("full_bf16_lora", False):
+        command.extend(
+            [
+                "student.quantization.enabled=false",
+                "++student.quantization.mlp_precision=bf16",
+                "++student.quantization.full_bf16_lora=true",
+            ]
+        )
+    for key in ("sequence_packing", "packing_compile_cache_limit"):
+        if key in job:
+            value = job[key]
+            encoded = str(value).lower() if isinstance(value, bool) else str(value)
+            command.append(f"++student.training.{key}={encoded}")
     if adaptive := job.get("adaptive_microbatching"):
         for key in ("enabled", "max_padded_tokens", "max_micro_batch_size", "profile"):
             if key in adaptive:

@@ -1,9 +1,9 @@
 # BF16 LoRA sequence packing on B200
 
-Status: eager and corrected compiled packing passed isolation, packing parity
-and bounded learning/timing checks, including the no-checkpoint follow-up. Packing remains
-confined to the bounded screen; new comparisons use packing only by user
-instruction. Historical paired reports remain available as baselines.
+Status: native packing passed isolation, numerical parity and bounded eager/
+compiled learning/timing checks, including the no-checkpoint follow-up. The user
+selected [packed BF16 without checkpointing as the B200 default](../decisions/b200_packed_bf16_training_recipe.md).
+New comparisons use packing only; historical paired reports remain baselines.
 
 ## Matched recipe and boundaries
 

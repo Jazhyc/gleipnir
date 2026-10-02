@@ -4,6 +4,8 @@
 - [Monitoring sequence packing](research/monitoring_sequence_packing.md):
   prior Phoenix rejection, model/kernel boundary audit, CPU isolation controls,
   and the B200 BF16 integration and correctness gates.
+- [Packed BF16 B200 default](decisions/b200_packed_bf16_training_recipe.md):
+  the selected packed training recipe without model checkpointing.
 - [BF16 sequence packing](findings/bf16_sequence_packing.md): native sequence
   isolation, numerical drift localization, and the bounded B200 packing comparison.
 - [Possible monitoring training follow-ups](research/monitoring_training_followups.md):

@@ -2,10 +2,9 @@
 
 Status: adaptive batching selected by explicit user instruction, 2026-10-01.
 
-The current B200 default, selected on 2026-10-02, adds uniform FlashQLA to this
-recipe. Use `qwen35_4b_b200_default`; see the
-[FlashQLA decision](b200_flashqla_training_recipe.md). The profile and evidence
-below preserve the preceding original-FLA recipe for comparisons.
+The current B200 default uses packed BF16 LoRA without model checkpointing;
+see the [packed BF16 decision](b200_packed_bf16_training_recipe.md). The profile
+and evidence below preserve the preceding original-FLA adaptive recipe.
 
 ## Decision
 

@@ -102,6 +102,7 @@ class AdaptiveMicrobatchTrainerMixin:
         *,
         profile: bool,
         require_finite_gradients: bool = False,
+        sequence_packing: bool = False,
     ) -> None:
         if self.args.world_size != 1 or self.args.n_gpu > 1:
             raise ValueError("adaptive microbatching currently requires one device")
@@ -115,6 +116,7 @@ class AdaptiveMicrobatchTrainerMixin:
             )
         if self.eval_dataset is not None:
             raise ValueError("adaptive microbatching currently supports training only")
+        self.sequence_packing = sequence_packing
         self.microbatch_policy = policy
         self.physical_collator = physical_collator
         self.data_collator = LogicalBatchCollator()
@@ -147,7 +149,15 @@ class AdaptiveMicrobatchTrainerMixin:
         self.logical_batch_sizes.append(len(features))
         total_loss = None
         cuda = self.args.device.type == "cuda"
-        for indices in self.microbatch_policy.partition(lengths):
+        if self.sequence_packing:
+            from gleipnir.packed_sequences import packed_partition
+
+            partition = packed_partition(
+                lengths, self.microbatch_policy.max_padded_tokens
+            )
+        else:
+            partition = self.microbatch_policy.partition(lengths)
+        for indices in partition:
             selected = [features[i] for i in indices]
             if cuda and self.microbatch_profile:
                 torch.cuda.synchronize(self.args.device)
@@ -184,7 +194,9 @@ class AdaptiveMicrobatchTrainerMixin:
                     "logical_indices": indices,
                     "max_length": max(lengths[i] for i in indices),
                     "tokens": sum(lengths[i] for i in indices),
-                    "padded_tokens": len(indices) * max(lengths[i] for i in indices),
+                    "padded_tokens": sum(lengths[i] for i in indices)
+                    if self.sequence_packing
+                    else len(indices) * max(lengths[i] for i in indices),
                     "seconds": elapsed,
                     "peak_allocated_bytes": allocated,
                     "peak_reserved_bytes": reserved,
@@ -204,6 +216,7 @@ class AdaptiveMicrobatchTrainerMixin:
         """Record partitions, per-example normalization, and profiling mode."""
         return {
             "enabled": True,
+            "sequence_packing": self.sequence_packing,
             "policy": asdict(self.microbatch_policy),
             "loss_normalization": "sum_per_example_over_logical_batch_v1",
             "logical_batch_sizes": self.logical_batch_sizes,
@@ -226,6 +239,8 @@ def gradient_partition_canary(
     policy: MicrobatchPolicy,
     *,
     relative_tolerance: float = 0.05,
+    candidate_collator: Callable | None = None,
+    partition_strategy: Callable | None = None,
 ) -> dict[str, Any]:
     """Compare all trainable gradients for singleton versus adaptive partitions."""
     named_parameters = [
@@ -249,9 +264,11 @@ def gradient_partition_canary(
         ]
         model.zero_grad(set_to_none=True)
         lengths = [len(f["direct_input_ids"]) for f in features]
-        partition = policy.partition(lengths)
+        partition = (partition_strategy or policy.partition)(lengths)
         for indices in partition:
-            loss = loss_forward(collator([features[i] for i in indices]))
+            loss = loss_forward(
+                (candidate_collator or collator)([features[i] for i in indices])
+            )
             actual_losses.append(float(loss.detach()) * len(indices) / len(features))
             (loss * (len(indices) / len(features))).backward()
         norm_squared = error_squared = 0.0

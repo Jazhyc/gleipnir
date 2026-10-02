@@ -1,0 +1,20 @@
+# User-selected historical B200 Qwen3.5-4B NF4/BF16 LoRA recipe, 2026-10-02.
+# See docs/decisions/b200_flashqla_training_recipe.md.
+# Preserve qwen35_4b_b200_adaptive as the original-FLA comparison profile.
+defaults:
+  - qwen35_4b_b200_adaptive
+  - _self_
+
+recipe:
+  gated_delta_backend: flashqla
+  gated_delta_parity_policy: selected_finite
+
+metadata_expectations:
+  gated_delta_backend.backend: flashqla
+  gated_delta_backend.replaced_layers: 24
+  gated_delta_backend.boundary_policy: bf16_fp32_gates_norm
+  gated_delta_backend.auto_cp: false
+  gated_delta_backend.parity_policy: selected_finite
+  gated_delta_backend.finite: true
+  adaptive_microbatching.require_finite_gradients: true
+  gated_delta_backend.revision: da06429d54b0f577de0a638f451ac8f0b395e0ac

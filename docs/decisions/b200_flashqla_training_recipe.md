@@ -2,6 +2,11 @@
 
 Status: selected by explicit user instruction, 2026-10-02.
 
+Subsequent user selection: the current B200 default uses packed unquantized BF16
+LoRA without model checkpointing. See the
+[packed BF16 decision](b200_packed_bf16_training_recipe.md). The recipe below
+preserves its historical selection.
+
 ## Decision
 
 Use `systems_screen@_global_: qwen35_4b_b200_default` for future single-B200
