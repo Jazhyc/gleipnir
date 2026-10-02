@@ -59,8 +59,28 @@ their documented QLoRA/FLA recipe.
 
 Ordinary Trainer integration is validated with focused CPU tests for scoped
 settings, per-example gradients, arbitrary packed sizes and partial final
-batches. The proposed two-step B200 smoke in
+batches. The two-step B200 smoke in
 `experiments/monitoring_sequence_packing/default_recipe_smoke.yaml` checks the
 normal training path against the same frozen initial adapter and 320-row cohort,
 including native eager/compiled isolation gates, longest-row memory preflight,
-finite gradients, zero padding and a changed FP32 master. Its result is pending.
+finite gradients, zero padding and a changed FP32 master. It completed both
+ordinary Trainer updates, logical batches `[32,32]`, 16 physical calls (including
+14-example packs), no checkpointed layers and 145.95 GiB peak allocated memory.
+Its longest actual input was 28,733 tokens. Eager/compiled packing gradient
+relative L2 was 0.00888195/0.00697903, with zero measured leakage. The broader
+eight-example singleton/packed gradient comparison differed by 21.1489%, while
+mean losses were 1.064834/1.074136. That strict 5% result remains false and is
+accepted only by the existing `selected_finite` partition policy; the stricter
+packing isolation gates remain independent and mandatory. Do not infer general
+gradient agreement from the smaller packing probe or two successful updates.
+The smoke produced 24 Dynamo graphs without cache-exhaustion fallback. It
+validates the ordinary training wiring, not warmed performance or convergence.
+Validation: 196 focused CPU tests passed (eight unsupported diagnostics skipped);
+48 affected CPU checks passed again after the metadata update. Ruff and staged
+diff checks passed. Reports and the FP32 adapter are collected locally under
+`results/bf16_packed_default_smoke/`.
+
+The complete ordinary-training metadata contract passed validation, including
+14-example packs exceeding the legacy padded batch-size cap. The saved adapter
+contains 256 FP32 LoRA tensors; its collected checksum matches the B200 original.
+Reports, configuration, logs and weights are locally checksummed.

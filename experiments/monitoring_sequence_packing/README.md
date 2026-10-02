@@ -302,4 +302,9 @@ validates wiring; the completed ten-step runs supply performance evidence.
 ```
 
 Artifacts: `results/bf16_packed_default_smoke/`; logs:
-`logs/runpod/bf16_packed_default_smoke/`. Result pending.
+`logs/runpod/bf16_packed_default_smoke/`. The smoke completed two ordinary updates
+with logical sizes `[32,32]`, 16 physical calls, zero padding and a changed FP32
+adapter. Both packing gates passed with zero measured leakage; the longest-row
+preflight fit at 145.95 GiB. The broader partition gradient canary still failed
+its strict gate (21.1489% relative L2) and recorded finite-policy acceptance.
+See the decision for numerical scope and the preserved receipts.

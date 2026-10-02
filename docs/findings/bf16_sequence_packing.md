@@ -254,3 +254,19 @@ There is no held-out quality result. Full-campaign promotion still requires the
 frozen validation contract. Focused regressions passed: 122 tests, eight intentional unsupported
 policy skips. The [experiment README](../../experiments/monitoring_sequence_packing/README.md)
 records hypotheses, gates, stop conditions, and executable configurations.
+
+## Ordinary training integration
+
+After the user selected packed BF16 without checkpointing as the B200 default,
+the two-step ordinary Trainer smoke completed with strict packing isolation/
+parity gates passed, longest-actual-input preflight passed, zero padding,
+finite gradients and a changed FP32 adapter. It used 16 physical calls for
+64 examples, including packs of 14, at 145.95 GiB peak allocated memory.
+Compiled packing probe gradient relative L2 was 0.00697903. The broader
+8-example singleton/packed gradient diagnostic was 0.21148890 and remained a
+strict failure, accepted under the existing selected finite policy; mean losses
+were 1.064834/1.074136. This larger numerical discrepancy is retained separately
+from the small isolation/parity canary. Neither two finite updates nor zero
+measured leakage establishes general gradient agreement or long-run quality.
+The [default decision](../decisions/b200_packed_bf16_training_recipe.md) records
+settings, provenance and numerical acceptance.
