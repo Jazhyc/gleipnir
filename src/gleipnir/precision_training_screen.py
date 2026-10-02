@@ -142,7 +142,16 @@ def run_precision_training_screen(
         or flashqla_layer_indices is not None
         or flashqla_layer_sweep is not None
         or metadata.get("fp32_projection")
-        or metadata.get("mlp", {}).get("precision") != "nf4"
+        or not (
+            metadata.get("mlp", {}).get("precision") == "nf4"
+            or (
+                metadata.get("mlp", {}).get("precision") == "bf16"
+                and metadata.get("quantization", {}).get("enabled") is False
+                and metadata.get("quantization", {})
+                .get("full_bf16_lora", {})
+                .get("verified")
+            )
+        )
     ):
         raise ValueError(
             "ten-step comparison requires ten uniform updates with current head"

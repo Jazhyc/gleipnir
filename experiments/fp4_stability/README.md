@@ -642,3 +642,28 @@ NF4/BF16 LoRA default. Ordinary training now uses `qwen35_4b_b200_default` and
 its explicit `selected_finite` canary policy. This is separate from the frozen
 ten-step diagnostic and does not change historical failed receipts. See the
 [default recipe decision](../../docs/decisions/b200_flashqla_training_recipe.md).
+
+## Fully BF16 LoRA with FlashQLA: ten-step screen
+
+Hypothesis: removing NF4 storage/dequantization from all frozen base weights
+reduces warmed optimizer-step time enough to offset BF16 weight storage. Previous
+BF16 controls changed only MLPs; attention retained NF4. This is the first fully
+unquantized control for the selected uniform FlashQLA recipe.
+
+Run `bf16_flashqla_ten_step_comparison.yaml` on the existing B200. Load the complete
+original base in BF16, disable bitsandbytes and verify every frozen parameter's
+dtype, absence of quantized modules and FP32 master adapters. Keep the same
+320 examples, initial master artifact/hash, rank 128, current head, all 24 FlashQLA
+layers, compiler policy, twelve checkpoints, logical batch 32, adaptive partitions
+and ten-step learning-rate schedule as the completed NF4/FlashQLA comparison.
+Compare its measured 9.0667 seconds/step and 132.091 GiB allocated peak against
+the new run; distinguish base-precision-dependent probe losses.
+
+Before updates, run finite numerical canaries, longest-cohort backward memory
+preflight and backward-only warmup of all ten batches; restore exact adapters.
+Then perform exactly ten optimizer calls (one LR-zero, nine nonzero), retaining
+the selected finite acceptance of strict numerical disagreement. Stop on OOM,
+nonfinite/zero gradients, input/master drift or runtime failure; do not shrink
+batches to rescue this comparison. Report every step, compile graph counts,
+setup time, allocated/reserved memory and common training probes. This screen
+does not select a checkpoint on held-out data or change the selected default.

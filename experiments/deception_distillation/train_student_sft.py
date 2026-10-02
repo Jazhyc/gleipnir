@@ -2892,7 +2892,20 @@ def main(cfg: DictConfig) -> None:
     )
     if mlp_precision not in {"nf4", "bf16", "fouroversix"}:
         raise ValueError(f"unknown MLP precision: {mlp_precision}")
-    if mlp_precision != "nf4" and not quantization_enabled:
+    full_bf16_lora = bool(
+        OmegaConf.select(cfg, "student.quantization.full_bf16_lora", default=False)
+    )
+    if full_bf16_lora and (
+        quantization_enabled
+        or mlp_precision != "bf16"
+        or finetuning_mode != "lora"
+        or model_loader != "causal_lm"
+        or not OmegaConf.select(
+            cfg, "student.training.precision_screen.enabled", default=False
+        )
+    ):
+        raise ValueError("full BF16 LoRA requires an unquantized causal LoRA screen")
+    if mlp_precision != "nf4" and not quantization_enabled and not full_bf16_lora:
         raise ValueError("selective MLP precision requires the QLoRA loading path")
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
     attention_implementation = OmegaConf.select(cfg, "student.attn_implementation")
@@ -3202,6 +3215,11 @@ def main(cfg: DictConfig) -> None:
             ),
         )
         print(f"mlp_precision={mlp_precision_metadata}", flush=True)
+    if full_bf16_lora:
+        from gleipnir.bf16_lora import bf16_lora_metadata
+
+        quantization_metadata["full_bf16_lora"] = bf16_lora_metadata(model)
+        print(f"full_bf16_lora={quantization_metadata['full_bf16_lora']}", flush=True)
     eager_mlp_interface = bool(
         OmegaConf.select(cfg, "student.training.eager_mlp_interface", default=False)
     )

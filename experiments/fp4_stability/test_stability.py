@@ -221,10 +221,16 @@ def test_timing_summary_weights_tokens_and_rejects_unmatched_replays():
 
 
 @pytest.mark.parametrize("ten_step_comparison", [False, True])
+@pytest.mark.parametrize("base_precision", ["nf4", "bf16"])
 @pytest.mark.parametrize("profile_batch", [None, 5])
 @pytest.mark.parametrize("gradient_validation", ["per_tensor", "clip_norm"])
 def test_timing_replays_restore_adapters_optimizer_and_schedule(
-    monkeypatch, tmp_path, profile_batch, gradient_validation, ten_step_comparison
+    monkeypatch,
+    tmp_path,
+    profile_batch,
+    gradient_validation,
+    ten_step_comparison,
+    base_precision,
 ):
     if ten_step_comparison and profile_batch is not None:
         pytest.skip("bounded comparison excludes profiling")
@@ -280,7 +286,13 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         policy=MicrobatchPolicy(max_padded_tokens=16384, max_micro_batch_size=8),
         steps=10,
         max_grad_norm=1.0,
-        metadata={"mlp": {"precision": "nf4" if ten_step_comparison else "bf16"}},
+        metadata={
+            "mlp": {"precision": base_precision if ten_step_comparison else "bf16"},
+            "quantization": {
+                "enabled": base_precision == "nf4",
+                "full_bf16_lora": {"verified": base_precision == "bf16"},
+            },
+        },
         timing_repeats=0 if ten_step_comparison else 3,
         ten_step_learning_comparison=ten_step_comparison,
         profile_batch=profile_batch,

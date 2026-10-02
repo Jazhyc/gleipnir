@@ -36,10 +36,16 @@ ROOT = Path(__file__).resolve().parents[2]
 def validate_config(config: dict) -> None:
     """Fail before GPU model loading for unsupported or unbounded campaigns."""
     validate_memory_recipe(config)
+    if config.get("full_bf16_lora", False) and not (
+        config.get("ten_step_learning_comparison", False)
+        and config["conditions"] == ["bf16"]
+    ):
+        raise ValueError("full BF16 LoRA requires a ten-step comparison")
     if config.get("ten_step_learning_comparison", False) and (
         config["steps"] != 10
         or config["diagnostics_only"]
-        or config["conditions"] != ["nf4"]
+        or config["conditions"]
+        != (["bf16"] if config.get("full_bf16_lora", False) else ["nf4"])
         or config.get("timing_repeats", 0)
         or config.get("flashqla_layer_indices") is not None
         or config.get("flashqla_layer_sweep") is not None
@@ -47,7 +53,9 @@ def validate_config(config: dict) -> None:
         or config.get("profile_batch") is not None
         or config.get("gated_delta_backend", "fla") not in {"fla", "flashqla"}
     ):
-        raise ValueError("ten-step comparison requires uniform NF4 with current head")
+        raise ValueError(
+            "ten-step comparison requires uniform NF4 or full BF16 with current head"
+        )
 
     def check_layers(indices):
         return (
@@ -289,6 +297,7 @@ def main() -> None:
                 ROOT / "src/gleipnir/fouroversix_training.py",
                 ROOT / "src/gleipnir/fp4_compiler_diagnostic.py",
                 ROOT / "src/gleipnir/precision_training_screen.py",
+                ROOT / "src/gleipnir/bf16_lora.py",
                 ROOT / "src/gleipnir/fp4_performance.py",
                 ROOT / "src/gleipnir/fp4_row_kernels.py",
                 ROOT / "src/gleipnir/fp4_quantization_kernels.py",
@@ -501,6 +510,13 @@ def main() -> None:
                 "++student.training.precision_screen.fp32_lm_head="
                 f"{str(config.get('fp32_lm_head', False)).lower()}",
             ]
+            if config.get("full_bf16_lora", False):
+                command.extend(
+                    [
+                        "student.quantization.enabled=false",
+                        "++student.quantization.full_bf16_lora=true",
+                    ]
+                )
             if config.get("compile_policy"):
                 command.append(
                     "student.training.selective_torch_compile_policy="
