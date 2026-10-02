@@ -667,3 +667,13 @@ nonfinite/zero gradients, input/master drift or runtime failure; do not shrink
 batches to rescue this comparison. Report every step, compile graph counts,
 setup time, allocated/reserved memory and common training probes. This screen
 does not select a checkpoint on held-out data or change the selected default.
+
+Completed: all ten optimizer calls finish without OOM or nonfinite gradients.
+Fully BF16 LoRA averages 7.8563 s/step versus the matched NF4/FlashQLA control's
+9.0667 s, a 13.35% time reduction. Measured allocated peak falls from 132.091
+to 96.144 GiB; both measured passes create zero new compiler graphs. Every
+paired BF16 batch is faster. Mean training loss is 0.560395 versus 0.688022,
+with different frozen base arithmetic and initial probes. Results, FP32 masters
+and comparison receipts are saved under `results/bf16_flashqla_ten_step_comparison/`
+locally and on the persistent volume. See the
+[finding](../../docs/findings/fp4_training_stability.md#fully-bf16-lora-with-uniform-flashqla).

@@ -1407,3 +1407,61 @@ FlashQLA as the default B200 NF4/BF16 LoRA recipe. The decision is recorded in
 statement that no default was promoted, through user selection rather than a
 new held-out quality result. Ordinary training records finite acceptance separately
 from failed strict parity, and preserves historical diagnostic contracts.
+
+## Fully BF16 LoRA with uniform FlashQLA
+
+Date: 2026-10-02. User requested ten steps of ordinary LoRA to test whether
+removing NF4 produces another speedup. The earlier BF16 controls replaced only
+MLP bases and retained NF4 attention, so they did not test a fully BF16 base.
+
+`bf16_flashqla_ten_step_comparison.yaml` disables bitsandbytes for the complete
+original model. Before GPU preflight, its verifier confirms all 4,205,751,296
+frozen parameters are BF16, no quantized modules remain, and 169,869,312 adapter
+elements across 256 tensors are FP32 masters. The model revision, initial master
+hash, software/GPU, 320-example permutation, probe lengths, twelve checkpoints,
+compiler policy, exact physical partitions, actual/padded tokens and learning
+rates match the completed NF4/FlashQLA ten-step control. Both use uniform
+FlashQLA on 24 GDN layers with the existing BF16/FP32 boundary; full attention
+retains SDPA. Each performs one LR-zero call and nine nonzero updates.
+
+| Metric | NF4 QLoRA + FlashQLA | Fully BF16 LoRA + FlashQLA |
+| --- | ---: | ---: |
+| Mean optimizer step, seconds | 9.066682 | 7.856332 |
+| Median optimizer step, seconds | 8.721489 | 7.401203 |
+| Step range, seconds | 7.013514–11.622088 | 6.124222–10.384118 |
+| Total ten-step work, seconds | 90.666825 | 78.563315 |
+| Actual tokens/second | 14,496.3 | 16,729.6 |
+| Measured peak allocated, GiB | 132.091379 | 96.144299 |
+| Measured peak reserved, GiB | 132.902344 | 96.587891 |
+| Mean training loss | 0.688022 | 0.560395 |
+| Common training probe before → after | 1.246726 → 0.912151 | 1.203673 → 0.779973 |
+| New measured compiler graphs | 0 | 0 |
+
+Every paired BF16 batch is faster: **13.35% less step time**, or 1.1541 times
+the throughput. All ten steps finish without OOM/nonfinite gradients. The
+longest-cohort backward preflight peaks at 95.163569 GiB allocated on 711,225
+tokens across 32 singletons, with gradient norm 32.613041. The ten backward-only
+warmup batches take 152.741936 seconds, make no optimizer updates and preserve
+the initial adapter hash. The whole training stage takes 778.376987 seconds
+including imports/model loading, canaries, compilation, preflight, warmup,
+probes and export. These setup costs are outside measured optimizer-step time.
+One recompile-limit warning occurs during setup, as in the NF4 control.
+
+The BF16 eager/compiled loss canary passes: 1.287744 versus 1.298254. Strict
+FlashQLA-versus-FLA adapter-gradient parity still fails (relative L2 0.184903),
+and the bounded screen retains the same explicitly selected finite acceptance.
+Common probes are eight shortened training examples evaluated with original
+eager FLA, retaining each condition's frozen base. BF16 also skips k-bit model
+preparation, so frozen non-MLP parameters retain their original BF16 dtype.
+Initial probe losses differ. The lower training losses do not establish
+held-out quality or isolate the effect of quantization alone.
+
+Receipts and FP32 masters are collected locally and on the persistent volume:
+`results/bf16_flashqla_ten_step_comparison/`, with logs under the corresponding
+`logs/runpod/` directory. `comparison.json` checks matching workload and initial
+adapters. All 23 source/config hashes match implementation commit `e249801`;
+the launch revision field is unset. The exported 256-tensor FP32 master artifact
+is finite, matches the trainable-name order and final digest
+`eb4367c1fb7f182cb7165aa1a0587121b70945875a3c0ea1af2b1aadd3670719`.
+The B200 is idle after this bounded run; the selected default remains the
+user-promoted NF4/FlashQLA recipe pending any separate selection.
