@@ -1,0 +1,35 @@
+campaign_id: student-injection-awareness-v1
+seed: 0
+training_rows: 8688
+training_source: data/tool_trajectory_monitoring/distillation_scaling/student_rows.jsonl
+teacher_source: data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl
+id_source: data/id_cot_only_evaluation/prompts.jsonl
+id_source_sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+id_manifest: data/id_cot_only_evaluation/evaluation.manifest.json
+id_manifest_sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+ood_source: data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl
+ood_source_sha256: ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2
+profile: qwen35_4b_b200_default
+models:
+  4b:
+    id: Qwen/Qwen3.5-4B
+    revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+    checkpointing: false
+    initial_adapter: results/fp4_row_aot_training/initial_adapter
+    initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+  9b:
+    id: Qwen/Qwen3.5-9B
+    revision: c202236235762e1c871ad0ccb60c8ee5ba337b9a
+    checkpointing: true
+    initial_adapter: null
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  max_num_seqs: 16
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 0.000001
