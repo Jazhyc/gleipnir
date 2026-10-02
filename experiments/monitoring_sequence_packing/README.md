@@ -92,7 +92,7 @@ does not launch or schedule this stage.
 See the [source audit and integration design](../../docs/research/monitoring_sequence_packing.md)
 for model/kernel changes and the prior Phoenix rejection.
 
-## Bounded BF16 B200 entrypoint
+## Historical paired BF16 B200 entrypoint
 
 ```bash
 bash experiments/fp4_stability/launch.sh experiments/monitoring_sequence_packing/bf16_gpu.yaml
@@ -261,7 +261,21 @@ least 5% lower packed update time than 5.1452 seconds (the no-checkpoint result)
 before favoring the larger checkpointed batch. Preserve all negative results;
 this is a systems comparison and makes no held-out quality claim.
 
+The packed-only 32k run completed with 44 physical calls versus 74 at 16k.
+Mean update time was 5.5162 seconds at 111.04 GiB peak allocated memory: 3.50%
+faster than checkpointed 16k packing, but 7.21% slower than 16k packing without
+checkpointing (5.1452 seconds, 147.14 GiB). It failed the prospective 5% speed
+gate against no checkpointing. Isolation and strict compiled numerical gates
+passed, all values stayed finite, and no measured recompilation/fallback occurred.
+The shared probe ended at 0.77203 from the same 1.20367 start. This budget did
+not make checkpointing faster than removing recomputation; other budgets remain
+untested.
+
 New comparisons default to `packing_only: true`; the launcher forwards this
 explicitly and receipts record it. Historical paired configurations retain
 `packing_only: false` for reproducibility. Independent singleton numerical and
 sequence-isolation canaries remain mandatory, as does the shared bounded probe.
+
+For future comparisons use the packing-only configuration above (with a new
+output/log destination). Paired configurations in this README document historical
+protocols and should only be used for an explicitly requested replay.

@@ -205,3 +205,10 @@ peak allocated memory. These bounded results support an opt-in systems recipe;
 longer training and frozen held-out quality validation are still required.
 The earlier compiler-related numerical discrepancies remain recorded with
 unresolved cache-causality attribution in the finding.
+
+Subsequent comparisons use packing only by user instruction. Doubling the packed
+token budget to 32,768 with checkpointing retained reduced physical calls from
+74 to 44, but improved time only 3.50% (5.5162 seconds/update). It remained 7.21%
+slower than packing without checkpointing, at lower memory (111.04 versus
+147.14 GiB). This tested batch-size intervention did not beat removing
+recomputation; the optimal larger budget has not been established.

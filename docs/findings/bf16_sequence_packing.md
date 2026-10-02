@@ -169,6 +169,43 @@ checkpointed packing's probe; this remains a small training-cohort diagnostic,
 not held-out quality equivalence. The configuration is a supported opt-in
 candidate for a longer validated campaign, not a default-recipe promotion.
 
+## Larger packed batches with checkpointing
+
+The user requested packing for all subsequent comparisons. The runner now
+uses `packing_only: true` by default; historical paired configurations remain
+explicit replays. The new `bf16_larger_batch_gpu.yaml` run retained the same
+12 checkpointed layers and doubled the packed token budget to 32,768. Logical
+batch size, initial adapters, all 320 examples/order, targets, learning rates,
+optimizer and shared probe remained matched to the completed packed baselines.
+No new padded training trajectory ran.
+
+| Compiled packed recipe | Seconds/update | Peak allocated GiB | Physical calls |
+| --- | ---: | ---: | ---: |
+| 16,384 tokens, checkpointed | 5.7163 | 98.0446 | 74 |
+| 16,384 tokens, no checkpointing | 5.1452 | 147.1395 | 74 |
+| 32,768 tokens, checkpointed | 5.5162 | 111.0401 | 44 |
+
+The larger checkpointed batch reduced calls by 40.54% and update time by 3.50%
+against checkpointed packing at 16k, using 13.00 GiB more allocated memory.
+It was 7.21% slower than the no-checkpoint packed run, while using 36.10 GiB
+less allocated memory. It did not meet the prospective requirement to beat
+no checkpointing by at least 5%. On this cohort and tested budget, spending
+memory on removing recomputation gave the larger speed gain. This does not
+establish the optimal token budget or exclude gains at other batch sizes.
+
+The longest-32 preflight and all ten warmup/measured batches passed. The compiled
+packing canary again had gradient relative L2 0.00885904, equal singleton/packed
+losses and exactly zero measured leakage. All training losses/gradient norms
+were finite, with no fallback warnings or new measured Dynamo graphs. Every
+recipe processed 1,314,331 actual tokens; packing introduced no padding. Shared
+probe losses started identically at 1.20367263 and ended at 0.77345017 (16k
+checkpointed), 0.77270733 (16k no checkpointing) and 0.77203090 (32k checkpointed).
+These are ten-step training-cohort diagnostics, not convergence or held-out
+quality evidence. The new receipts, FP32 master, matched comparison and plot
+are collected under `results/bf16_sequence_packing_larger_batch/`.
+
+## Earlier eager comparison
+
 The matched eager trajectories completed ten steps each (the first with zero
 learning rate), preserving the same initial adapter digest, data order, learning
 rates and 1,314,331 actual tokens. All losses and gradient norms were finite;
