@@ -505,3 +505,25 @@ difference 0.003099; base correlation 0.999665 and mean absolute difference
 contract/publication tests passed, including invalidation of cached predictions
 when the backend changes, and Ruff passed. Full replacement evaluations and
 aware serving parity remain pending.
+
+## Replacement 9B regular ID completed
+
+The Triton-backed replacement completed all 3,012 regular ID examples in
+1,036.80 seconds of evaluation-loop runtime. Its independent coverage audit
+passed exact unique membership, labels/sources, prompt/config identity, finite
+digit logprobs, score extraction and per-example token encoding. All 33,750,959
+input tokens were retained, with a longest prompt of 29,513. Prediction SHA256:
+`3be8cc4ef7fef9e3646c5c7397f7ef7bc495edccdb42cf5c12a1857bc4bf02de`.
+
+Primary equal-source macro pAUROC@20 is 0.879559, macro AUROC 0.960917 and
+Brier 0.078196. At the fixed 0.5 threshold, macro recall is 0.862232 and FPR
+0.061753. Source pAUROC@20 values are 0.811737 for Gloom exfiltration and
+0.947380 for STRIDE. Pooled pAUROC@20 is 0.848036, AUROC 0.952174, Brier
+0.085105, ECE 0.036282 and log loss 0.283268. There are 1,645 unique scores
+and 1,367 tied rows. Calibration bins and source threshold diagnostics remain
+in the full local report.
+
+These values supersede the archived first-attempt regular ID result for the
+paired 9B comparison. The backend changed solely to recover the observed
+runtime stall, before inspecting replacement quality. Regular OOD, aware parity,
+both aware full suites and 9B publication remain pending.
