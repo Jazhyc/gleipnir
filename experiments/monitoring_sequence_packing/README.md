@@ -164,3 +164,31 @@ implementation against a matched eager padding control. Torch model compilation
 is disabled in both; native convolution/FlashQLA kernels remain enabled and
 checkpointing, data, adapter, optimizer and all gates remain unchanged. This
 condition does not promote or imply acceptance of compiled packing.
+
+## Compiled learning diagnostic
+
+The user authorized a bounded training check despite the 14.3% gradient
+disagreement. `bf16_learning_gpu.yaml` repeats the cast-emulation compiled recipe
+with an explicit `packing_learning_gradient_tolerance: 0.15`. The existing
+strict 0.05 parity result remains recorded as failed; a separate
+`accepted_for_learning_comparison` field permits the diagnostic. No isolation,
+finite-gradient, or loss-agreement threshold changes. Gradients above 0.15,
+nonfinite values, or cross-example influence still stop before updates.
+
+Hypothesis: shape-dependent BF16 gradient drift can remain stable over a short
+training trajectory. Compare the same initial FP32 adapters and ten logical
+batches with fresh AdamW state for adaptive padding and packing. Examine finite
+losses/gradient norms and the common original-backend probe after each update,
+alongside complete-loop timing and memory. Stop on any nonfinite loss/gradient
+or failed preflight gate. Ten updates diagnose early stability; they do not
+establish convergence or held-out quality equivalence. The first scheduled
+step has zero learning rate, leaving nine weight-changing updates per control.
+Both common probes use the original padded collator and original kernels/forwards
+so comparison does not depend on the training layout.
+
+The eager comparison completed: 9.3926 seconds/update padded versus 7.2430 packed
+(22.89% lower), 115 versus 74 physical calls and effectively identical 118.42 GiB
+peak allocated memory. Every loss and gradient norm remained finite. Its probes
+used each training collator and had slightly different starting losses, so their
+final values (0.79265 padded, 0.76925 packed) are rough stability diagnostics.
+See the [finding](../../docs/findings/bf16_sequence_packing.md) for scope and limits.

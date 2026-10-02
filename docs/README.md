@@ -3,7 +3,9 @@
 - `research_program.md`: scope, research questions, and evaluation principles.
 - [Monitoring sequence packing](research/monitoring_sequence_packing.md):
   prior Phoenix rejection, model/kernel boundary audit, CPU isolation controls,
-  and the deferred B200 integration and correctness gates.
+  and the B200 BF16 integration and correctness gates.
+- [BF16 sequence packing](findings/bf16_sequence_packing.md): native sequence
+  isolation, numerical drift localization, and the bounded B200 packing comparison.
 - [Possible monitoring training follow-ups](research/monitoring_training_followups.md):
   fixed-backbone, existing-teacher-data proposals, their empirical and literature
   motivation, and a candidate comparison plan; research backlog rather than a

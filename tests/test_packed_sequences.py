@@ -179,3 +179,28 @@ def test_packing_config_preserves_the_completed_bf16_recipe():
     ]:
         with pytest.raises(ValueError, match="sequence packing requires"):
             validate_config(dict(config, **override))
+
+
+def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
+    from pathlib import Path
+
+    import yaml
+
+    from experiments.fp4_stability.run import validate_config
+
+    root = Path(__file__).parents[1] / "experiments/monitoring_sequence_packing"
+    baseline = yaml.safe_load((root / "bf16_casts_gpu.yaml").read_text())
+    config = yaml.safe_load((root / "bf16_learning_gpu.yaml").read_text())
+    validate_config(config)
+    assert {key for key in config if config[key] != baseline.get(key)} == {
+        "output",
+        "logs",
+        "packing_learning_gradient_tolerance",
+    }
+    for override in [
+        {"steps": 20},
+        {"packing_learning_gradient_tolerance": 0.151},
+        {"sequence_packing": False},
+    ]:
+        with pytest.raises(ValueError):
+            validate_config(dict(config, **override))

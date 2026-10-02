@@ -115,6 +115,7 @@ def run_precision_training_screen(
     ten_step_learning_comparison: bool = False,
     partition_strategy: Callable | None = None,
     packing_canary: Callable | None = None,
+    common_probe_collator: Callable | None = None,
 ) -> dict[str, Any]:
     """Run memory/compile canaries and ten updates without held-out selection."""
     if steps not in {1, 10} or len(features) != steps * 32:
@@ -224,6 +225,7 @@ def run_precision_training_screen(
             "controls retain their own NF4 or BF16 MLP bases"
         ),
         "probe_lengths": [len(p["direct_input_ids"]) for p in probe],
+        "common_probe_uses_shared_collator": common_probe_collator is not None,
     }
     output.mkdir(parents=True, exist_ok=True)
 
@@ -260,9 +262,11 @@ def run_precision_training_screen(
         model.eval()
         with common_attention(dense), use_forwards(original_forwards), torch.no_grad():
             if dense:
+                probe_collator = common_probe_collator or collator
                 with dense_mlp_evaluation(model):
                     losses = [
-                        float(loss_forward(collator([item])).detach()) for item in probe
+                        float(loss_forward(probe_collator([item])).detach())
+                        for item in probe
                     ]
             else:
                 losses = [

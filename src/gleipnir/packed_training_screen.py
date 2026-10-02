@@ -48,6 +48,54 @@ def _layer_comparison(reference: dict, candidate: dict) -> list[dict]:
     return results
 
 
+def validate_learning_tolerance(value: float | None) -> None:
+    """Limit the explicit learning diagnostic to the authorized 15% ceiling."""
+    if value is not None and (
+        type(value) not in (int, float) or not 0.05 <= value <= 0.15
+    ):
+        raise ValueError(
+            "packing learning gradient tolerance must be between .05 and .15"
+        )
+
+
+def _accept_canary(receipt: dict, learning_tolerance: float | None) -> dict:
+    validate_learning_tolerance(learning_tolerance)
+    reference = receipt["independent_loss"]
+    candidate = receipt["packed_loss"]
+    relative = receipt["adapter_gradient_relative_l2"]
+    isolation = bool(receipt["cases"]) and all(
+        all(
+            math.isfinite(v) and 0 <= v <= limit
+            for v, limit in [
+                (row["repeat_max_abs"], 1e-6),
+                (row["perturb_max_abs"], 1e-6),
+                (row["cross_input_grad_max_abs"], 1e-8),
+            ]
+        )
+        and math.isfinite(row["own_input_grad_max_abs"])
+        and row["own_input_grad_max_abs"] > 0
+        for row in receipt["cases"]
+    )
+    valid = (
+        isolation
+        and all(math.isfinite(v) for v in [reference, candidate, relative])
+        and relative >= 0
+        and abs(candidate - reference) <= 0.02 + 0.02 * abs(reference)
+    )
+    receipt["passed"] = valid and relative <= 0.05
+    receipt["learning_gradient_tolerance"] = learning_tolerance
+    receipt["accepted_for_learning_comparison"] = bool(
+        valid and learning_tolerance is not None and relative <= learning_tolerance
+    )
+    if not (receipt["passed"] or receipt["accepted_for_learning_comparison"]):
+        raise PackingCanaryError(
+            f"packing numerical parity failed: losses {reference}/{candidate}, "
+            f"gradient rel L2={relative}",
+            receipt,
+        )
+    return receipt
+
+
 def packing_isolation_canary(
     model: torch.nn.Module,
     features: list[dict[str, Any]],
@@ -55,6 +103,7 @@ def packing_isolation_canary(
     loss_forward: Callable,
     *,
     capture_layers: bool = True,
+    learning_tolerance: float | None = None,
 ) -> dict:
     """Test identical-shape independence and matched singleton adapter gradients.
 
@@ -62,6 +111,7 @@ def packing_isolation_canary(
     permit 1e-6 absolute logit drift and 1e-8 cross-input gradients; numerical
     singleton/packing parity permits 2% loss drift and 0.05 gradient relative L2.
     """
+    validate_learning_tolerance(learning_tolerance)
     device = next(model.parameters()).device
     parameters = [p for p in model.parameters() if p.requires_grad]
     rows = []
@@ -179,21 +229,7 @@ def packing_isolation_canary(
                 "gradient_relative_l2": 0.05,
             },
         }
-        if (
-            not all(
-                math.isfinite(v) for v in [packed_value, independent_loss, relative]
-            )
-            or abs(packed_value - independent_loss)
-            > 0.02 + 0.02 * abs(independent_loss)
-            or relative > 0.05
-        ):
-            raise PackingCanaryError(
-                f"packing numerical parity failed: losses "
-                f"{independent_loss}/{packed_value}, gradient rel L2={relative}",
-                receipt,
-            )
-        receipt["passed"] = True
-        return receipt
+        return _accept_canary(receipt, learning_tolerance)
     finally:
         model.zero_grad(set_to_none=True)
         model.train(was_training)
@@ -202,6 +238,8 @@ def packing_isolation_canary(
 def run_packed_training_screen(**kwargs: Any) -> dict:
     """Replay the existing ten-update BF16 recipe with padded and packed batches."""
     metadata = kwargs["metadata"]
+    learning_tolerance = metadata.get("packing_learning_gradient_tolerance")
+    validate_learning_tolerance(learning_tolerance)
     if not (
         metadata.get("quantization", {}).get("full_bf16_lora", {}).get("verified")
         and kwargs.get("gated_delta_backend") == "flashqla"
@@ -232,6 +270,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
     initial = [p.detach().cpu().clone() for _, p in named]
     report = {
         "status": "running",
+        "learning_gradient_tolerance": learning_tolerance,
         "initial_master_sha256": tensor_digest(initial),
         "convolution_kernels": sorted({fn.__module__ for fn in convolutions}),
         "conditions": {},
@@ -262,6 +301,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
                     # Release the first trajectory's AdamW states before preflight.
                     kwargs["optimizer_factory"]()
                 options = dict(kwargs, output=output / condition)
+                options["common_probe_collator"] = kwargs["collator"]
                 options["packing_canary"] = lambda *, compiled: (
                     packing_isolation_canary(
                         model,
@@ -272,6 +312,7 @@ def run_packed_training_screen(**kwargs: Any) -> dict:
                         kwargs["collator"],
                         kwargs["loss_forward"],
                         capture_layers=not compiled,
+                        learning_tolerance=learning_tolerance,
                     )
                 )
                 if condition == "packed":

@@ -253,6 +253,11 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         model.weight.fill_(1.0)
     optimizers = []
     profiled = []
+    common_collator_calls = []
+
+    def common_collator(items):
+        common_collator_calls.append(items)
+        return items
 
     def profile_action(action, output):
         profiled.append(action())
@@ -275,6 +280,7 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         model=model,
         features=[{"direct_input_ids": [1, 2]} for _ in range(320)],
         collator=lambda items: items,
+        common_probe_collator=common_collator,
         loss_forward=lambda batch: model(torch.ones(1, 1)).square().mean(),
         optimizer_factory=optimizer_factory,
         scheduler_factory=lambda optimizer, steps: torch.optim.lr_scheduler.LambdaLR(
@@ -299,6 +305,8 @@ def test_timing_replays_restore_adapters_optimizer_and_schedule(
         gradient_validation=gradient_validation,
     )
     assert report["status"] == "complete"
+    assert report["common_probe_uses_shared_collator"]
+    assert len(common_collator_calls) == (12 * 8 if ten_step_comparison else 2 * 8)
     if ten_step_comparison:
         assert not report["compile_canary"]["passed"]
         assert report["compile_canary"]["accepted_for_ten_step_learning_comparison"]
