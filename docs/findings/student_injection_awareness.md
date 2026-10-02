@@ -377,3 +377,21 @@ its input audit and started native initialization. Its startup gates, paired ini
 training completion and both conditions' serving parity and quality results
 remain pending. The separate failed strict gradient comparisons recorded above
 remain negative results; the artifact checks do not establish serving parity.
+
+## Aware 9B native gates and paired initialization
+
+The aware condition audited all 8,688 rows (85,562,657 tokens, maximum 29,538,
+zero truncation) and verified the same BF16 base and 232,783,872 FP32 trainable
+elements as regular 9B. Its actual initial master digest exactly matches the
+regular digest recorded above. Mandatory eager and compiled packing gates both
+passed, with adapter-gradient relative L2 of 0.008496 and 0.007835 respectively.
+The longest-32 backward preflight passed with 928,943 actual tokens, maximum
+29,538, finite nonzero gradient norm 12.239272, unchanged masters and peak
+allocated memory 34.3467 GiB. These native receipts are collected locally.
+
+The separate strict FlashQLA-versus-FLA gradient comparison failed (relative L2
+0.226668); the broader adaptive-partition comparison also failed (0.303002).
+Both were finite and accepted only under the unchanged explicit
+`selected_finite` policy. The negative results are retained independently of
+the mandatory packing gates. The first optimizer updates are advancing; full
+training completion, serving parity and full benchmark results remain pending.
