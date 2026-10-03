@@ -68,6 +68,9 @@ Artifacts: `data/monitoring_injection_disentanglement/`,
 `results/monitoring_injection_disentanglement/` and
 `logs/runpod/monitoring_injection_disentanglement/`. Use the existing authorized
 B200 Pod `3422tdq7tfog52` at $6.79/hour and its preserved network volume.
+Reuse the populated persistent compiler cache through the shared runtime helper.
+The initial cold-cache attempt and its intentional warm-cache restart are
+documented in [startup findings](../../docs/findings/monitoring_injection_disentanglement.md).
 The current session has no in-chat scheduling tool: startup and campaign
 monitoring happen in the active turn; no post-turn heartbeat is promised.
 

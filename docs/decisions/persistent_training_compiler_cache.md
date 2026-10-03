@@ -24,3 +24,11 @@ the existing warm volume. Its cold startup is retained in its log and execution
 receipt. The user requested this correction before the first optimizer update.
 The running worker already captured its environment; changing the shared helper
 affects future launches, including its bounded evaluation reference process.
+
+After the user reported low utilization, the initial attempt was intentionally
+stopped after ten completed updates. Its logs, input audit and execution receipt
+are retained under the campaign's `attempts/cold_cache/` trees. Missing entries
+from that newly built cache were merged into the populated legacy cache without
+overwriting existing entries. Training was restarted from the same initial
+adapter and seed for a complete epoch, using the corrected shared-cache helper;
+the original cache directories remain available for embedded artifact paths.
