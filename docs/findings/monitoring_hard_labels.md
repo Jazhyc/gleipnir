@@ -184,9 +184,9 @@ and 256 FP32 tensors for every collected master and serving adapter. All eight
 adapters, predictions, reports and logs were collected locally; duplicate
 optimizer checkpoints remain on the Pod.
 Logs preserve the numerical diagnostics and missing-ninja failure alongside
-the successful recovery. No OOD or final-test result was used, no model was
-published, and promotion remains false. Confirm the 0.3 mixture across seeds
-before promotion; transfer quality remains an open question.
+the successful recovery. No OOD or final-test result was used in ID selection,
+no model was published, and promotion remains false. Confirm the 0.3 mixture across seeds
+before promotion. Transfer evidence for the fixed candidate follows below.
 
 ## Fixed-candidate OOD follow-up (2026-10-03)
 
@@ -204,12 +204,76 @@ reference and ID-result checksums, unchanged vLLM/Torch/GPU/GDN identities and
 explicit `performed_this_run=false` receipts. No new training or numerical
 canary is requested. Source provenance and zero training-lineage overlap were
 verified before launch; instructions and the strict OOD population are unchanged.
-See `experiments/monitoring_hard_labels/ood_config.yaml`. Results will be recorded
-in `results/monitoring_hard_labels/ood_summary.json` after both conditions complete.
+See `experiments/monitoring_hard_labels/ood_config.yaml`. Completed results are
+recorded in `results/monitoring_hard_labels/ood_summary.json`.
 
 Launched on the existing B200 Pod `alzfug70g5237b` at 2026-10-03 00:13:57 UTC
 (02:13:57 Amsterdam), evaluator PID 74749. The independent launcher and receipt
-are ignored artifacts under `results/monitoring_hard_labels/`. Startup is checked
-in this turn. No in-chat scheduling capability is available, so recurring agent
+are ignored artifacts under `results/monitoring_hard_labels/`. Startup was checked
+during the launch turn. No in-chat scheduling capability is available, so recurring agent
 follow-ups are not scheduled; detached process persistence is separate from
 agent monitoring. The original completed ID status is preserved.
+
+Completed and collected 2026-10-03: each adapter scored all 6,395 examples, for
+12,790 predictions in one persistent engine. The frozen serving configuration
+was vLLM 0.24.0, Torch 2.11.0+cu130, NVIDIA B200 and FlashInfer GDN prefill.
+Both conditions reused their existing successful adapter-specific parity
+receipts with `performed_this_run=false`; unchanged artifact/runtime identities
+were verified. Each scored 55,346,879 prompt tokens, maximum 29,570, below the
+32,768-token cap with zero truncation. Scoring took 998.50 seconds for the
+candidate and 994.30 seconds for the control, excluding engine startup and the
+initial rendering audit. The final campaign status is complete and the GPU is
+idle; no recurring agent follow-ups were scheduled.
+
+| OOD source-macro metric | Soft-only, LR 2e-5 | Hard fraction 0.3, LR 2e-5 | Candidate minus control |
+| --- | ---: | ---: | ---: |
+| normalized pAUROC@20 | 0.782860 | 0.788400 | +0.005540 |
+| AUROC | 0.910372 | 0.912103 | +0.001731 |
+| Brier (lower is better) | 0.140889 | 0.140996 | +0.000106 |
+
+The macro pAUROC gain is 0.554 percentage points, substantially smaller than
+the 2.815-point ID gain. Four of six sources improve in pAUROC, but the average
+hides a large SHADE Arena regression:
+
+| Source | Rows | Soft-only pAUROC@20 | 0.3 pAUROC@20 | Change, percentage points |
+| --- | ---: | ---: | ---: | ---: |
+| AgentDojo | 1,500 | 0.797942 | 0.875016 | +7.71 |
+| CUA SHADE Arena | 955 | 0.777502 | 0.769860 | -0.76 |
+| IAC | 1,443 | 0.847464 | 0.891054 | +4.36 |
+| MLE sabotage | 148 | 0.997959 | 0.998980 | +0.10 |
+| RogueEval | 1,499 | 0.955358 | 0.965127 | +0.98 |
+| SHADE Arena | 850 | 0.320935 | 0.230365 | -9.06 |
+
+SHADE Arena AUROC also falls from 0.669159 to 0.637178, and Brier worsens from
+0.282530 to 0.316201. This corroborates a ranking and calibration regression
+on that source, rather than merely a changed operating threshold.
+
+At threshold 0.5, source-macro recall declines from 0.721728 to 0.705645 while
+FPR declines from 0.100735 to 0.076263. Source-macro Brier is essentially
+unchanged. Pooled ranking improves more than the equal-source mean: pAUROC@20
+0.654394 to 0.694456 and AUROC 0.898207 to 0.913839; pooled Brier improves
+0.147748 to 0.140698 and log loss 0.462060 to 0.449477. Pooled ECE worsens
+0.098869 to 0.122032, with probability bias becoming more negative (-0.095456
+to -0.122032). Calibration conclusions therefore depend on the metric and
+population weighting. Unique scores/tied rows remain 2,121/4,274 (control) and
+2,130/4,265 (candidate); full per-source diagnostics and reliability bins are
+preserved in each report.
+
+The matched control was useful: the historical soft-only LR 5e-5 adapter had
+macro pAUROC@20 0.776238, AUROC 0.914348 and Brier 0.138607 on these same inputs.
+It is a separate learning-rate condition. The hard-label effect reported above
+uses the fresh LR 2e-5 control, with all other frozen training choices held fixed.
+
+Adding 0.3 hard supervision gives a small OOD macro ranking gain
+and stronger pooled ranking, with mixed calibration and substantial source
+tradeoffs. The larger ID improvement does not establish a broad OOD advantage.
+These are descriptive one-seed results; no uncertainty interval was calculated.
+Keep the original ID selection intact. No OOD-based weight/checkpoint selection,
+publication or promotion occurred; multi-seed confirmation remains outstanding.
+
+All OOD predictions, reports, parity-reuse receipts and logs were collected
+locally. `ood_completion_audit.json` verifies frozen membership/provenance,
+finite raw logprobs, normalized-score reconstruction, zero truncation, complete
+ranking and calibration recomputation, adapter identities, summary checksum and
+preservation of the original ID summary. Its checked script is the ignored
+`results/monitoring_hard_labels/audit_ood_completion.py`.

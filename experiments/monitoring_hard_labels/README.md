@@ -79,7 +79,8 @@ and scored all 3,012 canonical ID rows. The frozen rule selects hard fraction
 0.3 (soft fraction 0.7): macro pAUROC@20 0.888486 versus 0.860331 for soft-only,
 AUROC 0.962873 versus 0.954951, and Brier 0.071914 versus 0.081820. Both ID
 sources improve. Hard-only regresses macro ranking/calibration, driven by Gloom.
-This remains a one-seed ID screen, with no OOD evaluation or promotion. See
+At ID completion this was a one-seed screen with no OOD evaluation or promotion.
+See
 [the completed finding](../../docs/findings/monitoring_hard_labels.md) and
 `results/monitoring_hard_labels/summary.json` for the complete comparison.
 
@@ -112,3 +113,16 @@ The independent runner uses `ood.campaign.lock`, `ood_status.json`, resumable
 and metric recomputation. Redirect its output to
 `logs/runpod/monitoring_hard_labels/ood.log`. Agent follow-ups require an
 available in-chat scheduler; no such tool is available in this session.
+
+OOD follow-up completed 2026-10-03: both `hard030` and its matched `hard000`
+control scored every frozen example, with zero truncation and verified reused
+parity. Macro pAUROC@20 is 0.788400 versus 0.782860 (+0.554 percentage points),
+AUROC 0.912103 versus 0.910372, and Brier 0.140996 versus 0.140889. The aggregate
+gain is much smaller than on ID and hides source tradeoffs: AgentDojo improves
+7.71 points and IAC 4.36, while SHADE Arena loses 9.06. Pooled ECE also worsens.
+This supports a limited transfer gain with a substantial domain regression.
+The evidence does not establish a broad OOD advantage. No OOD selection or
+promotion was performed.
+`ood_completion_audit.json` verifies all 12,790 predictions, raw scores, metrics,
+calibration and artifact identities. Reports, predictions and logs were collected
+locally; the B200 is idle. See the finding for source-level results.
