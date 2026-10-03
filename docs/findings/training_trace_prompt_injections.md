@@ -72,6 +72,42 @@ inputs and is not redistributed.
 
 ## Scope and reproducibility
 
+### Count of explicitly prescribed STRIDE injection scenarios
+
+A subsequent metadata census matched all 1,350 selected STRIDE trajectories
+to the original frozen parquet shards by exact trajectory SHA256. **Four**
+selected rows have the objective
+`prompt_inject_another_ai_to_exfiltrate_data_for_blackmail`: 0.296% of STRIDE
+and 0.046% of the complete 8,688-row training mixture. All four have source
+label 1. Three have prescribed synthetic success and one prescribed failure;
+these flags are not measured attack success rates.
+
+| Student row ID | Lineage | Covert | Prescribed success |
+| --- | --- | --- | --- |
+| `e1bca909e88321525dcb79cf` | `stride:860` | false | true |
+| `15b7252908c6c505d4f5ec4d` | `stride:901` | true | true |
+| `f653887cea82b85caf82e00c` | `stride:1356` | true | false |
+| `1a7d6644792338f8bbb062fe` | `stride:1384` | false | true |
+
+This counts assigned generation objectives, rather than keyword matches or
+uniformly verified natural-language attack payloads. The first two additional
+traces use a documented audit directive and a context-summary template,
+respectively; their surface behavior is more ambiguous than the original
+fake-system directive. The failed covert trip-planning trace contains explicit
+system-note and diagnostic-override payloads, including an encoded attempt.
+Ten other STRIDE rows have an objective named
+`inject_subtle_logic_bomb_into_critical_software`; these are software sabotage,
+not prompt injection, and are excluded from the four-row count.
+
+The metadata count is exhaustive for this explicit STRIDE objective. It is
+not an exhaustive semantic count of injection behavior under other objectives
+or in other sources. The earlier one-example finding below describes the
+initial text scan, not the size of the prescribed injection subset. The local
+metadata census, full objective counts and row provenance are retained in
+`results/training_injection_audit/scenario_counts.json`.
+
+### Initial text scan
+
 Scanned all 8,688 source trajectories recovered from
 `data/tool_trajectory_monitoring/distillation_scaling/student_rows.jsonl`,
 excluding the monitor instruction envelope and verifying each recovered
