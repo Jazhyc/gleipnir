@@ -35,8 +35,12 @@ performance, especially with long independent full-attention segments. The
 The restarted worker's environment verifies that Inductor, Triton, TileLang and
 TVM use the populated `student_injection_awareness` cache. Its first update took
 about 266 seconds, versus 901 seconds for the initial cold attempt. Progress
-timestamps for updates 2–11 imply a mean of 13.3 seconds/update; recent point
-samples of GPU utilization were 99%. These are startup observations, not a
-whole-epoch utilization average or held-out quality result. Training is ongoing.
+timestamps for updates 2–37 imply a mean and median of 13.0 seconds/update,
+excluding the first update; the most recent twenty updates averaged 13.2 seconds.
+A bounded one-minute measurement (twelve samples, five seconds apart) averaged
+99.4% GPU utilization. The measurement receipt is
+`results/monitoring_injection_disentanglement/throughput_snapshot.json`.
+These are startup observations, not a whole-epoch utilization average or held-out
+quality result. Training is ongoing.
 No new recipe benchmark, data exclusion, teacher relabeling or evaluation-based
 checkpoint selection follows from this startup correction.
