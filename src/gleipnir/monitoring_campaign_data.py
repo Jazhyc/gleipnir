@@ -42,9 +42,13 @@ def write_rows(path: Path, rows: list[dict[str, Any]]) -> None:
     tmp.replace(path)
 
 
-def trajectory_from_prompt(prompt: str, expected_hash: str) -> str:
+def trajectory_from_prompt(
+    prompt: str, expected_hash: str, *, source_template: PromptTemplate | None = None
+) -> str:
     """Recover source bytes by envelope and checksum, including trailing newlines."""
-    template = load_prompt_set().student
+    template = (
+        source_template if source_template is not None else load_prompt_set().student
+    )
     suffix = f"{template.trajectory_close}\n"
     if not prompt.startswith(template.cache_prefix) or not prompt.endswith(suffix):
         raise ValueError("source student envelope drift")
@@ -59,13 +63,16 @@ def rerender_training(
     rows: list[dict[str, Any]], template: PromptTemplate
 ) -> list[dict[str, Any]]:
     output = []
+    source_template = load_prompt_set().student
     for row in rows:
         if not row["dataset"].startswith("tool_trajectory/"):
             raise ValueError("deception data in monitoring-only campaign")
         if digest(row["student_prompt"]) != row["student_prompt_sha256"]:
             raise ValueError("source student prompt checksum drift")
         trajectory = trajectory_from_prompt(
-            row["student_prompt"], row["trajectory_sha256"]
+            row["student_prompt"],
+            row["trajectory_sha256"],
+            source_template=source_template,
         )
         prompt = template.render(trajectory)
         rendered = {
@@ -84,12 +91,15 @@ def rerender_evaluation(
     rows: list[dict[str, Any]], template: PromptTemplate
 ) -> list[dict[str, Any]]:
     output = []
+    source_template = load_prompt_set().student
     for row in rows:
         metadata = row["metadata"]
         if digest(row["prompt"]) != metadata["rendered_prompt_sha256"]:
             raise ValueError("evaluation source prompt drift")
         trajectory = trajectory_from_prompt(
-            row["prompt"], metadata["trajectory_sha256"]
+            row["prompt"],
+            metadata["trajectory_sha256"],
+            source_template=source_template,
         )
         prompt = template.render(trajectory)
         output.append(

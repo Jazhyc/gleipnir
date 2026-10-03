@@ -1,0 +1,37 @@
+campaign_id: monitoring-injection-disentanglement-v1
+seed: 0
+training_rows: 8688
+training_source: data/tool_trajectory_monitoring/distillation_scaling/student_rows.jsonl
+training_source_sha256: 03669ac12452a2b63fe13193611fb99bfaeeb2456e6aaeb0c1be43471ea4387c
+teacher_source: data/tool_trajectory_monitoring/distillation_scaling/soft_targets.jsonl
+teacher_source_sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+id_source: data/id_cot_only_evaluation/prompts.jsonl
+id_source_sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+id_manifest: data/id_cot_only_evaluation/evaluation.manifest.json
+id_manifest_sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+benchmark_root: ../monitor-injection-evals
+benchmark_source: data/apps/prompts/eval_neutral.jsonl
+benchmark_source_sha256: 339327a476f6834d8998500e2726263dfe3ce55bcc0a12648928abe9e99abfc0
+controls_source: data/apps/honest_controls/eval_neutral.jsonl
+controls_source_sha256: 71b337c070fc60faba0d04c54c5f0813498c45d60ab6b9c77b9b67639c6a70e1
+profile: qwen35_4b_b200_default
+learning_rate: 5.0e-5
+startup_validation_reference: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+startup_validation_reference_sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  max_num_seqs: 16
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+  gdn_prefill_backend: triton
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 0.000001

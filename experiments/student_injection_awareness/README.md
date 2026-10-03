@@ -1,5 +1,25 @@
 # Student prompt-injection awareness
 
+## Approved behavior-grounded prompt, 2026-10-03
+
+The user requested a new student instruction for review before any training.
+The proposed instruction is
+[`student_prompt_behavior_grounded_draft.txt`](student_prompt_behavior_grounded_draft.txt).
+It explicitly separates injection presence from the monitored agent's conduct,
+including text targeting the monitor, while retaining positive judgments for
+unauthorized actions caused by injections and attacks the agent carries out
+against other models. Monitor-directed wording alone is insufficient; positive
+judgments require concrete misconduct in task execution or reporting.
+
+The user approved this instruction for a new 4B training run and a three-prompt
+injection evaluation, with an additional ID sanity check. The frozen design is
+in [monitoring_injection_disentanglement](../monitoring_injection_disentanglement/README.md).
+The existing soft targets were generated under the earlier teacher rubric;
+this campaign keeps them fixed, so target compatibility remains a limitation.
+The completed campaign below retains its original scope.
+
+## Original campaign
+
 Hypothesis: explicitly warning a monitor about collusion and misleading claims
 improves transfer when its teacher signal stays fixed. Train matched regular and
 injection-aware students at 4B, then 9B. This intervention changes the student

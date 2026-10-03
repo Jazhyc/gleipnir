@@ -1,0 +1,82 @@
+{
+  "historical": {
+    "base/benchmark/injection_aware": {
+      "results/gleipnir-grid-v1/4b/base/eval_injection_aware.complete.json": "820a1660019aff74e5e09f6475d23b8c4693815beaaadf224eaa6b8fc8115655",
+      "results/gleipnir-grid-v1/4b/base/eval_injection_aware.contract.json": "66751904f8945c4d7b954d3cc9bfb7996ba20345a6a02714c8f71b62e4945680",
+      "results/gleipnir-grid-v1/4b/base/eval_injection_aware.jsonl": "65f92d7a1194e84f2ff6d76914095e75d83fdbc05e9bb25236232017dfaa1b52"
+    },
+    "base/benchmark/neutral": {
+      "results/gleipnir-grid-v1/4b/base/eval_neutral.complete.json": "9dbe52606b896681f950fa2cf4b4ec2d2166548fcd21ec0e362270595b90b445",
+      "results/gleipnir-grid-v1/4b/base/eval_neutral.contract.json": "f9764a5fec8803db91d9cad9e57f5d8d9347923fb201f663b02ac7adf3181102",
+      "results/gleipnir-grid-v1/4b/base/eval_neutral.jsonl": "a47ca66877da0c7bbe7b1890b6a6ff3da679ebac7b27171a0c32bd533159cb1e"
+    },
+    "base/honest_controls/injection_aware": {
+      "results/gleipnir-honest-controls-v1/4b/base/eval_injection_aware.complete.json": "9f500b1296484491ee10a1b47a4583c791a50d5d8fee8af20f90d28cd2e8cc75",
+      "results/gleipnir-honest-controls-v1/4b/base/eval_injection_aware.contract.json": "0e526411af7658f80818652f8a1730b142f6ad812d58d3bb29800e01ef34a4b3",
+      "results/gleipnir-honest-controls-v1/4b/base/eval_injection_aware.jsonl": "a38f476702c25ca19e8204cf46ba332672f8c2bcd644eb1f9db0f151a74b748f"
+    },
+    "base/honest_controls/neutral": {
+      "results/gleipnir-honest-controls-v1/4b/base/eval_neutral.complete.json": "0e896bcabafe5be5c756147186db853115487961042247454a3918a3c3dca1b3",
+      "results/gleipnir-honest-controls-v1/4b/base/eval_neutral.contract.json": "1464b6ac442051ee83e7f9a0d1a877939b8916e120e56d709b7886d57ecf9007",
+      "results/gleipnir-honest-controls-v1/4b/base/eval_neutral.jsonl": "5063be666976c56eaee801e476efbcc193531e2d096e9e29addb10b735803440"
+    },
+    "injection_aware/benchmark/injection_aware": {
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_injection_aware.complete.json": "45d501d2e44318d20a80749288a2d5febe6811ac7d61d1eafb10134e4f33d614",
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_injection_aware.contract.json": "977f88eccae8927668971e53da4a95ab39d08c0f3c63b6ef4f3a5dab178ce0ef",
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_injection_aware.jsonl": "fa2fb0b8bf3b0bb3ca22bc4bebf8bac6aa61e810ab1e5df67dd9c6f26f194f6e"
+    },
+    "injection_aware/benchmark/neutral": {
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_neutral.complete.json": "8edf75941a55190a90180e860e0dc61ec470585647bbc1f65da31e62dc4cf600",
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_neutral.contract.json": "68a660af4c955c9d089cba2256247f336423f37fe853ee23a3485a6e540e2ecd",
+      "results/gleipnir-grid-v1/4b/injection_aware/eval_neutral.jsonl": "664c305afff29491c4745510181ce28d414891e444bdbe4e91a4e1b5b5eefb59"
+    },
+    "injection_aware/honest_controls/injection_aware": {
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_injection_aware.complete.json": "c2b6eb77f1fce36465f4f887bd0cb1562628f17a9367ae7a41433f1b5d744dee",
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_injection_aware.contract.json": "c4afc171c302547237aaa2f5d65701a7bb2f34244468c056ca94360e8e653296",
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_injection_aware.jsonl": "56733d7e8f523b3a9d57ea935af8ab64f0bb9479859331178aea800966b52899"
+    },
+    "injection_aware/honest_controls/neutral": {
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_neutral.complete.json": "d6b78506a58c6b82e4ac3e29f597e67113018c5c93560eb721649acec6d8df96",
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_neutral.contract.json": "8338d960c08318b1df47e3f80d856dce2ad9647d567f03622d739272deece886",
+      "results/gleipnir-honest-controls-v1/4b/injection_aware/eval_neutral.jsonl": "76ce02cffbcdcea7bc4c8adaba0c1f401d14079c887c6438ad5bc33e111e12cf"
+    },
+    "regular/benchmark/injection_aware": {
+      "results/gleipnir-grid-v1/4b/regular/eval_injection_aware.complete.json": "d7bb542da8eb9a1e4cc3a694071c5ca75b3e9a557f3cd757ca2421b0dbf60690",
+      "results/gleipnir-grid-v1/4b/regular/eval_injection_aware.contract.json": "1234c43c267888ec6d5a212a2dceb8a0d87b08ae9d44c9c5f5ae5dec5466715a",
+      "results/gleipnir-grid-v1/4b/regular/eval_injection_aware.jsonl": "54e7c467c46217910f8307f696d6736c71bcd9a38d2be3228c7c0343645b8bbb"
+    },
+    "regular/benchmark/neutral": {
+      "results/gleipnir-grid-v1/4b/regular/eval_neutral.complete.json": "be9f55c6811f23d8af81ce8d8c57400d5034a449351f89ebf70f74943dccb56b",
+      "results/gleipnir-grid-v1/4b/regular/eval_neutral.contract.json": "3ea107009d38bc5e685c1df839dc3d17e86ae21b4fc4ab0789ef1fe521ca8f45",
+      "results/gleipnir-grid-v1/4b/regular/eval_neutral.jsonl": "78051b6fdeb39a5f19f28c15c8a55d9143b2e122c1d7887e7d4eee0bcb5d88ef"
+    },
+    "regular/honest_controls/injection_aware": {
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_injection_aware.complete.json": "211b0d91354f750c8930ec489a82cb00319c83030793c75787fdb5705a80f993",
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_injection_aware.contract.json": "9c20963ac6600b5212d00345898f1504660eeecee8de6e7b13e3de09a58f0140",
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_injection_aware.jsonl": "6d3f7fc2e553036a6f7c1e112998c1a90d335fb7223c9ba5e549f840d92fcef0"
+    },
+    "regular/honest_controls/neutral": {
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_neutral.complete.json": "91e50aeb4e1a407654f534cd2592f34119a4dc70552ad395c8edd73091ce63c2",
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_neutral.contract.json": "f9014a622689ae39dca28faa8a6839f8856e7ba90867b1ad69aab1723ee4136b",
+      "results/gleipnir-honest-controls-v1/4b/regular/eval_neutral.jsonl": "00a2e73dc85237365c6c8725fe2cc9dede4a6f7409d37bc63bea71469d9c6d25"
+    }
+  },
+  "model": {
+    "adapters": {
+      "injection_aware": {
+        "master": "results/student_injection_awareness/4b/injection_aware/causal_adapter",
+        "master_sha256": "d880686818a56ece8efedbd5dca9eb4a8067dd468686c5849024c307466e7a4f",
+        "serving": "results/student_injection_awareness/4b/injection_aware/model",
+        "serving_sha256": "999182e8da1706c26a0bcc8bad2cde691c28fa4ad586ad2df0ba146a42de326b"
+      },
+      "regular": {
+        "master": "results/student_injection_awareness/4b/regular/causal_adapter",
+        "master_sha256": "ef2ed374f7f07dfcf1455fc3c78a7722a7ce128dac0263deb79e8cc27560b873",
+        "serving": "results/student_injection_awareness/4b/regular/model",
+        "serving_sha256": "2d6a96428ff904b6254f7b20924650e6c4da2b93046673b6937fc76189029924"
+      }
+    },
+    "model": "Qwen/Qwen3.5-4B",
+    "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
+  }
+}
