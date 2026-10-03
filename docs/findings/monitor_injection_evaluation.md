@@ -1,5 +1,37 @@
 # Crossed monitor prompt-injection evaluation
 
+## Dataset-construction review, 2026-10-02
+
+This review uses dataset descriptions and generation procedures, not a search
+through individual trajectories. It concerns the matched 8,688-row campaign,
+whose regular and aware students receive identical trajectories and Kimi soft
+targets; awareness training changes the instruction, not the attack inventory.
+
+[Sinha et al., Appendix C.3–C.4](https://arxiv.org/html/2605.29601v1#A3.SS3)
+describe training as synthetic scheming (STRIDE/Gloom), covert coding sabotage
+(CoT-Red-Handed), and shell sabotage/exfiltration (BashArena/BashBench). Their
+behavioral categorization explicitly places prompt-injection compliance in
+AgentDojo OOD and says that category does not occur in training. This is a
+primary-category analysis of source-positive rows, not proof that training
+contains no incidental injection strings or secondary monitor manipulation.
+ID STRIDE and Gloom-Exfiltration cover held-out scheming and disguised leaks.
+AgentDojo attacks target the acting agent through tool outputs; Rogue Eval
+targets oversight routing. Neither description establishes direct persuasion
+of the reviewing monitor to return a low score.
+
+[CoT-Red-Handed, Sections 2.3 and 4.2](https://arxiv.org/html/2505.23575#S2.SS3)
+documents framing, stealth and monitor-awareness policies, including misleading
+benign explanations of harmful behavior. This supports exposure to related
+monitor-evasion behavior at the source level; the construction review does not
+establish which policies survive in our selected action-only coding rows.
+Direct monitor collusion is not established by the reviewed descriptions.
+
+Generalization from deception/sabotage supervision is a plausible explanation
+for the transfer-template result, not an identified causal mechanism. ID/OOD
+evaluation supplies no gradient updates and cannot itself teach this behavior.
+The absence of benign injected negatives remains an alternative explanation:
+injection text might simply act as a suspicion cue.
+
 The [prespecified evaluation](../research/monitor_injection_evaluation.md)
 crosses base, regular-trained and injection-aware-trained Qwen3.5 weights with
 regular and injection-aware student instructions at both 4B and 9B. These are
