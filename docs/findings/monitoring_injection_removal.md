@@ -56,6 +56,18 @@ hardware and driver match the preceding campaign. The launcher points at the
 populated persistent `student_injection_awareness` compiler cache. No new GPU
 allocation, cold cache, relabeling or teacher call is part of this run.
 
+Startup subsequently passed through actual optimizer updates: at least 5/236
+updates completed, with reported loss 0.6600 and gradient norm 19.23. The first
+update took about 251 seconds; progress timestamps for updates 2–5 imply about
+11.5 seconds/update. The recent GPU point sample was 100% utilization. These are
+early measurements, not a whole-epoch speed/utilization result. The complete
+token audit has 75,256,252 tokens, maximum length 29,337 and zero truncation.
+The model loader verifies a BF16 base and 256 FP32 LoRA tensors; all 24 GDN layers
+use FlashQLA. The actual worker environment verifies shared Inductor, Triton,
+TileLang and TVM paths, recorded in `cache_runtime.json`; advancing-update and
+startup evidence is in `startup_verified.json`. Both receipts live under
+`results/monitoring_injection_removal/`. No numerical probes were newly run.
+
 The new adapter will receive the same three-prompt injection grid and honest
 controls; the twelve complete previous model/prompt cells are checked and reused
 as baselines, giving fifteen grid cells overall. ID is evaluated only with the
