@@ -60,7 +60,9 @@ def make_job(config: dict, recipe: dict, size: str, variant: str) -> dict:
     return job
 
 
-def validate_training_metadata(metadata: dict, job: dict, initial_hash: str) -> None:
+def validate_training_metadata(
+    metadata: dict, job: dict, initial_hash: str, *, expected_steps: int = 272
+) -> None:
     """Require completed updates, exact loss weights and the selected packed recipe."""
     from gleipnir.monitoring_systems_screen import nested_value
 
@@ -86,7 +88,7 @@ def validate_training_metadata(metadata: dict, job: dict, initial_hash: str) -> 
         if nested_value(metadata, path) != expected:
             raise ValueError(f"systems metadata drift: {path}")
     packing = metadata["sequence_packing"]
-    if metadata["training_state"]["global_step"] != 272 or (
+    if metadata["training_state"]["global_step"] != expected_steps or (
         not reused
         and not all(
             packing[k]["passed"]
