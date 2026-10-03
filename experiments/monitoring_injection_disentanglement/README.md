@@ -7,6 +7,13 @@ frozen CoT-removed ID set as a sanity check. The mapping was explicitly
 confirmed: neutral is the original regular instruction, aggressive is the
 previous injection-aware instruction, and conservative is the approved draft.
 
+Completed 2026-10-03: all 272 training updates, twelve benchmark grid cells
+(six fresh and six verified historical) and the single conservative-prompt ID
+pass finished. The new monitor still alarms on 100% of injected honest-code
+controls under all three prompts; ID source-macro pAUROC@20 is 0.833429.
+See the [complete findings](../../docs/findings/monitoring_injection_disentanglement.md)
+for the grid, baselines, coverage checks and label-contract limitations.
+
 Hypothesis: explicitly requiring task-behavior evidence reduces alarms driven
 solely by injection text while preserving detection of underlying misconduct.
 Intervention: change only the student instruction relative to the completed
@@ -70,7 +77,7 @@ Artifacts: `data/monitoring_injection_disentanglement/`,
 B200 Pod `3422tdq7tfog52` at $6.79/hour and its preserved network volume.
 Reuse the populated persistent compiler cache through the shared runtime helper.
 The initial cold-cache attempt and its intentional warm-cache restart are
-documented in [startup findings](../../docs/findings/monitoring_injection_disentanglement.md).
+documented in [the findings](../../docs/findings/monitoring_injection_disentanglement.md).
 The current session has no in-chat scheduling tool: startup and campaign
 monitoring happen in the active turn; no post-turn heartbeat is promised.
 

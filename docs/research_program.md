@@ -40,6 +40,14 @@ with the proposed Kimi K3 logit-distillation comparison, is recorded in
 - Freeze promotion criteria before final evaluations.
 - Preserve raw teacher evidence and immutable prompt hashes for auditability.
 
+Instruction changes alone have not resolved injection-text sensitivity in the
+completed [behavior-grounded 4B experiment](findings/monitoring_injection_disentanglement.md):
+all three inference prompts retained 100% alarms on injected honest-code controls
+at thresholds set from clean code. Require honest injected negatives and matched
+positive/negative templates when interpreting injection benchmarks. This result
+uses fixed teacher targets and a code-backdoor label contract; it does not identify
+the causal training examples or settle the broader agent-behavior ontology.
+
 For future monitoring validation and checkpoint selection, use the
 [CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
 visible assistant prose. Freeze its input/manifest hashes in each new campaign.
