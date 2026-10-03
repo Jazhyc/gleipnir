@@ -213,6 +213,31 @@ refresh it from a live read after any separately authorized future start.
 Restore the recorded temporary kernel links and container caches if needed.
 No Pod or network volume was terminated or deleted.
 
+### B200 restarted for the training-injection census, 2026-10-03
+
+The user subsequently authorized one Runpod B200 for a full pass over the
+8,688 training trajectories with unadapted Qwen3.5-9B in vLLM. Resuming
+`alzfug70g5237b` failed because its physical host had no free GPU; a separate
+live read confirmed that it remained EXITED. New Pod `3422tdq7tfog52`
+(`gleipnir-b200-injection-audit`) started in US-NC-2 at the quoted $6.79/hour,
+using the existing 200 GB network volume `ixbh81vf9c` at `/workspace` and the
+same CUDA-13 image. No additional network volume was created.
+
+Use `scripts/runpod_cloud.py --pod-file .runpod/injection-audit.json` for this
+Pod; the previous `.runpod/pod.json` still describes the stopped original Pod.
+Refresh the sanitized live snapshot before reconnecting after lifecycle changes.
+The new host reports B200 183,359 MiB, driver 595.91.07 and CUDA 13.2. The
+preserved environment has Python 3.12.3, PyTorch 2.11.0+cu130, Transformers
+5.14.1 and vLLM 0.24.0. CUDA-13 wheel integrity passed, and serving logs
+confirmed FlashInfer GDN prefill. This inference check does not validate a
+training recipe on the new host.
+
+The campaign and frozen scoring contract are in
+[`training_injection_census`](../experiments/training_injection_census/README.md).
+The current session has no agent scheduling tool; monitoring occurs in the
+active turn and cannot promise a follow-up after yielding. Preserve the volume
+and collected artifacts when the user subsequently requests stopping compute.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

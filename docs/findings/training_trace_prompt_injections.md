@@ -5,6 +5,13 @@ contains at least one actual prompt-injection attack. AgentDojo remains a
 held-out source, but source-level behavioral categories do not establish that
 the training trajectories contain no injection attacks.
 
+The subsequent [full-training logit census](training_injection_census.md)
+scored all 8,688 complete trajectories with unadapted Qwen3.5-9B in vLLM.
+It flags 1,154 rows at 0.5 and 202 at 0.9, but reviewed code-only backdoors
+are semantic false positives. Those candidate counts do not replace the
+four-row assigned-objective census below or establish injection prevalence
+or exclusivity to harmful behavior labels.
+
 ## Confirmed example
 
 STRIDE example `1a7d6644792338f8bbb062fe`, lineage `stride:1384`, has source
