@@ -11,6 +11,7 @@ import time
 from pathlib import Path
 
 import numpy as np
+import yaml
 
 from experiments.judge_injection_continuation.prepare import (
     CONFIG,
@@ -26,9 +27,10 @@ from gleipnir.judge_injection import digest
 from gleipnir.judge_injection_metrics import summarize_preferences
 from gleipnir.monitoring_campaign_data import file_hash, read_rows, write_json
 
-DEST = OUTPUT / "evaluation"
+DEST = OUTPUT / "evaluation_regular"
 TRANSFER_DATA = ROOT / "data/monitoring_injection_disentanglement"
-PROMPTS = ("neutral", "aggressive", "conservative")
+PROMPTS = ("neutral",)
+EVALUATION_CONFIG = HERE / "evaluation_config.yaml"
 
 
 def adapters() -> dict[str, dict[str, Path]]:
@@ -46,6 +48,9 @@ def adapters() -> dict[str, dict[str, Path]]:
 
 
 def identity() -> dict:
+    scope = yaml.safe_load(EVALUATION_CONFIG.read_text())
+    if scope["monitor_prompts"] != list(PROMPTS):
+        raise ValueError("regular-only monitoring scope drift")
     manifest = verify_preparation()
     complete = json.loads((OUTPUT / "4b/continued/complete.json").read_text())
     if (
@@ -68,6 +73,8 @@ def identity() -> dict:
         "config_sha256": file_hash(CONFIG),
         "manifest_sha256": file_hash(DATA / "manifest.json"),
         "entrypoint_sha256": file_hash(HERE / "evaluate.py"),
+        "evaluation_config_sha256": file_hash(EVALUATION_CONFIG),
+        "monitor_prompts": list(PROMPTS),
         "adapters": hashes,
         "transfer_input_sha256": {
             f"{split}/{prompt}": file_hash(TRANSFER_DATA / split / f"{prompt}.jsonl")
@@ -136,30 +143,75 @@ def cohorts() -> dict[str, tuple[list[dict], str]]:
     }
 
 
+def validate_reference(result: dict, ident: dict) -> None:
+    if result["identity"] != ident:
+        raise ValueError("reference identity drift")
+    cached = result["cells"]
+    expected_cells = {
+        name + "/" + cohort: rows
+        for name in ("base", "original", "continued")
+        for cohort, (rows, _) in cohorts().items()
+    }
+    if set(cached) != set(expected_cells):
+        raise ValueError("reference cell coverage drift")
+    for cell, rows in expected_cells.items():
+        if (
+            cached[cell]["ids"] != [r.get("id", r.get("index")) for r in rows]
+            or len(cached[cell]["scores"]) != len(rows)
+            or len(cached[cell]["prompt_sha256"]) != len(rows)
+            or any(
+                not math.isfinite(s) or not 0 <= s <= 1 for s in cached[cell]["scores"]
+            )
+        ):
+            raise ValueError("reference score/coverage drift")
+
+
+def subset_reference(source: dict, ident: dict) -> dict:
+    """Reuse unchanged reference scores after the user narrowed monitor scope."""
+    previous = source["identity"]
+    for field in ("config_sha256", "manifest_sha256", "adapters", "id_input_sha256"):
+        if previous[field] != ident[field]:
+            raise ValueError("reference subset backbone/data drift")
+    for key, checksum in ident["transfer_input_sha256"].items():
+        if previous["transfer_input_sha256"][key] != checksum:
+            raise ValueError("reference subset monitoring input drift")
+    cells = {
+        name + "/" + cohort: source["cells"][name + "/" + cohort]
+        for name in ("base", "original", "continued")
+        for cohort in cohorts()
+    }
+    result = {**source, "identity": ident, "cells": cells}
+    validate_reference(result, ident)
+    return result
+
+
 def reference() -> None:
     ident = identity()
     target = DEST / "reference.json"
-    if target.exists() and json.loads(target.read_text())["identity"] == ident:
-        cached = json.loads(target.read_text())["cells"]
-        expected_cells = {
-            name + "/" + cohort: rows
-            for name in ("base", "original", "continued")
-            for cohort, (rows, _) in cohorts().items()
-        }
-        if set(cached) != set(expected_cells):
-            raise ValueError("reference cell coverage drift")
-        for cell, rows in expected_cells.items():
-            if (
-                cached[cell]["ids"] != [r.get("id", r.get("index")) for r in rows]
-                or len(cached[cell]["scores"]) != len(rows)
-                or len(cached[cell]["prompt_sha256"]) != len(rows)
-                or any(
-                    not math.isfinite(s) or not 0 <= s <= 1
-                    for s in cached[cell]["scores"]
-                )
-            ):
-                raise ValueError("reference score/coverage drift")
+    if target.exists():
+        validate_reference(json.loads(target.read_text()), ident)
         print("Reused bounded reference", flush=True)
+        return
+    scope = yaml.safe_load(EVALUATION_CONFIG.read_text())
+    source_path = ROOT / scope["reference_source"]
+    if source_path.exists():
+        if file_hash(source_path) != scope["reference_source_sha256"]:
+            raise ValueError("prior reference checksum drift")
+        source = json.loads(source_path.read_text())
+        if (
+            source["identity"]["entrypoint_sha256"]
+            != scope["reference_source_entrypoint_sha256"]
+        ):
+            raise ValueError("prior reference entrypoint drift")
+        result = subset_reference(source, ident)
+        result["reused_reference"] = {
+            "source": scope["reference_source"],
+            "sha256": scope["reference_source_sha256"],
+            "entrypoint_sha256": scope["reference_source_entrypoint_sha256"],
+            "reason": "user restricted monitoring evaluation to the regular prompt",
+        }
+        write_json(target, result)
+        print("Reused six unchanged reference cells for regular-only scope", flush=True)
         return
     import torch
     from peft import PeftModel
@@ -623,7 +675,7 @@ def summarize() -> None:
         {
             "stage": "complete",
             "preference_checkpoints": 2,
-            "monitor_prompt_cells": 3,
+            "monitor_prompt_cells": len(PROMPTS),
             "id_cells": 1,
         },
     )

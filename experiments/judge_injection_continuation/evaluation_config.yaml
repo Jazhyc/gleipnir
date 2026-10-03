@@ -1,0 +1,4 @@
+monitor_prompts: [neutral]
+reference_source: results/judge_injection_continuation/evaluation/reference.json
+reference_source_sha256: 507c61ff798fe86ecc9d9191eff3b53b1fcffccd34478843ed3e34a6693064cf
+reference_source_entrypoint_sha256: a3394268fc9d29ea0230b30536710f37c3b6dfada34b9f6ec2cb4f33ade0274d

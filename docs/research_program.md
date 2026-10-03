@@ -64,7 +64,7 @@ tests a different intervention: continue the regular 4B adapter on preference
 judgments with injections attached independently to preferred and disfavored
 answers. Its full released data are pooled and split approximately 80:20 by
 original query before augmentation. Compare original/continued A/B scores on
-held-out queries, then test transfer separately on the existing APPS grid and
+held-out queries, then test transfer separately on regular-prompt APPS controls and
 standard-prompt ID. Preference robustness does not establish harm-monitoring
 robustness; APPS is excluded from training and checkpoint selection.
 

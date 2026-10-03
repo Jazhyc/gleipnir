@@ -177,3 +177,40 @@ def test_original_id_reuse_requires_same_inputs_and_weights(tmp_path, monkeypatc
     ident["id_input_sha256"] = "different"
     with pytest.raises(ValueError, match="original ID baseline"):
         evaluate.original_id_baseline(ident)
+
+
+def test_narrower_reference_reuse_requires_unchanged_weights_and_inputs(monkeypatch):
+    from experiments.judge_injection_continuation import evaluate
+
+    monkeypatch.setattr(
+        evaluate,
+        "cohorts",
+        lambda: {
+            "preference": ([{"id": "p"}], "AB"),
+            "monitor/neutral": ([{"id": "m"}], "01"),
+        },
+    )
+    ident = {
+        "config_sha256": "config",
+        "manifest_sha256": "manifest",
+        "adapters": "weights",
+        "id_input_sha256": "id",
+        "transfer_input_sha256": {"canaries/neutral": "canaries"},
+    }
+    cells = {
+        name + "/" + cohort: {
+            "ids": [key],
+            "scores": [0.3],
+            "prompt_sha256": ["prompt"],
+        }
+        for name in ("base", "original", "continued")
+        for cohort, key in (("preference", "p"), ("monitor/neutral", "m"))
+    }
+    cells["original/monitor/aggressive"] = {"unused": True}
+    source = {"identity": json.loads(json.dumps(ident)), "cells": cells}
+    result = evaluate.subset_reference(source, ident)
+    assert len(result["cells"]) == 6
+    assert "original/monitor/aggressive" not in result["cells"]
+    source["identity"]["adapters"] = "different"
+    with pytest.raises(ValueError, match="backbone/data drift"):
+        evaluate.subset_reference(source, ident)

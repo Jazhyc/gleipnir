@@ -8,8 +8,8 @@ continued checkpoints on a frozen approximately 80:20 question-grouped split.
 Hypothesis: learning preference judgments with injections independently attached
 to either candidate reduces unjustified avoidance of otherwise preferred answers.
 Preference accuracy is an auxiliary outcome, not a harmfulness judgment. Test
-transfer independently on the existing APPS injection grid and CoT-removed ID
-using their original monitoring prompts and 0/1 interface. APPS remains excluded
+transfer independently on the existing APPS injection controls and CoT-removed ID
+using the regular monitoring prompt and 0/1 interface. APPS remains excluded
 from training, data generation, checkpoint selection and hyperparameter tuning.
 
 Source: `ShiJiawenwen/JudgeDeceiver` at
@@ -58,7 +58,7 @@ logprobs; normalized p(B) or p(harmful) retains both raw values and token audits
 
 Report preference accuracy, AUROC, Brier, log loss, calibration, ties, p(correct),
 source/query macro means, paired changes from clean to preferred/disfavored
-injection and preference flips. Report the fixed APPS three-prompt grid including
+injection and preference flips. Report APPS under the regular prompt, including
 injected-honest alarms, and standard-prompt ID ranking/calibration for the continued
 adapter against checksum-verified historical original results. Final checkpoint
 only; no epoch/LR/prompt/threshold selection on held-out preference or APPS scores.
@@ -66,6 +66,13 @@ Stop on unknown/ambiguous label contracts, provenance drift, grouped leakage,
 truncation, missing/nonfinite gradients or scores, parity failure or incomplete
 coverage. Retain failure receipts. Generalization remains bounded by few queries,
 model-specific optimized suffixes, construction labels and one seed.
+
+The user restricted monitoring evaluation to the regular prompt before held-out
+scoring began. `evaluation_config.yaml` freezes that scope separately from the
+unchanged training configuration. Artifacts live in `evaluation_regular/`;
+the interrupted sweep and its completed reference scores remain in `evaluation/`.
+Reuse only the checksum-verified preference/regular reference cells with identical
+weights and inputs. Aggressive/conservative prompts receive no full evaluation.
 
 The existing authorized B200 is used; no new capacity is allocated. This session
 has no in-chat scheduling tool, so monitoring takes place during active turns.
