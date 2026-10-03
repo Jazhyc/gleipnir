@@ -166,6 +166,15 @@ def training_command(job: dict[str, Any]) -> list[str]:
         command.append(
             "++student.training.decision_prefix=" + json.dumps(job["decision_prefix"])
         )
+    if job.get("per_record_binary_task"):
+        command.append("++student.training.per_record_binary_task=true")
+        mixture = job["task_mixture"]
+        for key in ("monitoring_per_batch", "preference_per_batch"):
+            command.append(f"++student.training.task_mixture.{key}={int(mixture[key])}")
+        for key, weight in mixture["condition_weights"].items():
+            command.append(
+                f"++student.training.task_mixture.condition_weights.{key}={float(weight)}"
+            )
     if "nonreentrant_checkpointing" in job:
         command.append(
             "++student.training.nonreentrant_checkpointing="

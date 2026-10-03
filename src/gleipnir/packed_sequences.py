@@ -113,6 +113,9 @@ def collate_packed_monitoring(features: Sequence[dict[str, Any]]) -> dict:
         )
     elif any("soft_target" in f for f in features):
         raise ValueError("mixed missing soft targets in packed batch")
+    from gleipnir.binary_task_training import collate_binary_task_fields
+
+    batch.update(collate_binary_task_fields(features))
     return batch
 
 

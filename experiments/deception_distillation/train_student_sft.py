@@ -117,6 +117,9 @@ class CompletionOnlyCollator:
                     [feature["soft_target"] for feature in features],
                     dtype=torch.float32,
                 )
+            from gleipnir.binary_task_training import collate_binary_task_fields
+
+            batch.update(collate_binary_task_fields(features))
             if "soft_rating_probs" in features[0]:
                 batch["soft_rating_targets"] = torch.tensor(
                     [feature["soft_rating_probs"] for feature in features],
@@ -1706,6 +1709,7 @@ def tokenize_record(
     include_mil_target: bool = False,
     include_prefix_target: bool = False,
     mil_max_instances: int = 8,
+    per_record_binary_task: bool = False,
 ) -> dict[str, Any]:
     effective_completion_max_length = (
         max_length if completion_max_length is None else completion_max_length
@@ -1787,6 +1791,12 @@ def tokenize_record(
     if include_direct_target:
         if dataset_id is None:
             raise ValueError("dataset_id is required for direct-target training")
+        if per_record_binary_task:
+            from gleipnir.binary_task_training import binary_task_feature
+
+            task_fields = binary_task_feature(record, tokenizer)
+            direct_target_prefix = record["decision_prefix"]
+            tokenized.update(task_fields)
         serialized_direct = direct_prompt + direct_target_prefix
         if include_mil_target and mil_row_enabled(record):
             direct_ids, mil_positions = mil_token_positions(
@@ -2045,6 +2055,33 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             default="random",
         )
     )
+    per_record_binary_task = bool(
+        OmegaConf.select(cfg, "student.training.per_record_binary_task", default=False)
+    )
+    task_mixture = OmegaConf.select(cfg, "student.training.task_mixture", default=None)
+    if per_record_binary_task and (
+        decision_head_mode != "token_logits"
+        or soft_loss_type != "bce"
+        or soft_target_logit_center != 0.0
+        or soft_target_logit_scale != 1.0
+        or completion_loss_weight
+        or pairwise_loss_weight
+        or mil_loss_weight
+        or OmegaConf.select(cfg, "student.training.prefix_loss_weight", default=0.0)
+        or ordinal_soft_loss_weight
+        or soft_loss_weight != 1.0
+        or direct_loss_weight != 1.0
+        or dataset_sampling != "proportional"
+        or paired_batching
+        or world_size != 1
+        or train_sampling_strategy != "random"
+        or task_mixture is None
+    ):
+        raise ValueError(
+            "per-record binary tasks require the explicit hard/soft task mixture"
+        )
+    if task_mixture is not None and not per_record_binary_task:
+        raise ValueError("task mixture requires per-record binary tasks")
     if train_sampling_strategy not in {
         "random",
         "group_by_length",
@@ -2061,6 +2098,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             default="mean",
         )
     )
+    if per_record_binary_task and dataset_loss_weighting != "mean":
+        raise ValueError("task mixtures require equal per-example loss weighting")
     if dataset_loss_weighting not in DATASET_LOSS_WEIGHTING_MODES:
         raise ValueError(
             "student.training.dataset_loss_weighting must be one of: "
@@ -2226,6 +2265,19 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         """Completion SFT with optional direct-label and within-dataset rank losses."""
 
         def _get_train_sampler(self, train_dataset=None):
+            if task_mixture is not None:
+                from gleipnir.binary_task_training import TaskMixtureSampler
+
+                selected = (
+                    self.train_dataset if train_dataset is None else train_dataset
+                )
+                self.task_mixture_sampler = TaskMixtureSampler(
+                    selected["sampling_group"],
+                    selected["binary_label"],
+                    seed=int(cfg.seed),
+                    **OmegaConf.to_container(task_mixture, resolve=True),
+                )
+                return self.task_mixture_sampler
             if paired_batching:
                 selected_dataset = (
                     self.train_dataset if train_dataset is None else train_dataset
@@ -2259,6 +2311,10 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             direct_input_ids = inputs.pop("direct_input_ids", None)
             direct_attention_mask = inputs.pop("direct_attention_mask", None)
             packed_lengths = inputs.pop("packed_lengths", None)
+            row_decision_ids = inputs.pop("row_decision_token_ids", None)
+            hard_objectives = inputs.pop("hard_objectives", None)
+            if per_record_binary_task and row_decision_ids is None:
+                raise ValueError("per-record decision token ids missing")
             binary_labels = inputs.pop("binary_labels", None)
             dataset_ids = inputs.pop("dataset_ids", None)
             soft_targets = inputs.pop("soft_targets", None)
@@ -2417,10 +2473,22 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                                 direct_attention_mask,
                                 direct_logits_mode,
                             )
-                        direct_logits = next_logits.index_select(-1, label_ids)
+                        direct_logits = (
+                            next_logits.gather(-1, row_decision_ids)
+                            if per_record_binary_task
+                            else next_logits.index_select(-1, label_ids)
+                        )
                 if loss is None:
                     loss = direct_logits.sum() * 0.0
-                if direct_loss_weight:
+                if per_record_binary_task:
+                    from gleipnir.binary_task_training import binary_task_loss
+
+                    if hard_objectives is None or soft_targets is None:
+                        raise ValueError("per-record objective fields missing")
+                    loss = loss + binary_task_loss(
+                        direct_logits, binary_labels, soft_targets, hard_objectives
+                    )
+                if direct_loss_weight and not per_record_binary_task:
                     loss = loss + direct_loss_weight * F.cross_entropy(
                         direct_logits.float(), binary_labels
                     )
@@ -2432,7 +2500,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         dataset_ids,
                         pairwise_temperature,
                     )
-                if soft_loss_weight:
+                if soft_loss_weight and not per_record_binary_task:
                     if soft_targets is None:
                         raise ValueError("soft targets are missing from training batch")
                     soft_losses = soft_binary_distillation_losses(
@@ -2655,7 +2723,20 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         soft_teacher_path = Path(str(soft_teacher_artifact))
         if not soft_teacher_path.is_absolute():
             soft_teacher_path = root / soft_teacher_path
-        records = attach_soft_teacher_targets(records, soft_teacher_path)
+        if per_record_binary_task:
+            soft_records = attach_soft_teacher_targets(
+                [r for r in records if r["binary_objective"] == "soft"],
+                soft_teacher_path,
+            )
+            joined = {(r["dataset"], r["index"]): r for r in soft_records}
+            records = [
+                joined[r["dataset"], r["index"]]
+                if r["binary_objective"] == "soft"
+                else r
+                for r in records
+            ]
+        else:
+            records = attach_soft_teacher_targets(records, soft_teacher_path)
     elif soft_teacher_artifact is not None:
         raise ValueError(
             "student.soft_teacher_artifact requires a positive soft_loss_weight"
@@ -2782,6 +2863,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             include_mil_target=bool(mil_loss_weight),
             include_prefix_target=bool(prefix_loss_weight),
             mil_max_instances=mil_max_instances,
+            per_record_binary_task=per_record_binary_task,
         )
         for record in records
     ]
@@ -2809,8 +2891,23 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         dataset_name_by_id[dataset_id]: mass
         for dataset_id, mass in expected_dataset_mass_by_id.items()
     }
+    if task_mixture is not None:
+        from gleipnir.binary_task_training import TaskMixtureSampler
+
+        mixture_sampler = TaskMixtureSampler(
+            [f["sampling_group"] for f in tokenized],
+            [f["binary_label"] for f in tokenized],
+            seed=int(cfg.seed),
+            **OmegaConf.to_container(task_mixture, resolve=True),
+        )
+        selected_ids = mixture_sampler.indices()
+        selected_datasets = Counter(tokenized[i]["dataset_id"] for i in selected_ids)
+        expected_dataset_mass = {
+            dataset_name_by_id[i]: count / len(selected_ids)
+            for i, count in selected_datasets.items()
+        }
     print(
-        f"training on {len(dataset)} parsed, label-consistent teacher targets "
+        f"training on {len(dataset)} parsed, label-consistent targets "
         f"records_before_fraction={records_before_fraction} "
         f"train_fraction={train_fraction} "
         f"train_fraction_seed={train_fraction_seed} "
@@ -4225,6 +4322,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                             else group_dro_loss.snapshot()
                         ),
                         "expected_dataset_mass": expected_dataset_mass,
+                        "task_mixture": (
+                            trainer.task_mixture_sampler.audit()
+                            if task_mixture is not None
+                            else None
+                        ),
                         "lora_dropout": (
                             float(cfg.student.lora.dropout)
                             if finetuning_mode == "lora"
@@ -4311,6 +4413,23 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     "losses": {
                         "decision_token_ids": direct_target_ids,
                         "decision_prefix": direct_target_prefix,
+                        "per_record_binary_task": per_record_binary_task,
+                        "binary_task_definitions": (
+                            {
+                                "monitor": {
+                                    "tokens": ["0", "1"],
+                                    "prefix": "Prediction:",
+                                    "objective": "privileged_teacher_soft_bce",
+                                },
+                                "preference": {
+                                    "tokens": ["A", "B"],
+                                    "prefix": "",
+                                    "objective": "construction_label_hard_ce",
+                                },
+                            }
+                            if per_record_binary_task
+                            else None
+                        ),
                         "completion_weight": completion_loss_weight,
                         "accumulation_policy": (
                             "sum_per_example_over_logical_batch_v1"
