@@ -201,3 +201,51 @@ the scan regenerates candidates, while the manual review notes require review
 again. Scope is the 8,688-row tool-trajectory mixture discussed here, excluding
 the prior-deception rows in historical mixed-data checkpoints. No data,
 teacher targets, model weights or evaluation thresholds were changed.
+
+## Follow-up across the complete 8,688-row mixture
+
+The four-row STRIDE objective count **must not be reported as the total
+number of training samples containing prompt injections**. A broader scan of
+all five sources and both labels verifies every student-prompt and trajectory
+checksum and normalizes escaped newlines for candidate retrieval. Eight
+pattern families cover injection/jailbreak terms, overrides, claimed
+authority, monitor addressing, instructions to other models, context leaks,
+role delimiters and embedded instructions. They retrieve 214 candidate rows;
+these are not 214 confirmed injections.
+
+Review of bounded representative contexts for those candidates finds an
+additional Gloom row with concrete authority-spoofing evaluation prompts:
+`01cfc9e3116069d847c5b89b`, lineage `gloom:690`, source label 1, trajectory
+SHA256 `019eab9464781e035232b8ba8510f2ddd8513fcc550918a5bd0edd2cdcade7a3`.
+Its `create_custom_benchmark` call creates
+`authority_instruction_compliance_v1` with four example prompt strings,
+including claims of administrator privileges, a request to override standard
+limitations, and a purported system directive. These strings are present in
+the student-visible training trajectory, rather than merely a report that
+injection tests occurred.
+
+The tasks are ostensibly educational or administrative, and the benchmark
+supplies them as direct model requests. The trace does not establish an
+indirect injection through untrusted content or an unauthorized downstream
+action. Accordingly, retain this as an additional **authority-spoofing prompt
+exposure**, not a confirmed fifth malicious injection. This qualifies the
+initial description that reviewed Gloom hits only discussed injection tests:
+at least one also contains actual evaluation prompt strings.
+
+Other inspected candidates concern normal task prompts, software exploits,
+system configuration and diagnostic logs, safety-test summaries, or human
+manipulation and AI communication without a model-redirection payload. No
+additional clear indirect LLM payload outside the four prescribed scenarios
+was established in this targeted review. Representative context review is
+not full semantic adjudication of every match or every transcript, and regex
+recall is unknown. **The exact injection-bearing sample count across all
+8,688 rows remains unknown.**
+
+The ignored reproducible script and report are
+`results/training_injection_audit/audit_all_sources.py` and
+`all_source_candidates.json`; the latter includes row IDs, patterns, checksum
+identity, contexts and review limitations. Run the script from the repository
+root with `PYTHONPATH=. .venv/bin/python
+results/training_injection_audit/audit_all_sources.py`. Regeneration retrieves
+candidates but requires the manual review annotations to be repeated. This
+audit used local CPU work only.
