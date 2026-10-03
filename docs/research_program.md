@@ -48,6 +48,13 @@ positive/negative templates when interpreting injection benchmarks. This result
 uses fixed teacher targets and a code-backdoor label contract; it does not identify
 the causal training examples or settle the broader agent-behavior ontology.
 
+The completed [aggressive census-filtering experiment](findings/monitoring_injection_removal.md)
+also retained 100% injected-honest alarms at clean-code 2% FPR operating points
+under all three monitor prompts. Removing 1,154 flagged rows lowered scores but
+reduced standard-prompt ID macro pAUROC@20 from 0.8463 to 0.8223. This broad data
+intervention did not resolve the failure; its changed class/source composition
+and remaining classifier misses prevent a prompt-injection-specific causal claim.
+
 For future monitoring validation and checkpoint selection, use the
 [CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
 visible assistant prose. Freeze its input/manifest hashes in each new campaign.

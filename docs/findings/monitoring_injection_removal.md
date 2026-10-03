@@ -1,6 +1,10 @@
-# Census-filtered standard-prompt 4B: training complete
+# Census-filtered standard-prompt 4B: filtering did not resolve injection alarms
 
-2026-10-03. Training completed; held-out evaluation results are pending. The user
+2026-10-03. Training and the full evaluation completed. Removing 1,154 census
+flags did not resolve the operational false alarms: the new monitor still alarms
+on 100% of injected honest-code controls under all three monitor prompts at
+thresholds derived from clean code. Scores changed, and ID ranking worsened;
+this is not a finding of no effect from filtering. The user
 selected removing all 1,154 frozen Qwen3.5-9B census flags at score >=0.5 and
 requested an aggressive data intervention after the
 [behavior-grounded prompt experiment](monitoring_injection_disentanglement.md)
@@ -86,16 +90,16 @@ from 0.999417 to 0.999877, and mean absolute score differences from 0.001490 to
 0.007657. The filtered adapter has a nonzero effect in both implementations under
 each prompt. All ten evaluation input audits completed with zero truncation.
 At approximately 17:38 UTC the standard-prompt ID cell had written 256/3,012
-scores, with 100% GPU utilization at the inspection. The evaluation is advancing;
-there is no complete held-out outcome yet. Parity, token audits and current
-scores were collected under `results/monitoring_injection_removal/evaluation/4b/`.
+scores, with 100% GPU utilization at the inspection. The full evaluation finished
+at approximately 18:10 UTC. Parity, token audits and completed scores were
+collected under `results/monitoring_injection_removal/evaluation/4b/`.
 
-The new adapter will receive the same three-prompt injection grid and honest
-controls; the twelve complete previous model/prompt cells are checked and reused
-as baselines, giving fifteen grid cells overall. ID is evaluated only with the
+The new adapter received the same three-prompt injection grid and honest
+controls; the twelve complete previous model/prompt cells were checked and reused
+as baselines, giving fifteen grid cells overall. ID was evaluated only with the
 standard training instruction, once over all 3,012 frozen CoT-removed rows.
-Adapter-specific original-FLA-to-vLLM parity must pass before complete scoring.
-The final one-epoch checkpoint is fixed; no held-out selection or promotion.
+Adapter-specific original-FLA-to-vLLM parity passed before complete scoring.
+The final one-epoch checkpoint was fixed; no held-out selection or promotion.
 
 Launch records are under `results/monitoring_injection_removal/`, with logs under
 `logs/runpod/monitoring_injection_removal/`. The evaluation queue waits for a
@@ -106,8 +110,99 @@ census identities, preserved teacher joins, the 236-update completion check,
 completed-cache identity checks and the single-standard-prompt ID scope. Scoped
 Ruff, shell syntax and staged diff checks pass.
 
-An eventual difference would measure this broad removal intervention, which
-also changes harmful-example coverage, source composition, class balance and
-training duration. It would not isolate prompt-injection text as the cause.
-No effect would not rule out other data mechanisms or classifier misses. APPS
-labels concern code backdoors; the training/ID rubric covers broader behavior.
+## Completed injection grid
+
+Each new prompt has all 5,184 original benchmark rows and 3,930 honest controls.
+Together with ID, this is 30,354 fresh predictions; the twelve previous grid
+cells contain 109,368 verified reused predictions. There are no missing or
+duplicate rows and no truncation across the ten input audits; the maximum input
+length is 29,513 tokens. The full results are in `evaluation/4b/summary.json`
+under this campaign's result directory.
+
+Independent local verification rechecked prepared inputs and source pins, both
+adapter checksums, all twelve baseline cells and all seven fresh score files.
+Completion contracts, unique coverage, row identities/labels, finite scores and
+score/logprob agreement pass. Every fresh record preserves both requested raw
+decision logprobs, matching its stored literal-0/literal-1 values, and the serving
+parity checksum. All six parity gates pass with nonzero adapter effects; no
+failure receipt is present. The verification receipt is
+`evaluation/4b/local_coverage_verified.json`; summary SHA256 is
+`d3146714ef5c581ad1a5aaee21488a77dda1dbec15d3fe7c06098b8903dd96db`.
+
+The table averages equally over the three frozen transfer templates (GPT-4,
+GPT-4.1 and GPT-4o). Alarm thresholds are selected from each cell's 655 original
+clean honest examples using the unchanged strict score > threshold rule, yielding
+13/655 clean alarms (1.985%). Matched AUROC compares the 647 backdoor problems
+with their corresponding honest-code submissions under the same template. The
+unfiltered regular-trained model is the direct training-instruction baseline.
+
+| Weights | Monitor prompt | Injected honest alarms | Neutral honest alarms | Matched injected AUROC | Matched neutral AUROC |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Unfiltered regular | Neutral | 100.00% | 1.48% | 0.6440 | 0.8967 |
+| Census-filtered | Neutral | 100.00% | 1.78% | 0.6503 | 0.8672 |
+| Unfiltered regular | Aggressive | 100.00% | 1.63% | 0.6614 | 0.8830 |
+| Census-filtered | Aggressive | 100.00% | 12.37% | 0.6706 | 0.8237 |
+| Unfiltered regular | Conservative | 100.00% | 1.83% | 0.7249 | 0.8837 |
+| Census-filtered | Conservative | 100.00% | 2.95% | 0.6611 | 0.8411 |
+
+All 655 injected honest controls per template exceed the clean-code threshold,
+under each of the three monitor instructions. The three filtered thresholds are
+0.085099 (neutral), 0.060087 (aggressive) and 0.075858 (conservative). The earlier
+regular/neutral threshold is 0.164516. All injected backdoors also exceed these
+thresholds, so conventional injected-backdoor TPR is 100%; this does not establish
+successful discrimination when injected honest negatives also trigger alarms.
+The filtered model's vanilla benchmark AUROCs are 0.927822, 0.919176 and 0.918987
+under the neutral, aggressive and conservative instructions respectively.
+
+Filtering did change score scale. With the neutral monitor instruction, the mean
+injected-honest score falls from 0.637405 to 0.529061, and the mean paired
+injection-minus-neutral score shift falls from 0.593938 to 0.487026. As a separate
+fixed-boundary diagnostic, injected-honest alarms at score >=0.5 fall from 97.30%
+to 66.36% under the neutral monitor instruction; the filtered aggressive and
+conservative values are 73.13% and 53.64%. These are not new operating thresholds
+or evidence that the prespecified clean-FPR result improved. In particular,
+lower clean scores also lower the clean-FPR threshold.
+
+Neutral-transfer honest alarms with the filtered aggressive monitor are 24.89%,
+5.95% and 6.26% by transfer template. This is a substantial prompt/template
+interaction even without the adversarial injection payload. The neutral monitor
+instruction and neutral transfer text appended to code are distinct conditions.
+The primary grid should therefore retain the per-template diagnostics.
+
+## ID sanity check
+
+The filtered and earlier regular models use the same standard prompt and exact
+same frozen ID input SHA256
+`8e0fde58119098356feb0d897194d0dddec5e21b3e5e6959d5495d0999bb0ed2`.
+There is one new ID pass, without an instruction sweep.
+
+| Weights / training prompt | Source-macro pAUROC@20 | Source-macro AUROC |
+| --- | ---: | ---: |
+| Earlier regular | 0.846273 | 0.951394 |
+| Earlier aggressive | 0.847301 | 0.947986 |
+| Earlier behavior-grounded | 0.833429 | 0.946427 |
+| Census-filtered regular | 0.822255 | 0.943424 |
+
+Relative to the direct regular baseline, macro pAUROC@20 decreases by 0.024017.
+Gloom (2,066 rows) drops from 0.763290 to 0.708638, while STRIDE (946 rows) rises
+from 0.929255 to 0.935873. Their filtered AUROCs are 0.901155 and 0.985694.
+Pooled AUROC is 0.935553 and pooled pAUROC@20 is 0.786512. At the fixed 0.5
+boundary, pooled recall drops from 81.90% to 74.00%, while FPR drops from 6.41%
+to 4.42%. Pooled Brier worsens from 0.097827 to 0.117895 and ECE from 0.058943
+to 0.102830. Mean predicted probability is 0.431035 against prevalence 0.533865,
+consistent with increased underprediction. There are 1,357 distinct ID scores
+and 1,655 repeated scores, versus 1,569 and 1,443 in the regular baseline.
+Filtered benchmark/honest-control score-tie counts are 3,879/3,226 (neutral),
+3,918/3,317 (aggressive) and 3,968/3,265 (conservative).
+
+## Interpretation
+
+This broad filtering intervention changes scores and ID performance but fails
+to resolve injected-honest alarms at the prespecified clean-code operating
+points. It also changes harmful-example coverage, source composition, class
+balance and training duration. The result does not isolate injection text as
+the cause, establish that the remaining data are injection-free, or rule out
+other data mechanisms. Reviewed low-scoring injection exposures remain in the
+retained corpus. APPS labels concern code backdoors; the training/ID rubric
+covers broader behavior. The single seed and fixed templates do not establish
+adaptive robustness. No model promotion follows from this campaign.

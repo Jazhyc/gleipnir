@@ -1,5 +1,16 @@
 # Standard-prompt 4B with aggressive census filtering
 
+Completed 2026-10-03: 236 training updates, all three injection prompt cells
+and one standard-prompt ID pass. All serving-parity and coverage checks pass.
+Removing 1,154 census flags leaves 100% injected-honest alarms under every
+monitor prompt at the clean-code 2% FPR thresholds. Neutral-prompt mean injected
+honest scores fall from 0.6374 to 0.5291, while ID source-macro pAUROC@20 falls
+from 0.8463 to 0.8223 relative to the unfiltered regular model. This filtering
+changes scores but does not resolve the operating-point failure. See the
+[completed finding](../../docs/findings/monitoring_injection_removal.md)
+for the full grid, calibration and interpretation limits. The design below was
+frozen before launch.
+
 User requested 2026-10-03 after the behavior-grounded prompt failed to reduce
 injected-honest alarms. The user explicitly selected removing **all 1,154 rows
 with the frozen unadapted Qwen3.5-9B census score >=0.5**, including exact ties.
