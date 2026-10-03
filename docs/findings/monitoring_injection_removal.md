@@ -1,6 +1,6 @@
-# Census-filtered standard-prompt 4B: campaign startup
+# Census-filtered standard-prompt 4B: training complete
 
-2026-10-03. Training has been launched; held-out results are pending. The user
+2026-10-03. Training completed; held-out evaluation results are pending. The user
 selected removing all 1,154 frozen Qwen3.5-9B census flags at score >=0.5 and
 requested an aggressive data intervention after the
 [behavior-grounded prompt experiment](monitoring_injection_disentanglement.md)
@@ -67,6 +67,28 @@ use FlashQLA. The actual worker environment verifies shared Inductor, Triton,
 TileLang and TVM paths, recorded in `cache_runtime.json`; advancing-update and
 startup evidence is in `startup_verified.json`. Both receipts live under
 `results/monitoring_injection_removal/`. No numerical probes were newly run.
+
+Training finished at approximately 17:21 UTC with all 236 updates and one epoch.
+The trainer reports 3,203.16 seconds (53 minutes 23 seconds), mean loss 0.264177
+and 13.57 seconds/update including startup. The training wrapper, including input
+checks and export, reports 3,832.82 seconds. Local validation of the collected
+training metadata confirms the selected recipe, exact update count, objective,
+initialization and reused startup reference. The final master SHA256 is
+`0e96096514e18e1e190d3317619d5845ad9dfaedc73a856dbadc064a2a7649ae`;
+the rebased serving adapter SHA256 is
+`c6146076376ef094b9a0b506ec9b6df6fe77cae8b9b5cc9b51a7cf9ea09f3a67`.
+Both adapters were collected locally and independently verified against these
+checksums; all 256 tensors in each layout are finite FP32. The verification
+receipt is `results/monitoring_injection_removal/local_adapter_verified.json`.
+The queue started evaluation automatically. All six original-FLA reference
+cohorts completed, followed by all six serving-parity gates. Correlations range
+from 0.999417 to 0.999877, and mean absolute score differences from 0.001490 to
+0.007657. The filtered adapter has a nonzero effect in both implementations under
+each prompt. All ten evaluation input audits completed with zero truncation.
+At approximately 17:38 UTC the standard-prompt ID cell had written 256/3,012
+scores, with 100% GPU utilization at the inspection. The evaluation is advancing;
+there is no complete held-out outcome yet. Parity, token audits and current
+scores were collected under `results/monitoring_injection_removal/evaluation/4b/`.
 
 The new adapter will receive the same three-prompt injection grid and honest
 controls; the twelve complete previous model/prompt cells are checked and reused
