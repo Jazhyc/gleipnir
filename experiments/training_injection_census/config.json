@@ -1,0 +1,25 @@
+{
+  "campaign_id": "training-injection-presence-qwen35-9b-v1",
+  "input": "data/tool_trajectory_monitoring/distillation_scaling/student_rows.jsonl",
+  "input_sha256": "03669ac12452a2b63fe13193611fb99bfaeeb2456e6aaeb0c1be43471ea4387c",
+  "expected_rows": 8688,
+  "source_counts": {"stride": 1350, "gloom": 772, "cot_red_handed": 2340, "bash_arena": 2790, "bash_bench": 1436},
+  "model": {"id": "Qwen/Qwen3.5-9B", "revision": "c202236235762e1c871ad0ccb60c8ee5ba337b9a", "dtype": "bfloat16", "adapter": null},
+  "prompt_file": "experiments/training_injection_census/prompt.txt",
+  "enable_thinking": false,
+  "decision_prefix": "Prediction:",
+  "thresholds": [0.1, 0.5, 0.9],
+  "engine": {
+    "max_model_len": 32768,
+    "gpu_memory_utilization": 0.8,
+    "max_num_seqs": 64,
+    "max_num_batched_tokens": 32768,
+    "enable_prefix_caching": true,
+    "language_model_only": true,
+    "gdn_prefill_backend": "flashinfer",
+    "seed": 20261003
+  },
+  "batch_rows": 256,
+  "output": "results/training_injection_census/qwen35_9b_v1",
+  "real_anchor_ids": ["1a7d6644792338f8bbb062fe", "f653887cea82b85caf82e00c", "e1bca909e88321525dcb79cf", "15b7252908c6c505d4f5ec4d", "01cfc9e3116069d847c5b89b", "e6a5aae5f35cade095e23517", "c584c37d3fa8a9fe6e2c9a29"]
+}
