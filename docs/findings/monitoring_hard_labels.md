@@ -1,8 +1,8 @@
 # Tool-trajectory hard-label strength screen
 
-Status: all four training runs completed; ID evaluation is in progress after
-an evaluation-only launcher recovery, 2026-10-03 (Amsterdam time).
-Quality results are pending; this record does not change the selected objective.
+Status: all four training runs and canonical ID evaluations completed,
+2026-10-03 (Amsterdam time). The frozen one-seed rule selects hard fraction 0.3.
+This is an ID screen result; seed confirmation and OOD evaluation remain pending.
 
 Completed tool-trajectory students previously used Kimi K3 soft targets only.
 Earlier hard-label anchoring experiments were in the deception domain. The
@@ -93,8 +93,8 @@ Version 2 completed its first optimizer update on 2026-10-02 at approximately
 Runtime missing/nonfinite-gradient rejection remained enabled; the update
 completed without a logged failure. The GPU held approximately 146 GiB and
 showed active kernel execution. This cold first update does not establish steady
-throughput or a campaign ETA. Training and the queued ID evaluation remain
-in progress; no quality result is available yet. The collected current kernel
+throughput or a campaign ETA. At this startup check, training and the queued ID
+evaluation were in progress and no quality result was available. The kernel
 receipt explicitly records `performed_this_run=false` and the reference SHA256
 `91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f`,
 with no fresh `passed` or `finite` field.
@@ -105,7 +105,7 @@ All four candidates completed 272 updates with the frozen loss weights, LR,
 initial adapter and training population. Their training runtime receipts report
 4,208.57 seconds (hard fraction 0), 3,424.86 (0.1), 3,431.71 (0.3) and 3,395.91
 (1). Training and eager master-reference JSON receipts were collected locally.
-No ID ranking/calibration conclusion is available yet.
+ID results became available after the serving recovery below.
 
 The first vLLM process failed during FlashInfer initialization because its
 executable `PATH` omitted `.venv/bin`, hiding the already-installed `ninja`.
@@ -120,7 +120,70 @@ no capacity or lifecycle operation was performed.
 
 Six focused resume/contract checks and scoped Ruff passed. The resumed engine
 loaded its cached graphs, completed FlashInfer warmup and passed soft-only
-master/serving parity. Full ID scoring remains pending/in progress; no quality
-selection is made from this startup result. All four completed training metadata
+master/serving parity. At that startup check, full ID scoring was pending/in
+progress and no quality selection was made. All four completed training metadata
 receipts passed the frozen objective/recipe audit locally, using a checksum-
 identical local reference path for the remote receipt.
+
+## Completed canonical ID comparison
+
+All four candidates scored the complete 3,012-row suite: 2,066 Gloom and 946
+STRIDE examples, for 12,048 predictions. Each evaluation recorded 33,750,959
+input tokens, maximum 29,513 under the 32,768 limit, with no truncation. The
+measured scoring/metric loops took 659.60, 656.72, 656.74 and 655.48 seconds,
+respectively (43.81 minutes total), excluding prompt preparation and engine
+startup. The campaign reported complete; the serving engine shut down and the
+B200 was verified idle with zero allocated GPU memory. The Pod remains online.
+
+All metrics below are source macro averages on the same canonical ID population.
+Hard fractions are normalized: `(1-alpha)*soft_BCE + alpha*hard_CE`.
+
+| Hard fraction | pAUROC@20 | AUROC | Brier | Eligible under frozen rule |
+| --- | ---: | ---: | ---: | --- |
+| 0 | 0.860331 | 0.954951 | 0.081820 | Control |
+| 0.1 | 0.868663 | 0.958013 | 0.079671 | Yes |
+| **0.3** | **0.888486** | **0.962873** | **0.071914** | **Selected** |
+| 1 | 0.811978 | 0.931630 | 0.123208 | No |
+
+The 0.3 candidate gains 0.028154 macro pAUROC@20 (2.82 percentage points),
+0.007922 AUROC, and lowers macro Brier by 0.009906. Both partial hard-label
+mixtures meet the predeclared gain/source/calibration limits. No candidate grid,
+checkpoint selection, threshold or eligibility rule was changed after scoring.
+
+| Hard fraction | Gloom pAUROC@20 | STRIDE pAUROC@20 |
+| --- | ---: | ---: |
+| 0 | 0.783768 | 0.936894 |
+| 0.1 | 0.793383 | 0.943942 |
+| 0.3 | 0.816112 | 0.960860 |
+| 1 | 0.645919 | 0.978038 |
+
+The selected mixture improves Gloom by 3.23 points and STRIDE by 2.40 points.
+Hard-only improves STRIDE by 4.11 points but loses 13.78 points on Gloom and
+regresses macro calibration. This supports partial hard-label supervision with
+the soft teacher distribution on this ID suite; it does not establish a general
+hard-label advantage or select a deployment model across domains.
+
+At threshold 0.5, selected source-macro recall is 0.875198 and FPR 0.055579,
+versus 0.857215 and 0.060504 for the control. Selected pooled ECE is 0.037304
+and log loss 0.270985, versus 0.039798 and 0.295860 for the control. Score ties
+remain substantial: unique scores/tied rows are 1,655/1,357 (control),
+1,612/1,400 (0.1), 1,729/1,283 (0.3), and 2,785/227 (hard-only). Full source
+ranking, reliability bins and threshold diagnostics remain in each ID result.
+
+All adapters passed serving parity. Adapter correlations were 0.999926,
+0.999836, 0.999999 and approximately 1; mean absolute score differences were
+0.001552, 0.003554, 0.000165 and 0.000008, with nonzero adapter effects.
+The common base correlation was 0.999170 and mean difference 0.006410.
+
+Final artifacts live under `results/monitoring_hard_labels/4b/`: FP32 masters,
+serving copies, predictions, ID reports, parity and provenance receipts.
+`summary.json` applies the frozen rule. Local coverage, raw-score,
+ranking/calibration and selection verification is recorded in
+`completion_audit.json`; `artifact_collection_audit.json` verifies checksums
+and 256 FP32 tensors for every collected master and serving adapter. All eight
+adapters, predictions, reports and logs were collected locally; duplicate
+optimizer checkpoints remain on the Pod.
+Logs preserve the numerical diagnostics and missing-ninja failure alongside
+the successful recovery. No OOD or final-test result was used, no model was
+published, and promotion remains false. Confirm the 0.3 mixture across seeds
+before promotion; transfer quality remains an open question.
