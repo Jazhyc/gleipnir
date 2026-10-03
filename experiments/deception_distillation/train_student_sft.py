@@ -956,17 +956,9 @@ def straight_through_decision_logits(
 
 def binary_token_ids(tokenizer: Any) -> list[int]:
     """Return the distinct single-token ids for literal binary predictions."""
-    ids = []
-    for text in ("0", "1"):
-        encoded = tokenizer.encode(text, add_special_tokens=False)
-        if len(encoded) != 1:
-            raise ValueError(
-                f"binary target {text!r} tokenized as {encoded}, expected one token"
-            )
-        ids.append(int(encoded[0]))
-    if len(set(ids)) != 2:
-        raise ValueError(f"binary targets must have distinct token ids, got {ids}")
-    return ids
+    from gleipnir.decision_surface import decision_token_ids
+
+    return decision_token_ids(tokenizer)
 
 
 def collate_eva_features(
@@ -2702,7 +2694,19 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         direct_target_ids = rating_token_ids(tokenizer)
         direct_target_prefix = DIRECT_RATING_PREFIX
     elif uses_direct_forward:
-        direct_target_ids = binary_token_ids(tokenizer)
+        from gleipnir.decision_surface import decision_token_ids
+
+        direct_target_ids = decision_token_ids(
+            tokenizer,
+            OmegaConf.select(
+                cfg, "student.training.decision_tokens", default=["0", "1"]
+            ),
+        )
+        direct_target_prefix = OmegaConf.select(
+            cfg, "student.training.decision_prefix", default=DIRECT_PREDICTION_PREFIX
+        )
+        if not isinstance(direct_target_prefix, str):
+            raise ValueError("student.training.decision_prefix must be a string")
     reasoning_dropout_probability = float(
         OmegaConf.select(cfg, "student.reasoning_dropout_probability", default=0.0)
     )
@@ -4305,6 +4309,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         else None
                     ),
                     "losses": {
+                        "decision_token_ids": direct_target_ids,
+                        "decision_prefix": direct_target_prefix,
                         "completion_weight": completion_loss_weight,
                         "accumulation_policy": (
                             "sum_per_example_over_logical_batch_v1"

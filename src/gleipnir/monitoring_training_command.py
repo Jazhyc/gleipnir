@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 from typing import Any
 
@@ -157,6 +158,14 @@ def training_command(job: dict[str, Any]) -> list[str]:
     )
     if reference := job.get("startup_validation_reference"):
         command.append(f"++student.training.startup_validation_reference={reference}")
+    if "decision_tokens" in job:
+        command.append(
+            "++student.training.decision_tokens=" + json.dumps(job["decision_tokens"])
+        )
+    if "decision_prefix" in job:
+        command.append(
+            "++student.training.decision_prefix=" + json.dumps(job["decision_prefix"])
+        )
     if "nonreentrant_checkpointing" in job:
         command.append(
             "++student.training.nonreentrant_checkpointing="

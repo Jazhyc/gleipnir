@@ -1,0 +1,26 @@
+campaign_id: judge-injection-continuation-v1
+seed: 0
+repository: ShiJiawenwen/JudgeDeceiver
+revision: 7cfc96af0272befd83220b1d7d3b0699d072ecbf
+profile: qwen35_4b_b200_default
+learning_rate: 2.0e-05
+epochs: 1
+test_fraction: 0.2
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/student_injection_awareness/4b/regular/causal_adapter
+  original_serving: results/student_injection_awareness/4b/regular/model
+startup_validation_reference: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+startup_validation_reference_sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  max_num_seqs: 32
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+  gdn_prefill_backend: triton
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06

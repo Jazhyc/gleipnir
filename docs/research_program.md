@@ -59,6 +59,15 @@ For future monitoring validation and checkpoint selection, use the
 [CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
 visible assistant prose. Freeze its input/manifest hashes in each new campaign.
 
+The authorized [JudgeDeceiver continuation experiment](../experiments/judge_injection_continuation/README.md)
+tests a different intervention: continue the regular 4B adapter on preference
+judgments with injections attached independently to preferred and disfavored
+answers. Its full released data are pooled and split approximately 80:20 by
+original query before augmentation. Compare original/continued A/B scores on
+held-out queries, then test transfer separately on the existing APPS grid and
+standard-prompt ID. Preference robustness does not establish harm-monitoring
+robustness; APPS is excluded from training and checkpoint selection.
+
 ## Near-term questions
 
 - With the backbone and teacher cache fixed, can CoT-removed student training,
