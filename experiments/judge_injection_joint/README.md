@@ -83,7 +83,11 @@ Input tokens total 84,842,449; preference contributes 1,026,138 (1.21%).
 Maximum input length is 29,337; no truncation. The one-token decisions add
 11,584 tokens. The 4,188 held-out variants remain excluded from sampling.
 
-The authorized B200 run has started and its first optimizer updates passed
-finite-gradient checks. Full held-out results are pending; the frozen protocol
-and startup evidence are recorded in the
-[finding](../../docs/findings/judge_injection_joint.md).
+The B200 run completed all 362 updates and 16,314 fresh evaluation scores.
+Preferred-answer-injected accuracy is 100%, with 99.90% pooled preference
+accuracy. ID source-macro pAUROC@20 is 0.8658 (original 0.8463; preference-only
+continuation 0.7958). All injected harmless APPS controls still alarm at the
+clean-code ~2% FPR operating point: preference robustness did not transfer to
+the regular harmfulness-monitoring task. All six serving-parity cells passed.
+The [finding](../../docs/findings/judge_injection_joint.md) records the complete
+comparison, provenance, calibration and limitations.

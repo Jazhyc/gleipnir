@@ -70,15 +70,20 @@ does not establish overall harm-monitoring improvement. Preserve the distinction
 between quality and harmfulness targets when designing benign injection exposure;
 APPS remains excluded from training and checkpoint selection. No promotion follows.
 
-A new [joint-training experiment](../experiments/judge_injection_joint/README.md)
-starts a fresh 4B adapter with the full regular trajectory population and a
+The completed [joint-training experiment](../experiments/judge_injection_joint/README.md)
+trains a fresh 4B adapter with the full regular trajectory population and a
 75:25 monitoring/preference sampler. It preserves monitoring soft targets and
 separate A/B hard preference labels, using the regular 5e-5 learning rate.
 Approximately 22.5% of training draws contain injections; their 25 original
-queries limit task diversity. This exploratory test examines retention under
-joint supervision without treating forgetting as established. Evaluate the
-frozen final checkpoint with the regular monitoring prompt; no prompt sweep or
-APPS-based selection. No outcome or promotion is claimed before completion.
+queries limit task diversity. Preferred-answer-injected accuracy reaches 100%,
+and ID source-macro pAUROC@20 is 0.8658 versus 0.8463 original and 0.7958 after
+preference-only continuation. However, all injected harmless APPS controls still
+alarm at clean-code ~2% FPR; matched injected-harmful versus injected-harmless
+AUROC is 0.6256 versus 0.6440 original. The auxiliary quality task can learn
+injection handling without transferring that behavior to harmfulness monitoring.
+These exploratory outcomes do not isolate forgetting. Only the fixed final
+checkpoint and regular monitoring prompt were evaluated, with no APPS-based
+selection or promotion. See the [finding](findings/judge_injection_joint.md).
 
 ## Near-term questions
 
