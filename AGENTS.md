@@ -84,6 +84,14 @@ agent follow-ups with a remote polling loop.
 
 ### Reuse validated training recipes
 
+Standing user preference, 2026-10-03: reuse persistent compiler and kernel caches
+across compatible training runs on the network volume. Do not create a cold cache
+namespace for each experiment. Keep run outputs separate from shared caches, record
+the effective cache paths and runtime versions, and let compiler cache keys handle
+new kernels, shapes and configurations automatically. Use isolated cold caches only
+for an explicitly requested cold-start measurement or a diagnosed cache problem.
+Preserve these caches across Pod restarts and changes of physical host.
+
 Standing user preference, 2026-10-02: once a recipe has been validated, reuse
 its recorded startup validation and begin ordinary training without repeating
 numerical comparison canaries, packing isolation probes or longest-batch memory

@@ -17,7 +17,30 @@ from gleipnir.qwen35_fast_training import (
 )
 
 
-def training_environment(root: Path, cache_name: str) -> dict[str, str]:
+def training_cache(
+    root: Path, cache_name: str, *, isolated_cache: bool = False
+) -> Path:
+    """Reuse the populated persistent cache unless cold-cache isolation is explicit."""
+    parent = root / ".cache/training"
+    if isolated_cache:
+        return parent / cache_name
+    shared = parent / "shared"
+    parent.mkdir(parents=True, exist_ok=True)
+    if not shared.exists():
+        legacy = parent / "student_injection_awareness"
+        try:
+            if legacy.is_dir():
+                shared.symlink_to(legacy.name, target_is_directory=True)
+            else:
+                shared.mkdir()
+        except FileExistsError:
+            pass  # Another launcher may have initialized the shared cache first.
+    return shared.resolve()
+
+
+def training_environment(
+    root: Path, cache_name: str, *, isolated_cache: bool = False
+) -> dict[str, str]:
     env = flashqla_environment(
         triton_environment(
             DEFAULT_TRITON_TARGET,
@@ -27,7 +50,9 @@ def training_environment(root: Path, cache_name: str) -> dict[str, str]:
             ),
         )
     )
-    env = gpu_environment(env, 0, root / ".cache/training" / cache_name)
+    env = gpu_environment(
+        env, 0, training_cache(root, cache_name, isolated_cache=isolated_cache)
+    )
     env.update(
         FLA_DISABLE_BACKEND_DISPATCH="1",
         OMP_NUM_THREADS="4",
