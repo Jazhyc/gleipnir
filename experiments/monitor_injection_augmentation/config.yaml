@@ -1,0 +1,29 @@
+campaign_id: monitor-injection-augmentation-v1
+seed: 0
+training_rows: 8688
+augmentation:
+  mode: replace
+  fraction: 0.4
+  roles: [user, assistant, tool]
+  position_mean: 0.5
+  position_std: 0.25
+  position_distribution: truncated_normal_nearest_rendered_boundary
+training_source: data/student_injection_awareness/regular/student_rows.jsonl
+training_source_sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+teacher_source: data/student_injection_awareness/soft_targets.jsonl
+teacher_source_sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+tokenizer_manifest: data/judge_injection_continuation/manifest.json
+tokenizer_manifest_sha256: c40d8c863032dd400e1307c1a254441364068adf368ca818fb03939379400516
+tokenizer_root: data/judge_injection_continuation/tokenizer
+max_input_tokens: 29696
+profile: qwen35_4b_b200_default
+learning_rate: 5.0e-05
+epochs: 1
+logical_batch_size: 32
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+startup_validation_reference: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+startup_validation_reference_sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f

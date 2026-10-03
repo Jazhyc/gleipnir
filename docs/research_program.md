@@ -87,6 +87,13 @@ selection or promotion. See the [finding](findings/judge_injection_joint.md).
 
 ## Near-term questions
 
+The selected [monitor-directed injection augmentation](decisions/monitor_injection_augmentation.md)
+replaces 40% of the original monitoring rows with one off-policy injected view,
+balancing user/assistant/tool roles and demanded verdicts across both source
+behavior classes. It directly trains the harmfulness objective using the fixed
+teacher cache. CPU preparation is complete; training and evaluation have not
+started, and no effectiveness result is available. APPS remains evaluation-only.
+
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data
   exposure, or checkpoint averaging improve transfer? The
