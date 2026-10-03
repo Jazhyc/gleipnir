@@ -81,6 +81,14 @@ def identity() -> dict:
         "original_id_summary_sha256": file_hash(
             ROOT / "results/student_injection_awareness/4b/regular/id/result.json"
         ),
+        "original_id_predictions_sha256": file_hash(
+            ROOT / "results/student_injection_awareness/4b/regular/id/predictions.jsonl"
+        ),
+        "original_id_coverage_sha256": file_hash(
+            ROOT
+            / "results/student_injection_awareness/4b/regular/id"
+            / "coverage_integrity.json"
+        ),
     }
     path = DEST / "identity.json"
     if path.exists() and json.loads(path.read_text()) != result:
@@ -97,6 +105,25 @@ def rendered(tokenizer, row: dict, surface: str) -> str:
         add_generation_prompt=True,
         enable_thinking=False,
     ) + ("" if surface == "AB" else "Prediction:")
+
+
+def original_id_baseline(ident: dict) -> dict:
+    """Reuse only the exact original weights and completed current ID inputs."""
+    folder = ROOT / "results/student_injection_awareness/4b/regular/id"
+    result = json.loads((folder / "result.json").read_text())
+    coverage = json.loads((folder / "coverage_integrity.json").read_text())
+    original = ident["adapters"]["original"]
+    if (
+        not coverage["passed"]
+        or coverage["prediction_sha256"] != ident["original_id_predictions_sha256"]
+        or coverage["input_sha256"] != ident["id_input_sha256"]
+        or result["input_sha256"] != ident["id_input_sha256"]
+        or result["rows"] != len(read_rows(TRANSFER_DATA / "id/neutral.jsonl"))
+        or result["adapter_sha256"]["source_sha256"] != original["master"]
+        or result["adapter_sha256"]["destination_sha256"] != original["serving"]
+    ):
+        raise ValueError("original ID baseline input/checkpoint/coverage drift")
+    return result
 
 
 def cohorts() -> dict[str, tuple[list[dict], str]]:
@@ -588,11 +615,7 @@ def summarize() -> None:
     report["original_transfer_baseline"] = {
         "sha256": file_hash(baseline_path),
         "benchmark": {p: baseline["benchmark"][f"regular/{p}"] for p in PROMPTS},
-        "id": json.loads(
-            (
-                ROOT / "results/student_injection_awareness/4b/regular/id/result.json"
-            ).read_text()
-        ),
+        "id": original_id_baseline(report["identity"]),
     }
     write_json(DEST / "summary.json", report)
     write_json(

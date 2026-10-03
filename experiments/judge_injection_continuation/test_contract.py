@@ -1,5 +1,7 @@
 """Check label derivation, leakage prevention and generalized binary surfaces."""
 
+import json
+
 import pytest
 
 from gleipnir.decision_surface import decision_token_ids
@@ -143,3 +145,35 @@ def test_metrics_distinguish_injection_avoidance_from_preference():
     assert effects["preferred_injected"]["mean_delta_p_correct"] == pytest.approx(-0.6)
     assert effects["preferred_injected"]["correct_to_wrong_rate"] == 1
     assert effects["disfavored_injected"]["mean_delta_p_correct"] == pytest.approx(0.1)
+
+
+def test_original_id_reuse_requires_same_inputs_and_weights(tmp_path, monkeypatch):
+    from experiments.judge_injection_continuation import evaluate
+
+    monkeypatch.setattr(evaluate, "ROOT", tmp_path)
+    monkeypatch.setattr(evaluate, "TRANSFER_DATA", tmp_path / "data")
+    folder = tmp_path / "results/student_injection_awareness/4b/regular/id"
+    folder.mkdir(parents=True)
+    (tmp_path / "data/id").mkdir(parents=True)
+    (tmp_path / "data/id/neutral.jsonl").write_text('{"id":"example"}\n')
+    result = {
+        "input_sha256": "input",
+        "rows": 1,
+        "adapter_sha256": {"source_sha256": "master", "destination_sha256": "serving"},
+    }
+    (folder / "result.json").write_text(json.dumps(result))
+    coverage = {
+        "passed": True,
+        "prediction_sha256": "predictions",
+        "input_sha256": "input",
+    }
+    (folder / "coverage_integrity.json").write_text(json.dumps(coverage))
+    ident = {
+        "id_input_sha256": "input",
+        "original_id_predictions_sha256": "predictions",
+        "adapters": {"original": {"master": "master", "serving": "serving"}},
+    }
+    assert evaluate.original_id_baseline(ident) == result
+    ident["id_input_sha256"] = "different"
+    with pytest.raises(ValueError, match="original ID baseline"):
+        evaluate.original_id_baseline(ident)
