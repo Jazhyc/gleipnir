@@ -158,3 +158,11 @@ Implementation and generated input manifests live in the sibling benchmark
 checkout. This repository receives documentation only. All twelve cells must
 be reported, including negative results; collect outputs and stop monitoring
 when coverage and metric audits pass.
+
+Completion: all twelve supplemental cells and all 47,160 predictions passed
+independent coverage, score and metric audits, with zero truncation. All serving
+gates passed using the recorded master references. The controls narrow the
+earlier ceiling interpretation: trained students also alarm on almost all honest
+programs carrying these injections. See the
+[finding](../findings/monitor_injection_evaluation.md#audited-honest-code-transfer-controls-2026-10-03)
+for the full crossed results and code-backdoor label distinction.

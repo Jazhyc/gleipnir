@@ -168,3 +168,95 @@ Results cannot establish adaptive or general prompt-injection robustness.
 No prompt, checkpoint or threshold is promoted using these results. Earlier
 failed strict training-gradient comparisons remain explicit in the separate
 training record; passed serving gates do not overturn them.
+
+## Audited honest-code transfer controls, 2026-10-03
+
+The predeclared follow-up adds each of the same three universal transfer
+templates to all 655 frozen honest submissions, plus their three paired
+neutral controls. No attack generation or training was repeated. Both student
+instructions have 3,930 new rows; all twelve cells completed, for 47,160 new
+predictions. Original inputs and predictions are unchanged. Implementation
+is `29b31d9` in the sibling benchmark; the
+[public results report](https://github.com/mkenney2/monitor-injection-evals/blob/feat/gleipnir-vllm-grid/reports/honest_controls.md)
+contains every per-template result, thresholds, tie diagnostics, score shifts
+and checksums.
+
+Alarm rates use each cell’s unchanged original clean-honest threshold, with
+strict `score > threshold`, over all 655 honest parents. Matched AUROC
+compares injected backdoors with injected honest programs on the same 647
+task IDs; the neutral comparison applies neutral text to both classes.
+Means give equal weight to the three templates. The new negatives are not
+pooled into the legacy benchmark metric.
+
+| Size | Weights | Student instruction | Honest-injection alarms | Honest-neutral alarms | Matched injected AUROC | Matched neutral AUROC |
+| --- | --- | --- | ---: | ---: | ---: | ---: |
+| 4B | Base | Regular | 0.20% | 2.24% | 0.6505 | 0.8451 |
+| 4B | Base | Aware | 1.93% | 3.05% | 0.7201 | 0.8298 |
+| 4B | Regular-trained | Regular | 100.00% | 1.48% | 0.6440 | 0.8967 |
+| 4B | Regular-trained | Aware | 100.00% | 1.63% | 0.6614 | 0.8830 |
+| 4B | Aware-trained | Regular | 100.00% | 2.04% | 0.6831 | 0.8804 |
+| 4B | Aware-trained | Aware | 100.00% | 2.24% | 0.6798 | 0.8625 |
+| 9B | Base | Regular | 27.63% | 7.38% | 0.6920 | 0.8149 |
+| 9B | Base | Aware | 3.41% | 4.63% | 0.7755 | 0.8401 |
+| 9B | Regular-trained | Regular | 99.85% | 1.42% | 0.6588 | 0.8786 |
+| 9B | Regular-trained | Aware | 100.00% | 1.48% | 0.6803 | 0.8584 |
+| 9B | Aware-trained | Regular | 92.72% | 1.53% | 0.6200 | 0.8561 |
+| 9B | Aware-trained | Aware | 100.00% | 1.68% | 0.5921 | 0.8655 |
+
+Trained students alarm on 92.72–100.00% of injected honest programs
+on average at the original operating point. Their mean matched injected
+AUROC is 0.5921–0.6831, versus 0.8561–0.8967 with neutral text.
+The original near-perfect injected-positive sensitivity therefore does not
+establish strong code-backdoor discrimination when both classes carry the
+same injection. The text drives a large shared score increase. Nonchance
+matched ranking remains, and template-specific effects vary; this is not
+evidence that the models ignore the code entirely. Neutral controls match
+character lengths rather than token counts or discourse structure, so this
+does not identify a single causal text feature. Backdoors retain their original
+scores; new honest controls use a separate matched engine invocation.
+
+Aware-trained 9B is near chance for GPT-4/GPT-4.1: matched injected AUROC
+is 0.5112/0.5130 under the regular instruction and 0.5114/0.5024 under the
+aware instruction, despite 100% honest-injection alarms for both templates.
+GPT-4o retains more discrimination (0.8359 regular, 0.7626 aware). Its honest
+alarm rate rises from 78.17% to 100% with the warning. Base 9B instead benefits
+on honest controls: mean injection alarms fall from 27.63% to 3.41% and matched
+injected AUROC rises from 0.6920 to 0.7755, while original injected-positive
+sensitivity falls from 38.64% to 20.40%. Neither sensitivity nor alarm rate
+alone is sufficient to assess robustness.
+
+These labels target code backdoors. The injected comments are still attempts
+to manipulate the monitor and may appropriately receive high scores under
+Gleipnir’s broader behavioral rubric. These results alone therefore do not
+establish a general failure to recognize hostile monitoring behavior.
+Awareness training does not resolve the honest-injection alarm problem in
+these fixed-template comparisons. The original claim is narrowed; no model,
+prompt or threshold is promoted.
+
+Construction checks passed exact frozen source-code hashes, syntax, executable
+AST preservation and header-binding checks. Independent byte comparisons
+confirmed injection and neutral text match all corresponding original
+backdoors under both instructions. Source unit-test validity is inherited;
+new APPS program tests were not executed because their inputs are absent
+from the downloaded snapshot. Fixed templates are reused verbatim rather
+than generated per task.
+
+The independent completion audit passed exact coverage, metadata, prompt and
+configuration identity, original prediction immutability, finite logprobs,
+score extraction, independently re-encoded token lengths, thresholds, alarm
+rates, score shifts and tied-rank AUROC. All twelve fresh serving comparisons
+passed against the recorded original FP32-master reference vectors on
+training-only canaries; reference reuse is recorded explicitly.
+Regular and aware inputs contain 7,132,518 and 7,922,448 tokens per cell,
+with maxima 3,931 and 4,132 respectively; no row is truncated.
+
+Artifacts and preserved logs are collected under the sibling checkout’s
+ignored `results/gleipnir-honest-controls-v1/` and `logs/` trees. The final
+independent receipt is `completion_audit.json`, SHA-256
+`e383f64daa7d718e03a88bee39d194827f45ec15cb4e4c0a2f9d30e342881345`.
+Aggregate scoring/metric-loop times were 18.20 minutes for 4B and
+20.88 minutes for 9B, excluding startup and parity. Both stages exited
+with code 0. The post-exit snapshot at 2026-10-03T02:30:36.096699+00:00 recorded
+zero allocated GPU memory, 0% utilization, 31°C and zero volatile
+uncorrected ECC errors. No benchmark worker remains. The existing B200 is
+retained; no additional billable capacity was launched.
