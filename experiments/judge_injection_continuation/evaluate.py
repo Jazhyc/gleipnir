@@ -31,6 +31,9 @@ DEST = OUTPUT / "evaluation_regular"
 TRANSFER_DATA = ROOT / "data/monitoring_injection_disentanglement"
 PROMPTS = ("neutral",)
 EVALUATION_CONFIG = HERE / "evaluation_config.yaml"
+LEGACY_SCORING_SHA256 = (
+    "ad824cadf0b7ec178004f6eb17ccc65ab95d4c12ca39710f4fb3dd138d504df2"
+)
 
 
 def adapters() -> dict[str, dict[str, Path]]:
@@ -47,7 +50,24 @@ def adapters() -> dict[str, dict[str, Path]]:
     }
 
 
-def identity() -> dict:
+def matching_identity(current: dict, cached: dict, *, reporting: bool = False) -> dict:
+    """A reporting-only fix cannot silently change a frozen scoring contract."""
+    if current == cached:
+        return cached
+
+    def without_source(value: dict) -> dict:
+        return {k: v for k, v in value.items() if k != "entrypoint_sha256"}
+
+    if (
+        reporting
+        and cached["entrypoint_sha256"] == LEGACY_SCORING_SHA256
+        and without_source(current) == without_source(cached)
+    ):
+        return cached
+    raise ValueError("evaluation identity drift")
+
+
+def identity(*, reporting: bool = False) -> dict:
     scope = yaml.safe_load(EVALUATION_CONFIG.read_text())
     if scope["monitor_prompts"] != list(PROMPTS):
         raise ValueError("regular-only monitoring scope drift")
@@ -98,8 +118,12 @@ def identity() -> dict:
         ),
     }
     path = DEST / "identity.json"
-    if path.exists() and json.loads(path.read_text()) != result:
-        raise ValueError("evaluation identity drift")
+    if path.exists():
+        accepted = matching_identity(
+            result, json.loads(path.read_text()), reporting=reporting
+        )
+        if accepted != result:
+            return accepted
     write_json(path, result)
     return result
 
@@ -131,6 +155,46 @@ def original_id_baseline(ident: dict) -> dict:
     ):
         raise ValueError("original ID baseline input/checkpoint/coverage drift")
     return result
+
+
+def completed_predictions(path: Path, inputs: list[dict], ident: dict) -> list[dict]:
+    """Reporting requires complete, identity-matched scores and raw-logprob evidence."""
+    contract = json.loads(path.with_suffix(".contract.json").read_text())
+    complete = json.loads(path.with_suffix(".complete.json").read_text())
+    rows = read_rows(path)
+    expected = {str(r.get("id", r.get("index"))): r for r in inputs}
+    if (
+        contract["identity"] != ident
+        or not complete["passed"]
+        or complete["sha256"] != file_hash(path)
+        or complete["contract_sha256"] != contract["sha256"]
+        or len(rows) != len(inputs)
+        or complete["rows"] != len(inputs)
+        or contract["rows"] != len(inputs)
+        or len({r["id"] for r in rows}) != len(rows)
+        or {r["id"] for r in rows} != set(expected)
+    ):
+        raise ValueError("completed score identity/coverage drift")
+    ids = contract["decision_ids"]
+    for row in rows:
+        source = expected[row["id"]]
+        metadata = source.get("metadata", {})
+        if (
+            row["label"] != source.get("label", metadata.get("ground_truth"))
+            or any(row[key] != value for key, value in metadata.items())
+            or row["contract_sha256"] != contract["sha256"]
+        ):
+            raise ValueError("completed score metadata drift")
+        raw = row["raw_decision_logprobs"]
+        if any(
+            str(token) not in raw or not math.isfinite(raw[str(token)]) for token in ids
+        ):
+            raise ValueError("completed score raw logprobs invalid")
+        delta = raw[str(ids[1])] - raw[str(ids[0])]
+        score = 1 / (1 + math.exp(-max(-80, min(80, delta))))
+        if not math.isfinite(row["score"]) or abs(row["score"] - score) > 1e-12:
+            raise ValueError("completed score disagrees with raw logprobs")
+    return rows
 
 
 def cohorts() -> dict[str, tuple[list[dict], str]]:
@@ -412,6 +476,9 @@ def predictions_for(
                     "id": str(original.get("id", original.get("index"))),
                     "label": original.get("label", metadata.get("ground_truth")),
                     "score": score,
+                    "prompt_tokens": lengths[i],
+                    "completion_tokens": 1,
+                    "generated_token_id": out.outputs[0].token_ids[0],
                     "p_B" if surface == "AB" else "p_harmful": score,
                     "raw_decision_logprobs": {
                         str(token): raw[str(token)] for token in ids
@@ -635,23 +702,80 @@ def summarize() -> None:
     )
     from gleipnir.calibration import binary_calibration
 
-    report = {"identity": identity(), "preference": {}, "monitoring": {}, "id": {}}
+    report = {
+        "identity": identity(reporting=True),
+        "reporting_entrypoint_sha256": file_hash(HERE / "evaluate.py"),
+        "preference": {},
+        "monitoring": {},
+        "id": {},
+    }
+    parity = json.loads((DEST / "serving_parity.json").read_text())
+    if (
+        parity["identity"] != report["identity"]
+        or len(parity["cells"]) != 6
+        or not all(c["passed"] for c in parity["cells"].values())
+    ):
+        raise ValueError("report requires all serving parity gates")
     for name in ("original", "continued"):
         report["preference"][name] = summarize_preferences(
-            read_rows(DEST / name / "preferences.jsonl")
+            completed_predictions(
+                DEST / name / "preferences.jsonl",
+                read_rows(DATA / "test.jsonl"),
+                report["identity"],
+            )
         )
     for prompt in PROMPTS:
         path = DEST / "continued" / f"benchmark_{prompt}.jsonl"
-        rows = read_rows(path)
-        controls = read_rows(DEST / "continued" / f"honest_controls_{prompt}.jsonl")
+        rows = completed_predictions(
+            path,
+            read_rows(TRANSFER_DATA / "benchmark" / f"{prompt}.jsonl"),
+            report["identity"],
+        )
+        controls = completed_predictions(
+            DEST / "continued" / f"honest_controls_{prompt}.jsonl",
+            read_rows(TRANSFER_DATA / "honest_controls" / f"{prompt}.jsonl"),
+            report["identity"],
+        )
         standard, _ = summarize_benchmark(path)
         report["monitoring"][prompt] = {
             "standard": standard,
             "honest_controls": summarize_controls(controls, rows),
         }
-    rows = read_rows(DEST / "continued/id_neutral.jsonl")
+    rows = completed_predictions(
+        DEST / "continued/id_neutral.jsonl",
+        read_rows(TRANSFER_DATA / "id/neutral.jsonl"),
+        report["identity"],
+    )
+    original_id = original_id_baseline(report["identity"])
+    prior_rows = {
+        r["id"]: r
+        for r in read_rows(
+            ROOT / "results/student_injection_awareness/4b/regular/id/predictions.jsonl"
+        )
+    }
+    for row in rows:
+        prior = prior_rows[row["id"]]
+        if (
+            row["prompt_sha256"] != prior["margin_prompt_sha256"]
+            or row["label"] != prior["label"]
+            or row["source_dataset"] != prior["source"]
+        ):
+            raise ValueError("ID token-count provenance drift")
+    counts = [prior_rows[r["id"]]["prompt_tokens"] for r in rows]
+    contract = json.loads((DEST / "continued/id_neutral.contract.json").read_text())
+    if (
+        sum(counts) != contract["total_tokens"]
+        or max(counts) != contract["maximum_tokens"]
+    ):
+        raise ValueError("ID token totals differ from actual scoring audit")
     mapped = [
-        {**r, "source": r["source_dataset"], "label": r["ground_truth"]} for r in rows
+        {
+            **r,
+            "source": r["source_dataset"],
+            "label": r["ground_truth"],
+            "prompt_tokens": count,
+        }
+        for r, count in zip(rows, counts, strict=True)
     ]
     report["id"]["continued"] = {
         **summarize_id(mapped),
@@ -667,7 +791,7 @@ def summarize() -> None:
     report["original_transfer_baseline"] = {
         "sha256": file_hash(baseline_path),
         "benchmark": {p: baseline["benchmark"][f"regular/{p}"] for p in PROMPTS},
-        "id": original_id_baseline(report["identity"]),
+        "id": original_id,
     }
     write_json(DEST / "summary.json", report)
     write_json(

@@ -214,3 +214,67 @@ def test_narrower_reference_reuse_requires_unchanged_weights_and_inputs(monkeypa
     source["identity"]["adapters"] = "different"
     with pytest.raises(ValueError, match="backbone/data drift"):
         evaluate.subset_reference(source, ident)
+
+
+def test_reporting_revision_never_allows_rescoring_or_data_drift():
+    from experiments.judge_injection_continuation import evaluate
+
+    cached = {
+        "entrypoint_sha256": evaluate.LEGACY_SCORING_SHA256,
+        "adapters": "weights",
+    }
+    current = {**cached, "entrypoint_sha256": "reporting-fix"}
+    assert evaluate.matching_identity(current, cached, reporting=True) == cached
+    with pytest.raises(ValueError, match="identity drift"):
+        evaluate.matching_identity(current, cached)
+    with pytest.raises(ValueError, match="identity drift"):
+        evaluate.matching_identity(
+            {**current, "adapters": "other"}, cached, reporting=True
+        )
+    with pytest.raises(ValueError, match="identity drift"):
+        evaluate.matching_identity(
+            current, {**cached, "entrypoint_sha256": "unknown"}, reporting=True
+        )
+
+
+def test_reporting_rejects_raw_logprob_score_disagreement(tmp_path):
+    from experiments.judge_injection_continuation import evaluate
+    from gleipnir.monitoring_campaign_data import file_hash
+
+    path = tmp_path / "scores.jsonl"
+    ident = {"weights": "fixed"}
+    contract = {
+        "identity": ident,
+        "sha256": "contract",
+        "rows": 1,
+        "decision_ids": [15, 16],
+    }
+    path.with_suffix(".contract.json").write_text(json.dumps(contract))
+    row = {
+        "id": "sample",
+        "label": 0,
+        "score": 0.5,
+        "contract_sha256": "contract",
+        "raw_decision_logprobs": {"15": -1, "16": -1},
+    }
+    inputs = [{"id": "sample", "label": 0}]
+
+    def save():
+        path.write_text(json.dumps(row) + "\n")
+        path.with_suffix(".complete.json").write_text(
+            json.dumps(
+                {
+                    "passed": True,
+                    "sha256": file_hash(path),
+                    "contract_sha256": "contract",
+                    "rows": 1,
+                }
+            )
+        )
+
+    save()
+    assert evaluate.completed_predictions(path, inputs, ident) == [row]
+    row["score"] = 0.2
+    save()
+    with pytest.raises(ValueError, match="raw logprobs"):
+        evaluate.completed_predictions(path, inputs, ident)

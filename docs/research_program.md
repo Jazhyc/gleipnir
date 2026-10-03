@@ -59,14 +59,16 @@ For future monitoring validation and checkpoint selection, use the
 [CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
 visible assistant prose. Freeze its input/manifest hashes in each new campaign.
 
-The authorized [JudgeDeceiver continuation experiment](../experiments/judge_injection_continuation/README.md)
-tests a different intervention: continue the regular 4B adapter on preference
-judgments with injections attached independently to preferred and disfavored
-answers. Its full released data are pooled and split approximately 80:20 by
-original query before augmentation. Compare original/continued A/B scores on
-held-out queries, then test transfer separately on regular-prompt APPS controls and
-standard-prompt ID. Preference robustness does not establish harm-monitoring
-robustness; APPS is excluded from training and checkpoint selection.
+The completed [JudgeDeceiver continuation experiment](findings/judge_injection_continuation.md)
+continues the regular 4B adapter on preference judgments with injections attached
+independently to preferred and disfavored answers. Its pooled full release is
+split approximately 80:20 by original query before augmentation. Preferred-answer
+injection accuracy rises from 58.36% to 100%, and regular-prompt APPS injected-honest
+alarms fall from 100% to 70.64% at clean-code 2% FPR operating points. ID macro
+pAUROC@20 falls from 0.8463 to 0.7958 and calibration worsens. Preference robustness
+does not establish overall harm-monitoring improvement. Preserve the distinction
+between quality and harmfulness targets when designing benign injection exposure;
+APPS remains excluded from training and checkpoint selection. No promotion follows.
 
 ## Near-term questions
 

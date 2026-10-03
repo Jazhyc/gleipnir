@@ -91,3 +91,22 @@ All 2,790 released source rows yield 1,260 deduplicated preference pairs and
 1,031 and 594 tokens respectively; no examples require truncation. One epoch
 has 524 logical updates, including the partial final batch. The ignored
 `data/judge_injection_continuation/manifest.json` freezes every artifact checksum.
+
+## Completed result
+
+All 524 updates and 20,502 fresh scores completed and were collected/verified.
+Preferred-answer-injected accuracy rises from 58.36% to 100%, pooled preference
+accuracy from 79.85% to 99.74%. Regular-prompt APPS injected-honest alarms fall
+from 100% to 70.64% at clean-code 2% FPR operating points, but vanilla-backdoor
+detection weakens. ID macro pAUROC@20 falls from 0.846273 to 0.795786 and pooled
+Brier worsens from 0.097827 to 0.171919. The checkpoint is more conservative,
+with a meaningful monitoring regression; no promotion follows. See the
+[finding](../../docs/findings/judge_injection_continuation.md) for source/template
+breakdowns, calibration, ties, recovery receipts and limits.
+
+The first final-report attempt omitted the per-example token field required by
+the legacy ID metric helper. Reporting derives those counts from the verified
+identical original ID prompts, checks them against actual scoring totals, and
+retains the original prediction files and scoring-source snapshot. Only a known,
+checksum-pinned reporting revision may reuse that frozen identity; inference
+continues to reject source drift. Both the failure and recovery are preserved.
