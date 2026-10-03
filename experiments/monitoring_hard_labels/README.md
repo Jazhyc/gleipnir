@@ -82,3 +82,33 @@ sources improve. Hard-only regresses macro ranking/calibration, driven by Gloom.
 This remains a one-seed ID screen, with no OOD evaluation or promotion. See
 [the completed finding](../../docs/findings/monitoring_hard_labels.md) and
 `results/monitoring_hard_labels/summary.json` for the complete comparison.
+
+OOD follow-up, explicitly requested 2026-10-03: freeze the ID-selected final
+`hard030` checkpoint and its matched `hard000` control at LR 2e-5. Score the
+unchanged strict 6,395-row, six-source suite in one persistent vLLM engine,
+candidate first. The older regular OOD baseline used LR 5e-5, so it cannot
+isolate the hard-label intervention. This follow-up reports transfer; it does
+not select another fraction/checkpoint, promote a model or alter the ID rule.
+The user's request authorizes this OOD evaluation before multi-seed confirmation.
+
+`ood_config.yaml` freezes source/manifest hashes and each adapter's completed
+parity/artifact/reference/ID-result identities. Reuse those successful parity
+receipts only with unchanged model, runtime versions, GPU and GDN backend;
+record `performed_this_run=false` in each OOD parity-reuse receipt. Stop on
+identity/runtime drift, truncation, nonfinite scores or incomplete membership.
+Preserve the original ID config, data manifest, receipts and summary. Prepare
+locally, transfer the separate OOD manifest, and install the byte-identical
+already cached regular OOD inputs on the B200:
+
+```bash
+.venv/bin/python -m experiments.monitoring_hard_labels.evaluate_ood --prepare
+.venv/bin/python -m experiments.monitoring_hard_labels.evaluate_ood \
+  --install-cached-input data/student_injection_awareness/regular/ood.jsonl
+.venv/bin/python -m experiments.monitoring_hard_labels.evaluate_ood
+```
+
+The independent runner uses `ood.campaign.lock`, `ood_status.json`, resumable
+`4b/{hard030,hard000}/ood/` predictions, and `ood_summary.json` with membership
+and metric recomputation. Redirect its output to
+`logs/runpod/monitoring_hard_labels/ood.log`. Agent follow-ups require an
+available in-chat scheduler; no such tool is available in this session.

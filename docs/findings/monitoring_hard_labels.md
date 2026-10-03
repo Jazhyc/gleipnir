@@ -187,3 +187,29 @@ Logs preserve the numerical diagnostics and missing-ninja failure alongside
 the successful recovery. No OOD or final-test result was used, no model was
 published, and promotion remains false. Confirm the 0.3 mixture across seeds
 before promotion; transfer quality remains an open question.
+
+## Fixed-candidate OOD follow-up (2026-10-03)
+
+The user requested OOD evaluation of the ID-selected 0.3 adapter. Freeze that
+final checkpoint and the screen's soft-only control at the same LR 2e-5 and
+score all 6,395 strict OOD examples (AgentDojo, CUA SHADE Arena, IAC, MLE
+sabotage, RogueEval and SHADE Arena). The previous regular OOD baseline used
+5e-5 and cannot isolate the weight change. Evaluate the candidate first, then
+its matched control, in one engine. Original ID selection remains unchanged;
+OOD does not select a checkpoint or another weight. Multi-seed confirmation
+and promotion remain outstanding.
+
+The existing adapter-specific parity checks are reused with frozen artifact,
+reference and ID-result checksums, unchanged vLLM/Torch/GPU/GDN identities and
+explicit `performed_this_run=false` receipts. No new training or numerical
+canary is requested. Source provenance and zero training-lineage overlap were
+verified before launch; instructions and the strict OOD population are unchanged.
+See `experiments/monitoring_hard_labels/ood_config.yaml`. Results will be recorded
+in `results/monitoring_hard_labels/ood_summary.json` after both conditions complete.
+
+Launched on the existing B200 Pod `alzfug70g5237b` at 2026-10-03 00:13:57 UTC
+(02:13:57 Amsterdam), evaluator PID 74749. The independent launcher and receipt
+are ignored artifacts under `results/monitoring_hard_labels/`. Startup is checked
+in this turn. No in-chat scheduling capability is available, so recurring agent
+follow-ups are not scheduled; detached process persistence is separate from
+agent monitoring. The original completed ID status is preserved.

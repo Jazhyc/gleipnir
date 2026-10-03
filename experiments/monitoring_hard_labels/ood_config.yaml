@@ -1,0 +1,39 @@
+campaign_id: monitoring-hard-labels-ood-v1
+id_config_sha256: 7dc30fd79b18cda97c3a2563a5b39d31bb034abde4d0c012f82fa6caf4e6a919
+candidate: hard030
+control: hard000
+selection: fixed ID winner; OOD never selects a checkpoint or fraction
+source: data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl
+source_sha256: ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2
+source_manifest: data/tool_trajectory_monitoring/distillation_ood/prompts.manifest.json
+source_manifest_sha256: 85f5831286d82008172fa35d2d9d08595c0c74d74aa8407ae6f0da9956e73953
+prepared_sha256: 42556d4f6ef6f7715b3b27f0b4d6f11ae83ef9c8499009489799032c2abbbf73
+rows: 6395
+source_rows:
+  agentdojo: 1500
+  cua_shade_arena: 955
+  iac: 1443
+  mle_sabotage: 148
+  rogue_eval: 1499
+  shade_arena: 850
+parity_reuse:
+  hard030:
+    files_sha256:
+      complete.json: e6a466b39a758b35a22d3accb743cc66063097fa90c8bd8a1a93983438becd3e
+      serving_parity.json: 711e19cb994f4a4b136fb63f085159e4f84cc0e21ecf4acd1069f10175d679f6
+      parity_reference.json: edf0401b1e9d2321db2e8cfaddb083feca24da83b3e8b7572c8283eb17eb3210
+      model/adapter_model.safetensors: dfbad9035363aa06d3362d2d32e34638e467241ebde24d03555664d14c2aa03b
+      model/adapter_config.json: 29454e94da0420d90b040dc67e5ec42cb4a7c379297d4bf8a0e898c2a255baab
+      model/rebase_manifest.json: 52d526a24a75d5a059987a75b21e3ab37a68146cbee87f99e79a0df7fd3c996a
+      causal_adapter/adapter_model.safetensors: 9c49d4c25a77c1ab20d7da1ccd29ccd366ff2015e0dbb680e24a6cbfe40482ba
+      id/result.json: 1fd770904ec273427e4bf0dcbe31dd0b17d86032af488d3e372fce96ff7db931
+  hard000:
+    files_sha256:
+      complete.json: 8ae291dae31915f8442cc31f0655d556bba617ef0de181f40b6f775a075c748e
+      serving_parity.json: ee1b9217214e668e255dbb88784fa8a0e280f164d728ed839691ce8b2dbeda07
+      parity_reference.json: 68b05505436da7e9f002c8c1b0cc9755911ed69aae8c7ce531a54054baf3a62b
+      model/adapter_model.safetensors: 04fe32cd3b52851c00643388813b83c7391ded09f5a42caedeb02340fda2928d
+      model/adapter_config.json: 526e397405190725afe00d146857f69af8d43933a8bb4127ae763314c399375e
+      model/rebase_manifest.json: 0c3499228e9c619271a60b9008b3c5d2b20afa4cdcbeb52632fa3c6c633c3365
+      causal_adapter/adapter_model.safetensors: 81359d163c2b730659c5976460c99bc7fc700af3f3a0d1f999bd2d2554aa4da6
+      id/result.json: 613054e607d04eca377c40948a79dfe152a3b3ff548af74e8cc06a6438688de6

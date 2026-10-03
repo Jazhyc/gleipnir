@@ -37,6 +37,7 @@ class EvaluationContext:
     variants: tuple[str, ...]
     template_sha256: dict[str, str]
     splits: tuple[str, ...] = ("id", "ood")
+    manifest_path: Path | None = None
 
 
 def canary(context: EvaluationContext, variant: str, count: int) -> list[dict]:
@@ -188,11 +189,64 @@ def evaluation_contract(
     return digest(json.dumps(values, sort_keys=True))
 
 
+def validate_parity_reuse(
+    directory: Path, receipt: dict, config: dict, runtime: dict, backend: str
+) -> dict:
+    """Reuse a frozen successful adapter receipt only with unchanged identities."""
+    for relative, expected in receipt["files_sha256"].items():
+        if file_hash(directory / relative) != expected:
+            raise ValueError(f"parity reuse artifact drift: {relative}")
+    prior = json.loads((directory / "serving_parity.json").read_text())
+    result = json.loads((directory / "id/result.json").read_text())
+    rebase = json.loads((directory / "model/rebase_manifest.json").read_text())
+    eager = json.loads((directory / "parity_reference.json").read_text())
+    if (
+        not prior["passed"]
+        or prior["limits"] != config["parity"]
+        or prior["gdn_prefill_backend"] != backend
+        or prior["serving_sha256"] != rebase["destination_sha256"]
+        or eager != prior["reference"]
+        or eager["master_sha256"] != rebase["source_sha256"]
+        or result["model"] != config["models"]["4b"]
+        or result["rows"] != 3012
+        or any(result["runtime"].get(k) != v for k, v in runtime.items())
+    ):
+        raise ValueError("parity reuse backend/reference drift")
+    limits = config["parity"]
+    for values in prior["comparisons"].values():
+        correlation = values["correlation"]
+        error = values["mean_absolute_difference"]
+        if not (
+            math.isfinite(correlation)
+            and correlation >= limits["min_correlation"]
+            and math.isfinite(error)
+            and 0 <= error <= limits["max_mean_absolute_difference"]
+        ):
+            raise ValueError("parity reuse comparison failed")
+    if not all(
+        math.isfinite(v) and v >= limits["min_adapter_effect"]
+        for v in prior["effects"].values()
+    ):
+        raise ValueError("parity reuse lacks adapter effect")
+    return {
+        "performed_this_run": False,
+        "policy": "reuse_unchanged_adapter_and_serving_backend",
+        "reference_sha256": receipt["files_sha256"]["serving_parity.json"],
+        "files_sha256": receipt["files_sha256"],
+        "runtime": runtime,
+        "comparisons": prior["comparisons"],
+        "effects": prior["effects"],
+        "prior_passed": True,
+    }
+
+
 def serving(
     context: EvaluationContext,
     config: dict,
     size: str,
     gdn_prefill_backend: str = "flashinfer",
+    *,
+    parity_reuse: dict[str, dict] | None = None,
 ) -> None:
     import numpy as np
     import torch
@@ -205,7 +259,9 @@ def serving(
 
     spec = config["models"][size]
     engine = config["engine"]
-    manifest = json.loads((context.data / "manifest.json").read_text())
+    manifest = json.loads(
+        (context.manifest_path or context.data / "manifest.json").read_text()
+    )
     tokenizer = AutoTokenizer.from_pretrained(spec["id"], revision=spec["revision"])
     ids = binary_token_ids(tokenizer)
     sampling = SamplingParams(
@@ -248,61 +304,79 @@ def serving(
             if file_hash(path) != expected:
                 raise ValueError("adapter checksum drift")
         request = LoRARequest(f"{size}-{variant}", number, str(directory / "model"))
-        rows = canary(context, variant, config["parity"]["rows_per_source_label"])
-        prompts = render(tokenizer, rows)
-        eager = json.loads((directory / "parity_reference.json").read_text())
-        if (
-            eager["ids"] != [r["id"] for r in rows]
-            or eager["prompt_sha256"] != [digest(p) for p in prompts]
-            or eager["master_sha256"] != rebase["source_sha256"]
-        ):
-            raise ValueError("reference identity drift")
-        served = {}
-        for name, lora in [("base", None), ("adapter", request)]:
-            served[name] = [
-                score_from_output(o, ids)
-                for o in llm.generate(prompts, sampling, lora_request=lora)
-            ]
-        parity = {}
-        for name in ["base", "adapter"]:
-            a, b = np.array(eager[name]), np.array(served[name])
-            parity[name] = {
-                "mean_absolute_difference": float(np.abs(a - b).mean()),
-                "correlation": float(np.corrcoef(a, b)[0, 1]),
-            }
-        effects = {
-            backend: max(
-                abs(a - b)
-                for a, b in zip(values["base"], values["adapter"], strict=True)
+        if parity_reuse is not None:
+            reused = validate_parity_reuse(
+                directory,
+                parity_reuse[variant],
+                config,
+                {
+                    "vllm": vllm.__version__,
+                    "torch": torch.__version__,
+                    "gpu": torch.cuda.get_device_name(0),
+                    "gdn_prefill_backend": gdn_prefill_backend,
+                },
+                gdn_prefill_backend,
             )
-            for backend, values in [("eager", eager), ("vllm", served)]
-        }
-        limits = config["parity"]
-        passed = all(
-            math.isfinite(p["correlation"])
-            and p["correlation"] >= limits["min_correlation"]
-            and p["mean_absolute_difference"] <= limits["max_mean_absolute_difference"]
-            for p in parity.values()
-        )
-        passed = passed and all(
-            v >= limits["min_adapter_effect"] for v in effects.values()
-        )
-        write_json(
-            directory / "serving_parity.json",
-            {
-                "passed": passed,
-                "comparisons": parity,
-                "effects": effects,
-                "reference": eager,
-                "served": served,
-                "limits": limits,
-                "serving_sha256": rebase["destination_sha256"],
-                "gdn_prefill_backend": gdn_prefill_backend,
-            },
-        )
-        if not passed:
-            raise RuntimeError(f"serving parity failed {size} {variant}")
-        print(f"serving_parity_passed {size} {variant}", flush=True)
+            for split in context.splits:
+                write_json(directory / split / "parity_reuse.json", reused)
+            print(f"serving_parity_reused {size} {variant}", flush=True)
+        else:
+            rows = canary(context, variant, config["parity"]["rows_per_source_label"])
+            prompts = render(tokenizer, rows)
+            eager = json.loads((directory / "parity_reference.json").read_text())
+            if (
+                eager["ids"] != [r["id"] for r in rows]
+                or eager["prompt_sha256"] != [digest(p) for p in prompts]
+                or eager["master_sha256"] != rebase["source_sha256"]
+            ):
+                raise ValueError("reference identity drift")
+            served = {}
+            for name, lora in [("base", None), ("adapter", request)]:
+                served[name] = [
+                    score_from_output(o, ids)
+                    for o in llm.generate(prompts, sampling, lora_request=lora)
+                ]
+            parity = {}
+            for name in ["base", "adapter"]:
+                a, b = np.array(eager[name]), np.array(served[name])
+                parity[name] = {
+                    "mean_absolute_difference": float(np.abs(a - b).mean()),
+                    "correlation": float(np.corrcoef(a, b)[0, 1]),
+                }
+            effects = {
+                backend: max(
+                    abs(a - b)
+                    for a, b in zip(values["base"], values["adapter"], strict=True)
+                )
+                for backend, values in [("eager", eager), ("vllm", served)]
+            }
+            limits = config["parity"]
+            passed = all(
+                math.isfinite(p["correlation"])
+                and p["correlation"] >= limits["min_correlation"]
+                and p["mean_absolute_difference"]
+                <= limits["max_mean_absolute_difference"]
+                for p in parity.values()
+            )
+            passed = passed and all(
+                v >= limits["min_adapter_effect"] for v in effects.values()
+            )
+            write_json(
+                directory / "serving_parity.json",
+                {
+                    "passed": passed,
+                    "comparisons": parity,
+                    "effects": effects,
+                    "reference": eager,
+                    "served": served,
+                    "limits": limits,
+                    "serving_sha256": rebase["destination_sha256"],
+                    "gdn_prefill_backend": gdn_prefill_backend,
+                },
+            )
+            if not passed:
+                raise RuntimeError(f"serving parity failed {size} {variant}")
+            print(f"serving_parity_passed {size} {variant}", flush=True)
         for split in context.splits:
             relative = f"{variant}/{split}.jsonl"
             path = context.data / relative
