@@ -179,6 +179,40 @@ ended; retained storage still bills. Before a later authorized start, read the
 refresh live SSH metadata and restore the temporary kernel links. No Pod or
 network volume was deleted.
 
+### B200 stopped after the completed campaigns, 2026-10-03
+
+The user explicitly requested deactivating the B200 after finishing the
+experiments. Pod `alzfug70g5237b` (`gleipnir-b200`) was stopped and a separate
+live read confirmed **EXITED** at 02:58 UTC. A final account inventory showed
+both this Pod and reservation Pod `o87sut99lu3ljs` EXITED, with no running Pod.
+The independent network-volume read confirmed `ixbh81vf9c`
+(`gleipnir-b200-workspace`, US-NC-2, STANDARD, now 200 GB) remains present.
+GPU compute billing ends on stop; retained storage continues billing.
+
+Before stopping, direct SSH verified zero GPU processes, 0 MiB allocated,
+0% utilization and 30 C, and no training/evaluation worker in the process
+inventory. `findmnt` confirmed `/workspace` is the network-volume mount.
+Completed student-awareness and honest-code-control artifacts and passing
+final audits are available locally; their final audit files were created
+locally after collection and need not exist on the Pod. Results and logs
+remain on the persistent workspace as well.
+
+Container-local profiler, TorchInductor and FlashInfer caches were archived
+to `.cache/runtime-resume/container-compiler-caches-20261003.tar.gz` on the
+workspace and collected to the same local path. Both copies have SHA256
+`eb7c45fda921ffb0eaf5c970b940f17574f90fc1e6b2dd7a4ea7dd0a6df63ca5`.
+The previous Python/runtime archive remains intact with its recorded
+`e80c0271...` checksum; the current Python version was 3.12.3. Reproducible
+container-local Hugging Face/uv download caches were not included in the new
+compiler-cache archive. Existing workspace weights and environments persist.
+
+Sanitized read-backs, volume identity, local audit hashes and preservation
+checks are in `results/b200_shutdown/20261003/stop_receipt.json`.
+`.runpod/pod.json` records EXITED with runtime and direct SSH mapping cleared;
+refresh it from a live read after any separately authorized future start.
+Restore the recorded temporary kernel links and container caches if needed.
+No Pod or network volume was terminated or deleted.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
