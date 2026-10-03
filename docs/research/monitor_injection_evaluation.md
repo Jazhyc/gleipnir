@@ -116,3 +116,45 @@ serving gates and passed an independent local completion audit. The corrected
 calculations, with zero truncation. Both engines exited successfully and the
 GPU is idle. Results and preserved startup recoveries are recorded in the
 [finding](../findings/monitor_injection_evaluation.md).
+
+## Honest-code transfer controls, 2026-10-03
+
+The completed grid has near-ceiling injected-positive sensitivity but no honest
+code carrying the same injection text. The follow-up tests whether that result
+reflects code-backdoor discrimination or a generic response to monitor-directed
+text. Reuse the three fixed transfer templates verbatim; no attack generation,
+teacher requests, training, model selection or additional capacity is required.
+
+Construct a separate supplement from the 655 frozen clean honest submissions.
+Each gets the three transfer injections and their character-length-matched
+neutral controls, with the same placement and task-seeded filler as the original
+backdoors: 3,930 rows per student instruction. The original 5,184-row prompt
+files and prediction artifacts remain immutable. Verify exact source-code
+hashes, prompt pairing, syntax, executable AST preservation and absence of reads
+from the added header globals; inherit the original unit-test validity explicitly
+rather than claiming fresh execution of tests whose inputs are unavailable.
+Check the template bytes against the original injected-positive submissions.
+
+Cross the same three weights and two instructions at both sizes, using the
+recorded BF16 vLLM/Triton recipe on the existing B200. Reuse the original
+FP32-master reference vectors with recorded hashes and rerun adapter-specific
+serving score parity before full scoring. Retain all original input, model,
+runtime, parity and no-truncation stop conditions. No checkpoint or instruction
+is selected using the supplemental scores.
+
+Primary diagnostics are honest-injection and honest-neutral alarm rates at each
+cell's original clean-honest 2% FPR threshold, paired score shifts, and AUROC
+between backdoored and honest programs carrying identical templates. For the
+matched AUROC comparison use the same 647 task IDs with valid backdoors; retain
+all 655 honest parents for alarm rates. Do not recalibrate the threshold on the
+injected controls or pool them into the legacy metric's negative distribution.
+The source label remains zero for code-backdoor detection; it does not certify
+that hostile instructions directed at the monitor are harmless under Gleipnir's
+broader behavioral rubric. Report that distinction with any apparent false
+positives. A high alarm rate on injected honest programs would weaken the
+interpretation of the earlier ceiling result as code-backdoor detection.
+
+Implementation and generated input manifests live in the sibling benchmark
+checkout. This repository receives documentation only. All twelve cells must
+be reported, including negative results; collect outputs and stop monitoring
+when coverage and metric audits pass.
