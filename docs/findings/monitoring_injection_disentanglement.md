@@ -1,7 +1,7 @@
-# Behavior-grounded 4B monitor: campaign startup
+# Behavior-grounded 4B monitor: training complete, evaluation pending
 
-2026-10-03. Training and evaluation are in progress; there are no held-out results
-yet. The approved design is in
+2026-10-03. Training completed all 272 updates over all 8,688 examples. Evaluation
+is in progress; there are no completed held-out results yet. The approved design is in
 [the experiment README](../../experiments/monitoring_injection_disentanglement/README.md).
 ID uses the conservative training instruction once over all 3,012 frozen rows.
 Only the injection benchmark and honest controls receive the three-prompt grid.
@@ -41,6 +41,34 @@ A bounded one-minute measurement (twelve samples, five seconds apart) averaged
 99.4% GPU utilization. The measurement receipt is
 `results/monitoring_injection_disentanglement/throughput_snapshot.json`.
 These are startup observations, not a whole-epoch utilization average or held-out
-quality result. Training is ongoing.
+quality result.
 No new recipe benchmark, data exclusion, teacher relabeling or evaluation-based
 checkpoint selection follows from this startup correction.
+
+## Completed training
+
+The final training receipt reports one epoch, 272 updates, mean training loss
+0.2341655 and 3,619.74 seconds of Trainer runtime (about 60 minutes, including
+its initial compilation). The launch wrapper took 4,282.14 seconds including
+input auditing and export. The final metadata independently passes the campaign's
+recipe, objective, initialization and completed-update checks; all 54 logged
+loss/gradient-norm records are finite. This log check supplements the required
+missing/nonfinite-gradient guards during updates; it is not a new numerical canary.
+Recorded update durations averaged 12.1897 seconds after the first update and
+12.1554 seconds after the first ten updates, with a 12.2925-second median after
+the first update. The after-ten comparison is effectively unchanged from the
+prior full-set run's 12.2587 seconds; it uses update timing rather than the
+rounded progress-bar timestamps used for the early snapshot.
+
+The FP32 master adapter SHA256 is
+`2460c08c8279fed18028979619aee6db7ef2ac4ac3d22f5bcc49bcb1fd37e09d`;
+the rebased serving adapter SHA256 is
+`fdbebdb6cde80089311dc7ce741bbf31239360fa8f9c3ec0d6fbb73e2a26ba9c`.
+Both adapters and the run records have been collected locally. Independent
+checksum and tensor checks confirm 256 finite FP32 tensors and 169,869,312
+parameters in each layout; the receipt is `4b/conservative/local_collection_verified.json`
+under this campaign's result directory.
+The queued evaluation started automatically after training. Original-FLA reference
+scoring completed all eight required 20-example cohorts. Full vLLM scoring still
+requires the serving-parity gates and complete ID/benchmark coverage; reference
+completion alone does not establish serving parity or held-out quality.
