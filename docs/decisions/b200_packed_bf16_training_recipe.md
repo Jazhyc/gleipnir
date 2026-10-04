@@ -136,3 +136,16 @@ wiring, metadata, finite updates and FP32 master changes; it does not repeat
 numerical or memory probes or establish longer training quality. Its entrypoint
 is `experiments.b200_bf16_fa4.default_recipe_smoke`, with outputs under
 `results/b200_fa4_default_smoke/` and logs under `logs/runpod/b200_fa4_default/`.
+
+Completed 2026-10-04: 92 focused CPU tests pass. The FA4 default smoke completes
+both updates, 16 physical calls, zero padding, no checkpointed layers and a
+changed FP32 master. Its peak allocation is 135.042 GiB; eight Dynamo graphs
+are recorded. Kernel/packing/partition/memory probes are correctly marked
+reused (`performed_this_run=false`), while hardware/software provenance is
+verified in this run. The original strict packing failures remain in the
+referenced receipts. First-update compilation is still required in a new process;
+this two-step integration check makes no warmed-throughput claim.
+The composed profile also passes the shared metadata validator against the actual
+reused-check receipts. Artifacts/logs are collected locally; three remote/local
+SHA-256 checksums match, all eight executed-source archives match their hashes,
+and the saved master contains exactly 256 FP32 tensors.

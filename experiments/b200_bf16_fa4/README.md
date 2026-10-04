@@ -24,6 +24,11 @@ Artifacts: `results/b200_fa4_default_smoke/`; logs:
 `logs/runpod/b200_fa4_default/`. Startup is monitored during this active turn;
 there is no in-chat scheduler available for follow-ups after it ends.
 
+The default smoke completed both updates: 16 physical calls, zero padding,
+FP32 masters changed, no checkpointing, finite gradients and native FA4 metadata.
+Its eight Dynamo graphs and 135.042 GiB peak validate wiring; startup checks
+are explicitly reused. All 92 focused CPU tests pass.
+
 Hypothesis: replacing the eight full-attention layers' segmented causal SDPA
 calls with one native FA4 variable-length call per packed row reduces training
 time now that the frozen base is unquantized BF16. The 24 FlashQLA layers,
@@ -116,4 +121,5 @@ relative L2 is 0.0517730, accepted separately from strict failure; all isolation
 checks and longest-batch memory preflight pass. Fresh FA4 checks front-load
 compilation: complete invocation is 567.05 vs 507.40 s. Its 72% shorter Trainer
 loop is not an equivalent startup improvement. Reverse-order replication and
-quality validation remain unperformed; the default stays SDPA.
+quality validation remain unperformed. SDPA remained the default during that
+continuation; the subsequent explicit user selection above makes FA4 standard.
