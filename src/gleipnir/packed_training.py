@@ -104,10 +104,12 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     if fp4_mlp_lora and training.get("startup_validation_reference"):
         raise ValueError("FP4 MLP packing requires fresh startup validation")
     version = training.get("packed_attention_version")
-    if backend not in {"sdpa", "flash_attention_4"} or (
-        (backend == "flash_attention_4") != (version is not None)
+    if backend not in {"sdpa", "flash_attention_4", "nvidia_mxfp8"} or (
+        (backend != "sdpa") != (version is not None)
     ):
         raise ValueError("packed attention requires an explicit supported version")
+    if backend == "nvidia_mxfp8" and training.get("startup_validation_reference"):
+        raise ValueError("experimental MXFP8 requires fresh model startup validation")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
         if tolerance != 0.10 or not training.get("startup_validation_reference_sha256"):
             raise ValueError(
@@ -144,11 +146,11 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
             compile_cache_limit=limit,
             fail_on_recompile_limit_hit=True,
             emulate_precision_casts=True,
-            full_attention=(
-                "segmented_causal_sdpa"
-                if attention == "sdpa"
-                else "varlen_causal_flash_attention_4"
-            ),
+            full_attention={
+                "sdpa": "segmented_causal_sdpa",
+                "flash_attention_4": "varlen_causal_flash_attention_4",
+                "nvidia_mxfp8": "segmented_causal_nvidia_mxfp8",
+            }[attention],
             attention_backend=attention,
             attention_version=attention_version,
             learning_gradient_tolerance=student["training"].get(

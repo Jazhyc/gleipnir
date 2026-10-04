@@ -30,6 +30,7 @@ def validate_inputs(q: torch.Tensor, k: torch.Tensor, v: torch.Tensor) -> None:
         or k.shape != v.shape
         or any(x.shape[2] != 256 for x in (q, k, v))
         or k.shape[1] < 1
+        or q.shape[1] < 1
         or q.shape[1] % k.shape[1]
     ):
         raise ValueError("MXFP8 requires nonempty D256 self attention and integer GQA")
@@ -305,6 +306,24 @@ class _Mxfp8Attention(torch.autograd.Function):
         return dq, dk, dv, None
 
 
+class _ExactSingletonAttention(torch.autograd.Function):
+    """Explicit BF16 identity for the one-key case rejected by cuDNN backward."""
+
+    @staticmethod
+    def forward(
+        ctx: Any, q: torch.Tensor, k: torch.Tensor, v: torch.Tensor
+    ) -> torch.Tensor:
+        ctx.save_for_backward(q, k, v)
+        ctx.groups = q.shape[1] // k.shape[1]
+        return v.repeat_interleave(ctx.groups, dim=1)
+
+    @staticmethod
+    def backward(ctx: Any, do: torch.Tensor) -> tuple:
+        q, k, v = ctx.saved_tensors
+        dv = do.float().reshape(1, v.shape[1], ctx.groups, 256).sum(dim=2).to(v.dtype)
+        return torch.zeros_like(q), torch.zeros_like(k), dv
+
+
 def mxfp8_attention(
     q: torch.Tensor, k: torch.Tensor, v: torch.Tensor, *, scale: float | None = None
 ) -> torch.Tensor:
@@ -315,6 +334,8 @@ def mxfp8_attention(
     scale = 0.0625 if scale is None else scale
     if not math.isfinite(scale) or scale <= 0:
         raise ValueError("MXFP8 softmax scale must be positive and finite")
+    if q.shape[0] == 1:
+        return _ExactSingletonAttention.apply(q, k, v)
     return _Mxfp8Attention.apply(q, k, v, scale)
 
 

@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import argparse
 import json
+import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -41,9 +43,14 @@ def environment(config: dict) -> dict[str, str]:
 
 
 def main() -> None:
-    config = yaml.safe_load(
-        (ROOT / "experiments/b200_nvidia_mxfp8/config.yaml").read_text()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=ROOT / "experiments/b200_nvidia_mxfp8/config.yaml",
     )
+    args = parser.parse_args()
+    config = yaml.safe_load(args.config.read_text())
     output = ROOT / config["output"]
     logs = ROOT / config["logs"]
     output.mkdir(parents=True, exist_ok=True)
@@ -61,18 +68,35 @@ def main() -> None:
             str(p): sha256_file(p)
             for p in [
                 Path(__file__),
-                ROOT / "experiments/b200_nvidia_mxfp8/config.yaml",
+                args.config,
                 ROOT / "experiments/b200_nvidia_mxfp8/kernel_canary.py",
                 ROOT / "src/gleipnir/nvidia_mxfp8_attention.py",
-                output / "setup/cudnn-source.tar.gz",
+                ROOT
+                / config.get(
+                    "source_archive",
+                    "results/b200_nvidia_mxfp8/setup/cudnn-source.tar.gz",
+                ),
             ]
         },
     }
+    archive = output / "executed_source"
+    for path in report["source_sha256"]:
+        source = Path(path)
+        if source.suffix != ".gz":
+            destination = archive / source.resolve().relative_to(ROOT)
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(source, destination)
     (output / "launch.json").write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report), flush=True)
     with (logs / "native-canary.log").open("x") as handle:
         process = subprocess.run(
-            [sys.executable, "-m", "experiments.b200_nvidia_mxfp8.kernel_canary"],
+            [
+                sys.executable,
+                "-m",
+                "experiments.b200_nvidia_mxfp8.kernel_canary",
+                "--config",
+                str(args.config),
+            ],
             cwd=ROOT,
             env=env,
             stdout=handle,

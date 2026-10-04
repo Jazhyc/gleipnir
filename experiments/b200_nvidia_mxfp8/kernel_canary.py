@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import importlib.metadata as metadata
 import importlib.util
 import json
@@ -48,9 +49,14 @@ def main() -> None:
 
     from gleipnir.flashqla_training import load_flashqla
 
-    config = yaml.safe_load(
-        (ROOT / "experiments/b200_nvidia_mxfp8/config.yaml").read_text()
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--config",
+        type=Path,
+        default=ROOT / "experiments/b200_nvidia_mxfp8/config.yaml",
     )
+    args = parser.parse_args()
+    config = yaml.safe_load(args.config.read_text())
     output = ROOT / config["output"] / "kernel_canary.json"
     if output.exists():
         raise ValueError("native receipt already exists")
@@ -132,6 +138,17 @@ def main() -> None:
                 enable_gqa=True,
             ).transpose(0, 1)
             candidate = mxfp8_attention(q, k, v)
+            case = {
+                "length": length,
+                "status": "forward_complete",
+                "errors": {
+                    "forward": difference(
+                        candidate, reference, config["forward_relative_l2_limit"]
+                    )
+                },
+            }
+            report["cases"].append(case)
+            publish()
             gradient = torch.randn_like(candidate)
             reference.backward(gradient.float())
             candidate.backward(gradient)
@@ -150,12 +167,11 @@ def main() -> None:
                     ("dv", v.grad, rv.grad, config["gradient_relative_l2_limit"]),
                 ]
             }
-            case = {
-                "length": length,
-                "errors": errors,
-                "passed": all(e["passed"] for e in errors.values()),
-            }
-            report["cases"].append(case)
+            case.update(
+                status="complete",
+                errors=errors,
+                passed=all(e["passed"] for e in errors.values()),
+            )
             publish()
             print(json.dumps(case), flush=True)
 

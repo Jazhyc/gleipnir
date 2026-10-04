@@ -18,7 +18,8 @@ and cross-example isolation. Record within-sequence future-token quantization
 effects separately. Forward relative L2 limit is 2%, gradient relative L2 5%.
 Stop on unsupported engines, missing/nonfinite gradients, isolation failures,
 native numerical gate failure, OOM or dependency incompatibility; preserve
-failed receipts. No silent fallback, tolerance tuning or default promotion.
+failed receipts. The separate learning continuation below retains strict results.
+No silent fallback or default promotion.
 
 If native checks pass, perform fresh eager/compiled model packing checks and
 longest-cohort memory preflight, then compare matched 20-update trajectories
@@ -39,3 +40,48 @@ The bootstrap builds the pinned upstream snapshot from an ignored source archive
 and resolves cuDNN 9.26 separately from the existing runtime. Exact installed
 versions, archive checksum and effective cache paths must be recorded before
 kernel execution. It does not modify `pyproject.toml` or `uv.lock`.
+
+The first attempt executes MXFP8 forward, but cuDNN's graph validator rejects
+one-token self-attention backward (`s_q = s_kv = 1`). Its failed receipt and
+executed source are preserved at the artifact root. The experimental training
+boundary handles that degenerate case analytically: output is V, Q/K gradients
+are zero, and V gradients sum across grouped query heads. This explicit exact
+BF16 case requires no matrix multiplication; sequences of two or more tokens
+use MXFP8. `native02.yaml` continues with
+supported lengths in `attempt02`, with unchanged numerical limits and caches:
+
+```bash
+source .cache-runtime.env
+.venv/bin/python -m experiments.b200_nvidia_mxfp8.run \
+  --config experiments/b200_nvidia_mxfp8/native02.yaml
+```
+
+The supported native suite executes both passes and all 24 fused-quantizer
+payload/scale-layout checks pass. Against FP32, forward relative L2 is
+3.11–4.55%, Q/K gradient relative L2 6.47–8.65%, and V gradients 3.56–4.84%.
+Strict 2%/5% gates remain failed. A separately recorded learning/timing
+continuation uses the user's standing acceptance of gradient differences around
+8%, bounded at 10%, with forward differences bounded at 5%. This does not assert
+quality equivalence. Fresh whole-model gates and longest-cohort memory preflight
+still run before any update; their gradient ceiling is 10%, with strict results
+retained. Stop if that envelope fails.
+
+Columnwise V scales depend on future values within a 32-token block; the native
+receipt separately reports this numerical effect. The perturbation test across
+block boundaries remains exactly zero. Scales and calls stay sequence-local,
+so this does not permit cross-example coupling. Do not claim exact BF16 causal
+semantics or release this experimental backend without further quality evidence.
+
+```bash
+source .cache-runtime.env
+.venv/bin/python -m experiments.b200_nvidia_mxfp8.training_screen \
+  --config experiments/b200_nvidia_mxfp8/training02.yaml
+```
+
+Both conditions use the isolated cuDNN runtime, existing compiler/kernel caches,
+identical data/targets/initial master and physical partitions. Candidate runs first;
+reverse-order replication is unperformed. The FA4 control reuses its checksum-bound
+unchanged kernel/packing validation, explicitly recording reuse. Outputs and logs
+for the continuation are in their respective `training02/` subdirectories.
+The first whole-model attempt stopped before updates at the one-token probe;
+its failed logs and source snapshot remain in `training/`.

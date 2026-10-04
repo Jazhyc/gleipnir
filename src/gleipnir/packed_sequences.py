@@ -203,6 +203,15 @@ def installed_segmented_sdpa(
         from flash_attn.cute import flash_attn_varlen_func
 
         interface = packed_fa4_interface(original, flash_attn_varlen_func)
+    elif backend == "nvidia_mxfp8":
+        from gleipnir.nvidia_mxfp8_attention import (
+            FRONTEND_VERSION,
+            segmented_mxfp8_interface,
+        )
+
+        if expected_version != FRONTEND_VERSION:
+            raise ValueError("MXFP8 requires the pinned experimental Frontend version")
+        interface = segmented_mxfp8_interface(original)
     else:
         raise ValueError(f"unsupported packed attention backend: {backend}")
     router = torch.compiler.disable(interface)
