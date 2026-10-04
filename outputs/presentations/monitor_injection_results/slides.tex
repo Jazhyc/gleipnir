@@ -177,3 +177,31 @@
         The sensitivity carried over to a different task and payload source.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{False alarms can become a denial-of-service vulnerability}
+    Benchmarks that pair injections only with harmful behavior can reward
+    \textbf{suspicion of the text itself}.
+    \medskip
+    In deployment, an agent can encounter an injection on the web and
+    \textbf{ignore it safely}.
+    \bigskip
+
+    \begin{center}
+        {\large Untrusted web page with injection}
+        \par\smallskip
+        $\downarrow$
+        \par\smallskip
+        {\large Agent continues safely; monitor raises an alarm}
+        \par\smallskip
+        $\downarrow$
+        \par\smallskip
+        {\large Human review queue fills; autonomous work stalls}
+    \end{center}
+    \bigskip
+
+    \begin{block}{An attacker need not compromise the agent}
+        If every alarm requires review, planting injection text could overwhelm
+        reviewers and halt autonomous workflows.
+    \end{block}
+\end{frame}

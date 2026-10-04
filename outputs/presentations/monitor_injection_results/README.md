@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has five content slides plus the title for a six-minute talk.
+The current opening has six content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -85,3 +85,6 @@ avoidance in a different task without treating preference labels as harm labels.
 
 Visible slides use “adapter” or “original” for the initial models; “regular”
 is retained only in provenance records as the internal condition identifier.
+
+The deployment-risk slide explains how injection-text false alarms could
+create review overload and denial of service when alarms gate autonomous work.

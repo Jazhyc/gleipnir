@@ -220,3 +220,22 @@ summary reuses verified historical regular-4B scores; regular-9B scores were
 first collected in the later transfer evaluation. The slide compares original
 weights only and does not imply the two sizes were evaluated simultaneously.
 No fresh scoring or training was performed for the presentation.
+
+## Deployment risk from injection-driven alarms
+
+The sixth content slide draws a deployment implication from the measured
+harmless-code alarms and auxiliary preference avoidance. The initial APPS
+comparison placed injections only on backdoors; injected-honest controls
+were essential to expose that shortcut. The slide says benchmarks *that* pair
+injections only with harmful behavior can reward text suspicion. It does not
+assert that every current benchmark has that construction, nor that agent-targeted
+injections are absent from existing ID/OOD sources such as AgentDojo.
+
+The deployment chain is a hypothetical threat model, not an observed attack:
+an adversary places injection text on a page, an agent encounters but ignores
+it, and a monitor nevertheless alarms. If alarms block work pending human
+review, repeated false alarms could exhaust review capacity and stall autonomous
+workflows. This requires exposure to adversary-controlled content and a
+review-gating policy; our experiments did not measure reviewer overload or
+end-to-end denial of service. Exposure to an injection alone does not establish
+agent compliance or harmful task behavior.
