@@ -1,0 +1,16 @@
+source_jobs: results/b200_adaptive_microbatching/jobs.jsonl
+condition_source: singleton
+profile: src/gleipnir/configs/systems_screen/qwen35_4b_b200_default.yaml
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+validation_reference: results/bf16_packed_default_smoke/causal_adapter/training_metadata.json
+output: results/b200_bf16_fa4
+logs: logs/runpod/b200_bf16_fa4
+compiler_cache: .cache/training/shared/gpu-0
+fa4_cache: .cache/training/fa4_4.0.0b33_cute
+fa4_overlay: .cache/kernels/fa4
+fa4_version: 4.0.0b33
+conditions: [sdpa, flash_attention_4]
+steps: 20
+warmup_steps: 10
+minimum_relative_improvement: 0.05

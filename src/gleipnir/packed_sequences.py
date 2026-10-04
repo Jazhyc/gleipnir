@@ -6,7 +6,7 @@ and convolution kernels must honor the supplied boundaries independently.
 
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
 from dataclasses import dataclass
 from itertools import accumulate
@@ -185,18 +185,71 @@ def segmented_sdpa_interface(original: Callable) -> Callable:
 
 
 @contextmanager
-def installed_segmented_sdpa():
+def installed_segmented_sdpa(
+    backend: str = "sdpa", expected_version: str | None = None
+) -> Iterator[None]:
     """Keep the native router opaque to compilation, restoring its global binding."""
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 
     original = ALL_ATTENTION_FUNCTIONS["sdpa"]
-    router = torch.compiler.disable(segmented_sdpa_interface(original))
+    if backend == "sdpa":
+        if expected_version is not None:
+            raise ValueError("SDPA has no external attention version")
+        interface = segmented_sdpa_interface(original)
+    elif backend == "flash_attention_4":
+        from gleipnir.attention_backends import attention_loader_kwargs
+
+        attention_loader_kwargs(backend, expected_version)
+        from flash_attn.cute import flash_attn_varlen_func
+
+        interface = packed_fa4_interface(original, flash_attn_varlen_func)
+    else:
+        raise ValueError(f"unsupported packed attention backend: {backend}")
+    router = torch.compiler.disable(interface)
     router._gleipnir_packed_boundaries = True
     ALL_ATTENTION_FUNCTIONS.register("sdpa", router)
     try:
         yield
     finally:
         ALL_ATTENTION_FUNCTIONS.register("sdpa", original)
+
+
+def packed_fa4_interface(original: Callable, kernel: Callable) -> Callable:
+    """Use one native variable-length call with isolated causal sequences."""
+
+    def attention(module, query, key, value, attention_mask, **kwargs):
+        cumulative = kwargs.get("cu_seq_lens_q")
+        if cumulative is None:
+            return original(module, query, key, value, attention_mask, **kwargs)
+        if query.shape[0] != 1 or attention_mask is not None:
+            raise ValueError("packed FA4 requires one unpadded flattened row")
+        if not torch.equal(cumulative, kwargs["cu_seq_lens_k"]):
+            raise ValueError("packed self attention requires matching Q/K boundaries")
+        cuts = cumulative.tolist()
+        if (
+            cumulative.dtype != torch.int32
+            or cuts[0] != 0
+            or cuts[-1] != query.shape[2]
+            or any(b <= a for a, b in zip(cuts[:-1], cuts[1:], strict=True))
+        ):
+            raise ValueError("invalid packed FA4 sequence boundaries")
+        if kwargs.get("dropout", 0) != 0:
+            raise ValueError("packed FA4 supports zero attention dropout only")
+        result = kernel(
+            query[0].transpose(0, 1),
+            key[0].transpose(0, 1),
+            value[0].transpose(0, 1),
+            cu_seqlens_q=cumulative,
+            cu_seqlens_k=cumulative,
+            max_seqlen_q=kwargs["max_length_q"],
+            max_seqlen_k=kwargs["max_length_k"],
+            softmax_scale=kwargs.get("scaling"),
+            causal=True,
+        )
+        output = result[0] if isinstance(result, tuple) else result
+        return output.unsqueeze(0), None
+
+    return attention
 
 
 def forward_packed_monitoring_logits(

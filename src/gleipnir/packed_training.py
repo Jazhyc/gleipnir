@@ -63,6 +63,14 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     ):
         raise ValueError("ordinary packing supports per-example binary LM-head losses")
     validate_compile_cache_limit(training.get("packing_compile_cache_limit", 64))
+    backend = training.get("packed_attention_backend", "sdpa")
+    version = training.get("packed_attention_version")
+    if backend not in {"sdpa", "flash_attention_4"} or (
+        (backend == "flash_attention_4") != (version is not None)
+    ):
+        raise ValueError("packed attention requires an explicit supported version")
+    if backend == "flash_attention_4" and training.get("startup_validation_reference"):
+        raise ValueError("FA4 packing requires fresh startup validation")
     return True
 
 
@@ -77,6 +85,8 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
     from torch._inductor import config as inductor_config
 
     limit = student["training"].get("packing_compile_cache_limit", 64)
+    attention = student["training"].get("packed_attention_backend", "sdpa")
+    attention_version = student["training"].get("packed_attention_version")
     backend = torch.backends.cuda.matmul
     previous = (
         backend.allow_bf16_reduced_precision_reduction,
@@ -91,7 +101,13 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
             compile_cache_limit=limit,
             fail_on_recompile_limit_hit=True,
             emulate_precision_casts=True,
-            full_attention="segmented_causal_sdpa",
+            full_attention=(
+                "segmented_causal_sdpa"
+                if attention == "sdpa"
+                else "varlen_causal_flash_attention_4"
+            ),
+            attention_backend=attention,
+            attention_version=attention_version,
             convolution="seq_idx",
             recurrent_state="cu_seq_lens",
             positions="reset_per_example",
@@ -100,7 +116,7 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
             ],
         )
         with (
-            installed_segmented_sdpa(),
+            installed_segmented_sdpa(attention, attention_version),
             torch._dynamo.config.patch(
                 recompile_limit=limit, fail_on_recompile_limit_hit=True
             ),

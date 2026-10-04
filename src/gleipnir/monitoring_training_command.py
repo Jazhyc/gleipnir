@@ -102,7 +102,12 @@ def training_command(job: dict[str, Any]) -> list[str]:
                 "++student.quantization.full_bf16_lora=true",
             ]
         )
-    for key in ("sequence_packing", "packing_compile_cache_limit"):
+    for key in (
+        "sequence_packing",
+        "packing_compile_cache_limit",
+        "packed_attention_backend",
+        "packed_attention_version",
+    ):
         if key in job:
             value = job[key]
             encoded = str(value).lower() if isinstance(value, bool) else str(value)

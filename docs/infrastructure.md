@@ -272,6 +272,27 @@ hashes are in `results/b200_shutdown/20261004_augmentation_9b/stop_receipt.json`
 Both `.runpod/monitor-injection-pod.json` and `.runpod/injection-audit.json` now
 record EXITED; `.runpod/pod.json` still describes the older stopped Pod.
 
+### B200 restarted for the BF16 FA4 screen, 2026-10-04
+
+The user authorized one B200, preferably NC2, to revisit training throughput
+after the move from QLoRA to unquantized BF16 LoRA. A live catalog read found
+LOW B200 stock in US-NC-2 at $6.79/hour. Pod `9gxht4kafwfbdu`
+(`gleipnir-b200-bf16-fa4`) was created using the retained 200 GB network volume
+`ixbh81vf9c` at `/workspace`, a 50 GB container disk and the CUDA-13 image
+`runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster`, read from the prior
+Pod inventory. Direct SSH and `findmnt` confirmed the mount and NVIDIA B200
+183,359 MiB, driver 580.126.09. Python 3.12.3, Torch 2.11.0, Transformers 5.14.1
+and vLLM 0.24.0 remain present. No additional volume was created.
+
+Use `scripts/runpod_cloud.py --pod-file .runpod/bf16-fa4.json`; refresh its
+sanitized live SSH mapping after a restart. Temporary FLA/conv/Triton symlinks
+were restored. Shared training caches resolve through `.cache/training/shared`
+to `.cache/training/student_injection_awareness`; FA4's existing CuTe cache and
+FlashQLA's persistent caches are retained. The matched systems contract is
+[`b200_bf16_fa4`](../experiments/b200_bf16_fa4/README.md).
+This session has no agent heartbeat scheduler; checks occur in the active turn.
+The Pod remains running unless the user separately requests stopping it.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
