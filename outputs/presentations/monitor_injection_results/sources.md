@@ -239,3 +239,37 @@ workflows. This requires exposure to adversary-controlled content and a
 review-gating policy; our experiments did not measure reviewer overload or
 end-to-end denial of service. Exposure to an injection alone does not establish
 agent compliance or harmful task behavior.
+
+## Diagnosis 1: aggressive training-data filtering
+
+The seventh content slide summarizes the metadata audit and the completed
+`experiments/monitoring_injection_removal/README.md` intervention. Exact
+trajectory matching to STRIDE metadata identified four assigned
+`prompt_inject_another_ai_to_exfiltrate_data_for_blackmail` objectives, all
+source-label 1, among 8,688 selected training rows (0.04604%). This is an
+exhaustive count of that explicit objective, not a semantic injection census
+across all sources. See `docs/findings/training_trace_prompt_injections.md`.
+
+The frozen unadapted Qwen3.5-9B census scanned all 8,688 trajectories. At score
+>=0.5, including ties, the user-selected filter excluded 1,154 rows: 1,140
+harmful-labeled and 14 benign-labeled. A fresh 4B adapter used the original
+monitor instruction, retained original teacher targets and one epoch over
+7,534 rows (236 updates). The census has false positives and misses; two of
+the four explicit STRIDE cases and one reviewed Gloom exposure remained.
+The resulting corpus is not verified injection-free.
+
+Under the original monitoring prompt, injected-harmless APPS flag rate is
+100% for both original and filtered adapters under every transfer template.
+Each adapter uses its own clean-honest ~2% FPR threshold, not a shared numeric
+threshold: 0.164516 original and 0.085099 filtered, each with 13/655 clean
+alarms. The same failure persisted under the other two tested instructions.
+Mean scores changed and ID macro pAUROC@20 fell from 0.846273 to 0.822255;
+“did not resolve” refers specifically to injected-harmless thresholded alarms.
+
+The intervention changes class/source composition and training exposure, and
+uses an imperfect classifier. It neither isolates injection content causally
+nor excludes other data shortcuts. Exact completed results and artifact identities
+are recorded in `docs/findings/monitoring_injection_removal.md`; the collected
+evaluation summary SHA-256 is
+`d3146714ef5c581ad1a5aaee21488a77dda1dbec15d3fe7c06098b8903dd96db`.
+No benchmark or training examples are redistributed in the slide.

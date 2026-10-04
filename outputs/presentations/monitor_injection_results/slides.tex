@@ -205,3 +205,34 @@
         reviewers and halt autonomous workflows.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{Diagnosis 1: remove injection-like training examples}
+    \textbf{Hypothesis:} frequent injections in harmful training traces taught
+    the monitor to treat injection text as evidence of harm.
+    \bigskip
+
+    \textbf{Metadata audit:} only \textbf{4 explicitly tagged injection cases}
+    among 8,688 training examples (0.046\%); all four were harmful-labeled.
+    \medskip
+
+    \textbf{Intervention:} use a Qwen3.5-9B injection judge to scan all rows,
+    remove \textbf{1,154 candidates}, and retrain the 4B adapter on 7,534 rows.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lcc}
+            \toprule
+            APPS injected-harmless flag rate & Original & Filtered \\
+            \midrule
+            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    \begin{block}{Aggressive filtering did not resolve the false alarms}
+        The filter was imperfect; this does not rule out other data shortcuts.
+    \end{block}
+\end{frame}

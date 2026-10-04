@@ -12,7 +12,7 @@ It contains a title, a methods introduction and a monitor-injection benchmark
 motivation, followed by initial 4B/9B detection results and harmless-code
 injection controls and an auxiliary JudgeDeceiver comparison for a six-minute talk.
 A deployment-risk slide connects false alarms to review overload; the remaining
-results narrative is still being developed.
+results narrative now begins with a training-data filtering diagnosis.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
 
 ```text
