@@ -43,7 +43,8 @@ competition runner is included.
 - `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.
 - `figures/`: tracked, reproducible figures and their regeneration commands.
 - `outputs/presentations/<presentation_name>/`: self-contained LaTeX/Beamer
-  presentations, with local slides, styling, assets and build instructions.
+  presentations, with committed public PDFs, local slides, styling, assets and
+  build instructions.
 - `docs/`: research program, findings, decisions, and infrastructure notes.
 - `data/`, `results/`, `logs/`: ignored local artifacts; only `.gitkeep` files are tracked.
 
