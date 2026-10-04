@@ -23,7 +23,7 @@ outputs/presentations/
     ├── slides.tex
     ├── presentation.pdf     # compiled public deck; committed
     ├── assets/
-    └── build/               # intermediate compilation files; ignored
+    └── build/               # auxiliary compilation files; ignored
 ```
 
 Build a presentation from its own directory:
@@ -35,8 +35,9 @@ make
 
 This requires a TeX Live or MiKTeX installation providing `latexmk`, `pdflatex`
 and the packages listed in the presentation README. `make` publishes the final
-PDF as `presentation.pdf`. Each folder's `make clean` removes its intermediate
-`build/` directory and preserves the published PDF.
+PDF as `presentation.pdf`; it is the only compiled deck. Each folder's
+`make clean` removes its auxiliary `build/` directory and preserves the
+published PDF.
 
 For a new presentation, copy the initial scaffold to a new folder, remove its
 copied `build/` directory with `make clean`, and update the title, slides and

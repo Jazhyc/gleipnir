@@ -6,8 +6,8 @@ all: pdf
 
 pdf:
 	mkdir -p build
-	$(LATEXMK) -pdf -interaction=nonstopmode -halt-on-error -file-line-error -outdir=build main.tex
-	cp build/main.pdf presentation.pdf
+	$(LATEXMK) -pdf -jobname=presentation -outdir=. -auxdir=build \
+		-emulate-aux-dir -interaction=nonstopmode -halt-on-error -file-line-error main.tex
 
 clean:
 	rm -rf -- build
