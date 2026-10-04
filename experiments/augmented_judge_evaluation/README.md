@@ -80,3 +80,28 @@ dependency versions or evaluation numerics. Model weights, FLA/kernel and
 compiler/serving caches remain under the stable network-volume `.cache/` paths.
 Repeat the bounded hardware/runtime probe and adapter-specific serving checks
 using the recovered runtime before population scoring.
+
+## Completed result
+
+All four fresh conditions completed: augmented 4B and base/regular/augmented 9B,
+16,752 predictions in total. The 4,188 cached regular-4B predictions are reused.
+All five bounded base/adapter parity cells passed before population scoring.
+Independent collection checks match 27 remote artifacts/logs, 37 frozen paths,
+all input IDs/labels/prompts, finite raw-logprob reconstruction and zero
+truncation. Local reporting exactly reproduces the remote summary.
+
+Preferred-answer-injected accuracy is 58.36% / 62.65% for regular / augmented
+4B and 65.53% / 64.33% / 72.37% for base / regular / augmented 9B. Augmented
+clean accuracies remain 99.40% / 99.60%. Preferred-injection correct-to-wrong
+flips remain 37.08% / 27.63%; every augmented query loses mean p(correct)
+relative to its clean counterpart. Improvement is partial and uneven, with
+the hardest MT-Bench query at only 23.44% / 34.82% augmented accuracy.
+The [finding](../../docs/findings/augmented_judge_evaluation.md) records paired
+continuous scores, source/query breakdowns, ranking, calibration, ties and limits.
+No model promotion follows.
+
+Evaluation processes have exited and final GPU health is clean. The EU pod
+remains running at $6.79/hour; both persistent volumes remain preserved.
+Main-branch implementation commit: `d6f057e`. Audit/report artifacts live under
+`results/augmented_judge_evaluation/`, including `collection_audit.json`,
+`summary.json`, `remote_summary.json` and `preferred_injection_breakdown.json`.

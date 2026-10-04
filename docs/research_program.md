@@ -117,6 +117,20 @@ the [completed finding](findings/monitor_injection_augmentation_9b.md).
 The existing B200 is verified EXITED after complete artifact collection and
 independent audits; its persistent workspace and compiler/kernel caches remain.
 
+The completed [auxiliary transfer evaluation](findings/augmented_judge_evaluation.md)
+uses the unchanged original A/B quality-judging prompt and 4,188 JudgeDeceiver
+holdout variants from six queries. Neither monitoring-augmented adapter trained
+on JudgeDeceiver. Preferred-answer-injected accuracy rises from 58.36% to 62.65%
+at 4B and 64.33% to 72.37% at 9B; freshly evaluated base 9B reaches 65.53%.
+Clean accuracy stays near 99%, but augmented correct-to-wrong flips remain
+37.08% / 27.63%. Every augmented query loses mean p(correct) under preferred
+injections, and the hardest MT-Bench query reaches only 23.44% / 34.82%
+accuracy. This supports partial transfer with residual avoidance across multiple
+sources, rather than broad immunity. It is a preference diagnostic, not a
+harmfulness false-positive rate. No promotion follows. The new EU evaluation
+pod remains running after verified artifact collection; the prior NC2 pod and
+its persistent caches remain preserved.
+
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data
   exposure, or checkpoint averaging improve transfer? The
