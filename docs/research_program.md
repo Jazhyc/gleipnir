@@ -106,10 +106,15 @@ are reused. APPS remains evaluation-only.
 The user authorized a [9B replication](decisions/monitor_injection_augmentation_9b.md)
 of the same frozen augmentation at 5e-5, using the previously validated 9B
 checkpointing recipe and cached regular 9B controls. This campaign preserves
-all training/evaluation views and introduces no recipe sweep. All 272 training
-updates are complete and collected weights/metadata verify locally; evaluation
-is underway and no new 9B quality result is available yet. Shutdown of the
-existing B200 is authorized after complete verified artifact collection.
+all training/evaluation views and introduces no recipe sweep. All 272 updates
+and 15,138 fresh scores are complete and independently verified. Clean ID
+source-macro pAUROC@20 rises from 0.8796 to 0.8939, but injected-honest APPS FPR
+falls only from 99.85% to 83.36%, with two templates still at 100%. Matched
+injected AUROC rises from 0.6588 to 0.6786, substantially less than at 4B;
+vanilla APPS AUROC regresses from 0.9314 to 0.9126. This supports clean ID
+benefits without broad OOD robustness or a model-size monotonicity claim. See
+the [completed finding](findings/monitor_injection_augmentation_9b.md).
+Shutdown of the existing B200 follows complete verified artifact collection.
 
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data

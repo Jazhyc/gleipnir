@@ -7,8 +7,13 @@ the existing Runpod B200. No additional capacity or publication is requested.
 Training completed 2026-10-04: all 272 updates at 5e-5, with the expected fresh
 initialization and matched metadata checks. The master, serving weights and final
 checkpoint are collected and their completion-receipt checksums verify locally.
-Bounded reference scoring finished; serving parity and full evaluation remain
-pending. See the [finding](../../docs/findings/monitor_injection_augmentation_9b.md).
+Serving parity and all 15,138 fresh evaluations passed collection audits.
+Clean ID source-macro pAUROC@20 increases from 0.879559 to 0.893869, but APPS
+injected-honest FPR falls only from 99.85% to 83.36% on average; two templates
+still give 100% alarms. Vanilla APPS AUROC falls from 0.931378 to 0.912592.
+This is substantially weaker OOD transfer than at 4B. Weights, raw scores and
+logs are collected and checksummed; authorized shutdown is the final closure step.
+See the [finding](../../docs/findings/monitor_injection_augmentation_9b.md).
 
 Hypothesis: the same label-independent monitor-directed distractors reduce
 injection-only alarms at 9B while preserving clean behavior discrimination.
