@@ -1,4 +1,4 @@
-% Opening for a six-minute talk: aim for about one minute across these two slides.
+% A single methods introduction for a six-minute talk.
 \begin{frame}{Our approach: distill the monitoring decision directly}
     We reuse Sinha et al.'s trajectory data framework: 8,688 training examples.
     \medskip
@@ -6,67 +6,40 @@
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{block}{Sinha et al.: SFT + RL}
-                \textbf{Learn to generate a judgment}\par
-                SFT on a monitor rationale and a final 0--10 score.
+                SFT on monitor rationales and final 0--10 scores.
                 \medskip
 
-                GRPO rewards calibration and ranking against binary labels.
+                RL rewards calibration and ranking against binary labels.
                 \medskip
 
                 \textbf{Output:} a rationale and score.
+                \bigskip
+
+                \textbf{Mean OOD pAUROC@20: 0.684}
             \end{block}
         \end{column}
         \begin{column}{0.48\textwidth}
             \begin{block}{Ours: logit distillation}
-                \textbf{Learn the teacher's decision probability}\par
-                Train a Qwen LoRA adapter with soft binary cross-entropy.
+                Distill Kimi K3's soft harmfulness probabilities into a Qwen LoRA adapter.
                 \medskip
 
-                Supervise the \texttt{0}/\texttt{1} decision logits directly.
+                Train the binary decision logits, without rationale targets or RL.
                 \medskip
 
                 \textbf{Output:} a harmfulness probability.
-            \end{block}
-        \end{column}
-    \end{columns}
-    \bigskip
-    Our adapters use soft decision targets, without rationale supervision or RL.
-    \medskip
+                \bigskip
 
-    {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026), Appendix D}.
-    Training provenance and input caveats are documented in \texttt{sources.md}.}
-\end{frame}
-
-\begin{frame}{From teacher probabilities to a small monitor}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Teacher: Kimi K3}
-                Read the trajectory under the full monitoring rubric.
-                \medskip
-
-                Normalize the \texttt{0}/\texttt{1} logprobs to obtain
-                a soft harmfulness target $q$.
-            \end{block}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Student: Qwen3.5-4B + LoRA}
-                Read the same trajectory under a compact instruction.
-                \medskip
-
-                Convert decision logits to a score:\par
-                $p_\theta = \sigma(z_1-z_0)$.
+                \textbf{Mean OOD pAUROC@20: 0.776}
             \end{block}
         \end{column}
     \end{columns}
     \medskip
-    \textbf{Train the adapter to match the teacher's probability:}
-    \[
-        \mathcal{L} = -q\log p_\theta -(1-q)\log(1-p_\theta)
-    \]
-    {\small Baseline: 8,688 trajectories, one epoch; frozen backbone.
-    At inference, read the decision logits directly.}
-    \bigskip
+    {\small Both use Qwen3.5-4B; evaluated on six OOD sources
+    comprising 6,395 trajectories.}
+    \medskip
 
-    \textbf{Our question:} does the monitor learn harmful behavior,
-    or become suspicious of prompt-injection text itself?
+    {\scriptsize Published baseline: three-seed mean; ours: one checkpoint.
+    Other training-recipe details also differ.\par
+    \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
+    \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
 \end{frame}

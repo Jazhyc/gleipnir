@@ -1,10 +1,11 @@
 # Sources and scope of the opening slides
 
-Verified 4 October 2026. The two-slide opening introduces the **regular,
+Verified 4 October 2026. The single-slide opening introduces the **regular,
 trajectory-only 4B adapter** and contrasts its objective with Sinha et al.'s
 method. It does not use the older mixed-data checkpoint or an injection-augmented
-checkpoint. OOD comparisons below document the retained supporting chart assets;
-they are not shown in the short opening for the six-minute talk.
+checkpoint. The slide shows the mean OOD comparison rounded to three decimals.
+The complete OOD comparisons below also document the retained supporting chart
+assets, which are not shown in the short opening for the six-minute talk.
 
 ## Published baseline
 
@@ -35,7 +36,8 @@ Upstream dataset license was unspecified; no raw examples are included here.
 The preparation extracts the outer user-message trajectory from the released
 SFT rows and excludes the upstream monitor's assistant completion. It preserves
 the embedded agent transcript. The 8,688 rows are balanced globally: 4,344 benign
-and 4,344 harmful, with source counts shown in the deck.
+and 4,344 harmful. Source counts are STRIDE 1,350; Gloom 772;
+CoT-Red-Handed 2,340; BashArena 2,790; BashBench 1,436.
 
 Frozen Kimi K3 binary soft-target SHA-256:
 `1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a`.

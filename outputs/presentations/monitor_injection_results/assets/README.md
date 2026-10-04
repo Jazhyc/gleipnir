@@ -1,7 +1,7 @@
 # Presentation assets
 
 Supporting OOD numerical inputs and charts live here. They are retained for
-reference but are not shown in the two-slide methods opening:
+reference but are not shown in the single-slide methods opening:
 
 - `ood_comparison.json`: exact local aggregate metrics, published baseline
   values and reported standard deviations, sample counts, and artifact hashes.
