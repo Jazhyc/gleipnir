@@ -131,6 +131,11 @@ harmfulness false-positive rate. No promotion follows. The new EU evaluation
 pod remains running after verified artifact collection; the prior NC2 pod and
 its persistent caches remain preserved.
 
+- TODO (2026-10-04): broaden training injection wording and attack styles beyond
+  the current small template pool and role/position variation. The
+  [auxiliary transfer finding](findings/augmented_judge_evaluation.md) motivates
+  testing whether greater variety reduces residual avoidance; insufficient
+  variety remains a hypothesis. Experiment deferred at the user's request.
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data
   exposure, or checkpoint averaging improve transfer? The
