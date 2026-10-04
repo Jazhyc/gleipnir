@@ -178,3 +178,12 @@ pass, but FP4 measured updates take 53.44% more time (7.86192 versus 5.12363
 seconds). Keep BF16 MLPs; this FP4 configuration has no throughput basis for
 promotion. Separate original-FLA/FlashQLA strict parity still fails at 73.64%
 gradient relative L2 under the standing selected-finite policy.
+
+The [MXFP8 FA4 feasibility assessment](findings/b200_mxfp8_fa4_feasibility.md)
+finds that Meta's public Blackwell implementation currently supports noncausal
+D128 MHA, while our Qwen3.5-4B recipe requires causal D256 GQA. Isolated execution
+of its actual source guards reproduces each rejection independently. This needs
+kernel development before integration; no GPU timing or training result follows.
+Keep BF16 FA4 as the standard. The assessment records a future integration path,
+including sequence-local scales, causal quantization checks, an isolated runtime
+and complete update timing with conversion costs.
