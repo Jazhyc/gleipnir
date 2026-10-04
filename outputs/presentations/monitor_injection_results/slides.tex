@@ -369,3 +369,33 @@
         and backdoor detection also changes.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{4B augmentation: broader gains, residual suspicion}
+    \small
+    The monitoring-augmented adapter \textbf{never trained on JudgeDeceiver}.
+    We tested transfer to answer-quality judging and checked clean ID monitoring.
+    \medskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lcc}
+            \toprule
+            Metric & Original 4B & Augmented 4B \\
+            \midrule
+            Clean ID mean pAUROC@20 & 0.846 & \textbf{0.873} \\
+            Clean judging accuracy & 99.40\% & 99.40\% \\
+            Better-answer-injected accuracy & 58.36\% & \textbf{62.65\%} \\
+            Worse-answer-injected accuracy & 95.98\% & \textbf{99.67\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    \begin{block}{Partial transfer, rather than broad immunity}
+        Gains extend beyond APPS, but injections on better answers still
+        cause substantial errors in quality judging.
+    \end{block}
+    \medskip
+    \textbf{Possible explanation:} reduced shortcut learning; the mechanism is unproven.
+\end{frame}

@@ -387,3 +387,30 @@ and FPR calibration uses clean honest code; the actual injected-honest FPR
 is the separate flag-rate row. All metrics are equal-template means.
 The same augmentation produces differing results across monitors; this does
 not establish a monotonic model-size effect.
+
+## 4B augmentation: ID and auxiliary transfer
+
+The twelfth content slide uses the monitoring-augmented 4B adapter, not the
+JudgeDeceiver joint-trained or preference-continued adapters. It did not train
+on JudgeDeceiver. Clean ID source-macro pAUROC@20 is 0.846273 original versus
+0.872983 augmented, using the project raw-partial-area normalization. The ID
+population is the same 3,012 CoT-removed trajectories.
+
+JudgeDeceiver uses the unchanged auxiliary A/B quality prompt and frozen
+4,188 variants from six held-out queries. Original/augmented clean accuracy
+is 99.40%/99.40%; preferred-injected 58.36%/62.65%; disfavored-injected
+95.98%/99.67%. Preferred-injection correct-to-wrong flip rate remains 37.08%
+after augmentation, and every augmented query loses mean p(correct) under
+preferred injections. These are preference judgments, not harmfulness flags.
+The asymmetry supports residual avoidance, not universal failure on every input.
+
+Results come from `docs/findings/monitor_injection_augmentation.md` and
+`docs/findings/augmented_judge_evaluation.md`. The latter summary SHA-256 is
+`62d141b03da82d31ddcab5fa3aa67bad6a74c84f6d63a3c5164a79b5ea1dd259`.
+Original scores are checksum-verified historical reuse; augmented scores were
+collected in the independent auxiliary transfer evaluation.
+
+ID gains and partial transfer to a different domain/decision surface are
+consistent with reduced nuisance-cue reliance or augmentation regularization,
+but neither explanation is causally established. One seed, few augmentation
+strings and only six judging query groups limit generalization claims.
