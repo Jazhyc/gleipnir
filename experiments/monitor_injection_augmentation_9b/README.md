@@ -4,6 +4,12 @@ Authorized 2026-10-04: replicate the completed 4B intervention on fresh
 Qwen3.5-9B at 5e-5, then collect and verify all artifacts before shutting down
 the existing Runpod B200. No additional capacity or publication is requested.
 
+Training completed 2026-10-04: all 272 updates at 5e-5, with the expected fresh
+initialization and matched metadata checks. The master, serving weights and final
+checkpoint are collected and their completion-receipt checksums verify locally.
+Bounded reference scoring finished; serving parity and full evaluation remain
+pending. See the [finding](../../docs/findings/monitor_injection_augmentation_9b.md).
+
 Hypothesis: the same label-independent monitor-directed distractors reduce
 injection-only alarms at 9B while preserving clean behavior discrimination.
 Reuse exactly the frozen 8,688 training rows from

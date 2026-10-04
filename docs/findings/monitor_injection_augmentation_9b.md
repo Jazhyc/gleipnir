@@ -1,6 +1,6 @@
 # Monitor-directed injection augmentation at 9B
 
-Date: 2026-10-04. Status: training advancing; evaluation queued. No new
+Date: 2026-10-04. Status: training complete; evaluation underway. No new
 9B quality result is available yet.
 
 The authorized replication freezes the completed 4B replacement intervention
@@ -41,7 +41,7 @@ active goal execution can inspect progress but a remote queue is not an agent
 follow-up. The goal remains active through verified shutdown.
 
 The source-checked launch started PID 15742 on B200 `3422tdq7tfog52`; training
-worker PID 15745 is live. Model loading verified 8,953,803,264 frozen BF16
+worker PID 15745 completed and exited. Model loading verified 8,953,803,264 frozen BF16
 elements and 232,783,872 trainable FP32 elements in 256 tensors. Live all-layer
 nonreentrant checkpointing matches the recorded recipe. All 24 GDN layers bound
 to FlashQLA with startup diagnostics explicitly marked reused/not repeated.
@@ -49,12 +49,12 @@ The populated shared compiler cache resolves to
 `/workspace/gleipnir/.cache/training/student_injection_awareness`.
 Preparation manifest SHA256 is
 `8ea9596a8458520525747c31b19eb248549a510b087e5ffd45c94baf4fce4442`.
-Launch and cache receipts are collected locally; serving parity and all fresh
-evaluation outputs remain pending. An initial launcher import-path failure
+Launch, cache and training receipts are collected locally; serving parity and
+the full fresh evaluation remain pending. An initial launcher import-path failure
 started no workload and is preserved separately; the source-checked launch
 uses an explicit repository import path.
 
-Ordinary training reached at least 2/272 completed updates, with mandatory
+At startup, ordinary training reached 2/272 completed updates, with mandatory
 finite/missing-gradient guards permitting both updates. First-update elapsed
 time was 282.16 seconds including compilation; the next update took about
 20 seconds. GPU utilization reached 100%, with 37,470 MiB used. These early
@@ -62,3 +62,24 @@ timings do not establish whole-epoch throughput. The numerical training command
 matches the original 9B regular condition; only campaign paths and the explicit
 startup-validation reference differ. Feature implementation is committed as
 `ac21e87`; the full goal remains active until verified shutdown.
+
+Training subsequently completed all 272 updates and one epoch at 5e-5, with
+mean loss 0.226887 and training runtime 6,264.15 seconds (104.4 minutes).
+Warmed updates averaged approximately 22 seconds. Peak CUDA allocated/reserved
+memory was 35.74/36.55 GiB. These are execution diagnostics, not quality results.
+The collected metadata passes the matched validator, including the expected
+initial tensor digest, original teacher targets, checkpointing, objective,
+precision and startup-reuse contract. The FP32 master, rebased serving artifact
+and final checkpoint are collected locally. Master/serving file SHA256 values
+match the completed training receipt:
+`36059afaff50c119c86f039860923a08d9672e9807aca261b784b88bf9afb283` and
+`64ff99a3abf331875d1c973f833dadb89c5462b918d94c17413f7ce3c2236e33`.
+Bounded master-reference scoring completed; persistent-vLLM startup and its
+adapter-specific parity gates precede population evaluation.
+
+Benchmark metrics are identical between remote revision
+`29b31d9bea6b0072e3710f47d09299281c7639d0` and local revision
+`b55c2014d4c22ceea810b2639e6c0f672d83eccb`, both on
+`feat/gleipnir-vllm-grid`. The revision difference affects only three documentation
+files. Four metric/imported-helper checksums match; their provenance receipt is
+`results/monitor_injection_augmentation_9b/benchmark_metric_provenance.json`.

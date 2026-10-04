@@ -106,7 +106,9 @@ are reused. APPS remains evaluation-only.
 The user authorized a [9B replication](decisions/monitor_injection_augmentation_9b.md)
 of the same frozen augmentation at 5e-5, using the previously validated 9B
 checkpointing recipe and cached regular 9B controls. This campaign preserves
-all training/evaluation views and introduces no recipe sweep. Shutdown of the
+all training/evaluation views and introduces no recipe sweep. All 272 training
+updates are complete and collected weights/metadata verify locally; evaluation
+is underway and no new 9B quality result is available yet. Shutdown of the
 existing B200 is authorized after complete verified artifact collection.
 
 - With the backbone and teacher cache fixed, can CoT-removed student training,
