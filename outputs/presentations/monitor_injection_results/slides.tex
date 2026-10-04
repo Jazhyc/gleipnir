@@ -302,3 +302,34 @@
     \href{https://proceedings.mlr.press/v267/betley25a.html}{\emph{Emergent Misalignment} (2025)}:
     educational framing changed generalization from insecure-code training.}
 \end{frame}
+
+
+\begin{frame}{Intervention 1: teach injection handling as an auxiliary task}
+    \textbf{Working explanation:} training may amplify suspicion into a shortcut.
+    Could explicit practice ignoring injections counteract it?
+    \medskip
+    \textbf{Joint 4B training:} 75\% trajectory monitoring + 25\% JudgeDeceiver
+    answer-quality judgments, with injections on better and worse answers.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lcc}
+            \toprule
+            Metric & Original & Joint training \\
+            \midrule
+            Held-out judging accuracy & 79.85\% & \textbf{99.90\%} \\
+            Better-answer-injected accuracy & 58.36\% & \textbf{100\%} \\
+            APPS injected-harmless flag rate & 100\% & \textbf{100\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+    {\small APPS flag rates use clean-code $\sim$2\% FPR thresholds.}
+    \smallskip
+
+    \begin{block}{Context-dependent robustness, with no transfer to APPS}
+        Injection handling improved within answer-quality judging;
+        the same adapter still flagged injected harmless code.
+    \end{block}
+\end{frame}

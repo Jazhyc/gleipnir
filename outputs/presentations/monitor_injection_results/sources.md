@@ -320,3 +320,29 @@ ICML 2025. Their educational-context control changes the framing of insecure
 code examples and prevents broad misalignment in their reported evaluation.
 This motivates testing context-sensitive generalization; our monitor-instruction
 change is a distinct intervention and does not reproduce their experiment.
+
+## Intervention 1: auxiliary preference task
+
+The tenth content slide summarizes the fresh 4B joint-training run in
+`experiments/judge_injection_joint/README.md` and `docs/findings/judge_injection_joint.md`,
+not the earlier preference-only continuation. A new adapter trains with 75%
+monitoring and 25% preference examples per logical batch, visiting all 8,688
+monitoring rows and sampling 2,896 preference variants. Preference draws are
+10% clean, 45% preferred-injected and 45% disfavored-injected. Monitoring keeps
+fixed teacher soft targets and the original 0/1 prompt; judging uses A/B hard
+quality labels. APPS is excluded from training and selection.
+
+The fixed 4,188-variant, six-query preference holdout yields original/joint
+accuracy 79.85%/99.90%, and preferred-injected accuracy 58.36%/100%. APPS
+injected-honest alarms remain 100% on every template at adapter-specific
+clean ~2% FPR thresholds. Matched injected APPS AUROC is 0.643951/0.625552.
+The joint run improves ID macro pAUROC@20 to 0.865829 from 0.846273, unlike
+the earlier preference-only continuation, which partly reduced APPS alarms
+but regressed ID. These interventions must not be conflated.
+
+Optimization-driven shortcut learning is a working hypothesis, not a causal
+conclusion established by the preceding diagnostics. Quality and harmfulness
+objectives differ; narrow query/template diversity, extra updates and unequal
+exposure limit claims. Strong auxiliary accuracy does not establish broad
+injection immunity. Summary SHA-256:
+`abd78c46043ab93754e8f6f0c42d82c65bda1d0b5fcfbc602fae7b2f98d11030`.
