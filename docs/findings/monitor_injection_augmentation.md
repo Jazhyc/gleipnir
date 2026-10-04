@@ -1,6 +1,6 @@
 # Monitor-directed injection replacement campaign
 
-Date: 2026-10-04. Status: startup verified; training running, evaluation queued.
+Date: 2026-10-04. Status: training complete; serving parity passed, evaluation running.
 No training-quality or robustness result is available yet.
 
 The user selected replacing 40% of the 8,688 original regular-prompt training
@@ -63,7 +63,30 @@ approximately 10–15 seconds each (about 12 seconds on average). GPU utilizatio
 reached 100%, with 150,008 MiB used. The reported loss was 0.7229 and gradient
 norm 16.14 at step five; mandatory finite/missing-gradient guards permitted the
 updates. This is early throughput evidence, not a whole-epoch measurement.
-Serving parity and the 15,138 fresh population predictions are still pending.
+Training subsequently completed all 272 updates. The matched metadata validator
+passed again on the collected checkpoint: objective weights, initialization,
+packed BF16 FlashQLA recipe, startup-reference identity and changed master are
+consistent with the frozen contract. Actual training runtime was 3,520.38 seconds
+(58.7 minutes); the training invocation, including token audit and export, took
+4,189.72 seconds (69.8 minutes). Mean training loss was 0.23464. Peak CUDA
+allocated/reserved memory was 150.13/150.98 GiB. These are execution diagnostics,
+not evidence of held-out robustness.
+The mean optimizer step excluding the initial compile was 11.81 seconds.
+
+The final FP32 master file SHA256 is
+`3ecfd0d397aed7ad666e189bbd6fed82a20f93be33b5608a32c288c78ac7edef`;
+serving file SHA256 is
+`bbed5d2c6fc5c9e8ae84a78993d43b2151acfd306e1d14b7ce5013e8e3c17fd7`.
+Both collected files match their completion-receipt checksums; each contains
+256 finite FP32 adapter tensors.
+The 20-example master/serving gate passed: augmented score correlation 0.999798,
+mean absolute difference 0.003291; base correlation 0.999265, difference 0.008019.
+Maximum serving/reference adapter effects were 0.898995/0.888744. Serving
+compilation and graph capture completed before population scoring. The 15,138
+fresh population predictions and final effectiveness report are still pending.
+Population scoring is advancing: the observed benchmark progress reached
+1,280/5,184 rows with 100% GPU utilization; clean/synthetic ID and honest-control
+scoring follow in the same engine.
 
 No in-chat scheduler is available in this session. Active-turn startup checks
 do not provide automatic post-turn agent follow-ups; the remote sequential

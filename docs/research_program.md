@@ -91,8 +91,9 @@ The selected [monitor-directed injection augmentation](decisions/monitor_injecti
 replaces 40% of the original monitoring rows with one off-policy injected view,
 balancing user/assistant/tool roles and demanded verdicts across both source
 behavior classes. It directly trains the harmfulness objective using the fixed
-teacher cache. CPU preparation is complete and the training/evaluation queue
-has launched on the existing B200; no effectiveness result is available yet.
+teacher cache. All 272 training updates are complete on the existing B200;
+adapter-specific serving parity passed and population evaluation is running.
+No effectiveness result is available yet.
 Only the new adapter receives fresh scores; original regular-adapter results
 are reused. APPS remains evaluation-only.
 
