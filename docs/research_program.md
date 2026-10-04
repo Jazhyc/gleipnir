@@ -171,5 +171,8 @@ replication and quality validation remain required before changing the default.
 
 The [native FP4 MLP LoRA screen](findings/b200_fp4_mlp_lora.md) revisits the
 prior FP4 path with BF16 non-MLP components and no k-bit preparation. Local
-native arithmetic and row scaling pass; the new whole-model packed precision
-combination is undergoing fresh validation before throughput claims.
+native arithmetic, row scaling, eager/compiled packing and 20 finite updates
+pass, but FP4 measured updates take 53.44% more time (7.86192 versus 5.12363
+seconds). Keep BF16 MLPs; this FP4 configuration has no throughput basis for
+promotion. Separate original-FLA/FlashQLA strict parity still fails at 73.64%
+gradient relative L2 under the standing selected-finite policy.

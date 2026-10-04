@@ -47,3 +47,12 @@ BF16 model and FP32 adapters to CUDA before native conversion.
 Current artifacts: `results/b200_fp4_mlp_lora_cuda/`; logs:
 `logs/runpod/b200_fp4_mlp_lora_cuda/`. No agent heartbeat scheduler is available in
 this session; startup/progress checks occur during the active turn only.
+
+Completed 2026-10-04: all 20 updates finish with matching physical batches and
+initial masters, fresh strict packing/accumulation checks, finite gradients and
+verified native MLP execution. Final-ten mean is 7.86192 seconds versus the clean
+BF16 control's 5.12363 seconds: 53.44% slower. This candidate does not meet the
+promotion threshold. Keep BF16 MLPs. The separate original-FLA/FlashQLA strict
+gradient result fails at 73.64% under the standing selected-finite policy; this
+is distinct from the passing packing checks. See
+`docs/findings/b200_fp4_mlp_lora.md` for scope and preserved receipts.
