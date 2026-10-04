@@ -424,12 +424,11 @@ experiments do not establish that optimization pressure alone caused the effect.
 Eight authored augmentation strings and their role/position variation motivate
 greater diversity; its benefit remains untested. No new collection is launched.
 
-The user reports that a coauthor’s account was suspended because OpenAI
-suspected a ToS violation during related attack-data development. Earlier
-supplied correspondence describes a warning and appeal. The slide follows the
-user’s latest account as a reported access constraint, without asserting a
-confirmed violation, verified enforcement outcome or appeal resolution. No
-private correspondence, email address or account identifiers are reproduced.
+The user confirms that OpenAI suspended a coauthor’s account over suspected
+cyber-terms violations during creation of APPS backdoors and addition of prompt
+injections. The slide states the suspension directly, based on that confirmation;
+it does not assert that an actual violation was established or an appeal resolved.
+No private correspondence, email address or account identifiers are reproduced.
 
 The work lacks extensive ablations, hyperparameter exploration and replication
 on other model families. Existing 4B/9B results are within Qwen3.5; they do not
