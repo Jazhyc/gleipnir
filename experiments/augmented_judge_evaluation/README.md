@@ -100,8 +100,12 @@ The [finding](../../docs/findings/augmented_judge_evaluation.md) records paired
 continuous scores, source/query breakdowns, ranking, calibration, ties and limits.
 No model promotion follows.
 
-Evaluation processes have exited and final GPU health is clean. The EU pod
-remains running at $6.79/hour; both persistent volumes remain preserved.
+Evaluation processes have exited and final GPU health is clean. The user then
+authorized EU pod termination: HTTP 204, followed by pod-not-found 404 and
+absence from a complete pod listing. Both persistent volumes remain preserved;
+the 100 GB EU volume is independently verified present. All 27 collected remote
+files were checksum-rechecked before termination. The sanitized receipt is
+`results/augmented_judge_evaluation/termination_receipt.json`.
 Main-branch implementation commit: `d6f057e`. Audit/report artifacts live under
 `results/augmented_judge_evaluation/`, including `collection_audit.json`,
 `summary.json`, `remote_summary.json` and `preferred_injection_breakdown.json`.

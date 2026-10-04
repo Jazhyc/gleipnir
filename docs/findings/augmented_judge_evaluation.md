@@ -134,10 +134,16 @@ under each size/condition, `summary.json`, `remote_summary.json`,
 Ruff passed. Implementation commit: `d6f057e`, on `main` as explicitly requested.
 
 The NC2 host could not restart and NC2 lacked B200 capacity. The user accepted
-EU-RO-1 and authorized required transfers. EU pod `aqmiipyogkjgi3` remains
-running at $6.79/hour after evaluation; persistent volume `cb7bxu71ug` and the
-original NC2 volume are preserved. No automatic post-turn follow-up is promised:
-this session has no in-chat scheduling tool.
+EU-RO-1 and authorized required transfers. After evaluation and artifact
+collection, the user explicitly requested termination of EU pod `aqmiipyogkjgi3`.
+Termination returned HTTP 204; an independent read returned pod-not-found 404
+and a complete pod listing confirmed its absence. All 27 collected remote files
+were checksum-rechecked before termination. Persistent volume `cb7bxu71ug`
+(100 GB, $7/month) remains present, retaining the workspace and shared caches;
+the original NC2 volume is also preserved. GPU billing for the terminated pod
+has ended. The sanitized receipt is
+`results/augmented_judge_evaluation/termination_receipt.json`. This session has
+no in-chat scheduling tool.
 
 Only six held-out queries, one adapter seed, construction labels and upstream
 suffixes optimized for other judge interfaces limit generalization. Tool

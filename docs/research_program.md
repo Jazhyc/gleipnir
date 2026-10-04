@@ -127,8 +127,9 @@ Clean accuracy stays near 99%, but augmented correct-to-wrong flips remain
 injections, and the hardest MT-Bench query reaches only 23.44% / 34.82%
 accuracy. This supports partial transfer with residual avoidance across multiple
 sources, rather than broad immunity. It is a preference diagnostic, not a
-harmfulness false-positive rate. No promotion follows. The new EU evaluation
-pod remains running after verified artifact collection; the prior NC2 pod and
+harmfulness false-positive rate. No promotion follows. The user-authorized EU
+pod termination is independently verified after artifact collection and
+checksum rechecks; its network volume remains present. The prior NC2 pod and
 its persistent caches remain preserved.
 
 - TODO (2026-10-04): broaden training injection wording and attack styles beyond
