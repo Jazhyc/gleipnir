@@ -115,4 +115,4 @@ The following 4B transfer slide compares clean ID monitoring and JudgeDeceiver
 quality judging, showing broader gains with substantial residual avoidance.
 
 The takeaways slide covers unexpected generalization, broader augmentation,
-research-access constraints and unresolved mechanisms/limited replication.
+unresolved mechanisms and limited replication.
