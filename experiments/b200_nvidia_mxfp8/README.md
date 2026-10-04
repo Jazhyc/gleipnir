@@ -109,3 +109,34 @@ source .cache-runtime.env
 .venv/bin/python -m experiments.b200_nvidia_mxfp8.training_screen \
   --config experiments/b200_nvidia_mxfp8/training03.yaml
 ```
+
+### Exact-shape cache preparation
+
+The matched cohort records 267 distinct sequence lengths. NVIDIA specializes
+both forward and backward plans on exact lengths/strides; serial first-use
+preparation takes about 16 seconds per new pair in the live screen. A scoped
+profile confirms CPU-side CuTe IR generation dominates fresh plan preparation,
+and existing object-cache entries are successfully reloaded. This startup cost
+must be reported separately from warmed update throughput.
+
+Hypothesis: sixteen independent preparation workers reduce remaining cold-start
+wall time by filling the same persistent cache before training encounters new
+shapes. This intervention changes no attention inputs, kernels, configuration,
+physical batches or model state. `prewarm.py` verifies the frozen manifest hash,
+deduplicates its recorded lengths and builds exactly the selected D256,
+16-query/4-KV-head forward/backward plans. It executes no attention or optimizer
+updates. NVIDIA publishes object and record files atomically, allowing concurrent
+cache readers/writers. The existing B200 has a 20.4-CPU quota and 234 GiB host
+memory; use sixteen workers, leaving CPU headroom for training and retaining its
+receipts. Stop a preparation worker on any compile/runtime failure; training
+continues under its original finite-gradient checks. Start these workers during
+warmup and ensure they finish before the measured updates.
+
+```bash
+source .cache-runtime.env
+.venv/bin/python -m experiments.b200_nvidia_mxfp8.prewarm \
+  --screen results/b200_nvidia_mxfp8/training03/summary.json --workers 16
+```
+
+Preparation receipts, source snapshot and worker logs go under that screen's
+`prewarm/` directory. Compiler caches remain in the shared network-volume paths.
