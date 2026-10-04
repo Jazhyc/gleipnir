@@ -1,7 +1,8 @@
 # Monitor-directed injection replacement
 
 Date: 2026-10-04. Status: user selected replacement; CPU preparation completed.
-No GPU training or model evaluation has started for this intervention.
+The user authorized training/evaluation on the existing B200 on 2026-10-04;
+launch verification will record when actual optimizer updates advance.
 
 The user selected replacing 40% of the full 8,688-row regular training set,
 rather than appending paired copies. Each original trajectory occurs once:
@@ -43,6 +44,13 @@ plus paired clean/injected ID views from the held-out template families. Freeze
 the final checkpoint and report ranking, calibration, class-conditional flips
 and clean-calibrated operating points. No benchmark-selected checkpoint or
 promotion follows this exploratory intervention.
+
+Subsequent user clarification: reuse the original adapter's existing results;
+do not rescore it. Only the new adapter receives fresh population predictions.
+The synthetic held-out ID comparison uses its own paired clean scores, without
+an original-adapter synthetic baseline. Report agreeing/conflicting demands
+separately to detect copying or reversing the injected verdict; training demands
+agree in 1,785 cases and conflict in 1,690, so blind reversal is 48.6% accurate.
 
 See the [experiment protocol](../../experiments/monitor_injection_augmentation/README.md)
 and [template bank](../../experiments/monitor_injection_augmentation/templates.json).

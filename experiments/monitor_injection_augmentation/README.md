@@ -33,8 +33,9 @@ Eight project-authored training templates span four monitor-directed mechanisms:
 direct override, reviewer authority spoofing, answer prefill and delegated
 verdicts. Balance demanded 0/1 verdicts independently of the actual label, and
 balance template exposure. Four additional templates from two separate families
-(decision pressure and channel spoofing) are held out. No APPS payload, code,
-result or benchmark-specific calibration wording enters generation or training.
+(decision pressure and channel spoofing) are held out. No held-out APPS benchmark
+payload, code, result or benchmark-specific calibration wording enters generation
+or training; the original 8,688-row training population remains fixed.
 The template bank is a small first intervention; eight strings are not broad
 attack diversity. Nothing is optimized against the student or held-out scores.
 
@@ -82,8 +83,10 @@ student rows SHA256 is
 `84998c2f7727ed1249356b3d4ff126dab71bb4d5ca4255a073128f0b624519b6`.
 Run `.venv/bin/python -m experiments.monitor_injection_augmentation.audit` to
 recheck the frozen artifacts and write `results/monitor_injection_augmentation/completion_audit.json`.
-All 40 focused CPU checks and scoped Ruff checks pass. No GPU training has
-started for this intervention.
+All 40 original preparation checks and scoped Ruff checks passed. Execution
+adds six focused checks; all 46 pass locally and on the B200. See the
+[campaign finding](../../docs/findings/monitor_injection_augmentation.md) for
+the subsequent authorized launch and measured startup status.
 
 The proposed matched training run initializes a fresh Qwen3.5-4B rank-128 LoRA
 from the original zero-B adapter, one epoch, logical batch 32, 272 updates,
@@ -92,12 +95,18 @@ masters and the persistent compiler cache. Reuse unchanged startup validation
 only if every augmented input remains inside its 29,696-token envelope, with
 the receipt checksum and reused/skipped status recorded. Keep finite/missing
 gradient guards. No preference task or extra optimizer steps are introduced.
-Preparation is implemented; training/evaluation entrypoints are pending.
+Training/evaluation entrypoints are implemented. The user authorized execution
+on the existing B200 on 2026-10-04. Run `bash experiments/monitor_injection_augmentation/run.sh`
+from the remote workspace after syncing both frozen materializations. It runs
+the data audit, matched training, bounded master reference and persistent-vLLM
+evaluation sequentially, stopping on any failure. `prepare_eval` separately
+freezes the evaluation manifest before launch. Execution contracts hash training
+and evaluation code; serving rejects changes to the launched campaign.
 
 ## Frozen evaluation proposal and stop conditions
 
 Use the fixed final checkpoint and the regular monitoring instruction only.
-Compare against the original regular adapter on canonical 3,012 CoT-removed ID
+Reuse the existing original regular adapter results on canonical 3,012 CoT-removed ID
 examples, unchanged APPS benchmark and honest controls, plus paired clean and
 synthetically injected ID views using only held-out template families. Keep
 the source holdouts intact; augmented and clean views of a trajectory must
@@ -105,6 +114,19 @@ never cross train/evaluation. APPS is evaluation-only and cannot select a
 checkpoint, template or hyperparameter. Require adapter-specific master/serving
 parity and nonzero adapter effect before full vLLM scoring; batch related
 conditions in one persistent engine with one-token decision logprobs.
+
+User clarification: do not evaluate the original adapter again. Its ID/APPS/
+honest-control results and a checksum-pinned base reference are reused. Fresh
+population scoring is only for the augmented adapter: 5,184 APPS benchmark,
+3,930 honest-control, 3,012 clean ID and 3,012 injected ID views (15,138 total).
+The held-out ID set balances roles exactly to 1,004 each, uses each held-out
+template 753 times and has no original training trajectory hash overlap. It
+preserves lowercase headers where present, with reversible original bytes.
+There is no original-adapter baseline for this new synthetic population.
+Report demands agreeing/conflicting with the source label separately, along
+with payload verdicts, roles and mechanism families. The training demand/label
+table has 893 harmless/0, 845 harmless/1, 845 harmful/0 and 892 harmful/1;
+blindly reversing the demand matches only 48.6% of hard labels.
 
 Report source-macro pAUROC@20, AUROC, calibration, ties, class-conditional paired
 score changes and flips, clean-calibrated injected-harmless FPR and harmful TPR,

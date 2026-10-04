@@ -1,0 +1,19 @@
+seed: 1000
+baseline_summary: results/judge_injection_continuation/evaluation_regular/summary.json
+baseline_summary_sha256: 621b681b1b78d40dd11fc7eb02d4f9c67cb561ac9d98e80eb4aaa6df5e517620
+baseline_reference: results/judge_injection_continuation/evaluation_regular/reference.json
+baseline_reference_sha256: b1e985596811b3c685ab68bd293acc7c93701d417eeb4c720b385626e48e3bb8
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  max_num_seqs: 32
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+  gdn_prefill_backend: triton
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+selection: fixed_final_checkpoint_regular_prompt_only
+original_adapter: reuse_cached_results_only
+synthetic_id: one_heldout_injection_per_source_row

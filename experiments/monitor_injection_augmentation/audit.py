@@ -15,6 +15,7 @@ from experiments.monitor_injection_augmentation.prepare import (
     template_bank,
     verify_preparation,
 )
+from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
 from gleipnir.monitoring_campaign_data import (
     digest,
     file_hash,
@@ -44,6 +45,7 @@ def audit_rows(
     seen = set()
     exposure = Counter()
     irregular = Counter()
+    prompt_template = load_prompt_set().student
     for old, new in zip(source, rows, strict=True):
         key = (old["dataset"], str(old["index"]))
         if key in seen:
@@ -67,10 +69,14 @@ def audit_rows(
         if digest(new["student_prompt"]) != new["student_prompt_sha256"]:
             raise ValueError("augmented prompt checksum drift")
         original = trajectory_from_prompt(
-            old["student_prompt"], old["trajectory_sha256"]
+            old["student_prompt"],
+            old["trajectory_sha256"],
+            source_template=prompt_template,
         )
         augmented = trajectory_from_prompt(
-            new["student_prompt"], new["trajectory_sha256"]
+            new["student_prompt"],
+            new["trajectory_sha256"],
+            source_template=prompt_template,
         )
         start = receipt["offset"]
         end = start + receipt["inserted_characters"]
