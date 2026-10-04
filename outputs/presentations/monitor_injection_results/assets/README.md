@@ -31,3 +31,6 @@ LaTeX builds without Python or Matplotlib.
 `initial_injection_results.json` records the initial regular-adapter 4B/9B
 injected-backdoor metrics and source summary checksums used on the results slide.
 It contains aggregate metrics only and requires no external files to read.
+
+`harmless_injection_results.json` records the paired harmless-code control flag
+rates and historical source summary checksums for the following slide.

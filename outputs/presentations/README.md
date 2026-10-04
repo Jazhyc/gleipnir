@@ -9,7 +9,8 @@ instructions; avoid symlinks or inputs from elsewhere in the repository.
 
 The first deck is [`monitor_injection_results/`](monitor_injection_results/).
 It contains a title, a methods introduction and a monitor-injection benchmark
-motivation, followed by initial 4B/9B injection results for a six-minute talk.
+motivation, followed by initial 4B/9B detection results and harmless-code
+injection controls for a six-minute talk.
 The remaining results narrative is still being developed.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
 

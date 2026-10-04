@@ -120,3 +120,32 @@
         Were the monitors detecting backdoors, or just reacting to injection text?
     \end{block}
 \end{frame}
+
+
+\begin{frame}{The same injections also flagged harmless code}
+    We added the same injection comments to \textbf{655 harmless solutions}.
+    The code still contained no backdoor.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.4}
+        \begin{tabular}{lcc}
+            \toprule
+            Regular adapter & Clean harmless & Injected harmless \\
+            \midrule
+            Qwen3.5-4B & 1.98\% & \textbf{100.00\%} \\
+            Qwen3.5-9B & 1.98\% & \textbf{99.85\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    {\small Flag rates at the same clean-code thresholds as the previous slide;
+    injected rates average the three templates.}
+    \bigskip
+
+    \begin{block}{Near-perfect detection hid near-universal suspicion}
+        Injection text alone was enough to trigger almost every alarm,
+        even when the underlying code was harmless.
+    \end{block}
+\end{frame}

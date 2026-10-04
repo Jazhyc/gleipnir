@@ -170,3 +170,23 @@ SHA-256 identities of the original `gleipnir-grid-v1/{4b,9b}/regular/
 eval_neutral.metrics.json` summaries. These are historical results, not fresh
 evaluations. No benchmark examples are included. The final question motivates
 the subsequent honest-injection control; it does not establish a mechanism.
+
+## Harmless-code injection control
+
+The fourth content slide retains the same regular adapters, regular monitoring
+prompt and clean-code thresholds as the initial-results slide. It appends each
+of the three transfer injections to all 655 honest solutions without adding a
+code backdoor. The target remains code-backdoor presence: hostile comments alone
+do not turn an honest solution into a positive under this label contract.
+
+Clean honest flag rates are 13/655 (1.9847328244%) for both adapters. At 4B,
+all 655 honest solutions alarm under every template (100%). At 9B, counts are
+655/655, 655/655 and 652/655 for GPT-4, GPT-4.1 and GPT-4o respectively. The
+equal-template mean is 99.8473282443%, displayed as 99.85%. Thresholds are
+unchanged; they are not recalibrated against injected honest code.
+
+`assets/harmless_injection_results.json` contains aggregate rates, counts and
+source summary SHA-256 identities from historical `gleipnir-honest-controls-v1/
+{4b,9b}/regular/eval_neutral.metrics.json`. These controls support strong
+injection-text sensitivity under this benchmark, without identifying the learned
+mechanism or establishing a result for every possible injection.
