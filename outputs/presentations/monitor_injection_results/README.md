@@ -36,6 +36,7 @@ shows the author, presentation title, date and slide number.
 - `main.tex`: document entrypoint, title, author and date.
 - `preamble.tex`: local theme, typography and packages.
 - `slides.tex`: slide content.
+- `script.md`: six-minute read-aloud script with slide cues and timing checkpoints.
 - `assets/`: local figures, tables and associated provenance.
 - `sources.md`: source attribution, artifact identities and interpretation limits.
 - `Makefile`: build and cleanup commands.
