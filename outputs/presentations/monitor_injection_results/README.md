@@ -82,3 +82,6 @@ The script reads only the local aggregate JSON and imports no project code.
 The JudgeDeceiver slide shows original-adapter A/B quality-judging accuracy
 for clean answers and injections on better or worse answers, demonstrating
 avoidance in a different task without treating preference labels as harm labels.
+
+Visible slides use “adapter” or “original” for the initial models; “regular”
+is retained only in provenance records as the internal condition identifier.
