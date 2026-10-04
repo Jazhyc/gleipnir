@@ -187,3 +187,12 @@ kernel development before integration; no GPU timing or training result follows.
 Keep BF16 FA4 as the standard. The assessment records a future integration path,
 including sequence-local scales, causal quantization checks, an isolated runtime
 and complete update timing with conversion costs.
+
+The [eight-bit training kernel survey](findings/b200_eight_bit_training_kernel_survey.md)
+identifies NVIDIA's development cuDNN Frontend FROST MXFP8 D256 causal GQA
+forward/backward path as a full-attention integration candidate. Its backward
+adapter lacks our packed variable-length layout. No compatible public eight-bit
+GDN training kernel was found: FlashQLA and TE recurrence remain BF16/FP16,
+while LeapQuant targets inference and Delta-Matching explicitly keeps recurrence
+in BF16. These are source findings, not measured Gleipnir training results.
+Keep BF16 FA4/FlashQLA as the standard pending a separate matched screen.
