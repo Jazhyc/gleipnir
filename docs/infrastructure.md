@@ -299,6 +299,14 @@ merge from the retained original 4B compiler cache invalidates a warm-cache timi
 comparison. The merge keeps existing shared entries and preserves both source
 caches. Failed receipts and exact executed sources remain on the volume.
 
+After the user explicitly accepted the approximately 8% gradient difference, a
+separate matched continuation completed both 20-update trajectories. FA4 measured
+updates are 20.24% faster with identical partitions/tokens; eager/compiled gradient
+differences are recorded as strict failures and accepted separately under 10%.
+Full receipts, logs and FP32 adapters are collected locally. The GPU is idle after
+the screen; Pod `9gxht4kafwfbdu` remains RUNNING at $6.79/hour. No recurring agent
+heartbeat is scheduled and no default recipe change follows from this one screen.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

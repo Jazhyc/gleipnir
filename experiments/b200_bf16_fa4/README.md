@@ -84,3 +84,12 @@ source .cache-runtime.env
 The continuation writes `b200_bf16_fa4_accepted` artifacts/logs and reuses the
 unchanged native kernel receipt. Fresh compiled packing and memory checks still
 precede FA4 updates. Acceptance does not select FA4 as the default.
+
+The continuation completed both 20-update trajectories. Final-ten mean time is
+5.12363 s (SDPA) vs 4.08648 s (FA4), a 20.24% reduction with identical physical
+partitions/tokens. Peak allocation is 146.995 vs 145.242 GiB. Compiled gradient
+relative L2 is 0.0517730, accepted separately from strict failure; all isolation
+checks and longest-batch memory preflight pass. Fresh FA4 checks front-load
+compilation: complete invocation is 567.05 vs 507.40 s. Its 72% shorter Trainer
+loop is not an equivalent startup improvement. Reverse-order replication and
+quality validation remain unperformed; the default stays SDPA.

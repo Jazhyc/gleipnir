@@ -159,6 +159,12 @@ identify the training mechanism; raw upstream predictions are not audited here.
 
 The [BF16 B200 FA4 screen](findings/b200_bf16_fa4.md) passes an isolated native
 kernel check but fails whole-model eager packing gradient parity at 8.29% against
-the unchanged 5% limit. It provides no valid FA4 speed or quality comparison;
-the packed BF16 recipe retains segmented SDPA full attention. The user-authorized
-NC2 B200 remains running with the persistent workspace and shared caches.
+the unchanged 5% limit. The replay shows zero cross-example leakage; differences
+begin at the first full-attention layer. The user explicitly authorized a separate
+timing continuation with a 10% learning acceptance ceiling and preserved strict
+results. The packed BF16 default retains segmented SDPA full attention. The
+user-authorized NC2 B200 remains running with its workspace and shared caches.
+The authorized continuation completes both 20-update trajectories: measured FA4
+updates take 20.24% less time (5.12363 to 4.08648 seconds), with matched partitions
+and tokens. Fresh FA4 checks make total invocation time longer; reverse-order
+replication and quality validation remain required before changing the default.

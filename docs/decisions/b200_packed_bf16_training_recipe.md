@@ -5,7 +5,13 @@ Status: selected by explicit user instruction, 2026-10-02.
 Kernel screen, 2026-10-04: [FA4's native canary passed, but eager model packing
 parity failed](../findings/b200_bf16_fa4.md) at 8.29% adapter-gradient relative
 L2 against the unchanged 5% gate. No FA4 optimizer updates or valid timing
-comparison followed. Keep segmented SDPA for full attention.
+comparison followed from that attempt. After inspecting zero leakage and the
+layer-level differences, the user authorized a separate timing continuation with
+a 10% learning acceptance ceiling, retaining strict failures. Keep segmented
+SDPA as the default pending replication and quality validation. The authorized
+20-update continuation observes 20.24% shorter measured update time with FA4
+(5.12363 to 4.08648 seconds), with identical physical partitions/tokens. Fresh
+FA4 checks front-load compilation and make its complete invocation longer.
 
 Startup validation update, 2026-10-02: the user explicitly requested reusing
 validation for an unchanged recipe instead of repeating diagnostic gates on
