@@ -399,3 +399,29 @@
     \medskip
     \textbf{Possible explanation:} reduced shortcut learning; the mechanism is unproven.
 \end{frame}
+
+
+\begin{frame}{Takeaways and next steps}
+    \small
+    \begin{itemize}
+        \item \textbf{Training can produce unexpected generalization.}
+        Broad suspicion emerged despite few tagged examples;
+        optimization-driven shortcut learning remains a hypothesis.
+        \medskip
+        \item \textbf{Direct augmentation helps, but unevenly.}
+        Broaden the current eight authored injection strings and test whether
+        greater variety improves robustness across contexts and monitors.
+        \medskip
+        \item \textbf{Research access is a practical constraint.}
+        One author's account was reportedly suspended over suspected ToS violations
+        during related attack-data work; future collection needs a provider-compatible approach.
+        \medskip
+        \item \textbf{The mechanism remains unresolved.}
+        Limited time for extensive ablations, hyperparameter tuning or transfer
+        beyond the two Qwen sizes. Mechanistic analysis and broader replication are next.
+    \end{itemize}
+    \medskip
+    \begin{block}{Evaluate behavior, not just the presence of an attack}
+        Include harmless injection controls: detection scores can hide costly false alarms.
+    \end{block}
+\end{frame}

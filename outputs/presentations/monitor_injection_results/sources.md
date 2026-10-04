@@ -414,3 +414,25 @@ ID gains and partial transfer to a different domain/decision surface are
 consistent with reduced nuisance-cue reliance or augmentation regularization,
 but neither explanation is causally established. One seed, few augmentation
 strings and only six judging query groups limit generalization claims.
+
+## Takeaways and next steps
+
+The closing slide treats optimization-driven shortcut learning as a hypothesis.
+The metadata audit found four explicit STRIDE injection objectives, not an
+absence of injection-like concepts throughout training or pretraining. The
+experiments do not establish that optimization pressure alone caused the effect.
+Eight authored augmentation strings and their role/position variation motivate
+greater diversity; its benefit remains untested. No new collection is launched.
+
+The user reports that a coauthor’s account was suspended because OpenAI
+suspected a ToS violation during related attack-data development. Earlier
+supplied correspondence describes a warning and appeal. The slide follows the
+user’s latest account as a reported access constraint, without asserting a
+confirmed violation, verified enforcement outcome or appeal resolution. No
+private correspondence, email address or account identifiers are reproduced.
+
+The work lacks extensive ablations, hyperparameter exploration and replication
+on other model families. Existing 4B/9B results are within Qwen3.5; they do not
+establish cross-family transfer or an identified mechanistic principle. The
+closing recommendation for harmless injection controls follows the measured
+APPS false alarms, rather than attributing a proven causal mechanism.

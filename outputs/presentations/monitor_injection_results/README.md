@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has twelve content slides plus the title for a six-minute talk.
+The current opening has thirteen content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -113,3 +113,6 @@ TPR at clean-code ~2% FPR, emphasizing monitor-dependent benefits and tradeoffs.
 
 The following 4B transfer slide compares clean ID monitoring and JudgeDeceiver
 quality judging, showing broader gains with substantial residual avoidance.
+
+The takeaways slide covers unexpected generalization, broader augmentation,
+research-access constraints and unresolved mechanisms/limited replication.
