@@ -293,6 +293,12 @@ FlashQLA's persistent caches are retained. The matched systems contract is
 This session has no agent heartbeat scheduler; checks occur in the active turn.
 The Pod remains running unless the user separately requests stopping it.
 
+The [FA4 screen](findings/b200_bf16_fa4.md) stopped at eager packing parity;
+FA4 performed no optimizer updates. The SDPA control completed, but an overlapping
+merge from the retained original 4B compiler cache invalidates a warm-cache timing
+comparison. The merge keeps existing shared entries and preserves both source
+caches. Failed receipts and exact executed sources remain on the volume.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

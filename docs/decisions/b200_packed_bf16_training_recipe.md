@@ -2,6 +2,11 @@
 
 Status: selected by explicit user instruction, 2026-10-02.
 
+Kernel screen, 2026-10-04: [FA4's native canary passed, but eager model packing
+parity failed](../findings/b200_bf16_fa4.md) at 8.29% adapter-gradient relative
+L2 against the unchanged 5% gate. No FA4 optimizer updates or valid timing
+comparison followed. Keep segmented SDPA for full attention.
+
 Startup validation update, 2026-10-02: the user explicitly requested reusing
 validation for an unchanged recipe instead of repeating diagnostic gates on
 every run. Reuse the recorded kernel/packing/partition/memory receipts and mark

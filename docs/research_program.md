@@ -156,3 +156,9 @@ finds template-dependent Kimi K3 suspicion on OOD APPS controls, alongside
 matched injected AUROC 0.918–0.971 versus 0.644 for the original 4B student.
 This challenges simple copying of the teacher’s OOD response but does not
 identify the training mechanism; raw upstream predictions are not audited here.
+
+The [BF16 B200 FA4 screen](findings/b200_bf16_fa4.md) passes an isolated native
+kernel check but fails whole-model eager packing gradient parity at 8.29% against
+the unchanged 5% limit. It provides no valid FA4 speed or quality comparison;
+the packed BF16 recipe retains segmented SDPA full attention. The user-authorized
+NC2 B200 remains running with the persistent workspace and shared caches.

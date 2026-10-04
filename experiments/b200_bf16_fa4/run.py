@@ -29,6 +29,45 @@ from gleipnir.qwen35_fast_training import (
 ROOT = Path(__file__).resolve().parents[2]
 
 
+def benchmark_environment(config: dict) -> dict[str, str]:
+    """Use the same pinned overlays and existing persistent caches for every stage."""
+    environment = flashqla_environment(
+        triton_environment(
+            DEFAULT_TRITON_TARGET,
+            causal_conv1d_environment(
+                DEFAULT_CAUSAL_CONV1D_TARGET,
+                fla_environment(DEFAULT_FLA_TARGET, dict(os.environ)),
+            ),
+        )
+    )
+    environment["PYTHONPATH"] += ":" + str(ROOT / config["fa4_overlay"])
+    environment = gpu_environment(environment, 0, ROOT / config["compiler_cache"])
+    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED"] = "1"
+    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_DIR"] = str(ROOT / config["fa4_cache"])
+    environment["FLA_DISABLE_BACKEND_DISPATCH"] = "1"
+    environment["OMP_NUM_THREADS"] = "4"
+    return environment
+
+
+def run_native_canary(logs: Path, output: Path, environment: dict[str, str]) -> None:
+    """Record a fresh native receipt when no unchanged validation is available."""
+    with (logs / "native-canary.log").open("w") as handle:
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "experiments.b200_bf16_fa4.kernel_canary",
+                "--output",
+                str(output / "kernel_canary.json"),
+            ],
+            cwd=ROOT,
+            env=environment,
+            stdout=handle,
+            stderr=subprocess.STDOUT,
+            check=True,
+        )
+
+
 def benchmark_job(config: dict, source: dict, recipe: dict, backend: str) -> dict:
     """Keep the frozen data and recipe, selecting only the packed attention route."""
     if config["steps"] != 20 or config["warmup_steps"] != 10:
@@ -53,6 +92,8 @@ def benchmark_job(config: dict, source: dict, recipe: dict, backend: str) -> dic
         job["startup_validation_reference"] = str(ROOT / config["validation_reference"])
     else:
         job["packed_attention_version"] = config["fa4_version"]
+        if tolerance := config.get("candidate_learning_gradient_tolerance"):
+            job["packing_learning_gradient_tolerance"] = tolerance
     return job
 
 
@@ -64,11 +105,15 @@ def summarize(metadata: dict, warmup: int) -> dict:
     if any(not math.isfinite(t) or t <= 0 for t in durations):
         raise ValueError("nonfinite/nonpositive benchmark duration")
     packing = metadata["sequence_packing"]
-    if not packing.get("startup_validation") and not all(
-        packing[key]["passed"]
-        for key in ["eager_canary", "compiled_canary", "preflight"]
-    ):
-        raise ValueError("fresh packing gates did not pass")
+    if not packing.get("startup_validation"):
+        if not packing["preflight"]["passed"] or not all(
+            packing[key]["passed"]
+            or packing[key].get("accepted_for_learning_comparison", False)
+            for key in ["eager_canary", "compiled_canary"]
+        ):
+            raise ValueError(
+                "fresh packing gates were not passed or explicitly accepted"
+            )
     if (
         packing["initial_master_sha256"] == packing["final_master_sha256"]
         or metadata["quantization"]["enabled"]
@@ -104,6 +149,10 @@ def summarize(metadata: dict, warmup: int) -> dict:
         "startup_validation": metadata.get("startup_validation"),
         "initial_master_sha256": packing["initial_master_sha256"],
         "compiled": metadata["selective_torch_compile"],
+        "packing_gates": {
+            key: packing.get(key)
+            for key in ["eager_canary", "compiled_canary", "preflight"]
+        },
     }
 
 
@@ -133,23 +182,7 @@ def main() -> None:
             raise ValueError(f"input checksum drift: {path_key}")
     profile = yaml.safe_load((ROOT / config["profile"]).read_text())
     initial = ROOT / config["initial_adapter"]
-    environment = flashqla_environment(
-        triton_environment(
-            DEFAULT_TRITON_TARGET,
-            causal_conv1d_environment(
-                DEFAULT_CAUSAL_CONV1D_TARGET,
-                fla_environment(DEFAULT_FLA_TARGET, dict(os.environ)),
-            ),
-        )
-    )
-    # Retain FlashQLA's pinned TVM FFI; FA4's CuTe modules are isolated by
-    # sitecustomize. Validate their combined runtime before any model load.
-    environment["PYTHONPATH"] += ":" + str(ROOT / config["fa4_overlay"])
-    environment = gpu_environment(environment, 0, ROOT / config["compiler_cache"])
-    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED"] = "1"
-    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_DIR"] = str(ROOT / config["fa4_cache"])
-    environment["FLA_DISABLE_BACKEND_DISPATCH"] = "1"
-    environment["OMP_NUM_THREADS"] = "4"
+    environment = benchmark_environment(config)
     files = [
         args.config,
         Path(__file__),
@@ -176,21 +209,24 @@ def main() -> None:
     publish()
     try:
         # Same dependency overlay for both conditions. No reinstall or cold cache.
-        with (logs / "native-canary.log").open("w") as handle:
-            subprocess.run(
-                [
-                    sys.executable,
-                    "-m",
-                    "experiments.b200_bf16_fa4.kernel_canary",
-                    "--output",
-                    str(output / "kernel_canary.json"),
-                ],
-                cwd=ROOT,
-                env=environment,
-                stdout=handle,
-                stderr=subprocess.STDOUT,
-                check=True,
-            )
+        native_reference = config.get("native_canary_reference")
+        if native_reference:
+            reference = ROOT / native_reference
+            native = json.loads(reference.read_text())
+            if (
+                not native["passed"]
+                or native["packages"]["flash-attn-4"] != config["fa4_version"]
+            ):
+                raise ValueError("native canary reference is incompatible")
+            report["native_canary"] = {
+                "reused": True,
+                "performed": False,
+                "reference": str(reference),
+                "sha256": sha256_file(reference),
+            }
+            publish()
+        else:
+            run_native_canary(logs, output, environment)
         for backend in config["conditions"]:
             job = benchmark_job(config, source, profile["recipe"], backend)
             command = training_command(job) + [

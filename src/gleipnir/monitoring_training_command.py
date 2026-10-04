@@ -107,6 +107,7 @@ def training_command(job: dict[str, Any]) -> list[str]:
         "packing_compile_cache_limit",
         "packed_attention_backend",
         "packed_attention_version",
+        "packing_learning_gradient_tolerance",
     ):
         if key in job:
             value = job[key]

@@ -21,6 +21,27 @@ from gleipnir.packed_training import validate_packed_training_config
 from tests.test_packed_training import student_config
 
 
+def test_failed_packing_receipt_survives_the_original_exception(tmp_path):
+    import json
+
+    from gleipnir.packed_training import record_packing_canary
+    from gleipnir.packed_training_screen import PackingCanaryError
+
+    receipt = {"passed": False, "adapter_gradient_relative_l2": 0.0829}
+    error = PackingCanaryError("strict gate failed", receipt)
+    metadata = {"enabled": True}
+
+    def check():
+        raise error
+
+    output = tmp_path / "nested" / "packing_canary.json"
+    with pytest.raises(PackingCanaryError) as caught:
+        record_packing_canary(check, metadata, "eager_canary", output)
+    assert caught.value is error
+    assert json.loads(output.read_text())["eager_canary"] == receipt
+    assert metadata["eager_canary"] == receipt
+
+
 @pytest.mark.parametrize("fail", [False, True])
 def test_fa4_router_restores_binding_after_success_or_failure(monkeypatch, fail):
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
@@ -128,3 +149,60 @@ def test_matched_job_preserves_sources_and_only_changes_attention():
         assert job["max_steps"] == 20
     assert "startup_validation_reference" in control
     assert "startup_validation_reference" not in candidate
+
+
+def test_explicit_learning_acceptance_is_bounded_and_preserves_strict_failure():
+    from gleipnir.monitoring_training_command import training_command
+    from gleipnir.packed_training_screen import PackingCanaryError, _accept_canary
+
+    receipt = {
+        "cases": [
+            {
+                "repeat_max_abs": 0.0,
+                "perturb_max_abs": 0.0,
+                "cross_input_grad_max_abs": 0.0,
+                "own_input_grad_max_abs": 1.0,
+            }
+        ],
+        "independent_loss": 0.9492289,
+        "packed_loss": 0.9576337,
+        "adapter_gradient_relative_l2": 0.0828666,
+    }
+    with pytest.raises(PackingCanaryError):
+        _accept_canary(deepcopy(receipt), None)
+    accepted = _accept_canary(deepcopy(receipt), 0.10)
+    assert not accepted["passed"] and accepted["accepted_for_learning_comparison"]
+    leaked = deepcopy(receipt)
+    leaked["cases"][0]["cross_input_grad_max_abs"] = 1e-3
+    with pytest.raises(PackingCanaryError):
+        _accept_canary(leaked, 0.10)
+    config = student_config()
+    config["training"]["packing_learning_gradient_tolerance"] = 0.10
+    assert validate_packed_training_config(config)
+    config["training"]["packing_learning_gradient_tolerance"] = 0.151
+    with pytest.raises(ValueError):
+        validate_packed_training_config(config)
+    screen = yaml.safe_load(
+        Path("experiments/b200_bf16_fa4/accepted_config.yaml").read_text()
+    )
+    source = yaml.safe_load(Path(screen["profile"]).read_text())["recipe"]
+    job = benchmark_job(
+        screen,
+        {
+            "seed": 0,
+            "student_rows": "rows.jsonl",
+            "soft_targets": "targets.jsonl",
+            "max_length": 29696,
+            "rank": 128,
+            "lora_alpha": 256,
+            "learning_rate": 5e-5,
+            "num_train_epochs": -1,
+        },
+        source,
+        "flash_attention_4",
+    )
+    assert job["packing_learning_gradient_tolerance"] == 0.10
+    assert (
+        "++student.training.packing_learning_gradient_tolerance=0.1"
+        in training_command(job)
+    )

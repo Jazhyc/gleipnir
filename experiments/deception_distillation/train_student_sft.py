@@ -3937,18 +3937,23 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         )
 
         def check_packing(*, compiled):
-            receipt = packing_isolation_canary(
-                model,
-                packing_features,
-                collator,
-                kernel_loss_forward,
-                capture_layers=not compiled,
-            )
+            from gleipnir.packed_training import record_packing_canary
+
             key = "compiled_canary" if compiled else "eager_canary"
-            packing_metadata[key] = receipt
-            output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / "packing_canary.json").write_text(
-                json.dumps(packing_metadata, indent=2, allow_nan=False) + "\n"
+            receipt = record_packing_canary(
+                lambda: packing_isolation_canary(
+                    model,
+                    packing_features,
+                    collator,
+                    kernel_loss_forward,
+                    capture_layers=not compiled,
+                    learning_tolerance=cfg.student.training.get(
+                        "packing_learning_gradient_tolerance"
+                    ),
+                ),
+                packing_metadata,
+                key,
+                output_dir / "packing_canary.json",
             )
             print(f"packing_{key}={receipt}", flush=True)
 

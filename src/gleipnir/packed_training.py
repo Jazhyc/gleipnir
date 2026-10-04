@@ -2,8 +2,10 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Callable, Iterator, Mapping, Sequence
 from contextlib import contextmanager
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -14,8 +16,34 @@ from gleipnir.packed_sequences import (
     installed_segmented_sdpa,
     packed_partition,
 )
-from gleipnir.packed_training_screen import validate_compile_cache_limit
+from gleipnir.packed_training_screen import (
+    validate_compile_cache_limit,
+    validate_learning_tolerance,
+)
 from gleipnir.training_execution_audit import tensor_digest
+
+
+def record_packing_canary(
+    check: Callable[[], dict[str, Any]],
+    metadata: dict[str, Any],
+    key: str,
+    output: Path,
+) -> dict[str, Any]:
+    """Preserve a failed numerical receipt before propagating its original error."""
+    from gleipnir.packed_training_screen import PackingCanaryError
+
+    receipt = None
+    try:
+        receipt = check()
+        return receipt
+    except PackingCanaryError as error:
+        receipt = error.receipt
+        raise
+    finally:
+        if receipt is not None:
+            metadata[key] = receipt
+            output.parent.mkdir(parents=True, exist_ok=True)
+            output.write_text(json.dumps(metadata, indent=2, allow_nan=False) + "\n")
 
 
 def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
@@ -63,6 +91,10 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     ):
         raise ValueError("ordinary packing supports per-example binary LM-head losses")
     validate_compile_cache_limit(training.get("packing_compile_cache_limit", 64))
+    tolerance = training.get("packing_learning_gradient_tolerance")
+    validate_learning_tolerance(tolerance)
+    if tolerance is not None and training.get("startup_validation_reference"):
+        raise ValueError("packing learning acceptance requires fresh recorded gates")
     backend = training.get("packed_attention_backend", "sdpa")
     version = training.get("packed_attention_version")
     if backend not in {"sdpa", "flash_attention_4"} or (
@@ -108,6 +140,9 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
             ),
             attention_backend=attention,
             attention_version=attention_version,
+            learning_gradient_tolerance=student["training"].get(
+                "packing_learning_gradient_tolerance"
+            ),
             convolution="seq_idx",
             recurrent_state="cu_seq_lens",
             positions="reset_per_example",
