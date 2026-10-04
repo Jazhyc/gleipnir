@@ -1,7 +1,11 @@
-# Monitor injection results
+# Emergent Suspiciousness in Trained Monitors
 
-Self-contained Beamer scaffold for communicating the Gleipnir monitor-injection
-experiments. The current deck contains a title slide and a draft outline;
+Authors: Jeremias Ferrao and Michael Kenny.
+
+Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
+
+Self-contained Beamer scaffold for communicating monitor-injection experiments.
+The current deck contains a title slide and a draft outline;
 results slides and audience-specific framing can be developed here.
 
 Read the compiled deck: [presentation.pdf](presentation.pdf). This PDF is
@@ -23,7 +27,7 @@ shows the author, presentation title, date and slide number.
 
 All build inputs are inside this directory. Copy this entire folder to another
 machine or upload its TeX files and assets to Overleaf, with `main.tex` as the
-main document. No Gleipnir Python environment or repository files are required.
+main document. No Python environment or repository files are required.
 
 ## Build
 
