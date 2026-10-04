@@ -125,6 +125,7 @@ def training_command(job: dict[str, Any]) -> list[str]:
         "packed_attention_backend",
         "packed_attention_version",
         "packing_learning_gradient_tolerance",
+        "packing_timing_authority",
         "expected_initial_master_sha256",
     ):
         if key in job:

@@ -64,7 +64,9 @@ def validate_compile_cache_limit(value: int | None) -> None:
         raise ValueError("packing compile cache limit must be an integer from 8 to 128")
 
 
-def _accept_canary(receipt: dict, learning_tolerance: float | None) -> dict:
+def _accept_canary(
+    receipt: dict, learning_tolerance: float | None, timing_authority: str | None = None
+) -> dict:
     validate_learning_tolerance(learning_tolerance)
     reference = receipt["independent_loss"]
     candidate = receipt["packed_loss"]
@@ -82,18 +84,30 @@ def _accept_canary(receipt: dict, learning_tolerance: float | None) -> dict:
         and row["own_input_grad_max_abs"] > 0
         for row in receipt["cases"]
     )
-    valid = (
+    finite_isolated = (
         isolation
         and all(math.isfinite(v) for v in [reference, candidate, relative])
         and relative >= 0
-        and abs(candidate - reference) <= 0.02 + 0.02 * abs(reference)
+    )
+    valid = finite_isolated and abs(candidate - reference) <= 0.02 + 0.02 * abs(
+        reference
     )
     receipt["passed"] = valid and relative <= 0.05
     receipt["learning_gradient_tolerance"] = learning_tolerance
     receipt["accepted_for_learning_comparison"] = bool(
         valid and learning_tolerance is not None and relative <= learning_tolerance
     )
-    if not (receipt["passed"] or receipt["accepted_for_learning_comparison"]):
+    if timing_authority is not None:
+        if not isinstance(timing_authority, str) or not timing_authority.strip():
+            raise ValueError("timing comparison requires recorded user authority")
+        receipt["timing_authority"] = timing_authority
+        receipt["accepted_for_timing_comparison"] = finite_isolated
+        receipt["timing_waived_checks"] = ["loss_parity", "gradient_relative_l2"]
+    if not (
+        receipt["passed"]
+        or receipt["accepted_for_learning_comparison"]
+        or receipt.get("accepted_for_timing_comparison", False)
+    ):
         raise PackingCanaryError(
             f"packing numerical parity failed: losses {reference}/{candidate}, "
             f"gradient rel L2={relative}",
@@ -110,6 +124,7 @@ def packing_isolation_canary(
     *,
     capture_layers: bool = True,
     learning_tolerance: float | None = None,
+    timing_authority: str | None = None,
 ) -> dict:
     """Test identical-shape independence and matched singleton adapter gradients.
 
@@ -235,7 +250,7 @@ def packing_isolation_canary(
                 "gradient_relative_l2": 0.05,
             },
         }
-        return _accept_canary(receipt, learning_tolerance)
+        return _accept_canary(receipt, learning_tolerance, timing_authority)
     finally:
         model.zero_grad(set_to_none=True)
         model.train(was_training)

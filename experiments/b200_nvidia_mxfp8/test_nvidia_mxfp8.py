@@ -206,3 +206,129 @@ def test_mxfp8_runtime_is_scoped_and_requires_fresh_validation():
     cfg["training"]["startup_validation_reference"] = "old.json"
     with pytest.raises(ValueError):
         validate_packed_training_config(cfg)
+
+
+def test_timing_authority_preserves_parity_failure_and_cannot_waive_execution_errors():
+    from copy import deepcopy
+
+    from gleipnir.packed_training_screen import PackingCanaryError, _accept_canary
+
+    receipt = {
+        "cases": [
+            {
+                "repeat_max_abs": 0.0,
+                "perturb_max_abs": 0.0,
+                "cross_input_grad_max_abs": 0.0,
+                "own_input_grad_max_abs": 1.0,
+            }
+        ],
+        "independent_loss": 0.9492289424,
+        "packed_loss": 0.9757985473,
+        "adapter_gradient_relative_l2": 0.1871139556,
+    }
+    with pytest.raises(PackingCanaryError):
+        _accept_canary(deepcopy(receipt), 0.1)
+    accepted = _accept_canary(deepcopy(receipt), 0.1, "user_speed_regardless")
+    assert not accepted["passed"]
+    assert not accepted["accepted_for_learning_comparison"]
+    assert accepted["accepted_for_timing_comparison"]
+    changed = deepcopy(receipt)
+    changed["packed_loss"] = 2.0
+    assert _accept_canary(changed, 0.1, "user_speed_regardless")[
+        "accepted_for_timing_comparison"
+    ]
+    for problem in ["isolation", "nonfinite_gradient", "nonfinite_loss", "zero_own"]:
+        changed = deepcopy(receipt)
+        if problem == "isolation":
+            changed["cases"][0]["cross_input_grad_max_abs"] = 0.001
+        elif problem == "zero_own":
+            changed["cases"][0]["own_input_grad_max_abs"] = 0
+        elif problem == "nonfinite_loss":
+            changed["packed_loss"] = float("nan")
+        else:
+            changed["adapter_gradient_relative_l2"] = float("inf")
+        with pytest.raises(PackingCanaryError):
+            _accept_canary(changed, 0.1, "user_speed_regardless")
+
+
+def test_timing_config_is_bounded_fresh_mxfp8_and_command_records_authority():
+    from gleipnir.monitoring_training_command import training_command
+    from gleipnir.packed_training import validate_packed_training_config
+    from tests.test_packed_training import student_config
+
+    cfg = student_config()
+    cfg["training"].update(
+        packed_attention_backend="nvidia_mxfp8",
+        packed_attention_version="1.31.0",
+        max_steps=20,
+        packing_timing_authority="user_speed_regardless",
+    )
+    assert validate_packed_training_config(cfg)
+    cfg["training"]["max_steps"] = 21
+    with pytest.raises(ValueError):
+        validate_packed_training_config(cfg)
+    cfg["training"]["max_steps"] = 20
+    cfg["training"]["packed_attention_backend"] = "flash_attention_4"
+    with pytest.raises(ValueError):
+        validate_packed_training_config(cfg)
+    from pathlib import Path
+
+    import yaml
+
+    from experiments.b200_nvidia_mxfp8.training_screen import job_for
+
+    config = yaml.safe_load(
+        Path("experiments/b200_nvidia_mxfp8/training03.yaml").read_text()
+    )
+    source = {
+        "seed": 0,
+        "student_rows": "rows.jsonl",
+        "soft_targets": "targets.jsonl",
+        "max_length": 29696,
+        "rank": 128,
+        "lora_alpha": 256,
+        "learning_rate": 5e-5,
+        "num_train_epochs": -1,
+    }
+    recipe = yaml.safe_load(Path(config["profile"]).read_text())["recipe"]
+    candidate = job_for(config, source, recipe, "nvidia_mxfp8")
+    control = job_for(config, source, recipe, "flash_attention_4")
+    assert "packing_timing_authority" not in control
+    assert (
+        "++student.training.packing_timing_authority=user_2026_10_05_speed_regardless"
+        in training_command(candidate)
+    )
+
+
+def test_summary_requires_explicit_timing_acceptance_and_preflight():
+    from copy import deepcopy
+
+    from gleipnir.packed_benchmark import summarize
+
+    failed_gate = {"passed": False, "accepted_for_timing_comparison": True}
+    metadata = {
+        "optimizer_step_timing": {"durations_seconds": [2.0] * 20},
+        "training_state": {"global_step": 20},
+        "sequence_packing": {
+            "attention_backend": "nvidia_mxfp8",
+            "timing_authority": "user_speed",
+            "preflight": {"passed": True},
+            "eager_canary": failed_gate,
+            "compiled_canary": failed_gate,
+            "initial_master_sha256": "initial",
+            "final_master_sha256": "changed",
+        },
+        "quantization": {"enabled": False},
+        "checkpointed_layer_indices": [],
+        "adaptive_microbatching": {"records": []},
+        "train_metrics": {"train_runtime": 40.0},
+        "peak_cuda_memory_allocated_bytes": 1,
+        "selective_torch_compile": {},
+    }
+    with pytest.raises(ValueError):
+        summarize(metadata, 10, accept_learning=True)
+    assert summarize(metadata, 10, accept_timing=True)["measured_total_seconds"] == 20
+    invalid = deepcopy(metadata)
+    invalid["sequence_packing"]["preflight"]["passed"] = False
+    with pytest.raises(ValueError):
+        summarize(invalid, 10, accept_timing=True)

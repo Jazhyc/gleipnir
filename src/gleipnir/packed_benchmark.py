@@ -43,7 +43,13 @@ def benchmark_environment(config: dict, root: Path) -> dict[str, str]:
     return environment
 
 
-def summarize(metadata: dict, warmup: int, *, accept_learning: bool = False) -> dict:
+def summarize(
+    metadata: dict,
+    warmup: int,
+    *,
+    accept_learning: bool = False,
+    accept_timing: bool = False,
+) -> dict:
     """Count every measured update and preserve its physical execution contract."""
     durations = metadata["optimizer_step_timing"]["durations_seconds"]
     if len(durations) != 20 or metadata["training_state"]["global_step"] != 20:
@@ -57,6 +63,12 @@ def summarize(metadata: dict, warmup: int, *, accept_learning: bool = False) -> 
             or (
                 accept_learning
                 and packing[key].get("accepted_for_learning_comparison", False)
+            )
+            or (
+                accept_timing
+                and packing.get("attention_backend") == "nvidia_mxfp8"
+                and packing.get("timing_authority")
+                and packing[key].get("accepted_for_timing_comparison", False)
             )
             for key in ["eager_canary", "compiled_canary"]
         ):

@@ -4007,6 +4007,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     learning_tolerance=cfg.student.training.get(
                         "packing_learning_gradient_tolerance"
                     ),
+                    timing_authority=cfg.student.training.get(
+                        "packing_timing_authority"
+                    ),
                 ),
                 packing_metadata,
                 key,

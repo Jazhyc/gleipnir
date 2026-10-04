@@ -93,3 +93,19 @@ limit; all cross-example isolation effects are exactly zero. The run stops
 before compiled checks, longest-batch preflight and optimizer updates. The FA4
 control is unrun and no training-speed result is available. Keep BF16 FA4 as
 the default; see [the finding](../../docs/findings/b200_nvidia_mxfp8.md).
+
+The user subsequently requested a speed result regardless of that discrepancy.
+`training03.yaml` authorizes a separate timing-only continuation, with 20 updates
+per condition, ten warmup and ten measured. Both begin from the original master;
+reuse all persistent caches and preserve prior failed receipts. Fresh eager and
+compiled diagnostics retain strict/learning results and record explicit timing
+acceptance separately. Numerical loss/gradient parity cannot stop this timing
+screen, but sequence isolation, finite/missing gradients, memory preflight,
+engine selection and matched input/partition identities remain mandatory. Stop
+on failures of those execution checks. No promotion or quality validation follows.
+
+```bash
+source .cache-runtime.env
+.venv/bin/python -m experiments.b200_nvidia_mxfp8.training_screen \
+  --config experiments/b200_nvidia_mxfp8/training03.yaml
+```

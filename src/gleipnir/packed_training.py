@@ -95,6 +95,17 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     tolerance = training.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(tolerance)
     backend = training.get("packed_attention_backend", "sdpa")
+    timing_authority = training.get("packing_timing_authority")
+    if timing_authority is not None and not (
+        isinstance(timing_authority, str)
+        and timing_authority.strip()
+        and backend == "nvidia_mxfp8"
+        and 0 < training.get("max_steps", 0) <= 20
+        and not training.get("startup_validation_reference")
+    ):
+        raise ValueError(
+            "timing-only MXFP8 requires authority and at most 20 fresh steps"
+        )
     if (
         tolerance is not None
         and training.get("startup_validation_reference")
@@ -156,6 +167,7 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
             learning_gradient_tolerance=student["training"].get(
                 "packing_learning_gradient_tolerance"
             ),
+            timing_authority=student["training"].get("packing_timing_authority"),
             convolution="seq_idx",
             recurrent_state="cu_seq_lens",
             positions="reset_per_example",

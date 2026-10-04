@@ -89,6 +89,8 @@ def job_for(config: dict, source: dict, recipe: dict, backend: str) -> dict:
         ],
     }
     job.pop("startup_validation_reference", None)
+    if backend == "nvidia_mxfp8" and config.get("timing_authority"):
+        job["packing_timing_authority"] = config["timing_authority"]
     if backend == "flash_attention_4":
         job["startup_validation_reference"] = str(ROOT / config["validation_reference"])
         job["startup_validation_reference_sha256"] = config[
@@ -116,6 +118,9 @@ def main() -> None:
         ROOT / "src/gleipnir/packed_sequences.py",
         ROOT / "src/gleipnir/packed_training.py",
         ROOT / "src/gleipnir/packed_training_screen.py",
+        ROOT / "src/gleipnir/packed_benchmark.py",
+        ROOT / "src/gleipnir/monitoring_training_command.py",
+        ROOT / "experiments/deception_distillation/train_student_sft.py",
         ROOT / config["profile"],
     ]
     source_hashes = {}
@@ -184,7 +189,12 @@ def main() -> None:
             metadata = json.loads(
                 (Path(job["causal_adapter_dir"]) / "training_metadata.json").read_text()
             )
-            metrics = summarize(metadata, config["warmup_steps"], accept_learning=True)
+            metrics = summarize(
+                metadata,
+                config["warmup_steps"],
+                accept_learning=True,
+                accept_timing=bool(config.get("timing_authority")),
+            )
             if (
                 metrics["initial_master_sha256"]
                 != config["expected_initial_master_sha256"]
@@ -215,6 +225,9 @@ def main() -> None:
         )
         publish()
     except Exception as error:
+        for condition in report["conditions"].values():
+            if condition["status"] == "running":
+                condition["status"] = "failed"
         report.update(status="failed", error=f"{type(error).__name__}: {error}")
         publish()
         raise
