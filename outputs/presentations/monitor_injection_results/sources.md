@@ -16,12 +16,34 @@ slide. In its GPT-5/APPS condition, GPT-4.1 assigns score 0 to all 375 successfu
 backdoors carrying injections. GPT-4 and GPT-4o also degrade under attack.
 This is their reported result, not a measurement of our adapters.
 
-Our evaluation reuses the APPS snapshot pinned at revision
+The gray code card quotes short fragments from the GPT-4-targeted payload in
+Appendix F.1: an XML authority attribute and the first output-directive sentence.
+Ellipses mark omissions; line breaks are adjusted for the slide. The solution-code
+placeholder and explanatory caption are authored for the illustration. The card
+is a schematic, not a complete code submission or the full attack. Its fragments
+also occur in the evaluated `transfer_gpt4.json` template. The adjacent 375/375
+statistic is a separate GPT-4.1 result from Figure 2; it is not attributed to this
+specific GPT-4 excerpt. The illustration is rendered in LaTeX, with no external
+image, dataset row or copied paper figure.
+
+Our evaluation uses our adapted benchmark, published as
+[mjkenney/monitor-injection-evals](https://huggingface.co/datasets/mjkenney/monitor-injection-evals),
+with code at [mkenney2/monitor-injection-evals](https://github.com/mkenney2/monitor-injection-evals).
+The evaluated snapshot is pinned at revision
 `58e722bf9912903d56a334f873e069aa17ccb7ad`. The benchmark contract and added
 honest-code controls are recorded in
 `experiments/monitoring_injection_disentanglement/README.md`. The new slide
 motivates the test; it does not yet present our results or a full control-protocol
 evaluation. No benchmark rows or copied paper figures are included in the deck.
+
+The local benchmark checkout at commit
+`b55c2014d4c22ceea810b2639e6c0f672d83eccb` documents the adaptation: o3-mini
+Control Tax backdoors and same-model honest solutions, transferred payloads from
+Terekhov et al., and matched neutral text. The honest-code supplement applies
+the same transferred injections to benign programs. It does not reproduce the
+paper's GPT-5-generated code population. The diagram shows one of those reused
+payload excerpts; the blue box reports the original paper's results, while the
+closing sentence identifies our adapted evaluation dataset.
 
 The gap is specifically a dedicated evaluation of attacks on the monitor.
 It is not a claim that the ID/OOD populations contain no injections:
