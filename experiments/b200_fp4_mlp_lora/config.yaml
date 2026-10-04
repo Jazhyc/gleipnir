@@ -1,0 +1,12 @@
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+compiler_cache: .cache/training/shared/gpu-0
+steps: 20
+warmup_steps: 10
+minimum_relative_improvement: 0.05
+baseline: results/b200_bf16_fa4_accepted/summary.json
+baseline_condition: sdpa
+output: results/b200_fp4_mlp_lora_cuda
+logs: logs/runpod/b200_fp4_mlp_lora_cuda
+kernel_overlays:
+- .cache/kernels/fouroversix-1.0.5

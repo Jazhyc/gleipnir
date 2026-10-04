@@ -45,8 +45,8 @@ def configure_bf16_reductions(
     }
 
 
-def bf16_lora_metadata(model: nn.Module) -> dict[str, Any]:
-    """Fail closed on quantized bases or non-FP32 master adapters."""
+def _original_base_metadata(model: nn.Module) -> dict[str, Any]:
+    """Verify original BF16 parameters and FP32 masters, excluding k-bit loading."""
     quantized = [
         name
         for name, module in model.named_modules()
@@ -78,3 +78,81 @@ def bf16_lora_metadata(model: nn.Module) -> dict[str, Any]:
         "trainable_elements": trainable_elements,
         "quantized_modules": quantized,
     }
+
+
+def bf16_lora_metadata(model: nn.Module) -> dict[str, Any]:
+    """Fail closed on native quantized bases or non-FP32 master adapters."""
+    if any(
+        hasattr(module, "runtime") and hasattr(module.runtime, "activation_config")
+        for module in model.modules()
+    ):
+        raise ValueError("ordinary BF16 LoRA must contain no native quantized modules")
+    return _original_base_metadata(model)
+
+
+def fp4_mlp_lora_metadata(model: nn.Module) -> dict[str, Any]:
+    """Verify native MLP-only W4A4 with original BF16 bases and FP32 LoRA masters."""
+    from gleipnir.fouroversix_training import FrozenFourOverSixLinear, is_mlp_base
+
+    original = _original_base_metadata(model)
+    native = [
+        (name, module)
+        for name, module in model.named_modules(remove_duplicate=False)
+        if isinstance(module, FrozenFourOverSixLinear)
+    ]
+    mlps = [
+        (name, module)
+        for name, module in model.named_modules()
+        if is_mlp_base(name) and not hasattr(module, "base_layer")
+    ]
+    if (
+        len(native) != 96
+        or len(mlps) != 96
+        or any(not is_mlp_base(name) for name, _ in native)
+        or any(not isinstance(module, FrozenFourOverSixLinear) for _, module in mlps)
+    ):
+        raise ValueError("FP4 MLP LoRA requires exactly 96 native decoder MLP bases")
+    if any(
+        not module.runtime.row_scaled_activations
+        or module.runtime.dequantized_weight is None
+        or module.runtime.dequantized_weight.dtype != torch.bfloat16
+        or module.runtime.activation_selector != "strict"
+        for _, module in native
+    ):
+        raise ValueError(
+            "FP4 MLP LoRA requires per-token strict FP4 and decoded BF16 backward"
+        )
+    return {
+        **original,
+        "frozen_dtype": "mixed_native_fp4_mlp_bf16_other",
+        "original_weight_dtype": "torch.bfloat16",
+        "mlp_forward": "native_cutlass_w4a4",
+        "base_input_gradient": "decoded_forward_weight_bf16",
+        "native_mlp_modules": [name for name, _ in native],
+        "quantized_modules": [name for name, _ in native],
+        "non_mlp_base_storage": "bf16",
+        "reference_weights_retained": True,
+    }
+
+
+def validate_fp4_mlp_lora_config(student: dict[str, Any]) -> bool:
+    """Permit explicit mixed LoRA and preserve historical QLoRA loading."""
+    quantization = student.get("quantization", {})
+    enabled = quantization.get("fp4_mlp_lora", False)
+    if type(enabled) is not bool:
+        raise ValueError("fp4_mlp_lora must be boolean")
+    if enabled and not (
+        quantization.get("mlp_precision") == "fouroversix"
+        and not quantization.get("enabled", True)
+        and not quantization.get("full_bf16_lora", False)
+        and quantization.get("fp4_backward_mode") == "dequantized_bf16"
+        and quantization.get("fp4_row_scaled_activations") is True
+        and quantization.get("fp4_activation_selector", "strict") == "strict"
+        and student.get("model_loader") == "causal_lm"
+        and student.get("finetuning_mode") == "lora"
+    ):
+        raise ValueError(
+            "FP4 MLP LoRA requires unquantized causal loading, "
+            "per-token FP4 and BF16 backward"
+        )
+    return enabled

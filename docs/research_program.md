@@ -168,3 +168,8 @@ The authorized continuation completes both 20-update trajectories: measured FA4
 updates take 20.24% less time (5.12363 to 4.08648 seconds), with matched partitions
 and tokens. Fresh FA4 checks make total invocation time longer; reverse-order
 replication and quality validation remain required before changing the default.
+
+The [native FP4 MLP LoRA screen](findings/b200_fp4_mlp_lora.md) revisits the
+prior FP4 path with BF16 non-MLP components and no k-bit preparation. Local
+native arithmetic and row scaling pass; the new whole-model packed precision
+combination is undergoing fresh validation before throughput claims.

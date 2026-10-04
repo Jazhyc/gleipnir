@@ -3026,6 +3026,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     full_bf16_lora = bool(
         OmegaConf.select(cfg, "student.quantization.full_bf16_lora", default=False)
     )
+    from gleipnir.bf16_lora import validate_fp4_mlp_lora_config
+
+    fp4_mlp_lora = validate_fp4_mlp_lora_config(cfg.student)
     if full_bf16_lora and (
         quantization_enabled
         or mlp_precision != "bf16"
@@ -3033,7 +3036,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         or model_loader != "causal_lm"
     ):
         raise ValueError("full BF16 LoRA requires unquantized causal LoRA training")
-    if mlp_precision != "nf4" and not quantization_enabled and not full_bf16_lora:
+    if (
+        mlp_precision != "nf4"
+        and not quantization_enabled
+        and not (full_bf16_lora or fp4_mlp_lora)
+    ):
         raise ValueError("selective MLP precision requires the QLoRA loading path")
     model_kwargs: dict[str, Any] = {"torch_dtype": torch.bfloat16}
     attention_implementation = OmegaConf.select(cfg, "student.attn_implementation")
@@ -3287,6 +3294,13 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             is_trainable=True,
         )
     mlp_precision_metadata = None
+    if fp4_mlp_lora:
+        from gleipnir.bf16_lora import bf16_lora_metadata
+
+        quantization_metadata["original_bf16_lora_loading"] = bf16_lora_metadata(model)
+        # Native packed FP4 weights are constructed on CUDA before Trainer's
+        # usual device placement; the unquantized loader initially uses CPU.
+        model.to(torch.device("cuda", torch.cuda.current_device()))
     if (
         OmegaConf.select(cfg, "student.quantization.mlp_precision", default=None)
         is not None
@@ -3348,6 +3362,15 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
 
         quantization_metadata["full_bf16_lora"] = bf16_lora_metadata(model)
         print(f"full_bf16_lora={quantization_metadata['full_bf16_lora']}", flush=True)
+    if fp4_mlp_lora:
+        from gleipnir.bf16_lora import fp4_mlp_lora_metadata
+
+        quantization_metadata.update(
+            effective_base_quantization="native_fp4_mlp_only",
+            loading_backend="unquantized_causal_lm",
+            fp4_mlp_lora=fp4_mlp_lora_metadata(model),
+        )
+        print(f"fp4_mlp_lora={quantization_metadata['fp4_mlp_lora']}", flush=True)
     eager_mlp_interface = bool(
         OmegaConf.select(cfg, "student.training.eager_mlp_interface", default=False)
     )
@@ -3876,7 +3899,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             not adaptive_enabled
             or world_size != 1
             or finetuning_mode != "lora"
-            or not (quantization_enabled or full_bf16_lora)
+            or not (quantization_enabled or full_bf16_lora or fp4_mlp_lora)
         ):
             raise ValueError(
                 "FlashQLA recipe requires single-device adaptive NF4 or BF16 LoRA"
@@ -3935,6 +3958,12 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         packing_metadata["initial_master_sha256"] = tensor_digest(
             [p for p in model.parameters() if p.requires_grad]
         )
+        expected_master = cfg.student.training.get("expected_initial_master_sha256")
+        if (
+            expected_master
+            and packing_metadata["initial_master_sha256"] != expected_master
+        ):
+            raise ValueError("initial packed master identity differs from contract")
 
         def check_packing(*, compiled):
             from gleipnir.packed_training import record_packing_canary
@@ -4272,6 +4301,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         print(f"packing_preflight={packing_metadata['preflight']}", flush=True)
 
     train_output = trainer.train()
+    native_mlp_calls = None
+    if fp4_mlp_lora:
+        from gleipnir.fouroversix_training import native_call_counts
+
+        native_mlp_calls = native_call_counts(model)
     if packing_enabled:
         packing_metadata["final_master_sha256"] = tensor_digest(
             [p for p in model.parameters() if p.requires_grad]
@@ -4468,6 +4502,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     "quantization": quantization_metadata,
                     "sequence_packing": packing_metadata,
                     "mlp_precision": mlp_precision_metadata,
+                    "native_mlp_calls": native_mlp_calls,
                     "flash_linear_attention": {
                         "available": fla_available,
                         "required": require_fla,

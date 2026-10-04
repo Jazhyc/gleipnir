@@ -4,9 +4,6 @@ from __future__ import annotations
 
 import argparse
 import json
-import math
-import os
-import statistics
 import subprocess
 import sys
 import time
@@ -14,39 +11,19 @@ from pathlib import Path
 
 import yaml
 
-from gleipnir.flashqla_training import flashqla_environment
-from gleipnir.monitoring_systems_screen import gpu_environment, sha256_file
+from gleipnir.monitoring_systems_screen import sha256_file
 from gleipnir.monitoring_training_command import training_command
-from gleipnir.qwen35_fast_training import (
-    DEFAULT_CAUSAL_CONV1D_TARGET,
-    DEFAULT_FLA_TARGET,
-    DEFAULT_TRITON_TARGET,
-    causal_conv1d_environment,
-    fla_environment,
-    triton_environment,
-)
+from gleipnir.packed_benchmark import benchmark_environment as packed_environment
+from gleipnir.packed_benchmark import summarize as summarize_trajectory
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
 def benchmark_environment(config: dict) -> dict[str, str]:
     """Use the same pinned overlays and existing persistent caches for every stage."""
-    environment = flashqla_environment(
-        triton_environment(
-            DEFAULT_TRITON_TARGET,
-            causal_conv1d_environment(
-                DEFAULT_CAUSAL_CONV1D_TARGET,
-                fla_environment(DEFAULT_FLA_TARGET, dict(os.environ)),
-            ),
-        )
+    return packed_environment(
+        {**config, "kernel_overlays": [config["fa4_overlay"]]}, ROOT
     )
-    environment["PYTHONPATH"] += ":" + str(ROOT / config["fa4_overlay"])
-    environment = gpu_environment(environment, 0, ROOT / config["compiler_cache"])
-    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED"] = "1"
-    environment["FLASH_ATTENTION_CUTE_DSL_CACHE_DIR"] = str(ROOT / config["fa4_cache"])
-    environment["FLA_DISABLE_BACKEND_DISPATCH"] = "1"
-    environment["OMP_NUM_THREADS"] = "4"
-    return environment
 
 
 def run_native_canary(logs: Path, output: Path, environment: dict[str, str]) -> None:
@@ -98,62 +75,8 @@ def benchmark_job(config: dict, source: dict, recipe: dict, backend: str) -> dic
 
 
 def summarize(metadata: dict, warmup: int) -> dict:
-    """Count every measured update and preserve its physical execution contract."""
-    durations = metadata["optimizer_step_timing"]["durations_seconds"]
-    if len(durations) != 20 or metadata["training_state"]["global_step"] != 20:
-        raise ValueError("incomplete benchmark trajectory")
-    if any(not math.isfinite(t) or t <= 0 for t in durations):
-        raise ValueError("nonfinite/nonpositive benchmark duration")
-    packing = metadata["sequence_packing"]
-    if not packing.get("startup_validation"):
-        if not packing["preflight"]["passed"] or not all(
-            packing[key]["passed"]
-            or packing[key].get("accepted_for_learning_comparison", False)
-            for key in ["eager_canary", "compiled_canary"]
-        ):
-            raise ValueError(
-                "fresh packing gates were not passed or explicitly accepted"
-            )
-    if (
-        packing["initial_master_sha256"] == packing["final_master_sha256"]
-        or metadata["quantization"]["enabled"]
-        or metadata["checkpointed_layer_indices"]
-    ):
-        raise ValueError("benchmark precision/update/checkpoint contract drift")
-    records = metadata["adaptive_microbatching"]["records"]
-    if any(r["tokens"] != r["padded_tokens"] for r in records):
-        raise ValueError("benchmark introduced padding")
-    steady = durations[warmup:]
-    return {
-        "durations_seconds": durations,
-        "measured_total_seconds": sum(steady),
-        "measured_mean_seconds": statistics.mean(steady),
-        "all_update_seconds": sum(durations),
-        "trainer_loop_seconds": metadata["train_metrics"]["train_runtime"],
-        "peak_allocated_gib": metadata["peak_cuda_memory_allocated_bytes"] / 2**30,
-        "physical_contract": [
-            {
-                k: row[k]
-                for k in ["update", "logical_indices", "tokens", "padded_tokens"]
-            }
-            for row in records
-        ],
-        "attention": {
-            k: packing.get(k)
-            for k in [
-                "full_attention",
-                "attention_backend",
-                "attention_version",
-            ]
-        },
-        "startup_validation": metadata.get("startup_validation"),
-        "initial_master_sha256": packing["initial_master_sha256"],
-        "compiled": metadata["selective_torch_compile"],
-        "packing_gates": {
-            key: packing.get(key)
-            for key in ["eager_canary", "compiled_canary", "preflight"]
-        },
-    }
+    """Preserve explicit FA4 learning acceptance separately from strict gates."""
+    return summarize_trajectory(metadata, warmup, accept_learning=True)
 
 
 def main() -> None:

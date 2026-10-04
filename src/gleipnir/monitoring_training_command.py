@@ -102,12 +102,30 @@ def training_command(job: dict[str, Any]) -> list[str]:
                 "++student.quantization.full_bf16_lora=true",
             ]
         )
+    if job.get("fp4_mlp_lora", False):
+        command.extend(
+            [
+                "student.quantization.enabled=false",
+                "++student.quantization.mlp_precision=fouroversix",
+                "++student.quantization.full_bf16_lora=false",
+                "++student.quantization.fp4_mlp_lora=true",
+            ]
+        )
+        for key in (
+            "fp4_backward_mode",
+            "fp4_row_scaled_activations",
+            "fp4_fused_row_scaling",
+        ):
+            value = job[key]
+            encoded = str(value).lower() if isinstance(value, bool) else str(value)
+            command.append(f"++student.quantization.{key}={encoded}")
     for key in (
         "sequence_packing",
         "packing_compile_cache_limit",
         "packed_attention_backend",
         "packed_attention_version",
         "packing_learning_gradient_tolerance",
+        "expected_initial_master_sha256",
     ):
         if key in job:
             value = job[key]

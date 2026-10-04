@@ -10,7 +10,7 @@ from typing import Any
 
 import torch
 
-from gleipnir.bf16_lora import configure_bf16_reductions
+from gleipnir.bf16_lora import configure_bf16_reductions, validate_fp4_mlp_lora_config
 from gleipnir.packed_sequences import (
     collate_packed_monitoring,
     installed_segmented_sdpa,
@@ -55,6 +55,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     if not enabled:
         return False
     quantization = student.get("quantization", {})
+    fp4_mlp_lora = validate_fp4_mlp_lora_config(student)
     compile_policy = training.get("selective_torch_compile_policy")
     supported_compile_policy = compile_policy == "full_attention_and_linear_shell" or (
         compile_policy == "checkpointed_full_attention_and_linear_shell"
@@ -62,9 +63,9 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         and training.get("nonreentrant_checkpointing") is True
     )
     if not (
-        quantization.get("full_bf16_lora")
+        (quantization.get("full_bf16_lora") or fp4_mlp_lora)
         and not quantization.get("enabled", True)
-        and quantization.get("mlp_precision") == "bf16"
+        and (quantization.get("mlp_precision") == "bf16" or fp4_mlp_lora)
         and student.get("model_loader") == "causal_lm"
         and student.get("finetuning_mode") == "lora"
         and student.get("attn_implementation") == "sdpa"
@@ -95,6 +96,8 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     validate_learning_tolerance(tolerance)
     if tolerance is not None and training.get("startup_validation_reference"):
         raise ValueError("packing learning acceptance requires fresh recorded gates")
+    if fp4_mlp_lora and training.get("startup_validation_reference"):
+        raise ValueError("FP4 MLP packing requires fresh startup validation")
     backend = training.get("packed_attention_backend", "sdpa")
     version = training.get("packed_attention_version")
     if backend not in {"sdpa", "flash_attention_4"} or (
