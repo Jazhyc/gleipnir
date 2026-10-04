@@ -1,5 +1,29 @@
 # FlashAttention 4 on the packed BF16 B200 recipe
 
+Default update, 2026-10-04: after reviewing the completed FA4 and FP4 screens,
+the user explicitly selected BF16 LoRA with FA4 as the standard. The historical
+screen contracts below retain their original SDPA control via
+`qwen35_4b_b200_packed_sdpa`; this default change does not alter their timings.
+See the [recipe decision](../../docs/decisions/b200_packed_bf16_training_recipe.md).
+The earlier prospective replication criterion below is superseded by that user
+selection; replication and held-out quality evidence remain uncollected.
+
+The default integration smoke checks two ordinary updates from the frozen initial
+adapter and cohort, reusing the completed checksum-bound FA4 receipt. Require
+native FA4 metadata, no checkpointing, zero padding, finite gradients, a changed
+FP32 master, and explicit `performed_this_run=false` reused checks. Stop on
+receipt, kernel, input or master drift. It launches no teacher requests or quality
+evaluation and makes no new warmed-throughput claim:
+
+```bash
+source .cache-runtime.env
+.venv/bin/python -m experiments.b200_bf16_fa4.default_recipe_smoke
+```
+
+Artifacts: `results/b200_fa4_default_smoke/`; logs:
+`logs/runpod/b200_fa4_default/`. Startup is monitored during this active turn;
+there is no in-chat scheduler available for follow-ups after it ends.
+
 Hypothesis: replacing the eight full-attention layers' segmented causal SDPA
 calls with one native FA4 variable-length call per packed row reduces training
 time now that the frozen base is unquantized BF16. The 24 FlashQLA layers,

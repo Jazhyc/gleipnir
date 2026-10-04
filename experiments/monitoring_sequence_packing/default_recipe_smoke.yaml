@@ -1,6 +1,6 @@
 source_jobs: results/b200_adaptive_microbatching/jobs.jsonl
 condition_source: singleton
-profile: src/gleipnir/configs/systems_screen/qwen35_4b_b200_default.yaml
+profile: src/gleipnir/configs/systems_screen/qwen35_4b_b200_packed_sdpa.yaml
 initial_adapter: results/fp4_row_aot_training/initial_adapter
 expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
 output: results/bf16_packed_default_smoke

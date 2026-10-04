@@ -283,10 +283,13 @@ protocols and should only be used for an explicitly requested replay.
 ## Selected default and ordinary Trainer validation
 
 The user selected packed BF16 LoRA without model checkpointing as the B200
-training default. Use `qwen35_4b_b200_default` for newly authored training jobs;
+training default, updated on 2026-10-04 to native FA4 full attention by explicit
+user selection. Use `qwen35_4b_b200_default` for newly authored training jobs;
 see the [decision](../../docs/decisions/b200_packed_bf16_training_recipe.md).
-Ordinary training uses the same packed collator/router and example weighting,
-with strict eager/compiled isolation gates and longest-actual-input preflight.
+Ordinary training uses the same packing boundaries and example weighting, with
+the checksum-bound FA4 validation receipt reused for compatible runs. Fresh
+checks retain strict results and the separate user-accepted 10% FA4 gradient
+ceiling. The historical smoke below stays on `qwen35_4b_b200_packed_sdpa`.
 Historical paired screen configurations above remain reproduction contracts.
 
 Hypothesis for the integration smoke: the ordinary Trainer preserves the tested

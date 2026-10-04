@@ -412,6 +412,29 @@ def validate_training_metadata(
     require_canary: bool = False,
 ) -> None:
     """Validate common kernels, batch, explicit expectations, and completion."""
+    if metadata.get("startup_validation"):
+        from gleipnir.validated_startup import (
+            reused_diagnostic_view,
+            validation_reference,
+        )
+
+        path = Path(job["startup_validation_reference"])
+        if not path.is_absolute():
+            path = ROOT / path
+        reference = validation_reference(
+            path,
+            packed_attention_backend=job.get("packed_attention_backend", "sdpa"),
+            packed_attention_version=job.get("packed_attention_version"),
+            learning_gradient_tolerance=job.get("packing_learning_gradient_tolerance"),
+            expected_sha256=job.get("startup_validation_reference_sha256"),
+        )
+        if (
+            metadata["startup_validation"]["reference_sha256"]
+            != reference["reference_sha256"]
+        ):
+            raise ValueError("reused startup validation identity drift")
+        # Use the trusted file's diagnostics, never fabricated embedded passes.
+        metadata = reused_diagnostic_view({**metadata, "startup_validation": reference})
     expected_batch = {
         "micro_batch_size": job["micro_batch_size"],
         "gradient_accumulation_steps": job["gradient_accumulation_steps"],
@@ -487,11 +510,24 @@ def validate_training_metadata(
             raise ValueError("adaptive gradient parity did not pass")
     if job.get("sequence_packing", False):
         packing_metadata = metadata.get("sequence_packing", {})
-        if not packing_metadata.get("enabled") or not all(
-            packing_metadata.get(key, {}).get("passed") is True
-            for key in ["eager_canary", "compiled_canary", "preflight"]
-        ):
+        from copy import deepcopy
+
+        from gleipnir.packed_training_screen import _accept_canary
+
+        if not packing_metadata.get("enabled") or not packing_metadata.get(
+            "preflight", {}
+        ).get("passed"):
             raise ValueError("packed training isolation/preflight gates did not pass")
+        for key in ("eager_canary", "compiled_canary"):
+            receipt = packing_metadata.get(key, {})
+            if receipt.get("passed") is not True:
+                if job.get("packing_learning_gradient_tolerance") is None:
+                    raise ValueError(
+                        "packed training isolation/preflight gates did not pass"
+                    )
+                _accept_canary(
+                    deepcopy(receipt), job.get("packing_learning_gradient_tolerance")
+                )
     if metadata.get("training_batch") != expected_batch:
         raise ValueError("training batch metadata drifted")
     kernels = config["kernels"]

@@ -34,6 +34,16 @@ def test_selected_profile_composes_and_forwards_the_backend():
         "full_bf16_lora": True,
         "sequence_packing": True,
         "packing_compile_cache_limit": 64,
+        "packed_attention_backend": "flash_attention_4",
+        "packed_attention_version": "4.0.0b33",
+        "packing_learning_gradient_tolerance": 0.10,
+        "startup_validation_reference": (
+            "results/b200_bf16_fa4_accepted/flash_attention_4/"
+            "causal_adapter/training_metadata.json"
+        ),
+        "startup_validation_reference_sha256": (
+            "185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364"
+        ),
         "selective_torch_compile_canary_tokens": 256,
         "gradient_checkpointing": False,
         "gradient_checkpointing_policy": "all",
@@ -50,6 +60,10 @@ def test_selected_profile_composes_and_forwards_the_backend():
         assert "++student.quantization.full_bf16_lora=true" in command
         assert "++student.training.sequence_packing=true" in command
         assert "++student.training.packing_compile_cache_limit=64" in command
+        assert (
+            "++student.training.packed_attention_backend=flash_attention_4" in command
+        )
+        assert "++student.training.packed_attention_version=4.0.0b33" in command
         assert "student.training.gradient_checkpointing=false" in command
         assert "++student.training.gated_delta_backend=flashqla" in command
         assert "++student.training.gated_delta_parity_policy=selected_finite" in command

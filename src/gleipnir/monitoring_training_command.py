@@ -182,6 +182,10 @@ def training_command(job: dict[str, Any]) -> list[str]:
     )
     if reference := job.get("startup_validation_reference"):
         command.append(f"++student.training.startup_validation_reference={reference}")
+        if digest := job.get("startup_validation_reference_sha256"):
+            command.append(
+                f"++student.training.startup_validation_reference_sha256={digest}"
+            )
     if "decision_tokens" in job:
         command.append(
             "++student.training.decision_tokens=" + json.dumps(job["decision_tokens"])

@@ -3879,12 +3879,40 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         reference_path = Path(str(startup_reference))
         if not reference_path.is_absolute():
             reference_path = root / reference_path
-        startup_validation = validation_reference(reference_path)
+        startup_validation = validation_reference(
+            reference_path,
+            packed_attention_backend=cfg.student.training.get(
+                "packed_attention_backend", "sdpa"
+            ),
+            packed_attention_version=cfg.student.training.get(
+                "packed_attention_version"
+            ),
+            learning_gradient_tolerance=cfg.student.training.get(
+                "packing_learning_gradient_tolerance"
+            ),
+            expected_sha256=cfg.student.training.get(
+                "startup_validation_reference_sha256"
+            ),
+            verify_runtime=True,
+        )
         if (
             startup_validation["model"] != str(cfg.student.model)
             or startup_validation["model_revision"] != model_revision
         ):
             raise ValueError("validation reference model identity drift")
+        if startup_validation["attention_backend"] == "flash_attention_4" and (
+            not full_bf16_lora
+            or gradient_checkpointing_requested
+            or int(cfg.student.max_length) > 29696
+            or int(args.per_device_train_batch_size) != 32
+            or int(args.gradient_accumulation_steps) != 1
+            or adaptive_policy.max_padded_tokens != 16384
+            or adaptive_policy.max_micro_batch_size != 8
+            or selective_torch_compile_policy != "full_attention_and_linear_shell"
+        ):
+            raise ValueError(
+                "FA4 validated precision/batch/context changed; use fresh validation"
+            )
         print(
             "startup_validation=reused; beginning training without repeated probes",
             flush=True,

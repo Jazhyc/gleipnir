@@ -81,6 +81,10 @@ def main() -> None:
             from gleipnir.flashqla_training import flashqla_environment
 
             environment = flashqla_environment(environment)
+        if job.get("packed_attention_backend") == "flash_attention_4":
+            from gleipnir.attention_backends import packed_fa4_environment
+
+            environment = packed_fa4_environment(environment, ROOT)
         subprocess.run(command, cwd=ROOT, env=environment, check=True)
     manifest = rebase_adapter(causal_dir, Path(job["model_dir"]))
     print(

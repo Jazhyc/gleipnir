@@ -1,4 +1,4 @@
-# User-selected packed BF16 LoRA B200 default, 2026-10-04; full attention uses FA4.
+# Historical packed BF16/SDPA B200 profile selected 2026-10-02.
 # See docs/decisions/b200_packed_bf16_training_recipe.md.
 # Inherit the common kernel/optimizer contract; keep historical B200 profiles frozen.
 defaults:
@@ -6,8 +6,7 @@ defaults:
   - _self_
 
 gpus: 1
-maximum_unique_graphs: 32
-compiler_cache_root: .cache/training/shared
+compiler_cache_root: .cache/training/qwen35_4b_b200_fa4
 selection:
   rows: 320
 
@@ -19,11 +18,6 @@ recipe:
   full_bf16_lora: true
   sequence_packing: true
   packing_compile_cache_limit: 64
-  packed_attention_backend: flash_attention_4
-  packed_attention_version: 4.0.0b33
-  packing_learning_gradient_tolerance: 0.10
-  startup_validation_reference: results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json
-  startup_validation_reference_sha256: 185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364
   gated_delta_backend: flashqla
   gated_delta_parity_policy: selected_finite
   selective_torch_compile_policy: full_attention_and_linear_shell
@@ -64,13 +58,9 @@ metadata_expectations:
   adaptive_microbatching.require_finite_gradients: true
   adaptive_microbatching.sequence_packing: true
   sequence_packing.enabled: true
-  sequence_packing.attention_backend: flash_attention_4
-  sequence_packing.attention_version: 4.0.0b33
-  sequence_packing.full_attention: varlen_causal_flash_attention_4
-  sequence_packing.learning_gradient_tolerance: 0.10
   sequence_packing.max_packed_tokens: 16384
-  sequence_packing.eager_canary.accepted_for_learning_comparison: true
-  sequence_packing.compiled_canary.accepted_for_learning_comparison: true
+  sequence_packing.eager_canary.passed: true
+  sequence_packing.compiled_canary.passed: true
   sequence_packing.preflight.passed: true
   sequence_packing.bf16_matmul.allow_reduced_precision: false
   sequence_packing.bf16_matmul.allow_split_k: false

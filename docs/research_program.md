@@ -162,12 +162,14 @@ kernel check but fails whole-model eager packing gradient parity at 8.29% agains
 the unchanged 5% limit. The replay shows zero cross-example leakage; differences
 begin at the first full-attention layer. The user explicitly authorized a separate
 timing continuation with a 10% learning acceptance ceiling and preserved strict
-results. The packed BF16 default retains segmented SDPA full attention. The
+results. The user subsequently selected native FA4 as the packed BF16 default
+after reviewing the completed timing and FP4 screens. The
 user-authorized NC2 B200 remains running with its workspace and shared caches.
 The authorized continuation completes both 20-update trajectories: measured FA4
 updates take 20.24% less time (5.12363 to 4.08648 seconds), with matched partitions
 and tokens. Fresh FA4 checks make total invocation time longer; reverse-order
-replication and quality validation remain required before changing the default.
+replication and quality validation remain unperformed. The explicit user
+selection changes the execution default without asserting quality equivalence.
 
 The [native FP4 MLP LoRA screen](findings/b200_fp4_mlp_lora.md) revisits the
 prior FP4 path with BF16 non-MLP components and no k-bit preparation. Local

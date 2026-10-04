@@ -94,18 +94,26 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     validate_compile_cache_limit(training.get("packing_compile_cache_limit", 64))
     tolerance = training.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(tolerance)
-    if tolerance is not None and training.get("startup_validation_reference"):
+    backend = training.get("packed_attention_backend", "sdpa")
+    if (
+        tolerance is not None
+        and training.get("startup_validation_reference")
+        and backend != "flash_attention_4"
+    ):
         raise ValueError("packing learning acceptance requires fresh recorded gates")
     if fp4_mlp_lora and training.get("startup_validation_reference"):
         raise ValueError("FP4 MLP packing requires fresh startup validation")
-    backend = training.get("packed_attention_backend", "sdpa")
     version = training.get("packed_attention_version")
     if backend not in {"sdpa", "flash_attention_4"} or (
         (backend == "flash_attention_4") != (version is not None)
     ):
         raise ValueError("packed attention requires an explicit supported version")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
-        raise ValueError("FA4 packing requires fresh startup validation")
+        if tolerance != 0.10 or not training.get("startup_validation_reference_sha256"):
+            raise ValueError(
+                "FA4 reuse requires a bound receipt; "
+                "otherwise use fresh startup validation"
+            )
     return True
 
 

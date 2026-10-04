@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from pathlib import Path
 
+from gleipnir.attention_backends import packed_fa4_environment
 from gleipnir.flashqla_training import flashqla_environment
 from gleipnir.monitoring_systems_screen import gpu_environment
 from gleipnir.qwen35_fast_training import (
@@ -53,6 +54,7 @@ def training_environment(
     env = gpu_environment(
         env, 0, training_cache(root, cache_name, isolated_cache=isolated_cache)
     )
+    env = packed_fa4_environment(env, root)
     env.update(
         FLA_DISABLE_BACKEND_DISPATCH="1",
         OMP_NUM_THREADS="4",

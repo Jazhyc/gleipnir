@@ -59,8 +59,9 @@ and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
 The user-selected recipe for future single-B200 Qwen3.5-4B training is
 `systems_screen@_global_: qwen35_4b_b200_default`: packed BF16 LoRA with FP32
-master adapters, uniform FlashQLA, segmented causal SDPA, no model checkpointing
-and selectively compiled physical rows with a 16,384-token budget and logical
+master adapters, uniform FlashQLA, native variable-length FlashAttention 4,
+no model checkpointing and selectively compiled physical rows with a
+16,384-token budget and logical
 batch 32. See the
 [recipe decision](docs/decisions/b200_packed_bf16_training_recipe.md) for mandatory
 startup gates, supported scope and historical profiles.

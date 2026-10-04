@@ -4,6 +4,8 @@ from __future__ import annotations
 
 import hashlib
 import json
+from copy import deepcopy
+from importlib.metadata import version as package_version
 from pathlib import Path
 from typing import Any
 
@@ -14,12 +16,79 @@ from gleipnir.flashqla_training import (
 )
 
 
-def validation_reference(path: Path) -> dict[str, Any]:
+def validation_reference(
+    path: Path,
+    *,
+    packed_attention_backend: str | None = None,
+    packed_attention_version: str | None = None,
+    learning_gradient_tolerance: float | None = None,
+    expected_sha256: str | None = None,
+    verify_runtime: bool = False,
+) -> dict[str, Any]:
     """Load a completed packed BF16 recipe receipt for explicitly requested reuse."""
-    metadata = json.loads(path.read_text())
+    contents = path.read_bytes()
+    digest = hashlib.sha256(contents).hexdigest()
+    if expected_sha256 is not None and digest != expected_sha256:
+        raise ValueError("validation reference checksum drift")
+    metadata = json.loads(contents)
     packing = metadata["sequence_packing"]
     backend = metadata["gated_delta_backend"]
     checkpointing = metadata["gradient_checkpointing"]
+    attention = packing.get("attention_backend", "sdpa")
+    version = packing.get("attention_version")
+    tolerance = packing.get("learning_gradient_tolerance")
+    if packed_attention_backend is not None and (
+        (attention, version, tolerance)
+        != (
+            packed_attention_backend,
+            packed_attention_version,
+            learning_gradient_tolerance,
+        )
+    ):
+        raise ValueError("validation reference attention/acceptance policy drift")
+    if attention == "flash_attention_4":
+        if (
+            version != "4.0.0b33"
+            or tolerance != 0.10
+            or metadata["model"] != "Qwen/Qwen3.5-4B"
+            or checkpointing
+            or not metadata["quantization"].get("full_bf16_lora", {}).get("verified")
+        ):
+            raise ValueError("reference does not validate selected BF16 FA4 recipe")
+        from gleipnir.packed_training_screen import _accept_canary
+
+        for name in ("eager_canary", "compiled_canary"):
+            _accept_canary(deepcopy(packing[name]), tolerance)
+        packing_passed = packing["preflight"]["passed"]
+        if verify_runtime:
+            import torch
+
+            expected_packages = {
+                "torch": "2.11.0",
+                "transformers": "5.14.1",
+                "flash-attn-4": "4.0.0b33",
+                "nvidia-cutlass-dsl": "4.8.0",
+                "nvidia-cutlass-dsl-libs-cu13": "4.8.0",
+                "apache-tvm-ffi": "0.1.11",
+            }
+            if (
+                any(
+                    package_version(name) != expected
+                    for name, expected in expected_packages.items()
+                )
+                or torch.cuda.get_device_name() != "NVIDIA B200"
+            ):
+                raise ValueError(
+                    "FA4 validated hardware/software changed; "
+                    "use fresh startup validation"
+                )
+    elif attention == "sdpa" and version is None and tolerance is None:
+        packing_passed = all(
+            packing[k]["passed"]
+            for k in ("eager_canary", "compiled_canary", "preflight")
+        )
+    else:
+        raise ValueError("unsupported validation reference attention policy")
     if checkpointing and (
         metadata["model"] != "Qwen/Qwen3.5-9B"
         or metadata.get("gradient_checkpointing_policy") != "all"
@@ -36,10 +105,7 @@ def validation_reference(path: Path) -> dict[str, Any]:
         or backend["boundary_policy"] != "bf16_fp32_gates_norm"
         or backend["auto_cp"]
         or not backend["finite"]
-        or not all(
-            packing[k]["passed"]
-            for k in ("eager_canary", "compiled_canary", "preflight")
-        )
+        or not packing_passed
         or packing["max_packed_tokens"] != 16384
     ):
         raise ValueError("reference does not validate the selected packed BF16 recipe")
@@ -47,15 +113,51 @@ def validation_reference(path: Path) -> dict[str, Any]:
         "performed_this_run": False,
         "policy": "reuse_validated_recipe_at_user_request",
         "reference_path": str(path),
-        "reference_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "reference_sha256": digest,
         "model": metadata["model"],
         "model_revision": metadata["model_revision"],
         "gradient_checkpointing": checkpointing,
+        "attention_backend": attention,
+        "attention_version": version,
+        "learning_gradient_tolerance": tolerance,
+        "runtime_verified_this_run": verify_runtime
+        and attention == "flash_attention_4",
         "reference_packing": {
             k: packing[k] for k in ("eager_canary", "compiled_canary", "preflight")
         },
         "reference_backend": backend,
+        "reference_adaptive_canary": metadata.get("adaptive_microbatching", {}).get(
+            "gradient_canary"
+        ),
+        "reference_compile_canary": metadata.get("selective_torch_compile", {}).get(
+            "canary"
+        ),
     }
+
+
+def reused_diagnostic_view(metadata: dict[str, Any]) -> dict[str, Any]:
+    """Expose referenced diagnostic results for validation, preserving raw receipts."""
+    reference = metadata.get("startup_validation")
+    if not reference:
+        return metadata
+    result = {**metadata}
+    result["sequence_packing"] = {
+        **metadata["sequence_packing"],
+        **reference["reference_packing"],
+    }
+    result["gated_delta_backend"] = {
+        **metadata["gated_delta_backend"],
+        **reference["reference_backend"],
+    }
+    for section, key, reference_key in (
+        ("adaptive_microbatching", "gradient_canary", "reference_adaptive_canary"),
+        ("selective_torch_compile", "canary", "reference_compile_canary"),
+    ):
+        result[section] = {
+            **metadata.get(section, {}),
+            key: reference.get(reference_key),
+        }
+    return result
 
 
 def skipped_diagnostic(reference: dict, name: str) -> dict:

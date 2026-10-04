@@ -2,7 +2,21 @@
 
 from collections.abc import Callable
 from importlib.metadata import version
+from pathlib import Path
 from typing import Any
+
+
+def packed_fa4_environment(environment: dict[str, str], root: Path) -> dict[str, str]:
+    """Append isolated FA4 behind pinned FlashQLA dependencies and reuse its cache."""
+    result = dict(environment)
+    overlay = str(root / ".cache/kernels/fa4")
+    paths = [p for p in result.get("PYTHONPATH", "").split(":") if p and p != overlay]
+    result["PYTHONPATH"] = ":".join([*paths, overlay])
+    result["FLASH_ATTENTION_CUTE_DSL_CACHE_ENABLED"] = "1"
+    result["FLASH_ATTENTION_CUTE_DSL_CACHE_DIR"] = str(
+        root / ".cache/training/fa4_4.0.0b33_cute"
+    )
+    return result
 
 
 def attention_loader_kwargs(
