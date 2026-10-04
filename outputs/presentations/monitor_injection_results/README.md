@@ -5,16 +5,16 @@ Authors: Jeremias Ferrao and Michael Kenny.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening explains the inherited trajectory data, contrasts rationale
-SFT plus GRPO with binary logit distillation, and describes our regular 4B
-adapter recipe. Two charts compare it with Sinha et al.'s published 4B SFT+RL
-results on the six-source OOD suite. The final opening slide introduces the
-prompt-injection stress tests; their results narrative remains to be added.
+The current opening has two content slides plus the title, intended to take
+about one minute of a six-minute talk. The first contrasts rationale SFT plus
+GRPO with our direct binary-logit supervision. The second introduces teacher
+soft targets, the student adapter and its loss, then leads into the question of
+prompt-injection shortcuts. The injection-results narrative remains to be added.
 
-The OOD gain is substantial on the source mean, with an AgentDojo regression.
-The slides distinguish a recipe comparison from an objective-only ablation and
-state the reasoning-bearing training-input caveat. See [sources.md](sources.md)
-for exact provenance, metric definitions and comparison limits.
+Detailed source counts, training hyperparameters and standalone OOD comparison
+slides are omitted from this short introduction. The OOD chart assets remain
+available as supporting material. See [sources.md](sources.md) for provenance,
+input caveats, metric definitions and comparison limits.
 
 Read the compiled deck: [presentation.pdf](presentation.pdf). This PDF is
 committed alongside its source so readers can view it without installing LaTeX.

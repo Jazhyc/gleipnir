@@ -7,8 +7,9 @@ Every presentation must build after its folder is copied out of
 this repository. Include its own slides, preamble, assets, references and build
 instructions; avoid symlinks or inputs from elsewhere in the repository.
 
-The initial scaffold is [`monitor_injection_results/`](monitor_injection_results/).
-It contains a title slide and a draft outline, ready for the results narrative.
+The first deck is [`monitor_injection_results/`](monitor_injection_results/).
+It contains a title and a two-slide methods introduction for a six-minute talk;
+the injection-results narrative is still being developed.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
 
 ```text

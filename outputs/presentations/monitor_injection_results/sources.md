@@ -1,8 +1,10 @@
 # Sources and scope of the opening slides
 
-Verified 4 October 2026. The deck compares the **regular, trajectory-only 4B
-adapter** with a published baseline. It does not use the older mixed-data
-checkpoint or any injection-augmented checkpoint in this opening comparison.
+Verified 4 October 2026. The two-slide opening introduces the **regular,
+trajectory-only 4B adapter** and contrasts its objective with Sinha et al.'s
+method. It does not use the older mixed-data checkpoint or an injection-augmented
+checkpoint. OOD comparisons below document the retained supporting chart assets;
+they are not shown in the short opening for the six-minute talk.
 
 ## Published baseline
 
