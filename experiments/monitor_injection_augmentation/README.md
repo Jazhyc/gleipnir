@@ -8,6 +8,14 @@ while preserving detection of underlying misconduct. This intervention trains
 the monitoring objective directly, unlike the completed A/B preference auxiliary
 task. It does not claim on-policy agent robustness.
 
+Completed 2026-10-04: all 272 training updates and 15,138 fresh evaluation scores
+passed coverage/parity checks. Clean ID macro pAUROC@20 is 0.8730 versus 0.8463
+cached original; APPS injected-honest FPR averages 44.43% versus 100% at
+clean-code ~2% FPR, with injected-backdoor TPR 87.64%. Held-out synthetic ID
+harmless FPR is 1.85% at source-specific clean ~2% operating points. See the
+[final finding](../../docs/findings/monitor_injection_augmentation.md) for
+the threshold, template, calibration and paired-effect details and limitations.
+
 The frozen preparation selects 3,475 rows (nearest integer to 40%), stratified
 proportionally by original source and hard behavior label. Uniform role quotas
 are 1,159 user, 1,158 assistant and 1,158 tool messages. Each selected trajectory

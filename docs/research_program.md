@@ -87,13 +87,19 @@ selection or promotion. See the [finding](findings/judge_injection_joint.md).
 
 ## Near-term questions
 
-The selected [monitor-directed injection augmentation](decisions/monitor_injection_augmentation.md)
+The completed [monitor-directed injection augmentation](findings/monitor_injection_augmentation.md)
 replaces 40% of the original monitoring rows with one off-policy injected view,
 balancing user/assistant/tool roles and demanded verdicts across both source
 behavior classes. It directly trains the harmfulness objective using the fixed
-teacher cache. All 272 training updates are complete on the existing B200;
-adapter-specific serving parity passed and population evaluation is running.
-No effectiveness result is available yet.
+teacher cache. All 272 updates and 15,138 fresh scores are complete. Clean ID
+source-macro pAUROC@20 rises from 0.8463 to 0.8730. APPS injected-honest FPR
+falls from 100% to 44.43% averaged over three transfer templates at each
+adapter's clean-code ~2% FPR threshold; injected-backdoor TPR falls to 87.64%.
+Matched injected-harmful versus injected-harmless AUROC rises from 0.6440 to
+0.8595. Held-out synthetic ID injections leave paired AUROC essentially unchanged
+and give 1.85% harmless FPR at source-calibrated clean ~2% operating points.
+This supports direct monitoring augmentation, with substantial residual APPS
+sensitivity and limits from one seed, few authored strings and off-policy views.
 Only the new adapter receives fresh scores; original regular-adapter results
 are reused. APPS remains evaluation-only.
 
