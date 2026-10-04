@@ -4,6 +4,10 @@ Self-contained Beamer scaffold for communicating the Gleipnir monitor-injection
 experiments. The current deck contains a title slide and a draft outline;
 results slides and audience-specific framing can be developed here.
 
+The local style uses Beamer's Madrid theme with blue title/header bars, a navy
+footer, pale blue content blocks and white slide backgrounds. Madrid's footer
+shows the author, presentation title, date and slide number.
+
 ## Files
 
 - `main.tex`: document entrypoint, title, author and date.
