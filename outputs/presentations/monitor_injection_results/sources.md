@@ -190,3 +190,33 @@ source summary SHA-256 identities from historical `gleipnir-honest-controls-v1/
 {4b,9b}/regular/eval_neutral.metrics.json`. These controls support strong
 injection-text sensitivity under this benchmark, without identifying the learned
 mechanism or establishing a result for every possible injection.
+
+## Original adapters on JudgeDeceiver
+
+The fifth content slide uses the unchanged regular monitoring adapters under
+the original auxiliary A/B quality-judging prompt. It reports preference
+accuracy, not harmfulness accuracy or a false-positive rate. Correct preferences
+stay fixed across clean, preferred-answer-injected and disfavored-answer-injected
+views. Both answer orders are present; normalized p(B) >= 0.5 selects B.
+
+The frozen holdout has 4,188 variants: 504 clean, 1,842 preferred-injected and
+1,842 disfavored-injected, from 252 pairs and six original query groups. Source:
+`ShiJiawenwen/JudgeDeceiver@7cfc96af0272befd83220b1d7d3b0699d072ecbf`.
+Construction preference labels and upstream suffixes optimized for other judge
+interfaces are documented in `experiments/judge_injection_continuation/README.md`.
+This is our transformed auxiliary evaluation, not the original published protocol.
+
+Regular 4B accuracies are 99.40%, 58.36%, 95.98%; regular 9B accuracies are
+99.21%, 64.33%, 95.28%, respectively. Preferred-injection correct-to-wrong
+flip rates are 41.21% / 35.67%. Their asymmetry supports injection-driven
+avoidance in quality judging, without identifying a mechanism or proving
+sensitivity to every string resembling an injection. These original monitoring
+adapters did not train on JudgeDeceiver. The domain and decision surface differ
+from their monitoring training. Only six queries limit the scope of OOD claims.
+
+`assets/initial_judge_results.json` retains exact aggregate accuracies, counts
+and the SHA-256 of `results/augmented_judge_evaluation/summary.json`. That
+summary reuses verified historical regular-4B scores; regular-9B scores were
+first collected in the later transfer evaluation. The slide compares original
+weights only and does not imply the two sizes were evaluated simultaneously.
+No fresh scoring or training was performed for the presentation.

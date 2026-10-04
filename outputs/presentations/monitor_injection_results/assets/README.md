@@ -34,3 +34,6 @@ It contains aggregate metrics only and requires no external files to read.
 
 `harmless_injection_results.json` records the paired harmless-code control flag
 rates and historical source summary checksums for the following slide.
+
+`initial_judge_results.json` stores original-adapter JudgeDeceiver aggregate
+accuracies, population counts and source summary checksum.

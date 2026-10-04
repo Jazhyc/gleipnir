@@ -149,3 +149,31 @@
         even when the underlying code was harmless.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{Suspicion carried over to LLM-as-a-judge tasks}
+    On \textbf{JudgeDeceiver}, the original adapters chose the better
+    of two answers (A/B): an answer-quality task.
+    \medskip
+    We attached injections to either answer; the correct preference stayed fixed.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.35}
+        \begin{tabular}{lcc}
+            \toprule
+            Judging accuracy & Regular 4B & Regular 9B \\
+            \midrule
+            Clean answers & 99.40\% & 99.21\% \\
+            Better answer injected & \textbf{58.36\%} & \textbf{64.33\%} \\
+            Worse answer injected & 95.98\% & 95.28\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \bigskip
+
+    \begin{block}{Avoidance beyond the code benchmark}
+        Adding injection text made the adapters reject otherwise better answers.
+        The sensitivity carried over to a different task and payload source.
+    \end{block}
+\end{frame}

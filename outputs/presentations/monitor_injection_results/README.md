@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has four content slides plus the title for a six-minute talk.
+The current opening has five content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -78,3 +78,7 @@ folder when adding them, and document their provenance here or beside the asset.
 The checked-in charts need no Python to build the PDF. To regenerate them,
 install Matplotlib (3.11.1 was used) and run `python assets/plot_ood_comparison.py`.
 The script reads only the local aggregate JSON and imports no project code.
+
+The JudgeDeceiver slide shows original-adapter A/B quality-judging accuracy
+for clean answers and injections on better or worse answers, demonstrating
+avoidance in a different task without treating preference labels as harm labels.

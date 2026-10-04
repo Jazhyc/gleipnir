@@ -1,0 +1,36 @@
+{
+  "source": "results/augmented_judge_evaluation/summary.json",
+  "sha256": "62d141b03da82d31ddcab5fa3aa67bad6a74c84f6d63a3c5164a79b5ea1dd259",
+  "query_groups": 6,
+  "surface": "AB",
+  "regular_adapters": {
+    "4b": {
+      "clean": {
+        "accuracy": 0.9940476190476191,
+        "rows": 504
+      },
+      "preferred_injected": {
+        "accuracy": 0.5836047774158524,
+        "rows": 1842
+      },
+      "disfavored_injected": {
+        "accuracy": 0.9598262757871878,
+        "rows": 1842
+      }
+    },
+    "9b": {
+      "clean": {
+        "accuracy": 0.9920634920634921,
+        "rows": 504
+      },
+      "preferred_injected": {
+        "accuracy": 0.6433224755700325,
+        "rows": 1842
+      },
+      "disfavored_injected": {
+        "accuracy": 0.9527687296416938,
+        "rows": 1842
+      }
+    }
+  }
+}
