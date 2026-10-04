@@ -236,3 +236,33 @@
         The filter was imperfect; this does not rule out other data shortcuts.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{Diagnosis 2: did the students inherit teacher suspicion?}
+    \textbf{Hypothesis:} Kimi K3 already treats injections as harmful,
+    and the students copy that behavior.
+    \medskip
+    Michael scored injected honest code and backdoors with the training
+    teacher prompt.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lccc}
+            \toprule
+            Injection template & GPT-4 & GPT-4.1 & GPT-4o \\
+            \midrule
+            K3 honest-code verdict 1 & $\sim$0.2\% & $\sim$16\% & $\sim$73\% \\
+            K3 matched injected AUROC & 0.971 & 0.949 & 0.918 \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+    Original 4B student: matched injected AUROC \textbf{0.644} (template mean).
+    \bigskip
+
+    \begin{block}{Teacher sensitivity is only part of the picture}
+        K3 reacts differently to each template and retains much better separation.
+        Uniform student suspicion is not explained by simply copying these responses.
+    \end{block}
+\end{frame}

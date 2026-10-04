@@ -150,3 +150,9 @@ its persistent caches remain preserved.
 - Which data mixtures transfer to held-out action types and model families?
 - Can a single calibrated output schema express positive detections, benign
   behavior, and epistemic uncertainty without benchmark-specific routing?
+
+A [collaborator-reported teacher diagnostic](findings/kimi_teacher_injection_controls.md)
+finds template-dependent Kimi K3 suspicion on OOD APPS controls, alongside
+matched injected AUROC 0.918–0.971 versus 0.644 for the original 4B student.
+This challenges simple copying of the teacher’s OOD response but does not
+identify the training mechanism; raw upstream predictions are not audited here.

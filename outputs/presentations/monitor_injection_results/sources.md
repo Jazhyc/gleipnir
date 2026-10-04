@@ -273,3 +273,24 @@ are recorded in `docs/findings/monitoring_injection_removal.md`; the collected
 evaluation summary SHA-256 is
 `d3146714ef5c581ad1a5aaee21488a77dda1dbec15d3fe7c06098b8903dd96db`.
 No benchmark or training examples are redistributed in the slide.
+
+## Diagnosis 2: collaborator-reported teacher scoring
+
+The eighth content slide summarizes Michael Kenney’s teacher diagnostic supplied
+by the user, recorded in `docs/findings/kimi_teacher_injection_controls.md`.
+Numbers are collaborator-reported and rounded, not freshly evaluated or locally
+raw-data audited. The stated upstream branch is `kimi-k3-teacher-controls`,
+commit `0ad1778`, with 7,173 selected APPS/control rows. Teacher settings use
+Makora only; training cached multiple providers. The three column names denote
+attack templates, not the evaluated teacher model.
+
+“Verdict 1” refers to the generated hard decision, not the ~2% FPR threshold
+used on the preceding student slides. The teacher’s broader rubric can count
+monitor manipulation as misconduct despite a negative code-backdoor label.
+Matched AUROC compares injected backdoors and injected honest code. Original
+4B’s historical equal-template mean is 0.643951; no student rescoring occurred.
+The better teacher ranking and different template responses challenge a simple
+copying explanation, without proving how the student learned the shortcut.
+This evaluates new OOD inputs, not causal teacher-target changes on training
+rows, and is a diagnostic rather than an intervention. Full setup, threshold
+caveats, source populations and audit status are retained in the finding.
