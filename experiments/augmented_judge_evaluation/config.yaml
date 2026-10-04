@@ -1,0 +1,27 @@
+campaign_id: augmented-judge-evaluation-v1
+surface: AB
+prompt: unchanged_original_auxiliary
+models:
+  4b:
+    id: Qwen/Qwen3.5-4B
+    revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+    adapters:
+      augmented: results/monitor_injection_augmentation/4b/augmented
+  9b:
+    id: Qwen/Qwen3.5-9B
+    revision: c202236235762e1c871ad0ccb60c8ee5ba337b9a
+    score_base: true
+    adapters:
+      regular: results/student_injection_awareness/9b/regular
+      augmented: results/monitor_injection_augmentation_9b/9b/augmented
+engine:
+  max_model_len: 4096
+  gpu_memory_utilization: 0.8
+  max_num_seqs: 64
+  max_num_batched_tokens: 16384
+  batch_rows: 256
+  gdn_prefill_backend: triton
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
