@@ -107,3 +107,6 @@ held-out quality judgments, but unchanged APPS injected-harmless alarms.
 Intervention 2 shows direct monitoring augmentation: 40% replacement with
 injected views and reused teacher targets. At 4B, matched APPS injected AUROC
 rises to 0.859 while injected-harmless flag rate falls to 44.43%.
+
+The augmentation table compares both 4B and 9B, including injected-backdoor
+TPR at clean-code ~2% FPR, emphasizing monitor-dependent benefits and tradeoffs.

@@ -377,3 +377,13 @@ with substantial APPS discrimination and false-alarm improvement. Earlier
 preference-only continuation also partially reduced APPS alarms (70.64%) but
 regressed ID; it is not shown here, so the deck does not assert this was the
 first intervention chronologically to change any APPS metric.
+
+The augmentation slide now also includes the completed 9B replication, from
+`docs/findings/monitor_injection_augmentation_9b.md`: original/augmented
+matched injected AUROC 0.658763/0.678591, injected-honest flags
+99.85%/83.36%, and injected-backdoor TPR 100%/98.25%. Corresponding 4B
+TPRs are 100%/87.64%. TPR applies to injected backdoors, not vanilla code,
+and FPR calibration uses clean honest code; the actual injected-honest FPR
+is the separate flag-rate row. All metrics are equal-template means.
+The same augmentation produces differing results across monitors; this does
+not establish a monotonic model-size effect.
