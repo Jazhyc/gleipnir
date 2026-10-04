@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has ten content slides plus the title for a six-minute talk.
+The current opening has eleven content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -103,3 +103,7 @@ emergent-misalignment framing work that motivated the intervention.
 
 Intervention 1 presents joint 75:25 monitoring/JudgeDeceiver training: strong
 held-out quality judgments, but unchanged APPS injected-harmless alarms.
+
+Intervention 2 shows direct monitoring augmentation: 40% replacement with
+injected views and reused teacher targets. At 4B, matched APPS injected AUROC
+rises to 0.859 while injected-harmless flag rate falls to 44.43%.

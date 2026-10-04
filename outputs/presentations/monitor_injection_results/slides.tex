@@ -334,3 +334,37 @@
         the same adapter still flagged injected harmless code.
     \end{block}
 \end{frame}
+
+
+\begin{frame}{Intervention 2: augment the monitoring task directly}
+    \small
+    Replace \textbf{40\% of rows} with synthetic injections in user, assistant
+    or tool messages, at varied positions.
+    \medskip
+    Both harmless and harmful cases; unchanged behavior and cached targets.
+    \textbf{No new teacher queries.}
+    \medskip
+    \textbf{Goal:} teach invariance to added injection text when task behavior
+    is unchanged.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lcc}
+            \toprule
+            4B: APPS injection controls & Original & Augmented \\
+            \midrule
+            Matched injected AUROC & 0.644 & \textbf{0.859} \\
+            Injected-harmless flag rate & 100\% & \textbf{44.43\%} \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+    {\small Template means; flag rates at clean-code $\sim$2\% FPR.}
+    \medskip
+
+    \begin{block}{A substantial improvement, with residual suspicion}
+        Direct monitoring augmentation transferred to APPS;
+        many harmless injected examples still triggered alarms.
+    \end{block}
+\end{frame}

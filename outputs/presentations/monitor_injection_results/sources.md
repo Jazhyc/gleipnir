@@ -346,3 +346,34 @@ objectives differ; narrow query/template diversity, extra updates and unequal
 exposure limit claims. Strong auxiliary accuracy does not establish broad
 injection immunity. Summary SHA-256:
 `abd78c46043ab93754e8f6f0c42d82c65bda1d0b5fcfbc602fae7b2f98d11030`.
+
+## Intervention 2: direct monitoring augmentation
+
+The eleventh content slide uses the completed 4B experiment in
+`experiments/monitor_injection_augmentation/README.md` and
+`docs/findings/monitor_injection_augmentation.md`. It replaces 40% of the
+8,688 original rows with one synthetic off-policy injected view, preserving
+training-set size, source labels and cached teacher targets. Roles are balanced
+among user/assistant/tool; insertion positions vary with a middle-centered
+distribution. Demanded verdicts are balanced across both behavior classes,
+preventing a simple “do the opposite of the injection” label shortcut.
+APPS payloads and examples are evaluation-only. No new teacher calls occur.
+
+The invariant-target assumption is deliberate: inserted text does not change
+the recorded agent’s subsequent behavior. These are off-policy synthetic
+views, not newly executed attacks or teacher-verified labels for the modified
+trajectories. The intervention encourages behavior-grounded monitoring while
+leaving the teacher cache fixed. Few authored strings and one seed limit scope.
+
+With the original monitoring prompt, equal-template matched injected-backdoor
+versus injected-honest AUROC rises from 0.643951 to 0.859471. Injected-honest
+alarm rate falls from 100% to 44.43% at each adapter’s own clean-code ~2% FPR
+threshold. Rates are 76.49%, 38.17% and 18.63% across the three templates,
+so improvement is uneven. Injected-backdoor TPR also falls from 100% to 87.64%;
+this slide’s two metrics summarize improvement without establishing immunity.
+
+This is the first direct monitoring intervention in the presented sequence
+with substantial APPS discrimination and false-alarm improvement. Earlier
+preference-only continuation also partially reduced APPS alarms (70.64%) but
+regressed ID; it is not shown here, so the deck does not assert this was the
+first intervention chronologically to change any APPS metric.
