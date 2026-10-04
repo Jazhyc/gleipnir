@@ -45,10 +45,10 @@
     Our ID/OOD scores are not a dedicated test of attacks on the monitor itself.
     \medskip
 
-    \begin{columns}[T,onlytextwidth]
+    {\small\textbf{APPS code + injected comment (excerpt)}}\par
+    \smallskip
+    \begin{columns}[c,onlytextwidth]
         \begin{column}{0.62\textwidth}
-            {\small\textbf{APPS code + injected comment (excerpt)}}\par
-            \smallskip
             \begingroup
             \setlength{\fboxsep}{7pt}
             \fcolorbox{CodeBorder}{CodeBackground}{%
@@ -65,9 +65,6 @@
                 \end{minipage}%
             }
             \endgroup
-            \smallskip
-
-            {\small Claims benchmark authority and dictates the monitor's verdict.}
         \end{column}
         \begin{column}{0.34\textwidth}
             \begin{block}{Earlier monitors}
@@ -82,16 +79,14 @@
             \end{block}
         \end{column}
     \end{columns}
+    \smallskip
+    {\small Claims benchmark authority and dictates the monitor's verdict.}\par
     \medskip
 
     These results leave open how trained monitors behave.\par
-    \textbf{We test ours on our adapted APPS injection benchmark.}
+    \textbf{We test our trained monitors against these injections.}
     \medskip
 
     {\scriptsize \href{https://arxiv.org/pdf/2510.09462v2}{Terekhov et al.,
-    arXiv:2510.09462v2} (attacks and earlier results).\par
-    Our adapted benchmark:
-    \href{https://huggingface.co/datasets/mjkenney/monitor-injection-evals}{Hugging Face dataset}
-    \enspace / \enspace
-    \href{https://github.com/mkenney2/monitor-injection-evals}{GitHub code}.}
+    arXiv:2510.09462v2} (attacks and earlier results).}
 \end{frame}

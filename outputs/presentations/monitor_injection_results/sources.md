@@ -43,7 +43,7 @@ Terekhov et al., and matched neutral text. The honest-code supplement applies
 the same transferred injections to benign programs. It does not reproduce the
 paper's GPT-5-generated code population. The diagram shows one of those reused
 payload excerpts; the blue box reports the original paper's results, while the
-closing sentence identifies our adapted evaluation dataset.
+closing sentence motivates testing our trained monitors against those injections.
 
 The gap is specifically a dedicated evaluation of attacks on the monitor.
 It is not a claim that the ID/OOD populations contain no injections:
