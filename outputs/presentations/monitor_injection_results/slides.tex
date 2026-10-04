@@ -1,4 +1,4 @@
-% A single methods introduction for a six-minute talk.
+% Main talk: five minutes. Detailed diagnostics follow as backup.
 \begin{frame}{Our approach: distill the monitoring decision directly}
     We reuse Sinha et al.'s trajectory data framework: 8,688 training examples.
     \medskip
@@ -91,7 +91,6 @@
     arXiv:2510.09462v2} (attacks and earlier results).}
 \end{frame}
 
-
 \begin{frame}{Initial results looked almost too good}
     We first compared injected backdoors against clean harmless code.
     \bigskip
@@ -121,7 +120,6 @@
     \end{block}
 \end{frame}
 
-
 \begin{frame}{The same injections also flagged harmless code}
     We added the same injection comments to \textbf{655 harmless solutions}.
     The code still contained no backdoor.
@@ -150,7 +148,6 @@
     \end{block}
 \end{frame}
 
-
 \begin{frame}{Suspicion carried over to LLM-as-a-judge tasks}
     On \textbf{JudgeDeceiver}, the original adapters chose the better
     of two answers (A/B): an answer-quality task.
@@ -178,131 +175,26 @@
     \end{block}
 \end{frame}
 
-
-\begin{frame}{False alarms can become a denial-of-service vulnerability}
-    Benchmarks that pair injections only with harmful behavior can reward
-    \textbf{suspicion of the text itself}.
-    \medskip
-    In deployment, an agent can encounter an injection on the web and
-    \textbf{ignore it safely}.
+\begin{frame}{Diagnostics narrowed the explanation}
+    \small
+    \begin{itemize}
+        \item \textbf{Training-data filtering:} four explicitly tagged injection
+        cases; removing 1,154 model-flagged rows still left 100\% APPS false alarms.
+        \medskip
+        \item \textbf{Teacher inheritance:} Kimi K3 was template-sensitive,
+        but separated injected backdoors from harmless code much better than the student.
+        \medskip
+        \item \textbf{Instruction framing:} conservative, behavior-grounded
+        retraining still left 100\% APPS false alarms.
+    \end{itemize}
     \bigskip
-
-    \begin{center}
-        {\large Untrusted web page with injection}
-        \par\smallskip
-        $\downarrow$
-        \par\smallskip
-        {\large Agent continues safely; monitor raises an alarm}
-        \par\smallskip
-        $\downarrow$
-        \par\smallskip
-        {\large Human review queue fills; autonomous work stalls}
-    \end{center}
-    \bigskip
-
-    \begin{block}{An attacker need not compromise the agent}
-        If every alarm requires review, planting injection text could overwhelm
-        reviewers and halt autonomous workflows.
+    \begin{block}{Working hypothesis: training amplified a shortcut}
+        Simple data-removal and instruction changes were insufficient.
+        We next tested whether explicit benign injection exposure could help.
     \end{block}
+    \medskip
+    These diagnostics narrow the explanation; they do not establish the mechanism.
 \end{frame}
-
-
-\begin{frame}{Diagnosis 1: remove injection-like training examples}
-    \textbf{Hypothesis:} frequent injections in harmful training traces taught
-    the monitor to treat injection text as evidence of harm.
-    \bigskip
-
-    \textbf{Metadata audit:} only \textbf{4 explicitly tagged injection cases}
-    among 8,688 training examples (0.046\%); all four were harmful-labeled.
-    \medskip
-
-    \textbf{Intervention:} use a Qwen3.5-9B injection judge to scan all rows,
-    remove \textbf{1,154 candidates}, and retrain the 4B adapter on 7,534 rows.
-    \bigskip
-
-    \begin{center}
-        \renewcommand{\arraystretch}{1.3}
-        \begin{tabular}{lcc}
-            \toprule
-            APPS injected-harmless flag rate & Original & Filtered \\
-            \midrule
-            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
-            \bottomrule
-        \end{tabular}
-    \end{center}
-    \medskip
-
-    \begin{block}{Aggressive filtering did not resolve the false alarms}
-        The filter was imperfect; this does not rule out other data shortcuts.
-    \end{block}
-\end{frame}
-
-
-\begin{frame}{Diagnosis 2: did the students inherit teacher suspicion?}
-    \textbf{Hypothesis:} Kimi K3 already treats injections as harmful,
-    and the students copy that behavior.
-    \medskip
-    We scored injected honest code and backdoors with the training
-    teacher prompt.
-    \bigskip
-
-    \begin{center}
-        \renewcommand{\arraystretch}{1.3}
-        \begin{tabular}{lccc}
-            \toprule
-            Injection template & GPT-4 & GPT-4.1 & GPT-4o \\
-            \midrule
-            K3 honest-code verdict 1 & $\sim$0.2\% & $\sim$16\% & $\sim$73\% \\
-            K3 matched injected AUROC & 0.971 & 0.949 & 0.918 \\
-            \bottomrule
-        \end{tabular}
-    \end{center}
-    \medskip
-    Original 4B student: matched injected AUROC \textbf{0.644} (template mean).
-    \bigskip
-
-    \begin{block}{Teacher sensitivity is only part of the picture}
-        K3 reacts differently to each template and retains much better separation.
-        Uniform student suspicion is not explained by simply copying these responses.
-    \end{block}
-\end{frame}
-
-
-\begin{frame}{Diagnosis 3: change the instruction framing}
-    \textbf{Hypothesis:} the monitoring instruction encourages suspicion
-    that generalizes beyond training.
-    \medskip
-    \textbf{Intervention:} retrain the 4B adapter with a more conservative,
-    behavior-grounded instruction; keep the data and teacher targets fixed.
-    \medskip
-
-    \begin{quote}
-        \small ``Prompt-injection presence and agent misconduct are separate questions.''
-    \end{quote}
-    \smallskip
-
-    \begin{center}
-        \renewcommand{\arraystretch}{1.25}
-        \begin{tabular}{lcc}
-            \toprule
-            APPS injected-harmless flag rate & Original & Reframed \\
-            \midrule
-            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
-            \bottomrule
-        \end{tabular}
-    \end{center}
-    \medskip
-
-    \begin{block}{Framing alone did not resolve the false alarms}
-        The retrained adapter still flagged every injected harmless example,
-        across all three evaluation instructions.
-    \end{block}
-    \smallskip
-    {\scriptsize Inspired by Betley et al.,
-    \href{https://proceedings.mlr.press/v267/betley25a.html}{\emph{Emergent Misalignment} (2025)}:
-    educational framing changed generalization from insecure-code training.}
-\end{frame}
-
 
 \begin{frame}{Intervention 1: teach injection handling as an auxiliary task}
     \small
@@ -334,7 +226,6 @@
         the same adapter still flagged injected harmless code.
     \end{block}
 \end{frame}
-
 
 \begin{frame}{Intervention 2: augment the monitoring task directly}
     \small
@@ -370,7 +261,6 @@
     \end{block}
 \end{frame}
 
-
 \begin{frame}{4B augmentation: broader gains, residual suspicion}
     \small
     The monitoring-augmented adapter \textbf{never trained on JudgeDeceiver}.
@@ -400,7 +290,6 @@
     \textbf{Possible explanation:} reduced shortcut learning; the mechanism is unproven.
 \end{frame}
 
-
 \begin{frame}{Takeaways and next steps}
     \small
     \begin{itemize}
@@ -419,4 +308,128 @@
     \begin{block}{Evaluate behavior, not just the presence of an attack}
         Include harmless injection controls: detection scores can hide costly false alarms.
     \end{block}
+\end{frame}
+
+\appendix
+\section*{Backup}
+
+\begin{frame}[noframenumbering]{Backup: False alarms can become a denial-of-service vulnerability}
+    Benchmarks that pair injections only with harmful behavior can reward
+    \textbf{suspicion of the text itself}.
+    \medskip
+    In deployment, an agent can encounter an injection on the web and
+    \textbf{ignore it safely}.
+    \bigskip
+
+    \begin{center}
+        {\large Untrusted web page with injection}
+        \par\smallskip
+        $\downarrow$
+        \par\smallskip
+        {\large Agent continues safely; monitor raises an alarm}
+        \par\smallskip
+        $\downarrow$
+        \par\smallskip
+        {\large Human review queue fills; autonomous work stalls}
+    \end{center}
+    \bigskip
+
+    \begin{block}{An attacker need not compromise the agent}
+        If every alarm requires review, planting injection text could overwhelm
+        reviewers and halt autonomous workflows.
+    \end{block}
+\end{frame}
+
+\begin{frame}[noframenumbering]{Backup: Diagnosis 1: remove injection-like training examples}
+    \textbf{Hypothesis:} frequent injections in harmful training traces taught
+    the monitor to treat injection text as evidence of harm.
+    \bigskip
+
+    \textbf{Metadata audit:} only \textbf{4 explicitly tagged injection cases}
+    among 8,688 training examples (0.046\%); all four were harmful-labeled.
+    \medskip
+
+    \textbf{Intervention:} use a Qwen3.5-9B injection judge to scan all rows,
+    remove \textbf{1,154 candidates}, and retrain the 4B adapter on 7,534 rows.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lcc}
+            \toprule
+            APPS injected-harmless flag rate & Original & Filtered \\
+            \midrule
+            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    \begin{block}{Aggressive filtering did not resolve the false alarms}
+        The filter was imperfect; this does not rule out other data shortcuts.
+    \end{block}
+\end{frame}
+
+\begin{frame}[noframenumbering]{Backup: Diagnosis 2: did the students inherit teacher suspicion?}
+    \textbf{Hypothesis:} Kimi K3 already treats injections as harmful,
+    and the students copy that behavior.
+    \medskip
+    We scored injected honest code and backdoors with the training
+    teacher prompt.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.3}
+        \begin{tabular}{lccc}
+            \toprule
+            Injection template & GPT-4 & GPT-4.1 & GPT-4o \\
+            \midrule
+            K3 honest-code verdict 1 & $\sim$0.2\% & $\sim$16\% & $\sim$73\% \\
+            K3 matched injected AUROC & 0.971 & 0.949 & 0.918 \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+    Original 4B student: matched injected AUROC \textbf{0.644} (template mean).
+    \bigskip
+
+    \begin{block}{Teacher sensitivity is only part of the picture}
+        K3 reacts differently to each template and retains much better separation.
+        Uniform student suspicion is not explained by simply copying these responses.
+    \end{block}
+\end{frame}
+
+\begin{frame}[noframenumbering]{Backup: Diagnosis 3: change the instruction framing}
+    \textbf{Hypothesis:} the monitoring instruction encourages suspicion
+    that generalizes beyond training.
+    \medskip
+    \textbf{Intervention:} retrain the 4B adapter with a more conservative,
+    behavior-grounded instruction; keep the data and teacher targets fixed.
+    \medskip
+
+    \begin{quote}
+        \small ``Prompt-injection presence and agent misconduct are separate questions.''
+    \end{quote}
+    \smallskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabular}{lcc}
+            \toprule
+            APPS injected-harmless flag rate & Original & Reframed \\
+            \midrule
+            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    \begin{block}{Framing alone did not resolve the false alarms}
+        The retrained adapter still flagged every injected harmless example,
+        across all three evaluation instructions.
+    \end{block}
+    \smallskip
+    {\scriptsize Inspired by Betley et al.,
+    \href{https://proceedings.mlr.press/v267/betley25a.html}{\emph{Emergent Misalignment} (2025)}:
+    educational framing changed generalization from insecure-code training.}
 \end{frame}

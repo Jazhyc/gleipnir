@@ -10,7 +10,7 @@ instructions; avoid symlinks or inputs from elsewhere in the repository.
 The first deck is [`monitor_injection_results/`](monitor_injection_results/).
 It contains a title, a methods introduction and a monitor-injection benchmark
 motivation, followed by initial 4B/9B detection results and harmless-code
-injection controls and an auxiliary JudgeDeceiver comparison for a six-minute talk.
+injection controls and an auxiliary JudgeDeceiver comparison for a five-minute talk.
 A deployment-risk slide connects false alarms to review overload; the remaining
 results narrative now begins with a training-data filtering diagnosis.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
@@ -50,3 +50,6 @@ presentation assets and the final PDF; keep intermediate build files ignored.
 Update and commit the PDF with each presentation change. Record the source
 revision and metric definitions for reported results, and include local asset
 provenance or references where applicable.
+
+The main deck now uses one diagnostic summary; detailed diagnoses and the DoS
+scenario appear after the takeaways as backup slides.

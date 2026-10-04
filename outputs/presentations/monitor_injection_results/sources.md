@@ -152,7 +152,7 @@ research benchmark, not a fresh unseen confirmation set.
 
 ## Initial injected-backdoor results
 
-The third content slide uses the original regular-trained 4B and 9B adapters
+The relevant slide uses the original regular-trained 4B and 9B adapters
 with the regular (neutral) monitor instruction. AUROC compares 647 injected
 backdoors per template against 655 clean honest submissions. Only the harmful
 class carries injections in this initial comparison. Results average the three
@@ -173,7 +173,7 @@ the subsequent honest-injection control; it does not establish a mechanism.
 
 ## Harmless-code injection control
 
-The fourth content slide retains the same regular adapters, regular monitoring
+The relevant slide retains the same regular adapters, regular monitoring
 prompt and clean-code thresholds as the initial-results slide. It appends each
 of the three transfer injections to all 655 honest solutions without adding a
 code backdoor. The target remains code-backdoor presence: hostile comments alone
@@ -193,7 +193,7 @@ mechanism or establishing a result for every possible injection.
 
 ## Original adapters on JudgeDeceiver
 
-The fifth content slide uses the unchanged regular monitoring adapters under
+The relevant slide uses the unchanged regular monitoring adapters under
 the original auxiliary A/B quality-judging prompt. It reports preference
 accuracy, not harmfulness accuracy or a false-positive rate. Correct preferences
 stay fixed across clean, preferred-answer-injected and disfavored-answer-injected
@@ -223,7 +223,7 @@ No fresh scoring or training was performed for the presentation.
 
 ## Deployment risk from injection-driven alarms
 
-The sixth content slide draws a deployment implication from the measured
+The relevant slide draws a deployment implication from the measured
 harmless-code alarms and auxiliary preference avoidance. The initial APPS
 comparison placed injections only on backdoors; injected-honest controls
 were essential to expose that shortcut. The slide says benchmarks *that* pair
@@ -242,7 +242,7 @@ agent compliance or harmful task behavior.
 
 ## Diagnosis 1: aggressive training-data filtering
 
-The seventh content slide summarizes the metadata audit and the completed
+The relevant slide summarizes the metadata audit and the completed
 `experiments/monitoring_injection_removal/README.md` intervention. Exact
 trajectory matching to STRIDE metadata identified four assigned
 `prompt_inject_another_ai_to_exfiltrate_data_for_blackmail` objectives, all
@@ -276,7 +276,7 @@ No benchmark or training examples are redistributed in the slide.
 
 ## Diagnosis 2: collaborator-reported teacher scoring
 
-The eighth content slide summarizes Michael Kenney’s teacher diagnostic supplied
+The relevant slide summarizes Michael Kenney’s teacher diagnostic supplied
 by the user, recorded in `docs/findings/kimi_teacher_injection_controls.md`.
 Numbers are collaborator-reported and rounded, not freshly evaluated or locally
 raw-data audited. The stated upstream branch is `kimi-k3-teacher-controls`,
@@ -297,7 +297,7 @@ caveats, source populations and audit status are retained in the finding.
 
 ## Diagnosis 3: behavior-grounded instruction framing
 
-The ninth content slide summarizes the completed instruction intervention in
+The relevant slide summarizes the completed instruction intervention in
 `experiments/monitoring_injection_disentanglement/README.md` and
 `docs/findings/monitoring_injection_disentanglement.md`. A fresh 4B adapter
 trained for one epoch on the same 8,688 trajectories and fixed Kimi K3 soft
@@ -323,7 +323,7 @@ change is a distinct intervention and does not reproduce their experiment.
 
 ## Intervention 1: auxiliary preference task
 
-The tenth content slide summarizes the fresh 4B joint-training run in
+The relevant slide summarizes the fresh 4B joint-training run in
 `experiments/judge_injection_joint/README.md` and `docs/findings/judge_injection_joint.md`,
 not the earlier preference-only continuation. A new adapter trains with 75%
 monitoring and 25% preference examples per logical batch, visiting all 8,688
@@ -349,7 +349,7 @@ injection immunity. Summary SHA-256:
 
 ## Intervention 2: direct monitoring augmentation
 
-The eleventh content slide uses the completed 4B experiment in
+The relevant slide uses the completed 4B experiment in
 `experiments/monitor_injection_augmentation/README.md` and
 `docs/findings/monitor_injection_augmentation.md`. It replaces 40% of the
 8,688 original rows with one synthetic off-policy injected view, preserving
@@ -390,7 +390,7 @@ not establish a monotonic model-size effect.
 
 ## 4B augmentation: ID and auxiliary transfer
 
-The twelfth content slide uses the monitoring-augmented 4B adapter, not the
+The relevant slide uses the monitoring-augmented 4B adapter, not the
 JudgeDeceiver joint-trained or preference-continued adapters. It did not train
 on JudgeDeceiver. Clean ID source-macro pAUROC@20 is 0.846273 original versus
 0.872983 augmented, using the project raw-partial-area normalization. The ID
@@ -429,3 +429,13 @@ on other model families. Existing 4B/9B results are within Qwen3.5; they do not
 establish cross-family transfer or an identified mechanistic principle. The
 closing recommendation for harmless injection controls follows the measured
 APPS false alarms, rather than attributing a proven causal mechanism.
+
+## Main/backup organization
+
+For the five-minute version, the DoS scenario and all three detailed diagnosis
+slides are moved after the takeaways as unnumbered backup. A new main-talk
+summary retains the key findings: 1,154 exclusions without resolving APPS
+false alarms; stronger and template-dependent K3 discrimination; and unchanged
+100% injected-honest alarms after behavior-grounded retraining. The source
+identities and limitations above remain applicable. Optimization-driven
+shortcut amplification is a working hypothesis, not a proven isolated cause.

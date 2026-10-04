@@ -5,7 +5,8 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has thirteen content slides plus the title for a six-minute talk.
+The current opening has ten main content slides plus the title for a five-minute talk, followed by
+four backup slides.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -116,3 +117,17 @@ quality judging, showing broader gains with substantial residual avoidance.
 
 The takeaways slide covers unexpected generalization, broader augmentation,
 unresolved mechanisms and limited replication.
+
+## Five-minute flow and backup
+
+The main talk keeps the methods, benchmark motivation, initial findings,
+JudgeDeceiver diagnostic, one summary of the three causal hypotheses, both
+interventions, transfer results and takeaways. The DoS scenario and the detailed
+data-filtering, teacher-inheritance and instruction-framing slides follow the
+takeaways in an unnumbered backup section. The summary narrows explanations
+without claiming a causally identified training mechanism.
+
+Suggested time budget (seconds): title 5; methods 35; benchmark 25; initial
+results 20; harmless controls 20; judging 25; diagnostic summary 25; auxiliary
+training 30; augmentation 45; transfer 35; takeaways 35. Total: 300 seconds.
+Backup slides are for questions and are excluded from the main frame count.
