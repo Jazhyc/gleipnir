@@ -42,6 +42,8 @@ competition runner is included.
 - `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
 - `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.
 - `figures/`: tracked, reproducible figures and their regeneration commands.
+- `outputs/presentations/<presentation_name>/`: self-contained LaTeX/Beamer
+  presentations, with local slides, styling, assets and build instructions.
 - `docs/`: research program, findings, decisions, and infrastructure notes.
 - `data/`, `results/`, `logs/`: ignored local artifacts; only `.gitkeep` files are tracked.
 
@@ -66,3 +68,6 @@ The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
+
+Presentation layout and build conventions are documented in
+[`outputs/presentations/README.md`](outputs/presentations/README.md).
