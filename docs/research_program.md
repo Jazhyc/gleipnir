@@ -114,7 +114,8 @@ injected AUROC rises from 0.6588 to 0.6786, substantially less than at 4B;
 vanilla APPS AUROC regresses from 0.9314 to 0.9126. This supports clean ID
 benefits without broad OOD robustness or a model-size monotonicity claim. See
 the [completed finding](findings/monitor_injection_augmentation_9b.md).
-Shutdown of the existing B200 follows complete verified artifact collection.
+The existing B200 is verified EXITED after complete artifact collection and
+independent audits; its persistent workspace and compiler/kernel caches remain.
 
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data

@@ -238,6 +238,40 @@ The current session has no agent scheduling tool; monitoring occurs in the
 active turn and cannot promise a follow-up after yielding. Preserve the volume
 and collected artifacts when the user subsequently requests stopping compute.
 
+### B200 stopped after the 9B augmentation replication, 2026-10-04
+
+The user explicitly authorized stopping the existing B200 after the fixed 9B
+training/evaluation replication and verified artifact collection. Pod
+`3422tdq7tfog52` (`gleipnir-b200-injection-audit`) was stopped; an independent
+live read confirmed **EXITED**, null runtime and no direct SSH mapping.
+The separate network-volume read confirms `ixbh81vf9c`
+(`gleipnir-b200-workspace`, US-NC-2, STANDARD, 200 GB) remains present.
+Compute is stopped; retained storage continues billing. Neither Pod nor volume
+was terminated or deleted. The older stopped Pod `alzfug70g5237b` was untouched.
+
+All 272 training updates and 15,138 fresh scores completed. Collection verified
+all 58 remote artifact files (2,864,290,636 bytes), including the FP32 master,
+serving adapter, final checkpoint, raw decision logprobs and logs. Independent
+local audits verified exact rebased tensor equality, adapter-specific serving
+parity, canonical input coverage, rendered prompts, labels and recomputed metrics.
+Exact remote reports were retained before local recomputation changed the
+absolute benchmark filename. See the [finding](findings/monitor_injection_augmentation_9b.md).
+
+Before stop, direct SSH and the remote inventory confirmed no remaining GPU
+process. `findmnt` confirmed `/workspace` is the network-volume mount. Kernel
+links for FLA, causal-conv1d and Triton resolve into `.cache/kernels/`; FlashQLA
+is under `.cache/kernels/flashqla-da06429`. The shared training cache resolves to
+`.cache/training/student_injection_awareness`. The checked container-local Torch
+Inductor, FlashInfer, torch_extensions and Triton cache paths were absent; no
+additional compiler-cache archive was needed. Existing runtime-resume archives
+and workspace environments remain available. Restore temporary kernel symlinks
+and refresh live SSH mappings before a separately authorized future restart.
+
+Sanitized lifecycle reads, storage identity, preservation checks and local audit
+hashes are in `results/b200_shutdown/20261004_augmentation_9b/stop_receipt.json`.
+Both `.runpod/monitor-injection-pod.json` and `.runpod/injection-audit.json` now
+record EXITED; `.runpod/pod.json` still describes the older stopped Pod.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

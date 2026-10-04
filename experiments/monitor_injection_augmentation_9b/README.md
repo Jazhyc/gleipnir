@@ -12,7 +12,8 @@ Clean ID source-macro pAUROC@20 increases from 0.879559 to 0.893869, but APPS
 injected-honest FPR falls only from 99.85% to 83.36% on average; two templates
 still give 100% alarms. Vanilla APPS AUROC falls from 0.931378 to 0.912592.
 This is substantially weaker OOD transfer than at 4B. Weights, raw scores and
-logs are collected and checksummed; authorized shutdown is the final closure step.
+logs are collected and checksummed. The authorized B200 stop is independently
+confirmed EXITED, with its network volume and compiler/kernel caches preserved.
 See the [finding](../../docs/findings/monitor_injection_augmentation_9b.md).
 
 Hypothesis: the same label-independent monitor-directed distractors reduce

@@ -1,7 +1,8 @@
 # Monitor-directed injection augmentation at 9B
 
 Date: 2026-10-04. Status: training and evaluation complete; artifacts collected
-and independently verified. Authorized B200 shutdown is the remaining closure step.
+and independently verified. The authorized B200 stop is independently confirmed
+EXITED; its persistent network volume remains present.
 
 The same intervention improves clean ID ranking at 9B, but transfers much less
 strongly to APPS injections than at 4B. The fixed final checkpoint gives:
@@ -116,7 +117,7 @@ any scores or input bytes. All 28 frozen source files match on the B200.
 User-authorized shutdown follows complete evaluation, artifact collection and
 verification. There is no separate in-chat heartbeat scheduler;
 active goal execution can inspect progress but a remote queue is not an agent
-follow-up. The goal remains active through verified shutdown.
+follow-up. The campaign closed after verified shutdown.
 
 The source-checked launch started PID 15742 on B200 `3422tdq7tfog52`; training
 worker PID 15745 completed and exited. Model loading verified 8,953,803,264 frozen BF16
@@ -128,8 +129,8 @@ The populated shared compiler cache resolves to
 Preparation manifest SHA256 is
 `8ea9596a8458520525747c31b19eb248549a510b087e5ffd45c94baf4fce4442`.
 Launch, cache, training and evaluation receipts are collected locally. An initial
-launcher import-path failure started no workload and is preserved separately; the source-checked launch
-uses an explicit repository import path.
+launcher import-path failure started no workload and is preserved separately;
+the source-checked launch uses an explicit repository import path.
 
 At startup, ordinary training reached 2/272 completed updates, with mandatory
 finite/missing-gradient guards permitting both updates. First-update elapsed
@@ -160,3 +161,10 @@ Benchmark metrics are identical between remote revision
 `feat/gleipnir-vllm-grid`. The revision difference affects only three documentation
 files. Four metric/imported-helper checksums match; their provenance receipt is
 `results/monitor_injection_augmentation_9b/benchmark_metric_provenance.json`.
+
+After final collection and independent audits, Pod `3422tdq7tfog52` was stopped.
+A separate live read confirms EXITED, null runtime and no direct SSH mapping.
+The 200 GB network volume `ixbh81vf9c` remains present in US-NC-2, with the
+workspace, weights and shared compiler/kernel caches preserved. Neither Pod nor
+volume was deleted. Sanitized before/action/after reads and audit hashes are in
+`results/b200_shutdown/20261004_augmentation_9b/stop_receipt.json`.
