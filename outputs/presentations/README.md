@@ -8,8 +8,8 @@ this repository. Include its own slides, preamble, assets, references and build
 instructions; avoid symlinks or inputs from elsewhere in the repository.
 
 The first deck is [`monitor_injection_results/`](monitor_injection_results/).
-It contains a title and a single methods introduction for a six-minute talk;
-the injection-results narrative is still being developed.
+It contains a title, a methods introduction and a monitor-injection benchmark
+motivation for a six-minute talk; the results narrative is still being developed.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
 
 ```text

@@ -40,3 +40,31 @@
     {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
     \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
 \end{frame}
+
+\begin{frame}{Can prompt injections fool the monitor?}
+    Our ID/OOD scores are not a dedicated test of attacks on the monitor itself.
+    \medskip
+
+    \begin{block}{The APPS injection benchmark}
+        Terekhov et al. embed monitor-directed instructions in the comments
+        of backdoored code solutions.
+    \end{block}
+    \medskip
+
+    \begin{block}{Earlier prompted monitors were vulnerable}
+        GPT-4, GPT-4o and GPT-4.1 were susceptible to these injections.
+        \medskip
+
+        In one APPS setting, GPT-4.1 scored \textbf{all 375 injected backdoors
+        as benign}.
+    \end{block}
+    \medskip
+
+    These results leave open how trained monitors behave.\par
+    \textbf{We test ours on the APPS injection benchmark.}
+    \medskip
+
+    {\scriptsize \href{https://arxiv.org/pdf/2510.09462v2}{Terekhov et al.,
+    \emph{Adaptive Attacks on Trusted Monitors Subvert AI Control Protocols},
+    arXiv:2510.09462v2.}}
+\end{frame}

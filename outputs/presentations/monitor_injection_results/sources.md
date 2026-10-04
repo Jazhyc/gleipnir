@@ -1,11 +1,34 @@
 # Sources and scope of the opening slides
 
-Verified 4 October 2026. The single-slide opening introduces the **regular,
+Verified 4 October 2026. The methods slide introduces the **regular,
 trajectory-only 4B adapter** and contrasts its objective with Sinha et al.'s
 method. It does not use the older mixed-data checkpoint or an injection-augmented
 checkpoint. The slide shows the mean OOD comparison rounded to three decimals.
 The complete OOD comparisons below also document the retained supporting chart
 assets, which are not shown in the short opening for the six-minute talk.
+
+## Monitor-directed injection benchmark
+
+Terekhov et al., *Adaptive Attacks on Trusted Monitors Subvert AI Control
+Protocols*, [arXiv:2510.09462v2](https://arxiv.org/pdf/2510.09462v2),
+2 March 2026. Sections 3.4 and 4.1 and Figure 2 support the benchmark-motivation
+slide. In its GPT-5/APPS condition, GPT-4.1 assigns score 0 to all 375 successful
+backdoors carrying injections. GPT-4 and GPT-4o also degrade under attack.
+This is their reported result, not a measurement of our adapters.
+
+Our evaluation reuses the APPS snapshot pinned at revision
+`58e722bf9912903d56a334f873e069aa17ccb7ad`. The benchmark contract and added
+honest-code controls are recorded in
+`experiments/monitoring_injection_disentanglement/README.md`. The new slide
+motivates the test; it does not yet present our results or a full control-protocol
+evaluation. No benchmark rows or copied paper figures are included in the deck.
+
+The gap is specifically a dedicated evaluation of attacks on the monitor.
+It is not a claim that the ID/OOD populations contain no injections:
+[AgentDojo](https://arxiv.org/abs/2406.13352), for example, targets the task agent
+through untrusted tool data. Whether our trained monitors resist transferred
+monitor-directed payloads is an experimental question, not a claim that all
+trained monitors are unstudied.
 
 ## Published baseline
 
