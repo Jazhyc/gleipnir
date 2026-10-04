@@ -1,6 +1,6 @@
 # Monitor-directed injection augmentation at 9B
 
-Date: 2026-10-04. Status: launched; model loaded, first update compiling. No new
+Date: 2026-10-04. Status: training advancing; evaluation queued. No new
 9B quality result is available yet.
 
 The authorized replication freezes the completed 4B replacement intervention
@@ -53,3 +53,12 @@ Launch and cache receipts are collected locally; serving parity and all fresh
 evaluation outputs remain pending. An initial launcher import-path failure
 started no workload and is preserved separately; the source-checked launch
 uses an explicit repository import path.
+
+Ordinary training reached at least 2/272 completed updates, with mandatory
+finite/missing-gradient guards permitting both updates. First-update elapsed
+time was 282.16 seconds including compilation; the next update took about
+20 seconds. GPU utilization reached 100%, with 37,470 MiB used. These early
+timings do not establish whole-epoch throughput. The numerical training command
+matches the original 9B regular condition; only campaign paths and the explicit
+startup-validation reference differ. Feature implementation is committed as
+`ac21e87`; the full goal remains active until verified shutdown.
