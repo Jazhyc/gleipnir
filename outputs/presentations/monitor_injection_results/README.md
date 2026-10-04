@@ -1,6 +1,6 @@
 # Emergent Suspiciousness in Trained Monitors
 
-Authors: Jeremias Ferrao and Michael Kenny.
+Authors: Jeremias Ferrao and Michael Kenney.
 
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
