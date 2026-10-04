@@ -1,0 +1,26 @@
+campaign_id: monitor-injection-augmentation-9b-v1
+seed: 0
+training_rows: 8688
+expected_steps: 272
+learning_rate: 5.0e-05
+model:
+  id: Qwen/Qwen3.5-9B
+  revision: c202236235762e1c871ad0ccb60c8ee5ba337b9a
+  initial_master_sha256: 5ba0b3d6e44c20a1a1ccfd2d5923b6d90a5dd930e02321ff832cb471984bcf79
+startup_validation_reference: results/student_injection_awareness/9b/regular/causal_adapter/training_metadata.json
+startup_validation_reference_sha256: ad97d1e02160084c370445625e5db1d13ee32a88fbe5be6720df030c24fc8b98
+prior_job: results/student_injection_awareness/9b/regular/job.json
+benchmark_root: ../monitor-injection-evals
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.9
+  max_num_seqs: 16
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+  gdn_prefill_backend: triton
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+selection: fixed_final_checkpoint_regular_prompt_only
+original_adapter: reuse_cached_results_only

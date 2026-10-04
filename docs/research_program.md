@@ -103,6 +103,12 @@ sensitivity and limits from one seed, few authored strings and off-policy views.
 Only the new adapter receives fresh scores; original regular-adapter results
 are reused. APPS remains evaluation-only.
 
+The user authorized a [9B replication](decisions/monitor_injection_augmentation_9b.md)
+of the same frozen augmentation at 5e-5, using the previously validated 9B
+checkpointing recipe and cached regular 9B controls. This campaign preserves
+all training/evaluation views and introduces no recipe sweep. Shutdown of the
+existing B200 is authorized after complete verified artifact collection.
+
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data
   exposure, or checkpoint averaging improve transfer? The

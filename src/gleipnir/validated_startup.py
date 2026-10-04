@@ -19,10 +19,18 @@ def validation_reference(path: Path) -> dict[str, Any]:
     metadata = json.loads(path.read_text())
     packing = metadata["sequence_packing"]
     backend = metadata["gated_delta_backend"]
+    checkpointing = metadata["gradient_checkpointing"]
+    if checkpointing and (
+        metadata["model"] != "Qwen/Qwen3.5-9B"
+        or metadata.get("gradient_checkpointing_policy") != "all"
+        or metadata.get("checkpointed_layer_indices") != list(range(32))
+        or metadata.get("selective_torch_compile", {}).get("policy")
+        != "checkpointed_full_attention_and_linear_shell"
+    ):
+        raise ValueError("reference does not validate the checkpointed 9B recipe")
     if (
         metadata["training_state"]["global_step"] <= 0
         or metadata["quantization"]["enabled"]
-        or metadata["gradient_checkpointing"]
         or backend["backend"] != "flashqla"
         or backend["replaced_layers"] != 24
         or backend["boundary_policy"] != "bf16_fp32_gates_norm"
@@ -42,6 +50,7 @@ def validation_reference(path: Path) -> dict[str, Any]:
         "reference_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
         "model": metadata["model"],
         "model_revision": metadata["model_revision"],
+        "gradient_checkpointing": checkpointing,
         "reference_packing": {
             k: packing[k] for k in ("eager_canary", "compiled_canary", "preflight")
         },
@@ -61,6 +70,27 @@ def skipped_diagnostic(reference: dict, name: str) -> dict:
 
 def install_validated_flashqla(model: Any, reference: dict) -> dict:
     """Bind the verified selected kernel, without model forward/backward probes."""
+    if "gradient_checkpointing" in reference:
+        if (
+            bool(getattr(model, "is_gradient_checkpointing", False))
+            != reference["gradient_checkpointing"]
+        ):
+            raise ValueError("model checkpointing differs from validated recipe")
+        if reference["gradient_checkpointing"]:
+            checkpointed = [
+                m
+                for m in model.modules()
+                if getattr(m, "gradient_checkpointing", False)
+            ]
+            if not checkpointed or any(
+                getattr(
+                    getattr(m, "_gradient_checkpointing_func", None), "keywords", {}
+                ).get("use_reentrant", True)
+                for m in checkpointed
+            ):
+                raise ValueError(
+                    "validated 9B recipe requires nonreentrant checkpointing"
+                )
     function, receipt = load_flashqla()
     if receipt["revision"] != reference["reference_backend"]["revision"]:
         raise ValueError("kernel revision differs from the validated recipe")
