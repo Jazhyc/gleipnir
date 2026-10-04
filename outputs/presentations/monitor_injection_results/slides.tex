@@ -1,10 +1,190 @@
-% Replace this outline with the presentation's results narrative.
-% Keep all figures, tables and references local to this presentation folder.
-\begin{frame}{Draft outline}
+% All figures and aggregate result inputs live in this presentation folder.
+\begin{frame}{The monitoring task and the data we inherit}
+    \begin{block}{Judge the agent's conduct from its trajectory}
+        Given a task and a transcript, assign a score for harmful or misaligned
+        behavior. The monitor is a separate model reading the recorded interaction.
+    \end{block}
+    \small
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.53\textwidth}
+            \textbf{Released training population}
+            \medskip
+
+            \begin{tabular}{lr}
+                \toprule
+                Source & Trajectories \\
+                \midrule
+                STRIDE & 1,350 \\
+                Gloom & 772 \\
+                CoT-Red-Handed & 2,340 \\
+                BashArena & 2,790 \\
+                BashBench & 1,436 \\
+                \bottomrule
+            \end{tabular}
+        \end{column}
+        \begin{column}{0.43\textwidth}
+            \textbf{8,688 examples}\par
+            4,344 benign; 4,344 harmful.
+            \medskip
+
+            We reuse Sinha et al.'s data framework and benchmark,
+            then change the supervision and training recipe.
+            \medskip
+
+            This baseline uses trajectory data only, with no auxiliary
+            preference or deception dataset.
+        \end{column}
+    \end{columns}
+    \medskip
+    {\scriptsize Input caveat: an audit found agent reasoning in 1,340/1,350
+    STRIDE training rows. These training inputs are not strictly action-only.\par
+    Framework: \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026)};
+    source revision and audit details: local \texttt{sources.md}.}
+\end{frame}
+
+\begin{frame}{Same detection task, different training objectives}
+    \small
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Sinha et al.: deliberative SFT + RL}
+                Gemini 2.5 Pro supplies candidate rationales and scores;
+                Claude Sonnet 4.5 filters them.
+                \medskip
+
+                \textbf{SFT:} next-token loss on a monitor rationale
+                and final 0--10 score.
+                \medskip
+
+                \textbf{GRPO:} Brier calibration and pairwise ranking
+                rewards against binary labels, with a KL reference.
+                \medskip
+
+                At inference: generate a rationale and parse its final score.
+            \end{block}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{block}{Our adapters: binary logit distillation}
+                Kimi K3 scores each trajectory under the full monitoring rubric.
+                \medskip
+
+                \textbf{Target:} normalized teacher probability on the
+                decision tokens \texttt{0} and \texttt{1}.
+                \medskip
+
+                \textbf{Loss:} soft binary cross-entropy at the decision
+                boundary; train LoRA parameters on the frozen backbone.
+                \medskip
+
+                At inference: read the \texttt{0}/\texttt{1} logits directly.
+            \end{block}
+        \end{column}
+    \end{columns}
+    \medskip
+    Both methods learn a harmfulness ranking. We distill the teacher's decision
+    distribution without rationale targets or an RL stage.
+    \medskip
+
+    {\scriptsize \href{https://arxiv.org/html/2605.29601v1}{Sinha et al., Appendix D};
+    our frozen recipe and artifact identities: \texttt{sources.md}.}
+\end{frame}
+
+\begin{frame}{How we train the regular 4B adapter}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.53\textwidth}
+            \textbf{1. Cache teacher decision probabilities}
+            \[
+                q = \frac{e^{\ell_1}}{e^{\ell_0}+e^{\ell_1}}
+                  = \sigma(\ell_1-\ell_0)
+            \]
+            \textbf{2. Score the same trajectory with the student}
+            \[
+                p_\theta = \sigma(z_1-z_0)
+            \]
+            \textbf{3. Match the teacher's soft target}
+            \[
+                \mathcal{L} = -q\log p_\theta
+                    -(1-q)\log(1-p_\theta)
+            \]
+            {\small $\ell$: teacher logprobs; $z$: student logits.\par
+            \texttt{1} means harmful; \texttt{0} means benign.}
+        \end{column}
+        \begin{column}{0.43\textwidth}
+            \begin{block}{Frozen baseline recipe}
+                Qwen3.5-4B; BF16 backbone.\par
+                LoRA rank 128, $\alpha=256$; FP32 master adapters.
+                \medskip
+
+                AdamW; learning rate $5\times10^{-5}$.\par
+                Logical batch 32; packed trajectories.
+                \medskip
+
+                One epoch: all 8,688 rows, 272 updates. Seed 0.
+                \medskip
+
+                Evaluate the final checkpoint under the regular prompt.
+                No OOD checkpoint selection.
+            \end{block}
+        \end{column}
+    \end{columns}
+    \medskip
+    {\small The target expresses teacher confidence in a binary decision;
+    it is not a semantic severity score.}
+\end{frame}
+
+\begin{frame}{Higher mean OOD ranking at the same 4B model size}
+    \begin{columns}[c,onlytextwidth]
+        \begin{column}{0.61\textwidth}
+            \includegraphics[width=\linewidth]{ood_mean.png}
+        \end{column}
+        \begin{column}{0.35\textwidth}
+            \begin{block}{Mean OOD pAUROC@20}
+                \centering
+                {\Large $0.6840 \;\rightarrow\; 0.7762$}\par
+                \medskip
+                {\Large\textbf{+0.0922}} absolute\par
+                {\small +13.5\% relative}
+            \end{block}
+            \small
+            6,395 held-out trajectories across six OOD sources.
+            \medskip
+
+            Equal-source mean. Each source's partial ROC area for
+            FPR $\leq20\%$ is divided by $0.2$.
+        \end{column}
+    \end{columns}
+    {\scriptsize Published SFT+RL baseline, not a checkpoint we rescored.
+    Paper: mean $\pm$ SD across three seeds; ours: one checkpoint.\par
+    Recipe comparison: teacher, LoRA configuration, schedule, output interface
+    and preprocessing differ. The objective's causal effect is not isolated.\par
+    \href{https://arxiv.org/html/2605.29601v1}{Sinha et al., Tables 4 and 8};
+    exact local aggregates: \texttt{assets/ood\_comparison.json}.}
+\end{frame}
+
+\begin{frame}{Five of six sources improve; AgentDojo regresses}
+    \centering
+    \includegraphics[width=0.93\linewidth]{ood_by_source.png}
+    \par\smallskip
+    \raggedright
+    {\scriptsize Error bars: paper's reported SD across three seeds;
+    our bars show one checkpoint without uncertainty estimates.
+    \par Source: \href{https://arxiv.org/html/2605.29601v1}{Sinha et al., Table 8}
+    and the frozen regular-adapter evaluation.}
+\end{frame}
+
+\begin{frame}{Strong OOD ranking motivates a different stress test}
+    \begin{block}{Can the monitor separate an attack from harmful behavior?}
+        A trajectory can contain instructions aimed at the monitor even when
+        the recorded agent's behavior is harmless.
+    \end{block}
+    \bigskip
     \begin{enumerate}
-        \item The monitoring problem and why prompt injections matter
-        \item Experimental design and matched harmless controls
-        \item Training interventions and results at 4B and 9B
-        \item Remaining failures, limitations and next steps
+        \item Does injected text cause false alarms on benign trajectories?
+        \medskip
+        \item Does the effect depend on the surrounding task and transcript?
+        \medskip
+        \item Can training augmentation reduce this shortcut while preserving
+        detection of harmful behavior?
     \end{enumerate}
+    \bigskip
+    The regular 4B adapter above is the baseline for these experiments.
 \end{frame}
