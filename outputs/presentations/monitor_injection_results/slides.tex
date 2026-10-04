@@ -242,7 +242,7 @@
     \textbf{Hypothesis:} Kimi K3 already treats injections as harmful,
     and the students copy that behavior.
     \medskip
-    Michael scored injected honest code and backdoors with the training
+    We scored injected honest code and backdoors with the training
     teacher prompt.
     \bigskip
 
@@ -265,4 +265,40 @@
         K3 reacts differently to each template and retains much better separation.
         Uniform student suspicion is not explained by simply copying these responses.
     \end{block}
+\end{frame}
+
+
+\begin{frame}{Diagnosis 3: change the instruction framing}
+    \textbf{Hypothesis:} the monitoring instruction encourages suspicion
+    that generalizes beyond training.
+    \medskip
+    \textbf{Intervention:} retrain the 4B adapter with a more conservative,
+    behavior-grounded instruction; keep the data and teacher targets fixed.
+    \medskip
+
+    \begin{quote}
+        \small ``Prompt-injection presence and agent misconduct are separate questions.''
+    \end{quote}
+    \smallskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.25}
+        \begin{tabular}{lcc}
+            \toprule
+            APPS injected-harmless flag rate & Original & Reframed \\
+            \midrule
+            At clean-code $\sim$2\% FPR & 100\% & 100\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    \begin{block}{Framing alone did not resolve the false alarms}
+        The retrained adapter still flagged every injected harmless example,
+        across all three evaluation instructions.
+    \end{block}
+    \smallskip
+    {\scriptsize Inspired by Betley et al.\ (with Owain Evans),
+    \href{https://proceedings.mlr.press/v267/betley25a.html}{\emph{Emergent Misalignment} (2025)}:
+    educational framing changed generalization from insecure-code training.}
 \end{frame}

@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has eight content slides plus the title for a six-minute talk.
+The current opening has nine content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -96,3 +96,7 @@ tagged injection objectives, 1,154 model-flagged exclusions, and unchanged
 Diagnosis 2 summarizes Michael’s collaborator-reported Kimi K3 teacher scoring:
 template-dependent hard verdicts and strong matched AUROC challenge a simple
 inheritance explanation. The accompanying finding records audit limitations.
+
+Diagnosis 3 tests conservative instruction framing with unchanged training data
+and teacher targets; injected-harmless APPS alarms remain 100%. It cites the
+emergent-misalignment framing work that motivated the intervention.

@@ -294,3 +294,29 @@ copying explanation, without proving how the student learned the shortcut.
 This evaluates new OOD inputs, not causal teacher-target changes on training
 rows, and is a diagnostic rather than an intervention. Full setup, threshold
 caveats, source populations and audit status are retained in the finding.
+
+## Diagnosis 3: behavior-grounded instruction framing
+
+The ninth content slide summarizes the completed instruction intervention in
+`experiments/monitoring_injection_disentanglement/README.md` and
+`docs/findings/monitoring_injection_disentanglement.md`. A fresh 4B adapter
+trained for one epoch on the same 8,688 trajectories and fixed Kimi K3 soft
+targets, using the conservative behavior-grounded student instruction. The
+quoted sentence is from that project-authored instruction. Teacher targets
+were not regenerated with a changed rubric.
+
+The displayed comparison is original adapter / original instruction versus
+new adapter / conservative instruction. Both have 100% injected-honest APPS
+alarms under each of the three transfer templates at their respective
+clean-honest ~2% FPR operating points. A three-instruction inference grid
+(neutral, aggressive, conservative) also yields 100% for the new adapter in
+every cell. Thus the conclusion concerns thresholded false alarms, not an
+absence of any score or ranking change. The experiment does not test all
+possible framings or a revised teacher-labeling pipeline.
+
+User-reported inspiration: Betley et al. (including Owain Evans),
+[Emergent Misalignment: Narrow finetuning can produce broadly misaligned LLMs](https://proceedings.mlr.press/v267/betley25a.html),
+ICML 2025. Their educational-context control changes the framing of insecure
+code examples and prevents broad misalignment in their reported evaluation.
+This motivates testing context-sensitive generalization; our monitor-instruction
+change is a distinct intervention and does not reproduce their experiment.
