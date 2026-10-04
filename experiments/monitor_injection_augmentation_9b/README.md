@@ -10,7 +10,9 @@ Reuse exactly the frozen 8,688 training rows from
 `data/monitor_injection_augmentation/`: 3,475 replaced views, 5,213 clean,
 the same eight training payload templates, role/position/demand assignments,
 regular instruction and original Kimi soft BCE targets. Preserve all original
-source bytes and provenance. No regeneration, preference task or APPS exposure.
+source bytes and provenance. No regeneration or preference task is introduced.
+No held-out APPS benchmark inputs or attack payloads are added to training;
+the original training population remains unchanged.
 
 Train one epoch, 272 updates, seed 0, fresh rank-128/alpha-256 LoRA,
 AdamW 5e-5, linear decay and 3% warmup. Reuse the completed 9B regular run's
