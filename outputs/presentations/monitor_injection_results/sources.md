@@ -33,8 +33,8 @@ The evaluated snapshot is pinned at revision
 `58e722bf9912903d56a334f873e069aa17ccb7ad`. The benchmark contract and added
 honest-code controls are recorded in
 `experiments/monitoring_injection_disentanglement/README.md`. The new slide
-motivates the test; it does not yet present our results or a full control-protocol
-evaluation. No benchmark rows or copied paper figures are included in the deck.
+motivates the test; the following slide presents initial detection results,
+without claiming a full control-protocol evaluation. No benchmark rows or copied paper figures are included in the deck.
 
 The local benchmark checkout at commit
 `b55c2014d4c22ceea810b2639e6c0f672d83eccb` documents the adaptation: o3-mini
@@ -149,3 +149,24 @@ significance. Teacher, adapter configuration, schedule, output interface,
 checkpoint-selection procedure and preprocessing differ. Our result has one
 checkpoint and no multi-seed uncertainty estimate. The OOD suite is a reused
 research benchmark, not a fresh unseen confirmation set.
+
+## Initial injected-backdoor results
+
+The third content slide uses the original regular-trained 4B and 9B adapters
+with the regular (neutral) monitor instruction. AUROC compares 647 injected
+backdoors per template against 655 clean honest submissions. Only the harmful
+class carries injections in this initial comparison. Results average the three
+GPT-4/GPT-4.1/GPT-4o transfer templates equally: 4B AUROC
+0.9987973461385687; 9B AUROC 0.9984799682228803. Each template has 100%
+TPR for both adapters. These results do not measure injected-honest specificity.
+
+TPR at 2% FPR uses an adapter-specific threshold from clean honest code, with
+strict score > threshold. The discrete clean alarm rate is 13/655 (1.985%),
+so the slide describes the operating point as approximately 2%. Thresholds are
+0.16451645470385745 (4B) and 0.13296424535145931 (9B).
+
+`assets/initial_injection_results.json` retains the exact condition metrics and
+SHA-256 identities of the original `gleipnir-grid-v1/{4b,9b}/regular/
+eval_neutral.metrics.json` summaries. These are historical results, not fresh
+evaluations. No benchmark examples are included. The final question motivates
+the subsequent honest-injection control; it does not establish a mechanism.

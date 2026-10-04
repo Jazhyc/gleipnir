@@ -27,3 +27,7 @@ python assets/plot_ood_comparison.py
 Run from the presentation directory; the script resolves its own local paths
 and also works from any other working directory. The checked-in PNGs allow
 LaTeX builds without Python or Matplotlib.
+
+`initial_injection_results.json` records the initial regular-adapter 4B/9B
+injected-backdoor metrics and source summary checksums used on the results slide.
+It contains aggregate metrics only and requires no external files to read.

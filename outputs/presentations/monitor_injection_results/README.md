@@ -5,7 +5,7 @@ Authors: Jeremias Ferrao and Michael Kenney.
 Subtitle: Prompt Injection Shortcuts, Context-Dependent Robustness, and Data Augmentation.
 
 Self-contained Beamer presentation for communicating monitor-injection experiments.
-The current opening has two content slides plus the title for a six-minute talk.
+The current opening has three content slides plus the title for a six-minute talk.
 It contrasts rationale SFT plus RL with our direct binary-logit supervision and
 shows both methods' mean OOD pAUROC@20 at 4B: 0.684 versus 0.776. The slide uses
 a paper citation accessible to the audience, without formulas or references to
@@ -13,7 +13,8 @@ repository files. The next slide motivates testing monitor-directed injections,
 illustrates Terekhov et al.'s APPS benchmark with a short injection excerpt
 beside one blue results box centered vertically against the code excerpt.
 It then leads into testing our trained monitors against these injections,
-with the original paper citation. The results slides remain to be added.
+with the original paper citation. The initial-results slide reports near-perfect injected-backdoor detection at
+4B and 9B, then asks whether injection text itself drives the alarms.
 
 Detailed source counts, training hyperparameters and standalone OOD comparison
 slides are omitted from this short introduction. The OOD chart assets remain

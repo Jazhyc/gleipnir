@@ -90,3 +90,33 @@
     {\scriptsize \href{https://arxiv.org/pdf/2510.09462v2}{Terekhov et al.,
     arXiv:2510.09462v2} (attacks and earlier results).}
 \end{frame}
+
+
+\begin{frame}{Initial results looked almost too good}
+    We first compared injected backdoors against clean harmless code.
+    \bigskip
+
+    \begin{center}
+        \renewcommand{\arraystretch}{1.35}
+        \begin{tabular}{lcc}
+            \toprule
+            Regular adapter & AUROC & TPR at 2\% FPR \\
+            \midrule
+            Qwen3.5-4B & 0.9988 & 100\% \\
+            Qwen3.5-9B & 0.9985 & 100\% \\
+            \bottomrule
+        \end{tabular}
+    \end{center}
+    \medskip
+
+    Both flagged \textbf{all 647 injected backdoors under each of three templates}.
+    \medskip
+
+    {\small AUROC averages the three templates; the alarm threshold uses clean
+    harmless code at approximately 2\% FPR.}
+    \bigskip
+
+    \begin{block}{This made us suspicious}
+        Were the monitors detecting backdoors, or just reacting to injection text?
+    \end{block}
+\end{frame}
