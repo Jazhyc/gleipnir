@@ -20,7 +20,7 @@
         \end{column}
         \begin{column}{0.48\textwidth}
             \begin{block}{Ours: logit distillation}
-                Distill Kimi K3's soft harmfulness probabilities into a Qwen LoRA adapter.
+                Distill Kimi K3's soft harmfulness probabilities into a smaller monitor.
                 \medskip
 
                 Train the binary decision logits, without rationale targets or RL.
@@ -34,8 +34,7 @@
         \end{column}
     \end{columns}
     \medskip
-    {\small Both use Qwen3.5-4B; evaluated on six OOD sources
-    comprising 6,395 trajectories.}
+    {\small \textbf{One illustrative comparison:} both use Qwen3.5-4B on six OOD sources.}
     \medskip
 
     {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
