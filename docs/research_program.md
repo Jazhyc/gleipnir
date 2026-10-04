@@ -196,3 +196,11 @@ GDN training kernel was found: FlashQLA and TE recurrence remain BF16/FP16,
 while LeapQuant targets inference and Delta-Matching explicitly keeps recurrence
 in BF16. These are source findings, not measured Gleipnir training results.
 Keep BF16 FA4/FlashQLA as the standard pending a separate matched screen.
+
+The [NVIDIA MXFP8 B200 screen](findings/b200_nvidia_mxfp8.md) executes causal
+D256 GQA forward/backward and passes all 24 quantizer-layout comparisons. Native
+Q/K gradient errors are 6.47–8.65%, but the fresh whole-model adapter-gradient
+error is 18.71%, exceeding the separate 10% learning ceiling. Cross-example
+isolation passes with zero leakage. Training stops before updates; there is no
+throughput result. Keep BF16 FA4/FlashQLA as the standard and preserve the failed
+receipts and opt-in prototype for further diagnostics.

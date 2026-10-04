@@ -140,6 +140,9 @@ def main() -> None:
             candidate = mxfp8_attention(q, k, v)
             case = {
                 "length": length,
+                "implementation": "exact_bf16_singleton"
+                if length == 1
+                else "nvidia_mxfp8_forward_backward",
                 "status": "forward_complete",
                 "errors": {
                     "forward": difference(

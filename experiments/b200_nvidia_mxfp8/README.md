@@ -85,3 +85,11 @@ unchanged kernel/packing validation, explicitly recording reuse. Outputs and log
 for the continuation are in their respective `training02/` subdirectories.
 The first whole-model attempt stopped before updates at the one-token probe;
 its failed logs and source snapshot remain in `training/`.
+
+Completed `training02`: eager whole-model adapter-gradient relative L2 is
+18.7114% against independent BF16 SDPA, exceeding both the strict 5% and
+separate 10% learning ceilings. Losses 0.9492289424/0.9757985473 pass the loss
+limit; all cross-example isolation effects are exactly zero. The run stops
+before compiled checks, longest-batch preflight and optimizer updates. The FA4
+control is unrun and no training-speed result is available. Keep BF16 FA4 as
+the default; see [the finding](../../docs/findings/b200_nvidia_mxfp8.md).
