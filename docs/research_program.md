@@ -209,3 +209,11 @@ same-runtime replication or quality equivalence is claimed. Sixteen parallel
 workers prepare the manifest's 534 exact-shape plans in 208 seconds using the
 shared cache. Keep BF16 FA4/FlashQLA as the standard and preserve failed parity
 receipts alongside the completed timing result.
+
+The follow-up [direct variable-length MXFP8 prototype](findings/b200_nvidia_mxfp8_varlen.md)
+uses packed forward and native cumulative-offset backward kernels. Whole-row
+quantization preserves sequence-local blocks and matches the dense MXFP8
+outputs and gradients exactly in fresh boundary tests. Singleton semantics,
+isolation, changed-length CUDA graph replay and initialized scratch pass;
+independent FP32 strict parity remains failed. Complete model timing and quality
+equivalence remain separate questions; keep BF16 FA4 as the standard.

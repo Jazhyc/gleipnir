@@ -66,7 +66,8 @@ def summarize(
             )
             or (
                 accept_timing
-                and packing.get("attention_backend") == "nvidia_mxfp8"
+                and packing.get("attention_backend")
+                in {"nvidia_mxfp8", "nvidia_mxfp8_varlen"}
                 and packing.get("timing_authority")
                 and packing[key].get("accepted_for_timing_comparison", False)
             )
