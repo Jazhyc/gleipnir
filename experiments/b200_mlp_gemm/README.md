@@ -644,3 +644,10 @@ inputs and the original GPU metadata builder/router/normalization. Keep the
 same first-batch strict gate, twenty reset updates, warmed audit and original
 timing/selection rule. This determines whether input-transfer changes help
 without the rejected metadata rewrite. No additional normalization retry follows.
+
+Result: `16asynconly` completes twenty finite warmed updates at 3.83429
+seconds/update (+4.24% versus control), with an exactly matching final adapter.
+All tested CPU variants fail the >=2% speed rule; both normalization variants
+stop on failed model parity. Retain the original baseline and resident worker.
+Sixty-five relevant CPU checks pass. Artifacts and the diagnostic instrumentation
+correction are collected; see the findings for the final accounting and limits.

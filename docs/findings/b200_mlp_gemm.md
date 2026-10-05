@@ -1152,3 +1152,111 @@ The failed first-model parity reference SHA-256 is
 `2efd07944f56dd4e41179ff43dd753ad52e90d112c89c70b114146213b2f7f8c`;
 the isolated canary reference is
 `5befbb5b152a8e5c75c88a5dcbba11836ba0572c6de802a22a5c55280adf0772`.
+
+### CPU dispatch and normalization-copy screen
+
+On 2026-10-05 the user requests investigating CPU dispatch and dtype conversions.
+All screens reuse resident02 PID 11905, its model/shared caches and the existing
+pooled 3.67835565-second FP4-MLP/BF16-GDN/FA4 control. No FA4/BF16 control or
+unchanged startup probes are repeated. Each changed path receives one matched
+first-logical-batch loss/gradient check; masters, RNG and physical partitions
+remain fixed. Finite/missing-gradient checks stay enabled. Select only with at
+least 2% less mean time on synchronized updates 11–20 and zero preparation in
+those updates. Failed numerical gates stop before optimizer updates.
+
+The CPU metadata intervention builds validated boundaries/positions/sequence IDs
+and FlashQLA chunk metadata from known CPU lengths, using the pinned backend's
+existing prepared-varlen hook. The FA4 router avoids repeated GPU boundary reads
+only for an unchanged, shared Q/K offset tensor with matching operand shapes and
+maximum lengths. Copied/mutated/untrusted offsets use original validation. The
+nonblocking-input variant preserves Trainer recursive preparation and enqueues
+input transfers on the original CUDA stream, without changing input storage.
+Scoped contexts restore the original methods/router after every trial.
+
+| Uninstrumented screen | Mean seconds/update, updates 11–20 | Time versus pooled control |
+| --- | ---: | ---: |
+| Existing resident02 FP4 control | 3.67836 | reference |
+| `11dispatch`: CPU-prepared metadata | 3.97877 | +8.17% |
+| `14async`: metadata plus nonblocking Trainer inputs | 3.79490 | +3.17% |
+| `16asynconly`: nonblocking inputs, original metadata | 3.83429 | +4.24% |
+
+None passes timing selection. All three uninstrumented trajectories and the
+separate `13hotprofile` diagnostic complete twenty finite updates, preserve all
+147 physical partitions and reproduce the control's loss/gradient/learning-rate
+history and final FP32 adapter exactly. All measured updates add zero native
+plans, Triton specializations, Dynamo graphs or Inductor graph-cache misses.
+The metadata path's first targeted check takes 18.38420 seconds, including its
+new graph guards; asynchronous validation takes 9.41920 seconds. `14async`
+reuses checksum-bound `13hotprofile` validation in the same worker with matching
+integration, installer, controls, initial masters and completed warm trajectory.
+It performs no new numerical comparison or preparation. The isolated-transfer
+check takes 9.08987 seconds. No complete twenty-batch preparation replay occurs.
+
+`13hotprofile` records update 15 with the same shape-recording profiler as the
+earlier resident01 trace. Stream synchronization calls fall from 268 to 59
+(78.0% fewer): repeated compiled-region offset transfers, sequence-ID size reads
+and FlashQLA metadata fallback synchronizations disappear. Remaining calls are
+22 input/layout transfers, 36 boolean scalar reads and one other scalar read.
+Their summed CPU wait durations are 714.66640 ms, versus 683.49770 ms in the
+earlier trace; these waits overlap GPU execution and cannot be counted as
+potential additive savings. Removing many calls mostly moves waits to later
+operations. Kernel count falls only from 46,144 to 45,891, and summed GPU kernel
+time changes from 4.96062 to 4.94416 seconds. The device span/gap are
+6.15599/1.21773 seconds versus 5.96702/1.01226 previously. Instrumentation and
+different resident-process preparation limit wall-time comparisons; counts and
+operator ancestry establish what was removed, not an unprofiled speedup.
+
+The old worker receipt incorrectly marks `13hotprofile` as uninstrumented
+because the candidate, rather than the worker's profile variant, installs its
+profiler. Preserve the raw receipt and the separate
+`hotpath_screen_artifacts/instrumentation_correction.json`; exclude its
+3.83235-second mean from speed selection. Future worker code recognizes the
+exported trace when recording instrumentation. PID 11905 retains its original
+loaded worker implementation; no restart occurs for that metadata correction.
+
+Most explicit dtype traffic belongs to GDN Q/K normalization and its backward
+path: the earlier trace has 1,034 BF16-to-FP32 rank-four/head-width-128 copies,
+taking 199.83376 ms, and 1,034 reverse copies, taking 63.97676 ms. Input promotion
+is only part of the first subtotal; backward also promotes incoming gradients.
+Head replication/contiguity copies contribute another 127.06929 ms. Small
+LoRA input casts are often already eliminated/fused by the compiled shells;
+the trace does not support assigning all copy time to adapters or FP4 packing.
+
+`12normcopy` removes the separate input promotion by calling the existing FLA
+normalization with BF16 input and FP32 output. Normalization computation/output
+and recurrent BF16 boundaries are intended to remain fixed, but the first
+whole-model check fails: control loss 0.52185988 becomes 0.65588129 (absolute
+difference 0.13402140), with adapter-gradient relative L2 1.03410778 (103.41%).
+No optimizer updates or full preparation follow. `15normfixed` repeats only
+the changed diagnostic while assigning all fifteen resident FP32 forward
+normalization tilings to the BF16-input specialization. It reproduces exactly
+the same failed loss/gradient values. Cache entries and baseline methods are
+restored. Matching launch tiling is insufficient to repair this dtype change;
+the source of numerical differences is not established. Keep both failed
+receipts and the unchanged 5% gradient/0.005 loss gate. No finite-only timing
+continuation or quality acceptance is asserted for either normalization path.
+
+Retain the original resident FP4 baseline. This screen finds no verified
+throughput improvement; fewer synchronization calls alone are insufficient,
+and the tested normalization-copy removal does not meet model parity. Sixty-five
+focused CPU checks pass, with Ruff and whitespace checks. Exact sources, receipts,
+trace/analyzers, logs and checksum-verified adapter references are collected in
+`results/b200_mlp_gemm/resident02/`. The four duplicate adapters match the
+already collected control byte-for-byte, SHA-256
+`0b9ea36eb19d012c730107ae222b490b4ad10620c795646d93cae8f94e68b71e`,
+and retain 256 FP32 tensors. PID 11905 remains alive and idle with model/caches
+resident. No after-turn heartbeat is promised; this session has no scheduler.
+
+Diagnostic trace SHA-256:
+`a58cbcef1c72925544a7049132a3b3275cc6d5b1bfe817b9517a7ae7a5c96728`.
+Initial master remains
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`;
+all completed trajectories finish at
+`cf38e3e6881cebba402f3d16a1ed2d31dd3a259876375e887b2821cc9426fe3f`.
+
+The collected campaign summary SHA-256 is
+`e49e58e161df931f63420f7adf30ed45e71ce26f68a4183a4b1c096978b3c008`;
+all 46 receipt/source files in its collection manifest are hash-verified.
+`16asynconly/receipt.json` SHA-256 is
+`39608ef24067258481c12c6c217818f51076dd4f8acf6e2e9fc6af1cee2e9216`.
+Both failed normalization validation hashes are retained in that summary.

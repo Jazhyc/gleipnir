@@ -83,3 +83,14 @@ so retain Dao convolution. Native kernel plans and the baseline model remain
 resident on PID 11905; methods and scoped cache settings are restored. Inspect
 live health before subsequent reuse. Failed parity checks/audits and deliberately
 stopped diagnostics remain separate from the completed finite timing receipt.
+
+The CPU dispatch/copy screen also retains the original baseline. CPU-prepared
+metadata takes 3.97877 seconds/update (+8.17%); adding nonblocking Trainer inputs
+takes 3.79490 (+3.17%), and isolated nonblocking inputs take 3.83429 (+4.24%).
+All completed trajectories reproduce the baseline adapter exactly. A diagnostic
+reduces stream synchronizations from 268 to 59 while barely changing summed GPU
+kernel work; counts alone do not establish a speedup. Direct BF16 loading in
+FP32 normalization fails first-batch model parity, including a retry matching
+the baseline's exact launch tilings. Preserve these failures and retain original
+normalization, metadata and input preparation. The same PID 11905 stays idle
+and resident. See the findings for collected receipts and instrumentation limits.
