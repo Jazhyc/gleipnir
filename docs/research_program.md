@@ -353,3 +353,14 @@ across compatible trials and future sessions. The
 matched state resets, reused validation, retained in-process caches and targeted
 GEMM attribution. This systems reference does not promote the FP4 path on quality
 or erase its strict numerical failures.
+
+The resident worker completes two baseline repeats and one diagnostic trajectory.
+Uninstrumented means are 3.65854/3.67101 seconds per update; exact loss/gradient
+logs, physical partitions and final FP32 adapters reproduce after state reset.
+All sixty updates add zero plans/specializations/graphs, and the second twenty-
+update trial takes 83.44038 seconds without preparation. The worker remains
+resident and idle. Context/shape attribution identifies frozen GDN projections
+as 9.67% of kernel time, LoRA GEMMs as 6.62%, and GDN scan/convolution/norm as
+25.24%. The next practical GEMM candidate is NVFP4 for large frozen GDN QKV/Z/
+output projections with shared packing, preserving BF16 recurrence and FP32
+gates/norm. It is proposed, not a new speed or numerical acceptance result.

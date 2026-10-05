@@ -44,3 +44,17 @@ shape matches. Select the next intervention from measured component cost and
 complete-update timing against this resident FP4 baseline. The older BF16
 control need not be repeated for each follow-up. No held-out quality promotion
 or claim of BF16 numerical equivalence follows from this campaign.
+
+The initial queue completes successfully. Baseline means are 3.65854/3.67101
+seconds per update, with identical losses, gradients, physical partitions and
+final FP32 adapters after reset. All sixty actual updates add zero compiler
+graphs, plans or specializations. The repeat takes 83.44038 seconds for twenty
+updates without preparation. The worker is left idle with model/caches resident.
+
+Shape/context attribution assigns 9.67% of summed GPU kernel time to frozen GDN
+projections and 6.62% to LoRA GEMMs; GDN scan/convolution/normalization accounts
+for another 25.24%. The next practical GEMM candidate is NVFP4 for large frozen
+GDN QKV/Z/output projections, with shared input packing where feasible. Preserve
+BF16 recurrence and small gate projections plus FP32 gates/normalization. This
+candidate is proposed, not implemented or numerically accepted. The findings
+record exact receipts, scope and source provenance.

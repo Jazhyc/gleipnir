@@ -853,3 +853,115 @@ Current profiling receipt SHA-256 values:
   `9c01df2de406f3debd117c8686237fdbf543113e5a5459e27660c678eb9993b7`.
 - `warmedprofile01/causal_adapter/adapter_model.safetensors`:
   `0b9ea36eb19d012c730107ae222b490b4ad10620c795646d93cae8f94e68b71e`.
+
+### Resident FP4 baseline and projection attribution
+
+On 2026-10-05 the user selects native FP4 MLPs plus BF16 FA4 as the timing
+baseline and requests a persistent training worker, including future sessions.
+Session `resident01` on the existing US-NC-2 B200 keeps PID `10916`, the loaded
+model, compiled modules, 376 native GEMM plans and 64 packed weight pairs
+(2,548,040,192 bytes) alive after its initial queue. It reuses network-volume
+compiler caches and the checksum-bound `warmed03` startup receipt. Original
+strict numerical failures remain explicit; no numerical, isolation or largest-
+batch probes are repeated. Actual updates retain finite/missing-gradient checks.
+
+The worker prepares the twenty benchmark shapes once without optimizer updates.
+Summed preparation time is 521.54616 seconds, including a 267.909-second first
+batch. This is process preparation despite persistent disk caches; subsequent
+compatible trials retain these in-process resources. All sixty actual updates
+across the initial queue add zero plans, Triton specializations, Dynamo graphs
+or Inductor graph-cache misses. No second full preparation replay is needed.
+
+| Resident trajectory | Mean synchronized seconds/update, updates 11–20 | Trial wall seconds |
+| --- | ---: | ---: |
+| `01baseline`, uninstrumented | 3.65854 | 605.36209, including preparation |
+| `02repeat`, uninstrumented | 3.67101 | 83.44038 |
+| `03gemmprofile`, instrumented at update 15 | 3.78291 | 138.85837 |
+
+The two uninstrumented means differ by 0.341%; their pooled mean is 3.66478
+seconds over twenty measured updates. Keep all samples; their individual ranges
+are 2.36495–5.27907 and 2.35135–5.29009 seconds. Use this resident baseline for
+future matched optimization trials, rather than repeating the historical BF16
+control. The profiled trajectory is diagnostic, not a third speed measurement.
+Trial wall time excludes initial imports/model loading; it includes state reset,
+the training call, final-master hashing and adapter export. Profiler
+export is also included.
+
+Each trial restores the initial FP32 adapters, resets AdamW/scheduler state and
+RNG, and reproduces the historical 147 physical partitions. All three trajectories
+have identical loss/gradient-norm/learning-rate logs and final-master hashes.
+`reset_validation.json` verifies the two baseline resets exactly. Initial master
+is `a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`;
+final master is `cf38e3e6881cebba402f3d16a1ed2d31dd3a259876375e887b2821cc9426fe3f`.
+All three saved adapters are byte-identical to `warmedprofile01`, with 256 FP32
+tensors and 679,511,752 bytes. This establishes reset correctness within the
+resident recipe, not equivalence to BF16 or the distinct `warmed03` trajectory.
+
+Update 15 records operand shapes, CPU/GPU External IDs and autograd sequence
+numbers. Forward regions are identified from actual FlashQLA/FA4 calls; sequence
+numbers link both compiled and ordinary `MmBackward0` nodes to their forward
+regions. This resolves shared GDN/full-attention weight shapes without assigning
+all ordinary GEMMs to adapters. GPU annotation and CPU durations are excluded.
+
+| Identified work in update 15 | Share of summed CUDA kernel time |
+| --- | ---: |
+| GDN scan, solve, convolution and normalization | 25.24% |
+| Frozen GDN projection GEMMs | 9.67% |
+| LoRA GEMMs, including adapter weight gradients | 6.62% |
+| Frozen full-attention projection GEMMs | 2.76% |
+| Language-model head GEMMs | 1.31% |
+| Unattributed ordinary GEMMs | 0.0013% |
+| BF16 FA4 | 13.62% |
+| Frozen FP4 MLP GEMMs and dynamic conversion | 9.99% |
+| SiLU/fused pointwise work without full module attribution | 10.06% |
+| Copies and casts | 8.14% |
+| Other/unclassified kernels | 12.60% |
+
+Frozen GDN projections are 47.50% of ordinary GEMM time, compared with LoRA's
+32.50%. The single fused GDN backward kernel accounts for 569.196 ms, 11.47% of
+total kernel time; it is the largest individual kernel. GDN preparation and
+causal convolution are additional work. The trace launches 46,144 CUDA kernels,
+with 4.96062 seconds of summed kernel duration and a 5.96702-second device span.
+The 1.01226-second gap without device events is instrumented evidence only.
+Do not multiply these shares by the unprofiled mean to claim component wall time.
+
+The next practical GEMM intervention is the large frozen GDN `in_proj_qkv`,
+`in_proj_z` and `out_proj` contractions, reusing the existing NVIDIA NVFP4
+packing/GEMM/descale machinery for forward and input gradients. Leave small
+`in_proj_a`/`in_proj_b` gate projections in BF16, recurrent Q/K/V in BF16 and
+gates/normalization in FP32. Investigate sharing input packing between QKV and Z
+projections, rather than duplicating conversion. This is a proposed intervention,
+not an implemented speedup or new numerical acceptance. Check its changed
+arithmetic once, then measure complete updates against the resident FP4 baseline.
+The largest broader target remains GDN backward/scan/convolution; core MLP FP4
+GEMM tuning has less room. No held-out quality promotion follows.
+
+All 39 initial launch-source archives are hash-verified. The loaded worker also
+archives its exact source and records SHA-256
+`c47c8292e9aa26443c2069ea30ff68102020369dafe6c943793892f92b611704`.
+This differs from its initial launch archive because candidate hot-loading support
+was added before the worker module imported. The stdlib-only control refactor and
+post-launch analyzer are separately recorded; the analyzer records its own hash.
+Fifty-five unique focused CPU checks pass across the completed feature and
+attribution work, with Ruff and whitespace checks. Adapters, trace, receipts and
+logs are collected locally. The queue is complete and the worker remains alive,
+idle, with the model/caches resident. There is no in-chat scheduling tool; no
+after-turn heartbeat monitoring is promised. See the
+[resident-worker decision](../decisions/b200_fp4_optimization_worker.md).
+
+Resident receipt SHA-256 values:
+
+- `01baseline/receipt.json`:
+  `ef3ef71321ea77f2cd486c50b1df28b78f89a9b7743ed4cc1fe97df132af378a`.
+- `02repeat/receipt.json`:
+  `739ad4e505d42de98365db81d748faee9996badb03a09876146fecc1e27f143b`.
+- `03gemmprofile/receipt.json`:
+  `d3e4a59a56ff454c62b49d8e1735ce0d937a25ce7b2571cfbb166b949e00488f`.
+- `reset_validation.json`:
+  `20e778ceefa018f3c751392b82a7389a7f6c30f5267ce2a2bae19960324675c3`.
+- `03gemmprofile/gemm_trace.json`:
+  `2146c169380735a28237a061e1bddaa079aa158f7b108758d9d523b247f884bd`.
+- `03gemmprofile/gemm_analysis.json`:
+  `916fe2811508cd58e2a5e351c09e7770f9a7105af1c3d8467762cb1e68c34f56`.
+- All three `adapter/adapter_model.safetensors` files:
+  `0b9ea36eb19d012c730107ae222b490b4ad10620c795646d93cae8f94e68b71e`.

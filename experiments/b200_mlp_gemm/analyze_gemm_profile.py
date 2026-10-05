@@ -76,19 +76,20 @@ def operator_context(events: list[dict]) -> tuple[dict, dict]:
     def kinds(parents):
         return set().union(*(region_kinds.get(e["name"], set()) for e in parents))
 
-    sequences = {}
+    sequences = defaultdict(set)
     for event in rows:
-        if event["name"] == "CompiledFunction":
+        sequence = event.get("args", {}).get("Sequence number")
+        if sequence is not None and "Backward" not in event["name"]:
             context = kinds(ancestry.get(event.get("args", {}).get("External id"), []))
-            if len(context) == 1:
-                sequences[event.get("args", {}).get("Sequence number")] = context
+            sequences[(event.get("pid"), sequence)].update(context)
     contexts = {}
     for external, parents in ancestry.items():
         context = kinds(parents)
         for parent in parents:
-            if parent["name"] == "CompiledFunctionBackward":
+            if "Backward" in parent["name"]:
                 context |= sequences.get(
-                    parent.get("args", {}).get("Sequence number"), set()
+                    (parent.get("pid"), parent.get("args", {}).get("Sequence number")),
+                    set(),
                 )
         if len(context) == 1:
             contexts[external] = next(iter(context))

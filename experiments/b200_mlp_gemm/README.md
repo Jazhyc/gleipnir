@@ -419,3 +419,23 @@ without restarting the model process. Submission/status commands import only
 the stdlib and do not load Torch or Transformers. GEMM shape attribution identifies
 how much ordinary contraction time belongs to frozen GDN projections versus
 LoRA and other work before selecting the next implementation target.
+
+Result: `resident01` completes all three twenty-update trials and remains alive,
+idle, as PID `10916`. The two uninstrumented baselines average 3.65854/3.67101
+seconds per measured update and reproduce exact loss/gradient logs, physical
+partitions and final FP32 adapters. All sixty updates add zero plans,
+specializations or compiler graphs; only the first trial prepares shapes. The
+repeat takes 83.44038 seconds including adapter export, without preparation.
+
+GEMM shapes and forward/backward context identify frozen GDN projections as
+9.67% of summed kernel time and LoRA GEMMs as 6.62%; GDN scan/convolution/
+normalization contributes another 25.24%. The next practical GEMM candidate is
+large frozen GDN QKV/Z/output projections in NVFP4, sharing input packing where
+possible and retaining BF16 recurrence/small gate projections and FP32 gates/
+normalization. No candidate arithmetic has been introduced yet. The raw trace,
+adapters and receipts are collected; see the findings for hashes and limits.
+
+```bash
+python -m experiments.b200_mlp_gemm.analyze_gemm_profile \
+  results/b200_mlp_gemm/resident01
+```

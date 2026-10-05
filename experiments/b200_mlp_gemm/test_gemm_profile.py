@@ -51,7 +51,13 @@ def test_external_id_connects_shapes_to_kernel_only_duration():
     assert row["fraction_of_ordinary_gemm_time"] == 1.0
 
 
-def test_attention_call_and_autograd_sequence_disambiguate_backward():
+@pytest.mark.parametrize(
+    ("forward_name", "backward_name"),
+    [("CompiledFunction", "CompiledFunctionBackward"), ("aten::mm", "MmBackward0")],
+)
+def test_attention_call_and_autograd_sequence_disambiguate_backward(
+    forward_name, backward_name
+):
     modules = [
         module("x.linear_attn.in_proj_z", [4096, 2560]),
         module("x.self_attn.q_proj.base_layer", [4096, 2560]),
@@ -72,15 +78,15 @@ def test_attention_call_and_autograd_sequence_disambiguate_backward():
     events = [
         event("Torch-Compiled Region: 0/7", "user_annotation", 0, 100),
         event(
-            "CompiledFunction",
+            forward_name,
             "cpu_op",
             10,
             50,
             **{"External id": 1, "Sequence number": 7},
         ),
-        event("ChunkGatedDeltaRuleFunction", "cpu_op", 20, 10, **{"External id": 2}),
+        event("ChunkGatedDeltaRuleFunction", "cpu_op", 70, 10, **{"External id": 2}),
         event(
-            "CompiledFunctionBackward",
+            backward_name,
             "cpu_op",
             200,
             100,
