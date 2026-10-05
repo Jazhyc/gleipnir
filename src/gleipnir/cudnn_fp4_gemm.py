@@ -106,7 +106,15 @@ def _row_inverse(X, INV, K: tl.constexpr, BLOCK: tl.constexpr):
 
 @triton.jit
 def _pack_row_blocks(
-    X, INV, Q, SF, K: tl.constexpr, GROUPS: tl.constexpr, BLOCK: tl.constexpr
+    X,
+    INV,
+    Q,
+    SF,
+    K: tl.constexpr,
+    GROUPS: tl.constexpr,
+    BLOCK: tl.constexpr,
+    HARDWARE: tl.constexpr = False,
+    PADDED_GROUPS: tl.constexpr = 0,
 ):
     g = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     j = tl.arange(0, 16)
@@ -115,28 +123,42 @@ def _pack_row_blocks(
     )
     inv = tl.load(INV + g // (K // 16), g < GROUPS, other=1)
     scale = (tl.max(tl.abs(v), 1) * inv / 6.0).to(tl.float8e4nv).to(tl.float32)
-    a = tl.abs(v) * inv[:, None] / tl.where(scale > 0, scale, 1.0)[:, None]
-    code = (
-        (a > 0.25).to(tl.int32)
-        + (a >= 0.75).to(tl.int32)
-        + (a > 1.25).to(tl.int32)
-        + (a >= 1.75).to(tl.int32)
-        + (a > 2.5).to(tl.int32)
-        + (a >= 3.5).to(tl.int32)
-        + (a > 5.0).to(tl.int32)
-    )
-    code = (code | ((v.to(tl.int32, bitcast=True) >> 28) & 8)).to(tl.uint8)
-    lo, hi = tl.split(tl.reshape(code, (BLOCK, 8, 2)))
+    if HARDWARE:
+        normalized = v * inv[:, None] / tl.where(scale > 0, scale, 1.0)[:, None]
+        lo, hi = tl.split(tl.reshape(normalized, (BLOCK, 8, 2)))
+        packed = tl.inline_asm_elementwise(
+            "{ .reg .b8 p; cvt.rn.satfinite.e2m1x2.f32 p, $2, $1; "
+            "mov.b32 $0, {p, p, p, p}; }",
+            constraints="=r,f,f",
+            args=[lo, hi],
+            dtype=tl.uint32,
+            is_pure=True,
+            pack=1,
+        ).to(tl.uint8)
+    else:
+        a = tl.abs(v) * inv[:, None] / tl.where(scale > 0, scale, 1.0)[:, None]
+        code = (
+            (a > 0.25).to(tl.int32)
+            + (a >= 0.75).to(tl.int32)
+            + (a > 1.25).to(tl.int32)
+            + (a >= 1.75).to(tl.int32)
+            + (a > 2.5).to(tl.int32)
+            + (a >= 3.5).to(tl.int32)
+            + (a > 5.0).to(tl.int32)
+        )
+        code = (code | ((v.to(tl.int32, bitcast=True) >> 28) & 8)).to(tl.uint8)
+        lo, hi = tl.split(tl.reshape(code, (BLOCK, 8, 2)))
+        packed = lo | (hi << 4)
     tl.store(
         Q + g[:, None] * 8 + tl.arange(0, 8)[None, :],
-        lo | (hi << 4),
+        packed,
         g[:, None] < GROUPS,
     )
     r, c = g // (K // 16), g % (K // 16)
     offset = (
         ((r // 128 * (K // 64) + c // 4) * 32 + r % 32) * 4 + (r % 128) // 32
     ) * 4 + c % 4
-    tl.store(SF + offset, scale, g < GROUPS)
+    tl.store(SF + offset, scale, g < (PADDED_GROUPS if HARDWARE else GROUPS))
 
 
 PACKING_KERNEL_METADATA: dict = {}
@@ -194,10 +216,13 @@ def pack_operand(
     fused_amax: bool = False,
     row_amax: bool = False,
     chunked_rows: bool = False,
+    hardware_packing: bool = False,
 ) -> PackedNvfp4:
     """Pack BF16 CUDA data with dynamic global scaling and RNE E2M1 codes."""
     if x.requires_grad and torch.is_grad_enabled():
         raise ValueError("native FP4 packing requires explicit autograd integration")
+    if hardware_packing and (not row_amax or not chunked_rows or weight):
+        raise ValueError("hardware packing requires chunked per-row activations")
     if (
         x.ndim != 2
         or not x.is_contiguous()
@@ -212,7 +237,7 @@ def pack_operand(
             raise ValueError("row amax needs activation rows and K divisible by 64")
         rows, k = x.shape
         q = torch.empty((rows, k // 2), dtype=torch.uint8, device=x.device)
-        sf = torch.zeros(
+        sf = (torch.empty if hardware_packing else torch.zeros)(
             ((rows + 127) // 128 * 128, k // 16),
             dtype=torch.float8_e4m3fn,
             device=x.device,
@@ -222,12 +247,23 @@ def pack_operand(
             reduction = _row_inverse[(rows,)](
                 x, inverse, k, triton.next_power_of_2(k), num_warps=8
             )
-            packing = _pack_row_blocks[(triton.cdiv(rows * k // 16, 128),)](
-                x, inverse, q, sf, k, rows * k // 16, 128, num_warps=4
+            groups = sf.numel() if hardware_packing else rows * k // 16
+            packing = _pack_row_blocks[(triton.cdiv(groups, 128),)](
+                x,
+                inverse,
+                q,
+                sf,
+                k,
+                rows * k // 16,
+                128,
+                hardware_packing,
+                sf.numel(),
+                num_warps=4,
             )
             PACKING_KERNEL_METADATA[(k, True)] = {
                 "reduction": _kernel_metadata(reduction),
                 "packing": _kernel_metadata(packing),
+                "hardware_packing": hardware_packing,
             }
         else:
             packing = _pack_rows[(rows,)](

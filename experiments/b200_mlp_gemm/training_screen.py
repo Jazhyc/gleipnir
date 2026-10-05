@@ -71,7 +71,52 @@ def accept_integrated_pilot(
     rows = receipt["shapes"]
     if [r["tokens"] for r in rows] != [193, 4096, 16384]:
         raise ValueError("incomplete FP4 integration shapes")
+    hardware = receipt.get("installation", {}).get("hardware_packing", False)
+    fused = receipt.get("installation", {}).get("fused_descale", False)
+    if fused and not hardware:
+        raise ValueError("fused MLP must retain validated hardware packing")
+    if hardware:
+        packing = receipt.get("packing_validation", {})
+        cases = packing.get("cases", [])
+        if packing.get("status") != "complete" or [
+            (c["rows"], c["width"]) for c in cases
+        ] != [(m, k) for m in (193, 4096, 16384) for k in (2560, 9216, 18432)]:
+            raise ValueError("complete hardware packing receipt required")
+        if any(
+            c.get("bitwise")
+            != {"codes": True, "scales_including_padding": True, "row_inverse": True}
+            or c.get("changed_input_bitwise") is not True
+            or c.get("graph_copy_included") is not True
+            for c in cases
+        ):
+            raise ValueError("hardware packing operand/replay mismatch")
     for row in rows:
+        if fused:
+            compared = row.get("four_way_graph_timing", {}).get("samples_ms", {})
+            if set(compared) != {
+                "baseline",
+                "candidate",
+                "reference_fp4",
+                "hardware_fp4",
+            } or any(
+                len(v) != 10 or not all(math.isfinite(x) and x > 0 for x in v)
+                for v in compared.values()
+            ):
+                raise ValueError("complete four-way fused MLP timings required")
+            if any(
+                compared[k] != row["graph_timing"]["samples_ms"][k]
+                for k in ("baseline", "candidate")
+            ):
+                raise ValueError("fused MLP comparison timings drifted")
+            if row["tokens"] >= 4096 and statistics.mean(compared["candidate"]) >= (
+                statistics.mean(compared["hardware_fp4"])
+            ):
+                raise ValueError("fused MLP is not faster than hardware packing alone")
+        if hardware and (
+            row.get("reference_fp4_output_relative_l2") != 0
+            or row.get("reference_fp4_gradient_relative_l2") != [0.0] * 7
+        ):
+            raise ValueError("hardware packing changed complete-MLP arithmetic")
         if (
             row["finite"] is not True
             or not 0 <= row["oracle_output_relative_l2"] <= 0.01
@@ -110,6 +155,8 @@ def main() -> None:
         raise ValueError("pilot checksum drift")
     pilot = json.loads(args.pilot.read_text())
     fp4 = pilot.get("variant") == "fp4_integrated"
+    hardware_packing = bool(pilot.get("installation", {}).get("hardware_packing"))
+    fused_descale = bool(pilot.get("installation", {}).get("fused_descale"))
     (accept_integrated_pilot if fp4 else accept_pilot)(pilot)
     if sha256_file(ROOT / REFERENCE) != REFERENCE_SHA256:
         raise ValueError("FA4 historical control checksum drift")
@@ -142,6 +189,8 @@ def main() -> None:
     if fp4:
         job["packing_learning_gradient_tolerance"] = 0.05
         job["selective_torch_compile_mode"] = "reduce-overhead"
+        job["native_fp4_hardware_packing"] = hardware_packing
+        job["native_fp4_fused_descale"] = fused_descale
     # MLP code changed; request fresh model gates instead of claiming startup reuse.
     job.pop("startup_validation_reference", None)
     job.pop("startup_validation_reference_sha256", None)
@@ -180,11 +229,14 @@ def main() -> None:
         MAX_JOBS="16",
         PYTHONUNBUFFERED="1",
         GLEIPNIR_FP4_RUNTIME_REPORT=str(output / "native_runtime.json"),
+        GLEIPNIR_FP4_HARDWARE_PACKING="1" if hardware_packing else "0",
+        GLEIPNIR_FP4_FUSED_DESCALE="1" if fused_descale else "0",
     )
     sources = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         Path("src/gleipnir/mlp_gemm.py"),
         Path("src/gleipnir/cudnn_fp4_mlp.py"),
+        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
         Path("src/gleipnir/cudnn_fp4_gemm.py"),
         Path("src/gleipnir/nvfp4_pack.py"),
         Path("experiments/b200_mlp_gemm/README.md"),
@@ -208,6 +260,8 @@ def main() -> None:
         "pilot_sha256": args.pilot_sha256,
         "control_sha256": REFERENCE_SHA256,
         "mlp_intervention": "nvfp4_forward_dgrad" if fp4 else "merged_bf16",
+        "hardware_packing": hardware_packing,
+        "fused_descale": fused_descale,
         "candidate_compile_mode": "reduce-overhead" if fp4 else "default",
         "compile_mode_matches_control": not fp4,
         "control": control,

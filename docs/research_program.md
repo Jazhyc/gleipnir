@@ -283,3 +283,20 @@ four native FP4 GEMMs, 16.71% to adapters and 31.35% to compiled elementwise/cas
 concatenation work. Conversion costs almost twice as much as native contraction;
 producer/epilogue fusion is a better supported next target than isolated core
 GEMM tuning. These instrumented shares do not replace synchronized wall timings.
+
+The hardware-packing follow-up replaces software E2M1 encoding with Blackwell's
+native conversion instruction and fills scale padding inside the same kernel.
+It preserves all packed operands and complete-MLP output/gradients exactly.
+At 4096/16384 tokens, matched complete-MLP graph time drops 11.86%/14.76% versus
+compiled BF16 and 10.10%/12.80% versus the old FP4 integration. Ordinary dispatch
+is still slower than BF16. This selects the opt-in hardware path for fresh
+packed-model checks; it does not establish model-update speed or training
+quality, and BF16 FA4 remains the standard.
+
+Fusing per-row output descaling into the same pinned NVIDIA GEMM, while retaining
+the virtual raw BF16 rounding, also preserves bitwise arithmetic. The combined
+complete-MLP graph saves 18.54%/24.42% versus compiled BF16 at 4096/16384 tokens
+and 7.76%/8.75% versus hardware packing alone in a matched four-way screen.
+All input/adapter gradients and isolation checks pass. This selects the combined
+experimental path for fresh full-model gates; the ordinary dispatch path still
+loses, and no model-update speed or quality equivalence follows from the pilot.

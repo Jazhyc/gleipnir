@@ -351,3 +351,157 @@ archives are collected locally; every archive hash matches its launch receipt.
 The focused suite passes 37 tests, Ruff and Git whitespace checks pass. The
 BF16 FA4 default remains unchanged. The B200 is idle and remains running in
 US-NC-2 with retained caches; no after-turn monitoring is promised.
+
+### Hardware conversion preserves arithmetic and improves complete MLP time
+
+The opt-in follow-up replaces the software E2M1 threshold encoder with
+Blackwell's `cvt.rn.satfinite.e2m1x2.f32`, using the same low/even and high/odd
+nibble convention as the pinned NVIDIA quantizer. It also writes padded scale
+slots inside packing instead of separately clearing the scale buffer. Keep the
+same row amax, E4M3 block scales, global weight scale, frozen weight orientations,
+GEMM tile, FP32 masters and explicit input-gradient quantization contract.
+These are implementation changes; neither scale scope nor precision changes.
+
+First attempt `conversion01` passes all nine packing cases, then fails because
+the diagnostic decoded oracle still accepts four arguments and the hardware
+wrapper supplies five. Preserve the failed receipt as a harness failure. The
+corrected `conversion02/conversions` completes all packing and MLP cases.
+Codes, the entire scale blob including padding, and row inverse scales match
+bit for bit at 193/4096/16384 rows and widths 2560/9216/18432, including zero,
+signed-zero and midpoint-tie inputs. Changed-input replay is bitwise identical.
+Both packers use 38 registers and zero spills; reduction uses 16/28/32 registers
+with zero spills. A register-count change does not explain this improvement.
+
+| Rows | Width | Software pack graph, ms | Hardware pack graph, ms | Time reduction |
+| --- | ---: | ---: | ---: | ---: |
+| 4096 | 2560 | 0.06118 | 0.05653 | 7.60% |
+| 4096 | 9216 | 0.12188 | 0.08632 | 29.18% |
+| 4096 | 18432 | 0.21871 | 0.15371 | 29.72% |
+| 16384 | 2560 | 0.13817 | 0.10031 | 27.40% |
+| 16384 | 9216 | 0.40403 | 0.27343 | 32.32% |
+| 16384 | 18432 | 0.76133 | 0.50166 | 34.11% |
+
+These complete pack timings include the same input copy, row reduction, packing
+and scale layout; six warmups and ten alternating synchronized samples are
+used. The 193-row pack gains range from -0.73% to +0.74%, with tiny absolute
+differences. Hardware packing fills padded rows explicitly, so short shapes
+need not benefit even though large widths do.
+
+The same process compares complete compiled PEFT BF16, the existing compiled
+software-packed FP4 MLP and the hardware-packed MLP. Both FP4 paths share frozen
+weights/plans, geometry and original masters. Native output and all seven eager
+gradients remain exactly unchanged from the software-packed FP4 path at every
+shape. Independent decoded-operand checks, finite/nonmissing gradients, exact
+row isolation and changed-input/live-master graph agreement pass. Original-BF16
+quantization errors are unchanged; no quality equivalence follows.
+
+| Tokens | BF16 graph, ms | Software FP4 graph, ms | Hardware FP4 graph, ms | Hardware vs BF16 reduction | Hardware vs software reduction |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 193 | 0.68363 | 0.64788 | 0.67148 | 1.78% | -3.64% |
+| 4096 | 1.20118 | 1.17759 | 1.05870 | 11.86% | 10.10% |
+| 16384 | 4.66143 | 4.55637 | 3.97331 | 14.76% | 12.80% |
+
+Each graph includes caller copies, all dynamic conversions, adapter casts/GEMMs,
+SiLU, native input gradients and all six adapter gradients, with six warmups
+and ten alternating synchronized samples across all three legs. Ordinary
+dispatch still loses to BF16: at 16384 it takes 11.09466 ms versus 5.99310 ms;
+software FP4 takes 11.25618 ms. Hardware packing therefore passes the >=5%
+complete-MLP graph selection rule at both long shapes, but the ungraphed path
+does not provide a training throughput improvement. No repeated FA4 full-model
+control is needed; any model screen must reuse its exact frozen contract,
+initial adapter and rows, and request fresh precision/packing/memory gates.
+
+Completed pilot SHA-256:
+`a32699073a0fc4993d3f1b5328cbcea2f0ca0fcc05bfa0c9b45a372051a8940c`.
+Its executed-source archive matches every launch hash. This receipt selects
+only the hardware packer, not a fused descaling epilogue or the standard recipe.
+
+### Native row-descaling epilogue preserves raw BF16 rounding
+
+The first epilogue attempt in `conversion02/epilogue` fails before timing because
+the already planned projection graph is immutable. The corrected
+`descale01/epilogue` constructs a fresh graph with exactly the original operand
+dimensions, strides, FP4/E4M3 formats and selected FROST tile configuration.
+It declares the raw matmul result BF16 while virtual, then multiplies by a
+per-row FP32 scale and emits BF16. A small row-scale kernel computes only
+`1 / (inverse_a[row] * inverse_b)`; the full matrix output-descaling pass and
+its additional matrix buffer are removed. This uses NVIDIA's existing pointwise
+epilogue compiler and MMA core, without a kernel-template fork or dtype change.
+
+All twelve cases complete with bitwise-identical outputs to the original
+separately-descaled GEMM. Finite/nonzero outputs, exact row isolation and changed-
+input graph replay pass throughout. Both legs use hardware packing and the same
+original weight pair and native tile. Timings include conversion, row scales
+and symmetric caller copies, six warmups and ten alternating synchronized
+samples. These are isolated projection paths, not a complete MLP or model update.
+
+| Tokens | Path | Separate descaling, ms | Fused epilogue, ms | Time reduction |
+| --- | --- | ---: | ---: | ---: |
+| 4096 | Gate/up forward | 0.17350 | 0.12305 | 29.08% |
+| 4096 | Gate/up input gradient | 0.23136 | 0.22643 | 2.13% |
+| 4096 | Down forward | 0.13333 | 0.12820 | 3.85% |
+| 4096 | Down input gradient | 0.11499 | 0.09076 | 21.08% |
+| 16384 | Gate/up forward | 0.56384 | 0.37151 | 34.11% |
+| 16384 | Gate/up input gradient | 0.75335 | 0.72440 | 3.84% |
+| 16384 | Down forward | 0.41067 | 0.38396 | 6.50% |
+| 16384 | Down input gradient | 0.33121 | 0.23711 | 28.41% |
+
+The wide outputs benefit most from eliminating a matrix pass; this timing
+pattern supports the fusion but does not itself measure memory-bandwidth
+saturation. At 193 rows, one path improves 4.46% and the other three regress
+3.71–9.09%; keep the short-shape results. Do not add independent path timings
+into a claimed optimizer-update improvement. The combined MLP follow-up must
+retain complete input/adapter gradients and compare against packing alone,
+software FP4 and BF16 before selecting the full-model intervention.
+
+Receipt SHA-256:
+`2efae72f96d15858b07089e68196b82ffd15f8568db36e6df6b804d3bdb048d5`.
+All archived source hashes match the launch receipt. Preserve the earlier graph-
+mutation failure separately; it is an API-construction failure, not arithmetic
+evidence against the corrected epilogue.
+
+### Combined conversion optimizations: complete MLP selection
+
+`fusedmlp01/fusedmlp` registers the row-descaling native GEMM in both frozen
+forward and input-gradient operators. Retain the software and hardware-only
+operators as independent controls; packed weights are shared and plans are
+keyed separately by epilogue mode, device and geometry, with the live caller
+stream supplied on every launch. Keep original parameter identities and all
+six FP32 adapter masters. The default profile is untouched.
+
+All nine packing checks and all three complete-MLP cases pass. The combined
+output and every one of seven gradients are exactly identical to the previous
+software-packed FP4 MLP. Native-versus-decoded implementation errors stay below
+0.14%; finite/missing-gradient, exact row isolation and changed-input/live-master
+graph checks pass. Original-BF16 quantization disagreement remains unchanged.
+These are arithmetic and wiring checks, not model-quality acceptance.
+
+| Tokens | BF16 graph, ms | Software FP4 graph, ms | Hardware-only FP4 graph, ms | Combined FP4 graph, ms | Combined vs BF16 reduction | Combined vs hardware-only reduction |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 193 | 0.68228 | 0.66572 | 0.67311 | 0.66763 | 2.15% | 0.81% |
+| 4096 | 1.20102 | 1.17731 | 1.06061 | 0.97835 | 18.54% | 7.76% |
+| 16384 | 4.61722 | 4.35546 | 3.82395 | 3.48949 | 24.42% | 8.75% |
+
+All four legs are measured in the same process with complete MLP forward,
+input/adapter backward, dynamic packing/scaling and caller copies. Six warmups
+and ten alternating synchronized wall-time samples are used. Within-attempt
+legs are matched; do not treat timing differences between separate attempts as
+an isolated causal effect. Ordinary dispatch remains slower than BF16: at
+16384 the combined path takes 10.97324 ms versus 5.97418 ms; hardware-only takes
+10.97040 ms. Whole-model graph integration is therefore essential to realizing
+the local gain, and these data cannot establish an optimizer-update improvement.
+
+The combined candidate passes the predeclared >=5% improvement rule at both
+long shapes and beats hardware packing alone. Select it for a bounded fresh
+strict model screen; the selector requires matched four-way timings and exact
+operand/MLP arithmetic evidence. The twenty-update screen uses the immutable
+320-row FA4 cohort, targets and initial master, while recording both conversion
+flags and the changed `reduce-overhead` decoder compile mode. Request all fresh
+precision/packing/finite/memory gates; no startup-receipt reuse or widening of
+the 5% limit occurs. A failed gate stops before optimizer updates.
+
+Completed combined pilot SHA-256:
+`1710694a780a1062b7d034903e422eac148c98ae61f6f28602bcda0c8f6e1aa7`.
+Its archive matches every launch source hash. Fifty focused CPU tests pass,
+including three registered autograd/compiler paths, optimizer updates on live
+FP32 masters and fail-closed candidate selection; Ruff and whitespace checks pass.

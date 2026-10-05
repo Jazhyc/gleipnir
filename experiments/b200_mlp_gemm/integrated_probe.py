@@ -9,6 +9,7 @@ import statistics
 import time
 import traceback
 from pathlib import Path
+from types import MethodType
 from unittest.mock import patch
 
 import torch
@@ -21,7 +22,9 @@ from gleipnir.bf16_lora import configure_bf16_reductions
 from gleipnir.cudnn_fp4_gemm import decode_operand, pack_operand
 
 
-def decoded_linear(x, weight, other, backward):
+def decoded_linear(
+    x, weight, other, backward, hardware_packing=False, fused_descale=False
+):
     with torch.no_grad():
         pair = native.prepare_weights(weight, other)
         b = pair.backward if backward else pair.forward
@@ -57,7 +60,10 @@ def timings(functions):
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--hardware-packing", action="store_true")
+    parser.add_argument("--fused-descale", action="store_true")
     args = parser.parse_args()
+    args.hardware_packing = args.hardware_packing or args.fused_descale
     args.output.mkdir(parents=True, exist_ok=False)
     receipt = args.output / "probe.json"
     report = {
@@ -86,15 +92,34 @@ def main() -> None:
             revision="851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
             local_files_only=True,
         ).text_config
+        if args.hardware_packing:
+            from experiments.b200_mlp_gemm.conversion_probe import (
+                check_hardware_packing,
+            )
+
+            report["packing_validation"] = check_hardware_packing(args.output)
         m = make_mlp(config)
         original = m.forward
         parameters = [p for p in m.parameters() if p.requires_grad]
-        report["installation"] = native.install_fp4_mlp(m)
+        report["installation"] = native.install_fp4_mlp(
+            m, hardware_packing=args.hardware_packing, fused_descale=args.fused_descale
+        )
         candidate = m.forward
         compiled = {
             "baseline": torch.compile(original, fullgraph=True, dynamic=True),
             "candidate": torch.compile(candidate, fullgraph=True, dynamic=True),
         }
+        reference_fp4 = MethodType(native.fp4_mlp_forward, m)
+        if args.fused_descale:
+            compiled["hardware_fp4"] = torch.compile(
+                MethodType(native.hardware_fp4_mlp_forward, m),
+                fullgraph=True,
+                dynamic=True,
+            )
+        if args.hardware_packing:
+            compiled["reference_fp4"] = torch.compile(
+                reference_fp4, fullgraph=True, dynamic=True
+            )
         report["runtime"] = {
             "torch": torch.__version__,
             "cuda": torch.version.cuda,
@@ -120,11 +145,27 @@ def main() -> None:
             with patch.object(native, "_native_linear", decoded_linear):
                 ref, ref_grads = step(candidate)
             bf16_y, bf16_grads = step(original)
+            reference_checks = {}
+            if args.hardware_packing:
+                old_y, old_grads = step(reference_fp4)
+                reference_checks = {
+                    "reference_fp4_output_relative_l2": relative_l2(y, old_y),
+                    "reference_fp4_gradient_relative_l2": [
+                        relative_l2(a, b) for a, b in zip(grads, old_grads, strict=True)
+                    ],
+                }
+                if (
+                    reference_checks["reference_fp4_output_relative_l2"] != 0
+                    or max(reference_checks["reference_fp4_gradient_relative_l2"]) != 0
+                ):
+                    raise ValueError("hardware packing changed complete-MLP arithmetic")
+                del old_y, old_grads
             changed = x.detach().clone()
             changed[:, 17:] *= 31.7
             with torch.no_grad(), torch.autocast("cuda", dtype=torch.bfloat16):
                 isolated = candidate(changed)
             row = {
+                **reference_checks,
                 "tokens": tokens,
                 "oracle_output_relative_l2": relative_l2(y, ref),
                 "oracle_gradient_relative_l2": [
@@ -182,6 +223,15 @@ def main() -> None:
             row["graph_timing"] = timings(
                 {k: lambda g=g: replay(g) for k, g in graphs.items()}
             )
+            if args.hardware_packing:
+                prefix = "four_way" if args.fused_descale else "three_way"
+                row[prefix + "_graph_timing"] = row["graph_timing"]
+                row[prefix + "_ordinary_timing"] = row["ordinary_timing"]
+                for key in ("ordinary_timing", "graph_timing"):
+                    row[key] = {
+                        k: {name: v[name] for name in ("baseline", "candidate")}
+                        for k, v in row[key].items()
+                    }
             row["graph_copy_included"] = True
             # Replay must read changed inputs and the live FP32 adapter master.
             saved_master = parameters[1].detach().clone()

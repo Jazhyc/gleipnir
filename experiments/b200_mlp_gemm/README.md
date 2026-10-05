@@ -188,3 +188,51 @@ The separate `integrateprofile01/integratedprofile` trace finds conversion takes
 [`docs/findings/b200_mlp_gemm.md`](../../docs/findings/b200_mlp_gemm.md) for raw
 timings, profiler scope, numerical distinctions and receipt hashes. The BF16
 FA4 standard is unchanged; this is an explicit experimental integration.
+
+## Hardware packing follow-up
+
+Hypothesis: Blackwell's native nearest-even E2M1 conversion instruction reduces
+packing cost compared with the seven-comparison software encoder, preserving
+all quantized operands. The opt-in hardware path also writes padded E4M3 scale
+slots inside packing so a separate scale-buffer clearing launch is unnecessary.
+Keep identical per-row amax, block scales, weight pairs, native GEMM tiles,
+BF16 rounding and explicit input/adapter gradient contract. Do not change
+precision, global scale scope, adapter masters or the standard training recipe.
+
+Before measuring complete MLPs, require bitwise codes, scale blobs including
+padding, and row inverses against the retained software packer at 193/4096/16384
+rows and widths 2560/9216/18432. Include zero rows, signed zero, midpoint ties
+and changed-input replay. Record registers/spills and ten alternating pack-graph
+samples with copies after six warmups. Then run the existing complete-MLP gates
+and timing protocol with three same-process legs: compiled BF16 PEFT, compiled
+software-packed FP4, and compiled hardware-packed FP4. Require exactly unchanged
+native MLP output/all seven gradients versus software packing; retain the
+independent decoded oracle, isolation and live-master checks. Only >=5% faster
+complete MLP versus BF16 at both long shapes advances to fresh full-model gates.
+Stop on mismatch, missing/nonfinite gradients, replay failure, OOM or 30 minutes.
+Preserve failed receipts and do not replace historical wall time with profiles.
+
+A separate twelve-case epilogue probe adapts the existing pinned FROST graph,
+keeping its exact tile configuration, with a rowwise FP32 descale multiply.
+Declare the original raw GEMM tensor BF16 before multiplication, preserving its
+rounding even though that tensor becomes virtual. Reduce global memory traffic
+by preparing only one FP32 scale per row, then applying it in the GEMM epilogue.
+Use hardware packing in both candidate and reference; require bitwise outputs
+against the existing separately-descaled GEMM, finite/nonzero outputs, row
+isolation and changed-input replay before interpreting timings. Include all
+packing/scaling and symmetric input copies. Six warmups and ten alternating
+samples cover both orientations of both projections at all three row counts.
+Stop on a failed case or 30 minutes. These isolated timings cannot substitute
+for a complete-MLP or model-update screen, or promote a recipe.
+
+After the corrected fresh epilogue graph passes all twelve bitwise cases, test
+the combined registered-autograd MLP with four same-process compiled graph
+legs: BF16 PEFT, software FP4, hardware-packed FP4, and hardware packing plus
+row-descaling epilogues. Preserve the explicit BF16 rounding and quantized
+input-gradient contract. Repeat the nine packing gates, exact complete-MLP
+output/seven-gradient agreement against software FP4, decoded oracle, row
+isolation, live-master replay, six warmups and ten alternating synchronized
+samples at all three shapes. Only a complete passing candidate with >=5%
+gain over BF16 at both long shapes advances to fresh strict full-model gates;
+choose the better measured complete MLP candidate rather than add isolated
+path savings. Stop at 30 minutes or a failed gate and preserve prior receipts.

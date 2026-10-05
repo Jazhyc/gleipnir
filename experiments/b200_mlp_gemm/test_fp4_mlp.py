@@ -21,7 +21,7 @@ def module():
 def decoded_native(monkeypatch):
     calls = []
 
-    def kernel(x, weight, other, backward):
+    def kernel(x, weight, other, backward, hardware_packing=False, fused_descale=False):
         calls.append(backward)
         w = weight if other is None else torch.cat((weight, other))
         return F.linear(x, w.t() if backward else w)
@@ -30,7 +30,12 @@ def decoded_native(monkeypatch):
     return calls
 
 
-def test_registered_backward_preserves_all_master_gradients(decoded_native):
+@pytest.mark.parametrize(
+    "hardware_packing,fused_descale", [(False, False), (True, False), (True, True)]
+)
+def test_registered_backward_preserves_all_master_gradients(
+    decoded_native, hardware_packing, fused_descale
+):
     torch.manual_seed(41)
     m = module()
     original = m.forward
@@ -42,7 +47,9 @@ def test_registered_backward_preserves_all_master_gradients(decoded_native):
     with torch.autocast("cpu", dtype=torch.bfloat16):
         ref = original(x)
         ref_grads = torch.autograd.grad(ref, (x, *masters), dy)
-    native.install_fp4_mlp(m)
+    native.install_fp4_mlp(
+        m, hardware_packing=hardware_packing, fused_descale=fused_descale
+    )
     with torch.autocast("cpu", dtype=torch.bfloat16):
         y = m(x)
         grads = torch.autograd.grad(y, (x, *masters), dy)
@@ -56,10 +63,17 @@ def test_registered_backward_preserves_all_master_gradients(decoded_native):
     assert all(g is not None and torch.isfinite(g).all() for g in grads)
 
 
-def test_fake_and_fullgraph_backward_updates_live_masters(decoded_native):
+@pytest.mark.parametrize(
+    "hardware_packing,fused_descale", [(False, False), (True, False), (True, True)]
+)
+def test_fake_and_fullgraph_backward_updates_live_masters(
+    decoded_native, hardware_packing, fused_descale
+):
     torch.manual_seed(41)
     m = module()
-    native.install_fp4_mlp(m)
+    native.install_fp4_mlp(
+        m, hardware_packing=hardware_packing, fused_descale=fused_descale
+    )
     compiled = torch.compile(m, backend="aot_eager", fullgraph=True, dynamic=True)
     opt = torch.optim.SGD([p for p in m.parameters() if p.requires_grad], lr=0.01)
     initial = {n: p.detach().clone() for n, p in m.named_parameters()}
@@ -144,6 +158,104 @@ def test_model_selection_requires_complete_live_fp4_graph_evidence(failure):
         r["shapes"][0]["graph_timing"]["samples_ms"]["candidate"].pop()
     elif failure == "gain":
         r["shapes"][2]["graph_timing"]["samples_ms"]["candidate"] = [9.8] * 10
+    if failure is None:
+        accept_integrated_pilot(r)
+    else:
+        with pytest.raises(ValueError):
+            accept_integrated_pilot(r)
+
+
+@pytest.mark.parametrize("failure", [None, "missing", "padding", "replay", "gradient"])
+def test_hardware_selection_requires_bitwise_operand_and_mlp_evidence(failure):
+    from experiments.b200_mlp_gemm.training_screen import accept_integrated_pilot
+
+    r = integrated_receipt()
+    r["installation"] = {"hardware_packing": True}
+    r["packing_validation"] = {
+        "status": "complete",
+        "cases": [
+            {
+                "rows": m,
+                "width": k,
+                "bitwise": {
+                    "codes": True,
+                    "scales_including_padding": True,
+                    "row_inverse": True,
+                },
+                "changed_input_bitwise": True,
+                "graph_copy_included": True,
+            }
+            for m in (193, 4096, 16384)
+            for k in (2560, 9216, 18432)
+        ],
+    }
+    for row in r["shapes"]:
+        row.update(
+            reference_fp4_output_relative_l2=0.0,
+            reference_fp4_gradient_relative_l2=[0.0] * 7,
+        )
+    if failure == "missing":
+        r["packing_validation"]["cases"].pop()
+    elif failure == "padding":
+        r["packing_validation"]["cases"][0]["bitwise"]["scales_including_padding"] = (
+            False
+        )
+    elif failure == "replay":
+        r["packing_validation"]["cases"][0]["changed_input_bitwise"] = False
+    elif failure == "gradient":
+        r["shapes"][0]["reference_fp4_gradient_relative_l2"][0] = 1e-9
+    if failure is None:
+        accept_integrated_pilot(r)
+    else:
+        with pytest.raises(ValueError):
+            accept_integrated_pilot(r)
+
+
+@pytest.mark.parametrize("failure", [None, "partial", "slower", "drift"])
+def test_fused_selection_requires_matched_four_way_gain(failure):
+    from experiments.b200_mlp_gemm.training_screen import accept_integrated_pilot
+
+    r = integrated_receipt()
+    r["installation"] = {"hardware_packing": True, "fused_descale": True}
+    r["packing_validation"] = {
+        "status": "complete",
+        "cases": [
+            {
+                "rows": m,
+                "width": k,
+                "bitwise": {
+                    "codes": True,
+                    "scales_including_padding": True,
+                    "row_inverse": True,
+                },
+                "changed_input_bitwise": True,
+                "graph_copy_included": True,
+            }
+            for m in (193, 4096, 16384)
+            for k in (2560, 9216, 18432)
+        ],
+    }
+    for row in r["shapes"]:
+        row.update(
+            reference_fp4_output_relative_l2=0.0,
+            reference_fp4_gradient_relative_l2=[0.0] * 7,
+        )
+        row["four_way_graph_timing"] = {
+            "samples_ms": {
+                "baseline": list(row["graph_timing"]["samples_ms"]["baseline"]),
+                "candidate": list(row["graph_timing"]["samples_ms"]["candidate"]),
+                "reference_fp4": [9.8] * 10,
+                "hardware_fp4": [9.0] * 10,
+            }
+        }
+    if failure == "partial":
+        del r["shapes"][0]["four_way_graph_timing"]["samples_ms"]["hardware_fp4"]
+    elif failure == "slower":
+        r["shapes"][2]["four_way_graph_timing"]["samples_ms"]["hardware_fp4"] = [
+            7.9
+        ] * 10
+    elif failure == "drift":
+        r["shapes"][2]["four_way_graph_timing"]["samples_ms"]["candidate"] = [7.0] * 10
     if failure is None:
         accept_integrated_pilot(r)
     else:

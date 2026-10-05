@@ -14,7 +14,12 @@ def main() -> None:
     def validate_and_install(model):
         original = bf16_lora_metadata(model)
         if not hasattr(model, "_gleipnir_fp4_mlp_installation"):
-            installation = install_fp4_mlp(model)
+            installation = install_fp4_mlp(
+                model,
+                hardware_packing=os.environ.get("GLEIPNIR_FP4_HARDWARE_PACKING", "0")
+                == "1",
+                fused_descale=os.environ.get("GLEIPNIR_FP4_FUSED_DESCALE", "0") == "1",
+            )
             if len(installation["modules"]) != 32:
                 raise ValueError("native FP4 screen requires exactly 32 Qwen MLPs")
             model._gleipnir_fp4_mlp_installation = installation

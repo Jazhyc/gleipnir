@@ -21,7 +21,7 @@ class FrozenPair:
 
 
 _WEIGHTS: dict[tuple, FrozenPair] = {}
-_PLANS: dict[tuple, Nvfp4Gemm] = {}
+_PLANS: dict[tuple, Any] = {}
 
 
 def clear_native_caches() -> None:
@@ -72,7 +72,12 @@ def prepare_weights(
 
 
 def _native_linear(
-    x: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None, backward: bool
+    x: torch.Tensor,
+    weight: torch.Tensor,
+    other: torch.Tensor | None,
+    backward: bool,
+    hardware_packing: bool = False,
+    fused_descale: bool = False,
 ) -> torch.Tensor:
     if not x.is_cuda or x.dtype != torch.bfloat16 or x.ndim < 2:
         raise ValueError("native FP4 MLP inputs must be CUDA BF16 with rank >= 2")
@@ -84,11 +89,20 @@ def _native_linear(
         if flat.shape[1] != packed_weight.codes.shape[1] * 2:
             raise ValueError("FP4 projection input width mismatch")
         key = (x.device.index, flat.shape[0], flat.shape[1], n)
+        if fused_descale:
+            key = (*key, "row_descale")
         if key not in _PLANS:
             if torch.cuda.is_current_stream_capturing():
                 raise RuntimeError("warm every FP4 GEMM shape before graph capture")
-            _PLANS[key] = Nvfp4Gemm(flat.shape[0], flat.shape[1], n)
-        packed_x = pack_operand(flat, row_amax=True, chunked_rows=True)
+            if fused_descale:
+                from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
+
+                _PLANS[key] = Nvfp4ScaledGemm(flat.shape[0], flat.shape[1], n)
+            else:
+                _PLANS[key] = Nvfp4Gemm(flat.shape[0], flat.shape[1], n)
+        packed_x = pack_operand(
+            flat, row_amax=True, chunked_rows=True, hardware_packing=hardware_packing
+        )
         return _PLANS[key](packed_x, packed_weight).reshape(*x.shape[:-1], n)
 
 
@@ -135,8 +149,81 @@ def _backward(ctx, dy):
 fp4_frozen_linear.register_autograd(_backward, setup_context=_setup_context)
 
 
-def fp4_mlp_forward(self: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
-    base = fp4_frozen_linear(
+@torch.library.custom_op("gleipnir::fp4_hardware_linear", mutates_args=())
+def fp4_hardware_linear(
+    x: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
+) -> torch.Tensor:
+    return _native_linear(x, weight, other, False, True)
+
+
+fp4_hardware_linear.register_fake(_forward_fake)
+
+
+@torch.library.custom_op("gleipnir::fp4_hardware_dgrad", mutates_args=())
+def fp4_hardware_dgrad(
+    dy: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
+) -> torch.Tensor:
+    return _native_linear(dy, weight, other, True, True)
+
+
+fp4_hardware_dgrad.register_fake(_backward_fake)
+
+
+def _hardware_backward(ctx, dy):
+    saved = ctx.saved_tensors
+    return (
+        fp4_hardware_dgrad(dy, saved[0], saved[1] if ctx.has_other else None),
+        None,
+        None,
+    )
+
+
+fp4_hardware_linear.register_autograd(_hardware_backward, setup_context=_setup_context)
+
+
+@torch.library.custom_op("gleipnir::fp4_epilogue_linear", mutates_args=())
+def fp4_epilogue_linear(
+    x: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
+) -> torch.Tensor:
+    return _native_linear(x, weight, other, False, True, True)
+
+
+fp4_epilogue_linear.register_fake(_forward_fake)
+
+
+@torch.library.custom_op("gleipnir::fp4_epilogue_dgrad", mutates_args=())
+def fp4_epilogue_dgrad(
+    dy: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
+) -> torch.Tensor:
+    return _native_linear(dy, weight, other, True, True, True)
+
+
+fp4_epilogue_dgrad.register_fake(_backward_fake)
+
+
+def _epilogue_backward(ctx, dy):
+    saved = ctx.saved_tensors
+    return (
+        fp4_epilogue_dgrad(dy, saved[0], saved[1] if ctx.has_other else None),
+        None,
+        None,
+    )
+
+
+fp4_epilogue_linear.register_autograd(_epilogue_backward, setup_context=_setup_context)
+
+
+def fp4_mlp_forward(
+    self: torch.nn.Module,
+    x: torch.Tensor,
+    *,
+    hardware_packing: bool = False,
+    fused_descale: bool = False,
+) -> torch.Tensor:
+    linear = fp4_hardware_linear if hardware_packing else fp4_frozen_linear
+    if fused_descale:
+        linear = fp4_epilogue_linear
+    base = linear(
         x.to(torch.bfloat16),
         self.gate_proj.base_layer.weight,
         self.up_proj.base_layer.weight,
@@ -145,12 +232,27 @@ def fp4_mlp_forward(self: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
     gate = (gate + update(self.gate_proj, x)).to(base.dtype)
     up = (up + update(self.up_proj, x)).to(base.dtype)
     hidden = F.silu(gate) * up
-    down = fp4_frozen_linear(hidden, self.down_proj.base_layer.weight, None)
+    down = linear(hidden, self.down_proj.base_layer.weight, None)
     return (down + update(self.down_proj, hidden)).to(down.dtype)
 
 
-def install_fp4_mlp(model: torch.nn.Module) -> dict[str, Any]:
+def hardware_fp4_mlp_forward(self: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
+    return fp4_mlp_forward(self, x, hardware_packing=True)
+
+
+def epilogue_fp4_mlp_forward(self: torch.nn.Module, x: torch.Tensor) -> torch.Tensor:
+    return fp4_mlp_forward(self, x, hardware_packing=True, fused_descale=True)
+
+
+def install_fp4_mlp(
+    model: torch.nn.Module,
+    *,
+    hardware_packing: bool = False,
+    fused_descale: bool = False,
+) -> dict[str, Any]:
     """Install before compiler wrapping; lazy CUDA packing follows Trainer placement."""
+    if fused_descale and not hardware_packing:
+        raise ValueError("fused descale requires the validated hardware packer")
     mlps = [
         (n, m) for n, m in model.named_modules() if m.__class__.__name__ == "Qwen3_5MLP"
     ]
@@ -167,7 +269,14 @@ def install_fp4_mlp(model: torch.nn.Module) -> dict[str, Any]:
         if m.config.hidden_act != "silu":
             raise ValueError("native FP4 MLP requires SiLU")
     for _, m in mlps:
-        m.forward = MethodType(fp4_mlp_forward, m)
+        m.forward = MethodType(
+            epilogue_fp4_mlp_forward
+            if fused_descale
+            else hardware_fp4_mlp_forward
+            if hardware_packing
+            else fp4_mlp_forward,
+            m,
+        )
         m._gleipnir_fp4_installed = True
     return {
         "modules": [n for n, _ in mlps],
@@ -179,4 +288,6 @@ def install_fp4_mlp(model: torch.nn.Module) -> dict[str, Any]:
         "original_parameters_preserved": True,
         "lazy_cuda_preparation": True,
         "retained_merged_bf16_buffer": False,
+        "hardware_packing": hardware_packing,
+        "fused_descale": fused_descale,
     }
