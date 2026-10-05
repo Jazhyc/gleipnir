@@ -309,3 +309,14 @@ then diverge at the first full-attention layer; amplification through later FP4
 layers is a hypothesis requiring separate diagnosis. Retain the conversion
 optimizations as experimental code, but do not promote this model recipe or
 claim an end-to-end speed gain. BF16 MLPs with FA4 remain the standard.
+
+After explicit user timing-only acceptance, the native FP4 screen completes
+twenty updates in the same default compile mode and exact physical partitions
+as the historical FA4 control. Updates 11–20 average 19.42944 seconds versus
+4.08648 (4.75x slower), with finite updates but failed strict/learning numerical
+parity preserved. Twenty-seven measured token shapes are new after warmup,
+and packing/scaling kernel compilation continues during measurement. This is
+trajectory wall time, not fully warmed kernel speed. Graph-enabled full-model
+attempts fail before updates; complete-MLP graph gains have not been realized
+in the ordinary training recipe. Runtime shape arguments and stable graph
+integration are better supported follow-ups than promoting the current FP4 path.

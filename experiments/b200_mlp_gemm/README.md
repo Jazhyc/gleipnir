@@ -278,3 +278,15 @@ both conversion optimizations and the same timing-only authority and twenty-
 update contract. This matches the historical control's compile mode. Require
 all finite/isolation/memory checks, and report the ordinary-dispatch outcome
 even if it loses the complete-MLP graph pilot's gains.
+
+`traintiming03` completes twenty finite updates using `default` mode, with the
+same initial master and all physical partitions/tokens as the historical FA4
+control. The measured half averages 19.42944 seconds/update versus 4.08648,
+4.75x slower. Twenty-seven measured token shapes are new after warmup and
+conversion kernel compilation continues during measurement; report this as
+trajectory wall time, not fully warmed kernel speed. Both strict/learning
+packing receipts remain failed and explicitly accepted only for timing.
+Peak allocated memory is 148.31 GiB, and all saved adapter tensors are FP32.
+The local complete-MLP graph gains have not translated to this ordinary training
+recipe. Results/checkpoint/logs are collected and the B200 is idle; retain the
+opt-in implementations, negative receipts and BF16 FA4 default.

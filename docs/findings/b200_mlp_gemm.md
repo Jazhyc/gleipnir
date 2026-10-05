@@ -612,3 +612,73 @@ compile mode. The local whole-MLP graph speedups no longer predict this path;
 report any regression openly rather than extending graph-only numbers to full
 training. The root physical-forward marker can remain but no decoder graphs
 are enabled by the default mode.
+
+### Completed matched standard-mode end-to-end timing
+
+`traintiming03` completes all twenty updates with both conversion optimizations
+installed in all 32 MLPs and `selective_torch_compile_mode=default`, matching
+the historical FA4 control's mode. The unchanged initial FP32 master, all 147
+physical partitions, logical indices, tokens and padded-token fields match the
+control exactly. No repeated FA4 control run occurs. Missing/nonfinite-gradient
+checks remain enabled through every update; all losses/gradients are finite.
+
+| Quantity | Historical BF16 FA4 control | Combined native FP4, default mode |
+| --- | ---: | ---: |
+| Measured mean, updates 11–20, seconds | 4.08648 | 19.42944 |
+| Measured total, seconds | 40.86484 | 194.29436 |
+
+The native FP4 trajectory takes 4.75456x as long (375.46% more time), so it fails
+the five-percent speed improvement rule. Its Trainer loop takes 436.2034
+seconds. Preserve all raw step durations; do not discard slow measured updates.
+The ten measured durations range from 8.01514 to 34.59060 seconds. This result
+is observed end-to-end wall time for the predeclared trajectory, including
+first-use planning/compilation; it is not a fully warmed contraction benchmark.
+
+There are 94 distinct physical token shapes across the twenty updates. The
+warmup half has 67 and the measured half has 69, of which 27 are new relative
+to warmup (28 of 73 measured physical batches). Cache inspection during the run
+shows new `_pack_row_blocks` and `_row_scale` IR/PTX/cubin artifacts. These
+kernels specialize on row-dependent group/row counts, and the native runtime
+ends with 416 geometry-specific GEMM plans. Ten updates therefore do not warm
+the candidate's entire measured shape envelope. Timing alone does not apportion
+the observed regression among compilation, plan construction, Python dispatch,
+conversion and contraction. The prior matched ordinary-dispatch complete-MLP
+pilot also loses to BF16, so removing first-use cost alone does not establish a
+training speedup. The supported next targets are runtime row-count arguments
+in conversion kernels, reusable native plans and reliable MLP graph integration.
+
+The longest-batch preflight passes on the actual 32 longest training inputs,
+maximum length 28733, with finite gradients and unchanged master. Peak allocated
+memory during the trajectory is 148.30696 GiB. The runtime retains 64 packed
+weight pairs totaling 2,548,040,192 bytes; no extra merged BF16 copy is retained.
+The final adapter contains 256 FP32 tensors and 679,511,752 bytes. Its master
+digest changes to
+`6b6d8eec418209c61b9bbbd3a4b6a6498d55ee861061c9bf5cd1b35368a94d56`.
+
+Strict/learning packing acceptance remains false in both receipts: eager
+gradient relative L2 is 68.11% and compiled is 65.09%; both loss comparisons
+also fail their original bound. Exact isolation and finite gradients pass,
+with only loss/relative-gradient checks waived under the quoted user timing
+authority. This run establishes timing and operational progress, not BF16
+quality equivalence or held-out monitoring performance. Keep BF16 MLPs with
+FA4 as the standard; retain all opt-in conversion implementations and failed
+graph/strict receipts.
+
+All 29 archived source hashes match the launch receipt. The completed model,
+checkpoint, reports and logs are collected locally. The process exits with
+return code zero and the GPU allocation returns to zero. The B200 remains
+running and idle in US-NC-2 at $6.79/hour, with its network-volume caches intact;
+active-turn campaign monitoring is complete.
+
+Final standard-mode receipt SHA-256 values:
+
+- `traintiming03/summary.json`:
+  `89f4cec6f6aed5bff02e4e9cfb56b5e2ff5f18049be2687c437853a6559931ee`.
+- `traintiming03/causal_adapter/training_metadata.json`:
+  `f1b7bfed8fa3301002aba91fce991bc39dfee5c587c9a25fbb2f3257efd09079`.
+- `traintiming03/causal_adapter/packing_canary.json`:
+  `9ec1b04890820ec9bc0047e2df4b3c5ba8dfa12e0c89841724a9d1383c0bfe14`.
+- `traintiming03/native_runtime.json`:
+  `3b2c97704cc65d460d14628f1d3d91b8600b716afcb89b24500c8a81f04e2c29`.
+- `traintiming03/causal_adapter/adapter_model.safetensors`:
+  `cdae0133aeff9a4b7eb03cdc87008d03e5a5b40e7abb7ce1466821b3fdc28445`.
