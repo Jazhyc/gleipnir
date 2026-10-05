@@ -394,9 +394,20 @@ selected native FP4 MLP/FA4 default: all 8,688 monitoring rows, LR 5e-5, one epo
 followed by all 3,012 canonical ID examples. The
 [replication decision](decisions/b200_fp4_full_training_replication.md) freezes
 inputs, initial FP32 adapters and held-out selection before launch. The ordinary
-Trainer is running on the existing NC2 B200 and will remain resident afterwards.
+Trainer's first attempt stops at 43/272 updates on the existing NC2 B200 after a
+substantial full-corpus throughput regression; its source/logs are archived and
+a replacement starts from the frozen original initialization.
 Full-corpus first-use plan costs exceed the short warmed timing cohort; optional
 compile-only cache population uses spare CPUs without replaying a model or
 changing arithmetic. Training and ID results are pending; no quality equivalence
 or promotion follows from the launch. The historical control used BF16/SDPA, so
 the eventual comparison includes both the MLP and attention recipe changes.
+Bounded diagnostics measure about 24 seconds of native plan construction for
+one upcoming update despite all compiled-object cache hits, plus about 7 seconds
+of conversion/row-scale specialization. The wrapper was rebuilding plans for
+each token count even though NVIDIA supports runtime M. Runtime-shape plan reuse
+matches fixed-M native outputs bitwise in 16 projection cases; generic conversion
+kernels match codes/scales/inverses in 21 cases across seven row counts, and
+generic row scaling matches at those seven lengths. These
+targeted checks do not yet establish full-run speed or ID quality. Preserve the
+first attempt separately from the replacement when reporting practical time.

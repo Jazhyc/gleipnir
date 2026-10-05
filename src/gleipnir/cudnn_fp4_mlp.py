@@ -24,6 +24,13 @@ _WEIGHTS: dict[tuple, FrozenPair] = {}
 _PLANS: dict[tuple, Any] = {}
 
 
+def _plan_key(device, m, k, n, *, fused_descale=False, runtime_m=False) -> tuple:
+    if runtime_m and not fused_descale:
+        raise ValueError("runtime M requires the fused descale launch path")
+    key = (device, "runtime_m" if runtime_m else m, k, n)
+    return (*key, "row_descale") if fused_descale else key
+
+
 def clear_native_caches() -> None:
     """Release experiment-owned packed tensors/plans after all replays complete."""
     _PLANS.clear()
@@ -78,6 +85,7 @@ def _native_linear(
     backward: bool,
     hardware_packing: bool = False,
     fused_descale: bool = False,
+    runtime_m: bool = False,
 ) -> torch.Tensor:
     if not x.is_cuda or x.dtype != torch.bfloat16 or x.ndim < 2:
         raise ValueError("native FP4 MLP inputs must be CUDA BF16 with rank >= 2")
@@ -88,16 +96,23 @@ def _native_linear(
         n = packed_weight.codes.shape[0]
         if flat.shape[1] != packed_weight.codes.shape[1] * 2:
             raise ValueError("FP4 projection input width mismatch")
-        key = (x.device.index, flat.shape[0], flat.shape[1], n)
-        if fused_descale:
-            key = (*key, "row_descale")
+        key = _plan_key(
+            x.device.index,
+            flat.shape[0],
+            flat.shape[1],
+            n,
+            fused_descale=fused_descale,
+            runtime_m=runtime_m,
+        )
         if key not in _PLANS:
             if torch.cuda.is_current_stream_capturing():
                 raise RuntimeError("warm every FP4 GEMM shape before graph capture")
             if fused_descale:
                 from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
 
-                _PLANS[key] = Nvfp4ScaledGemm(flat.shape[0], flat.shape[1], n)
+                _PLANS[key] = Nvfp4ScaledGemm(
+                    flat.shape[0], flat.shape[1], n, runtime_m=runtime_m
+                )
             else:
                 _PLANS[key] = Nvfp4Gemm(flat.shape[0], flat.shape[1], n)
         packed_x = pack_operand(
@@ -185,7 +200,7 @@ fp4_hardware_linear.register_autograd(_hardware_backward, setup_context=_setup_c
 def fp4_epilogue_linear(
     x: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
 ) -> torch.Tensor:
-    return _native_linear(x, weight, other, False, True, True)
+    return _native_linear(x, weight, other, False, True, True, True)
 
 
 fp4_epilogue_linear.register_fake(_forward_fake)
@@ -195,7 +210,7 @@ fp4_epilogue_linear.register_fake(_forward_fake)
 def fp4_epilogue_dgrad(
     dy: torch.Tensor, weight: torch.Tensor, other: torch.Tensor | None
 ) -> torch.Tensor:
-    return _native_linear(dy, weight, other, True, True, True)
+    return _native_linear(dy, weight, other, True, True, True, True)
 
 
 fp4_epilogue_dgrad.register_fake(_backward_fake)
@@ -290,4 +305,5 @@ def install_fp4_mlp(
         "retained_merged_bf16_buffer": False,
         "hardware_packing": hardware_packing,
         "fused_descale": fused_descale,
+        "runtime_m_plans": fused_descale,
     }

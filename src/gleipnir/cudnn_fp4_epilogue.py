@@ -9,8 +9,8 @@ import triton.language as tl
 from gleipnir.cudnn_fp4_gemm import Nvfp4Gemm, PackedNvfp4
 
 
-@triton.jit
-def _row_scale(IA, IB, SCALE, ROWS: tl.constexpr, BLOCK: tl.constexpr):
+@triton.jit(do_not_specialize=["ROWS"])
+def _row_scale(IA, IB, SCALE, ROWS, BLOCK: tl.constexpr):
     r = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     a = tl.load(IA + r, r < ROWS, other=1)
     b = tl.load(IB)
@@ -18,14 +18,19 @@ def _row_scale(IA, IB, SCALE, ROWS: tl.constexpr, BLOCK: tl.constexpr):
 
 
 class Nvfp4ScaledGemm:
-    """Adapt the pinned projection graph with a rowwise FP32 multiply epilogue."""
+    """Adapt the pinned projection graph with a rowwise FP32 multiply epilogue.
 
-    def __init__(self, m: int, k: int, n: int) -> None:
+    ``runtime_m`` opts into NVIDIA's symbolic M launch support. K/N, scale
+    layouts, tile configuration and BF16 rounding remain fixed by the plan.
+    """
+
+    def __init__(self, m: int, k: int, n: int, *, runtime_m: bool = False) -> None:
         import cudnn
         from cudnn.gemm.frost.compiler import jit_from_cudnn_graph
 
         # Planning freezes graph mutation. Recreate the same operand/layout
         # contract, retaining the original arithmetic and tile control.
+        self.runtime_m = runtime_m
         self.reference = Nvfp4Gemm(m, k, n)
         self.plan = self.reference.plan
         graph = cudnn.pygraph(
@@ -79,30 +84,37 @@ class Nvfp4ScaledGemm:
             self.workspace_bytes, device="cuda", dtype=torch.uint8
         )
 
-    def __call__(self, a: PackedNvfp4, b: PackedNvfp4) -> torch.Tensor:
-        from cudnn.frost.workspace import Workspace
-        from cudnn.gated_attention_block.kernels.proj_gemm import _rank3, _sf_view
-
-        if a.inverse.numel() != self.plan.m or b.inverse.numel() != 1:
+    def _operand_rows(self, a: PackedNvfp4, b: PackedNvfp4) -> int:
+        m = a.codes.shape[0] if self.runtime_m else self.plan.m
+        if m <= 0:
+            raise ValueError("fused descale requires positive activation rows")
+        if a.inverse.numel() != m or b.inverse.numel() != 1:
             raise ValueError("fused descale requires per-row A and scalar B inverses")
-        if a.codes.shape != (self.plan.m, self.plan.k // 2) or b.codes.shape != (
+        if a.codes.shape != (m, self.plan.k // 2) or b.codes.shape != (
             self.plan.n,
             self.plan.k // 2,
         ):
             raise ValueError("fused descale operand geometry mismatch")
-        scale = torch.empty(self.plan.m, device=a.codes.device, dtype=torch.float32)
-        _row_scale[(triton.cdiv(self.plan.m, 1024),)](
-            a.inverse, b.inverse, scale, self.plan.m, 1024
+        return m
+
+    def __call__(self, a: PackedNvfp4, b: PackedNvfp4) -> torch.Tensor:
+        from cudnn.frost.workspace import Workspace
+        from cudnn.gated_attention_block.kernels.proj_gemm import _rank3, _sf_view
+
+        m = self._operand_rows(a, b)
+        scale = torch.empty(m, device=a.codes.device, dtype=torch.float32)
+        _row_scale[(triton.cdiv(m, 1024),)](
+            a.inverse, b.inverse, scale, m, 1024
         )
         out = torch.empty(
-            self.plan.m, self.plan.n, device=a.codes.device, dtype=torch.bfloat16
+            m, self.plan.n, device=a.codes.device, dtype=torch.bfloat16
         )
         bindings = {
             self.a_tensor: _rank3(a.codes, "a"),
             self.b_tensor: _rank3(b.codes, "b"),
-            self.sfa_tensor: _sf_view(self.plan, a.scales, "sf_a", self.plan.m),
+            self.sfa_tensor: _sf_view(self.plan, a.scales, "sf_a", m),
             self.sfb_tensor: _sf_view(self.plan, b.scales, "sf_b", self.plan.n),
-            self.scale_tensor: scale.view(1, self.plan.m, 1),
+            self.scale_tensor: scale.view(1, m, 1),
             self.output_tensor: out.unsqueeze(0),
         }
         kwargs = {"stream": torch.cuda.current_stream(out.device).cuda_stream}

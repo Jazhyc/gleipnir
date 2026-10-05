@@ -91,6 +91,11 @@ def main() -> None:
                 "manifest_sha256": file_hash(
                     ROOT / "data/b200_fp4_full_training/manifest.json"
                 ),
+                "runtime_shape_validation_sha256": (
+                    file_hash(OUTPUT / "runtime_shape_validation.json")
+                    if (OUTPUT / "runtime_shape_validation.json").exists()
+                    else None
+                ),
             },
         )
         with (logroot / "train.log").open("x") as log:

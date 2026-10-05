@@ -58,3 +58,17 @@ The corrected helper permits that marker while requiring zero fused workspace
 and spare GPU memory for compiler contexts. Report this concurrent cache work
 when interpreting training time. This is cache population, not a model warmup
 replay or repeated numerical startup validation.
+
+The first attempt stops at update 43 after a full-corpus throughput
+regression. A bounded profile measures 23.980 seconds to construct one update's
+56 GEMM plans despite all compiled-object cache hits. The native fused MLP path
+now reuses NVIDIA's runtime-M plan support per device/K/N, and its conversion
+group counts and row-scale lengths are runtime arguments. Targeted native checks
+match fixed-M outputs bitwise in sixteen projection cases and conversion bytes
+in 21 cases, plus seven row-scale cases; full-run speed and ID quality are still
+pending. Applying the Python
+change requires restarting from the original initialization because the first
+attempt has no intermediate disk checkpoint. The replacement restarts from the
+frozen controls on the same B200, preserving that attempt under the
+`b200_fp4_full_training_slow_attempt01` results/log paths and reusing disk caches.
+See `docs/decisions/b200_fp4_full_training_replication.md`.

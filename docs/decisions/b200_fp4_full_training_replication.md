@@ -77,3 +77,55 @@ requires zero fused workspace, and checks GPU headroom for compiler contexts.
 
 Full training and ID results remain pending. Collect and verify final artifacts
 before drawing quality or practical full-corpus performance conclusions.
+
+## Full-corpus throughput regression and runtime-shape fix
+
+The first attempt was paused after 43 of 272 updates with its live state intact.
+The latest completed update takes about 45 seconds, after earlier updates of
+roughly 80–113 seconds; this is substantially slower than the historical control
+(3,916 seconds for the whole epoch). The user expects roughly an hour. Do not
+extrapolate the 3.678-second short-cohort measurement to this token distribution
+or accept a multi-hour run without investigating the regression.
+
+A compile-only CPU profile of the fourteen packed shapes at historical update
+44 takes 23.980 seconds to construct 56 native plans, despite 168 compiled-object
+cache hits and zero misses. Repeated graph construction, module loading, template
+reads and runtime-library discovery dominate this bounded diagnostic. This is
+not a full-training trace, and does not establish exact end-to-end percentages.
+Another bounded probe takes 7.275 seconds to compile/load FP4 conversion and
+row-scaling variants for the same shapes. The earlier compile-ahead helper
+populated GEMM objects, not these Triton variants. Its successful 747-second run
+therefore did not resolve the underlying per-shape overhead.
+
+NVIDIA's existing compiled GEMM already supports symbolic runtime M. Reuse one
+fused-descaling plan per device/K/N geometry, retaining all geometry, scale-blob
+and native launch guards. Keep the fixed-M direct API for historical probes.
+Pass conversion group counts and row-scale lengths at runtime instead of
+specializing on each count. Preserve K, hardware conversion, fused BF16 rounding,
+tile configuration, FP32 adapter masters and all experiment controls.
+
+The bounded native proof covers four projection orientations at M=129, 5,047,
+16,322 and 29,337: all sixteen outputs are bitwise identical to fixed-M plans,
+with the same NVIDIA tile configuration and no refused launches. A separate
+conversion proof covers all three activation widths at seven row counts,
+including empty-valued rows and 128-row boundaries: packed codes, scale bytes
+and FP32 inverses match bitwise in all 21 cases. Each width uses one compiled
+conversion kernel across these lengths. Generic row scaling matches bitwise
+at the same seven lengths with one compiled variant. Record these receipts and
+source hashes separately from the reused historical startup receipt; unchanged
+model canaries are not claimed to have passed again. Full-run throughput and
+ID quality remain unmeasured for this fix.
+
+Applying the Python cache-key change requires a process restart. The first
+attempt has no intermediate disk checkpoint; a replacement must restart from
+the frozen original initialization, preserving the slow attempt's source,
+logs and diagnostic receipts. Reuse the same disk caches and allocated B200.
+
+The replacement pipeline PID 66650 and trainer PID 66778 start on the existing
+B200 at Unix time 1791235348.779. The slow attempt and logs are archived under
+`results/b200_fp4_full_training_slow_attempt01/` and
+`logs/runpod/b200_fp4_full_training_slow_attempt01/`. Its 43 updates have no
+resumable checkpoint and are not counted toward the replacement epoch.
+`runtime_shape_validation.json` binds the 16 GEMM, 21 conversion and seven
+row-scale cases plus current source checksums; the new execution contract
+records that receipt's hash. Sixty-one focused tests and Ruff pass.

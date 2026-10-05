@@ -43,7 +43,12 @@ def worker_status(stage: str, **extra) -> None:
 
 class Progress(TrainerCallback):
     def on_step_end(self, args, state, control, **kwargs):
-        worker_status("training", update=state.global_step, total=state.max_steps)
+        worker_status(
+            "training",
+            update=state.global_step,
+            total=state.max_steps,
+            native_cache=cache_metadata(),
+        )
 
     def on_log(self, args, state, control, logs=None, **kwargs):
         print(

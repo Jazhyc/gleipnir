@@ -104,17 +104,17 @@ def _row_inverse(X, INV, K: tl.constexpr, BLOCK: tl.constexpr):
     )
 
 
-@triton.jit
+@triton.jit(do_not_specialize=["GROUPS", "PADDED_GROUPS"])
 def _pack_row_blocks(
     X,
     INV,
     Q,
     SF,
     K: tl.constexpr,
-    GROUPS: tl.constexpr,
+    GROUPS,
     BLOCK: tl.constexpr,
     HARDWARE: tl.constexpr = False,
-    PADDED_GROUPS: tl.constexpr = 0,
+    PADDED_GROUPS=0,
 ):
     g = tl.program_id(0) * BLOCK + tl.arange(0, BLOCK)
     j = tl.arange(0, 16)
