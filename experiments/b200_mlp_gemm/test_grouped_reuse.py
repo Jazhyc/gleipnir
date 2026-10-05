@@ -13,10 +13,13 @@ from experiments.b200_mlp_gemm import grouped_candidate as candidate
 @pytest.fixture
 def previous(tmp_path, monkeypatch):
     monkeypatch.setattr(candidate, "FINITE_TIMING_REFERENCE", "previous")
+    monkeypatch.setattr(candidate, "MATCH_NORMALIZATION_CONFIGS", True)
     previous = tmp_path / "previous"
     previous.mkdir()
     (previous / "executed_grouped_candidate.py").write_text(
-        Path(candidate.__file__).read_text()
+        Path(candidate.__file__).read_text().replace(
+            "MATCH_NORMALIZATION_CONFIGS = False", "MATCH_NORMALIZATION_CONFIGS = True"
+        )
     )
     receipt = {
         "worker_pid": os.getpid(),

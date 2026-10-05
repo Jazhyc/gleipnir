@@ -699,3 +699,21 @@ Do not repeat that numerical comparison or model preparation. Keep finite/
 missing-gradient checks, twenty reset updates, the >=2% timing selection and
 zero-preparation audit during measured updates. A timing gain alone cannot
 select this numerically failed implementation as a training replacement.
+
+`19groupedfinite` completes twenty finite updates but has new Triton
+specializations on measured updates 12, 14 and 19. Its 4.03276-second mean is
+not warmed and fails timing eligibility; retain the complete receipt and audit
+failure. `20groupedwarm` repeats only reset actual updates using the same
+diagnostic and now-prepared shapes, without a new numerical check or preparation
+replay. All five native TileLang caches are monitored, including group reduction.
+
+Also screen default grouped normalization settings as `21groupeddefault`, so
+the deliberately forced launch configurations used for diagnosis do not decide
+the efficiency of the original proposed native path. Restore original forward
+normalization dispatch, retain shared heads and every precision boundary, and
+record a targeted comparison under this final integration source. Preserve the
+strict 5% result separately from the explicitly finite timing-only acceptance.
+Run twenty reset updates with the same numerical/physical/compilation checks;
+reuse all existing native kernels and caches. Keep the original baseline if the
+warmed mean does not satisfy the >=2% timing rule; failed strict numerical
+agreement independently excludes training/quality promotion.
