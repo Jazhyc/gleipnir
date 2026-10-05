@@ -651,3 +651,30 @@ All tested CPU variants fail the >=2% speed rule; both normalization variants
 stop on failed model parity. Retain the original baseline and resident worker.
 Sixty-five relevant CPU checks pass. Artifacts and the diagnostic instrumentation
 correction are collected; see the findings for the final accounting and limits.
+
+## Native grouped Q/K GDN screen
+
+Hypothesis: retaining 16 shared Q/K heads, instead of materializing 32 repeated
+heads before FlashQLA, removes head-copy traffic and duplicate normalization.
+The pinned native kernel already supports 32 value heads with 16 Q/K heads and
+reduces grouped gradients. Remove only the two upstream repeat calls, preserve
+Accelerate convolution hooks and the disabled GDN shell, original BF16 Q/K/V,
+FP32 normalization/gates, FP32 master adapters, weights and parameters. Reject
+cached decoding, which uses a separate recurrent kernel outside this screen.
+All 24 GDN layers change; FP4 MLPs, FA4, packing, inputs and losses remain fixed.
+
+Compare one actual first logical batch with the restored resident baseline:
+require absolute loss difference <=0.005, adapter-gradient relative L2 <=5%,
+finite/present gradients and unchanged initial masters/physical partitions.
+Retain any failed receipt and stop before updates on failed parity. Reuse
+unchanged startup checks and the existing pooled 3.67835565-second control;
+do not repeat FA4 controls or all twenty batches for preparation. Preserve RNG,
+optimizer/scheduler reset and the original 147 physical rows. If parity passes,
+run twenty updates and select only with >=2% less mean time on updates 11–20.
+Existing native-plan/Triton/Dynamo/Inductor counters and additional four native
+TileLang specialization-cache counters must remain unchanged during measurement.
+Stop on nonfinite/missing gradients, changed partitions/masters, measured
+preparation, OOM or thirty minutes without completing the bounded screen.
+The scoped intervention restores all forwards after success or failure; keep
+the worker and shared network-volume caches alive. No held-out promotion or new
+BF16 quality-equivalence claim follows from this systems screen.
