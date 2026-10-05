@@ -717,3 +717,12 @@ Run twenty reset updates with the same numerical/physical/compilation checks;
 reuse all existing native kernels and caches. Keep the original baseline if the
 warmed mean does not satisfy the >=2% timing rule; failed strict numerical
 agreement independently excludes training/quality promotion.
+
+Result: the fully warmed matched-settings repeat takes 3.68516 seconds/update
+(+0.185% versus the existing 3.67836-second control); default grouped settings
+take 3.70644 (+0.763%). Both have zero preparation on every actual update and
+preserve the 147 physical rows. Neither meets the >=2% timing gain. First-batch
+gradient differences remain 17.5842%/18.0449%, respectively, so no training
+replacement is selected. The matched repeat reproduces the earlier finite run's
+final masters and loss/gradient logs exactly. Keep the original baseline and
+resident worker; see the findings for failed checks, warm eligibility and limits.

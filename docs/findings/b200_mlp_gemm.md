@@ -1260,3 +1260,109 @@ all 46 receipt/source files in its collection manifest are hash-verified.
 `16asynconly/receipt.json` SHA-256 is
 `39608ef24067258481c12c6c217818f51076dd4f8acf6e2e9fc6af1cee2e9216`.
 Both failed normalization validation hashes are retained in that summary.
+
+### Native grouped Q/K GDN screen
+
+On 2026-10-05 the user authorizes testing removal of GDN Q/K head expansion.
+The existing pinned FlashQLA SM100 kernel supports 16 shared Q/K heads and 32
+value heads, including grouped-gradient reduction. A scoped source transform
+removes only the two upstream `repeat_interleave` calls in all 24 GDN layers.
+It preserves the Accelerate convolution hook, disabled GDN shell, frozen BF16
+projections, BF16 recurrent operands, FP32 normalization/gates and original FP32
+master adapters. Cached decoding is excluded. No FA4, MLP, objective, packing,
+input-transfer or metadata implementation changes. The existing resident02
+pooled 3.67835565-second control is reused; no fresh FA4 control runs.
+
+`17grouped` checks one actual first logical batch before updates. Loss is
+0.51918769 versus 0.52185988 (absolute difference 0.00267220, passing <=0.005),
+but adapter-gradient relative L2 is 0.18044884 (18.0449%), failing the unchanged
+5% gate. It stops with zero updates and restores the initial masters/baseline.
+Its targeted check takes 148.65605 seconds, including the first grouped native
+kernel compilations, in the shared persistent cache.
+
+`18groupednorm` forces grouped forward normalization to use the resident launch
+configuration for the corresponding expanded 32-head shape. It keeps FP32
+input/compute/output and restores every modified cache entry after each call.
+First-batch loss becomes exactly 0.52185988, but gradient relative L2 remains
+0.17584170 (17.5842%), so this check also stops before updates. It takes
+9.63274 seconds using existing native kernels. Matching forward reduction tiling
+repairs this scalar loss difference but does not establish backward parity.
+
+Source inspection identifies a changed numerical order: native grouped
+backward sums per-value-head BF16 Q/K gradients with FP32 accumulation and
+stores the sum in BF16 before FP32 normalization backward. With explicitly
+repeated Q/K, normalization backward runs separately per value head before
+the model sums gradients back into shared heads. This is a plausible source
+of the remaining gradient difference; these checks do not prove it is the only
+cause. No fused-gradient correction or new attention kernel is implemented.
+
+Under the user's earlier instruction to measure finite variants regardless of
+gradient differences, `19groupedfinite` continues solely for timing, retaining
+both failed strict receipts. It binds the existing diagnostic to integration
+source, installer AST, precision option, worker PID, initial master, matched
+physical contract and restored baseline. It repeats no numerical comparison
+or model-preparation replay. All twenty updates are finite, but measured
+updates 12, 14 and 19 each add a Triton specialization: the raw 4.03276119-second
+mean is not warmed and fails timing eligibility. Retain its completed receipt
+and separate audit failure. The repeat `20groupedwarm` reuses the diagnostic
+and all now-prepared shapes, resets the same adapters/AdamW/scheduler/RNG, and
+performs only actual updates. The two trajectories have identical losses,
+gradient-norm logs, partitions and final FP32 masters/adapters.
+
+`21groupeddefault` restores default grouped normalization launch settings to
+screen the original proposal independently of the forced diagnostic settings.
+Its targeted comparison takes 10.02535 seconds and reproduces `17grouped` loss
+and gradient differences exactly under the final integration source. The strict
+result stays false, with separate finite timing-only acceptance. All twenty
+actual updates are finite and fully warmed.
+
+| Eligible uninstrumented condition | Mean seconds/update, updates 11–20 | Time versus pooled control |
+| --- | ---: | ---: |
+| Existing resident02 FP4-MLP/BF16-GDN/FA4 control | 3.67836 | reference |
+| `20groupedwarm`: matched expanded normalization settings | 3.68516 | +0.185% |
+| `21groupeddefault`: default grouped normalization settings | 3.70644 | +0.763% |
+
+Neither meets the predeclared >=2% timing gain. Both are within 1% of the existing
+control; these small differences do not establish a robust slowdown. Both
+preserve all 147 physical partitions and add zero native MLP plans, Triton
+specializations, Dynamo graphs or Inductor misses on every actual update.
+Additional audits confirm no growth in five native TileLang caches: fused GDN
+forward/backward, state preparation, KKT solve and grouped-gradient reduction.
+No profiler is installed; no component-time attribution or removed-copy count
+is inferred from these end-to-end measurements. Invocation wall times are
+84.31330 seconds for the reused-check matched repeat and 95.40111 seconds for
+the default-settings trial including its targeted check and final export.
+
+Retain the original FP4-MLP/BF16-GDN/FA4 systems baseline and the general BF16
+training recipe. Native grouping has no verified end-to-end throughput benefit
+in this configuration and separately fails strict gradient agreement. Keep the
+failed checks and un-warmed run rather than promoting on finite timing alone.
+Forty-one focused CPU checks pass, with Ruff and whitespace checks. The same
+worker PID 11905 remains idle and alive; forwards, normalization dispatch and
+launch configuration entries are restored, and shared caches remain available.
+
+Training loss is descriptive rather than a quality-selection metric here. Mean
+logged loss over the twenty identical logical batches is 0.50287150 for the
+existing control, 0.55002584 for matched grouped settings and 0.50216686 for
+default grouped settings. Final logged losses are 0.39405805, 0.40921599 and
+0.29194170, respectively. Changed gradients lead to different adapter
+trajectories; these short training losses do not establish held-out quality.
+
+All 56 receipt/source/log/metadata files in the collection manifest are verified
+locally against remote hashes. Both unique saved adapters contain 256 FP32
+tensors and 679,511,752 bytes. The first finite run's duplicate adapter is
+represented locally by a checksum-verified link to the matched warmed repeat.
+Artifacts are under `results/b200_mlp_gemm/resident02/grouped_screen_artifacts/`
+and the respective trial directories. The campaign summary SHA-256 is
+`80d704082bbad5049c023b72f735a5e593912ee263841c87cefc6390bf89281a`.
+The matched/default warmed receipt hashes are
+`b0c9b1698677837d63eadd667f45ab0426eacf5c1c77cb13ca02cc1f92623a02` /
+`dabaa1bb60ab0e95a33e6f7da5bebcd68b7e189698bf9ced9be88ca9d54b93ee`.
+Their adapter hashes are
+`07ef92f75173cab99b342e6418212892da526b07189a1df7cc6c72c00d63cbd3` /
+`dbc138a90c0a5ecc23cbdfbbb42c79f0aec9d737c64420a169cabbff27dae6d9`.
+The original master identity remains
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`;
+matched/default final masters are
+`9f661c8173e876fa10bcf7e9a65032e59e63a3f01c1a1ac2b405cd2464d6c23f` /
+`e93bf0d48991424c8be87909a4227587eff97f930fd10ba555b33f4fe37db32a`.

@@ -94,3 +94,15 @@ FP32 normalization fails first-batch model parity, including a retry matching
 the baseline's exact launch tilings. Preserve these failures and retain original
 normalization, metadata and input preparation. The same PID 11905 stays idle
 and resident. See the findings for collected receipts and instrumentation limits.
+
+Native grouped Q/K also leaves the selected systems baseline unchanged. Removing
+16-to-32-head replication while keeping the existing native FlashQLA kernel and
+precision boundaries fails first-batch strict gradient agreement at 18.0449%.
+Matching expanded-shape normalization launch settings restores exact loss but
+still gives 17.5842% gradient difference. Separate finite timing-only screens
+give 3.68516 seconds/update with matched settings and 3.70644 with defaults,
+versus the existing 3.67836-second control. Both are fully warmed and preserve
+all physical rows; neither reaches the >=2% timing gain. The initial finite run's
+un-warmed timing and audit failure remain archived. Restore the original model
+forwards/normalizer and retain PID 11905 and all shared compiler/kernel caches.
+No numerical-equivalence or training-replacement acceptance follows.
