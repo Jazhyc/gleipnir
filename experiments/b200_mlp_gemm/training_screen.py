@@ -149,6 +149,11 @@ def main() -> None:
     parser.add_argument("--pilot-sha256", required=True)
     parser.add_argument("--attempt", required=True)
     parser.add_argument("--timing-authority")
+    parser.add_argument(
+        "--compile-mode",
+        choices=("default", "reduce-overhead"),
+        default="reduce-overhead",
+    )
     args = parser.parse_args()
     if not args.attempt.isalnum():
         raise ValueError("attempt must be alphanumeric")
@@ -193,7 +198,7 @@ def main() -> None:
     }
     if fp4:
         job["packing_learning_gradient_tolerance"] = 0.05
-        job["selective_torch_compile_mode"] = "reduce-overhead"
+        job["selective_torch_compile_mode"] = args.compile_mode
         job["native_fp4_hardware_packing"] = hardware_packing
         job["native_fp4_fused_descale"] = fused_descale
         if args.timing_authority:
@@ -225,7 +230,7 @@ def main() -> None:
     ]
     if fp4:
         command += [
-            "++student.training.selective_torch_compile_mode=reduce-overhead",
+            f"++student.training.selective_torch_compile_mode={args.compile_mode}",
         ]
         if args.timing_authority:
             command.append("++student.training.native_fp4_mlp_timing=true")
@@ -271,8 +276,8 @@ def main() -> None:
         "mlp_intervention": "nvfp4_forward_dgrad" if fp4 else "merged_bf16",
         "hardware_packing": hardware_packing,
         "fused_descale": fused_descale,
-        "candidate_compile_mode": "reduce-overhead" if fp4 else "default",
-        "compile_mode_matches_control": not fp4,
+        "candidate_compile_mode": args.compile_mode if fp4 else "default",
+        "compile_mode_matches_control": not fp4 or args.compile_mode == "default",
         "timing_only": bool(args.timing_authority),
         "timing_authority": args.timing_authority,
         "control": control,

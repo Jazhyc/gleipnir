@@ -270,3 +270,11 @@ iteration at each root-model physical forward, preserving decoder-segment
 outputs until backward completes. Keep all prior receipts, the same pilot and
 timing authority, and fresh compiled/isolation/memory checks. CPU hook tests
 cannot establish GPU replay correctness; require the retry to demonstrate it.
+
+The boundary retry advances through compiled no-grad execution but segfaults
+in native backward before updates. Preserve that failure and collect logs.
+The requested speed result is next measured with `--compile-mode default`,
+both conversion optimizations and the same timing-only authority and twenty-
+update contract. This matches the historical control's compile mode. Require
+all finite/isolation/memory checks, and report the ordinary-dispatch outcome
+even if it loses the complete-MLP graph pilot's gains.

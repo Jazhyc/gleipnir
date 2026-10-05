@@ -586,3 +586,29 @@ Fourteen timing-path CPU tests pass, including single root marks through nested
 layers, live parameter/input gradients and unchanged parameter/state identities.
 Use the same pilot, authority, fresh checks, twenty updates and retained caches;
 the GPU retry must establish that the boundary fix actually resolves replay.
+
+`traintiming02` passes the previous graph-lifetime failure and reaches gradient-
+enabled packed variants, then encounters a native `kernel_py` segfault in the
+autograd worker before completing the compiled packing receipt or any updates.
+The native log alone does not identify which kernel caused it. Preserve the
+sources, eager receipt and logs; do not treat successful no-grad replay as
+successful graph-enabled backward. The process remains in exit handling and is
+sent SIGTERM and SIGKILL after artifact collection, but still retains 12.67 GiB
+of device memory while exiting. No compiler descendants remain. A fresh CUDA
+compute/synchronize probe succeeds with a sum of 16.0; the GPU is usable for a
+separate process. At the subsequent `traintiming03` startup check, the old
+context has released its memory and device allocation is zero before new model
+placement. No residual-context memory confound remains for that measurement.
+No timing result exists for either graph-enabled attempt.
+The graph retry's final launcher return code is `-9` after forced cleanup;
+summary SHA-256 is
+`aa1b742b957250766f6893d8aa9ed3b681217febc5abae78554af41c404e9663`.
+
+To fulfill the requested end-to-end timing, select `--compile-mode default`
+for a separate bounded follow-up with the same two conversion optimizations,
+pilot, authority, cohort, master, physical batching and fresh checks. This
+removes graph-enabled decoder execution and matches the historical control's
+compile mode. The local whole-MLP graph speedups no longer predict this path;
+report any regression openly rather than extending graph-only numbers to full
+training. The root physical-forward marker can remain but no decoder graphs
+are enabled by the default mode.
