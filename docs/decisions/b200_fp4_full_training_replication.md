@@ -151,3 +151,40 @@ short-cohort benchmark or a completed-epoch result. The warmed short cohort
 already cached its exact-M plans and conversion variants, so this removal of
 first-use overhead should not imply a similar gain there. Generic conversion
 may still change steady performance slightly; it has not been timed separately.
+
+## Completed training, 2026-10-06
+
+The corrected epoch completes all 272 updates over 8,688 monitoring rows and
+83,816,369 input tokens, with no padding, truncation or missing/nonfinite
+gradients. Training-loop runtime is 2,779.6297 seconds (46 minutes 20 seconds),
+versus the historical regular control's 3,916.0600 seconds (65 minutes 16 seconds):
+29.0197% less time, or 1.4088 times the throughput. This includes the first
+293.159-second update's preparation. The remaining 271 logical updates average
+8.9631 seconds (median 8.9336, range 3.2086–12.8333); this timer excludes some
+Trainer/logging overhead. Do not compare this full-corpus population directly
+with the smaller warmed timing cohort.
+
+The successful pipeline takes about 53 minutes 14 seconds through validated
+adapter export, including input preparation, model loading, training and export.
+The failed earlier attempts and subsequent serving reference/ID evaluation are
+separate costs, preserved in their own artifact trees. No additional training
+control or per-shape compile-ahead helper runs during the corrected epoch.
+
+Mean training loss is 0.2439715244 versus 0.2331215996 for the historical control,
+a descriptive increase of 0.0108499249 (4.65%). The first 43 logged losses and
+gradient norms match the archived slow attempt exactly; this is a check of the
+runtime-shape fix, not an FP4-to-BF16 quality comparison.
+
+The final causal master SHA256 is
+`8dbc1a2e5445ca8807907692b64a59f637e00958d0c89f0d4182930cffef866c`;
+the rebased serving artifact SHA256 is
+`d13be8b249129269cec572e36e2006a955fa56dec5a015bd93f35bd876c62751`.
+Both preserve all 256 FP32 adapter tensors (169,869,312 elements). Their mapped
+tensor values are bitwise equal and finite; serving uses BF16 compute rather
+than changing the archived adapter dtype. Local collection matches both hashes.
+Fresh score parity and canonical ID quality are still pending.
+
+Worker PID 67332 remains resident and idle, retaining four native plans and 64
+packed weight pairs (2,548,040,192 packed bytes); GPU memory falls to about 15 GB
+after gradients and optimizer state are released. Record final timing and
+collection receipts under `results/b200_fp4_full_training/`.

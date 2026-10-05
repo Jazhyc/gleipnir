@@ -422,3 +422,13 @@ seconds (one-second log resolution), with all eight losses/norms matching the
 archived attempt exactly. This addresses full-corpus first-use overhead; the
 warmed short-cohort benchmark had already paid those costs. Completed-epoch
 throughput and ID quality remain pending.
+
+The corrected full epoch subsequently completes all 272 updates in 2,779.630
+seconds (46 minutes 20 seconds), 29.02% less training-loop time than the historical
+3,916.060-second BF16/SDPA control. The first update includes 293.159 seconds of
+preparation; remaining logical updates average 8.963 seconds in the recorded
+update timer. This validates the full-corpus throughput repair, not a similar
+gain in the already-warmed short cohort. Mean training loss is 0.243972 versus
+0.233122 historically. All 256 FP32 master tensors are finite and preserved
+bitwise by the serving rebase; the trained worker remains resident. Fresh score
+parity and ID quality are still pending.

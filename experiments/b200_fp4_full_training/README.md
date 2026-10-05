@@ -67,8 +67,14 @@ regression. A bounded profile measures 23.980 seconds to construct one update's
 now reuses NVIDIA's runtime-M plan support per device/K/N, and its conversion
 group counts and row-scale lengths are runtime arguments. Targeted native checks
 match fixed-M outputs bitwise in sixteen projection cases and conversion bytes
-in 21 cases, plus seven row-scale cases; full-run speed and ID quality are still
-pending. Applying the Python
+in 21 cases, plus seven row-scale cases. The corrected full epoch completes in
+2,779.630 seconds
+(46 minutes 20 seconds), versus 3,916.060 seconds for the historical BF16/SDPA
+control: 29.02% less loop time for the combined recipe. All 272 updates cover
+83,816,369 tokens; updates after the first average 8.963 seconds in the recorded
+logical-update timer. The first update takes 293.159 seconds including
+preparation. Mean training loss is 0.243972 versus 0.233122 historically; ID
+quality is still pending. Applying the Python
 change requires restarting from the original initialization because the first
 attempt has no intermediate disk checkpoint. The replacement restarts from the
 frozen controls on the same B200, preserving that attempt under the
