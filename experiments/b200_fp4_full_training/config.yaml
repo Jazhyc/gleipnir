@@ -1,0 +1,45 @@
+campaign_id: b200-fp4-full-training-v1
+seed: 0
+profile: qwen35_4b_b200_fp4_mlp
+training_rows: 8688
+expected_steps: 272
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+template_sha256: f104aa18fe9f04094efdca14f9cebe65f7b18d976f454c134fa4282bd5162eaa
+training_source: data/student_injection_awareness/regular/student_rows.jsonl
+teacher_source: data/student_injection_awareness/soft_targets.jsonl
+id_source: data/student_injection_awareness/regular/id.jsonl
+canonical_id_source: data/id_cot_only_evaluation/prompts.jsonl
+canonical_id_manifest: data/id_cot_only_evaluation/evaluation.manifest.json
+control_metadata: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+control_id_result: results/student_injection_awareness/4b/regular/id/result.json
+control_id_predictions: results/student_injection_awareness/4b/regular/id/predictions.jsonl
+control_token_audit: results/student_injection_awareness/4b/regular/token_audit.json
+training_source_sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+teacher_source_sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+id_source_sha256: 8e0fde58119098356feb0d897194d0dddec5e21b3e5e6959d5495d0999bb0ed2
+canonical_id_source_sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+canonical_id_manifest_sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+control_metadata_sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+control_id_result_sha256: 0e6d299ad932ac9e6263b0bda35d51e895e19bf98376f68937c102ebaeb7c680
+control_id_predictions_sha256: 860383ffcf45767fdbdcd23caef4df93e64408f80e3edc29d4b1ec16273312b7
+control_token_audit_sha256: 0db8abe9b9dfaff6b22284fb37bf957b65fa5adcaa4da9165b25bdfb0b6a51ba
+models:
+  4b:
+    id: Qwen/Qwen3.5-4B
+    revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+engine:
+  max_model_len: 32768
+  gpu_memory_utilization: 0.15
+  max_num_seqs: 16
+  max_num_batched_tokens: 32768
+  batch_rows: 128
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
