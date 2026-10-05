@@ -49,7 +49,8 @@ def main() -> None:
             )
             warm_report = os.environ.get("GLEIPNIR_FP4_WARM_REPORT")
             profile_output = os.environ.get("GLEIPNIR_FP4_PROFILE_OUTPUT")
-            if profile_output:
+            resident_root = os.environ.get("GLEIPNIR_FP4_RESIDENT_ROOT")
+            if profile_output or resident_root:
                 from experiments.b200_mlp_gemm.full_model_profile import (
                     profile_validation_reference,
                 )
@@ -60,6 +61,19 @@ def main() -> None:
                         profile_validation_reference,
                     )
                 )
+            if resident_root:
+                from transformers import Trainer
+
+                from experiments.b200_mlp_gemm.resident_worker import resident_train
+
+                stack.enter_context(
+                    patch.object(
+                        Trainer,
+                        "train",
+                        resident_train(Trainer.train, Path(resident_root)),
+                    )
+                )
+
             if warm_report:
                 from transformers import Trainer
 

@@ -372,3 +372,50 @@ Analyze collected raw traces with:
 python -m experiments.b200_mlp_gemm.analyze_full_profile \
   results/b200_mlp_gemm/warmedprofile01/warmed_profile
 ```
+
+## Resident FP4 optimization worker
+
+User request, 2026-10-05: retain a live worker across compatible optimization
+trials, and use combined native FP4 MLPs with BF16 FA4 as the timing baseline.
+This is a systems-comparison baseline; historical strict numerical failures
+remain preserved and the general BF16 recipe is unchanged.
+
+Hypothesis: retaining the model, compiled runtime, FP4 plans and packed frozen
+weights removes repeated process setup and allows short matched experiments.
+Start one worker from the checksum-bound successful profiling launch contract.
+Verify input hashes and reuse the original timing-only validation reference.
+Prime the twenty logical batches once without updates; audit actual updates for
+new plans/specializations instead of doing a second complete replay. Each trial
+uses the same twenty updates, initial FP32 masters, RNG, fresh AdamW/scheduler
+state and exact historical physical batches. Retain caches across trials.
+
+The startup queue contains two uninstrumented FP4 baseline trajectories followed
+by one diagnostic trajectory with a shape-recording CPU/CUDA trace at update 15.
+Require the two baselines to reproduce loss/gradient logs and final-master hashes
+exactly before attributing subsequent work. Stop on nonfinite/missing gradients,
+master/contract/reset disagreement or preparation during measured updates.
+Each trial is bounded to twenty updates. The worker stays idle with the model
+resident after the queue completes. No teacher calls or held-out evaluation
+occur. This session has no in-chat scheduling tool; monitor during the active turn.
+
+Use the same session ID for subsequent submissions:
+
+```bash
+python -m experiments.b200_mlp_gemm.resident_launch --session resident01 start
+python -m experiments.b200_mlp_gemm.resident_launch --session resident01 status
+python -m experiments.b200_mlp_gemm.resident_launch --session resident01 submit \
+  --id followup01 --variant baseline
+```
+
+Receipts/requests and the worker PID are under
+`results/b200_mlp_gemm/resident01/`; the live log is
+`logs/runpod/b200_mlp_gemm/resident01/worker.log`. Requests select baseline/profile
+variants or the checksum-bound experiment file `resident_candidate.py`.
+A candidate supplies an `intervention(trainer)` context manager and
+`validate(trainer)` targeted timing-validation receipt. Its source is archived
+per trial, and the context restores the baseline after execution. The worker
+reads candidate code at trial start, allowing compatible implementation changes
+without restarting the model process. Submission/status commands import only
+the stdlib and do not load Torch or Transformers. GEMM shape attribution identifies
+how much ordinary contraction time belongs to frozen GDN projections versus
+LoRA and other work before selecting the next implementation target.

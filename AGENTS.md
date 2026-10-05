@@ -84,6 +84,22 @@ agent follow-ups with a remote polling loop.
 
 ### Reuse validated training recipes
 
+Standing user preference, 2026-10-05: keep a persistent, resident training worker
+when iterating on training-stack optimizations. Reuse the loaded model, compiler
+and kernel caches, native plans and packed frozen weights across compatible
+trials. Reset FP32 adapters, optimizer/scheduler state, RNG and data order for
+matched comparisons; verify reset correctness when establishing a worker.
+Do not reload the model, repeat full-shape replay or rerun unchanged startup
+diagnostics for every trial. Keep finite/missing-gradient update checks and run
+targeted checks when an intervention changes arithmetic or the supported envelope.
+Record the worker PID, active configuration and artifact/queue paths so later
+sessions can inspect and reuse it. Restart when changes require it or after a
+diagnosed failure; preserve artifacts and disk caches. This preference does not
+authorize launching new billable capacity or terminating existing capacity.
+For the current B200 systems-optimization campaign, use the combined native FP4
+MLP plus BF16 FA4 variant as the timing baseline for further improvements; this
+does not by itself replace the quality-validated BF16 training default.
+
 Standing user preference, 2026-10-03: reuse persistent compiler and kernel caches
 across compatible training runs on the network volume. Do not create a cold cache
 namespace for each experiment. Keep run outputs separate from shared caches, record

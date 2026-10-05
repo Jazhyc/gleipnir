@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import os
 import time
 from copy import deepcopy
 from pathlib import Path
@@ -63,7 +64,11 @@ def profile_validation_reference(path: Path, **kwargs: Any) -> dict:
             raise ValueError(f"validated kernel source changed: {relative}")
     result = {
         **control,
-        "policy": "reuse_explicit_timing_only_fp4_profile",
+        "policy": (
+            "reuse_explicit_timing_only_fp4_resident"
+            if os.environ.get("GLEIPNIR_FP4_RESIDENT_ROOT")
+            else "reuse_explicit_timing_only_fp4_profile"
+        ),
         "reference_path": str(path),
         "reference_sha256": REFERENCE_SHA,
         "learning_gradient_tolerance": 0.05,

@@ -345,3 +345,11 @@ the profile loss history/final adapter differ from the earlier run, with cause
 not isolated. Diagnostic traces do not replace unprofiled speed measurements or
 establish quality parity. Larger supported targets are GDN work and remaining
 BF16 projections; native FP4 conversion is no longer the largest identified cost.
+
+The user subsequently selects the combined native FP4 MLP/FA4 path as the
+timing baseline for further systems optimization and requests persistent workers
+across compatible trials and future sessions. The
+[resident-worker decision](decisions/b200_fp4_optimization_worker.md) records
+matched state resets, reused validation, retained in-process caches and targeted
+GEMM attribution. This systems reference does not promote the FP4 path on quality
+or erase its strict numerical failures.

@@ -98,7 +98,10 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     timing_authority = training.get("packing_timing_authority")
     profile_reuse = (
         backend == "flash_attention_4"
-        and training.get("native_fp4_mlp_profile") is True
+        and (
+            training.get("native_fp4_mlp_profile") is True
+            or training.get("native_fp4_mlp_resident") is True
+        )
         and training.get("native_fp4_mlp_timing") is True
         and quantization.get("full_bf16_lora") is True
         and isinstance(timing_authority, str)
@@ -124,10 +127,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
             )
         )
         and 0 < training.get("max_steps", 0) <= 20
-        and (
-            not training.get("startup_validation_reference")
-            or profile_reuse
-        )
+        and (not training.get("startup_validation_reference") or profile_reuse)
     ):
         raise ValueError(
             "timing-only low precision requires authority and at most 20 fresh steps"
