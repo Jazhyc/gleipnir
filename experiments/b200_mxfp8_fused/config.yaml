@@ -1,0 +1,6 @@
+upstream_revision: 51d9d06b574222378a3d806009accab098e73705
+overlay: .cache/kernels/nvidia_mxfp8
+compiler_cache: .cache/training/shared/gpu-0
+fa4_cache: .cache/training/fa4_4.0.0b33_cute
+fa4_overlay: .cache/kernels/fa4
+logs: logs/runpod/b200_mxfp8_fused

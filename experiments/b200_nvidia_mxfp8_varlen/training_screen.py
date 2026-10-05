@@ -66,10 +66,17 @@ def accept_native(receipt: dict) -> dict:
 def job_for(config: dict, source: dict, recipe: dict) -> dict:
     """Keep the dense screen's optimizer/data contract and fresh startup gates."""
     job = dense_job(config, source, recipe, "nvidia_mxfp8")
-    destination = ROOT / config["output"] / "nvidia_mxfp8_varlen"
+    backend = config.get("candidate_backend", "nvidia_mxfp8_varlen")
+    if backend not in {
+        "nvidia_mxfp8_varlen",
+        "nvidia_mxfp8_fused",
+        "nvidia_mxfp8_square",
+    }:
+        raise ValueError("unsupported packed NVIDIA candidate")
+    destination = ROOT / config["output"] / backend
     job.update(
-        job_name="nvidia_mxfp8_varlen",
-        packed_attention_backend="nvidia_mxfp8_varlen",
+        job_name=backend,
+        packed_attention_backend=backend,
         output_dir=str(destination),
         causal_adapter_dir=str(destination / "causal_adapter"),
         model_dir=str(destination / "model"),
@@ -77,19 +84,29 @@ def job_for(config: dict, source: dict, recipe: dict) -> dict:
     return job
 
 
-def main() -> None:
+def main(default_config: Path | None = None) -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
         "--config",
         type=Path,
-        default=ROOT / "experiments/b200_nvidia_mxfp8_varlen/training_config.yaml",
+        default=default_config
+        or ROOT / "experiments/b200_nvidia_mxfp8_varlen/training_config.yaml",
     )
     args = parser.parse_args()
     config = yaml.safe_load(args.config.read_text())
     native_path = ROOT / config["native_reference"]
     if sha256_file(native_path) != config["native_reference_sha256"]:
         raise ValueError("native receipt checksum drift")
-    acceptance = accept_native(json.loads(native_path.read_text()))
+    backend = config.get("candidate_backend", "nvidia_mxfp8_varlen")
+    native = json.loads(native_path.read_text())
+    if backend in {"nvidia_mxfp8_fused", "nvidia_mxfp8_square"}:
+        from experiments.b200_mxfp8_fused.training_screen import (
+            accept_native as accept_fused,
+        )
+
+        acceptance = accept_fused(native, square=backend == "nvidia_mxfp8_square")
+    else:
+        acceptance = accept_native(native)
     output = ROOT / config["output"]
     output.mkdir(parents=True, exist_ok=False)
     logs = ROOT / config["logs"]
@@ -125,6 +142,8 @@ def main() -> None:
         ROOT / "experiments/b200_nvidia_mxfp8/run.py",
         ROOT / "experiments/b200_nvidia_mxfp8/training_screen.py",
         *ROOT.glob("src/gleipnir/nvidia_mxfp8_varlen*.py"),
+        *ROOT.glob("src/gleipnir/nvidia_mxfp8_fused*.py"),
+        *(ROOT / "experiments/b200_mxfp8_fused").glob("*.py"),
         *(
             ROOT / "src/gleipnir" / name
             for name in [
@@ -170,7 +189,7 @@ def main() -> None:
     publish()
     started = time.perf_counter()
     try:
-        with (logs / "nvidia_mxfp8_varlen.log").open("x") as handle:
+        with (logs / f"{backend}.log").open("x") as handle:
             subprocess.run(
                 command,
                 cwd=ROOT,

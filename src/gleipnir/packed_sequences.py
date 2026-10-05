@@ -203,7 +203,12 @@ def installed_segmented_sdpa(
         from flash_attn.cute import flash_attn_varlen_func
 
         interface = packed_fa4_interface(original, flash_attn_varlen_func)
-    elif backend in {"nvidia_mxfp8", "nvidia_mxfp8_varlen"}:
+    elif backend in {
+        "nvidia_mxfp8",
+        "nvidia_mxfp8_varlen",
+        "nvidia_mxfp8_fused",
+        "nvidia_mxfp8_square",
+    }:
         from gleipnir.nvidia_mxfp8_attention import (
             FRONTEND_VERSION,
             segmented_mxfp8_interface,
@@ -211,7 +216,13 @@ def installed_segmented_sdpa(
 
         if expected_version != FRONTEND_VERSION:
             raise ValueError("MXFP8 requires the pinned experimental Frontend version")
-        if backend == "nvidia_mxfp8_varlen":
+        if backend in {"nvidia_mxfp8_fused", "nvidia_mxfp8_square"}:
+            from gleipnir.nvidia_mxfp8_fused_attention import fused_interface
+
+            interface = fused_interface(
+                original, square=backend == "nvidia_mxfp8_square"
+            )
+        elif backend == "nvidia_mxfp8_varlen":
             from gleipnir.nvidia_mxfp8_varlen_attention import packed_mxfp8_interface
 
             interface = packed_mxfp8_interface(original)

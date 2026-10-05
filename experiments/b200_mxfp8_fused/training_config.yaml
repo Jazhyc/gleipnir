@@ -1,0 +1,43 @@
+native_reference: results/b200_mxfp8_fused/square02/kernel_canary.json
+source_jobs: results/b200_adaptive_microbatching/jobs.jsonl
+condition_source: singleton
+profile: src/gleipnir/configs/systems_screen/qwen35_4b_b200_packed_sdpa.yaml
+initial_adapter: results/fp4_row_aot_training/initial_adapter
+expected_initial_master_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+validation_reference: results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json
+validation_reference_sha256: 185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364
+output: results/b200_mxfp8_fused/training_square01
+logs: logs/runpod/b200_mxfp8_fused/training_square01
+overlay: .cache/kernels/nvidia_mxfp8
+compiler_cache: .cache/training/shared/gpu-0
+fa4_cache: .cache/training/fa4_4.0.0b33_cute
+fa4_overlay: .cache/kernels/fa4
+conditions:
+- nvidia_mxfp8_square
+steps: 20
+warmup_steps: 10
+minimum_relative_improvement: 0.05
+native_learning_forward_limit: 0.05
+native_learning_gradient_limit: 0.1
+candidate_learning_gradient_tolerance: 0.1
+learning_acceptance_authority: 'Standing user instruction in this session: gradient
+  difference around 8% or so is not that problematic; check differences and continue
+  the main run. Preserve strict results separately; this authorizes a bounded learning/timing
+  comparison, not default promotion or quality equivalence.'
+timing_authority: user_2026_10_05_speed_regardless
+timing_acceptance_authority: 'Explicit user instruction after reviewing the 18.71%
+  whole-model gradient failure: Hmm, ok. Let us get a speed result regardless. This
+  authorizes a bounded timing-only comparison with finite gradients and sequence isolation;
+  strict and learning parity remain failed.'
+native_reference_sha256: 39d11ec07c8c435addd7ce41820425d9b31a81bc09011f7aea2aa8fb6659aec3
+controls:
+  flash_attention_4:
+    metadata: results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json
+    sha256: 185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364
+  nvidia_mxfp8:
+    metadata: results/b200_nvidia_mxfp8/training03/nvidia_mxfp8/causal_adapter/training_metadata.json
+    sha256: 2047927e4484bdc9481fa158a72f03456c65487b87b4434abd48a9d337c39492
+  nvidia_mxfp8_varlen:
+    metadata: results/b200_nvidia_mxfp8_varlen/training01/nvidia_mxfp8_varlen/causal_adapter/training_metadata.json
+    sha256: 8442b71822b61a445b4f8715c903fc720ab8d9e49b538e359bcdad4ba040f8d9
+candidate_backend: nvidia_mxfp8_square

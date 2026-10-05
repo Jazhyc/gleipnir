@@ -99,7 +99,13 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     if timing_authority is not None and not (
         isinstance(timing_authority, str)
         and timing_authority.strip()
-        and backend in {"nvidia_mxfp8", "nvidia_mxfp8_varlen"}
+        and backend
+        in {
+            "nvidia_mxfp8",
+            "nvidia_mxfp8_varlen",
+            "nvidia_mxfp8_fused",
+            "nvidia_mxfp8_square",
+        }
         and 0 < training.get("max_steps", 0) <= 20
         and not training.get("startup_validation_reference")
     ):
@@ -120,11 +126,16 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         "flash_attention_4",
         "nvidia_mxfp8",
         "nvidia_mxfp8_varlen",
+        "nvidia_mxfp8_fused",
+        "nvidia_mxfp8_square",
     } or ((backend != "sdpa") != (version is not None)):
         raise ValueError("packed attention requires an explicit supported version")
-    if backend in {"nvidia_mxfp8", "nvidia_mxfp8_varlen"} and training.get(
-        "startup_validation_reference"
-    ):
+    if backend in {
+        "nvidia_mxfp8",
+        "nvidia_mxfp8_varlen",
+        "nvidia_mxfp8_fused",
+        "nvidia_mxfp8_square",
+    } and training.get("startup_validation_reference"):
         raise ValueError("experimental MXFP8 requires fresh model startup validation")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
         if tolerance != 0.10 or not training.get("startup_validation_reference_sha256"):
@@ -167,6 +178,8 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
                 "flash_attention_4": "varlen_causal_flash_attention_4",
                 "nvidia_mxfp8": "segmented_causal_nvidia_mxfp8",
                 "nvidia_mxfp8_varlen": "varlen_causal_nvidia_mxfp8",
+                "nvidia_mxfp8_fused": "varlen_causal_nvidia_mxfp8_fused_dual",
+                "nvidia_mxfp8_square": "varlen_causal_nvidia_mxfp8_fused_square32",
             }[attention],
             attention_backend=attention,
             attention_version=attention_version,
