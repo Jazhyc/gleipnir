@@ -188,3 +188,15 @@ Worker PID 67332 remains resident and idle, retaining four native plans and 64
 packed weight pairs (2,548,040,192 packed bytes); GPU memory falls to about 15 GB
 after gradients and optimizer state are released. Record final timing and
 collection receipts under `results/b200_fp4_full_training/`.
+
+The fresh final-adapter serving canary passes on twenty training-source rows:
+adapter correlation 0.9997727794 and mean absolute score difference 0.0035214861;
+base correlation 0.9984131854 and mean difference 0.0106879820. Canonical ID
+evaluation then advances in the same vLLM engine. Before its final report,
+inspection finds that the base serving environment excludes the training-only
+FA4/cuDNN distributions and uses older Cutlass/TVM versions. The summary CLI
+therefore delegates artifact comparison to a child in the pinned training
+environment, preserving all runtime/source/provenance checks. Twelve focused
+tests and Ruff pass. Archive the summary-only source patch separately from the
+already-executed training/scoring sources; no arithmetic or evaluation population
+changes, and no failed summary run or waived check is claimed.

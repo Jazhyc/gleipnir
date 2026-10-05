@@ -44,9 +44,11 @@ Artifacts: `data/b200_fp4_full_training/`,
 experiments.b200_fp4_full_training.run` prepares inputs, starts the normal
 Trainer through a retention wrapper, waits for verified full training, runs
 the reference/ID evaluation and writes the final comparison. It neither
-provisions nor terminates cloud capacity. Agent monitoring requires an in-chat
-scheduler; none is available in this session. Active-turn checks do not promise
-follow-ups after the turn ends.
+provisions nor terminates cloud capacity. Its final summary delegates to the
+pinned training environment so artifact provenance checks see the same kernel
+distributions; scoring uses the separate serving environment. Agent monitoring
+requires an in-chat scheduler; none is available in this session. Active-turn
+checks do not promise follow-ups after the turn ends.
 
 Legacy compile-only cache population uses `compile_ahead --minimum-update N
 --workers 16`. It builds the unchanged native plans for future historical batch

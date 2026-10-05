@@ -43,6 +43,45 @@ def test_full_replication_uses_original_regular_controls_and_native_recipe():
     assert "packing_timing_authority" not in student["training"]
 
 
+def test_summary_validates_in_training_environment_before_serving_prepare(
+    monkeypatch, tmp_path
+):
+    from experiments.b200_fp4_full_training import evaluate
+
+    environment = {"PYTHONPATH": "/isolated-training", "CUDA_VISIBLE_DEVICES": "0"}
+    calls = []
+
+    def pinned_environment(root, campaign_id, *, native_fp4_mlp):
+        assert root == tmp_path
+        assert campaign_id == "full-replication"
+        assert native_fp4_mlp is True
+        return environment
+
+    def child(command, **kwargs):
+        calls.append((command, kwargs))
+
+    def unnecessary_prepare():
+        pytest.fail("summary must prepare inputs only in its pinned child")
+
+    monkeypatch.setattr(evaluate, "ROOT", tmp_path)
+    monkeypatch.setattr(
+        evaluate, "configuration", lambda: {"campaign_id": "full-replication"}
+    )
+    monkeypatch.setattr(evaluate, "training_environment", pinned_environment)
+    monkeypatch.setattr(evaluate, "prepare", unnecessary_prepare)
+    monkeypatch.setattr(evaluate.subprocess, "run", child)
+    monkeypatch.setattr(evaluate.sys, "argv", ["evaluate", "--backend", "summary"])
+    evaluate.main()
+    assert len(calls) == 1
+    command, kwargs = calls[0]
+    assert command == [
+        evaluate.sys.executable,
+        "-m",
+        "experiments.b200_fp4_full_training.comparison",
+    ]
+    assert kwargs == {"cwd": tmp_path, "env": environment, "check": True}
+
+
 def populations():
     inputs = [
         {
