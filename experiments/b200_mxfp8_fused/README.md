@@ -47,3 +47,12 @@ sections 2.2 and 2.3, public source revision
 `2889aefba0d03b3eecf779eed9f4097066ecdc5d`. The fused kernels below are a project
 implementation of those ideas using NVIDIA's pinned consumer layouts, not
 copied unpublished Meta producer code.
+
+Completed B200 screen: both modes pass layout, sequence isolation and native
+execution checks; dual outputs/gradients are byte-exact with the old producer.
+Fused square uses 16 attention GPU kernels instead of 38–39, but its matched
+20-update run averages 4.15062 seconds/update, 1.57% slower than historical BF16
+FA4 and 5.40% slower than direct-varlen MXFP8. Eager/compiled model gradient
+errors remain failed at 19.49%/18.22%. Do not promote this experimental backend.
+See [the finding](../../docs/findings/b200_mxfp8_fused.md) for receipts,
+attention diagnostics, scope limitations and numerical results.

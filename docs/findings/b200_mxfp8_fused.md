@@ -120,16 +120,60 @@ clock/order variation remains visible and no long repeated campaign is claimed.
 
 ## Whole-model screen
 
-The checksum-bound `training_square01` screen is configured for exactly 20
-updates from the same initial FP32 adapter, 320-row cohort, seed and adaptive
-packing as the direct-varlen control. Ten warmup updates precede ten measured
-updates. Because precision/preparation changed, model eager/compiled packing
-and longest-row checks are fresh. The earlier explicit timing-only authority
-does not turn strict or separate learning parity failures into passes. Final
-update timing, finite-gradient status and physical-contract agreement must be
-collected before drawing a whole-model conclusion.
+The checksum-bound `training_square01` screen completed exactly 20 updates
+from the same initial FP32 adapter, 320-row cohort, seed and adaptive packing as
+all three historical controls. Ten warmup updates precede ten measured updates;
+all physical row contracts match exactly. The measured window contains
+1,314,331 tokens and 73 physical rows. No fresh control replication is claimed.
 
-Validation so far: 68 focused CPU tests pass, including new explicit-precision
+| Complete-update recipe | Mean seconds/update | Peak allocated GiB |
+| --- | ---: | ---: |
+| Historical BF16 FA4 | 4.08648 | 145.242 |
+| Historical dense MXFP8 | 5.29781 | 146.852 |
+| Historical direct-varlen MXFP8 | 3.93793 | 145.098 |
+| Fused square MXFP8 | 4.15062 | 144.242 |
+
+Square fusion takes 21.65% less time than dense MXFP8, but 1.57% more than FA4
+and 5.40% more than direct-varlen MXFP8. It does not meet the predeclared 5%
+complete-update improvement rule. The ten measured updates total 41.5062 seconds;
+all twenty update timers total 84.9899 seconds, the trainer loop takes 89.2456
+seconds, and the full invocation including fresh gates takes 458.826 seconds.
+Attention-only improvements therefore do not establish a training speedup.
+
+Fresh eager/compiled packing gradient relative L2 errors are 19.49%/18.22%,
+versus 18.71%/16.66% for direct-varlen MXFP8. Both exceed strict 5% and separate
+10% learning ceilings; both runs retain failed receipts. The adaptive gradient
+canary is finite but fails strict parity at 36.77%. Cross-example perturbation
+and input-gradient leakage are zero in all fresh packing cases. The longest-row
+preflight passes with unchanged master adapters and finite gradients. The
+explicit earlier timing-only authority permits this bounded comparison and does
+not establish learning quality or numerical equivalence.
+
+All twenty updates enforce finite loss and reject missing/nonfinite gradients.
+The collected checkpoint contains 256 finite FP32 master adapter tensors; local
+checksums match the remote adapter and metadata, and all 24 archived source files
+match their recorded hashes. Its final master hash
+is `8a1666ad2aecd366e9fd9dca838a9fa32d9c2e54cd815e16e0fc2f04ab06d689`,
+different from the shared initial adapter and the earlier dense/direct-varlen
+trajectory. The saved adapter file SHA256 is
+`2e5b88f7e46a2cff42439c3b201ded32306cca4f5cc813f99305b7518ca36f33`.
+Metadata SHA256:
+`60fc8b01e01b96a98ec9f9b0d72511b13af2eae8a3bbd8c9bdc484ac63f4b2b1`.
+The result, executed-source archive and runtime logs are collected locally under
+`results/b200_mxfp8_fused/training_square01/` and
+`logs/runpod/b200_mxfp8_fused/`.
+
+Keep BF16 FA4/FlashQLA as the standard. Both fused modes remain explicit
+experimental backends. Fused dual has byte-exact native parity with the old
+producer; only square mode has a complete-model timing screen here. No held-out
+quality validation, fresh FA4 replication or claim of a precise whole-model
+bottleneck follows. Short-pack dispatch overhead, slower fused preparation on
+some shapes and the native dQ backward kernel remain measured optimization
+targets; GDN/MLP shares still require a whole-model profile. Meta's public recipe
+also changes tensor-production and native attention internals that this port
+has not implemented.
+
+Validation: 68 focused CPU tests pass, including new explicit-precision
 routing, bounded authorization, failed-native rejection, square scale-group
 scope, and the affected existing packing contracts. Ruff and diff checks pass.
 Feature commit: `4910f6b` on `research/b200-mxfp8-fused`.

@@ -225,3 +225,18 @@ profile finds a 28% long-singleton latency reduction but regressions on short
 and balanced packs. The remaining targets are host conversion/dispatch costs
 and a dQ backward kernel with roughly unchanged GPU time; the exact whole-model
 GDN/MLP/attention time shares remain unmeasured.
+
+The [fused MXFP8 preparation screen](findings/b200_mxfp8_fused.md) implements
+Meta-inspired single-pass operand/scaling preparation and transpose-invariant
+32x32 block scaling, plus a fused cumulative-boundary predicate. It retains the
+NVIDIA causal D256 GQA kernels and our sequence-local layouts. Native dual mode
+matches the old producer exactly; both modes pass execution/isolation checks.
+Attention GPU launches fall from 38–39 to 16, and long-singleton attention takes
+31.8% less time than FA4 in the isolated diagnostic. However, the matched square
+20-update screen averages 4.15062 seconds/update, 1.57% slower than historical
+FA4 and 5.40% slower than direct-varlen MXFP8. Whole-model eager/compiled gradient
+errors remain failed at 19.49%/18.22%. The intervention fails its complete-update
+improvement rule. Keep BF16 FA4 as the standard and retain these explicit
+experimental backends; no quality equivalence or fresh control replication is
+claimed. Meta's RMSNorm/GEMM producer epilogues and native attention changes
+remain outside this implementation.
