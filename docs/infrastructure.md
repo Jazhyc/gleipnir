@@ -336,6 +336,31 @@ additions and training backward, while retaining BF16 FA4. The
 negative training screen and faster forward-only projection pilots. No GEMM
 training experiment was launched before this shutdown.
 
+### B200 provisioned for MLP/GEMM screens, 2026-10-05
+
+The user explicitly authorized resuming work on MLPs/GEMMs and provisioning
+one B200 in NC2. A live Secure Cloud stock read reported LOW availability in
+US-NC-2 at $6.79/hour. Pod `i243nsg10usytq` (`gleipnir-b200-mlp-gemm`)
+was created at 2026-10-05 11:38 UTC, read back RUNNING, and is reachable by
+direct SSH through `.runpod/mlp-gemm.json`. It uses the CUDA-13 image
+`runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster`, read from the
+existing stopped Pod inventory, a 50 GB container disk and retained 200 GB
+network volume `ixbh81vf9c` mounted at `/workspace`.
+
+SSH verifies NVIDIA B200 183,359 MiB, driver 595.91.07,
+UUID `GPU-12d4b74b-73ef-7428-b4ec-1fe79d4586b3`, 20.4 CPU quota and
+250,999,996,416-byte memory limit. `findmnt` confirms the original NC2
+network-volume mount and shared caches. Torch remains 2.11.0+cu130/CUDA 13.0.
+Temporary FLA/causal-conv1d/Triton links are restored to the retained overlays;
+the saved cuDNN Frontend includes the SwiGLU MLP/FROST interfaces. No package
+upgrade, new volume or cold-cache namespace is created.
+
+The bounded experiment contract is
+[`b200_mlp_gemm`](../experiments/b200_mlp_gemm/README.md). Keep BF16 FA4 as
+the standard; synthetic component timings alone do not promote a recipe.
+No in-chat scheduling tool is available: startup/progress checks are performed
+during the active turn, with no autonomous follow-up promised after it ends.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

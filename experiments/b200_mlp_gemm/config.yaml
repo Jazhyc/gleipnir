@@ -1,0 +1,12 @@
+overlay: .cache/kernels/nvidia_mxfp8
+compiler_cache: .cache/training/shared/gpu-0
+fa4_cache: .cache/training/fa4_4.0.0b33_cute
+fa4_overlay: .cache/kernels/fa4
+timeout_seconds: 600
+warmups: 6
+repetitions: 10
+tokens: [193, 4096, 16384]
+rank: 128
+alpha: 256
+relative_l2_limit: 0.01
+minimum_relative_improvement: 0.05
