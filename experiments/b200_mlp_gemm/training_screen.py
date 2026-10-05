@@ -150,6 +150,7 @@ def main() -> None:
     parser.add_argument("--attempt", required=True)
     parser.add_argument("--timing-authority")
     parser.add_argument("--warm-shapes", action="store_true")
+    parser.add_argument("--profile-updates", action="store_true")
     parser.add_argument(
         "--compile-mode",
         choices=("default", "reduce-overhead"),
@@ -166,6 +167,8 @@ def main() -> None:
         not fp4 or not args.timing_authority or args.compile_mode != "default"
     ):
         raise ValueError("warmed screen requires native FP4 timing in default mode")
+    if args.profile_updates and not args.warm_shapes:
+        raise ValueError("full-model profiling requires exact-shape warmup")
     if args.timing_authority is not None and (
         not fp4 or not args.timing_authority.strip()
     ):
@@ -211,6 +214,14 @@ def main() -> None:
     # MLP code changed; request fresh model gates instead of claiming startup reuse.
     job.pop("startup_validation_reference", None)
     job.pop("startup_validation_reference_sha256", None)
+    if args.profile_updates:
+        job["startup_validation_reference"] = str(
+            ROOT
+            / "results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json"
+        )
+        job["startup_validation_reference_sha256"] = (
+            "14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb"
+        )
     for path_key, hash_key in [
         ("student_rows", "student_rows_sha256"),
         ("soft_targets", "soft_targets_sha256"),
@@ -239,6 +250,8 @@ def main() -> None:
         ]
         if args.timing_authority:
             command.append("++student.training.native_fp4_mlp_timing=true")
+        if args.profile_updates:
+            command.append("++student.training.native_fp4_mlp_profile=true")
     cfg = yaml.safe_load((ROOT / "experiments/b200_mlp_gemm/config.yaml").read_text())
     env = environment(cfg)
     env.update(
@@ -256,6 +269,8 @@ def main() -> None:
             GLEIPNIR_FP4_WARM_REPORT=str(output / "shape_warmup.json"),
             GLEIPNIR_FP4_WARM_REFERENCE=str(ROOT / REFERENCE),
         )
+    if args.profile_updates:
+        env["GLEIPNIR_FP4_PROFILE_OUTPUT"] = str(output / "warmed_profile")
     sources = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         Path("src/gleipnir/mlp_gemm.py"),
@@ -291,6 +306,8 @@ def main() -> None:
         "timing_only": bool(args.timing_authority),
         "timing_authority": args.timing_authority,
         "exact_shape_warmup": args.warm_shapes,
+        "profiled_updates": [11, 15, 20] if args.profile_updates else [],
+        "instrumented_time_is_not_speed_result": args.profile_updates,
         "control": control,
         "cache_paths": {k: v for k, v in env.items() if "CACHE" in k},
         "source_sha256": {str(p): sha256_file(ROOT / p) for p in sources},
@@ -331,12 +348,20 @@ def main() -> None:
     report.update(
         status="complete",
         candidate=candidate,
-        relative_improvement=gain,
-        followup_supported=gain >= 0.05,
+        relative_improvement=None if args.profile_updates else gain,
+        followup_supported=not args.profile_updates and gain >= 0.05,
         default_changed=False,
     )
     summary.write_text(json.dumps(report, indent=2) + "\n")
-    print(json.dumps({"status": "complete", "relative_improvement": gain}), flush=True)
+    print(
+        json.dumps(
+            {
+                "status": "complete",
+                "relative_improvement": report["relative_improvement"],
+            }
+        ),
+        flush=True,
+    )
 
 
 if __name__ == "__main__":

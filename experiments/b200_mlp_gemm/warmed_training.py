@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import random
 import time
 from collections.abc import Callable, Iterator
@@ -278,11 +279,22 @@ def install_warmed_train(
 
         callback = WarmupAudit()
         trainer.add_callback(callback)
+        profile_callback = None
+        if os.environ.get("GLEIPNIR_FP4_PROFILE_OUTPUT"):
+            from experiments.b200_mlp_gemm.full_model_profile import ProfileUpdates
+
+            profile_callback = ProfileUpdates(
+                Path(os.environ["GLEIPNIR_FP4_PROFILE_OUTPUT"])
+            )
+            trainer.add_callback(profile_callback)
         try:
             knobs.runtime.jit_cache_hook = hook
             return original_train(trainer)
         finally:
             knobs.runtime.jit_cache_hook = previous_hook
             trainer.remove_callback(callback)
+            if profile_callback is not None:
+                profile_callback.close()
+                trainer.remove_callback(profile_callback)
 
     return train

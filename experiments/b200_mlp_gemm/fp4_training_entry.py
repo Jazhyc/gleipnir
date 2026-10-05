@@ -48,6 +48,18 @@ def main() -> None:
                 patch("gleipnir.bf16_lora.bf16_lora_metadata", validate_and_install)
             )
             warm_report = os.environ.get("GLEIPNIR_FP4_WARM_REPORT")
+            profile_output = os.environ.get("GLEIPNIR_FP4_PROFILE_OUTPUT")
+            if profile_output:
+                from experiments.b200_mlp_gemm.full_model_profile import (
+                    profile_validation_reference,
+                )
+
+                stack.enter_context(
+                    patch(
+                        "gleipnir.validated_startup.validation_reference",
+                        profile_validation_reference,
+                    )
+                )
             if warm_report:
                 from transformers import Trainer
 

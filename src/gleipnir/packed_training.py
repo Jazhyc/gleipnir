@@ -96,6 +96,15 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     validate_learning_tolerance(tolerance)
     backend = training.get("packed_attention_backend", "sdpa")
     timing_authority = training.get("packing_timing_authority")
+    profile_reuse = (
+        backend == "flash_attention_4"
+        and training.get("native_fp4_mlp_profile") is True
+        and training.get("native_fp4_mlp_timing") is True
+        and quantization.get("full_bf16_lora") is True
+        and isinstance(timing_authority, str)
+        and bool(timing_authority.strip())
+        and tolerance == 0.05
+    )
     if timing_authority is not None and not (
         isinstance(timing_authority, str)
         and timing_authority.strip()
@@ -115,7 +124,10 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
             )
         )
         and 0 < training.get("max_steps", 0) <= 20
-        and not training.get("startup_validation_reference")
+        and (
+            not training.get("startup_validation_reference")
+            or profile_reuse
+        )
     ):
         raise ValueError(
             "timing-only low precision requires authority and at most 20 fresh steps"
@@ -148,7 +160,9 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     } and training.get("startup_validation_reference"):
         raise ValueError("experimental MXFP8 requires fresh model startup validation")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
-        if tolerance != 0.10 or not training.get("startup_validation_reference_sha256"):
+        if (tolerance != 0.10 and not profile_reuse) or not training.get(
+            "startup_validation_reference_sha256"
+        ):
             raise ValueError(
                 "FA4 reuse requires a bound receipt; "
                 "otherwise use fresh startup validation"

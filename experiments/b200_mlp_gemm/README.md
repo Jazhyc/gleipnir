@@ -325,3 +325,28 @@ only. Warmup step durations total 204.84/73.96 seconds, separate from optimizer
 timings; the Trainer runtime includes warmup. All artifacts are collected and
 the GPU is idle. Retain failed launch receipts, the experimental path and the
 BF16 FA4 default; warmed timing does not establish full-corpus wall-time savings.
+
+## Current warmed full-model profile
+
+Profile the same native FP4/FA4 recipe on fixed actual optimizer updates 11, 15
+and 20 after exact-shape replay. Hypothesis: remaining cost is identifiable in
+native FP4 contractions, dynamic conversion, ordinary BF16 GEMMs, FlashQLA/GDN,
+FA4 and host dispatch. Use `--profile-updates --warm-shapes --compile-mode default`
+and the same twenty-update/320-row/master contract; no new BF16 control run.
+Reuse the checksum-bound `warmed03` startup diagnostics with original strict
+failures and timing-only acceptance preserved. Verify current hardware/software
+and native source identity; mark reused checks explicitly instead of repeating
+numerical and longest-batch probes. Actual updates retain finite/missing-gradient
+checks. Warm every actual batch until the replay adds no plans or specializations.
+
+Capture CPU/CUDA events without shapes/stacks/memory profiling. Include complete
+forward/backward, gradient checks/clipping and optimizer work. Export raw traces
+and operator/kernel histograms; distinguish summed kernel durations, the union
+of device intervals, host gaps and CPU synchronization/launch time. Keep opaque
+GEMMs and pointwise work unclassified when the trace cannot identify their model
+component. Do not treat CPU waits as additive to GPU time or infer an unprofiled
+breakdown from instrumented wall time. This run is diagnostic only: its timings
+cannot replace the completed 3.74480-second screen or promote the default.
+Stop on nonfinite/missing gradients, changed source/runtime, warmup failure,
+OOM or a 30-minute process cap. No held-out evaluation or teacher calls occur.
+Monitor during the active turn; there is no in-chat scheduling tool.
