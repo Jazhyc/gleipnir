@@ -71,3 +71,10 @@ validation and persistent caches, makes no optimizer updates, and stops on
 nonfinite outputs/gradients, unsupported execution or OOM. Record CPU wall and
 CUDA-event times separately; profiler sums are attribution, not throughput.
 Stop after four shapes, with no tuning sweep or new numerical canaries.
+
+Completed `profile01`: long-singleton attention improves 17.926 to 12.903 ms,
+but short-pack attention regresses 0.819 to 5.181 ms. Graph replay removes much
+of the short-input host cost; 38–39 MXFP8 GPU kernels remain versus four for FA4.
+The long-input dQ kernel is roughly unchanged at 4.9 ms; forward and dK/dV
+improve. This is attention-only evidence, not a measured whole-model component
+breakdown. See the finding for actual-kernel attribution and trace hashes.

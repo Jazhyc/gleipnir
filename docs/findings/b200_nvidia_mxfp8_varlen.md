@@ -114,3 +114,92 @@ The 3.64% FA4 time reduction falls below the predeclared 5% threshold and lacks 
 fresh FA4 replication. Keep BF16 FA4 as the standard; direct varlen MXFP8 is now
 a working experimental option with substantially lower overhead than the dense
 prototype. No quality-equivalence claim follows.
+## Warmed attention bottleneck diagnostic
+
+On 2026-10-05, `profile01` completed a bounded attention-only diagnostic on the
+same authorized NC2 B200 and persistent caches. Identical synthetic BF16
+operands use causal D256 GQA (16 query / 4 KV heads). Six warmups precede ten
+uncaptured repetitions per backend/shape; backend order alternates by shape.
+Twenty graph replays separately measure the path with most host dispatch
+removed. One warmed forward/backward per condition supplies a CUPTI trace.
+No model or optimizer updates occur and existing native validation is reused.
+All diagnostic outputs and input gradients are finite.
+
+| Controlled lengths | FA4 wall ms | MXFP8 wall ms | FA4 graph ms | MXFP8 graph ms |
+| --- | ---: | ---: | ---: | ---: |
+| 301, 280, 250, 230, 201 | 0.819 | 5.181 | 0.101 | 0.274 |
+| 4 x 4,096 | 2.404 | 5.207 | 2.294 | 2.483 |
+| 14,373, 1,000, 992 | 6.419 | 5.535 | 6.498 | 5.181 |
+| 24,521 | 17.926 | 12.903 | 18.274 | 12.683 |
+
+These measure the complete attention call and its input gradients, including
+quantization, scale conversion and scratch work. The 24,521 length is an actual
+long-singleton length in the measured training window; mixed lengths are
+controlled examples, not asserted to be actual training packs. Do not equate
+these timings with a complete update or combine profiler times with warmed wall
+times as if they were one measurement. Clock/order variation is visible in
+graph samples; this short diagnostic is not a repeated throughput campaign.
+
+The MXFP8 path issues 38–39 actual GPU kernels versus FA4's four. Short inputs
+are especially sensitive to its Python/FFI launches and allocations: graph
+replay cuts MXFP8 short-pack latency from 5.181 to 0.274 ms. Even without most
+host dispatch, that shape remains slower than FA4. Eight external quantizer
+launches and eleven scale-repack launches persist after removing per-example
+dense dispatch. On the balanced pack, quantization and repacking use 0.225 and
+0.166 ms of actual GPU kernel time; total MXFP8 kernel time is 2.500 ms, versus
+2.380 ms for FA4. GPU conversion overhead erases the native compute advantage
+on that shape, with further uncaptured launch overhead.
+
+On the long-singleton trace, actual GPU kernel durations are:
+
+| Operation | BF16 FA4 ms | MXFP8 ms |
+| --- | ---: | ---: |
+| Forward main kernel | 3.244 | 1.898 |
+| dQ main kernel | 4.868 | 4.905 |
+| dK/dV main kernel | 8.148 | 4.682 |
+| All actual kernels | 16.336 | 12.241 |
+
+The FP8 dQ path is roughly unchanged, while forward and dK/dV improve. Native
+backward plus its prologue occupies 9.729 of 12.241 ms (79.5%) of MXFP8 GPU
+kernel time. Quantization and repacking contribute 0.327 and 0.254 ms on this
+shape. This identifies dQ as a specific remaining kernel target; it does not
+prove whether its underlying limit is instruction scheduling, memory traffic,
+softmax/online dS conversion or occupancy. That requires instruction/hardware
+counter profiling. Do not attribute the long-input limit mainly to repacking.
+
+Complete-update gains also depend on the unchanged 24 GDN layers, all MLPs,
+projections, FP32 LoRA work and optimizer. The measured ten-update workload has
+73 physical rows, hence 58.4 full-attention calls per update across eight layers;
+33 rows are long singletons and seven have maximum length below 4,096. Faster
+long attention competes with overhead on other packs. This diagnostic has no
+whole-model GPU breakdown, so it does not establish the exact attention share
+or rank GDN against MLP costs. For illustration only, reducing a component
+occupying 20% of update time by 28% saves 5.6% overall before regressions on other
+shapes. The historical complete-update 3.64% difference remains unreplicated.
+
+The [Meta implementation report](https://pytorch.org/blog/low-precision-flash-attention-4-end-to-end-block-scaled-attention-for-blackwell/)
+describes fused RMSNorm/GEMM-plus-quantization producers and transpose-invariant
+square block quantization. Our producer boundary remains BF16, and separate
+row/column quantization and scale conversion are explicit. Prioritize reducing
+that dispatch/conversion work and investigating native dQ before another
+precision-only screen; retain the unchanged numerical failures and FA4 default.
+
+Artifacts are under `results/b200_nvidia_mxfp8_varlen/profile01/`; the timing
+receipt SHA256 is
+`679a62d8ad3d14dbca19e2c0f36ab9b2918f493de2fe8de71c39125e8ab669fe`.
+Preserve its original `operators`/`kernels` fields: the first profiler export
+also includes synthetic GPU annotation ranges there, which must not be summed
+as actual kernels. `kernel_attribution.json` is the corrected analysis, using
+only Chrome `cat=kernel` events and runtime launch correlations to map nested
+CPU annotations. It excludes synthetic annotation ranges and binds all eight
+traces, the original timing receipt and analysis source by SHA256. Reproduce
+without GPU execution:
+
+```bash
+python -m experiments.b200_nvidia_mxfp8_varlen.profile_attention \
+  --output results/b200_nvidia_mxfp8_varlen/profile01 --analyze-existing
+```
+
+Four focused attribution tests cover exclusion of synthetic annotations,
+thread separation, duplicate external IDs and coarse external-ID correlation.
+Ruff and diff checks pass. The native kernel implementation is unchanged.
