@@ -179,6 +179,19 @@ seconds). Keep BF16 MLPs; this FP4 configuration has no throughput basis for
 promotion. Separate original-FLA/FlashQLA strict parity still fails at 73.64%
 gradient relative L2 under the standing selected-finite policy.
 
+The [B200 MLP / GEMM screen](findings/b200_mlp_gemm.md) rejects compiled
+gate/up merging and the initial cuDNN LoRA-aware forward graph as throughput
+improvements over already compiled PEFT. At 16384 tokens their complete standalone
+MLP forward/backward times are 3.04% and 21.91% slower; no full-model continuation
+was launched. Native FP4 frozen-base forward and input-gradient GEMMs pass decoded-operand
+arithmetic checks. Tensor-wide dynamic scaling measurably couples examples;
+per-row scaling restores exact row independence. Chunked per-row packing
+with matched graph replay yields 10.65–38.10% faster isolated FP4 paths at
+16384 tokens, with all conversion costs included, while ordinary
+unscripted paths remain slower. Synthetic GEMM measurements remain distinct
+from full training speed and quality evidence; the selected BF16 FA4 recipe
+is unchanged.
+
 The [MXFP8 FA4 feasibility assessment](findings/b200_mxfp8_fa4_feasibility.md)
 finds that Meta's public Blackwell implementation currently supports noncausal
 D128 MHA, while our Qwen3.5-4B recipe requires causal D256 GQA. Isolated execution

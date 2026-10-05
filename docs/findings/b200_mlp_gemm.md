@@ -1,0 +1,256 @@
+# B200 MLP / GEMM screen
+
+Date: 2026-10-05. The user authorized a new single B200 in US-NC-2 and asked
+for large MLP / GEMM optimization, with FP4 as the eventual target. The first
+BF16 candidates do not meet the predeclared throughput threshold. Keep the
+selected BF16 FA4 recipe; no full-model training was launched for these candidates.
+
+## Matched BF16 MLP probes
+
+Use actual Qwen3.5-4B geometry (hidden 2560, intermediate 9216), seeded synthetic
+frozen BF16 weights and nonzero rank-128/alpha-256 LoRA adapters with FP32 masters.
+The caller uses BF16 autocast; master precision does not imply FP32 matmul.
+Six warmups and ten alternating synchronized samples include the complete MLP
+forward/backward, all six adapter gradients, input gradient and adapter casts.
+Forward-only samples are no-grad inference and cannot be read as training forward.
+No optimizer update or checkpoint-quality assessment occurs in these probes.
+
+The default already compiles decoder shells including MLPs. Compare proposed
+compiled merging and cuDNN fusion against compiled PEFT within each process;
+do not treat ordinary eager-to-compiled speed as a new recipe improvement.
+Absolute times across independent processes vary; paired legs are the evidence.
+
+| Complete MLP forward/backward | Tokens | Paired compiled PEFT, ms | Candidate, ms | Time reduction |
+| --- | ---: | ---: | ---: | ---: |
+| Compiled merged gate/up | 4096 | 5.08068 | 4.90509 | 3.46% |
+| Compiled merged gate/up | 16384 | 6.14400 | 6.33101 | -3.04% |
+| cuDNN LoRA-aware forward graph | 4096 | 4.61873 | 5.02920 | -8.89% |
+| cuDNN LoRA-aware forward graph | 16384 | 6.09065 | 7.42512 | -21.91% |
+
+Both candidates preserve outputs and all six adapter gradients exactly in these
+samples. Merged input-gradient relative L2 is about 0.00373 and cuDNN about
+0.00361; all gradients are finite and independent-row output differences are zero.
+They pass the local 1% arithmetic gate but fail the 5% speed gate at both long
+shapes. The merged frozen gate/up copy also costs 90 MiB per MLP (2.8125 GiB
+for 32 layers), in addition to the original frozen weights. The cuDNN prototype
+uses ordinary BF16 backward and uncompiled adapter operations; these results
+measure the whole prototype, not isolated GPU GEMM efficiency or kernel count.
+
+Ordinary compiled PEFT versus eager PEFT reduces the 16384-token mean by 16.63%
+(7.30255 to 6.08791 ms). The 4096-token compiled leg retains one 13.0378 ms outlier
+among ten samples; its mean is 22.89% slower. No samples were removed. Eager
+merged gate/up changes the 4096 mean by +1.96% and the 16384 mean by -9.16%.
+These controls support neither a new training speedup nor a bottleneck attribution.
+
+The [contract and entrypoints](../../experiments/b200_mlp_gemm/README.md)
+record the held-out selection rule, stop condition and possible twenty-update
+continuation. The checksum-bound compiled-merge selection was declined before
+training. The historical FA4 control remains 4.08648 seconds/update, with its
+existing packing and explicit gradient-acceptance records; it was not rerun.
+
+## Receipts and runtime
+
+Artifacts and executed source archives are under
+`results/b200_mlp_gemm/pilot02/`, logs under
+`logs/runpod/b200_mlp_gemm/`. Probe SHA-256:
+
+- `merged_compiled`: `2f0f717d95d1741b3e899faf8757c65871f8065d62a31f22413890205ab2efa1`.
+- `cudnn`: `b1b91867ee3f2e7314fa269702e7c35ba1a7c0794b5777841da20a24146e4fca`.
+- `compiled`: `0c8243e8a51591ba034161a165c1299a17d1c3316e57caff1b7f2eb7d169fa79`.
+- `merged`: `96941ae494414a43878604e6fec79036bc17c1e83338bbf77e56f44f7a5a5e31`.
+
+The first attempt `pilot01` failed before GPU execution because the fresh
+container did not inherit the retained Hugging Face cache environment; its failure
+is preserved. The launcher now binds the network-volume cache explicitly.
+Runtime: B200 183359 MiB, driver 595.91.07, Torch 2.11.0+cu130, Triton 3.7.1,
+Transformers 5.14.1, PEFT 0.19.1, cuDNN Frontend 1.31.0/runtime 9.26.0.51.
+NVIDIA source revision: `51d9d06b574222378a3d806009accab098e73705`.
+Compiler caches reuse the retained network volume, including shared gpu-0
+TorchInductor/Triton and shared cuDNN/CuTe DSL namespaces; no cold-cache test.
+Compilation uses 16 workers within the measured 20.4-CPU quota. Input/compiler
+imports from the network volume contribute minutes of startup and are excluded
+from warmed timings. The authorized pod remains running; lifecycle details are
+in [infrastructure](../infrastructure.md).
+
+## Native FP4 forward and input-gradient feasibility
+
+The first native cuDNN FROST NVFP4 probe completes all twelve shape/path cases:
+merged gate/up forward, down forward, and their two input-gradient GEMMs, each
+at 193, 4096 and 16384 tokens. Unlike the previous Four Over Six training screen,
+these input-gradient matrix products use FP4 operands and native FP4 MMA too;
+this does not yet integrate the full LoRA MLP or optimizer update.
+
+Frozen synthetic weights use global FP32 scaling and E4M3 scales shared over
+16x16 tiles. Both orientations are quantized from original BF16; their decoded
+transpose disagreement is exactly zero. Activations/gradient operands use global
+dynamic amax and per-row 16-element scales. Gradient codes use RNE, not stochastic
+rounding. Output is BF16, with explicit global descaling. This borrows the
+transpose-consistent weight scaling documented by
+[NVIDIA Transformer Engine](https://nvidia.github.io/TransformerEngine/features/low_precision_training/nvfp4/nvfp4.html),
+without claiming its complete training recipe. The native primitive is the
+pinned [cuDNN Frontend](https://github.com/NVIDIA/cudnn-frontend) projection/FROST
+block-scaled GEMM, using 128x256 tiles on SM100 and the current PyTorch stream.
+
+Native-versus-decoded-operand relative L2 is 0.002777–0.002830 across all cases,
+below the predeclared 1% implementation limit; all outputs are finite.
+Original-BF16 GEMM disagreement is 0.146105–0.146395, and decoded weight
+quantization error is about 0.1113. These are synthetic GEMM errors, not model
+loss, adapter-gradient or quality measurements. The FA4-specific user acceptance
+does not relax FP4 tolerances or establish quantized-model equivalence.
+
+| 16384-token isolated path | BF16, ms | FP4 prepacked, ms | FP4 including packing/scaling, ms |
+| --- | ---: | ---: | ---: |
+| Gate/up forward | 1.00427 | 0.73869 | 1.24867 |
+| Gate/up input gradient | 1.04818 | 0.56158 | 1.18044 |
+| Down forward | 0.56237 | 0.47488 | 0.98844 |
+| Down input gradient | 0.52813 | 0.51065 | 0.98221 |
+
+Prepacked gate/up forward/input-gradient time falls 26.45%/46.42%, including
+native dispatch and descaling. Dynamic conversion erases this gain: complete
+paths are 24.34%, 12.62%, 75.76% and 85.98% slower, respectively. All 4096-token
+paths are slower too. Paired samples retain all observations; no cold cache or
+whole-training comparison is implied. Weight preparation occurs once and both
+packed orientations occupy 79,626,256 bytes per synthetic MLP; original BF16
+weights and diagnostic decoded copies remain resident. The initial receipt's
+`pack_seconds_including_first_jit` includes diagnostic decoder dispatch after
+the packing synchronization and is not a clean isolated weight-pack timing.
+The optimized follow-up fixes that reporting boundary in a separate attempt.
+
+First FP4 receipt: `results/b200_mlp_gemm/fp4pilot01/fp4/probe.json`, SHA-256
+`8d06750ed2f5577b5c608800eec035a067d9a273cf3b0e6c47c815aa3faf4c9b`.
+This negative complete-path result motivates a separately recorded fused global
+reduction and symmetric CUDA graph replay probe, rather than model integration
+or default promotion. Unlaunched BF16 batched-adapter/backward designs were
+deferred in favor of the user's FP4 priority; their draft source is retained
+under ignored `results/b200_mlp_gemm/deferred_designs/`, not shipped as validated
+library implementations.
+
+### Fused tensor-wide scaling and matched graph replay
+
+The second attempt `fp4pilot02/fp4optimized` also completes all twelve cases.
+Two Triton reductions replace the Torch amax/inverse sequence; codes, block
+scales and inverse scales agree exactly with ordinary reduction for every
+sampled shape/path. Ordinary and changed-input graph replay agree exactly
+with uncaptured FP4 execution. Both graph legs include the input copy and all
+FP4 dynamic scaling, packing, scale initialization, GEMM and output descaling.
+
+| Tokens | Isolated path | BF16 graph, ms | FP4 graph including conversion, ms | Time reduction |
+| --- | --- | ---: | ---: | ---: |
+| 4096 | Gate/up forward | 0.24565 | 0.17130 | 30.27% |
+| 4096 | Gate/up input gradient | 0.30944 | 0.29112 | 5.92% |
+| 4096 | Down forward | 0.15358 | 0.16159 | -5.22% |
+| 4096 | Down input gradient | 0.13217 | 0.11244 | 14.93% |
+| 16384 | Gate/up forward | 0.97028 | 0.56172 | 42.11% |
+| 16384 | Gate/up input gradient | 1.17402 | 1.00978 | 13.99% |
+| 16384 | Down forward | 0.59644 | 0.53628 | 10.09% |
+| 16384 | Down input gradient | 0.50349 | 0.34414 | 31.65% |
+
+Without replay the 16384 gate/up input-gradient path is only 3.66% faster;
+the other three full-conversion paths remain slower, and every 4096 path is
+slower. This supports an effect of invocation policy and conversion overhead
+for this implementation; it does not isolate GPU launch time from memory traffic
+or prove end-to-end training gains. No matching model graph integration exists
+yet. Tensor-wide dynamic activation scaling can couple rows, so a separate
+per-row packing intervention is required before treating this as an isolated
+packed-training candidate. This is a precision/data-dependence constraint,
+not a relaxation of the existing packing gates.
+
+Optimized receipt SHA-256:
+`e8d43e986e1e21f59cbb4b285eb2fd5624ddbe7e86e06da12e2cf8c98048283e`.
+The weight-pack timer now ends at the actual packing synchronization: initial
+merged-weight preparation is 1.9023 seconds including warm JIT/cache setup,
+and down-weight preparation is 0.1575 seconds. These are one attempt's startup
+times, not cold-cache or replicated estimates.
+
+### Per-row scaling preserves packed-example independence
+
+The third attempt `fp4pilot03/fp4row` fuses row amax, 16-element E4M3 scaling and
+E2M1 packing in one Triton kernel. A BF16 output kernel applies each row's global
+scale. Frozen weight scaling remains global and transpose-consistent. This is
+an adaptation around NVIDIA's existing GEMM, not a replacement for its MMA core.
+
+Perturbing the first input row by 31.7x changes other rows' outputs by relative
+L2 0.08595–0.09068 in the tensor-wide version, on the four 193-token paths.
+The per-row version has exactly zero cross-row output effect in every one of
+the twelve cases. All native arithmetic and ordinary/changed-input graph checks
+pass; maximum decoded-operand relative L2 is 0.00286636. Tensor-wide scaling
+therefore cannot be adopted under the current example-isolation contract even
+where its graph timings are positive.
+
+| Tokens | Per-row isolated path | BF16 graph, ms | FP4 graph including conversion, ms | Time reduction |
+| --- | --- | ---: | ---: | ---: |
+| 4096 | Gate/up forward | 0.24620 | 0.18327 | 25.56% |
+| 4096 | Gate/up input gradient | 0.31102 | 0.32577 | -4.74% |
+| 4096 | Down forward | 0.15619 | 0.19855 | -27.12% |
+| 4096 | Down input gradient | 0.13710 | 0.12486 | 8.93% |
+| 16384 | Gate/up forward | 0.97375 | 0.61943 | 36.39% |
+| 16384 | Gate/up input gradient | 1.17525 | 1.14087 | 2.93% |
+| 16384 | Down forward | 0.59883 | 0.64977 | -8.51% |
+| 16384 | Down input gradient | 0.50121 | 0.37818 | 24.55% |
+
+This restores isolation but does not establish a uniformly faster FP4 MLP.
+In particular, carrying the full padded 9216/18432-element row through one
+packing CTA can be costly; this is a hypothesis pending register/spill evidence,
+not a demonstrated bottleneck from launch counts. A chunked-row follow-up
+separates row reduction from block packing and requires bitwise agreement of
+codes, scales and inverse scales against this fused-row implementation.
+
+Third receipt SHA-256:
+`6af72596fb1476e9d1f23117cead2a021155f17cf27a95800f70ffa535f693f8`.
+The ordinary unscripted per-row complete paths remain slower at both long shapes;
+positive entries above depend on graph replay. Dynamic packing/autograd integration,
+full LoRA MLP speed, fresh packed-model gates and checkpoint quality remain
+unvalidated. No FP4 serving artifact or training-recipe promotion was produced.
+
+### Chunked per-row packing: complete native screen
+
+The fourth attempt `fp4pilot04/fp4chunks` completes all twelve cases. It separates
+row amax from 128-block packing chunks while reusing the same pinned NVIDIA
+FROST GEMM and output descaling. Quantized codes, E4M3 block scales and row inverse
+scales are bitwise identical to fused-row packing at every shape/path. Native
+arithmetic, finite outputs, decoded weight-transpose consistency and both graph
+replay checks pass. Cross-row perturbation remains exactly zero throughout.
+Maximum decoded-operand relative L2 is 0.00286636; original-BF16 GEMM disagreement
+is 0.146147–0.146448. These numerical quantities retain their separate meanings.
+
+| Tokens | Chunked-row isolated path | BF16 graph, ms | FP4 graph including conversion, ms | Time reduction |
+| --- | --- | ---: | ---: | ---: |
+| 4096 | Gate/up forward | 0.24845 | 0.18374 | 26.04% |
+| 4096 | Gate/up input gradient | 0.31584 | 0.29287 | 7.27% |
+| 4096 | Down forward | 0.16204 | 0.16997 | -4.90% |
+| 4096 | Down input gradient | 0.13567 | 0.11967 | 11.79% |
+| 16384 | Gate/up forward | 0.97325 | 0.60240 | 38.10% |
+| 16384 | Gate/up input gradient | 1.17750 | 1.00523 | 14.63% |
+| 16384 | Down forward | 0.59986 | 0.53598 | 10.65% |
+| 16384 | Down input gradient | 0.50147 | 0.36154 | 27.90% |
+
+Three paths meet the 5% isolated-path threshold at both long shapes; down forward
+still loses at 4096. All ordinary unscripted full-conversion paths are slower
+than their paired BF16 legs at both long shapes. The positive results above
+therefore require graph replay; the current full-model recipe has not acquired
+that integration. Do not add these independent timings into a claimed complete
+MLP or optimizer-update speedup, or promote the FP4 recipe based on them.
+
+Triton reports 48/155/246 registers for fused-row packing at widths
+2560/9216/18432 and **zero spills**. Chunked packing uses 38 registers, with
+16/28/32 for its separate row reduction and zero spills. The large register
+footprint is observed; an occupancy bottleneck has not been measured. The
+cross-attempt timing trend supports testing this layout but does not isolate
+its causal effect; only within-attempt BF16/FP4 legs are paired.
+
+The final library is an explicit CUDA primitive, without registered autograd.
+It rejects training inputs requiring gradients under ordinary grad mode so a
+caller cannot silently drop them; future training needs an autograd/compiler
+wrapper and preserved FP32 adapter masters. Next evidence must cover the
+complete LoRA MLP, then fresh full-model packing/isolation/finite-gradient gates,
+matched FA4 update timing and quality validation. The BF16 FA4 default remains
+unchanged. No repeated FA4 control, full-model FP4 run or teacher call occurred.
+
+Final receipt SHA-256:
+`c36750acedb3964228a376732d9cce1255a636769dfcd43e8cbdaadeca9a5ce6`.
+All four FP4 attempts, their logs, raw samples and checksum-bound source archives
+are collected locally. Every archived source hash matches its launch receipt.
+The focused CPU suite passes 27 tests; Ruff and Git whitespace checks pass.
+The B200 is idle and remains running in US-NC-2 with the retained workspace and
+shared caches. This session has no in-chat scheduling tool, and no after-turn
+monitoring is promised.

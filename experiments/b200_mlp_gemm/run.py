@@ -48,6 +48,9 @@ def main() -> None:
         Path("experiments/b200_mlp_gemm/config.yaml"),
         Path("src/gleipnir/mlp_gemm.py"),
         Path("src/gleipnir/cudnn_lora_mlp.py"),
+        Path("src/gleipnir/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/nvfp4_pack.py"),
+        Path("experiments/b200_mlp_gemm/README.md"),
     ]
     report = {
         "status": "running",
@@ -69,6 +72,15 @@ def main() -> None:
             "--output",
             str(root / variant),
         ]
+        if variant in {"fp4", "fp4optimized", "fp4row", "fp4chunks"}:
+            command[2] = "experiments.b200_mlp_gemm.fp4_probe"
+            command = [command[0], "-m", command[2], "--output", str(root / variant)]
+        if variant in {"fp4optimized", "fp4row", "fp4chunks"}:
+            command.append("--optimized")
+        if variant in {"fp4row", "fp4chunks"}:
+            command.append("--row-scaled")
+        if variant == "fp4chunks":
+            command.append("--chunked-rows")
         row = {"variant": variant, "status": "starting"}
         report["candidates"].append(row)
         (root / "launch.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -82,7 +94,11 @@ def main() -> None:
                 start_new_session=True,
             )
             try:
-                code = proc.wait(timeout=cfg["timeout_seconds"])
+                code = proc.wait(
+                    timeout=1200
+                    if variant in {"fp4", "fp4optimized", "fp4row", "fp4chunks"}
+                    else cfg["timeout_seconds"]
+                )
                 row.update(
                     status="complete" if code == 0 else "failed", returncode=code
                 )
