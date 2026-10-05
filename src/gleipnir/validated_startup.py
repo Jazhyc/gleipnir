@@ -127,6 +127,11 @@ def validation_reference(
         from gleipnir.native_fp4_training import verify_native_fp4_runtime
 
         native_runtime = verify_native_fp4_runtime()
+    native_sources = {}
+    if native_fp4_mlp:
+        from gleipnir.native_fp4_training import RUNTIME_SHAPE_VALIDATION
+
+        native_sources = deepcopy(RUNTIME_SHAPE_VALIDATION)
     return {
         "performed_this_run": False,
         "policy": (
@@ -140,6 +145,7 @@ def validation_reference(
                 "native_fp4_mlp_parity_policy": "selected_finite",
                 "waived_checks": ["loss_parity", "gradient_relative_l2"],
                 "native_fp4_runtime": native_runtime,
+                "native_fp4_source_validation": native_sources,
             }
             if native_fp4_mlp
             else {}

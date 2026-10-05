@@ -48,7 +48,7 @@ provisions nor terminates cloud capacity. Agent monitoring requires an in-chat
 scheduler; none is available in this session. Active-turn checks do not promise
 follow-ups after the turn ends.
 
-Optional compile-only cache population uses `compile_ahead --minimum-update N
+Legacy compile-only cache population uses `compile_ahead --minimum-update N
 --workers 16`. It builds the unchanged native plans for future historical batch
 shapes in spare CPUs, loads no model and executes no GEMMs. Shared caches and
 atomic upstream publication preserve the numerical recipe; every helper archives
@@ -58,6 +58,8 @@ The corrected helper permits that marker while requiring zero fused workspace
 and spare GPU memory for compiler contexts. Report this concurrent cache work
 when interpreting training time. This is cache population, not a model warmup
 replay or repeated numerical startup validation.
+The runtime-M baseline does not need this per-shape helper; retain it for
+historical exact-M diagnostics.
 
 The first attempt stops at update 43 after a full-corpus throughput
 regression. A bounded profile measures 23.980 seconds to construct one update's

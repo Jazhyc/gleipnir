@@ -27,6 +27,10 @@ from gleipnir.monitoring_training_command import training_command
 
 def main() -> None:
     config = configuration()
+    from gleipnir.native_fp4_training import validate_kernel_sources
+
+    # Reject source drift before loading a model, using the same startup guard.
+    validate_kernel_sources()
     manifest = prepare()
     job = make_job(config, profile(config)["recipe"])
     command = training_command(job)

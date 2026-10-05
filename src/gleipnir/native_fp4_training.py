@@ -11,7 +11,7 @@ from typing import Any
 
 REFERENCE = "results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json"
 REFERENCE_SHA256 = "14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb"
-KERNEL_SHA256 = {
+HISTORICAL_KERNEL_SHA256 = {
     "cudnn_fp4_mlp.py": (
         "64f968420eec392171cad076116e7a2c00e298f0b08285be0871deed29fd1a93"
     ),
@@ -26,6 +26,54 @@ KERNEL_SHA256 = {
         "26f6b0edc8c35bf7de04e0087451a1b5d8812c8508a51a444684f56cbf53e1c8"
     ),
 }
+# Source promotion is based on targeted bitwise equivalence, not a new pass of
+# the historical model canaries. Preserve both source generations and receipts.
+KERNEL_SHA256 = {
+    **HISTORICAL_KERNEL_SHA256,
+    "cudnn_fp4_mlp.py": (
+        "35022148da1813dc07408826b39d6584efa0c8efe244a5286940354415ab5dd0"
+    ),
+    "cudnn_fp4_gemm.py": (
+        "d6b1d7ca14860ecdf80ea95730df46b603685e8a2d7a00c1fd721d2ad045741e"
+    ),
+    "cudnn_fp4_epilogue.py": (
+        "b06e7131a0834154c1a27d01bf96a9f238208154947b3ce0b5a6e86e1fa742e2"
+    ),
+}
+RUNTIME_SHAPE_VALIDATION = {
+    "basis": "targeted_bitwise_runtime_shape_equivalence",
+    "performed_this_run": False,
+    "historical_source_sha256": HISTORICAL_KERNEL_SHA256,
+    "active_source_sha256": KERNEL_SHA256,
+    "receipts": {
+        "runtime_m_probe": {
+            "cases": 16,
+            "sha256": (
+                "e1ebbb36f1e43d8b68eed98690df38d924c936c98a4e2970d523c2c739eeed80"
+            ),
+        },
+        "runtime_conversion_probe": {
+            "cases": 21,
+            "sha256": (
+                "8fe670c604dc0e44eae9a32b7dfa1dee95c40e37fe6e708f27e4e34bfeacf27a"
+            ),
+        },
+        "runtime_scale_probe": {
+            "cases": 7,
+            "sha256": (
+                "e27d7862f5de2f8ad3d382f371604829afd5d7faf2067d3efbec18a0510c9811"
+            ),
+        },
+    },
+}
+
+
+def validate_kernel_sources() -> None:
+    """Require the source generation covered by recorded arithmetic validation."""
+    for name, expected in KERNEL_SHA256.items():
+        actual = hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
+        if actual != expected:
+            raise ValueError(f"validated native FP4 kernel source changed: {name}")
 
 
 def validate_native_fp4_config(student: Mapping[str, Any]) -> bool:
@@ -165,12 +213,7 @@ def validate_native_fp4_reference(metadata: dict[str, Any], digest: str) -> None
         raise ValueError("native FP4 reference arithmetic changed")
     for name in ("eager_canary", "compiled_canary"):
         accept_selected_canary(metadata["sequence_packing"][name])
-    for name, expected in KERNEL_SHA256.items():
-        if (
-            hashlib.sha256(Path(__file__).with_name(name).read_bytes()).hexdigest()
-            != expected
-        ):
-            raise ValueError(f"validated native FP4 kernel source changed: {name}")
+    validate_kernel_sources()
 
 
 def verify_native_fp4_runtime() -> dict[str, Any]:

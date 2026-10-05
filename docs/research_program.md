@@ -411,3 +411,8 @@ kernels match codes/scales/inverses in 21 cases across seven row counts, and
 generic row scaling matches at those seven lengths. These
 targeted checks do not yet establish full-run speed or ID quality. Preserve the
 first attempt separately from the replacement when reporting practical time.
+The replacement initially fails the historical source-checksum guard before
+any update. Preserve that receipt separately. The new source hashes are now
+bound to the targeted bitwise evidence, retaining historical hashes and failed
+canaries; source drift is checked before loading a model. Training and ID
+remain pending after this corrected restart.

@@ -129,3 +129,15 @@ resumable checkpoint and are not counted toward the replacement epoch.
 `runtime_shape_validation.json` binds the 16 GEMM, 21 conversion and seven
 row-scale cases plus current source checksums; the new execution contract
 records that receipt's hash. Sixty-one focused tests and Ruff pass.
+
+That replacement stops before any update: the original startup source guard
+correctly rejects the changed MLP source. Preserve this failure under
+`b200_fp4_full_training_source_guard_attempt02` results/log paths. The source
+binding now retains historical hashes separately and pins the new hashes to
+the 44-case bitwise proof; startup metadata records that separate equivalence
+evidence without relabeling old canaries. The same source check runs before
+model loading in the campaign launcher. A bounded receipt read passes with
+no repeated model arithmetic, and 62 focused tests pass. The corrected pipeline
+PID 67204 and trainer PID 67332 restart from the same frozen controls at Unix
+time 1791236020.868; throughput and ID remain pending.
+The per-shape compile-ahead helper is unnecessary for the runtime-M baseline.

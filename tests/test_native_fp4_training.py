@@ -18,6 +18,19 @@ from gleipnir.validated_startup import validation_reference
 ROOT = Path(__file__).resolve().parents[1]
 
 
+def test_targeted_equivalence_binds_sources_and_rejects_drift(monkeypatch):
+    native.validate_kernel_sources()
+    assert native.KERNEL_SHA256 != native.HISTORICAL_KERNEL_SHA256
+    proof = native.RUNTIME_SHAPE_VALIDATION
+    assert proof["performed_this_run"] is False
+    assert sum(r["cases"] for r in proof["receipts"].values()) == 44
+    monkeypatch.setattr(
+        native, "KERNEL_SHA256", {**native.KERNEL_SHA256, "cudnn_fp4_mlp.py": "drift"}
+    )
+    with pytest.raises(ValueError, match="kernel source changed"):
+        native.validate_kernel_sources()
+
+
 def profile(name="qwen35_4b_b200_default"):
     with initialize_config_dir(
         config_dir=str(ROOT / "src/gleipnir/configs/systems_screen"),
