@@ -364,3 +364,15 @@ as 9.67% of kernel time, LoRA GEMMs as 6.62%, and GDN scan/convolution/norm as
 25.24%. The next practical GEMM candidate is NVFP4 for large frozen GDN QKV/Z/
 output projections with shared packing, preserving BF16 recurrence and FP32
 gates/norm. It is proposed, not a new speed or numerical acceptance result.
+
+The subsequent matched GDN projection screen rejects both merged and separate
+NVFP4 variants: 4.16069/4.04658 seconds per update versus a new worker's pooled
+3.67836-second FP4-MLP/BF16-GDN control, 13.11%/10.01% more time. All eighty
+updates are finite, warmed and use the same physical partitions; first-batch
+adapter-gradient differences nevertheless reach 117.84%/137.15%. Lower short-run
+training losses do not establish quality. Keep the current timing baseline and
+resident worker. Investigate NVIDIA's BF16 width-four SiLU causal convolution
+as a smaller arithmetic-preserving intervention; its native packed API needs
+cumulative offsets rather than `seq_idx`. The convolution contributes about
+4.31% of the existing trace's summed kernel time, so its potential is bounded.
+See the [completed findings](findings/b200_mlp_gemm.md).

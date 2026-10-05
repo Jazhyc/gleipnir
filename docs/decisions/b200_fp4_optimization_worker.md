@@ -68,3 +68,11 @@ worker reuses the same GPU and network-volume caches; its initial queue omits th
 already-completed profiling run. Scoped candidate failures now restore baseline
 state and return to idle when the CUDA context remains usable. Damaged CUDA
 contexts and failed baseline reset checks still stop the worker.
+
+The replacement worker's two controls average 3.67836 seconds per update and
+exactly reproduce the earlier numerical trajectory. Merged/separate GDN FP4
+take 4.16069/4.04658 seconds, respectively, with first-batch gradient differences
+of 117.84%/137.15%. Both fail the predeclared timing selection; retain FP4 MLPs,
+BF16 GDN and BF16 FA4. All eighty updates add zero compiler/kernel-plan entries
+and preserve the physical contract. Keep the worker idle and resident for the
+next intervention. NVIDIA BF16 causal Conv1D is under investigation, not selected.

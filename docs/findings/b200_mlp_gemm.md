@@ -965,3 +965,93 @@ Resident receipt SHA-256 values:
   `916fe2811508cd58e2a5e351c09e7770f9a7105af1c3d8467762cb1e68c34f56`.
 - All three `adapter/adapter_model.safetensors` files:
   `0b9ea36eb19d012c730107ae222b490b4ad10620c795646d93cae8f94e68b71e`.
+
+## Resident frozen-GDN NVFP4 projection screen, 2026-10-05
+
+Both merged QKV/Z packing and separate QKV/Z projections lose to the FP4-MLP,
+BF16-GDN baseline. The merged path saves input packing and combines the input
+gradient contraction; the separate path removes that integration choice. Both
+use the existing NVIDIA hardware NVFP4 packing/GEMM/fused-descale operations,
+including the frozen output projection. Small gate projections, BF16 recurrence,
+FA4, FP32 gates/normalization and adapter masters remain unchanged.
+
+After the original installer fails before preparation or updates, the corrected
+worker `resident02` on the same B200 establishes two matched controls before
+either candidate. Their pooled mean, 3.67836 seconds, replaces the prior worker's
+reference for the unchanged, predeclared 2% selection rule.
+
+| Trial | Warm seconds/update, updates 11–20 | Extra time versus pooled control | Mean training loss, updates 1–20 |
+| --- | ---: | ---: | ---: |
+| FP4 MLP / BF16 GDN control | 3.68226 | +0.11% | 0.50287 |
+| Exact control repeat | 3.67445 | −0.11% | 0.50287 |
+| FP4 GDN, merged QKV/Z | 4.16069 | +13.11% | 0.49842 |
+| FP4 GDN, separate QKV/Z | 4.04658 | +10.01% | 0.45917 |
+
+All ten measured updates of each candidate are slower than their matched pooled
+controls. All eighty actual updates have finite/nonmissing gradients and add
+zero native plans, Triton specializations, Dynamo graphs or Inductor graph misses.
+All four runs reproduce the same 147 physical partitions and initial master
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
+Both controls exactly reproduce the prior worker's loss/gradient-norm/LR logs
+and final master. Thus compilation during measurement does not explain the loss
+of speed, and merging is not its sole cause. No new candidate trace isolates
+conversion, eager dispatch or individual contraction costs.
+
+On the first matched logical batch, control loss is 0.52186; merged/split losses
+are 0.55682/0.61754, absolute differences 0.03496/0.09568. Relative adapter-gradient
+L2 differences are 117.84%/137.15%. These are finite timing-only screens, with
+numerical equivalence explicitly unclaimed. Lower twenty-update mean losses do
+not establish held-out quality or better convergence. Reject both candidates for
+the timing baseline; retain FP4 MLPs with BF16 GDN and BF16 FA4. The general
+quality-validated BF16 profile and historical strict failures remain separate.
+
+The replacement worker primes once (524.79032 seconds of step time); candidate
+preparation takes 367.45113/245.56307 seconds wall time with no optimizer updates.
+The control repeat takes 83.64615 seconds including reset/export. Exact-source,
+variant, worker-PID, master, physical-contract and completed-warm-receipt checks
+now permit reusing candidate validation within this worker. Eight CPU identity
+tests pass; no repeated GPU candidate was launched to exercise receipt reuse.
+
+Four FP32 adapters, receipts, source archives and logs are collected locally
+under `results/b200_mlp_gemm/resident02/` and the matching logs directory.
+Each adapter has 256 FP32 tensors and 679,511,752 bytes. Forty-two launch-source
+archives and separately executed candidate/library sources are checksum checked.
+The executed worker SHA-256 is
+`e3e8fbb0ec4c35fba5c72501ec17fc67168dffae84a9c7fea11e6801b1670042`;
+both candidate library archives have SHA-256
+`fa7d65d2803afa40ad065354ed6ed279fca5076f37ac63d05126473abb1f6056`.
+Twenty-eight focused CPU tests cover the integration, recovery and receipt reuse.
+The completed queue leaves PID 11905 alive and idle with the baseline GDN methods
+restored, model/caches resident, and no promised after-turn heartbeat.
+
+Receipt SHA-256 values, in table order:
+
+- `04e2274db5ac8fc17fb8a3b986e4097fa54b1937082503658fbf8623c8dcc676`.
+- `21a4d7514b7af1cb13f8a3420eb5181b23dd04f62ed28220cea364cdb9485670`.
+- `50be0a66cfbe0437c822b6bb7c8c6b5eff7835e2ff68db101ba92851a68e251a`.
+- `2d976b3f4790dba91abb428c7e87bee943b0d9e4cf24c6a26f736a60ee37ce8b`.
+
+### NVIDIA BF16 causal Conv1D follow-up
+
+The user redirects investigation toward a smaller BF16 convolution replacement.
+NVIDIA's [frontend roadmap](https://github.com/NVIDIA/cudnn-frontend/issues/442)
+describes native width-four SiLU forward/backward and packed sequences. Inspection
+of our already-pinned frontend source confirms `cudnn.ops.causal_conv1d` routes
+channel-last BF16 inputs and contiguous width-four filters to the native training
+backend. It accepts CUDA int32 `cu_seqlens` for packing but explicitly rejects
+`seq_idx`; reuse our existing cumulative packing offsets rather than infer them
+on the host or omit sequence isolation. The GDN disabled-forward boundary is
+compatible with this eager native route. The path keeps BF16 arithmetic; it is
+not yet an integrated, parity-validated or measured replacement.
+
+The pinned native training implementation is named a prototype and currently
+allocates/computes filter gradients even when filters are frozen; its FLA
+`short_conv` shim targets one-token decode updates, not this full-sequence
+Transformers training call. Neither the shim nor generic dense convolution is
+a drop-in packed-training replacement. A scoped adapter to the native packed
+operation and matched forward/input-gradient/adapter-gradient checks are needed.
+
+The existing update-15 trace spends 70.483 ms in convolution forward and
+143.403 ms in backward, approximately 4.31% of summed CUDA kernel time combined.
+This supports a bounded follow-up, not a prediction of equivalent wall-time
+savings or a claim NVIDIA is faster/more stable than the current Dao kernel.

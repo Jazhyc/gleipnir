@@ -477,3 +477,30 @@ worker on the same GPU/caches, with two baseline resets and no repeated profile.
 The worker now records recoverable candidate errors and restores the baseline
 without exiting. Tests cover the real Transformers wrapper, disabled boundaries,
 parameter identities/restoration and unusable-CUDA rejection.
+
+Before the corrected candidate starts, designate the replacement worker's two
+baseline repeats as its matched timing reference. Apply the same 2% selection
+rule to their pooled mean; retain the prior worker's 3.66478-second reference as
+historical context. Replacing the worker changes process preparation and can
+affect timing even when the numerical recipe is unchanged.
+
+The corrected screen completes. The new pooled control is 3.67836 seconds per
+update; merged GDN FP4 takes 4.16069 seconds (+13.11% time), and separate GDN FP4
+takes 4.04658 seconds (+10.01%). All eighty actual updates are finite and fully
+warmed, with identical physical partitions. Both fail timing selection; retain
+FP4 MLPs/BF16 GDN/FA4. First-batch gradient differences are 117.84% and 137.15%,
+so neither is a numerical-equivalence result. Receipts and exact sources are in
+`results/b200_mlp_gemm/resident02/`; the worker remains idle and resident.
+See the [findings](../../docs/findings/b200_mlp_gemm.md) for provenance and losses.
+
+Candidate preparation receipts can be reused only for matching executed library
+source, merge mode, worker PID, initial master and physical contract, following
+a completed fully warmed trial. `candidate_reuse.py` tests these identities;
+the reuse branch has not yet been exercised by a repeated GPU trial. Keep the
+historical candidate sources even when hot-loading a new intervention.
+
+The next investigated target is NVIDIA's BF16 width-four SiLU causal Conv1D
+training operation, already present in the pinned frontend. Its packed native
+route consumes `cu_seqlens`, not our current convolution's `seq_idx`. Reuse the
+existing packing offsets and preserve boundaries, layout and adapter gradients.
+No convolution integration or speed improvement is claimed yet.

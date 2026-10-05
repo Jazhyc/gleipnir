@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import time
 from contextlib import contextmanager
 from pathlib import Path
@@ -12,6 +13,7 @@ from pathlib import Path
 import torch
 
 import gleipnir.cudnn_fp4_gdn as gdn_source
+from experiments.b200_mlp_gemm import candidate_reuse
 from experiments.b200_mlp_gemm.resident_worker import (
     capture_rng,
     restore_rng,
@@ -26,7 +28,7 @@ from gleipnir.cudnn_fp4_gdn import gdn_fp4_context
 from gleipnir.cudnn_fp4_mlp import cache_metadata
 from gleipnir.training_execution_audit import tensor_digest
 
-MERGED_INPUTS = True
+MERGED_INPUTS = False
 _INSTALLATION = None
 _MODEL = None
 _CONTEXT = None
@@ -54,6 +56,32 @@ def validate(trainer) -> dict:
     reference = json.loads((trial.parent / "01baseline/receipt.json").read_text())
     parameters = [p for p in trainer.model.parameters() if p.requires_grad]
     initial = tensor_digest(parameters)
+    if trainer.optimizer is not None or trainer.lr_scheduler is not None:
+        raise ValueError(
+            "candidate validation requires reset optimizer/scheduler state"
+        )
+    reuse_source = Path(candidate_reuse.__file__).read_bytes()
+    (trial / "executed_candidate_reuse.py").write_bytes(reuse_source)
+    reusable = candidate_reuse.reusable_validation(
+        trial.parent,
+        integration_sha256=hashlib.sha256(source).hexdigest(),
+        merged_inputs=MERGED_INPUTS,
+        worker_pid=os.getpid(),
+        initial_master=initial,
+        physical_contract=reference["physical_contract"],
+    )
+    if reusable is not None:
+        print(f"gdn_fp4_validation reused={reusable['path']}", flush=True)
+        return {
+            **reusable["validation"],
+            "performed_this_trial": False,
+            "reuse_reference": reusable["path"],
+            "reuse_reference_sha256": reusable["sha256"],
+            "steps": [],
+            "preparation_wall_seconds": 0.0,
+            "installation": _INSTALLATION,
+            "reuse_source_sha256": hashlib.sha256(reuse_source).hexdigest(),
+        }
     saved = {
         name: getattr(trainer, name)
         for name in (
@@ -106,13 +134,21 @@ def validate(trainer) -> dict:
                 steps.append({"step": step, "seconds": time.perf_counter() - before})
                 write_json(
                     trial / "gdn_preparation.json",
-                    {"status": "preparing", "steps": steps},
+                    {
+                        "status": "preparing",
+                        "steps": steps,
+                        "baseline_first_batch_loss": baseline_loss,
+                        "candidate_first_batch_loss": candidate_loss,
+                        "adapter_gradient_relative_l2": relative,
+                    },
                 )
                 print(
                     f"gdn_fp4_prepare step={step}/20 "
                     f"seconds={steps[-1]['seconds']:.3f}",
                     flush=True,
                 )
+                if time.perf_counter() - started > 1800:
+                    raise TimeoutError("GDN preparation exceeded thirty minutes")
             contract = physical_contract(trainer.microbatch_records)
             if contract != reference["physical_contract"]:
                 raise ValueError("GDN FP4 preparation changed physical batches")
@@ -120,6 +156,7 @@ def validate(trainer) -> dict:
             raise ValueError("GDN FP4 validation changed adapter masters")
         receipt = {
             "accepted_for_timing": True,
+            "performed_this_trial": True,
             "acceptance": "selected_finite_timing_only",
             "authority": "2026-10-05 user: Alright, sure try this out.",
             "baseline_first_batch_loss": baseline_loss,
@@ -135,6 +172,7 @@ def validate(trainer) -> dict:
             "native_cache": cache_metadata(),
             "installation": _INSTALLATION,
             "integration_source_sha256": hashlib.sha256(source).hexdigest(),
+            "reuse_source_sha256": hashlib.sha256(reuse_source).hexdigest(),
         }
         write_json(trial / "gdn_preparation.json", {"status": "complete", **receipt})
         print(
