@@ -128,4 +128,10 @@ def test_kernel_accounting_excludes_annotations_and_merges_overlap():
     assert result["cuda_apis"]["cudaLaunchKernel"]["cpu_ms"] == pytest.approx(0.04)
     assert kernel_group("_pack_row_blocks") == "mlp_fp4_dynamic_conversion"
     assert kernel_group("FlashAttentionForwardSm100") == "fa4_full_attention"
+    assert (
+        kernel_group("tilelang_kkt_solve_kernel_kernel") == "gdn_scan_and_convolution"
+    )
+    assert kernel_group("triton_poi_fused__unsafe_view_add_mul_silu_split_4") == (
+        "silu_and_fused_pointwise_without_module_attribution"
+    )
     assert kernel_group("opaque_kernel") == "other_or_unclassified"

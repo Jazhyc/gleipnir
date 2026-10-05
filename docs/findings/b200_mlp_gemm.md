@@ -758,3 +758,98 @@ Warmed receipt SHA-256 values:
   `3b2c97704cc65d460d14628f1d3d91b8600b716afcb89b24500c8a81f04e2c29`.
 - `warmed03/causal_adapter/adapter_model.safetensors`:
   `cdae0133aeff9a4b7eb03cdc87008d03e5a5b40e7abb7ce1466821b3fdc28445`.
+
+### Current warmed full-model profiling
+
+On 2026-10-05, `warmedprofile01` profiles fixed actual optimizer updates 11,
+15 and 20 of the combined native FP4/FA4 implementation. The twenty-update,
+320-row cohort, initial FP32 adapter master, objective, default compile mode
+and all 147 physical partitions match the historical control. No fresh BF16
+control is run. Startup checks are reused from checksum-bound `warmed03`, with
+hardware/software and native-source identity verified. Original strict failures
+remain in the receipt with `performed_this_run=false`; numerical, isolation and
+longest-batch probes are not repeated. Finite/missing-gradient update checks
+remain active. This is a diagnostic campaign, not a new speed or quality screen.
+
+Two exact-shape forward/backward replay passes take 531.35439 and 72.37660
+seconds in summed step time. The first adds 376 native plans, 447 in-process
+Triton specializations and eight Dynamo graphs, with zero Inductor graph-cache
+misses. Its first batch takes 272.93813 seconds; the reused diagnostics did not
+prepare the ordinary training variant. The second pass and all twenty actual
+updates add zero plans, specializations or compiler graphs. Warmup preserves
+masters, RNG/sampler state and empty optimizer state. The runtime ends with
+376 plans and 64 packed weight pairs totaling 2,548,040,192 bytes. Unlike the
+earlier run, this process does not build the extra diagnostic-shape plans.
+Persistent compiler/kernel cache paths and pinned runtime versions are unchanged.
+
+The table pools **summed CUDA kernel time** across the three selected updates.
+GPU annotation events and CPU operators are excluded to avoid double counting.
+
+| Identifiable GPU work | Share of summed kernel time |
+| --- | ---: |
+| FlashQLA/GDN scan, triangular solve, convolution and normalization | 24.93% |
+| Ordinary GEMMs, including LoRA and other projections | 20.17% |
+| BF16 causal variable-length FA4 | 14.24% |
+| SiLU and fused pointwise work, without full module attribution | 10.02% |
+| Tensor copies and dtype conversions | 8.12% |
+| Frozen-base FP4 GEMMs with fused output descale | 5.65% |
+| Dynamic FP4 input/gradient conversion | 4.31% |
+| Other/unclassified kernels | 12.56% |
+
+The GDN subtotal is 21.55% scan/solve/convolution and 3.38% normalization.
+The traced `tilelang_kkt_solve_kernel` is verified against the pinned FlashQLA
+GDN source. Generic SiLU fusions are not all assigned to MLPs: GDN shells also
+contain SiLU work. Ordinary GEMMs are not all adapters or MLPs. Broad matrix
+and pointwise attribution requires additional module/correlation evidence.
+
+| Update | CUDA kernels | Summed kernels, s | Device interval union, s | First-to-last device span, s | No device event inside span, s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 11 | 37,742 | 3.72560 | 3.72114 | 4.63969 | 0.91854 |
+| 15 | 46,144 | 4.95855 | 4.95234 | 5.75908 | 0.80675 |
+| 20 | 33,520 | 4.55159 | 4.54740 | 4.96685 | 0.41945 |
+
+Device union includes memcpy/memset and merges overlapping intervals. Gaps
+average 0.71491 seconds, 13.96% of the pooled device span. There are 196–268
+`cudaStreamSynchronize` calls per traced update, with 0.571–0.929 seconds of
+summed CPU duration. CPU launch, transfer and synchronization durations overlap
+GPU execution and must not be added to these GPU totals. Missing device events
+suggest dispatch/synchronization investigation but do not alone prove a CPU
+bottleneck. Instrumentation itself can increase gaps and launch costs.
+
+The current full-model conversion share is much smaller than the earlier
+34.12% unfused synthetic-MLP share; their scopes and kernels differ, so that is
+not a matched before/after reduction. Frozen FP4 contractions plus their dynamic
+conversion now occupy only 9.96% of identifiable total kernel time. Larger
+supported investigation targets are GDN backward/convolution, remaining BF16
+projections, and launch/copy overhead. Further core FP4 GEMM tuning alone has
+limited room in this profile; no new implementation or speedup is established.
+
+Instrumented update wall times are 4.84032/5.82623/5.04231 seconds. Keep the
+unprofiled 3.74480-second result as the speed receipt; selected trace shares
+cannot be multiplied by that mean to claim unprofiled component wall times.
+The profile run's loss history and final adapter are **not identical** to
+`warmed03`, despite matching initial masters and physical batches. Startup and
+compilation history differ; the cause of numerical trajectory drift is not
+isolated here. Treat these as diagnostic traces of the same implementation,
+not exact replay of the earlier optimization trajectory. No new loss-parity,
+held-out-quality or default-promotion claim follows.
+
+The process exits zero after twenty finite updates; peak allocated memory is
+148.25233 GiB. The final saved adapter has 256 FP32 tensors and 679,511,752
+bytes. All 33 archived launch-source hashes, three raw-trace hashes and the
+separately recorded post-launch analyzer hash are verified. Raw traces, reports,
+checkpoint and logs are collected locally. The analyzer's nine focused tests,
+Ruff and whitespace checks pass (the initial launch feature also passed 54
+unique relevant CPU checks). The B200 remains running and idle in US-NC-2;
+active-turn monitoring is complete. BF16 MLPs with FA4 remain the standard.
+
+Current profiling receipt SHA-256 values:
+
+- `warmedprofile01/summary.json`:
+  `64507ef439da31bb4294b54cc3f6a310b3e4e662d2a4fe224f3f493cba07c772`.
+- `warmedprofile01/causal_adapter/training_metadata.json`:
+  `b3215136208889c622b4449751f08ece1a54a7ddb995d42bd10719710cb928e3`.
+- `warmedprofile01/warmed_profile/analysis.json`:
+  `9c01df2de406f3debd117c8686237fdbf543113e5a5459e27660c678eb9993b7`.
+- `warmedprofile01/causal_adapter/adapter_model.safetensors`:
+  `0b9ea36eb19d012c730107ae222b490b4ad10620c795646d93cae8f94e68b71e`.

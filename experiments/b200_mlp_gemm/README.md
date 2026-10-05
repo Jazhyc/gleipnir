@@ -350,3 +350,25 @@ cannot replace the completed 3.74480-second screen or promote the default.
 Stop on nonfinite/missing gradients, changed source/runtime, warmup failure,
 OOM or a 30-minute process cap. No held-out evaluation or teacher calls occur.
 Monitor during the active turn; there is no in-chat scheduling tool.
+
+Result: `warmedprofile01` completes twenty finite updates, with zero new plans,
+specializations or compiler graphs after the second warmup pass. All three
+selected CPU/CUDA traces are exported and collected. Pooled kernel shares are
+GDN 24.93%, ordinary GEMMs 20.17%, FA4 14.24%, frozen FP4 GEMMs 5.65% and
+dynamic FP4 conversion 4.31%. SiLU/fused pointwise work is left without module
+attribution; copies and unclassified kernels are reported separately. Traced
+updates launch 33,520–46,144 kernels and average 0.71491 seconds without device
+events (13.96% of their pooled device span). GDN/projection work and dispatch/
+copy overhead are better supported targets than further core FP4 contraction
+tuning alone. These are instrumented diagnostic shares, not a decomposition of
+the previous 3.74480-second unprofiled mean. The profile loss history and final
+FP32 adapter differ from `warmed03`; identical initial masters/batches do not
+establish exact trajectory replay. Preserve the original strict failures and
+BF16 FA4 default. See the [full findings](../../docs/findings/b200_mlp_gemm.md).
+
+Analyze collected raw traces with:
+
+```bash
+python -m experiments.b200_mlp_gemm.analyze_full_profile \
+  results/b200_mlp_gemm/warmedprofile01/warmed_profile
+```

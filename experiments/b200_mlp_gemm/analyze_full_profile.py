@@ -16,7 +16,15 @@ def kernel_group(name: str) -> str:
         return "mlp_frozen_fp4_gemm_and_fused_descale"
     if name in {"_pack_row_blocks", "_row_inverse", "_row_scale"}:
         return "mlp_fp4_dynamic_conversion"
-    if "gdr" in lower or "tilelang_prepare_h" in lower or "causal_conv1d" in lower:
+    if any(
+        marker in lower
+        for marker in (
+            "gdr",
+            "tilelang_prepare_h",
+            "tilelang_kkt_solve",
+            "causal_conv1d",
+        )
+    ):
         return "gdn_scan_and_convolution"
     if "l2norm" in lower or "layer_norm_gated" in lower:
         return "gdn_normalization"
@@ -28,7 +36,7 @@ def kernel_group(name: str) -> str:
     if "gemm" in lower or lower.startswith("nvjet_"):
         return "ordinary_gemms_lora_and_other_projections"
     if "silu" in lower:
-        return "mlp_swiglu_and_fused_pointwise"
+        return "silu_and_fused_pointwise_without_module_attribution"
     if "copy_kernel" in lower:
         return "tensor_copies_and_casts"
     return "other_or_unclassified"

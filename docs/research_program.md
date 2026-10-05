@@ -331,3 +331,17 @@ timing selection rule once every measured shape is resident; full-corpus shape
 preparation costs, fresh control replication and quality validation remain
 unresolved. Strict numerical parity remains failed and accepted only for timing.
 Retain the opt-in implementation and BF16 FA4 standard.
+
+Current warmed full-model FP4 profiling of fixed updates 11/15/20 attributes
+24.93% of summed CUDA kernel time to FlashQLA/GDN, 20.17% to ordinary GEMMs,
+14.24% to BF16 FA4, 5.65% to frozen-base FP4 GEMMs and 4.31% to dynamic FP4
+conversion. Generic SiLU/pointwise work, copies and unclassified kernels make
+up the remainder. The traced updates launch 33,520–46,144 kernels and average
+0.71491 seconds without device events, 13.96% of pooled device span. These gaps
+and synchronization costs motivate dispatch/copy investigation; they do not
+prove CPU limitation or add to overlapping GPU time. All actual updates remain
+fully warmed. Startup validation is reused with failed strict receipts retained;
+the profile loss history/final adapter differ from the earlier run, with cause
+not isolated. Diagnostic traces do not replace unprofiled speed measurements or
+establish quality parity. Larger supported targets are GDN work and remaining
+BF16 projections; native FP4 conversion is no longer the largest identified cost.
