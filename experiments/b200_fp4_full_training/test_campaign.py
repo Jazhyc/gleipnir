@@ -13,6 +13,7 @@ from experiments.b200_fp4_full_training.campaign import (
     profile,
     validate_prediction_membership,
 )
+from experiments.b200_fp4_full_training.compile_ahead import future_shapes
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_training import validate_packed_training_config
 
@@ -108,3 +109,19 @@ def test_id_matching_rejects_incomplete_or_changed_population(change):
         rows[0][key] = value
     with pytest.raises(ValueError):
         validate_prediction_membership(rows, inputs)
+
+
+def test_compile_ahead_preserves_future_first_use_and_deduplicates_shapes():
+    records = [
+        {"update": 1, "tokens": 100},
+        {"update": 2, "tokens": 200},
+        {"update": 3, "tokens": 100},
+        {"update": 4, "tokens": 200},
+    ]
+    assert future_shapes(records, 2) == [200, 100]
+    assert future_shapes(records, 5) == []
+
+
+def test_compile_ahead_rejects_empty_native_shape():
+    with pytest.raises(ValueError):
+        future_shapes([{"update": 2, "tokens": 0}], 2)

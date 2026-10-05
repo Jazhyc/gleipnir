@@ -388,3 +388,15 @@ The evidence does not isolate downstream amplification to FP4 MLPs versus GDN
 recurrence. A separate finite timing-only run preserves failed parity, reuses
 completed preparation and completes twenty updates with zero compilation misses.
 Keep the original convolution and resident baseline; no quality promotion follows.
+
+The user requests a full replication of the original regular 4B run with the
+selected native FP4 MLP/FA4 default: all 8,688 monitoring rows, LR 5e-5, one epoch,
+followed by all 3,012 canonical ID examples. The
+[replication decision](decisions/b200_fp4_full_training_replication.md) freezes
+inputs, initial FP32 adapters and held-out selection before launch. The ordinary
+Trainer is running on the existing NC2 B200 and will remain resident afterwards.
+Full-corpus first-use plan costs exceed the short warmed timing cohort; optional
+compile-only cache population uses spare CPUs without replaying a model or
+changing arithmetic. Training and ID results are pending; no quality equivalence
+or promotion follows from the launch. The historical control used BF16/SDPA, so
+the eventual comparison includes both the MLP and attention recipe changes.
