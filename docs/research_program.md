@@ -201,6 +201,11 @@ The [NVIDIA MXFP8 B200 screen](findings/b200_nvidia_mxfp8.md) executes causal
 D256 GQA forward/backward and passes all 24 quantizer-layout comparisons. Native
 Q/K gradient errors are 6.47–8.65%, but the fresh whole-model adapter-gradient
 error is 18.71%, exceeding the separate 10% learning ceiling. Cross-example
-isolation passes with zero leakage. Training stops before updates; there is no
-throughput result. Keep BF16 FA4/FlashQLA as the standard and preserve the failed
-receipts and opt-in prototype for further diagnostics.
+isolation passes with zero leakage. A separately authorized timing-only run
+completes 20 updates and averages 5.29781 seconds over its last ten, versus
+4.08648 seconds for the verified matched historical FA4 control (29.64% slower).
+The fresh FA4 repeat was intentionally stopped as redundant; no fresh
+same-runtime replication or quality equivalence is claimed. Sixteen parallel
+workers prepare the manifest's 534 exact-shape plans in 208 seconds using the
+shared cache. Keep BF16 FA4/FlashQLA as the standard and preserve failed parity
+receipts alongside the completed timing result.

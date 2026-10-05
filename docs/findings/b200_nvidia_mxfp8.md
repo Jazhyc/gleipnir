@@ -3,8 +3,10 @@
 Date: 2026-10-05. Native forward and backward execute for causal D256 GQA.
 Strict native numerical parity fails. A separately authorized learning screen
 also fails whole-model adapter-gradient parity at 18.71%, exceeding its 10%
-ceiling. Cross-example isolation passes; zero optimizer updates run. There is
-no complete-update throughput result. Keep BF16 FA4 as the standard.
+ceiling. Cross-example isolation passes. A subsequently authorized timing-only
+run completes 20 updates: MXFP8 averages 5.29781 seconds over the last ten,
+versus 4.08648 seconds for the reused, matched BF16 FA4 control (29.64% slower).
+Keep BF16 FA4 as the standard.
 
 ## Intervention and runtime
 
@@ -64,7 +66,7 @@ Q/K gradients are zero, and V gradients sum over grouped query heads. This exact
 case uses no attention matrix multiplication and is checked against FP32 SDPA;
 all longer sequences use the selected MXFP8 engines.
 
-## Whole-model outcome
+## Whole-model parity outcome (training02)
 
 The fresh eager model probe uses the actual soft monitoring loss and the same
 initial master digest as earlier screens:
@@ -102,13 +104,80 @@ QKV distributions, quantization scales or mixed-precision attention passes would
 require a new scoped diagnostic; increasing this screen's ceiling after seeing
 the result would not validate the current recipe.
 
+## Authorized timing outcome (training03)
+
+After reviewing the numerical rejection, the user explicitly requested a speed
+result regardless. Fresh eager/compiled receipts retain failed strict and
+learning parity and separately accept timing execution. Adapter-gradient relative
+L2 is 18.7114% eager and 16.6558% compiled. Cross-example effects remain zero;
+finite/missing-gradient checks and longest-batch memory preflight pass. The
+preflight covers 32 examples and 711,225 tokens without changing master adapters.
+
+| Measurement | NVIDIA MXFP8 | BF16 FA4 (reused control) |
+| --- | ---: | ---: |
+| Complete optimizer updates | 20 | 20 |
+| Warmup / measured updates | 10 / 10 | 10 / 10 |
+| Mean measured update time | 5.297811 s | 4.086484 s |
+| Total measured update time | 52.978114 s | 40.864844 s |
+| Peak allocated GPU memory | 146.851841 GiB | 145.241803 GiB |
+
+The recorded control is
+`results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json`,
+SHA256 `185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364`.
+Model/revision, initial master, seed, optimizer, objectives, BF16 precision,
+compiler policy, GDN pins, adaptive policy, input checksums and every physical
+batch across all 20 updates match. Each measured window covers 1,314,331 tokens.
+Both saved adapters contain 256 FP32 tensors and change from the original master;
+all 20 logged gradient norms/losses are finite.
+
+A fresh FA4 repeat was started, then stopped as redundant after the user reminded
+us of the prior benchmark and the full contract match was verified. Preserve its
+raw termination receipt separately: `summary.json` reports a completed candidate
+and a failed control subprocess following SIGTERM; `control_stop.json` records
+the intentional stop. The successful historical-control comparison is recorded
+in `reused_fa4_comparison.json`, not substituted into that raw receipt. There is
+no fresh same-runtime replication: the candidate uses isolated cuDNN 9.26.0.51
+while the prior FA4 control used the original runtime. Do not claim this measures
+the standalone MXFP8 kernels or a quality-equivalent trajectory.
+
+The dense integration is slower on complete updates despite its lower-precision
+arithmetic. It executes attention independently per sequence, while FA4 supports
+the packed variable-length batch directly. Each sequence needs six forward and
+two backward quantization launches plus eleven backward scale-layout repacks;
+allocation and host dispatch remain inside update timing. These are plausible
+contributors, not a measured breakdown. NVIDIA describes scale repacks alone as
+roughly 1–2% of backward in its own setup; do not assign our entire slowdown to
+them. Only eight full-attention layers change; GDN, MLP and adapter work remain
+unchanged. Direct packed support is a separate optimization hypothesis.
+
+### Compilation and parallel preparation
+
+The frozen selection manifest records 267 distinct lengths, giving 534 exact
+forward/backward plans. A scoped profile places most fresh-plan time in CPU-side
+CuTe IR generation. Persistent object-cache reuse works. Sixteen independent
+workers prepare those recorded shapes in 208.068 seconds, with 266 hits and 268
+misses, no bypasses, invalid artifacts or export failures. Median observed plan
+times are 0.114 seconds for hits and 8.232 seconds for misses. These figures
+include concurrent CPU activity; the scoped profiler additionally has tracing
+overhead. The roughly hour-long serial estimate follows from hundreds of
+specializations, not one large compilation.
+
+The pod has a 20.4-CPU quota and 234 GiB host-memory limit. Observed total host
+usage during preparation is about 33 GiB. Workers finish before the measured
+window and execute no attention or model updates. Recorded selection lengths are
+preparation hints; diagnostic and materialized training shapes can add plans.
+Cold preparations remain in the excluded first ten update timings. Keep caches
+on the shared network volume; no sequence padding/bucketing was introduced.
+
 ## Artifact provenance
 
 Ignored artifacts are under `results/b200_nvidia_mxfp8/`; logs are under
 `logs/runpod/b200_nvidia_mxfp8/`. The root retains the first native failure,
 `attempt02/` the complete supported-length native suite, `training/` the first
 model failure, and `training02/` the continuation. Executed-source snapshots
-and effective commands are retained per attempt. Native attempt02 receipt SHA256:
+and effective commands are retained per attempt. `training03/` retains the
+completed timing candidate, parallel-preparation receipts, stopped control and
+the separate historical-control comparison. Native attempt02 receipt SHA256:
 `44454758699aacf22439ae252eb099a889097ca4665328dddb80f44b9ca2549c`.
 Pinned upstream source archive SHA256:
 `d924b07d4c0186dfbeaa7a74d9327c01b6f6a0e144a84cdbab2fb501f4832c83`.
@@ -118,6 +187,13 @@ Both collected receipt hashes match the B200 originals; all eight executed-sourc
 archives and the initial master identity verify locally. The experiment process
 has exited and the B200 remains running with its persistent workspace/caches.
 
+Timing candidate metadata SHA256:
+`2047927e4484bdc9481fa158a72f03456c65487b87b4434abd48a9d337c39492`.
+Reused-control comparison SHA256:
+`ff0c8a76f9cdc6c701ec3c29979798dfa42d1a9e309ee477116248a59773c491`.
+
 The prototype and packed-routing regression suite pass 61 focused tests; the
 strengthened native-acceptance checks subsequently pass all 11 prototype tests.
+The timing/preparation continuation passes 20 focused prototype tests, including
+six new manifest/partition tests; scoped Ruff and staged-diff checks pass.
 No downstream evaluation, adapter-serving parity or default promotion has run.

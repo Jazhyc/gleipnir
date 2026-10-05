@@ -140,3 +140,17 @@ source .cache-runtime.env
 
 Preparation receipts, source snapshot and worker logs go under that screen's
 `prewarm/` directory. Compiler caches remain in the shared network-volume paths.
+
+Completed timing-only candidate: 20 updates, last-ten mean 5.297811 seconds.
+The user reminded us of the existing FA4 benchmark. Its initial master,
+input hashes, objectives, optimizer/precision and all 20 physical batch contracts
+match, so the redundant fresh FA4 repeat was intentionally stopped and the prior
+4.086484-second control reused. MXFP8 is 29.64% slower in this comparison. The
+candidate uses the isolated cuDNN runtime; no fresh same-runtime replication or
+quality equivalence is claimed. The raw runner termination receipt remains
+unchanged; `control_stop.json` explains the stop and
+`reused_fa4_comparison.json` records the completed comparison separately.
+Sixteen preparation workers finish in 208.068 seconds with 266 hits/268 misses
+and no cache failures. Recorded lengths are preparation hints; materialized
+training and diagnostic shapes may add plans. See
+[the finding](../../docs/findings/b200_nvidia_mxfp8.md) for receipts and limits.
