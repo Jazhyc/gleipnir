@@ -314,3 +314,14 @@ zero new plans/specializations/compiler graphs. Keep every sample, the existing
 finite/isolation/memory checks and failed strict parity. Stop on missing/nonfinite
 gradients, changed masters during warmup, shape-contract mismatch or persistent
 compilation. No held-out quality selection or default promotion occurs.
+
+Result: `warmed03` completes both replay passes and twenty actual updates.
+The second replay and all updates add zero native plans, Triton specializations,
+Dynamo graphs or Inductor graph-cache misses. Measured updates 11–20 average
+3.74480 seconds versus historical BF16 FA4's 4.08648 (8.36% less time), passing
+the five-percent speed rule. The final adapter is byte-for-byte identical to
+`traintiming03`, with all 256 tensors FP32; numerical acceptance remains timing-
+only. Warmup step durations total 204.84/73.96 seconds, separate from optimizer
+timings; the Trainer runtime includes warmup. All artifacts are collected and
+the GPU is idle. Retain failed launch receipts, the experimental path and the
+BF16 FA4 default; warmed timing does not establish full-corpus wall-time savings.

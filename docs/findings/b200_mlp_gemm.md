@@ -682,3 +682,79 @@ Final standard-mode receipt SHA-256 values:
   `3b2c97704cc65d460d14628f1d3d91b8600b716afcb89b24500c8a81f04e2c29`.
 - `traintiming03/causal_adapter/adapter_model.safetensors`:
   `cdae0133aeff9a4b7eb03cdc87008d03e5a5b40e7abb7ce1466821b3fdc28445`.
+
+### Exact-shape warmed FP4 training
+
+The user requests warmed performance on 2026-10-05 after the preceding default-
+mode run continued first-use specialization during measured updates. `warmed03`
+completes the same twenty-update trajectory in `default` mode with unchanged
+conversion kernels and retained cache namespaces. Before optimization, two
+same-process passes replay the full twenty logical batches with full backward,
+no optimizer updates, preserved RNG/sampler state and unchanged FP32 masters.
+Both replay physical contracts match all 147 historical FA4 partitions exactly.
+The first pass creates 248 native plans and 265 Triton specializations; the
+second creates zero plans, specializations, Dynamo graphs or Inductor graph-cache
+misses. No third warmup is needed. All twenty actual optimizer updates also show
+zero increments in each of these counters. These Triton events count first-use
+in-process specialization, including loading already compiled persistent entries;
+they are not all fresh binary compilations.
+
+| Complete update, updates 11–20 | Mean seconds | Difference versus historical BF16 FA4 |
+| --- | ---: | ---: |
+| Historical BF16 FA4 control | 4.08648 | Reference |
+| Combined native FP4, first-use shapes included (`traintiming03`) | 19.42944 | 375.46% more time |
+| Combined native FP4, all measured shapes warmed (`warmed03`) | 3.74480 | 8.36% less time |
+
+The ten warmed measured updates total 37.44805 seconds versus 40.86484 for
+the historical control. Keep all samples; their range is 2.40343–5.39594 seconds.
+The warmed candidate clears the predeclared five-percent timing improvement
+rule. This is comparison with the immutable historical control, without fresh
+same-runtime control replication or uncertainty estimates. It supports warmed
+execution follow-up, not automatic recipe promotion or full-corpus wall-time
+savings: unseen packed shapes still incur preparation. The earlier ordinary-
+dispatch standalone MLP pilot remains a separate, slower result; it is not
+substituted for this full-model measurement.
+
+Warmup forward/backward durations sum to 204.84156 and 73.96002 seconds for the
+two passes. Receipt writes, batch collection and verification are additional
+warmup overhead. The Trainer loop's 363.3807 seconds includes the warmup callback;
+use synchronized optimizer-step durations, not that loop total, for warmed
+throughput. Native runtime ends at 416 plans and 64 packed weight pairs totaling
+2,548,040,192 bytes. Peak allocated memory is 148.30699 GiB. The longest-batch
+preflight passes, and every actual update has finite loss/nonmissing gradients.
+
+The initial master remains
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
+The final master digest and 679,511,752-byte saved adapter are identical to
+`traintiming03`, with all 256 tensors FP32. This confirms that extra warmup
+preserves this optimization trajectory. Strict/learning packing acceptance
+remains false, with eager/compiled gradient relative L2 68.11%/65.09% and failed
+loss bounds. Exact isolation and finite checks pass. Retain the original user
+timing-only authority; no BF16 quality equivalence or held-out evaluation occurs.
+BF16 MLPs with FA4 remain the selected standard.
+
+The initial `warmed01` launch fails because the wrapper precreates the runner's
+exclusive log directory; `warmed02` then fails Hydra parsing of punctuation added
+to the authority note. Neither reaches optimizer updates. Preserve both failures;
+the corrected wrapper uses a separate launcher directory and the original
+validated authority string. Sixty-three focused CPU tests pass, plus Ruff and
+whitespace checks. The executed warmup source is archived with all 31 launch
+source hashes verified; subsequent interface annotations do not change execution.
+The successful process exits zero and the GPU becomes idle. Its checkpoint,
+adapter, reports and logs are collected locally. The B200 remains running in
+US-NC-2 with its volume/caches; active-turn monitoring is complete.
+
+Warmed receipt SHA-256 values:
+
+- `warmed03/summary.json`:
+  `8a6900a482fce0568d40d631f2f1342a845cd9e096ebc8c897bcaad5a3fd0f13`.
+- `warmed03/shape_warmup.json`:
+  `506af5051d5c152b635394abe9bee2fb46346e73c8ea78baace35faf14dfb60d`.
+- `warmed03/causal_adapter/training_metadata.json`:
+  `14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb`.
+- `warmed03/causal_adapter/packing_canary.json`:
+  `9ec1b04890820ec9bc0047e2df4b3c5ba8dfa12e0c89841724a9d1383c0bfe14`.
+- `warmed03/native_runtime.json`:
+  `3b2c97704cc65d460d14628f1d3d91b8600b716afcb89b24500c8a81f04e2c29`.
+- `warmed03/causal_adapter/adapter_model.safetensors`:
+  `cdae0133aeff9a4b7eb03cdc87008d03e5a5b40e7abb7ce1466821b3fdc28445`.

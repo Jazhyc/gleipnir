@@ -320,3 +320,14 @@ trajectory wall time, not fully warmed kernel speed. Graph-enabled full-model
 attempts fail before updates; complete-MLP graph gains have not been realized
 in the ordinary training recipe. Runtime shape arguments and stable graph
 integration are better supported follow-ups than promoting the current FP4 path.
+
+The explicitly requested warmed follow-up replays all twenty logical batches
+twice without optimizer updates, preserving master/RNG/sampler state. Its second
+replay and all actual updates create zero native plans, Triton specializations or
+compiler graphs. Measured FP4 updates average 3.74480 seconds versus historical
+BF16 FA4's 4.08648, an 8.36% time reduction. The final FP32 adapter is byte-for-byte
+identical to the preceding 19.42944-second first-use trajectory. This clears the
+timing selection rule once every measured shape is resident; full-corpus shape
+preparation costs, fresh control replication and quality validation remain
+unresolved. Strict numerical parity remains failed and accepted only for timing.
+Retain the opt-in implementation and BF16 FA4 standard.
