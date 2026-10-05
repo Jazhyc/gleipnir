@@ -149,6 +149,7 @@ def main() -> None:
     parser.add_argument("--pilot-sha256", required=True)
     parser.add_argument("--attempt", required=True)
     parser.add_argument("--timing-authority")
+    parser.add_argument("--warm-shapes", action="store_true")
     parser.add_argument(
         "--compile-mode",
         choices=("default", "reduce-overhead"),
@@ -161,6 +162,10 @@ def main() -> None:
         raise ValueError("pilot checksum drift")
     pilot = json.loads(args.pilot.read_text())
     fp4 = pilot.get("variant") == "fp4_integrated"
+    if args.warm_shapes and (
+        not fp4 or not args.timing_authority or args.compile_mode != "default"
+    ):
+        raise ValueError("warmed screen requires native FP4 timing in default mode")
     if args.timing_authority is not None and (
         not fp4 or not args.timing_authority.strip()
     ):
@@ -246,6 +251,11 @@ def main() -> None:
         GLEIPNIR_FP4_HARDWARE_PACKING="1" if hardware_packing else "0",
         GLEIPNIR_FP4_FUSED_DESCALE="1" if fused_descale else "0",
     )
+    if args.warm_shapes:
+        env.update(
+            GLEIPNIR_FP4_WARM_REPORT=str(output / "shape_warmup.json"),
+            GLEIPNIR_FP4_WARM_REFERENCE=str(ROOT / REFERENCE),
+        )
     sources = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         Path("src/gleipnir/mlp_gemm.py"),
@@ -280,6 +290,7 @@ def main() -> None:
         "compile_mode_matches_control": not fp4 or args.compile_mode == "default",
         "timing_only": bool(args.timing_authority),
         "timing_authority": args.timing_authority,
+        "exact_shape_warmup": args.warm_shapes,
         "control": control,
         "cache_paths": {k: v for k, v in env.items() if "CACHE" in k},
         "source_sha256": {str(p): sha256_file(ROOT / p) for p in sources},
@@ -310,6 +321,12 @@ def main() -> None:
     for key in ("physical_contract", "initial_master_sha256"):
         if candidate[key] != control[key]:
             raise ValueError(f"physical contract mismatch: {key}")
+    if args.warm_shapes:
+        from experiments.b200_mlp_gemm.warmed_training import validate_warmed_receipt
+
+        warm_receipt = json.loads((output / "shape_warmup.json").read_text())
+        validate_warmed_receipt(warm_receipt, candidate)
+        report["shape_warmup"] = warm_receipt
     gain = 1 - candidate["measured_mean_seconds"] / control["measured_mean_seconds"]
     report.update(
         status="complete",

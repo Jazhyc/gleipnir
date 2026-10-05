@@ -3,6 +3,7 @@
 import json
 import os
 import runpy
+from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import patch
 
@@ -42,7 +43,29 @@ def main() -> None:
         return {**original, "native_fp4_mlp": model._gleipnir_fp4_mlp_installation}
 
     try:
-        with patch("gleipnir.bf16_lora.bf16_lora_metadata", validate_and_install):
+        with ExitStack() as stack:
+            stack.enter_context(
+                patch("gleipnir.bf16_lora.bf16_lora_metadata", validate_and_install)
+            )
+            warm_report = os.environ.get("GLEIPNIR_FP4_WARM_REPORT")
+            if warm_report:
+                from transformers import Trainer
+
+                from experiments.b200_mlp_gemm.warmed_training import (
+                    install_warmed_train,
+                )
+
+                stack.enter_context(
+                    patch.object(
+                        Trainer,
+                        "train",
+                        install_warmed_train(
+                            Trainer.train,
+                            Path(os.environ["GLEIPNIR_FP4_WARM_REFERENCE"]),
+                            Path(warm_report),
+                        ),
+                    )
+                )
             runpy.run_path(
                 "experiments/deception_distillation/train_student_sft.py",
                 run_name="__main__",

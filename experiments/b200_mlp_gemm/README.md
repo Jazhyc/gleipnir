@@ -290,3 +290,27 @@ Peak allocated memory is 148.31 GiB, and all saved adapter tensors are FP32.
 The local complete-MLP graph gains have not translated to this ordinary training
 recipe. Results/checkpoint/logs are collected and the B200 is idle; retain the
 opt-in implementations, negative receipts and BF16 FA4 default.
+
+## Exact-shape warmed timing
+
+User request, 2026-10-05: obtain warmed performance after the default-mode
+trajectory still specialized new shapes during measurement. Hypothesis: removing
+first-use compilation and native plan construction materially lowers complete
+FP4 update time. Use `training_screen --warm-shapes --compile-mode default`
+with the same explicit timing-only authority, initial adapter, 320-row cohort,
+twenty updates, physical partitions and historical BF16 FA4 control. Reuse all
+persistent cache namespaces. Do not alter precision, kernels, optimizer or packing.
+
+Before ordinary training, replay all twenty logical batches including full
+forward/backward without optimizer updates. Preserve global CPU/CUDA/Python/NumPy
+RNG state and the epoch-seeded loader, verify unchanged FP32 master hashes and
+empty optimizer state, and remove warmup records from training metadata. Repeat
+the sequence until a replay produces no new native plans, Triton JIT
+specializations, Dynamo graphs or Inductor graph-cache misses; require at least
+two passes and stop after three. Verify each warmup physical contract against
+the historical control. Record warmup costs separately from synchronized updates.
+Audit every actual update; claim warmed performance only if updates 11–20 show
+zero new plans/specializations/compiler graphs. Keep every sample, the existing
+finite/isolation/memory checks and failed strict parity. Stop on missing/nonfinite
+gradients, changed masters during warmup, shape-contract mismatch or persistent
+compilation. No held-out quality selection or default promotion occurs.
