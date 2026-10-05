@@ -559,3 +559,14 @@ fixes only the assertion and reuses the complete preparation receipt when
 native/integration sources, master and worker match and baseline restoration is
 verified. Do not repeat preparation. The new helper tests those identities and
 actual-update counters still verify native compilation convergence.
+
+Result: `10convwarm` completes twenty finite updates in the same worker without
+preparation replay. Updates 11–20 average 4.02959 seconds versus 3.67836 seconds
+for the pooled resident control, 9.55% more time; all ten are slower than their
+matched control steps. Every update adds zero native convolution compilations
+and zero existing compiler/plan misses. The numerical gate remains failed at
+113.75% adapter-gradient relative L2 despite tiny isolated convolution errors.
+Reject this kernel as a replacement in the current configuration. Keep Dao
+convolution and the resident FP4-MLP/BF16-GDN/FA4 baseline. The worker is left
+idle and alive; collected receipts retain failures, diagnostic stops and reuse
+references. See the findings for full numerical limits and exact checksums.

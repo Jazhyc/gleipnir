@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import importlib
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from contextvars import ContextVar
 from functools import wraps
@@ -11,12 +11,12 @@ from typing import Any
 
 import torch
 
-_BOUNDARIES: ContextVar[tuple | None] = ContextVar(
-    "nvidia_conv_boundaries", default=None
+_BOUNDARIES: ContextVar[tuple[torch.Tensor | None, torch.Tensor | None] | None] = (
+    ContextVar("nvidia_conv_boundaries", default=None)
 )
 
 
-def convolution_forward(original):
+def convolution_forward(original: Callable) -> Callable:
     """Carry existing packing offsets to the convolution without host reads."""
 
     @wraps(original)
@@ -46,14 +46,14 @@ def convolution_forward(original):
 
 
 def convolution_kernel(
-    backend,
-    stats: dict,
+    backend: Any,
+    stats: dict[str, int],
     *,
-    reference=None,
-    diagnostics=None,
-    name=None,
+    reference: Callable | None = None,
+    diagnostics: list[dict[str, Any]] | None = None,
+    name: str | None = None,
     return_reference: bool = False,
-):
+) -> Callable:
     """Reject unsupported routes rather than silently use dense convolution."""
 
     def convolution(x, weight, bias=None, activation=None, seq_idx=None):

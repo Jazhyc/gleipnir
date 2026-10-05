@@ -376,3 +376,15 @@ as a smaller arithmetic-preserving intervention; its native packed API needs
 cumulative offsets rather than `seq_idx`. The convolution contributes about
 4.31% of the existing trace's summed kernel time, so its potential is bounded.
 See the [completed findings](findings/b200_mlp_gemm.md).
+
+The subsequent NVIDIA BF16 causal Conv1D screen also rejects replacement in the
+current FP4-MLP configuration: warmed updates average 4.02959 seconds versus
+3.67836 for the resident control, 9.55% more time. Isolated packed forward/input
+gradients agree closely with Dao and show zero leakage, but the matched first
+model batch changes loss by 0.09096 and adapter gradients by 113.75%. Returning
+Dao outputs/gradients through the same wrapper reproduces the control exactly;
+the discrepancy is triggered by convolution arithmetic rather than the wrapper.
+The evidence does not isolate downstream amplification to FP4 MLPs versus GDN
+recurrence. A separate finite timing-only run preserves failed parity, reuses
+completed preparation and completes twenty updates with zero compilation misses.
+Keep the original convolution and resident baseline; no quality promotion follows.

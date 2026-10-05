@@ -1055,3 +1055,100 @@ The existing update-15 trace spends 70.483 ms in convolution forward and
 143.403 ms in backward, approximately 4.31% of summed CUDA kernel time combined.
 This supports a bounded follow-up, not a prediction of equivalent wall-time
 savings or a claim NVIDIA is faster/more stable than the current Dao kernel.
+
+## Completed NVIDIA BF16 causal Conv1D screen, 2026-10-05
+
+Reject the native NVIDIA width-four SiLU convolution as a replacement in the
+current resident FP4-MLP configuration. All twenty warmed finite updates complete,
+but take 9.55% more time than the unchanged resident control and the matched
+first-batch model loss/adapter-gradient check fails. Keep Dao convolution and
+the existing FP4-MLP/BF16-GDN/FA4 timing baseline; preserve the general BF16
+training default separately.
+
+The scoped integration forwards existing CUDA int32 cumulative offsets through
+the disabled GDN shell to `cudnn.ops.causal_conv1d`, preserving Accelerate hooks,
+frozen parameters and packing boundaries. Every unsupported native route fails
+closed. Scoped training/forward cache capacities become 256, avoiding upstream
+64/128-plan eviction. Exact native sources, driver/integration sources and
+checksum-bound receipts are archived per trial. The frontend/runtime and shared
+compiler caches remain the previously pinned NVIDIA stack; no dependency upgrade
+or worker restart occurs.
+
+The native canary includes sequence lengths 1, 2, 3, 63, 65, 256 and 1025 with
+8192 channels. Output/input-gradient relative L2 errors versus Dao are
+0.004874%/0.002948%; versus independent FP32 convolution they are
+0.16560%/0.16591%. Output and input-gradient cross-example leakage are exactly
+zero. All compared values are finite. This component agreement does not establish
+whole-model parity.
+
+`06nvidiaconv` stops before updates: first-logical-batch loss changes from
+0.5218598843 to 0.6128203273, absolute difference 0.0909604430, and adapter-gradient
+relative L2 differs by 113.75%. `07convdiagnostic` reproduces these values exactly
+and compares all 168 actual convolutions with Dao on their shared inputs. The
+largest relative output difference is 0.012388%; the largest absolute difference
+is 0.0625. `08convpassthrough` returns Dao outputs/gradients through the same
+wrapper and exactly reproduces baseline loss and adapter gradients (zero relative
+error). Its intentional diagnostic stop is recorded independently. This rules
+out the wrapper as the source of the discrepancy and shows that small convolution
+arithmetic differences trigger model-level divergence. It does not isolate the
+amplification to FP4 MLPs rather than GDN recurrence or other downstream work.
+No matched BF16-MLP diagnostic or candidate performance trace was run.
+
+A separate, predeclared finite timing-only continuation retains the failed
+5%/0.005 model gate and excludes quality/recipe selection. It reuses the isolated
+canary and failed parity with matching worker/master/native sources, and verifies
+that the native first preparation loss reproduces the recorded value. In
+`09convfinite`, twenty batches prepare in 149.78847 seconds without optimizer
+updates or master changes. Preparation builds 104 additional backward and 16
+forward plans. Its first finite actual update then stops on an incorrect audit:
+the first frozen GDN legitimately requires only forward execution. Seven native
+inference plus 161 native autograd calls correctly cover the seven physical
+rows. Retain the audit failure and baseline-restoration receipt.
+
+`10convwarm` corrects the assertion and reuses the entire preparation receipt,
+checking integration/native source identity, initial master, the same worker,
+completed preparation and restored baseline. No preparation replay or model
+reload occurs. Twenty updates reproduce the historical 147 physical partitions
+from initial master
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
+All updates have finite/nonmissing gradients and zero native forward/backward
+compilations, native FP4 plan additions, Triton specializations, Dynamo graphs
+or Inductor graph misses. The route audit counts 147 inference and 3381 autograd
+calls: exactly 24 convolutions per row, with gradients where required.
+
+| Condition | Mean seconds/update, updates 11–20 | Mean training loss, updates 1–20 |
+| --- | ---: | ---: |
+| Existing pooled Dao control | 3.67836 | 0.50287 |
+| NVIDIA BF16 Conv1D | 4.02959 | 0.44356 |
+
+All ten measured candidate updates are slower than their per-step pooled
+controls; mean time increases by 9.54875%. Trial wall time, including reset and
+adapter export but no preparation, is 94.62246 seconds. The matched mean absolute
+training-loss difference is 0.08516; lower mean training loss and final loss
+0.29021 do not establish held-out quality or convergence improvement.
+Compilation during measurement is excluded as an explanation. Frozen-filter
+gradient work in the current native backward remains a plausible cost, not a
+measured causal attribution. Both timing and numerical evidence reject selection.
+
+The final adapter has 256 FP32 tensors and 679,511,752 bytes. Adapter/receipt/source
+archives and logs are collected locally; the baseline convolution methods and
+cache settings are restored. PID 11905 remains alive and idle on the same B200
+with its model, compiled kernels and packed-weight caches resident. No after-turn
+heartbeat is promised because this session lacks a scheduling tool. Thirteen
+new focused CPU tests and thirteen resident-worker checks pass, with Ruff and
+whitespace checks. The exact executed integration predates subsequent type-hint
+formatting, and the helper/shim archives predate their whitespace/reload cleanup;
+arithmetic is unchanged. Retain the executed archives for provenance.
+
+Completed receipt SHA-256:
+`3c077f1e401043a93637005f215cc18940c8ceb3fe2b4d84674fb9d9c492603d`.
+Reused validation SHA-256:
+`b5480bc7fd09f7a2277fed275a5db20a304c82eb501f488c9d20d5b58d4dc091`.
+Final adapter SHA-256:
+`4e1ce98717dec1f878ece6a5f8e51245a401485ff6d1bbaba9fdae2403085ec1`;
+final master tensor digest:
+`881ec977ac54b538ac72f7488a176597368ee5b6ecc7ae9e968898c51933f3e6`.
+The failed first-model parity reference SHA-256 is
+`2efd07944f56dd4e41179ff43dd753ad52e90d112c89c70b114146213b2f7f8c`;
+the isolated canary reference is
+`5befbb5b152a8e5c75c88a5dcbba11836ba0572c6de802a22a5c55280adf0772`.

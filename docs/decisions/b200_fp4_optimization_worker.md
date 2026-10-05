@@ -76,3 +76,10 @@ of 117.84%/137.15%. Both fail the predeclared timing selection; retain FP4 MLPs,
 BF16 GDN and BF16 FA4. All eighty updates add zero compiler/kernel-plan entries
 and preserve the physical contract. Keep the worker idle and resident for the
 next intervention. NVIDIA BF16 causal Conv1D is under investigation, not selected.
+
+The NVIDIA BF16 causal convolution trial completes as `resident02/10convwarm`.
+It takes 9.55% more time than the resident control and fails full-model parity,
+so retain Dao convolution. Native kernel plans and the baseline model remain
+resident on PID 11905; methods and scoped cache settings are restored. Inspect
+live health before subsequent reuse. Failed parity checks/audits and deliberately
+stopped diagnostics remain separate from the completed finite timing receipt.
