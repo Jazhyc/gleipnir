@@ -570,3 +570,38 @@ Reject this kernel as a replacement in the current configuration. Keep Dao
 convolution and the resident FP4-MLP/BF16-GDN/FA4 baseline. The worker is left
 idle and alive; collected receipts retain failures, diagnostic stops and reuse
 references. See the findings for full numerical limits and exact checksums.
+
+## Resident CPU dispatch and dtype-copy screen
+
+Hypothesis: repeated GPU packing-metadata reads and avoidable normalization
+input copies reduce throughput of the existing resident FP4-MLP/BF16-GDN/FA4
+baseline. Screen CPU-prepared metadata first, then add direct BF16 input loading
+in the existing FP32 FLA normalization kernel. Arithmetic, boundaries, objective,
+147 physical rows, twenty updates and FP32 master adapters stay fixed. Keep
+finite/missing-gradient checks. The timing reference is the existing resident02
+control's pooled 3.67836 seconds/update; do not rerun the BF16/FA4 control.
+
+`training_hotpath_context` scopes and restores the metadata builder, FA4 router
+and optional normalization function. CPU lengths validate the layout once;
+FA4 skips device reads only for the original shared Q/K tensor with unchanged
+version and matching operands/max lengths. Untrusted/copied/mutated boundaries
+retain the original router's validation. CPU-built FlashQLA chunk metadata uses
+the pinned backend's existing prepared-varlen hook and chunk size. No upstream
+kernel source changes. FLA normalization still computes and outputs FP32 and
+retains its original BF16 recurrence boundary.
+
+Check one matched first logical batch against the restored baseline before
+updates: loss absolute difference <=0.005, adapter-gradient relative L2 <=5%,
+all gradients finite/present, exact physical contract and unchanged masters.
+Record bitwise gradient agreement separately. Reuse unchanged startup receipts.
+Do not replay all twenty model batches merely to prepare metadata; for the
+normalization intervention, prepare only changed dtype/autotune bins using its
+existing kernel. Audit compiler/plan convergence on actual updates 11–20.
+Select only with >=2% less measured mean time, preserving all samples. Stop on
+parity failure, nonfinite/missing gradients, partition/master drift, new
+preparation during measured updates, OOM or a thirty-minute trial cap.
+
+If timing supports selection, capture one diagnostic update to verify the
+removed synchronization/copy operations, separately from uninstrumented
+timing. Profiled times do not establish speed. No held-out quality promotion
+or new BF16 numerical-equivalence claim follows. Keep the worker resident.
