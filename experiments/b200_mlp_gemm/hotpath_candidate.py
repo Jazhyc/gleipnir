@@ -13,6 +13,7 @@ from pathlib import Path
 import torch
 
 import gleipnir.training_hotpath as integration
+from experiments.b200_mlp_gemm import hotpath_reuse
 from experiments.b200_mlp_gemm.hotpath_reuse import reusable_validation
 from experiments.b200_mlp_gemm.resident_worker import write_json
 from experiments.b200_mlp_gemm.warmed_training import (
@@ -22,8 +23,9 @@ from experiments.b200_mlp_gemm.warmed_training import (
 )
 from gleipnir.training_execution_audit import tensor_digest
 
-NORMALIZE = True
+NORMALIZE = False
 MATCH_NORM_CONFIGS = True
+PREPARED_METADATA = False
 ASYNC_INPUTS = True
 PROFILE = False
 _CONTEXT = None
@@ -35,7 +37,9 @@ def installed(trainer):
     with ExitStack() as stack:
         metadata = stack.enter_context(
             integration.training_hotpath_context(
-                normalize=NORMALIZE, match_norm_configs=MATCH_NORM_CONFIGS
+                normalize=NORMALIZE,
+                match_norm_configs=MATCH_NORM_CONFIGS,
+                prepare_metadata=PREPARED_METADATA,
             )
         )
         if ASYNC_INPUTS:
@@ -68,6 +72,7 @@ def validate(trainer) -> dict:
     for name, path in (
         ("executed_training_hotpath.py", Path(integration.__file__)),
         ("executed_hotpath_candidate.py", Path(__file__)),
+        ("executed_hotpath_reuse.py", Path(hotpath_reuse.__file__)),
     ):
         (trial / name).write_bytes(path.read_bytes())
     reference = json.loads((trial.parent / "01baseline/receipt.json").read_text())
@@ -83,6 +88,7 @@ def validate(trainer) -> dict:
         installer_source=Path(__file__).read_text(),
         normalize=NORMALIZE,
         async_inputs=ASYNC_INPUTS,
+        prepared_metadata=PREPARED_METADATA,
         worker_pid=os.getpid(),
         initial_master=initial,
         physical_contract=reference["physical_contract"],

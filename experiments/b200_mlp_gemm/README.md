@@ -634,3 +634,13 @@ autotuning to choose another configuration. Scope and restore each cache entry;
 record the selected configurations. Repeat only the changed first-batch gate,
 then prepare changed normalization specializations if it passes. Failure still
 stops before updates. Do not assume matching tiling ensures numerical agreement.
+
+`15normfixed` reproduces the same failed loss/gradient values despite matching
+all fifteen resident FP32 launch configurations. It stops before updates and
+restores the baseline. This rules out dtype-specific launch-tiling selection
+as a sufficient fix, without identifying the source of numerical differences.
+To separate the two CPU interventions, run `16asynconly` with nonblocking Trainer
+inputs and the original GPU metadata builder/router/normalization. Keep the
+same first-batch strict gate, twenty reset updates, warmed audit and original
+timing/selection rule. This determines whether input-transfer changes help
+without the rejected metadata rewrite. No additional normalization retry follows.

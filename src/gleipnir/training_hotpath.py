@@ -164,7 +164,10 @@ def matched_normalization_configs(autotuner: Any) -> Iterator[list[dict[str, Any
 
 @contextmanager
 def training_hotpath_context(
-    *, normalize: bool = False, match_norm_configs: bool = False
+    *,
+    normalize: bool = False,
+    match_norm_configs: bool = False,
+    prepare_metadata: bool = True,
 ) -> Iterator[dict[str, Any]]:
     """Restore packing/router/normalization functions after a resident trial."""
     from flash_attn.cute import flash_attn_varlen_func
@@ -189,8 +192,9 @@ def training_hotpath_context(
     )
     router._gleipnir_packed_boundaries = True
     try:
-        PackedSequenceLayout.kernel_kwargs = kwargs
-        ALL_ATTENTION_FUNCTIONS.register("sdpa", router)
+        if prepare_metadata:
+            PackedSequenceLayout.kernel_kwargs = kwargs
+            ALL_ATTENTION_FUNCTIONS.register("sdpa", router)
         if normalize:
             boundary._normalize_qk_fp32 = normalize_qk_without_input_copy
         with ExitStack() as stack:
@@ -202,9 +206,9 @@ def training_hotpath_context(
                     matched_normalization_configs(l2norm_fwd_kernel)
                 )
             yield {
-                "cpu_prepared_packing": True,
+                "cpu_prepared_packing": prepare_metadata,
                 "flashqla_chunk_size": CHUNK_SIZE,
-                "fa4_repeated_boundary_reads_removed": True,
+                "fa4_repeated_boundary_reads_removed": prepare_metadata,
                 "normalization_input_copy_removed": normalize,
                 "normalization_arithmetic_and_output": "float32",
                 "normalization_configs": configs,

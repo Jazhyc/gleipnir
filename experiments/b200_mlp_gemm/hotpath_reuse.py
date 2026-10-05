@@ -25,6 +25,7 @@ def reusable_validation(
     installer_source: str,
     normalize: bool,
     async_inputs: bool,
+    prepared_metadata: bool,
     worker_pid: int,
     initial_master: str,
     physical_contract: list[dict],
@@ -46,6 +47,9 @@ def reusable_validation(
             and validation.get("installation", {}).get(
                 "nonblocking_trainer_inputs"
             ) is async_inputs
+            and validation.get("installation", {}).get(
+                "cpu_prepared_packing"
+            ) is prepared_metadata
             and validation.get("initial_master_sha256") == initial_master
             and validation.get("masters_unchanged") is True
             and validation.get("optimizer_updates") == 0

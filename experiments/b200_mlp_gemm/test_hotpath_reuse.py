@@ -9,7 +9,10 @@ from experiments.b200_mlp_gemm.hotpath_reuse import reusable_validation
 
 @pytest.mark.parametrize(
     "change",
-    [None, "source", "installer", "normalize", "async", "pid", "warm", "physical"],
+    [
+        None, "source", "installer", "normalize", "async", "metadata",
+        "pid", "warm", "physical",
+    ],
 )
 def test_reuse_requires_matching_completed_integration(tmp_path, change):
     trial = tmp_path / "13profile"
@@ -21,6 +24,7 @@ def test_reuse_requires_matching_completed_integration(tmp_path, change):
         "installation": {
             "normalization_input_copy_removed": False,
             "nonblocking_trainer_inputs": True,
+            "cpu_prepared_packing": True,
         },
         "initial_master_sha256": "master",
         "masters_unchanged": True,
@@ -43,6 +47,8 @@ def test_reuse_requires_matching_completed_integration(tmp_path, change):
         validation["installation"]["normalization_input_copy_removed"] = True
     if change == "async":
         validation["installation"]["nonblocking_trainer_inputs"] = False
+    if change == "metadata":
+        validation["installation"]["cpu_prepared_packing"] = False
     if change == "pid":
         receipt["pid"] = 124
     if change == "warm":
@@ -60,6 +66,7 @@ def test_reuse_requires_matching_completed_integration(tmp_path, change):
         ),
         normalize=False,
         async_inputs=True,
+        prepared_metadata=True,
         worker_pid=123,
         initial_master="master",
         physical_contract=[{"tokens": 5}],
