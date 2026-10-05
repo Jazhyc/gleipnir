@@ -38,6 +38,15 @@ def main() -> None:
             json.dumps(report, indent=2) + "\n"
         )
 
+    paths = [
+        Path(__file__),
+        Path("src/gleipnir/nvidia_mxfp8_fused_quantize.py"),
+        Path("src/gleipnir/nvidia_mxfp8_projection_pilot.py"),
+    ]
+    source_bytes = {str(p): p.read_bytes() for p in paths}
+    report["source_sha256"] = {
+        p: hashlib.sha256(content).hexdigest() for p, content in source_bytes.items()
+    }
     save()
     try:
         config = AutoConfig.from_pretrained(
@@ -177,18 +186,10 @@ def main() -> None:
         traceback.print_exc()
         raise
     finally:
-        paths = [
-            Path(__file__),
-            Path("src/gleipnir/nvidia_mxfp8_fused_quantize.py"),
-            Path("src/gleipnir/nvidia_mxfp8_projection_pilot.py"),
-        ]
-        report["source_sha256"] = {
-            str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths
-        }
-        for p in paths:
+        for p, content in source_bytes.items():
             dest = args.output / "executed_source" / p
             dest.parent.mkdir(parents=True, exist_ok=True)
-            dest.write_bytes(p.read_bytes())
+            dest.write_bytes(content)
         save()
 
 

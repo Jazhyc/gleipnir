@@ -240,3 +240,18 @@ improvement rule. Keep BF16 FA4 as the standard and retain these explicit
 experimental backends; no quality equivalence or fresh control replication is
 claimed. Meta's RMSNorm/GEMM producer epilogues and native attention changes
 remain outside this implementation.
+
+The [Meta optimization campaign](findings/b200_meta_stack.md) audits every blog
+technique against the pinned public implementations and tests native scheduling,
+probability scaling, wider dQ stores and project producer fusions. Persistent dQ
+stalls and the warp-maxima prototype fails replay agreement; probability scaling
+regresses. Fused Qwen head normalization/RoPE/quantization plus wider stores
+passes execution checks and reduces isolated producer/attention time, but its
+20-update model screen takes 4.51828 seconds/update, 10.57% slower than historical
+FA4. The whole-model profile attributes 9.54% of summed GPU kernel time to native
+full-attention contractions, versus 39.87% to mixed GEMMs and 20.39% to GDN and
+convolution. These shares describe this profiled candidate, not a baseline or a
+causal regression diagnosis. A BF16 projection epilogue pilot halves Q producer
+forward time; an MXFP8 pilot matches its quantized-operand oracle with similar
+fused forward time. Projection backward and native FP8 returned-gradient fusion
+remain unimplemented. Keep BF16 FA4 as the standard and preserve the negative screen.

@@ -56,3 +56,14 @@ public Meta revision `2889aefba0d03b3eecf779eed9f4097066ecdc5d`, NVIDIA revision
 `51d9d06b574222378a3d806009accab098e73705`. Project implementations of ideas are
 distinguished from the unavailable public producer epilogues and from upstream
 MIT/Apache licensed source (see the earlier experimental notices).
+
+Completed model screen: fused head-norm/RoPE preparation plus wider dQ stores
+takes 4.51828 seconds/update versus the recorded FA4 4.08648, a 10.57% regression.
+All 20 updates complete, with finite FP32 masters and failed parity preserved.
+The identified native full-attention contractions occupy 9.54% of summed GPU
+kernel time in the profiled candidate; mixed GEMMs and GDN/convolution are larger
+targets. The BF16 Q producer epilogue is faster in a synthetic forward-only pilot;
+the FP8 pilot also passes its quantized-operand oracle and takes similar time.
+Neither validates projection training backward. Keep BF16 FA4 as standard.
+See [the complete finding](../../docs/findings/b200_meta_stack.md) for every
+technique, negative result, artifact checksum and measurement limitation.

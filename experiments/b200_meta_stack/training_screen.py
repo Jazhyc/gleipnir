@@ -40,7 +40,7 @@ def accept_meta(native: dict, config: dict) -> dict:
         if len(checks) != 2 or {x["heads"] for x in checks} != {16, 4}:
             raise ValueError("incomplete producer checks")
         if any(
-            x["code_agreement"] < 0.999
+            not 0.999 <= x["code_agreement"] <= 1
             or x["native_scales_bitexact"] != [True, True, True]
             or not 0 <= x["backward_relative_l2"] <= 0.01
             for x in checks

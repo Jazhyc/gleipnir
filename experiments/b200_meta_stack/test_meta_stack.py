@@ -197,3 +197,36 @@ def test_meta_scope_preserves_unpacked_reference_and_restores_on_exception(monke
             assert Qwen3_5Attention.forward(dummy, None, None, None) is sentinel
             raise RuntimeError("exit")
     assert Qwen3_5Attention.forward is original
+
+
+def test_profile_counts_kernels_once_and_merges_overlapping_intervals():
+    from experiments.b200_meta_stack.analyze_profile import analyze
+
+    events = [
+        {"ph": "X", "cat": "kernel", "name": "nvjet_example", "ts": 0, "dur": 2000},
+        {
+            "ph": "X",
+            "cat": "kernel",
+            "name": "norm_rope_backward",
+            "ts": 1000,
+            "dur": 3000,
+        },
+        {
+            "ph": "X",
+            "cat": "gpu_user_annotation",
+            "name": "duplicate",
+            "ts": 0,
+            "dur": 4000,
+        },
+        {"ph": "X", "cat": "cpu_op", "name": "host", "ts": 0, "dur": 9000},
+    ]
+    result = analyze(events)
+    assert result["summed_kernel_ms"] == 5
+    assert result["kernel_interval_union_ms"] == 4
+    assert result["first_to_last_kernel_span_ms"] == 4
+    assert result["kernel_count"] == 2
+    assert (
+        result["groups"]["attention_operand_producer_and_norm_backward"]["gpu_ms"] == 3
+    )
+    with pytest.raises(ValueError, match="no CUDA"):
+        analyze(events[2:])

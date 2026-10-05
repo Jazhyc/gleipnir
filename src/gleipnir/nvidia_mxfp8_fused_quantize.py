@@ -101,7 +101,7 @@ def _prepare(
                 + (head * WEIGHT_HEAD_STRIDE + cols[None, :]) * INNER
                 + ks[:, None],
                 ks[:, None] < INNER,
-                other=0,
+                other=0.0,
             )
             if MXFP8_PROJECTION:
                 groups = tl.reshape(a.to(tl.float32), (128, 2, 32))
