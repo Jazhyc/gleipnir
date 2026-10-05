@@ -90,7 +90,11 @@ def run_training(
         subprocess.run(
             command,
             cwd=root,
-            env=training_environment(root, config["campaign_id"]),
+            env=training_environment(
+                root,
+                config["campaign_id"],
+                native_fp4_mlp=job.get("native_fp4_mlp", False),
+            ),
             check=True,
         )
     metadata = json.loads((master / "training_metadata.json").read_text())

@@ -1,5 +1,12 @@
 # B200 MLP/GEMM optimization
 
+The user-selected warmed native FP4 MLP baseline is now available in ordinary
+training as `qwen35_4b_b200_fp4_mlp`, also selected by `qwen35_4b_b200_default`.
+Use the normal Trainer/launchers; benchmark monkeypatch flags are unnecessary.
+The BF16 comparison is `qwen35_4b_b200_bf16_fa4`. Preserve historical strict
+loss/gradient failures alongside the selected finite receipt and shared caches.
+See [the integration decision](../../docs/decisions/b200_native_fp4_training_recipe.md).
+
 Hypothesis: merging the two frozen gate/up GEMMs and compiling the complete
 LoRA MLP, or fusing the GEMMs/LoRA adds/SwiGLU with cuDNN, reduces full MLP
 forward-plus-backward time and then complete FA4 training update time.

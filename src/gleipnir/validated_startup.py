@@ -24,13 +24,19 @@ def validation_reference(
     learning_gradient_tolerance: float | None = None,
     expected_sha256: str | None = None,
     verify_runtime: bool = False,
+    native_fp4_mlp: bool = False,
 ) -> dict[str, Any]:
-    """Load a completed packed BF16 recipe receipt for explicitly requested reuse."""
+    """Load a completed packed recipe receipt for explicitly selected reuse."""
     contents = path.read_bytes()
     digest = hashlib.sha256(contents).hexdigest()
     if expected_sha256 is not None and digest != expected_sha256:
         raise ValueError("validation reference checksum drift")
     metadata = json.loads(contents)
+    native = (
+        metadata.get("quantization", {}).get("full_bf16_lora", {}).get("native_fp4_mlp")
+    )
+    if bool(native) != native_fp4_mlp:
+        raise ValueError("validation reference MLP precision drift")
     packing = metadata["sequence_packing"]
     backend = metadata["gated_delta_backend"]
     checkpointing = metadata["gradient_checkpointing"]
@@ -49,7 +55,7 @@ def validation_reference(
     if attention == "flash_attention_4":
         if (
             version != "4.0.0b33"
-            or tolerance != 0.10
+            or tolerance != (0.05 if native_fp4_mlp else 0.10)
             or metadata["model"] != "Qwen/Qwen3.5-4B"
             or checkpointing
             or not metadata["quantization"].get("full_bf16_lora", {}).get("verified")
@@ -57,8 +63,15 @@ def validation_reference(
             raise ValueError("reference does not validate selected BF16 FA4 recipe")
         from gleipnir.packed_training_screen import _accept_canary
 
-        for name in ("eager_canary", "compiled_canary"):
-            _accept_canary(deepcopy(packing[name]), tolerance)
+        if native_fp4_mlp:
+            from gleipnir.native_fp4_training import validate_native_fp4_reference
+
+            if expected_sha256 is None:
+                raise ValueError("native FP4 receipt must be checksum-bound")
+            validate_native_fp4_reference(metadata, digest)
+        else:
+            for name in ("eager_canary", "compiled_canary"):
+                _accept_canary(deepcopy(packing[name]), tolerance)
         packing_passed = packing["preflight"]["passed"]
         if verify_runtime:
             import torch
@@ -73,7 +86,7 @@ def validation_reference(
             }
             if (
                 any(
-                    package_version(name) != expected
+                    package_version(name).split("+")[0] != expected
                     for name, expected in expected_packages.items()
                 )
                 or torch.cuda.get_device_name() != "NVIDIA B200"
@@ -109,9 +122,28 @@ def validation_reference(
         or packing["max_packed_tokens"] != 16384
     ):
         raise ValueError("reference does not validate the selected packed BF16 recipe")
+    native_runtime = {}
+    if native_fp4_mlp and verify_runtime:
+        from gleipnir.native_fp4_training import verify_native_fp4_runtime
+
+        native_runtime = verify_native_fp4_runtime()
     return {
         "performed_this_run": False,
-        "policy": "reuse_validated_recipe_at_user_request",
+        "policy": (
+            "reuse_selected_finite_native_fp4_recipe"
+            if native_fp4_mlp
+            else "reuse_validated_recipe_at_user_request"
+        ),
+        **(
+            {
+                "native_fp4_mlp": native,
+                "native_fp4_mlp_parity_policy": "selected_finite",
+                "waived_checks": ["loss_parity", "gradient_relative_l2"],
+                "native_fp4_runtime": native_runtime,
+            }
+            if native_fp4_mlp
+            else {}
+        ),
         "reference_path": str(path),
         "reference_sha256": digest,
         "model": metadata["model"],

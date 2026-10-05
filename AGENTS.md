@@ -96,9 +96,10 @@ Record the worker PID, active configuration and artifact/queue paths so later
 sessions can inspect and reuse it. Restart when changes require it or after a
 diagnosed failure; preserve artifacts and disk caches. This preference does not
 authorize launching new billable capacity or terminating existing capacity.
-For the current B200 systems-optimization campaign, use the combined native FP4
-MLP plus BF16 FA4 variant as the timing baseline for further improvements; this
-does not by itself replace the quality-validated BF16 training default.
+Use the combined native FP4 MLP plus BF16 GDN/FA4 variant as the optimization
+baseline and, following the user's later explicit selection on 2026-10-05,
+the default B200 training recipe. This selection does not establish held-out
+quality equivalence with BF16.
 
 Standing user preference, 2026-10-03: reuse persistent compiler and kernel caches
 across compatible training runs on the network volume. Do not create a cold cache
@@ -165,13 +166,15 @@ use pinned FlashQLA with BF16 Q/K/V and FP32 gates/normalization; full attention
 uses pinned FlashAttention 4 4.0.0b33 with native causal variable-length packing.
 Load an unquantized BF16 base, use no model checkpointing, and keep the
 16,384-token packing budget, logical batch 32, and FP32 master adapters.
-Reuse the checksum-bound FA4 startup receipt for compatible runs. Preserve the
-strict 5% packing result separately from the user-accepted 10% FA4 gradient
-ceiling; isolation, loss agreement and finite-gradient limits remain unchanged.
-Use BF16 MLPs; the FP4 LoRA screen is slower. Record failed
-strict parity separately from explicit `selected_finite` acceptance; reject
-missing/nonfinite gradients before updates. Preserve original-FLA comparison
-profiles and historical gates. See `docs/decisions/b200_packed_bf16_training_recipe.md`.
+Use native NVFP4 MLPs with hardware activation packing and fused descale in
+forward and base input gradients. Keep GDN projections/recurrence and full
+attention in BF16. Reuse the checksum-bound warmed03 FP4 receipt for compatible
+runs with explicit `selected_finite` acceptance; preserve its failed loss and
+strict 5% gradient comparisons and passing isolation/preflight separately.
+Reject missing/nonfinite gradients before updates. Keep the historical BF16 FA4
+recipe as `qwen35_4b_b200_bf16_fa4`, including its separate accepted 10% ceiling,
+and preserve original-FLA comparison profiles. Do not change frozen campaigns'
+recorded precision/receipts. See `docs/decisions/b200_native_fp4_training_recipe.md`.
 
 For frozen text-only evaluation of standard base or PEFT LoRA models, default to
 one persistent vLLM engine with continuous batching, a constrained one-token

@@ -7,21 +7,9 @@ from contextlib import ExitStack
 from pathlib import Path
 from unittest.mock import patch
 
-import torch
-
 from gleipnir.bf16_lora import bf16_lora_metadata
 from gleipnir.cudnn_fp4_mlp import cache_metadata, install_fp4_mlp
-
-
-def install_graph_step_boundary(model: torch.nn.Module) -> None:
-    """Keep all decoder graph segments in one physical forward/backward step."""
-    if hasattr(model, "_gleipnir_graph_step_boundary"):
-        raise ValueError("model graph step boundary is already installed")
-
-    def begin_step(module, args):
-        torch.compiler.cudagraph_mark_step_begin()
-
-    model._gleipnir_graph_step_boundary = model.register_forward_pre_hook(begin_step)
+from gleipnir.native_fp4_training import install_graph_step_boundary
 
 
 def main() -> None:

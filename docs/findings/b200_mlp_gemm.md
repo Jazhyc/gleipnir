@@ -1366,3 +1366,36 @@ The original master identity remains
 matched/default final masters are
 `9f661c8173e876fa10bcf7e9a65032e59e63a3f01c1a1ac2b405cd2464d6c23f` /
 `e93bf0d48991424c8be87909a4227587eff97f930fd10ba555b33f4fe37db32a`.
+
+## Ordinary training recipe integration, 2026-10-05
+
+The user explicitly selected the FP4 baseline as the default. The ordinary
+Trainer now installs the same 32 native FP4 MLPs, hardware activation packing,
+fused descale and physical-forward graph boundary through configuration. The
+default profile aliases `qwen35_4b_b200_fp4_mlp`; the original BF16 comparison
+is `qwen35_4b_b200_bf16_fa4`. No rejected GDN/convolution/dispatch/normalization/
+grouped-head candidate enters the default. Shared launchers expose the pinned
+cuDNN overlay and retain populated compiler/kernel caches. Master adapters stay
+FP32 and original BF16 frozen parameters/state-dict layout stay intact.
+
+Startup reuse binds the warmed03 metadata checksum and original kernel source
+hashes, verifies the B200/FA4/cuDNN runtime and accepts the user's selected finite
+policy for ordinary epochs or fixed step counts. Raw loss/strict-gradient
+failures remain false; isolation/preflight remain separately recorded. The
+experimental timing-only paths keep their twenty-update bound. Finite/missing
+gradient checks during actual updates remain enabled. This integration does
+not establish held-out quality equivalence or long-run convergence.
+
+Validation: 121 focused CPU tests pass, including composed ordinary Trainer
+commands, unsupported-recipe rejection, receipt/precision identity, master
+parameter and graph-boundary preservation, historical failed receipts and
+experimental/resident compatibility. Ruff and diff checks pass. A lightweight
+smoke on the existing B200 verifies the ordinary command/config, real bound
+receipt, cuDNN GEMM source/runtime and all 24 pinned FlashQLA bindings without
+loading a model, running numerical probes or taking training updates. The
+receipt is `results/b200_mlp_gemm/recipe_integration/runtime_smoke.json`.
+Effective GPU compiler paths resolve the shared symlink to the populated
+`student_injection_awareness/gpu-0` directory; cuDNN/CuTe caches stay under
+`shared/` and FA4 retains its existing cache. Worker PID 11905 remains idle with
+all model/native caches resident. No throughput control or new capacity is
+launched. See [the decision](../decisions/b200_native_fp4_training_recipe.md).

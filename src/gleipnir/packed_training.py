@@ -49,6 +49,9 @@ def record_packing_canary(
 def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     """Reject unsupported ordinary packing before loading the model."""
     training = student["training"]
+    from gleipnir.native_fp4_training import validate_native_fp4_config
+
+    selected_native_fp4 = validate_native_fp4_config(student)
     enabled = training.get("sequence_packing", False)
     if type(enabled) is not bool:
         raise ValueError("sequence_packing must be boolean")
@@ -160,9 +163,9 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     } and training.get("startup_validation_reference"):
         raise ValueError("experimental MXFP8 requires fresh model startup validation")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
-        if (tolerance != 0.10 and not profile_reuse) or not training.get(
-            "startup_validation_reference_sha256"
-        ):
+        if (
+            tolerance != 0.10 and not profile_reuse and not selected_native_fp4
+        ) or not training.get("startup_validation_reference_sha256"):
             raise ValueError(
                 "FA4 reuse requires a bound receipt; "
                 "otherwise use fresh startup validation"

@@ -17,7 +17,7 @@ def main() -> None:
     baseline = json.loads(
         (ROOT / "results/b200_bf16_fa4_accepted/summary.json").read_text()
     )
-    profile = ROOT / "src/gleipnir/configs/systems_screen/qwen35_4b_b200_default.yaml"
+    profile = ROOT / "src/gleipnir/configs/systems_screen/qwen35_4b_b200_bf16_fa4.yaml"
     recipe = yaml.safe_load(profile.read_text())["recipe"]
     output = ROOT / "results/b200_fa4_default_smoke"
     logs = ROOT / "logs/runpod/b200_fa4_default"

@@ -1,0 +1,97 @@
+# User-selected native NVFP4 MLP/BF16 GDN/FA4 recipe, 2026-10-05.
+# See docs/decisions/b200_native_fp4_training_recipe.md.
+# Inherit the common kernel/optimizer contract; keep historical B200 profiles frozen.
+defaults:
+  - qwen35_4b_h100_fast
+  - _self_
+
+gpus: 1
+maximum_unique_graphs: 32
+compiler_cache_root: .cache/training/shared
+selection:
+  rows: 320
+
+recipe:
+  max_steps: 10
+  attn_implementation: sdpa
+  eager_attention_interface: false
+  allow_unspec_int_on_nn_module: false
+  full_bf16_lora: true
+  native_fp4_mlp: true
+  native_fp4_mlp_parity_policy: selected_finite
+  sequence_packing: true
+  packing_compile_cache_limit: 64
+  packed_attention_backend: flash_attention_4
+  packed_attention_version: 4.0.0b33
+  packing_learning_gradient_tolerance: 0.05
+  startup_validation_reference: results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json
+  startup_validation_reference_sha256: 14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb
+  gated_delta_backend: flashqla
+  gated_delta_parity_policy: selected_finite
+  selective_torch_compile_policy: full_attention_and_linear_shell
+  selective_torch_compile_canary_tokens: 256
+  gradient_checkpointing: false
+  gradient_checkpointing_policy: all
+  gradient_checkpointing_layer_indices: null
+  micro_batch_size: 32
+  gradient_accumulation_steps: 1
+  effective_batch_size: 32
+  adaptive_microbatching:
+    enabled: true
+    max_padded_tokens: 16384
+    max_micro_batch_size: 8
+    profile: false
+
+metadata_expectations:
+  gradient_checkpointing: false
+  gradient_checkpointing_policy: all
+  gradient_checkpointing_layer_indices: null
+  checkpointed_layer_indices: []
+  attention_backend.requested: sdpa
+  attention_backend.resolved: sdpa
+  attention_backend.interface_eager: false
+  quantization.enabled: false
+  quantization.full_bf16_lora.verified: true
+  quantization.full_bf16_lora.frozen_dtype: torch.bfloat16
+  quantization.full_bf16_lora.master_dtype: torch.float32
+  gated_delta_backend.backend: flashqla
+  gated_delta_backend.replaced_layers: 24
+  gated_delta_backend.boundary_policy: bf16_fp32_gates_norm
+  gated_delta_backend.auto_cp: false
+  gated_delta_backend.parity_policy: selected_finite
+  gated_delta_backend.finite: true
+  gated_delta_backend.revision: da06429d54b0f577de0a638f451ac8f0b395e0ac
+  losses.accumulation_policy: sum_per_example_over_logical_batch_v1
+  adaptive_microbatching.loss_normalization: sum_per_example_over_logical_batch_v1
+  adaptive_microbatching.require_finite_gradients: true
+  adaptive_microbatching.sequence_packing: true
+  sequence_packing.enabled: true
+  sequence_packing.attention_backend: flash_attention_4
+  sequence_packing.attention_version: 4.0.0b33
+  sequence_packing.full_attention: varlen_causal_flash_attention_4
+  sequence_packing.learning_gradient_tolerance: 0.05
+  sequence_packing.max_packed_tokens: 16384
+  sequence_packing.eager_canary.accepted_for_learning_comparison: false
+  sequence_packing.eager_canary.passed: false
+  sequence_packing.eager_canary.accepted_for_timing_comparison: true
+  sequence_packing.compiled_canary.accepted_for_learning_comparison: false
+  sequence_packing.compiled_canary.passed: false
+  sequence_packing.compiled_canary.accepted_for_timing_comparison: true
+  sequence_packing.preflight.passed: true
+  sequence_packing.bf16_matmul.allow_reduced_precision: false
+  sequence_packing.bf16_matmul.allow_split_k: false
+  sequence_packing.emulate_precision_casts: true
+  sequence_packing.compile_cache_limit: 64
+  sequence_packing.fail_on_recompile_limit_hit: true
+  selective_torch_compile.policy: full_attention_and_linear_shell
+  selective_torch_compile.disabled_linear_attention_layer_indices: ${_authoring.layer_indices.linear_attention}
+  selective_torch_compile.disabled_linear_attention_kernel_layer_indices: []
+  selective_torch_compile.disabled_linear_attention_kernel_components: []
+  quantization.full_bf16_lora.native_fp4_mlp.base_forward: nvfp4
+  quantization.full_bf16_lora.native_fp4_mlp.base_input_gradient: nvfp4
+  quantization.full_bf16_lora.native_fp4_mlp.master_dtype: float32
+  quantization.full_bf16_lora.native_fp4_mlp.hardware_packing: true
+  quantization.full_bf16_lora.native_fp4_mlp.fused_descale: true
+  quantization.full_bf16_lora.native_fp4_mlp.cudagraph_step_boundary: physical_model_forward
+  startup_validation.policy: reuse_selected_finite_native_fp4_recipe
+  startup_validation.native_fp4_mlp_parity_policy: selected_finite

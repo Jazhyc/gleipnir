@@ -75,13 +75,24 @@ def validate_training_metadata(
         "gated_delta_backend.finite",
     }
     if reused:
-        from gleipnir.validated_startup import validation_reference
+        from gleipnir.validated_startup import (
+            reused_diagnostic_view,
+            validation_reference,
+        )
 
         expected_reference = validation_reference(
-            Path(job["startup_validation_reference"])
+            Path(job["startup_validation_reference"]),
+            packed_attention_backend=job.get("packed_attention_backend", "sdpa"),
+            packed_attention_version=job.get("packed_attention_version"),
+            learning_gradient_tolerance=job.get("packing_learning_gradient_tolerance"),
+            expected_sha256=job.get("startup_validation_reference_sha256"),
+            **({"native_fp4_mlp": True} if job.get("native_fp4_mlp", False) else {}),
         )
         if reused["reference_sha256"] != expected_reference["reference_sha256"]:
             raise ValueError("reused validation identity drift")
+        metadata = reused_diagnostic_view(
+            {**metadata, "startup_validation": expected_reference}
+        )
     for path, expected in profile["metadata_expectations"].items():
         if reused and path in skipped_paths:
             continue
@@ -201,7 +212,11 @@ def main() -> None:
         subprocess.run(
             command,
             cwd=ROOT,
-            env=training_environment(ROOT, "monitoring_hard_labels_v1"),
+            env=training_environment(
+                ROOT,
+                "monitoring_hard_labels_v1",
+                native_fp4_mlp=job.get("native_fp4_mlp", False),
+            ),
             check=True,
         )
     metadata = json.loads((master / "training_metadata.json").read_text())

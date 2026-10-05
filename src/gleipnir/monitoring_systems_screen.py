@@ -427,6 +427,7 @@ def validate_training_metadata(
             packed_attention_version=job.get("packed_attention_version"),
             learning_gradient_tolerance=job.get("packing_learning_gradient_tolerance"),
             expected_sha256=job.get("startup_validation_reference_sha256"),
+            **({"native_fp4_mlp": True} if job.get("native_fp4_mlp", False) else {}),
         )
         if (
             metadata["startup_validation"]["reference_sha256"]
@@ -525,9 +526,15 @@ def validate_training_metadata(
                     raise ValueError(
                         "packed training isolation/preflight gates did not pass"
                     )
-                _accept_canary(
-                    deepcopy(receipt), job.get("packing_learning_gradient_tolerance")
-                )
+                if job.get("native_fp4_mlp", False):
+                    from gleipnir.native_fp4_training import accept_selected_canary
+
+                    accept_selected_canary(receipt)
+                else:
+                    _accept_canary(
+                        deepcopy(receipt),
+                        job.get("packing_learning_gradient_tolerance"),
+                    )
     if metadata.get("training_batch") != expected_batch:
         raise ValueError("training batch metadata drifted")
     kernels = config["kernels"]

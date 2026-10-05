@@ -5,11 +5,15 @@ baseline for further training-stack timing improvements and requested keeping
 a training worker resident. The subsequent user message explicitly extends
 that persistence preference to future sessions; it is recorded in `AGENTS.md`.
 
-This selection changes the systems-comparison reference, not the general
+This initial selection changes the systems-comparison reference, not the general
 quality-validated training profile. Retain FP32 master adapters and historical
 failed strict FP4 loss/gradient receipts alongside explicit timing acceptance.
 The existing BF16 FA4 default remains available. See the
 [MLP findings](../findings/b200_mlp_gemm.md) for warmed speed and numerical limits.
+
+Later on 2026-10-05 the user explicitly selected FP4 as the ordinary training
+default too. See [the integration decision](b200_native_fp4_training_recipe.md).
+The BF16 comparison remains named and all failed strict receipts remain intact.
 
 Keep the model, compiled modules, native plans and packed frozen weights alive
 across compatible trials. Each matched trial resets the original FP32 masters,

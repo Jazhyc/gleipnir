@@ -58,13 +58,16 @@ only a Hydra YAML config and experiment README. Preparation resolves defaults
 and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
 The user-selected recipe for future single-B200 Qwen3.5-4B training is
-`systems_screen@_global_: qwen35_4b_b200_default`: packed BF16 LoRA with FP32
-master adapters, uniform FlashQLA, native variable-length FlashAttention 4,
+`systems_screen@_global_: qwen35_4b_b200_default`: native NVFP4 MLP forward and
+base input gradients with hardware activation packing and fused descale,
+FP32 master adapters, BF16 FlashQLA, native variable-length FlashAttention 4,
 no model checkpointing and selectively compiled physical rows with a
 16,384-token budget and logical
 batch 32. See the
-[recipe decision](docs/decisions/b200_packed_bf16_training_recipe.md) for mandatory
-startup gates, supported scope and historical profiles.
+[recipe decision](docs/decisions/b200_native_fp4_training_recipe.md) for the
+checksum-bound startup reuse, explicit finite acceptance and numerical limits.
+The BF16 comparison is `qwen35_4b_b200_bf16_fa4`; frozen campaigns retain their
+recorded precision and receipt rather than switching recipes mid-campaign.
 The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 [`docs/findings/b200_training_throughput.md`](docs/findings/b200_training_throughput.md).
 

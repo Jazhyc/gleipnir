@@ -1,5 +1,13 @@
 # Decision log
 
+## 2026-10-05 — Select native FP4 MLPs as the B200 training default
+
+- `qwen35_4b_b200_default` now selects the warmed native NVFP4 MLP recipe with
+  BF16 FlashQLA/FA4 and FP32 master adapters. Ordinary training reuses its bound
+  startup receipt with explicit finite acceptance, preserving failed strict
+  loss/gradient checks. Retain the named BF16 comparison and shared caches.
+  See the [recipe decision](decisions/b200_native_fp4_training_recipe.md).
+
 ## 2026-10-02 — Select uniform FlashQLA for B200 NF4/BF16 LoRA
 
 - Use `systems_screen@_global_: qwen35_4b_b200_default`, with all 24 GDN layers

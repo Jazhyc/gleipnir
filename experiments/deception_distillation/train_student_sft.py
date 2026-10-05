@@ -3361,6 +3361,12 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         from gleipnir.bf16_lora import bf16_lora_metadata
 
         quantization_metadata["full_bf16_lora"] = bf16_lora_metadata(model)
+        if cfg.student.training.get("native_fp4_mlp", False):
+            from gleipnir.native_fp4_training import install_native_fp4_recipe
+
+            quantization_metadata["full_bf16_lora"]["native_fp4_mlp"] = (
+                install_native_fp4_recipe(model)
+            )
         print(f"full_bf16_lora={quantization_metadata['full_bf16_lora']}", flush=True)
     if fp4_mlp_lora:
         from gleipnir.bf16_lora import fp4_mlp_lora_metadata
@@ -3894,6 +3900,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                 "startup_validation_reference_sha256"
             ),
             verify_runtime=True,
+            **(
+                {"native_fp4_mlp": True}
+                if cfg.student.training.get("native_fp4_mlp", False)
+                else {}
+            ),
         )
         if (
             startup_validation["model"] != str(cfg.student.model)

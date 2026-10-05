@@ -40,7 +40,11 @@ def training_cache(
 
 
 def training_environment(
-    root: Path, cache_name: str, *, isolated_cache: bool = False
+    root: Path,
+    cache_name: str,
+    *,
+    isolated_cache: bool = False,
+    native_fp4_mlp: bool = False,
 ) -> dict[str, str]:
     env = flashqla_environment(
         triton_environment(
@@ -51,10 +55,13 @@ def training_environment(
             ),
         )
     )
-    env = gpu_environment(
-        env, 0, training_cache(root, cache_name, isolated_cache=isolated_cache)
-    )
+    cache = training_cache(root, cache_name, isolated_cache=isolated_cache)
+    env = gpu_environment(env, 0, cache / "gpu-0" if native_fp4_mlp else cache)
     env = packed_fa4_environment(env, root)
+    if native_fp4_mlp:
+        from gleipnir.native_fp4_training import native_fp4_environment
+
+        env = native_fp4_environment(env, root)
     env.update(
         FLA_DISABLE_BACKEND_DISPATCH="1",
         OMP_NUM_THREADS="4",

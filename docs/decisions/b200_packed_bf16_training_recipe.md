@@ -45,7 +45,11 @@ and LR sweeps can reuse validation. Keep finite/missing-gradient checks during
 updates and adapter-specific serving parity. See `AGENTS.md` and
 `experiments/monitoring_hard_labels/README.md`.
 
-Use `systems_screen@_global_: qwen35_4b_b200_default` for new single-B200
+Historical selection below: on 2026-10-05 the user selected
+[native FP4 MLPs](b200_native_fp4_training_recipe.md) as the new default.
+This BF16 recipe remains available as `qwen35_4b_b200_bf16_fa4`.
+
+Use `systems_screen@_global_: qwen35_4b_b200_bf16_fa4` to reproduce single-B200
 Qwen3.5-4B binary monitoring training. The user selected the fastest completed
 packed recipe after reviewing the checkpointing/batch-size comparison. This
 updates the execution default without launching a full training campaign or

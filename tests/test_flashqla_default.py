@@ -21,7 +21,7 @@ def test_selected_profile_composes_and_forwards_the_backend():
     source = Path("experiments/b200_adaptive_microbatching/config.yaml")
     original = load_config(source)
     selected = load_config(
-        source, overrides=["systems_screen@_global_=qwen35_4b_b200_default"]
+        source, overrides=["systems_screen@_global_=qwen35_4b_b200_bf16_fa4"]
     )
     reference = load_config(
         source, overrides=["systems_screen@_global_=qwen35_4b_b200_adaptive"]

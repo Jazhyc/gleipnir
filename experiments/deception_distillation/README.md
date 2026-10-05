@@ -64,8 +64,15 @@ FlashQLA in all 24 GDN layers with BF16 operands and FP32 gates/normalization.
 Use the reusable `qwen35_4b_b200_default` profile and worker so the isolated
 package is exposed before import. Record all strict parity results; the selected
 policy accepts finite numerical differences, and every optimizer batch rejects
-missing/nonfinite gradients. SDPA, causal-conv1d and FP32 master adapters remain
+missing/nonfinite gradients. BF16 FA4, causal-conv1d and FP32 master adapters remain
 part of the recipe. See the [decision](../../docs/decisions/b200_flashqla_training_recipe.md).
+
+The B200 default now installs native NVFP4 MLP forward/base input gradients with
+hardware activation packing and fused descale through the normal Trainer.
+The profile selects explicit finite acceptance and checksum-bound receipt reuse,
+preserving failed strict loss/gradient diagnostics. FP32 adapters and BF16
+GDN/FA4 remain intact. Keep the named `qwen35_4b_b200_bf16_fa4` comparison and
+frozen campaign recipes. See the [current decision](../../docs/decisions/b200_native_fp4_training_recipe.md).
 
 ## Inputs
 

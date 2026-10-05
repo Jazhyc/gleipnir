@@ -85,6 +85,10 @@ def main() -> None:
             from gleipnir.attention_backends import packed_fa4_environment
 
             environment = packed_fa4_environment(environment, ROOT)
+        if job.get("native_fp4_mlp", False):
+            from gleipnir.native_fp4_training import native_fp4_environment
+
+            environment = native_fp4_environment(environment, ROOT)
         subprocess.run(command, cwd=ROOT, env=environment, check=True)
     manifest = rebase_adapter(causal_dir, Path(job["model_dir"]))
     print(
