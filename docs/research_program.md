@@ -268,3 +268,18 @@ causal regression diagnosis. A BF16 projection epilogue pilot halves Q producer
 forward time; an MXFP8 pilot matches its quantized-operand oracle with similar
 fused forward time. Projection backward and native FP8 returned-gradient fusion
 remain unimplemented. Keep BF16 FA4 as the standard and preserve the negative screen.
+
+The [B200 MLP/GEMM screen](findings/b200_mlp_gemm.md) adapts NVIDIA's pinned
+Frontend/FROST native FP4 GEMMs for frozen LoRA base forward and input gradients.
+Row-independent scaling preserves packed-example isolation, and registered
+autograd/compiler integration keeps the live FP32 adapter masters intact.
+Isolated GEMM graph savings shrink to 1.56%/2.28% for the complete synthetic
+LoRA MLP at 4096/16384 tokens, with conversions and every gradient included;
+ordinary dispatch is slower. The integrated pilot fails the predeclared 5%
+selection rule, so no full-model FP4 run or quality equivalence is claimed.
+Keep BF16 FA4 as the standard. A separate 16,384-token GPU profile attributes
+34.12% of summed native-candidate kernel time to FP4 conversion, 17.21% to the
+four native FP4 GEMMs, 16.71% to adapters and 31.35% to compiled elementwise/cast/
+concatenation work. Conversion costs almost twice as much as native contraction;
+producer/epilogue fusion is a better supported next target than isolated core
+GEMM tuning. These instrumented shares do not replace synchronized wall timings.

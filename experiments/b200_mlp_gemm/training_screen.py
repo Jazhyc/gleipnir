@@ -57,6 +57,47 @@ def accept_pilot(receipt: dict, *, minimum_improvement: float = 0.05) -> None:
             raise ValueError("pilot lacks a five-percent compiled training gain")
 
 
+def accept_integrated_pilot(
+    receipt: dict, *, minimum_improvement: float = 0.05
+) -> None:
+    """Require complete FP4 autograd/oracle evidence and full-MLP graph gains."""
+    if (
+        receipt.get("status") != "complete"
+        or receipt.get("variant") != "fp4_integrated"
+        or receipt.get("timing_baseline") != "compiled_peft"
+        or receipt.get("full_backward_included") is not True
+    ):
+        raise ValueError("complete registered FP4 MLP pilot required")
+    rows = receipt["shapes"]
+    if [r["tokens"] for r in rows] != [193, 4096, 16384]:
+        raise ValueError("incomplete FP4 integration shapes")
+    for row in rows:
+        if (
+            row["finite"] is not True
+            or not 0 <= row["oracle_output_relative_l2"] <= 0.01
+            or len(row["oracle_gradient_relative_l2"]) != 7
+            or not all(0 <= e <= 0.02 for e in row["oracle_gradient_relative_l2"])
+            or row["row_isolation_relative_l2"] != 0
+            or row.get("graph_copy_included") is not True
+            or len(row["changed_input_master_replay_relative_l2"]) != 8
+            or not all(
+                0 <= e <= 0.01 for e in row["changed_input_master_replay_relative_l2"]
+            )
+        ):
+            raise ValueError("FP4 integration oracle/isolation/replay gate failed")
+        samples = row["graph_timing"]["samples_ms"]
+        if set(samples) != {"baseline", "candidate"} or any(
+            len(v) != 10 or not all(math.isfinite(x) and x > 0 for x in v)
+            for v in samples.values()
+        ):
+            raise ValueError("incomplete FP4 integration timings")
+        gain = 1 - statistics.mean(samples["candidate"]) / statistics.mean(
+            samples["baseline"]
+        )
+        if row["tokens"] >= 4096 and gain < minimum_improvement:
+            raise ValueError("FP4 full MLP lacks five-percent graph gain")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--pilot", type=Path, required=True)
@@ -67,7 +108,9 @@ def main() -> None:
         raise ValueError("attempt must be alphanumeric")
     if sha256_file(args.pilot) != args.pilot_sha256:
         raise ValueError("pilot checksum drift")
-    accept_pilot(json.loads(args.pilot.read_text()))
+    pilot = json.loads(args.pilot.read_text())
+    fp4 = pilot.get("variant") == "fp4_integrated"
+    (accept_integrated_pilot if fp4 else accept_pilot)(pilot)
     if sha256_file(ROOT / REFERENCE) != REFERENCE_SHA256:
         raise ValueError("FA4 historical control checksum drift")
     control = summarize(
@@ -85,7 +128,7 @@ def main() -> None:
     job = {
         **baseline["conditions"]["flash_attention_4"]["job"],
         **recipe,
-        "job_name": "merged-mlp-fa4",
+        "job_name": "native-fp4-mlp-fa4" if fp4 else "merged-mlp-fa4",
         "max_steps": 20,
         "save_steps": 1000000,
         "expected_initial_master_sha256": baseline["conditions"]["flash_attention_4"][
@@ -96,6 +139,9 @@ def main() -> None:
         "model_dir": str(output / "model"),
         "hydra_log_dir": str(logs),
     }
+    if fp4:
+        job["packing_learning_gradient_tolerance"] = 0.05
+        job["selective_torch_compile_mode"] = "reduce-overhead"
     # MLP code changed; request fresh model gates instead of claiming startup reuse.
     job.pop("startup_validation_reference", None)
     job.pop("startup_validation_reference_sha256", None)
@@ -115,7 +161,16 @@ def main() -> None:
         "++student.training.logging_steps=1",
     ]
     entry = command.index("experiments/deception_distillation/train_student_sft.py")
-    command[entry : entry + 1] = ["-m", "experiments.b200_mlp_gemm.training_entry"]
+    command[entry : entry + 1] = [
+        "-m",
+        "experiments.b200_mlp_gemm.fp4_training_entry"
+        if fp4
+        else "experiments.b200_mlp_gemm.training_entry",
+    ]
+    if fp4:
+        command += [
+            "++student.training.selective_torch_compile_mode=reduce-overhead",
+        ]
     cfg = yaml.safe_load((ROOT / "experiments/b200_mlp_gemm/config.yaml").read_text())
     env = environment(cfg)
     env.update(
@@ -124,10 +179,15 @@ def main() -> None:
         TORCHINDUCTOR_COMPILE_THREADS="16",
         MAX_JOBS="16",
         PYTHONUNBUFFERED="1",
+        GLEIPNIR_FP4_RUNTIME_REPORT=str(output / "native_runtime.json"),
     )
     sources = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         Path("src/gleipnir/mlp_gemm.py"),
+        Path("src/gleipnir/cudnn_fp4_mlp.py"),
+        Path("src/gleipnir/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/nvfp4_pack.py"),
+        Path("experiments/b200_mlp_gemm/README.md"),
         profile.relative_to(ROOT),
         Path("experiments/deception_distillation/train_student_sft.py"),
         *[
@@ -147,6 +207,9 @@ def main() -> None:
         "command": command,
         "pilot_sha256": args.pilot_sha256,
         "control_sha256": REFERENCE_SHA256,
+        "mlp_intervention": "nvfp4_forward_dgrad" if fp4 else "merged_bf16",
+        "candidate_compile_mode": "reduce-overhead" if fp4 else "default",
+        "compile_mode_matches_control": not fp4,
         "control": control,
         "cache_paths": {k: v for k, v in env.items() if "CACHE" in k},
         "source_sha256": {str(p): sha256_file(ROOT / p) for p in sources},

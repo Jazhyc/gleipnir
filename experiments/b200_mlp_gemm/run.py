@@ -49,6 +49,7 @@ def main() -> None:
         Path("src/gleipnir/mlp_gemm.py"),
         Path("src/gleipnir/cudnn_lora_mlp.py"),
         Path("src/gleipnir/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/cudnn_fp4_mlp.py"),
         Path("src/gleipnir/nvfp4_pack.py"),
         Path("experiments/b200_mlp_gemm/README.md"),
     ]
@@ -81,6 +82,16 @@ def main() -> None:
             command.append("--row-scaled")
         if variant == "fp4chunks":
             command.append("--chunked-rows")
+        if variant in {"integrated", "integratedprofile"}:
+            command = [
+                sys.executable,
+                "-m",
+                "experiments.b200_mlp_gemm.integrated_profile"
+                if variant == "integratedprofile"
+                else "experiments.b200_mlp_gemm.integrated_probe",
+                "--output",
+                str(root / variant),
+            ]
         row = {"variant": variant, "status": "starting"}
         report["candidates"].append(row)
         (root / "launch.json").write_text(json.dumps(report, indent=2) + "\n")
@@ -95,7 +106,9 @@ def main() -> None:
             )
             try:
                 code = proc.wait(
-                    timeout=1200
+                    timeout=1800
+                    if variant in {"integrated", "integratedprofile"}
+                    else 1200
                     if variant in {"fp4", "fp4optimized", "fp4row", "fp4chunks"}
                     else cfg["timeout_seconds"]
                 )

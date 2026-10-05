@@ -254,3 +254,100 @@ The focused CPU suite passes 27 tests; Ruff and Git whitespace checks pass.
 The B200 is idle and remains running in US-NC-2 with the retained workspace and
 shared caches. This session has no in-chat scheduling tool, and no after-turn
 monitoring is promised.
+
+### Registered native FP4 whole-MLP integration
+
+The complete pilot `integrate01/integrated` installs registered PyTorch custom
+operators for frozen native FP4 forward and input-gradient GEMMs, with fake
+implementations and explicit autograd. Gate/up forwards share one native GEMM;
+all six original FP32 adapter masters retain their identities, state-dict names
+and ordinary compiled matmuls. Input gradients include both the native frozen
+base and the adapters. Weight pairs are prepared lazily after CUDA placement;
+no extra merged BF16 weight buffer is retained. Frozen BF16 originals remain
+resident, plus 79,626,256 packed bytes per MLP (about 2.37 GiB across 32 layers).
+
+The three seeded synthetic shapes complete. All output/input/six-adapter
+gradients are finite. Native-versus-decoded-FP4 output relative L2 is at most
+0.00126408 and each of seven gradient errors is at most 0.00132168, within the
+predeclared 1% output / 2% multilayer gradient implementation limits. Perturbing
+rows 17 onward by 31.7x has exactly zero effect on rows 0–16. Changed-input and
+changed-live-master graph replay agrees exactly with uncaptured compiled native
+execution at all shapes. These checks validate the quantized arithmetic and
+wiring, not equivalence to the unquantized model. Original-BF16 output error is
+24.76–24.82%; gradient errors are 19.91–25.08% on this synthetic fixture.
+
+Matched compiled PEFT and native FP4 complete forward/input-gradient/adapter-
+gradient measurements include activation and gradient packing, output descaling,
+LoRA casts/matmuls, SiLU and backwards. Both graph legs also include caller input
+copies. Six warmups and ten alternating synchronized wall-time samples per leg
+are used; no optimizer step or attention is included.
+
+| Tokens | Ordinary BF16, ms | Ordinary FP4, ms | BF16 graph, ms | FP4 graph, ms | Graph time reduction |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 193 | 4.84529 | 10.15411 | 0.68211 | 0.65884 | 3.41% |
+| 4096 | 4.86652 | 10.08969 | 1.20888 | 1.18998 | 1.56% |
+| 16384 | 5.80790 | 10.67218 | 4.68553 | 4.57893 | 2.28% |
+
+The actual complete-MLP gains fail the predeclared >=5% graph improvement rule
+at both long shapes. The selector records `not_selected`; no twenty-update
+full-model FP4 run, new packing receipt, adapter checkpoint or quality result
+is produced. Do not sum the earlier isolated GEMM savings into an update-speed
+claim. The conditional full-model entry exists, but remains unvalidated on the
+GPU and refuses this pilot. It would request fresh strict 5% packing/gradient,
+loss/isolation/finite/memory gates and explicitly record a changed decoder
+compilation mode, preserving the separate FA4-specific historical 10% record.
+
+The integrated receipt SHA-256 is
+`97d585d8c66b5923ad0a50955a21e802b37a9bd87d9597620eaf51bd7292e0b9`.
+Its archived source hashes match the launch receipt. The unchanged B200,
+Torch 2.11.0+cu130 and pinned Frontend/FROST overlay reuse persistent compiler
+caches. A separate bounded whole-MLP CUDA profile follows the speed failure to
+attribute conversion versus native/adapter GEMM cost; profiler event sums are
+distinct from the wall-time measurements above.
+
+### Complete-MLP conversion profile
+
+The separate `integrateprofile01/integratedprofile` diagnostic completes both
+matched 16,384-token graph traces, ten replay iterations per leg. This fresh
+process first compiles at 16,384 tokens; the timing pilot first compiled at 193.
+Kernel-duration sums are instrumented observations from this diagnostic, not
+an exact decomposition of the pilot's synchronized wall time or a new selection
+measurement. The candidate trace contains 58 GPU events per replay, including
+four native FROST GEMMs, eighteen ordinary adapter GEMMs, sixteen conversion
+kernels and the symmetric caller copy. No additional large BF16 base GEMM is
+present in the candidate.
+
+| Candidate GPU work | ms/replay | Share of summed kernel duration |
+| --- | ---: | ---: |
+| Row reduction, FP4 packing, scale clearing, BF16 output descaling | 1.39850 | 34.12% |
+| Four frozen-base native FP4 GEMMs | 0.70543 | 17.21% |
+| Eighteen adapter GEMMs, including backward | 0.68510 | 16.71% |
+| Compiled elementwise, casts and backward concatenation | 1.28494 | 31.35% |
+| Caller input copy | 0.02500 | 0.61% |
+
+Conversion alone costs almost twice as much as the native dense GEMMs in this
+trace. Its components are row amax 0.19500 ms, packing 0.80226 ms, output
+descaling 0.38900 ms and clearing scale buffers 0.01225 ms. This is measured
+evidence that the separate conversion passes are a substantial remaining cost;
+it does not prove a particular memory-bandwidth/occupancy limit. The candidate
+also has an additional fused backward/concatenation kernel (0.31720 ms), whereas
+the compiled BF16 graph lacks that kernel. Native custom-op boundaries and
+merged gradient layout are plausible fusion targets, without a measured causal
+attribution of the entire integration regression.
+
+Summed kernel durations are 4.61439 ms for the profiled BF16 graph and 4.09897 ms
+for FP4. These sums omit inter-kernel and host gaps and use instrumented,
+back-to-back replays with a different first compilation shape. Do not substitute
+their ratio for the pilot's 2.28% synchronized wall-time reduction or use it to
+bypass the failed 5% selection rule. Next useful work would fuse producers with
+packing and native GEMM epilogues with output scaling/consumers, while retaining
+per-row isolation and live adapters. Simply accelerating the already small FP4
+contraction core is unlikely to recover all surrounding cost.
+
+Profile receipt SHA-256:
+`19ecb8390868a7d31fd4ba7ddf41291b6508538a97fa48abe19541e7bb7f651a`.
+Both raw traces, histograms, derived attribution and checksum-bound source
+archives are collected locally; every archive hash matches its launch receipt.
+The focused suite passes 37 tests, Ruff and Git whitespace checks pass. The
+BF16 FA4 default remains unchanged. The B200 is idle and remains running in
+US-NC-2 with retained caches; no after-turn monitoring is promised.

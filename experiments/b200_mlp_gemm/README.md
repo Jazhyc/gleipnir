@@ -119,3 +119,72 @@ in one CTA. Record Triton register/spill metadata for both implementations to
 check the suspected register-pressure cost instead of attributing slowdown to
 launch count alone. Repeat the same twelve cases and graph/isolation gates with
 no promotion based on isolated GEMM timing.
+
+## Registered FP4 LoRA MLP integration
+
+Hypothesis: merging frozen gate/up FP4 forwards, using native FP4 base-input
+backward GEMMs, and keeping the ordinary compiled LoRA/SiLU operations can
+retain the isolated GEMM gains in complete MLP forward/backward. Register both
+native operators with fake implementations and explicit autograd; frozen base
+weights never receive gradients. Preserve all original BF16 base parameters,
+state-dict names, and FP32 adapter masters. Prepare packed forward/transposed
+weights lazily after CUDA placement, retain owners to prevent pointer reuse,
+and reuse immutable weights/plans across compatible calls. Do not retain an
+extra merged BF16 weight copy. Keep all activation/gradient scales per row.
+
+Use the same seeded nonzero adapter fixture, model geometry, 193/4096/16384
+rows, six warmups and ten alternating synchronized samples. Measure complete
+input and all six adapter gradients against compiled ordinary PEFT, first with
+ordinary dispatch and then symmetric whole-MLP forward/backward graph replay.
+Include caller input copies in both graph legs and all conversion, allocation,
+SwiGLU, adapter GEMMs/casts and backwards in candidate timings. Validate changed
+inputs and changed live FP32 adapter masters under replay. Do not cache adapter
+copies across updates. Compare native output/gradients to a decoded-operand
+FP32-matmul oracle using the identical registered gradient quantization contract,
+not to an unquantized derivative. Require <=1% output error, <=2% error for each
+of the seven gradients (a multilayer implementation check), finite nonmissing
+gradients and exactly zero cross-row output effect. Record original-BF16
+quantization errors separately. The existing strict 5% full-model packed-gradient
+and loss/isolation gates are unchanged; this 2% local oracle limit is not a
+training-quality acceptance or an extension of the FA4-specific 10% ceiling.
+
+Stop the integrated pilot on arithmetic/isolation failure, stale graph replay,
+missing gradients, OOM or a 30-minute process cap. Whole-MLP graph improvement
+must reach 5% at both long shapes before an ordinary twenty-update FA4 model
+screen; positive isolated GEMM timings are insufficient. A full-model trial uses
+the exact frozen 320 rows, targets, initial masters and physical contract of the
+historical FA4 control, with fresh precision/packing/memory checks. No repeated
+FA4 control is needed. Record startup/compiler reuse and every failed receipt;
+keep the standard BF16 FA4 profile unchanged pending complete evidence.
+
+The conditional full-model FP4 trial explicitly uses `reduce-overhead` decoder
+compilation to attempt the graph dispatch measured locally. This changes
+compilation mode as well as MLP arithmetic versus the historical FA4 control;
+any total-update difference is a combined recipe result, not an isolated FP4
+causal effect. Keep dynamic shapes and the same token/context envelope. Require
+the strict 5% fresh packing-gradient acceptance for this new precision, preserving
+the FA4-specific historical 10% record independently. A failed packing/memory/
+finite-gradient gate stops before optimizer updates; do not widen limits to
+obtain a speed result. Archive the native-runtime cache report even on failure.
+This session has no in-chat scheduling tool; monitor in the active turn and do
+not promise after-turn follow-ups.
+
+After the complete MLP pilot fails the 5% speed threshold, a bounded diagnostic
+profiles both matched 16,384-token whole-MLP graphs with ten replays per leg.
+Preserve the completed pilot rather than changing its selection rule. Retain
+all forward, input/adapter backward and caller-copy work and export raw CUDA
+traces plus kernel-name/duration histograms. Distinguish activation reduction,
+FP4 packing/scale clearing, output descaling, native dense GEMMs, ordinary
+adapter GEMMs and compiled elementwise work. Profiler duration sums describe
+instrumented GPU events; they are not replacements for synchronized wall-time
+samples, model-update timings or quality evidence. Stop after both traces or a
+30-minute cap; do not launch the conditional full-model screen on these data.
+
+Results: `integrate01/integrated` passes native arithmetic, all seven gradients,
+row isolation and changed-live-master replay, but saves only 1.56%/2.28% complete
+MLP graph time at 4096/16384 tokens. It is not selected for full-model training.
+The separate `integrateprofile01/integratedprofile` trace finds conversion takes
+1.39850 ms versus 0.70543 ms in native FP4 GEMMs at 16384 tokens. See
+[`docs/findings/b200_mlp_gemm.md`](../../docs/findings/b200_mlp_gemm.md) for raw
+timings, profiler scope, numerical distinctions and receipt hashes. The BF16
+FA4 standard is unchanged; this is an explicit experimental integration.
