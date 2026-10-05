@@ -105,7 +105,15 @@ def packed_backward_host(
     )
 
 
-def compile_packed_backward(heads: tuple[int, int], cache_key: str):
+def compile_packed_backward(
+    heads: tuple[int, int],
+    cache_key: str,
+    *,
+    persistent_dq: bool = False,
+    persistent_dkdv: bool = False,
+    dq_store_bits: int = 16,
+    kernel_classes: tuple | None = None,
+):
     """Compile once per head contract; no sequence extents enter the key."""
     from cudnn.sdpa.bwd.kernels.sm100 import _bprop_mxfp8_masks as masks
     from cudnn.sdpa.bwd.kernels.sm100.bprop_dkdv_d256_mxfp8 import (
@@ -115,15 +123,18 @@ def compile_packed_backward(heads: tuple[int, int], cache_key: str):
         BlackwellFmhaBackwardDQ256,
     )
 
+    if kernel_classes is not None:
+        BlackwellFmhaBackwardDQ256, BlackwellFmhaBackwardDKDV256 = kernel_classes
+
     dq = BlackwellFmhaBackwardDQ256(
         cutlass.BFloat16,
         cutlass.Float32,
         (128, 128, 256),
         True,
         masks.MaskEnum.WINDOW_MASK,
-        is_persistent=False,
+        is_persistent=persistent_dq,
         online_ds_scale=True,
-        store_num_bits_per_copy=16,
+        store_num_bits_per_copy=dq_store_bits,
     )
     dkdv = BlackwellFmhaBackwardDKDV256(
         cutlass.BFloat16,
@@ -131,7 +142,7 @@ def compile_packed_backward(heads: tuple[int, int], cache_key: str):
         (128, 128, 256),
         True,
         masks.MaskEnum.WINDOW_MASK_BWD,
-        is_persistent=False,
+        is_persistent=persistent_dkdv,
         online_ds_scale=True,
         p_scale_log2=8,
     )

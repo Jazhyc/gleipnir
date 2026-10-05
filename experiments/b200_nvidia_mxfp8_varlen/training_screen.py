@@ -71,6 +71,7 @@ def job_for(config: dict, source: dict, recipe: dict) -> dict:
         "nvidia_mxfp8_varlen",
         "nvidia_mxfp8_fused",
         "nvidia_mxfp8_square",
+        "nvidia_mxfp8_meta",
     }:
         raise ValueError("unsupported packed NVIDIA candidate")
     destination = ROOT / config["output"] / backend
@@ -99,7 +100,11 @@ def main(default_config: Path | None = None) -> None:
         raise ValueError("native receipt checksum drift")
     backend = config.get("candidate_backend", "nvidia_mxfp8_varlen")
     native = json.loads(native_path.read_text())
-    if backend in {"nvidia_mxfp8_fused", "nvidia_mxfp8_square"}:
+    if backend == "nvidia_mxfp8_meta":
+        from experiments.b200_meta_stack.training_screen import accept_meta
+
+        acceptance = accept_meta(native, config)
+    elif backend in {"nvidia_mxfp8_fused", "nvidia_mxfp8_square"}:
         from experiments.b200_mxfp8_fused.training_screen import (
             accept_native as accept_fused,
         )
@@ -143,6 +148,9 @@ def main(default_config: Path | None = None) -> None:
         ROOT / "experiments/b200_nvidia_mxfp8/training_screen.py",
         *ROOT.glob("src/gleipnir/nvidia_mxfp8_varlen*.py"),
         *ROOT.glob("src/gleipnir/nvidia_mxfp8_fused*.py"),
+        *ROOT.glob("src/gleipnir/nvidia_mxfp8_meta*.py"),
+        *ROOT.glob("src/gleipnir/nvidia_mxfp8_norm_rope*.py"),
+        *(ROOT / "experiments/b200_meta_stack").glob("*.py"),
         *(ROOT / "experiments/b200_mxfp8_fused").glob("*.py"),
         *(
             ROOT / "src/gleipnir" / name
@@ -170,7 +178,26 @@ def main(default_config: Path | None = None) -> None:
         f"student.init_adapter={ROOT / config['initial_adapter']}",
         "++student.training.logging_steps=1",
     ]
+    if backend == "nvidia_mxfp8_meta":
+        command.append(
+            "++student.training.meta_attention_options="
+            + "{"
+            + ",".join(
+                f"{key}:{str(value).lower()}"
+                for key, value in config["meta_attention_options"].items()
+            )
+            + "}"
+        )
+        if config.get("profile_update"):
+            command[1] = "experiments/b200_meta_stack/training_entry.py"
     env = environment(config)
+    if config.get("profile_update"):
+        if not 1 <= config["profile_update"] <= config["warmup_steps"]:
+            raise ValueError("profiling must be confined to an excluded warmup update")
+        env.update(
+            GLEIPNIR_PROFILE_UPDATE=str(config["profile_update"]),
+            GLEIPNIR_PROFILE_OUTPUT=str(output / "warmup_profile"),
+        )
     report = {
         "status": "starting",
         "config": config,

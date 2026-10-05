@@ -105,6 +105,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
             "nvidia_mxfp8_varlen",
             "nvidia_mxfp8_fused",
             "nvidia_mxfp8_square",
+            "nvidia_mxfp8_meta",
         }
         and 0 < training.get("max_steps", 0) <= 20
         and not training.get("startup_validation_reference")
@@ -128,6 +129,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         "nvidia_mxfp8_varlen",
         "nvidia_mxfp8_fused",
         "nvidia_mxfp8_square",
+        "nvidia_mxfp8_meta",
     } or ((backend != "sdpa") != (version is not None)):
         raise ValueError("packed attention requires an explicit supported version")
     if backend in {
@@ -135,6 +137,7 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         "nvidia_mxfp8_varlen",
         "nvidia_mxfp8_fused",
         "nvidia_mxfp8_square",
+        "nvidia_mxfp8_meta",
     } and training.get("startup_validation_reference"):
         raise ValueError("experimental MXFP8 requires fresh model startup validation")
     if backend == "flash_attention_4" and training.get("startup_validation_reference"):
@@ -165,6 +168,19 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
         backend.allow_bf16_reduced_precision_reduction_split_k,
         torch.backends.cuda.preferred_blas_library(),
     )
+    from contextlib import nullcontext
+
+    meta_runtime = nullcontext()
+    if attention == "nvidia_mxfp8_meta":
+        from gleipnir.nvidia_mxfp8_meta_training import (
+            meta_attention_runtime,
+            validate_options,
+        )
+
+        options = dict(student["training"].get("meta_attention_options", {}))
+        validate_options(options)
+        meta_runtime = meta_attention_runtime(options)
+        metadata["meta_attention_options"] = options
     try:
         metadata.update(
             bf16_matmul=configure_bf16_reductions(
@@ -180,6 +196,7 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
                 "nvidia_mxfp8_varlen": "varlen_causal_nvidia_mxfp8",
                 "nvidia_mxfp8_fused": "varlen_causal_nvidia_mxfp8_fused_dual",
                 "nvidia_mxfp8_square": "varlen_causal_nvidia_mxfp8_fused_square32",
+                "nvidia_mxfp8_meta": "varlen_causal_nvidia_mxfp8_meta",
             }[attention],
             attention_backend=attention,
             attention_version=attention_version,
@@ -196,6 +213,7 @@ def packed_training_runtime(student: Mapping[str, Any]) -> Iterator[dict[str, An
         )
         with (
             installed_segmented_sdpa(attention, attention_version),
+            meta_runtime,
             torch._dynamo.config.patch(
                 recompile_limit=limit, fail_on_recompile_limit_hit=True
             ),

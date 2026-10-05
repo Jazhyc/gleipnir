@@ -208,6 +208,7 @@ def installed_segmented_sdpa(
         "nvidia_mxfp8_varlen",
         "nvidia_mxfp8_fused",
         "nvidia_mxfp8_square",
+        "nvidia_mxfp8_meta",
     }:
         from gleipnir.nvidia_mxfp8_attention import (
             FRONTEND_VERSION,
@@ -216,11 +217,15 @@ def installed_segmented_sdpa(
 
         if expected_version != FRONTEND_VERSION:
             raise ValueError("MXFP8 requires the pinned experimental Frontend version")
-        if backend in {"nvidia_mxfp8_fused", "nvidia_mxfp8_square"}:
+        if backend in {
+            "nvidia_mxfp8_fused",
+            "nvidia_mxfp8_square",
+            "nvidia_mxfp8_meta",
+        }:
             from gleipnir.nvidia_mxfp8_fused_attention import fused_interface
 
             interface = fused_interface(
-                original, square=backend == "nvidia_mxfp8_square"
+                original, square=backend in {"nvidia_mxfp8_square", "nvidia_mxfp8_meta"}
             )
         elif backend == "nvidia_mxfp8_varlen":
             from gleipnir.nvidia_mxfp8_varlen_attention import packed_mxfp8_interface

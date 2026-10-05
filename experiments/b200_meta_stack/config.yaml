@@ -1,0 +1,9 @@
+overlay: .cache/kernels/nvidia_mxfp8
+compiler_cache: .cache/training/shared/gpu-0
+fa4_cache: .cache/training/fa4_4.0.0b33_cute
+fa4_overlay: .cache/kernels/fa4
+output: results/b200_meta_stack/native01
+logs: logs/runpod/b200_meta_stack
+timeout_seconds: 600
+warmups: 6
+repetitions: 10

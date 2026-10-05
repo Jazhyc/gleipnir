@@ -64,17 +64,103 @@ def _prepare(
     HEADS: tl.constexpr,
     BATCH,
     SQUARE: tl.constexpr,
+    W,
+    COS,
+    SIN,
+    X_ROW_STRIDE,
+    X_HEAD_STRIDE,
+    EPS,
+    ROTARY: tl.constexpr,
+    NORM_ROPE: tl.constexpr,
+    MAT_WEIGHT,
+    UPDATE,
+    WEIGHT_SF,
+    INNER,
+    WEIGHT_HEAD_STRIDE,
+    PROJECTION: tl.constexpr,
+    MXFP8_PROJECTION: tl.constexpr,
+    HAS_UPDATE: tl.constexpr,
 ):
     tile, head, batch = tl.program_id(0), tl.program_id(1), tl.program_id(2)
     start, end = tl.load(CU + batch), tl.load(CU + batch + 1)
     length = end - start
     rows = tile * 128 + tl.arange(0, 128)
     cols = tl.arange(0, 256)
-    value = tl.load(
-        X + ((start + rows[:, None]) * HEADS + head) * 256 + cols[None, :],
-        rows[:, None] < length,
-        other=0,
-    ).to(tl.float32)
+    if PROJECTION:
+        inner = tl.arange(0, 64)
+        value = tl.full((128, 256), 0.0, tl.float32)
+        for block in range(tl.cdiv(INNER, 64)):
+            ks = block * 64 + inner
+            a = tl.load(
+                X + (start + rows[:, None]) * INNER + ks[None, :],
+                (rows[:, None] < length) & (ks[None, :] < INNER),
+                other=0,
+            )
+            b = tl.load(
+                MAT_WEIGHT
+                + (head * WEIGHT_HEAD_STRIDE + cols[None, :]) * INNER
+                + ks[:, None],
+                ks[:, None] < INNER,
+                other=0,
+            )
+            if MXFP8_PROJECTION:
+                groups = tl.reshape(a.to(tl.float32), (128, 2, 32))
+                sf, inv = _scale(tl.max(tl.abs(groups), 2))
+                aq = tl.reshape(groups * inv[:, :, None], (128, 64)).to(tl.float8e4nv)
+                si = block * 2 + tl.arange(0, 2)
+                sb = tl.load(
+                    WEIGHT_SF
+                    + (head * WEIGHT_HEAD_STRIDE + cols[:, None]) * tl.cdiv(INNER, 32)
+                    + si[None, :],
+                    si[None, :] < tl.cdiv(INNER, 32),
+                    other=127,
+                )
+                value = tl.dot_scaled(aq, sf, "e4m3", b, sb, "e4m3", value)
+            else:
+                value += tl.dot(a, b)
+        value = value.to(tl.bfloat16).to(tl.float32)
+        if HAS_UPDATE:
+            update = tl.load(
+                UPDATE + ((start + rows[:, None]) * HEADS + head) * 256 + cols[None, :],
+                rows[:, None] < length,
+                other=0,
+            )
+            value = (value + update.to(tl.float32)).to(tl.bfloat16).to(tl.float32)
+    else:
+        value = tl.load(
+            X
+            + (start + rows[:, None]) * X_ROW_STRIDE
+            + head * X_HEAD_STRIDE
+            + cols[None, :],
+            rows[:, None] < length,
+            other=0,
+        ).to(tl.float32)
+    if NORM_ROPE:
+        rstd = tl.rsqrt(tl.sum(value * value, 1) / 256.0 + EPS)
+        weight = 1.0 + tl.load(W + cols).to(tl.float32)
+        normalized = (value * rstd[:, None] * weight[None, :]).to(tl.bfloat16)
+        normalized = normalized.to(tl.float32)
+        partner = tl.where(cols < ROTARY // 2, cols + ROTARY // 2, cols - ROTARY // 2)
+        partner = tl.where(cols < ROTARY, partner, cols)
+        opposite = tl.gather(
+            normalized, tl.broadcast_to(partner[None, :], (128, 256)), 1
+        )
+        opposite = tl.where(cols[None, :] < ROTARY // 2, -opposite, opposite)
+        cos = tl.load(
+            COS + (start + rows[:, None]) * ROTARY + cols[None, :],
+            (rows[:, None] < length) & (cols[None, :] < ROTARY),
+            other=0,
+        )
+        sin = tl.load(
+            SIN + (start + rows[:, None]) * ROTARY + cols[None, :],
+            (rows[:, None] < length) & (cols[None, :] < ROTARY),
+            other=0,
+        )
+        a = (normalized * cos.to(tl.float32)).to(tl.bfloat16).to(tl.float32)
+        b = (opposite * sin.to(tl.float32)).to(tl.bfloat16).to(tl.float32)
+        rotated = (a + b).to(tl.bfloat16).to(tl.float32)
+        value = tl.where(cols[None, :] < ROTARY, rotated, normalized)
+        value = tl.where(rows[:, None] < length, value, 0.0)
     if SQUARE:
         block = tl.reshape(value, (4, 32, 8, 32))
         maximum = tl.max(tl.max(tl.abs(block), 3), 1)
@@ -179,16 +265,48 @@ def prepare(
     maximum: int,
     *,
     square: bool = False,
+    norm_weight: torch.Tensor | None = None,
+    cos: torch.Tensor | None = None,
+    sin: torch.Tensor | None = None,
+    eps: float = 1e-6,
 ) -> tuple[torch.Tensor, ...]:
     """Return shared/dual payloads and initialized native scale layouts."""
-    source = source.contiguous()
+    transform = norm_weight is not None
+    if not transform:
+        if cos is not None or sin is not None:
+            raise ValueError("rotary tables require a norm weight")
+        source = source.contiguous()
+    elif (
+        cos is None
+        or sin is None
+        or cos.shape != sin.shape
+        or cos.ndim != 2
+        or cos.shape[0] != source.shape[0]
+        or not 0 < cos.shape[1] <= 256
+        or cos.shape[1] % 2
+        or norm_weight.shape != (256,)
+        or norm_weight.requires_grad
+        or cos.requires_grad
+        or sin.requires_grad
+        or any(t.device != source.device for t in (norm_weight, cos, sin))
+        or cos.dtype != torch.bfloat16
+        or sin.dtype != torch.bfloat16
+        or norm_weight.dtype not in (torch.bfloat16, torch.float32)
+        or not cos.is_contiguous()
+        or not sin.is_contiguous()
+        or source.stride(-1) != 1
+        or eps <= 0
+    ):
+        raise ValueError(
+            "norm/rotary producer requires frozen D256 norm and compact BF16 tables"
+        )
     total, heads, dim = source.shape
     if dim != 256 or source.dtype != torch.bfloat16:
         raise ValueError("fused MXFP8 preparation requires BF16 D256 inputs")
     batch = cumulative.numel() - 1
     tiles = (maximum + 127) // 128
     capacity = (total + 127) // 128 + batch
-    row = torch.empty_like(source, dtype=torch.float8_e4m3fn)
+    row = torch.empty(source.shape, device=source.device, dtype=torch.float8_e4m3fn)
     col = row if square else torch.empty_like(row)
     sizes = (
         batch * heads * tiles * 4096,
@@ -211,6 +329,22 @@ def prepare(
         heads,
         batch,
         square,
+        norm_weight if transform else source,
+        cos if transform else source,
+        sin if transform else source,
+        source.stride(0),
+        source.stride(1),
+        eps,
+        cos.shape[1] if transform else 0,
+        transform,
+        source,
+        source,
+        source,
+        256,
+        256,
+        False,
+        False,
+        False,
         num_warps=8,
         enable_fp_fusion=False,
     )

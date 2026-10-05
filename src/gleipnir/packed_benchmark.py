@@ -72,6 +72,7 @@ def summarize(
                     "nvidia_mxfp8_varlen",
                     "nvidia_mxfp8_fused",
                     "nvidia_mxfp8_square",
+                    "nvidia_mxfp8_meta",
                 }
                 and packing.get("timing_authority")
                 and packing[key].get("accepted_for_timing_comparison", False)
