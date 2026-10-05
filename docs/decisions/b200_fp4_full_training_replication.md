@@ -258,3 +258,23 @@ Worker PID 67332 remains alive and idle on pod `i243nsg10usytq`; the evaluation
 engine exits normally and GPU memory returns to about 15 GB. Keep its native
 plans, packed weights, initial FP32 adapter copies and shared disk caches for
 future authorized optimization.
+
+## Worker shutdown and interpretation, 2026-10-06
+
+The user ends training optimization and requests stopping the resident worker.
+Its native shutdown request completes cleanly: PID 67332 is absent from `/proc`,
+`worker.json` records `stopped`, and GPU memory returns to 0 MiB. Preserve
+`worker_shutdown.json`, completed adapters, logs and shared disk caches. This
+process shutdown does not terminate the B200 pod; capacity disposition requires
+the separate user response.
+
+Higher training loss with improved held-out ranking is consistent with a
+regularization hypothesis, but does not identify it. FP4 rounding of frozen MLP
+weights and dynamic activations changes both the forward computation and the
+input gradients seen by FP32 LoRA adapters. This could impede fitting particular
+training examples. Related quantization-aware training research reports implicit
+regularization ([QT-DoG, ICML 2025](https://proceedings.mlr.press/v267/javed25a.html)),
+but that evidence does not establish the mechanism for this frozen-base LoRA
+recipe. The attention backend also changes, only one seed is observed, and ECE
+worsens. Do not claim reduced overfitting, flatter minima or causal FP4 gains
+without a matched precision-only comparison. No further experiment is launched.
