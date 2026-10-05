@@ -40,7 +40,63 @@ def shape_candidates(shapes: list, modules: list[dict]) -> list[str]:
     return sorted(groups)
 
 
+def operator_context(events: list[dict]) -> tuple[dict, dict]:
+    """Identify decoder regions from actual attention calls and link autograd nodes."""
+    rows = sorted(
+        [
+            e
+            for e in events
+            if e.get("ph") == "X"
+            and "dur" in e
+            and e.get("cat") in {"cpu_op", "user_annotation"}
+        ],
+        key=lambda e: (e["ts"], -e["dur"]),
+    )
+    stacks, ancestry, region_kinds = {}, {}, defaultdict(set)
+    markers = {
+        "ChunkGatedDeltaRuleFunction": "gdn",
+        "FlashAttnVarlenFunc": "full_attention",
+    }
+    for event in rows:
+        stack = stacks.setdefault((event.get("pid"), event.get("tid")), [])
+        while stack and (
+            stack[-1]["ts"] + stack[-1]["dur"] <= event["ts"]
+            or stack[-1]["ts"] + stack[-1]["dur"] < event["ts"] + event["dur"]
+        ):
+            stack.pop()
+        external = event.get("args", {}).get("External id")
+        if external is not None:
+            ancestry[external] = stack.copy()
+        if event["name"] in markers:
+            for parent in stack:
+                if parent["name"].startswith("Torch-Compiled Region:"):
+                    region_kinds[parent["name"]].add(markers[event["name"]])
+        stack.append(event)
+
+    def kinds(parents):
+        return set().union(*(region_kinds.get(e["name"], set()) for e in parents))
+
+    sequences = {}
+    for event in rows:
+        if event["name"] == "CompiledFunction":
+            context = kinds(ancestry.get(event.get("args", {}).get("External id"), []))
+            if len(context) == 1:
+                sequences[event.get("args", {}).get("Sequence number")] = context
+    contexts = {}
+    for external, parents in ancestry.items():
+        context = kinds(parents)
+        for parent in parents:
+            if parent["name"] == "CompiledFunctionBackward":
+                context |= sequences.get(
+                    parent.get("args", {}).get("Sequence number"), set()
+                )
+        if len(context) == 1:
+            contexts[external] = next(iter(context))
+    return contexts, {name: sorted(value) for name, value in region_kinds.items()}
+
+
 def analyze(events: list[dict], modules: list[dict]) -> dict:
+    contexts, region_evidence = operator_context(events)
     operators = {
         e["args"]["External id"]: e
         for e in events
@@ -65,6 +121,18 @@ def analyze(events: list[dict], modules: list[dict]) -> dict:
         if operator and operator["name"] == "aten::addmm":
             shapes = shapes[1:]
         candidates = shape_candidates(shapes, modules)
+        context = contexts.get(event.get("args", {}).get("External id"))
+        if len(candidates) > 1 and context in {"gdn", "full_attention"}:
+            # LoRA weight gradients cannot be identified by decoder context alone.
+            compatible = {
+                "gdn": "gdn_frozen_projections",
+                "full_attention": "full_attention_frozen_projections",
+            }[context]
+            if set(candidates) <= {
+                "gdn_frozen_projections",
+                "full_attention_frozen_projections",
+            }:
+                candidates = [compatible] if compatible in candidates else candidates
         group = (
             candidates[0]
             if len(candidates) == 1
@@ -75,6 +143,7 @@ def analyze(events: list[dict], modules: list[dict]) -> dict:
                 "operator": operator["name"] if operator else None,
                 "shapes": shapes,
                 "candidates": candidates,
+                "decoder_context": context,
             },
             sort_keys=True,
         )
@@ -93,9 +162,11 @@ def analyze(events: list[dict], modules: list[dict]) -> dict:
         "ordinary_gemm_ms": ordinary_gpu,
         "groups": dict(groups),
         "geometries": dict(geometries),
-        "limits": "One instrumented update. Shapes identify compatible modules, not "
-        "unique call sites; ambiguous matches are retained. CPU/GPU External IDs "
-        "link actual kernel time, without adding overlapping CPU operators.",
+        "decoder_context_evidence": region_evidence,
+        "limits": "One instrumented update. Shapes identify compatible modules; "
+        "actual attention calls identify compiled decoder contexts, and autograd "
+        "sequence numbers link backward contexts. Remaining ambiguity is retained. "
+        "CPU/GPU External IDs link actual kernel time, without adding CPU durations.",
     }
 
 

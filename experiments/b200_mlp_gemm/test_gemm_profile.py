@@ -30,6 +30,7 @@ def test_external_id_connects_shapes_to_kernel_only_duration():
             "ph": "X",
             "cat": "cpu_op",
             "name": "aten::mm",
+            "ts": 0,
             "dur": 500,
             "args": {"External id": 42, "Input Dims": [[1000, 2560], [2560, 4096]]},
         },
@@ -48,3 +49,52 @@ def test_external_id_connects_shapes_to_kernel_only_duration():
     assert row["calls"] == 1 and row["gpu_ms"] == pytest.approx(0.1)
     assert row["fraction_of_total_kernel_time"] == pytest.approx(0.5)
     assert row["fraction_of_ordinary_gemm_time"] == 1.0
+
+
+def test_attention_call_and_autograd_sequence_disambiguate_backward():
+    modules = [
+        module("x.linear_attn.in_proj_z", [4096, 2560]),
+        module("x.self_attn.q_proj.base_layer", [4096, 2560]),
+    ]
+
+    def event(name, cat, ts, dur, **args):
+        return {
+            "ph": "X",
+            "name": name,
+            "cat": cat,
+            "ts": ts,
+            "dur": dur,
+            "pid": 1,
+            "tid": 1,
+            "args": args,
+        }
+
+    events = [
+        event("Torch-Compiled Region: 0/7", "user_annotation", 0, 100),
+        event(
+            "CompiledFunction",
+            "cpu_op",
+            10,
+            50,
+            **{"External id": 1, "Sequence number": 7},
+        ),
+        event("ChunkGatedDeltaRuleFunction", "cpu_op", 20, 10, **{"External id": 2}),
+        event(
+            "CompiledFunctionBackward",
+            "cpu_op",
+            200,
+            100,
+            **{"External id": 3, "Sequence number": 7},
+        ),
+        event(
+            "aten::mm",
+            "cpu_op",
+            220,
+            10,
+            **{"External id": 42, "Input Dims": [[1000, 2560], [2560, 4096]]},
+        ),
+        event("nvjet_test", "kernel", 230, 50, **{"External id": 42}),
+    ]
+    result = analyze(events, modules)
+    assert result["groups"]["gdn_frozen_projections"]["gpu_ms"] == pytest.approx(0.05)
+    assert result["decoder_context_evidence"] == {"Torch-Compiled Region: 0/7": ["gdn"]}
