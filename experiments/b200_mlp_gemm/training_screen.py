@@ -148,6 +148,7 @@ def main() -> None:
     parser.add_argument("--pilot", type=Path, required=True)
     parser.add_argument("--pilot-sha256", required=True)
     parser.add_argument("--attempt", required=True)
+    parser.add_argument("--timing-authority")
     args = parser.parse_args()
     if not args.attempt.isalnum():
         raise ValueError("attempt must be alphanumeric")
@@ -155,6 +156,10 @@ def main() -> None:
         raise ValueError("pilot checksum drift")
     pilot = json.loads(args.pilot.read_text())
     fp4 = pilot.get("variant") == "fp4_integrated"
+    if args.timing_authority is not None and (
+        not fp4 or not args.timing_authority.strip()
+    ):
+        raise ValueError("timing-only authority requires a native FP4 pilot")
     hardware_packing = bool(pilot.get("installation", {}).get("hardware_packing"))
     fused_descale = bool(pilot.get("installation", {}).get("fused_descale"))
     (accept_integrated_pilot if fp4 else accept_pilot)(pilot)
@@ -191,6 +196,8 @@ def main() -> None:
         job["selective_torch_compile_mode"] = "reduce-overhead"
         job["native_fp4_hardware_packing"] = hardware_packing
         job["native_fp4_fused_descale"] = fused_descale
+        if args.timing_authority:
+            job["packing_timing_authority"] = args.timing_authority
     # MLP code changed; request fresh model gates instead of claiming startup reuse.
     job.pop("startup_validation_reference", None)
     job.pop("startup_validation_reference_sha256", None)
@@ -220,6 +227,8 @@ def main() -> None:
         command += [
             "++student.training.selective_torch_compile_mode=reduce-overhead",
         ]
+        if args.timing_authority:
+            command.append("++student.training.native_fp4_mlp_timing=true")
     cfg = yaml.safe_load((ROOT / "experiments/b200_mlp_gemm/config.yaml").read_text())
     env = environment(cfg)
     env.update(
@@ -264,6 +273,8 @@ def main() -> None:
         "fused_descale": fused_descale,
         "candidate_compile_mode": "reduce-overhead" if fp4 else "default",
         "compile_mode_matches_control": not fp4,
+        "timing_only": bool(args.timing_authority),
+        "timing_authority": args.timing_authority,
         "control": control,
         "cache_paths": {k: v for k, v in env.items() if "CACHE" in k},
         "source_sha256": {str(p): sha256_file(ROOT / p) for p in sources},
@@ -285,7 +296,12 @@ def main() -> None:
     metadata = json.loads(
         (output / "causal_adapter/training_metadata.json").read_text()
     )
-    candidate = summarize(metadata, 10, accept_learning=True)
+    candidate = summarize(
+        metadata,
+        10,
+        accept_learning=not bool(args.timing_authority),
+        accept_timing=bool(args.timing_authority),
+    )
     for key in ("physical_contract", "initial_master_sha256"):
         if candidate[key] != control[key]:
             raise ValueError(f"physical contract mismatch: {key}")

@@ -300,3 +300,12 @@ and 7.76%/8.75% versus hardware packing alone in a matched four-way screen.
 All input/adapter gradients and isolation checks pass. This selects the combined
 experimental path for fresh full-model gates; the ordinary dispatch path still
 loses, and no model-update speed or quality equivalence follows from the pilot.
+
+The selected combined FP4 full-model attempt then fails its fresh eager packing
+gate: 67.90% adapter-gradient disagreement and loss drift above the unchanged
+bound, despite exact cross-example isolation. It stops before compilation,
+memory preflight and optimizer updates. Layer outputs match through layers 0–2,
+then diverge at the first full-attention layer; amplification through later FP4
+layers is a hypothesis requiring separate diagnosis. Retain the conversion
+optimizations as experimental code, but do not promote this model recipe or
+claim an end-to-end speed gain. BF16 MLPs with FA4 remain the standard.

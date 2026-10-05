@@ -57,6 +57,24 @@ def summarize(
     if any(not math.isfinite(t) or t <= 0 for t in durations):
         raise ValueError("nonfinite/nonpositive benchmark duration")
     packing = metadata["sequence_packing"]
+    native_fp4 = (
+        metadata.get("quantization", {})
+        .get("full_bf16_lora", {})
+        .get("native_fp4_mlp", {})
+    )
+    timing_backend = packing.get("attention_backend") in {
+        "nvidia_mxfp8",
+        "nvidia_mxfp8_varlen",
+        "nvidia_mxfp8_fused",
+        "nvidia_mxfp8_square",
+        "nvidia_mxfp8_meta",
+    } or (
+        packing.get("attention_backend") == "flash_attention_4"
+        and native_fp4.get("base_forward") == "nvfp4"
+        and native_fp4.get("base_input_gradient") == "nvfp4"
+        and native_fp4.get("master_dtype") == "float32"
+        and len(native_fp4.get("modules", [])) == 32
+    )
     if not packing.get("startup_validation"):
         if not packing["preflight"]["passed"] or not all(
             packing[key]["passed"]
@@ -66,14 +84,7 @@ def summarize(
             )
             or (
                 accept_timing
-                and packing.get("attention_backend")
-                in {
-                    "nvidia_mxfp8",
-                    "nvidia_mxfp8_varlen",
-                    "nvidia_mxfp8_fused",
-                    "nvidia_mxfp8_square",
-                    "nvidia_mxfp8_meta",
-                }
+                and timing_backend
                 and packing.get("timing_authority")
                 and packing[key].get("accepted_for_timing_comparison", False)
             )

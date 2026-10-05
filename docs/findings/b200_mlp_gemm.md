@@ -505,3 +505,62 @@ Completed combined pilot SHA-256:
 Its archive matches every launch source hash. Fifty focused CPU tests pass,
 including three registered autograd/compiler paths, optimizer updates on live
 FP32 masters and fail-closed candidate selection; Ruff and whitespace checks pass.
+
+### Full-model conversion screen fails fresh packing parity
+
+`trainconv01` launches the selected combined pilot, installs both optimizations
+in all 32 MLPs and verifies the checksum-bound initial FP32 master. It stops at
+the fresh eager packing gate before decoder compilation, longest-batch memory
+preflight or optimizer updates. Preserve this negative receipt; no complete
+update timing, trained adapter or quality result exists for this attempt.
+
+All three isolation cases pass exactly: repeat/perturb decision drift and cross-
+example input gradients are zero, with finite nonzero own-example gradients.
+The equal-example-weighted independent loss is 1.11006910 and packed loss is
+1.06096554. The absolute difference, 0.04910356, exceeds the unchanged permitted
+`0.02 + 0.02 * abs(independent_loss)` bound of 0.04220138. Adapter-gradient
+relative L2 is 0.67898673 (67.90%), exceeding the predeclared 5% limit. The
+FA4-specific historical 10% acceptance does not cover this new FP4 recipe.
+
+Layer diagnostics are exactly equal through decoder layers 0–2. The first
+observed difference appears at layer 3, the first full-attention layer (1.94%
+relative L2), then reaches 23.08% at layer 31 and 32.17% at the LM head. This
+locates the onset but does not isolate the attention versus MLP contribution
+inside layer 3. Amplification of packing-dependent rounding by repeated FP4
+quantization is a plausible next hypothesis, not an established cause. The
+bitwise conversion/epilogue proofs remain valid for the tested operand and MLP
+fixtures; they do not establish full-model packing or BF16 quality equivalence.
+
+Separately, the original-FLA versus FlashQLA canary has finite gradients but
+fails strict parity at 102.16% gradient relative L2. It is recorded under the
+existing explicit `selected_finite` FlashQLA policy; that acceptance does not
+waive the packing loss/gradient gate which stops this run. Do not report either
+failed strict receipt as a fresh numerical pass.
+
+The final runtime receipt records 64 frozen forward/transposed weight pairs,
+30 plans and 2,548,040,192 packed-weight bytes (2.37 GiB). All 28 archived source
+hashes match the launch receipt. Results and logs are collected locally; no
+model updates or unchanged strict reruns occur. BF16 MLPs with FA4 remain the
+standard. The B200 is idle and remains running in US-NC-2 at $6.79/hour;
+the network-volume compiler caches are retained. Active-turn monitoring ends
+with this completed screen; this session has no recurring agent scheduler.
+
+Final receipt SHA-256 values:
+
+- `trainconv01/summary.json`:
+  `0062d15be9342e2c369b6b0495644ea230242c1bb8129a440adebc311b98844e`.
+- `trainconv01/causal_adapter/packing_canary.json`:
+  `bda454f82233e43ce1da0bfa82849c85a0e39f3d0cd4304431d5c38fd3ba5324`.
+- `trainconv01/causal_adapter/gated_delta_canary.json`:
+  `3d571442ef89653b3c8a3b92c9083ee9a36161868c6a524cda42b5fddfd17df6`.
+- `trainconv01/native_runtime.json`:
+  `23c70ab7b9b3298ec78f79886e214a656843d30176f68832c0cc1ef1eda26450`.
+
+The user subsequently explicitly requests end-to-end timing despite the gradient
+disagreement. A separate bounded timing-only follow-up retains both failed
+strict receipts and records that new authority. Waive only loss/relative-gradient
+parity for speed measurement; require fresh finite/isolation, compiled replay
+and memory checks, preserve FP32 masters and the unchanged physical contract.
+Keep the selected combined FP4 pilot, twenty updates (ten warmup/ten measured),
+historical FA4 control and shared caches. Report any resulting gain as speed
+evidence for the combined FP4/compile recipe, not learning/quality acceptance.

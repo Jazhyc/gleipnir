@@ -236,3 +236,30 @@ samples at all three shapes. Only a complete passing candidate with >=5%
 gain over BF16 at both long shapes advances to fresh strict full-model gates;
 choose the better measured complete MLP candidate rather than add isolated
 path savings. Stop at 30 minutes or a failed gate and preserve prior receipts.
+
+Observed conversion follow-up: native packing preserves all nine operand
+fixtures bitwise, and the corrected NVIDIA row-descaling epilogue preserves all
+twelve projection fixtures bitwise. Their combined complete-MLP graph reduces
+time 18.54%/24.42% versus BF16 at 4096/16384 tokens, including forward and all
+input/adapter gradients. Ordinary dispatch remains slower than BF16.
+`fusedmlp01` therefore selects the combined opt-in path for `trainconv01`.
+The full-model attempt fails fresh eager packing parity (67.90% adapter-gradient
+relative L2 and loss drift above the existing bound), despite exact isolation,
+and stops before compilation, memory preflight or optimizer updates. No model-
+update speedup or training-quality equivalence is established. Preserve the
+failed receipts and retain BF16 FA4 as the standard. See the
+[finding record](../../docs/findings/b200_mlp_gemm.md) for hashes and diagnostics.
+
+After the user explicitly accepts proceeding despite gradient disagreement,
+`training_screen --timing-authority TEXT` permits a separate native-FP4/FA4
+timing-only attempt with at most twenty fresh updates. Preserve strict and
+learning acceptance as false; record the quoted authority and waived loss/
+relative-gradient checks. Isolation, finite/missing-gradient checks, fresh
+compiled checks and longest-batch memory preflight remain mandatory. Compare
+ten measured updates after ten warmups with the checksum-bound historical FA4
+control; require exact initial master and physical partitions/tokens. Record
+the changed `reduce-overhead` compile mode as a confound in that comparison.
+Stop on isolation/finite/replay failure, OOM or twenty updates. Timing acceptance
+requires actual metadata for all 32 native forward/input-gradient MLPs and FP32
+masters; an ordinary BF16 FA4 recipe cannot use this waiver. No quality claim,
+held-out promotion or default change follows from this timing-only experiment.
