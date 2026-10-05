@@ -307,6 +307,35 @@ Full receipts, logs and FP32 adapters are collected locally. The GPU is idle aft
 the screen; Pod `9gxht4kafwfbdu` remains RUNNING at $6.79/hour. No recurring agent
 heartbeat is scheduled and no default recipe change follows from this one screen.
 
+### B200 terminated after attention optimization screens, 2026-10-05
+
+At the user's explicit request to defer further work, Pod `9gxht4kafwfbdu`
+(`gleipnir-b200-bf16-fa4`, US-NC-2) was permanently terminated at
+2026-10-05 02:34 UTC. The terminate API returned HTTP 204; a subsequent get
+returned HTTP 404 / `pod not found`. This supersedes the running status above.
+No replacement capacity was launched or scheduled.
+
+Before termination the GPU was idle (0 MiB / 0% utilization), no experiment
+process remained, and six final artifact SHA-256 checks passed locally,
+including the completed 20-update model metadata, FP32 adapter, full-model
+profile and both completed projection pilots. Earlier controls, source archives,
+negative receipts and logs had already been collected. The actual shared-cache
+mount resolves to `/workspace` on
+`mfs#us-nc-2.runpod.net:9421[/networkvolumes/ixbh81vf9c]`.
+
+An independent post-termination volume read confirms the retained STANDARD
+200 GB network volume `ixbh81vf9c` (`gleipnir-b200-workspace`) in US-NC-2.
+Its project data, environment and persistent caches remain available for a
+future authorized Pod; the terminated Pod's container disk is lost. Local
+Pod aliases now record TERMINATED. The sanitized lifecycle receipt is
+`results/b200_shutdown/20261005_meta_stack/termination_receipt.json`.
+
+Resume with general cuDNN/FROST GEMMs and BF16 MLP fusion, including LoRA
+additions and training backward, while retaining BF16 FA4. The
+[Meta optimization finding](findings/b200_meta_stack.md) records the completed
+negative training screen and faster forward-only projection pilots. No GEMM
+training experiment was launched before this shutdown.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
