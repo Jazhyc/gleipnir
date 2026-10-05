@@ -53,3 +53,21 @@ python -m experiments.b200_nvidia_mxfp8_varlen.training_screen
 ```
 
 Launchers reject existing output directories so previous receipts survive.
+
+## Attention bottleneck diagnostic
+
+Hypothesis: the small complete-update gain reflects both work outside full
+attention and FP8 conversion/backward costs. Compare warmed BF16 FA4 and the
+unchanged validated packed MXFP8 forward/backward on identical BF16 operands,
+including all quantization, repacking, scratch initialization and gradients.
+Use controlled short, balanced and skewed packs plus an actual long-singleton
+length from the measured training window. These synthetic operands are a kernel
+diagnostic, not a new complete-model throughput or quality result.
+
+`profile_attention.py` performs six warmups and ten timed repetitions per
+backend/shape, alternates backend order across shapes, measures CUDA graph
+replay separately, and traces one warmed iteration. It reuses existing native
+validation and persistent caches, makes no optimizer updates, and stops on
+nonfinite outputs/gradients, unsupported execution or OOM. Record CPU wall and
+CUDA-event times separately; profiler sums are attribution, not throughput.
+Stop after four shapes, with no tuning sweep or new numerical canaries.
