@@ -5,9 +5,11 @@ from __future__ import annotations
 import json
 import random
 import time
+from collections.abc import Callable, Iterator
 from contextlib import contextmanager
 from copy import deepcopy
 from pathlib import Path
+from typing import Any
 
 import numpy as np
 import torch
@@ -55,7 +57,7 @@ def validate_warmed_receipt(receipt: dict, candidate: dict) -> None:
 
 
 @contextmanager
-def preserve_random_state():
+def preserve_random_state() -> Iterator[None]:
     python_state, numpy_state = random.getstate(), np.random.get_state()
     devices = (
         list(range(torch.cuda.device_count())) if torch.cuda.is_available() else []
@@ -68,7 +70,7 @@ def preserve_random_state():
         np.random.set_state(numpy_state)
 
 
-def collect_batches(loader, steps: int) -> list[dict]:
+def collect_batches(loader: Any, steps: int) -> list[dict]:
     """Replay the Trainer's epoch-seeded sampler; restore it before training."""
     from accelerate.data_loader import SeedableRandomSampler
 
@@ -100,7 +102,13 @@ def collect_batches(loader, steps: int) -> list[dict]:
     return batches[:steps]
 
 
-def warm_shapes(trainer, batches, snapshot, expected_contract, path: Path) -> dict:
+def warm_shapes(
+    trainer: Any,
+    batches: list[dict],
+    snapshot: Callable[[], dict[str, int]],
+    expected_contract: list[dict],
+    path: Path,
+) -> dict:
     """Warm full forward/backward until replay creates no new compiled shapes."""
     if len(batches) != 20 or trainer.state.global_step != 0:
         raise ValueError("shape warmup requires a fresh twenty-update trajectory")
@@ -208,7 +216,9 @@ def warm_shapes(trainer, batches, snapshot, expected_contract, path: Path) -> di
             trainer.current_gradient_accumulation_steps = prior_accumulation
 
 
-def install_warmed_train(original_train, reference: Path, report_path: Path):
+def install_warmed_train(
+    original_train: Callable, reference: Path, report_path: Path
+) -> Callable:
     """Attach warmup after Trainer preparation, plus per-update compile auditing."""
     from transformers import TrainerCallback
     from triton import knobs
