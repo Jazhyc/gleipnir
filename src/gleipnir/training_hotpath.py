@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator
 from contextlib import contextmanager
+from types import MethodType
 from typing import Any
 
 import torch
@@ -109,7 +110,62 @@ def normalize_qk_without_input_copy(x: torch.Tensor) -> torch.Tensor:
 
 
 @contextmanager
-def training_hotpath_context(*, normalize: bool = False) -> Iterator[dict[str, Any]]:
+def nonblocking_trainer_inputs(trainer: Any) -> Iterator[None]:
+    """Enqueue single-device input copies on the existing stream without waits."""
+    if trainer.is_deepspeed_enabled:
+        raise ValueError("nonblocking input screen does not support DeepSpeed")
+    original = trainer._prepare_input
+    instance_original = trainer.__dict__.get("_prepare_input")
+    had_instance = "_prepare_input" in trainer.__dict__
+
+    def prepare(self, data):
+        if isinstance(data, torch.Tensor):
+            return data.to(device=self.args.device, non_blocking=True)
+        # Trainer's recursion calls the scoped method for nested tensor values.
+        return original(data)
+
+    trainer._prepare_input = MethodType(prepare, trainer)
+    try:
+        yield
+    finally:
+        if had_instance:
+            trainer._prepare_input = instance_original
+        else:
+            del trainer._prepare_input
+
+
+@contextmanager
+def matched_normalization_configs(autotuner: Any) -> Iterator[list[dict[str, Any]]]:
+    """Keep the FP32 baseline's reduction tiling when loading BF16 inputs."""
+    fp32 = str(torch.float32)
+    bf16 = str(torch.bfloat16)
+    previous = {}
+    selected = []
+    for key, config in list(autotuner.cache.items()):
+        if len(key) != 5 or key[2:] != (fp32, fp32, fp32):
+            continue
+        target = (*key[:2], bf16, fp32, fp32)
+        previous[target] = (target in autotuner.cache, autotuner.cache.get(target))
+        autotuner.cache[target] = config
+        selected.append(
+            {"dimension": key[0], "nb": key[1], "config": str(config)}
+        )
+    if not selected:
+        raise ValueError("resident FP32 normalization launch configs missing")
+    try:
+        yield selected
+    finally:
+        for key, (existed, config) in previous.items():
+            if existed:
+                autotuner.cache[key] = config
+            else:
+                autotuner.cache.pop(key, None)
+
+
+@contextmanager
+def training_hotpath_context(
+    *, normalize: bool = False, match_norm_configs: bool = False
+) -> Iterator[dict[str, Any]]:
     """Restore packing/router/normalization functions after a resident trial."""
     from flash_attn.cute import flash_attn_varlen_func
     from flash_qla.ops.gated_delta_rule.chunk import CHUNK_SIZE
@@ -120,6 +176,8 @@ def training_hotpath_context(*, normalize: bool = False) -> Iterator[dict[str, A
     previous_kwargs = PackedSequenceLayout.kernel_kwargs
     previous_router = ALL_ATTENTION_FUNCTIONS["sdpa"]
     previous_norm = boundary._normalize_qk_fp32
+    from contextlib import ExitStack
+
     if not getattr(previous_router, "_gleipnir_packed_boundaries", False):
         raise ValueError("hotpath screen requires an installed packed FA4 router")
 
@@ -135,14 +193,23 @@ def training_hotpath_context(*, normalize: bool = False) -> Iterator[dict[str, A
         ALL_ATTENTION_FUNCTIONS.register("sdpa", router)
         if normalize:
             boundary._normalize_qk_fp32 = normalize_qk_without_input_copy
-        yield {
-            "cpu_prepared_packing": True,
-            "flashqla_chunk_size": CHUNK_SIZE,
-            "fa4_repeated_boundary_reads_removed": True,
-            "normalization_input_copy_removed": normalize,
-            "normalization_arithmetic_and_output": "float32",
-            "master_parameter_dtype": "float32",
-        }
+        with ExitStack() as stack:
+            configs = []
+            if normalize and match_norm_configs:
+                from fla.modules.l2norm import l2norm_fwd_kernel
+
+                configs = stack.enter_context(
+                    matched_normalization_configs(l2norm_fwd_kernel)
+                )
+            yield {
+                "cpu_prepared_packing": True,
+                "flashqla_chunk_size": CHUNK_SIZE,
+                "fa4_repeated_boundary_reads_removed": True,
+                "normalization_input_copy_removed": normalize,
+                "normalization_arithmetic_and_output": "float32",
+                "normalization_configs": configs,
+                "master_parameter_dtype": "float32",
+            }
     finally:
         PackedSequenceLayout.kernel_kwargs = previous_kwargs
         ALL_ATTENTION_FUNCTIONS.register("sdpa", previous_router)

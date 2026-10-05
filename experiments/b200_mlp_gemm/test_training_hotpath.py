@@ -8,6 +8,8 @@ import torch
 
 from gleipnir.packed_sequences import PackedSequenceLayout, packed_fa4_interface
 from gleipnir.training_hotpath import (
+    matched_normalization_configs,
+    nonblocking_trainer_inputs,
     normalize_qk_without_input_copy,
     prepared_fa4_interface,
     prepared_kernel_kwargs,
@@ -109,3 +111,52 @@ def test_normalization_retains_fp32_output_without_materializing_input(monkeypat
     assert calls[0][0] is x and calls[0][1] == torch.float32
     assert y.dtype == torch.float32
     assert x.grad is not None and x.grad.dtype == torch.bfloat16
+
+
+def test_nonblocking_inputs_preserve_recursive_contract_and_restore(monkeypatch):
+    class Trainer:
+        is_deepspeed_enabled = False
+        args = SimpleNamespace(device="cpu")
+
+        def _prepare_input(self, data):
+            if isinstance(data, dict):
+                return {k: self._prepare_input(v) for k, v in data.items()}
+            if isinstance(data, tuple):
+                return tuple(self._prepare_input(v) for v in data)
+            return data
+
+    calls = []
+    original_to = torch.Tensor.to
+
+    def to(tensor, *args, **kwargs):
+        calls.append(kwargs)
+        return original_to(tensor, *args, **kwargs)
+
+    monkeypatch.setattr(torch.Tensor, "to", to)
+    trainer = Trainer()
+    x = torch.tensor([1, 2])
+    with pytest.raises(RuntimeError), nonblocking_trainer_inputs(trainer):
+        actual = trainer._prepare_input({"ids": x, "extra": (x, "label")})
+        assert actual["ids"] is x and actual["extra"] == (x, "label")
+        assert calls == [{"device": "cpu", "non_blocking": True}] * 2
+        raise RuntimeError("trial failure")
+    assert "_prepare_input" not in trainer.__dict__
+
+
+def test_nonblocking_inputs_reject_deepspeed():
+    with pytest.raises(ValueError, match="DeepSpeed"), nonblocking_trainer_inputs(
+        SimpleNamespace(is_deepspeed_enabled=True)
+    ):
+        pytest.fail("must fail closed")
+
+
+def test_matched_normalization_tiling_restores_original_choices():
+    fp32, bf16 = str(torch.float32), str(torch.bfloat16)
+    float_key = (128, 8, fp32, fp32, fp32)
+    mixed_key = (128, 8, bf16, fp32, fp32)
+    tuner = SimpleNamespace(cache={float_key: "baseline", mixed_key: "new"})
+    with pytest.raises(RuntimeError), matched_normalization_configs(tuner) as selected:
+        assert tuner.cache[mixed_key] == "baseline"
+        assert selected == [{"dimension": 128, "nb": 8, "config": "baseline"}]
+        raise RuntimeError("failed trial")
+    assert tuner.cache == {float_key: "baseline", mixed_key: "new"}

@@ -601,7 +601,36 @@ Select only with >=2% less measured mean time, preserving all samples. Stop on
 parity failure, nonfinite/missing gradients, partition/master drift, new
 preparation during measured updates, OOM or a thirty-minute trial cap.
 
-If timing supports selection, capture one diagnostic update to verify the
-removed synchronization/copy operations, separately from uninstrumented
-timing. Profiled times do not establish speed. No held-out quality promotion
+If timing supports selection or a regression needs diagnosis, capture one
+diagnostic update to verify the removed synchronization/copy operations,
+separately from uninstrumented timing. Profiled times do not establish speed.
+No held-out quality promotion
 or new BF16 numerical-equivalence claim follows. Keep the worker resident.
+
+The first metadata-only screen preserves exact gradients/final adapters but
+regresses to 3.97877 seconds/update. Direct BF16 normalization input fails the
+unchanged first-batch gate (loss difference 0.13402, gradient relative L2
+1.03411), so it stops before optimizer updates. Preserve that failed receipt.
+Investigate the regression with a bounded diagnostic adding nonblocking Trainer
+input transfers, whose blocking copies dominate traced host wait durations.
+Use the same stream and do not mutate/reuse CPU input storage during transfer;
+preserve Trainer's recursive input preparation and reject DeepSpeed. Compare
+against both the original control and metadata-only result. A subsequent
+uninstrumented timing screen is required before claiming a gain. Keep the
+first-batch strict gate and existing actual-update checks.
+
+The asynchronous-transfer diagnostic removes 209 of 268 stream synchronizations
+in update 15, but uninstrumented `14async` still takes 3.79490 seconds/update
+(3.17% more than the original control). It reuses `13hotprofile` validation in
+the same worker, with matching integration/installer/precision/input controls,
+initial masters and complete physical contract, instead of repeating that check.
+The profile's worker receipt incorrectly marks instrumentation false because
+the profiler was installed by the candidate; treat it as diagnostic and preserve
+the raw receipt with a separate analysis correction. Its timings are excluded.
+
+One final targeted normalization retry uses the FP32 baseline's exact cached
+reduction tiling for BF16 input/FP32 output, rather than allowing dtype-specific
+autotuning to choose another configuration. Scope and restore each cache entry;
+record the selected configurations. Repeat only the changed first-batch gate,
+then prepare changed normalization specializations if it passes. Failure still
+stops before updates. Do not assume matching tiling ensures numerical agreement.

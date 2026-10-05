@@ -339,7 +339,8 @@ def resident_train(original_train: Callable, root: Path) -> Callable:
                         "update_audit": audit.copy(),
                         "native_cache": cache_metadata(),
                         "wall_seconds": time.perf_counter() - started,
-                        "instrumented": profile is not None,
+                        "instrumented": profile is not None
+                        or (trial / "gemm_trace.json").exists(),
                         "optimizer_reset": True,
                         "startup_validation": {
                             "performed_this_run": False,

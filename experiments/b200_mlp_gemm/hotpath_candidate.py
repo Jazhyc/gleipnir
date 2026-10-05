@@ -7,12 +7,13 @@ import json
 import math
 import os
 import time
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 
 import torch
 
 import gleipnir.training_hotpath as integration
+from experiments.b200_mlp_gemm.hotpath_reuse import reusable_validation
 from experiments.b200_mlp_gemm.resident_worker import write_json
 from experiments.b200_mlp_gemm.warmed_training import (
     collect_batches,
@@ -21,16 +22,32 @@ from experiments.b200_mlp_gemm.warmed_training import (
 )
 from gleipnir.training_execution_audit import tensor_digest
 
-NORMALIZE = False
+NORMALIZE = True
+MATCH_NORM_CONFIGS = True
+ASYNC_INPUTS = True
 PROFILE = False
 _CONTEXT = None
 _INSTALLATION = None
 
 
 @contextmanager
+def installed(trainer):
+    with ExitStack() as stack:
+        metadata = stack.enter_context(
+            integration.training_hotpath_context(
+                normalize=NORMALIZE, match_norm_configs=MATCH_NORM_CONFIGS
+            )
+        )
+        if ASYNC_INPUTS:
+            stack.enter_context(integration.nonblocking_trainer_inputs(trainer))
+        metadata["nonblocking_trainer_inputs"] = ASYNC_INPUTS
+        yield metadata
+
+
+@contextmanager
 def intervention(trainer):
     global _CONTEXT, _INSTALLATION
-    _CONTEXT = integration.training_hotpath_context(normalize=NORMALIZE)
+    _CONTEXT = installed(trainer)
     _INSTALLATION = _CONTEXT.__enter__()
     try:
         yield
@@ -58,6 +75,22 @@ def validate(trainer) -> dict:
     initial = tensor_digest(parameters)
     if trainer.optimizer is not None or trainer.lr_scheduler is not None:
         raise ValueError("hotpath validation requires reset optimizer/scheduler")
+    reused = reusable_validation(
+        trial.parent,
+        integration_sha256=hashlib.sha256(
+            Path(integration.__file__).read_bytes()
+        ).hexdigest(),
+        installer_source=Path(__file__).read_text(),
+        normalize=NORMALIZE,
+        async_inputs=ASYNC_INPUTS,
+        worker_pid=os.getpid(),
+        initial_master=initial,
+        physical_contract=reference["physical_contract"],
+    )
+    if reused is not None and not PROFILE:
+        write_json(trial / "hotpath_validation.json", reused)
+        print(f"hotpath_validation reused={reused['reuse_reference']}", flush=True)
+        return reused
     saved = {
         name: getattr(trainer, name)
         for name in (
@@ -83,7 +116,7 @@ def validate(trainer) -> dict:
             )
             baseline_contract = physical_contract(trainer.microbatch_records)
             baseline_gradients = [p.grad.detach().cpu().clone() for p in parameters]
-            _CONTEXT = integration.training_hotpath_context(normalize=NORMALIZE)
+            _CONTEXT = installed(trainer)
             _INSTALLATION = _CONTEXT.__enter__()
             trainer.microbatch_records, trainer.logical_batch_sizes = [], []
             trainer.model.zero_grad(set_to_none=True)
