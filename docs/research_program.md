@@ -431,4 +431,12 @@ update timer. This validates the full-corpus throughput repair, not a similar
 gain in the already-warmed short cohort. Mean training loss is 0.243972 versus
 0.233122 historically. All 256 FP32 master tensors are finite and preserved
 bitwise by the serving rebase; the trained worker remains resident. Fresh score
-parity and ID quality are still pending.
+parity and all 3,012 canonical ID scores then complete successfully. Macro
+pAUROC@20 improves from 0.846273 to 0.886090, AUROC from 0.951394 to 0.965927,
+and Brier from 0.089216 to 0.086493. At the fixed 0.5 threshold, macro FPR falls
+from 0.051326 to 0.022328 but recall also falls from 0.830638 to 0.810651. Pooled
+ten-bin ECE worsens from 0.058943 to 0.096407, reflecting underprediction of
+positive probability. Report this tradeoff alongside ranking improvement; do not
+fit calibration on ID or promote from this one-seed combined-recipe comparison.
+The final prediction hash, per-source results, startup costs and retained worker
+are recorded in the replication decision.

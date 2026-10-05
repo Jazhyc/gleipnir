@@ -75,8 +75,12 @@ in 21 cases, plus seven row-scale cases. The corrected full epoch completes in
 control: 29.02% less loop time for the combined recipe. All 272 updates cover
 83,816,369 tokens; updates after the first average 8.963 seconds in the recorded
 logical-update timer. The first update takes 293.159 seconds including
-preparation. Mean training loss is 0.243972 versus 0.233122 historically; ID
-quality is still pending. Applying the Python
+preparation. Mean training loss is 0.243972 versus 0.233122 historically. All
+3,012 ID examples complete: macro pAUROC@20 is 0.886090 versus 0.846273, and
+AUROC is 0.965927 versus 0.951394. At threshold 0.5, recall falls from 0.830638
+to 0.810651 while FPR falls from 0.051326 to 0.022328. Pooled ten-bin ECE worsens
+from 0.058943 to 0.096407. These one-seed combined-recipe results do not establish
+isolated FP4 gains or authorize quality promotion. Applying the Python
 change requires restarting from the original initialization because the first
 attempt has no intermediate disk checkpoint. The replacement restarts from the
 frozen controls on the same B200, preserving that attempt under the

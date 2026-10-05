@@ -3,8 +3,9 @@
 Decision date: 2026-10-05. The user requests a complete training run followed by
 ID evaluation and selects the original regular 4B run: 8,688 monitoring rows,
 LR 5e-5, one epoch. This follows the explicit selection of native FP4 MLPs as
-the B200 execution default. Quality evaluation is pending; this decision does
-not establish equivalence with BF16.
+the B200 execution default. The corrected epoch and canonical ID evaluation
+complete on 2026-10-06.
+This one-seed comparison does not establish equivalence with BF16.
 
 ## Frozen comparison
 
@@ -36,8 +37,9 @@ Use the existing US-NC-2 B200 pod `i243nsg10usytq`, network volume `ixbh81vf9c`,
 and populated shared compiler/kernel caches. No capacity is created or
 terminated. The old resident timing worker, PID 11905, supports only twenty-step
 trials; preserve its state/logs and replace that process with the ordinary full
-Trainer through a retention wrapper. Pipeline PID 16069 launches trainer PID
-16214. After training, keep the model, native plans and initial CPU FP32 master
+Trainer through a retention wrapper. The initial slow pipeline PID 16069
+launches trainer PID 16214; the corrected run retains trainer PID 67332 as
+recorded below. After training, keep the model, native plans and initial CPU FP32 master
 copies resident, release optimizer state, and park the worker for future work.
 
 Reuse checksum-bound startup validation from
@@ -182,7 +184,7 @@ the rebased serving artifact SHA256 is
 Both preserve all 256 FP32 adapter tensors (169,869,312 elements). Their mapped
 tensor values are bitwise equal and finite; serving uses BF16 compute rather
 than changing the archived adapter dtype. Local collection matches both hashes.
-Fresh score parity and canonical ID quality are still pending.
+Fresh score parity and canonical ID results are completed below.
 
 Worker PID 67332 remains resident and idle, retaining four native plans and 64
 packed weight pairs (2,548,040,192 packed bytes); GPU memory falls to about 15 GB
@@ -200,3 +202,59 @@ environment, preserving all runtime/source/provenance checks. Twelve focused
 tests and Ruff pass. Archive the summary-only source patch separately from the
 already-executed training/scoring sources; no arithmetic or evaluation population
 changes, and no failed summary run or waived check is claimed.
+
+## Completed canonical ID evaluation, 2026-10-06
+
+All 3,012 frozen examples complete with finite scores, unique IDs and unchanged
+source/label/prompt membership: 2,066 Gloom (1,035 negative/1,031 positive) and
+946 STRIDE (369 negative/577 positive). The checksum-bound summary recomputes
+both populations against the same inputs; no ID tuning or alternate checkpoint
+selection occurs.
+
+| Macro metric | Historical BF16/SDPA | Native FP4/FA4 | Difference |
+| --- | ---: | ---: | ---: |
+| pAUROC@20 | 0.846273 | 0.886090 | +0.039817 |
+| AUROC | 0.951394 | 0.965927 | +0.014533 |
+| Brier | 0.089216 | 0.086493 | -0.002723 |
+| Balanced accuracy | 0.889656 | 0.894161 | +0.004505 |
+| Recall | 0.830638 | 0.810651 | -0.019987 |
+| False-positive rate | 0.051326 | 0.022328 | -0.028997 |
+
+Threshold diagnostics use the fixed 0.5 threshold. Ranking improves in both
+sources, while the Gloom threshold becomes more conservative: fewer false
+positives but lower recall. These are descriptive combined-recipe differences,
+not an isolated FP4 benefit or a statistical equivalence/promotion result.
+
+| Source | pAUROC@20, old → new | AUROC, old → new | Brier, old → new | Recall, old → new | FPR, old → new |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| gloom_exfiltration (2066) | 0.763290 → 0.825344 | 0.918684 → 0.943579 | 0.112373 → 0.106914 | 0.789525 → 0.747818 | 0.078261 → 0.033816 |
+| test_stride (946) | 0.929255 → 0.946835 | 0.984104 → 0.988275 | 0.066059 → 0.066073 | 0.871750 → 0.873484 | 0.024390 → 0.010840 |
+
+Ten-bin expected calibration error worsens despite the slightly better Brier
+score. The candidate underpredicts positive probability; no calibration is fitted
+on this ID set.
+
+| Population | ECE, old | ECE, new | Candidate mean probability minus prevalence |
+| --- | ---: | ---: | ---: |
+| pooled | 0.058943 | 0.096407 | -0.096407 |
+| gloom_exfiltration | 0.051820 | 0.097813 | -0.097813 |
+| test_stride | 0.074498 | 0.093336 | -0.093336 |
+
+The score-tie diagnostic records 1,472 unique scores/1,540 `tied_rows`, versus
+1,569/1,443 historically. The final prediction SHA256 is
+`12e75f3db89e0e811d1236f2bc9337ae2d8397cb1d688fad42520fe7106e08e4`.
+Local predictions, summary and both collected adapter files match their recorded
+checksums. `summary.json` reports complete, with no promotion and no OOD
+evaluation.
+
+ID scoring takes 665.178 seconds, versus the historical 658.275 seconds; these
+exclude engine startup and prompt preparation. The successful pipeline takes
+5154.132 seconds through its final summary, including training, loading,
+reference, serving preparation and scoring. Earlier failed attempts are
+additional preserved costs, excluded from that successful-pipeline figure. The
+46-minute training loop should not be described as the entire campaign time.
+
+Worker PID 67332 remains alive and idle on pod `i243nsg10usytq`; the evaluation
+engine exits normally and GPU memory returns to about 15 GB. Keep its native
+plans, packed weights, initial FP32 adapter copies and shared disk caches for
+future authorized optimization.
