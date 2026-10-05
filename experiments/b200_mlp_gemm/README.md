@@ -504,3 +504,58 @@ training operation, already present in the pinned frontend. Its packed native
 route consumes `cu_seqlens`, not our current convolution's `seq_idx`. Reuse the
 existing packing offsets and preserve boundaries, layout and adapter gradients.
 No convolution integration or speed improvement is claimed yet.
+
+## Resident NVIDIA BF16 causal Conv1D screen
+
+Hypothesis: NVIDIA's native width-four SiLU convolution forward/backward can
+reduce complete-update time versus Dao causal-conv1d in the resident FP4-MLP,
+BF16-GDN/FA4 baseline. Replace only the 24 convolution calls, forwarding the
+existing CUDA int32 cumulative offsets. Preserve parameters, Accelerate hooks,
+the disabled GDN shell, sequence boundaries and all other arithmetic. The native
+route must fail closed for unsupported layout/dtype or missing packed metadata.
+Raise the scoped native plan capacities from 64/128 to 256 to retain this
+twenty-update shape envelope; restore settings and methods after the trial.
+
+Before timing, require finite independent FP32/Dao output/input-gradient relative
+L2 error at most 3%, with zero cross-example output/gradient leakage on a packed
+row including lengths 1, 2 and 3. On the first actual logical batch, require
+absolute loss difference at most 0.005 and adapter-gradient relative L2 at most
+5% versus the existing FP4 baseline. This is changed-kernel validation, not a
+repeat of FA4 or unchanged startup gates. Prepare the twenty actual shapes once
+without updates, preserving masters/RNG/data order. Abort on failed parity,
+nonfinite/missing gradients, parameter/physical-partition drift, OOM or thirty
+minutes of preparation.
+
+Run twenty complete updates from reset masters, compare updates 11–20 against
+the existing pooled 3.67836-second control, and retain every sample. Select only
+with at least 2% less time, zero native forward/backward compilations during
+measurement and the existing worker's zero plan/specialization/graph checks.
+Audit that every physical row invokes all 24 native convolutions, with autograd
+where inputs require gradients (the first frozen GDN is forward-only).
+No held-out quality promotion follows. Historical GDN projection experiments
+remain reproducible through `gdn_candidate.py` and their archived trial sources.
+
+The native isolated check passes, but `06nvidiaconv` fails the first full-model
+parity gate before updates. `07convdiagnostic` reproduces that failure while
+comparing each actual convolution with Dao; `08convpassthrough` returns Dao
+outputs/gradients through the new wrapper and exactly reproduces the control.
+Retain all three receipts (the passthrough uses a deliberate diagnostic stop).
+
+Before a separate `09convfinite` trial, restrict its objective to finite timing
+under the user's kernel-screen instruction. Reuse the checksum-bound failed
+parity, verified matching native sources/master/worker and independent canary;
+the first preparation loss must reproduce the recorded native loss exactly.
+Do not claim a new parity pass or permit quality/recipe selection. Prepare the
+twenty changed shapes once, retain all finite/missing-gradient checks, then
+measure twenty reset updates against the existing resident control. This trial
+can answer speed despite failed numerical equivalence; it cannot select a
+training replacement. The original 5%/0.005 gate and stopped trials remain.
+
+`09convfinite` prepares all twenty batches and verifies unchanged masters, then
+stops after its first finite update because the original audit wrongly expects
+autograd in the first frozen GDN. Its seven inference plus 161 autograd calls
+correctly cover seven physical rows. Preserve that audit failure. `10convwarm`
+fixes only the assertion and reuses the complete preparation receipt when
+native/integration sources, master and worker match and baseline restoration is
+verified. Do not repeat preparation. The new helper tests those identities and
+actual-update counters still verify native compilation convergence.
