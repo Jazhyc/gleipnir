@@ -3,6 +3,7 @@
 from copy import deepcopy
 
 import pytest
+import torch
 
 from gleipnir.packed_benchmark import summarize
 from gleipnir.packed_training import validate_packed_training_config
@@ -113,9 +114,9 @@ def test_timing_summary_rejects_missing_native_or_acceptance_evidence(missing):
     elif missing == "native":
         del m["quantization"]["full_bf16_lora"]["native_fp4_mlp"]
     elif missing == "backward":
-        m["quantization"]["full_bf16_lora"]["native_fp4_mlp"][
-            "base_input_gradient"
-        ] = "bf16"
+        m["quantization"]["full_bf16_lora"]["native_fp4_mlp"]["base_input_gradient"] = (
+            "bf16"
+        )
     else:
         m["sequence_packing"]["preflight"]["passed"] = False
     with pytest.raises(ValueError, match="fresh packing gates"):
@@ -147,3 +148,33 @@ def test_timing_waiver_keeps_isolation_and_finite_gates(invalid):
         c["adapter_gradient_relative_l2"] = float("nan")
     with pytest.raises(PackingCanaryError):
         _accept_canary(c, 0.05, "explicit user timing request")
+
+
+def test_graph_boundary_marks_whole_invocations_and_preserves_live_gradients(
+    monkeypatch,
+):
+    from experiments.b200_mlp_gemm.fp4_training_entry import (
+        install_graph_step_boundary,
+    )
+
+    marks = []
+    monkeypatch.setattr(
+        torch.compiler, "cudagraph_mark_step_begin", lambda: marks.append(1)
+    )
+    model = torch.nn.Sequential(torch.nn.Linear(3, 4), torch.nn.Linear(4, 2))
+    initial_ids = [id(p) for p in model.parameters()]
+    initial_keys = tuple(model.state_dict())
+    install_graph_step_boundary(model)
+    x = torch.randn(2, 3, requires_grad=True)
+    for invocation in range(1, 3):
+        model.zero_grad(set_to_none=True)
+        model(x).square().sum().backward()
+        assert len(marks) == invocation
+        assert all(
+            p.grad is not None and torch.isfinite(p.grad).all()
+            for p in model.parameters()
+        )
+    assert [id(p) for p in model.parameters()] == initial_ids
+    assert tuple(model.state_dict()) == initial_keys
+    with pytest.raises(ValueError, match="already installed"):
+        install_graph_step_boundary(model)

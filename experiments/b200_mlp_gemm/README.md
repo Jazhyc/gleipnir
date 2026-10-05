@@ -263,3 +263,10 @@ Stop on isolation/finite/replay failure, OOM or twenty updates. Timing acceptanc
 requires actual metadata for all 32 native forward/input-gradient MLPs and FP32
 masters; an ordinary BF16 FA4 recipe cannot use this waiver. No quality claim,
 held-out promotion or default change follows from this timing-only experiment.
+
+The first timing-only attempt reaches decoder graph compilation but fails on
+an overwritten graph output before any updates. Its retry marks one CUDA-graph
+iteration at each root-model physical forward, preserving decoder-segment
+outputs until backward completes. Keep all prior receipts, the same pilot and
+timing authority, and fresh compiled/isolation/memory checks. CPU hook tests
+cannot establish GPU replay correctness; require the retry to demonstrate it.

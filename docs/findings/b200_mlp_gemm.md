@@ -564,3 +564,25 @@ and memory checks, preserve FP32 masters and the unchanged physical contract.
 Keep the selected combined FP4 pilot, twenty updates (ten warmup/ten measured),
 historical FA4 control and shared caches. Report any resulting gain as speed
 evidence for the combined FP4/compile recipe, not learning/quality acceptance.
+
+`traintiming01` records the requested timing-only authority and accepts the
+finite, exactly isolated eager packing receipt for timing, while strict and
+learning parity remain false (68.11% gradient relative L2). It then fails before
+updates during the compiled logit canary: a decoder graph-segment output is
+overwritten when CUDA-graph iteration tracking advances between segments.
+Preserve this integration failure separately from numerical parity. Its final
+summary SHA-256 is
+`db23cb1b08bdf316509e618423f867e9fade2a4f9d8f1034a6efcd5ab0c3f92b`;
+eager packing receipt SHA-256 is
+`fed2055a68ad35da44b558fb642ab817f7d7ca1253c2fcedf0112022960d8db1`.
+
+The retry adds one root-model pre-forward hook calling the supported
+`torch.compiler.cudagraph_mark_step_begin()` API, so all decoder segments in
+one physical model invocation share a graph iteration. Mark once per physical
+forward, never once per decoder layer or before its pending backward. No output
+clone or arithmetic change is added. This follows the
+[PyTorch 2.11 iteration-boundary guidance](https://docs.pytorch.org/docs/2.11/generated/torch.compiler.cudagraph_mark_step_begin.html).
+Fourteen timing-path CPU tests pass, including single root marks through nested
+layers, live parameter/input gradients and unchanged parameter/state identities.
+Use the same pilot, authority, fresh checks, twenty updates and retained caches;
+the GPU retry must establish that the boundary fix actually resolves replay.
