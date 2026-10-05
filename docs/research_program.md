@@ -416,3 +416,9 @@ any update. Preserve that receipt separately. The new source hashes are now
 bound to the targeted bitwise evidence, retaining historical hashes and failed
 canaries; source drift is checked before loading a model. Training and ID
 remain pending after this corrected restart.
+The corrected worker reaches eight updates with four native plans: its first
+update takes 293 seconds including compilation, then updates 2–8 average 10.43
+seconds (one-second log resolution), with all eight losses/norms matching the
+archived attempt exactly. This addresses full-corpus first-use overhead; the
+warmed short-cohort benchmark had already paid those costs. Completed-epoch
+throughput and ID quality remain pending.

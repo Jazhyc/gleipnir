@@ -141,3 +141,13 @@ no repeated model arithmetic, and 62 focused tests pass. The corrected pipeline
 PID 67204 and trainer PID 67332 restart from the same frozen controls at Unix
 time 1791236020.868; throughput and ID remain pending.
 The per-shape compile-ahead helper is unnecessary for the runtime-M baseline.
+
+The corrected run reaches update 8 with exactly four native plans and 64 packed
+weight pairs. Its first update takes 293 seconds including initial compilation;
+updates 2–8 take 12, 10, 11, 8, 10, 10 and 12 seconds (one-second log resolution,
+10.43-second mean). All eight logged losses and gradient norms match the archived
+slow attempt exactly. This is encouraging full-corpus evidence, not the warmed
+short-cohort benchmark or a completed-epoch result. The warmed short cohort
+already cached its exact-M plans and conversion variants, so this removal of
+first-use overhead should not imply a similar gain there. Generic conversion
+may still change steady performance slightly; it has not been timed separately.
