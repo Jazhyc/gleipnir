@@ -67,7 +67,9 @@ def grouped_gdn_forward(original: Callable) -> tuple[Callable, dict]:
 
 
 @contextmanager
-def grouped_gdn_context(model: torch.nn.Module) -> Iterator[dict[str, Any]]:
+def grouped_gdn_context(
+    model: torch.nn.Module, *, match_normalization_configs: bool = False
+) -> Iterator[dict[str, Any]]:
     """Retain shared Q/K heads for a caller already using native grouped FlashQLA."""
     modules = [
         (name, m)
@@ -95,9 +97,14 @@ def grouped_gdn_context(model: torch.nn.Module) -> Iterator[dict[str, Any]]:
         transforms.append({"module": name, **metadata})
     missing = object()
     saved = [(m, m.__dict__.get("forward", missing)) for m, _ in replacements]
+    norm_context = None
     try:
         for module, function in replacements:
             module.forward = function
+        configs = []
+        if match_normalization_configs:
+            norm_context = grouped_normalization_configs()
+            configs = norm_context.__enter__()
         yield {
             "modules": [name for name, _ in modules],
             "query_key_heads": modules[0][1].num_k_heads,
@@ -105,10 +112,62 @@ def grouped_gdn_context(model: torch.nn.Module) -> Iterator[dict[str, Any]]:
             "precision_boundary": "unchanged_bf16_qkv_fp32_gates_norm",
             "parameter_identity_preserved": True,
             "source_transforms": transforms,
+            "matched_normalization_configs": match_normalization_configs,
+            "normalization_configs": configs,
         }
     finally:
+        if norm_context is not None:
+            norm_context.__exit__(None, None, None)
         for module, original in saved:
             if original is missing:
                 del module.forward
             else:
                 module.forward = original
+
+
+@contextmanager
+def grouped_normalization_configs() -> Iterator[list[dict[str, Any]]]:
+    """Use the corresponding expanded-head forward reduction launch settings."""
+    from fla.modules.l2norm import l2norm_fwd_kernel
+
+    import gleipnir.flashqla_training as boundary
+
+    original = boundary._normalize_qk_fp32
+    baseline = dict(l2norm_fwd_kernel.cache)
+    selected, seen = [], set()
+
+    def normalize(x):
+        if x.shape[-2:] != (16, 128):
+            raise ValueError("matched grouped normalization requires 16 D128 heads")
+        rows = x.numel() // 128
+        nb = (rows + 65535) // 65536
+        expanded_nb = (rows * 2 + 65535) // 65536
+        target = (128, nb, "torch.float32", "torch.float32", "torch.float32")
+        source = (128, expanded_nb, *target[2:])
+        if source not in baseline:
+            raise ValueError(f"expanded normalization configuration missing: {source}")
+        cache = l2norm_fwd_kernel.cache
+        existed, previous = target in cache, cache.get(target)
+        cache[target] = baseline[source]
+        if (nb, expanded_nb) not in seen:
+            selected.append(
+                {
+                    "grouped_nb": nb,
+                    "expanded_nb": expanded_nb,
+                    "config": str(baseline[source]),
+                }
+            )
+            seen.add((nb, expanded_nb))
+        try:
+            return original(x)
+        finally:
+            if existed:
+                cache[target] = previous
+            else:
+                cache.pop(target, None)
+
+    boundary._normalize_qk_fp32 = normalize
+    try:
+        yield selected
+    finally:
+        boundary._normalize_qk_fp32 = original

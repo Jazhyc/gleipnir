@@ -1,12 +1,18 @@
 """Preserve head grouping, hooks, disabled boundaries and scoped restoration."""
 
 import inspect
+import sys
+from types import SimpleNamespace
 
 import pytest
 import torch
 import torch.nn.functional as F
 
-from gleipnir.grouped_gdn import grouped_gdn_context, grouped_gdn_forward
+from gleipnir.grouped_gdn import (
+    grouped_gdn_context,
+    grouped_gdn_forward,
+    grouped_normalization_configs,
+)
 
 
 class Qwen3_5GatedDeltaNet(torch.nn.Module):
@@ -73,6 +79,40 @@ def test_restore_after_exception():
         with grouped_gdn_context(model):
             raise RuntimeError("injected")
     assert all("forward" not in m.__dict__ for m in model)
+
+
+@pytest.mark.parametrize("fail", [False, True])
+def test_matched_normalization_config_and_function_restore(monkeypatch, fail):
+    import gleipnir.flashqla_training as boundary
+
+    key = (128, 1, "torch.float32", "torch.float32", "torch.float32")
+    source = (128, 2, *key[2:])
+    cache = {key: "grouped", source: "expanded"}
+    autotuner = SimpleNamespace(cache=cache)
+    monkeypatch.setitem(
+        sys.modules,
+        "fla.modules.l2norm",
+        SimpleNamespace(l2norm_fwd_kernel=autotuner),
+    )
+    x = SimpleNamespace(shape=(1, 4096, 16, 128), numel=lambda: 4096 * 16 * 128)
+
+    def original(actual):
+        assert actual is x
+        assert cache[key] == "expanded"
+        if fail:
+            raise RuntimeError("injected")
+        return "normalized"
+
+    monkeypatch.setattr(boundary, "_normalize_qk_fp32", original)
+    with grouped_normalization_configs() as configs:
+        if fail:
+            with pytest.raises(RuntimeError, match="injected"):
+                boundary._normalize_qk_fp32(x)
+        else:
+            assert boundary._normalize_qk_fp32(x) == "normalized"
+        assert cache == {key: "grouped", source: "expanded"}
+        assert configs == [{"grouped_nb": 1, "expanded_nb": 2, "config": "expanded"}]
+    assert boundary._normalize_qk_fp32 is original
 
 
 def test_actual_transformers_hook_preserved():

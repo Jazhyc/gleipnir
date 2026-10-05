@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import ast
 import hashlib
 import json
 import math
@@ -22,6 +23,8 @@ from experiments.b200_mlp_gemm.warmed_training import (
 )
 from gleipnir.training_execution_audit import tensor_digest
 
+MATCH_NORMALIZATION_CONFIGS = True
+FINITE_TIMING_REFERENCE = "18groupednorm"
 _CONTEXT = None
 _INSTALLATION = None
 
@@ -29,7 +32,9 @@ _INSTALLATION = None
 @contextmanager
 def intervention(trainer):
     global _CONTEXT, _INSTALLATION
-    _CONTEXT = integration.grouped_gdn_context(trainer.model)
+    _CONTEXT = integration.grouped_gdn_context(
+        trainer.model, match_normalization_configs=MATCH_NORMALIZATION_CONFIGS
+    )
     _INSTALLATION = _CONTEXT.__enter__()
     try:
         yield
@@ -62,6 +67,17 @@ def validate(trainer) -> dict:
     initial = tensor_digest(parameters)
     if trainer.optimizer is not None or trainer.lr_scheduler is not None:
         raise ValueError("grouped validation requires reset optimizer/scheduler")
+    if FINITE_TIMING_REFERENCE:
+        reused = finite_timing_validation(trial, initial)
+        write_json(trial / "grouped_validation.json", reused)
+        audit = GroupedKernelAudit(trial)
+        trainer.add_callback(audit)
+        trainer._gleipnir_grouped_audit = audit
+        print(
+            f"grouped_validation finite_timing_reuse={FINITE_TIMING_REFERENCE}",
+            flush=True,
+        )
+        return reused
     saved = {
         name: getattr(trainer, name)
         for name in (
@@ -87,7 +103,9 @@ def validate(trainer) -> dict:
             check_gradients(parameters)
             baseline_contract = physical_contract(trainer.microbatch_records)
             baseline_gradients = [p.grad.detach().cpu().clone() for p in parameters]
-            _CONTEXT = integration.grouped_gdn_context(trainer.model)
+            _CONTEXT = integration.grouped_gdn_context(
+                trainer.model, match_normalization_configs=MATCH_NORMALIZATION_CONFIGS
+            )
             _INSTALLATION = _CONTEXT.__enter__()
             trainer.microbatch_records, trainer.logical_batch_sizes = [], []
             trainer.model.zero_grad(set_to_none=True)
@@ -174,3 +192,59 @@ def check_gradients(parameters):
     if not gradients or any(g is None for g in gradients):
         raise FloatingPointError("missing grouped-screen adapter gradients")
     torch.nn.utils.get_total_norm(gradients, error_if_nonfinite=True)
+
+
+def finite_timing_validation(trial: Path, initial: str) -> dict:
+    """Reuse matching failed strict checks for a finite timing-only screen."""
+    previous = trial.parent / FINITE_TIMING_REFERENCE
+    path = previous / "grouped_validation.json"
+    receipt = json.loads(path.read_text())
+    failure = json.loads((previous / "failure.json").read_text())
+    prior_source = (previous / "executed_grouped_candidate.py").read_text()
+
+    def installer(source):
+        tree = ast.parse(source)
+        function = next(
+            n
+            for n in tree.body
+            if isinstance(n, ast.FunctionDef) and n.name == "intervention"
+        )
+        return ast.dump(function)
+
+    if (
+        not MATCH_NORMALIZATION_CONFIGS
+        or "MATCH_NORMALIZATION_CONFIGS = True" not in prior_source
+        or installer(prior_source) != installer(Path(__file__).read_text())
+        or receipt["worker_pid"] != os.getpid()
+        or receipt["initial_master_sha256"] != initial
+        or receipt.get("masters_unchanged") is not True
+        or receipt.get("optimizer_updates") != 0
+        or receipt.get("physical_contract_agreement") is not True
+        or failure.get("baseline_restored") is not True
+        or receipt["integration_source_sha256"]
+        != hashlib.sha256(Path(integration.__file__).read_bytes()).hexdigest()
+        or not all(
+            math.isfinite(receipt[k])
+            for k in (
+                "baseline_first_batch_loss",
+                "candidate_first_batch_loss",
+                "adapter_gradient_relative_l2",
+            )
+        )
+    ):
+        raise ValueError("finite grouped timing validation identity mismatch")
+    return {
+        **receipt,
+        "accepted_for_timing": True,
+        "accepted_for_training_replacement": False,
+        "strict_parity_passed": False,
+        "finite_timing_only": True,
+        "performed_this_trial": False,
+        "validation_wall_seconds": 0.0,
+        "full_model_preparation_replayed": False,
+        "reuse_reference": str(path),
+        "reuse_reference_sha256": hashlib.sha256(path.read_bytes()).hexdigest(),
+        "previous_candidate_source_sha256": hashlib.sha256(
+            prior_source.encode()
+        ).hexdigest(),
+    }

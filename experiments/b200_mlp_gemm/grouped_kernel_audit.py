@@ -11,7 +11,7 @@ from experiments.b200_mlp_gemm.resident_worker import write_json
 
 
 class GroupedKernelAudit(TrainerCallback):
-    """Check the four existing SM100 native JIT caches on each actual update."""
+    """Check native SM100 and grouped-gradient JIT caches on each update."""
 
     def __init__(self, trial: Path):
         self.trial, self.records = trial, []
@@ -23,12 +23,16 @@ class GroupedKernelAudit(TrainerCallback):
             "fused_bwd": "tilelang_fused_chunk_gdr_bwd",
             "prepare_h": "tilelang_prepare_h",
             "kkt_solve": "tilelang_kkt_solve",
+            "group_reduce": "tilelang_group_reduce_vector",
         }
         caches = {}
         for name, attribute in functions.items():
-            module = importlib.import_module(
-                f"flash_qla.ops.gated_delta_rule.chunk.blackwell.{name}"
+            path = (
+                "flash_qla.ops.utils.group_reduce"
+                if name == "group_reduce"
+                else f"flash_qla.ops.gated_delta_rule.chunk.blackwell.{name}"
             )
+            module = importlib.import_module(path)
             cache = getattr(module, attribute)._kernel_cache
             caches[name] = len(cache)
         return caches

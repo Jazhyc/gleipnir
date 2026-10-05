@@ -3,11 +3,12 @@
 import importlib
 
 import gleipnir.grouped_gdn as integration
-from experiments.b200_mlp_gemm import grouped_candidate
+from experiments.b200_mlp_gemm import grouped_candidate, grouped_kernel_audit
 
 # Each request archives these exact sources; reload compatible pilot fixes
 # without replacing the resident model or retaining failed module globals.
 importlib.reload(integration)
+importlib.reload(grouped_kernel_audit)
 importlib.reload(grouped_candidate)
 intervention = grouped_candidate.intervention
 validate = grouped_candidate.validate

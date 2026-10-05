@@ -678,3 +678,24 @@ preparation, OOM or thirty minutes without completing the bounded screen.
 The scoped intervention restores all forwards after success or failure; keep
 the worker and shared network-volume caches alive. No held-out promotion or new
 BF16 quality-equivalence claim follows from this systems screen.
+
+`17grouped` fails the first-batch gradient gate (18.0449% relative L2) while
+passing loss agreement (absolute difference 0.00267220). No updates occur and
+the baseline is restored. Preserve that receipt. A single targeted diagnostic
+maps grouped forward-normalization launches to the resident settings used for
+the corresponding expanded 32-head shape, keeping FP32 input/compute/output.
+Scope and restore each cache entry and the normalizer; keep the same numerical
+gate and stop before updates if it fails. This tests launch-setting effects,
+not an assumption that backward gradient reduction is equivalent.
+
+`18groupednorm` restores exact first-batch loss but still fails gradient parity
+at 17.5842%. It stops before updates. Under the user's earlier instruction to
+measure finite variants regardless of gradient differences, `19groupedfinite`
+is a timing-only continuation, retaining both failed strict receipts and
+excluding training/quality promotion. Reuse the matching diagnostic by checking
+worker PID, original FP32 master, integration source, installer AST, precision
+option, physical-contract agreement and baseline restoration; archive its hash.
+Do not repeat that numerical comparison or model preparation. Keep finite/
+missing-gradient checks, twenty reset updates, the >=2% timing selection and
+zero-preparation audit during measured updates. A timing gain alone cannot
+select this numerically failed implementation as a training replacement.
