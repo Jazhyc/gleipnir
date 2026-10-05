@@ -59,3 +59,58 @@ gates, the frozen initial FP32 adapter and 20 updates (ten warmup, ten measured)
 Controls are checksum-bound historical dense MXFP8 and FA4 trajectories;
 the FA4 runtime used its original cuDNN rather than the NVIDIA overlay.
 No new quality validation or default promotion follows this screen.
+
+## Completed whole-model timing
+
+`training01` completes all 20 finite updates. The final ten include 1,314,331
+tokens with exactly the same physical rows, logical indices and token counts
+as both recorded controls.
+
+| Attention | Mean measured update | Peak allocated GPU memory |
+| --- | ---: | ---: |
+| Dense NVIDIA MXFP8, historical | 5.29781 s | 146.85 GiB |
+| BF16 FA4, historical | 4.08648 s | 145.24 GiB |
+| Direct variable-length NVIDIA MXFP8 | 3.93793 s | 145.10 GiB |
+
+Variable-length support reduces measured update time by 25.67% relative to
+dense MXFP8 and 3.64% relative to the historical FA4 control. The complete new
+invocation takes 528.58 seconds, including fresh model loading, eager/compiled
+diagnostics, memory checks, updates and saving. This uses warm shared compiler
+caches; it is not a cold-start measurement. The measured update window totals
+39.37934 seconds. Actual packed physical rows contain up to 26 examples, within
+the declared 32-example envelope; input partitions are preserved from the
+matched controls rather than inferred from nominal profile settings.
+
+The saved adapter is byte-for-byte identical to the dense MXFP8 adapter after
+its 20 updates: SHA256
+`0aade911f1a97ea803c1dd921e49079221bf7ea4fb75d70310a42cd66888745a`.
+All 256 master tensors are FP32. Both runs finish at master-state checksum
+`b52c12f171e708681fb223f6f2b277af42070c3cbc36da519dc95702dfad147e`
+from the same initial master checksum
+`a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11`.
+This supports the correctness of the variable-length port for this trajectory,
+while retaining the original approximation relative to BF16.
+
+Fresh whole-model strict and 10% learning parity remain failed: eager adapter
+gradient relative L2 is 18.7114%, compiled 16.6558%. Isolation remains zero and
+the largest-input preflight passes with unchanged masters before training.
+The separate adaptive-gradient comparison is finite but fails at 33.6068%;
+its existing selected-recipe acceptance is explicitly recorded. Continue to
+distinguish these receipts from finite timing acceptance.
+
+Verification checks both remote/local artifact hashes, all 16 archived
+execution-source hashes, complete update counts, identical physical contracts,
+master identity and FP32 safetensors headers. Important artifacts and logs are
+collected; the B200 is idle and remains running. Receipts:
+
+- `results/b200_nvidia_mxfp8_varlen/training01/summary.json`, SHA256
+  `da16c9e8572e0610e9e13da0e7ba71afe56ed063e93ba90a90fd133950108391`.
+- `nvidia_mxfp8_varlen/causal_adapter/training_metadata.json` within that run,
+  SHA256 `8442b71822b61a445b4f8715c903fc720ab8d9e49b538e359bcdad4ba040f8d9`.
+- `artifact_audit.json` and `local_verification.json` within that run preserve
+  the final collection and comparison checks.
+
+The 3.64% FA4 time reduction falls below the predeclared 5% threshold and lacks a
+fresh FA4 replication. Keep BF16 FA4 as the standard; direct varlen MXFP8 is now
+a working experimental option with substantially lower overhead than the dense
+prototype. No quality-equivalence claim follows.

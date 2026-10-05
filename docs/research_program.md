@@ -215,5 +215,9 @@ uses packed forward and native cumulative-offset backward kernels. Whole-row
 quantization preserves sequence-local blocks and matches the dense MXFP8
 outputs and gradients exactly in fresh boundary tests. Singleton semantics,
 isolation, changed-length CUDA graph replay and initialized scratch pass;
-independent FP32 strict parity remains failed. Complete model timing and quality
-equivalence remain separate questions; keep BF16 FA4 as the standard.
+independent FP32 strict parity remains failed. Its completed 20-update screen
+averages 3.93793 seconds/update, taking 25.67% less time than dense MXFP8 and
+3.64% less than historical FA4 with identical physical contracts. Its final FP32
+adapter is byte-for-byte identical to the dense MXFP8 run. Whole-model gradient
+parity remains failed; the modest FA4 timing difference lacks fresh replication
+and quality validation. Keep BF16 FA4 as the standard.
