@@ -40,7 +40,10 @@ def test_queue_atomic_publish(tmp_path):
     assert not list(tmp_path.glob("*.tmp"))
 
 
-def test_reset_preserves_parameters_and_restores_rng():
+@pytest.mark.parametrize("recover", [False, True])
+def test_reset_preserves_parameters_and_restores_rng(monkeypatch, recover):
+    from experiments.b200_mlp_gemm.resident_worker import recover_candidate
+
     model = torch.nn.Linear(4, 2)
     parameters = list(model.parameters())
     initial = [p.detach().clone() for p in parameters]
@@ -61,13 +64,28 @@ def test_reset_preserves_parameters_and_restores_rng():
     with torch.no_grad():
         for p in parameters:
             p.add_(1)
-    digest = reset_trainer(trainer, initial, rng)
+    if recover:
+        monkeypatch.setattr(torch.cuda, "synchronize", lambda: None)
+        digest = recover_candidate(trainer, initial, rng, tensor_digest(initial))
+    else:
+        digest = reset_trainer(trainer, initial, rng)
     assert digest == tensor_digest(initial)
     assert all(a is b for a, b in zip(parameters, model.parameters(), strict=True))
     assert torch.equal(torch.rand(4), expected)
     assert trainer.optimizer is trainer.lr_scheduler is None
     assert handler.optimizer is handler.lr_scheduler is None
     assert not timer.durations and timer.started_at is None
+
+
+def test_recovery_rejects_unusable_cuda_context(monkeypatch):
+    from experiments.b200_mlp_gemm.resident_worker import recover_candidate
+
+    def failed_cuda():
+        raise RuntimeError("CUDA context unusable")
+
+    monkeypatch.setattr(torch.cuda, "synchronize", failed_cuda)
+    with pytest.raises(RuntimeError, match="CUDA context unusable"):
+        recover_candidate(None, [], {}, "unused")
 
 
 def test_resident_validation_reuse_is_scoped():

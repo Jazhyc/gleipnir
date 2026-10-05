@@ -114,6 +114,17 @@ def reset_trainer(trainer: Any, initial: list[torch.Tensor], rng: dict) -> str:
     return tensor_digest(parameters)
 
 
+def recover_candidate(
+    trainer: Any, initial: list[torch.Tensor], rng: dict, expected_digest: str
+) -> str:
+    """Recover model/state after a scoped failure; reject a damaged CUDA context."""
+    torch.cuda.synchronize()
+    digest = reset_trainer(trainer, initial, rng)
+    if digest != expected_digest:
+        raise ValueError("failed candidate changed parameter layout")
+    return digest
+
+
 def prime_shapes(trainer: Any, loader: Any, expected: list[dict], path: Path) -> None:
     """Replay each trial batch once; actual baseline updates audit convergence."""
     records, sizes = trainer.microbatch_records, trainer.logical_batch_sizes
@@ -269,96 +280,119 @@ def resident_train(original_train: Callable, root: Path) -> Callable:
                 trial = root / current["id"]
                 trial.mkdir(exist_ok=False)
                 request_path.rename(trial / "request.json")
-                audit.clear()
-                started = time.perf_counter()
-                digest = reset_trainer(trainer, initial, rng)
-                if digest != initial_digest:
-                    raise ValueError("resident master reset failed")
-                trainer.args.output_dir = str(trial / "adapter")
-                profile = None
-                if current.get("variant") == "gemmprofile":
-                    from experiments.b200_mlp_gemm.resident_profile import GemmProfile
-
-                    profile = GemmProfile(trial)
-                    trainer.add_callback(profile)
                 try:
-                    intervention = (
-                        candidate_context(trainer, current, trial)
-                        if (current.get("variant") == "candidate")
-                        else nullcontext()
-                    )
-                    with intervention:
-                        output = original_train(trainer)
-                finally:
-                    if profile is not None:
-                        profile.close()
-                        trainer.remove_callback(profile)
-                contract = physical_contract(trainer.microbatch_records)
-                if contract != expected or len(audit) != 20:
-                    raise ValueError(
-                        "resident trial physical contract/update count changed"
-                    )
-                timing = next(
-                    c
-                    for c in trainer.callback_handler.callbacks
-                    if c.__class__.__name__ == "OptimizerStepTimer"
-                )
-                samples = timing.durations
-                warm = all(all(v == 0 for v in x["delta"].values()) for x in audit[10:])
-                final_digest = tensor_digest(parameters)
-                trainer.save_model(str(trial / "adapter"))
-                report = {
-                    "status": "complete",
-                    "variant": current.get("variant", "baseline"),
-                    "pid": os.getpid(),
-                    "initial_master_sha256": digest,
-                    "final_master_sha256": final_digest,
-                    "physical_contract": contract,
-                    "loss_history": [
-                        x for x in trainer.state.log_history if "loss" in x
-                    ],
-                    "step_seconds": samples,
-                    "measured_mean_seconds": sum(samples[10:]) / 10,
-                    "measured_updates_warm": warm,
-                    "update_audit": audit.copy(),
-                    "native_cache": cache_metadata(),
-                    "wall_seconds": time.perf_counter() - started,
-                    "instrumented": profile is not None,
-                    "optimizer_reset": True,
-                    "startup_validation": {
-                        "performed_this_run": False,
-                        "reference_sha256": reference_sha,
-                        "timing_only": True,
-                        "original_strict_failures_preserved": True,
-                    },
-                }
-                write_json(trial / "receipt.json", report)
-                if current["id"] == "02repeat":
-                    baseline = json.loads(
-                        (root / "01baseline/receipt.json").read_text()
-                    )
-                    keys = (
-                        "initial_master_sha256",
-                        "final_master_sha256",
-                        "physical_contract",
-                        "loss_history",
-                    )
-                    agreement = {key: report[key] == baseline[key] for key in keys}
-                    write_json(root / "reset_validation.json", agreement)
-                    if not all(agreement.values()):
-                        raise ValueError(
-                            "resident repeat did not reproduce the baseline"
+                    audit.clear()
+                    started = time.perf_counter()
+                    digest = reset_trainer(trainer, initial, rng)
+                    if digest != initial_digest:
+                        raise ValueError("resident master reset failed")
+                    trainer.args.output_dir = str(trial / "adapter")
+                    profile = None
+                    if current.get("variant") == "gemmprofile":
+                        from experiments.b200_mlp_gemm.resident_profile import (
+                            GemmProfile,
                         )
-                if not warm:
-                    raise ValueError(
-                        "measured resident updates still prepare new shapes"
+
+                        profile = GemmProfile(trial)
+                        trainer.add_callback(profile)
+                    try:
+                        intervention = (
+                            candidate_context(trainer, current, trial)
+                            if (current.get("variant") == "candidate")
+                            else nullcontext()
+                        )
+                        with intervention:
+                            output = original_train(trainer)
+                    finally:
+                        if profile is not None:
+                            profile.close()
+                            trainer.remove_callback(profile)
+                    contract = physical_contract(trainer.microbatch_records)
+                    if contract != expected or len(audit) != 20:
+                        raise ValueError(
+                            "resident trial physical contract/update count changed"
+                        )
+                    timing = next(
+                        c
+                        for c in trainer.callback_handler.callbacks
+                        if c.__class__.__name__ == "OptimizerStepTimer"
                     )
-                status("idle", last_receipt=str(trial / "receipt.json"))
-                print(
-                    f"resident_trial_complete id={current['id']} "
-                    f"mean={report['measured_mean_seconds']:.6f}",
-                    flush=True,
-                )
+                    samples = timing.durations
+                    warm = all(
+                        all(v == 0 for v in x["delta"].values()) for x in audit[10:]
+                    )
+                    final_digest = tensor_digest(parameters)
+                    trainer.save_model(str(trial / "adapter"))
+                    report = {
+                        "status": "complete",
+                        "variant": current.get("variant", "baseline"),
+                        "pid": os.getpid(),
+                        "initial_master_sha256": digest,
+                        "final_master_sha256": final_digest,
+                        "physical_contract": contract,
+                        "loss_history": [
+                            x for x in trainer.state.log_history if "loss" in x
+                        ],
+                        "step_seconds": samples,
+                        "measured_mean_seconds": sum(samples[10:]) / 10,
+                        "measured_updates_warm": warm,
+                        "update_audit": audit.copy(),
+                        "native_cache": cache_metadata(),
+                        "wall_seconds": time.perf_counter() - started,
+                        "instrumented": profile is not None,
+                        "optimizer_reset": True,
+                        "startup_validation": {
+                            "performed_this_run": False,
+                            "reference_sha256": reference_sha,
+                            "timing_only": True,
+                            "original_strict_failures_preserved": True,
+                        },
+                    }
+                    write_json(trial / "receipt.json", report)
+                    if current["id"] == "02repeat":
+                        baseline = json.loads(
+                            (root / "01baseline/receipt.json").read_text()
+                        )
+                        keys = (
+                            "initial_master_sha256",
+                            "final_master_sha256",
+                            "physical_contract",
+                            "loss_history",
+                        )
+                        agreement = {key: report[key] == baseline[key] for key in keys}
+                        write_json(root / "reset_validation.json", agreement)
+                        if not all(agreement.values()):
+                            raise ValueError(
+                                "resident repeat did not reproduce the baseline"
+                            )
+                    if not warm:
+                        raise ValueError(
+                            "measured resident updates still prepare new shapes"
+                        )
+                    status("idle", last_receipt=str(trial / "receipt.json"))
+                    print(
+                        f"resident_trial_complete id={current['id']} "
+                        f"mean={report['measured_mean_seconds']:.6f}",
+                        flush=True,
+                    )
+                except Exception as error:
+                    if current.get("variant") != "candidate":
+                        raise
+                    # A scoped candidate has restored its modules by this point.
+                    # Failed CUDA contexts cannot safely remain resident.
+                    restored = recover_candidate(trainer, initial, rng, initial_digest)
+                    failure = {
+                        "status": "failed",
+                        "trial": current["id"],
+                        "error": f"{type(error).__name__}: {error}",
+                        "baseline_restored": True,
+                        "initial_master_sha256": restored,
+                    }
+                    write_json(trial / "failure.json", failure)
+                    status(
+                        "idle", last_failed_trial=current["id"], error=failure["error"]
+                    )
+                    print(f"resident_candidate_failed {failure}", flush=True)
         except BaseException as error:
             status("failed", error=f"{type(error).__name__}: {error}")
             raise

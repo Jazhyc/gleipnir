@@ -24,7 +24,8 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--session", required=True)
     sub = parser.add_subparsers(dest="action", required=True)
-    sub.add_parser("start")
+    start = sub.add_parser("start")
+    start.add_argument("--baseline-only", action="store_true")
     submit = sub.add_parser("submit")
     submit.add_argument("--id", required=True)
     submit.add_argument(
@@ -127,11 +128,13 @@ def main() -> None:
     }
     write_json(root / "launch.json", receipt)
     # Check reset stability twice; the last trial attributes GEMMs.
-    for name, variant in (
+    conditions = [
         ("01baseline", "baseline"),
         ("02repeat", "baseline"),
-        ("03gemmprofile", "gemmprofile"),
-    ):
+    ]
+    if not args.baseline_only:
+        conditions.append(("03gemmprofile", "gemmprofile"))
+    for name, variant in conditions:
         write_json(root / "requests" / f"{name}.json", {"id": name, "variant": variant})
     with (logroot / "worker.log").open("x") as log:
         process = subprocess.Popen(

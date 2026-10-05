@@ -20,10 +20,10 @@ arithmetic. Prepare benchmark shapes once; actual-update compiler/plan counters
 verify convergence. Ordinary optimization trials do not require a second full
 preparation replay or unchanged global diagnostic gates.
 
-The current worker is PID `10916` on the existing US-NC-2 B200, session
-`resident01`. Durable control/status files live at
-`results/b200_mlp_gemm/resident01/`, with the active log at
-`logs/runpod/b200_mlp_gemm/resident01/worker.log`. Inspect status and process/GPU
+The current worker is PID `11905` on the existing US-NC-2 B200, session
+`resident02`. Durable control/status files live at
+`results/b200_mlp_gemm/resident02/`, with the active log at
+`logs/runpod/b200_mlp_gemm/resident02/worker.log`. Inspect status and process/GPU
 health before reusing it in a future session; recorded PID alone does not prove
 the worker remains alive. No new billable capacity is implied by this preference.
 
@@ -58,3 +58,13 @@ GDN QKV/Z/output projections, with shared input packing where feasible. Preserve
 BF16 recurrence and small gate projections plus FP32 gates/normalization. This
 candidate is proposed, not implemented or numerically accepted. The findings
 record exact receipts, scope and source provenance.
+
+The first GDN candidate in `resident01` fails before preparation or optimizer
+updates because its installer assumes an ordinary bound forward rather than the
+disabled Transformers wrapper. The original worker exits on that exception.
+Preserve its failed request, source and logs. The corrected integration preserves
+the Transformers Accelerate hook and disabled forward boundary. The replacement
+worker reuses the same GPU and network-volume caches; its initial queue omits the
+already-completed profiling run. Scoped candidate failures now restore baseline
+state and return to idle when the CUDA context remains usable. Damaged CUDA
+contexts and failed baseline reset checks still stop the worker.

@@ -439,3 +439,41 @@ adapters and receipts are collected; see the findings for hashes and limits.
 python -m experiments.b200_mlp_gemm.analyze_gemm_profile \
   results/b200_mlp_gemm/resident01
 ```
+
+## Resident GDN projection FP4 intervention
+
+Hypothesis: large frozen GDN contractions can use the existing NVIDIA NVFP4
+hardware-packing/fused-descaling kernels to improve complete-update time beyond
+the resident FP4 MLP baseline. Merge QKV and Z weights so their forward shares
+input packing and their backward uses one combined input-gradient contraction;
+also convert the frozen output projection. Leave small A/B projections, recurrent
+kernels, BF16 Q/K/V and FP32 gates/normalization unchanged. Preserve original
+BF16 weights and FP32 adapter parameter identities. A scoped context restores
+the baseline after the trial; no model reload or new GPU allocation occurs.
+
+The hot-loaded `resident_candidate.py` performs one matched first-logical-batch
+loss/adapter-gradient diagnostic against FP4 MLPs with BF16 GDN, then one
+twenty-batch forward/backward preparation pass for the changed kernels. Preserve
+masters, RNG, sampling and optimizer state, without optimizer updates. This is
+explicit finite timing acceptance, not numerical equivalence; report all loss/
+gradient differences and retain earlier strict FP4 failures. Actual updates
+must have finite/nonmissing gradients and the exact historical 147 partitions.
+Time twenty complete updates and compare updates 11–20 against both resident
+baseline means (3.65854/3.67101 seconds), retaining all samples. Select only if
+the mean is at least 2% faster than their pooled 3.66478-second reference and
+measured updates add zero plans/specializations/graphs. Otherwise retain the
+FP4 MLP/BF16 GDN baseline. No teacher calls or held-out promotion occurs.
+Stop on nonfinite/missing gradients, parameter/partition drift, OOM or a
+30-minute preparation/trial cap. If merged packing introduces a bottleneck,
+screen separate large projections in the same worker before rejecting the
+projection hypothesis; record each attempted implementation separately.
+
+The original `resident01/04gdnmerged` attempt fails before preparation/updates:
+the installer assumes a bound forward, while selective compilation installs a
+disabled wrapper and Transformers also wraps the underlying function with
+Accelerate hooks. The corrected installer handles both wrappers and preserves
+the disabled GDN boundary. Session `resident02`, PID `11905`, replaces the exited
+worker on the same GPU/caches, with two baseline resets and no repeated profile.
+The worker now records recoverable candidate errors and restores the baseline
+without exiting. Tests cover the real Transformers wrapper, disabled boundaries,
+parameter identities/restoration and unusable-CUDA rejection.
