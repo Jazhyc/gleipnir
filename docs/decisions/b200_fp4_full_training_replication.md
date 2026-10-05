@@ -265,8 +265,8 @@ The user ends training optimization and requests stopping the resident worker.
 Its native shutdown request completes cleanly: PID 67332 is absent from `/proc`,
 `worker.json` records `stopped`, and GPU memory returns to 0 MiB. Preserve
 `worker_shutdown.json`, completed adapters, logs and shared disk caches. This
-process shutdown does not terminate the B200 pod; capacity disposition requires
-the separate user response.
+process shutdown does not terminate the B200 pod. The user explicitly selects
+keeping the pod running; leave capacity allocated without a resident trainer.
 
 Higher training loss with improved held-out ranking is consistent with a
 regularization hypothesis, but does not identify it. FP4 rounding of frozen MLP
