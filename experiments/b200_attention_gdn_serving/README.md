@@ -287,3 +287,22 @@ control. At c16, quick pooled/source-macro AUROC deltas are +0.003448/+0.106692
 on only eleven dual-label sources. These partial small-cohort metrics do not
 supersede the NaN failure on the full workload; no full-cohort result or
 production promotion is valid.
+
+`fp4_gdn_projection02` completes fourteen timed passes. All 48 GDN projections
+pass native decoded-reference checks (maximum observed relative-L2 0.00000753),
+with representative weight errors 11.49% for QKV/Z and 17.98% for output.
+All unchanged FROST MLP checks pass. The score canary fails: mean error/correlation
+versus FROST 0.024425/0.992690; finite outputs remain mandatory.
+
+| Concurrency | Input tokens/s | Gain vs FROST | Pooled AUROC delta | Source-macro AUROC delta |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 133,779 | +2.48% | +0.013694 | −0.007035 |
+| 32 | 167,276 | +12.18% | +0.013322 | −0.006028 |
+| 64 | 170,163 | +15.20% | +0.013772 | −0.006641 |
+| 128 | 159,619 | +11.89% | +0.014690 | −0.004659 |
+
+Full-workload mean/max score drift is about 0.053/0.50983, with 15–16 threshold
+flips. Keep this faster variant diagnostic because its quality canary fails
+and macro AUROC declines. Confirm the >5% c128 gain with five full-cohort passes
+on the same warm worker, reusing the unchanged canary and native validation;
+no new control server or model reload.

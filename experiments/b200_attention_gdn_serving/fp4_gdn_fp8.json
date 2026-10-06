@@ -1,5 +1,5 @@
 {
-  "name": "frost_bf16_attention_fp4_gdn_projection",
+  "name": "frost_fp4_mlp_gdn_fp8_attention_backend",
   "port": 8010,
   "merged_model": "/tmp/gleipnir-merged/fp4-full-training-bf16",
   "baseline": "selected",
@@ -9,7 +9,7 @@
   "training_fp4_environment": true,
   "allow_finite_parity_diagnostic": true,
   "log_directory": "logs/runpod/b200_attention_gdn_serving",
-  "attention_precision": "bf16",
+  "attention_precision": "fp8_e4m3",
   "gdn_backend": "flashinfer",
   "gdn_projection_precision": "fp4",
   "serving_config_overrides": {

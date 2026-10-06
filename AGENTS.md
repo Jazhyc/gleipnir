@@ -232,18 +232,23 @@ labels to exact prompt identities. Reuse archived baseline predictions rather
 than rerunning the control. Small training-seen optimization sets are diagnostic
 and do not establish held-out quality parity or select production precision.
 
-Standing user preference, 2026-10-06: use FROST native FP4 MLPs with merged
-weights and BF16 FlashInfer GDN/full attention as the B200 inference optimization
-baseline. Prefer the high-concurrency throughput result as the primary metric;
-retain concurrency 1/4/16 latency and ranking diagnostics. The selected control
-is `results/b200_frost_inference/frost02`, bound by
-`experiments/b200_inference_benchmark/baseline.json`. New kernel conditions use
-`baseline: selected` (also the default when omitted); explicit historical
-references remain unchanged. Reuse these archived predictions/timings and keep
-the existing FROST worker resident rather than rerunning its control. Report
-speed and AUROC deltas against FROST, retaining BF16 comparisons as historical
-context when useful. This preference does not change training or frozen past
-evaluation contracts; new adapters still require serving score parity.
+Standing user preference, 2026-10-06 (updated): use FROST native FP4 MLPs
+and all 48 large GDN QKV/Z and output projections as the B200 inference
+optimization baseline. Keep small gate projections, convolution and recurrence
+operands BF16, gates/state FP32, and full attention BF16 FlashInfer. The user
+explicitly accepts the c128 source-macro AUROC drop of 0.47 percentage points;
+retain the strict failed score-canary receipt separately as `user_accepted_finite`.
+The selected control is `results/b200_attention_gdn_serving/fp4_gdn_projection02`,
+with five-pass warmed confirmation at `fp4_gdn_confirmation01`, bound by
+`experiments/b200_inference_benchmark/baseline.json`. Prioritize c128 throughput,
+retaining peak throughput, lower-concurrency latency and AUROC diagnostics.
+New conditions compare against this selected baseline; preserve explicit
+historical references. Reuse archived controls and persistent caches. Stop the
+old server before changing active kernels so the candidate gets the whole GPU.
+Keep BF16 GDN/MLP and FP8 comparisons as historical context. This acceptance
+applies to the current adapter and pinned serving recipe; it changes neither
+training nor frozen past evaluations and does not waive missing/nonfinite
+outputs or adapter-specific checks for future layouts/adapters.
 
 ## Code, Tests, and Git
 

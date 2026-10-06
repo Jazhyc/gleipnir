@@ -40,9 +40,51 @@ def test_selected_baseline_binds_results_recipe_and_workload(tmp_path, monkeypat
         with pytest.raises(ValueError, match="baseline identity drift"):
             run.resolve_kernel_baseline(condition)
         path.write_text(original)
+    acceptance = tmp_path / "quality_acceptance.json"
+    acceptance.write_text(json.dumps({"status": "user_accepted_finite"}))
+    selection.update(
+        quality_acceptance="quality_acceptance.json",
+        quality_acceptance_sha256=run.sha(acceptance),
+    )
+    (tmp_path / "baseline.json").write_text(json.dumps(selection))
+    resolved = run.resolve_kernel_baseline(condition)
+    assert resolved["baseline_quality_acceptance_sha256"] == run.sha(acceptance)
+    acceptance.write_text(json.dumps({"status": "unaccepted"}))
+    with pytest.raises(ValueError, match="baseline identity drift"):
+        run.resolve_kernel_baseline(condition)
 
 
 def test_explicit_historical_baselines_are_preserved():
     condition = {"baseline": "results/historical/control"}
     assert run.resolve_kernel_baseline(condition) is condition
     assert run.resolve_kernel_baseline(None) is None
+
+
+def test_accepted_baseline_does_not_hide_strict_failure_or_accept_new_drift():
+    limits = {
+        "max_mean_absolute_difference": 0.02,
+        "min_correlation": 0.995,
+        "min_adapter_effect": 0.01,
+    }
+    comparisons = {
+        "adapter": {"mean_absolute_difference": 0.03, "correlation": 0.992},
+        "kernel_baseline": {"mean_absolute_difference": 0.001, "correlation": 0.999},
+    }
+    assert run.parity_status(comparisons, limits, 0.5, baseline_accepted=False) == (
+        False,
+        False,
+    )
+    assert run.parity_status(comparisons, limits, 0.5, baseline_accepted=True) == (
+        False,
+        True,
+    )
+    comparisons["kernel_baseline"]["mean_absolute_difference"] = 0.1
+    assert run.parity_status(comparisons, limits, 0.5, baseline_accepted=True) == (
+        False,
+        False,
+    )
+    comparisons["kernel_baseline"]["mean_absolute_difference"] = 0.001
+    assert run.parity_status(comparisons, limits, 0, baseline_accepted=True) == (
+        False,
+        False,
+    )

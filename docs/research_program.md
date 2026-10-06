@@ -561,3 +561,12 @@ pass, peak throughput is about 155k tokens/s, and c128 gains 1.84% with repeat
 noise. The score canary fails correlation (0.994822 versus FROST); improved
 development AUROC does not override that failure. Keep this diagnostic variant
 and test native NVFP4 KV attention separately before changing the baseline.
+
+The user now selects FROST FP4 MLPs plus all 48 large GDN projections as the
+B200 inference baseline, keeping BF16 recurrence/attention and FP32 gates/state.
+Five warm c128 passes confirm about 166k input tokens/s, +16.3% versus the
+whole-GPU FROST-MLP/BF16-GDN control. The user explicitly accepts the 0.47
+percentage-point development macro-AUROC drop; preserve strict score-parity
+failure separately. This is current-adapter acceptance, not held-out quality
+proof or a training recipe change. See the
+[baseline decision](decisions/b200_fp4_gdn_inference_baseline.md).

@@ -298,6 +298,14 @@ def resolve_kernel_baseline(condition: dict | None) -> dict | None:
     selection = json.loads(selection_path.read_text())
     summary_path = ROOT / selection["results"] / "summary.json"
     summary = json.loads(summary_path.read_text())
+    if selection.get("quality_acceptance"):
+        acceptance_path = ROOT / selection["quality_acceptance"]
+        if (
+            sha(acceptance_path) != selection["quality_acceptance_sha256"]
+            or json.loads(acceptance_path.read_text())["status"]
+            != "user_accepted_finite"
+        ):
+            raise ValueError("selected inference baseline identity drift: acceptance")
     if (
         sha(summary_path) != selection["summary_sha256"]
         or summary["status"] != "complete"
@@ -312,7 +320,38 @@ def resolve_kernel_baseline(condition: dict | None) -> dict | None:
         "baseline": selection["results"],
         "baseline_selection_sha256": sha(selection_path),
         "baseline_summary_sha256": selection["summary_sha256"],
+        **(
+            {
+                "baseline_quality_acceptance_sha256": selection[
+                    "quality_acceptance_sha256"
+                ]
+            }
+            if selection.get("quality_acceptance")
+            else {}
+        ),
     }
+
+
+def parity_status(
+    comparisons: dict, limits: dict, effect: float, *, baseline_accepted: bool
+) -> tuple[bool, bool]:
+    """Retain strict master parity while gating changes against an accepted baseline."""
+
+    def agrees(value: dict) -> bool:
+        return (
+            value["mean_absolute_difference"] <= limits["max_mean_absolute_difference"]
+            and value["correlation"] >= limits["min_correlation"]
+        )
+
+    effect_passed = effect >= limits["min_adapter_effect"]
+    strict = effect_passed and all(agrees(v) for v in comparisons.values())
+    relative = (
+        baseline_accepted
+        and effect_passed
+        and "kernel_baseline" in comparisons
+        and agrees(comparisons["kernel_baseline"])
+    )
+    return bool(strict), bool(strict or relative)
 
 
 async def benchmark(
@@ -484,7 +523,9 @@ async def benchmark(
             if kernel_condition:
                 prior_path = ROOT / kernel_condition["baseline"] / "http_parity.json"
                 prior = json.loads(prior_path.read_text())
-                if not prior["passed"]:
+                if not prior["passed"] and not kernel_condition.get(
+                    "baseline_quality_acceptance_sha256"
+                ):
                     raise ValueError("merged control parity failed")
                 reference = prior["served"]["adapter"]
                 comparisons["kernel_baseline"] = {
@@ -497,17 +538,21 @@ async def benchmark(
                 }
                 report["merged_baseline_parity_sha256"] = sha(prior_path)
         effect = float(np.max(np.abs(np.array(served["adapter"]) - served["base"])))
-        passed = all(
-            v["mean_absolute_difference"]
-            <= parity["limits"]["max_mean_absolute_difference"]
-            and v["correlation"] >= parity["limits"]["min_correlation"]
-            for v in comparisons.values()
+        strict_passed, accepted_passed = parity_status(
+            comparisons,
+            parity["limits"],
+            effect,
+            baseline_accepted=bool(
+                kernel_condition
+                and kernel_condition.get("baseline_quality_acceptance_sha256")
+            ),
         )
-        passed = passed and effect >= parity["limits"]["min_adapter_effect"]
         write(
             output / "http_parity.json",
             {
-                "passed": bool(passed),
+                "passed": strict_passed,
+                "evaluation_passed": accepted_passed,
+                "baseline_relative_acceptance": accepted_passed and not strict_passed,
                 "comparisons": comparisons,
                 "adapter_effect": effect,
                 "served": served,
@@ -516,13 +561,14 @@ async def benchmark(
                 "seconds": time.perf_counter() - parity_start,
             },
         )
-        report["numerical_parity_passed"] = bool(passed)
-        report["diagnostic_only"] = not bool(passed)
-        if not passed and not (
+        report["numerical_parity_passed"] = strict_passed
+        report["baseline_relative_parity_passed"] = accepted_passed
+        report["diagnostic_only"] = not accepted_passed
+        if not accepted_passed and not (
             kernel_condition and kernel_condition.get("allow_finite_parity_diagnostic")
         ):
             raise ValueError("HTTP scoring parity failed")
-        if not passed:
+        if not accepted_passed:
             print(
                 "finite_parity_failure_preserved diagnostic_benchmark=true", flush=True
             )
@@ -540,7 +586,10 @@ async def benchmark(
             if not json.loads(path.read_text())["passed"]:
                 raise ValueError("native serving startup audit failed")
             report["startup_audit_sha256"] = sha(path)
-        print("http_parity_and_warmup_passed", flush=True)
+        print(
+            f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
+            flush=True,
+        )
         for concurrency in config["concurrency"]:
             for repeat in range(config["repeats"]):
                 results, elapsed = await trial(

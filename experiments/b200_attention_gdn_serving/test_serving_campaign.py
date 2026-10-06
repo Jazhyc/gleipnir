@@ -100,3 +100,13 @@ def test_fp4_gdn_trial_cannot_launch_the_fp8_quantizer_under_an_fp4_label():
     assert result["quantization"] == "gleipnir_frost_gdn_fp4"
     with pytest.raises(ValueError, match="matching mixed-precision"):
         resolve_condition({**condition, "quantization": "gleipnir_frost_gdn"}, {})
+
+
+def test_further_backends_retain_the_user_selected_fp4_gdn_scope():
+    for suffix in ("fa4", "fp8", "flashqla"):
+        condition = json.loads((EXPERIMENT / f"fp4_gdn_{suffix}.json").read_text())
+        resolved = resolve_condition(condition, {})
+        assert resolved["gdn_projection_precision"] == "fp4"
+        assert resolved["quantization"] == "gleipnir_frost_gdn_fp4"
+        assert resolved["baseline"] == "selected"
+        assert resolved["high_reference"].endswith("fp4_gdn_projection02")

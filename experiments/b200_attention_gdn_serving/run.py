@@ -56,8 +56,7 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
     if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:
         raise ValueError("unsupported GDN prefill backend")
     if condition["gdn_backend"] != "flashinfer" and (
-        condition["gdn_projection_precision"] != "bf16"
-        or not condition.get("gdn_validation")
+        not condition.get("gdn_validation")
         or not condition["worker_cls"].endswith("GdnServingAuditWorker")
     ):
         raise ValueError("alternative GDN requires its validation and audited worker")
@@ -183,7 +182,9 @@ async def high_concurrency(
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--condition", type=Path, default=EXPERIMENT / "config.json")
+    parser.add_argument(
+        "--condition", type=Path, default=EXPERIMENT / "fp4_gdn_projection.json"
+    )
     parser.add_argument("--output", required=True)
     parser.add_argument("--reuse-server", action="store_true")
     args = parser.parse_args()
@@ -194,6 +195,8 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if ".combined_worker." in raw["worker_cls"]:
+        sources.append("experiments/b200_attention_gdn_serving/combined_worker.py")
     if raw.get("attention_backend") == "FLASH_ATTN":
         sources.append("experiments/b200_attention_gdn_serving/fa4_worker.py")
     if raw["gdn_backend"] != "flashinfer":

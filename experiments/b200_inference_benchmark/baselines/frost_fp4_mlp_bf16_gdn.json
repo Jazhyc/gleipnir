@@ -1,0 +1,14 @@
+{
+  "name": "frost_fp4_mlp_flashinfer_bf16",
+  "selected_at": "2026-10-06",
+  "scope": "B200 inference optimization",
+  "results": "results/b200_frost_inference/frost02",
+  "summary_sha256": "d113755882f4bb83a17e24c2e55751b3f4ab1d38061c22d1c0f103f8ff837184",
+  "manifest_sha256": "b02af232d76935f2cda2a52213ebce27ae04ca5aaf44898cfe496104adad4266",
+  "recipe_config": "experiments/b200_frost_inference/config.json",
+  "validated_recipe_config": "results/b200_frost_inference/frost02/executed_sources/experiments/b200_frost_inference/config.json",
+  "validated_recipe_config_sha256": "dad4e4b43caf51e27297f8f5b4b7ab8af9b850b84b961a23ec7d0cc71c381beb",
+  "server_metadata": "results/b200_frost_inference/server.json",
+  "primary_concurrency": 16,
+  "comparison_concurrency": [1, 4, 16]
+}
