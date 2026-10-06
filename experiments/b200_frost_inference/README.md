@@ -55,3 +55,62 @@ Startup attempt `frost01` failed the runtime guard before loading weights:
 the FA4 compiler overlay supplied Triton 3.6.0 ahead of the training pin. The
 launcher now prepends the retained `/tmp/gleipnir-triton-3.7.1` target, matching
 the training environment. Preserve the failed receipt; `frost02` uses this fix.
+
+## Completed serving screen
+
+`frost02` completes all six passes. All 64 MLPs use packed FP4 training-forward
+methods, with BF16 non-MLP linears and two symbolic-M plans. The six native
+checks match the original `_native_linear` bit for bit; decoded-reference
+relative L2 ranges from zero to 0.00002036. The fresh twenty-row score canary
+passes unchanged limits: mean difference/correlation versus merged BF16 are
+0.019684/0.996641, versus master 0.018147/0.996695. Loaded weight memory is
+5.2 GiB; overall serving allocation is about 49,300 MiB under the fixed fraction.
+
+| Concurrency | BF16 input tokens/s | FROST input tokens/s | Throughput vs BF16 | FROST p50 latency | Pooled AUROC BF16 → FROST | Macro AUROC BF16 → FROST |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 29,763 | 27,509 | −7.57% | 0.1272 s | 0.932512 → 0.936453 | 0.883207 → 0.887626 |
+| 4 | 69,049 | 64,601 | −6.44% | 0.2514 s | 0.932512 → 0.936453 | 0.883207 → 0.887626 |
+| 16 | 107,073 | 124,595 | +16.36% | 0.4935 s | 0.932020 → 0.936453 | 0.883207 → 0.887626 |
+
+Figures are medians of two post-startup passes; ranking uses per-row repeat
+medians. Pass durations are 10.079/9.524, 4.196/4.145 and 2.184/2.141 seconds.
+Readiness takes 622.566 seconds, with compilation and capture included;
+HTTP warmup takes 0.400 seconds. No additional warmed replay is used: the
+initial passes have no large startup cost like the earlier stock-FP4 trial.
+P95 latency is 0.3077/0.3680/0.7588 seconds. Interactive p50 rises from BF16
+0.1041 seconds, while concurrency-16 p50 falls from 0.5630 seconds.
+
+At concurrency 16, throughput exceeds archived FP8 by 7.95% and warmed stock
+FP4 by 21.25%. At concurrency 1/4 it remains 14.31%/17.56% below FP8 and only
+1.97%/8.68% above stock FP4. The predeclared >10% performance-interest threshold
+is met for batched throughput, supporting follow-up rather than adoption as a
+universal serving default. Attention backends remain FlashInfer; no control
+was rerun.
+
+Pooled AUROC changes +0.394/+0.394/+0.443 percentage points; macro changes
++0.442 points across the 11 dual-label sources. Insider-trading AUROC falls
+0.0625 and soft-trigger rises 0.111111; the other nine eligible sources stay
+unchanged. Twelve single-label groups remain undefined. Mean/max paired score
+error is about 0.0362/0.1927, with two threshold flips at every concurrency.
+Across the six passes, mean/max score range is 0.001156/0.058688 with no
+unstable threshold decisions, substantially below the stock-FP4 range.
+Per-source/repeat metrics, partial AUROC, Brier, ties and thresholds remain in
+the saved comparisons. The small training-seen set cannot establish quality.
+
+This reuses the exact training **GEMM forward kernels on merged weights**.
+Training adds separate BF16 LoRA contributions to the quantized frozen base;
+here the merged base-plus-adapter weight is quantized once. Kernel bitwise
+agreement does not imply identical whole-model training and serving arithmetic.
+The cuDNN/compiler overlay is also part of the intervention. Compilation under
+Triton 3.7.1 emits recoverable mutation-analysis warnings in vLLM's fused QK
+normalization kernel;
+PyTorch conservatively treats its inputs as mutated, and compilation/capture
+finish. Their timing effect is not isolated. Do not attribute the full speed or
+score difference solely to FP4 GEMM arithmetic without a matched ablation.
+
+Thirteen focused CPU tests pass on the pod and Ruff passes locally. The local
+shared filesystem stalls on cold imports, so retain the pod validation receipt.
+Collect source archives, predictions, metrics, kernel/runtime audit, failed
+startup and retirement receipts, verifying checksums and token identities.
+Keep API PID 74857 / engine PID 75080 healthy and resident on localhost 8010;
+the stock FP4 server is stopped and the existing B200 pod is retained.

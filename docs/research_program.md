@@ -523,3 +523,15 @@ plans through a forward-only adapter. Require bitwise agreement with original
 training-forward calls on the same merged weights before scoring. The retained
 cuDNN 9.26/CuTe DSL 4.8.0 runtime is part of this intervention; keep serving
 attention explicitly FlashInfer and report matched speed and AUROC differences.
+
+The completed FROST serving screen passes native bitwise checks and the fresh
+score canary. At concurrency 1/4/16, input throughput is 27,509/64,601/124,595
+tokens/s: −7.57%/−6.44%/+16.36% versus merged BF16. Batched throughput exceeds
+FP8 by 7.95%, meeting the follow-up threshold, while interactive p50 worsens.
+Pooled AUROC is 0.936453 and source macro 0.887626, roughly +0.0044 over BF16;
+two threshold flips and an insider-trading source decline remain. The small
+training-seen set supports a batched candidate, not a quality or default
+promotion. Quantizing merged weights differs from training's separate LoRA
+addition; runtime/compiler changes and recoverable QK normalization compilation
+warnings also prevent a kernel-only causal attribution. Keep the server warm
+and the archived controls; no further evaluation or sweep is launched.

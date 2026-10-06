@@ -58,3 +58,7 @@ test-filename collision before correcting it. Collect all twelve initial/warmed
 passes, AUROC/backfill reports, source/merge/cache receipts, kernel audit and
 logs, verifying coverage and checksums. FP4 API PID 73839 / engine PID 73902
 remains warm and healthy on localhost 8010, the previous FP8 server stopped.
+
+The stock FP4 server is subsequently retired for the user-requested
+[FROST training-forward comparison](b200_frost_inference.md), which records
+the new resident worker. Preserve this stock result and its retirement receipt.

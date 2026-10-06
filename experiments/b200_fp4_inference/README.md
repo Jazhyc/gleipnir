@@ -111,3 +111,8 @@ retry. Initial/warmed output coverage, finite scores, audit and every collected
 artifact checksum verify. Collect logs/receipts/sources locally; no packed
 weights are saved persistently. Only FP4 API PID 73839 / engine PID 73902
 remains healthy and warm on localhost 8010; FP8 is stopped and pod retained.
+
+The stock FP4 server was subsequently stopped for the user-requested
+[training-forward FROST comparison](../b200_frost_inference/README.md). Its
+retirement receipt is preserved; the FROST experiment records the current
+resident worker and supersedes the PIDs above.
