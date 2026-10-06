@@ -38,10 +38,10 @@ async def canary(client, ids, output):
     results = {}
     try:
         await graph_state(client, "false")
-        results["uncaptured"], _ = await trial(client, rows, ids, 1, "base")
+        results["uncaptured"], _ = await trial(client, rows, ids, 1, "monitor")
         await graph_state(client, "true")
         for mode in ("replay", "repeat"):
-            results[mode], _ = await trial(client, rows, ids, 1, "base")
+            results[mode], _ = await trial(client, rows, ids, 1, "monitor")
     finally:
         state = await graph_state(client, "true")
     errors = [

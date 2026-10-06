@@ -109,7 +109,7 @@ def test_canary_restores_replay_and_checks_changed_logprobs(
         }
 
     async def measured(client, rows, ids, concurrency, model):
-        assert model == "base" and concurrency == 1
+        assert model == "monitor" and concurrency == 1
         calls.append(rows)
         if fail_request:
             raise RuntimeError("request failed")
