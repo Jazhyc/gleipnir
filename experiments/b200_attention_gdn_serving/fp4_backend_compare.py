@@ -13,6 +13,8 @@ from pathlib import Path
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--backends", nargs="+", default=None)
+    parser.add_argument("--cute-compat", action="store_true")
     args = parser.parse_args()
     import torch
     from flashinfer.autotuner import autotune
@@ -28,7 +30,16 @@ def main() -> None:
     from gleipnir.serving_fp4_tuning import SHAPES, retile, row_band
 
     BASE_TILE = "frost"
-    CANDIDATES = BACKENDS
+    CANDIDATES = tuple(args.backends or BACKENDS)
+    if "frost" not in CANDIDATES or set(CANDIDATES) - set(BACKENDS):
+        raise ValueError("backend subset must include frost and supported backends")
+    compatibility = {}
+    if args.cute_compat:
+        import cutlass.cute as cute
+
+        from gleipnir.serving_fp4_cute_compat import install_aliases
+
+        compatibility = install_aliases(cute)
     selection_path = Path("results/b200_attention_gdn_serving/fp4_gemm_tune01.json")
     baseline_selection = json.loads(selection_path.read_text())["selected"]
     cache_path = Path(".cache/flashinfer/autotune/gleipnir_fp4_backends.json")
@@ -49,6 +60,8 @@ def main() -> None:
         Path("src/gleipnir/cudnn_fp4_gemm.py"),
         Path(".cache/kernels/nvidia_mxfp8/frontend/cudnn/gemm/frost/tile_config.py"),
     ]
+    if args.cute_compat:
+        sources.append(Path("src/gleipnir/serving_fp4_cute_compat.py"))
     from importlib.metadata import version
 
     import cudnn
@@ -72,6 +85,7 @@ def main() -> None:
         ).hexdigest(),
         "autotune_cache": str(cache_path),
         "cute_tactics": cute_tactics,
+        "cute_compatibility": compatibility,
         "candidates": list(CANDIDATES),
         "relative_l2_limit": 0.01,
         "selection_minimum_gain": 0.02,
