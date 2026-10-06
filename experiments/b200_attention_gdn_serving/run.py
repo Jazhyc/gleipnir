@@ -274,7 +274,7 @@ async def high_concurrency(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--condition", type=Path, default=EXPERIMENT / "fp4_gemm_tuned.json"
+        "--condition", type=Path, default=EXPERIMENT / "attention_fp4.json"
     )
     parser.add_argument("--output", required=True)
     parser.add_argument("--reuse-server", action="store_true")

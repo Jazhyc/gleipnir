@@ -4,9 +4,9 @@ Date: 2026-10-06. The user authorizes changing the remaining full-attention
 projection GEMMs to FP4. The named recipe `attention_fp4.json` extends the
 selected tuned FROST reference; experimental SwiGLU fusion is excluded.
 The implementation is complete and the warm throughput gain is reproducible,
-but interactive latency and monitoring quality worsen. Keep the measured
-recipe available and the selected default/reference unchanged; do not silently
-promote the precision tradeoff.
+but interactive latency and monitoring quality worsen. At completion the
+recipe remained named pending explicit acceptance. The user subsequently
+selects it as the default/reference with that tradeoff recorded; see below.
 
 ## Intervention and native validation
 
@@ -129,10 +129,20 @@ not the legacy preparation field about unchanged weight/attention scope.
 
 Keep the named attention-FP4 server warm as API **93539**, engine **93625**,
 port **8010**, sole GPU ownership, approximately 168,886 MiB and 33°C at
-collection. The current selected reference/default is unchanged. Preserve the
+collection. At collection the selected reference/default was unchanged. Preserve the
 existing pod and shared caches. Artifacts include both native receipts and
 exact sources, initial serving predictions, five warm confirmation repeats,
 two warm c1 passes, runtime usage/source receipts, logs and an all-repeat
 analysis under `results/b200_attention_gdn_serving/`. All **157** collection
 hashes verify locally. Thirty-eight focused CPU tests and Ruff pass; the
 scoped implementation is committed and the campaign records live PIDs.
+
+## Subsequent reference selection
+
+The user subsequently says, “Let's make it the reference now.” Select
+`attention_fp4.json` for future B200 inference optimization, with the measured
+quality and interactive-latency tradeoffs above explicitly recorded as
+`user_accepted_finite`. Preserve the unchanged strict failed checks and all
+historical controls. The existing worker is retained; selection changes only
+the default entrypoint and checksum-bound client reference metadata. See the
+[reference decision](../decisions/b200_attention_fp4_inference_baseline.md).

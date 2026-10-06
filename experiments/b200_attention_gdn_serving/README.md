@@ -1,12 +1,13 @@
 # B200 attention and GDN throughput campaign
 
-Current optimization reference: the user-selected **combined FP4 preparation,
-shape-dependent output GEMM tiles and cuDNN MXFP8 prefill** stack. The default
-entrypoint uses `fp4_gemm_tuned.json`. New comparisons use `baseline: selected`
+Current optimization reference: the user-selected **FP4 MLP/GDN/attention
+projections, combined FP4 preparation, shape-dependent output GEMM tiles and
+cuDNN MXFP8 prefill** stack. The default entrypoint uses `attention_fp4.json`.
+New comparisons use `baseline: selected`
 and `high_reference: selected`; historical measurements remain intact. Use
-182,682 input tokens/s for warm c128 comparisons and the separate 147.00 ms
+193,224 input tokens/s for warm c128 comparisons and the separate 156.82 ms
 warm c1 confirmation. See the
-[current reference decision](../../docs/decisions/b200_tuned_fp4_inference_baseline.md).
+[current reference decision](../../docs/decisions/b200_attention_fp4_inference_baseline.md).
 
 ## FP4 full-attention projection trial
 
@@ -31,8 +32,10 @@ Completed: `attention_fp4.json` runs all 16 attention projections in NVFP4,
 with BF16 outputs and the existing MXFP8 attention core. Five warm c128 passes
 give 193,224 input tokens/s (+5.77% median, +6.00% aggregate). Warm c1 latency
 rises 6.68%; source-macro/pooled AUROC drop 0.61/1.84 percentage points.
-Keep this named recipe available and the selected default unchanged pending
-explicit acceptance of the quality tradeoff. See the
+The user subsequently accepts this recipe as the new reference. Bind its
+executed configuration, warm confirmations and explicit quality acceptance by
+checksum; preserve the preceding selection and strict failures. The resident
+worker is reused without a kernel/settings change or control replay. See the
 [attention projection finding](../../docs/findings/b200_attention_projection_fp4.md)
 for scope, numerical validation, metrics and retained worker details.
 
@@ -59,8 +62,8 @@ Completed result: the corrected N192 kernel matches native down-projection
 outputs and gives approximately 5% large-row producer gains. Warm serving
 median improves 1.8%, but one slow confirmation repeat makes aggregate
 throughput 2.1% worse, and warm c1 latency rises 6%. AUROC is effectively
-unchanged. Keep `fp4_swiglu_fused.json` as a named experiment; the default
-remains `fp4_gemm_tuned.json`. See the
+unchanged. Keep `fp4_swiglu_fused.json` as a named experiment; fusion was not
+selected. These measurements precede the attention-FP4 reference. See the
 [fusion finding](../../docs/findings/b200_fp4_swiglu_fusion.md) for all failures,
 timings, precision receipts and the retained experimental worker.
 

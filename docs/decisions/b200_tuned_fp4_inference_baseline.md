@@ -1,5 +1,9 @@
 # Combined preparation and tuned FP4 GEMMs as the B200 inference reference
 
+Subsequently superseded by the user-selected
+[FP4 attention projection reference](b200_attention_fp4_inference_baseline.md).
+The measurements and selection history below remain unchanged.
+
 Decision date: 2026-10-06. The user explicitly says, “I think we can use this
 as a reference,” accepting that small gains can accumulate. Select the completed
 `fp4_gemm_tuned_serving01` stack for subsequent inference optimization. This

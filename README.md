@@ -74,11 +74,11 @@ The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
 
-The B200 inference optimization baseline uses FROST FP4 MLPs and large GDN
-projection GEMMs plus adapted cuDNN MXFP8 full-attention prefill. Recurrence,
-KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
+The B200 inference optimization baseline uses FROST FP4 MLPs, large GDN
+and full-attention projection GEMMs plus adapted cuDNN MXFP8 full-attention
+prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
 development quality tradeoff; strict failed parity remains recorded separately.
-See the [inference baseline decision](docs/decisions/b200_mxfp8_inference_baseline.md).
+See the [inference baseline decision](docs/decisions/b200_attention_fp4_inference_baseline.md).
 
 Presentation layout and build conventions are documented in
 [`outputs/presentations/README.md`](outputs/presentations/README.md).
