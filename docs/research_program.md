@@ -464,3 +464,13 @@ Accumulate updates in FP32 before BF16 export, preserve master/base weights and
 persistent provenance, and require fresh adapter-specific serving score parity.
 The [inference decision](decisions/b200_inference_benchmark.md) records the
 protocol; historical dynamic-LoRA evaluation contracts remain frozen.
+
+The merged suite completes: prompt throughput rises 1.56×/1.96×/2.23× at
+concurrency 1/4/16, reaching 107,073 input tokens/s at 16. Interactive median
+latency falls 0.154 → 0.104 seconds. Fresh serving canary passes against both
+master and unmerged scores, but paired 64-row repeat medians still have 1/1/2
+threshold flips; preserve these shifts alongside baseline repeat variation.
+Keep the merged worker resident and disposable weights on ephemeral disk, with
+immutable FP32 adapters and all provenance/results persistent. This validates a
+performance gain on the small systems workload, not equivalence of complete
+ID/OOD quality metrics.

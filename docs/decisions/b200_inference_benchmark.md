@@ -167,3 +167,27 @@ concurrency sweep. Lead comparisons with prompt tokens/s and report latency,
 paired repeat-median score/margin differences and threshold changes alongside
 the baseline's own variation. Record this future-evaluation preference in
 `AGENTS.md`; do not rewrite historical dynamic-LoRA campaign contracts.
+
+The merged suite completes all six passes. Median prompt throughput at client
+concurrency 1/4/16 rises from 19,074/35,269/48,096 to
+29,763/69,049/107,073 tokens/s (1.56×/1.96×/2.23×). Interactive p50 drops from
+0.154 to 0.104 seconds; concurrency-16 p50/p95 drop from 1.255/2.143 to
+0.563/0.946. Fresh canary mean score difference/correlation are
+0.00165113/0.99988104 versus master and 0.00237397/0.99990730 versus dynamic
+LoRA. Nonzero adapter effect is 0.77222942 against reused base scores.
+
+Paired repeat-median scores have 1/1/2 threshold flips at concurrency 1/4/16,
+with mean absolute differences 0.004552/0.004371/0.004815 and maximum differences
+0.049130/0.049130/0.062419. Merged six-pass score ranges average 0.000457,
+maximum 0.027824, with zero threshold-unstable rows. The dynamic baseline has
+three unstable rows. Record both serving shifts and baseline variation; do not
+claim exact equivalence or a full held-out quality result.
+
+The CPU merge takes 76.953 seconds and occupies about 8.8 GiB ephemeral disk.
+Readiness is 700.771 seconds, canary 10.789 and workload warmup 0.472, excluded
+from timed passes. All outputs and source hashes verify; thirteen focused tests
+and Ruff pass. Collect receipts/logs/executed sources locally, retaining the
+merged weights only on the pod. Server PID 72552 / engine PID 72648 remain
+healthy and warm, about 49.8 GB GPU memory. Original master/serving adapter
+checksums are unchanged. Future applicable evaluations use the recorded merged
+preference with fresh adapter-specific parity and persistent source provenance.

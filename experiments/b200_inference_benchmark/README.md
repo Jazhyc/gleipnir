@@ -153,3 +153,49 @@ python -m experiments.b200_inference_benchmark.merge_model
 python -m experiments.b200_inference_benchmark.run --output merged01 \
   --merged-model /tmp/gleipnir-merged/fp4-full-training-bf16
 ```
+
+## Completed merged benchmark
+
+All six matched passes complete in `results/b200_inference_benchmark/merged01`.
+Each cell below is the median of two repeats on the same 64 prompts (269,411
+input tokens), with prefix caching disabled. Startup is excluded.
+
+| Client concurrency | Dynamic LoRA input tokens/s | Merged input tokens/s | Ratio | Merged p50 / p95 latency (s) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 19,074 | 29,763 | 1.56× | 0.104 / 0.360 |
+| 4 | 35,269 | 69,049 | 1.96× | 0.224 / 0.435 |
+| 16 | 48,096 | 107,073 | 2.23× | 0.563 / 0.946 |
+
+Median requests/s are 7.070 / 16.403 / 25.436 and pass durations
+9.056 / 3.902 / 2.516 seconds. Interactive p50 falls from 0.154 to 0.104
+seconds; at concurrency 16, p50/p95 fall from 1.255/2.143 to 0.563/0.946.
+This is the matched serving effect of merging, including the graph/kernel path
+changes caused by disabling dynamic LoRA, not a full ID or production SLO result.
+
+Fresh twenty-row parity passes against the archived master: mean absolute score
+difference 0.00165113, correlation 0.99988104; against dynamic LoRA:
+0.00237397 and 0.99990730. Maximum adapter effect against reused baseline base
+scores is 0.77222942. On 64 paired repeat medians, score mean/max differences
+at concurrency 1/4/16 are 0.004552/0.049130, 0.004371/0.049130 and
+0.004815/0.062419; margin mean/max differences are 0.036133/0.25,
+0.032227/0.25 and 0.036133/0.25. There are 1/1/2 threshold flips at 0.5.
+The merged model's six-pass mean/max score range is 0.000457/0.027824,
+with zero threshold-unstable rows, versus baseline 0.008312/0.062177 and three.
+Preserve these finite score shifts; passing canary does not establish identical
+held-out metrics or justify attributing differences solely to BF16 merge rounding.
+
+The CPU merge takes 76.953 seconds, changes all 128 projection weights and uses
+about 8.8 GiB ephemeral disk. Server readiness takes 700.771 seconds, parity
+10.789 and four-length warmup 0.472, separate from timed passes. Package imports,
+compilation and runtime setup dominate readiness; checkpoint shard loading takes
+1.61 seconds. Source FP32 master and rebased adapter checksums are unchanged.
+Thirteen focused tests and Ruff pass. Results, logs, executed sources and merge
+receipts are collected; disposable weights stay on the pod only.
+
+Merged server PID 72552 and engine PID 72648 remain resident and healthy on
+localhost port 8000, about 49.8 GB GPU memory. For compatible request trials:
+
+```bash
+python -m experiments.b200_inference_benchmark.run --output merged02 \
+  --merged-model /tmp/gleipnir-merged/fp4-full-training-bf16 --reuse-server
+```
