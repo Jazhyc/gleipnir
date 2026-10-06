@@ -1,0 +1,28 @@
+{
+  "name": "frost_fp4_mlp_gdn_projections_flashinfer_bf16",
+  "selected_at": "2026-10-06",
+  "scope": "B200 inference optimization",
+  "results": "results/b200_attention_gdn_serving/fp4_gdn_projection02",
+  "summary_sha256": "195ed14cdd15286e5129584457d5f0e70f8f3336d534503d8833a723ddba2e36",
+  "manifest_sha256": "b02af232d76935f2cda2a52213ebce27ae04ca5aaf44898cfe496104adad4266",
+  "recipe_config": "experiments/b200_attention_gdn_serving/fp4_gdn_projection.json",
+  "validated_recipe_config": "results/b200_attention_gdn_serving/fp4_gdn_projection02/executed_sources/experiments/b200_attention_gdn_serving/fp4_gdn_projection.json",
+  "validated_recipe_config_sha256": "d525beb0a340c7ef03abb153f6e96883a8190286e1469bb02c600c13ae3b7b3b",
+  "server_metadata": "results/b200_attention_gdn_serving/fp4_gdn_projection02_server_retired.json",
+  "primary_concurrency": 128,
+  "comparison_concurrency": [
+    1,
+    4,
+    16,
+    32,
+    64,
+    128
+  ],
+  "high_summary_sha256": "28f7ca3506a985cd3c0928eded2c21136a1ef9c23af9145aab9078e096e1adfc",
+  "quality_acceptance": "results/b200_attention_gdn_serving/fp4_gdn_projection02/quality_acceptance.json",
+  "quality_acceptance_sha256": "a9117849ad593f0ceddb83d5726715f649f4e6202632039e7bf51b0cd1785fb3",
+  "strict_canary_passed": false,
+  "quality_status": "user_accepted_finite",
+  "confirmation_results": "results/b200_attention_gdn_serving/fp4_gdn_confirmation01",
+  "confirmation_summary_sha256": "7df7122a201b417a45e91563e1cad4d67b8a8e8e7da92bf9a3de3fe9c018a6d0"
+}

@@ -5,6 +5,7 @@ import json
 import pytest
 import yaml
 
+from experiments.b200_attention_gdn_serving import run
 from experiments.b200_attention_gdn_serving.run import EXPERIMENT, resolve_condition
 from experiments.b200_inference_benchmark.run import server_command
 
@@ -16,6 +17,28 @@ def test_capacity_only_control_does_not_quantize_attention():
     assert result["serving_config_overrides"]["max_num_seqs"] == 128
     assert result["high_concurrency"][-1] == 128
     assert result["startup_audit"].endswith("native_attention.json")
+
+
+def test_selected_full_cohort_reference_preserves_history_and_rejects_drift(
+    tmp_path, monkeypatch
+):
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "BENCHMARK", tmp_path)
+    summary = tmp_path / "new_control/high_summary.json"
+    summary.parent.mkdir()
+    summary.write_text('{"status":"complete"}')
+    (tmp_path / "baseline.json").write_text(
+        json.dumps({"high_summary_sha256": run.sha(summary)})
+    )
+    monkeypatch.setattr(
+        run, "resolve_kernel_baseline", lambda condition: {"baseline": "new_control"}
+    )
+    assert run.resolve_high_reference({"high_reference": "selected"}) == "new_control"
+    assert run.resolve_high_reference({"high_reference": "historical"}) == "historical"
+    assert run.resolve_high_reference({}) is None
+    summary.write_text('{"status":"running"}')
+    with pytest.raises(ValueError, match="baseline identity drift"):
+        run.resolve_high_reference({"high_reference": "selected"})
 
 
 def test_fp8_counts_query_and_cache_scale_intervention_and_source_identity():
@@ -119,7 +142,7 @@ def test_mxfp8_compute_preserves_bf16_cache_and_requires_native_receipt():
     resolved = resolve_condition(condition, {})
     assert "--kv-cache-dtype" not in resolved["extra_server_args"]
     assert resolved["gdn_projection_precision"] == "fp4"
-    assert resolved["high_reference"].endswith("fp4_gdn_projection02")
+    assert resolved["high_reference"] == "selected"
     with pytest.raises(ValueError, match="validated forward-only"):
         resolve_condition({**condition, "mxfp8_validation": None}, {})
     with pytest.raises(ValueError, match="validated forward-only"):

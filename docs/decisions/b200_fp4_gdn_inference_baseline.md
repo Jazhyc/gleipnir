@@ -1,5 +1,9 @@
 # FP4 GDN projections as the B200 serving baseline
 
+Superseded for new optimization comparisons on 2026-10-06 by the
+[MXFP8 prefill reference](b200_mxfp8_inference_baseline.md). Preserve this
+selection and its results as the historical BF16-attention comparison.
+
 Decision date: 2026-10-06. The user explicitly accepts the source-macro AUROC
 change in percentage points and asks to add the FP4 GDN projection variant to
 the stack, measuring further improvements against it.

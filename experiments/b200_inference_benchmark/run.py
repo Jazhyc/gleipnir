@@ -354,6 +354,26 @@ def parity_status(
     return bool(strict), bool(strict or relative)
 
 
+def compatible_server_command(observed: list[str], requested: list[str]) -> bool:
+    """Allow client-only reference changes while enforcing loaded kernel identity."""
+
+    def identity(command: list[str]) -> list[str]:
+        command = list(command)
+        if "--additional-config" in command:
+            index = command.index("--additional-config") + 1
+            config = json.loads(command[index])
+            condition = config.get("serving_condition")
+            if condition is not None:
+                condition.pop("high_reference", None)
+            command[index] = json.dumps(config, sort_keys=True)
+        return command
+
+    try:
+        return identity(observed) == identity(requested)
+    except (ValueError, IndexError, AttributeError, TypeError):
+        return False
+
+
 async def benchmark(
     config: dict,
     manifest: dict,
@@ -397,7 +417,7 @@ async def benchmark(
     if reuse:
         receipt = json.loads(metadata.read_text())
         if (
-            receipt["command"] != command
+            not compatible_server_command(receipt["command"], command)
             or receipt["config_sha256"] != manifest["config_sha256"]
         ):
             raise ValueError("resident server configuration drift")

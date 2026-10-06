@@ -22,7 +22,7 @@
     64,
     128
   ],
-  "high_reference": "results/b200_attention_gdn_serving/fp4_gdn_projection02",
+  "high_reference": "selected",
   "profiler_config": {
     "profiler": "torch",
     "torch_profiler_dir": "/workspace/gleipnir/results/b200_attention_gdn_serving/profiles",

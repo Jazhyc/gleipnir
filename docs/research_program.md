@@ -577,3 +577,16 @@ graph-replay checks through a zero-copy hybrid-cache adapter (maximum relative-L
 after compilation, before model scores or timings. Retain this as an integration
 prototype; the selected inference baseline continues to use BF16 FlashInfer.
 See the [campaign record](../experiments/b200_attention_gdn_serving/README.md).
+
+The user subsequently selects adapted cuDNN MXFP8 full-attention prefill on top
+of FP4 MLP/GDN projections as the next optimization reference. Five warm c128
+passes yield 173,938 input tokens/s, +4.83% versus the preceding reference.
+Development source-macro AUROC rises 1.68 percentage points and pooled AUROC
+falls 0.37 points; preserve the explicit finite acceptance and failed strict
+native/master parity separately. KV cache, decode and GDN recurrence remain
+BF16. A fresh resident-worker profile assigns 34.82% of GPU kernel time to
+FP4 GEMMs plus packing/scales, 26.66% to fused elementwise/norm/gates/layouts,
+12.80% to GDN core and 10.46% to full attention including preparation. This
+prioritizes FP4 activation preparation/fusion next rather than more attention
+conversion work. See the [reference decision](decisions/b200_mxfp8_inference_baseline.md)
+and [finding](findings/b200_mxfp8_serving.md); no final ID quality claim follows.

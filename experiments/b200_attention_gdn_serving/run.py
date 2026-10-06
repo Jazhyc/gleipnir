@@ -14,6 +14,7 @@ from experiments.b200_inference_benchmark.run import (
     ROOT,
     benchmark,
     prepared_manifest,
+    resolve_kernel_baseline,
     sha,
     trial,
     verify_merged_model,
@@ -120,11 +121,25 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
     }
 
 
+def resolve_high_reference(condition: dict) -> str | None:
+    """Bind selected full-cohort controls without rewriting historical trials."""
+    reference = condition.get("high_reference")
+    if reference != "selected":
+        return reference
+    resolved = resolve_kernel_baseline({"baseline": "selected"})
+    selection = json.loads((BENCHMARK / "baseline.json").read_text())
+    path = ROOT / resolved["baseline"] / "high_summary.json"
+    if sha(path) != selection["high_summary_sha256"]:
+        raise ValueError("selected high-concurrency baseline identity drift")
+    return resolved["baseline"]
+
+
 async def high_concurrency(
     config: dict, manifest: dict, condition: dict, out: Path
 ) -> None:
     rows = json.loads((ROOT / "data/b200_inference_benchmark/full.json").read_text())
     assert len(rows) == 320
+    reference = resolve_high_reference(condition)
     report = {
         "status": "running",
         "rows": 320,
@@ -157,8 +172,8 @@ async def high_concurrency(
                 report["trials"].append(measurement)
                 write(out / "high_summary.json", report)
                 print(json.dumps(measurement), flush=True)
-            if condition.get("high_reference"):
-                ref = ROOT / condition["high_reference"]
+            if reference:
+                ref = ROOT / reference
                 before = json.loads((ref / "high_summary.json").read_text())
                 if (
                     before["status"] != "complete"
@@ -200,7 +215,7 @@ async def high_concurrency(
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument(
-        "--condition", type=Path, default=EXPERIMENT / "fp4_gdn_projection.json"
+        "--condition", type=Path, default=EXPERIMENT / "fp4_gdn_cudnn_mxfp8.json"
     )
     parser.add_argument("--output", required=True)
     parser.add_argument("--reuse-server", action="store_true")

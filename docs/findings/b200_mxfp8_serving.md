@@ -3,8 +3,10 @@
 Date: 2026-10-06. The corrected causal D256/GQA serving bridge completes the
 frozen inference screen. Five additional resident concurrency-128 passes give
 median **173,938 input tokens/s**, **+4.83%** against the selected FP4-MLP/GDN
-baseline's five-pass confirmation of 165,927. The new precision recipe remains
-experimental; the selected baseline has not changed.
+baseline's five-pass confirmation of 165,927. After reviewing these results,
+the user selects this recipe as the next optimization reference; see the
+[selection decision](../decisions/b200_mxfp8_inference_baseline.md). Preserve
+the original strict failures and the earlier diagnostic status.
 
 ## Scope and comparison
 
@@ -90,7 +92,52 @@ retained. Twelve focused tests, Ruff, native cases and finite-score checks pass.
 The experimental server is retained warm: API **84940**, engine **85056**, port
 8010; configuration and shared cache paths are recorded in `server.json` and
 `campaign.json`. Stop it before modifying active kernels/settings. The B200 pod
-remains running. No new billable capacity is launched and no promotion is made.
+remains running. No new billable capacity is launched. The user's subsequent
+reference selection is recorded separately in `quality_acceptance.json`.
+
+## Profile of the selected reference
+
+`mxfp8_profile01` runs a separate full 320-row c128 pass on the same resident
+worker, with no kernel/settings changes or control replay. Its 7.602-second
+request duration includes profiler overhead and is excluded from speed claims.
+The trace records 46,704 kernels, 6.696 seconds of summed kernel time, a
+6.691-second interval union and a 7.279-second first-to-last-kernel window.
+GPU occupancy within that window is **91.92%**. Gaps are not automatically
+CPU dispatch time; HTTP/tokenization and overlapping host work are separate.
+
+| Exclusive CUDA category | Seconds summed | Share of kernel time |
+| --- | ---: | ---: |
+| FP4 GEMMs | 1.527 | 22.81% |
+| FP4 activation packing and scales | 0.804 | 12.01% |
+| Fused elementwise, normalization, gates and layouts | 1.785 | 26.66% |
+| GDN core | 0.857 | 12.80% |
+| MXFP8 attention core | 0.620 | 9.26% |
+| MXFP8 gathering, quantization and offsets | 0.080 | 1.20% |
+| Remaining BF16 GEMMs | 0.504 | 7.53% |
+| Causal convolution | 0.395 | 5.90% |
+| Other kernels | 0.123 | 1.84% |
+
+FP4 GEMMs and preparation together account for **34.82%**. Runtime preparation
+is activation work; frozen weights are already packed. `_row_inverse` costs
+0.255 seconds, `_pack_row_blocks` 0.538 and `_row_scale` 0.012, each with
+4,704 calls (112 projections × 42 model iterations). The GEMM epilogue already
+fuses output descaling. The next suggested screen is row-amax/activation-packing
+fusion and fusion with preceding activation/normalization producers, preserving
+row-local scales and BF16 rounding. The broad 26.66% fused category contains
+multiple operations and is not one removable kernel. Its largest individual
+kernel is the fused MLP activation chain, approximately 0.307 seconds.
+
+Full attention including preparation accounts for **10.46%**, so it is no
+longer the dominant block. MXFP8 preparation alone is only 1.20%; prioritize
+the larger FP4 preparation cost first. GDN core and its surrounding fused
+normalization/gating work remain another substantive target. Native GDN backend
+failures remain preserved; the profile does not validate a replacement.
+
+Raw trace, profiler table, predictions, kernel counts/durations, exclusive
+category membership, CPU operator totals and GPU interval calculation are
+retained under `results/b200_attention_gdn_serving/mxfp8_profile01`. CPU totals
+are nested and overlap GPU work, so they are not wall-time fractions. This is
+one throughput profile, not a latency-at-c1 profile or an optimization result.
 
 Pins: vLLM 0.24.0, Torch 2.11.0+cu130, cuDNN frontend 1.31.0/backend 9.26.0.51,
 NVIDIA source revision `51d9d06b574222378a3d806009accab098e73705`, Triton 3.7.1

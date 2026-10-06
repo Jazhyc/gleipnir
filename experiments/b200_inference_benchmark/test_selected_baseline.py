@@ -60,6 +60,34 @@ def test_explicit_historical_baselines_are_preserved():
     assert run.resolve_kernel_baseline(None) is None
 
 
+def test_resident_worker_reuse_allows_only_client_reference_changes():
+    config = {
+        "gleipnir_frost_fp4": {"kernel.py": "validated_hash"},
+        "serving_condition": {
+            "attention_precision": "mxfp8",
+            "high_reference": "historical",
+        },
+    }
+    command = [
+        "python", "--max-num-seqs", "128", "--additional-config", json.dumps(config)
+    ]
+    config["serving_condition"]["high_reference"] = "selected"
+    updated = [*command[:-1], json.dumps(config)]
+    assert run.compatible_server_command(command, updated)
+    changed_capacity = [*updated[:2], "64", *updated[3:]]
+    assert not run.compatible_server_command(command, changed_capacity)
+    config["serving_condition"]["attention_precision"] = "bf16"
+    assert not run.compatible_server_command(
+        command, [*command[:-1], json.dumps(config)]
+    )
+    config["serving_condition"]["attention_precision"] = "mxfp8"
+    config["gleipnir_frost_fp4"]["kernel.py"] = "changed_hash"
+    assert not run.compatible_server_command(
+        command, [*command[:-1], json.dumps(config)]
+    )
+    assert not run.compatible_server_command(command, [*command[:-1], "invalid_json"])
+
+
 def test_accepted_baseline_does_not_hide_strict_failure_or_accept_new_drift():
     limits = {
         "max_mean_absolute_difference": 0.02,

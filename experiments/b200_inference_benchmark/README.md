@@ -1,16 +1,20 @@
 # Small production inference benchmark
 
 Current B200 optimization baseline, selected by the user on 2026-10-06:
-**FROST FP4 MLPs and large GDN QKV/Z/output projections**, with BF16 small gate
-projections, convolution/recurrence operands and full attention, plus FP32
-gates/state. `results/b200_attention_gdn_serving/fp4_gdn_projection02` is the
-archived control; `fp4_gdn_confirmation01` holds five warm c128 passes.
+**FROST FP4 MLPs and large GDN QKV/Z/output projections plus cuDNN MXFP8
+full-attention prefill**, with BF16 small gate projections, convolution/recurrence,
+KV cache and decode, plus FP32 gates/state.
+`results/b200_attention_gdn_serving/fp4_gdn_cudnn_mxfp8_02` is the archived
+control; `mxfp8_confirmation02` holds five warm c128 passes (173,938 input tokens/s).
 `baseline.json` binds the workload, executed recipe, result and explicit
-`user_accepted_finite` quality receipt. The user accepts the 0.47 percentage-point
-macro-AUROC drop; the original strict canary failure remains intact. New kernel
+`user_accepted_finite` quality receipt. The user accepts macro-AUROC +1.68 and
+pooled AUROC −0.37 percentage points relative to the preceding FP4 reference;
+strict score/native-precision failures remain intact. New kernel
 conditions use `baseline: selected`; explicit historical references remain
 unchanged. Primary comparison is c128 throughput, retaining peak, latency and
-ranking diagnostics. See the [baseline decision](../../docs/decisions/b200_fp4_gdn_inference_baseline.md).
+ranking diagnostics. Full-cohort candidates use `high_reference: selected` too,
+which binds the archived full-sweep checksum. See the
+[baseline decision](../../docs/decisions/b200_mxfp8_inference_baseline.md).
 
 Hypothesis: a fixed, small real-prompt workload can expose latency and throughput
 tradeoffs before changing the monitor's production serving kernels or precision.

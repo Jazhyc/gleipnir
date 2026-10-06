@@ -1,5 +1,12 @@
 # B200 attention and GDN throughput campaign
 
+Current optimization reference: FROST FP4 MLP/GDN projections plus the adapted
+cuDNN MXFP8 prefill path, selected by the user after the completed corrected
+screen. The default entrypoint uses `fp4_gdn_cudnn_mxfp8.json`. New candidates
+use both `baseline: selected` and `high_reference: selected`; explicit historical
+comparisons below remain intact. See the
+[current reference decision](../../docs/decisions/b200_mxfp8_inference_baseline.md).
+
 Started 2026-10-06 03:19 UTC. The user authorizes approximately nine hours of
 attention/GDN optimization, prioritizing throughput at high concurrency, FP8
 first, alternative kernels and small integration changes. Stop the old server
@@ -475,3 +482,22 @@ Source-macro AUROC changes +1.68 percentage points, pooled AUROC −0.37 points,
 with twenty threshold flips. The baseline selection remains unchanged and the
 experimental worker stays warm. See [the full finding](../../docs/findings/b200_mxfp8_serving.md)
 for timing variation, calibration, invalidated results and artifact provenance.
+
+The user subsequently accepts MXFP8 as the new optimization reference. Bind the
+unchanged result and five-pass confirmation, native validation and a separate
+`user_accepted_finite` receipt in `baseline.json`; archive the preceding FP4/BF16
+attention selection. Preserve the failed strict native/score checks. Default
+future launches to MXFP8 and bind selected full-cohort comparisons by checksum.
+This changes reference metadata, not the running server's kernels/settings.
+
+`mxfp8_profile01` profiles one full c128 pass on the same worker, excluding its
+7.602 seconds from benchmark timing. Its 46,704 CUDA kernels sum to 6.696 seconds
+and occupy 91.92% of the first-to-last-kernel window. FP4 GEMMs plus runtime
+activation preparation take 34.82% of kernel time; fused elementwise/norm/gates/
+layouts 26.66%; GDN core 12.80%; MXFP8 attention including preparation 10.46%;
+remaining BF16 GEMMs 7.53%; causal convolution 5.90%; other kernels 1.84%.
+FP4 packing/scales alone cost 12.01%, versus MXFP8 preparation 1.20%. Prioritize
+FP4 row-scale/packing and producer fusion, preserving rounding/scales, before
+another attention-conversion change. CPU operator totals overlap/nest and are
+not wall-time fractions. Raw trace, table, predictions and exclusive kernel
+membership remain archived; this is one batch-throughput profile, not c1 latency.
