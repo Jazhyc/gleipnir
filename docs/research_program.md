@@ -505,3 +505,13 @@ Compare pooled/per-source/macro AUROC with archived baseline predictions and
 backfill FP8 without another GPU run. Finite score-canary failures remain failed
 and the bounded AUROC/speed pass diagnostic; no production promotion follows.
 Stop the previous FP8 server before loading FP4, preserving caches and artifacts.
+
+The cuDNN FP4 MLP screen and a targeted warmed replay complete. Native
+arithmetic and twenty-row score canary pass, but warmed throughput remains
+9.36%/13.91%/4.03% below BF16 at concurrency 1/4/16. Pooled AUROC drops
+1.23/1.13/0.59 percentage points; macro drops 2.46/0.57/0.69 points on 11
+eligible small sources. Larger score shifts and 4/3/2 threshold flips remain
+despite the passing canary. Do not adopt this cuDNN configuration or infer a
+general FP4 limitation. Backfilled FP8 AUROC also declines at concurrency 16:
+pooled −0.003448, macro −0.011364. Every subsequent kernel comparison now
+includes matched ranking deltas and source eligibility, alongside timings.

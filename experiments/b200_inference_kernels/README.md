@@ -107,3 +107,20 @@ Only candidate API PID 73262 / engine PID 73329 remains resident at localhost
 port 8010, healthy and idle. The old BF16 server is stopped, original merged
 checkpoint/caches/results preserved and pod kept running. Reuse compatible
 candidate request trials with a new output directory and `--reuse-server`.
+
+## AUROC backfill and later worker retirement
+
+The user subsequently requires AUROC deviation for every kernel change. Backfill
+the frozen predictions with `ranking_report.py`, without another GPU pass.
+At concurrency 1/4, pooled AUROC is 0.932512 → 0.929557; at 16,
+0.932020 → 0.928571 (−0.003448). Source-macro is 0.883207 → 0.871843
+(−0.011364) throughout, over 11 dual-label sources; 12 undefined sources stay
+explicit. The macro decline comes from a −0.125 AUROC change in the six-row
+insider-trading group, with other eligible sources unchanged. This illustrates
+why small-group macro results need context, and why the passing score canary
+alone cannot establish quality parity. Bind inputs/output hashes in the derived
+`fp8_mlp02/ranking_comparison.json`; preserve the original timed artifacts.
+
+The FP8 API PID 73262 / engine PID 73329 is then stopped before the requested
+FP4 replacement. The retirement receipt is `fp8_server_retired.json`; its
+checkpoint, compiler caches and measurements remain intact.
