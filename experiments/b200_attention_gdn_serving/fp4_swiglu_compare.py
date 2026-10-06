@@ -15,6 +15,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--vector-tuning", action="store_true")
+    parser.add_argument("--n192-scale-fix", action="store_true")
     parser.add_argument(
         "--rows",
         nargs="+",
@@ -30,38 +31,17 @@ def main():
         raise FileExistsError(args.output)
     import torch
     import triton
-    import triton.language as tl
 
     from gleipnir.cudnn_fp4_epilogue import Nvfp4ScaledGemm
-    from gleipnir.cudnn_fp4_gemm import PackedNvfp4, decode_operand, pack_operand
-    from gleipnir.serving_fp4_fusion import _buffers, _emit, silu_pack
+    from gleipnir.cudnn_fp4_gemm import decode_operand, pack_operand
+    from gleipnir.serving_fp4_fusion import silu_pack
     from gleipnir.serving_fp4_swiglu import FusedSwiGlu, load_kernel, prepare_weight
-
-    @triton.jit(do_not_specialize=["M"])
-    def emit_activated(X, Q, SF, INV, M, K: tl.constexpr, BLOCK: tl.constexpr):
-        row = tl.program_id(0)
-        j = tl.arange(0, BLOCK)
-        value = tl.load(X + row * K + j, (row < M) & (j < K), other=0).to(tl.float32)
-        _emit(value, Q, SF, INV, row, M, K, BLOCK)
-
-    def pack(x):
-        q, sf, inv = _buffers(x, x.shape[1])
-        emit_activated[(triton.cdiv(x.shape[0], 128) * 128,)](
-            x,
-            q,
-            sf,
-            inv,
-            x.shape[0],
-            x.shape[1],
-            triton.next_power_of_2(x.shape[1]),
-            num_warps=8,
-            enable_fp_fusion=False,
-        )
-        return PackedNvfp4(q.view(torch.float4_e2m1fn_x2), sf, inv)
+    from gleipnir.serving_fp4_swiglu_pack import activated_pack as pack
 
     sources = [
         Path(__file__).relative_to(Path.cwd()),
         Path("src/gleipnir/serving_fp4_swiglu.py"),
+        Path("src/gleipnir/serving_fp4_swiglu_pack.py"),
         Path("src/gleipnir/cudnn_fp4_epilogue.py"),
         Path("src/gleipnir/cudnn_fp4_gemm.py"),
         Path("src/gleipnir/serving_fp4_fusion.py"),
@@ -71,7 +51,9 @@ def main():
         dest = archive / p
         dest.parent.mkdir(parents=True, exist_ok=True)
         shutil.copy2(p, dest)
-    kernel, hashes = load_kernel(Path.cwd(), archive)
+    kernel, hashes = load_kernel(
+        Path.cwd(), archive, n192_scale_fix=args.n192_scale_fix
+    )
     report = dict(
         state="starting",
         passed=False,
@@ -166,6 +148,13 @@ def main():
             )
             for tile, cluster in specs
         }
+        if args.n192_scale_fix:
+            candidates = {
+                name: plan for name, plan in candidates.items() if plan.tile[1] == 192
+            }
+            if not candidates:
+                raise ValueError("N192 correction requires --vector-tuning")
+        report["n192_scale_fix"] = args.n192_scale_fix
         report["candidates"] = list(candidates)
         for m in args.rows:
             print("row_start", m, flush=True)

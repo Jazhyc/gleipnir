@@ -113,10 +113,19 @@ def adapt_source(source: str) -> str:
     return source
 
 
-def load_kernel(root: Path, archive: Path):
+def load_kernel(root: Path, archive: Path, *, n192_scale_fix: bool = False):
     """Archive exact generated source and import its isolated module."""
     original = (root / UPSTREAM).read_text()
     generated = adapt_source(original)
+    if n192_scale_fix:
+        old = "if cutlass.const_expr(self.cta_tile_shape_mnk_c[1] == 192):"
+        if generated.count(old) != 1:
+            raise ValueError("pinned N192 scale-layout branch changed")
+        # The upstream correction is keyed on half-width C, making it
+        # unreachable for the advertised input N192 tile. Test the input tile.
+        generated = generated.replace(
+            old, "if cutlass.const_expr(self.cta_tile_shape_mnk[1] == 192):"
+        )
     archive.mkdir(parents=True, exist_ok=True)
     path = archive / "nvfp4_swiglu_inference.py"
     path.write_text(generated)
