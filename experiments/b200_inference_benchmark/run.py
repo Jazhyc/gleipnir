@@ -234,6 +234,7 @@ def environment() -> dict[str, str]:
         PYTHONUNBUFFERED="1",
         HF_HOME=str(ROOT / ".cache/huggingface"),
         HF_HUB_CACHE=str(ROOT / ".cache/huggingface/hub"),
+        FLASHINFER_WORKSPACE_BASE=str(ROOT),
         TOKENIZERS_PARALLELISM="false",
         OMP_NUM_THREADS="4",
         VLLM_CACHE_ROOT=str(ROOT / ".cache/vllm/student_injection_awareness_v1"),

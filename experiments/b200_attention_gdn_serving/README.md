@@ -514,3 +514,68 @@ that bounded candidate first, using a host constant to avoid the wrapper's GPU
 the vendor norm/activation fusions use scalar scale contracts. See the
 [detailed diagnosis](../../docs/findings/b200_mxfp8_serving.md#fp4-preparation-diagnosis-and-vendor-kernel-candidates).
 No new kernel timing or AUROC claim follows from this inspection.
+
+## FP4 preparation trials
+
+The user authorizes testing all three proposed improvements. Hypothesis:
+vendor per-token CUDA packing and fused SwiGLU/normalization producers reduce
+activation preparation cost on top of the selected FP4/MXFP8 reference.
+Preserve the FP32 master, merged model, 112 FP4 projections, MXFP8 prefill,
+BF16 recurrence/cache/decode, token/scoring contract and shared caches. Retire
+the existing server before changing active kernels; use one GPU worker.
+
+First compare the installed CUDA per-token NVFP4 producer with the existing
+hardware row packer at widths 2560/4096/9216 and rows 1/17/129/32768. Include
+allocation, token-scale conversion and scale-layout work in timings. Check
+decoded values/scales, zero and extreme rows, padding, isolation, finite native
+GEMM outputs and changed-input CUDA graph replay. Record bitwise comparisons
+separately from <=1% decoded-reference arithmetic admission. Then test row-scaled
+SwiGLU packing and Qwen3.5 post-attention RMSNorm/residual packing, preserving
+the recorded BF16 rounding boundaries, epsilon and weight-offset convention.
+Require targeted producer/native checks before model startup; hard-stop on
+structural, missing or nonfinite outputs. Never silently fall back.
+
+For admitted candidates run the unchanged score canary, quick latency/full
+throughput sweep and source/pooled AUROC against the saved selected MXFP8
+reference, plus five warm c128 confirmation passes on the same resident worker.
+Numerical finite failures may remain diagnostic under the existing explicit
+trial policy, but do not overwrite strict receipts or promote new drift.
+Reuse native/kernel caches and validation for unchanged components. No new
+control server, calibration on final ID or new billable capacity is required.
+Finish after the three independent variants and a combined variant if their
+native/model results support it, then collect results and retain a useful worker.
+No in-chat scheduling tool is available; startup and progress monitoring are
+performed during this active turn and cannot promise a follow-up after it ends.
+
+Vendor canaries01–04 retain a missing-PATH build failure, a scale-padding dtype
+failure and the zero-row nonfinite failure. Add explicit zero payload/scale
+initialization; never route zero rows to another producer. Canary04 then stays
+finite but exceeds the unchanged 1% baseline decoded-precision comparison at
+1.81% on M129/K2560. Preserve that failure. Canary05 separately compares native
+FROST GEMM output with FP32 contraction of the actual vendor decoded operands,
+retaining the 1% arithmetic ceiling, isolation and updated-input graph checks.
+Only full arithmetic/finite admission permits the existing diagnostic model
+screen; `passed` still denotes strict baseline precision and remains distinct
+from `arithmetic_passed`. New source archives preserve the executed producers
+and checking code. The eventual model AUROC check measures whether this native
+rounding change is usable; no precision ceiling or historical result is widened.
+
+Canary05 passes all twelve vendor arithmetic/isolation/replay checks, with native
+GEMM relative-L2 at most 1.08e-5. Strict baseline precision remains failed at
+1.81%. Long-row packing is 2.00/2.19/2.24 times faster at K2560/4096/9216;
+these CUDA-graph measurements exclude HTTP and host dispatch overhead.
+
+Fusion canary01 preserves the failed eager-style SwiGLU rounding attempt.
+Inspecting generated Inductor code shows FP32 SiLU and multiplication followed
+by a single BF16 output boundary. Canary02 matches this compiled contract and
+passes eight cases for each fusion, including actual-operand GEMM arithmetic,
+row isolation and changed-input graph replay. Select eight warps for SwiGLU
+and four for normalization. At M32768, complete producer-plus-packing time is
+0.806 to 0.457 ms for SwiGLU and 0.499 to 0.110 ms for residual/normalization.
+SwiGLU payloads/scales are bitwise equal in the native fixtures; normalization
+has small rounding differences and exactly preserves the BF16 residual output.
+Model speed and AUROC must still be measured before interpreting these gains.
+
+FlashInfer's existing 28 MB ephemeral cache is copied into the network-volume
+`.cache/flashinfer` directory. Serving now sets `FLASHINFER_WORKSPACE_BASE` to
+the repository root, preserving compatible native builds across pod restarts.

@@ -58,6 +58,14 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         or not condition["worker_cls"].endswith("Mxfp8ServingAuditWorker")
     ):
         raise ValueError("MXFP8 requires its validated forward-only serving worker")
+    if condition.get("fp4_preparation") and (
+        condition["fp4_preparation"] not in {"vendor", "silu", "norm"}
+        or not condition.get("fp4_prepare_validation")
+        or not condition["worker_cls"].endswith("PreparationMxfp8ServingAuditWorker")
+        or condition["attention_precision"] != "mxfp8"
+        or condition["gdn_projection_precision"] != "fp4"
+    ):
+        raise ValueError("FP4 preparation requires its bound native receipt and worker")
     if condition["gdn_projection_precision"] not in {"bf16", "fp8", "fp4"}:
         raise ValueError("unsupported GDN projection precision")
     if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:
@@ -238,6 +246,17 @@ def main() -> None:
                 "experiments/b200_attention_gdn_serving/mxfp8_canary.py",
             ]
         )
+    if raw.get("fp4_preparation"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_fp4_prepare.py",
+                "src/gleipnir/serving_fp4_fusion.py",
+                "src/gleipnir/serving_fp4_integration.py",
+                "experiments/b200_attention_gdn_serving/prepare_worker.py",
+                "experiments/b200_attention_gdn_serving/fp4_prepare_canary.py",
+                "experiments/b200_attention_gdn_serving/fp4_fusion_canary.py",
+            ]
+        )
     if ".combined_worker." in raw["worker_cls"] or raw.get("external_fa4"):
         sources.append("experiments/b200_attention_gdn_serving/combined_worker.py")
     if raw.get("external_fa4"):
@@ -306,7 +325,11 @@ def main() -> None:
         write(out / "failure.json", {"error": f"{type(error).__name__}: {error}"})
         raise
     finally:
-        for name in ("loaded_precision.json", "native_attention.json"):
+        for name in (
+            "loaded_precision.json",
+            "native_attention.json",
+            "native_preparation.json",
+        ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))
 
