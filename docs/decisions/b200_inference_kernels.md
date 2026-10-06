@@ -50,3 +50,33 @@ already measured BF16 control. Stop API PID 72552 and engine PID 72648, preservi
 results, logs, caches and the ephemeral merged checkpoint. Reuse the archived
 control results without another resident engine or repeated baseline. The
 candidate keeps its original engine budgets; no memory-fraction tuning is done.
+
+## Completed first native kernel trial
+
+All six FP8-MLP passes complete after loaded precision audit and fresh canary.
+The audit confirms 64 native `CutlassFP8ScaledMMLinearKernel` projections with
+per-channel weights/per-token activations and BF16 in every other loaded linear.
+Median input throughput at client concurrency 1/4/16 rises
+29,763/69,049/107,073 → 32,105/78,356/115,423 tokens/s:
+7.87%/13.48%/7.80% gains including activation conversion. Interactive p50 falls
+0.1041 → 0.0973 seconds; concurrency-16 p50/p95 are 0.5244/0.8681 seconds.
+Only concurrency 4 clears the >10% screening interest rule; report the modest
+gain rather than predicting large whole-model gains from FP8 peak throughput.
+
+Twenty-row canary mean score difference/correlation versus master are
+0.00493345/0.99966835 and versus merged BF16 0.00339731/0.99980108, passing
+the unchanged limits. Nonzero effect is 0.79854948 against reused base scores.
+Paired 64-row repeat medians have mean score drift about 0.0104–0.0106,
+maximum 0.103560 and one changed 0.5-threshold decision at each concurrency.
+Candidate within-array ranges average 0.000867, maximum 0.027824, with no
+threshold-unstable rows. Passing this canary is not broad held-out quality
+equivalence; do not replace a quality-validated production precision recipe.
+
+Readiness takes 698.666 seconds, canary 10.622 and workload warmup 0.452,
+excluded from timed passes. Weight memory falls 7.99 → 5.96 GiB, while total
+resident GPU allocation stays 49,798 MiB under the unchanged memory budget.
+Only FP8 API PID 73262 / engine PID 73329 remains warm at localhost 8010;
+the old control is stopped. Collect results, executed sources, numerical
+comparisons, audit and logs locally; retain disposable merged weights on the
+pod and original FP32 masters/caches persistently. Fifteen focused tests and
+Ruff pass. Preserve the port-collision failure, source provenance and stop receipt.

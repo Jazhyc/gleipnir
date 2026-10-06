@@ -58,3 +58,52 @@ The first attempt, `fp8_mlp01`, stops before model loading because port 8001
 already has a listener. Preserve its receipt; the retry uses verified-free port
 8010 and leaves the existing listener untouched. No GPU timing or numerical
 measurement comes from the failed launch.
+
+## Completed native FP8 MLP screen
+
+`fp8_mlp02` completes all six matched passes. The loading audit verifies 64
+fused MLP projections using `Fp8PtpcOnlineLinearMethod` and
+`CutlassFP8ScaledMMLinearKernel`, with all other loaded linears BF16. Model
+loading uses 5.96 GiB versus 7.99 GiB for BF16. The serving engine still reserves
+49,798 MiB overall under the unchanged memory fraction, including cache and
+runtime allocations; lower weight memory is not equal to total server savings.
+
+Each statistic below is the median of two repeats on the same 64 prompts,
+269,411 input tokens, with prefix caching off. Conversion cost is included.
+
+| Concurrency | Merged BF16 input tokens/s | FP8 MLP input tokens/s | Throughput gain | FP8 p50 / p95 latency (s) |
+| --- | ---: | ---: | ---: | ---: |
+| 1 | 29,763 | 32,105 | 7.87% | 0.0973 / 0.3382 |
+| 4 | 69,049 | 78,356 | 13.48% | 0.1984 / 0.3821 |
+| 16 | 107,073 | 115,423 | 7.80% | 0.5244 / 0.8681 |
+
+Median requests/s are 7.627 / 18.614 / 27.419 and pass durations
+8.406 / 3.438 / 2.334 seconds. Interactive p50 falls 0.1041 → 0.0973 seconds.
+Only concurrency 4 clears the predeclared >10% interest threshold. This is a
+modest end-to-end gain with conversion cost included, not a kernel-only speedup.
+Two short repeats are screening evidence; do not infer universal acceleration
+or compute/memory limitation without profiling.
+
+Fresh twenty-row canary passes: mean score difference/correlation are
+0.00493345/0.99966835 versus archived master, 0.00398037/0.99983862 versus
+dynamic LoRA and 0.00339731/0.99980108 versus merged BF16. Nonzero adapter effect
+against explicitly reused base scores is 0.79854948. On 64 paired repeat medians,
+mean absolute score drift at concurrency 1/4/16 is
+0.010563/0.010378/0.010577, maximum 0.103560 throughout; mean margin drift is
+0.091797/0.092773/0.091797, maximum 0.5. One 0.5-threshold decision changes in
+each comparison, the same identity. Across all candidate arrays the mean/max
+per-row range is 0.000867/0.027824 with zero threshold-unstable rows. These
+differences do not establish held-out quality parity or promote FP8 production
+precision. Keep merged BF16 as the comparison reference for further screens.
+
+Readiness is 698.666 seconds, fresh canary 10.622 and four-length warmup 0.452,
+excluded from all timed passes. Native graph compilation takes 114.03 seconds
+and initial runtime warmup 93.99 seconds; checkpoint loading takes 1.67 seconds.
+Fifteen focused tests and Ruff pass; local collection verifies every result
+checksum, row identity, prompt hash, token count, finite score and native audit.
+Preserve the first port-collision failure and the BF16 retirement receipt.
+
+Only candidate API PID 73262 / engine PID 73329 remains resident at localhost
+port 8010, healthy and idle. The old BF16 server is stopped, original merged
+checkpoint/caches/results preserved and pod kept running. Reuse compatible
+candidate request trials with a new output directory and `--reuse-server`.

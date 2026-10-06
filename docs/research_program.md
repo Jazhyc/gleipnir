@@ -488,3 +488,11 @@ subsequently selects stopping the previous server whenever an inference change
 requires a new process, reusing completed baseline results rather than holding
 an idle control. Record this preference in `AGENTS.md` and free the old merged
 server's approximately 49 GB GPU allocation while the candidate initializes.
+
+The native CUTLASS FP8 MLP screen completes. Median prompt throughput improves
+7.87%/13.48%/7.80% at concurrency 1/4/16, reaching 115,423 tokens/s at 16,
+with activation conversion included. Fresh score canary passes, but paired
+64-row scores differ on average about 0.0105 and by as much as 0.1036, changing
+one threshold decision. This modest systems gain does not establish broad
+quality parity. Retain the active FP8 worker for compatible kernel trials and
+the archived merged BF16 reference, with the previous server stopped.
