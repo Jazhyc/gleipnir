@@ -222,6 +222,14 @@ still costs 10.4%, but it must preserve our dynamic row-scale and gate/up layout
 contracts. No new kernel, server restart or performance improvement is claimed
 by this follow-up. The combined worker remains unchanged.
 
+The subsequent user-authorized [tile tuning](b200_fp4_gemm_tuning.md) completes
+on 2026-10-06. The existing tile wins all tested large-row shapes; N128 helps
+the two output projections at small M. Whole-serving warm latency improves
+slightly, while c128 throughput is 1.66% lower than the combined stack. Keep
+this as an experimental option and leave the selected reference unchanged.
+The earlier combined server is retired; experimental API/engine 89879/89962
+now remain healthy and warm on the same pod.
+
 ## Cache and artifact handling
 
 The previous server's FlashInfer cache lived under `/root/.cache/flashinfer`.

@@ -629,3 +629,33 @@ reference. Use the unchanged frozen 320 training-seen systems-dev rows, one
 excluded warmup plus five c128 passes, interactive latency and source/pooled
 AUROC. This is kernel selection on systems-dev, with no final-ID promotion.
 Stop the serving worker before native tuning or a changed serving configuration.
+
+
+Native sweep `fp4_gemm_tune01.json` completes in 58.4 seconds. All 160
+executable cases have zero relative-L2 difference, exact zero rows, row isolation
+and changed-input replay agreement. Four M256/N256 builds fail the upstream
+TMEM budget (496 columns available versus 512 required); preserve these rejects.
+The forced N256/two-CTA tile wins every large-row shape and both input
+projections. For M<=4096, N128/two-CTA wins MLP down by 13.60% and GDN output
+by 5.70% (geometric mean across M129/1536/2304/4096). The integrated candidate
+is `fp4_gemm_tuned.json`, with a source-bound native receipt, precompiled
+symbolic-M plans and live per-shape dispatch audit. Its full-cohort reference
+is the existing combined-preparation run; saved selected-reference scores are
+also retained for the final report.
+
+The integrated sweep completes fourteen passes. Five further warm c128 passes
+have median 182,682 input tokens/s, -1.66% versus combined preparation and
++5.03% versus the selected MXFP8 reference. A fully warm c1 confirmation is
+147.00 ms median / 270.26 ms p95, versus saved combined 149.47 / 286.38 ms.
+The initial post-startup c1 median is 163.41 ms; preserve both measurements
+rather than attributing all warm differences to the tile choice. Source-macro /
+pooled AUROC is 0.884608 / 0.908150, -0.0584 / +0.0137 percentage points versus
+the saved combined full-sweep repeat-median scores. Baseline-relative canary
+passes; inherited strict master/preparation failures remain recorded.
+
+The selected default is unchanged. The experimental server stays healthy and
+warm: API/engine **89879/89962**, port 8010, same retained NC2 pod. Campaign
+state is completed, with no active driver. Collection manifest
+`fp4_gemm_tuning_collection01` verifies all 130 artifacts; 21 timed passes and
+one excluded warmup have matched IDs/prompts/tokens and finite scores.
+See [the tuning finding](../../docs/findings/b200_fp4_gemm_tuning.md).
