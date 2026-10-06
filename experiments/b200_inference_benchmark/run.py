@@ -296,12 +296,16 @@ async def benchmark(
     count: int,
     reuse: bool,
     merged_model: Path | None = None,
+    kernel_condition: dict | None = None,
 ) -> None:
     import httpx
     import numpy as np
 
     command = server_command(config, merged_model)
-    metadata = OUTPUT / "server.json"
+    if kernel_condition:
+        command.extend(kernel_condition["extra_server_args"])
+    metadata = (output.parent if kernel_condition else OUTPUT) / "server.json"
+    logs = (ROOT / "logs/runpod/b200_inference_kernels") if kernel_condition else LOGS
     base_url = f"http://127.0.0.1:{config['port']}"
     started = time.perf_counter()
     if reuse:
@@ -324,10 +328,10 @@ async def benchmark(
                 pass
             else:
                 raise ValueError("port already in use")
-        LOGS.mkdir(parents=True, exist_ok=True)
+        logs.mkdir(parents=True, exist_ok=True)
         if shutil.which("ninja", path=environment()["PATH"]) is None:
             raise RuntimeError("serving compiler executable ninja is unavailable")
-        with (LOGS / "server.log").open("x") as handle:
+        with (logs / "server.log").open("x") as handle:
             process = subprocess.Popen(
                 command,
                 cwd=ROOT,
@@ -343,7 +347,7 @@ async def benchmark(
             "started_at_unix": time.time(),
             "status": "starting",
             "cache_paths": {k: v for k, v in environment().items() if "CACHE" in k},
-            "log": str(LOGS / "server.log"),
+            "log": str(logs / "server.log"),
         }
         write(metadata, receipt)
     async with httpx.AsyncClient(
@@ -369,7 +373,14 @@ async def benchmark(
         write(metadata, receipt)
         report = {
             "status": "running",
-            "serving_mode": "merged_bf16" if merged_model else "dynamic_lora_bf16",
+            "serving_mode": (
+                kernel_condition["name"]
+                if kernel_condition
+                else "merged_bf16"
+                if merged_model
+                else "dynamic_lora_bf16"
+            ),
+            "kernel_condition": kernel_condition,
             "rows": count,
             "manifest_sha256": sha(DATA / "manifest.json"),
             "server": receipt,
@@ -421,6 +432,21 @@ async def benchmark(
                 "correlation": float(np.corrcoef(served["adapter"], reference)[0, 1]),
             }
             report["unmerged_baseline_parity_sha256"] = sha(baseline_parity)
+            if kernel_condition:
+                prior_path = ROOT / kernel_condition["baseline"] / "http_parity.json"
+                prior = json.loads(prior_path.read_text())
+                if not prior["passed"]:
+                    raise ValueError("merged control parity failed")
+                reference = prior["served"]["adapter"]
+                comparisons["merged_bf16"] = {
+                    "mean_absolute_difference": float(
+                        np.mean(np.abs(np.array(served["adapter"]) - reference))
+                    ),
+                    "correlation": float(
+                        np.corrcoef(served["adapter"], reference)[0, 1]
+                    ),
+                }
+                report["merged_baseline_parity_sha256"] = sha(prior_path)
         effect = float(np.max(np.abs(np.array(served["adapter"]) - served["base"])))
         passed = all(
             v["mean_absolute_difference"]
@@ -504,7 +530,11 @@ async def benchmark(
             .strip(),
         )
         if merged_model:
-            baseline_path = OUTPUT / "baseline01"
+            baseline_path = (
+                ROOT / kernel_condition["baseline"]
+                if kernel_condition
+                else OUTPUT / "baseline01"
+            )
             baseline_report = json.loads((baseline_path / "summary.json").read_text())
             if (
                 baseline_report["status"] != "complete"

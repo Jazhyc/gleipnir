@@ -1,0 +1,11 @@
+{
+  "name": "fp8_mlp",
+  "port": 8010,
+  "merged_model": "/tmp/gleipnir-merged/fp4-full-training-bf16",
+  "baseline": "results/b200_inference_benchmark/merged01",
+  "quantization": "fp8_per_channel",
+  "quantization_config": {
+    "ignore": ["re:^(?!.*\\.layers\\.\\d+\\.mlp\\.).*$"]
+  },
+  "worker_cls": "experiments.b200_inference_kernels.worker.PrecisionAuditWorker"
+}

@@ -474,3 +474,13 @@ Keep the merged worker resident and disposable weights on ephemeral disk, with
 immutable FP32 adapters and all provenance/results persistent. This validates a
 performance gain on the small systems workload, not equivalence of complete
 ID/OOD quality metrics.
+
+The user next requests inference kernel optimization. The live merged vLLM
+engine already uses FlashInfer/TRTLLM full attention and FlashInfer GDN; its
+BF16 linears use PyTorch's CUDA GEMM path. The first new kernel screen uses
+native vLLM per-channel-weight/per-token-activation FP8 only in MLPs, retaining
+the warm, idle merged BF16 control and matched HTTP workload. Loaded precision
+and resolved GEMM classes are audited before the unchanged score canary.
+The [kernel screening decision](decisions/b200_inference_kernels.md) records
+scope, hypotheses and stop conditions; prior SM120 FP8 results motivate this
+trial but do not establish its B200 performance or numerical fidelity.
