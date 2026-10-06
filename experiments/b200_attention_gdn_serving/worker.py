@@ -100,6 +100,8 @@ class ServingAuditWorker(FrostAuditWorker):
                     "q_scale": layer._q_scale_float,
                     "k_scale": layer._k_scale_float,
                     "v_scale": layer._v_scale_float,
+                    "bmm1_scale": getattr(layer.impl, "bmm1_scale", None),
+                    "bmm2_scale": getattr(layer.impl, "bmm2_scale", None),
                 }
         if len(attention) != 8:
             raise ValueError("incomplete full-attention audit")

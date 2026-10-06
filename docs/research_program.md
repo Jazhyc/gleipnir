@@ -542,3 +542,16 @@ throughput. A checksum-bound baseline selection routes new kernel comparisons
 to archived `frost02` timings/predictions, preserving explicit historical
 controls and the live worker. Lower-precision attention feasibility is recorded
 in [the serving precision decision](decisions/b200_low_precision_attention_serving.md).
+
+The user authorizes an approximately nine-hour attention/GDN throughput campaign
+on the existing B200, with one serving process using the whole-GPU memory budget
+and conditional termination after sensible options are exhausted. The
+[campaign](../experiments/b200_attention_gdn_serving/README.md) establishes a
+90%-memory/128-sequence FROST control: full-cohort throughput peaks around
+149k tokens/s at client concurrency 32, dropping to 143k at 128. Native FP8
+attention passes the score canary but gains only 0.35% at c128 and decreases
+source-macro AUROC about one percentage point on the 320-row development set.
+vLLM disables startup KV-scale calibration for the hybrid architecture, leaving
+unit scales. A separate profile places FP8 attention at about 9% of CUDA kernel
+time, BF16 projections at 27%, and GDN core at 12%; prioritize projection/GDN
+interventions and alternative attention kernels, retaining numerical drift.

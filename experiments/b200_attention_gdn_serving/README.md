@@ -77,3 +77,78 @@ a turn ends. Record live PIDs, configuration and artifact paths for continuation
 Outputs: `results/b200_attention_gdn_serving/`; logs:
 `logs/runpod/b200_attention_gdn_serving/`. All conditions use the existing NC2
 B200, no concurrent control server or newly launched capacity.
+
+## Whole-GPU FROST control
+
+`high_base01` completes six quick passes and eight full 320-row passes. Its
+canary matches the archived FROST scores exactly (mean error 0, correlation 1).
+All 64 MLPs pass the FROST scope/native audit. Eight observed native attention
+calls have BF16 Q/KV, causal masking, D256, 16 query heads and four KV heads.
+The native paged view uses 16-token pages; do not infer its layout solely from
+the hybrid cache's physical allocation. Startup takes 620.651 seconds, HTTP
+warmup 0.438 seconds. Serving uses about 169,374 MiB of 183,359 MiB GPU memory.
+
+| Client concurrency | Full-workload input tokens/s | p50 latency | Pooled AUROC | Source-macro AUROC |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 130,542 | 0.504 s | 0.889534 | 0.889694 |
+| 32 | 149,113 | 0.830 s | 0.889690 | 0.889694 |
+| 64 | 147,705 | 1.707 s | 0.889963 | 0.889848 |
+| 128 | 142,661 | 3.189 s | 0.889397 | 0.889292 |
+
+Two-repeat medians; the workload is 320 rows and 1,310,581 prompt tokens, with
+29 dual-label sources and one undefined source. This is a different population
+from the quick 64-row screen; do not compare their absolute AUROCs. The engine
+allows 128 active sequences at all client loads. Peak observed throughput is
+at c32; c128 is slower despite a larger queue. Preserve both peak and
+highest-concurrency measurements. The c128 pass pair is 8.913/9.478 seconds,
+so modest gains require additional warmed confirmation rather than assuming
+perfect measurement stability.
+
+Thirteen focused CPU checks and Ruff pass. All fourteen prediction arrays,
+native scope/dtype receipts, prompt/token identity and finite logprobs verify;
+43 collected artifact checksums match locally. The control API 76454 / engine
+76507 is retired before the FP8 candidate, with its log and identity-bound
+retirement receipt preserved. No control remains on the GPU.
+
+`fp8_attention01` starts with native FP8 Q/K/V and the same 90%/128-sequence
+envelope. Its requested `--calculate-kv-scales` flag is explicitly disabled by
+vLLM for this hybrid model: startup calibration has uninitialized recurrent
+state. Effective initial scales are unit values, not a completed real-prompt
+calibration. Retain this requested/effective difference; inspect canary/AUROC
+and scale state before deciding whether a real-prompt calibration is needed.
+
+## Native FP8 attention result and profile
+
+`fp8_attention01` completes all fourteen passes. The canary passes: mean error
+versus FROST is 0.010543, correlation 0.999104; master error/correlation are
+0.016524/0.997552. Eight native calls confirm FP8 E4M3 Q/KV, D256, causal GQA,
+and the paged prefill kernel. Effective scales are all 1.0, with BMM1 scale
+0.0625 and BMM2 1.0, consistent with the runtime's disabled calibration flag.
+
+| Concurrency | FP8 input tokens/s | Gain vs matched FROST | Pooled AUROC delta | Source-macro AUROC delta | Threshold flips |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 16 | 135,093 | +3.49% | +0.000820 | −0.010495 | 14 |
+| 32 | 154,689 | +3.74% | +0.000449 | −0.010476 | 14 |
+| 64 | 152,512 | +3.25% | +0.000547 | −0.010282 | 14 |
+| 128 | 143,166 | +0.35% | +0.000840 | −0.009048 | 13 |
+
+The c128 repeats are 8.775/9.568 seconds, so its small median gain is not
+convincing. Full-workload mean/max paired score error is about 0.0314/0.2861,
+despite the passing small canary. Preserve the source-macro decline and avoid
+promoting this configuration solely on pooled AUROC or a modest c32 gain.
+
+A separate resident c128 profile completes, excluded from benchmark timing.
+Its 38,976 CUDA kernels total 7.940 seconds; their interval union is 7.934
+seconds over an 8.509-second first-to-last-kernel span (93.24% active). Kernel
+sum shares: BF16 GEMMs about 27%, FROST including packing about 20%, GDN core
+about 12%, causal convolution about 5%, and native FP8 full attention about 9%.
+CPU/GPU overlap means CPU operator totals are not wall-time fractions. Do not
+double-count nested profiler operators or call all gaps CPU dispatch. Trace,
+profiler tables and raw kernel-name/duration summaries remain in the artifacts.
+
+This prioritizes FP8 GDN QKV/Z and output projection GEMMs next, with BF16
+attention, convolution and recurrence retained and small gate projections
+unchanged. Require six quantized-reference checks on the two representative
+GDN projection geometries (M=1/17/129), native Cutlass W8A8 dispatch, complete
+48-projection coverage and all unchanged FROST checks. Also test another native
+attention path rather than treating the first FP8 kernel as an endpoint.
