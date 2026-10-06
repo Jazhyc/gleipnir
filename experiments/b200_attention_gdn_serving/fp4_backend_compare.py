@@ -10,6 +10,19 @@ import time
 from pathlib import Path
 
 
+def _resolve_backend_choices(
+    candidates: tuple[str, ...], supported: tuple[str, ...]
+) -> tuple[str, ...]:
+    if (
+        not candidates
+        or candidates[0] != "frost"
+        or len(set(candidates)) != len(candidates)
+        or set(candidates) - set(supported)
+    ):
+        raise ValueError("backend subset must start with frost and be unique/supported")
+    return candidates
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
@@ -30,9 +43,7 @@ def main() -> None:
     from gleipnir.serving_fp4_tuning import SHAPES, retile, row_band
 
     BASE_TILE = "frost"
-    CANDIDATES = tuple(args.backends or BACKENDS)
-    if "frost" not in CANDIDATES or set(CANDIDATES) - set(BACKENDS):
-        raise ValueError("backend subset must include frost and supported backends")
+    CANDIDATES = _resolve_backend_choices(tuple(args.backends or BACKENDS), BACKENDS)
     compatibility = {}
     if args.cute_compat:
         import cutlass.cute as cute

@@ -212,3 +212,10 @@ hurt. Hardware Tensor Core, DRAM/L2 and stall counters remain unmeasured.
 and the trace-bound BF16 attribution. Prioritize the bounded backend screen,
 then adapted GEMM-plus-SwiGLU fusion. No new native/serving trial is launched,
 no default changes, and the selected worker remains intact.
+
+
+The user subsequently authorizes the backend comparison. All four alternatives
+pass the matched native arithmetic cases, but no shape/row-band winner emerges.
+Keep the selected FROST stack; the restored API/engine is now **91253/91317**.
+See the [completed backend comparison](b200_fp4_backend_comparison.md) for
+operator timings, the preserved/fixed CuTe API mismatch and artifact receipts.

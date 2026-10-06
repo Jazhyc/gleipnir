@@ -64,3 +64,11 @@ core 9.65%. Large-row tile choices are unchanged, making this a useful starting
 estimate rather than a fresh profile. GPU kernel shares do not establish
 Tensor Core saturation or identify compute versus memory stalls; those counters
 remain unmeasured.
+
+
+Later on 2026-10-06, the user-authorized
+[backend comparison](../findings/b200_fp4_backend_comparison.md) retains FROST.
+After stopping the old server for native work, restore the same recipe as
+API/engine **91253/91317**, port 8010. Existing quality and performance controls
+remain bound; four warmup requests and current-PID runtime audits verify the
+restored worker. The selection is unchanged.

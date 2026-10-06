@@ -67,3 +67,19 @@ def test_cute_aliases_preserve_target_and_existing_functions():
     assert install_aliases(cute) == {}
     with pytest.raises(ValueError, match="missing CuTe compatibility target"):
         install_aliases(SimpleNamespace())
+
+
+def test_backend_subsets_require_an_unambiguous_first_control():
+    from experiments.b200_attention_gdn_serving.fp4_backend_compare import (
+        _resolve_backend_choices,
+    )
+    from gleipnir.serving_fp4_backends import BACKENDS
+
+    assert _resolve_backend_choices(BACKENDS, BACKENDS) == BACKENDS
+    assert _resolve_backend_choices(("frost", "cute-dsl"), BACKENDS) == (
+        "frost",
+        "cute-dsl",
+    )
+    for choices in ((), ("cutlass", "frost"), ("frost", "frost"), ("frost", "bad")):
+        with pytest.raises(ValueError, match="backend subset"):
+            _resolve_backend_choices(choices, BACKENDS)

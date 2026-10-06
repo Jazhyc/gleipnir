@@ -700,3 +700,22 @@ and AUROC/score diagnostics. Reuse unchanged preparation and attention receipts.
 Stop after the bounded comparison and one integrated candidate; restore a useful
 serving worker even if no backend wins. Do not start fusion/precision experiments
 as part of this backend comparison. No final-ID promotion or new capacity.
+
+
+Backend comparison completes without a selected alternative. Initial sweep
+`fp4_backend_compare01` gives 128 passes and 32 preserved CuTe API failures in
+253.1 seconds. A documented process-local register-tensor alias repairs the
+CuTe/CUTLASS-4.8 mismatch; targeted `fp4_backend_compare02` gives 64 passes in
+49.8 seconds. All four alternatives have zero observed numerical error in their
+32 native cases, but no shape/row-band winner. At M32768, gate/up milliseconds
+are FROST 0.6124, cuDNN 1.0327, CUTLASS 1.0267, TRT-LLM 1.2917, CuTe 1.0659.
+These include required row descaling; the reference already fuses that epilogue.
+Shared autotune cache retains 152 configurations. Preserve both exact source
+archives and the original incompatibility; aliases are not installed in serving.
+
+The reference is restored unchanged as API/engine **91253/91317**, port 8010.
+Four bounded warmup requests progress and current-PID native audits pass.
+Reuse the prior quality receipt and speed/AUROC controls; no new quality pass
+or alternative model kernel is claimed. Collection `fp4_backend_collection01`
+binds all native results, sources, installed implementation copies, cache and
+restore receipts. See [the backend finding](../../docs/findings/b200_fp4_backend_comparison.md).
