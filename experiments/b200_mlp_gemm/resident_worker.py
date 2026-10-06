@@ -24,6 +24,7 @@ from experiments.b200_mlp_gemm.warmed_training import (
     preserve_random_state,
 )
 from gleipnir.cudnn_fp4_mlp import cache_metadata
+from gleipnir.systems_artifacts import systems_scratch
 from gleipnir.training_execution_audit import tensor_digest
 
 
@@ -286,7 +287,8 @@ def resident_train(original_train: Callable, root: Path) -> Callable:
                     digest = reset_trainer(trainer, initial, rng)
                     if digest != initial_digest:
                         raise ValueError("resident master reset failed")
-                    trainer.args.output_dir = str(trial / "adapter")
+                    scratch_adapter = systems_scratch() / "adapter"
+                    trainer.args.output_dir = str(scratch_adapter)
                     profile = None
                     if current.get("variant") == "gemmprofile":
                         from experiments.b200_mlp_gemm.resident_profile import (
@@ -322,13 +324,18 @@ def resident_train(original_train: Callable, root: Path) -> Callable:
                         all(v == 0 for v in x["delta"].values()) for x in audit[10:]
                     )
                     final_digest = tensor_digest(parameters)
-                    trainer.save_model(str(trial / "adapter"))
+                    trainer.save_model(str(scratch_adapter))
                     report = {
                         "status": "complete",
                         "variant": current.get("variant", "baseline"),
                         "pid": os.getpid(),
                         "initial_master_sha256": digest,
                         "final_master_sha256": final_digest,
+                        "master_artifact": {
+                            "path": str(scratch_adapter),
+                            "mutable": True,
+                            "retention": "latest_only",
+                        },
                         "physical_contract": contract,
                         "loss_history": [
                             x for x in trainer.state.log_history if "loss" in x

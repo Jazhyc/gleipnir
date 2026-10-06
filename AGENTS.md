@@ -84,6 +84,19 @@ agent follow-ups with a remote polling loop.
 
 ### Reuse validated training recipes
 
+Standing user preference, 2026-10-06: short systems-training optimization checks
+overwrite a shared scratch adapter/master instead of retaining weights for
+every condition. Keep per-trial configurations, timings, losses, gradient
+diagnostics, tensor digests and numerical receipts. Preserve one frozen original
+initialization for matched resets, compiler/kernel caches, and full research
+training/evaluation adapters. Expendable historical systems weight copies were
+explicitly authorized for deletion; this does not authorize deleting quality
+artifacts or caches. Use `results/systems_training_scratch/` for mutable weights
+and clearly mark receipts that point there as references to an overwritten slot.
+For ordinary Trainer screens, set `systems_adapter_scratch: true` in the screen
+configuration/job; this suppresses checkpoint copies and redirects only weights,
+while metadata stays per trial. Keep historical frozen configs unchanged.
+
 Standing user preference, 2026-10-05: keep a persistent, resident training worker
 when iterating on training-stack optimizations. Reuse the loaded model, compiler
 and kernel caches, native plans and packed frozen weights across compatible

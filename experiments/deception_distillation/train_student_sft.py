@@ -3549,6 +3549,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     )
     if save_strategy not in {"no", "steps", "epoch"}:
         raise ValueError("student.training.save_strategy must be no, steps, or epoch")
+    systems_adapter_scratch = bool(
+        OmegaConf.select(cfg, "student.training.systems_adapter_scratch", default=False)
+    )
+    if systems_adapter_scratch:
+        save_strategy = "no"
     save_steps = float(
         OmegaConf.select(cfg, "student.training.save_steps", default=500)
     )
@@ -4365,15 +4370,28 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         key=lambda path: int(path.name.removeprefix("checkpoint-")),
     )
     output_dir.mkdir(parents=True, exist_ok=True)
-    trainer.save_model(output_dir.as_posix())
+    if systems_adapter_scratch:
+        from gleipnir.systems_artifacts import systems_scratch
+
+        adapter_weight_dir = systems_scratch() / "adapter"
+    else:
+        adapter_weight_dir = output_dir
+    trainer.save_model(adapter_weight_dir.as_posix())
     distributed_verification = verify_distributed_parameters(model)
     if trainer.is_world_process_zero():
-        tokenizer.save_pretrained(output_dir)
+        tokenizer.save_pretrained(adapter_weight_dir)
         (output_dir / "training_metadata.json").write_text(
             json.dumps(
                 {
                     **counts,
                     "finetuning_mode": finetuning_mode,
+                    "adapter_artifact": {
+                        "path": adapter_weight_dir.as_posix(),
+                        "mutable": systems_adapter_scratch,
+                        "retention": (
+                            "latest_only" if systems_adapter_scratch else "run"
+                        ),
+                    },
                     "model_loader": model_loader,
                     "model": str(cfg.student.model),
                     "model_revision": model_revision,

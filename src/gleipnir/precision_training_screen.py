@@ -585,8 +585,10 @@ def run_precision_training_screen(
         report["dynamo_counters"] = {
             name: dict(values) for name, values in torch._dynamo.utils.counters.items()
         }
-        torch.save(
-            {name: p.detach().cpu() for name, p in named}, output / "fp32_master.pt"
+        from gleipnir.systems_artifacts import save_systems_master
+
+        report["master_artifact"] = save_systems_master(
+            {name: p.detach().cpu() for name, p in named}
         )
         report["status"] = "complete"
         publish()

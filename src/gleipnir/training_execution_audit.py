@@ -379,9 +379,10 @@ def run_execution_audit(
                     final_master_sha256=tensor_digest(final),
                     counters=counters(),
                 )
-                torch.save(
-                    {n: v for (n, _), v in zip(named, final, strict=True)},
-                    output / f"{name}_fp32_master.pt",
+                from gleipnir.systems_artifacts import save_systems_master
+
+                result["master_artifact"] = save_systems_master(
+                    {n: v for (n, _), v in zip(named, final, strict=True)}
                 )
                 if backend == "compiled":
                     ref_final = trajectory_references[("eager", partition_name)]

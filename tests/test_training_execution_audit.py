@@ -42,7 +42,11 @@ def test_forward_switch_restores_after_failure():
 
 
 @pytest.mark.parametrize("fail", [False, True])
-def test_audit_resets_weights_optimizer_state_and_schedule(tmp_path, fail):
+def test_audit_resets_weights_optimizer_state_and_schedule(tmp_path, fail, monkeypatch):
+    monkeypatch.setattr(
+        "gleipnir.systems_artifacts.systems_scratch",
+        lambda root=None: tmp_path / "scratch",
+    )
     model = torch.nn.Linear(1, 1, bias=False).eval()
     with torch.no_grad():
         model.weight.fill_(0.75)
@@ -132,7 +136,16 @@ def test_audit_resets_weights_optimizer_state_and_schedule(tmp_path, fail):
                 range(32)
             )
             assert result["initial_master_sha256"] == report["initial_master_sha256"]
-        assert len(list(tmp_path.glob("*_fp32_master.pt"))) == 4
+        assert not list(tmp_path.glob("*_fp32_master.pt"))
+        assert list((tmp_path / "scratch").iterdir()) == [
+            tmp_path / "scratch/fp32_master.pt"
+        ]
+        assert all(
+            result["master_artifact"]["mutable"]
+            and result["master_artifact"]["path"]
+            == str(tmp_path / "scratch/fp32_master.pt")
+            for result in report["trajectories"].values()
+        )
     assert torch.equal(model.weight, before)
     assert model.training is False
     assert model.weight.grad is None

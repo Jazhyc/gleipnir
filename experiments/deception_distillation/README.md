@@ -29,6 +29,12 @@ checkpoint retention. Training metadata records expected dataset exposure,
 optimizer/scheduler settings, LoRA dropout, target scaling, checkpoints, and
 loss/learning-rate history.
 
+Short systems screens can set `student.training.systems_adapter_scratch=true`
+through the shared launcher. They disable checkpoint copies and overwrite the
+latest adapter under `results/systems_training_scratch/adapter/`, retaining
+per-trial metadata, timings and tensor digests. Metadata explicitly marks that
+weight reference as mutable. Full quality training leaves this option disabled.
+
 Direct-boundary MIL also has an opt-in two-process `torchrun` launcher. Specify
 `world_size: 2` and the per-rank accumulation explicitly in the job contract;
 the launcher does not silently rescale batches. Selected final/MIL LM-head

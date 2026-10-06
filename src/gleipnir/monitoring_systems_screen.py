@@ -259,6 +259,8 @@ def make_jobs_unchecked(
         "student_rows_sha256": data["student_rows_sha256"],
         "soft_targets_sha256": data["soft_targets_sha256"],
     }
+    if config.get("systems_adapter_scratch", False):
+        base["systems_adapter_scratch"] = True
     jobs = []
     for condition in config["conditions"]:
         name = str(condition["job_name"])
