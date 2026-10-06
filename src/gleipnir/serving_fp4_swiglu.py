@@ -71,6 +71,45 @@ def adapt_source(source: str) -> str:
     begin = source.index("                    # Store AB12 to shared memory for bprop")
     end = source.index("                    # SwiGelu", begin)
     source = source[:begin] + source[end:]
+
+    # Inference also releases backward-only shared storage and pipeline state.
+    def remove_between(begin: str, end: str) -> None:
+        nonlocal source
+        if source.count(begin) != 1:
+            raise ValueError("pinned SwiGLU backward-storage source drift")
+        a = source.index(begin)
+        b = source.index(end, a)
+        source = source[:a] + source[b:]
+
+    remove_between(
+        "            sAB12: cute.struct.Align[",
+        "            # (MMA, MMA_M, MMA_K, STAGE)",
+    )
+    remove_between(
+        "        sAB12 = storage.sAB12.get_tensor(",
+        "        # Shared memory for amax reduction",
+    )
+    remove_between(
+        "            tTR_rAB12 = cute.make_rmem_tensor(",
+        "            #\n            # Persistent tile scheduling loop",
+    )
+    remove_between(
+        "            ab12_producer_group = pipeline.CooperativeGroup(",
+        "            # norm_const when used in sfc",
+    )
+    remove_between(
+        "                bSG_gAB12 = bSG_gAB12_mnl[",
+        "                # Set tensor memory buffer for current tile",
+    )
+    replace(
+        "                bSG_gAB12 = cute.group_modes(bSG_gAB12, 1, cute.rank(bSG_gAB12))\n",
+        "",
+    )
+    replace("            ab12_pipeline.producer_tail()\n", "")
+    replace(
+        "epi_bytes = c_bytes_per_stage * num_c_stage + ab12_bytes_per_stage * num_ab12_stage + amax_bytes",
+        "epi_bytes = c_bytes_per_stage * num_c_stage + amax_bytes",
+    )
     return source
 
 
@@ -118,9 +157,12 @@ def prepare_weight(weight):
 class FusedSwiGlu:
     """Cache exact-M native plans; use original FP4 operands and FP32 descale."""
 
-    def __init__(self, kernel, reference, tile=(128, 256), cluster=(1, 1)):
+    def __init__(
+        self, kernel, reference, tile=(128, 256), cluster=(1, 1), *, vector=False
+    ):
         self.kernel, self.reference = kernel, reference
         self.tile, self.cluster = tile, cluster
+        self.vector = vector
         self.plans = {}
 
     def __call__(self, a, b):
@@ -132,15 +174,32 @@ class FusedSwiGlu:
         from cutlass.cute.runtime import make_fake_stream
 
         from gleipnir.cudnn_fp4_epilogue import _row_scale
+        from gleipnir.cudnn_fp4_gemm import PackedNvfp4
 
-        m, n = a.codes.shape[0], b.codes.shape[0]
+        logical_m, n = a.codes.shape[0], b.codes.shape[0]
+        m = triton.cdiv(logical_m, self.tile[0]) * self.tile[0]
+        if m != logical_m:
+            codes = torch.zeros(
+                m, a.codes.shape[1], device=a.codes.device, dtype=torch.uint8
+            )
+            codes[:logical_m].copy_(a.codes.view(torch.uint8))
+            inverse = torch.ones(m, device=a.codes.device, dtype=torch.float32)
+            inverse[:logical_m].copy_(a.inverse)
+            sf = torch.zeros(
+                triton.cdiv(m, 128) * 128,
+                a.scales.shape[1] if a.scales.ndim == 2 else a.codes.shape[1] // 8,
+                device=a.codes.device,
+                dtype=a.scales.dtype,
+            )
+            sf.reshape(-1)[: a.scales.numel()].copy_(a.scales.reshape(-1))
+            a = PackedNvfp4(codes.view(a.codes.dtype), sf, inverse)
         scale = torch.empty(m, device=a.codes.device, dtype=torch.float32)
         _row_scale[(triton.cdiv(m, 1024),)](a.inverse, b.inverse, scale, m, 1024)
         out = torch.empty(m, n // 2, device=a.codes.device, dtype=torch.bfloat16)
         # The unused descriptor preserves upstream shared-memory planning, but
         # the adaptation never stores the training-only AB12 tensor.
         unused = torch.empty_strided(
-            (m, n, 1), (n, 1, m * n), device=a.codes.device, dtype=torch.bfloat16
+            (1, n, 1), (n, 1, n), device=a.codes.device, dtype=torch.bfloat16
         )
         aa, bb = a.codes.unsqueeze(-1), b.codes.unsqueeze(-1)
         k = a.codes.shape[1] * 2
@@ -161,7 +220,7 @@ class FusedSwiGlu:
             api.norm_const_desc = api._make_tensor_desc(
                 scale, name="row_scale", canonical=True
             )
-            kernel = self.kernel(16, self.tile, self.cluster, False, 2)
+            kernel = self.kernel(16, self.tile, self.cluster, self.vector, 2)
             fake = api._make_fake_cute_tensor_from_desc
             hw = __import__("cutlass").utils.HardwareInfo()
             self.plans[m] = cute.compile(
@@ -187,8 +246,10 @@ class FusedSwiGlu:
             sb,
             cc,
             unused,
+            None,
+            None,
             scale,
             1.0,
             cuda.CUstream(torch.cuda.current_stream().cuda_stream),
         )
-        return out
+        return out[:logical_m]

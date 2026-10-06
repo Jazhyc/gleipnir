@@ -14,6 +14,7 @@ from pathlib import Path
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--vector-tuning", action="store_true")
     parser.add_argument(
         "--rows",
         nargs="+",
@@ -21,6 +22,10 @@ def main():
         default=[1536, 32768, 1, 17, 129, 2304, 4096, 29184],
     )
     args = parser.parse_args()
+    if len(set(args.rows)) != len(args.rows) or any(
+        not 1 <= m <= 32768 for m in args.rows
+    ):
+        parser.error("rows must be unique and within 1..32768")
     if args.output.exists():
         raise FileExistsError(args.output)
     import torch
@@ -136,15 +141,32 @@ def main():
             torch.equal(decoded, decode_operand(weight)[interleaved_rows(18432)])
         )
         del decoded
-        candidates = {
-            str(tile): FusedSwiGlu(kernel, ref, tile, cluster)
-            for tile, cluster in [
+        specs = (
+            [
+                ((256, 128), (2, 1)),
+                ((128, 128), (1, 1)),
+                ((256, 192), (2, 1)),
+                ((256, 128), (2, 2)),
+                ((128, 128), (2, 1)),
+                ((128, 192), (2, 1)),
+                ((256, 256), (2, 1)),
+                ((256, 128), (2, 4)),
+            ]
+            if args.vector_tuning
+            else [
                 ((128, 256), (1, 1)),
                 ((128, 128), (1, 1)),
                 ((256, 256), (2, 1)),
                 ((256, 128), (2, 1)),
             ]
+        )
+        candidates = {
+            f"tile={tile},cluster={cluster},vector={args.vector_tuning}": FusedSwiGlu(
+                kernel, ref, tile, cluster, vector=args.vector_tuning
+            )
+            for tile, cluster in specs
         }
+        report["candidates"] = list(candidates)
         for m in args.rows:
             print("row_start", m, flush=True)
             x = torch.randn(m, 2560, device="cuda", dtype=torch.bfloat16, generator=gen)
@@ -169,9 +191,13 @@ def main():
                 try:
                     fused = plan(a, interleaved)
                     record["activation"] = compare(fused, activated)
+                    if not record["activation"]["finite"]:
+                        raise FloatingPointError("nonfinite fused activation")
                     candidate = pack(fused)
                     out = down(candidate, down_weight)
                     record.update(compare(out, output_ref))
+                    if not record["finite"]:
+                        raise FloatingPointError("nonfinite fused down projection")
                     record["zero_row_exact"] = bool((out[0] == 0).all())
                     record["passed"] &= (
                         record["zero_row_exact"] and record["activation"]["passed"]
@@ -226,6 +252,12 @@ def main():
                         traceback=traceback.format_exc(),
                     )
                     print(record["traceback"], flush=True)
+                    if isinstance(
+                        exc, (torch.AcceleratorError, FloatingPointError)
+                    ) or "illegal instruction" in str(exc):
+                        report["results"].append(record)
+                        save()
+                        raise
                 report["results"].append(record)
                 save()
             del x, a, gateup, gate, up, activated, packed_ref, output_ref
@@ -234,8 +266,26 @@ def main():
             if not any(r["passed"] for r in report["results"]):
                 print("stop_no_executable_candidate", flush=True)
                 break
-        report["passed"] = report["weight_permutation_exact"] and any(
-            r["passed"] for r in report["results"]
+        report["validated_candidates"] = [
+            name
+            for name in candidates
+            if {r["m"] for r in report["results"] if r["tile"] == name and r["passed"]}
+            == set(args.rows)
+        ]
+        report["full_envelope"] = set(args.rows) == {
+            1,
+            17,
+            129,
+            1536,
+            2304,
+            4096,
+            29184,
+            32768,
+        }
+        report["passed"] = bool(
+            report["weight_permutation_exact"]
+            and report["validated_candidates"]
+            and report["full_envelope"]
         )
         report["state"] = "completed"
     except Exception as exc:
