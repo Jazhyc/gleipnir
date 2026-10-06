@@ -39,7 +39,9 @@ class Fa4ServingAuditWorker(ServingAuditWorker):
                 "causal": kwargs.get("causal"),
                 "fa_version": kwargs.get("fa_version"),
                 "paged": kwargs.get("block_table") is not None,
-                "kernel": "vllm.vllm_flash_attn.cute.interface._flash_attn_fwd",
+                "kernel": "flash_attn.cute.interface._flash_attn_fwd"
+                if self.condition.get("external_fa4")
+                else "vllm.vllm_flash_attn.cute.interface._flash_attn_fwd",
             }
             if (
                 value["fa_version"] != 4

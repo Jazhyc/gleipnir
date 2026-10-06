@@ -306,3 +306,68 @@ flips. Keep this faster variant diagnostic because its quality canary fails
 and macro AUROC declines. Confirm the >5% c128 gain with five full-cohort passes
 on the same warm worker, reusing the unchanged canary and native validation;
 no new control server or model reload.
+
+## Selected baseline and subsequent trials
+
+The user explicitly accepts the FP4 GDN variant's 0.47 percentage-point c128
+macro-AUROC decline and selects it as the inference stack baseline. Preserve
+strict failed parity separately from checksum-bound `user_accepted_finite`.
+Five complete warm c128 passes confirm median 165,927 input tokens/s (+16.31%
+versus the previous control). A client transport error retains three valid
+passes, then resumes the other two without restarting the GPU worker. All
+nineteen complete arrays and seventy collected artifact hashes verify.
+
+The default entrypoint now uses `fp4_gdn_projection.json`; `baseline.json`
+binds the executed recipe, input manifest, full sweep, confirmation and quality
+acceptance. Preserve the original FROST-only selection and all historical
+references. Compare later kernels to this baseline with the same numerical
+change limits, retaining strict master parity as a separate diagnostic and
+mandatory nonzero adapter effect/finite output checks.
+
+`fp4_gdn_fa4_01` changes only full attention to the installed causal paged BF16
+FA4 backend, retaining all 112 FP4 projection GEMMs and BF16 FlashInfer GDN
+recurrence. Require FA4 version 4, actual paged BF16 Q/K/V, causal D256 GQA
+and the unchanged projection/native scope audits. Measure the same fourteen
+passes and full-cohort ranking diagnostics against `fp4_gdn_projection02`.
+FP8 attention and the validated forward-only FlashQLA recurrence are separate
+subsequent candidates on this same selected FP4 stack; never revert GDN
+projections to BF16 when claiming incremental gains over it.
+
+`fp4_gdn_fa4_01` exits during startup because the native audit detects version 2,
+not FA4. vLLM explicitly falls back for Blackwell head dimensions above 128.
+Preserve that failed receipt; forcing version 4 alone cannot bypass the limit.
+The already-pinned external FA4 4.0.0b33 interface has a dedicated SM100 D256
+paged kernel. `fp4_gdn_external_fa4.json` adapts vLLM's forward call to that
+verified package, keeps FP4 MLP/GDN fixed, uses 128-token page geometry and
+single-split capture, and preserves causal masks, actual sequence lengths,
+output buffers and LSE semantics. Reject unsupported features rather than
+discarding them. Record external source/version and actual native dispatch;
+require the same scope, score and complete throughput/AUROC checks before use.
+
+`fp4_gdn_external_fa4_01` passes pinned version/source and all FP4 projection
+checks, then fails at the first native forward because vLLM supplies descale
+tensors for BF16 inputs. Its bundled BF16 FA4 branch ignores those tensors;
+the external API rejects them. Preserve the terminal failure and exited-process
+receipt. Remove these fields only in the BF16 adapter, require all layer scalar
+descales to equal one, and retry as `fp4_gdn_external_fa4_02` with unchanged
+math, workload, baseline, scope and numerical limits.
+
+`fp4_gdn_external_fa4_02` clears the descale mismatch but exits before timing:
+the hybrid allocator enlarges its 128-token logical pages to physical 640-token
+pages, whereas native D256 FA4 requires 128-token TMA pages. Preserve its
+terminal receipt and exited API/worker verification. The next intervention
+exposes NHD K/V storage as smaller zero-copy views, including unused interleaved
+K/V spans, and remaps the GPU page table. It leaves sequence lengths and causal
+masks unchanged. First require shuffled-page payload equality, independent FP32
+causal attention within 1% relative-L2, finite outputs and graph replay after
+changing the input table. Then retry the unchanged fourteen-pass model screen;
+measure the added page-table work in end-to-end throughput.
+
+`fa4_paged_canary01` reaches the native forward but catches a return-contract
+mistake: the pinned private API returns five values. Preserve that failure;
+translate its output/LSE pair explicitly. `fa4_paged_canary02` passes all six
+native checks, including shuffled physical pages and graph replay after table
+updates, with maximum observed relative-L2 0.002253 against independent FP32
+causal attention. Both K/V views share their original storage. The next model
+trial, `fp4_gdn_external_fa4_03`, requires this source-bound receipt and leaves
+the selected FP4 stack and fourteen-pass scoring envelope unchanged.

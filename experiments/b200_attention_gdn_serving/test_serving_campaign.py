@@ -88,7 +88,9 @@ def test_server_launch_has_one_explicit_gdn_backend_and_preserves_default():
 def test_blackwell_fa4_needs_its_native_audit_and_does_not_claim_fp8_support():
     condition = json.loads((EXPERIMENT / "fa4_attention.json").read_text())
     args = resolve_condition(condition, {})["extra_server_args"]
-    assert args[args.index("--attention-backend") + 1] == "FLASH_ATTN"
+    selected = json.loads(args[args.index("--attention-config") + 1])
+    assert selected == {"backend": "FLASH_ATTN", "flash_attn_version": 4}
+    assert "--attention-backend" not in args
     with pytest.raises(ValueError, match="Blackwell FA4 requires BF16"):
         resolve_condition({**condition, "attention_precision": "fp8_e4m3"}, {})
 

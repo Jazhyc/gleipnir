@@ -90,6 +90,17 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
             sort_keys=True,
         ),
     ]
+    if attention_backend == "FLASH_ATTN":
+        index = args.index("--attention-backend")
+        attention_config = {"backend": "FLASH_ATTN", "flash_attn_version": 4}
+        if condition.get("external_fa4"):
+            attention_config["flash_attn_max_num_splits_for_cuda_graph"] = 1
+        args[index : index + 2] = [
+            "--attention-config",
+            json.dumps(attention_config),
+        ]
+        if condition.get("external_fa4"):
+            args.extend(["--block-size", "128"])
     if condition["attention_precision"] == "fp8_e4m3":
         args.extend(["--kv-cache-dtype", "fp8_e4m3", "--calculate-kv-scales"])
     elif condition["attention_precision"] == "nvfp4":
@@ -195,8 +206,15 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
-    if ".combined_worker." in raw["worker_cls"]:
+    if ".combined_worker." in raw["worker_cls"] or raw.get("external_fa4"):
         sources.append("experiments/b200_attention_gdn_serving/combined_worker.py")
+    if raw.get("external_fa4"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_fa4.py",
+                "experiments/b200_attention_gdn_serving/external_fa4_worker.py",
+            ]
+        )
     if raw.get("attention_backend") == "FLASH_ATTN":
         sources.append("experiments/b200_attention_gdn_serving/fa4_worker.py")
     if raw["gdn_backend"] != "flashinfer":
