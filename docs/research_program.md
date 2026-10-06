@@ -483,4 +483,8 @@ the warm, idle merged BF16 control and matched HTTP workload. Loaded precision
 and resolved GEMM classes are audited before the unchanged score canary.
 The [kernel screening decision](decisions/b200_inference_kernels.md) records
 scope, hypotheses and stop conditions; prior SM120 FP8 results motivate this
-trial but do not establish its B200 performance or numerical fidelity.
+trial but do not establish its B200 performance or numerical fidelity. The user
+subsequently selects stopping the previous server whenever an inference change
+requires a new process, reusing completed baseline results rather than holding
+an idle control. Record this preference in `AGENTS.md` and free the old merged
+server's approximately 49 GB GPU allocation while the candidate initializes.

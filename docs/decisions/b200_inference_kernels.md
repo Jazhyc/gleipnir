@@ -23,8 +23,8 @@ The installed online dispatcher supports FP8/MXFP8, but does not have the newer
 online NVFP4 method documented in newer vLLM releases. Native NVFP4 checkpoint
 backends exist separately; using them needs a compatible weight/scale artifact.
 
-Keep merged BF16 API PID 72552 / engine PID 72648 resident and idle at port
-8000. Start the candidate on localhost 8010 with the same memory fraction,
+Initially keep merged BF16 API PID 72552 / engine PID 72648 resident and idle at
+port 8000. Start the candidate on localhost 8010 with the same memory fraction,
 context/token/sequence budgets, seed, prefix-cache policy and merged ephemeral
 checkpoint. The two engines fit in existing B200 memory. No concurrent timed
 requests across engines. Preserve caches and original FP32 masters.
@@ -44,3 +44,9 @@ startup every 30–60 seconds; no in-chat scheduler is available for later wakeu
 The first attempt rejects occupied port 8001 before starting a server or loading
 weights. Preserve `fp8_mlp01/failure.json` and logs; verify port 8010 free before
 the `fp8_mlp02` retry. Do not stop or modify the existing 8001 listener.
+
+While the candidate initializes, the user questions reserving resources for an
+already measured BF16 control. Stop API PID 72552 and engine PID 72648, preserving
+results, logs, caches and the ephemeral merged checkpoint. Reuse the archived
+control results without another resident engine or repeated baseline. The
+candidate keeps its original engine budgets; no memory-fraction tuning is done.

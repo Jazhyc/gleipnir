@@ -217,6 +217,13 @@ Changing adapters requires loading the corresponding merged model; preserve disk
 compiler caches across those restarts. See the merged serving protocol in
 `experiments/b200_inference_benchmark/README.md`.
 
+Standing user preference, 2026-10-06: when an inference change needs a different
+serving process, stop the old server rather than keeping both resident. Preserve
+its measured baseline results, merged checkpoint, logs and persistent caches.
+Reuse completed matched baseline results; do not retain or rerun a control merely
+because a new kernel is being tested. Keep the active candidate warm for compatible
+trials. This is process replacement, not authorization to terminate capacity.
+
 ## Code, Tests, and Git
 
 Use 4-space Python indentation, type hints for public interfaces, `snake_case`

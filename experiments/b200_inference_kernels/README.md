@@ -14,10 +14,10 @@ Compare with the completed merged BF16 suite, not the unmerged baseline.
 The development rows are training-seen; labels never select a kernel. This is
 neither a held-out quality evaluation nor a production arrival-rate/SLO result.
 
-Use the existing NC2 B200, without allocating capacity. Keep the merged BF16
-server resident and idle on port 8000. The FP8 candidate uses localhost 8010;
-both 0.25-memory-fraction engines fit on the B200. Never run timed requests on
-both engines concurrently. Keep the original merged checkpoint on ephemeral
+Use the existing NC2 B200, without allocating capacity. Reuse the completed
+merged BF16 results and stop its idle server; the user explicitly questions the
+need to reserve another 49 GB of GPU memory for an already measured control.
+The FP8 candidate uses localhost 8010. Keep the merged checkpoint on ephemeral
 disk; online quantization adds no persistent weight artifact. Reuse shared disk
 compiler/kernel caches and record new cache keys/runtime/worker PIDs.
 
@@ -36,7 +36,8 @@ score/margin differences and threshold flips against the merged control, and
 within-candidate variation. A >10% warmed gain merits follow-up; passing a small
 canary is not enough to promote production precision. Do not repeat the BF16
 control, rerun full ID, tune concurrency or launch a broad kernel sweep here.
-Retain a successful candidate and the idle BF16 control for compatible work.
+Retain a successful candidate for compatible work. Do not keep a separate
+resident control unless a new matched control measurement needs it.
 
 Historical SM120 experiments motivate this first choice: MLP-only native FP8
 passed a different adapter/workload's checks and improved full-split throughput
