@@ -27,6 +27,15 @@ reuse archived controls and never select on final ID. Keep one GPU worker,
 the existing pod and shared caches. Whole-row amax remains in the separate
 packing stage; this trial does not claim direct FP4 GEMM output.
 
+Completed result: the corrected N192 kernel matches native down-projection
+outputs and gives approximately 5% large-row producer gains. Warm serving
+median improves 1.8%, but one slow confirmation repeat makes aggregate
+throughput 2.1% worse, and warm c1 latency rises 6%. AUROC is effectively
+unchanged. Keep `fp4_swiglu_fused.json` as a named experiment; the default
+remains `fp4_gemm_tuned.json`. See the
+[fusion finding](../../docs/findings/b200_fp4_swiglu_fusion.md) for all failures,
+timings, precision receipts and the retained experimental worker.
+
 Started 2026-10-06 03:19 UTC. The user authorizes approximately nine hours of
 attention/GDN optimization, prioritizing throughput at high concurrency, FP8
 first, alternative kernels and small integration changes. Stop the old server
