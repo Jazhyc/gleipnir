@@ -136,6 +136,15 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         )
     ):
         raise ValueError("FP4 attention projections require a validated audited worker")
+    overhead_worker = condition["worker_cls"].endswith(
+        "OverheadAttentionTunedPreparationMxfp8ServingAuditWorker"
+    )
+    if bool(condition.get("swiglu_overhead_validation")) != overhead_worker or (
+        overhead_worker and not condition.get("attention_projection_validation")
+    ):
+        raise ValueError(
+            "symbolic SwiGLU requires its receipt and attention-FP4 worker"
+        )
     overrides = condition["serving_config_overrides"]
     if set(overrides) - {
         "max_num_seqs",
@@ -286,6 +295,19 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("swiglu_overhead_validation"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_fp4_swiglu.py",
+                "src/gleipnir/serving_fp4_swiglu_pack.py",
+                "src/gleipnir/serving_fp4_swiglu_overhead.py",
+                "src/gleipnir/serving_fp4_swiglu_padding.py",
+                "src/gleipnir/serving_fp4_swiglu_overhead_integration.py",
+                "src/gleipnir/serving_fp4_swiglu_overhead_validation.py",
+                "experiments/b200_attention_gdn_serving/swiglu_overhead_worker.py",
+                "experiments/b200_attention_gdn_serving/fp4_swiglu_overhead_compare.py",
+            ]
+        )
     if raw.get("attention_projection_precision") == "fp4":
         sources.extend(
             [
@@ -411,6 +433,7 @@ def main() -> None:
             "native_preparation.json",
             "native_gemm_tuning.json",
             "native_swiglu.json",
+            "native_swiglu_overhead.json",
             "native_attention_projections.json",
         ):
             if (OUTPUT / name).exists():

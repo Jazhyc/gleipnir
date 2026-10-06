@@ -677,6 +677,16 @@ async def benchmark(
                 kernel_condition["swiglu_fusion_validation"],
             )
             report["swiglu_fusion_audit_sha256"] = sha(path)
+        if kernel_condition and kernel_condition.get("swiglu_overhead_validation"):
+            from gleipnir.serving_fp4_swiglu_overhead_validation import validate_runtime
+
+            path = metadata.parent / "native_swiglu_overhead.json"
+            validate_runtime(
+                json.loads(path.read_text()),
+                precision["worker_pid"],
+                kernel_condition["swiglu_overhead_validation"],
+            )
+            report["swiglu_overhead_audit_sha256"] = sha(path)
         print(
             f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
             flush=True,

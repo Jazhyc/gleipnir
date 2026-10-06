@@ -41,6 +41,30 @@ for scope, numerical validation, metrics and retained worker details.
 
 ## Gate/up GEMM and SwiGLU fusion trial
 
+### Follow-up: overhead, then direct FP4 output
+
+Authorized 2026-10-06: first remove padding/copy, scale-preparation and exact-M
+planning overhead from the NVIDIA GEMM–SwiGLU adaptation, then try native packed
+FP4 output. Use the attention-FP4 reference (193,224 warm c128 input tokens/s,
+156.82 ms warm c1 median, macro/pooled AUROC 0.878553/0.889729). Reuse archived
+controls and shared caches; keep attention/GDN precision and all weights fixed.
+Preserve BF16 rounding boundaries and whole-row scaling in the first stage.
+Test one symbolic-row plan with in-epilogue descaling and predicated/unaligned
+rows; if native TMA cannot support unaligned rows, retain that failure and test
+one fused padding preparation kernel instead of multiple copies.
+
+The second stage tests output packing in the native epilogue. A changed scale
+contract must be named explicitly and compared with its independently decoded
+operands; preserve baseline-relative precision failures separately from the
+unchanged <=1% native arithmetic gate. Do not silently widen score tolerances.
+Require zero/extreme-row, isolation, finite output and changed-input graph
+replay coverage at rows 1/17/129/1536/2304/4096/29184/32768 plus unaligned
+large rows. Measure the complete producer and down-projection path, not just
+GEMM. Stop a stage on structural/nonfinite failures or no plausible native gain;
+run serving throughput, latency and frozen 320-row systems-dev AUROC for admitted
+candidates. No final-ID selection. Stop the serving process before kernel/GPU
+trials, retain the pod and restore a useful worker at campaign completion.
+
 Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense
 SwiGLU kernel to remove its training-only gate/up write, preserve raw BF16
 rounding and per-row FP32 descaling followed by BF16 rounding before SiLU,
