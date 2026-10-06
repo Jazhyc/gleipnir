@@ -8,6 +8,25 @@ and `high_reference: selected`; historical measurements remain intact. Use
 warm c1 confirmation. See the
 [current reference decision](../../docs/decisions/b200_tuned_fp4_inference_baseline.md).
 
+## Gate/up GEMM and SwiGLU fusion trial
+
+Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense
+SwiGLU kernel to remove its training-only gate/up write, preserve raw BF16
+rounding and per-row FP32 descaling followed by BF16 rounding before SiLU,
+and emit half-width BF16 activations for existing hardware NVFP4 packing.
+Interleave frozen packed weight rows in 32-column up/gate blocks without
+requantization. Compare the complete producer plus packing with selected
+FROST gate/up plus fused SiLU/packing, including descale and graph replay.
+Use native rows 1/17/129/1536/2304/4096/29184/32768, unchanged 1% relative-L2
+admission, zero/extreme rows, isolation and changed-input replay. Bound tile
+search before considering full serving integration. Stop on nonfinite output,
+unsupported launches, or no native gain; preserve failures and restore the
+selected worker. A viable candidate requires warmed serving throughput,
+interactive latency and frozen 320-row development AUROC before selection;
+reuse archived controls and never select on final ID. Keep one GPU worker,
+the existing pod and shared caches. Whole-row amax remains in the separate
+packing stage; this trial does not claim direct FP4 GEMM output.
+
 Started 2026-10-06 03:19 UTC. The user authorizes approximately nine hours of
 attention/GDN optimization, prioritizing throughput at high concurrency, FP8
 first, alternative kernels and small integration changes. Stop the old server
