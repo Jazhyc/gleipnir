@@ -9,6 +9,7 @@ from typing import Any
 import torch
 
 from experiments.b200_frost_inference.worker import FrostAuditWorker
+from gleipnir.serving_precision import describe_attention_cache
 
 ROOT = Path(__file__).resolve().parents[2]
 OUTPUT = ROOT / "results/b200_attention_gdn_serving"
@@ -40,8 +41,9 @@ class ServingAuditWorker(FrostAuditWorker):
         original = backend.trtllm_batch_context_with_kv_cache
         calls = []
         expected = {
-            "bf16": "torch.bfloat16",
-            "fp8_e4m3": "torch.float8_e4m3fn",
+            "bf16": ("torch.bfloat16", "torch.bfloat16"),
+            "fp8_e4m3": ("torch.float8_e4m3fn", "torch.float8_e4m3fn"),
+            "nvfp4": ("torch.float8_e4m3fn", "torch.uint8"),
         }[self.condition["attention_precision"]]
         write(
             "native_attention.json",
@@ -53,18 +55,29 @@ class ServingAuditWorker(FrostAuditWorker):
             if torch.cuda.is_current_stream_capturing():
                 return original(*args, **kwargs)
             query, cache = kwargs["query"], kwargs["kv_cache"]
+            cache_sf = kwargs.get("kv_cache_sf")
+            cache_info = describe_attention_cache(cache)
+            scale_info = (
+                describe_attention_cache(cache_sf) if cache_sf is not None else None
+            )
             value = {
                 "query_dtype": str(query.dtype),
-                "cache_dtype": str(cache.dtype),
+                "cache_dtype": cache_info["dtype"],
                 "query_shape": list(query.shape),
-                "cache_shape": list(cache.shape),
+                "cache_shape": cache_info["shape"],
+                "cache_layout": cache_info["layout"],
+                "cache_scale_dtype": scale_info["dtype"] if scale_info else None,
+                "cache_scale_shape": scale_info["shape"] if scale_info else None,
                 "causal": kwargs.get("causal", True),
                 "batch_size": int(kwargs["batch_size"]),
                 "kernel": "flashinfer.prefill.trtllm_batch_context_with_kv_cache",
             }
             if (
-                value["query_dtype"] != expected
-                or value["cache_dtype"] != expected
+                (value["query_dtype"], value["cache_dtype"]) != expected
+                or (
+                    self.condition["attention_precision"] == "nvfp4"
+                    and cache_sf is None
+                )
                 or query.shape[-2:] != (16, 256)
                 or not value["causal"]
             ):

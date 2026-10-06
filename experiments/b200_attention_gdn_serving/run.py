@@ -36,11 +36,12 @@ SOURCES = [
     "src/gleipnir/nvfp4_pack.py",
     "experiments/b200_frost_inference/worker.py",
     "experiments/b200_attention_gdn_serving/worker.py",
+    "src/gleipnir/serving_precision.py",
 ]
 
 
 def resolve_condition(condition: dict, hashes: dict) -> dict:
-    if condition["attention_precision"] not in {"bf16", "fp8_e4m3"}:
+    if condition["attention_precision"] not in {"bf16", "fp8_e4m3", "nvfp4"}:
         raise ValueError("unsupported attention precision")
     if condition["gdn_projection_precision"] not in {"bf16", "fp8"}:
         raise ValueError("unsupported GDN projection precision")
@@ -71,6 +72,8 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
     ]
     if condition["attention_precision"] == "fp8_e4m3":
         args.extend(["--kv-cache-dtype", "fp8_e4m3", "--calculate-kv-scales"])
+    elif condition["attention_precision"] == "nvfp4":
+        args.extend(["--kv-cache-dtype", "nvfp4"])
     if condition.get("profiler_config"):
         args.extend(["--profiler-config", json.dumps(condition["profiler_config"])])
     return {
@@ -174,7 +177,6 @@ def main() -> None:
         sources.extend(
             [
                 "src/gleipnir/vllm_frost_gdn.py",
-                "src/gleipnir/serving_precision.py",
                 "experiments/b200_attention_gdn_serving/mixed_worker.py",
                 "experiments/b200_attention_gdn_serving/server.py",
             ]

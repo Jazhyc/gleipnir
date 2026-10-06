@@ -183,3 +183,19 @@ The native path returns FP8 attention output then converts to BF16; include
 that conversion in complete timings. This is not a claim that every attention
 operation uses FP4. Run the same score canary and fourteen-pass matched sweep;
 retain finite failures as diagnostic and never promote nonfinite outputs.
+
+Before a new GDN prefill backend, `gdn_canary.py` compares outputs and final
+V-first FP32 state against FlashInfer at native D128, 16 Q/K heads and 32 value
+heads. Freeze relative-L2 limits at 3% for both; preserve nonfinite failures.
+Use lengths 1, 17, 129, ragged [1,127,513], 4096 and [8192,8192], nonzero initial
+states, a sequential FP32 oracle, split/continued state and ragged isolation.
+Record warmed host-inclusive kernel-call times; these are feasibility checks,
+not complete serving throughput. Run them only after retiring the serving
+process, then require the usual model score and runtime dispatch checks.
+
+`nvfp4_attention01` reaches readiness, then fails its first HTTP canary because
+our audit assumed a combined cache tensor. Native NVFP4 supplies separately
+strided K/V pairs (and separate block-scale views). No valid throughput or
+AUROC exists for that attempt. Preserve the failure and exited-process receipt;
+correct tuple handling with focused tests, then retry as `nvfp4_attention02`.
+This integration failure is not evidence that the native kernel is unsupported.

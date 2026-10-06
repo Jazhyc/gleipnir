@@ -555,3 +555,9 @@ vLLM disables startup KV-scale calibration for the hybrid architecture, leaving
 unit scales. A separate profile places FP8 attention at about 9% of CUDA kernel
 time, BF16 projections at 27%, and GDN core at 12%; prioritize projection/GDN
 interventions and alternative attention kernels, retaining numerical drift.
+
+Native FP8 GDN projections complete the matched screen: native W8A8 checks
+pass, peak throughput is about 155k tokens/s, and c128 gains 1.84% with repeat
+noise. The score canary fails correlation (0.994822 versus FROST); improved
+development AUROC does not override that failure. Keep this diagnostic variant
+and test native NVFP4 KV attention separately before changing the baseline.
