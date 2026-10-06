@@ -21,7 +21,7 @@ MAX_BATCH = 128
 MAX_LENGTH = 32768
 
 
-@triton.jit
+@triton.jit(do_not_specialize=["BATCH"])
 def _produce(
     X,
     OUT,
@@ -35,7 +35,7 @@ def _produce(
     STRIDE_S,
     TABLE_STRIDE,
     HEADS: tl.constexpr,
-    BATCH: tl.constexpr,
+    BATCH,
     PAGE: tl.constexpr,
     PAGED: tl.constexpr,
     COLUMN: tl.constexpr,
@@ -85,7 +85,7 @@ def _produce(
             payload.to(tl.float8e4nv),
             live[:, None],
         )
-        previous = tl.arange(0, triton.next_power_of_2(BATCH))
+        previous = tl.arange(0, 128)
         a = tl.load(CU + previous, previous < batch, other=0)
         b = tl.load(CU + previous + 1, previous < batch, other=0)
         prefix = tl.sum(tl.cdiv(b - a, 128), 0)
@@ -164,6 +164,15 @@ def produce(
     return payload, scales
 
 
+@triton.jit
+def _token_offsets(LENGTHS, OFFSETS, BATCH):
+    rows = tl.arange(0, 128)
+    lengths = tl.load(LENGTHS + rows, rows < BATCH, other=0)
+    offsets = tl.cumsum(lengths, 0)
+    tl.store(OFFSETS, 0)
+    tl.store(OFFSETS + rows + 1, offsets, rows < BATCH)
+
+
 @lru_cache(maxsize=4)
 def forward_plan(device: torch.device):
     """Compile packed query/history with bottom-right causal alignment."""
@@ -232,6 +241,7 @@ def paged_forward(
     block_tables: torch.Tensor,
     cum_seq_lens_q: torch.Tensor,
     cum_seq_lens_kv: torch.Tensor,
+    seq_lens: torch.Tensor,
     max_q_len: int,
     max_kv_len: int,
     batch_size: int,
@@ -248,6 +258,8 @@ def paged_forward(
         or out.dtype != torch.bfloat16
         or batch_size != cum_seq_lens_q.numel() - 1
         or cum_seq_lens_kv.numel() != batch_size + 1
+        or seq_lens.shape != (batch_size,)
+        or seq_lens.dtype != torch.int32
     ):
         raise ValueError(
             "MXFP8 serving requires BF16 causal D256 GQA 16/4 and HND cache"
@@ -264,14 +276,18 @@ def paged_forward(
         if kwargs.get(name, neutral) != neutral:
             raise ValueError(f"unsupported MXFP8 serving option: {name}")
     key, value = kv_cache.unbind(1)
+    # TRTLLM's cum_seq_lens_kv counts cache pages. cuDNN's packed THD
+    # offsets count tokens; derive them from exact lengths, including tails.
+    token_offsets = torch.empty_like(cum_seq_lens_kv)
+    _token_offsets[(1,)](seq_lens, token_offsets, batch_size)
     qr, sfq = produce(query, cum_seq_lens_q, max_q_len)
     capacity = batch_size * max_kv_len
     kr, sfk = produce(
-        key, cum_seq_lens_kv, max_kv_len, table=block_tables, total=capacity
+        key, token_offsets, max_kv_len, table=block_tables, total=capacity
     )
     vc, sfv = produce(
         value,
-        cum_seq_lens_kv,
+        token_offsets,
         max_kv_len,
         table=block_tables,
         total=capacity,
@@ -287,7 +303,7 @@ def paged_forward(
         vc,
         out,
         seq_q_lens=cum_seq_lens_q,
-        seq_kv_lens=cum_seq_lens_kv,
+        seq_kv_lens=token_offsets,
         sf_q=sfq,
         sf_k=sfk,
         sf_v=sfv,

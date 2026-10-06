@@ -23,6 +23,8 @@ class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
             or len(receipt["checks"]) != 7
             or receipt["batch_limit"] != 128
             or receipt["context_limit"] != 32768
+            or receipt.get("kv_metadata_contract")
+            != "TRTLLM cumulative pages plus exact token lengths"
             or any(
                 not r["finite"] or not r["quantized_relative_l2"] <= 0.01
                 for r in receipt["checks"]

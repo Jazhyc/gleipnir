@@ -49,6 +49,7 @@ def main() -> None:
         "device_capability": list(torch.cuda.get_device_capability()),
         "batch_limit": 128,
         "context_limit": 32768,
+        "kv_metadata_contract": "TRTLLM cumulative pages plus exact token lengths",
     }
 
     def save() -> None:
@@ -100,13 +101,20 @@ def main() -> None:
                 dtype=torch.int32,
                 device="cuda",
             )
+            lengths = torch.tensor(histories, dtype=torch.int32, device="cuda")
+            page_offsets = torch.tensor(
+                [0, *torch.tensor(pages_needed).cumsum(0).tolist()],
+                dtype=torch.int32,
+                device="cuda",
+            )
             output = torch.empty_like(q)
             kwargs = dict(
                 query=q,
                 kv_cache=cache,
                 block_tables=table,
                 cum_seq_lens_q=cuq,
-                cum_seq_lens_kv=cuk,
+                cum_seq_lens_kv=page_offsets,
+                seq_lens=lengths,
                 max_q_len=max(queries),
                 max_kv_len=max(histories),
                 batch_size=batch,
@@ -227,6 +235,12 @@ def main() -> None:
                             torch.tensor(
                                 [0, 511, 640], dtype=torch.int32, device="cuda"
                             )
+                        )
+                        lengths.copy_(
+                            torch.tensor([511, 129], dtype=torch.int32, device="cuda")
+                        )
+                        page_offsets.copy_(
+                            torch.tensor([0, 32, 41], dtype=torch.int32, device="cuda")
                         )
                         table.copy_(table.flip(0))
                     graph.replay()

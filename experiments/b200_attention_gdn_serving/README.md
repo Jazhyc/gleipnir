@@ -448,3 +448,16 @@ failed (maximum 0.053363). Keep `passed=false`, `arithmetic_passed=true` and
 pass. `fp4_gdn_cudnn_mxfp8_01` starts the finite diagnostic model screen,
 passes all 112 FP4 projection checks, compilation and initial profiling/warmup;
 reuse this native receipt while checking actual serving dispatch and scores.
+
+The first serving screen and five resident c128 repeats expose a metadata
+integration error: pinned vLLM supplies cumulative **cache-page counts** in
+`cum_seq_lens_kv`, whereas cuDNN's packed input requires cumulative token counts.
+The initial synthetic fixture supplied token counts directly and missed this
+contract. Preserve `fp4_gdn_cudnn_mxfp8_01` and `mxfp8_confirmation01` as invalid
+integration results, not evidence about MXFP8 quality or performance. Retire
+that server before changing kernels. The corrected bridge derives token offsets
+on-device from the exact `seq_lens`, including partial final pages. Canary05
+passes realistic page-count metadata, distinct token lengths, and changes both
+on graph replay; workers reject earlier receipts without this contract. The
+producer also takes batch count at runtime to avoid compiling every batch count.
+Rerun all seven native cases and the model screen before interpreting scores.

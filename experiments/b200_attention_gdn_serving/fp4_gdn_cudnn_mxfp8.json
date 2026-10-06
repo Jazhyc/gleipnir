@@ -29,6 +29,6 @@
     "torch_profiler_with_stack": false,
     "ignore_frontend": true
   },
-  "mxfp8_validation": "results/b200_attention_gdn_serving/cudnn_mxfp8_canary04.json",
+  "mxfp8_validation": "results/b200_attention_gdn_serving/cudnn_mxfp8_canary05.json",
   "mxfp8_exp2": "hardware_fastmath"
 }
