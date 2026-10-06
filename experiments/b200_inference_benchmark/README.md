@@ -87,3 +87,34 @@ and four-length warmup 0.818 seconds, separate from timed requests. Earlier
 preparation/PATH failures remain archived. Server PID 71421 and engine PID 71522
 remain resident on pod `i243nsg10usytq`, localhost port 8000, using about 48.8 GB
 GPU memory. Eight focused benchmark tests and Ruff pass.
+
+## Warm reuse and throughput bounds
+
+The retained server is useful for repeated requests, load/concurrency passes and
+profiling the same implementation. Changing loaded kernel backends, precision,
+engine sequence/token budgets, memory allocation or compilation/CUDA-graph
+settings normally requires a new vLLM process. Preserve disk caches across that
+restart; compatible cached builds can be reused, while model loading, runtime
+plans and graph capture still have process startup costs. No restart or new
+concurrency sweep is performed for this analysis.
+
+Concurrency 16 is the current `max_num_seqs` limit, not a demonstrated optimum.
+Client load beyond 16 cannot raise the scheduled sequence limit; it can keep the
+queue fed but primarily adds queueing. The current cache planner estimates
+975,592 token slots, or 29.77 full 32,768-token contexts. This is a cache-capacity
+estimate, not supported active concurrency or a throughput measurement. Increasing
+engine concurrency changes runtime buffer/graph allocation too. Throughput rose
+35,269 → 48,096 prompt tokens/s between tested loads 4 and 16; saturation of a
+larger engine remains unmeasured.
+
+A loose arithmetic-only ceiling for this frozen quick workload is approximately
+263,000 prompt tokens/s. Count all BF16 decoder projection and LoRA affine work
+(7.478 GFLOPs/token), plus causal full-attention QK/PV work at the actual lengths
+(1.080 GFLOPs/token). Divide a nominal 2.25 PFLOPS dense BF16 B200 peak by that
+8.557 GFLOPs/token total. NVIDIA's [HGX specifications](https://www.nvidia.com/en-us/data-center/hgx/)
+list 36 sparse BF16 PFLOPS for eight B200s, with dense performance half sparse.
+The estimate ignores GDN scan/solve/convolution/normalization, memory traffic,
+kernel efficiency, dispatch/HTTP overhead and power/clocks. It is an optimistic
+hardware bound, not a prediction for the current kernels or a claim that a
+fivefold improvement is attainable. The practical software ceiling is unknown.
+Record the assumptions in `arithmetic_ceiling_estimate.json`.

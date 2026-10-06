@@ -123,3 +123,21 @@ at concurrency 1/4/16), retaining request latency and requests/s. The benchmark
 already records this metric; no new measurement is needed. Distinguish prompt
 throughput from the single generated decision token and hold workload/cache
 policy fixed when comparing candidates. Record the preference in `AGENTS.md`.
+
+The subsequent read-only analysis verifies server PID 71421 healthy and idle.
+Warm reuse covers compatible workload/load/profiling trials; kernel/backend,
+precision and startup engine/graph settings require process reconstruction.
+Concurrency 16 was selected as a conservative scheduler limit, not measured as
+the throughput optimum. The cache planner's 975,592 token slots/29.77 maximum-
+length contexts is a memory estimate, not an active-concurrency or speed result.
+No new sweep or engine restart is launched when the user defers that work.
+
+The pinned geometry and quick length distribution give 7.478 GFLOPs/token in
+decoder/LoRA projections and 1.080 in causal full-attention QK/PV products.
+A nominal 2.25 PFLOPS dense BF16 single-B200 peak from
+[NVIDIA's sparse HGX specifications and footnote](https://www.nvidia.com/en-us/data-center/hgx/)
+gives an optimistic arithmetic ceiling of about 263k prompt tokens/s. Explicitly
+exclude GDN recurrence/solve/conv/norm, memory traffic, kernel efficiency,
+dispatch/HTTP and clock/power variation from that estimate. Do not treat it as
+a practical current-kernel ceiling or evidence of achievable fivefold gains.
+Preserve the detailed assumptions in `arithmetic_ceiling_estimate.json`.
