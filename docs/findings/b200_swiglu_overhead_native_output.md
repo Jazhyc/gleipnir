@@ -219,3 +219,11 @@ Report exclusive GPU kernel categories and the union of kernel intervals; CPU
 operator sums are nested and cannot be treated as wall-time fractions. Stop on
 server failure, nonfinite/missing scores or provenance drift, always stopping
 profiling after the bounded pass. Collect the raw trace and source/server binds.
+
+Completed: selection commit 165f864 promotes the checksum-bound direct-output
+recipe and archives the preceding selection. Fresh profiling confirms that
+GEMM-containing kernels occupy 38.89% of GPU kernel time, elementwise
+normalization/gating/layout 22.07%, GDN 13.70% and attention core 10.19%.
+See the [profile finding](b200_native_fp4_output_profile.md) for complete scope,
+exclusive membership, trace hashes and interpretation limits. The server is
+retained healthy, and profiling has stopped.
