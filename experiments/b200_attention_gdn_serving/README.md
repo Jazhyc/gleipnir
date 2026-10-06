@@ -199,3 +199,23 @@ strided K/V pairs (and separate block-scale views). No valid throughput or
 AUROC exists for that attempt. Preserve the failure and exited-process receipt;
 correct tuple handling with focused tests, then retry as `nvfp4_attention02`.
 This integration failure is not evidence that the native kernel is unsupported.
+
+## Native NVFP4 KV result
+
+`nvfp4_attention02` completes fourteen timed passes. Eight native calls confirm
+FP8 E4M3 queries, separate packed uint8 K/V views, FP8 E4M3 block-scale views,
+causal D256 GQA and native TRTLLM prefill. The score canary fails: versus FROST,
+mean absolute error 0.033490 and correlation 0.986485. All outputs remain finite.
+
+| Concurrency | Input tokens/s | Gain vs FROST | Pooled AUROC delta | Source-macro AUROC delta |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 123,640 | −5.29% | +0.005235 | −0.014020 |
+| 32 | 145,396 | −2.49% | +0.004454 | −0.014924 |
+| 64 | 139,468 | −5.58% | +0.004044 | −0.014221 |
+| 128 | 141,732 | −0.65% | +0.006603 | −0.013665 |
+
+The c128 pair is 8.996/9.513 seconds. Full-cohort mean score drift is about
+0.065, with maximum 0.532215. This candidate provides no observed throughput
+benefit and reduces source-macro ranking despite a pooled increase; keep it
+as diagnostic, without replacing the FROST/BF16 baseline. API 78611 and engine
+78701 are retired before alternate GDN kernel checks.
