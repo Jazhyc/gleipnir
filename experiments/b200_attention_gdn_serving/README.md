@@ -461,3 +461,17 @@ passes realistic page-count metadata, distinct token lengths, and changes both
 on graph replay; workers reject earlier receipts without this contract. The
 producer also takes batch count at runtime to avoid compiling every batch count.
 Rerun all seven native cases and the model screen before interpreting scores.
+
+The corrected `cudnn_mxfp8_canary05` passes all seven producer/arithmetic and
+replay cases under the actual TRTLLM contract. Keep the strict FP32 precision
+failure separate (maximum 5.336%); quantized-reference error stays below 0.167%.
+`fp4_gdn_cudnn_mxfp8_02` completes all fourteen serving passes and passes the
+baseline-relative score canary (mean error 0.012958, correlation 0.998448).
+Strict master-score parity remains failed. Five additional resident c128 passes
+in `mxfp8_confirmation02` give median 173,938 input tokens/s, +4.83% against the
+selected baseline's five-pass 165,927. A transport failure after two complete
+passes is preserved; the three missing passes resume on the same worker.
+Source-macro AUROC changes +1.68 percentage points, pooled AUROC −0.37 points,
+with twenty threshold flips. The baseline selection remains unchanged and the
+experimental worker stays warm. See [the full finding](../../docs/findings/b200_mxfp8_serving.md)
+for timing variation, calibration, invalidated results and artifact provenance.
