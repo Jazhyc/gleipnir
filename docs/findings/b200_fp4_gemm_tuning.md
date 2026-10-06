@@ -122,3 +122,42 @@ GEMMs total 32.00% (FP4 24.03%, BF16 7.97%), normalization/gates/layout 19.64%,
 GDN core 14.37%, fused FP4 producers 13.00% and MXFP8 attention core 9.65%.
 Because large-row tiles stay unchanged, this is a useful starting estimate for
 the new reference, with no fresh post-tuning profile claimed.
+
+
+## Output sampling cost, 2026-10-06
+
+A read-only follow-up checks the pinned vLLM 0.24.0 sampler and the same saved
+combined-preparation c128 trace. Requests use temperature zero, one generated
+label, allowed tokens 15/16 and two processed logprobs. The sampler performs
+argmax; random top-k/top-p sampling is skipped for all-greedy requests. The
+`aten::topk` calls visible in the trace select returned logprobs, not random
+samples. See the [pinned sampler source](https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/v1/sample/sampler.py).
+
+Correlating GPU kernels by External id with their CPU operators gives 42
+argmax kernels / 0.480 ms, 42 log-softmax kernels / 2.570 ms, and 840 top-k
+helper kernels / 3.956 ms: **7.006 ms total, 0.1108% of 6.326 seconds of summed
+GPU kernel time**. This core attribution excludes masking, rank/gather/copies
+and host/API scheduling. CPU operator durations nest and are not wall-time
+fractions, so this does not establish the complete output pipeline's overhead.
+
+The last CPU `aten::mm` before each argmax maps to 42 inferred vocabulary-head
+kernels / **8.284 ms, 0.1310%**. All grids have N dimension 1294 at tile N192,
+consistent with the installed vocabulary of 248,320. Installed Qwen3.5
+`compute_logits` calls the full-vocabulary logits processor; see its
+[pinned projection source](https://github.com/vllm-project/vllm/blob/v0.24.0/vllm/model_executor/layers/logits_processor.py).
+Keep this head attribution marked as inferred from ordering, grid and source.
+
+For the monitoring score, `p(1) = sigmoid(logit_1 - logit_0)`: normalization
+cancels in the logprob difference. A dedicated score endpoint could project
+only the two decision rows and bypass token selection, full-vocabulary
+log-softmax and top-logprob selection. Deleting the sampler outright from the
+existing generation engine would break its output contract; retain a compatible
+score interface. A smaller output GEMM can change floating-point rounding,
+so adapter-specific score/AUROC parity remains required. The identified GPU
+work totals only about 0.24%; no meaningful throughput gain is demonstrated,
+and CPU savings require a matched measurement. No server/kernel change is made.
+
+Receipt: `results/b200_attention_gdn_serving/output_sampling_diagnosis01.json`,
+binding the existing trace hash, attribution method, operator counts and installed
+source hashes. This is a low-priority simplification for the current long-prompt,
+one-token workload, with potentially different economics for other workloads.
