@@ -570,3 +570,10 @@ percentage-point development macro-AUROC drop; preserve strict score-parity
 failure separately. This is current-adapter acceptance, not held-out quality
 proof or a training recipe change. See the
 [baseline decision](decisions/b200_fp4_gdn_inference_baseline.md).
+
+The pinned FA4 D256 kernel passes six independent causal, shuffled-page and
+graph-replay checks through a zero-copy hybrid-cache adapter (maximum relative-L2
+0.23% versus FP32). Its full vLLM trial still fails on profiling page geometry
+after compilation, before model scores or timings. Retain this as an integration
+prototype; the selected inference baseline continues to use BF16 FlashInfer.
+See the [campaign record](../experiments/b200_attention_gdn_serving/README.md).

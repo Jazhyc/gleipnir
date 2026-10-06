@@ -371,3 +371,17 @@ updates, with maximum observed relative-L2 0.002253 against independent FP32
 causal attention. Both K/V views share their original storage. The next model
 trial, `fp4_gdn_external_fa4_03`, requires this source-bound receipt and leaves
 the selected FP4 stack and fourteen-pass scoring envelope unchanged.
+
+`fp4_gdn_external_fa4_03` reuses the passed six-case receipt and passes all
+112 projection scope/native checks. Compilation completes (98.35 seconds),
+then the engine's memory-profile forward supplies a page geometry rejected by
+the adapter. Preserve that terminal failure; no score canary, timed passes or
+model AUROC were completed. The isolated zero-copy D256 kernel is validated,
+but full vLLM integration remains unsupported. Both API 82988 and worker 83104
+exit and are verified absent before archiving. Keep the selected FP4/FlashInfer
+baseline, source weights, master adapters and shared caches. The user has
+returned; close this timed campaign with the accepted projection improvement.
+Further FA4 integration needs actual profiling/cache shape and stride evidence
+before another expensive startup. FlashQLA and combined FP4-projection/FP8-
+attention configurations remain unrun candidates, so do not claim exhaustion
+or terminate the retained pod on that basis.
