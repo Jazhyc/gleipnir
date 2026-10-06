@@ -95,3 +95,45 @@ HTTP 200; sole GPU worker 95657 uses approximately 170,340 MiB at 32 C and
 is idle. The server and pod remain available. Fifteen focused selection/overhead/
 native-output tests and Ruff pass; selection commit is 165f864. No scheduling
 tool is available; no after-turn monitoring is promised.
+
+## Kernel-window gap follow-up
+
+The remaining 574.570 ms (8.942% of the kernel window) is not all GPU idle.
+Intersect the union of kernel-free intervals with GPU memcpy/memset intervals,
+and correlate every following kernel with its CUDA runtime/driver launch.
+Merged-interval recomputation independently verifies the copy overlap.
+
+| Exclusive timing partition | Milliseconds | Share of GPU window |
+| --- | ---: | ---: |
+| GPU copies/memsets during kernel-free intervals | 88.135 | 1.372% |
+| Before the next kernel launch starts, excluding GPU copies | 445.550 | 6.934% |
+| Remaining launch/execution spacing | 40.886 | 0.636% |
+
+All 39,917 gaps match their next kernel's launch. The second partition measures
+when the host submits work; it does not isolate scheduling, Python/custom-op
+preparation, synchronization or profiler overhead. The last partition includes
+time in launch calls and spacing after submission. These instrumented totals
+are not guaranteed recoverable speedup in an unprofiled worker.
+
+36 gaps exceed 1 ms and 1,265 span 100 us to 1 ms; these account for 71.99% of
+all gap time. Thus most gap duration is not the accumulation of tiny
+inter-kernel spacing. Innermost engine-thread scope overlap highlights
+`frost_inference_linear` (87.726 ms), GDN (34.922 ms), packed FP4 GEMMs
+(34.114 ms), copying and execute-context work. Those CPU scope overlaps include
+copy intervals, are temporal associations rather than causal attribution, and
+are separate from the exclusive table above.
+
+Device-to-device copies sum to 81.146 ms. Correlation places 81.009 ms and
+1,008 copies inside `vllm::qwen_gdn_attention_core`: one output copy per GDN
+layer per scheduled batch. They total 257,670,709,248 bytes, exactly
+1,310,581 tokens times 4,096 output elements times two BF16 bytes times 24
+GDN layers. There are 936 copies of 256 MiB for 32,768-token batches; the
+remaining 72 copies match the three partial batches. The installed
+`qwen_gdn_linear_attn.py` copies `o_flat` into `core_attn_out` after the
+FlashInfer chunk call. This confirms output copying, not full recurrent-cache
+copying. It consumes roughly 1.26% of the GPU window and is a concrete
+future opportunity if the kernel can write directly into the destination.
+
+Additional artifacts: `gap_analysis.json`, `gap_cpu_overlap.json`,
+`gap_copy_scopes.json`, and the installed GDN source. No new profile, kernel
+change or serving restart is performed for this follow-up.
