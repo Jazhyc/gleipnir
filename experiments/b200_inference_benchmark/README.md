@@ -63,11 +63,16 @@ available: active-turn startup checks do not promise monitoring after the turn.
 All six timed passes complete on the 64-row quick workload (269,411 prompt
 tokens, 188–28,733 tokens per request). Medians across the two passes:
 
-| Client concurrency | Pass seconds | Requests/s | Prompt tokens/s | p50 latency | p95 latency |
+| Client concurrency | Pass seconds | Prompt tokens/s | Requests/s | p50 latency | p95 latency |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| 1 | 14.138 | 4.531 | 19,074 | 0.154 s | 0.639 s |
-| 4 | 7.639 | 8.378 | 35,269 | 0.411 s | 0.872 s |
-| 16 | 5.602 | 11.425 | 48,096 | 1.255 s | 2.143 s |
+| 1 | 14.138 | 19,074 | 4.531 | 0.154 s | 0.639 s |
+| 4 | 7.639 | 35,269 | 8.378 | 0.411 s | 0.872 s |
+| 16 | 5.602 | 48,096 | 11.425 | 1.255 s | 2.143 s |
+
+Following the user's explicit reporting preference, lead optimization comparisons
+with prompt-token throughput, alongside requests/s and latency. Each request
+generates only one decision token; output-token throughput consequently tracks
+requests/s. Keep the same prompt-length mix and cache policy across candidates.
 
 These are localhost closed-loop results with prefix caching off, rather than
 production arrival-rate/SLO estimates. The cohort is shorter on average than

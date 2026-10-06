@@ -116,3 +116,10 @@ all six output memberships, finite scores and token counts are verified locally.
 Server PID 71421 and engine PID 71522 remain alive/idle at localhost port 8000,
 about 48.8 GB GPU memory, for compatible future inference trials. No further
 optimization or full ID rerun is launched.
+
+The user subsequently requests tokens/s alongside requests/s because request
+lengths vary. Default comparisons lead with prompt tokens/s (19,074/35,269/48,096
+at concurrency 1/4/16), retaining request latency and requests/s. The benchmark
+already records this metric; no new measurement is needed. Distinguish prompt
+throughput from the single generated decision token and hold workload/cache
+policy fixed when comparing candidates. Record the preference in `AGENTS.md`.

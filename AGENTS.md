@@ -138,6 +138,13 @@ Serving artifacts still need adapter-specific score parity before evaluation.
 
 ### Infrastructure and execution
 
+Standing user preference, 2026-10-06: inference optimization reports must include
+prompt tokens per second alongside requests per second and request latency.
+Use prompt-token throughput as the main compute-throughput comparison for the
+one-token monitor, keeping the prompt-length distribution and cache policy fixed.
+Label input/prompt throughput explicitly rather than confusing it with generated
+output-token throughput.
+
 Use local Slurm GPU jobs for cluster experiments. Default to one `gpushort`
 `rtx_pro_6000` GPU, one CPU, and 32 GB RAM unless the workload requires a
 documented change. Redirect final logs to `logs/slurm/<experiment>/` and remove
