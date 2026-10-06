@@ -42,8 +42,13 @@ SOURCES = [
 def resolve_condition(condition: dict, hashes: dict) -> dict:
     if condition["attention_precision"] not in {"bf16", "fp8_e4m3"}:
         raise ValueError("unsupported attention precision")
-    if condition["gdn_projection_precision"] != "bf16":
-        raise ValueError("GDN projection intervention not implemented yet")
+    if condition["gdn_projection_precision"] not in {"bf16", "fp8"}:
+        raise ValueError("unsupported GDN projection precision")
+    if (
+        condition["gdn_projection_precision"] == "fp8"
+        and condition["quantization"] != "gleipnir_frost_gdn"
+    ):
+        raise ValueError("FP8 GDN requires the mixed-precision quantizer")
     overrides = condition["serving_config_overrides"]
     if set(overrides) - {
         "max_num_seqs",
@@ -163,9 +168,18 @@ def main() -> None:
         raise ValueError("output must be a directory name")
     base = yaml.safe_load((BENCHMARK / "config.yaml").read_text())
     manifest = prepared_manifest(base)
-    condition = resolve_condition(
-        json.loads(args.condition.read_text()), {p: sha(ROOT / p) for p in SOURCES}
-    )
+    raw = json.loads(args.condition.read_text())
+    sources = list(SOURCES)
+    if raw["gdn_projection_precision"] == "fp8":
+        sources.extend(
+            [
+                "src/gleipnir/vllm_frost_gdn.py",
+                "src/gleipnir/serving_precision.py",
+                "experiments/b200_attention_gdn_serving/mixed_worker.py",
+                "experiments/b200_attention_gdn_serving/server.py",
+            ]
+        )
+    condition = resolve_condition(raw, {p: sha(ROOT / p) for p in sources})
     condition["config_sha256"] = sha(args.condition)
     config = {
         **base,
@@ -178,7 +192,7 @@ def main() -> None:
         *EXPERIMENT.glob("*"),
         *BENCHMARK.glob("*"),
         args.condition,
-        *(ROOT / p for p in SOURCES),
+        *(ROOT / p for p in sources),
         ROOT / "src/gleipnir/inference_benchmark.py",
     ]:
         if source.is_file():

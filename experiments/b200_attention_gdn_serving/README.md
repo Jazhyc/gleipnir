@@ -152,3 +152,34 @@ unchanged. Require six quantized-reference checks on the two representative
 GDN projection geometries (M=1/17/129), native Cutlass W8A8 dispatch, complete
 48-projection coverage and all unchanged FROST checks. Also test another native
 attention path rather than treating the first FP8 kernel as an endpoint.
+
+## Native FP8 GDN projections
+
+`fp8_gdn_projection01` completes fourteen timed passes. All 48 large GDN
+projections use native Cutlass W8A8; small gate projections, full attention,
+convolution and recurrence retain BF16, with FP32 gates/state. Six independent
+quantized-reference checks give zero observed BF16-rounded output error;
+representative weight reconstruction error is 2.64%. All unchanged FROST
+checks pass. The score canary fails its existing correlation limit: versus
+FROST, mean absolute error 0.021591 and correlation 0.994822. This is diagnostic
+only, despite improved AUROC on this small training-seen cohort.
+
+| Concurrency | Input tokens/s | Gain | Pooled AUROC delta | Source-macro AUROC delta |
+| --- | ---: | ---: | ---: | ---: |
+| 16 | 135,404 | +3.72% | +0.008302 | +0.005239 |
+| 32 | 153,391 | +2.87% | +0.008380 | +0.005919 |
+| 64 | 154,542 | +4.63% | +0.007521 | +0.005181 |
+| 128 | 145,290 | +1.84% | +0.007716 | +0.005428 |
+
+The c128 repeats are 8.616/9.465 seconds; its small gain remains inconclusive.
+Full-workload mean score drift is about 0.039 and maximum 0.29845. Preserve
+per-source regressions even when macro/pooled averages improve. API 77510 and
+engine 77576 are retired before changing kernels.
+
+The next isolated candidate is native NVFP4 KV storage with FP8 queries and
+block scales, unchanged BF16 GDN and FROST MLPs (`nvfp4_attention.json`). Audit
+actual packed uint8 KV, FP8 queries, block-scale tensors and causal D256 GQA.
+The native path returns FP8 attention output then converts to BF16; include
+that conversion in complete timings. This is not a claim that every attention
+operation uses FP4. Run the same score canary and fourteen-pass matched sweep;
+retain finite failures as diagnostic and never promote nonfinite outputs.

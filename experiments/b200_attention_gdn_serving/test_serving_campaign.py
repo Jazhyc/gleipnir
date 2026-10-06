@@ -32,3 +32,12 @@ def test_precision_and_data_contract_changes_fail_closed():
         resolve_condition({**condition, "attention_precision": "mxfp8"}, {})
     with pytest.raises(ValueError, match="frozen data/scoring"):
         resolve_condition({**condition, "serving_config_overrides": {"seed": 5}}, {})
+
+
+def test_gdn_projection_intervention_keeps_attention_bf16_and_requires_its_quantizer():
+    condition = json.loads((EXPERIMENT / "fp8_gdn_projection.json").read_text())
+    result = resolve_condition(condition, {"gdn": "source"})
+    assert "--kv-cache-dtype" not in result["extra_server_args"]
+    assert result["gdn_projection_precision"] == "fp8"
+    with pytest.raises(ValueError, match="mixed-precision quantizer"):
+        resolve_condition({**condition, "quantization": "gleipnir_frost_fp4"}, {})
