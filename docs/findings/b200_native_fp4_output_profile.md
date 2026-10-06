@@ -129,9 +129,11 @@ layer per scheduled batch. They total 257,670,709,248 bytes, exactly
 1,310,581 tokens times 4,096 output elements times two BF16 bytes times 24
 GDN layers. There are 936 copies of 256 MiB for 32,768-token batches; the
 remaining 72 copies match the three partial batches. The installed
-`qwen_gdn_linear_attn.py` copies `o_flat` into `core_attn_out` after the
-FlashInfer chunk call. This confirms output copying, not full recurrent-cache
-copying. It consumes roughly 1.26% of the GPU window and is a concrete
+`qwen_gdn_linear_attn.py` ordinary-prefill caller omits the destination
+argument and assigns `core_attn_out_non_spec` into `core_attn_out` afterward.
+That caller assignment causes the measured copy; the chunk wrapper also has
+an optional copy when supplied a destination. This confirms output copying,
+not full recurrent-cache copying. It consumes roughly 1.26% of the GPU window and is a concrete
 future opportunity if the kernel can write directly into the destination.
 
 Additional artifacts: `gap_analysis.json`, `gap_cpu_overlap.json`,

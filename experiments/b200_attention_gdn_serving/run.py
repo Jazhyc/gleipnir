@@ -321,6 +321,7 @@ def main() -> None:
         sources.extend(
             [
                 "src/gleipnir/serving_gdn_direct_output.py",
+                "src/gleipnir/serving_gdn_direct_caller.py",
                 "experiments/b200_attention_gdn_serving/gdn_direct_worker.py",
                 "experiments/b200_attention_gdn_serving/gdn_direct_canary.py",
             ]

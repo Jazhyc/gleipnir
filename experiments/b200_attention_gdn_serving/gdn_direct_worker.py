@@ -1,9 +1,11 @@
 """Install native-admitted direct GDN destinations on the Direct FP4 stack."""
 
 import hashlib
+import inspect
 import json
 import os
 import re
+from types import MethodType
 
 import torch
 
@@ -17,6 +19,7 @@ class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker
 ):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        from gleipnir.serving_gdn_direct_caller import build_core_source
         from gleipnir.serving_gdn_direct_output import make_forward, validate_native
 
         condition = self.vllm_config.additional_config["serving_condition"]
@@ -33,8 +36,31 @@ class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         from flashinfer.gdn_prefill import chunk_gated_delta_rule
         from vllm.model_executor.layers.mamba.gdn.qwen_gdn_linear_attn import (
             ChunkGatedDeltaRule,
+            QwenGatedDeltaNetAttention,
             l2norm_fwd,
         )
+
+        original_core = QwenGatedDeltaNetAttention._forward_core
+        original_source = inspect.getsource(original_core)
+        generated = build_core_source(original_source)
+        generated_path = (
+            ROOT / "results/b200_attention_gdn_serving/native_gdn_direct_caller.py"
+        )
+        generated_path.write_text(generated)
+        namespace = dict(original_core.__globals__)
+        exec(compile(generated, str(generated_path), "exec"), namespace)
+        direct_core = namespace["_forward_core"]
+        callers = [
+            layer
+            for layer in self.model_runner.get_model().modules()
+            if isinstance(layer, QwenGatedDeltaNetAttention)
+        ]
+        if len(callers) != 24:
+            raise ValueError("incomplete direct GDN caller scope")
+        for layer in callers:
+            if layer._forward_core.__func__ is not original_core:
+                raise ValueError("unsupported GDN caller override")
+            layer._forward_core = MethodType(direct_core, layer)
 
         audit = {
             "passed": False,
@@ -46,6 +72,14 @@ class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
             "operators": {},
             "output_copy": False,
             "arithmetic_changed": False,
+            "caller_count": len(callers),
+            "caller_original_sha256": hashlib.sha256(
+                original_source.encode()
+            ).hexdigest(),
+            "caller_generated_sha256": hashlib.sha256(generated.encode()).hexdigest(),
+            "direct_scope": (
+                "ordinary prefill; original mixed/speculative/decode behavior"
+            ),
         }
         seen = set()
 
