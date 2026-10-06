@@ -1,0 +1,21 @@
+model: Qwen/Qwen3.5-4B
+revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+adapter: results/b200_fp4_full_training/4b/fp4/model
+adapter_sha256: d13be8b249129269cec572e36e2006a955fa56dec5a015bd93f35bd876c62751
+source: data/tool_trajectory_monitoring/distillation_scaling/mixed_student_rows.jsonl
+source_sha256: f9b0a322f277991edae2510b658a2298c0c585d402b39f36d6ac86352bf1a76b
+selection: results/b200_adaptive_microbatching/selections/matched.jsonl
+selection_sha256: a27b8b3d702436839869fda2aa612ad61a4c3ef8aa9f56b4c57a4914b0a50e06
+canary_source: data/b200_fp4_full_training/fp4/student_rows.jsonl
+canary_source_sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+parity: results/b200_fp4_full_training/4b/fp4/serving_parity.json
+parity_sha256: 56e64509f0e49c98c842f1f4d858b3518ab4545e11bcd305ac4fe01e6ecfe99f
+seed: 0
+quick_rows: 64
+concurrency: [1, 4, 16]
+repeats: 2
+port: 8000
+max_model_len: 32768
+max_num_seqs: 16
+max_num_batched_tokens: 32768
+gpu_memory_utilization: 0.25

@@ -440,3 +440,18 @@ positive probability. Report this tradeoff alongside ranking improvement; do not
 fit calibration on ID or promote from this one-seed combined-recipe comparison.
 The final prediction hash, per-source results, startup costs and retained worker
 are recorded in the replication decision.
+
+The user next requests a small production inference benchmark covering both
+interactive latency and batch throughput. The
+[inference benchmark decision](decisions/b200_inference_benchmark.md) freezes
+the training systems cohort as a development workload, with a nested 64-row
+quick pass, closed-loop HTTP concurrency 1/4/16, repeat score variation and
+prefix caching disabled. The final FP4-trained adapter is served in BF16;
+training precision is not an inference kernel selection. Establish and collect
+this B200 baseline before choosing any optimization. No held-out quality or
+production arrival-rate/SLO result follows from this systems development set.
+The BF16 HTTP baseline subsequently completes all six 64-row passes: median
+throughput is 4.531/8.378/11.425 requests/s at concurrency 1/4/16, with p50
+latencies 0.154/0.411/1.255 seconds. Score parity passes, while three rows cross
+0.5 across repeat/concurrency arrays. Retain that baseline variation when
+screening later precision/scheduling candidates. The server remains resident.
