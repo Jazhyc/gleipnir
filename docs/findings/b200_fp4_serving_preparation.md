@@ -2,10 +2,21 @@
 
 Date: 2026-10-06. The user authorizes all three proposed preparation changes:
 installed CUDA per-token NVFP4 packing, fused SwiGLU packing, and fused
-post-attention residual/RMSNorm packing. The vendor trial finishes with a
-five-pass median of **181,786 input tokens/s**, **+4.51%** over the accepted
-MXFP8 reference's 173,938. Its score canary fails the existing agreement limits;
-retain this as diagnostic evidence, without changing the selected reference.
+post-attention residual/RMSNorm packing. All three independent trials and their
+combination complete. The combined stack gives a five-pass median of
+**185,767 input tokens/s**, **+6.80%** over the accepted MXFP8 reference's
+173,938, while interactive median latency stays at 149.5 ms. It passes the
+baseline-relative score canary; native/master strict failures remain separate.
+Source-macro/pooled AUROC changes are **−1.61/+0.81 percentage points**.
+Keep the combined worker warm and leave the selected reference unchanged.
+
+| Preparation change | Warm input tokens/s | Speed change | c1 median ms | Source-macro AUROC change, pp | Pooled AUROC change, pp |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Selected reference | 173,938 | — | 149.50 | — | — |
+| Vendor packing | 181,786 | +4.51% | 150.77 | −1.00 | +0.47 |
+| SwiGLU fusion | 180,903 | +4.00% | 147.12 | −1.83 | −0.39 |
+| Normalization fusion | 178,260 | +2.48% | 147.44 | −1.08 | +0.05 |
+| Combined | 185,767 | +6.80% | 149.47 | −1.61 | +0.81 |
 
 ## Frozen scope and evidence
 
@@ -95,6 +106,81 @@ and multiplication followed by BF16 storage, matching the canary's formula;
 the cause of the model-level drift is not established. Do not promote a claim
 of exact model equivalence from these fixtures.
 
+## Independent normalization model result
+
+`fp4_prepare_norm_serving01` completes all fourteen passes, passes the new
+current-worker/count audit and passes the baseline-relative score canary:
+mean difference 0.015047, correlation 0.998144. Strict master parity remains
+failed. Five warm passes in `fp4_prepare_norm_confirmation01` give median
+**178,260 input tokens/s**, **+2.48%**, with rates
+178,073 / 177,898 / 179,341 / 178,260 / 178,721. Interactive c1 median is
+147.44 ms versus 149.50 ms. API/engine PIDs 88396/88456 are reused, then retired.
+
+Source-macro AUROC is 0.900666→0.889885, **−1.08 percentage points**; pooled
+AUROC is 0.900238→0.900727, **+0.05 points**. Mean/max score differences are
+0.045887/0.411570, with eighteen threshold flips. The large isolated native
+producer gain becomes a modest full-model gain; do not extrapolate kernel
+speed ratios to the complete serving stack. All three independent trials
+support a bounded combined diagnostic screen, without promoting their drift.
+
+## Combined model result
+
+`fp4_prepare_combined_serving01` completes all fourteen passes. The current
+worker's native preparation receipt verifies 32 normalization, 32 SwiGLU and
+48 vendor-packing calls, with all three validation hashes bound. Strict native
+preparation precision remains failed because the vendor receipt's 1.81% result
+is not erased. The baseline-relative score canary passes: mean difference
+0.012902, correlation 0.998811. Strict master parity remains failed.
+
+Five warm passes in `fp4_prepare_combined_confirmation01` give
+185,767 / 186,024 / 186,004 / 184,014 / 185,701 input tokens/s. Exclude the
+preceding full-cohort warmup. API/engine PIDs **88949/89008**, port **8010**,
+remain resident after the experiment. The measured +6.80% is smaller than the
+sum of the individual gains; native kernel ratios do not predict additive
+full-model speedups. c1 median/p95 are 149.47/286.38 ms versus the saved
+reference's 149.50/299.28 ms; two quick repeats do not establish a latency
+improvement. Keep sweep variability and warmed confirmation separate.
+
+Source-macro AUROC is 0.900666→0.884569, **−1.61 percentage points**; pooled
+AUROC is 0.900238→0.908326, **+0.81 points**. Mean/max score differences are
+0.042684/0.485976, with twenty-two threshold flips. Preserve calibration,
+partial-AUROC, per-source and score-tie outputs. Passing a twenty-row canary
+does not remove the measured source-average decline or establish equivalence.
+Do not replace the user-selected reference based on the pooled gain alone.
+
+## Profile of the combined stack
+
+`fp4_prepare_combined_profile01` profiles a separate full c128 pass on the
+same worker. Exclude its 7.156-second request time from speed claims. It records
+44,688 kernels, 6.326 seconds summed kernel time, 6.320 seconds of interval
+union and a 6.843-second first-to-last-kernel window: 92.36% busy within that
+window. The saved reference has 46,704 kernels and 6.696 seconds summed time,
+so launches fall 4.32% and summed time falls 5.54%. This is one profile per
+stack, not a separately repeated performance benchmark or SM occupancy measure.
+
+| Exclusive combined CUDA category | Seconds | Share |
+| --- | ---: | ---: |
+| FP4 GEMMs | 1.520 | 24.03% |
+| Remaining fused elementwise/norm/gates/layouts | 1.242 | 19.64% |
+| GDN core | 0.909 | 14.37% |
+| Fused SwiGLU and normalization FP4 producers | 0.822 | 13.00% |
+| MXFP8 attention core | 0.611 | 9.65% |
+| BF16 GEMMs | 0.504 | 7.97% |
+| Causal convolution | 0.391 | 6.18% |
+| Other kernels | 0.129 | 2.03% |
+| Standalone FP4 packing/scales | 0.119 | 1.88% |
+| MXFP8 gather/quantization/offsets | 0.079 | 1.25% |
+
+Standalone FP4 packing/scales fall from 0.804 to 0.119 seconds, but account
+for the new fused producers separately. The broader packing plus fused
+elementwise/producer group falls from 2.589 to 2.183 seconds, about 15.7%.
+SwiGLU emission alone still takes 0.658 seconds, 10.4% of the new kernel sum;
+normalization emission takes 0.164 seconds. FP4 GEMMs remain almost unchanged
+at 1.520 versus 1.527 seconds. These measured totals explain why reducing
+preparation does not multiply whole-model throughput. CPU operator totals
+overlap/nest and are not wall-time fractions; retain the raw trace and exclusive
+category membership rather than calling `aten::copy_` time a dispatch fraction.
+
 ## Cache and artifact handling
 
 The previous server's FlashInfer cache lived under `/root/.cache/flashinfer`.
@@ -109,3 +195,14 @@ source hashes verified. Serving predictions, score failures, source archives
 and warm confirmation receipts are also collected. Outputs remain under
 `results/b200_attention_gdn_serving/`, logs under the matching Runpod tree.
 Focused tests and Ruff pass. The selected optimization baseline is unchanged.
+
+`fp4_preparation_collection01` binds all result/source artifacts, exact warm
+client/profile scripts and frozen log/server/baseline snapshots by checksum.
+All 76 timed passes preserve IDs, prompt hashes and token counts with finite
+scores; executed source bindings are verified against each archived trial.
+Twenty-two focused CPU tests pass. The final HTTP health check returns 200,
+only engine PID 89008 owns GPU compute, and the shared cache paths plus actual
+Torch/vLLM/FlashInfer/Transformers versions are recorded in `health.json`.
+`campaign.json` marks the campaign complete and the combined server retained;
+retire it before changing kernels. The B200 pod remains running. No recurring
+follow-up is promised after this active turn.

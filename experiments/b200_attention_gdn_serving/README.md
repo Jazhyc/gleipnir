@@ -595,3 +595,19 @@ producers. Runtime usage must match 32 normalization fusions, 32 SwiGLU fusions
 and 48 remaining vendor-packed GDN projections. The benchmark rejects failed,
 stale-PID or incomplete preparation receipts before timing. Record the effective
 FlashInfer cache path alongside the existing shared cache paths.
+
+Normalization's five warm passes give 178,260 input tokens/s (+2.48%), with
+source-macro/pooled AUROC −1.08/+0.05 percentage points. The combined stack
+finishes all fourteen sweep passes and five warm confirmations at 185,767
+input tokens/s (+6.80%). Its c1 median is 149.47 ms versus 149.50 ms; AUROC
+changes −1.61/+0.81 points. The baseline-relative score canary passes, while
+strict native/master failures remain recorded. The combined profile lowers
+summed CUDA time from 6.696 to 6.326 seconds and launches from 46,704 to
+44,688; exclude profiling from speed claims. All 76 timed passes have matched
+IDs/prompts/token counts, finite scores and verified executed source hashes.
+
+Final collection: `results/b200_attention_gdn_serving/fp4_preparation_collection01`.
+The selected default stays unchanged. Combined API/engine **88949/89008**, port
+8010, remain healthy and warm; `campaign.json` records completion, artifact
+paths and retained-worker identity. Stop that server before changing kernels.
+No new capacity is launched and the retained B200 pod stays running.
