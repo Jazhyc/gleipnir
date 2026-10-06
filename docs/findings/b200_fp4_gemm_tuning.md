@@ -161,3 +161,54 @@ Receipt: `results/b200_attention_gdn_serving/output_sampling_diagnosis01.json`,
 binding the existing trace hash, attribution method, operator counts and installed
 source hashes. This is a low-priority simplification for the current long-prompt,
 one-token workload, with potentially different economics for other workloads.
+
+
+## GEMM follow-up research, 2026-10-06
+
+The next low-cost screen is backend comparison on identical packed operands,
+not a repetition of the same tile sweep. Installed FlashInfer 0.6.12 exposes
+cuDNN, CUTLASS, TRT-LLM and CuTe-DSL FP4 runners; auto selection does not visit
+all of them. Weight shuffles should be prepared once and cached. Our rowwise
+inverse scales differ from the scalar alpha interface, so comparisons must
+include the complete BF16-rounding/descaling path and any activation-layout
+conversion. These are prospective trials, with no claimed speed gain.
+See the [FP4 API](https://docs.flashinfer.ai/generated/flashinfer.gemm.mm_fp4.html)
+and [analogous B200 performance report](https://github.com/flashinfer-ai/flashinfer/issues/1732).
+
+The larger fusion target is gate/up GEMM plus SwiGLU. Current fusion combines
+SwiGLU with FP4 packing, leaving a BF16 gate/up tensor written by the GEMM and
+read by the producer. The saved profile spends 10.4% on the fused SwiGLU
+producer. NVIDIA's installed dense SM100 block-scaled SwiGLU kernel supports
+NVFP4 inputs; [the GLU API](https://github.com/NVIDIA/cudnn-frontend/blob/main/docs/fe-oss-apis/gemm_fusions/grouped_gemm_glu.md)
+uses alternating 32-column gate/up blocks and group-level alpha. BF16/FP16/
+FP32/FP8 outputs are supported rather than our exact packed FP4 contract.
+An initial integration could emit BF16 SwiGLU values, halving the intermediate
+width before existing packing. Direct packed FP4 output requires preserving
+per-row scaling before the nonlinear activation, both GEMM rounding boundaries
+and the whole-row amax normalization. This involves adaptation; an unmodified
+kernel is not a compatible replacement. Measure the complete producer path,
+then warmed serving speed and AUROC; fewer launches alone are insufficient.
+
+Layer-order attribution of the saved 1,722 BF16 matmuls suggests attention QKV
+at 0.325 seconds (5.14% of total GPU kernel time), attention output at 0.131
+seconds (2.07%), small GDN gates at 0.039 seconds (0.62%) and vocabulary head
+at 0.008 seconds (0.13%). Each of 42 groups matches 24 GDN small gates, 16
+attention projections and one checked vocabulary-head grid. Keep the family
+labels marked as inferred from the frozen layer order, not profiler-recorded
+module names. Large full-attention projection GEMMs are an additional FP8/FP4
+candidate while the attention kernel and BF16 cache/recurrence stay fixed.
+This precision intervention needs its own adapter-score/AUROC check; small
+GDN gates are a much smaller target.
+
+CUTLASS also uses cache-aware tile ordering, pipelining and split-K parallel
+reductions; see [its GEMM guide](https://docs.nvidia.com/cutlass/latest/media/docs/cpp/efficient_gemm.html).
+Pinned FROST already implements L2 rasterization and derived stage sizing.
+Counter-guided refinement is possible, but do not present these as missing
+features. Split-K is primarily a small-M/high-K output-projection candidate;
+large-M prefill already supplies many tiles and extra reduction traffic can
+hurt. Hardware Tensor Core, DRAM/L2 and stall counters remain unmeasured.
+
+`gemm_followup_research01.json` records source links, compatibility constraints
+and the trace-bound BF16 attribution. Prioritize the bounded backend screen,
+then adapted GEMM-plus-SwiGLU fusion. No new native/serving trial is launched,
+no default changes, and the selected worker remains intact.
