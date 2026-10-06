@@ -355,6 +355,22 @@ def parity_status(
     return bool(strict), bool(strict or relative)
 
 
+def validate_preparation_usage(audit: dict, worker_pid: int, mode: str) -> None:
+    """Reject stale, failed or incomplete preparation receipts before timing."""
+    expected = (
+        {"vendor": 48, "silu": 32, "norm": 32}
+        if mode == "combined"
+        else {mode: 112 if mode == "vendor" else 32}
+    )
+    if (
+        not audit.get("passed")
+        or audit.get("worker_pid") != worker_pid
+        or audit.get("condition", {}).get("fp4_preparation") != mode
+        or Counter(c["stage"] for c in audit.get("calls", [])) != expected
+    ):
+        raise ValueError("native preparation usage audit failed")
+
+
 def compatible_server_command(observed: list[str], requested: list[str]) -> bool:
     """Allow client-only reference changes while enforcing loaded kernel identity."""
 
@@ -454,7 +470,11 @@ async def benchmark(
             "started_at_unix": time.time(),
             "status": "starting",
             "cache_paths": {
-                k: v for k, v in server_environment.items() if "CACHE" in k
+                **{k: v for k, v in server_environment.items() if "CACHE" in k},
+                "FLASHINFER_CACHE_DIR": str(
+                    Path(server_environment["FLASHINFER_WORKSPACE_BASE"])
+                    / ".cache/flashinfer"
+                ),
             },
             "log": str(logs / "server.log"),
         }
@@ -607,6 +627,17 @@ async def benchmark(
             if not json.loads(path.read_text())["passed"]:
                 raise ValueError("native serving startup audit failed")
             report["startup_audit_sha256"] = sha(path)
+        if kernel_condition and kernel_condition.get("fp4_preparation"):
+            path = metadata.parent / "native_preparation.json"
+            precision = json.loads(
+                (metadata.parent / "loaded_precision.json").read_text()
+            )
+            validate_preparation_usage(
+                json.loads(path.read_text()),
+                precision["worker_pid"],
+                kernel_condition["fp4_preparation"],
+            )
+            report["preparation_audit_sha256"] = sha(path)
         print(
             f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
             flush=True,

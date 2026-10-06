@@ -59,13 +59,19 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
     ):
         raise ValueError("MXFP8 requires its validated forward-only serving worker")
     if condition.get("fp4_preparation") and (
-        condition["fp4_preparation"] not in {"vendor", "silu", "norm"}
+        condition["fp4_preparation"] not in {"vendor", "silu", "norm", "combined"}
         or not condition.get("fp4_prepare_validation")
         or not condition["worker_cls"].endswith("PreparationMxfp8ServingAuditWorker")
         or condition["attention_precision"] != "mxfp8"
         or condition["gdn_projection_precision"] != "fp4"
     ):
         raise ValueError("FP4 preparation requires its bound native receipt and worker")
+    if condition.get("fp4_preparation") == "combined" and (
+        not isinstance(condition["fp4_prepare_validation"], dict)
+        or set(condition["fp4_prepare_validation"]) != {"vendor", "silu", "norm"}
+        or not all(condition["fp4_prepare_validation"].values())
+    ):
+        raise ValueError("combined FP4 preparation requires all three native receipts")
     if condition["gdn_projection_precision"] not in {"bf16", "fp8", "fp4"}:
         raise ValueError("unsupported GDN projection precision")
     if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:

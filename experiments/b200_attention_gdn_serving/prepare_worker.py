@@ -3,6 +3,7 @@
 import hashlib
 import json
 import os
+from collections import Counter
 
 import torch
 
@@ -16,38 +17,61 @@ class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
         mode = condition["fp4_preparation"]
         if self.vllm_config.parallel_config.tensor_parallel_size != 1:
             raise ValueError("FP4 producer fusion requires the pinned single-GPU model")
-        receipt = json.loads((ROOT / condition["fp4_prepare_validation"]).read_text())
-        expected = {"vendor": "vendor_cuda", "silu": "silu", "norm": "norm"}[mode]
-        if (
-            not receipt.get("arithmetic_passed", receipt["passed"])
-            or receipt["mode"] != expected
-            or len(receipt["checks"]) != (12 if mode == "vendor" else 8)
-            or any(
-                not r["finite"] or r.get("gemm_relative_l2", 0) > 0.01
-                for r in receipt["checks"]
-            )
-        ):
-            raise ValueError("FP4 preparation native validation failed")
-        if not receipt["passed"] and not condition["allow_finite_parity_diagnostic"]:
-            raise ValueError(
-                "FP4 preparation strict precision failed; diagnostic disabled"
-            )
-        for path, expected_hash in receipt["sources"].items():
-            if hashlib.sha256((ROOT / path).read_bytes()).hexdigest() != expected_hash:
-                raise ValueError(f"FP4 preparation source drift: {path}")
+        paths = condition["fp4_prepare_validation"]
+        if mode != "combined":
+            paths = {mode: paths}
+        elif set(paths) != {"vendor", "silu", "norm"}:
+            raise ValueError("combined preparation requires all native receipts")
+        receipts, hashes = {}, {}
+        for stage, path in paths.items():
+            raw = (ROOT / path).read_bytes()
+            receipt = json.loads(raw)
+            expected = {"vendor": "vendor_cuda", "silu": "silu", "norm": "norm"}[stage]
+            if (
+                not receipt.get("arithmetic_passed", receipt["passed"])
+                or receipt["mode"] != expected
+                or len(receipt["checks"]) != (12 if stage == "vendor" else 8)
+                or any(
+                    not r["finite"] or not r["gemm_relative_l2"] <= 0.01
+                    for r in receipt["checks"]
+                )
+            ):
+                raise ValueError("FP4 preparation native validation failed")
+            if (
+                not receipt["passed"]
+                and not condition["allow_finite_parity_diagnostic"]
+            ):
+                raise ValueError(
+                    "FP4 preparation strict precision failed; diagnostic disabled"
+                )
+            for source, expected_hash in receipt["sources"].items():
+                if (
+                    hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
+                    != expected_hash
+                ):
+                    raise ValueError(f"FP4 preparation source drift: {source}")
+            receipts[stage] = receipt
+            hashes[stage] = hashlib.sha256(raw).hexdigest()
         # The unchanged baseline audits validate packed weights before installing
         # candidate activation arithmetic. Their receipts retain that scope.
         super().load_model(load_dummy_weights=load_dummy_weights)
         from gleipnir.serving_fp4_integration import install
 
         calls = []
-        count = 112 if mode == "vendor" else 32
+        expected_calls = (
+            {"vendor": 48, "silu": 32, "norm": 32}
+            if mode == "combined"
+            else {mode: 112 if mode == "vendor" else 32}
+        )
+        count = sum(expected_calls.values())
 
         def observed(stage: str, shape: tuple) -> None:
             if len(calls) >= count or torch.cuda.is_current_stream_capturing():
                 return
             calls.append({"stage": stage, "input_shape": list(shape)})
             if len(calls) == count:
+                if Counter(c["stage"] for c in calls) != expected_calls:
+                    raise ValueError("incomplete runtime preparation coverage")
                 write(
                     "native_preparation.json",
                     {
@@ -55,15 +79,19 @@ class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
                         "worker_pid": os.getpid(),
                         "condition": condition,
                         "calls": calls,
-                        "validation_sha256": hashlib.sha256(
-                            (ROOT / condition["fp4_prepare_validation"]).read_bytes()
-                        ).hexdigest(),
+                        "validation_sha256": hashes,
                         "weights_and_attention_unchanged": True,
-                        "strict_preparation_precision_passed": receipt["passed"],
+                        "strict_preparation_precision_passed": all(
+                            r["passed"] for r in receipts.values()
+                        ),
                     },
                 )
 
-        warps = {mode: receipt["selected_warps"]} if mode != "vendor" else {}
+        warps = {
+            stage: r["selected_warps"]
+            for stage, r in receipts.items()
+            if stage != "vendor"
+        }
         scope = install(
             self.model_runner.get_model(), mode, warps=warps, audit=observed
         )

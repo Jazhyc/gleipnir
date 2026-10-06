@@ -579,3 +579,19 @@ Model speed and AUROC must still be measured before interpreting these gains.
 FlashInfer's existing 28 MB ephemeral cache is copied into the network-volume
 `.cache/flashinfer` directory. Serving now sets `FLASHINFER_WORKSPACE_BASE` to
 the repository root, preserving compatible native builds across pod restarts.
+
+The independent vendor and SwiGLU screens each complete fourteen serving passes
+and five warm c128 confirmation passes. Median rates are 181,786 and 180,903
+input tokens/s, +4.51% and +4.00% against the selected 173,938 reference.
+Vendor baseline-relative score parity fails; SwiGLU passes that canary. Their
+source-macro/pooled AUROC changes are respectively −1.00/+0.47 and −1.83/−0.39
+percentage points on the frozen training-seen cohort. Keep native fixture
+agreement separate from whole-model scores. Both workers are retired before
+the next kernel change; the selected reference remains unchanged. See the
+[preparation finding](../../docs/findings/b200_fp4_serving_preparation.md).
+
+The combined configuration requires separately bound receipts for all three
+producers. Runtime usage must match 32 normalization fusions, 32 SwiGLU fusions
+and 48 remaining vendor-packed GDN projections. The benchmark rejects failed,
+stale-PID or incomplete preparation receipts before timing. Record the effective
+FlashInfer cache path alongside the existing shared cache paths.
