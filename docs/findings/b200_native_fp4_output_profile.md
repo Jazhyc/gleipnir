@@ -168,3 +168,11 @@ GPU kernels; it has not been run here.
 
 Additional diagnostic: `native_fp4_output_profile01/gap_execution_context.json`.
 No new serving run, kernel change or server restart is performed.
+
+## Prefill graph coverage
+
+The recorded recipe captures at most 256 tokens. Every profiled batch exceeds
+that limit, and installed dispatch returns graph mode `NONE`; the trace shows
+one individual launch per kernel and no graph-launch calls. See the
+[prefill-dispatch assessment](b200_prefill_dispatch.md) for pinned-source
+evidence, bounded graph-capture candidates and padding/memory limitations.
