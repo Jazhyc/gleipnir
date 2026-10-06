@@ -611,3 +611,21 @@ The selected default stays unchanged. Combined API/engine **88949/89008**, port
 8010, remain healthy and warm; `campaign.json` records completion, artifact
 paths and retained-worker identity. Stop that server before changing kernels.
 No new capacity is launched and the retained B200 pod stays running.
+
+
+### Bounded FP4 GEMM tile tuning, 2026-10-06
+
+Hypothesis: NVIDIA's forced N256 tile leaves performance available for the
+four fixed projection shapes. Keep combined FP4 preparation, MXFP8 attention,
+all model weights, packed operands and BF16 output rounding fixed. Sweep six
+SM100 tiles/clusters in one persistent native worker using shared caches.
+Measure rows 1/17/129/1536/2304/4096/29184/32768; select separately at M<=4096
+and M>4096 only when every shape's numerical/zero-row/isolation/changed-input
+replay checks pass and geometric-mean native gain reaches 2%. Reject unsupported
+configs without fallback and preserve failures. Stop after this bounded sweep
+and one integrated candidate. The incremental end-to-end reference is combined
+preparation at 185,766.6 input tokens/s; also report the selected 173,938.1
+reference. Use the unchanged frozen 320 training-seen systems-dev rows, one
+excluded warmup plus five c128 passes, interactive latency and source/pooled
+AUROC. This is kernel selection on systems-dev, with no final-ID promotion.
+Stop the serving worker before native tuning or a changed serving configuration.

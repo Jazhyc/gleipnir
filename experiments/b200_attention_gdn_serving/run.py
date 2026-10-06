@@ -72,6 +72,17 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         or not all(condition["fp4_prepare_validation"].values())
     ):
         raise ValueError("combined FP4 preparation requires all three native receipts")
+    if condition.get("gemm_tuning_validation") and (
+        condition.get("fp4_preparation") != "combined"
+        or not condition["worker_cls"].endswith(
+            "TunedPreparationMxfp8ServingAuditWorker"
+        )
+    ):
+        raise ValueError("GEMM tuning requires the bound combined preparation worker")
+    if condition["worker_cls"].endswith("TunedPreparationMxfp8ServingAuditWorker") and (
+        not condition.get("gemm_tuning_validation")
+    ):
+        raise ValueError("GEMM tuning requires a native validation receipt")
     if condition["gdn_projection_precision"] not in {"bf16", "fp8", "fp4"}:
         raise ValueError("unsupported GDN projection precision")
     if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:
@@ -241,6 +252,15 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("gemm_tuning_validation"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_fp4_tuning.py",
+                "src/gleipnir/serving_fp4_tuning_validation.py",
+                "experiments/b200_attention_gdn_serving/fp4_gemm_tune.py",
+                "experiments/b200_attention_gdn_serving/tuned_worker.py",
+            ]
+        )
     if raw["attention_precision"] == "mxfp8":
         sources.extend(
             [
@@ -335,6 +355,7 @@ def main() -> None:
             "loaded_precision.json",
             "native_attention.json",
             "native_preparation.json",
+            "native_gemm_tuning.json",
         ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))

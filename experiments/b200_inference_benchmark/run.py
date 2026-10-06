@@ -638,6 +638,16 @@ async def benchmark(
                 kernel_condition["fp4_preparation"],
             )
             report["preparation_audit_sha256"] = sha(path)
+        if kernel_condition and kernel_condition.get("gemm_tuning_validation"):
+            from gleipnir.serving_fp4_tuning_validation import validate_runtime_usage
+
+            path = metadata.parent / "native_gemm_tuning.json"
+            validate_runtime_usage(
+                json.loads(path.read_text()),
+                precision["worker_pid"],
+                kernel_condition["gemm_tuning_validation"],
+            )
+            report["gemm_tuning_audit_sha256"] = sha(path)
         print(
             f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
             flush=True,
