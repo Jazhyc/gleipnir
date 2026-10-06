@@ -699,6 +699,16 @@ async def benchmark(
                 kernel_condition["swiglu_native_output_validation"],
             )
             report["swiglu_native_output_audit_sha256"] = sha(path)
+        if kernel_condition and kernel_condition.get("gdn_direct_output_validation"):
+            from gleipnir.serving_gdn_direct_output import validate_runtime
+
+            path = metadata.parent / "native_gdn_direct_output.json"
+            validate_runtime(
+                json.loads(path.read_text()),
+                precision["worker_pid"],
+                kernel_condition["gdn_direct_output_validation"],
+            )
+            report["gdn_direct_output_audit_sha256"] = sha(path)
         print(
             f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
             flush=True,

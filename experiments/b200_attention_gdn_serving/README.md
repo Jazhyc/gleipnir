@@ -9,6 +9,29 @@ Use 196,866 input tokens/s for warm c128 comparisons and 159.46/275.92 ms
 for warm c1 median/p95. Macro/pooled development AUROC is 0.878105/0.885842.
 See the [current reference decision](../../docs/decisions/b200_native_fp4_output_inference_baseline.md).
 
+## GDN direct output-buffer trial
+
+Hypothesis (2026-10-07): writing FlashInfer GDN prefill output directly into
+vLLM's caller-provided buffer removes the 1,008 output copies and roughly
+81 ms of copy work observed in the selected reference profile. Keep its
+precision, arithmetic, weights, batching and all other kernels unchanged.
+Use the existing NC2 B200 and shared caches, stopping the serving process
+before any native GPU checks or replacement server.
+
+Validate caller-buffer shape/stride/alias contracts, partial-token destination
+views and untouched tails, exact output/state agreement, finite values,
+variable-length isolation, zero input and changed-input CUDA-graph replay.
+Test supported row counts including the maximum 32,768-token batch. Bind the
+installed FlashInfer/vLLM sources and confirm direct dispatch on all 24 GDN
+layers. Reuse unchanged kernel startup receipts; do not replay archived
+controls. Measure five warm c128 passes, warm c1 latency and frozen 320-row
+systems-dev AUROC against the selected Direct FP4 reference. Confirm removal
+with one bounded profile, excluding profiling timings from speed claims.
+Stop on unsupported layouts, source drift, nonfinite/incorrect output, missing
+layer coverage, server failure or OOM. Preserve negative receipts; do not
+promote silently or select on final ID. No in-chat heartbeat tool is available;
+active-turn monitoring cannot promise follow-up after the turn ends.
+
 ## FP4 full-attention projection trial
 
 Hypothesis (2026-10-06): extend the selected symbolic-M FROST NVFP4 serving

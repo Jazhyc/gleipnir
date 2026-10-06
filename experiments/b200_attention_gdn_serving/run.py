@@ -161,6 +161,13 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         raise ValueError(
             "native FP4 output requires its receipt and attention-FP4 worker"
         )
+    direct_gdn_worker = condition["worker_cls"].endswith(
+        "DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker"
+    )
+    if bool(condition.get("gdn_direct_output_validation")) != direct_gdn_worker or (
+        direct_gdn_worker and condition["gdn_backend"] != "flashinfer"
+    ):
+        raise ValueError("direct GDN output requires its receipt and FlashInfer worker")
     if set(overrides) - {
         "max_num_seqs",
         "gpu_memory_utilization",
@@ -310,6 +317,14 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("gdn_direct_output_validation"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_gdn_direct_output.py",
+                "experiments/b200_attention_gdn_serving/gdn_direct_worker.py",
+                "experiments/b200_attention_gdn_serving/gdn_direct_canary.py",
+            ]
+        )
     if raw.get("swiglu_native_output_validation"):
         sources.extend(
             [
@@ -466,6 +481,7 @@ def main() -> None:
             "native_swiglu_overhead.json",
             "native_swiglu_output.json",
             "native_attention_projections.json",
+            "native_gdn_direct_output.json",
         ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))
