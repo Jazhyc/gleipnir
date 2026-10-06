@@ -153,3 +153,65 @@ def paired_score_summary(
             if len({rows[i]["score"] >= 0.5 for rows in baseline}) > 1
         ],
     }
+
+
+def ranking_comparison(
+    rows: list[dict], baseline: list[list[dict]], candidate: list[list[dict]]
+) -> dict:
+    """Report matched development ranking/calibration metrics and AUROC deltas."""
+    import pandas as pd
+
+    from gleipnir.binary_evaluation import metric_views
+
+    paired_score_summary(baseline, candidate)
+    if [(r["id"], r["prompt_sha256"]) for r in rows] != [
+        (r["id"], r["prompt_sha256"]) for r in baseline[0]
+    ]:
+        raise ValueError("ranking label/prompt identity drift")
+
+    def metrics(scores: list[float]) -> dict:
+        return metric_views(
+            pd.DataFrame(
+                [
+                    {"dataset": r["dataset"], "label": r["label"], "score": score}
+                    for r, score in zip(rows, scores, strict=True)
+                ]
+            )
+        )
+
+    medians, repeats = [], []
+    for runs in (baseline, candidate):
+        medians.append(
+            metrics(
+                [
+                    statistics.median(output[i]["score"] for output in runs)
+                    for i in range(len(rows))
+                ]
+            )
+        )
+        repeats.append([metrics([r["score"] for r in output]) for output in runs])
+    groups = [{g["group"]: g["auroc"] for g in m["macro"]["groups"]} for m in medians]
+
+    def delta(a, b):
+        return b - a if a is not None and b is not None else None
+
+    return {
+        "population": "frozen training-seen systems development workload",
+        "baseline_repeat_median_scores": medians[0],
+        "candidate_repeat_median_scores": medians[1],
+        "repeat_metrics": {"baseline": repeats[0], "candidate": repeats[1]},
+        "auroc_delta": {
+            "pooled": delta(
+                medians[0]["pooled"]["auroc"], medians[1]["pooled"]["auroc"]
+            ),
+            "macro": delta(
+                medians[0]["macro"]["macro"]["auroc"],
+                medians[1]["macro"]["macro"]["auroc"],
+            ),
+            "per_source": {
+                name: delta(value, groups[1][name]) for name, value in groups[0].items()
+            },
+        },
+        "macro_auroc_sources": [name for name, v in groups[0].items() if v is not None],
+        "undefined_auroc_sources": [name for name, v in groups[0].items() if v is None],
+    }

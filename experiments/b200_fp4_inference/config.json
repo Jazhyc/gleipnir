@@ -1,0 +1,11 @@
+{
+  "name": "nvfp4_mlp_cudnn",
+  "port": 8010,
+  "merged_model": "/tmp/gleipnir-merged/fp4-full-training-bf16",
+  "baseline": "results/b200_inference_benchmark/merged01",
+  "quantization": "gleipnir_b200_nvfp4",
+  "worker_cls": "experiments.b200_fp4_inference.worker.Fp4AuditWorker",
+  "linear_backend": "flashinfer_cudnn",
+  "server_module": "experiments.b200_fp4_inference.server",
+  "allow_finite_parity_diagnostic": true
+}

@@ -496,3 +496,12 @@ with activation conversion included. Fresh score canary passes, but paired
 one threshold decision. This modest systems gain does not establish broad
 quality parity. Retain the active FP8 worker for compatible kernel trials and
 the archived merged BF16 reference, with the previous server stopped.
+
+The user next requests FP4 MLP inference and AUROC deviation reporting for every
+kernel update. The [FP4 inference decision](decisions/b200_fp4_inference.md)
+freezes a native FlashInfer/cuDNN screen with dynamic activation conversion,
+independent decoded arithmetic checks and the same development workload.
+Compare pooled/per-source/macro AUROC with archived baseline predictions and
+backfill FP8 without another GPU run. Finite score-canary failures remain failed
+and the bounded AUROC/speed pass diagnostic; no production promotion follows.
+Stop the previous FP8 server before loading FP4, preserving caches and artifacts.

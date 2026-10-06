@@ -24,6 +24,7 @@ from gleipnir.inference_benchmark import (
     measurement_summary,
     paired_score_summary,
     quick_workload,
+    ranking_comparison,
     response_score,
 )
 from gleipnir.merged_lora import file_sha256
@@ -304,8 +305,16 @@ async def benchmark(
     command = server_command(config, merged_model)
     if kernel_condition:
         command.extend(kernel_condition["extra_server_args"])
+        command[command.index("-m") + 1] = kernel_condition.get(
+            "server_module", "vllm.entrypoints.openai.api_server"
+        )
     metadata = (output.parent if kernel_condition else OUTPUT) / "server.json"
-    logs = (ROOT / "logs/runpod/b200_inference_kernels") if kernel_condition else LOGS
+    logs = (
+        ROOT
+        / kernel_condition.get("log_directory", "logs/runpod/b200_inference_kernels")
+        if kernel_condition
+        else LOGS
+    )
     base_url = f"http://127.0.0.1:{config['port']}"
     started = time.perf_counter()
     if reuse:
@@ -467,8 +476,16 @@ async def benchmark(
                 "seconds": time.perf_counter() - parity_start,
             },
         )
-        if not passed:
+        report["numerical_parity_passed"] = bool(passed)
+        report["diagnostic_only"] = not bool(passed)
+        if not passed and not (
+            kernel_condition and kernel_condition.get("allow_finite_parity_diagnostic")
+        ):
             raise ValueError("HTTP scoring parity failed")
+        if not passed:
+            print(
+                "finite_parity_failure_preserved diagnostic_benchmark=true", flush=True
+            )
         rows = json.loads(
             (
                 DATA / ("quick.json" if count == config["quick_rows"] else "full.json")
@@ -567,6 +584,7 @@ async def benchmark(
                     "merged_prompt_tokens_per_second": throughputs[1],
                     "throughput_ratio": throughputs[1] / throughputs[0],
                     "paired_scores": paired_score_summary(*scores),
+                    "ranking_metrics": ranking_comparison(rows, *scores),
                 }
             write(
                 output / "baseline_comparison.json",

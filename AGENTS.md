@@ -224,6 +224,14 @@ Reuse completed matched baseline results; do not retain or rerun a control merel
 because a new kernel is being tested. Keep the active candidate warm for compatible
 trials. This is process replacement, not authorization to terminate capacity.
 
+Standing user preference, 2026-10-06: every inference kernel update must report
+AUROC deviation against the same frozen baseline, alongside speed and score
+parity. Include pooled/per-source AUROC and macro across sources with both
+labels, repeat variation, explicit undefined single-label sources, and bind
+labels to exact prompt identities. Reuse archived baseline predictions rather
+than rerunning the control. Small training-seen optimization sets are diagnostic
+and do not establish held-out quality parity or select production precision.
+
 ## Code, Tests, and Git
 
 Use 4-space Python indentation, type hints for public interfaces, `snake_case`
