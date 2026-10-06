@@ -141,3 +141,29 @@ exclude GDN recurrence/solve/conv/norm, memory traffic, kernel efficiency,
 dispatch/HTTP and clock/power variation from that estimate. Do not treat it as
 a practical current-kernel ceiling or evidence of achievable fivefold gains.
 Preserve the detailed assumptions in `arithmetic_ceiling_estimate.json`.
+
+## Merged serving preference and matched benchmark
+
+The user next selects merged LoRA serving for future evaluations and requests
+a matched benchmark. Keep the immutable FP32 master and pinned BF16 base on
+persistent storage; generate a disposable BF16 checkpoint on the pod's `/tmp`
+container disk. Apply all 128 standard LoRA projection updates in FP32, then
+cast once to BF16. This matches PEFT safe merge with an FP32 base followed by
+BF16 export; PEFT merging directly into a BF16 base rounds the update before
+addition and can produce different weights. Do not assume score equivalence.
+
+The reusable streaming merger rejects unsupported adapter variants, missing
+pairs, checksum drift, shape/dtype errors and nonfinite weights. Hash source
+shards and resulting files, preserving every non-adapter tensor. A fresh
+twenty-row merged-serving canary must meet the existing 0.02 mean absolute
+score difference and 0.99 correlation limits against both archived master and
+dynamic-LoRA scores, with nonzero adapter effect against archived base scores.
+The old base pass is explicitly reused; do not claim a fresh base comparison.
+
+Replace the idle dynamic server while retaining its command/logs, persistent
+caches and completed baseline. Run the same six passes on the frozen 64 rows
+with the same engine budgets and prefix-cache policy, without an ID rerun or
+concurrency sweep. Lead comparisons with prompt tokens/s and report latency,
+paired repeat-median score/margin differences and threshold changes alongside
+the baseline's own variation. Record this future-evaluation preference in
+`AGENTS.md`; do not rewrite historical dynamic-LoRA campaign contracts.

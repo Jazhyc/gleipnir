@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import math
 import random
+import statistics
 from typing import Any
 
 
@@ -101,4 +102,54 @@ def measurement_summary(rows: list[dict], seconds: float) -> dict[str, Any]:
         "prompt_tokens_per_second": sum(r["prompt_tokens"] for r in rows) / seconds,
         "latency": latencies(rows),
         "latency_by_prompt_length": bins,
+    }
+
+
+def paired_score_summary(
+    baseline: list[list[dict]], candidate: list[list[dict]]
+) -> dict:
+    """Compare repeat-median scores, requiring identical ordered prompt identities."""
+    if not baseline or not candidate or not baseline[0]:
+        raise ValueError("empty paired measurement")
+    identities = [(r["id"], r["prompt_sha256"]) for r in baseline[0]]
+    for rows in baseline + candidate:
+        if [(r["id"], r["prompt_sha256"]) for r in rows] != identities:
+            raise ValueError("paired prompt identity drift")
+        if not all(math.isfinite(r[k]) for r in rows for k in ("score", "margin")):
+            raise ValueError("nonfinite paired score")
+    medians = [
+        {
+            key: [
+                statistics.median(r[i][key] for r in runs)
+                for i in range(len(identities))
+            ]
+            for key in ("score", "margin")
+        }
+        for runs in (baseline, candidate)
+    ]
+    differences = {}
+    for key in ("score", "margin"):
+        errors = [
+            abs(a - b) for a, b in zip(medians[0][key], medians[1][key], strict=True)
+        ]
+        differences[key] = {
+            "mean_absolute_difference": statistics.mean(errors),
+            "max_absolute_difference": max(errors),
+        }
+    flips = [
+        identity
+        for identity, a, b in zip(
+            identities, medians[0]["score"], medians[1]["score"], strict=True
+        )
+        if (a >= 0.5) != (b >= 0.5)
+    ]
+    return {
+        **differences,
+        "threshold_flips": len(flips),
+        "threshold_flip_ids": [identity[0] for identity in flips],
+        "baseline_threshold_unstable_ids": [
+            identities[i][0]
+            for i in range(len(identities))
+            if len({rows[i]["score"] >= 0.5 for rows in baseline}) > 1
+        ],
     }

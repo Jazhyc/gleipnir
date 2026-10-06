@@ -118,3 +118,38 @@ kernel efficiency, dispatch/HTTP overhead and power/clocks. It is an optimistic
 hardware bound, not a prediction for the current kernels or a claim that a
 fivefold improvement is attainable. The practical software ceiling is unknown.
 Record the assumptions in `arithmetic_ceiling_estimate.json`.
+
+## Merged BF16 benchmark protocol
+
+The user selects merged LoRA serving for future evaluations and requests this
+next benchmark. Hypothesis: removing adapter projections/dispatch improves
+throughput and latency. Freeze the same 64 rows, order, engine sequence/token
+budgets, memory fraction, backends, prefix-cache policy and six timed passes.
+Compare with the completed dynamic-LoRA baseline; do not rerun full ID or tune
+the serving recipe on labels.
+
+Materialize the pinned unquantized base plus final FP32 master LoRA updates on
+CPU, accumulating each `W + (alpha/r) B@A` in FP32 and rounding once to BF16.
+Check every merged weight finite, every adapter pair represented and a nonzero
+weight effect. Copy unchanged tensors and tokenizer/config assets. Keep source
+weights immutable and bind shard/adapter/config hashes in a persistent receipt.
+The generated checkpoint lives only at
+`/tmp/gleipnir-merged/fp4-full-training-bf16` on the Runpod container disk; it is
+disposable and reconstructable. No duplicate merged checkpoint goes on the
+network volume. Unsupported adapter variants fail rather than silently merging.
+
+The merged server omits all dynamic-LoRA flags and uses the same localhost
+endpoint after retiring the idle dynamic server, whose command/logs stay archived.
+Reuse shared compiler caches. The fresh twenty-row serving canary compares with
+the archived FP32 master and dynamic-LoRA scores, requiring the unchanged
+0.02 mean score difference/0.99 correlation bounds and a nonzero effect against
+the archived unadapted base. Stop on failed parity or structural/finite checks.
+Report all paired 64-row score/margin differences and threshold flips against
+each baseline concurrency's repeat median, including its own baseline variation.
+Keep the merged worker warm if the benchmark passes.
+
+```bash
+python -m experiments.b200_inference_benchmark.merge_model
+python -m experiments.b200_inference_benchmark.run --output merged01 \
+  --merged-model /tmp/gleipnir-merged/fp4-full-training-bf16
+```

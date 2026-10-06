@@ -205,6 +205,18 @@ the model/adapter, and document that exception. For every new adapter layout or
 backend combination, compare the master checkpoint with its serving artifact and
 record score agreement plus a nonzero adapter effect before scaling evaluation.
 
+Standing user preference, 2026-10-06: merge standard LoRA updates into BF16 base
+weights for future evaluations, serving without dynamic adapter projections.
+Keep FP32 master adapters and pinned base weights persistent. On Runpod, store
+reconstructable merged checkpoints on ephemeral container storage, with merge
+source/file checksums and evaluation receipts on the network volume. Accumulate
+the merge in FP32 before exporting BF16 and run adapter-specific serving parity
+before scaling evaluation. Record unsupported layouts or failed parity explicitly;
+do not silently fall back or change frozen historical evaluation contracts.
+Changing adapters requires loading the corresponding merged model; preserve disk
+compiler caches across those restarts. See the merged serving protocol in
+`experiments/b200_inference_benchmark/README.md`.
+
 ## Code, Tests, and Git
 
 Use 4-space Python indentation, type hints for public interfaces, `snake_case`

@@ -9,6 +9,7 @@ import importlib.metadata
 import json
 import os
 import shutil
+import statistics
 import subprocess
 import sys
 import time
@@ -21,9 +22,11 @@ import yaml
 from gleipnir.inference_benchmark import (
     match_selection,
     measurement_summary,
+    paired_score_summary,
     quick_workload,
     response_score,
 )
+from gleipnir.merged_lora import file_sha256
 
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = Path(__file__).parent
@@ -139,8 +142,8 @@ def prepare(config: dict) -> dict:
     return manifest
 
 
-def server_command(config: dict) -> list[str]:
-    return [
+def server_command(config: dict, merged_model: Path | None = None) -> list[str]:
+    command = [
         sys.executable,
         "-m",
         "vllm.entrypoints.openai.api_server",
@@ -181,6 +184,30 @@ def server_command(config: dict) -> list[str]:
         "--seed",
         str(config["seed"]),
     ]
+    if merged_model is not None:
+        command[command.index("--model") + 1] = str(merged_model)
+        for flag in ("--revision", "--max-lora-rank", "--max-loras", "--lora-modules"):
+            index = command.index(flag)
+            del command[index : index + 2]
+        command.remove("--enable-lora")
+        command[command.index("--served-model-name") + 1] = "monitor"
+    return command
+
+
+def verify_merged_model(config: dict, path: Path) -> dict:
+    """Bind disposable merged weights to the frozen source and file manifest."""
+    receipt = json.loads((path / "merge_manifest.json").read_text())
+    for key, expected in (
+        ("model", config["model"]),
+        ("revision", config["revision"]),
+        ("adapter_sha256", config["adapter_sha256"]),
+    ):
+        if receipt[key] != expected:
+            raise ValueError(f"merged artifact source drift: {key}")
+    for name, checksum in receipt["files_sha256"].items():
+        if Path(name).name != name or file_sha256(path / name) != checksum:
+            raise ValueError(f"merged artifact file drift: {name}")
+    return receipt
 
 
 def prepared_manifest(config: dict) -> dict:
@@ -263,12 +290,17 @@ async def trial(
 
 
 async def benchmark(
-    config: dict, manifest: dict, output: Path, count: int, reuse: bool
+    config: dict,
+    manifest: dict,
+    output: Path,
+    count: int,
+    reuse: bool,
+    merged_model: Path | None = None,
 ) -> None:
     import httpx
     import numpy as np
 
-    command = server_command(config)
+    command = server_command(config, merged_model)
     metadata = OUTPUT / "server.json"
     base_url = f"http://127.0.0.1:{config['port']}"
     started = time.perf_counter()
@@ -337,6 +369,7 @@ async def benchmark(
         write(metadata, receipt)
         report = {
             "status": "running",
+            "serving_mode": "merged_bf16" if merged_model else "dynamic_lora_bf16",
             "rows": count,
             "manifest_sha256": sha(DATA / "manifest.json"),
             "server": receipt,
@@ -358,7 +391,7 @@ async def benchmark(
         parity = json.loads((ROOT / config["parity"]).read_text())
         parity_start = time.perf_counter()
         comparisons, served = {}, {}
-        for mode in ("base", "adapter"):
+        for mode in ("adapter",) if merged_model else ("base", "adapter"):
             values, _ = await trial(
                 client,
                 canaries,
@@ -374,6 +407,20 @@ async def benchmark(
                 ),
                 "correlation": float(np.corrcoef(served[mode], reference)[0, 1]),
             }
+        if merged_model:
+            baseline_parity = OUTPUT / "baseline01/http_parity.json"
+            baseline = json.loads(baseline_parity.read_text())
+            if not baseline["passed"]:
+                raise ValueError("unmerged baseline parity failed")
+            served["base"] = baseline["served"]["base"]
+            reference = baseline["served"]["adapter"]
+            comparisons["dynamic_lora"] = {
+                "mean_absolute_difference": float(
+                    np.mean(np.abs(np.array(served["adapter"]) - reference))
+                ),
+                "correlation": float(np.corrcoef(served["adapter"], reference)[0, 1]),
+            }
+            report["unmerged_baseline_parity_sha256"] = sha(baseline_parity)
         effect = float(np.max(np.abs(np.array(served["adapter"]) - served["base"])))
         passed = all(
             v["mean_absolute_difference"]
@@ -390,6 +437,7 @@ async def benchmark(
                 "adapter_effect": effect,
                 "served": served,
                 "reference_sha256": sha(ROOT / config["parity"]),
+                "base_scores_reused": bool(merged_model),
                 "seconds": time.perf_counter() - parity_start,
             },
         )
@@ -455,6 +503,49 @@ async def benchmark(
             .decode()
             .strip(),
         )
+        if merged_model:
+            baseline_path = OUTPUT / "baseline01"
+            baseline_report = json.loads((baseline_path / "summary.json").read_text())
+            if (
+                baseline_report["status"] != "complete"
+                or baseline_report["manifest_sha256"] != report["manifest_sha256"]
+            ):
+                raise ValueError("baseline workload binding drift")
+            comparison = {}
+            for concurrency in config["concurrency"]:
+                runs = [
+                    [t for t in source["trials"] if t["concurrency"] == concurrency]
+                    for source in (baseline_report, report)
+                ]
+                scores = [
+                    [
+                        json.loads(
+                            (
+                                path / f"c{concurrency}_repeat{t['repeat']}.json"
+                            ).read_text()
+                        )
+                        for t in trials
+                    ]
+                    for path, trials in zip((baseline_path, output), runs, strict=True)
+                ]
+                throughputs = [
+                    statistics.median(t["prompt_tokens_per_second"] for t in trials)
+                    for trials in runs
+                ]
+                comparison[str(concurrency)] = {
+                    "baseline_prompt_tokens_per_second": throughputs[0],
+                    "merged_prompt_tokens_per_second": throughputs[1],
+                    "throughput_ratio": throughputs[1] / throughputs[0],
+                    "paired_scores": paired_score_summary(*scores),
+                }
+            write(
+                output / "baseline_comparison.json",
+                {
+                    "baseline_summary_sha256": sha(baseline_path / "summary.json"),
+                    "concurrency": comparison,
+                    "baseline_score_variation": baseline_report["score_variation"],
+                },
+            )
         write(output / "summary.json", report)
         print("inference_baseline_complete server_retained=true", flush=True)
 
@@ -463,11 +554,16 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--reuse-server", action="store_true")
+    parser.add_argument("--merged-model", type=Path)
     parser.add_argument("--output", default="baseline01")
     parser.add_argument("--rows", type=int, choices=(64, 320), default=64)
     args = parser.parse_args()
     config = yaml.safe_load((EXPERIMENT / "config.yaml").read_text())
-    manifest = prepared_manifest(config) if args.reuse_server else prepare(config)
+    manifest = (
+        prepared_manifest(config)
+        if args.reuse_server or args.merged_model
+        else prepare(config)
+    )
     print(json.dumps(manifest["populations"]), flush=True)
     if args.prepare_only:
         return
@@ -475,11 +571,18 @@ def main() -> None:
         raise ValueError("output must be a single directory name")
     output = OUTPUT / args.output
     output.mkdir(parents=True, exist_ok=False)
+    if args.merged_model:
+        args.merged_model = args.merged_model.resolve()
+        write(
+            output / "merged_artifact.json",
+            verify_merged_model(config, args.merged_model),
+        )
     for source in [
         *EXPERIMENT.glob("*.py"),
         EXPERIMENT / "config.yaml",
         EXPERIMENT / "README.md",
         ROOT / "src/gleipnir/inference_benchmark.py",
+        ROOT / "src/gleipnir/merged_lora.py",
         ROOT / "experiments/tool_trajectory_monitoring/benchmark_qwen_ood.py",
     ]:
         destination = output / "executed_sources" / source.relative_to(ROOT)
@@ -487,7 +590,16 @@ def main() -> None:
         destination.write_bytes(source.read_bytes())
     write(output / "manifest.json", manifest)
     try:
-        asyncio.run(benchmark(config, manifest, output, args.rows, args.reuse_server))
+        asyncio.run(
+            benchmark(
+                config,
+                manifest,
+                output,
+                args.rows,
+                args.reuse_server,
+                args.merged_model,
+            )
+        )
     except BaseException as error:
         write(output / "failure.json", {"error": f"{type(error).__name__}: {error}"})
         raise

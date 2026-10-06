@@ -455,3 +455,12 @@ throughput is 4.531/8.378/11.425 requests/s at concurrency 1/4/16, with p50
 latencies 0.154/0.411/1.255 seconds. Score parity passes, while three rows cross
 0.5 across repeat/concurrency arrays. Retain that baseline variation when
 screening later precision/scheduling candidates. The server remains resident.
+
+The user subsequently requests merging LoRA into the BF16 base for future
+evaluations, with reconstructable merged checkpoints on ephemeral Runpod disk.
+The next matched HTTP benchmark removes dynamic adapter projections while
+keeping the same frozen workload, engine limits and prefix-cache policy.
+Accumulate updates in FP32 before BF16 export, preserve master/base weights and
+persistent provenance, and require fresh adapter-specific serving score parity.
+The [inference decision](decisions/b200_inference_benchmark.md) records the
+protocol; historical dynamic-LoRA evaluation contracts remain frozen.
