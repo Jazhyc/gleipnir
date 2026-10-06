@@ -27,6 +27,15 @@ launches or OOM. Preserve all negative/failed receipts and never widen quality
 tolerances. Keep one GPU worker and the existing pod; stop the old server
 before native or serving trials. Do not promote a precision change silently.
 
+Completed: `attention_fp4.json` runs all 16 attention projections in NVFP4,
+with BF16 outputs and the existing MXFP8 attention core. Five warm c128 passes
+give 193,224 input tokens/s (+5.77% median, +6.00% aggregate). Warm c1 latency
+rises 6.68%; source-macro/pooled AUROC drop 0.61/1.84 percentage points.
+Keep this named recipe available and the selected default unchanged pending
+explicit acceptance of the quality tradeoff. See the
+[attention projection finding](../../docs/findings/b200_attention_projection_fp4.md)
+for scope, numerical validation, metrics and retained worker details.
+
 ## Gate/up GEMM and SwiGLU fusion trial
 
 Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense
