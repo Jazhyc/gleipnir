@@ -65,6 +65,15 @@ run serving throughput, latency and frozen 320-row systems-dev AUROC for admitte
 candidates. No final-ID selection. Stop the serving process before kernel/GPU
 trials, retain the pod and restore a useful worker at campaign completion.
 
+Stage-one result: `fp4_swiglu_overhead03` passes all nine native cases with one
+symbolic-M plan and no padding, giving 4.1% large-row producer improvement.
+Five warm serving passes give 195,552 input tokens/s (+1.20%) and warm c1
+median/p95 154.87/269.13 ms. Macro/pooled AUROC change +0.0078/+0.0254
+percentage points. Preserve the final-pass HTTP failure, its fresh-client resume
+and the separate client receipt failure. Retire the collected first server
+before native FP4-output work; keep the selected reference unchanged. See the
+[follow-up finding](../../docs/findings/b200_swiglu_overhead_native_output.md).
+
 Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense
 SwiGLU kernel to remove its training-only gate/up write, preserve raw BF16
 rounding and per-row FP32 descaling followed by BF16 rounding before SiLU,

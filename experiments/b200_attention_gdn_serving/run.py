@@ -146,6 +146,21 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
             "symbolic SwiGLU requires its receipt and attention-FP4 worker"
         )
     overrides = condition["serving_config_overrides"]
+    native_output_worker = condition["worker_cls"].endswith(
+        "NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker"
+    )
+    if bool(
+        condition.get("swiglu_native_output_validation")
+    ) != native_output_worker or (
+        native_output_worker
+        and (
+            not condition.get("attention_projection_validation")
+            or not condition.get("swiglu_overhead_reference")
+        )
+    ):
+        raise ValueError(
+            "native FP4 output requires its receipt and attention-FP4 worker"
+        )
     if set(overrides) - {
         "max_num_seqs",
         "gpu_memory_utilization",
@@ -295,6 +310,21 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("swiglu_native_output_validation"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_fp4_swiglu.py",
+                "src/gleipnir/serving_fp4_swiglu_pack.py",
+                "src/gleipnir/serving_fp4_swiglu_overhead.py",
+                "src/gleipnir/serving_fp4_swiglu_overhead_validation.py",
+                "src/gleipnir/serving_fp4_swiglu_native_output.py",
+                "src/gleipnir/serving_fp4_swiglu_block_reference.py",
+                "src/gleipnir/serving_fp4_swiglu_native_output_validation.py",
+                "src/gleipnir/serving_fp4_swiglu_native_output_integration.py",
+                "experiments/b200_attention_gdn_serving/swiglu_native_output_worker.py",
+                "experiments/b200_attention_gdn_serving/fp4_swiglu_native_output_compare.py",
+            ]
+        )
     if raw.get("swiglu_overhead_validation"):
         sources.extend(
             [
@@ -434,6 +464,7 @@ def main() -> None:
             "native_gemm_tuning.json",
             "native_swiglu.json",
             "native_swiglu_overhead.json",
+            "native_swiglu_output.json",
             "native_attention_projections.json",
         ):
             if (OUTPUT / name).exists():

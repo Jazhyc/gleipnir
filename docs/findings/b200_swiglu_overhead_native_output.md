@@ -55,8 +55,47 @@ against the earlier fusion trial or serving claims.
 uses this fused producer for M>=1536, and preserves the recorded reference path
 for smaller rows. The worker compiles its single native plan before capture;
 source-bound admission and live dispatch from all 32 MLPs remain required.
-The associated serving screen starts as driver 94653. Its throughput, latency
-and AUROC remain pending. Twenty-four focused CPU checks and Ruff pass.
+The associated serving screen starts as driver 94653, API/engine 94692/94763.
+Its score canary exactly matches the selected reference (mean error zero,
+correlation one). All 32 fused and 32 small-row reference routes are observed;
+the live audit confirms a single native compile.
+
+## Stage-one serving result
+
+Five fully warm c128 rates are 193,842 / 196,597 / 195,933 / 195,552 / 195,096
+input tokens/s. Retain every repeat and the excluded warmup. Controls are the
+archived attention-FP4 confirmations on the same retained B200, without an
+interleaved control replay.
+
+| Warm measure | Selected reference | Overhead revision | Change |
+| --- | ---: | ---: | ---: |
+| c128 median input tokens/s | 193,224 | 195,552 | +1.20% |
+| c128 aggregate input tokens/s, all five repeats | 193,243 | 195,400 | +1.12% |
+| c1 median latency | 156.82 ms | 154.87 ms | -1.24% |
+| c1 p95 latency | 287.55 ms | 269.13 ms | -6.41% |
+| Source-macro AUROC | 0.878553 | 0.878631 | +0.0078 percentage points |
+| Pooled AUROC | 0.889729 | 0.889983 | +0.0254 percentage points |
+
+Repeat-median mean/max score differences are 0.000783/0.040275. One 0.5
+threshold flip is on a baseline-unstable `bash_arena` example; two baseline
+examples vary around that threshold. Only `bash_arena` source AUROC changes,
+by +0.002268. Preserve complete calibration, pAUROC, ties and per-source metrics
+in the confirmation summary. These tiny differences do not establish quality
+improvement. Strict master precision remains failed separately.
+
+The initial fourteen-pass sweep completes thirteen passes before an HTTP
+`ReadError` in its last c128 repeat. The engine stays healthy and idle. Preserve
+the failure and partial report. A fresh client completes the missing repeat in
+`fp4_swiglu_overhead_sweep_resume02`, binding the original report/failure hashes.
+The preceding resume01 saves predictions but its client receipt assertion uses
+a nonexistent `prompt_tokens` summary field; preserve that failure, with no
+speed claim. Independent fresh-client warm and latency confirmations complete
+on the same worker, without repeating startup checks or restarting.
+
+Artifacts and live audits/logs are collected under
+`fp4_swiglu_overhead_collection01`. Stop the overhead API/engine before stage
+two. The selected default/reference remains unchanged; this is a small measured
+gain rather than a statistically established production improvement.
 
 ## Stage two: direct packed output
 
@@ -68,3 +107,47 @@ and is explicitly separate from stage one's arithmetic-preserving overhead
 work. Bind independent mathematical packing and actual-decoded GEMM references;
 retain baseline precision separately from native arithmetic admission. Serving
 and development AUROC follow only after supported/finite native validation.
+
+The first native-output source compiles and executes, but canary01's checker
+compares a 128-column decoded slice with the full-width mathematical reference.
+Preserve the failed harness receipt and generated source. Correct only the
+checker to compare all 9,216 columns, then retry as canary02. The separate
+decoded-operand GEMM check uses all K columns and the first 16 output columns
+with TF32 disabled. Both producer-only and complete producer-plus-down timing
+include their scale preparation and packing. No serving quality claim follows
+from the first harness failure.
+
+Canary02 completes all nine cases: decoded-operand GEMM arithmetic, finite
+outputs and isolation pass, but packing reference errors reach 1.315% at
+M32768 and 1.178% on the changed M1 input, exceeding the unchanged 1% limit.
+Preserve this failure and its diagnostic timings. Implement correctly rounded
+scale division and FMA residual correction of reciprocal-based normalization
+before hardware E2M1 conversion. The independent reference uses a device
+denominator because [pinned Torch 2.11 scalar division](https://github.com/pytorch/pytorch/blob/v2.11.0/aten/src/ATen/native/cuda/BinaryDivTrueKernel.cu)
+can replace division with multiplication by a rounded reciprocal. Keep the
+mathematical ties-to-even contract and finite scale saturation explicit.
+
+Canary03 preserves an assembler rejection of an inline negated FMA operand;
+use an explicit `neg.f32` instruction. Canary04 then passes all nine cases,
+including full-width packing, decoded GEMM, zero/extreme rows, isolation and
+changed-input replay. Packing reference and replay relative-L2 errors are zero
+in every fixture. Only one symbolic-row plan is compiled. Strict baseline
+precision remains failed because fixed global scaling changes quantization.
+The resident native worker is PID 95514 with queue
+`fp4_swiglu_native_queue01`; it is stopped and GPU vacancy verified before
+serving. Preserve all four receipts, exact sources and the stopped queue state.
+
+At M29184/M32768, corrected direct-output producer speed ratios are
+1.1009/1.0999; full producer-plus-down ratios are only 1.0292/1.0200.
+Complete MLP timing uses the same standard N256 down-projection plan for both
+native fixtures; serving retains its selected shape-dependent down tiles.
+Do not infer that removing BF16 traffic translates directly into the producer
+gain at whole-MLP or HTTP level. Hardware stall/cache counters are unmeasured.
+
+The integrated `fp4_swiglu_native_output.json` retains the original producer
+below M1536, the stage-one whole-row producer at M1536..4096, and direct native
+FP4 output above M4096. Medium rows favored stage one in native measurements;
+the new format is restricted to large rows. Both native plans are precompiled,
+with separately bound receipts and live large-row calls required from every
+MLP. Serving throughput, latency and AUROC remain pending. Thirty-two focused
+CPU tests and Ruff pass; the selected reference remains unchanged.
