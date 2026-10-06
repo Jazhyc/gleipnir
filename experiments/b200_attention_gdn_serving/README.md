@@ -673,3 +673,30 @@ with the same loaded arithmetic and capacity. No server restart or control
 replay is needed. GEMMs remain about 32% of GPU kernel time in the saved
 combined-preparation profile (24% FP4 plus 8% BF16); this is a pre-tuning profile,
 not a new measurement of the selected server.
+
+
+### Matched FP4 backend comparison, 2026-10-06
+
+Hypothesis: a different FP4 GEMM implementation can improve the selected tuned
+FROST stack beyond its tile sweep. Compare FROST, FlashInfer/cuDNN, CUTLASS,
+TRT-LLM and CuTe-DSL on the same four projection shapes and eight native rows
+1/17/129/1536/2304/4096/29184/32768. Preserve packed payloads/scales, scalar
+weight inverse, per-row activation inverse and the two BF16 rounding boundaries.
+Prepare backend-specific weight permutations once, outside timing, without
+requantization. Time the whole raw GEMM plus required row-descaling/layout work,
+using persistent plans, shared compiler/JIT caches and cached autotune choices.
+CuTe tuning is bounded to at most eight representative supported tactics per
+shape/row, with exclusions recorded. Keep unsupported/compile/numerical failures
+rather than falling back silently. Native admission includes finite/error,
+zero-row, isolation and changed-input graph replay checks at the unchanged 1%
+relative-L2 ceiling. Select per projection and M<=4096 / M>4096 only after every
+row passes and geometric-mean native improvement exceeds 2%.
+
+Stop the selected API/engine before GPU trials; use one resident native worker
+for the comparison. If a native winner survives, run one integrated candidate
+against the checksum-bound selected reference, using the frozen 320 systems-dev
+rows, warmed c128 throughput (182,682 input tokens/s), c1 latency (147.00 ms)
+and AUROC/score diagnostics. Reuse unchanged preparation and attention receipts.
+Stop after the bounded comparison and one integrated candidate; restore a useful
+serving worker even if no backend wins. Do not start fusion/precision experiments
+as part of this backend comparison. No final-ID promotion or new capacity.
