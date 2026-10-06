@@ -253,3 +253,37 @@ represent sustained high-concurrency serving. Run `cutedsl_gdn.json` on the
 same whole-GPU envelope, preserving BF16 attention/GDN projections and FROST
 MLPs. Bind the passed receipt and sources; require all 24 operators to select
 CuTe without fallback, then report matched full-serving throughput and AUROC.
+
+`cutedsl_gdn01` passes model loading, all 24 backend selections, the twenty-row
+score canary and six quick timed passes. The full high-concurrency sweep then
+returns NaN logprobs/HTTP 400 during its first c16 pass; no full-cohort timing
+or AUROC is valid. Reject this backend at the production envelope despite the
+passing native and small-model checks. Preserve the failed receipt, completed
+quick predictions and server log; retire API 79972 / engine 80038 before a new
+kernel. A monitoring gap leaves this failed trial idle until 10:48 UTC; this
+is a monitoring failure, not additional benchmark work. Continue with the
+separately specified FP4 GDN projection variant.
+
+`fp4_gdn_projection01` tests the alternative FROST/cudNN forward GEMM family
+on all 48 large GDN QKV/Z and output projections, after the modest W8A8 result.
+Preserve the 64 FROST MLPs, small BF16 gate projections, BF16 convolution and
+recurrence operands, FP32 gates/state and BF16 full attention. Require six
+independent FP4 decoded-reference checks at M1/17/129 on the representative
+projection shapes, complete dtype/method scope and the unchanged FROST MLP
+checks. Use the same score canary, finite-output stop condition and fourteen
+matched timing/AUROC passes. Quantization and conversion costs are included;
+no baseline promotion follows a failed quality canary or nonfinite output.
+
+`fp4_gdn_projection01` exits before model loading because the new adapter imports
+`PackedNvfp4` from the packing module instead of its actual GEMM module.
+Correct the import to `gleipnir.cudnn_fp4_gemm`, preserve the exited API receipt
+and failure, then retry as `fp4_gdn_projection02`. The server wrapper records
+successful FP8/FP4 registry imports before API/model startup in the same process;
+this avoids another separate cold startup solely for the import check.
+
+The rejected CuTe trial's completed quick 64-row medians are 28,555/62,242/
+118,552 input tokens/s at c1/4/16: +5.70%/−4.46%/−1.00% versus the matched
+control. At c16, quick pooled/source-macro AUROC deltas are +0.003448/+0.106692
+on only eleven dual-label sources. These partial small-cohort metrics do not
+supersede the NaN failure on the full workload; no full-cohort result or
+production promotion is valid.

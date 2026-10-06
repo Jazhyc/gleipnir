@@ -41,15 +41,36 @@ SOURCES = [
 
 
 def resolve_condition(condition: dict, hashes: dict) -> dict:
+    attention_backend = condition.get("attention_backend", "FLASHINFER")
+    if attention_backend not in {"FLASHINFER", "FLASH_ATTN"}:
+        raise ValueError("unsupported attention backend")
+    if attention_backend == "FLASH_ATTN" and (
+        condition["attention_precision"] != "bf16"
+        or not condition["worker_cls"].endswith("Fa4ServingAuditWorker")
+    ):
+        raise ValueError("Blackwell FA4 requires BF16 and its native dispatch audit")
     if condition["attention_precision"] not in {"bf16", "fp8_e4m3", "nvfp4"}:
         raise ValueError("unsupported attention precision")
-    if condition["gdn_projection_precision"] not in {"bf16", "fp8"}:
+    if condition["gdn_projection_precision"] not in {"bf16", "fp8", "fp4"}:
         raise ValueError("unsupported GDN projection precision")
-    if (
-        condition["gdn_projection_precision"] == "fp8"
-        and condition["quantization"] != "gleipnir_frost_gdn"
+    if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:
+        raise ValueError("unsupported GDN prefill backend")
+    if condition["gdn_backend"] != "flashinfer" and (
+        condition["gdn_projection_precision"] != "bf16"
+        or not condition.get("gdn_validation")
+        or not condition["worker_cls"].endswith("GdnServingAuditWorker")
     ):
-        raise ValueError("FP8 GDN requires the mixed-precision quantizer")
+        raise ValueError("alternative GDN requires its validation and audited worker")
+    if (
+        condition["gdn_projection_precision"] in {"fp8", "fp4"}
+        and condition["quantization"]
+        != {"fp8": "gleipnir_frost_gdn", "fp4": "gleipnir_frost_gdn_fp4"}[
+            condition["gdn_projection_precision"]
+        ]
+    ):
+        raise ValueError(
+            "GDN precision requires the matching mixed-precision quantizer"
+        )
     overrides = condition["serving_config_overrides"]
     if set(overrides) - {
         "max_num_seqs",
@@ -63,7 +84,7 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         "--worker-cls",
         condition["worker_cls"],
         "--attention-backend",
-        "FLASHINFER",
+        attention_backend,
         "--additional-config",
         json.dumps(
             {"gleipnir_frost_fp4": hashes, "serving_condition": condition},
@@ -173,7 +194,20 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
-    if raw["gdn_projection_precision"] == "fp8":
+    if raw.get("attention_backend") == "FLASH_ATTN":
+        sources.append("experiments/b200_attention_gdn_serving/fa4_worker.py")
+    if raw["gdn_backend"] != "flashinfer":
+        sources.extend(
+            [
+                "src/gleipnir/serving_gdn_kernels.py",
+                "src/gleipnir/flashqla_training.py",
+                "experiments/b200_attention_gdn_serving/gdn_worker.py",
+                "experiments/b200_attention_gdn_serving/gdn_canary.py",
+            ]
+        )
+        if raw["gdn_backend"] == "flashqla":
+            sources.append("experiments/b200_attention_gdn_serving/gdn_server.py")
+    if raw["gdn_projection_precision"] in {"fp8", "fp4"}:
         sources.extend(
             [
                 "src/gleipnir/vllm_frost_gdn.py",
@@ -181,12 +215,17 @@ def main() -> None:
                 "experiments/b200_attention_gdn_serving/server.py",
             ]
         )
+        if raw["gdn_projection_precision"] == "fp4":
+            sources.append("src/gleipnir/vllm_frost_gdn_fp4.py")
     condition = resolve_condition(raw, {p: sha(ROOT / p) for p in sources})
     condition["config_sha256"] = sha(args.condition)
     config = {
         **base,
         **condition["serving_config_overrides"],
         "port": condition["port"],
+        "gdn_prefill_backend": "cutedsl"
+        if condition["gdn_backend"] == "cutedsl"
+        else "flashinfer",
     }
     out = OUTPUT / args.output
     out.mkdir(parents=True, exist_ok=False)

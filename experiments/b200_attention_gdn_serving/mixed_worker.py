@@ -1,4 +1,4 @@
-"""Audit mixed FROST MLP/FP8 GDN projection scope and native arithmetic."""
+"""Audit mixed FROST MLP/GDN projection scope and native arithmetic."""
 
 import os
 import re
@@ -14,11 +14,17 @@ from gleipnir.cudnn_fp4_mlp import clear_native_caches
 from gleipnir.serving_precision import is_gdn_projection
 from gleipnir.vllm_frost_fp4 import FrostFp4LinearMethod, runtime_receipt
 from gleipnir.vllm_frost_gdn import CheckedGdnFp8Method
+from gleipnir.vllm_frost_gdn_fp4 import CheckedGdnFp4Method
 
 
 class MixedServingAuditWorker(ServingAuditWorker):
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
         self.condition = self.vllm_config.additional_config["serving_condition"]
+        precision = self.condition["gdn_projection_precision"]
+        gdn_method, gdn_dtype = {
+            "fp8": (CheckedGdnFp8Method, torch.float8_e4m3fn),
+            "fp4": (CheckedGdnFp4Method, torch.float4_e2m1fn_x2),
+        }[precision]
         self._runtime_audits_remaining = 2
         self._install_attention_audit()
         runtime_receipt()
@@ -39,10 +45,11 @@ class MixedServingAuditWorker(ServingAuditWorker):
                     {"layer": name, **check} for check in layer._gleipnir_kernel_checks
                 )
             elif is_gdn_projection(name):
-                if not isinstance(method, CheckedGdnFp8Method) or (
-                    layer.weight.dtype != torch.float8_e4m3fn
+                if (
+                    not isinstance(method, gdn_method)
+                    or layer.weight.dtype != gdn_dtype
                 ):
-                    raise ValueError("FP8 GDN projection scope changed")
+                    raise ValueError("GDN projection precision/scope changed")
                 index = int(re.search(r"\.layers\.(\d+)\.", name)[1])
                 gdns.add((index, name.rsplit(".", 1)[1]))
                 gdn_checks.extend(
@@ -58,6 +65,8 @@ class MixedServingAuditWorker(ServingAuditWorker):
                 "method": type(method).__name__,
                 "kernel": type(method.fp8_linear).__name__
                 if isinstance(method, CheckedGdnFp8Method)
+                else "FROST Native Nvfp4ScaledGemm"
+                if isinstance(method, CheckedGdnFp4Method)
                 else None,
             }
         if mlps != {(i, p) for i in range(32) for p in ("gate_up_proj", "down_proj")}:

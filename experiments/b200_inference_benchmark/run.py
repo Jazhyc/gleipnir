@@ -169,7 +169,7 @@ def server_command(config: dict, merged_model: Path | None = None) -> list[str]:
         "--served-model-name",
         "base",
         "--gdn-prefill-backend",
-        "flashinfer",
+        config.get("gdn_prefill_backend", "flashinfer"),
         "--max-model-len",
         str(config["max_model_len"]),
         "--max-num-seqs",
