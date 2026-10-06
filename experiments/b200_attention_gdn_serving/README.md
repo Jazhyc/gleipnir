@@ -1,13 +1,13 @@
 # B200 attention and GDN throughput campaign
 
-Current optimization reference: the user-selected **FP4 MLP/GDN/attention
-projections, combined FP4 preparation, shape-dependent output GEMM tiles and
-cuDNN MXFP8 prefill** stack. The default entrypoint uses `attention_fp4.json`.
-New comparisons use `baseline: selected`
-and `high_reference: selected`; historical measurements remain intact. Use
-193,224 input tokens/s for warm c128 comparisons and the separate 156.82 ms
-warm c1 confirmation. See the
-[current reference decision](../../docs/decisions/b200_attention_fp4_inference_baseline.md).
+Current optimization reference: user-selected **direct FP4 MLP output**,
+including symbolic-row overhead improvements, FP4 GDN/attention projections,
+combined preparation, tuned output GEMMs and cuDNN MXFP8 prefill. The default
+entrypoint uses `fp4_swiglu_native_output.json`. New comparisons use
+`baseline: selected` and `high_reference: selected`; preserve historical results.
+Use 196,866 input tokens/s for warm c128 comparisons and 159.46/275.92 ms
+for warm c1 median/p95. Macro/pooled development AUROC is 0.878105/0.885842.
+See the [current reference decision](../../docs/decisions/b200_native_fp4_output_inference_baseline.md).
 
 ## FP4 full-attention projection trial
 

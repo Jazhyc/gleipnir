@@ -1,24 +1,24 @@
 # Small production inference benchmark
 
-Current B200 optimization reference, explicitly selected by the user on
-2026-10-06: **FROST FP4 MLP/large GDN/full-attention projections, combined vendor/SwiGLU/
-normalization preparation, shape-dependent output GEMM tiles and cuDNN MXFP8
-attention prefill**. Small gates, convolution/recurrence, KV cache and decode
-remain BF16; gates/state remain FP32. The bound result is
-`results/b200_attention_gdn_serving/attention_fp4_serving01`.
-Five warm c128 passes give **193,224 input tokens/s**; the separate fully warm
-c1 confirmation gives **156.82 ms median / 287.55 ms p95**. Source-macro/pooled
-AUROC is **0.878553/0.889729**, with the user-accepted 0.6055/1.8421
-percentage-point declines relative to the preceding reference.
+Current B200 optimization reference, selected by the user on 2026-10-07:
+**direct FP4 MLP output with symbolic-row overhead improvements**, retaining
+FP4 MLP/GDN/full-attention projections, combined preparation, tuned output
+GEMMs and cuDNN MXFP8 causal prefill. Recurrence, convolution, KV cache and
+decode remain BF16; gates/state remain FP32. Bound results live in
+`results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01`.
 
-`baseline.json` binds the executed recipe, manifest, full sweep, warm throughput,
-latency and explicit `user_accepted_finite` receipt. Preserve inherited strict
-master/native/preparation precision failures. New comparisons use
-`baseline: selected` and `high_reference: selected`; explicit historical
-references remain unchanged. Use the warm confirmation for primary throughput
-claims and the latency confirmation for warm latency claims, keeping the full
-sweep and its original post-startup timings separately. See the
-[current reference decision](../../docs/decisions/b200_attention_fp4_inference_baseline.md).
+Five warm c128 passes give **196,866 input tokens/s**; warm c1 confirmation
+gives **159.46 ms median / 275.92 ms p95**. Source-macro/pooled AUROC is
+**0.878105/0.885842**, with accepted 0.0448/0.3887 percentage-point declines
+against the preceding reference. Median latency increases 1.68%.
+
+`baseline.json` binds the executed recipe, manifest, sweep, warm confirmations
+and explicit `user_accepted_finite` receipt. Preserve strict native/preparation
+and changed-output-format failures separately from the passing twenty-row
+master-score canary. New comparisons use `baseline: selected` and
+`high_reference: selected`; historical references remain unchanged. Primary
+speed claims use warm confirmations, keeping post-startup timings separately.
+See the [current reference decision](../../docs/decisions/b200_native_fp4_output_inference_baseline.md).
 
 Hypothesis: a fixed, small real-prompt workload can expose latency and throughput
 tradeoffs before changing the monitor's production serving kernels or precision.

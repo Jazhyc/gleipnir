@@ -204,3 +204,18 @@ ownership, approximately **170,328 MiB**. Preserve the existing pod and caches;
 the separate native worker is stopped. Kernel/source, initial sweep, warm
 throughput/latency, ranking/calibration/threshold diagnostics, failures and
 runtime logs are collected. Commits 7bfcf59 and 5cb6d02 contain the two features.
+
+## Direct-output reference and profile follow-up, 2026-10-07
+
+The user selects the combined direct-output recipe as the next reference. It
+includes stage-one overhead improvements for medium rows and native packed
+output for large rows. Bind the existing warm confirmations; reuse the resident
+API/engine 95619/95657 without a restart or control replay.
+
+Profiling hypothesis: remaining GEMMs and GDN/elementwise work now dominate
+the c128 batch workload. Measure one frozen 320-row pass under the existing
+Torch profiler, excluding its instrumented speed from benchmark claims.
+Report exclusive GPU kernel categories and the union of kernel intervals; CPU
+operator sums are nested and cannot be treated as wall-time fractions. Stop on
+server failure, nonfinite/missing scores or provenance drift, always stopping
+profiling after the bounded pass. Collect the raw trace and source/server binds.

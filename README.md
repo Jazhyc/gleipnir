@@ -75,10 +75,11 @@ Start with [the research program](docs/research_program.md), then read the READM
 inside the experiment you are changing.
 
 The B200 inference optimization baseline uses FROST FP4 MLPs, large GDN
-and full-attention projection GEMMs plus adapted cuDNN MXFP8 full-attention
+and full-attention projection GEMMs, symbolic-row SwiGLU overhead improvements,
+direct packed FP4 MLP activation output for large batches, and cuDNN MXFP8 full-attention
 prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
 development quality tradeoff; strict failed parity remains recorded separately.
-See the [inference baseline decision](docs/decisions/b200_attention_fp4_inference_baseline.md).
+See the [inference baseline decision](docs/decisions/b200_native_fp4_output_inference_baseline.md).
 
 Presentation layout and build conventions are documented in
 [`outputs/presentations/README.md`](outputs/presentations/README.md).

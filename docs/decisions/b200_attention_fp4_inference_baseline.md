@@ -70,3 +70,7 @@ and require a separate quality comparison; a smaller launch count alone is
 insufficient evidence of a speedup. A fresh profile is needed before assigning
 current bottleneck percentages. No additional fusion trial is launched by this
 reference selection.
+
+Superseded on 2026-10-07 by the user-selected
+[direct FP4-output reference](b200_native_fp4_output_inference_baseline.md).
+Preserve this decision and its original checksum-bound measurements.
