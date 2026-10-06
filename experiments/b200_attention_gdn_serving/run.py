@@ -109,13 +109,33 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
     if (
         condition["gdn_projection_precision"] in {"fp8", "fp4"}
         and condition["quantization"]
-        != {"fp8": "gleipnir_frost_gdn", "fp4": "gleipnir_frost_gdn_fp4"}[
-            condition["gdn_projection_precision"]
-        ]
+        != {
+            "fp8": "gleipnir_frost_gdn",
+            "fp4": "gleipnir_frost_attention_fp4"
+            if condition.get("attention_projection_precision") == "fp4"
+            else "gleipnir_frost_gdn_fp4",
+        }[condition["gdn_projection_precision"]]
     ):
         raise ValueError(
             "GDN precision requires the matching mixed-precision quantizer"
         )
+    attention_projection_worker = condition["worker_cls"].endswith(
+        "AttentionTunedPreparationMxfp8ServingAuditWorker"
+    )
+    if bool(
+        condition.get("attention_projection_precision")
+    ) != attention_projection_worker or (
+        attention_projection_worker
+        and (
+            condition.get("attention_projection_precision") != "fp4"
+            or not condition.get("attention_projection_validation")
+            or condition.get("quantization") != "gleipnir_frost_attention_fp4"
+            or condition.get("fp4_preparation") != "combined"
+            or not condition.get("gemm_tuning_validation")
+            or condition.get("swiglu_fusion_validation")
+        )
+    ):
+        raise ValueError("FP4 attention projections require a validated audited worker")
     overrides = condition["serving_config_overrides"]
     if set(overrides) - {
         "max_num_seqs",
@@ -266,6 +286,15 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("attention_projection_precision") == "fp4":
+        sources.extend(
+            [
+                "src/gleipnir/serving_attention_fp4.py",
+                "src/gleipnir/vllm_frost_attention_fp4.py",
+                "experiments/b200_attention_gdn_serving/attention_fp4_worker.py",
+                "experiments/b200_attention_gdn_serving/attention_fp4_canary.py",
+            ]
+        )
     if raw.get("gemm_tuning_validation") or raw.get("gemm_reference_validation"):
         sources.extend(
             [
@@ -382,6 +411,7 @@ def main() -> None:
             "native_preparation.json",
             "native_gemm_tuning.json",
             "native_swiglu.json",
+            "native_attention_projections.json",
         ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))

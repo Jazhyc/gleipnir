@@ -11,7 +11,9 @@ from experiments.b200_attention_gdn_serving.worker import (
     ServingAuditWorker,
 )
 from gleipnir.cudnn_fp4_mlp import clear_native_caches
+from gleipnir.serving_attention_fp4 import EXPECTED, projection_identity
 from gleipnir.serving_precision import is_gdn_projection
+from gleipnir.vllm_frost_attention_fp4 import AttentionFp4Method
 from gleipnir.vllm_frost_fp4 import FrostFp4LinearMethod, runtime_receipt
 from gleipnir.vllm_frost_gdn import CheckedGdnFp8Method
 from gleipnir.vllm_frost_gdn_fp4 import CheckedGdnFp4Method
@@ -30,6 +32,7 @@ class MixedServingAuditWorker(ServingAuditWorker):
         runtime_receipt()
         Worker.load_model(self, load_dummy_weights=load_dummy_weights)
         audit, mlps, gdns, mlp_checks, gdn_checks = {}, set(), set(), [], []
+        attention_projections = set()
         for name, layer in self.model_runner.get_model().named_modules():
             if not isinstance(layer, LinearBase):
                 continue
@@ -56,6 +59,16 @@ class MixedServingAuditWorker(ServingAuditWorker):
                     {"layer": name, **check}
                     for check in layer._gleipnir_gdn_kernel_checks
                 )
+            elif (
+                self.condition.get("attention_projection_precision") == "fp4"
+                and projection_identity(name) is not None
+            ):
+                if (
+                    not isinstance(method, AttentionFp4Method)
+                    or layer.weight.dtype != torch.float4_e2m1fn_x2
+                ):
+                    raise ValueError("FP4 full-attention projection scope changed")
+                attention_projections.add(projection_identity(name))
             elif not isinstance(method, UnquantizedLinearMethod) or (
                 layer.weight.dtype != torch.bfloat16
             ):
@@ -79,6 +92,12 @@ class MixedServingAuditWorker(ServingAuditWorker):
         }
         if gdns != expected or len(mlp_checks) != 6 or len(gdn_checks) != 6:
             raise ValueError("incomplete GDN projection coverage/native checks")
+        if attention_projections != (
+            EXPECTED
+            if self.condition.get("attention_projection_precision") == "fp4"
+            else set()
+        ):
+            raise ValueError("incomplete full-attention FP4 projection scope")
         clear_native_caches()
         self.precision = {
             "passed": True,
@@ -87,6 +106,7 @@ class MixedServingAuditWorker(ServingAuditWorker):
             "serving_condition": self.condition,
             "mlp_projection_count": len(mlps),
             "gdn_projection_count": len(gdns),
+            "attention_projection_count": len(attention_projections),
             "kernel_checks": mlp_checks,
             "gdn_kernel_checks": gdn_checks,
             "linears": audit,

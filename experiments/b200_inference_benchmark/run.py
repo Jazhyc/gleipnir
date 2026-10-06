@@ -358,7 +358,13 @@ def parity_status(
 def validate_preparation_usage(audit: dict, worker_pid: int, mode: str) -> None:
     """Reject stale, failed or incomplete preparation receipts before timing."""
     expected = (
-        {"vendor": 48, "silu": 32, "norm": 32}
+        {
+            "vendor": 64
+            if audit.get("condition", {}).get("attention_projection_precision") == "fp4"
+            else 48,
+            "silu": 32,
+            "norm": 32,
+        }
         if mode == "combined"
         else {mode: 112 if mode == "vendor" else 32}
     )
@@ -648,6 +654,19 @@ async def benchmark(
                 kernel_condition["gemm_tuning_validation"],
             )
             report["gemm_tuning_audit_sha256"] = sha(path)
+        if (
+            kernel_condition
+            and kernel_condition.get("attention_projection_precision") == "fp4"
+        ):
+            from gleipnir.serving_attention_fp4 import validate_usage
+
+            path = metadata.parent / "native_attention_projections.json"
+            validate_usage(
+                json.loads(path.read_text()),
+                precision["worker_pid"],
+                kernel_condition["attention_projection_validation"],
+            )
+            report["attention_projection_audit_sha256"] = sha(path)
         if kernel_condition and kernel_condition.get("swiglu_fusion_validation"):
             from gleipnir.serving_fp4_swiglu_validation import validate_runtime
 

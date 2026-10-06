@@ -8,6 +8,25 @@ and `high_reference: selected`; historical measurements remain intact. Use
 warm c1 confirmation. See the
 [current reference decision](../../docs/decisions/b200_tuned_fp4_inference_baseline.md).
 
+## FP4 full-attention projection trial
+
+Hypothesis (2026-10-06): extend the selected symbolic-M FROST NVFP4 serving
+method to the eight full-attention layers' QKV and output projections. Use
+the unchanged FP4 MLP/GDN, combined preparation and tuned reference; exclude
+experimental SwiGLU fusion. Keep BF16 projection outputs, existing QK norm/
+RoPE/gating, MXFP8 causal attention prefill, BF16 cache/decode/recurrence and
+FP32 gates/state. Restrict scope to decoder `self_attn.qkv_proj`/`o_proj` and
+audit all 16 loaded modules plus native execution. Bind new-shape numerical,
+zero-row, isolation and changed-input graph-replay checks at the unchanged 1%
+quantized-reference ceiling; record BF16 quantization error separately.
+Measure complete packing/descale/projection costs, warmed serving token
+throughput, latency and frozen 320-row development AUROC. Reuse archived
+controls, sources/caches and unchanged startup validation; do not select on
+final ID. Stop on nonfinite output, wrong scope, source drift, unsupported
+launches or OOM. Preserve all negative/failed receipts and never widen quality
+tolerances. Keep one GPU worker and the existing pod; stop the old server
+before native or serving trials. Do not promote a precision change silently.
+
 ## Gate/up GEMM and SwiGLU fusion trial
 
 Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense

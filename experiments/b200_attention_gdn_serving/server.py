@@ -2,6 +2,7 @@
 
 import runpy
 
+from gleipnir.vllm_frost_attention_fp4 import FrostAttentionFp4Config  # noqa: F401
 from gleipnir.vllm_frost_gdn import FrostGdnConfig  # noqa: F401
 from gleipnir.vllm_frost_gdn_fp4 import FrostGdnFp4Config  # noqa: F401
 

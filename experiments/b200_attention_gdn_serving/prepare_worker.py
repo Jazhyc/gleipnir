@@ -59,7 +59,13 @@ class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
 
         calls = []
         expected_calls = (
-            {"vendor": 48, "silu": 32, "norm": 32}
+            {
+                "vendor": 64
+                if condition.get("attention_projection_precision") == "fp4"
+                else 48,
+                "silu": 32,
+                "norm": 32,
+            }
             if mode == "combined"
             else {mode: 112 if mode == "vendor" else 32}
         )
