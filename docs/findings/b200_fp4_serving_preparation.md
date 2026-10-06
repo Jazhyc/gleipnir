@@ -181,6 +181,47 @@ preparation does not multiply whole-model throughput. CPU operator totals
 overlap/nest and are not wall-time fractions; retain the raw trace and exclusive
 category membership rather than calling `aten::copy_` time a dispatch fraction.
 
+## GEMM diagnosis after preparation fusion
+
+A read-only follow-up reconstructs the 4,704 FP4 launches from the frozen
+32-layer order and trace grids. All 42 groups contain 112 projections, have
+the same M within a group, and match the expected output widths. K is inferred
+from the model declaration rather than directly recorded by the profiler.
+`fp4_gemm_diagnosis01.json` binds the trace and these attribution checks.
+
+| FP4 projection | K × N | Seconds | Share of FP4 GEMM time |
+| --- | --- | ---: | ---: |
+| MLP gate/up | 2560 × 18432 | 0.745 | 49.0% |
+| GDN input | 2560 × 12288 | 0.367 | 24.2% |
+| MLP down | 9216 × 2560 | 0.300 | 19.7% |
+| GDN output | 4096 × 2560 | 0.107 | 7.1% |
+
+The pinned NVIDIA projection wrapper's `auto` selector forces the same
+128×256 M/N tile and 2×1 two-CTA cluster when N is divisible by 256, which
+includes every one of these shapes. Our wrapper reuses that configuration
+for symbolic runtime M, with a plan reference of 16,384 rows; no measured
+per-shape/per-row-range tile search has been performed. This is a concrete
+tuning opportunity, not evidence that the selected tile is slow.
+
+Trace launch metadata records 63 registers/thread, 256 threads/block and
+212,992 bytes (208 KiB) of shared memory. SM100 has 228 KiB shared memory/SM
+per [NVIDIA's tuning guide](https://docs.nvidia.com/cuda/blackwell-tuning-guide/index.html);
+the reported allocation cannot admit two such CTAs on one SM. That static
+residency constraint does not establish poor Tensor Core utilization in a
+warp-specialized kernel. The trace's unsupported zero estimated-occupancy
+field is not a measurement of zero occupancy. Actual Tensor Core utilization,
+DRAM/L2 traffic and stall counters remain unmeasured; see the
+[Nsight Compute metric guide](https://docs.nvidia.com/nsight-compute/ProfilingGuide/index.html).
+
+Prioritize a bounded NVIDIA tile/cluster search for gate/up and GDN input,
+preserving FP4 layouts and BF16 rounding, followed by complete serving timing
+and AUROC. Output descaling is already fused; its separate scale-vector helper
+costs only 11.25 ms (0.18% of kernel time), so removing it has little standalone
+upside. MLP GEMM→SwiGLU→FP4 fusion is a larger candidate because SwiGLU emission
+still costs 10.4%, but it must preserve our dynamic row-scale and gate/up layout
+contracts. No new kernel, server restart or performance improvement is claimed
+by this follow-up. The combined worker remains unchanged.
+
 ## Cache and artifact handling
 
 The previous server's FlashInfer cache lived under `/root/.cache/flashinfer`.
