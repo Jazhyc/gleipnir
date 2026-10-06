@@ -139,3 +139,32 @@ future opportunity if the kernel can write directly into the destination.
 Additional artifacts: `gap_analysis.json`, `gap_cpu_overlap.json`,
 `gap_copy_scopes.json`, and the installed GDN source. No new profile, kernel
 change or serving restart is performed for this follow-up.
+
+## Engine gaps versus frontend/tokenizer work
+
+Follow-up on the saved reference trace: the 7--8% figure measures kernel-free
+time around host submission and launch, not CPU utilization or a separately
+measured tokenizer cost. All recorded CPU events belong to engine PID 95657;
+`ignore_frontend=true` excludes API PID 95619 and tokenizer tracing.
+
+Intersecting kernel-free intervals with the union of engine execution-context
+annotations puts 570.120 of 574.570 ms (99.23%) inside those annotations, with
+4.450 ms outside. This is temporal overlap, not a causal attribution to any
+specific operator. GPU annotations show 39 full 32,768-token batches, one
+29,116-token batch and two small batches (1,428/2,085). Together these findings
+argue against tokenizer starvation explaining most of the recorded gaps.
+They do not rule out frontend cost before the kernel window, in HTTP latency
+or at other workload sizes/concurrencies.
+
+The profiled pass takes 6.724902 s, versus a warm unprofiled median of
+6.657211 s (about 1.02% longer). This is a single profiled pass against archived
+warm repeats, not a controlled profiler-on/off attribution. It does not support
+calling the entire 7--8% instrumentation overhead. Engine dispatch, custom-op
+preparation, allocation and synchronization remain candidates; instrumentation
+can amplify them. CPU scope sums overlap GPU execution and are not additional
+wall-time percentages. A matched text-versus-exact-token-ID request comparison
+would isolate frontend tokenization/serialization contributions without changing
+GPU kernels; it has not been run here.
+
+Additional diagnostic: `native_fp4_output_profile01/gap_execution_context.json`.
+No new serving run, kernel change or server restart is performed.
