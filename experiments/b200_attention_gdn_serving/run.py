@@ -174,6 +174,16 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         "max_num_batched_tokens",
     }:
         raise ValueError("override would change the frozen data/scoring contract")
+    graph_worker = ".prefill_graph_worker." in condition["worker_cls"]
+    if (
+        bool(condition.get("prefill_graphs")) != graph_worker
+        or bool(condition.get("compilation_config")) != graph_worker
+    ):
+        raise ValueError("prefill graphs require their bounded audited worker")
+    if graph_worker:
+        from gleipnir.serving_prefill_graphs import validate_graph_config
+
+        validate_graph_config(condition)
     args = [
         "--quantization",
         condition["quantization"],
@@ -204,6 +214,10 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         args.extend(["--kv-cache-dtype", "nvfp4"])
     if condition.get("profiler_config"):
         args.extend(["--profiler-config", json.dumps(condition["profiler_config"])])
+    if graph_worker:
+        args.extend(
+            ["--compilation-config", json.dumps(condition["compilation_config"])]
+        )
     return {
         **condition,
         "extra_server_args": args,
@@ -317,6 +331,14 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("prefill_graphs"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_prefill_graphs.py",
+                "experiments/b200_attention_gdn_serving/prefill_graph_worker.py",
+                "experiments/b200_attention_gdn_serving/prefill_graph_canary.py",
+            ]
+        )
     if raw.get("gdn_direct_output_validation"):
         sources.extend(
             [
@@ -483,6 +505,7 @@ def main() -> None:
             "native_swiglu_output.json",
             "native_attention_projections.json",
             "native_gdn_direct_output.json",
+            "prefill_graphs.json",
         ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))

@@ -1,5 +1,27 @@
 # B200 attention and GDN throughput campaign
 
+## Large-prefill piecewise graphs (2026-10-07)
+
+Hypothesis: the selected Direct FP4 reference leaves launch gaps because its
+256-token graph ceiling excludes large prefills. `prefill_graphs.json` captures
+13 explicit sizes through 32,768 with PIECEWISE mode, retaining eager
+attention/GDN splitting ops and all selected kernels. Live dispatch rejects
+padding above 12.5% or crossing the 1,536/4,096-row FP4 producer boundaries.
+The installed dispatcher is checksum-bound. The deferred direct-GDN-output
+candidate is excluded.
+
+Compare with the saved selected-reference warm c128 throughput and c1 latency;
+do not rerun that control. Use the same frozen 320 training-seen systems-dev
+examples for AUROC, calibration and threshold diagnostics; final ID is excluded
+from selection. Before timing, compare 24 synthetic token fixtures spanning
+padding, boundaries and changed-input replay with graphs bypassed in the same
+worker, then repeat replay. Stop on failed finite/score/repeat checks, native
+dispatch checks, graph capture errors or OOM. Confirm actual graph launches in
+a separate profiler pass. The trial remains named until explicitly selected.
+The loopback-only test server enables vLLM's development RPC for this canary;
+ordinary recipes do not enable it. Preserve shared disk caches and stop the
+previous serving process before starting this trial.
+
 Current optimization reference: user-selected **direct FP4 MLP output**,
 including symbolic-row overhead improvements, FP4 GDN/attention projections,
 combined preparation, tuned output GEMMs and cuDNN MXFP8 prefill. The default

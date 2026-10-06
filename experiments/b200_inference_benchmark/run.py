@@ -437,6 +437,8 @@ async def benchmark(
             triton_environment(DEFAULT_TRITON_TARGET, server_environment), ROOT
         )
         server_environment["PYTHONPATH"] += f":{ROOT / '.cache/kernels/fa4'}"
+    if kernel_condition and kernel_condition.get("prefill_graphs"):
+        server_environment["VLLM_SERVER_DEV_MODE"] = "1"
     if reuse:
         receipt = json.loads(metadata.read_text())
         if (
@@ -533,6 +535,15 @@ async def benchmark(
         }
         write(output / "summary.json", report)
         print("server_ready", flush=True)
+        if kernel_condition and kernel_condition.get("prefill_graphs"):
+            from experiments.b200_attention_gdn_serving.prefill_graph_canary import (
+                canary,
+            )
+
+            await canary(client, manifest["token_ids"], output)
+            report["prefill_graph_canary_sha256"] = sha(
+                output / "prefill_graph_canary.json"
+            )
         canaries = json.loads((DATA / "canary.json").read_text())
         parity = json.loads((ROOT / config["parity"]).read_text())
         parity_start = time.perf_counter()
