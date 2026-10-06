@@ -219,3 +219,37 @@ The c128 pair is 8.996/9.513 seconds. Full-cohort mean score drift is about
 benefit and reduces source-macro ranking despite a pooled increase; keep it
 as diagnostic, without replacing the FROST/BF16 baseline. API 78611 and engine
 78701 are retired before alternate GDN kernel checks.
+
+`cutedsl_canary01` fails before native arithmetic: vLLM's `cute_utils` expects
+`nvvm.Tcgen05GroupKind`, renamed `CTAGroupKind` by the pinned CuTe DSL 4.8.0
+required by FROST. Preserve the receipt and checksum-verified executed sources.
+The next attempt installs a process-local alias with verified CTA values
+0/1; generated NVVM MMA/alloc/load signatures retain compatibility. Do not
+change the validated FROST compiler install or upstream kernel source. Require
+all six native output/state checks before a full serving launch.
+
+`cutedsl_canary02` reaches first-kernel compilation, then fails on another DSL
+rename: `tcgen05_commit_arrive` became `tcgen05_commit`. An AST audit of every
+NVVM reference in vLLM's complete `cute_utils` package finds exactly these two
+missing names; the commit call retains its address, multicast-mask, group,
+location and insertion-point arguments. Extend the process-local compatibility
+mapping and retry as `cutedsl_canary03`, retaining both failed receipts/sources.
+
+`cutedsl_canary03` validates both process-local mappings in real native kernels:
+the T=1 and T=17 output/state checks, FP32 oracle and continued state pass.
+The strided-QKV case then fails in the reference normalizer's `.view` contract,
+before that case reaches CuTe. Make Q/K contiguous before normalization in both
+reference and candidate; retain strided V to exercise native layout support.
+Retry the unchanged native CuTe arithmetic as `cutedsl_canary04` without
+changing numerical ceilings or restarting any serving control.
+
+`cutedsl_canary04` passes all six native cases, including strided V, ragged
+isolation, continued state and the independent FP32 recurrence oracle. Output
+relative-L2 is about 0.44–0.48%; final-state error about 0.25–0.35%, below the
+unchanged 3% limits. Ragged split/packed results match exactly. Host-inclusive
+calls at T4096 are 0.518 ms versus FlashInfer 0.466 ms; at [8192,8192], 0.586
+versus 0.526 ms. These small native trials are slightly slower and do not
+represent sustained high-concurrency serving. Run `cutedsl_gdn.json` on the
+same whole-GPU envelope, preserving BF16 attention/GDN projections and FROST
+MLPs. Bind the passed receipt and sources; require all 24 operators to select
+CuTe without fallback, then report matched full-serving throughput and AUROC.
