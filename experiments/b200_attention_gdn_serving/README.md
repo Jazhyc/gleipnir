@@ -1,11 +1,12 @@
 # B200 attention and GDN throughput campaign
 
-Current optimization reference: FROST FP4 MLP/GDN projections plus the adapted
-cuDNN MXFP8 prefill path, selected by the user after the completed corrected
-screen. The default entrypoint uses `fp4_gdn_cudnn_mxfp8.json`. New candidates
-use both `baseline: selected` and `high_reference: selected`; explicit historical
-comparisons below remain intact. See the
-[current reference decision](../../docs/decisions/b200_mxfp8_inference_baseline.md).
+Current optimization reference: the user-selected **combined FP4 preparation,
+shape-dependent output GEMM tiles and cuDNN MXFP8 prefill** stack. The default
+entrypoint uses `fp4_gemm_tuned.json`. New comparisons use `baseline: selected`
+and `high_reference: selected`; historical measurements remain intact. Use
+182,682 input tokens/s for warm c128 comparisons and the separate 147.00 ms
+warm c1 confirmation. See the
+[current reference decision](../../docs/decisions/b200_tuned_fp4_inference_baseline.md).
 
 Started 2026-10-06 03:19 UTC. The user authorizes approximately nine hours of
 attention/GDN optimization, prioritizing throughput at high concurrency, FP8
@@ -659,3 +660,16 @@ state is completed, with no active driver. Collection manifest
 `fp4_gemm_tuning_collection01` verifies all 130 artifacts; 21 timed passes and
 one excluded warmup have matched IDs/prompts/tokens and finite scores.
 See [the tuning finding](../../docs/findings/b200_fp4_gemm_tuning.md).
+
+
+Subsequent user selection, 2026-10-06: adopt the completed tuned stack as the
+optimization reference. `baseline.json` now binds this run and its warm
+throughput/latency confirmations plus explicit finite-quality acceptance.
+Archive the preceding MXFP8 selection under
+`baselines/frost_fp4_mlp_gdn_cudnn_mxfp8_prefill.json`. Preserve the original
+executed configuration and all strict failures. Only the launch default and
+client reference selector change; the existing API/engine 89879/89962 continue
+with the same loaded arithmetic and capacity. No server restart or control
+replay is needed. GEMMs remain about 32% of GPU kernel time in the saved
+combined-preparation profile (24% FP4 plus 8% BF16); this is a pre-tuning profile,
+not a new measurement of the selected server.

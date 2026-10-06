@@ -2,8 +2,9 @@
 
 Date: 2026-10-06. A bounded NVIDIA tile/cluster sweep finds small native gains
 for output projections, but no clear whole-serving win. The existing tile wins
-every tested large-row shape. Keep the tuned configuration experimental; the
-user-selected serving reference is unchanged.
+every tested large-row shape. After reviewing the tradeoff, the user explicitly
+selects this stack as the optimization reference. See the
+[selection decision](../decisions/b200_tuned_fp4_inference_baseline.md).
 
 | Metric | Previous combined preparation | Tuned candidate |
 | --- | ---: | ---: |
@@ -104,10 +105,20 @@ erase those precision receipts or promote this recipe.
   after transfer. Loaded kernel source and benchmark source hashes also match
   their executed archives.
 
-The candidate remains a named experimental recipe. API **89879**, engine
+The user subsequently selects this recipe as the reference. API **89879**, engine
 **89962**, port **8010** remain warm and healthy on pod `i243nsg10usytq`.
 Collection health returns HTTP 200, with the engine as the sole GPU process,
 168,734 MiB used and idle temperature 33°C. `campaign.json` records completion,
 configuration, receipts and artifact paths; no driver remains active. Stop this
 server before changing kernels or starting another GPU worker. The selected
-default and FP32 master checkpoint remain unchanged.
+default now selects the tuned recipe; the FP32 master remains unchanged.
+
+
+Selection accepts the measured latency/throughput tradeoff; it does not change
+any result or reclassify the inherited strict precision failures. Future primary
+throughput and warm-latency comparisons use the separate warm confirmations.
+The latest collected kernel profile is the preceding combined-preparation run:
+GEMMs total 32.00% (FP4 24.03%, BF16 7.97%), normalization/gates/layout 19.64%,
+GDN core 14.37%, fused FP4 producers 13.00% and MXFP8 attention core 9.65%.
+Because large-row tiles stay unchanged, this is a useful starting estimate for
+the new reference, with no fresh post-tuning profile claimed.

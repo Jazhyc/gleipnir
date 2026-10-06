@@ -1,20 +1,22 @@
 # Small production inference benchmark
 
-Current B200 optimization baseline, selected by the user on 2026-10-06:
-**FROST FP4 MLPs and large GDN QKV/Z/output projections plus cuDNN MXFP8
-full-attention prefill**, with BF16 small gate projections, convolution/recurrence,
-KV cache and decode, plus FP32 gates/state.
-`results/b200_attention_gdn_serving/fp4_gdn_cudnn_mxfp8_02` is the archived
-control; `mxfp8_confirmation02` holds five warm c128 passes (173,938 input tokens/s).
-`baseline.json` binds the workload, executed recipe, result and explicit
-`user_accepted_finite` quality receipt. The user accepts macro-AUROC +1.68 and
-pooled AUROC −0.37 percentage points relative to the preceding FP4 reference;
-strict score/native-precision failures remain intact. New kernel
-conditions use `baseline: selected`; explicit historical references remain
-unchanged. Primary comparison is c128 throughput, retaining peak, latency and
-ranking diagnostics. Full-cohort candidates use `high_reference: selected` too,
-which binds the archived full-sweep checksum. See the
-[baseline decision](../../docs/decisions/b200_mxfp8_inference_baseline.md).
+Current B200 optimization reference, explicitly selected by the user on
+2026-10-06: **FROST FP4 MLP/large GDN projections, combined vendor/SwiGLU/
+normalization preparation, shape-dependent output GEMM tiles and cuDNN MXFP8
+attention prefill**. Small gates, convolution/recurrence, KV cache and decode
+remain BF16; gates/state remain FP32. The bound result is
+`results/b200_attention_gdn_serving/fp4_gemm_tuned_serving01`.
+Five warm c128 passes give **182,682 input tokens/s**; the separate fully warm
+c1 confirmation gives **147.00 ms median / 270.26 ms p95**.
+
+`baseline.json` binds the executed recipe, manifest, full sweep, warm throughput,
+latency and explicit `user_accepted_finite` receipt. Preserve inherited strict
+master/native/preparation precision failures. New comparisons use
+`baseline: selected` and `high_reference: selected`; explicit historical
+references remain unchanged. Use the warm confirmation for primary throughput
+claims and the latency confirmation for warm latency claims, keeping the full
+sweep and its original post-startup timings separately. See the
+[current reference decision](../../docs/decisions/b200_tuned_fp4_inference_baseline.md).
 
 Hypothesis: a fixed, small real-prompt workload can expose latency and throughput
 tradeoffs before changing the monitor's production serving kernels or precision.

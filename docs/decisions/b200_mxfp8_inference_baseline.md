@@ -1,5 +1,9 @@
 # MXFP8 prefill as the B200 inference optimization reference
 
+Superseded later on 2026-10-06 by the user-selected
+[combined-preparation/shape-tuned reference](b200_tuned_fp4_inference_baseline.md).
+Keep this decision and its receipts as historical evidence.
+
 Decision date: 2026-10-06. The user accepts the completed MXFP8 result and asks
 to make it the new reference point for optimization. This supersedes the
 [FP4-projection/BF16-attention reference](b200_fp4_gdn_inference_baseline.md)
