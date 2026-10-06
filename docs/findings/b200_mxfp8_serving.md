@@ -139,6 +139,91 @@ retained under `results/b200_attention_gdn_serving/mxfp8_profile01`. CPU totals
 are nested and overlap GPU work, so they are not wall-time fractions. This is
 one throughput profile, not a latency-at-c1 profile or an optimization result.
 
+## FP4 preparation diagnosis and vendor-kernel candidates
+
+The subsequent investigation leaves API 84940 / engine 85056 unchanged. Reconcile
+all 4,704 row-reduction, packing and output-scale launches from the saved trace.
+The row-reduction grid gives M; the packing grid gives
+`ceil(M/128) * K/16`. Pair launches in stream order and verify the reconstructed
+widths against the actual model: 2,560 for MLP gate/up and GDN inputs, 4,096 for
+GDN output, and 9,216 for MLP down. Shape totals and all three timing totals
+exactly reconcile with the raw kernel summary.
+
+| Activation width | Calls | Preparation time | Share of preparation |
+| --- | ---: | ---: | ---: |
+| 2,560 | 2,352 | 245.49 ms | 30.53% |
+| 4,096 | 1,008 | 146.57 ms | 18.23% |
+| 9,216 | 1,344 | 411.94 ms | 51.24% |
+
+The current path materializes BF16 producer outputs, scans each entire row for
+its dynamic maximum, then reads the activation again to compute 16-element
+block scales and hardware FP4 codes. The GEMM is a custom operator, so compiler
+fusion of preceding normalization/SwiGLU does not reach into its internal
+packing. This is a producer/quantizer boundary cost, not repeated weight packing
+or a missing hardware FP4 conversion. Output descaling already runs inside the
+FROST GEMM epilogue. Its separate `_row_scale` helper costs only 11.66 ms,
+0.17% of kernel time; `_row_inverse` and `_pack_row_blocks` cost 254.81 and
+537.54 ms. Prioritize those larger stages.
+
+The reconstructed input scans total **2.813 TB of logical reads** over the full
+320-row workload. This is not measured HBM traffic: caches may serve reads, and
+the estimate omits additional implementation traffic. Logical scan throughput
+at K9,216 is 6.67 TB/s; packing input-plus-code/scale-output throughput is
+3.38 TB/s. These observations support investigating memory movement plus
+reduction/conversion work, but do not establish a roofline bottleneck without
+memory/instruction counters. Current packing uses 37–39 registers/thread in
+trace metadata; reduction uses 16–28. Do not interpret the profiler's estimated
+occupancy field as a measured occupancy counter.
+
+The [earlier native FP4 study](b200_mlp_gemm.md#chunked-per-row-packing-complete-native-screen)
+already compared fused-row and chunked packing. The old fused-row path uses
+155 registers at K9,216, versus roughly 38 for chunked packing, with no spills
+reported in that study. A single whole-row fusion is therefore not automatically
+an improvement. Preserve low-register tiling or adopt a tuned vectorized vendor
+implementation; do not simply repeat the old whole-row prototype.
+
+NVIDIA documents the gap between low-precision GEMM-only performance and complete
+performance including quantization, including the extra maximum-reduction pass.
+Its delayed-scaling example is FP8 and is not evidence that our row-scaled NVFP4
+contract supports delayed scaling unchanged. [NVIDIA performance study](https://developer.nvidia.com/blog/how-to-optimize-transformer-based-models-for-low-precision-training/).
+
+The installed FlashInfer **0.6.12** already exposes
+`nvfp4_quantize(..., backend="cuda", per_token_activation=True)`, with E4M3
+block-16 scales, selectable 128×4 layout and returned FP32 token scales. This
+is the first suggested bounded comparison against the current packer while
+keeping FROST GEMMs fixed. Use the documented inverse base multiplier as a
+host float: the pinned wrapper calls `.item()` if it receives a tensor, which
+would synchronize a GPU scalar and break graph capture. Its per-token CuTe
+backend is rejected by the pinned wrapper; do not assume newer documentation's
+CuTe symbol exists locally. API/format compatibility does not establish
+bit-exact codes, rounding, tail initialization, graph replay or a speed gain.
+[Pinned source](https://github.com/flashinfer-ai/flashinfer/blob/v0.6.12/flashinfer/quantization/fp4_quantization.py),
+[current API](https://docs.flashinfer.ai/generated/flashinfer.quantization.nvfp4_quantize.html).
+
+For subsequent producer fusion, FlashInfer has fused RMSNorm→NVFP4 and
+SiLU/multiply→NVFP4 implementations. Pinned RMSNorm FP4 and the expert activation
+fusion are present; the newer dense `silu_and_mul_nvfp4_quantize` symbol is absent
+from the pinned quantization module. Their supplied scalar-scale contracts differ
+from our freshly calculated row scales. Adapting the producer to preserve row
+maxima, BF16 boundaries and the FROST scale layout is a separate intervention;
+calibrated fixed scales would change quantization policy and need a quality screen.
+[RMSNorm API](https://docs.flashinfer.ai/generated/flashinfer.cute_dsl.rmsnorm_fp4quant.html),
+[dense SwiGLU API](https://docs.flashinfer.ai/generated/flashinfer.quantization.silu_and_mul_nvfp4_quantize.html).
+
+Recommended order: compare the existing vendor CUDA per-token quantizer at the
+three reconstructed widths; then investigate a row-scaled SwiGLU/packing
+producer for the dominant K9,216 down-projection path; then normalization/packing
+producers. Preserve zero-row/extreme-value handling, actual scales and rounding,
+128×4 tails, supported shapes and changed-input graph replay. Any serving kernel
+change requires stopping the old server, matched token throughput and AUROC.
+No replacement is integrated or benchmarked by this source/trace investigation.
+Halving the measured preparation cost alone would suggest roughly 5–6% complete
+throughput improvement under additive-cost assumptions, not a demonstrated gain.
+
+Artifacts: `mxfp8_profile01/diagnose_fp4_preparation.py` and
+`fp4_preparation_diagnosis.json`, bound to the original trace checksum. The
+baseline selection and resident worker remain intact.
+
 Pins: vLLM 0.24.0, Torch 2.11.0+cu130, cuDNN frontend 1.31.0/backend 9.26.0.51,
 NVIDIA source revision `51d9d06b574222378a3d806009accab098e73705`, Triton 3.7.1
 and CuTe DSL 4.8.0. See the [experiment contract](../../experiments/b200_attention_gdn_serving/README.md#forward-only-cudnn-mxfp8-serving).

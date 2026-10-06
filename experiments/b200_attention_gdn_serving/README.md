@@ -501,3 +501,16 @@ FP4 row-scale/packing and producer fusion, preserving rounding/scales, before
 another attention-conversion change. CPU operator totals overlap/nest and are
 not wall-time fractions. Raw trace, table, predictions and exclusive kernel
 membership remain archived; this is one batch-throughput profile, not c1 latency.
+
+The follow-up source/trace investigation reconstructs all preparation shapes
+without changing the resident worker. K9,216 MLP-down inputs account for 51.24%
+of preparation time; the path scans BF16 activations twice and hides packing
+inside a custom-op boundary. Hardware packing and GEMM output descaling are
+already enabled. The prior fused-row experiment's high register footprint rules
+out assuming a single large fusion will be faster. Installed FlashInfer 0.6.12
+has a CUDA per-token NVFP4 quantizer with the required block/scale format; test
+that bounded candidate first, using a host constant to avoid the wrapper's GPU
+`.item()` synchronization. Producer fusion is a subsequent intervention because
+the vendor norm/activation fusions use scalar scale contracts. See the
+[detailed diagnosis](../../docs/findings/b200_mxfp8_serving.md#fp4-preparation-diagnosis-and-vendor-kernel-candidates).
+No new kernel timing or AUROC claim follows from this inspection.
