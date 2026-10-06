@@ -535,6 +535,11 @@ async def benchmark(
         _, report["warmup_seconds"] = await trial(
             client, warmup, manifest["token_ids"], 16
         )
+        if kernel_condition and kernel_condition.get("startup_audit"):
+            path = ROOT / kernel_condition["startup_audit"]
+            if not json.loads(path.read_text())["passed"]:
+                raise ValueError("native serving startup audit failed")
+            report["startup_audit_sha256"] = sha(path)
         print("http_parity_and_warmup_passed", flush=True)
         for concurrency in config["concurrency"]:
             for repeat in range(config["repeats"]):
