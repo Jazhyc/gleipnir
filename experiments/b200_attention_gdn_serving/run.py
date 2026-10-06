@@ -49,8 +49,14 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         or not condition["worker_cls"].endswith("Fa4ServingAuditWorker")
     ):
         raise ValueError("Blackwell FA4 requires BF16 and its native dispatch audit")
-    if condition["attention_precision"] not in {"bf16", "fp8_e4m3", "nvfp4"}:
+    if condition["attention_precision"] not in {"bf16", "fp8_e4m3", "nvfp4", "mxfp8"}:
         raise ValueError("unsupported attention precision")
+    if condition["attention_precision"] == "mxfp8" and (
+        attention_backend != "FLASHINFER"
+        or not condition.get("mxfp8_validation")
+        or not condition["worker_cls"].endswith("Mxfp8ServingAuditWorker")
+    ):
+        raise ValueError("MXFP8 requires its validated forward-only serving worker")
     if condition["gdn_projection_precision"] not in {"bf16", "fp8", "fp4"}:
         raise ValueError("unsupported GDN projection precision")
     if condition["gdn_backend"] not in {"flashinfer", "cutedsl", "flashqla"}:
@@ -206,6 +212,17 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw["attention_precision"] == "mxfp8":
+        sources.extend(
+            [
+                "src/gleipnir/serving_mxfp8.py",
+                "src/gleipnir/serving_mxfp8_source.py",
+                "src/gleipnir/nvidia_mxfp8_attention.py",
+                "src/gleipnir/nvidia_mxfp8_fused_quantize.py",
+                "experiments/b200_attention_gdn_serving/mxfp8_worker.py",
+                "experiments/b200_attention_gdn_serving/mxfp8_canary.py",
+            ]
+        )
     if ".combined_worker." in raw["worker_cls"] or raw.get("external_fa4"):
         sources.append("experiments/b200_attention_gdn_serving/combined_worker.py")
     if raw.get("external_fa4"):

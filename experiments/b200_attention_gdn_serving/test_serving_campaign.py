@@ -31,7 +31,7 @@ def test_fp8_counts_query_and_cache_scale_intervention_and_source_identity():
 def test_precision_and_data_contract_changes_fail_closed():
     condition = json.loads((EXPERIMENT / "config.json").read_text())
     with pytest.raises(ValueError, match="attention precision"):
-        resolve_condition({**condition, "attention_precision": "mxfp8"}, {})
+        resolve_condition({**condition, "attention_precision": "fp6"}, {})
     with pytest.raises(ValueError, match="frozen data/scoring"):
         resolve_condition({**condition, "serving_config_overrides": {"seed": 5}}, {})
 
@@ -112,3 +112,15 @@ def test_further_backends_retain_the_user_selected_fp4_gdn_scope():
         assert resolved["quantization"] == "gleipnir_frost_gdn_fp4"
         assert resolved["baseline"] == "selected"
         assert resolved["high_reference"].endswith("fp4_gdn_projection02")
+
+
+def test_mxfp8_compute_preserves_bf16_cache_and_requires_native_receipt():
+    condition = json.loads((EXPERIMENT / "fp4_gdn_cudnn_mxfp8.json").read_text())
+    resolved = resolve_condition(condition, {})
+    assert "--kv-cache-dtype" not in resolved["extra_server_args"]
+    assert resolved["gdn_projection_precision"] == "fp4"
+    assert resolved["high_reference"].endswith("fp4_gdn_projection02")
+    with pytest.raises(ValueError, match="validated forward-only"):
+        resolve_condition({**condition, "mxfp8_validation": None}, {})
+    with pytest.raises(ValueError, match="validated forward-only"):
+        resolve_condition({**condition, "worker_cls": "Worker"}, {})

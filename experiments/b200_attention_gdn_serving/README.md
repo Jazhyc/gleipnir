@@ -385,3 +385,66 @@ Further FA4 integration needs actual profiling/cache shape and stride evidence
 before another expensive startup. FlashQLA and combined FP4-projection/FP8-
 attention configurations remain unrun candidates, so do not claim exhaustion
 or terminate the retained pod on that basis.
+
+## Forward-only cuDNN MXFP8 serving
+
+The user requests a cuDNN MXFP8 attention trial on the selected FP4 MLP/GDN
+baseline. Hypothesis: the native causal D256 kernel improves warmed prefill
+throughput when backward preparation is omitted. Keep the existing BF16 paged
+KV cache and all 112 FP4 projections. The pinned cuDNN paged MXFP8 path rejects
+THD queries, so fuse BF16 cache gather with forward-only row-scaled K and
+column-scaled V quantization, and use the native packed THD forward kernel.
+Query quantization is row-scaled; softmax stays FP32 and output BF16. Include
+gather, quantization, scale layout, allocations and native execution in timing.
+Ordinary decode remains the original BF16 backend; the monitor emits one token.
+
+Before model startup require exact payload/live scale atoms against the
+previous validated NVIDIA producer, independent FP32 bottom-right causal
+attention within the previous 5% native forward ceiling, finite outputs,
+shuffled/interleaved cache pages, asymmetric query/history lengths, 128
+sequences, 32768 context and graph replay with changed lengths/page tables.
+Stop on structural/native/nonfinite failure. Then run the existing twenty-row
+score canary and fourteen timing/AUROC passes with unchanged score limits.
+Compare against `fp4_gdn_projection02` and its five-pass warm confirmation;
+retain finite score failures as diagnostic, without accepting new quality
+drift automatically. Confirm a >5% high-concurrency gain on the same worker.
+Reuse archived controls and shared caches; one serving process owns the GPU.
+
+`cudnn_mxfp8_canary01` passes producer byte agreement and the first full-query
+native case (4.23% FP32 error), then fails the asymmetric query/history case
+at 5.26%, above the unchanged 5% precision gate. All values are finite. Preserve
+that failed receipt; do not widen its ceiling or promote this configuration.
+The follow-up independently reconstructs row/column MXFP8 operands and online
+128-key-tile FP8-P attention in FP32. Require <=1% agreement with this quantized
+arithmetic reference, exact producer bytes, finite outputs and all envelope/
+replay cases. Keep the original FP32 precision result separately as `passed`.
+Only a source-bound `arithmetic_passed` result may support the already-enabled
+finite diagnostic timing/AUROC screen; failed strict precision remains failed.
+
+`cudnn_mxfp8_canary02` detects a reference-model mismatch at the same asymmetric
+case. The pinned D256 kernel uses unit P scales (`SF_CONST_VALUE=0x7f`) and a
+four-base-2-unit rescale threshold. The initial reference assumed the generic
+cuDNN blog's 256 P scale and updated the maximum every tile. Correct only this
+independent reference, retaining both historical failures and the 5% FP32 gate;
+retry all declared cases as `cudnn_mxfp8_canary03`. Native arithmetic admission
+is separate from precision acceptance. Full model timing remains diagnostic
+if its native precision gate fails, with unchanged score/AUROC reporting.
+
+`cudnn_mxfp8_canary03` still differs by 2.21% from the corrected quantized
+reference on the long-history case. The pinned template mixes low-degree
+polynomial exponentials into online softmax. Before a model timing run,
+`cudnn_mxfp8_canary04` tests an isolated variant replacing those two mixed
+helpers with hardware vector exp2 (`fastmath=True`). Keep unit P scaling,
+the four-log2-unit rescale policy, all MXFP8 operands and both existing numerical
+ceilings. Generate a checksum-named source under the shared cache; never mutate
+the installed NVIDIA kernels or discard historical receipts. This variant's
+performance includes any additional SFU cost; it is not a stock-kernel claim.
+
+`cudnn_mxfp8_canary04` completes all seven cases, with exact producer payload/
+live scale atoms and maximum quantized-reference relative-L2 0.001667. Both
+changed-length/page graph checks pass. The unchanged FP32 precision gate remains
+failed (maximum 0.053363). Keep `passed=false`, `arithmetic_passed=true` and
+`diagnostic_only=true` separately. Twelve focused source/launch tests and Ruff
+pass. `fp4_gdn_cudnn_mxfp8_01` starts the finite diagnostic model screen,
+passes all 112 FP4 projection checks, compilation and initial profiling/warmup;
+reuse this native receipt while checking actual serving dispatch and scores.
