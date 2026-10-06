@@ -1,5 +1,15 @@
 # Small production inference benchmark
 
+Current B200 optimization baseline, selected by the user on 2026-10-06:
+**FROST FP4 MLPs plus BF16 FlashInfer GDN/full attention**, using the archived
+`results/b200_frost_inference/frost02` control. `baseline.json` binds its summary,
+workload and validated recipe checksums. New kernel conditions default to this
+selection, or request `baseline: selected` explicitly. Explicit baseline paths
+preserve historical screens below. Reuse the resident FROST worker and its saved
+six prediction arrays; changing the reference needs no restart or control rerun.
+Primary comparison is throughput at concurrency 16, with 1/4 latency and all
+ranking diagnostics retained. See the [FROST recipe](../b200_frost_inference/README.md).
+
 Hypothesis: a fixed, small real-prompt workload can expose latency and throughput
 tradeoffs before changing the monitor's production serving kernels or precision.
 Establish a BF16 dynamic-LoRA baseline first; no optimization sweep is launched.

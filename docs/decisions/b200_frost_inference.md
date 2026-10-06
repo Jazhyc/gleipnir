@@ -64,3 +64,12 @@ isolated. A future kernel-only attribution requires a matched runtime ablation.
 Readiness takes 622.566 seconds; pass pairs are close enough that no extra
 warmed replay is used. Reuse controls, retain failures and keep the candidate
 resident. Thirteen focused tests pass on the pod and local Ruff passes.
+
+The user subsequently selects FROST FP4 MLP/BF16 FlashInfer GDN/full attention
+as the standard B200 inference optimization baseline, prioritizing throughput.
+Bind the archived `frost02` control in
+`experiments/b200_inference_benchmark/baseline.json`; new kernel conditions
+resolve `baseline: selected` or an omitted reference to it. Explicit historical
+references and executed sources remain unchanged. Keep the already warm worker
+and cached results; this metadata selection requires no restart or control run.
+Retain lower-concurrency latency, adapter-specific score parity and AUROC deltas.

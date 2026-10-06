@@ -290,6 +290,31 @@ async def trial(
     return results, time.perf_counter() - start
 
 
+def resolve_kernel_baseline(condition: dict | None) -> dict | None:
+    """Use the selected archived control for new kernel comparisons by default."""
+    if condition is None or condition.get("baseline", "selected") != "selected":
+        return condition
+    selection_path = EXPERIMENT / "baseline.json"
+    selection = json.loads(selection_path.read_text())
+    summary_path = ROOT / selection["results"] / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    if (
+        sha(summary_path) != selection["summary_sha256"]
+        or summary["status"] != "complete"
+        or summary["manifest_sha256"] != selection["manifest_sha256"]
+        or sha(DATA / "manifest.json") != selection["manifest_sha256"]
+        or sha(ROOT / selection["validated_recipe_config"])
+        != selection["validated_recipe_config_sha256"]
+    ):
+        raise ValueError("selected inference baseline identity drift")
+    return {
+        **condition,
+        "baseline": selection["results"],
+        "baseline_selection_sha256": sha(selection_path),
+        "baseline_summary_sha256": selection["summary_sha256"],
+    }
+
+
 async def benchmark(
     config: dict,
     manifest: dict,
@@ -302,6 +327,7 @@ async def benchmark(
     import httpx
     import numpy as np
 
+    kernel_condition = resolve_kernel_baseline(kernel_condition)
     command = server_command(config, merged_model)
     if kernel_condition:
         command.extend(kernel_condition["extra_server_args"])
@@ -461,7 +487,7 @@ async def benchmark(
                 if not prior["passed"]:
                     raise ValueError("merged control parity failed")
                 reference = prior["served"]["adapter"]
-                comparisons["merged_bf16"] = {
+                comparisons["kernel_baseline"] = {
                     "mean_absolute_difference": float(
                         np.mean(np.abs(np.array(served["adapter"]) - reference))
                     ),

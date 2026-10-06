@@ -2,7 +2,7 @@
   "name": "training_frost_fp4_mlp",
   "port": 8010,
   "merged_model": "/tmp/gleipnir-merged/fp4-full-training-bf16",
-  "baseline": "results/b200_inference_benchmark/merged01",
+  "baseline": "selected",
   "quantization": "gleipnir_frost_fp4",
   "worker_cls": "experiments.b200_frost_inference.worker.FrostAuditWorker",
   "server_module": "experiments.b200_frost_inference.server",

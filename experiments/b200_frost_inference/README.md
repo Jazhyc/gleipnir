@@ -114,3 +114,10 @@ Collect source archives, predictions, metrics, kernel/runtime audit, failed
 startup and retirement receipts, verifying checksums and token identities.
 Keep API PID 74857 / engine PID 75080 healthy and resident on localhost 8010;
 the stock FP4 server is stopped and the existing B200 pod is retained.
+
+The user subsequently selects this recipe as the B200 inference optimization
+baseline, prioritizing high-concurrency throughput. The current config now uses
+`baseline: selected`, resolved to the checksum-bound `frost02` results in
+`../b200_inference_benchmark/baseline.json`. The executed historical config in
+`frost02` remains immutable and retains its BF16 comparison. Existing server
+arguments and arithmetic are unchanged; baseline selection needs no restart.

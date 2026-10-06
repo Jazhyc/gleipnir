@@ -535,3 +535,10 @@ promotion. Quantizing merged weights differs from training's separate LoRA
 addition; runtime/compiler changes and recoverable QK normalization compilation
 warnings also prevent a kernel-only causal attribution. Keep the server warm
 and the archived controls; no further evaluation or sweep is launched.
+
+The user subsequently selects FROST FP4 MLPs with BF16 FlashInfer GDN/full
+attention as the B200 inference optimization baseline, prioritizing batched
+throughput. A checksum-bound baseline selection routes new kernel comparisons
+to archived `frost02` timings/predictions, preserving explicit historical
+controls and the live worker. Lower-precision attention feasibility is recorded
+in [the serving precision decision](decisions/b200_low_precision_attention_serving.md).
