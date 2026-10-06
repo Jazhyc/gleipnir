@@ -32,6 +32,16 @@ layer coverage, server failure or OOM. Preserve negative receipts; do not
 promote silently or select on final ID. No in-chat heartbeat tool is available;
 active-turn monitoring cannot promise follow-up after the turn ends.
 
+Completed: the corrected caller forwards the existing buffer to FlashInfer on
+all 24 GDN layers and skips the ordinary-prefill final copy. Native output/state
+parity is exact, including max rows and graph replay. The serving profile shows
+1,008 output copies to zero (257.7 GB per 320-row pass). Five warm passes give
+196,780 input tokens/s (-0.04%); warm c1 median/p95 rise to 168.85/291.07 ms.
+Macro/pooled development AUROC changes -0.00391/-0.00195 percentage points.
+Keep the selected reference unchanged and this as a named candidate. Preserve
+the first caller-wiring failure; API/engine 97318/97421 remain healthy and warm.
+See the [direct-output finding](../../docs/findings/b200_gdn_direct_output.md).
+
 ## FP4 full-attention projection trial
 
 Hypothesis (2026-10-06): extend the selected symbolic-M FROST NVFP4 serving
