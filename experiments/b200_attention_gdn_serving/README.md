@@ -41,6 +41,10 @@ Macro/pooled development AUROC changes -0.00391/-0.00195 percentage points.
 Keep the selected reference unchanged and this as a named candidate. Preserve
 the first caller-wiring failure; API/engine 97318/97421 remain healthy and warm.
 See the [direct-output finding](../../docs/findings/b200_gdn_direct_output.md).
+Further tuning is deferred at the user's request when upside is small: the
+observed copy budget suggests roughly 1--2% throughput potential and little
+median-latency headroom over the existing reference. Preserve this unresolved
+performance path and its receipts for a broader dispatch investigation.
 
 ## FP4 full-attention projection trial
 

@@ -138,3 +138,27 @@ are archived with checksums. Thirty focused tests and Ruff pass. Implementation
 commits: 1e7d13b and 9e99e0e. Profiling is stopped; server health is HTTP 200,
 sole GPU worker 97421 uses approximately 170,360 MiB at 32 C. No new capacity
 or after-turn monitoring is scheduled.
+
+## Deferred performance path, 2026-10-07
+
+The user asks to leave this unresolved if the likely upside is small. Defer
+further direct-output tuning; preserve the implementation, failed attempt,
+receipts and warm candidate. No server or capacity lifecycle action is requested.
+Keep the selected Direct FP4 reference unchanged.
+
+The observed 81.009 ms copy budget is 1.26% of the reference's 6.425253 s
+kernel window. Removing only that cost while holding everything else fixed
+would improve kernel-window rate by 1.28%, or instrumented HTTP-pass rate by
+1.22%. This suggests roughly 1--2% potential throughput gain, allowing for
+small unmeasured allocation/dispatch savings; it is not a measured speedup
+or a hard upper bound on all possible integration changes. Recovering the
+candidate's 9.39 ms median-latency regression would first restore the baseline,
+rather than establish a gain over it.
+
+At observed large-copy bandwidth, byte-linear estimates are 0.031 ms of copy
+work for the quick cohort's median 502-token prompt, 0.260 ms for its mean
+4,210-token prompt and 1.776 ms at its 28,733-token maximum. These are GPU-copy
+estimates, not request-latency predictions; small transfers, launch/allocator
+cost and overlap can differ. There is no evidence here for a substantial
+interactive-latency improvement over the selected reference. Resume only when
+isolating wrapper/dispatch cost is useful to a broader optimization effort.
