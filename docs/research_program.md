@@ -515,3 +515,11 @@ despite the passing canary. Do not adopt this cuDNN configuration or infer a
 general FP4 limitation. Backfilled FP8 AUROC also declines at concurrency 16:
 pooled −0.003448, macro −0.011364. Every subsequent kernel comparison now
 includes matched ranking deltas and source eligibility, alongside timings.
+
+The user then requests testing the optimized training FP4 forward kernels in
+vLLM. The [FROST inference decision](decisions/b200_frost_inference.md) freezes
+reuse of hardware row packing, 16x16 weight scales, fused descale and runtime-M
+plans through a forward-only adapter. Require bitwise agreement with original
+training-forward calls on the same merged weights before scoring. The retained
+cuDNN 9.26/CuTe DSL 4.8.0 runtime is part of this intervention; keep serving
+attention explicitly FlashInfer and report matched speed and AUROC differences.

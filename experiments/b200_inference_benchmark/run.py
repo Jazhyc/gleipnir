@@ -317,6 +317,18 @@ async def benchmark(
     )
     base_url = f"http://127.0.0.1:{config['port']}"
     started = time.perf_counter()
+    server_environment = environment()
+    if kernel_condition and kernel_condition.get("training_fp4_environment"):
+        from gleipnir.native_fp4_training import native_fp4_environment
+        from gleipnir.qwen35_fast_training import (
+            DEFAULT_TRITON_TARGET,
+            triton_environment,
+        )
+
+        server_environment = native_fp4_environment(
+            triton_environment(DEFAULT_TRITON_TARGET, server_environment), ROOT
+        )
+        server_environment["PYTHONPATH"] += f":{ROOT / '.cache/kernels/fa4'}"
     if reuse:
         receipt = json.loads(metadata.read_text())
         if (
@@ -338,13 +350,13 @@ async def benchmark(
             else:
                 raise ValueError("port already in use")
         logs.mkdir(parents=True, exist_ok=True)
-        if shutil.which("ninja", path=environment()["PATH"]) is None:
+        if shutil.which("ninja", path=server_environment["PATH"]) is None:
             raise RuntimeError("serving compiler executable ninja is unavailable")
         with (logs / "server.log").open("x") as handle:
             process = subprocess.Popen(
                 command,
                 cwd=ROOT,
-                env=environment(),
+                env=server_environment,
                 stdout=handle,
                 stderr=subprocess.STDOUT,
                 start_new_session=True,
@@ -355,7 +367,9 @@ async def benchmark(
             "config_sha256": manifest["config_sha256"],
             "started_at_unix": time.time(),
             "status": "starting",
-            "cache_paths": {k: v for k, v in environment().items() if "CACHE" in k},
+            "cache_paths": {
+                k: v for k, v in server_environment.items() if "CACHE" in k
+            },
             "log": str(logs / "server.log"),
         }
         write(metadata, receipt)
