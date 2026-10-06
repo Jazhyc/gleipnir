@@ -149,5 +149,58 @@ below M1536, the stage-one whole-row producer at M1536..4096, and direct native
 FP4 output above M4096. Medium rows favored stage one in native measurements;
 the new format is restricted to large rows. Both native plans are precompiled,
 with separately bound receipts and live large-row calls required from every
-MLP. Serving throughput, latency and AUROC remain pending. Thirty-two focused
-CPU tests and Ruff pass; the selected reference remains unchanged.
+MLP. Thirty-two focused CPU tests and Ruff pass; the selected reference remains
+unchanged.
+
+## Direct-output serving result
+
+The initial fourteen-pass sweep completes without an HTTP failure. Preserve
+the initial c128 rates 183,906/155,338 input tokens/s and their post-startup
+history separately from fully warm confirmation. Five subsequent warm rates
+are 198,009 / 196,022 / 196,866 / 196,502 / 196,896 tokens/s; no repeat is
+discarded. Each uses the same 320 identities and 1,310,581 input tokens.
+
+| Warm measure | Selected reference | Overhead | Direct FP4 large rows |
+| --- | ---: | ---: | ---: |
+| c128 median input tokens/s | 193,224 | 195,552 | 196,866 |
+| c128 aggregate input tokens/s, all five repeats | 193,243 | 195,400 | 196,857 |
+| c1 median latency | 156.82 ms | 154.87 ms | 159.46 ms |
+| c1 p95 latency | 287.55 ms | 269.13 ms | 275.92 ms |
+| Source-macro AUROC | 0.878553 | 0.878631 | 0.878105 |
+| Pooled AUROC | 0.889729 | 0.889983 | 0.885842 |
+
+Direct output improves warm median throughput **1.88%** against the selected
+reference and **0.67%** against the overhead stage. Aggregate gain against the
+reference is **1.87%**. Median latency is **1.68% slower** than the reference
+and **2.96% slower** than overhead; p95 is 4.04% faster than the reference.
+These are archived-control comparisons rather than an interleaved replication.
+
+Source-macro/pooled AUROC changes **-0.0448/-0.3887 percentage points** against
+the reference. Repeat-median mean/max score differences are 0.042686/0.420646;
+there are ten threshold flips, two on baseline-unstable examples. Preserve these
+score shifts despite the small aggregate ranking difference. Source-macro
+pAUROC@20/Brier are 0.751991/0.151983 versus 0.748985/0.147939; pooled values
+are 0.595925/0.148127 versus 0.599051/0.144583. Pooled recall/FPR remain
+0.753165/0.197531 and unique scores rise 84 to 85. Per-source losses include
+knowledge-report -9.26 points, soft-trigger -4.71 and insider-trading -1.33;
+tiny four/six-row groups have changes of up to 25 points. Preserve the full
+per-source and repeat diagnostics rather than interpreting macro cancellation
+as precision equivalence. No final-ID evaluation or selection is performed.
+
+The twenty-row canary passes strict master-score admission on this sample:
+mean master error 0.019734, correlation 0.996962. Its selected-reference mean
+error/correlation are 0.008460/0.999239. This does not override the native
+changed-format precision failure or inherited MXFP8/vendor strict failures.
+Live usage covers all three row routes on all 32 MLPs, with one direct-output
+and one overhead plan compiled before capture. Existing attention/preparation/
+tuning audits pass on the current engine. The runner also archives stale
+`native_swiglu_overhead.json` and legacy `native_swiglu.json` from retired
+workers; those are unused by this condition and are not fresh runtime passes.
+
+Both requested stages are implemented and measured as named recipes. Keep the
+selected attention-FP4 reference unchanged. Retain the experimental native
+output server as API/engine **95619/95657**, port **8010**, healthy and sole GPU
+ownership, approximately **170,328 MiB**. Preserve the existing pod and caches;
+the separate native worker is stopped. Kernel/source, initial sweep, warm
+throughput/latency, ranking/calibration/threshold diagnostics, failures and
+runtime logs are collected. Commits 7bfcf59 and 5cb6d02 contain the two features.

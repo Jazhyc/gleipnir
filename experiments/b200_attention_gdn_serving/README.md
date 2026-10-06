@@ -74,6 +74,17 @@ and the separate client receipt failure. Retire the collected first server
 before native FP4-output work; keep the selected reference unchanged. See the
 [follow-up finding](../../docs/findings/b200_swiglu_overhead_native_output.md).
 
+Stage two completes: direct native FP4 output is admitted after midpoint-rounding
+corrections, with zero packing-reference error in all nine fixtures. Use the
+stage-one producer through M4096 and direct packed output above that threshold.
+Five warm c128 passes give 196,866 input tokens/s (+1.88% versus the selected
+reference, +0.67% versus overhead), with warm c1 median/p95 159.46/275.92 ms.
+Macro/pooled AUROC changes -0.0448/-0.3887 percentage points. Preserve the ten
+threshold flips and score/calibration shifts. Keep both named recipes and the
+selected reference unchanged; API/engine 95619/95657 remain warm with sole GPU
+ownership. The separate native worker is stopped. See the follow-up finding
+for source bindings, failed attempts and all-repeat evidence.
+
 Hypothesis (2026-10-06): adapt NVIDIA's pinned SM100 block-scaled dense
 SwiGLU kernel to remove its training-only gate/up write, preserve raw BF16
 rounding and per-row FP32 descaling followed by BF16 rounding before SiLU,
