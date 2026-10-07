@@ -58,3 +58,9 @@ token after correction. Retry with `python -m experiments.b200_long_context.resu
 --name long02 --failed-name long01`, reusing native/quality receipts and all GPU
 sources/compiler identity, rechecking the real canary and rerunning all six
 lengths on the same corrected configuration.
+
+The corrected sweep completes exact 256K without OOM at C1, with 3.60 s median
+latency and 72,795 input tokens/s. See [the finding](../../docs/findings/b200_long_context.md)
+for all lengths, memory/quality diagnostics and the preserved failed attempt.
+Export figures with `python -m experiments.b200_long_context.summarize
+results/b200_long_context/long02`.

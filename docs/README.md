@@ -53,6 +53,9 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
+- [B200 single-request long contexts](findings/b200_long_context.md): exact
+  8K–256K capacity/latency sweep, bounded temporary memory, and an opt-in fix for
+  the pinned pooling scheduler's exact-cap stall.
 - [B200 BF16 GDN state](findings/b200_gdn_state.md): native state admission,
   gate-rounding diagnostic and negligible full-vLLM throughput change.
 - [B200 dedicated monitor scoring](findings/b200_monitor_score_endpoint.md):
