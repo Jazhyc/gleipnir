@@ -264,7 +264,11 @@ async def high_concurrency(
         trust_env=False,
         limits=httpx.Limits(max_connections=256),
     ) as client:
-        for c in condition["high_concurrency"]:
+        concurrencies = condition["high_concurrency"]
+        if condition.get("high_reference") == "selected":
+            selection = json.loads((BENCHMARK / "baseline.json").read_text())
+            concurrencies = selection.get("throughput_concurrency", concurrencies)
+        for c in concurrencies:
             candidate = []
             for repeat in (0, 1):
                 values, seconds = await trial(client, rows, manifest["token_ids"], c)
@@ -288,9 +292,14 @@ async def high_concurrency(
                     != report["serving_config_overrides"]
                 ):
                     raise ValueError("unmatched high-concurrency reference")
+                reference_repeats = [
+                    t["repeat"] for t in before["trials"] if t["concurrency"] == c
+                ]
+                if not reference_repeats:
+                    raise ValueError("selected reference has no matched concurrency")
                 baseline = [
                     json.loads((ref / f"high_c{c}_repeat{i}.json").read_text())
-                    for i in (0, 1)
+                    for i in reference_repeats
                 ]
                 old = statistics.median(
                     t["prompt_tokens_per_second"]

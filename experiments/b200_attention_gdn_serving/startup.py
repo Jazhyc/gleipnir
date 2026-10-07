@@ -26,13 +26,10 @@ def main() -> None:
     parser.add_argument("--frontend-validation")
     parser.add_argument("--frontend-ab", action="store_true")
     parser.add_argument("--host-wrapper-validation")
+    parser.add_argument("--legacy-host", action="store_true")
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("startup run name must be a directory stem")
-    if args.frontend_ab and not args.frontend_validation:
-        raise ValueError("frontend A/B requires native validation")
-    if args.host_wrapper_validation and not args.frontend_validation:
-        raise ValueError("host wrapper control requires the native registry frontend")
     base = yaml.safe_load((EXPERIMENT / "config.yaml").read_text())
     manifest = prepared_manifest(base)
     selected = resolve_kernel_baseline({"baseline": "selected"})
@@ -54,7 +51,11 @@ def main() -> None:
     config = {**base, **raw["serving_config_overrides"], "port": raw["port"]}
     out = OUTPUT / args.name
     out.mkdir(exist_ok=False)
-    frontend = None
+    from gleipnir.serving_reference import selected_host_components
+
+    frontend, host_wrapper = (
+        (None, None) if args.legacy_host else selected_host_components(ROOT, out)
+    )
     if args.frontend_validation:
         frontend = {
             "backend": "gigatoken_native",
@@ -63,14 +64,18 @@ def main() -> None:
             "receipt_path": str(out / "frontend.json"),
             "ab_control": args.frontend_ab,
         }
+    elif args.frontend_ab:
+        if frontend is None:
+            raise ValueError("frontend A/B requires native validation")
+        frontend["ab_control"] = True
+    if frontend is not None:
         write(out / "frontend_config.json", frontend)
     write(out / "condition.json", condition)
     write(out / "manifest.json", manifest)
-    host_wrapper = (
-        {"validation": args.host_wrapper_validation}
-        if args.host_wrapper_validation
-        else None
-    )
+    if args.host_wrapper_validation:
+        host_wrapper = {"validation": args.host_wrapper_validation}
+    if host_wrapper and frontend is None:
+        raise ValueError("host wrapper control requires the native registry frontend")
     if host_wrapper is not None:
         write(out / "host_wrapper_config.json", host_wrapper)
     for source in [
@@ -106,6 +111,7 @@ def main() -> None:
                 startup_only=True,
                 frontend=frontend,
                 host_wrapper=host_wrapper,
+                use_selected_host=not args.legacy_host,
             )
         )
     except BaseException as error:

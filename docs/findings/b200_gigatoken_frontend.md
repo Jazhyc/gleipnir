@@ -5,7 +5,10 @@ selected Qwen3.5-4B stack. The latest same-worker comparison improves interactiv
 median/p95 latency from **152.62/270.04 ms to 148.88/191.96 ms**. Full c128
 throughput is **196523 versus 198633 input tokens/s**; the median paired change
 is -1.11%, with the final two pairs essentially tied. Keep this frontend optional
-for latency work; the selected GPU kernel/precision reference is unchanged.
+for latency work at this stage. The user subsequently selects native Gigatoken
+plus direct FROST bindings as the
+[standard combined reference](../decisions/b200_gigatoken_direct_host_reference.md).
+The GPU kernel/precision recipe remains unchanged.
 
 ## Encoding, compatibility and the bulk headline
 

@@ -173,6 +173,12 @@ Stop after this bounded trace/analysis; no frontend, GPU kernel or capacity chan
 
 ## Same-worker tokenizer A/B, 2026-10-07
 
+Subsequent user selection: native Gigatoken plus direct FROST bindings is now
+the standard B200 serving reference. Existing direct-mode measurements and
+receipts are bound by checksum; startup enables both components by default.
+Selected comparisons use c1/quick64 and c128/full320 with all baseline repeats.
+See [the decision](../../docs/decisions/b200_gigatoken_direct_host_reference.md).
+
 Hypothesis: the earlier small throughput decline may reflect different worker
 state rather than the tokenizer. Restart once to install opt-in `--frontend-ab`
 control, then keep exactly one API and GPU engine throughout the comparison.

@@ -79,7 +79,10 @@ and full-attention projection GEMMs, symbolic-row SwiGLU overhead improvements,
 direct packed FP4 MLP activation output for large batches, and cuDNN MXFP8 full-attention
 prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
 development quality tradeoff; strict failed parity remains recorded separately.
-See the [inference baseline decision](docs/decisions/b200_native_fp4_output_inference_baseline.md).
+Native Gigatoken encoding and direct FROST host binding reuse are now the
+selected serving reference, with c1 median/p95 149.69/184.19 ms and c128
+throughput 197530 input tokens/s. See the
+[serving reference decision](docs/decisions/b200_gigatoken_direct_host_reference.md).
 
 Presentation layout and build conventions are documented in
 [`outputs/presentations/README.md`](outputs/presentations/README.md).

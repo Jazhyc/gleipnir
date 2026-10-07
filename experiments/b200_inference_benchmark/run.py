@@ -385,9 +385,28 @@ def compatible_server_command(observed: list[str], requested: list[str]) -> bool
         if "--additional-config" in command:
             index = command.index("--additional-config") + 1
             config = json.loads(command[index])
+            sources = config.get("gleipnir_frost_fp4")
+            if sources is not None:
+                config["gleipnir_frost_fp4"] = {
+                    path: digest
+                    for path, digest in sources.items()
+                    if not Path(path).name.endswith(("_canary.py", "_compare.py"))
+                    and Path(path).name not in {"run.py", "serving_runtime.py"}
+                    and not Path(path).name.startswith("prefill_graph_canary")
+                }
             condition = config.get("serving_condition")
             if condition is not None:
-                condition.pop("high_reference", None)
+                for field in [
+                    "high_reference",
+                    "baseline",
+                    "name",
+                    "high_concurrency",
+                    "log_directory",
+                    "config_sha256",
+                    "startup_audit",
+                    "allow_finite_parity_diagnostic",
+                ]:
+                    condition.pop(field, None)
             command[index] = json.dumps(config, sort_keys=True)
         return command
 
@@ -409,6 +428,7 @@ async def benchmark(
     startup_only: bool = False,
     frontend: dict | None = None,
     host_wrapper: dict | None = None,
+    use_selected_host: bool = True,
 ) -> None:
     import httpx
     import numpy as np
@@ -428,6 +448,23 @@ async def benchmark(
         else LOGS
     )
     base_url = f"http://127.0.0.1:{config['port']}"
+    if kernel_condition and kernel_condition.get("baseline_selection_sha256"):
+        selection = json.loads((EXPERIMENT / "baseline.json").read_text())
+        if use_selected_host:
+            from gleipnir.serving_reference import selected_host_components
+
+            resident = json.loads(metadata.read_text()) if reuse else None
+            selected_frontend, selected_wrapper = selected_host_components(
+                ROOT, output, resident=resident
+            )
+            frontend = frontend if frontend is not None else selected_frontend
+            host_wrapper = (
+                host_wrapper if host_wrapper is not None else selected_wrapper
+            )
+        config = {
+            **config,
+            "concurrency": selection.get("latency_concurrency", config["concurrency"]),
+        }
     started = time.perf_counter()
     server_environment = environment()
     if kernel_condition and kernel_condition.get("training_fp4_environment"):
@@ -579,6 +616,16 @@ async def benchmark(
         }
         write(output / "summary.json", report)
         print("server_ready", flush=True)
+        if host_wrapper is not None:
+            response = await client.post(
+                "/collective_rpc",
+                json={"method": "frost_wrapper_state", "kwargs": {}, "timeout": 60},
+            )
+            response.raise_for_status()
+            states = response.json()["results"]
+            if len(states) != 1 or states[0]["mode"] != "direct":
+                raise ValueError("selected direct host wrapper is not active")
+            report["host_wrapper_state"] = states[0]
         if kernel_condition and kernel_condition.get("prefill_graphs"):
             from experiments.b200_attention_gdn_serving.prefill_graph_canary import (
                 canary,

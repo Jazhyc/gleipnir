@@ -1,46 +1,42 @@
 {
-  "name": "frost_fp4_mlp_gdn_attention_mxfp8_native_swiglu_fp4_output",
+  "name": "frost_fp4_mlp_gdn_attention_mxfp8_native_swiglu_fp4_output_gigatoken_direct_host",
   "selected_at": "2026-10-07",
   "scope": "B200 inference optimization",
-  "results": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01",
-  "summary_sha256": "d26a6069c2a0f5031fa5320957dcc6546ff2418becf595529f1d5e3a2c510715",
+  "results": "results/b200_attention_gdn_serving/gigatoken_direct_host_reference01",
+  "summary_sha256": "d5542e4ed16660766aebaeb1a697728d62334aae8f50717a292e76a934abbb80",
   "manifest_sha256": "b02af232d76935f2cda2a52213ebce27ae04ca5aaf44898cfe496104adad4266",
   "recipe_config": "experiments/b200_attention_gdn_serving/fp4_swiglu_native_output.json",
   "validated_recipe_config": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01/executed_sources/experiments/b200_attention_gdn_serving/fp4_swiglu_native_output.json",
   "validated_recipe_config_sha256": "b08078b7ad5d84610ef45c47bb4d9ce2f8f67792f07a0eadac59e1a4efd221df",
-  "server_metadata": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01/selected_server.json",
+  "server_metadata": "results/b200_attention_gdn_serving/gigatoken_direct_host_reference01/selected_server.json",
   "primary_concurrency": 128,
   "comparison_concurrency": [
     1,
-    4,
-    16,
-    32,
-    64,
     128
   ],
-  "high_summary_sha256": "2996385f1d0b7893354fbdfb5f25c2f79df8f23ef1d96ec95db166c8c738859e",
-  "quality_acceptance": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01/quality_acceptance.json",
-  "quality_acceptance_sha256": "c52670854a9605ec507e31177fd1fae456556a255c4898b1d3474212a37ac753",
+  "high_summary_sha256": "3f1941236fef0b0332c3325741ff6f61f2fcd4369d6c2dc3519e5d1c7d9c3937",
+  "quality_acceptance": "results/b200_attention_gdn_serving/gigatoken_direct_host_reference01/quality_acceptance.json",
+  "quality_acceptance_sha256": "125c4b1c7c5876ec17622e5f44ecc7469eb361bef68fcd42d11eb1e1734a800c",
   "strict_canary_passed": true,
   "quality_status": "user_accepted_finite",
-  "confirmation_results": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_confirmation01",
-  "confirmation_summary_sha256": "1f41701e8b2b80e5e8634fdf94b39da0c232946523d9064668f83ffb125e2399",
+  "confirmation_results": "results/b200_attention_gdn_serving/gigatoken_direct_host_reference01",
+  "confirmation_summary_sha256": "3f1941236fef0b0332c3325741ff6f61f2fcd4369d6c2dc3519e5d1c7d9c3937",
   "strict_native_precision_passed": false,
   "native_validation": "results/b200_attention_gdn_serving/cudnn_mxfp8_canary05.json",
   "native_validation_sha256": "690c18ebd87557c061d8953717f7837c73aa937669e1fe9b00f2de3054668407",
-  "latency_confirmation_results": "results/b200_attention_gdn_serving/fp4_swiglu_native_output_latency_confirmation01",
-  "latency_confirmation_summary_sha256": "6e46abd139ace96baef87b31b9962549bb8dd4fd5e0a7b05963045fee2688492",
+  "latency_confirmation_results": "results/b200_attention_gdn_serving/gigatoken_direct_host_reference01",
+  "latency_confirmation_summary_sha256": "d5542e4ed16660766aebaeb1a697728d62334aae8f50717a292e76a934abbb80",
   "strict_preparation_precision_passed": false,
   "native_gemm_validation": "results/b200_attention_gdn_serving/fp4_gemm_tune01.json",
   "native_gemm_validation_sha256": "1427d158087a024f0edbf6ccdb5d6399a6f7e0c15dd07f40be1f26d82218c9ed",
   "native_gemm_validation_passed": true,
-  "previous_selection": "experiments/b200_inference_benchmark/baselines/frost_fp4_mlp_gdn_attention_mxfp8_combined_prepare_shape_tuned.json",
-  "warm_reference_tokens_per_second": 196866.3685319446,
-  "warm_reference_latency_seconds": 0.1594607682491187,
-  "warm_reference_p95_seconds": 0.27592359093250696,
+  "previous_selection": "experiments/b200_inference_benchmark/baselines/frost_fp4_mlp_gdn_attention_mxfp8_native_swiglu_fp4_output.json",
+  "warm_reference_tokens_per_second": 197529.72783579555,
+  "warm_reference_latency_seconds": 0.1496923704398796,
+  "warm_reference_p95_seconds": 0.18419175588060166,
   "warm_reference_auroc": {
-    "macro": 0.8781047922719252,
-    "pooled": 0.885841537740272
+    "macro": 0.8781438883701346,
+    "pooled": 0.8857634005313331
   },
   "native_attention_projection_validation": "results/b200_attention_gdn_serving/attention_fp4_canary02.json",
   "native_attention_projection_validation_sha256": "f1f2d1d3b73314457b55656bab080182316ff0e69861bbe89d803fba771e6ba0",
@@ -50,5 +46,24 @@
   "native_swiglu_output_validation_sha256": "a0d01c20cb2e65ababda1671b9ccd77f140efd8065fd92394fab4090111077f8",
   "native_swiglu_output_validation_passed": true,
   "native_swiglu_overhead_reference": "results/b200_attention_gdn_serving/fp4_swiglu_overhead03.json",
-  "native_swiglu_overhead_reference_sha256": "4908b586c37bb984c8792b62d879c3b16fa1a26db0a6cedb1c56636b0889289f"
+  "native_swiglu_overhead_reference_sha256": "4908b586c37bb984c8792b62d879c3b16fa1a26db0a6cedb1c56636b0889289f",
+  "parent_gpu_selection_sha256": "39811c43e0b4bbf574e682d7b21f09e394909af3af4a69f3b398193cace89166",
+  "latency_concurrency": [
+    1
+  ],
+  "throughput_concurrency": [
+    128
+  ],
+  "frontend": {
+    "backend": "gigatoken_native",
+    "package_path": "/tmp/gleipnir-gigatoken-0.10.0",
+    "validation": "results/b200_inference_benchmark/gigatoken_native_canary03/validation.json",
+    "validation_sha256": "cc4bc1150d644edbc7618e137035640134218c572887f556563f76874d6c86d1",
+    "ab_control": true
+  },
+  "host_wrapper": {
+    "validation": "results/b200_attention_gdn_serving/host_wrapper_canary03/validation.json",
+    "validation_sha256": "49a82a2896846f5914a5873c6f8513f7b3a655568896278f28d05a2ed888ffa9"
+  },
+  "host_wrapper_mode": "direct"
 }

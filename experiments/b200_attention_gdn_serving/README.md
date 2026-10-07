@@ -1,5 +1,23 @@
 # B200 attention and GDN throughput campaign
 
+## Selected serving reference, 2026-10-07
+
+The user selects native Gigatoken plus direct FROST host bindings on the existing
+Direct FP4/MXFP8 GPU recipe. Startup and selected comparisons resolve these
+checksum-bound CPU components automatically. Keep warm API/engine 109400/109438;
+no restart is needed for selection. Controls are c1 quick64 median/p95
+149.69/184.19 ms, c128 full320 throughput 197530 input tokens/s and macro/pooled
+AUROC 0.878144/0.885763. Use all recorded repeats at matched concurrency/population.
+Default selected comparisons use c1/c128; other combined-stack controls are
+unmeasured. Prior GPU references and strict precision failures remain archived.
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name unique_start
+```
+
+Use `--legacy-host` for an explicit HF/original-wrapper diagnostic after retiring
+the current server. See [the decision](../../docs/decisions/b200_gigatoken_direct_host_reference.md).
+
 ## FROST host binding wrappers, 2026-10-07
 
 Hypothesis: repeated cuDNN tensor-name/UID resolution and frozen-weight view

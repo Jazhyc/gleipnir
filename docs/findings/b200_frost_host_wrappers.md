@@ -111,5 +111,8 @@ the previous API/engine:
 PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name unique_wrapper_start --frontend-validation results/b200_inference_benchmark/gigatoken_native_canary03/validation.json --frontend-ab --host-wrapper-validation results/b200_attention_gdn_serving/host_wrapper_canary03/validation.json
 ```
 
-The control is opt-in; original bindings remain available. New helper/compiler
-sources require renewed admission, rather than silently accepting old receipts.
+The user subsequently selects native Gigatoken plus this direct wrapper as the
+[standard serving reference](../decisions/b200_gigatoken_direct_host_reference.md).
+Startup resolves both by default; `--legacy-host` keeps the original host path
+available for explicit diagnostics. New helper/compiler sources require renewed
+admission rather than silently accepting old receipts.
