@@ -72,7 +72,11 @@ def require_idle_gpu(*, allowed_pids: set[int] | None = None) -> None:
 
 
 async def run(
-    name: str, retired_parent: Path | None, *, control_only: bool = False
+    name: str,
+    retired_parent: Path | None,
+    *,
+    control_only: bool = False,
+    source_bootstrap_dir: Path | None = None,
 ) -> None:
     # A live parent is replaced only through the existing identity-checked stop
     # helper. An idle-GPU launch reconstructs its preserved public receipts.
@@ -82,7 +86,14 @@ async def run(
         from gleipnir.serving.score_runtime import resume_score_environment
 
         parent = json.loads(retired_parent.read_text())
-        environment = resume_score_environment(ROOT, parent, base_environment())
+        base = base_environment()
+        if source_bootstrap_dir is not None:
+            if not (source_bootstrap_dir / "sitecustomize.py").is_file():
+                raise ValueError("source bootstrap is missing")
+            base["PYTHONPATH"] = (
+                f"{source_bootstrap_dir.resolve()}:{base['PYTHONPATH']}"
+            )
+        environment = resume_score_environment(ROOT, parent, base)
     else:
         parent = json.loads((SERVING / "server.json").read_text())
         worker = json.loads((SERVING / "loaded_precision.json").read_text())[
@@ -154,6 +165,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--retired-parent", type=Path)
+    parser.add_argument(
+        "--source-bootstrap-dir",
+        type=Path,
+        help="Receipt-bound frozen-source import bootstrap",
+    )
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument(
         "--control-only",
@@ -193,7 +209,14 @@ def main() -> None:
         )
         print(out / "prepared.json")
         return
-    asyncio.run(run(args.name, args.retired_parent, control_only=args.control_only))
+    asyncio.run(
+        run(
+            args.name,
+            args.retired_parent,
+            control_only=args.control_only,
+            source_bootstrap_dir=args.source_bootstrap_dir,
+        )
+    )
 
 
 if __name__ == "__main__":
