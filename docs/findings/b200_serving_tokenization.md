@@ -94,3 +94,9 @@ server/native receipts and **59 locally checksum-verified files**. Six focused
 token-payload contract tests and Ruff pass. Selected baseline SHA256 remains
 `39811c43e0b4bbf574e682d7b21f09e394909af3af4a69f3b398193cace89166`.
 The sole healthy serving engine is retained; no long-running trial remains.
+
+Subsequent work wires an optional
+[native Gigatoken frontend](b200_gigatoken_frontend.md), with exact token IDs and
+a substantial interactive tail-latency gain. Its c128 throughput is slightly
+lower than its preceding HF text control; do not treat encoder speed as an
+established GPU-throughput gain. Current retained API/engine is 106836/106874.

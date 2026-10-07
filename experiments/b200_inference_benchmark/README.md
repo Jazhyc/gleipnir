@@ -145,6 +145,25 @@ Stop on source/ID/score failure, startup failure or the bounded suite's completi
 Retain the useful server; preserve failures and restore the original frontend if
 the native candidate materially regresses throughput. No precision promotion.
 
+Outcome: native frontend exact IDs pass full320 and 99 fixtures, and the
+twenty-example score canary is exact. c1 median/p95 improves 156.35/285.81 to
+145.13/187.43 ms; c128 throughput is 194611 input tokens/s (-2.56% versus the
+preceding HF text controls). Keep it optional for latency work; no throughput
+winner or GPU-reference promotion is claimed. Retain native API/engine
+106836/106874. Thirty native/launcher/cache tests, eight caller tests and Ruff
+pass; 141 collected files verify locally. See
+[the Gigatoken finding](../../docs/findings/b200_gigatoken_frontend.md).
+
+```bash
+uv pip install --python .venv/bin/python --target /tmp/gleipnir-gigatoken-0.10.0 --no-deps --only-binary :all: gigatoken==0.10.0
+PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name native_frontend_trial --frontend-validation results/b200_inference_benchmark/gigatoken_native_canary02/validation.json
+```
+
+The recorded admission receipt binds the exact helper and optional package.
+Retire the current server before a new launch; use the existing warm server for
+compatible client trials. The second command measures startup/canary, not the
+full serving sweep.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
