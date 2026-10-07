@@ -174,18 +174,36 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         "max_num_seqs",
         "gpu_memory_utilization",
         "max_num_batched_tokens",
+        "enable_chunked_prefill",
     }:
         raise ValueError("override would change the frozen data/scoring contract")
     graph_worker = ".prefill_graph_worker." in condition["worker_cls"]
-    if (
-        bool(condition.get("prefill_graphs")) != graph_worker
-        or bool(condition.get("compilation_config")) != graph_worker
+    prompt_worker = ".prompt_only_worker." in condition["worker_cls"]
+    if bool(condition.get("prompt_only")) != prompt_worker or (
+        "enable_chunked_prefill" in overrides and not prompt_worker
+    ):
+        raise ValueError("whole-prompt batching requires its prompt-only worker")
+    if bool(condition.get("prefill_graphs")) != graph_worker or (
+        bool(condition.get("compilation_config")) != graph_worker
+        and not condition.get("prompt_only")
     ):
         raise ValueError("prefill graphs require their bounded audited worker")
     if graph_worker:
         from gleipnir.serving_prefill_graphs import validate_graph_config
 
         validate_graph_config(condition)
+    if condition.get("prompt_only"):
+        if (
+            not condition["worker_cls"].endswith(
+                "PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker"
+            )
+            or not condition.get("prompt_only_validation")
+            or overrides.get("enable_chunked_prefill") is not False
+            or condition.get("compilation_config") != {"cudagraph_mode": "PIECEWISE"}
+        ):
+            raise ValueError(
+                "prompt-only mode requires its admitted whole-prompt worker"
+            )
     args = [
         "--quantization",
         condition["quantization"],
@@ -216,14 +234,16 @@ def resolve_condition(condition: dict, hashes: dict) -> dict:
         args.extend(["--kv-cache-dtype", "nvfp4"])
     if condition.get("profiler_config"):
         args.extend(["--profiler-config", json.dumps(condition["profiler_config"])])
-    if graph_worker:
+    if graph_worker or condition.get("prompt_only"):
         args.extend(
             ["--compilation-config", json.dumps(condition["compilation_config"])]
         )
     return {
         **condition,
         "extra_server_args": args,
-        "startup_audit": "results/b200_attention_gdn_serving/native_attention.json",
+        "startup_audit": "results/b200_attention_gdn_serving/native_prompt_only.json"
+        if condition.get("prompt_only")
+        else "results/b200_attention_gdn_serving/native_attention.json",
     }
 
 
@@ -258,6 +278,13 @@ async def high_concurrency(
         "parity_reused_from": str(out / "http_parity.json"),
     }
     write(out / "high_summary.json", report)
+    if condition.get("prompt_only"):
+        report["batching_treatment"] = {
+            "reference_chunked_prefill": True,
+            "candidate_chunked_prefill": False,
+            "max_num_batched_tokens": config["max_num_batched_tokens"],
+            "same_gpu_precision_and_scoring_contract": True,
+        }
     async with httpx.AsyncClient(
         base_url=f"http://127.0.0.1:{config['port']}",
         timeout=300,
@@ -288,8 +315,16 @@ async def high_concurrency(
                 if (
                     before["status"] != "complete"
                     or before["manifest_sha256"] != report["manifest_sha256"]
-                    or before["serving_config_overrides"]
-                    != report["serving_config_overrides"]
+                    or {
+                        k: v
+                        for k, v in before["serving_config_overrides"].items()
+                        if k != "enable_chunked_prefill"
+                    }
+                    != {
+                        k: v
+                        for k, v in report["serving_config_overrides"].items()
+                        if k != "enable_chunked_prefill"
+                    }
                 ):
                     raise ValueError("unmatched high-concurrency reference")
                 reference_repeats = [
@@ -342,6 +377,15 @@ def main() -> None:
     manifest = prepared_manifest(base)
     raw = json.loads(args.condition.read_text())
     sources = list(SOURCES)
+    if raw.get("prompt_only"):
+        sources.extend(
+            [
+                "src/gleipnir/serving_prompt_only.py",
+                "src/gleipnir/serving_prompt_only_contract.py",
+                "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
+                "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
+            ]
+        )
     if raw.get("prefill_graphs"):
         sources.extend(
             [
@@ -517,6 +561,7 @@ def main() -> None:
             "native_attention_projections.json",
             "native_gdn_direct_output.json",
             "prefill_graphs.json",
+            "native_prompt_only.json",
         ):
             if (OUTPUT / name).exists():
                 write(out / name, json.loads((OUTPUT / name).read_text()))

@@ -179,7 +179,9 @@ def server_command(config: dict, merged_model: Path | None = None) -> list[str]:
         "--gpu-memory-utilization",
         str(config["gpu_memory_utilization"]),
         "--no-enable-prefix-caching",
-        "--enable-chunked-prefill",
+        "--enable-chunked-prefill"
+        if config.get("enable_chunked_prefill", True)
+        else "--no-enable-chunked-prefill",
         "--logprobs-mode",
         "processed_logprobs",
         "--seed",
@@ -626,6 +628,19 @@ async def benchmark(
             if len(states) != 1 or states[0]["mode"] != "direct":
                 raise ValueError("selected direct host wrapper is not active")
             report["host_wrapper_state"] = states[0]
+        if kernel_condition and kernel_condition.get("prompt_only"):
+            response = await client.post(
+                "/collective_rpc",
+                json={"method": "prompt_only_state", "kwargs": {}, "timeout": 60},
+            )
+            response.raise_for_status()
+            states = response.json()["results"]
+            if len(states) != 1 or any(
+                states[0][key]
+                for key in ("runner_cache_bytes", "layer_cache_bytes", "cache_specs")
+            ):
+                raise ValueError("prompt-only worker retained persistent cache storage")
+            report["prompt_only_state"] = states[0]
         if kernel_condition and kernel_condition.get("prefill_graphs"):
             from experiments.b200_attention_gdn_serving.prefill_graph_canary import (
                 canary,

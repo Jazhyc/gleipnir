@@ -1022,3 +1022,31 @@ collected artifact/source files have locally verified checksums. Retain API/engi
 105110/105163 with unchanged selected arithmetic; no 30-second restart achieved
 or alternative startup default promoted. See
 [the startup finding](../../docs/findings/b200_serving_startup.md).
+### Cache-free offline monitoring trial, 2026-10-07
+
+Hypothesis: scoring a complete prompt and producing one decision token does not
+need continuation K/V or GDN state. Removing persistent cache allocation, scatter
+writes, page gathers, history-sized packing and recurrent-state copies may reduce
+latency and memory. Whole-prompt batching may reduce GPU utilization relative to
+chunked prefill, so a throughput gain is not assumed.
+
+`prompt_only.json` retains the selected native Gigatoken/direct-FROST host path,
+FP4 projections/direct SwiGLU and causal MXFP8 attention. It disables chunked
+prefill and prefix caching; all 32 layers report no persistent cache spec. A
+runner-only zero-storage metadata group supplies sequence boundaries. This uses
+vLLM's encoder-only *storage* spec with explicitly causal cuDNN computation; it
+does not turn monitoring into bidirectional attention. GDN starts from zero and
+omits final-state output; its convolution API uses disposable per-call scratch.
+HTTP requests must explicitly use one output token and one completion. Continuation,
+partial histories, speculative decode and prompts outside the 32,768-token step
+budget fail closed. Piecewise compilation is retained; decode graph capture is
+disabled for this prefill-only backend.
+
+Selection and baseline: use the same frozen training-seen quick64/full320 cohort
+and selected `gigatoken_direct_host_reference01` controls, without rerunning the
+control or using the final ID set. Check native packed-versus-paged attention and
+zero-state GDN, fresh artifact score parity, then warmed c1 latency and c128 input
+tokens/s plus AUROC deviation. Report the batching change as part of the treatment.
+Stop on invalid history, nonfinite scores, missing layer coverage or native
+equivalence failure. A negative speed result stays a named offline option rather
+than replacing the selected reference.
