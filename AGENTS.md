@@ -113,6 +113,12 @@ and avoid hidden dependencies between experiment folders. Add focused tests for
 non-trivial parsing, cache identity, loss functions, metrics, and launch logic.
 Mock paid APIs and remote lifecycle operations in tests.
 
+Prefer quiet test/lint output. For noisy checks, capture full stdout/stderr in
+an ignored log and return the command, exit status, available pass/fail counts
+and log path. On failure, read the relevant error/traceback and expand diagnostics
+as needed. Report significant warnings even when checks pass. Preserve the
+original exit status when redirecting or piping output; never hide failures.
+
 Work on a feature branch for new research methods. Keep commits scoped, use short
 imperative subjects, and commit coherent completed changes. Do not commit keys,
 raw paid API responses containing sensitive inputs, model weights, caches,
