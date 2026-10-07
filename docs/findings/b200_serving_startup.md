@@ -1,6 +1,6 @@
 # B200 serving startup
 
-2026-10-07. The validated unchanged-arithmetic restart now takes **95.44 s**,
+2026-10-07. The recorded warm NC2 unchanged-arithmetic restart takes **95.44 s**,
 versus **680.8 s** for the archived selected Direct FP4 recipe. Use locally
 staged dependencies and computation-bound compiler identity by default. Keep
 the model, kernel recipe, precision, scoring and selected reference unchanged.
@@ -157,3 +157,33 @@ baseline checksum above is unchanged. No implementation changed, so no new
 unit-test pass is claimed. Retain the healthy single API/engine **105110/105163**
 on port 8010, using shared compiler caches and the selected arithmetic. The next
 ordinary launch keeps the default spawn method.
+
+## Fresh-pod resume bundle
+
+The EU-RO-1 deployment preserves a self-contained **5.16 GB** bundle at
+`.cache/runtime-resume/b200-serving-euro-20261007/`, locally and on the pod.
+Its checksum manifest binds the exact deployed source/lock, staged Python
+packages, pinned Triton/FA4/cuDNN/CUTLASS overlays, native Gigatoken, shared
+compiler/kernel caches, frozen systems inputs and validation/reference receipts.
+Weights, master adapters, merged models and credentials remain separate.
+
+The standalone `restore.py` verifies all payload bytes before writing, extracts
+with path/link protection, checks restored dependency identity, repairs omitted
+bound Git source markers, and reconnects source dependency paths to local runtime
+copies. It refuses existing or overlapping destinations. The repository entry
+point is `scripts/restore_serving_bundle.py` with `PYTHONPATH=src`; the bundle's
+standalone copy works before project/dependency installation. Use the bundle's
+README on a compatible CUDA-13 image with Python 3.12/system standard library
+and zstd. Preserve caches under the usual shared names; do not run the normal
+installing bootstrap first or overwrite an existing resident worker.
+
+A separate-directory restore succeeds and the ordinary launcher accepts its
+binding. `verify_runtime.py` resolves actual CUTLASS 4.8, cuDNN, Triton, Torch
+2.11/cu130 and vLLM 0.24 imports, verifies the native FROST compiler hash, and
+creates **no CUDA context**. The original API/engine stays healthy and warm.
+Receipts are collected in `results/b200_attention_gdn_serving/bundle_restore01/`
+and the bundle's `restoration_validation.json`. Six focused restoration tests
+and Ruff pass. The temporary restored copy is removed after receipt collection.
+This checks reconstruction, not fresh-server readiness or an isolated kernel
+speedup; uploading/restoring this bundle is not included in the warm 95-second
+startup measurement.

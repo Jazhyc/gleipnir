@@ -100,6 +100,14 @@ caches. Both variants passed exact twenty-example serving parity. Full frozen
 development validation gave 198,904 input tokens/s, unchanged macro AUROC,
 pooled AUROC -0.0527 percentage points and no threshold flips.
 
+Fresh compatible pods can instead restore the captured
+`.cache/runtime-resume/b200-serving-euro-20261007/` bundle using its standalone
+`restore.py`. It contains the deployed source/lock, pinned packages, native
+tokenizer, shared caches and validation inputs; weights remain separate. The
+helper verifies payload hashes and dependency bindings and refuses to overwrite
+existing destinations. See the bundle's `README.md` and
+[restore implementation](../../src/gleipnir/serving_bundle.py).
+
 ## Large-prefill piecewise graphs (2026-10-07)
 
 Result: capture and numerical replay checks passed, but warm c128 throughput
@@ -1067,7 +1075,10 @@ The user subsequently terminates pod `i243nsg10usytq` on 2026-10-07; API deletio
 and absence are verified. No worker remains. Retain the 300 GB NC2 network volume
 `ixbh81vf9c`, master adapter, shared disk caches and results for a later authorized
 allocation. Reconstruct the disposable merged model and restage the runtime;
-the experimental cache-free path remains unselected.
+the experimental cache-free path remains unselected. The subsequent EU-RO-1
+screen completes 20 ordinary full-batch passes without a stall; the NC2 failure
+is unreproduced rather than causally fixed. Updated quality and cross-host
+latency qualifications are recorded in the linked finding.
 
 The resumed investigation records operator progress before GPU launches and
 optionally synchronizes after each operator, saving exact whole-batch token IDs
