@@ -78,6 +78,27 @@ under `logs/runpod/b200_inference_benchmark/`. The server PID and command are
 recorded. No capacity is created or terminated. No in-chat scheduling tool is
 available: active-turn startup checks do not promise monitoring after the turn.
 
+## Tokenization contribution, 2026-10-07
+
+Hypothesis: text tokenization adds measurable latency and may limit admission
+throughput in the selected fast B200 stack. `tokenization.py` reuses the sole warm
+selected server; it changes only client prompt payloads. Time three warmed serial
+CPU encodes on all frozen 320 prompts with the same local fast tokenizer and
+special-token policy. Compare every exact token ID with the server's `/tokenize`
+endpoint, recording that endpoint's HTTP/response overhead separately. Alternate
+three text/token-ID repeat pairs at c1 on frozen quick64 and c128 on full320, with
+one excluded warmup per mode/concurrency. Preserve scoring, precision, cache
+policy and input order; report latency bins, tokens/s, API/engine process CPU,
+score differences, AUROC and threshold diagnostics. Token-ID timing excludes
+client token preparation but includes integer JSON serialization; the ablation
+does not isolate pure tokenizer time or promise a production traffic result.
+Stop on input/token/source drift, nonfinite scores, server failure or completion
+of the bounded suite. No kernel change, restart, new capacity or final-ID use.
+
+```bash
+TOKENIZERS_PARALLELISM=false python -m experiments.b200_inference_benchmark.tokenization --name tokenization01
+```
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
