@@ -15,6 +15,7 @@ from experiments.monitor_injection_augmentation_9b.prepare import (
     configuration,
     verify_preparation,
 )
+from gleipnir.evaluation.sources import SCORING_SOURCE_PATHS
 from gleipnir.monitoring_campaign_data import file_hash, write_json
 from gleipnir.monitoring_campaign_runtime import training_environment
 from gleipnir.monitoring_training_command import training_command
@@ -160,7 +161,7 @@ def main() -> None:
             "src/gleipnir/validated_startup.py",
             "src/gleipnir/monitoring_campaign_runtime.py",
             "src/gleipnir/monitoring_training_command.py",
-            "src/gleipnir/monitoring_scoring.py",
+            *SCORING_SOURCE_PATHS,
             "src/gleipnir/packed_training.py",
             "src/gleipnir/packed_sequences.py",
             "experiments/deception_distillation/train_student_sft.py",

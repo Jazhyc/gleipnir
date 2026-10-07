@@ -36,7 +36,7 @@ dev = [
 ]
 
 [project.scripts]
-gleipnir-openrouter = "gleipnir.openrouter_cli:main"
+gleipnir-openrouter = "gleipnir.teachers.openrouter_cli:main"
 
 [build-system]
 requires = ["hatchling"]

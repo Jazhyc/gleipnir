@@ -26,6 +26,7 @@ from experiments.monitor_injection_augmentation.prepare_eval import (
     verify_evaluation,
 )
 from gleipnir.decision_surface import decision_token_ids
+from gleipnir.evaluation.sources import SCORING_SOURCE_PATHS
 from gleipnir.monitoring_campaign_data import digest, file_hash, read_rows, write_json
 from gleipnir.monitoring_scoring import completed_predictions, predictions_for, rendered
 
@@ -78,7 +79,7 @@ def identity() -> dict:
             for name in (
                 "experiments/monitor_injection_augmentation/evaluate.py",
                 "experiments/monitor_injection_augmentation/metrics.py",
-                "src/gleipnir/monitoring_scoring.py",
+                *SCORING_SOURCE_PATHS,
             )
         },
         "baseline_sha256": manifest["source_sha256"][

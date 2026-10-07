@@ -8,6 +8,12 @@ from pathlib import Path
 
 import yaml
 
+from gleipnir.evaluation.sources import (
+    BINARY_SOURCE_PATHS,
+    DECISION_SOURCE_PATHS,
+    PREFERENCE_SOURCE_PATHS,
+    SCORING_SOURCE_PATHS,
+)
 from gleipnir.monitoring_campaign_data import file_hash, read_rows, write_json
 from gleipnir.monitoring_scoring import completed_predictions
 
@@ -132,10 +138,10 @@ def main() -> None:
     files += [
         ROOT / p
         for p in (
-            "src/gleipnir/monitoring_scoring.py",
-            "src/gleipnir/judge_injection_metrics.py",
-            "src/gleipnir/decision_surface.py",
-            "src/gleipnir/binary_evaluation.py",
+            *SCORING_SOURCE_PATHS,
+            *PREFERENCE_SOURCE_PATHS,
+            *DECISION_SOURCE_PATHS,
+            *BINARY_SOURCE_PATHS,
             "src/gleipnir/monitoring_campaign_data.py",
             "uv.lock",
             "experiments/training_procedure_screen/evaluate_causal.py",

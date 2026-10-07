@@ -79,9 +79,7 @@ class MuonAdamW(torch.optim.Optimizer):
         muon_adjust_lr_fn: str = "match_rms_adamw",
     ) -> None:
         if muon_adjust_lr_fn not in MUON_LR_ADJUSTMENTS:
-            raise ValueError(
-                f"muon_adjust_lr_fn must be one of {MUON_LR_ADJUSTMENTS}"
-            )
+            raise ValueError(f"muon_adjust_lr_fn must be one of {MUON_LR_ADJUSTMENTS}")
         defaults = {
             "lr": lr,
             "betas": betas,

@@ -37,7 +37,8 @@ competition runner is included.
 
 ## Layout
 
-- `src/gleipnir/`: shared prompt, API, metric, and training utilities.
+- `src/gleipnir/`: shared code; see the [source map](src/gleipnir/README.md)
+  for packages and entrypoints.
 - `experiments/<hypothesis>/`: one self-contained hypothesis and its launchers.
 - `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
 - `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.

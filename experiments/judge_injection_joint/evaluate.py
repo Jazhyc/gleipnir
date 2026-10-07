@@ -26,6 +26,7 @@ from experiments.judge_injection_joint.prepare import (
     verify_preparation,
 )
 from gleipnir.decision_surface import decision_token_ids
+from gleipnir.evaluation.sources import PREFERENCE_SOURCE_PATHS
 from gleipnir.judge_injection import digest
 from gleipnir.judge_injection_metrics import summarize_preferences
 from gleipnir.monitoring_campaign_data import file_hash, read_rows, write_json
@@ -96,7 +97,7 @@ def identity() -> dict:
             for name in (
                 "experiments/judge_injection_joint/evaluate.py",
                 "experiments/judge_injection_continuation/evaluate.py",
-                "src/gleipnir/judge_injection_metrics.py",
+                *PREFERENCE_SOURCE_PATHS,
             )
         },
         "baseline_summary_sha256": BASELINE_SHA,

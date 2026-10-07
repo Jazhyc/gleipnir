@@ -15,6 +15,7 @@ from experiments.monitor_injection_augmentation.prepare import (
     verify_preparation,
 )
 from experiments.monitoring_hard_labels.prepare import resolved_profile
+from gleipnir.evaluation.sources import SCORING_SOURCE_PATHS
 from gleipnir.monitoring_campaign_data import write_json
 from gleipnir.monitoring_campaign_training import run_training
 
@@ -81,7 +82,7 @@ def main() -> None:
             "experiments/monitor_injection_augmentation/metrics.py",
             "experiments/monitor_injection_augmentation/eval_config.yaml",
             "experiments/monitor_injection_augmentation/launch_evaluate.py",
-            "src/gleipnir/monitoring_scoring.py",
+            *SCORING_SOURCE_PATHS,
             "experiments/monitoring_hard_labels/train.py",
             "src/gleipnir/monitoring_campaign_training.py",
             "src/gleipnir/monitoring_campaign_runtime.py",
