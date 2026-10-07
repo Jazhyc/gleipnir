@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from experiments.b200_score_scaling.run import reference_command, validate_settings
+from experiments.b200_score_scaling.summarize import aggregate
 
 
 def settings():
@@ -42,3 +43,12 @@ def test_scaling_keeps_stock_scheduler_and_token_budget():
     assert reference_command(command, settings(), {}) == command
     with pytest.raises(ValueError, match="stock reference"):
         reference_command(command + ["--scheduler-cls", "experimental"], settings(), {})
+
+
+def test_summary_rejects_quick_cohort_or_missing_repeats():
+    report = {"status": "complete", "trials": []}
+    with pytest.raises(ValueError, match="repeat/workload"):
+        aggregate(report)
+    report["trials"] = [{"concurrency": 1, "latency": {"rows": 64}}] * 3
+    with pytest.raises(ValueError, match="repeat/workload"):
+        aggregate(report)

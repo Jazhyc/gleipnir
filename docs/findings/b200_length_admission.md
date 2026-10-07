@@ -80,6 +80,10 @@ Repeat-median score mean/max drift is 0.004715/0.076474, margin mean/max drift
 baseline-threshold rows are separately retained. Batch composition can change
 the accepted quantized stack's rounding even without changing its arithmetic
 recipe; these sequential controls do not isolate policy as the sole cause.
+The subsequent [stock reference scaling sweep](b200_score_scaling.md) also
+finds c128 pooled/macro shifts of -0.23246/-0.10196 pp and one flip against the
+same archived control. That reinforces the attribution limit: numerical drift
+is observable with stock FCFS too.
 
 The frozen screen fails short p95 improvement (requires >=10%), long p95 bound
 (<=10%) and pooled AUROC bound (<=0.1 pp). Throughput, c1 latency and arrival

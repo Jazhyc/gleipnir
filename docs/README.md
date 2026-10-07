@@ -47,6 +47,9 @@
 - [B200 length-aware admission](findings/b200_length_admission.md): modest
   low-load short-request benefit, longer long-request tails and failed initial
   latency/fairness/pooled-AUROC screen on the selected scorer.
+- [B200 reference concurrency scaling](findings/b200_score_scaling.md): same
+  full320 workload at c1/2/4/16/32/64/128, throughput plateau near c16, latency
+  growth and batch-dependent score diagnostics.
 - [B200 BF16 GDN state](findings/b200_gdn_state.md): native state admission,
   gate-rounding diagnostic and negligible full-vLLM throughput change.
 - [B200 dedicated monitor scoring](findings/b200_monitor_score_endpoint.md):
