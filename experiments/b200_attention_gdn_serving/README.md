@@ -934,3 +934,30 @@ Reuse the prior quality receipt and speed/AUROC controls; no new quality pass
 or alternative model kernel is claimed. Collection `fp4_backend_collection01`
 binds all native results, sources, installed implementation copies, cache and
 restore receipts. See [the backend finding](../../docs/findings/b200_fp4_backend_comparison.md).
+
+### Remaining startup setup, 2026-10-07
+
+Hypothesis: vLLM's supported `VLLM_WORKER_MULTIPROC_METHOD=fork` can reuse API
+imports instead of repeating them in a spawned engine. Compare one warm-cache
+fresh-process restart with archived `startup_local03` (95.44 s), using the same
+selected Direct FP4 recipe, staged dependencies and shared compiler caches.
+Keep vLLM's automatic spawn fallback when CUDA has already initialized; do not
+patch its multiprocessing guard or alter compilation/graph modes. Retire the
+existing API and engine before launching the candidate. Record the requested
+method, observed processes, effective compile identity, readiness, twenty-row
+score parity and native audits. If startup succeeds, check warm c128 throughput
+and AUROC on the frozen 320-row systems-dev cohort; no final-ID selection.
+Stop after this bounded trial, or after a startup failure and reference restore.
+The aspirational target is 30 s; retaining a running engine is not a measurement
+of fresh-process readiness. No new capacity or kernel arithmetic is involved.
+
+Outcome: `startup_fork01` took 95.20 s. vLLM automatically fell back to spawn
+because parent imports initialized CUDA. A CPU-only trace, blocking both CUDA
+initialization and engine launch, locates the import-time query in vLLM's FLA
+helpers. Keep the default method and guard unchanged. Exact twenty-row parity
+passed; three warm c128 passes gave 197474 input tokens/s, unchanged source-macro
+AUROC, pooled delta -0.0723 percentage points and zero threshold flips. Eighty-one
+collected artifact/source files have locally verified checksums. Retain API/engine
+105110/105163 with unchanged selected arithmetic; no 30-second restart achieved
+or alternative startup default promoted. See
+[the startup finding](../../docs/findings/b200_serving_startup.md).

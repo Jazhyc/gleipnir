@@ -46,6 +46,7 @@ Genuine kernel/source/settings changes still invalidate the compiler key.
 | `startup_local02`, first new identity/runtime | 441.92 s | 165.95 s | 152.36 s |
 | `startup_local03`, changed run label | **95.44 s** | **21.07 s** | **6.34 s** |
 | `startup_local04`, compiler-cache mirror | 105.34 s | 16.56 s | 7.07 s |
+| `startup_fork01`, requested fork, automatic spawn fallback | 95.20 s | 21.62 s | 6.32 s |
 
 The two local non-mirror runs have identical compilation identity
 `5a00ce5a0c8398b6b28bd93baa522878dee420dc7c60682c693ae9893bd7fd5d`.
@@ -109,3 +110,50 @@ existing NC2 B200, port 8010. Its arithmetic is the selected Direct FP4 recipe;
 the next ordinary launch uses the faster non-mirror configuration. Only the
 engine owns GPU memory. The staged packages and optional mirror are ephemeral;
 important receipts and authoritative caches remain on the network volume.
+
+## Remaining setup and the 30-second target
+
+A bounded follow-up requested `VLLM_WORKER_MULTIPROC_METHOD=fork` to avoid
+repeating API imports in the engine. The existing API/engine were retired before
+the trial. vLLM's unmodified guard reported **CUDA is initialized** and changed
+the method to `spawn`. Readiness was **95.20 s**, with the same compilation
+identity/AOT entry, 21.62 s compile/load, 6.32 s initial warmup and about nine
+seconds capturing graphs. This establishes no additional speedup; do not enable
+fork by default or bypass the guard. The requested environment value in
+`/proc/environ` is not evidence of the method selected at runtime.
+
+Two CPU-only diagnostic scripts blocked `torch.cuda._lazy_init` before it could
+initialize CUDA. Engine-config construction completed without CUDA; importing
+the engine-client path then reached vLLM's
+`model_executor/layers/fla/ops/utils.py`. Its import-time `_check_platform()`
+calls Triton's current-target query, which calls `torch.cuda.current_device()`.
+Further import-time name/capability checks also exist in that module. The second
+script blocked engine launch as well. No upstream package or hardware query was
+patched in the serving process. This identifies a concrete opportunity to defer
+GPU-specific imports/queries to the worker, but does not establish the safety or
+startup benefit of that refactor. vLLM documents both the faster fork path and
+its dependency/initialization constraints in its
+[multiprocessing design](https://github.com/vllm-project/vllm/blob/main/docs/design/multiprocessing.md);
+the collected installed 0.24.0 sources are authoritative for this trial.
+
+The installed `GPUWorker.determine_available_memory()` also supports explicit
+`kv_cache_memory_bytes`, but still runs `profile_run()` to compile/warm the
+maximum token shape. It would avoid the extra graph-memory estimate (about
+three seconds in these starts), not the 21-second compiled-graph reconstruction
+or per-process graph capture. No fixed KV budget or smaller graph envelope was
+selected. Those small setup changes cannot by themselves reach 30 seconds;
+that target requires larger reductions in process imports and graph setup, or
+retaining initialized processes across compatible client-only trials. Resident
+reuse must not be reported as fresh restart latency.
+
+`startup_fork_quality01` has one excluded warmup and three c128 passes, median
+**197474 input tokens/s** (+0.31% against the archived reference; no meaningful
+new speedup). Source-macro AUROC is unchanged; pooled AUROC is lower by **0.0723
+percentage points**, with zero threshold flips. The twenty-row startup score
+canary is exactly equal to the selected reference. Existing native acceptance
+and strict failures remain unchanged. All **81 collected files** have locally
+verified checksums in `startup_setup_diagnosis01/checksums.json`; the selected
+baseline checksum above is unchanged. No implementation changed, so no new
+unit-test pass is claimed. Retain the healthy single API/engine **105110/105163**
+on port 8010, using shared compiler caches and the selected arithmetic. The next
+ordinary launch keeps the default spawn method.
