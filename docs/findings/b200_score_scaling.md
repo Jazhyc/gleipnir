@@ -41,10 +41,17 @@ Medians across three timed repeats per level, same workload throughout:
 | 1 | 96,046 | 23.45 | 30.47 ms | 130.74 ms | 172.67 ms |
 | 2 | 110,873 | 27.07 | 56.56 ms | 168.97 ms | 207.00 ms |
 | 4 | 157,242 | 38.39 | 85.07 ms | 221.20 ms | 271.32 ms |
+| 8* | 196,514 | 47.98 | 153.28 ms | 303.93 ms | 361.99 ms |
 | 16 | 214,332 | 52.33 | 288.13 ms | 469.71 ms | 541.00 ms |
 | 32 | 216,528 | 52.87 | 598.26 ms | 760.70 ms | 779.03 ms |
 | 64 | 216,498 | 52.86 | 1185.45 ms | 1351.00 ms | 1466.38 ms |
 | 128 | 216,761 | 52.93 | 2260.55 ms | 2669.56 ms | 2695.00 ms |
+
+*The user subsequently requested c8 during the
+[fixed 2K sweep](b200_context_scaling.md). Its full320 addendum uses this same
+warm process, inputs and timing protocol; repeat range 195,353–197,887 input
+tokens/s. The original `scale01` report and quality comparisons remain unchanged.
+The 2K finding includes a figure with all eight points on both workload curves.
 
 Input-throughput repeat ranges are 95,908--96,931; 109,683--111,918;
 153,360--157,960; 213,997--216,269; 216,256--216,699; 216,155--218,268;
