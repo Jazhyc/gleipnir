@@ -75,9 +75,16 @@ def test_training_exports_and_historical_pickle():
         _ = training.missing_attribute
 
 
-def test_legacy_and_canonical_annotation_cli_help_match():
+@pytest.mark.parametrize(
+    "legacy,canonical",
+    [
+        ("gleipnir.openrouter_cli", "gleipnir.teachers.openrouter_cli"),
+        ("gleipnir.monitoring_systems_screen", "gleipnir.campaigns.systems_screen"),
+    ],
+)
+def test_legacy_and_canonical_command_help_match(legacy, canonical):
     outputs = []
-    for name in ("gleipnir.openrouter_cli", "gleipnir.teachers.openrouter_cli"):
+    for name in (legacy, canonical):
         result = subprocess.run(
             [sys.executable, "-m", name, "--help"],
             check=True,
@@ -87,3 +94,12 @@ def test_legacy_and_canonical_annotation_cli_help_match():
         assert result.stderr == ""
         outputs.append(result.stdout)
     assert outputs[0] == outputs[1]
+
+
+def test_repository_and_scratch_paths_survive_package_depth_change():
+    from gleipnir.campaigns.systems_screen import ROOT
+    from gleipnir.training.artifacts import systems_scratch
+
+    repository = Path(__file__).resolve().parents[1]
+    assert ROOT == repository
+    assert systems_scratch() == repository / "results/systems_training_scratch"

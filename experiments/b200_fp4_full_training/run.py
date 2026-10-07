@@ -70,12 +70,14 @@ def main() -> None:
                     "src/gleipnir/cudnn_fp4_gemm.py",
                     "src/gleipnir/cudnn_fp4_epilogue.py",
                     "src/gleipnir/nvfp4_pack.py",
-                    "src/gleipnir/packed_training.py",
+                    "src/gleipnir/training/packed.py",
+                    "src/gleipnir/__init__.py",
+                    "src/gleipnir/_compat.py",
                     "src/gleipnir/packed_sequences.py",
                     "src/gleipnir/validated_startup.py",
                     "src/gleipnir/monitoring_campaign_evaluation.py",
                     "src/gleipnir/monitoring_campaign_runtime.py",
-                    "src/gleipnir/monitoring_training_command.py",
+                    "src/gleipnir/campaigns/training_command.py",
                 )
             ],
         ]

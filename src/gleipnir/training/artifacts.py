@@ -9,7 +9,7 @@ from typing import Any
 
 def systems_scratch(root: Path | None = None) -> Path:
     """Return the shared scratch location, separate from immutable run receipts."""
-    repository = root or Path(__file__).resolve().parents[2]
+    repository = root or Path(__file__).resolve().parents[3]
     return repository / "results/systems_training_scratch"
 
 

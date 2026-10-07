@@ -6,10 +6,10 @@ Use canonical package paths for new code; moved implementations have one home.
 
 | Package | Responsibilities | Starting points |
 | --- | --- | --- |
-| `training/` | Optimizers and adapter initialization | [optimizers.py](training/optimizers.py), [qwen35_loftq.py](training/qwen35_loftq.py) |
+| `training/` | Objectives, batching, branch execution, training audits and adapter utilities | [optimizers.py](training/optimizers.py), [packed.py](training/packed.py), [branch_trainer.py](training/branch_trainer.py), [binary_tasks.py](training/binary_tasks.py), [mil.py](training/mil.py) |
 | `teachers/` | Teacher API requests, resumable annotation, teacher-cache validation | [openrouter_cli.py](teachers/openrouter_cli.py), [openrouter.py](teachers/openrouter.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
-| `data/` | Training augmentation and prefix preparation | [judge_injection.py](data/judge_injection.py), [prefix_boundaries.py](data/prefix_boundaries.py), [prefix_sampling.py](data/prefix_sampling.py) |
-| `campaigns/` | Concurrent campaign progress | [status.py](campaigns/status.py) |
+| `data/` | Campaign inputs, augmentation, filtering and prefix preparation | [monitoring.py](data/monitoring.py), [branches.py](data/branches.py), [exclusions.py](data/exclusions.py), [nested_subsets.py](data/nested_subsets.py), [transcript_injection.py](data/transcript_injection.py) |
+| `campaigns/` | Training launches, matched systems screens and stage coordination | [systems_screen.py](campaigns/systems_screen.py), [training.py](campaigns/training.py), [training_command.py](campaigns/training_command.py), [lanes.py](campaigns/lanes.py), [status.py](campaigns/status.py) |
 | `evaluation/` | Scores, metrics, calibration, preference diagnostics, sharding and recovery | [probabilities.py](evaluation/probabilities.py), [binary.py](evaluation/binary.py), [scoring.py](evaluation/scoring.py), [metrics.py](evaluation/metrics.py), [preferences.py](evaluation/preferences.py) |
 | `configs/` | Packaged Hydra configuration | [configs/](configs/) |
 
@@ -19,18 +19,23 @@ remain supported through lazy exports. The annotation command is
 `python -m gleipnir.teachers.openrouter_cli`; `gleipnir-openrouter` and
 `python -m gleipnir.openrouter_cli` remain supported.
 
+Use `python -m gleipnir.campaigns.systems_screen` for config-driven training
+screens. The historical `gleipnir.monitoring_systems_screen` command remains an
+alias. Repository/cache roots, job schemas, objectives, and batching are unchanged.
+
 ## Modules awaiting migration
 
 Serving and kernels remain at their existing paths. Consult the
 [root README](../../README.md) for the selected serving and training recipes.
 
-The training runners, backend setup, and campaign preparation helpers also remain
-at their existing paths where launchers record their source-file checksums.
-Their migration must update those provenance lists to include implementations,
-rather than hashing only alias registration. Do not change frozen receipts or
-contracts to accommodate a move. Important entrypoints are
-`monitoring_systems_screen.py`, `monitoring_campaign_training.py`,
-`packed_training.py`, and `branch_trainer.py`.
+Training backend integrations remain flat: `flashqla_training.py`,
+`native_fp4_training.py`, `fouroversix_training.py`, `qwen35_fast_training.py`,
+`attention_backends.py`, `packed_sequences.py`, `bf16_lora.py`, and
+`training_hotpath.py`. Backend benchmark/canary runners also retain their paths.
+New source snapshots use canonical implementation paths and include alias
+registration. Source lists inherited from a receipt can translate live source
+references using `_compat.canonical_source_reference`; archived artifacts and
+their recorded hashes are never rewritten.
 
 The source-bound `monitoring_campaign_evaluation.py` orchestrator also remains at
 its existing path, exposed as `gleipnir.evaluation.campaign` through the same

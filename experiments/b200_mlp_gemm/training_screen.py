@@ -284,11 +284,13 @@ def main() -> None:
         *[
             Path("src/gleipnir") / name
             for name in (
-                "packed_training.py",
+                "training/packed.py",
+                "__init__.py",
+                "_compat.py",
                 "packed_training_screen.py",
                 "packed_benchmark.py",
                 "attention_backends.py",
-                "monitoring_training_command.py",
+                "campaigns/training_command.py",
             )
         ],
     ]

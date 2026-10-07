@@ -24,7 +24,7 @@ from typing import Any
 
 from gleipnir.campaign_status import CampaignStatus
 
-ROOT = Path(__file__).resolve().parents[2]
+ROOT = Path(__file__).resolve().parents[3]
 SCHEMA_VERSION = 1
 
 

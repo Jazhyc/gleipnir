@@ -167,7 +167,9 @@ def main() -> None:
                         "experiments/student_injection_awareness/train.py",
                         "experiments/deception_distillation/train_student_sft.py",
                         "experiments/tool_trajectory_monitoring/run_distillation_train.py",
-                        "src/gleipnir/packed_training.py",
+                        "src/gleipnir/training/packed.py",
+                        "src/gleipnir/__init__.py",
+                        "src/gleipnir/_compat.py",
                         "src/gleipnir/packed_sequences.py",
                     ]
                 },

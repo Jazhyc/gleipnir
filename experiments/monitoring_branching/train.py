@@ -10,7 +10,23 @@ from pathlib import Path
 from hydra import compose, initialize_config_dir
 from omegaconf import OmegaConf
 
+from gleipnir._compat import canonical_source_reference
 from gleipnir.monitoring_systems_screen import atomic_write_json, sha256_file
+
+
+def validate_smoke_sources(files: dict[str, str]) -> None:
+    """Keep exact byte checks against historical or canonical source-list keys."""
+    for name in (
+        "branch_model.py",
+        "branch_training.py",
+        "branch_data.py",
+        "prefix_loss.py",
+    ):
+        historical = str(Path("src/gleipnir") / name)
+        current = canonical_source_reference(historical)
+        recorded = {files[key] for key in (current, historical) if key in files}
+        if len(recorded) != 1 or sha256_file(Path(current)) != next(iter(recorded)):
+            raise ValueError("numerical path changed since fresh-adapter smoke")
 
 
 def prepare(config_name: str = "training") -> Path:
@@ -43,15 +59,7 @@ def prepare(config_name: str = "training") -> Path:
         previous = json.loads((smoke_root / "manifest.json").read_text())
         if smoke["state"] != "complete" or smoke["parents"] != 8:
             raise ValueError("reused fresh-adapter smoke did not pass")
-        for name in (
-            "branch_model.py",
-            "branch_training.py",
-            "branch_data.py",
-            "prefix_loss.py",
-        ):
-            path = Path("src/gleipnir") / name
-            if sha256_file(path) != previous["files"][str(path)]:
-                raise ValueError("numerical path changed since fresh-adapter smoke")
+        validate_smoke_sources(previous["files"])
         additional_paths.extend([smoke_status, smoke_root / "manifest.json"])
     exception = config["numerical_exception"]
     if (
@@ -169,11 +177,13 @@ def prepare(config_name: str = "training") -> Path:
     paths.extend(
         Path("src/gleipnir") / name
         for name in (
-            "branch_training.py",
-            "branch_trainer.py",
-            "branch_model.py",
-            "branch_data.py",
-            "prefix_loss.py",
+            "training/branches.py",
+            "__init__.py",
+            "_compat.py",
+            "training/branch_trainer.py",
+            "training/branch_model.py",
+            "data/branches.py",
+            "training/prefix_loss.py",
         )
     )
     atomic_write_json(

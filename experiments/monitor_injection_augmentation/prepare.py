@@ -171,8 +171,10 @@ def main() -> None:
     for name in (
         "experiments/monitor_injection_augmentation/templates.json",
         "experiments/monitor_injection_augmentation/prepare.py",
-        "src/gleipnir/transcript_injection.py",
-        "src/gleipnir/monitoring_campaign_data.py",
+        "src/gleipnir/data/transcript_injection.py",
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/data/monitoring.py",
         "experiments/tool_trajectory_monitoring/prompting.py",
         "experiments/tool_trajectory_monitoring/prompts/manifest.json",
         "experiments/tool_trajectory_monitoring/prompts/student.txt",

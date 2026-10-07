@@ -10,6 +10,7 @@ import sys
 from pathlib import Path
 
 from experiments.b200_mlp_gemm.resident_protocol import validate_request, write_json
+from gleipnir._compat import canonical_source_reference
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "results/b200_mlp_gemm/warmedprofile01/summary.json"
@@ -105,12 +106,14 @@ def main() -> None:
     files = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         *[
-            Path(x)
+            Path(canonical_source_reference(x))
             for x in source["source_sha256"]
             if not x.startswith("experiments/b200_mlp_gemm/")
         ],
         Path("src/gleipnir/validated_startup.py"),
-        Path("src/gleipnir/adaptive_microbatching.py"),
+        Path("src/gleipnir/training/adaptive_microbatching.py"),
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
     ]
     files = sorted(set(files))
     for file in files:

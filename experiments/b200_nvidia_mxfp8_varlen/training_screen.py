@@ -156,10 +156,12 @@ def main(default_config: Path | None = None) -> None:
             ROOT / "src/gleipnir" / name
             for name in [
                 "packed_sequences.py",
-                "packed_training.py",
+                "training/packed.py",
+                "__init__.py",
+                "_compat.py",
                 "packed_training_screen.py",
                 "packed_benchmark.py",
-                "monitoring_training_command.py",
+                "campaigns/training_command.py",
             ]
         ),
         ROOT / "experiments/deception_distillation/train_student_sft.py",

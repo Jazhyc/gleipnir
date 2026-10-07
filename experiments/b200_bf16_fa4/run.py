@@ -111,7 +111,9 @@ def main() -> None:
         Path(__file__),
         ROOT / config["profile"],
         ROOT / "src/gleipnir/packed_sequences.py",
-        ROOT / "src/gleipnir/packed_training.py",
+        ROOT / "src/gleipnir/training/packed.py",
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         ROOT / "experiments/deception_distillation/train_student_sft.py",
     ]
     report = {

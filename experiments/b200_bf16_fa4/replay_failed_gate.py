@@ -51,7 +51,9 @@ def main() -> None:
                 "experiments/b200_bf16_fa4/replay_failed_gate.py",
                 "experiments/b200_bf16_fa4/run.py",
                 "experiments/deception_distillation/train_student_sft.py",
-                "src/gleipnir/packed_training.py",
+                "src/gleipnir/training/packed.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
                 "src/gleipnir/packed_training_screen.py",
                 "src/gleipnir/packed_sequences.py",
             ]

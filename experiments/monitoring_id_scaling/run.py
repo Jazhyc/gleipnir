@@ -177,7 +177,9 @@ def prepare() -> None:
         [
             Path(__file__),
             Path(__file__).with_name("config.yaml"),
-            Path("src/gleipnir/nested_subsets.py"),
+            Path("src/gleipnir/data/nested_subsets.py"),
+            Path("src/gleipnir/__init__.py"),
+            Path("src/gleipnir/_compat.py"),
             Path("experiments/monitoring_duration/run.py"),
         ]
     )

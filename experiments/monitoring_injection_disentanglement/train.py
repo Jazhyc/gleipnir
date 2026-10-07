@@ -115,8 +115,10 @@ def main() -> None:
                     for p in (
                         "experiments/monitoring_injection_disentanglement/train.py",
                         "experiments/deception_distillation/train_student_sft.py",
-                        "src/gleipnir/monitoring_training_command.py",
-                        "src/gleipnir/packed_training.py",
+                        "src/gleipnir/campaigns/training_command.py",
+                        "src/gleipnir/__init__.py",
+                        "src/gleipnir/_compat.py",
+                        "src/gleipnir/training/packed.py",
                         "src/gleipnir/packed_sequences.py",
                     )
                 },

@@ -71,8 +71,8 @@ def main() -> None:
             "experiments/judge_injection_continuation/train.py",
             "experiments/deception_distillation/train_student_sft.py",
             *DECISION_SOURCE_PATHS,
-            "src/gleipnir/monitoring_training_command.py",
-            "src/gleipnir/packed_training.py",
+            "src/gleipnir/campaigns/training_command.py",
+            "src/gleipnir/training/packed.py",
         ]
         write_json(
             output / "execution_contract.json",

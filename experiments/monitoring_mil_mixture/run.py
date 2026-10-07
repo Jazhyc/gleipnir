@@ -242,7 +242,9 @@ def prepare() -> None:
         Path(config["source_jobs"]),
         Path(config["monitoring_selection"]),
         Path("experiments/deception_distillation/train_student_sft.py"),
-        Path("src/gleipnir/mil.py"),
+        Path("src/gleipnir/training/mil.py"),
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path("experiments/monitoring_mil_mixture/run.py"),
         Path("experiments/monitoring_mil_mixture/config.yaml"),
     ]
@@ -447,8 +449,10 @@ def distributed_screen(attempt: int = 1, eager_ddp: bool = False) -> None:
     code = [
         Path(__file__),
         Path("experiments/deception_distillation/train_student_sft.py"),
-        Path("src/gleipnir/distributed_training.py"),
-        Path("src/gleipnir/mil.py"),
+        Path("src/gleipnir/training/distributed.py"),
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
+        Path("src/gleipnir/training/mil.py"),
         Path("experiments/tool_trajectory_monitoring/run_distillation_train.py"),
     ]
     atomic_write_json(
@@ -573,8 +577,10 @@ def promote_distributed_screen(screen: Path, root: Path) -> None:
         Path("experiments/tool_trajectory_monitoring/run_distillation_train.py"),
         Path("experiments/monitoring_lr_sweep/core.py"),
         Path("experiments/monitoring_subset_duration/run.py"),
-        Path("src/gleipnir/distributed_training.py"),
-        Path("src/gleipnir/mil.py"),
+        Path("src/gleipnir/training/distributed.py"),
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
+        Path("src/gleipnir/training/mil.py"),
     ]
     atomic_write_json(
         root / "manifest.json",

@@ -142,7 +142,7 @@ def main() -> None:
             *PREFERENCE_SOURCE_PATHS,
             *DECISION_SOURCE_PATHS,
             *BINARY_SOURCE_PATHS,
-            "src/gleipnir/monitoring_campaign_data.py",
+            "src/gleipnir/data/monitoring.py",
             "uv.lock",
             "experiments/training_procedure_screen/evaluate_causal.py",
             "experiments/deception_distillation/train_student_sft.py",
