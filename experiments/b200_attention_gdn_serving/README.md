@@ -2,6 +2,12 @@
 
 ## Large-prefill piecewise graphs (2026-10-07)
 
+Result: capture and numerical replay checks passed, but warm c128 throughput
+fell 1.99% to 192,943 input tokens/s and c1 median latency rose 8.14% to
+172.44 ms. Macro/pooled AUROC changed +0.0117/-0.0352 percentage points.
+The selected reference is unchanged. See the
+[capture findings](../../docs/findings/b200_prefill_graph_capture.md).
+
 Hypothesis: the selected Direct FP4 reference leaves launch gaps because its
 256-token graph ceiling excludes large prefills. `prefill_graphs.json` captures
 13 explicit sizes through 32,768 with PIECEWISE mode, retaining eager

@@ -5,6 +5,11 @@ installed vLLM 0.24.0 source. No new GPU run, server restart or recipe promotion
 The direct-GDN output path remains deferred; use the selected reference for
 future launch-optimization comparisons.
 
+Subsequent experiment: [large-prefill graph capture](b200_prefill_graph_capture.md)
+worked and reduced launch API calls by 54.8%, but regressed warm c128 throughput
+by 1.99% and c1 median latency by 8.14%. The original reference remains selected;
+the inspection below is preserved as the hypothesis preceding that result.
+
 ## Concrete configuration mismatch
 
 The reference enables `FULL_AND_PIECEWISE` graphs, but its capture sizes stop
