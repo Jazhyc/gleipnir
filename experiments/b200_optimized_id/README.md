@@ -112,3 +112,6 @@ PYTHONPATH=<frozen-serving-source-bootstrap>:src:. <serving-python> \
 PYTHONPATH=src:. python -m experiments.b200_optimized_id.analyze \
   results/b200_optimized_id/continuous01
 ```
+
+The continuous follow-up is recorded alongside the original grouped result in
+[the finding](../../docs/findings/b200_optimized_id.md#continuous-admission-follow-up).

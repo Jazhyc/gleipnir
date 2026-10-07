@@ -1,12 +1,14 @@
 # Optimized-stack drift on the last full-trained adapter
 
-2026-10-08. One complete evaluation of the last full-trained 4B adapter on the
+2026-10-08. The initial grouped evaluation of the last full-trained 4B adapter on the
 optimized vLLM stack shows a material ID regression against the same adapter's
 archived BF16 dynamic-LoRA predictions. Source-macro AUROC falls 1.27 percentage
 points and raw normalized pAUROC@20 falls 3.48 points. Gloom accounts for most
 of the loss. Reproducing the accepted small canary does not establish held-out
 quality parity. Keep the user-selected serving default and frozen controls;
 this measurement neither promotes a new checkpoint nor isolates a kernel cause.
+The continuous-admission follow-up below gives a small throughput gain with
+longer request latency and retains the quality regression.
 
 ## Frozen comparison
 
@@ -124,3 +126,83 @@ Six focused identity, label/order, repeat and live-command tests pass; Ruff is
 clean. The verified API/engine are retired after the single full pass. Closure
 shows 0 MiB GPU allocation and no GPU processes. The existing Pod, FP32 master,
 merged checkpoint, network volume, caches and historical evidence remain intact.
+
+## Continuous-admission follow-up
+
+The user requested continuous admission on 2026-10-08. Refill request slots as
+responses complete, reuse one HTTP pool and persist results through an
+asynchronous journal. The [experiment contract](../../experiments/b200_optimized_id/README.md#continuous-admission-comparison)
+defines input/adapter-bound recovery, durability and failure handling.
+
+Freeze the grouped `id02` artifacts in `continuous.json`, use one new full pass
+(`continuous01`), and leave the historical grouped and BF16 controls unchanged.
+The exact server command, pooling correction, rendered workload, merged model
+and selected backend match the grouped control. The same GPU UUID is verified
+live; reuse the persistent compiler cache and reproduce the same accepted real
+canary. Startup takes 106.380 seconds and is excluded, as is quick64 warmup.
+This is a sequential, single-pass client comparison with a server restart and
+persistent cache reuse. It combines admission, HTTP-pool reuse and persistence;
+new batch combinations can encounter first-use work. It does not isolate the
+barrier's causal cost or establish a precise speed or quality repeat distribution.
+
+| Measurement | Grouped `id02` | Continuous `continuous01` |
+| --- | ---: | ---: |
+| Timed full-pass duration | 153.131 s | 149.063 s |
+| Input tokens/s | 220,406 | 226,420 |
+| Requests/s | 19.67 | 20.21 |
+| Request latency p50 | 2.349 s | 7.549 s |
+| Request latency p95 | 7.737 s | 9.348 s |
+| Request latency p99 | 9.057 s | 9.641 s |
+| Mean HTTP requests in flight | 66.06 | 124.18 |
+| Source-macro AUROC | 0.953200 | 0.952724 |
+| Source-macro pAUROC@20 | 0.851263 | 0.850323 |
+
+Measured throughput increases **2.73%**, elapsed time decreases **2.66%**, and
+p50 latency increases **3.21x**. Mean HTTP concurrency is the integral of request
+durations divided by full-pass time, not GPU occupancy. Both clients cap at
+128; continuous admission fills those slots much more consistently. Most of
+that increase manifests as request waiting rather than a large throughput gain
+in this trial. The grouping barrier is therefore not evidenced as a large
+throughput bottleneck by this comparison; the small speed difference remains
+subject to unmeasured run variation.
+
+The asynchronous writer spends 26.253 seconds in overlapping append/flush/fsync
+I/O, with a peak queue of 29 records versus capacity 256. Aggregate queue-put
+wait/overhead is 0.0087 seconds; the queue never fills. Persistence is not holding
+up admission. Final drain and HTTP cleanup take 0.0261 seconds after the last
+validated response; ordered prediction export adds 0.0649 seconds. These timings
+include stronger fsync durability than the original grouped writes and should
+not be interpreted as 26 seconds of serialized inference overhead. The grouped
+timer includes batch checkpoints and excludes its final ordered export; the
+continuous duration includes both the journal and its 0.0649-second export.
+
+Compared with grouped optimized scores, MAE is 0.015495, Pearson 0.995214,
+absolute-error p95 0.079704 and maximum 0.358357. There are **44 threshold
+disagreements** (16 negative-to-positive, 28 positive-to-negative), 1.46% of
+inputs. Source-macro AUROC changes -0.0475 percentage points and pAUROC@20
+-0.0940 points. Gloom AUROC/pAUROC@20 change -0.1002/-0.3992 points; STRIDE
++0.0052/+0.2111 points. Pooled AUROC changes -0.0415 points and Brier increases
+0.000653. Source-macro Brier is 0.117187 versus 0.116865. Keep this schedule
+sensitivity visible rather than treating client batching as numerically neutral.
+
+Relative to BF16, continuous macro AUROC is lower by 1.3202 points and
+pAUROC@20 by 3.5767 points. Score MAE is 0.071444, Pearson 0.960388 and threshold
+disagreements 217. Pooled Brier/ECE are 0.130876/0.152391. The original
+whole-stack quality regression remains; this client change does not resolve it.
+No precision, threshold, checkpoint or quality-default promotion occurs.
+
+All 42 collected remote artifacts match sizes and SHA-256 values in
+`results/b200_optimized_id/continuous01_remote_artifacts.json`. The local
+journal audit validates every persisted response against exact input identities,
+raw two-logit consistency and frozen contract bindings, verifies equality to the
+ordered predictions, preserves input dispatch order and observes peak HTTP
+concurrency exactly 128. Raw start/completion offsets allow later request-trace
+analysis. Post-run sources, paired comparisons against both controls, plots and
+local audits are saved separately from immutable execution snapshots.
+
+Eleven focused local mocked tests pass; the four admission/recovery tests also
+pass in the actual serving runtime. Local tests require running outside the
+restricted sandbox: a minimal `asyncio.to_thread` reproduction also times out
+inside it, while unrestricted tests and remote thread wakeups work. The only
+server is retired after the pass; closure shows no GPU processes and 0 MiB.
+The existing Pod, checkpoints, shared caches and previous results are preserved.
