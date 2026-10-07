@@ -44,16 +44,18 @@ def main():
     )
 
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__).relative_to(Path.cwd()),
-        Path("src/gleipnir/serving_fp4_swiglu.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_overhead.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_native_output.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_block_reference.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_padding.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_pack.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
-        Path("src/gleipnir/serving_fp4_fusion.py"),
+        Path("src/gleipnir/serving/fp4/swiglu.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_overhead.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_native_output.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_block_reference.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_padding.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_pack.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/serving/fp4/fusion.py"),
     ]
     archive = args.output.with_suffix("").with_name(args.output.stem + "_sources")
     for p in sources:
@@ -159,9 +161,7 @@ def main():
                     candidate = plan(a, interleaved)
                     decoded = decode_operand(candidate)
                     packed_expected = reference_decode(activated)
-                    record["packing_reference"] = compare(
-                        decoded, packed_expected
-                    )
+                    record["packing_reference"] = compare(decoded, packed_expected)
                     out = down(candidate, down_weight)
                     expected = (
                         decoded.float() @ decode_operand(down_weight)[:16].float().T

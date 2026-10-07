@@ -79,7 +79,7 @@ async def measure(name: str, node: int, *, hot_thread: bool = False) -> None:
     out.mkdir(exist_ok=False)
     (out / "executed_client.py").write_bytes(Path(__file__).read_bytes())
     (out / "executed_affinity.py").write_bytes(
-        (ROOT / "src/gleipnir/serving_cpu_placement.py").read_bytes()
+        (ROOT / "src/gleipnir/serving/cpu_placement.py").read_bytes()
     )
     serving = ROOT / "results/b200_attention_gdn_serving"
     server = json.loads((serving / "server.json").read_text())

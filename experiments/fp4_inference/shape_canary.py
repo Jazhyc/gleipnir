@@ -53,9 +53,11 @@ def main() -> None:
     torch.backends.cuda.matmul.allow_tf32 = False
     torch.backends.cuda.matmul.allow_bf16_reduced_precision_reduction = False
     sources = (
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__),
-        Path("src/gleipnir/vllm_nvfp4.py"),
-        Path("src/gleipnir/nvfp4_reference.py"),
+        Path("src/gleipnir/serving/vllm/nvfp4.py"),
+        Path("src/gleipnir/kernels/fp4/nvfp4_reference.py"),
         Path("experiments/fp4_inference/kernel_canary.py"),
     )
     result = {

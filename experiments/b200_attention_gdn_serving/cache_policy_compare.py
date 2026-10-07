@@ -265,6 +265,19 @@ async def measure(phase: str, output: Path, manifest: dict, settings: dict) -> d
     return report
 
 
+def _live_sources(root: Path, sources: set[str]) -> set[str]:
+    """Keep deployed snapshot paths; resolve relocations only when needed."""
+    if all((root / p).is_file() for p in sources):
+        return set(sources)
+    from gleipnir._compat import canonical_source_reference
+
+    return {
+        *(canonical_source_reference(p) for p in sources),
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+    }
+
+
 async def launch(phase: str, output: Path, base: dict, manifest: dict) -> None:
     os.environ.pop("GLEIPNIR_PROMPT_ONLY_TRACE", None)
     os.environ.pop("GLEIPNIR_PROMPT_ONLY_TRACE_MODE", None)
@@ -283,13 +296,16 @@ async def launch(phase: str, output: Path, base: dict, manifest: dict) -> None:
     )
     if phase == "fresh_prompt_only":
         sources.update(
+            f"src/gleipnir/{name}.py"
+            for name in ("serving_prompt_only", "serving_prompt_only_contract")
+        )
+        sources.update(
             [
-                "src/gleipnir/serving_prompt_only.py",
-                "src/gleipnir/serving_prompt_only_contract.py",
                 "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
                 "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
             ]
         )
+    sources = _live_sources(ROOT, sources)
     condition = resolve_condition(raw, {p: sha(ROOT / p) for p in sorted(sources)})
     config = {**base, **raw["serving_config_overrides"], "port": raw["port"]}
     output.mkdir(exist_ok=False)

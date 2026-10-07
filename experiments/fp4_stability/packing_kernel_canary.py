@@ -66,8 +66,10 @@ def main() -> None:
         "source_sha256": {
             name: hashlib.sha256(Path(name).read_bytes()).hexdigest()
             for name in [
-                "src/gleipnir/fp4_quantization_kernels.py",
-                "src/gleipnir/fp4_row_kernels.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/kernels/fp4/fp4_quantization_kernels.py",
+                "src/gleipnir/kernels/fp4/fp4_row_kernels.py",
                 "experiments/fp4_stability/packing_kernel_canary.py",
             ]
         },

@@ -78,8 +78,10 @@ def main() -> None:
         "activation_scale_mode": args.scale_mode,
         "capture_manifest_sha256": sha256_file(manifest_path),
         "source_sha256": sha256_file(Path(__file__)),
-        "native_method_sha256": sha256_file(Path("src/gleipnir/vllm_nvfp4.py")),
-        "packer_source_sha256": sha256_file(Path("src/gleipnir/nvfp4_pack.py")),
+        "native_method_sha256": sha256_file(Path("src/gleipnir/serving/vllm/nvfp4.py")),
+        "packer_source_sha256": sha256_file(
+            Path("src/gleipnir/kernels/fp4/nvfp4_pack.py")
+        ),
         "calls": args.calls,
         "conditions": [],
         "note": "One 256-call window; activation range/packing included in FP4; "

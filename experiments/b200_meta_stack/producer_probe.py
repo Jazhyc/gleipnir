@@ -39,7 +39,12 @@ def main() -> None:
         (args.output / "producer.json").write_text(json.dumps(report, indent=2) + "\n")
 
     report["spec"] = asdict(variant)
-    paths = [Path(__file__), *Path("src/gleipnir").glob("nvidia_mxfp8*.py")]
+    paths = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
+        Path(__file__),
+        *Path("src/gleipnir/kernels/mxfp8").glob("nvidia_mxfp8*.py"),
+    ]
     for p in paths:
         dest = args.output / "executed_source" / p
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -239,9 +244,11 @@ def main() -> None:
         report["source_sha256"] = {
             str(p): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in [
+                Path("src/gleipnir/__init__.py"),
+                Path("src/gleipnir/_compat.py"),
                 Path(__file__),
-                *Path("src/gleipnir").glob("nvidia_mxfp8_norm_rope*.py"),
-                Path("src/gleipnir/nvidia_mxfp8_fused_quantize.py"),
+                *Path("src/gleipnir/kernels/mxfp8").glob("nvidia_mxfp8_norm_rope*.py"),
+                Path("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_fused_quantize.py"),
             ]
         }
         save()

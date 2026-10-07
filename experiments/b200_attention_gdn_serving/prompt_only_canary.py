@@ -22,9 +22,11 @@ def main() -> None:
 
     torch.manual_seed(73)
     sources = [
-        "src/gleipnir/serving_prompt_only.py",
-        "src/gleipnir/serving_prompt_only_contract.py",
-        "src/gleipnir/serving_mxfp8.py",
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/serving/prompt_only.py",
+        "src/gleipnir/serving/prompt_only_contract.py",
+        "src/gleipnir/serving/mxfp8.py",
         "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
     ]
     report = {

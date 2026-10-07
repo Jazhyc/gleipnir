@@ -39,9 +39,11 @@ def main() -> None:
         )
 
     paths = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__),
-        Path("src/gleipnir/nvidia_mxfp8_fused_quantize.py"),
-        Path("src/gleipnir/nvidia_mxfp8_projection_pilot.py"),
+        Path("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_fused_quantize.py"),
+        Path("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_projection_pilot.py"),
     ]
     source_bytes = {str(p): p.read_bytes() for p in paths}
     report["source_sha256"] = {

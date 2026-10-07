@@ -19,11 +19,13 @@ def main() -> None:
     torch.manual_seed(19)
     torch.backends.cuda.matmul.allow_tf32 = False
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__),
-        Path("src/gleipnir/serving_mxfp8.py"),
-        Path("src/gleipnir/serving_mxfp8_source.py"),
-        Path("src/gleipnir/nvidia_mxfp8_attention.py"),
-        Path("src/gleipnir/nvidia_mxfp8_fused_quantize.py"),
+        Path("src/gleipnir/serving/mxfp8.py"),
+        Path("src/gleipnir/serving/mxfp8_source.py"),
+        Path("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_attention.py"),
+        Path("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_fused_quantize.py"),
         Path("experiments/b200_attention_gdn_serving/mxfp8_reference.py"),
     ]
     native = Path(".cache/kernels/nvidia_mxfp8/frontend/cudnn/sdpa/fwd")

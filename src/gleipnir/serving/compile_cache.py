@@ -46,6 +46,7 @@ def compile_identity(data: dict, root: Path, versions: dict) -> dict:
         for path, digest in data["gleipnir_frost_fp4"].items()
         if not Path(path).name.endswith(("_canary.py", "_compare.py"))
         and Path(path).name not in {"run.py", "serving_runtime.py"}
+        and path != "src/gleipnir/serving/runtime.py"
         and not Path(path).name.startswith("prefill_graph_canary")
     }
     return {

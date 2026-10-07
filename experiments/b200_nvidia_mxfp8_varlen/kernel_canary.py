@@ -131,7 +131,7 @@ def main():
         "quantizer_checks": [],
         "source_sha256": {
             str(p): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in Path("src/gleipnir").glob("nvidia_mxfp8_varlen*.py")
+            for p in Path("src/gleipnir/kernels/mxfp8").glob("nvidia_mxfp8_varlen*.py")
         },
         "cache_paths": {k: v for k, v in os.environ.items() if "CACHE" in k},
     }

@@ -29,10 +29,12 @@ def main() -> None:
     if args.output.exists():
         raise FileExistsError(args.output)
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__).relative_to(Path.cwd()),
-        Path("src/gleipnir/serving_fp4_tuning.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/serving/fp4/tuning.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
         Path(".cache/kernels/nvidia_mxfp8/frontend/cudnn/gemm/frost/tile_config.py"),
     ]
     report = {

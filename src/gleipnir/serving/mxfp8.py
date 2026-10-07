@@ -200,7 +200,7 @@ def forward_plan(device: torch.device):
         source = hardware_exp2_source(Path(original.__file__).read_text())
         digest = hashlib.sha256(source.encode()).hexdigest()
         target = (
-            Path(__file__).resolve().parents[2]
+            Path(__file__).resolve().parents[3]
             / ".cache/kernels/nvidia_mxfp8/generated"
             / ("serving_exp2_" + digest + ".py")
         )

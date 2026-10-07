@@ -3,12 +3,12 @@
 import hashlib
 import json
 import os
-from pathlib import Path
 
 import torch
 
 from experiments.b200_attention_gdn_serving.mixed_worker import MixedServingAuditWorker
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 from gleipnir.serving_mxfp8 import paged_forward
 
 
@@ -39,7 +39,12 @@ class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
                 "MXFP8 strict precision failed; diagnostic timing disabled"
             )
         for source, expected in receipt["sources"].items():
-            if hashlib.sha256(Path(source).read_bytes()).hexdigest() != expected:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != expected
+            ):
                 raise ValueError(f"MXFP8 validation source drift: {source}")
         calls = []
         write(

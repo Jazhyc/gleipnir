@@ -239,8 +239,10 @@ def main():
         "source_sha256": {
             str(p): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in [
+                Path("src/gleipnir/__init__.py"),
+                Path("src/gleipnir/_compat.py"),
                 Path(__file__),
-                *Path("src/gleipnir").glob("nvidia_mxfp8_varlen*.py"),
+                *Path("src/gleipnir/kernels/mxfp8").glob("nvidia_mxfp8_varlen*.py"),
             ]
         },
         "limits": (

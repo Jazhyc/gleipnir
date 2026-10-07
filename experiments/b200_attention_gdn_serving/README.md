@@ -106,7 +106,7 @@ Fresh compatible pods can instead restore the captured
 tokenizer, shared caches and validation inputs; weights remain separate. The
 helper verifies payload hashes and dependency bindings and refuses to overwrite
 existing destinations. See the bundle's `README.md` and
-[restore implementation](../../src/gleipnir/serving_bundle.py).
+[restore implementation](../../src/gleipnir/serving/bundle.py).
 
 ## Large-prefill piecewise graphs (2026-10-07)
 

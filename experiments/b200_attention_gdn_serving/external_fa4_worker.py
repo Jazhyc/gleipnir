@@ -11,6 +11,7 @@ from experiments.b200_attention_gdn_serving.combined_worker import (
     MixedFa4ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT
+from gleipnir.serving.sources import recorded_source_path
 from gleipnir.serving_fa4 import make_paged_fa4_forward
 
 
@@ -28,13 +29,22 @@ class ExternalFa4ServingAuditWorker(MixedFa4ServingAuditWorker):
             raise ValueError("external FA4 source/version/hardware drift")
         validation = ROOT / self.condition["fa4_validation"]
         receipt = json.loads(validation.read_text())
-        if not receipt["passed"] or len(receipt["checks"]) != 6 or any(
-            not row["finite"] or row["relative_l2"] > 0.01
-            for row in receipt["checks"]
+        if (
+            not receipt["passed"]
+            or len(receipt["checks"]) != 6
+            or any(
+                not row["finite"] or row["relative_l2"] > 0.01
+                for row in receipt["checks"]
+            )
         ):
             raise ValueError("external FA4 page-layout validation failed")
         for source, checksum in receipt["sources"].items():
-            if hashlib.sha256(Path(source).read_bytes()).hexdigest() != checksum:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != checksum
+            ):
                 raise ValueError("external FA4 validation source drift")
         backend.get_flash_attn_version = lambda **kwargs: 4
         backend.flash_attn_varlen_func = make_paged_fa4_forward(

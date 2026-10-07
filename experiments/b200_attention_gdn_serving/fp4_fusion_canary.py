@@ -60,10 +60,12 @@ def main() -> None:
             args.output_prefix.name + "_" + mode + ".json"
         )
         sources = [
-            Path("src/gleipnir/serving_fp4_fusion.py"),
+            Path("src/gleipnir/__init__.py"),
+            Path("src/gleipnir/_compat.py"),
+            Path("src/gleipnir/serving/fp4/fusion.py"),
             Path(__file__),
-            Path("src/gleipnir/cudnn_fp4_gemm.py"),
-            Path("src/gleipnir/cudnn_fp4_epilogue.py"),
+            Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+            Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
         ]
         report = {
             "passed": False,

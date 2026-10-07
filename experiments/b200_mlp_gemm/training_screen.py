@@ -272,12 +272,14 @@ def main() -> None:
     if args.profile_updates:
         env["GLEIPNIR_FP4_PROFILE_OUTPUT"] = str(output / "warmed_profile")
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
-        Path("src/gleipnir/mlp_gemm.py"),
-        Path("src/gleipnir/cudnn_fp4_mlp.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
-        Path("src/gleipnir/nvfp4_pack.py"),
+        Path("src/gleipnir/kernels/mlp_gemm.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/kernels/fp4/nvfp4_pack.py"),
         Path("experiments/b200_mlp_gemm/README.md"),
         profile.relative_to(ROOT),
         Path("experiments/deception_distillation/train_student_sft.py"),

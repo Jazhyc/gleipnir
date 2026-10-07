@@ -23,6 +23,7 @@ from experiments.b200_inference_benchmark.run import (
     verify_merged_model,
     write,
 )
+from gleipnir._compat import canonical_source_reference
 
 
 async def drive(
@@ -94,13 +95,18 @@ def main() -> None:
     selection = json.loads((EXPERIMENT / "baseline.json").read_text())
     previous = json.loads((ROOT / selection["results"] / "condition.json").read_text())
     argv = previous["extra_server_args"]
-    sources = set(
-        json.loads(argv[argv.index("--additional-config") + 1])["gleipnir_frost_fp4"]
-    )
+    sources = {
+        canonical_source_reference(p)
+        for p in json.loads(argv[argv.index("--additional-config") + 1])[
+            "gleipnir_frost_fp4"
+        ]
+    }
     sources.update(
         [
-            "src/gleipnir/serving_prompt_only.py",
-            "src/gleipnir/serving_prompt_only_contract.py",
+            "src/gleipnir/__init__.py",
+            "src/gleipnir/_compat.py",
+            "src/gleipnir/serving/prompt_only.py",
+            "src/gleipnir/serving/prompt_only_contract.py",
             "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
             "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
         ]
@@ -113,9 +119,11 @@ def main() -> None:
     write(out / "condition.json", condition)
     write(out / "manifest.json", manifest)
     for source in [
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
         *sources,
         str(Path(__file__).relative_to(ROOT)),
-        "src/gleipnir/serving_operator_trace.py",
+        "src/gleipnir/serving/operator_trace.py",
         "experiments/b200_attention_gdn_serving/prompt_only_trace.py",
         "experiments/b200_inference_benchmark/frontend_server.py",
     ]:

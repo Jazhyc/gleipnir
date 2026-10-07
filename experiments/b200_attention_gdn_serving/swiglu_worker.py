@@ -10,6 +10,7 @@ from experiments.b200_attention_gdn_serving.prepare_worker import (
     PreparationMxfp8ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class SwigluPreparationMxfp8ServingAuditWorker(PreparationMxfp8ServingAuditWorker):
@@ -26,14 +27,24 @@ class SwigluPreparationMxfp8ServingAuditWorker(PreparationMxfp8ServingAuditWorke
         receipt = json.loads(raw)
         validate_native(receipt)
         for source, digest in receipt["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"native SwiGLU source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("native SwiGLU hardware changed")
         tiled = json.loads((ROOT / condition["gemm_reference_validation"]).read_text())
         selected = validate_selection(tiled)
         for source, digest in tiled["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"reference GEMM source drift: {source}")
         kernel, hashes = load_kernel(
             ROOT,

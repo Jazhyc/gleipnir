@@ -68,7 +68,9 @@ def main() -> None:
         "screen_result_sha256": sha256_file(args.screen / "result.json"),
         "merge_manifest_sha256": manifest["merge_manifest_sha256"],
         "source_sha256": sha256_file(Path(__file__)),
-        "feedback_source_sha256": sha256_file(Path("src/gleipnir/nvfp4_gptq.py")),
+        "feedback_source_sha256": sha256_file(
+            Path("src/gleipnir/kernels/fp4/nvfp4_gptq.py")
+        ),
         "protocol": {"damping": 0.01, "block_size": 128, "act_order": False},
         "layers": {},
     }

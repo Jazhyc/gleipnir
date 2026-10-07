@@ -29,17 +29,20 @@ from gleipnir.inference_benchmark import (
 EXPERIMENT = Path(__file__).parent
 OUTPUT = ROOT / "results/b200_attention_gdn_serving"
 SOURCES = [
-    "src/gleipnir/vllm_frost_fp4.py",
-    "src/gleipnir/cudnn_fp4_gemm.py",
-    "src/gleipnir/cudnn_fp4_epilogue.py",
-    "src/gleipnir/cudnn_fp4_mlp.py",
+    "src/gleipnir/__init__.py",
+    "src/gleipnir/_compat.py",
+    "src/gleipnir/serving/sources.py",
+    "src/gleipnir/serving/vllm/frost_fp4.py",
+    "src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py",
+    "src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py",
+    "src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py",
     "src/gleipnir/native_fp4_training.py",
-    "src/gleipnir/nvfp4_pack.py",
+    "src/gleipnir/kernels/fp4/nvfp4_pack.py",
     "experiments/b200_frost_inference/worker.py",
     "experiments/b200_attention_gdn_serving/worker.py",
-    "src/gleipnir/serving_precision.py",
-    "src/gleipnir/serving_compile_cache.py",
-    "src/gleipnir/serving_runtime.py",
+    "src/gleipnir/serving/precision.py",
+    "src/gleipnir/serving/compile_cache.py",
+    "src/gleipnir/serving/runtime.py",
 ]
 
 
@@ -380,8 +383,10 @@ def main() -> None:
     if raw.get("prompt_only"):
         sources.extend(
             [
-                "src/gleipnir/serving_prompt_only.py",
-                "src/gleipnir/serving_prompt_only_contract.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/prompt_only.py",
+                "src/gleipnir/serving/prompt_only_contract.py",
                 "experiments/b200_attention_gdn_serving/prompt_only_worker.py",
                 "experiments/b200_attention_gdn_serving/prompt_only_canary.py",
             ]
@@ -389,7 +394,9 @@ def main() -> None:
     if raw.get("prefill_graphs"):
         sources.extend(
             [
-                "src/gleipnir/serving_prefill_graphs.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/prefill_graphs.py",
                 "experiments/b200_attention_gdn_serving/prefill_graph_worker.py",
                 "experiments/b200_attention_gdn_serving/prefill_graph_canary.py",
             ]
@@ -397,8 +404,10 @@ def main() -> None:
     if raw.get("gdn_direct_output_validation"):
         sources.extend(
             [
-                "src/gleipnir/serving_gdn_direct_output.py",
-                "src/gleipnir/serving_gdn_direct_caller.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/gdn/direct_output.py",
+                "src/gleipnir/serving/gdn/direct_caller.py",
                 "experiments/b200_attention_gdn_serving/gdn_direct_worker.py",
                 "experiments/b200_attention_gdn_serving/gdn_direct_canary.py",
             ]
@@ -406,14 +415,16 @@ def main() -> None:
     if raw.get("swiglu_native_output_validation"):
         sources.extend(
             [
-                "src/gleipnir/serving_fp4_swiglu.py",
-                "src/gleipnir/serving_fp4_swiglu_pack.py",
-                "src/gleipnir/serving_fp4_swiglu_overhead.py",
-                "src/gleipnir/serving_fp4_swiglu_overhead_validation.py",
-                "src/gleipnir/serving_fp4_swiglu_native_output.py",
-                "src/gleipnir/serving_fp4_swiglu_block_reference.py",
-                "src/gleipnir/serving_fp4_swiglu_native_output_validation.py",
-                "src/gleipnir/serving_fp4_swiglu_native_output_integration.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/swiglu.py",
+                "src/gleipnir/serving/fp4/swiglu_pack.py",
+                "src/gleipnir/serving/fp4/swiglu_overhead.py",
+                "src/gleipnir/serving/fp4/swiglu_overhead_validation.py",
+                "src/gleipnir/serving/fp4/swiglu_native_output.py",
+                "src/gleipnir/serving/fp4/swiglu_block_reference.py",
+                "src/gleipnir/serving/fp4/swiglu_native_output_validation.py",
+                "src/gleipnir/serving/fp4/swiglu_native_output_integration.py",
                 "experiments/b200_attention_gdn_serving/swiglu_native_output_worker.py",
                 "experiments/b200_attention_gdn_serving/fp4_swiglu_native_output_compare.py",
             ]
@@ -421,12 +432,14 @@ def main() -> None:
     if raw.get("swiglu_overhead_validation"):
         sources.extend(
             [
-                "src/gleipnir/serving_fp4_swiglu.py",
-                "src/gleipnir/serving_fp4_swiglu_pack.py",
-                "src/gleipnir/serving_fp4_swiglu_overhead.py",
-                "src/gleipnir/serving_fp4_swiglu_padding.py",
-                "src/gleipnir/serving_fp4_swiglu_overhead_integration.py",
-                "src/gleipnir/serving_fp4_swiglu_overhead_validation.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/swiglu.py",
+                "src/gleipnir/serving/fp4/swiglu_pack.py",
+                "src/gleipnir/serving/fp4/swiglu_overhead.py",
+                "src/gleipnir/serving/fp4/swiglu_padding.py",
+                "src/gleipnir/serving/fp4/swiglu_overhead_integration.py",
+                "src/gleipnir/serving/fp4/swiglu_overhead_validation.py",
                 "experiments/b200_attention_gdn_serving/swiglu_overhead_worker.py",
                 "experiments/b200_attention_gdn_serving/fp4_swiglu_overhead_compare.py",
             ]
@@ -434,8 +447,10 @@ def main() -> None:
     if raw.get("attention_projection_precision") == "fp4":
         sources.extend(
             [
-                "src/gleipnir/serving_attention_fp4.py",
-                "src/gleipnir/vllm_frost_attention_fp4.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/attention.py",
+                "src/gleipnir/serving/vllm/frost_attention_fp4.py",
                 "experiments/b200_attention_gdn_serving/attention_fp4_worker.py",
                 "experiments/b200_attention_gdn_serving/attention_fp4_canary.py",
             ]
@@ -443,8 +458,10 @@ def main() -> None:
     if raw.get("gemm_tuning_validation") or raw.get("gemm_reference_validation"):
         sources.extend(
             [
-                "src/gleipnir/serving_fp4_tuning.py",
-                "src/gleipnir/serving_fp4_tuning_validation.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/tuning.py",
+                "src/gleipnir/serving/fp4/tuning_validation.py",
                 "experiments/b200_attention_gdn_serving/fp4_gemm_tune.py",
                 "experiments/b200_attention_gdn_serving/tuned_worker.py",
             ]
@@ -452,10 +469,12 @@ def main() -> None:
     if raw.get("swiglu_fusion_validation"):
         sources.extend(
             [
-                "src/gleipnir/serving_fp4_swiglu.py",
-                "src/gleipnir/serving_fp4_swiglu_pack.py",
-                "src/gleipnir/serving_fp4_swiglu_integration.py",
-                "src/gleipnir/serving_fp4_swiglu_validation.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/swiglu.py",
+                "src/gleipnir/serving/fp4/swiglu_pack.py",
+                "src/gleipnir/serving/fp4/swiglu_integration.py",
+                "src/gleipnir/serving/fp4/swiglu_validation.py",
                 "experiments/b200_attention_gdn_serving/swiglu_worker.py",
                 "experiments/b200_attention_gdn_serving/fp4_swiglu_compare.py",
             ]
@@ -463,10 +482,12 @@ def main() -> None:
     if raw["attention_precision"] == "mxfp8":
         sources.extend(
             [
-                "src/gleipnir/serving_mxfp8.py",
-                "src/gleipnir/serving_mxfp8_source.py",
-                "src/gleipnir/nvidia_mxfp8_attention.py",
-                "src/gleipnir/nvidia_mxfp8_fused_quantize.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/mxfp8.py",
+                "src/gleipnir/serving/mxfp8_source.py",
+                "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_attention.py",
+                "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_fused_quantize.py",
                 "experiments/b200_attention_gdn_serving/mxfp8_worker.py",
                 "experiments/b200_attention_gdn_serving/mxfp8_canary.py",
             ]
@@ -474,9 +495,11 @@ def main() -> None:
     if raw.get("fp4_preparation"):
         sources.extend(
             [
-                "src/gleipnir/serving_fp4_prepare.py",
-                "src/gleipnir/serving_fp4_fusion.py",
-                "src/gleipnir/serving_fp4_integration.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fp4/prepare.py",
+                "src/gleipnir/serving/fp4/fusion.py",
+                "src/gleipnir/serving/fp4/integration.py",
                 "experiments/b200_attention_gdn_serving/prepare_worker.py",
                 "experiments/b200_attention_gdn_serving/fp4_prepare_canary.py",
                 "experiments/b200_attention_gdn_serving/fp4_fusion_canary.py",
@@ -487,7 +510,9 @@ def main() -> None:
     if raw.get("external_fa4"):
         sources.extend(
             [
-                "src/gleipnir/serving_fa4.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/fa4.py",
                 "experiments/b200_attention_gdn_serving/external_fa4_worker.py",
             ]
         )
@@ -496,7 +521,9 @@ def main() -> None:
     if raw["gdn_backend"] != "flashinfer":
         sources.extend(
             [
-                "src/gleipnir/serving_gdn_kernels.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/gdn/kernels.py",
                 "src/gleipnir/flashqla_training.py",
                 "experiments/b200_attention_gdn_serving/gdn_worker.py",
                 "experiments/b200_attention_gdn_serving/gdn_canary.py",
@@ -507,13 +534,15 @@ def main() -> None:
     if raw["gdn_projection_precision"] in {"fp8", "fp4"}:
         sources.extend(
             [
-                "src/gleipnir/vllm_frost_gdn.py",
+                "src/gleipnir/__init__.py",
+                "src/gleipnir/_compat.py",
+                "src/gleipnir/serving/vllm/frost_gdn.py",
                 "experiments/b200_attention_gdn_serving/mixed_worker.py",
                 "experiments/b200_attention_gdn_serving/server.py",
             ]
         )
         if raw["gdn_projection_precision"] == "fp4":
-            sources.append("src/gleipnir/vllm_frost_gdn_fp4.py")
+            sources.append("src/gleipnir/serving/vllm/frost_gdn_fp4.py")
     condition = resolve_condition(raw, {p: sha(ROOT / p) for p in sources})
     condition["config_sha256"] = sha(args.condition)
     config = {
@@ -527,11 +556,13 @@ def main() -> None:
     out = OUTPUT / args.output
     out.mkdir(parents=True, exist_ok=False)
     for source in [
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         *EXPERIMENT.glob("*"),
         *BENCHMARK.glob("*"),
         args.condition,
         *(ROOT / p for p in sources),
-        ROOT / "src/gleipnir/inference_benchmark.py",
+        ROOT / "src/gleipnir/serving/benchmark.py",
     ]:
         if source.is_file():
             target = out / "executed_sources" / source.relative_to(ROOT)

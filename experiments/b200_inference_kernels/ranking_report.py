@@ -48,7 +48,7 @@ def main() -> None:
         "baseline": str(baseline),
         "candidate": str(candidate),
         "inputs_sha256": {"labels_prompts": sha(DATA / "quick.json"), **hashes},
-        "implementation_sha256": sha(ROOT / "src/gleipnir/inference_benchmark.py"),
+        "implementation_sha256": sha(ROOT / "src/gleipnir/serving/benchmark.py"),
         "concurrency": comparisons,
     }
     write(candidate / "ranking_comparison.json", report)

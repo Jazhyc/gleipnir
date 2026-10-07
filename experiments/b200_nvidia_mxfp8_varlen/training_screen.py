@@ -141,15 +141,17 @@ def main(default_config: Path | None = None) -> None:
             accept_timing=True,
         )
     source_paths = [
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
         args.config,
         Path(__file__),
         ROOT / "experiments/b200_nvidia_mxfp8_varlen/kernel_canary.py",
         ROOT / "experiments/b200_nvidia_mxfp8/run.py",
         ROOT / "experiments/b200_nvidia_mxfp8/training_screen.py",
-        *ROOT.glob("src/gleipnir/nvidia_mxfp8_varlen*.py"),
-        *ROOT.glob("src/gleipnir/nvidia_mxfp8_fused*.py"),
-        *ROOT.glob("src/gleipnir/nvidia_mxfp8_meta*.py"),
-        *ROOT.glob("src/gleipnir/nvidia_mxfp8_norm_rope*.py"),
+        *ROOT.glob("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_varlen*.py"),
+        *ROOT.glob("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_fused*.py"),
+        *ROOT.glob("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_meta*.py"),
+        *ROOT.glob("src/gleipnir/kernels/mxfp8/nvidia_mxfp8_norm_rope*.py"),
         *(ROOT / "experiments/b200_meta_stack").glob("*.py"),
         *(ROOT / "experiments/b200_mxfp8_fused").glob("*.py"),
         *(

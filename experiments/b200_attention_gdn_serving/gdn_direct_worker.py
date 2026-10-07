@@ -13,6 +13,7 @@ from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
@@ -30,7 +31,12 @@ class DirectGdnNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("direct GDN output hardware changed")
         for source, digest in receipt["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"direct GDN output source drift: {source}")
         super().load_model(load_dummy_weights=load_dummy_weights)
         from flashinfer.gdn_prefill import chunk_gated_delta_rule

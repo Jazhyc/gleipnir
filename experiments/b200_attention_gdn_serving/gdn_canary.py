@@ -38,8 +38,10 @@ def main() -> None:
         "sources": {
             str(path.resolve()): hashlib.sha256(path.read_bytes()).hexdigest()
             for path in (
+                Path("src/gleipnir/__init__.py"),
+                Path("src/gleipnir/_compat.py"),
                 Path(__file__),
-                Path("src/gleipnir/serving_gdn_kernels.py"),
+                Path("src/gleipnir/serving/gdn/kernels.py"),
                 Path(fi_chunk_gated_delta_rule.__code__.co_filename),
             )
         },

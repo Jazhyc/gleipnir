@@ -9,7 +9,9 @@ Use canonical package paths for new code; moved implementations have one home.
 | `training/` | Objectives, batching, branch execution, training audits and adapter utilities | [optimizers.py](training/optimizers.py), [packed.py](training/packed.py), [branch_trainer.py](training/branch_trainer.py), [binary_tasks.py](training/binary_tasks.py), [mil.py](training/mil.py) |
 | `teachers/` | Teacher API requests, prompt construction and output parsing, resumable annotation and cache validation | [openai.py](teachers/openai.py), [openrouter_cli.py](teachers/openrouter_cli.py), [prompts.py](teachers/prompts.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
 | `analysis/` | Shared plotting conventions, Pareto frontiers and empirical scaling fits | [plotting.py](analysis/plotting.py), [scaling.py](analysis/scaling.py) |
-| `adapters/` | Adapter artifact transformations with tensor and checksum preservation | [rebase.py](adapters/rebase.py) |
+| `adapters/` | Adapter artifact transformations with tensor and checksum preservation | [rebase.py](adapters/rebase.py), [merge.py](adapters/merge.py) |
+| `serving/` | Runtime and compiler identity, CPU frontend, precision audits, engine integration and bundle restoration | [runtime.py](serving/runtime.py), [compile_cache.py](serving/compile_cache.py), [gigatoken.py](serving/gigatoken.py), [vllm/](serving/vllm/), [fp4/](serving/fp4/), [gdn/](serving/gdn/) |
+| `kernels/` | Shared GPU arithmetic and model adapters, FP4 packing/GEMMs, NVIDIA MXFP8 attention | [mlp_gemm.py](kernels/mlp_gemm.py), [fp4/](kernels/fp4/), [mxfp8/](kernels/mxfp8/), [nvidia_causal_conv1d.py](kernels/nvidia_causal_conv1d.py) |
 | `data/` | Campaign inputs, augmentation, filtering and prefix preparation | [monitoring.py](data/monitoring.py), [branches.py](data/branches.py), [exclusions.py](data/exclusions.py), [nested_subsets.py](data/nested_subsets.py), [transcript_injection.py](data/transcript_injection.py) |
 | `campaigns/` | Training launches, matched systems screens and stage coordination | [systems_screen.py](campaigns/systems_screen.py), [training.py](campaigns/training.py), [training_command.py](campaigns/training_command.py), [lanes.py](campaigns/lanes.py), [status.py](campaigns/status.py) |
 | `evaluation/` | Scores, metrics, calibration, preference diagnostics, sharding and recovery | [probabilities.py](evaluation/probabilities.py), [binary.py](evaluation/binary.py), [scoring.py](evaluation/scoring.py), [metrics.py](evaluation/metrics.py), [preferences.py](evaluation/preferences.py) |
@@ -28,10 +30,12 @@ alias. Repository/cache roots, job schemas, objectives, and batching are unchang
 Use `python -m gleipnir.adapters.rebase` to rebase Qwen3.5 adapter keys. The
 historical `gleipnir.qwen35_adapter_rebase` command remains an alias.
 
-## Modules awaiting migration
+## Source identity and remaining modules
 
-Serving and kernels remain at their existing paths. Consult the
-[root README](../../README.md) for the selected serving and training recipes.
+Consult the [root README](../../README.md) for selected serving and training
+recipes. Serving integrations live under `serving/`; shared arithmetic lives
+under `kernels/`. FP4 compiler, memory and performance diagnostics live under
+`training/fp4/`. GPU dependencies stay optional until an implementation is imported.
 
 Training backend integrations remain flat: `flashqla_training.py`,
 `native_fp4_training.py`, `fouroversix_training.py`, `qwen35_fast_training.py`,

@@ -2,6 +2,7 @@
 
 import ast
 import hashlib
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -70,8 +71,16 @@ def test_smoke_source_reuse_still_requires_exact_recorded_bytes(
 
 def test_launcher_source_literals_identify_existing_implementations():
     root = Path(__file__).resolve().parents[1]
-    for path in (root / "experiments").rglob("*.py"):
-        if path.name.startswith("test_"):
+    tracked = (
+        subprocess.check_output(
+            ["git", "-C", str(root), "ls-files", "-z", "--", "experiments"],
+        )
+        .decode()
+        .split("\0")
+    )
+    for relative in tracked:
+        path = root / relative
+        if path.suffix != ".py" or path.name.startswith("test_"):
             continue
         for node in ast.walk(ast.parse(path.read_text())):
             if (

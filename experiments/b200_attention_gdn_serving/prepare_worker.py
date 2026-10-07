@@ -9,6 +9,7 @@ import torch
 
 from experiments.b200_attention_gdn_serving.mxfp8_worker import Mxfp8ServingAuditWorker
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
@@ -46,7 +47,9 @@ class PreparationMxfp8ServingAuditWorker(Mxfp8ServingAuditWorker):
                 )
             for source, expected_hash in receipt["sources"].items():
                 if (
-                    hashlib.sha256((ROOT / source).read_bytes()).hexdigest()
+                    hashlib.sha256(
+                        recorded_source_path(ROOT, source).read_bytes()
+                    ).hexdigest()
                     != expected_hash
                 ):
                     raise ValueError(f"FP4 preparation source drift: {source}")

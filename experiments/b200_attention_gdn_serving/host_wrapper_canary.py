@@ -29,7 +29,7 @@ def main() -> None:
         "checks": [],
         "gpu": torch.cuda.get_device_name(),
         "helper_sha256": hashlib.sha256(
-            (root / "src/gleipnir/serving_frost_wrappers.py").read_bytes()
+            (root / "src/gleipnir/serving/frost_wrappers.py").read_bytes()
         ).hexdigest(),
         "compiler_sha256": hashlib.sha256(
             Path(compiler.__file__).read_bytes()

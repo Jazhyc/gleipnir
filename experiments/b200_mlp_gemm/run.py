@@ -44,14 +44,16 @@ def main() -> None:
         MAX_JOBS="16",
     )
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         Path("experiments/b200_mlp_gemm/config.yaml"),
-        Path("src/gleipnir/mlp_gemm.py"),
-        Path("src/gleipnir/cudnn_lora_mlp.py"),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
-        Path("src/gleipnir/cudnn_fp4_mlp.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
-        Path("src/gleipnir/nvfp4_pack.py"),
+        Path("src/gleipnir/kernels/mlp_gemm.py"),
+        Path("src/gleipnir/kernels/cudnn_lora_mlp.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/nvfp4_pack.py"),
         Path("experiments/b200_mlp_gemm/README.md"),
     ]
     report = {

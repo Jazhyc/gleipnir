@@ -16,13 +16,11 @@ from gleipnir.serving_operator_trace import OperatorTrace, PatchSet
 
 def enable_trace(root: Path) -> None:
     """Initialize only in the GPU worker, after direct FROST bindings install."""
-    from experiments.b200_attention_gdn_serving import prompt_only_worker
-
-    Worker = (
-        prompt_only_worker.PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker
+    from experiments.b200_attention_gdn_serving.prompt_only_worker import (
+        PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker as Base,
     )
 
-    original_load = Worker.load_model
+    original_load = Base.load_model
 
     def load(self, *, load_dummy_weights=False):
         original_load(self, load_dummy_weights=load_dummy_weights)
@@ -56,8 +54,8 @@ def enable_trace(root: Path) -> None:
             "diagnostic_only": True,
         }
 
-    Worker.load_model = load
-    Worker.prompt_only_trace_state = control
+    Base.load_model = load
+    Base.prompt_only_trace_state = control
 
 
 def _install(worker, root: Path, mode: str) -> None:
@@ -186,7 +184,12 @@ def _install(worker, root: Path, mode: str) -> None:
         "signal": "SIGUSR2",
         "sources": {
             str(p.relative_to(root)): hashlib.sha256(p.read_bytes()).hexdigest()
-            for p in [Path(__file__), root / "src/gleipnir/serving_operator_trace.py"]
+            for p in [
+                root / "src/gleipnir/__init__.py",
+                root / "src/gleipnir/_compat.py",
+                Path(__file__),
+                root / "src/gleipnir/serving/operator_trace.py",
+            ]
         },
     }
     (directory / "trace_ready.json").write_text(json.dumps(receipt, indent=2) + "\n")

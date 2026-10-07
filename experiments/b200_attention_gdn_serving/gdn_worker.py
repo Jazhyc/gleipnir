@@ -2,9 +2,9 @@
 
 import hashlib
 import json
-from pathlib import Path
 
 from experiments.b200_attention_gdn_serving.worker import ROOT, ServingAuditWorker
+from gleipnir.serving.sources import recorded_source_path
 
 
 class GdnServingAuditWorker(ServingAuditWorker):
@@ -23,7 +23,12 @@ class GdnServingAuditWorker(ServingAuditWorker):
         ):
             raise ValueError("missing matched GDN forward/state validation")
         for source, expected in validation["sources"].items():
-            if hashlib.sha256(Path(source).read_bytes()).hexdigest() != expected:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != expected
+            ):
                 raise ValueError(f"GDN validation source drift: {source}")
         import vllm.model_executor.layers.mamba.gdn.qwen_gdn_linear_attn as gdn
 

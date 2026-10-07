@@ -67,10 +67,12 @@ def main() -> None:
         "source_sha256": {
             str(p): sha256_file(p)
             for p in [
+                ROOT / "src/gleipnir/__init__.py",
+                ROOT / "src/gleipnir/_compat.py",
                 Path(__file__),
                 args.config,
                 ROOT / "experiments/b200_nvidia_mxfp8/kernel_canary.py",
-                ROOT / "src/gleipnir/nvidia_mxfp8_attention.py",
+                ROOT / "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_attention.py",
                 ROOT
                 / config.get(
                     "source_archive",

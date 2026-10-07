@@ -114,7 +114,7 @@ def main() -> None:
         config_path,
         Path(__file__),
         ROOT / "experiments/b200_nvidia_mxfp8/run.py",
-        ROOT / "src/gleipnir/nvidia_mxfp8_attention.py",
+        ROOT / "src/gleipnir/kernels/mxfp8/nvidia_mxfp8_attention.py",
         ROOT / "src/gleipnir/packed_sequences.py",
         ROOT / "src/gleipnir/training/packed.py",
         ROOT / "src/gleipnir/__init__.py",

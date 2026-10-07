@@ -69,8 +69,10 @@ def main() -> None:
                 target.parent.mkdir(parents=True, exist_ok=True)
                 target.write_bytes(source.read_bytes())
     for source in (
-        "src/gleipnir/inference_benchmark.py",
-        "src/gleipnir/merged_lora.py",
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/serving/benchmark.py",
+        "src/gleipnir/adapters/merge.py",
     ):
         target = output / "executed_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)

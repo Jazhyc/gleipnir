@@ -394,6 +394,7 @@ def compatible_server_command(observed: list[str], requested: list[str]) -> bool
                     for path, digest in sources.items()
                     if not Path(path).name.endswith(("_canary.py", "_compare.py"))
                     and Path(path).name not in {"run.py", "serving_runtime.py"}
+                    and path != "src/gleipnir/serving/runtime.py"
                     and not Path(path).name.startswith("prefill_graph_canary")
                 }
             condition = config.get("serving_condition")
@@ -499,7 +500,7 @@ async def benchmark(
             raise ValueError("host wrapper trial requires the native registry frontend")
         validation_path = ROOT / host_wrapper["validation"]
         validation = json.loads(validation_path.read_text())
-        helper = ROOT / "src/gleipnir/serving_frost_wrappers.py"
+        helper = ROOT / "src/gleipnir/serving/frost_wrappers.py"
         if not validation.get("passed") or validation["helper_sha256"] != sha(helper):
             raise ValueError("FROST host wrapper admission drift")
         host_wrapper = {
@@ -613,7 +614,12 @@ async def benchmark(
             },
             "source_sha256": {
                 str(p.relative_to(ROOT)): sha(p)
-                for p in [Path(__file__), ROOT / "src/gleipnir/inference_benchmark.py"]
+                for p in [
+                    ROOT / "src/gleipnir/__init__.py",
+                    ROOT / "src/gleipnir/_compat.py",
+                    Path(__file__),
+                    ROOT / "src/gleipnir/serving/benchmark.py",
+                ]
             },
         }
         write(output / "summary.json", report)
@@ -966,11 +972,13 @@ def main() -> None:
             verify_merged_model(config, args.merged_model),
         )
     for source in [
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         *EXPERIMENT.glob("*.py"),
         EXPERIMENT / "config.yaml",
         EXPERIMENT / "README.md",
-        ROOT / "src/gleipnir/inference_benchmark.py",
-        ROOT / "src/gleipnir/merged_lora.py",
+        ROOT / "src/gleipnir/serving/benchmark.py",
+        ROOT / "src/gleipnir/adapters/merge.py",
         ROOT / "experiments/tool_trajectory_monitoring/benchmark_qwen_ood.py",
     ]:
         destination = output / "executed_sources" / source.relative_to(ROOT)

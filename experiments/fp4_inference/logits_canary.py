@@ -49,7 +49,9 @@ def main() -> None:
             "state": "complete",
             "results": results,
             "source_sha256": sha256_file(Path(__file__)),
-            "method_sha256": sha256_file(Path("src/gleipnir/vllm_fp32_logits.py")),
+            "method_sha256": sha256_file(
+                Path("src/gleipnir/serving/vllm/fp32_logits.py")
+            ),
         },
     )
     print(json.dumps(results), flush=True)

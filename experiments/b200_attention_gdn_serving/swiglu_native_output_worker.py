@@ -10,6 +10,7 @@ from experiments.b200_attention_gdn_serving.attention_fp4_worker import (
     AttentionTunedPreparationMxfp8ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
@@ -33,7 +34,12 @@ class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         receipt = json.loads(raw)
         validate_native(receipt)
         for source, digest in receipt["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"symbolic SwiGLU source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("symbolic SwiGLU hardware changed")
@@ -48,7 +54,12 @@ class NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         )
         validate_overhead(previous)
         for source, digest in previous["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"medium-row SwiGLU source drift: {source}")
         reference_kernel, reference_hashes = load_overhead(
             ROOT,

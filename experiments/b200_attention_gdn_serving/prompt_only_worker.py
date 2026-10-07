@@ -11,6 +11,7 @@ from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
@@ -61,7 +62,12 @@ class PromptOnlyNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         ):
             raise ValueError("prompt-only native admission failed")
         for source, expected in receipt["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != expected:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != expected
+            ):
                 raise ValueError(f"prompt-only admission source drift: {source}")
         config = self.vllm_config
         if config.scheduler_config.enable_chunked_prefill or (

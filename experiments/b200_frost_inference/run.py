@@ -56,12 +56,14 @@ def main() -> None:
     if sha(ROOT / config["parity"]) != config["parity_sha256"]:
         raise ValueError("master reference drift")
     sources = [
-        "src/gleipnir/vllm_frost_fp4.py",
-        "src/gleipnir/cudnn_fp4_gemm.py",
-        "src/gleipnir/cudnn_fp4_epilogue.py",
-        "src/gleipnir/cudnn_fp4_mlp.py",
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/serving/vllm/frost_fp4.py",
+        "src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py",
+        "src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py",
+        "src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py",
         "src/gleipnir/native_fp4_training.py",
-        "src/gleipnir/nvfp4_pack.py",
+        "src/gleipnir/kernels/fp4/nvfp4_pack.py",
         "experiments/b200_frost_inference/worker.py",
     ]
     condition = resolve_condition(
@@ -73,11 +75,13 @@ def main() -> None:
     output = OUTPUT / args.output
     output.mkdir(parents=True, exist_ok=False)
     for source in [
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         *EXPERIMENT.glob("*"),
         *BENCHMARK.glob("*"),
         *(ROOT / p for p in sources),
-        ROOT / "src/gleipnir/inference_benchmark.py",
-        ROOT / "src/gleipnir/merged_lora.py",
+        ROOT / "src/gleipnir/serving/benchmark.py",
+        ROOT / "src/gleipnir/adapters/merge.py",
     ]:
         if source.is_file():
             target = output / "executed_sources" / source.relative_to(ROOT)

@@ -81,10 +81,25 @@ def condition_config(name: str) -> Path:
 def resolve_runtime_config(config: dict) -> dict:
     """Include custom quantizer flags and source identity in vLLM's compile hash."""
     resolved = copy.deepcopy(config)
+    from gleipnir._compat import canonical_source_reference
+
     method = resolved["engine"].get("quantization")
+    if "additional_code_files" in resolved or method in {
+        "gleipnir_nvfp4",
+        "gleipnir_mixed_fp8",
+    }:
+        resolved["additional_code_files"] = list(
+            dict.fromkeys(
+                [
+                    canonical_source_reference(p)
+                    for p in resolved.get("additional_code_files", [])
+                ]
+                + ["src/gleipnir/__init__.py", "src/gleipnir/_compat.py"]
+            )
+        )
     sources = {
-        "gleipnir_nvfp4": "src/gleipnir/vllm_nvfp4.py",
-        "gleipnir_mixed_fp8": "src/gleipnir/vllm_mixed_fp8.py",
+        "gleipnir_nvfp4": "src/gleipnir/serving/vllm/nvfp4.py",
+        "gleipnir_mixed_fp8": "src/gleipnir/serving/vllm/mixed_fp8.py",
     }
     if method in sources:
         flags = {
@@ -101,9 +116,7 @@ def resolve_runtime_config(config: dict) -> dict:
                 for p in resolved.get("additional_code_files", [])
             },
         }
-        resolved["engine"].setdefault("additional_config", {})[method] = (
-            identity
-        )
+        resolved["engine"].setdefault("additional_config", {})[method] = identity
     return resolved
 
 

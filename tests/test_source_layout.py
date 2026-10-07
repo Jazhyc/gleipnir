@@ -10,9 +10,22 @@ import pytest
 
 from gleipnir._compat import MODULE_ALIASES, install_aliases
 
+# These eagerly import Four Over Six, the pinned FROST overlay or FlashInfer.
+# Their redirects are checked without loading those GPU runtime dependencies.
+_OVERLAY_ALIASES = {
+    "gleipnir.fp4_fast_selector",
+    "gleipnir.fp4_quantization_kernels",
+    "gleipnir.nvidia_mxfp8_varlen_host",
+    "gleipnir.nvidia_mxfp8_varlen_quantize",
+    "gleipnir.serving_prompt_only",
+}
+_IMPORTABLE_ALIASES = {
+    old: new for old, new in MODULE_ALIASES.items() if old not in _OVERLAY_ALIASES
+}
+
 
 def test_legacy_imports_share_state_and_preserve_canonical_metadata(monkeypatch):
-    for legacy, canonical in MODULE_ALIASES.items():
+    for legacy, canonical in _IMPORTABLE_ALIASES.items():
         old = importlib.import_module(legacy)
         new = importlib.import_module(canonical)
         assert old is new
@@ -29,6 +42,28 @@ def test_aliases_require_no_compatibility_files():
         assert not (root / (legacy.replace(".", "/") + ".py")).exists()
 
 
+@pytest.mark.parametrize("legacy", sorted(_OVERLAY_ALIASES))
+def test_overlay_aliases_resolve_to_existing_sources_without_loading_runtimes(
+    legacy, monkeypatch
+):
+    from types import ModuleType
+
+    canonical = MODULE_ALIASES[legacy]
+    expected = importlib.util.find_spec(canonical)
+    alias = importlib.util.find_spec(legacy)
+    assert Path(alias.origin) == Path(expected.origin)
+    assert Path(alias.origin).is_file()
+    module = ModuleType(canonical)
+    module.__spec__ = expected
+    placeholder = ModuleType(legacy)
+    monkeypatch.setitem(sys.modules, canonical, module)
+    monkeypatch.setitem(sys.modules, legacy, placeholder)
+    alias.loader.exec_module(placeholder)
+    assert sys.modules[legacy] is module
+    assert module.__name__ == canonical
+    assert module.__spec__ is expected
+
+
 def test_alias_registration_is_idempotent_and_reload_uses_the_implementation():
     original_finders = tuple(sys.meta_path)
     install_aliases()
@@ -43,7 +78,7 @@ def test_alias_registration_is_idempotent_and_reload_uses_the_implementation():
 def test_aliases_work_in_both_cold_import_orders(canonical_first):
     code = f"""
 import importlib
-aliases = {list(MODULE_ALIASES.items())!r}
+aliases = {list(_IMPORTABLE_ALIASES.items())!r}
 for legacy, canonical in aliases:
     names = [legacy, canonical]
     if {canonical_first!r}:
@@ -81,6 +116,7 @@ def test_training_exports_and_historical_pickle():
         ("gleipnir.openrouter_cli", "gleipnir.teachers.openrouter_cli"),
         ("gleipnir.monitoring_systems_screen", "gleipnir.campaigns.systems_screen"),
         ("gleipnir.qwen35_adapter_rebase", "gleipnir.adapters.rebase"),
+        ("gleipnir.serving_bundle", "gleipnir.serving.bundle"),
     ],
 )
 def test_legacy_and_canonical_command_help_match(legacy, canonical):

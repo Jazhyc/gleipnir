@@ -62,7 +62,7 @@ def test_native_encoder_rejects_unsupported_flags(kwargs):
 
 
 def test_frontend_binds_package_and_changes_only_cpu_launch(tmp_path):
-    source = tmp_path / "src/gleipnir/serving_gigatoken.py"
+    source = tmp_path / "src/gleipnir/serving/gigatoken.py"
     source.parent.mkdir(parents=True)
     source.write_text("validated implementation")
     entry = tmp_path / "experiments/b200_inference_benchmark/frontend_server.py"

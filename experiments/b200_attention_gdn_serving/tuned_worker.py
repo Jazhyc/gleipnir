@@ -10,6 +10,7 @@ from experiments.b200_attention_gdn_serving.prepare_worker import (
     PreparationMxfp8ServingAuditWorker,
 )
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving.sources import recorded_source_path
 
 
 class TunedPreparationMxfp8ServingAuditWorker(PreparationMxfp8ServingAuditWorker):
@@ -28,7 +29,12 @@ class TunedPreparationMxfp8ServingAuditWorker(PreparationMxfp8ServingAuditWorker
         receipt = json.loads(raw)
         selected = validate_selection(receipt)
         for source, digest in receipt["sources"].items():
-            if hashlib.sha256((ROOT / source).read_bytes()).hexdigest() != digest:
+            if (
+                hashlib.sha256(
+                    recorded_source_path(ROOT, source).read_bytes()
+                ).hexdigest()
+                != digest
+            ):
                 raise ValueError(f"FP4 GEMM tuning source drift: {source}")
         if receipt["gpu"] != torch.cuda.get_device_name():
             raise ValueError("FP4 GEMM tuning hardware changed")

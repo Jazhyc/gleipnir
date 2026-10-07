@@ -54,12 +54,149 @@ MODULE_ALIASES = {
     "gleipnir.plotting": "gleipnir.analysis.plotting",
     "gleipnir.scaling": "gleipnir.analysis.scaling",
     "gleipnir.qwen35_adapter_rebase": "gleipnir.adapters.rebase",
+    "gleipnir.cudnn_fp4_epilogue": "gleipnir.kernels.fp4.cudnn_fp4_epilogue",
+    "gleipnir.cudnn_fp4_gdn": "gleipnir.kernels.fp4.cudnn_fp4_gdn",
+    "gleipnir.cudnn_fp4_gemm": "gleipnir.kernels.fp4.cudnn_fp4_gemm",
+    "gleipnir.cudnn_fp4_mlp": "gleipnir.kernels.fp4.cudnn_fp4_mlp",
+    "gleipnir.cudnn_lora_mlp": "gleipnir.kernels.cudnn_lora_mlp",
+    "gleipnir.fp32_projection": "gleipnir.kernels.fp32_projection",
+    "gleipnir.fp4_compiler_diagnostic": "gleipnir.training.fp4.compiler_diagnostic",
+    "gleipnir.fp4_compiler_ops": "gleipnir.training.fp4.compiler_ops",
+    "gleipnir.fp4_fast_selector": "gleipnir.kernels.fp4.fp4_fast_selector",
+    "gleipnir.fp4_memory": "gleipnir.training.fp4.memory",
+    "gleipnir.fp4_performance": "gleipnir.training.fp4.performance",
+    "gleipnir.fp4_quantization_kernels": (
+        "gleipnir.kernels.fp4."
+        "fp4_quantization_kernels"
+    ),
+    "gleipnir.fp4_row_kernels": "gleipnir.kernels.fp4.fp4_row_kernels",
+    "gleipnir.grouped_gdn": "gleipnir.kernels.grouped_gdn",
+    "gleipnir.inference_benchmark": "gleipnir.serving.benchmark",
+    "gleipnir.merged_lora": "gleipnir.adapters.merge",
+    "gleipnir.serving_bundle": "gleipnir.serving.bundle",
+    "gleipnir.mlp_gemm": "gleipnir.kernels.mlp_gemm",
+    "gleipnir.nvfp4_artifact": "gleipnir.kernels.fp4.nvfp4_artifact",
+    "gleipnir.nvfp4_gptq": "gleipnir.kernels.fp4.nvfp4_gptq",
+    "gleipnir.nvfp4_pack": "gleipnir.kernels.fp4.nvfp4_pack",
+    "gleipnir.nvfp4_reference": "gleipnir.kernels.fp4.nvfp4_reference",
+    "gleipnir.nvidia_causal_conv1d": "gleipnir.kernels.nvidia_causal_conv1d",
+    "gleipnir.nvidia_mxfp8_attention": "gleipnir.kernels.mxfp8.nvidia_mxfp8_attention",
+    "gleipnir.nvidia_mxfp8_fused_attention": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_fused_attention"
+    ),
+    "gleipnir.nvidia_mxfp8_fused_quantize": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_fused_quantize"
+    ),
+    "gleipnir.nvidia_mxfp8_meta_training": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_meta_training"
+    ),
+    "gleipnir.nvidia_mxfp8_meta_variants": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_meta_variants"
+    ),
+    "gleipnir.nvidia_mxfp8_norm_rope": "gleipnir.kernels.mxfp8.nvidia_mxfp8_norm_rope",
+    "gleipnir.nvidia_mxfp8_norm_rope_kernel": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_norm_rope_kernel"
+    ),
+    "gleipnir.nvidia_mxfp8_projection_pilot": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_projection_pilot"
+    ),
+    "gleipnir.nvidia_mxfp8_varlen_attention": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_varlen_attention"
+    ),
+    "gleipnir.nvidia_mxfp8_varlen_host": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_varlen_host"
+    ),
+    "gleipnir.nvidia_mxfp8_varlen_quantize": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_varlen_quantize"
+    ),
+    "gleipnir.nvidia_mxfp8_varlen_repack": (
+        "gleipnir.kernels.mxfp8."
+        "nvidia_mxfp8_varlen_repack"
+    ),
+    "gleipnir.serving_attention_fp4": "gleipnir.serving.fp4.attention",
+    "gleipnir.serving_cache_mirror": "gleipnir.serving.cache_mirror",
+    "gleipnir.serving_compile_cache": "gleipnir.serving.compile_cache",
+    "gleipnir.serving_cpu_placement": "gleipnir.serving.cpu_placement",
+    "gleipnir.serving_fa4": "gleipnir.serving.fa4",
+    "gleipnir.serving_fp4_backends": "gleipnir.serving.fp4.backends",
+    "gleipnir.serving_fp4_cute_compat": "gleipnir.serving.fp4.cute_compat",
+    "gleipnir.serving_fp4_fusion": "gleipnir.serving.fp4.fusion",
+    "gleipnir.serving_fp4_integration": "gleipnir.serving.fp4.integration",
+    "gleipnir.serving_fp4_prepare": "gleipnir.serving.fp4.prepare",
+    "gleipnir.serving_fp4_swiglu": "gleipnir.serving.fp4.swiglu",
+    "gleipnir.serving_fp4_swiglu_block_reference": (
+        "gleipnir.serving.fp4."
+        "swiglu_block_reference"
+    ),
+    "gleipnir.serving_fp4_swiglu_integration": (
+        "gleipnir.serving.fp4."
+        "swiglu_integration"
+    ),
+    "gleipnir.serving_fp4_swiglu_native_output": (
+        "gleipnir.serving.fp4."
+        "swiglu_native_output"
+    ),
+    "gleipnir.serving_fp4_swiglu_native_output_integration": (
+        "gleipnir.serving.fp4."
+        "swiglu_native_output_integration"
+    ),
+    "gleipnir.serving_fp4_swiglu_native_output_validation": (
+        "gleipnir.serving.fp4."
+        "swiglu_native_output_validation"
+    ),
+    "gleipnir.serving_fp4_swiglu_overhead": "gleipnir.serving.fp4.swiglu_overhead",
+    "gleipnir.serving_fp4_swiglu_overhead_integration": (
+        "gleipnir.serving.fp4."
+        "swiglu_overhead_integration"
+    ),
+    "gleipnir.serving_fp4_swiglu_overhead_validation": (
+        "gleipnir.serving.fp4."
+        "swiglu_overhead_validation"
+    ),
+    "gleipnir.serving_fp4_swiglu_pack": "gleipnir.serving.fp4.swiglu_pack",
+    "gleipnir.serving_fp4_swiglu_padding": "gleipnir.serving.fp4.swiglu_padding",
+    "gleipnir.serving_fp4_swiglu_validation": "gleipnir.serving.fp4.swiglu_validation",
+    "gleipnir.serving_fp4_tuning": "gleipnir.serving.fp4.tuning",
+    "gleipnir.serving_fp4_tuning_validation": "gleipnir.serving.fp4.tuning_validation",
+    "gleipnir.serving_frost_wrappers": "gleipnir.serving.frost_wrappers",
+    "gleipnir.serving_gdn_direct_caller": "gleipnir.serving.gdn.direct_caller",
+    "gleipnir.serving_gdn_direct_output": "gleipnir.serving.gdn.direct_output",
+    "gleipnir.serving_gdn_kernels": "gleipnir.serving.gdn.kernels",
+    "gleipnir.serving_gigatoken": "gleipnir.serving.gigatoken",
+    "gleipnir.serving_mxfp8": "gleipnir.serving.mxfp8",
+    "gleipnir.serving_mxfp8_source": "gleipnir.serving.mxfp8_source",
+    "gleipnir.serving_operator_trace": "gleipnir.serving.operator_trace",
+    "gleipnir.serving_precision": "gleipnir.serving.precision",
+    "gleipnir.serving_prefill_graphs": "gleipnir.serving.prefill_graphs",
+    "gleipnir.serving_prompt_only": "gleipnir.serving.prompt_only",
+    "gleipnir.serving_prompt_only_contract": "gleipnir.serving.prompt_only_contract",
+    "gleipnir.serving_reference": "gleipnir.serving.reference",
+    "gleipnir.serving_runtime": "gleipnir.serving.runtime",
+    "gleipnir.silu_fp8": "gleipnir.kernels.silu_fp8",
+    "gleipnir.vllm_fp32_logits": "gleipnir.serving.vllm.fp32_logits",
+    "gleipnir.vllm_frost_attention_fp4": "gleipnir.serving.vllm.frost_attention_fp4",
+    "gleipnir.vllm_frost_fp4": "gleipnir.serving.vllm.frost_fp4",
+    "gleipnir.vllm_frost_gdn": "gleipnir.serving.vllm.frost_gdn",
+    "gleipnir.vllm_frost_gdn_fp4": "gleipnir.serving.vllm.frost_gdn_fp4",
+    "gleipnir.vllm_mixed_fp8": "gleipnir.serving.vllm.mixed_fp8",
+    "gleipnir.vllm_nvfp4": "gleipnir.serving.vllm.nvfp4",
+    "gleipnir.vllm_online_nvfp4": "gleipnir.serving.vllm.online_nvfp4",
 }
 
 _CLI_MODULES = {
     "gleipnir.openrouter_cli",
     "gleipnir.monitoring_systems_screen",
     "gleipnir.qwen35_adapter_rebase",
+    "gleipnir.serving_bundle",
 }
 
 

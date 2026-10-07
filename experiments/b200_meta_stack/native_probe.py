@@ -37,7 +37,12 @@ def main() -> None:
     args = parser.parse_args()
     args.output.mkdir(parents=True, exist_ok=False)
     report = {"status": "starting", "variant": args.variant, "rows": []}
-    paths = [Path(__file__), *Path("src/gleipnir").glob("nvidia_mxfp8*.py")]
+    paths = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
+        Path(__file__),
+        *Path("src/gleipnir/kernels/mxfp8").glob("nvidia_mxfp8*.py"),
+    ]
     report["source_sha256"] = {
         str(p): hashlib.sha256(p.read_bytes()).hexdigest() for p in paths
     }

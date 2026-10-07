@@ -20,10 +20,12 @@ def main() -> None:
     torch.manual_seed(37)
     torch.backends.cuda.matmul.allow_tf32 = False
     sources = [
-        Path("src/gleipnir/serving_fp4_prepare.py"),
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
+        Path("src/gleipnir/serving/fp4/prepare.py"),
         Path(__file__),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
     ]
     report = {
         "passed": False,

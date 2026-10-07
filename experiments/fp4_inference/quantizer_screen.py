@@ -104,7 +104,7 @@ def main() -> None:
         "state": "running",
         "capture_sha256": sha256_file(manifest_path),
         "source_sha256": sha256_file(Path(__file__)),
-        "packer_sha256": sha256_file(Path("src/gleipnir/nvfp4_pack.py")),
+        "packer_sha256": sha256_file(Path("src/gleipnir/kernels/fp4/nvfp4_pack.py")),
         "validation": validate_packer(),
         "clips": list(CLIPS),
         "selection_rule": "lowest mean calibration relative L2 across six "

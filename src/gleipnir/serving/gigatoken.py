@@ -123,7 +123,7 @@ def configure_frontend(
     receipt = json.loads(validation.read_text())
     if receipt.get("exact") is not True or receipt.get("version") != VERSION:
         raise ValueError("native Gigatoken validation failed")
-    source = root / "src/gleipnir/serving_gigatoken.py"
+    source = root / "src/gleipnir/serving/gigatoken.py"
     if receipt["source_sha256"] != sha(source):
         raise ValueError("native Gigatoken validation source drift")
     package = Path(frontend["package_path"])

@@ -40,14 +40,16 @@ def main():
     from gleipnir.serving_fp4_swiglu_pack import activated_pack as pack
 
     sources = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__).relative_to(Path.cwd()),
-        Path("src/gleipnir/serving_fp4_swiglu.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_overhead.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_padding.py"),
-        Path("src/gleipnir/serving_fp4_swiglu_pack.py"),
-        Path("src/gleipnir/cudnn_fp4_epilogue.py"),
-        Path("src/gleipnir/cudnn_fp4_gemm.py"),
-        Path("src/gleipnir/serving_fp4_fusion.py"),
+        Path("src/gleipnir/serving/fp4/swiglu.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_overhead.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_padding.py"),
+        Path("src/gleipnir/serving/fp4/swiglu_pack.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py"),
+        Path("src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py"),
+        Path("src/gleipnir/serving/fp4/fusion.py"),
     ]
     archive = args.output.with_suffix("").with_name(args.output.stem + "_sources")
     for p in sources:

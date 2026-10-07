@@ -18,6 +18,7 @@ from experiments.b200_inference_benchmark.run import (
     verify_merged_model,
     write,
 )
+from gleipnir._compat import canonical_source_reference
 
 
 def main() -> None:
@@ -39,9 +40,12 @@ def main() -> None:
         "gleipnir_frost_fp4"
     ]
     sources = [
-        *old_sources,
-        "src/gleipnir/serving_runtime.py",
-        "src/gleipnir/serving_compile_cache.py",
+        *(canonical_source_reference(p) for p in old_sources),
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/serving/sources.py",
+        "src/gleipnir/serving/runtime.py",
+        "src/gleipnir/serving/compile_cache.py",
     ]
     raw = json.loads(
         (Path(__file__).parent / "fp4_swiglu_native_output.json").read_text()
@@ -79,14 +83,16 @@ def main() -> None:
     if host_wrapper is not None:
         write(out / "host_wrapper_config.json", host_wrapper)
     for source in [
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
         *sources,
-        "src/gleipnir/serving_cache_mirror.py",
+        "src/gleipnir/serving/cache_mirror.py",
         str(Path(__file__).relative_to(ROOT)),
         "experiments/b200_inference_benchmark/run.py",
-        *(["src/gleipnir/serving_frost_wrappers.py"] if host_wrapper else []),
+        *(["src/gleipnir/serving/frost_wrappers.py"] if host_wrapper else []),
         *(
             [
-                "src/gleipnir/serving_gigatoken.py",
+                "src/gleipnir/serving/gigatoken.py",
                 "experiments/b200_inference_benchmark/frontend_server.py",
             ]
             if frontend is not None

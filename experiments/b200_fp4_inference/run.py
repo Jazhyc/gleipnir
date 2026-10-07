@@ -59,9 +59,11 @@ def main() -> None:
     if sha(ROOT / config["parity"]) != config["parity_sha256"]:
         raise ValueError("master reference drift")
     sources = [
-        "src/gleipnir/vllm_online_nvfp4.py",
-        "src/gleipnir/vllm_nvfp4.py",
-        "src/gleipnir/nvfp4_reference.py",
+        "src/gleipnir/__init__.py",
+        "src/gleipnir/_compat.py",
+        "src/gleipnir/serving/vllm/online_nvfp4.py",
+        "src/gleipnir/serving/vllm/nvfp4.py",
+        "src/gleipnir/kernels/fp4/nvfp4_reference.py",
         "experiments/b200_fp4_inference/worker.py",
     ]
     condition = resolve_condition(
@@ -73,11 +75,13 @@ def main() -> None:
     output = OUTPUT / args.output
     output.mkdir(parents=True, exist_ok=False)
     for source in [
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         *EXPERIMENT.glob("*"),
         *BENCHMARK.glob("*"),
         *(ROOT / p for p in sources),
-        ROOT / "src/gleipnir/inference_benchmark.py",
-        ROOT / "src/gleipnir/merged_lora.py",
+        ROOT / "src/gleipnir/serving/benchmark.py",
+        ROOT / "src/gleipnir/adapters/merge.py",
     ]:
         if source.is_file():
             target = output / "executed_sources" / source.relative_to(ROOT)

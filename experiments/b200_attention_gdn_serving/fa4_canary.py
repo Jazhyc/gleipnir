@@ -17,8 +17,10 @@ def main() -> None:
     from gleipnir.serving_fa4 import make_paged_fa4_forward, subdivide_paged_kv
 
     source_paths = [
+        Path("src/gleipnir/__init__.py"),
+        Path("src/gleipnir/_compat.py"),
         Path(__file__),
-        Path("src/gleipnir/serving_fa4.py"),
+        Path("src/gleipnir/serving/fa4.py"),
         Path(_flash_attn_fwd.__code__.co_filename),
     ]
     receipt = {

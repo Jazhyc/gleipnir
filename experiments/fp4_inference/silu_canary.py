@@ -94,7 +94,7 @@ def main() -> None:
     result = {
         "state": "running",
         "source_sha256": sha256_file(Path(__file__)),
-        "kernel_sha256": sha256_file(Path("src/gleipnir/silu_fp8.py")),
+        "kernel_sha256": sha256_file(Path("src/gleipnir/kernels/silu_fp8.py")),
         "capture_manifest_sha256": sha256_file(manifest_path),
         "calls_per_window": args.calls,
         "conditions": [],
