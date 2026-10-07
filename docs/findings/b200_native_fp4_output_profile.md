@@ -164,7 +164,10 @@ preparation, allocation and synchronization remain candidates; instrumentation
 can amplify them. CPU scope sums overlap GPU execution and are not additional
 wall-time percentages. A matched text-versus-exact-token-ID request comparison
 would isolate frontend tokenization/serialization contributions without changing
-GPU kernels; it has not been run here.
+GPU kernels; it was subsequently completed in the
+[tokenization study](b200_serving_tokenization.md). That study finds a material
+long-prompt interactive benefit but only a small c128 throughput difference;
+it does not reattribute these engine-only profile gaps to the tokenizer.
 
 Additional diagnostic: `native_fp4_output_profile01/gap_execution_context.json`.
 No new serving run, kernel change or server restart is performed.

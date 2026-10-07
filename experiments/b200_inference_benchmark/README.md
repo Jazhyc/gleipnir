@@ -99,6 +99,17 @@ of the bounded suite. No kernel change, restart, new capacity or final-ID use.
 TOKENIZERS_PARALLELISM=false python -m experiments.b200_inference_benchmark.tokenization --name tokenization01
 ```
 
+Result: exact IDs reduced c1 median/p95 from 164.82/290.21 to 159.47/192.91 ms,
+with identical c1 scores. Long-prompt paired saving is about 95 ms. Full c128
+throughput changed 193359 to 195420 input tokens/s (+1.07%, within repeat range),
+despite substantially lower API CPU use. A matched CPU encoder check gives
+about 1.3 ms below 4k tokens and 54 ms at 16k+, with exact parity. The complete
+HTTP ablation also includes frontend/serialization/scheduling effects and
+excludes client token preparation. Preserve `tokenization01`'s c128 warmup
+ReadError; the server stayed healthy and `tokenization_batch02 --concurrency 128`
+completed with fresh pools per pass. No kernel/reference change or restart.
+See [the tokenization finding](../../docs/findings/b200_serving_tokenization.md).
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
