@@ -8,7 +8,11 @@ from pathlib import Path
 import pytest
 
 from experiments.b200_attention_gdn_serving.run import resolve_condition
-from gleipnir.serving_prefill_graphs import graph_padding_allowed, validate_graph_config
+from gleipnir.serving_prefill_graphs import (
+    adapt_profile_cache_source,
+    graph_padding_allowed,
+    validate_graph_config,
+)
 
 
 def recipe():
@@ -78,6 +82,25 @@ def test_reject_excessive_padding():
     c["prefill_graphs"]["max_padding_fraction"] = 0.5
     with pytest.raises(ValueError, match="unsupported prefill graph"):
         validate_graph_config(c)
+
+
+def test_temporary_profile_cache_uses_requests_and_preserves_other_logic():
+    from types import SimpleNamespace
+
+    source = """
+    def _init_minimal_kv_cache_for_profiling(self):
+        min_blocks = self.compilation_config.max_cudagraph_capture_size or 1
+        return min_blocks, self.compilation_config.max_cudagraph_capture_size
+    """
+    namespace = {}
+    exec(adapt_profile_cache_source(source), namespace)
+    runner = SimpleNamespace(
+        compilation_config=SimpleNamespace(max_cudagraph_capture_size=32768),
+        scheduler_config=SimpleNamespace(max_num_seqs=128),
+    )
+    assert namespace["_init_minimal_kv_cache_for_profiling"](runner) == (128, 32768)
+    with pytest.raises(ValueError, match="allocator source changed"):
+        adapt_profile_cache_source(source.replace("or 1", "or 2"))
 
 
 @pytest.mark.parametrize("fail_request", [False, True])

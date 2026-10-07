@@ -3,14 +3,19 @@
 import hashlib
 import inspect
 import os
+import types
 from collections import Counter
 from pathlib import Path
 
 from experiments.b200_attention_gdn_serving.swiglu_native_output_worker import (
     NativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker,
 )
-from experiments.b200_attention_gdn_serving.worker import write
-from gleipnir.serving_prefill_graphs import graph_padding_allowed, validate_graph_config
+from experiments.b200_attention_gdn_serving.worker import ROOT, write
+from gleipnir.serving_prefill_graphs import (
+    adapt_profile_cache_source,
+    graph_padding_allowed,
+    validate_graph_config,
+)
 
 
 class PrefillGraphNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
@@ -27,6 +32,36 @@ class PrefillGraphNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
         digest = hashlib.sha256(source.read_bytes()).hexdigest()
         if digest != condition["prefill_graphs"]["dispatcher_sha256"]:
             raise ValueError("installed graph dispatcher changed")
+        runner = self.model_runner
+        original_allocator = runner._init_minimal_kv_cache_for_profiling
+        runner_source = Path(inspect.getfile(type(runner)))
+        runner_digest = hashlib.sha256(runner_source.read_bytes()).hexdigest()
+        if runner_digest != condition["prefill_graphs"]["model_runner_sha256"]:
+            raise ValueError("installed model runner changed")
+        adapted = adapt_profile_cache_source(inspect.getsource(original_allocator))
+        generated = (
+            ROOT / "results/b200_attention_gdn_serving/prefill_graph_cache_source.py"
+        )
+        generated.write_text(
+            "# SPDX-License-Identifier: Apache-2.0\n"
+            "# Adapted from the checksum-bound vLLM model runner.\n" + adapted
+        )
+        namespace = {}
+        exec(
+            compile(adapted, str(generated), "exec"),
+            original_allocator.__func__.__globals__,
+            namespace,
+        )
+        runner._init_minimal_kv_cache_for_profiling = types.MethodType(
+            namespace["_init_minimal_kv_cache_for_profiling"], runner
+        )
+        self._profile_cache = {
+            "blocks": self.vllm_config.scheduler_config.max_num_seqs,
+            "scope": "temporary piecewise CUDA graph memory profiling only",
+            "installed_runner_sha256": runner_digest,
+            "generated_sha256": hashlib.sha256(generated.read_bytes()).hexdigest(),
+            "runtime_kv_allocator_changed": False,
+        }
         self._graph_enabled = True
         self._graph_live = False
         self._graph_decisions = Counter()
@@ -58,6 +93,7 @@ class PrefillGraphNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
             "compilation_config": self._graph_config,
             "policy": condition["prefill_graphs"],
             "installed_dispatcher": self._graph_source,
+            "profile_cache": self._profile_cache,
             "attention_and_gdn": "eager splitting ops preserved",
         }
         self.audit_serving_state()
@@ -81,6 +117,7 @@ class PrefillGraphNativeOutputAttentionTunedPreparationMxfp8ServingAuditWorker(
             "enabled": self._graph_enabled,
             "compilation_config": self._graph_config,
             "installed_dispatcher": self._graph_source,
+            "profile_cache": self._profile_cache,
             "decisions": [
                 dict(rows=r, padded=p, mode=m, reason=why, count=n)
                 for (r, p, m, why), n in self._graph_decisions.items()

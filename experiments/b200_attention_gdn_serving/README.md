@@ -22,6 +22,14 @@ The loopback-only test server enables vLLM's development RPC for this canary;
 ordinary recipes do not enable it. Preserve shared disk caches and stop the
 previous serving process before starting this trial.
 
+The first native startup hit OOM before capture: vLLM 0.24's temporary
+profiling cache equates the capture token ceiling to KV block count, allocating
+32,768 blocks for this hybrid model. The checksum-bound worker adapts that
+temporary initializer to allocate `max_num_seqs` blocks (128) for PIECEWISE
+profiling, whose attention ops run without real attention metadata. Keep the
+runtime KV allocator, capture token sizes, workload and memory utilization
+unchanged. Preserve the failed startup and hash the generated adapter source.
+
 Current optimization reference: user-selected **direct FP4 MLP output**,
 including symbolic-row overhead improvements, FP4 GDN/attention projections,
 combined preparation, tuned output GEMMs and cuDNN MXFP8 prefill. The default

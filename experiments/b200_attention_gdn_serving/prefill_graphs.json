@@ -62,6 +62,7 @@
   },
   "prefill_graphs": {
     "max_padding_fraction": 0.125,
-    "dispatcher_sha256": "51f632753af729aeee6ce4a802d9d74b64f22eef02a524f36e2a24b07ef0cf63"
+    "dispatcher_sha256": "51f632753af729aeee6ce4a802d9d74b64f22eef02a524f36e2a24b07ef0cf63",
+    "model_runner_sha256": "d2b8ec101122749e1a2610383d2ab74c5a21605e9d7995eb68192bc769986694"
   }
 }
