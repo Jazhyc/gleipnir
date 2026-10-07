@@ -38,6 +38,8 @@ SOURCES = [
     "experiments/b200_frost_inference/worker.py",
     "experiments/b200_attention_gdn_serving/worker.py",
     "src/gleipnir/serving_precision.py",
+    "src/gleipnir/serving_compile_cache.py",
+    "src/gleipnir/serving_runtime.py",
 ]
 
 

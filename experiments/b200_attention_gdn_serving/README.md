@@ -1,5 +1,28 @@
 # B200 attention and GDN throughput campaign
 
+## Serving startup (2026-10-07)
+
+Hypothesis: network-mounted package imports and metadata-sensitive compiler
+identity cause most restart latency. Stage the immutable Python environment,
+pinned Triton override and vendor dependencies once on ephemeral storage with
+`PYTHONPATH=src python3 scripts/stage_serving_runtime.py`. The normal launcher
+uses the staged interpreter and library paths when the dependency binding is
+current. Keep compiler/kernel caches on the network volume. Preserve complete
+provenance but use vLLM's SupportsHash interface to key additional config on
+kernel sources, runtime versions, mathematical settings and native receipt
+contents, excluding run labels, control references, audit locations and canary
+implementation. Unknown settings remain part of the key.
+
+Use the selected Direct FP4 recipe, without the slower graph-capture candidate.
+Compare measured time to readiness and a second unchanged-arithmetic restart
+with different experiment metadata. Verify an actual compiled-cache load,
+unchanged native source bindings, bounded serving-score parity and frozen
+320-row development AUROC. Reuse archived throughput controls and native
+diagnostics; do not rerun full shape or concurrency sweeps. Stop on stale
+dependencies, source drift, unsafe cache identity, numerical failure or GPU
+startup failure. Stop the old server before restarting. A one-time package
+copy is provisioning cost, distinct from warm server restart time.
+
 ## Large-prefill piecewise graphs (2026-10-07)
 
 Result: capture and numerical replay checks passed, but warm c128 throughput

@@ -405,6 +405,8 @@ async def benchmark(
     reuse: bool,
     merged_model: Path | None = None,
     kernel_condition: dict | None = None,
+    *,
+    startup_only: bool = False,
 ) -> None:
     import httpx
     import numpy as np
@@ -439,6 +441,11 @@ async def benchmark(
         server_environment["PYTHONPATH"] += f":{ROOT / '.cache/kernels/fa4'}"
     if kernel_condition and kernel_condition.get("prefill_graphs"):
         server_environment["VLLM_SERVER_DEV_MODE"] = "1"
+    from gleipnir.serving_runtime import local_serving_runtime
+
+    runtime = local_serving_runtime(ROOT, server_environment)
+    if runtime is not None:
+        command[0] = runtime["python"]
     if reuse:
         receipt = json.loads(metadata.read_text())
         if (
@@ -476,6 +483,7 @@ async def benchmark(
             "command": command,
             "config_sha256": manifest["config_sha256"],
             "started_at_unix": time.time(),
+            "local_runtime": runtime,
             "status": "starting",
             "cache_paths": {
                 **{k: v for k, v in server_environment.items() if "CACHE" in k},
@@ -724,6 +732,12 @@ async def benchmark(
             f"http_canary_complete strict={strict_passed} accepted={accepted_passed}",
             flush=True,
         )
+        if startup_only:
+            report.update(
+                status="complete", startup_only=True, timing_sweep_skipped=True
+            )
+            write(output / "summary.json", report)
+            return
         for concurrency in config["concurrency"]:
             for repeat in range(config["repeats"]):
                 results, elapsed = await trial(
