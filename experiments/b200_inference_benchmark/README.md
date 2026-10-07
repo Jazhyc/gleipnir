@@ -216,6 +216,37 @@ PYTHONPATH=src:. python -m experiments.b200_inference_benchmark.gigatoken_ab --n
 The first command requires retiring the old API/engine. The second uses the
 loaded worker and verifies opt-in control/PID identity before each switch.
 
+## GPU-local CPU placement, 2026-10-07
+
+Hypothesis: GPU-local execution avoids cross-socket submission/metadata costs
+in the native Gigatoken frontend and selected Direct FP4 engine. Preserve the
+current API/engine, compiled graph, arithmetic, native receipts and loaded
+memory. Compare original affinity against NUMA-node-0 affinity on all threads,
+then disjoint GPU-local groups: four physical cores plus SMT siblings for the
+API, remaining node-0 cores for the engine. No existing memory is migrated;
+this is CPU execution placement, not a full NUMA memory-policy experiment.
+
+Use one excluded warmup per condition/workload; three position-balanced c1
+quick64 triplets and all six permutations at c128/full320. Verify process birth
+identity, frontend mode and every live thread's mask around each pass. Save
+process scheduling/context-switch counters, cgroup quota/pressure/throttling,
+predictions and AUROC deltas. The client retains its original affinity. Reuse
+exact-ID validation; CPU placement does not change encoding or GPU arithmetic.
+
+Select by timing only, with quality as a guard: median paired throughput must
+improve >0.5%, at least five of six pairs must improve, and c1 median/p95 may
+regress at most 2%; alternatively accept >3% p95 improvement, no median-latency
+regression and at most 0.5% throughput loss. Require identical c1 scores and
+absolute macro/pooled AUROC shifts <=0.1 percentage points on the training-seen
+development workload. Prefer the eligible candidate with highest paired
+throughput. Otherwise restore original affinity. No final-ID selection or GPU
+baseline promotion occurs. Stop on identity, mask, finite-score or transport
+failure, restoring saved original masks on failure. Retain the healthy worker.
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_inference_benchmark.cpu_placement --name cpu_placement01 --node 0
+```
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
