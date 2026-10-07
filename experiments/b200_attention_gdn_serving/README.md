@@ -4,8 +4,8 @@
 
 The user selects native Gigatoken plus direct FROST host bindings on the existing
 Direct FP4/MXFP8 GPU recipe. Startup and selected comparisons resolve these
-checksum-bound CPU components automatically. Keep warm API/engine 109400/109438;
-no restart is needed for selection. Controls are c1 quick64 median/p95
+checksum-bound CPU components automatically. At selection, API/engine 109400/109438
+was kept warm; the later cache-free trial retires it. Controls are c1 quick64 median/p95
 149.69/184.19 ms, c128 full320 throughput 197530 input tokens/s and macro/pooled
 AUROC 0.878144/0.885763. Use all recorded repeats at matched concurrency/population.
 Default selected comparisons use c1/c128; other combined-stack controls are
@@ -1050,3 +1050,16 @@ tokens/s plus AUROC deviation. Report the batching change as part of the treatme
 Stop on invalid history, nonfinite scores, missing layer coverage or native
 equivalence failure. A negative speed result stays a named offline option rather
 than replacing the selected reference.
+
+Completed as an experimental screen: `prompt_only03` verifies zero persistent
+cache bytes across all 32 layers, c1 median/p95 133.42/175.20 ms (−10.87% median),
+and exact c1 scores. One completed full320 pass has macro/pooled AUROC shifts
++0.00782/−0.03125 percentage points and no flips. Its first-use-inclusive rate
+is 66,906 input tokens/s; the repeated c128 pass stalls, so no stable warmed
+throughput result or promotion is claimed. Stop that server and restore the
+selected recipe with `startup --name prompt_only_restore01`. Preserve the two
+earlier integration failures and inadequate canary03; canary04 adds independent
+convolution verification and passes seven cases. See the
+[finding](../../docs/findings/b200_cache_free_serving.md) for boundaries and artifacts.
+Restoration completes in 107.08 s with unchanged GPU compile identity; API/engine
+112588/112611 remain warm. All 556 evidence files verify locally.

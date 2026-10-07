@@ -84,5 +84,10 @@ selected serving reference, with c1 median/p95 149.69/184.19 ms and c128
 throughput 197530 input tokens/s. See the
 [serving reference decision](docs/decisions/b200_gigatoken_direct_host_reference.md).
 
+A cache-free whole-prompt monitoring prototype reduces c1 latency and persistent
+GPU storage, but its repeated batch run stalls. Keep it experimental and retain
+the selected serving reference; see the
+[cache-free finding](docs/findings/b200_cache_free_serving.md).
+
 Presentation layout and build conventions are documented in
 [`outputs/presentations/README.md`](outputs/presentations/README.md).
