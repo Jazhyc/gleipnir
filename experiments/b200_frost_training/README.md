@@ -14,14 +14,13 @@ activation/output buffers or adapter values. Unsupported compiler identities,
 operand contracts and workspace plans fail closed. Default recipes and pinned
 source receipts remain unchanged until GPU evidence supports selection.
 
-Status: local implementation and CPU tests are complete; CUDA parity and speed
-are unmeasured. The user requests code preparation while another agent uses the B200.
-Do not transfer files, launch probes or replace any remote process for this task.
-CPU tests establish dispatch ordering, source guards, scope/restoration and
-failure handling; they do not establish CUDA parity or a speedup.
+The user authorized retiring vLLM and running the native GPU screen. The pod now
+uses the current refactored repository source; weights, datasets, environments
+and shared caches are preserved. See the [native finding](../../docs/findings/b200_frost_training.md)
+for passing CUDA evidence, timing qualifications and preserved failed attempts.
 
 The probe rejects another live GPU process and never stops that process.
-Once compute is available, `probe` checks the actual compiled FP4 LoRA MLP at
+The `probe` checks the actual compiled FP4 LoRA MLP at
 193/4096/16384 rows. Require bitwise output, input-gradient and all six adapter-
 gradient agreement with original bindings, finite/missing-gradient checks,
 independent outputs and changed-input/live-adapter replay. Check a second CUDA
@@ -49,3 +48,8 @@ pass, it can scope an existing Trainer's `train()` call. Its controller supports
 `set_mode("original")` / `set_mode("direct")` between drained passes; original
 mode restores both the class method and every wrapped plan executor. Exiting
 the context restores the original path even after a failed native call.
+
+`native03` passes all native gates. Median complete-MLP time falls 1.27/4.18/0.66%
+at the three shapes; the 4096-token mean is dominated by a preserved control
+outlier. This is not a measured optimizer-update gain. Keep the path opt-in;
+the selected training recipe is unchanged.

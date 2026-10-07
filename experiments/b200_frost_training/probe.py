@@ -158,6 +158,9 @@ def worker(output: Path, settings: dict) -> None:
                 independent = direct[0].data_ptr() != second[
                     0
                 ].data_ptr() and torch.equal(direct[0], saved_output)
+                # Raw outputs retain AccumulateGrad nodes on the default stream.
+                # Keep detached snapshots before executing on another stream.
+                del direct, second
                 flags = dict(
                     output_exact=torch.equal(reference[0], candidate[0]),
                     gradients_exact=all(
@@ -178,9 +181,35 @@ def worker(output: Path, settings: dict) -> None:
                 torch.cuda.current_stream().wait_stream(side)
                 flags["alternate_stream_exact"] = exact(candidate, stream_result)
                 torch.cuda.synchronize()
+                row = dict(rows=rows, checks=flags, phase="ordinary_parity")
+                report["shapes"].append(row)
+                write(receipt, report)
+                if not all(
+                    flags[key]
+                    for key in (
+                        "output_exact",
+                        "gradients_exact",
+                        "finite",
+                        "independent_outputs",
+                        "alternate_stream_exact",
+                    )
+                ):
+                    raise ValueError("ordinary complete-MLP binding parity failed")
+                capture_stream = torch.cuda.Stream()
+                capture_stream.wait_stream(torch.cuda.current_stream())
+                with torch.cuda.stream(capture_stream):
+                    for _ in range(3):
+                        step()
+                torch.cuda.current_stream().wait_stream(capture_stream)
+                torch.cuda.synchronize()
                 graph = torch.cuda.CUDAGraph()
-                with torch.cuda.graph(graph):
-                    captured = step()
+                with torch.cuda.graph(graph, stream=capture_stream):
+                    raw_captured = step()
+                captured = (
+                    raw_captured[0].detach(),
+                    tuple(g.detach() for g in raw_captured[1]),
+                )
+                del raw_captured
                 original_x = x.detach().clone()
                 with torch.no_grad():
                     x.mul_(0.9)
@@ -208,15 +237,14 @@ def worker(output: Path, settings: dict) -> None:
                     x.copy_(original_x)
                     parameters[1].copy_(master)
                 flags["dispatch"] = control.state()
-                row = dict(
-                    rows=rows,
+                row.update(
                     checks=flags,
+                    phase="replay_parity",
                     timing_scope=(
                         "ordinary synchronized complete MLP forward "
                         "and all seven gradients"
                     ),
                 )
-                report["shapes"].append(row)
                 write(receipt, report)
                 accept_checks(flags)
                 # Replay gates precede timing; modes switch outside timing.
@@ -252,7 +280,7 @@ def worker(output: Path, settings: dict) -> None:
                     row["step_time_change_percent"],
                     flush=True,
                 )
-                del captured, graph, direct, candidate, reference, second, stream_result
+                del captured, graph, candidate, reference, stream_result
         report.update(status="complete", passed=True, restored_bindings=control.state())
         write(receipt, report)
     except BaseException as error:
