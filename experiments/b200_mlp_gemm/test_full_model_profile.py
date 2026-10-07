@@ -135,3 +135,29 @@ def test_kernel_accounting_excludes_annotations_and_merges_overlap():
         "silu_and_fused_pointwise_without_module_attribution"
     )
     assert kernel_group("opaque_kernel") == "other_or_unclassified"
+
+
+def test_profile_reuses_only_bound_runtime_shape_generation(monkeypatch):
+    from experiments.b200_mlp_gemm.full_model_profile import validate_profile_sources
+    from gleipnir import native_fp4_training as native
+
+    launch = {
+        "source_sha256": {
+            "src/gleipnir/" + name: value
+            for name, value in native.HISTORICAL_KERNEL_SHA256.items()
+        }
+    }
+    proof = validate_profile_sources(launch)
+    assert proof == native.RUNTIME_SHAPE_VALIDATION
+    assert proof is not native.RUNTIME_SHAPE_VALIDATION
+    changed = deepcopy(launch)
+    changed["source_sha256"]["src/gleipnir/cudnn_fp4_mlp.py"] = "0" * 64
+    with pytest.raises(ValueError, match="historical kernel source receipt"):
+        validate_profile_sources(changed)
+
+    def drift():
+        raise ValueError("validated native FP4 kernel source changed")
+
+    monkeypatch.setattr(native, "validate_kernel_sources", drift)
+    with pytest.raises(ValueError, match="validated native FP4 kernel source"):
+        validate_profile_sources(launch)

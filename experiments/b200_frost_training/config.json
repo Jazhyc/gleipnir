@@ -15,7 +15,7 @@
   "full_model_screen": {
     "launch_reference": "results/b200_mlp_gemm/warmedprofile01/summary.json",
     "launch_reference_sha256": "64507ef439da31bb4294b54cc3f6a310b3e4e662d2a4fe224f3f493cba07c772",
-    "session": "frostresident02",
+    "session": "frostresident03",
     "trials": [
       [
         "01baseline",

@@ -51,9 +51,9 @@ scratch adapter. Stop on nonfinite/missing gradients, workload drift, failed par
 or timed compilation. No ID evaluation or precision change is included.
 
 ```bash
-PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 start --baseline-only
-PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 submit --id 03direct --variant candidate
-PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 submit --id 04control --variant baseline
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident03 start --baseline-only
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident03 submit --id 03direct --variant candidate
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident03 submit --id 04control --variant baseline
 ```
 
 The shared opt-in context is `training_frost_bindings()` from

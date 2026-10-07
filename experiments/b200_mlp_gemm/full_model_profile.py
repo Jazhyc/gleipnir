@@ -13,7 +13,6 @@ from typing import Any
 import torch
 from transformers import TrainerCallback
 
-from gleipnir._compat import canonical_source_reference
 from gleipnir.packed_benchmark import summarize
 from gleipnir.validated_startup import validation_reference as bf16_validation_reference
 
@@ -23,6 +22,21 @@ REFERENCE = (
 )
 REFERENCE_SHA = "14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb"
 UPDATES = (11, 15, 20)
+
+
+def validate_profile_sources(launch: dict) -> dict:
+    """Bind the historical receipt and the already validated active generation."""
+    from gleipnir.native_fp4_training import (
+        HISTORICAL_KERNEL_SHA256,
+        RUNTIME_SHAPE_VALIDATION,
+        validate_kernel_sources,
+    )
+
+    for name, expected in HISTORICAL_KERNEL_SHA256.items():
+        if launch["source_sha256"][f"src/gleipnir/{name}"] != expected:
+            raise ValueError(f"historical kernel source receipt changed: {name}")
+    validate_kernel_sources()
+    return deepcopy(RUNTIME_SHAPE_VALIDATION)
 
 
 def profile_validation_reference(path: Path, **kwargs: Any) -> dict:
@@ -50,21 +64,7 @@ def profile_validation_reference(path: Path, **kwargs: Any) -> dict:
         verify_runtime=True,
     )
     launch = json.loads((REFERENCE.parents[1] / "summary.json").read_text())
-    for name in (
-        "cudnn_fp4_mlp.py",
-        "cudnn_fp4_gemm.py",
-        "cudnn_fp4_epilogue.py",
-        "nvfp4_pack.py",
-        "attention_backends.py",
-    ):
-        relative = f"src/gleipnir/{name}"
-        if (
-            hashlib.sha256(
-                (ROOT / canonical_source_reference(relative)).read_bytes()
-            ).hexdigest()
-            != launch["source_sha256"][relative]
-        ):
-            raise ValueError(f"validated kernel source changed: {relative}")
+    source_validation = validate_profile_sources(launch)
     result = {
         **control,
         "policy": (
@@ -87,6 +87,7 @@ def profile_validation_reference(path: Path, **kwargs: Any) -> dict:
         "timing_only": True,
         "reference_timing_authority": metadata["sequence_packing"]["timing_authority"],
         "initial_master_sha256": validated["initial_master_sha256"],
+        "native_fp4_source_validation": source_validation,
     }
     return result
 
