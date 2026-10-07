@@ -163,6 +163,44 @@ source hashes. This is a low-priority simplification for the current long-prompt
 one-token workload, with potentially different economics for other workloads.
 
 
+### Current cached EU host, 2026-10-07
+
+`output_profile_euro01` checks the same hypothesis on the restored warm cached
+server, without a restart, kernel change or baseline timing replay. Its saved
+contract permits one engine trace on frozen quick64/c1 and full320/c128, stops
+on input/response/health failure and forbids promotion or profiled speed claims.
+Prefix caching stays off and chunked prefill stays on. The installed sampler,
+projection and Qwen source hashes match the earlier diagnosis.
+
+| Output GPU attribution | c1: 64 sampling steps | c128: 41 sampling steps |
+|---|---:|---:|
+| Inferred vocabulary head | 12.218 ms | 8.031 ms |
+| Argmax, log-softmax and returned-logprob top-k | 9.050 ms | 6.653 ms |
+| Allowed-token mask, gather and inferred rank reduction | 2.066 ms | 1.485 ms |
+| Identified output work / all GPU kernel time | 1.562% | 0.277% |
+
+At c1 the head/core median is **0.332 ms per request**, including a 0.191-ms
+head; the extended attribution averages **0.365 ms per request**. This is the
+scale of identifiable GPU work a two-logit path could remove, not a measured
+end-to-end saving. That path still needs scoring and device-to-host delivery.
+Engine dispatch, IPC, API response construction and serialization remain
+unattributed: the profiler excludes the frontend, and nested CPU operator sums
+cannot supply their latency. A complete score-endpoint bypass needs matched
+unprofiled timing before promising additional host savings.
+
+All head grids are `[1294,1,1]`, consistent with the installed full vocabulary;
+rank reduction is inferred from the sampler's compiled greater-than count.
+c1 scores match the archived same-host control exactly. One profiled c128 pass
+has mean/max score differences 0.001925/0.086512, zero threshold flips and
+macro/pooled AUROC deltas **-0.06556/-0.00586 percentage points**; this is
+unchanged arithmetic under a different instrumented batch schedule, not a new
+kernel-quality acceptance. Per-source, calibration, ties and undefined
+single-label diagnostics remain in `score_comparison.json`. The archived warm
+reference stays 30.36-ms c1 median and 211041 input tokens/s at c128; no fresh
+speed result is claimed. Profiling is stopped and the sole server remains
+healthy. Twenty collected files, including traces, executed client/analysis,
+installed sources and closure, are checksum-bound under the run directory.
+
 ## GEMM follow-up research, 2026-10-06
 
 The next low-cost screen is backend comparison on identical packed operands,
