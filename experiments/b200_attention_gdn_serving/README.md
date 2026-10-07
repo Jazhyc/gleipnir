@@ -30,6 +30,19 @@ positive pairs and <=2% c1 median/p95 regression; otherwise retain original host
 binding. Stop after this bounded comparison and keep the useful worker warm.
 No final-ID selection, new capacity, kernel arithmetic change or cold cache.
 
+Completed: all 20 native cases pass bitwise, including independent outputs,
+changed-weight graph replay and a second stream. The replacement reuses the same
+GPU compile identity and is ready in 97.04 s. Same-worker warm c128 median input
+throughput is 196558 -> 197530 tokens/s, with a +0.60% median paired gain and five
+of six positive pairs; c1 median/p95 falls 156.84/190.96 -> 149.69/184.19 ms.
+The six-pair interval includes zero gain, so preserve the repeat range. c1 scores
+are exact; c128 macro/pooled AUROC shifts +0.0426/+0.0391 percentage points with
+no flips. The candidate meets the frozen rule and remains enabled in the warm
+worker. API/engine 109400/109438 retain native Gigatoken and original CPU affinity.
+Thirty-five tests and Ruff pass; all 126 artifacts verify locally. Preserve both
+failed setup/fixture checks. See [the finding](../../docs/findings/b200_frost_host_wrappers.md)
+for source bindings, profile confounds and the restart command.
+
 ## Serving startup (2026-10-07)
 
 Hypothesis: network-mounted package imports and metadata-sensitive compiler

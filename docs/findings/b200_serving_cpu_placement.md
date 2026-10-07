@@ -86,3 +86,8 @@ original CPU masks restored. Only the engine owns GPU memory (169068 MiB).
 The selected GPU baseline checksum and compile identity are unchanged. Runtime
 metadata records the CPU comparison and retained placement separately from GPU
 configuration. Do not enable these rejected masks by default.
+
+The subsequent [host-binding wrapper intervention](b200_frost_host_wrappers.md)
+retains native arithmetic and improves paired-median throughput by 0.60%, with
+five of six positive pairs and better interactive median/p95. The warm worker
+is replaced for that code change; its CPU affinity remains the original mask.
