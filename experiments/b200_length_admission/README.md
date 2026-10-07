@@ -2,8 +2,7 @@
 
 Hypothesis: prioritizing short waiting prompts improves mixed-length request
 latency without sacrificing the selected B200 scorer's bulk throughput. This is
-an opt-in waiting-queue intervention, not a kernel or precision change. No GPU
-trial has run; the shared B200 is occupied by another task.
+an opt-in waiting-queue intervention, not a kernel or precision change.
 
 The custom vLLM 0.24.0 synchronous pooling scheduler sorts waiting requests into
 <=1024, <=4096, <=16384 and larger-token buckets, FIFO within each bucket.
@@ -67,8 +66,11 @@ PYTHONPATH=src:. python -m experiments.b200_length_admission.traffic \
 
 The traffic client only sends requests to an already-ready scorer. Run its
 control against the same selected FCFS recipe before comparing the candidate.
-For a matched custom-scheduler control, set `length_admission.mode` to `fcfs` in
-the prepared command: that delegates admission entirely to upstream vLLM.
+Use `run --control-only --name fcfs_start01 --retired-parent <receipt>` to start
+the matched FCFS control with adapter canary and excluded warmups only. Then
+run `traffic --name fcfs_arrivals01` before replacing that server with the
+candidate. This delegates admission entirely to upstream vLLM and never reruns
+archived throughput timing controls.
 Neither entrypoint creates or terminates capacity. Results remain ignored under
 `results/b200_length_admission/`; shared server metadata and runtime logs retain
 the established scoring harness locations. Monitor any future launch in the

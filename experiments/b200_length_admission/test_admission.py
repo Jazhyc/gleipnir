@@ -226,6 +226,20 @@ def test_idle_launch_never_reclaims_an_occupied_gpu(monkeypatch):
     require_idle_gpu()
 
 
+def test_mixed_control_changes_only_policy_mode():
+    original = settings()
+    hashes = {POLICY_SOURCE: "a", INTEGRATION_SOURCE: "b"}
+    candidate = admission_command(parent_command(), original, hashes)
+    control = admission_command(parent_command(), original, hashes, control_only=True)
+    index = control.index("--additional-config") + 1
+    control_config = json.loads(control[index])
+    candidate_config = json.loads(candidate[index])
+    assert control_config["length_admission"]["mode"] == "fcfs"
+    control_config["length_admission"]["mode"] = "length_aware"
+    assert control_config == candidate_config
+    assert original["length_admission"]["mode"] == "length_aware"
+
+
 def test_retired_runtime_preserves_identity_caches_and_parent(tmp_path, monkeypatch):
     selection = tmp_path / "experiments/b200_inference_benchmark/baseline.json"
     selection.parent.mkdir(parents=True)

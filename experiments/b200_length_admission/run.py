@@ -19,7 +19,9 @@ POLICY_SOURCE = "src/gleipnir/serving/length_admission.py"
 INTEGRATION_SOURCE = "src/gleipnir/serving/vllm/length_scheduler.py"
 
 
-def admission_command(command: list[str], settings: dict, hashes: dict) -> list[str]:
+def admission_command(
+    command: list[str], settings: dict, hashes: dict, *, control_only: bool = False
+) -> list[str]:
     """Add only the admission policy to the selected synchronous pooling recipe."""
     command = command.copy()
     if (
@@ -36,6 +38,8 @@ def admission_command(command: list[str], settings: dict, hashes: dict) -> list[
     ):
         raise ValueError("admission trial requires upstream FCFS policy")
     config = dict(settings["length_admission"])
+    if control_only:
+        config["mode"] = "fcfs"
     AdmissionPolicy.from_dict(config)
     config.update(
         policy_sha256=hashes[POLICY_SOURCE],
@@ -67,7 +71,9 @@ def require_idle_gpu(*, allowed_pids: set[int] | None = None) -> None:
         )
 
 
-async def run(name: str, retired_parent: Path | None) -> None:
+async def run(
+    name: str, retired_parent: Path | None, *, control_only: bool = False
+) -> None:
     # A live parent is replaced only through the existing identity-checked stop
     # helper. An idle-GPU launch reconstructs its preserved public receipts.
     environment = None
@@ -88,9 +94,12 @@ async def run(name: str, retired_parent: Path | None) -> None:
             name,
             experiment=EXPERIMENT,
             result_group="b200_length_admission",
-            command_prepare=admission_command,
+            command_prepare=lambda c, s, h: admission_command(
+                c, s, h, control_only=control_only
+            ),
             retired_parent=retired_parent,
             resumed_environment=environment,
+            startup_only=control_only,
         )
     except BaseException as error:
         out = ROOT / "results/b200_length_admission" / name
@@ -146,6 +155,11 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--retired-parent", type=Path)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument(
+        "--control-only",
+        action="store_true",
+        help="Start FCFS with canary/warmups, without timing controls",
+    )
     args = parser.parse_args()
     if args.name in {"", ".", ".."} or Path(args.name).name != args.name:
         raise ValueError("run name must be a directory stem")
@@ -163,7 +177,9 @@ def main() -> None:
         parent = json.loads(metadata.read_text())
         settings = json.loads((EXPERIMENT / "config.json").read_text())
         hashes = {p: sha(ROOT / p) for p in settings["additional_sources"]}
-        command = admission_command(parent["command"], settings, hashes)
+        command = admission_command(
+            parent["command"], settings, hashes, control_only=args.control_only
+        )
         out = ROOT / "results/b200_length_admission" / args.name
         out.mkdir(parents=True, exist_ok=False)
         write(
@@ -177,7 +193,7 @@ def main() -> None:
         )
         print(out / "prepared.json")
         return
-    asyncio.run(run(args.name, args.retired_parent))
+    asyncio.run(run(args.name, args.retired_parent, control_only=args.control_only))
 
 
 if __name__ == "__main__":
