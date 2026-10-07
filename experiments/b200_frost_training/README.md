@@ -1,0 +1,51 @@
+# Direct FROST bindings for FP4 LoRA training
+
+Hypothesis: bypassing cuDNN's per-call tensor/name/UID resolver reduces warmed
+training host dispatch time. Keep the selected FP4 MLP forward/input-gradient
+kernels, hardware packing, row scaling, BF16 rounding, live FP32 LoRA masters,
+FlashQLA and FA4 unchanged. The intervention is opt-in and reversible; it wraps
+only the six-operand, zero-workspace row-descaling plans in the native MLP cache.
+The lowered NVIDIA executor retains its runtime guards. Both existing and newly
+created plans use the wrapper, and original executors are restored on exit.
+
+This first implementation reuses the original caller's packing, allocation and
+view creation; it skips the vendor's operand-map resolution. It caches no
+activation/output buffers or adapter values. Unsupported compiler identities,
+operand contracts and workspace plans fail closed. Default recipes and pinned
+source receipts remain unchanged until GPU evidence supports selection.
+
+Status: local implementation and CPU tests are complete; CUDA parity and speed
+are unmeasured. The user requests code preparation while another agent uses the B200.
+Do not transfer files, launch probes or replace any remote process for this task.
+CPU tests establish dispatch ordering, source guards, scope/restoration and
+failure handling; they do not establish CUDA parity or a speedup.
+
+The probe rejects another live GPU process and never stops that process.
+Once compute is available, `probe` checks the actual compiled FP4 LoRA MLP at
+193/4096/16384 rows. Require bitwise output, input-gradient and all six adapter-
+gradient agreement with original bindings, finite/missing-gradient checks,
+independent outputs and changed-input/live-adapter replay. Check a second CUDA
+stream and all four forward/dgrad K/N geometries. Compare ten alternating
+synchronized complete forward/backward samples after six warmups; include all
+packing, allocation and adapter work. Graph replay is a separate numerical gate,
+not a timing claim about the bypassed Python work. Stop on any gate failure, OOM
+or thirty minutes. No teacher calls, held-out selection or automatic promotion.
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_frost_training.probe --name native01
+```
+
+A later full-model screen must use one resident worker, identical FP32 master,
+RNG/data order, physical partitions and optimizer/scheduler resets. Reuse the
+validated FP4 startup receipt and preserved strict failures. Require no new
+plans/specializations/graphs during timed updates and >=2% lower warmed mean
+complete-update time, with exact loss/gradient/update agreement. Reuse an
+existing same-host training control; an old NC2 timing cannot attribute a gain
+on the EU host. This full-model screen has not been launched or wired here.
+
+The shared opt-in context is `training_frost_bindings()` from
+`gleipnir.kernels.fp4.frost_bindings`. After the native and targeted model gates
+pass, it can scope an existing Trainer's `train()` call. Its controller supports
+`set_mode("original")` / `set_mode("direct")` between drained passes; original
+mode restores both the class method and every wrapped plan executor. Exiting
+the context restores the original path even after a failed native call.

@@ -1,0 +1,11 @@
+{
+  "model": "Qwen/Qwen3.5-4B",
+  "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "rows": [193, 4096, 16384],
+  "warmups": 6,
+  "repeats": 10,
+  "seed": 41,
+  "max_seconds": 1800,
+  "required_bitwise_parity": true,
+  "automatic_promotion": false
+}
