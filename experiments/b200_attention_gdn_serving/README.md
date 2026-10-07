@@ -1062,4 +1062,9 @@ earlier integration failures and inadequate canary03; canary04 adds independent
 convolution verification and passes seven cases. See the
 [finding](../../docs/findings/b200_cache_free_serving.md) for boundaries and artifacts.
 Restoration completes in 107.08 s with unchanged GPU compile identity; API/engine
-112588/112611 remain warm. All 556 evidence files verify locally.
+112588/112611 were kept warm. All 556 evidence files verify locally.
+The user subsequently terminates pod `i243nsg10usytq` on 2026-10-07; API deletion
+and absence are verified. No worker remains. Retain the 300 GB NC2 network volume
+`ixbh81vf9c`, master adapter, shared disk caches and results for a later authorized
+allocation. Reconstruct the disposable merged model and restage the runtime;
+the experimental cache-free path remains unselected.

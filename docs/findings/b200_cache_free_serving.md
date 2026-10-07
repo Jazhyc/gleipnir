@@ -89,3 +89,24 @@ All **556 artifacts** verify locally under
 native checks, completed scores/timings, stall diagnostics, executed sources,
 and restoration receipts. The evidence archive SHA256 is
 `c1f0c5a209615eed0319b5b3ff7b24852a60bda6bf058256104d88b63c3daf0f`.
+
+## User-requested shutdown, 2026-10-07
+
+The user subsequently requests terminating the B200 and continuing later.
+Stop API/engine 112588/112611 and collect six final shutdown receipts. Reverify
+all 556 earlier evidence files and the persistent master adapter checksum.
+Runpod deletes pod `i243nsg10usytq` with HTTP 204; a fresh get returns HTTP 404
+(`pod not found`). No serving or training worker remains on that pod.
+
+Network volume `ixbh81vf9c` (`gleipnir-b200-workspace`) remains **300 GB** in
+**US-NC-2**, confirmed by a fresh volume read. Model sources, master adapter,
+shared compiler/kernel caches and results remain there. The optional native
+tokenizer package is additionally preserved at
+`/workspace/gleipnir/.cache/kernels/gigatoken/0.10.0`. Ephemeral merged weights,
+staged runtime copies and in-memory plans are discarded; reconstruct/restage
+them when separately authorized capacity is available. The selected reference
+and unresolved cache-free batch stall are unchanged.
+
+Final local shutdown evidence is under
+`results/b200_attention_gdn_serving/pod_termination_20261007/`. The retired pod
+record is historical; do not try to reuse its SSH address or worker PIDs.
