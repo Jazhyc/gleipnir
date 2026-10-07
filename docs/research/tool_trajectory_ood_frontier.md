@@ -13,7 +13,7 @@ The current plot is tracked as a sharp vector
 [`PNG`](../../figures/tool_trajectory_ood_frontier.png) fallback and is
 regenerated directly from the table below with
 `python scripts/plot_tool_trajectory_ood_frontier.py`. Shared plotting helpers
-live in `src/gleipnir/plotting.py`; see
+live in `src/gleipnir/analysis/plotting.py`; see
 [`../../figures/README.md`](../../figures/README.md) before adding another plot.
 
 ## Comparison contract

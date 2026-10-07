@@ -49,9 +49,18 @@ MODULE_ALIASES = {
     "gleipnir.monitoring_systems_screen": "gleipnir.campaigns.systems_screen",
     "gleipnir.monitoring_training_command": "gleipnir.campaigns.training_command",
     "gleipnir.staged_lanes": "gleipnir.campaigns.lanes",
+    "gleipnir.openai_monitor": "gleipnir.teachers.openai",
+    "gleipnir.prompts": "gleipnir.teachers.prompts",
+    "gleipnir.plotting": "gleipnir.analysis.plotting",
+    "gleipnir.scaling": "gleipnir.analysis.scaling",
+    "gleipnir.qwen35_adapter_rebase": "gleipnir.adapters.rebase",
 }
 
-_CLI_MODULES = {"gleipnir.openrouter_cli", "gleipnir.monitoring_systems_screen"}
+_CLI_MODULES = {
+    "gleipnir.openrouter_cli",
+    "gleipnir.monitoring_systems_screen",
+    "gleipnir.qwen35_adapter_rebase",
+}
 
 
 def canonical_source_reference(reference: str) -> str:

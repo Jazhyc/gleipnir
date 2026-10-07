@@ -80,6 +80,7 @@ def test_training_exports_and_historical_pickle():
     [
         ("gleipnir.openrouter_cli", "gleipnir.teachers.openrouter_cli"),
         ("gleipnir.monitoring_systems_screen", "gleipnir.campaigns.systems_screen"),
+        ("gleipnir.qwen35_adapter_rebase", "gleipnir.adapters.rebase"),
     ],
 )
 def test_legacy_and_canonical_command_help_match(legacy, canonical):

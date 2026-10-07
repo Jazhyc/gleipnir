@@ -49,7 +49,7 @@ competition runner is included.
 - `docs/`: research program, findings, decisions, and infrastructure notes.
 - `data/`, `results/`, `logs/`: ignored local artifacts; only `.gitkeep` files are tracked.
 
-Reusable plotting conventions live in `src/gleipnir/plotting.py`. See
+Reusable plotting conventions live in `src/gleipnir/analysis/plotting.py`. See
 [`figures/README.md`](figures/README.md) for the figure registry and exact
 regeneration commands.
 

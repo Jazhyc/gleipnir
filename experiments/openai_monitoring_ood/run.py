@@ -20,7 +20,7 @@ from experiments.tool_trajectory_monitoring.teacher_canary import (
     load_jsonl,
     summarize_scored_rows,
 )
-from gleipnir.openai_monitor import DEFAULT_PRICING, AuditedClient, digest
+from gleipnir.teachers.openai import DEFAULT_PRICING, AuditedClient, digest
 
 
 def file_hash(path: Path) -> str:
@@ -283,7 +283,10 @@ def main() -> None:
                         str(p): file_hash(p)
                         for p in (
                             Path(__file__),
-                            Path("src/gleipnir/openai_monitor.py"),
+                            Path("src/gleipnir/teachers/openai.py"),
+                            Path("src/gleipnir/teachers/openrouter.py"),
+                            Path("src/gleipnir/__init__.py"),
+                            Path("src/gleipnir/_compat.py"),
                         )
                     },
                 }

@@ -7,7 +7,9 @@ Use canonical package paths for new code; moved implementations have one home.
 | Package | Responsibilities | Starting points |
 | --- | --- | --- |
 | `training/` | Objectives, batching, branch execution, training audits and adapter utilities | [optimizers.py](training/optimizers.py), [packed.py](training/packed.py), [branch_trainer.py](training/branch_trainer.py), [binary_tasks.py](training/binary_tasks.py), [mil.py](training/mil.py) |
-| `teachers/` | Teacher API requests, resumable annotation, teacher-cache validation | [openrouter_cli.py](teachers/openrouter_cli.py), [openrouter.py](teachers/openrouter.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
+| `teachers/` | Teacher API requests, prompt construction and output parsing, resumable annotation and cache validation | [openai.py](teachers/openai.py), [openrouter_cli.py](teachers/openrouter_cli.py), [prompts.py](teachers/prompts.py), [prefix_cache.py](teachers/prefix_cache.py), [prefix_audit.py](teachers/prefix_audit.py) |
+| `analysis/` | Shared plotting conventions, Pareto frontiers and empirical scaling fits | [plotting.py](analysis/plotting.py), [scaling.py](analysis/scaling.py) |
+| `adapters/` | Adapter artifact transformations with tensor and checksum preservation | [rebase.py](adapters/rebase.py) |
 | `data/` | Campaign inputs, augmentation, filtering and prefix preparation | [monitoring.py](data/monitoring.py), [branches.py](data/branches.py), [exclusions.py](data/exclusions.py), [nested_subsets.py](data/nested_subsets.py), [transcript_injection.py](data/transcript_injection.py) |
 | `campaigns/` | Training launches, matched systems screens and stage coordination | [systems_screen.py](campaigns/systems_screen.py), [training.py](campaigns/training.py), [training_command.py](campaigns/training_command.py), [lanes.py](campaigns/lanes.py), [status.py](campaigns/status.py) |
 | `evaluation/` | Scores, metrics, calibration, preference diagnostics, sharding and recovery | [probabilities.py](evaluation/probabilities.py), [binary.py](evaluation/binary.py), [scoring.py](evaluation/scoring.py), [metrics.py](evaluation/metrics.py), [preferences.py](evaluation/preferences.py) |
@@ -22,6 +24,9 @@ remain supported through lazy exports. The annotation command is
 Use `python -m gleipnir.campaigns.systems_screen` for config-driven training
 screens. The historical `gleipnir.monitoring_systems_screen` command remains an
 alias. Repository/cache roots, job schemas, objectives, and batching are unchanged.
+
+Use `python -m gleipnir.adapters.rebase` to rebase Qwen3.5 adapter keys. The
+historical `gleipnir.qwen35_adapter_rebase` command remains an alias.
 
 ## Modules awaiting migration
 
