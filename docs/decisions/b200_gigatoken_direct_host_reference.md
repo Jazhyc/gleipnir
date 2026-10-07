@@ -28,6 +28,10 @@ measures **30.36 ms c1 median** and **211041 input tokens/s** in the matched
 Use its three c1/six c128 repeats for performance attribution on that host;
 retain the selected archive for its frozen recipe and numerical provenance.
 Do not attribute cross-host latency differences to a kernel intervention.
+The user retains this standard cached path after the comparison: the cache-free
+prototype's roughly 5-ms median saving does not justify its observed throughput
+tradeoff for this workload. Keep prefix caching disabled in matched timing
+comparisons; KV/state storage for chunked prefill is a separate feature.
 See the [same-host finding](../findings/b200_cache_policy_same_host.md).
 
 Future selected comparisons use c1 and c128 and all available baseline repeats.

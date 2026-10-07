@@ -123,3 +123,35 @@ new entries from both policies, additionally collected as
 (SHA256 `5ed67762c53b7b682d33daf892f9b8fa3abc5e51c6971c28828cc68014ee6067`). No capacity is created or terminated and no
 serving or training default is promoted. Existing NC2 stall evidence remains
 unresolved separately.
+
+## User-selected cached restoration
+
+The user retains the standard cached path: the roughly 5-ms median saving is
+not valuable enough to trade away observed batch throughput. Prefix caching
+was explicitly **disabled in both conditions**; it explains none of the gain.
+The standard KV/state cache supports chunked prefill within a request. Our
+cache-free implementation requires whole prompts, so the scheduler can leave
+unused token budget when the next prompt does not fit. Changed batch sizes and
+GEMM shapes are a plausible throughput cost, alongside the differing metadata
+and graph policy, but have not been isolated by an operator/packing ablation.
+This is a prototype/configuration tradeoff, not evidence that cache-free
+attention is intrinsically slower. Preserve it as an optional memory-saving
+path rather than the active serving reference.
+
+`cached_restore_euro01` retires API/engine 15761/15786 before restoring the
+unchanged selected cached recipe with native Gigatoken/direct FROST, persistent
+compiler caches, chunked prefill and prefix caching off. Readiness takes
+**264.96 s**; no throughput control is rerun. The startup score canary passes
+existing **accepted-baseline agreement** (mean absolute difference 0.000807,
+correlation 0.999967, nonzero adapter effect 0.839906). Strict master agreement
+fails at mean absolute difference 0.020541, so `passed=false` and
+`evaluation_passed=true` are preserved separately; existing finite acceptance
+is reused, not replaced by a newly claimed strict pass.
+
+API **16386** / engine **16409** remain healthy and warm on port 8010. Current
+`cache_policy_state.json` records `standard_cached`; earlier cache-free closure
+receipts above are historical. Restoration receipts, executed sources, retirement
+and startup logs are collected under `cached_restore_euro01/` and
+`cached_restore_euro01_collection/`. No kernel arithmetic, quantization, model
+weights, cache policy flags beyond restoring the selected recipe, or capacity
+lifecycle changes are made.
