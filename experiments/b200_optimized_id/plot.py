@@ -36,6 +36,7 @@ def plot(directory: Path) -> None:
     for extension in ("png", "svg"):
         fig.savefig(directory / f"score_drift.{extension}", dpi=180)
     plt.close(fig)
+    (directory / "plot_source.py").write_bytes(Path(__file__).read_bytes())
 
 
 def main() -> None:

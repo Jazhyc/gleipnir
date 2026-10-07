@@ -402,9 +402,13 @@ async def run(name: str, reuse_prepared: str | None = None) -> None:
                         "save_seconds": save_seconds,
                         "prompt_token_min": min(lengths),
                         "prompt_token_max": max(lengths),
-                        "completion_p50_seconds": float(np.percentile(latencies, 50)),
-                        "completion_p90_seconds": float(np.percentile(latencies, 90)),
-                        "completion_max_seconds": max(latencies),
+                        "request_latency_p50_seconds": float(
+                            np.percentile(latencies, 50)
+                        ),
+                        "request_latency_p90_seconds": float(
+                            np.percentile(latencies, 90)
+                        ),
+                        "request_latency_max_seconds": max(latencies),
                     }
                 )
                 print("id_progress", repeat, len(values), len(workload), flush=True)

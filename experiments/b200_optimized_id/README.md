@@ -65,5 +65,8 @@ Preserve any partial batches as diagnostics and run one complete pass.
 `--reuse-prepared <source-run>` permits only a repetition-count change, verifies
 the prepared input and live API identities, and reuses the server.
 The original source/settings receipts remain intact. Batch diagnostics report
-checkpoint-write time and request completion percentiles; these identify barrier
+checkpoint-write time and request latency percentiles; these identify barrier
 tails but do not isolate their causal throughput cost.
+
+The completed one-pass result and its quality/throughput qualifications are in
+[the ID drift finding](../../docs/findings/b200_optimized_id.md).

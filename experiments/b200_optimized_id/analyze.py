@@ -159,7 +159,7 @@ def analyze(directory: Path) -> dict:
         ]
     }
     (directory / "comparison.json").write_text(json.dumps(result, indent=2) + "\n")
-    (directory / "executed_sources/analyze.py").write_bytes(Path(__file__).read_bytes())
+    (directory / "analysis_source.py").write_bytes(Path(__file__).read_bytes())
     print("ID metric deltas", result["metric_deltas"])
     print("ID score drift", result["score_drift"])
     return result

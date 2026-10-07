@@ -83,3 +83,23 @@ def test_single_pass_does_not_claim_repeat_variation():
     assert not result["repeat_variation"]["measured"]
     assert result["repeat_variation"]["passes"] == 1
     assert result["paired"]["threshold_flips"] == 0
+
+
+def test_prepared_server_requires_exact_live_command(tmp_path, monkeypatch):
+    from experiments.b200_optimized_id import run
+
+    proc = tmp_path / "123"
+    proc.mkdir()
+    (proc / "cmdline").write_bytes(b"python\0-m\0expected.server\0")
+    (proc / "stat").write_text("123 (python) S 1 2 3\n")
+    monkeypatch.setattr(run, "Path", lambda p: tmp_path / str(p).removeprefix("/proc/"))
+    process = run.ExistingServer(
+        {"pid": 123, "command": ["python", "-m", "expected.server"]}
+    )
+    assert process.poll() is None
+    (proc / "stat").write_text("123 (python) Z 1 2 3\n")
+    assert process.poll() == -1
+    (proc / "stat").write_text("123 (python) S 1 2 3\n")
+    (proc / "cmdline").write_bytes(b"python\0-m\0other.server\0")
+    with pytest.raises(ValueError, match="no longer live"):
+        run.ExistingServer({"pid": 123, "command": ["python", "-m", "expected.server"]})

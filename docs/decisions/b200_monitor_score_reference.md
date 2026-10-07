@@ -17,7 +17,10 @@ record any backend exception explicitly. New adapters use their own merged
 serving artifact and master/serving score canary with a nonzero adapter effect.
 Reuse unchanged native receipts and persistent compiler/kernel caches. The
 current adapter's accepted numerical drift does not establish other adapters'
-quality or justify modifying frozen past evaluation contracts.
+quality or justify modifying frozen past evaluation contracts. The full
+[same-adapter ID comparison](../findings/b200_optimized_id.md) shows material
+held-out drift despite reproducing the accepted small canary; small-canary
+agreement alone cannot support an ID quality-parity claim.
 
 Use the source-bound `PoolingContextScheduler` correction from
 `experiments/b200_long_context/scheduler.py` for chunked pooling: reserve zero

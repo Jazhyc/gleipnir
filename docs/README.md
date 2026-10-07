@@ -45,6 +45,8 @@
 - [Optimized vLLM serving default](decisions/b200_monitor_score_reference.md):
   future-experiment inference/evaluation recipe, supported context and model/GPU
   envelope, parity requirements and frozen B200 comparison controls.
+- [Optimized-stack ID drift](findings/b200_optimized_id.md): one full same-adapter
+  ID pass, held-out ranking/calibration regression and recovery-group diagnostics.
 - [B200 length-aware admission](findings/b200_length_admission.md): modest
   low-load short-request benefit, longer long-request tails and failed initial
   latency/fairness/pooled-AUROC screen on the selected scorer.
