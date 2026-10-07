@@ -44,6 +44,9 @@
   engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
 - [B200 repaired score reference](decisions/b200_monitor_score_reference.md):
   current cached scoring recipe and checksum-bound comparison controls.
+- [B200 length-aware admission](findings/b200_length_admission.md): modest
+  low-load short-request benefit, longer long-request tails and failed initial
+  latency/fairness/pooled-AUROC screen on the selected scorer.
 - [B200 BF16 GDN state](findings/b200_gdn_state.md): native state admission,
   gate-rounding diagnostic and negligible full-vLLM throughput change.
 - [B200 dedicated monitor scoring](findings/b200_monitor_score_endpoint.md):
