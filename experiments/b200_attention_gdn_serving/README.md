@@ -23,6 +23,13 @@ dependencies, source drift, unsafe cache identity, numerical failure or GPU
 startup failure. Stop the old server before restarting. A one-time package
 copy is provisioning cost, distinct from warm server restart time.
 
+Follow-up: mirror the existing vLLM/Inductor cache keys onto local storage to
+reduce cached-graph loading. Keep the shared trees intact and copy new/changed
+entries back after readiness, with no deletion of shared keys. Record mirror
+and durable paths, transfer checks and writeback time. Compare with the
+95.44-second cached restart, keeping the same arithmetic and cache identity;
+preserve a failed mirror trial and fall back to the shared cache if needed.
+
 ## Large-prefill piecewise graphs (2026-10-07)
 
 Result: capture and numerical replay checks passed, but warm c128 throughput

@@ -446,6 +446,9 @@ async def benchmark(
     runtime = local_serving_runtime(ROOT, server_environment)
     if runtime is not None:
         command[0] = runtime["python"]
+    from gleipnir.serving_cache_mirror import compiler_mirror, persist_compiler_mirror
+
+    mirror = compiler_mirror(ROOT, server_environment) if runtime is not None else None
     if reuse:
         receipt = json.loads(metadata.read_text())
         if (
@@ -484,6 +487,7 @@ async def benchmark(
             "config_sha256": manifest["config_sha256"],
             "started_at_unix": time.time(),
             "local_runtime": runtime,
+            "compiler_mirror": mirror,
             "status": "starting",
             "cache_paths": {
                 **{k: v for k, v in server_environment.items() if "CACHE" in k},
@@ -515,6 +519,7 @@ async def benchmark(
                 raise TimeoutError("server startup exceeded twenty minutes")
             await asyncio.sleep(2)
         receipt.update(status="ready", ready_at_unix=time.time())
+        receipt["compiler_cache_persistence"] = persist_compiler_mirror(mirror)
         write(metadata, receipt)
         report = {
             "status": "running",

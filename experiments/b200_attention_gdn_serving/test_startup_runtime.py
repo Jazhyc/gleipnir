@@ -179,3 +179,35 @@ def test_parallel_staging_dereferences_links_and_removes_obsolete_packages(tmp_p
     copied = target / lib / "torch/lib/alias.so"
     assert copied.read_bytes() == b"native library" and not copied.is_symlink()
     assert not old.exists() and not (target / "lib64").exists()
+
+
+def test_compiler_mirror_persists_new_entries_without_deleting_shared_keys(tmp_path):
+    import shutil
+
+    from gleipnir.serving_cache_mirror import compiler_mirror, persist_compiler_mirror
+
+    if shutil.which("rsync") is None:
+        pytest.skip("rsync unavailable")
+    root, target = tmp_path / "source", tmp_path / "local"
+    folder = target / "compiler_cache"
+    folder.mkdir(parents=True)
+    shared, local = root / "cache", folder / "cache"
+    shared.mkdir(parents=True)
+    local.mkdir()
+    (shared / "keep").write_text("durable")
+    data = {
+        "source_root": str(root),
+        "mappings": {"VLLM_CACHE_ROOT": {"shared": str(shared), "local": str(local)}},
+    }
+    (folder / "manifest.json").write_text(json.dumps(data))
+    env = {"GLEIPNIR_SERVING_RUNTIME": str(target), "VLLM_CACHE_ROOT": str(shared)}
+    receipt = compiler_mirror(root, env)
+    assert env["VLLM_CACHE_ROOT"] == str(local)
+    (local / "new").write_text("compiled kernel")
+    result = persist_compiler_mirror(receipt)
+    assert (
+        result["changed_entries"] == 1
+        and (shared / "new").read_text() == "compiled kernel"
+    )
+    assert (shared / "keep").read_text() == "durable"
+    assert persist_compiler_mirror(receipt)["changed_entries"] == 0

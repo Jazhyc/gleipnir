@@ -18,6 +18,8 @@ def copy_dependency_tree(source: Path, destination: Path, workers: int = 8) -> N
     """Copy disjoint package trees concurrently, reusing already copied files."""
     split = {
         ".",
+        "torch_compile_cache",
+        "torch_compile_cache/torch_aot_compile",
         "lib",
         "lib/python3.12",
         "lib/python3.12/site-packages",

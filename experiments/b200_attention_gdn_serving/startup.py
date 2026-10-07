@@ -51,6 +51,7 @@ def main() -> None:
     write(out / "manifest.json", manifest)
     for source in [
         *sources,
+        "src/gleipnir/serving_cache_mirror.py",
         str(Path(__file__).relative_to(ROOT)),
         "experiments/b200_inference_benchmark/run.py",
     ]:
