@@ -1,11 +1,11 @@
 # Native Gigatoken serving frontend
 
 2026-10-07. Native Gigatoken is wired into the API renderer and validated on the
-selected Qwen3.5-4B stack. Ordinary text requests improve interactive median/p95
-latency from **156.35/285.81 ms to 145.13/187.43 ms** against the preceding HF
-text controls. Full c128 throughput is **194611 input tokens/s**, 2.56% below
-those controls. Keep this frontend optional for latency work; the selected GPU
-kernel/precision reference is unchanged.
+selected Qwen3.5-4B stack. The latest same-worker comparison improves interactive
+median/p95 latency from **152.62/270.04 ms to 148.88/191.96 ms**. Full c128
+throughput is **196523 versus 198633 input tokens/s**; the median paired change
+is -1.11%, with the final two pairs essentially tied. Keep this frontend optional
+for latency work; the selected GPU kernel/precision reference is unchanged.
 
 ## Encoding, compatibility and the bulk headline
 
@@ -263,3 +263,63 @@ GPU engine remains healthy and warm on port 8010. Campaign state records API/eng
 opt-in and disabled for ordinary launches; use the guarded `ModeController`
 rather than sending signals to an arbitrary server. Gigatoken remains useful for
 interactive latency, with no established saturated-throughput gain.
+
+## Host optimization diagnosis
+
+The user's follow-up asks whether the host itself gets slower and what to
+optimize. Distinguish delayed engine submissions from slower CPU computation.
+The same native encoder is faster; the trace reports kernel-free intervals
+before CUDA calls, which can include Python/native wrapper work, waits,
+descheduling and profiler effects. It does not establish CPU saturation or
+an intrinsic host slowdown caused by Gigatoken.
+
+Reanalyze the existing warm HF and native traces without a new GPU run. Classify
+the 474.19/553.46 ms before-launch intervals excluding GPU copies using the
+innermost recorded CPU/API scope on the launching engine thread. Intersections
+are exclusive and sum back to the original interval totals. They are temporal
+overlaps, not sampled CPU stacks or causal assignments:
+
+| Scope overlapping the gap | Warm HF | Native |
+| --- | ---: | ---: |
+| Untraced host work/wait | 154.42 ms | 168.27 ms |
+| `gleipnir::frost_inference_linear` | 74.81 ms | 117.56 ms |
+| `vllm::qwen_gdn_attention_core` | 28.17 ms | 39.22 ms |
+| `gleipnir::norm_frost_pack` | 9.20 ms | 26.61 ms |
+| `aten::empty` | 12.71 ms | 15.36 ms |
+
+The FROST wrapper scope contributes 42.75 ms of the 79.27 ms difference in
+overlapping time. Thus investigate the engine's custom operator wrappers and
+their input/descriptor preparation rather than treating faster encoding as
+the identified source. This scope can include unrecorded nested native work
+and profiling overhead. Optimized GPU kernels do not remove host argument
+packing, tensor views, allocation and submission costs.
+
+Read-only CPU inspection finds a 20.4-CPU cgroup quota with affinity to all 192
+logical CPUs. The B200 is local to NUMA node 0 (CPUs 0-47,96-143); API and engine
+were observed on CPUs 146/174 on node 1. This is one idle snapshot, not proof of
+their placement during timed passes. No CPU pressure is present at collection;
+historical throttling counters do not diagnose the timed workload. No affinity
+or memory policy is changed. The installed vLLM has NUMA-binding support;
+[upstream guidance](https://docs.vllm.ai/en/stable/configuration/optimization/#numa-binding-for-multi-socket-gpu-nodes)
+describes binding GPU worker execution and memory at process startup.
+
+Prioritize a matched GPU-local CPU-affinity trial, then reduce measured wrapper
+overhead by reusing stable descriptors and bounded workspaces where lifetimes
+and concurrent execution permit it. Current native SwiGLU allocates packed
+outputs plus unused descriptor storage each call; MXFP8 allocates packing and
+scratch workspace per call. Do not share mutable outputs across in-flight
+requests or graph replays. Verify effective async scheduling before proposing
+it as an additional optimization; available configuration alone does not prove
+it is disabled. A CPU-stack/OS-runtime trace would distinguish untraced work
+from waits; nsys, py-spy and perf are absent on the current pod.
+
+The earlier large-prefill piecewise graph trial already reduced launch API
+counts but regressed throughput and latency. Do not repeat it unchanged or
+assume fewer calls will help. In this native profile, eliminating all 553 ms
+of before-launch time would yield an optimistic 9.4% GPU-window speedup with
+kernel work fixed; this is an upper bound, not a serving forecast.
+
+Artifacts: `results/b200_inference_benchmark/gigatoken_host01` contains the
+executed offline analysis, exact input trace hashes, exclusive scope totals and
+CPU inventory. The retained server stays healthy in native mode; this diagnosis
+does not change code, kernels, affinity or the selected reference.
