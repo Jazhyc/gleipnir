@@ -164,6 +164,13 @@ Retire the current server before a new launch; use the existing warm server for
 compatible client trials. The second command measures startup/canary, not the
 full serving sweep.
 
+Throughput diagnosis: one instrumented native-frontend c128/full320 pass on the
+retained worker, compared with the archived same-GPU-recipe engine trace. Inspect
+physical batch sizes, kernel counts/work and kernel-window gaps before assigning
+the small throughput decline to faster admission. Exclude profiled timing from
+speed claims; archived profile differences do not establish tokenizer causality.
+Stop after this bounded trace/analysis; no frontend, GPU kernel or capacity change.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt

@@ -118,3 +118,52 @@ Only the engine owns GPU memory. CPU frontend selection remains opt-in via
 results/b200_inference_benchmark/gigatoken_native_canary02/validation.json`.
 Selected GPU baseline SHA256 remains
 `39811c43e0b4bbf574e682d7b21f09e394909af3af4a69f3b398193cace89166`.
+
+## Throughput decline diagnostic
+
+At the user's request, capture one native-frontend full320/c128 engine trace
+on the retained worker and compare with the archived unchanged-GPU-recipe
+`native_fp4_output_profile01`. This does **not** confirm an intrinsic Gigatoken
+regression: the profile control is older, and the benchmark controls preceded
+the server restart. A smaller-batch GPU-efficiency explanation is not supported
+by this trace.
+
+| Instrumented engine observation | Archived reference | Native frontend |
+| --- | ---: | ---: |
+| Nonempty physical GPU batches | 42 | 41 |
+| Full 32768-token batches | 39 | 39 |
+| Other nonempty batches | 1428 / 29116 / 2085 | 1428 / 31201 |
+| CUDA kernel count | 44784 | 43688 |
+| Summed GPU kernel time | 5.852 s | 5.802 s |
+| First-to-last kernel window | 6.425 s | 6.513 s |
+| Kernel-free gaps | 574.57 ms | 713.09 ms |
+| Copies within those gaps | 88.14 ms | 88.31 ms |
+| Before-next-launch time, excluding copies | 445.55 ms | 579.21 ms |
+
+Both schedule exactly 1310581 input tokens. Exclude two zero-token execution
+annotations from each physical-batch count. Native does slightly less GPU work,
+but has more time before the host submits its next kernel. 98.86% of native
+kernel gaps overlap engine execution contexts; the API/tokenizer is untraced.
+This is temporal overlap, not causal attribution to a particular CPU operator.
+
+Almost all additional gap time is concentrated in the first 1428-token context:
+gap overlap rises from 194.33 to 336.79 ms (+142.47 ms), while total gaps rise
+138.52 ms. CPU context duration rises from 217.04 to 352.79 ms. Several large
+gaps overlap original FP4 preparation/GEMM or GDN scopes. This points toward
+first-use/host-execution or profiling variation; it does not prove a cold plan,
+compiler-cache miss or tokenizer-induced scheduling penalty.
+
+The instrumented native HTTP pass takes 6.7494 s versus archived 6.7249 s
+(+0.36%). Exclude both from speed claims. A justified short unprofiled follow-up
+after this shape has executed gives 195081/190842/196593 input tokens/s, median
+195081. That remains 2.33% below the preceding HF text control, but only 0.91%
+below the separately recorded five-pass standard GPU reference (196866).
+Warming this profiled shape does not establish recovery or the cause of the
+difference. Do not present the original 2.56% observation as a demonstrated
+causal cost of native tokenization. A same-worker HF/native frontend A/B would
+be needed to settle that attribution; no such runtime-switch control is installed.
+
+Artifacts: `results/b200_attention_gdn_serving/gigatoken_native_profile01`,
+including trace, exact batch/kernel comparison, gap/first-batch diagnostics,
+executed profile/timing clients, predictions and checksum-verified receipts.
+Profiling is stopped and the sole native frontend server remains healthy.
