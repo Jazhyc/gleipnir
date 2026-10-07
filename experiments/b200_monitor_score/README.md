@@ -45,3 +45,10 @@ remain under `b200_attention_gdn_serving` so the established stop helper can
 retire the candidate too. The active server is recorded explicitly as pooling,
 not as a reusable generation worker. Changes need matched score/AUROC evidence
 because a smaller GEMM can change BF16 rounding.
+
+`score02` completes the bounded suite and retains a healthy warm score worker.
+It shows no clear latency gain and slightly lower batch throughput, with batch
+AUROC changes despite nearly exact interactive scores. Keep it a named option;
+the selected generation reference is unchanged. See the
+[finding](../../docs/findings/b200_monitor_score_endpoint.md) for all repeat,
+quality, compiler-warning and failed-launch evidence.
