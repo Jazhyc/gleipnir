@@ -8,14 +8,14 @@ unsafe capability use and other strategically harmful behavior from model
 interactions, while retaining uncertainty in ambiguous cases. Generalization
 across tasks, model families and deployment settings is the central objective.
 Qwen 3.5 is the initial backbone; the research goal is independent of that choice.
+Avoid benchmark-specific tricks when designing methods or interpreting gains.
 
 ## Working approach
 
 Distill strong teachers' judgments into smaller monitors using
 parameter-efficient training and a direct binary decision-token interface.
-Keep three supervision channels distinct: source hard labels, teacher soft
-distributions, and privileged rationales or evidence. Matched comparisons are
-needed to identify the value of each channel.
+Use matched studies to identify the value of source labels, soft teacher
+targets and privileged evidence supervision.
 
 The completed tool-trajectory line uses Kimi K3 soft targets to train Qwen3.5
 students on agent trajectories. Gleipnir 4B and 9B are released research artifacts;
@@ -61,6 +61,9 @@ recorded explicitly in target provenance.
 
 ## Evaluation contract
 
+Apply the general [experiment standards](../AGENTS.md#experiment-standards).
+The current requirements for monitoring are:
+
 Use the accepted [CoT-removed ID dataset](decisions/cot_removed_id_validation.md)
 for future monitoring validation, hyperparameter comparisons, early stopping
 and checkpoint selection. Remove source-typed reasoning and explicit thinking
@@ -69,22 +72,17 @@ Freeze input/manifest hashes and keep distinct cache identities. This does not
 retroactively clean training data or regenerate teacher targets. Historical
 full-input scores and broader prose-removal ablations are different contracts.
 
-- Group splits by available conversation, generator, task, source and annotation
-  lineage; keep derived views with their parents and disclose missing lineage.
 - Use source-macro raw normalized pAUROC@20 for the monitoring ID contract.
-  Also report AUROC, calibration, threshold diagnostics, score ties and results
-  by task/source/model family. Preserve the metric convention; standardized
-  partial AUC and raw partial area divided by 0.2 are different quantities.
+  Standardized partial AUC and raw partial area divided by 0.2 are different
+  quantities; preserve the project metric convention.
 - Maintain honest hard negatives and ordinary-capability controls so factual
   mistakes are not conflated with deception or misalignment. Keep APPS out of
   training and checkpoint selection for these injection comparisons.
-- Freeze selection and promotion criteria before evaluation. Keep the six-source
-  OOD suite outside prompt, recipe, threshold, checkpoint and stopping choices;
-  disclose prior use when interpreting later results. Never promote on final
-  test results.
-- Preserve raw teacher evidence, prompt hashes and target provenance. Distinguish
-  uncertainty caused by missing observable evidence from presentation changes
-  that truly preserve the label. Evaluate transfer before further scaling.
+- Keep the six-source OOD suite outside prompt, recipe, threshold, checkpoint
+  and stopping choices; disclose prior use when interpreting later results.
+- Distinguish uncertainty caused by missing observable evidence from
+  presentation changes that truly preserve the label. Evaluate transfer before
+  further scaling.
 
 ## Open research questions
 
@@ -101,14 +99,10 @@ full-input scores and broader prose-removal ablations are different contracts.
    performance on earlier domains, and how should the ontology represent
    ambiguous evidence and deferral?
 
-## Where details belong
+## Supporting records
 
-Experiment READMEs hold hypotheses, executable contracts and run instructions.
-[Findings and decisions](README.md) hold durable evidence and current selections;
-research proposals live under `research/`. Follow the task-specific
-[training](agent_guides/training.md), [inference](agent_guides/inference.md) and
-[compute](agent_guides/compute.md) instructions for execution. Keep hardware
-recipes, changing baselines, process state, timings and restart history there.
+Use the [documentation index](README.md) for detailed findings, decisions and
+proposals, and [AGENTS.md](../AGENTS.md) for working rules and execution guides.
 
 Update this program when evidence changes project direction or evaluation
 principles. The [archived program](research_program_history.md) preserves the

@@ -1,12 +1,8 @@
 # Repository Guidelines
 
-## Mission
-
-Gleipnir develops a monitoring foundation model for AI control. The intended
-scope includes deception, misaligned or strategically harmful actions, and other
-control-relevant behavior. Qwen 3.5 is the default initial backbone, not a
-permanent architectural constraint. Optimize for generalization across tasks,
-model families, and deployment settings rather than benchmark-specific tricks.
+This file defines repository working rules. The
+[research program](docs/research_program.md) defines project goals, scientific
+direction and the current evaluation contract.
 
 ## Before You Work
 
@@ -64,11 +60,13 @@ names and descriptions, never values.
 ## Experiment Standards
 
 Write the hypothesis, intervention, baselines, held-out selection rule, and stop
-condition before launching an expensive run. Prefer continuous scores and report
+condition before launching an expensive run. Freeze selection and promotion
+criteria before evaluating candidates. Prefer continuous scores and report
 ranking metrics, calibration, threshold diagnostics, score ties, and performance
-by task/source/model family. Use grouped holdouts whenever examples share a source
-conversation, generator, or annotation lineage. Never promote on the final test
-set or hide negative results.
+by task/source/model family. Use grouped holdouts whenever examples share a
+conversation, task, source, generator or annotation lineage; keep derived views
+with their parents and disclose missing lineage. Never promote on the final
+test set or hide negative results.
 
 Teacher caches must be resumable and prompt-aware. Record model/provider IDs,
 request settings, prompt hashes, raw returned logprobs, normalized targets, token
