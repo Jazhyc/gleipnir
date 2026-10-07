@@ -25,11 +25,14 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--frontend-validation")
     parser.add_argument("--frontend-ab", action="store_true")
+    parser.add_argument("--host-wrapper-validation")
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("startup run name must be a directory stem")
     if args.frontend_ab and not args.frontend_validation:
         raise ValueError("frontend A/B requires native validation")
+    if args.host_wrapper_validation and not args.frontend_validation:
+        raise ValueError("host wrapper control requires the native registry frontend")
     base = yaml.safe_load((EXPERIMENT / "config.yaml").read_text())
     manifest = prepared_manifest(base)
     selected = resolve_kernel_baseline({"baseline": "selected"})
@@ -63,11 +66,19 @@ def main() -> None:
         write(out / "frontend_config.json", frontend)
     write(out / "condition.json", condition)
     write(out / "manifest.json", manifest)
+    host_wrapper = (
+        {"validation": args.host_wrapper_validation}
+        if args.host_wrapper_validation
+        else None
+    )
+    if host_wrapper is not None:
+        write(out / "host_wrapper_config.json", host_wrapper)
     for source in [
         *sources,
         "src/gleipnir/serving_cache_mirror.py",
         str(Path(__file__).relative_to(ROOT)),
         "experiments/b200_inference_benchmark/run.py",
+        *(["src/gleipnir/serving_frost_wrappers.py"] if host_wrapper else []),
         *(
             [
                 "src/gleipnir/serving_gigatoken.py",
@@ -94,6 +105,7 @@ def main() -> None:
                 condition,
                 startup_only=True,
                 frontend=frontend,
+                host_wrapper=host_wrapper,
             )
         )
     except BaseException as error:

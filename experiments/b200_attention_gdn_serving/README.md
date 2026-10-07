@@ -1,5 +1,35 @@
 # B200 attention and GDN throughput campaign
 
+## FROST host binding wrappers, 2026-10-07
+
+Hypothesis: repeated cuDNN tensor-name/UID resolution and frozen-weight view
+construction delay GPU submission. Bypass only variant-pack resolution by
+calling the same pinned compiler's lowered executor with its exact operand
+order; retain all native device/layout/alignment guards, row-descaling kernel,
+tiles, BF16 rounding and fresh scale/output buffers. Cache only read-only frozen
+weight views, with storage/layout-aware keys and a bounded number of entries.
+No mutable activation/output pooling in this first intervention.
+
+Before replacement serving, retire the sole old API/engine. On the existing
+B200, compare direct/original calls bitwise at rows 1/129/4096/32768 for all five
+unique FP4 projection geometries and selected tiles. Check independent returned
+outputs, changed inputs, CUDA-graph replay with changed activation/weight
+contents and a second CUDA stream. Reuse all unchanged native-kernel receipts.
+Stop on any mismatch, unsupported plan, source drift, alias or nonfinite output.
+
+If admitted, restart once with opt-in host wrapper control, native Gigatoken
+and original CPU affinity. Bind host source/validation separately from GPU
+compilation identity; loaded kernels and opaque operator signatures stay fixed.
+Loopback-only development RPC toggles original/direct host binding after drained
+passes. Measure three alternating c1 quick64 and six balanced c128 full320 pairs
+in that same loaded GPU worker, with excluded warmups and per-mode call-count
+and PID checks. Report input tokens/s, latency, full development AUROC and score
+variation. Require exact c1 scores and absolute macro/pooled AUROC shifts <=0.1
+percentage points. Adopt only >0.5% median paired throughput gain with >=5/6
+positive pairs and <=2% c1 median/p95 regression; otherwise retain original host
+binding. Stop after this bounded comparison and keep the useful worker warm.
+No final-ID selection, new capacity, kernel arithmetic change or cold cache.
+
 ## Serving startup (2026-10-07)
 
 Hypothesis: network-mounted package imports and metadata-sensitive compiler

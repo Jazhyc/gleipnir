@@ -408,6 +408,7 @@ async def benchmark(
     *,
     startup_only: bool = False,
     frontend: dict | None = None,
+    host_wrapper: dict | None = None,
 ) -> None:
     import httpx
     import numpy as np
@@ -454,6 +455,24 @@ async def benchmark(
         frontend_receipt = configure_frontend(
             ROOT, frontend, command, server_environment
         )
+    if host_wrapper is not None:
+        if frontend is None:
+            raise ValueError("host wrapper trial requires the native registry frontend")
+        validation_path = ROOT / host_wrapper["validation"]
+        validation = json.loads(validation_path.read_text())
+        helper = ROOT / "src/gleipnir/serving_frost_wrappers.py"
+        if not validation.get("passed") or validation["helper_sha256"] != sha(helper):
+            raise ValueError("FROST host wrapper admission drift")
+        host_wrapper = {
+            **host_wrapper,
+            "validation_sha256": sha(validation_path),
+            "source_sha256": sha(helper),
+            "entrypoint_sha256": frontend_receipt["entrypoint_sha256"],
+        }
+        server_environment["GLEIPNIR_FROST_WRAPPER_VALIDATION"] = host_wrapper[
+            "validation"
+        ]
+        server_environment["VLLM_SERVER_DEV_MODE"] = "1"
     from gleipnir.serving_cache_mirror import compiler_mirror, persist_compiler_mirror
 
     mirror = compiler_mirror(ROOT, server_environment) if runtime is not None else None
@@ -463,6 +482,7 @@ async def benchmark(
             not compatible_server_command(receipt["command"], command)
             or receipt["config_sha256"] != manifest["config_sha256"]
             or receipt.get("frontend") != frontend_receipt
+            or receipt.get("host_wrapper") != host_wrapper
         ):
             raise ValueError("resident server configuration drift")
         os.kill(receipt["pid"], 0)
@@ -498,6 +518,7 @@ async def benchmark(
             "local_runtime": runtime,
             "compiler_mirror": mirror,
             "frontend": frontend_receipt,
+            "host_wrapper": host_wrapper,
             "status": "starting",
             "cache_paths": {
                 **{k: v for k, v in server_environment.items() if "CACHE" in k},
