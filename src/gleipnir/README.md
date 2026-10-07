@@ -1,8 +1,8 @@
 # Shared source map
 
-Place new shared code in the package matching its responsibility. Existing
-top-level compatibility modules redirect to the implementation and preserve
-historical imports. They contain no independent implementation.
+Place new shared code in the package matching its responsibility. Historical
+import names resolve lazily through the single [_compat.py](_compat.py) registry.
+Use canonical package paths for new code; moved implementations have one home.
 
 | Package | Responsibilities | Starting points |
 | --- | --- | --- |
@@ -27,16 +27,16 @@ Serving and kernels remain at their existing paths. Consult the
 The training runners, backend setup, and campaign preparation helpers also remain
 at their existing paths where launchers record their source-file checksums.
 Their migration must update those provenance lists to include implementations,
-rather than hashing compatibility modules. Do not change frozen receipts or
+rather than hashing only alias registration. Do not change frozen receipts or
 contracts to accommodate a move. Important entrypoints are
 `monitoring_systems_screen.py`, `monitoring_campaign_training.py`,
 `packed_training.py`, and `branch_trainer.py`.
 
 The source-bound `monitoring_campaign_evaluation.py` orchestrator also remains at
-its existing path, exposed through [evaluation/campaign.py](evaluation/campaign.py)
-as a module alias. For new evaluation source fingerprints, use the tuples in
+its existing path, exposed as `gleipnir.evaluation.campaign` through the same
+alias registry. For new evaluation source fingerprints, use the tuples in
 [evaluation/sources.py](evaluation/sources.py). These include moved implementations,
-shared score helpers, and compatibility aliases; existing frozen manifests and
+shared score helpers, and alias registration; existing frozen manifests and
 their drift checks remain unchanged. Metric definitions, thresholds, raw-logprob
 checks, prediction schemas, and contract hashing rules are preserved by the move.
 Moving source changes its fingerprints: historical code-bound campaigns continue

@@ -4,49 +4,48 @@ import importlib
 import pickle
 import subprocess
 import sys
+from pathlib import Path
 
 import pytest
 
-ALIASES = [
-    ("qwen35_loftq", "training.qwen35_loftq"),
-    ("openrouter", "teachers.openrouter"),
-    ("openrouter_cli", "teachers.openrouter_cli"),
-    ("prefix_cache", "teachers.prefix_cache"),
-    ("prefix_audit", "teachers.prefix_audit"),
-    ("judge_injection", "data.judge_injection"),
-    ("prefix_boundaries", "data.prefix_boundaries"),
-    ("prefix_sampling", "data.prefix_sampling"),
-    ("campaign_status", "campaigns.status"),
-    ("binary_evaluation", "evaluation.binary"),
-    ("metrics", "evaluation.metrics"),
-    ("calibration", "evaluation.calibration"),
-    ("decision_surface", "evaluation.decision_surface"),
-    ("evaluation_lanes", "evaluation.lanes"),
-    ("evaluation_shards", "evaluation.shards"),
-    ("evaluation_watchdog", "evaluation.watchdog"),
-    ("judge_injection_metrics", "evaluation.preferences"),
-    ("monitoring_scoring", "evaluation.scoring"),
-    ("monitoring_campaign_evaluation", "evaluation.campaign"),
-]
+from gleipnir._compat import MODULE_ALIASES, install_aliases
 
 
-@pytest.mark.parametrize("legacy,canonical", ALIASES)
-def test_legacy_import_shares_module_state(legacy, canonical, monkeypatch):
-    old = importlib.import_module(f"gleipnir.{legacy}")
-    new = importlib.import_module(f"gleipnir.{canonical}")
-    assert old is new
-    sentinel = object()
-    monkeypatch.setattr(old, "_layout_probe", sentinel, raising=False)
-    assert new._layout_probe is sentinel
+def test_legacy_imports_share_state_and_preserve_canonical_metadata(monkeypatch):
+    for legacy, canonical in MODULE_ALIASES.items():
+        old = importlib.import_module(legacy)
+        new = importlib.import_module(canonical)
+        assert old is new
+        assert new.__name__ == canonical
+        assert new.__spec__.name == canonical
+        sentinel = object()
+        monkeypatch.setattr(old, "_layout_probe", sentinel, raising=False)
+        assert new._layout_probe is sentinel
+
+
+def test_aliases_require_no_compatibility_files():
+    root = Path(__file__).resolve().parents[1] / "src"
+    for legacy in MODULE_ALIASES:
+        assert not (root / (legacy.replace(".", "/") + ".py")).exists()
+
+
+def test_alias_registration_is_idempotent_and_reload_uses_the_implementation():
+    original_finders = tuple(sys.meta_path)
+    install_aliases()
+    assert tuple(sys.meta_path) == original_finders
+    old = importlib.import_module("gleipnir.prefix_cache")
+    new = importlib.import_module("gleipnir.teachers.prefix_cache")
+    assert importlib.reload(old) is new
+    assert new.__spec__.name == "gleipnir.teachers.prefix_cache"
 
 
 @pytest.mark.parametrize("canonical_first", [False, True])
 def test_aliases_work_in_both_cold_import_orders(canonical_first):
     code = f"""
 import importlib
-aliases = {ALIASES!r}
+aliases = {list(MODULE_ALIASES.items())!r}
 for legacy, canonical in aliases:
-    names = [f'gleipnir.{{legacy}}', f'gleipnir.{{canonical}}']
+    names = [legacy, canonical]
     if {canonical_first!r}:
         names.reverse()
     first, second = [importlib.import_module(name) for name in names]
