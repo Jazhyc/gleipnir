@@ -118,6 +118,8 @@ async def measure(
     native_prepare: Callable | None = None,
     retired_parent: Path | None = None,
     resumed_environment: dict | None = None,
+    ready_prepare: Callable | None = None,
+    command_prepare: Callable | None = None,
 ) -> None:
     settings = json.loads((experiment / "config.json").read_text())
     assert not settings["promote"] and settings["endpoint"] == ENDPOINT
@@ -176,7 +178,15 @@ async def measure(
         }
         or p.endswith(("/server.py", "/worker.py"))
     }
-    if settings.get("mutation_fix"):
+    if settings.get("score_parent"):
+        if actual[actual.index("--runner") + 1] != "pooling":
+            raise ValueError("score trial requires the selected pooling parent")
+        command = actual.copy()
+        index = command.index("--additional-config") + 1
+        additional = json.loads(command[index])
+        additional["gleipnir_frost_fp4"].update(compute_sources)
+        command[index] = json.dumps(additional, sort_keys=True)
+    elif settings.get("mutation_fix"):
         if actual[actual.index("--runner") + 1] != "pooling":
             raise ValueError("mutation trial requires the warm score parent")
         command = actual.copy()
@@ -191,13 +201,22 @@ async def measure(
         )
     else:
         command = score_command(actual, hf_config, compute_sources)
+    if command_prepare is not None:
+        command = command_prepare(command, settings, hashes)
     environment["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     write(out / "parent_server.json", parent)
     write(
         out / "merged_artifact.json",
         json.loads((merged / "merge_manifest.json").read_text()),
     )
-    baseline = ROOT / settings["baseline"]
+    if settings["baseline"] == "selected":
+        from gleipnir.serving.reference import selected_score_reference
+
+        selection = selected_score_reference(ROOT)
+        write(out / "reference_selection.json", selection)
+        baseline = ROOT / selection["results"]
+    else:
+        baseline = ROOT / settings["baseline"]
     baseline_files = sorted(baseline.glob("c*_repeat*.json"))
     assert len(baseline_files) == 9, "cached repeat reference incomplete"
     canary_path = ROOT / settings["canary_reference"]
@@ -216,7 +235,10 @@ async def measure(
                 "--archive-name",
                 name,
                 "--reason",
-                "Replace generation with a two-logit monitoring endpoint",
+                settings.get(
+                    "retirement_reason",
+                    "Replace generation with a two-logit monitoring endpoint",
+                ),
             ],
             cwd=ROOT,
             check=True,
@@ -280,6 +302,8 @@ async def measure(
         )
         response.raise_for_status()
         assert response.json()["results"][0]["mode"] == "direct"
+        if ready_prepare is not None:
+            await ready_prepare(client, out)
     values, _ = await trial(workloads["canary"], 4, settings)
     observed = np.array([v["score"] for v in values])
     reference = np.array(control["served"]["adapter"])

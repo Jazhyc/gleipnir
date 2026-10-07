@@ -7,6 +7,39 @@ import json
 from pathlib import Path
 
 
+def selected_score_reference(root: Path) -> dict:
+    """Verify the selected score workload, receipts and every saved repeat."""
+    selection = json.loads(
+        (root / "experiments/b200_inference_benchmark/baseline.json").read_text()
+    )
+    if selection.get("endpoint") != "/v1/monitor/score":
+        raise ValueError("selected reference is not a monitoring score server")
+    for path, digest in selection["artifact_bindings"].items():
+        artifact = root / path
+        if not artifact.resolve().is_relative_to(root.resolve() / "results") or (
+            hashlib.sha256(artifact.read_bytes()).hexdigest() != digest
+        ):
+            raise ValueError("selected score reference artifact drift")
+    directory = root / selection["results"]
+    summary = json.loads((directory / "summary.json").read_text())
+    if summary["status"] != "complete" or not summary["score_audit_passed"]:
+        raise ValueError("selected score reference incomplete")
+    manifest = root / "data/b200_inference_benchmark/manifest.json"
+    if (
+        hashlib.sha256(manifest.read_bytes()).hexdigest()
+        != selection["manifest_sha256"]
+    ):
+        raise ValueError("selected score reference workload drift")
+    expected = {
+        str((directory / f"c{c}_repeat{i}.json").relative_to(root))
+        for c, count in ((1, 3), (128, 6))
+        for i in range(count)
+    }
+    if not expected.issubset(selection["artifact_bindings"]):
+        raise ValueError("selected score reference repeats unbound")
+    return selection
+
+
 def selected_host_components(
     root: Path, output: Path, *, resident: dict | None = None
 ) -> tuple[dict | None, dict | None]:

@@ -1,0 +1,50 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "baseline": "selected",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "port": 8010,
+  "timeout_seconds": 180,
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "warmup_repeats": 1,
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "promote": false,
+  "additional_sources": [
+    "src/gleipnir/serving/triton_mutation.py",
+    "src/gleipnir/serving/reference.py",
+    "experiments/b200_mutation_analysis/server.py",
+    "experiments/b200_monitor_score/worker.py",
+    "experiments/b200_attention_gdn_serving/prefill_graph_worker.py",
+    "experiments/b200_score_graphs/config.json",
+    "experiments/b200_score_graphs/README.md",
+    "experiments/b200_score_graphs/worker.py",
+    "experiments/b200_score_graphs/run.py",
+    "experiments/b200_score_graphs/canary.py"
+  ],
+  "score_parent": true,
+  "retirement_reason": "Test large prefill graphs on the selected repaired score endpoint",
+  "compilation_config": {
+    "cudagraph_mode": "PIECEWISE",
+    "cudagraph_capture_sizes": [
+      1,
+      16,
+      64,
+      128,
+      256,
+      512,
+      1024,
+      1536,
+      2048,
+      4096,
+      8192,
+      16384,
+      32768
+    ]
+  },
+  "prefill_graphs": {
+    "max_padding_fraction": 0.125,
+    "dispatcher_sha256": "51f632753af729aeee6ce4a802d9d74b64f22eef02a524f36e2a24b07ef0cf63",
+    "model_runner_sha256": "d2b8ec101122749e1a2610383d2ab74c5a21605e9d7995eb68192bc769986694"
+  }
+}

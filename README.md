@@ -81,11 +81,10 @@ and full-attention projection GEMMs, symbolic-row SwiGLU overhead improvements,
 direct packed FP4 MLP activation output for large batches, and cuDNN MXFP8 full-attention
 prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
 development quality tradeoff; strict failed parity remains recorded separately.
-Native Gigatoken encoding and direct FROST host binding reuse are now the
-selected serving reference. Its archived NC2 controls have c1 median/p95
-149.69/184.19 ms and c128 throughput 197530 input tokens/s; current-host controls
-are recorded in the
-[serving reference decision](docs/decisions/b200_gigatoken_direct_host_reference.md).
+The repaired two-logit monitoring endpoint, native Gigatoken and direct FROST
+host bindings are the selected serving reference. Its saved EU controls measure
+31.23 ms c1 median and 215707 input tokens/s at c128; see the
+[serving reference decision](docs/decisions/b200_monitor_score_reference.md).
 
 A cache-free whole-prompt monitoring prototype removes persistent GPU cache
 storage. Same-host EU-RO-1 measurements reduce c1 median latency by 15%, with

@@ -57,10 +57,11 @@ and do not establish held-out quality parity or select production precision.
 
 ## Current B200 optimization reference
 
-Read the [selected reference decision](../decisions/b200_gigatoken_direct_host_reference.md)
+Read the [selected reference decision](../decisions/b200_monitor_score_reference.md)
 and `experiments/b200_inference_benchmark/baseline.json` before preparing a new
 comparison. The checksum-bound selection supersedes the October 6 GDN-only
-reference below. Use the recorded native Gigatoken/direct FROST host recipe,
+reference below. Use the repaired two-logit score endpoint with cached causal
+LAST pooling and the recorded native Gigatoken/direct FROST host recipe,
 FP4 MLP/GDN/full-attention projections, selected SwiGLU/direct FP4 activation
 output and MXFP8 full-attention prefill. Recurrence, KV cache and decode remain
 BF16, with FP32 gates/state. Reuse archived controls and persistent caches;

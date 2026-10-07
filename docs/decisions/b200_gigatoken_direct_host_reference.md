@@ -1,13 +1,15 @@
 # Native Gigatoken and direct FROST serving reference
 
-User-selected on 2026-10-07. The B200 inference optimization reference is the
+Historical selection, superseded by the [repaired score reference](b200_monitor_score_reference.md).
+User-selected on 2026-10-07. The earlier B200 inference optimization reference is the
 existing Direct FP4 GPU recipe with **native Gigatoken 0.10.0 encoding and direct
 FROST host binding reuse**. Keep original CPU affinity, FP4 projection/MLP scopes,
 MXFP8 causal prefill, BF16 recurrence/cache/decode and FP32 gates/state, together
 with inherited strict numerical failures and finite acceptance. No training
 recipe changes.
 
-`experiments/b200_inference_benchmark/baseline.json` binds the combined reference
+`experiments/b200_inference_benchmark/baselines/frost_fp4_gigatoken_direct_host_generation.json`
+binds the archived combined reference
 and both CPU-component receipts by checksum. Archive the preceding selection
 under `baselines/frost_fp4_mlp_gdn_attention_mxfp8_native_swiglu_fp4_output.json`.
 The source GPU configuration and validation remain the recorded parent;

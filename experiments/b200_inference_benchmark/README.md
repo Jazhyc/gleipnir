@@ -1,24 +1,13 @@
 # Small production inference benchmark
 
-Current B200 optimization reference, selected by the user on 2026-10-07:
-**direct FP4 MLP output with symbolic-row overhead improvements**, retaining
-FP4 MLP/GDN/full-attention projections, combined preparation, tuned output
-GEMMs and cuDNN MXFP8 causal prefill. Recurrence, convolution, KV cache and
-decode remain BF16; gates/state remain FP32. Bound results live in
-`results/b200_attention_gdn_serving/fp4_swiglu_native_output_serving01`.
-
-Five warm c128 passes give **196,866 input tokens/s**; warm c1 confirmation
-gives **159.46 ms median / 275.92 ms p95**. Source-macro/pooled AUROC is
-**0.878105/0.885842**, with accepted 0.0448/0.3887 percentage-point declines
-against the preceding reference. Median latency increases 1.68%.
-
-`baseline.json` binds the executed recipe, manifest, sweep, warm confirmations
-and explicit `user_accepted_finite` receipt. Preserve strict native/preparation
-and changed-output-format failures separately from the passing twenty-row
-master-score canary. New comparisons use `baseline: selected` and
-`high_reference: selected`; historical references remain unchanged. Primary
-speed claims use warm confirmations, keeping post-startup timings separately.
-See the [current reference decision](../../docs/decisions/b200_native_fp4_output_inference_baseline.md).
+Current B200 optimization reference: the repaired cached two-logit score endpoint,
+retaining Direct FP4 projections/MLPs, cuDNN MXFP8 prefill, native Gigatoken and
+direct FROST bindings. `baseline.json` binds all saved score repeats and quality
+receipts; use the [selected decision](../../docs/decisions/b200_monitor_score_reference.md).
+Score comparisons use `experiments.b200_monitor_score.run.measure` with
+`baseline: selected` and `/v1/monitor/score`. Generation runs below require an
+explicit archived generation control. Preserve strict failures separately from
+user finite acceptance; do not mix request protocols or cross-host timings.
 
 Hypothesis: a fixed, small real-prompt workload can expose latency and throughput
 tradeoffs before changing the monitor's production serving kernels or precision.

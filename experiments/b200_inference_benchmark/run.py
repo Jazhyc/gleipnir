@@ -299,6 +299,11 @@ def resolve_kernel_baseline(condition: dict | None) -> dict | None:
         return condition
     selection_path = EXPERIMENT / "baseline.json"
     selection = json.loads(selection_path.read_text())
+    if selection.get("reference_format") == "monitor_score_v1":
+        raise ValueError(
+            "selected reference uses /v1/monitor/score; use the score benchmark "
+            "or an explicit archived generation baseline"
+        )
     summary_path = ROOT / selection["results"] / "summary.json"
     summary = json.loads(summary_path.read_text())
     if selection.get("quality_acceptance"):
