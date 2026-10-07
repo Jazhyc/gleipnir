@@ -109,6 +109,11 @@ def main() -> None:
     )
     for key in ("GLEIPNIR_FP4_WARM_REPORT", "GLEIPNIR_FP4_PROFILE_OUTPUT"):
         env.pop(key, None)
+    from gleipnir.serving.runtime import local_serving_runtime
+
+    staged_runtime = local_serving_runtime(ROOT, env)
+    if staged_runtime is not None:
+        command[0] = staged_runtime["python"]
     files = [
         *Path("experiments/b200_mlp_gemm").glob("*.py"),
         *[
@@ -120,6 +125,7 @@ def main() -> None:
         Path("src/gleipnir/training/adaptive_microbatching.py"),
         Path("src/gleipnir/__init__.py"),
         Path("src/gleipnir/_compat.py"),
+        Path("src/gleipnir/serving/runtime.py"),
     ]
     files = sorted(set(files))
     for file in files:
@@ -132,6 +138,7 @@ def main() -> None:
         "launch_reference_sha256": SOURCE_SHA,
         "baseline": "combined_native_fp4_mlp_bf16_fa4",
         "timing_only": True,
+        "staged_runtime": staged_runtime,
         "cache_paths": {k: v for k, v in env.items() if "CACHE" in k},
         "source_sha256": {str(f): sha(ROOT / f) for f in files},
     }

@@ -46,6 +46,10 @@ Run two FP4 controls to verify resident reset stability, then direct bindings,
 then a final restored control. Targeted first-logical-batch validation requires
 bitwise loss and all adapter gradients, unchanged masters and physical partitions.
 Record host-call counts: existing CUDA graphs can bypass Python dispatch entirely.
+Setup runs independent FLA, convolution and FlashQLA jobs concurrently, with
+16 compiler workers for supported builds. Use the verified staged local runtime
+when available; on-demand backend JIT calls still need separate precompilation
+to overlap. Shared compiler/kernel caches retain their existing namespaces.
 Keep the worker resident; reuse shared caches and overwrite only the systems
 scratch adapter. Stop on nonfinite/missing gradients, workload drift, failed parity
 or timed compilation. No ID evaluation or precision change is included.

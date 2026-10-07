@@ -7,27 +7,12 @@ import os
 import subprocess
 import sys
 import tarfile
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
-def main() -> None:
-    root = Path(__file__).resolve().parents[2]
-    os.chdir(root)
-    target = Path("/tmp/gleipnir-triton-3.7.1")
-    if not target.exists():
-        target.symlink_to(root / ".cache/kernels/triton", target_is_directory=True)
-    environment = dict(os.environ)
-    environment.update(
-        MAX_JOBS="16", TORCH_CUDA_ARCH_LIST="10.0", CUDA_HOME="/usr/local/cuda"
-    )
-    # Use the pinned helpers separately so the existing overlay environment survives.
-    from gleipnir.training.backends.qwen35 import (
-        ensure_causal_conv1d,
-        ensure_fla_kernels,
-    )
-
-    environment = ensure_fla_kernels(python=Path(sys.executable), base=environment)
-    ensure_causal_conv1d(python=Path(sys.executable), base=environment)
+def ensure_flashqla_overlay(root: Path, environment: dict[str, str]) -> None:
+    """Stage the independent FlashQLA dependency job on local disk."""
     target = root / ".cache/kernels/flashqla-da06429"
     local_target = Path("/tmp/gleipnir-flashqla-da06429")
     archive = root / ".cache/kernels/sources/flashqla-runtime-da06429.tar.gz"
@@ -73,6 +58,40 @@ def main() -> None:
             for path in sorted(local_target.iterdir()):
                 output.add(path, arcname=path.name)
         temporary.replace(archive)
+
+
+def prepare_overlays(root: Path, environment: dict[str, str]) -> None:
+    """Run three independent install/build jobs; propagate every failure."""
+    from gleipnir.training.backends.qwen35 import (
+        ensure_causal_conv1d,
+        ensure_fla_kernels,
+    )
+
+    with ThreadPoolExecutor(max_workers=3) as pool:
+        jobs = [
+            pool.submit(
+                ensure_fla_kernels, python=Path(sys.executable), base=environment
+            ),
+            pool.submit(
+                ensure_causal_conv1d, python=Path(sys.executable), base=environment
+            ),
+            pool.submit(ensure_flashqla_overlay, root, environment),
+        ]
+        for job in jobs:
+            job.result()
+
+
+def main() -> None:
+    root = Path(__file__).resolve().parents[2]
+    os.chdir(root)
+    target = Path("/tmp/gleipnir-triton-3.7.1")
+    if not target.exists():
+        target.symlink_to(root / ".cache/kernels/triton", target_is_directory=True)
+    environment = dict(os.environ)
+    environment.update(
+        MAX_JOBS="16", TORCH_CUDA_ARCH_LIST="10.0", CUDA_HOME="/usr/local/cuda"
+    )
+    prepare_overlays(root, environment)
     print("training_overlays_ready", flush=True)
 
 
