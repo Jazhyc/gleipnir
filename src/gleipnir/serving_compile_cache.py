@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import importlib.metadata
 import json
-from collections.abc import Iterator, Mapping
+from collections.abc import Iterator, MutableMapping
 from pathlib import Path
 
 NON_COMPUTE_FIELDS = {
@@ -61,7 +61,7 @@ def compile_identity(data: dict, root: Path, versions: dict) -> dict:
     }
 
 
-class ServingCompileConfig(Mapping):
+class ServingCompileConfig(MutableMapping):
     """Picklable hash-protocol object with unchanged dictionary access."""
 
     def __init__(self, data: dict, root: Path, versions: dict) -> None:
@@ -72,6 +72,12 @@ class ServingCompileConfig(Mapping):
 
     def __getitem__(self, key):
         return self._data[key]
+
+    def __setitem__(self, key, value) -> None:
+        self._data[key] = value
+
+    def __delitem__(self, key) -> None:
+        del self._data[key]
 
     def __iter__(self) -> Iterator:
         return iter(self._data)
@@ -99,6 +105,7 @@ def install_compile_identity(root: Path) -> None:
     if importlib.metadata.version("vllm") != "0.24.0":
         raise ValueError("serving compile identity requires the validated vLLM version")
     original = AsyncEngineArgs.from_cli_args.__func__
+    original_create = AsyncEngineArgs.create_engine_config
     versions = {}
     for name in [
         "torch",
@@ -124,11 +131,18 @@ def install_compile_identity(root: Path) -> None:
         ):
             wrapped = ServingCompileConfig(data, root, versions)
             result.additional_config = wrapped
+        return result
+
+    def created(self, *args, **kwargs):
+        result = original_create(self, *args, **kwargs)
+        wrapped = result.additional_config
+        if isinstance(wrapped, ServingCompileConfig):
+            digest = wrapped.compute_hash()
             out = root / "results/b200_attention_gdn_serving/compile_identity.json"
             out.write_text(
                 json.dumps(
                     {
-                        "hash": wrapped.compute_hash(),
+                        "hash": digest,
                         "identity": wrapped.identity,
                         "full_metadata_preserved": True,
                     },
@@ -139,3 +153,4 @@ def install_compile_identity(root: Path) -> None:
         return result
 
     AsyncEngineArgs.from_cli_args = classmethod(parsed)
+    AsyncEngineArgs.create_engine_config = created

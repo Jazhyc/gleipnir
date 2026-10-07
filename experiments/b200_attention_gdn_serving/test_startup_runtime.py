@@ -90,6 +90,16 @@ def test_mutating_nested_arithmetic_cannot_reuse_previous_hash(tmp_path):
     assert value.compute_hash() != before
 
 
+def test_vllm_can_add_backend_fields_and_they_are_hashed(tmp_path):
+    value = ServingCompileConfig(config(tmp_path), tmp_path, {})
+    before = value.compute_hash()
+    value["gdn_prefill_backend"] = "flashinfer"
+    assert value["gdn_prefill_backend"] == "flashinfer"
+    assert value.compute_hash() != before
+    del value["gdn_prefill_backend"]
+    assert value.compute_hash() == before
+
+
 def test_receipt_paths_cannot_read_outside_artifact_tree(tmp_path):
     data = config(tmp_path)
     data["serving_condition"]["native_validation"] = "../private.json"
