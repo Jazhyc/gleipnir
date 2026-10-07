@@ -1,9 +1,11 @@
 # Cache-free complete-prompt monitoring on B200
 
 Date: 2026-10-07. **Keep the selected Gigatoken/direct-FROST reference.** The
-cache-free prototype improves interactive latency and removes persistent cache
-storage, but its repeated c128 batch run stalls. It is an experimental path,
-not an accepted batch-serving replacement.
+cache-free prototype removes persistent cache storage. The initial NC2 screen
+stalls on its second c128 pass; a subsequent EU-RO-1 screen completes 20 ordinary
+full-batch passes without a stall. The old failure remains unexplained, and the
+new latency measurements use a different host/driver. This remains an opt-in
+experimental path rather than a promoted batch-serving replacement.
 
 ## Scope and evidence
 
@@ -110,3 +112,85 @@ and unresolved cache-free batch stall are unchanged.
 Final local shutdown evidence is under
 `results/b200_attention_gdn_serving/pod_termination_20261007/`. The retired pod
 record is historical; do not try to reuse its SSH address or worker PIDs.
+
+## EU-RO-1 resume and stability screen
+
+After separately authorized deployment, pod `qobmmj1weyevg1` uses one B200 in
+EU-RO-1, CUDA 13 and driver **580.178.04**, versus **595.91.07** on the retired
+NC2 host. No cache-free attention/GDN mathematics changes. Add opt-in cooperative
+operator tracing and exact ordered token/batch snapshots so a recurrence of the
+stall can be diagnosed without ptrace. Six instrumented full320 passes complete;
+all tracing timings are excluded because flushed journal writes are expensive.
+Restore every patched operator before ordinary measurements; the warm worker
+reports zero runner/layer cache bytes and no cache specifications.
+
+Fresh native checks (`prompt_only_canary_euro02.json`) pass all seven cases,
+including bitwise attention/GDN comparisons and independent convolution checks.
+The preceding canary01 fails at attention import: isolated CUTLASS 4.8 metadata
+was present, but its `libs-core` implementation was missing and the locked
+4.5.2 site hook took import priority. Install the missing pinned dependency and
+add a source-bound isolated import bootstrap; the NVIDIA source hashes match the
+recorded recipe. Preserve the failed receipt. Additional direct-FP4 checks pass
+rows 4097, 8193, 16385 and 32767. Their harness's global/full-envelope flags remain
+false because this is a four-row extension, not a replacement nine-row receipt.
+
+`prompt_only_euro_warm01` completes **20 ordinary full320/c128 passes** plus one
+excluded warmup and three quick64/c1 passes with tracing removed. None stalls.
+The HTTP score canary passes; all c1 scores and margins match the archived
+reference exactly. Measurements summarize the three c1/six timed c128 repeats:
+
+| Metric | Archived NC2 reference | EU-RO-1 cache-free |
+| --- | ---: | ---: |
+| c1 median latency | 149.69 ms | 28.54 ms |
+| c1 p95 latency | 184.19 ms | 119.29 ms |
+| c128 input tokens/s | 197,530 | 185,096 |
+
+Latency is client-observed HTTP round-trip time **within the pod**, including
+encoding, queueing, host dispatch, GPU work and response handling. It excludes
+external client-to-pod network latency. Both cohorts have the same ordered IDs,
+prompt hashes, lengths and total token counts. The quick64 median is dominated
+by its 46 prompts below 4096 tokens; the seven longest prompts have approximately
+122 ms median latency in the new second repeat. The archived process has a much
+higher floor even for short prompts. Source inspection finds no deliberate
+per-request delay or changed client timing boundaries; its frontend A/B control
+adds locks/counters but does not establish the cause of that floor. **Do not
+attribute the apparent 5.24x c1 difference solely to cache removal.** Host,
+driver, warm runtime and whole-prompt batching confound this comparison.
+
+The six c128 rates span **141,893–208,878 input tokens/s**; preserve this spread,
+rather than selecting the fastest pass. The median is 6.29% below the archived
+reference. Whole-prompt admission differs from its chunked prefill. Score
+mean/max absolute differences are 0.002416/0.111789 with zero threshold flips.
+Pooled development AUROC changes **+0.00586 percentage points** (0.885763 to
+0.885822), source-macro **+0.88862 points** (0.878144 to 0.887030). A four-example
+source contributes a +25-point AUROC change and dominates the macro movement;
+this does not establish improved generalization. Full calibration, source,
+ranking/tie and repeat diagnostics are preserved in `summary.json`. No final-ID
+run or default promotion occurs.
+
+The NC2 stall is **unreproduced on this host**, not causally fixed. Keep that
+failure and this completed screen separately. API/engine **13964/14005** are
+left warm on loopback port 8010; tracing is off. Historical process notes above
+refer to retired capacity. Active-turn checks cannot promise future monitoring
+without an agent scheduling tool.
+
+Fresh provisioning takes much longer than a warm restart: dependency download
+and workspace installation alone take over 20 minutes, followed by staging and
+an avoidable CUTLASS repair; first server readiness takes **520.33 s**. Preserve
+the complete staged dependency runtime and native tokenizer as
+`.cache/runtime-resume/b200-serving-runtime-euro-20261007.tar.zst`, together with
+its binding manifest. The dependency archive SHA256 is
+`26d7636171604fe81c469ca7aa901add7d204a54264fc4aaff73686aca4d0bc1`;
+its remote zstd integrity check passes. Exact binding metadata, executed clients,
+failed receipts and trace/quality evidence are collected under
+`prompt_only_euro_collection01`, `prompt_only_euro_trace01` and
+`prompt_only_euro_warm01` (422 evidence files with a checksum manifest).
+The bundle excludes weights and merged artifacts. Restore
+under `/tmp` on a compatible CUDA-13 image, validate the manifest/package hashes,
+and restore the corresponding pinned source dependencies before running the
+normal launcher. Shared compiler/kernel caches are preserved separately as
+`.cache/runtime-resume/b200-serving-caches-euro-20261007.tar.zst` (SHA256
+`741952c1b18900d85e404e3996a532d7cf5ff5785d2ae865b51cdece5592e746`).
+This is not a promise
+of a 90-second first start on different hardware. Focused runtime/trace/prompt
+and reference checks pass (36 tests) with Ruff.
