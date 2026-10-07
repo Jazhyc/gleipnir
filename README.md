@@ -81,14 +81,15 @@ direct packed FP4 MLP activation output for large batches, and cuDNN MXFP8 full-
 prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
 development quality tradeoff; strict failed parity remains recorded separately.
 Native Gigatoken encoding and direct FROST host binding reuse are now the
-selected serving reference, with c1 median/p95 149.69/184.19 ms and c128
-throughput 197530 input tokens/s. See the
+selected serving reference. Its archived NC2 controls have c1 median/p95
+149.69/184.19 ms and c128 throughput 197530 input tokens/s; current-host controls
+are recorded in the
 [serving reference decision](docs/decisions/b200_gigatoken_direct_host_reference.md).
 
 A cache-free whole-prompt monitoring prototype removes persistent GPU cache
-storage. It completes 20 full-batch passes on EU-RO-1 after an unresolved NC2
-stall; cross-host latency measurements do not isolate its speedup. Keep it
-experimental and retain the selected serving reference; see the
+storage. Same-host EU-RO-1 measurements reduce c1 median latency by 15%, with
+about 3% lower batch throughput. The earlier NC2 stall remains unresolved.
+Keep it experimental and retain the selected serving reference; see the
 [cache-free finding](docs/findings/b200_cache_free_serving.md).
 
 Presentation layout and build conventions are documented in

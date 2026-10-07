@@ -1078,7 +1078,11 @@ allocation. Reconstruct the disposable merged model and restage the runtime;
 the experimental cache-free path remains unselected. The subsequent EU-RO-1
 screen completes 20 ordinary full-batch passes without a stall; the NC2 failure
 is unreproduced rather than causally fixed. Updated quality and cross-host
-latency qualifications are recorded in the linked finding.
+latency qualifications are recorded in the linked finding. The completed
+`cache_policy_compare` resident/fresh screen isolates the policy on one EU host:
+c1 median is 30.36 ms cached versus 25.71 ms cache-free, with about 3% lower
+batch throughput. See the [matched policy/restart record](../../docs/findings/b200_cache_policy_same_host.md)
+for its frozen protocol, AUROC diagnostics and the historical latency caveat.
 
 The resumed investigation records operator progress before GPU launches and
 optionally synchronizes after each operator, saving exact whole-batch token IDs

@@ -22,6 +22,14 @@ claimed during selection. Controls are **149.69 ms median, 184.19 ms p95 and
 0.878144/0.885763. These are training-seen systems-development workloads, not
 production traffic or final ID.
 
+These are historical NC2 timings. On EU-RO-1, the same selected cached recipe
+measures **30.36 ms c1 median** and **211041 input tokens/s** in the matched
+`results/b200_attention_gdn_serving/cache_policy_euro02/fresh_cached` phase.
+Use its three c1/six c128 repeats for performance attribution on that host;
+retain the selected archive for its frozen recipe and numerical provenance.
+Do not attribute cross-host latency differences to a kernel intervention.
+See the [same-host finding](../findings/b200_cache_policy_same_host.md).
+
 Future selected comparisons use c1 and c128 and all available baseline repeats.
 Other combined-stack concurrency controls are unmeasured; do not substitute
 historical HF timings or mix quick64 with full320. The wrapper's paired gain was
@@ -36,9 +44,10 @@ PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name
 Retire the old API/engine before replacement; compatible trials reuse the warm
 worker. `--legacy-host` explicitly requests HF encoding and original bindings
 for a named diagnostic. The selected optimization reference retains the control
-instrumentation of the measured process, bound in server metadata. API 109400
-and sole GPU engine 109438 are already healthy, native/direct and warm on port
-8010. Selection needs no restart or cold cache.
+instrumentation of the measured process, bound in server metadata. Its original
+selection reused the resident worker without a restart or cold cache. Inspect
+`results/b200_attention_gdn_serving/server.json` for current process identity;
+historical PIDs remain in the finding records.
 
 Focused default-selection, receipt-drift and resident-command tests pass.
 See the [encoder finding](../findings/b200_gigatoken_frontend.md) and

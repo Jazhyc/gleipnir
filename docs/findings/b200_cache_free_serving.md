@@ -5,7 +5,12 @@ cache-free prototype removes persistent cache storage. The initial NC2 screen
 stalls on its second c128 pass; a subsequent EU-RO-1 screen completes 20 ordinary
 full-batch passes without a stall. The old failure remains unexplained, and the
 new latency measurements use a different host/driver. This remains an opt-in
-experimental path rather than a promoted batch-serving replacement.
+experimental path rather than a promoted batch-serving replacement. A subsequent
+same-host screen
+measures **30.36 ms cached versus 25.71 ms cache-free**; most of the historical
+fivefold latency contrast is associated with the host/runtime environment.
+See the [matched policy/restart finding](b200_cache_policy_same_host.md) for
+throughput, quality, restart and memory results.
 
 ## Scope and evidence
 
