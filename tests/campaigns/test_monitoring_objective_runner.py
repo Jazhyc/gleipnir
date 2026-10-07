@@ -12,8 +12,7 @@ from experiments.monitoring_objective_ablation.core import (
     validate_loss_metadata,
 )
 from gleipnir.campaign_status import CampaignStatus
-
-ROOT = Path(__file__).resolve().parents[1]
+from tests.helpers.paths import ROOT
 
 
 def test_loss_metadata_accepts_versioned_normalization_without_relaxing_weights():

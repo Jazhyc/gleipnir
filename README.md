@@ -40,6 +40,7 @@ competition runner is included.
 - `src/gleipnir/`: shared code; see the [source map](src/gleipnir/README.md)
   for packages and entrypoints.
 - `experiments/<hypothesis>/`: one self-contained hypothesis and its launchers.
+- `tests/`: tests grouped by responsibility; see the [test map](tests/README.md).
 - `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
 - `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.
 - `figures/`: tracked, reproducible figures and their regeneration commands.

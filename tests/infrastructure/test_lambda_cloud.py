@@ -11,7 +11,8 @@ from unittest.mock import patch
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests.helpers.paths import ROOT
+
 MODULE_PATH = ROOT / "scripts/lambda_cloud.py"
 SPEC = importlib.util.spec_from_file_location("lambda_cloud", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None

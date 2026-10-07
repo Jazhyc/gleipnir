@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from gleipnir._compat import MODULE_ALIASES, install_aliases
+from tests.helpers.paths import ROOT as REPOSITORY_ROOT
 
 # These eagerly import Four Over Six, the pinned FROST overlay or FlashInfer.
 # Their redirects are checked without loading those GPU runtime dependencies.
@@ -37,7 +38,7 @@ def test_legacy_imports_share_state_and_preserve_canonical_metadata(monkeypatch)
 
 
 def test_aliases_require_no_compatibility_files():
-    root = Path(__file__).resolve().parents[1] / "src"
+    root = REPOSITORY_ROOT / "src"
     for legacy in MODULE_ALIASES:
         assert not (root / (legacy.replace(".", "/") + ".py")).exists()
 
@@ -137,6 +138,6 @@ def test_repository_and_scratch_paths_survive_package_depth_change():
     from gleipnir.campaigns.systems_screen import ROOT
     from gleipnir.training.artifacts import systems_scratch
 
-    repository = Path(__file__).resolve().parents[1]
+    repository = REPOSITORY_ROOT
     assert ROOT == repository
     assert systems_scratch() == repository / "results/systems_training_scratch"

@@ -17,6 +17,7 @@ from gleipnir.evaluation.sources import (
     PREFERENCE_SOURCE_PATHS,
     SCORING_SOURCE_PATHS,
 )
+from tests.helpers.paths import ROOT
 
 # Captured from score_from_output before the package move. Keep exact FP64
 # outputs: near-half scores and saturated tails affect ties and cache validation.
@@ -86,7 +87,7 @@ assert not {'torch', 'vllm', 'pandas', 'sklearn', 'numpy'} & set(sys.modules)
     ],
 )
 def test_source_fingerprints_include_implementations_and_helpers(sources, required):
-    root = Path(__file__).resolve().parents[1]
+    root = ROOT
     assert all((root / path).is_file() for path in sources)
     canonical = {Path(p).stem for p in sources if "/evaluation/" in p}
     assert required | {"sources"} <= canonical

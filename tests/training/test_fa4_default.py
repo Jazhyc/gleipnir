@@ -11,7 +11,7 @@ from experiments.monitoring_hard_labels.test_validated_startup import reference_
 from gleipnir import validated_startup
 from gleipnir.attention_backends import packed_fa4_environment
 from gleipnir.packed_training import validate_packed_training_config
-from tests.test_packed_training import student_config
+from tests.helpers.training import student_config
 
 
 def fa4_reference():

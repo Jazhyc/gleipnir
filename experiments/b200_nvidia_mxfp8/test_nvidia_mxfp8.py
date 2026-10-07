@@ -190,7 +190,7 @@ def test_mxfp8_runtime_is_scoped_and_requires_fresh_validation():
 
     from gleipnir.packed_sequences import installed_segmented_sdpa
     from gleipnir.packed_training import validate_packed_training_config
-    from tests.test_packed_training import student_config
+    from tests.helpers.training import student_config
 
     cfg = student_config()
     cfg["training"].update(
@@ -254,7 +254,7 @@ def test_timing_authority_preserves_parity_failure_and_cannot_waive_execution_er
 def test_timing_config_is_bounded_fresh_mxfp8_and_command_records_authority():
     from gleipnir.monitoring_training_command import training_command
     from gleipnir.packed_training import validate_packed_training_config
-    from tests.test_packed_training import student_config
+    from tests.helpers.training import student_config
 
     cfg = student_config()
     cfg["training"].update(

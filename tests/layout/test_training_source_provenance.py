@@ -9,6 +9,7 @@ import pytest
 
 from experiments.monitoring_branching.train import validate_smoke_sources
 from gleipnir._compat import canonical_source_reference
+from tests.helpers.paths import ROOT
 
 
 @pytest.mark.parametrize(
@@ -74,7 +75,7 @@ def test_smoke_source_reuse_still_requires_exact_recorded_bytes(
 
 
 def test_launcher_source_literals_identify_existing_implementations():
-    root = Path(__file__).resolve().parents[1]
+    root = ROOT
     tracked = (
         subprocess.check_output(
             ["git", "-C", str(root), "ls-files", "-z", "--", "experiments"],

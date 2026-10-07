@@ -10,10 +10,9 @@ from experiments.tool_trajectory_monitoring.prompting import (
     load_prompt_set,
 )
 from gleipnir.openrouter import OpenRouterConfig, PromptRecord, request_payload
+from tests.helpers.paths import ROOT
 
-EXPERIMENT_DIRECTORY = (
-    Path(__file__).resolve().parents[1] / "experiments" / "tool_trajectory_monitoring"
-)
+EXPERIMENT_DIRECTORY = ROOT / "experiments" / "tool_trajectory_monitoring"
 
 
 def test_prompt_roles_share_binary_interface_but_not_instruction_depth() -> None:

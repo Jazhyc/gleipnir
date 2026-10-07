@@ -1,13 +1,12 @@
 """Verify that the ordinary LoRA experiment really removes base quantization."""
 
-from pathlib import Path
-
 import pytest
 import torch
 import yaml
 
 from experiments.fp4_stability.run import campaign_stages, validate_config
 from gleipnir.bf16_lora import bf16_lora_metadata, configure_bf16_reductions
+from tests.helpers.paths import ROOT
 
 
 def test_bf16_reduction_policy_controls_split_k_separately():
@@ -84,7 +83,7 @@ def test_quantized_module_and_unfrozen_base_are_rejected():
 
 
 def test_full_bf16_campaign_has_exactly_ten_calls_and_keeps_batch_policy():
-    path = Path(__file__).parents[1] / "experiments/fp4_stability"
+    path = ROOT / "experiments/fp4_stability"
     full = yaml.safe_load((path / "bf16_flashqla_ten_step_comparison.yaml").read_text())
     control = yaml.safe_load(
         (path / "nf4_flashqla_ten_step_comparison.yaml").read_text()

@@ -18,7 +18,7 @@ from gleipnir.packed_sequences import (
     segmented_sdpa_interface,
 )
 from gleipnir.packed_training import validate_packed_training_config
-from tests.test_packed_training import student_config
+from tests.helpers.training import student_config
 
 
 def test_failed_packing_receipt_survives_the_original_exception(tmp_path):

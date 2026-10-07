@@ -1,8 +1,8 @@
-from pathlib import Path
+from tests.helpers.paths import ROOT
 
 
 def test_prefix_prompt_preserves_original_rubric():
-    root = Path(__file__).resolve().parents[1]
+    root = ROOT
     original = (
         root / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
     ).read_text()

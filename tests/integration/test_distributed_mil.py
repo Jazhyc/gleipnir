@@ -147,6 +147,7 @@ def worker(rank, rendezvous):
         torch.distributed.destroy_process_group()
 
 
+@pytest.mark.integration
 def test_ddp_selected_mil_matches_global_batch(tmp_path):
     mp.spawn(worker, args=(f"file://{tmp_path / 'rendezvous'}",), nprocs=2, join=True)
 

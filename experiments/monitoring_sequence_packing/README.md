@@ -40,7 +40,7 @@ quality equivalence follows from the CPU reference.
 ```bash
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 \
   .venv/bin/python -m experiments.monitoring_sequence_packing.audit_cpu
-.venv/bin/pytest tests/test_packed_sequences.py
+.venv/bin/pytest tests/training/test_packed_sequences.py
 ```
 
 `config.yaml` selects a deterministic, random-weight, float32 two-layer CPU

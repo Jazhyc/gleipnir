@@ -3,7 +3,6 @@
 import hashlib
 import json
 from copy import deepcopy
-from pathlib import Path
 
 import pytest
 import torch
@@ -14,8 +13,7 @@ from gleipnir import native_fp4_training as native
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_training import validate_packed_training_config
 from gleipnir.validated_startup import validation_reference
-
-ROOT = Path(__file__).resolve().parents[1]
+from tests.helpers.paths import ROOT
 
 
 def test_targeted_equivalence_binds_sources_and_rejects_drift(monkeypatch):

@@ -70,7 +70,7 @@ def test_router_rejects_unsupported_semantics(change):
 
 
 def student():
-    from tests.test_packed_training import student_config
+    from tests.helpers.training import student_config
 
     value = deepcopy(student_config())
     value["training"].update(

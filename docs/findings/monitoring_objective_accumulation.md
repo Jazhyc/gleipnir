@@ -22,8 +22,8 @@ contains 16 rows, so the factor there was 16. This is not just a logging issue;
 it changes the objective balance and the gradient presented to clipping/AdamW.
 The original one-microbatch preflight could not expose the problem.
 
-`tests/test_auxiliary_accumulation.py` exercises the actual pinned Trainer and
-Accelerate path on CPU with independent direct and auxiliary parameters. At
+`tests/training/test_auxiliary_accumulation.py` exercises the actual pinned Trainer
+and Accelerate path on CPU with independent direct and auxiliary parameters. At
 accumulation 32 and auxiliary weight 0.20, it reproduces gradients `(32, 0.20)`
 before the fix and `(1, 0.20)` with explicit mean-loss normalization.
 

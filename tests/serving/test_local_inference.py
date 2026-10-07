@@ -3,7 +3,6 @@
 import json
 import subprocess
 from collections import Counter
-from pathlib import Path
 
 import pytest
 
@@ -15,6 +14,7 @@ from experiments.local_inference.core import (
     parity_passes,
     select_subset,
 )
+from tests.helpers.paths import ROOT
 
 
 def test_diagnostic_override_is_explicit_and_default_fails_closed():
@@ -30,7 +30,7 @@ def test_diagnostic_override_is_explicit_and_default_fails_closed():
 
 
 def test_diagnostic_config_preserves_engine_and_gates():
-    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    root = ROOT / "experiments/local_inference"
     original = json.loads((root / "fp8_channel.json").read_text())
     diagnostic = json.loads((root / "fp8_channel_diagnostic.json").read_text())
     assert diagnostic.pop("diagnostic_parity_override")
@@ -95,7 +95,7 @@ def test_comparison_checks_identity_and_paired_drift(tmp_path):
 
 
 def test_prefill_candidate_changes_only_budget_and_output():
-    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    root = ROOT / "experiments/local_inference"
     baseline = json.loads((root / "iteration32.json").read_text())
     candidate = json.loads((root / "prefill4096.json").read_text())
     assert candidate.pop("output") != baseline.pop("output")
@@ -109,7 +109,7 @@ def test_prefill_candidate_changes_only_budget_and_output():
     [("fp8.json", "fp8_per_tensor"), ("fp8_channel.json", "fp8_per_channel")],
 )
 def test_fp8_candidate_changes_only_quantization_and_output(filename, scheme):
-    root = Path(__file__).resolve().parents[1] / "experiments/local_inference"
+    root = ROOT / "experiments/local_inference"
     baseline = json.loads((root / "iteration32.json").read_text())
     candidate = json.loads((root / filename).read_text())
     assert candidate.pop("output") != baseline.pop("output")

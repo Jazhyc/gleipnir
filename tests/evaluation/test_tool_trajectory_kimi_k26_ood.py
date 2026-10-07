@@ -1,15 +1,12 @@
 import hashlib
 import json
-from pathlib import Path
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests.helpers.paths import ROOT
+
 CONFIG_PATH = (
-    ROOT
-    / "experiments"
-    / "tool_trajectory_monitoring"
-    / "kimi_k26_ood_benchmark.json"
+    ROOT / "experiments" / "tool_trajectory_monitoring" / "kimi_k26_ood_benchmark.json"
 )
 
 
@@ -42,12 +39,9 @@ def test_frozen_kimi_k26_campaign_identity_and_cost() -> None:
         assert result["paper_price_output_usd_per_million"] == 4.0
         expected_paper_cost = (
             result["prompt_tokens"] * result["paper_price_input_usd_per_million"]
-            + result["completion_tokens"]
-            * result["paper_price_output_usd_per_million"]
+            + result["completion_tokens"] * result["paper_price_output_usd_per_million"]
         ) / 1_000_000
-        assert result["paper_comparable_cost_usd"] == pytest.approx(
-            expected_paper_cost
-        )
+        assert result["paper_comparable_cost_usd"] == pytest.approx(expected_paper_cost)
         assert result["paper_comparable_cost_usd_per_1000"] == pytest.approx(
             result["paper_comparable_cost_usd"] / 6_395 * 1_000
         )
@@ -63,8 +57,7 @@ def test_frozen_kimi_k26_campaign_identity_and_cost() -> None:
     tokens = config["token_audit"]
     request = config["request"]
     projected = (
-        tokens["input_tokens"]
-        * request["provider_max_prompt_price_per_million"]
+        tokens["input_tokens"] * request["provider_max_prompt_price_per_million"]
         + config["scope"]["rows"]
         * tokens["expected_completion_tokens_per_row"]
         * request["provider_max_completion_price_per_million"]
@@ -78,11 +71,13 @@ def test_frozen_inputs_and_balanced_canary_prefix() -> None:
     full_path = ROOT / config["scope"]["input"]
     canary_path = ROOT / config["canary"]["input"]
 
-    assert hashlib.sha256(full_path.read_bytes()).hexdigest() == (
-        config["scope"]["input_sha256"]
+    assert (
+        hashlib.sha256(full_path.read_bytes()).hexdigest()
+        == (config["scope"]["input_sha256"])
     )
-    assert hashlib.sha256(canary_path.read_bytes()).hexdigest() == (
-        config["canary"]["input_sha256"]
+    assert (
+        hashlib.sha256(canary_path.read_bytes()).hexdigest()
+        == (config["canary"]["input_sha256"])
     )
 
     rows = [json.loads(line) for line in canary_path.read_text().splitlines()[:12]]

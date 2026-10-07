@@ -10,7 +10,7 @@ from experiments.b200_mxfp8_fused.square_reference import square_reference
 from experiments.b200_mxfp8_fused.training_screen import accept_native
 from gleipnir.nvidia_mxfp8_fused_attention import fused_interface
 from gleipnir.packed_training import validate_packed_training_config
-from tests.test_packed_training import student_config
+from tests.helpers.training import student_config
 
 
 @pytest.mark.parametrize("square", [False, True])

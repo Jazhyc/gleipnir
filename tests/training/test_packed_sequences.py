@@ -13,6 +13,7 @@ from gleipnir.packed_sequences import (
     packed_partition,
     segmented_sdpa_interface,
 )
+from tests.helpers.paths import ROOT
 
 
 @pytest.mark.parametrize("lengths", [(), (0,), (-1, 2), (True,), (1.5,), (2**31,)])
@@ -153,13 +154,12 @@ def test_real_qwen_packed_readout_preserves_every_example():
 
 
 def test_packing_config_preserves_the_completed_bf16_recipe():
-    from pathlib import Path
 
     import yaml
 
     from experiments.fp4_stability.run import validate_config
 
-    root = Path(__file__).parents[1] / "experiments"
+    root = ROOT / "experiments"
     baseline = yaml.safe_load(
         (root / "fp4_stability/bf16_flashqla_ten_step_comparison.yaml").read_text()
     )
@@ -183,13 +183,12 @@ def test_packing_config_preserves_the_completed_bf16_recipe():
 
 
 def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
-    from pathlib import Path
 
     import yaml
 
     from experiments.fp4_stability.run import validate_config
 
-    root = Path(__file__).parents[1] / "experiments/monitoring_sequence_packing"
+    root = ROOT / "experiments/monitoring_sequence_packing"
     baseline = yaml.safe_load((root / "bf16_casts_gpu.yaml").read_text())
     config = yaml.safe_load((root / "bf16_learning_gpu.yaml").read_text())
     validate_config(config)
@@ -233,7 +232,6 @@ def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
 
 @pytest.mark.parametrize("value", ["true", None, 1])
 def test_packing_only_requires_boolean(value):
-    from pathlib import Path
 
     import yaml
 
@@ -241,8 +239,7 @@ def test_packing_only_requires_boolean(value):
 
     config = yaml.safe_load(
         (
-            Path(__file__).parents[1]
-            / "experiments/monitoring_sequence_packing/bf16_larger_batch_gpu.yaml"
+            ROOT / "experiments/monitoring_sequence_packing/bf16_larger_batch_gpu.yaml"
         ).read_text()
     )
     with pytest.raises(ValueError, match="packing_only"):

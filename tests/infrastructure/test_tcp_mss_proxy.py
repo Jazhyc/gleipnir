@@ -2,12 +2,12 @@ from __future__ import annotations
 
 import importlib.util
 import socket
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import pytest
 
-ROOT = Path(__file__).resolve().parents[1]
+from tests.helpers.paths import ROOT
+
 MODULE_PATH = ROOT / "scripts/tcp_mss_proxy.py"
 SPEC = importlib.util.spec_from_file_location("tcp_mss_proxy", MODULE_PATH)
 assert SPEC is not None and SPEC.loader is not None

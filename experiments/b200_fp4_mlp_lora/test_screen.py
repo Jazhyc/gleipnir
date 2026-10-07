@@ -17,7 +17,7 @@ from gleipnir.bf16_lora import (
 from gleipnir.fouroversix_training import FrozenFourOverSixLinear
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_training import validate_packed_training_config
-from tests.test_packed_training import student_config
+from tests.helpers.training import student_config
 
 
 def mixed_student():

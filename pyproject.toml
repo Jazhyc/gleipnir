@@ -48,6 +48,10 @@ packages = ["src/gleipnir"]
 [tool.pytest.ini_options]
 pythonpath = ["."]
 testpaths = ["tests"]
+addopts = "--import-mode=importlib"
+markers = [
+    "integration: starts local worker processes and requires local networking",
+]
 
 [tool.ruff]
 line-length = 88
@@ -57,4 +61,4 @@ target-version = "py312"
 select = ["E", "F", "I", "UP", "B"]
 
 [tool.ruff.lint.isort]
-known-first-party = ["gleipnir", "experiments", "scripts"]
+known-first-party = ["gleipnir", "experiments", "scripts", "tests"]
