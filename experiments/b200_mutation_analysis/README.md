@@ -43,3 +43,10 @@ PYTHONPATH=src:. python -m experiments.b200_mutation_analysis.run --name mutatio
 See [the upstream issue](https://github.com/pytorch/pytorch/issues/170049) for the
 runtime-scalar/constexpr argument-index mismatch. Only the checksum-bound kernel
 is supported; different Torch/Triton versions or upstream source need new validation.
+
+`mutation03` passes native parity and completes the serving screen with zero
+mutation-analysis warnings. Keep the repaired score worker warm. Batch throughput
+increases in the sequential comparison; interactive median does not improve.
+The generation reference is unchanged. See the
+[finding](../../docs/findings/b200_triton_mutation_analysis.md) for complete
+timing, AUROC, copy-attribution limits and failed-probe evidence.

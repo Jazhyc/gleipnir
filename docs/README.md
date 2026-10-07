@@ -45,6 +45,9 @@
 - [B200 dedicated monitor scoring](findings/b200_monitor_score_endpoint.md):
   two-logit cached classification endpoint, measured output costs and the
   negative speed result with batch-quality qualifications.
+- [B200 Triton mutation analysis](findings/b200_triton_mutation_analysis.md):
+  source-bound Torch/Triton metadata repair, exact native parity and warning-free
+  serving measurements, with failed probes and attribution limits.
 - [B200 Four Over Six training handoff](findings/b200_fouroversix_training.md#resume-checklist-and-stability-candidates):
   completed native kernel checks, two failed full-model compilation gates,
   artifact/code state, and untested per-token scaling, dequantized BF16 backward
