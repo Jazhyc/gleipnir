@@ -24,8 +24,9 @@ canary against the accepted cached serving artifact. Require canary mean score
 error <=0.005, correlation >=0.995 and a nonzero adapter effect. Record strict
 master agreement separately from inherited finite-quality acceptance.
 
-Reuse all three c1 and six c128 repeats from
-`cache_policy_euro02/fresh_cached` on the same EU host. Measure frozen quick64/c1
+The initial trial used the same-host cached generation control. Subsequent
+comparisons use all three c1 and six c128 repeats of the checksum-bound selected
+reference. Measure frozen quick64/c1
 and full320/c128 with one excluded warmup, three/six repeats and fresh HTTP
 pools per pass. Report input tokens/s, latency bins, score differences, pooled,
 per-source and source-macro AUROC, calibration, ties and threshold diagnostics.
@@ -33,13 +34,15 @@ Full320 is training-seen systems development, not held-out quality evidence.
 Do not promote a new baseline automatically. Stop on provenance/weight drift,
 nonfinite output, canary failure, truncation, server failure or suite completion.
 No new capacity or final-ID selection. Preserve failures and restore the
-generation reference if the candidate cannot provide a usable score service.
+selected reference if the candidate cannot provide a usable score service.
 
 ```bash
 PYTHONPATH=src:. python -m experiments.b200_monitor_score.run --name score01
 ```
 
-The entrypoint reads the live parent server before retirement. Run artifacts
+The default entrypoint restores the checksum-bound repaired score recipe from
+the live pooling parent, including removing experimental graph settings. It
+reads the live parent server before retirement. Run artifacts
 live under `results/b200_monitor_score/<name>/`; shared server metadata and logs
 remain under `b200_attention_gdn_serving` so the established stop helper can
 retire the candidate too. The active server is recorded explicitly as pooling,

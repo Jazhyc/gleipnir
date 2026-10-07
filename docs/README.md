@@ -42,9 +42,13 @@
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
   development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
   engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
+- [B200 repaired score reference](decisions/b200_monitor_score_reference.md):
+  current cached scoring recipe and checksum-bound comparison controls.
 - [B200 dedicated monitor scoring](findings/b200_monitor_score_endpoint.md):
   two-logit cached classification endpoint, measured output costs and the
   negative speed result with batch-quality qualifications.
+- [B200 large-prefill graphs](findings/b200_prefill_graph_capture.md):
+  NC2 and repaired EU retries, replay profiles and negative batch speed results.
 - [B200 Triton mutation analysis](findings/b200_triton_mutation_analysis.md):
   source-bound Torch/Triton metadata repair, exact native parity and warning-free
   serving measurements, with failed probes and attribution limits.

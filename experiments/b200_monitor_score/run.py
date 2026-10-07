@@ -77,6 +77,18 @@ def score_command(parent: list[str], hf_config: dict, hashes: dict) -> list[str]
     return command
 
 
+def selected_score_command(parent: list[str], template: list[str]) -> list[str]:
+    """Restore the saved recipe without carrying experimental graph flags."""
+    if (
+        parent[0] != template[0]
+        or parent[parent.index("--model") + 1]
+        != template[template.index("--model") + 1]
+        or template[template.index("--runner") + 1] != "pooling"
+    ):
+        raise ValueError("selected recipe runtime/model differs from live parent")
+    return template.copy()
+
+
 async def trial(
     rows: list[dict], concurrency: int, settings: dict
 ) -> tuple[list[dict], float]:
@@ -120,6 +132,7 @@ async def measure(
     resumed_environment: dict | None = None,
     ready_prepare: Callable | None = None,
     command_prepare: Callable | None = None,
+    startup_only: bool = False,
 ) -> None:
     settings = json.loads((experiment / "config.json").read_text())
     assert not settings["promote"] and settings["endpoint"] == ENDPOINT
@@ -181,7 +194,15 @@ async def measure(
     if settings.get("score_parent"):
         if actual[actual.index("--runner") + 1] != "pooling":
             raise ValueError("score trial requires the selected pooling parent")
-        command = actual.copy()
+        if settings.get("restore_selected_recipe"):
+            from gleipnir.serving.reference import selected_score_reference
+
+            selected = selected_score_reference(ROOT)
+            recipe = json.loads((ROOT / selected["server_metadata"]).read_text())
+            command = selected_score_command(actual, recipe["command"])
+            environment["GLEIPNIR_STRIDE_VALIDATION"] = selected["mutation_validation"]
+        else:
+            command = actual.copy()
         index = command.index("--additional-config") + 1
         additional = json.loads(command[index])
         additional["gleipnir_frost_fp4"].update(compute_sources)
@@ -327,10 +348,17 @@ async def measure(
     if not canary["passed"]:
         raise ValueError("score endpoint canary failed")
     print("score_canary_passed", mean, correlation, flush=True)
-    for c, key, repeats in [
+    passes = [
         (1, "quick", settings["c1_repeats"]),
         (128, "full", settings["c128_repeats"]),
-    ]:
+    ]
+    if startup_only:
+        # Keep a restored reference warm without rerunning timing controls.
+        for c, key, _ in passes:
+            values, _ = await trial(workloads[key], c, settings)
+            write(out / f"c{c}_warmup.json", values)
+        report["startup_only"] = True
+    for c, key, repeats in [] if startup_only else passes:
         rows = workloads[key]
         warm, seconds = await trial(rows, c, settings)
         write(out / f"c{c}_warmup.json", warm)
@@ -377,7 +405,10 @@ async def measure(
         ],
     )
     write(out / "summary.json", report)
-    print("score_benchmark_complete", flush=True)
+    print(
+        "score_restore_complete" if startup_only else "score_benchmark_complete",
+        flush=True,
+    )
 
 
 def main() -> None:

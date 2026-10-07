@@ -83,3 +83,39 @@ def test_score_reference_rejects_prediction_and_workload_drift(tmp_path):
     manifest.write_text("changed")
     with pytest.raises(ValueError, match="workload drift"):
         selected_score_reference(tmp_path)
+
+
+def test_profile_distinguishes_launches_from_kernels_and_merges_overlap(tmp_path):
+    import gzip
+
+    from experiments.b200_score_graphs.profile import summarize
+
+    trace = tmp_path / "trace.json.gz"
+    events = [
+        dict(cat="kernel", name="gemm", ts=0, dur=10),
+        dict(cat="kernel", name="gemm", ts=5, dur=10),
+        dict(cat="kernel", name="attention", ts=20, dur=5),
+        dict(cat="cuda_runtime", name="cudaGraphLaunch", ts=0, dur=1),
+        dict(cat="cuda_driver", name="cuLaunchKernel", ts=1, dur=1),
+    ]
+    with gzip.open(trace, "wt") as handle:
+        json.dump({"traceEvents": events}, handle)
+    report = summarize(trace)
+    assert report["kernels"] == 3
+    assert report["graph_launches"] == report["ordinary_launches"] == 1
+    assert report["gpu_window_us"] == 25
+    assert report["gpu_busy_union_us"] == 20
+    assert report["gpu_gaps_us"] == 5
+
+
+def test_restore_selected_recipe_removes_trial_capture_without_mutating_template():
+    from experiments.b200_monitor_score.run import selected_score_command
+
+    saved = ["python", "-m", "repaired", "--model", "merged", "--runner", "pooling"]
+    parent = [*saved, "--compilation-config", '{"cudagraph_capture_sizes":[32768]}']
+    command = selected_score_command(parent, saved)
+    assert command == saved and command is not saved
+    assert "--compilation-config" not in command
+    parent[0] = "other-runtime"
+    with pytest.raises(ValueError, match="runtime/model"):
+        selected_score_command(parent, saved)
