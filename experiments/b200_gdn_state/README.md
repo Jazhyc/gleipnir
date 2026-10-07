@@ -7,6 +7,10 @@ Keep all FP4 projections/MLPs, MXFP8 full attention, gates, FP32 MMA accumulatio
 convolution, prompt identities, causal LAST pooling and cache policy fixed.
 No backend upgrade or MLP optimization is part of this screen.
 
+Outcome: BF16 state is numerically feasible here, but the completed serving
+screen found no useful throughput gain. See the
+[finding](../../docs/findings/b200_gdn_state.md) for measurements and limits.
+
 The pinned FlashInfer 0.6.12 SM100 adapter accepts BF16 state beneath its public
 FP32 documentation. vLLM's ordinary wrapper upcasts state to FP32; the candidate
 passes BF16 initial/final buffers explicitly and sets `--mamba-ssm-cache-dtype
@@ -24,7 +28,8 @@ represented by that diagnostic. Preserve all failures and source/runtime hashes.
 
 Retire the sole identity-verified serving process before native checks; preserve
 its source/environment identity, logs, checkpoint and shared compiler caches.
-On failure restore the selected reference without replaying its timing controls.
+On failure retire the candidate and preserve receipts; do not restart the
+reference automatically. Leave the GPU available for the next change.
 After native admission, require the existing 20-row score canary (mean absolute
 error <=0.005, correlation >=0.995, nonzero adapter effect), finite outputs and
 live BF16 state dispatch/cache coverage. Compare three c1/quick64 and six
@@ -37,7 +42,7 @@ quality evidence. No final-ID evaluation or automatic promotion.
 A useful candidate needs >1% median c128 throughput gain, <=2% c1 median/p95
 regression and absolute macro/pooled AUROC shifts <=0.1 percentage points.
 This screening rule is diagnostic; retain strict/inherited precision failures.
-Restore the reference after a rejected candidate. Stop on provenance/input drift,
+Retire a rejected candidate without restarting the reference. Stop on provenance/input drift,
 native/canary/audit failure, nonfinite output, server failure or bounded completion.
 No capacity creation or termination. Startup is monitored in the active turn;
 no after-turn heartbeat scheduler is available in this session.

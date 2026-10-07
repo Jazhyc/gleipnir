@@ -168,3 +168,47 @@ def test_exited_startup_recovery_preserves_receipts_and_refuses_live_gpu(
         log.with_name("failed01_candidate_server.log").read_text()
         == "failed startup traceback\n"
     )
+
+
+def test_failed_trial_retires_candidate_without_restarting_reference(
+    tmp_path, monkeypatch
+):
+    import asyncio
+
+    from experiments.b200_gdn_state import run
+
+    serving = tmp_path / "results/serving"
+    serving.mkdir(parents=True)
+    parent = tmp_path / "parent.json"
+    parent.write_text(json.dumps({"pid": 99999999, "command": ["python"]}))
+    calls = []
+
+    async def failed_measure(name, **kwargs):
+        calls.append(name)
+        out = tmp_path / "results/b200_gdn_state" / name
+        out.mkdir(parents=True)
+        (out / "parent_server.json").write_text(parent.read_text())
+        (serving / "server.json").write_text(
+            json.dumps(
+                {
+                    "pid": 99999999,
+                    "command": ["python", "--worker-cls", run.STATE_WORKER],
+                }
+            )
+        )
+        raise RuntimeError("candidate failed")
+
+    monkeypatch.setattr(run, "ROOT", tmp_path)
+    monkeypatch.setattr(run, "SERVING", serving)
+    monkeypatch.setattr(run, "resume_environment", lambda parent: {})
+    monkeypatch.setattr(run, "measure", failed_measure)
+    monkeypatch.setattr(
+        run, "archive_exited_candidate", lambda name: (serving / "server.json").unlink()
+    )
+    with pytest.raises(RuntimeError, match="candidate failed"):
+        asyncio.run(run.run("failed01", retired_parent=parent))
+    assert calls == ["failed01"]
+    receipt = json.loads(
+        (tmp_path / "results/b200_gdn_state/failed01/recovery.json").read_text()
+    )
+    assert receipt["candidate_retired"] and not receipt["reference_restored"]

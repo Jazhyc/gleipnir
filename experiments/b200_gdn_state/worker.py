@@ -2,6 +2,7 @@
 
 import hashlib
 import json
+import math
 import os
 from pathlib import Path
 
@@ -80,15 +81,20 @@ class GdnStateMonitorScoreAuditWorker(MonitorScoreAuditWorker):
         from vllm.model_executor.layers.mamba.gdn.base import GatedDeltaNetAttention
 
         caches = {}
+        backing_storages = {}
         for name, layer in self.model_runner.get_model().named_modules():
             if isinstance(layer, GatedDeltaNetAttention):
                 conv, state = layer.kv_cache
                 if state.dtype != torch.bfloat16 or conv.dtype != torch.bfloat16:
                     raise ValueError(f"unexpected GDN cache precision: {name}")
+                storage = state.untyped_storage()
+                backing_storages[storage.data_ptr()] = storage.nbytes()
                 caches[name] = {
                     "state_dtype": str(state.dtype),
                     "state_shape": list(state.shape),
-                    "state_bytes": state.numel() * state.element_size(),
+                    "logical_state_bytes": state.numel() * state.element_size(),
+                    "state_bytes_per_slot": math.prod(state.shape[1:])
+                    * state.element_size(),
                     "conv_dtype": str(conv.dtype),
                 }
         if len(caches) != 24 or not self._state_calls:
@@ -98,7 +104,15 @@ class GdnStateMonitorScoreAuditWorker(MonitorScoreAuditWorker):
             "worker_pid": os.getpid(),
             "caches": caches,
             "native_calls": self._state_calls,
-            "state_bytes": sum(c["state_bytes"] for c in caches.values()),
+            "logical_state_bytes": sum(
+                c["logical_state_bytes"] for c in caches.values()
+            ),
+            "unique_backing_storage_bytes": sum(backing_storages.values()),
+            "backing_storage_count": len(backing_storages),
+            "memory_accounting": (
+                "Logical views share hybrid cache backing; unique storage includes "
+                "other cache views and is not dedicated recurrent-state memory."
+            ),
             "gate_dtype": "float32",
             "accumulation_dtype": "float32",
             "validation_sha256": self._state_validation_sha256,

@@ -31,12 +31,15 @@ compiler caches across those restarts. See the merged serving protocol in
 
 ## Persistent serving process
 
-Standing user preference, 2026-10-06: when an inference change needs a different
+Standing user preference: when an inference change needs a different
 serving process, stop the old server rather than keeping both resident. Preserve
 its measured baseline results, merged checkpoint, logs and persistent caches.
 Reuse completed matched baseline results; do not retain or rerun a control merely
 because a new kernel is being tested. Keep the active candidate warm for compatible
-trials. This is process replacement, not authorization to terminate capacity.
+trials. After a rejected or failed kernel trial, retire its worker and leave the
+GPU available for the next change; do not automatically restart the reference
+server. Restore a reference only when the user requests it or the next task needs
+that process. This is process replacement, not authorization to terminate capacity.
 
 ## Optimization reporting
 

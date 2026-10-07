@@ -13,7 +13,6 @@ import subprocess
 from pathlib import Path
 
 from experiments.b200_inference_benchmark.run import ROOT, write
-from experiments.b200_monitor_score.run import EXPERIMENT as REFERENCE_EXPERIMENT
 from experiments.b200_monitor_score.run import SERVING, measure
 from gleipnir.serving.gdn.state import validate_native
 
@@ -236,7 +235,7 @@ async def run(
             raise ValueError("live BF16 GDN state audit failed")
         write(destination / "gdn_state.json", receipt)
 
-    restore = False
+    retire = False
     try:
         await measure(
             name,
@@ -260,15 +259,15 @@ async def run(
         ranking = json.loads((out / "c128_comparison.json").read_text())["ranking"]
         result = screen(summary, reference, ranking)
         write(out / "screen.json", result)
-        restore = not result["passed"]
+        retire = not result["passed"]
         print("bf16_state_screen", json.dumps(result), flush=True)
     except BaseException as error:
         if out.exists():
             write(out / "failure.json", {"error": f"{type(error).__name__}: {error}"})
-        restore = True
+        retire = True
         raise
     finally:
-        if restore and (out / "parent_server.json").exists():
+        if retire and (out / "parent_server.json").exists():
             if (SERVING / "server.json").exists():
                 current = json.loads((SERVING / "server.json").read_text())
                 if (
@@ -287,28 +286,21 @@ async def run(
                             "--archive-name",
                             name + "_candidate",
                             "--reason",
-                            "Restore reference after rejected BF16 state screen",
+                            "Leave GPU available after rejected BF16 state screen",
                         ],
                         cwd=ROOT,
                         env=environment,
                         check=True,
                     )
-            await measure(
-                name + "_reference_restored",
-                experiment=REFERENCE_EXPERIMENT,
-                result_group="b200_gdn_state",
-                retired_parent=out / "parent_server.json",
-                resumed_environment=environment,
-                startup_only=True,
-            )
             write(
                 out / "recovery.json",
                 {
-                    "reference_restored": True,
-                    "artifact": f"results/b200_gdn_state/{name}_reference_restored",
+                    "reference_restored": False,
+                    "candidate_retired": True,
+                    "reference_restart_requires_user_request": True,
                 },
             )
-            print("bf16_state_reference_restored", flush=True)
+            print("bf16_state_candidate_retired", flush=True)
 
 
 def main() -> None:
