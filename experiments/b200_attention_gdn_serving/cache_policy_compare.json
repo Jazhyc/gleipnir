@@ -1,0 +1,10 @@
+{
+  "phases": ["resident_prompt_only", "fresh_cached", "fresh_prompt_only"],
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "warmup_repeats_per_concurrency": 1,
+  "port": 8010,
+  "timeout_seconds": 180,
+  "population": "frozen training-seen systems development cohort",
+  "promotion": false
+}
