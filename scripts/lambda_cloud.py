@@ -668,13 +668,18 @@ def run_checked(argv: Sequence[str], *, input_text: str | None = None) -> None:
         fail(f"command failed with exit code {result.returncode}: {shlex.join(argv)}")
 
 
-def run_transfer(argv: Sequence[str], *, attempts: int = TRANSFER_ATTEMPTS) -> None:
+def run_transfer(
+    argv: Sequence[str],
+    *,
+    attempts: int = TRANSFER_ATTEMPTS,
+    input_data: bytes | None = None,
+) -> None:
     """Run resumable transfer commands with bounded exponential-backoff retries."""
     if attempts < 1:
         raise ValueError("transfer attempts must be positive")
     last_returncode = 0
     for attempt in range(1, attempts + 1):
-        result = subprocess.run(list(argv), check=False)
+        result = subprocess.run(list(argv), input=input_data, check=False)
         last_returncode = result.returncode
         if result.returncode == 0:
             return
@@ -841,7 +846,7 @@ def ensure_repo_relative_local_path(path_text: str) -> Path:
 
 def ensure_relative_remote_path(path_text: str) -> PurePosixPath:
     path = PurePosixPath(path_text)
-    if path.is_absolute() or ".." in path.parts:
+    if path.is_absolute() or ".." in path.parts or "\0" in path_text:
         fail("remote sync paths must be relative and cannot contain '..'")
     if not path.parts:
         fail("remote sync path cannot be empty")
@@ -997,12 +1002,55 @@ PY
     run_checked(argv, input_text=remote_script)
 
 
-def command_push(args: argparse.Namespace, client: LambdaCloudClient) -> None:
+def command_transfer_batch(
+    args: argparse.Namespace,
+    client: LambdaCloudClient,
+    paths: Sequence[str],
+    *,
+    pull: bool,
+) -> None:
+    """Copy explicit paths in one resumable session with their directory layout."""
+    checked = sorted({str(ensure_relative_remote_path(value)) for value in paths})
+    if not checked:
+        fail("at least one transfer path is required")
+    for path in checked:
+        local = ensure_repo_relative_local_path(path)
+        if not pull and not local.exists():
+            fail(f"local path does not exist: {local}")
     private_key, instance = active_ssh_target(args, client)
-    local_path = ensure_repo_relative_local_path(args.local_path)
+    if not pull:
+        run_checked(
+            [*ssh_argv(private_key, instance["ip"]), "mkdir", "-p", REMOTE_ROOT]
+        )
+    remote = f"ubuntu@{instance['ip']}:{REMOTE_ROOT}/"
+    source, destination = (remote, f"{ROOT}/") if pull else (f"{ROOT}/", remote)
+    file_list = "".join(f"./{path}\0" for path in checked).encode()
+    run_transfer(
+        [
+            *rsync_argv(private_key),
+            "-r",
+            "--files-from=-",
+            "--from0",
+            source,
+            destination,
+        ],
+        input_data=file_list,
+    )
+
+
+def command_push(args: argparse.Namespace, client: LambdaCloudClient) -> None:
+    paths = [args.local_path] if isinstance(args.local_path, str) else args.local_path
+    if len(paths) > 1:
+        if args.remote_path:
+            fail("--remote-path can rename only a single --local-path")
+        command_transfer_batch(args, client, paths, pull=False)
+        return
+    path = paths[0]
+    private_key, instance = active_ssh_target(args, client)
+    local_path = ensure_repo_relative_local_path(path)
     if not local_path.exists():
         fail(f"local path does not exist: {local_path}")
-    remote_path = ensure_relative_remote_path(args.remote_path or args.local_path)
+    remote_path = ensure_relative_remote_path(args.remote_path or path)
     remote_parent = PurePosixPath(REMOTE_ROOT) / remote_path.parent
     mkdir_argv = ssh_argv(private_key, instance["ip"]) + [
         "mkdir",
@@ -1020,9 +1068,18 @@ def command_push(args: argparse.Namespace, client: LambdaCloudClient) -> None:
 
 
 def command_pull(args: argparse.Namespace, client: LambdaCloudClient) -> None:
+    paths = (
+        [args.remote_path] if isinstance(args.remote_path, str) else args.remote_path
+    )
+    if len(paths) > 1:
+        if args.local_path:
+            fail("--local-path can rename only a single --remote-path")
+        command_transfer_batch(args, client, paths, pull=True)
+        return
+    path = paths[0]
     private_key, instance = active_ssh_target(args, client)
-    remote_path = ensure_relative_remote_path(args.remote_path)
-    local_path = ensure_repo_relative_local_path(args.local_path or args.remote_path)
+    remote_path = ensure_relative_remote_path(path)
+    local_path = ensure_repo_relative_local_path(args.local_path or path)
     local_path.parent.mkdir(parents=True, exist_ok=True)
     source_path = PurePosixPath(REMOTE_ROOT) / remote_path
     source = f"ubuntu@{instance['ip']}:{source_path}"
@@ -1249,20 +1306,24 @@ def build_parser() -> argparse.ArgumentParser:
     bootstrap_parser.set_defaults(handler=command_bootstrap)
 
     push_parser = subparsers.add_parser(
-        "push", help="copy one explicit repository-relative path to the campaign"
+        "push", help="copy explicit repository-relative paths to the campaign"
     )
     push_parser.add_argument("--campaign", required=True)
-    push_parser.add_argument("--local-path", required=True)
-    push_parser.add_argument("--remote-path")
+    push_parser.add_argument(
+        "--local-path", required=True, nargs="+", action="extend", metavar="PATH"
+    )
+    push_parser.add_argument("--remote-path", help="rename a single uploaded path")
     add_private_key_argument(push_parser)
     push_parser.set_defaults(handler=command_push)
 
     pull_parser = subparsers.add_parser(
-        "pull", help="copy one explicit campaign path back into the repository"
+        "pull", help="copy explicit campaign paths back into the repository"
     )
     pull_parser.add_argument("--campaign", required=True)
-    pull_parser.add_argument("--remote-path", required=True)
-    pull_parser.add_argument("--local-path")
+    pull_parser.add_argument(
+        "--remote-path", required=True, nargs="+", action="extend", metavar="PATH"
+    )
+    pull_parser.add_argument("--local-path", help="rename a single downloaded path")
     pull_parser.add_argument(
         "--directory",
         action="store_true",

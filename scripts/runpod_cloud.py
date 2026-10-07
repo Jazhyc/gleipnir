@@ -13,6 +13,7 @@ import ipaddress
 import json
 import shlex
 import subprocess
+from collections.abc import Sequence
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -95,6 +96,45 @@ def ssh_argv(pod: dict[str, Any], key: Path) -> list[str]:
     ]
 
 
+def transfer_batch(paths: Sequence[str], ssh: Sequence[str], *, pull: bool) -> None:
+    """Transfer an explicit path list in one session, preserving repository paths."""
+    checked = sorted({relative_path(value) for value in paths})
+    if not checked:
+        raise ValueError("At least one transfer path is required")
+    if not pull:
+        for path in checked:
+            if not (ROOT / path).exists():
+                raise ValueError(f"Local path does not exist: {path}")
+        subprocess.run([*ssh, f"mkdir -p {shlex.quote(REMOTE_ROOT)}"], check=True)
+    remote = f"{ssh[-1]}:{REMOTE_ROOT}/"
+    source, destination = (remote, f"{ROOT}/") if pull else (f"{ROOT}/", remote)
+    # Prefix entries with ./ so names beginning with # or ; are not list comments.
+    file_list = "".join(f"./{path}\0" for path in checked).encode()
+    subprocess.run(
+        [
+            "rsync",
+            "-arz",
+            "--no-owner",
+            "--no-group",
+            "--partial",
+            "--timeout=60",
+            "--files-from=-",
+            "--from0",
+            *(
+                ["--exclude=*.tmp"]
+                if pull and any(p.endswith("/") for p in paths)
+                else []
+            ),
+            "-e",
+            shlex.join(ssh[:-1]),
+            source,
+            destination,
+        ],
+        input=file_list,
+        check=True,
+    )
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--pod-file", type=Path, default=ROOT / ".runpod/pod.json")
@@ -106,8 +146,8 @@ def main() -> None:
     execution = sub.add_parser("exec")
     execution.add_argument("command")
     for name in ("push", "pull"):
-        transfer = sub.add_parser(name)
-        transfer.add_argument("path")
+        transfer = sub.add_parser(name, help="transfer repository-relative paths")
+        transfer.add_argument("paths", nargs="+", metavar="PATH")
     args = parser.parse_args()
     pod = json.loads(args.pod_file.read_text())
     ssh = ssh_argv(pod, args.key)
@@ -133,10 +173,14 @@ def main() -> None:
             check=True,
         )
     elif args.action in {"push", "pull"}:
-        path = relative_path(args.path)
+        if len(args.paths) > 1:
+            transfer_batch(args.paths, ssh, pull=args.action == "pull")
+            return
+        value = args.paths[0]
+        path = relative_path(value)
         remote = f"{host}:{REMOTE_ROOT}/{path}"
         local = ROOT / path
-        directory = local.is_dir() if args.action == "push" else args.path.endswith("/")
+        directory = local.is_dir() if args.action == "push" else value.endswith("/")
         if args.action == "push":
             parent = PurePosixPath(path).parent
             subprocess.run(

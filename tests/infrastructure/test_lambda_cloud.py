@@ -217,7 +217,8 @@ def test_rsync_is_resumable_and_has_an_io_timeout() -> None:
     assert "--timeout=60" in argv
 
 
-def test_transfer_retries_with_bounded_backoff() -> None:
+@pytest.mark.parametrize("input_data", [None, b"./file one\0./file\ntwo\0"])
+def test_transfer_retries_with_bounded_backoff(input_data) -> None:
     results = [
         SimpleNamespace(returncode=30),
         SimpleNamespace(returncode=12),
@@ -227,9 +228,10 @@ def test_transfer_retries_with_bounded_backoff() -> None:
         patch.object(lambda_cloud.subprocess, "run", side_effect=results) as run,
         patch.object(lambda_cloud.time, "sleep") as sleep,
     ):
-        lambda_cloud.run_transfer(["rsync", "source", "target"])
+        lambda_cloud.run_transfer(["rsync", "source", "target"], input_data=input_data)
 
     assert run.call_count == 3
+    assert all(call.kwargs["input"] == input_data for call in run.call_args_list)
     assert [call.args[0] for call in sleep.call_args_list] == [1, 2]
 
 
@@ -304,3 +306,175 @@ def test_safe_api_error_does_not_include_authorization_header() -> None:
         None,
     )
     assert lambda_cloud.safe_api_error(error) == "Unauthorized"
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+def test_batch_transfers_preserve_layout_in_one_session(
+    action, rsync_peer, monkeypatch
+):
+    source, destination = (
+        (rsync_peer.local, rsync_peer.remote)
+        if action == "push"
+        else (rsync_peer.remote, rsync_peer.local)
+    )
+    files = [
+        "inputs/same.json",
+        "results/same.json",
+        "#leading.txt",
+        "space $name [1].json",
+        "line\nbreak.txt",
+        "bundle/deep/file.txt",
+    ]
+    for index, name in enumerate(files):
+        path = source / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(str(index))
+    (source / "unselected.txt").write_text("leave behind")
+    flag = "--local-path" if action == "push" else "--remote-path"
+    args = lambda_cloud.build_parser().parse_args(
+        [action, "--campaign", "example", flag, *files[:-1], "bundle/", files[0]]
+    )
+    monkeypatch.setattr(lambda_cloud, "ROOT", rsync_peer.local)
+    with patch.object(
+        lambda_cloud,
+        "active_ssh_target",
+        return_value=(Path("/tmp/key"), {"ip": "192.0.2.1"}),
+    ) as target:
+        args.handler(args, object())
+    assert target.call_count == 1
+    for index, name in enumerate(files):
+        assert (destination / name).read_text() == str(index)
+    assert not (destination / "unselected.txt").exists()
+    assert len(rsync_peer.calls) == (2 if action == "push" else 1)
+    transfers = [
+        (argv, kwargs) for argv, kwargs in rsync_peer.calls if argv[0] == "rsync"
+    ]
+    assert len(transfers) == 1
+    assert transfers[0][1]["input"].count(b"./inputs/same.json\0") == 1
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+@pytest.mark.parametrize("directory", [False, True])
+def test_single_path_rename_keeps_existing_behavior(
+    action, directory, rsync_peer, monkeypatch
+):
+    source, destination = (
+        (rsync_peer.local, rsync_peer.remote)
+        if action == "push"
+        else (rsync_peer.remote, rsync_peer.local)
+    )
+    source_name = "original/inside.txt" if directory else "original.txt"
+    destination_name = "renamed/inside.txt" if directory else "renamed.txt"
+    (source / source_name).parent.mkdir(parents=True, exist_ok=True)
+    (source / source_name).write_text("original behavior")
+    source_path = "original" if directory else "original.txt"
+    destination_path = "renamed" if directory else "renamed.txt"
+    local_path, remote_path = (
+        (source_path, destination_path)
+        if action == "push"
+        else (destination_path, source_path)
+    )
+    args = lambda_cloud.build_parser().parse_args(
+        [
+            action,
+            "--campaign",
+            "example",
+            "--local-path",
+            local_path,
+            "--remote-path",
+            remote_path,
+            *(["--directory"] if action == "pull" and directory else []),
+        ]
+    )
+    monkeypatch.setattr(lambda_cloud, "ROOT", rsync_peer.local)
+    with patch.object(
+        lambda_cloud,
+        "active_ssh_target",
+        return_value=(Path("/tmp/key"), {"ip": "192.0.2.1"}),
+    ):
+        args.handler(args, object())
+    assert (destination / destination_name).read_text() == "original behavior"
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+@pytest.mark.parametrize("bad_path", ["../outside", "/outside", "bad\0name"])
+def test_batch_validates_before_target_lookup(
+    action, bad_path, rsync_peer, monkeypatch
+):
+    (rsync_peer.local / "valid.txt").write_text("valid")
+    flag = "--local-path" if action == "push" else "--remote-path"
+    args = lambda_cloud.build_parser().parse_args(
+        [action, "--campaign", "example", flag, "valid.txt", bad_path]
+    )
+    monkeypatch.setattr(lambda_cloud, "ROOT", rsync_peer.local)
+    with patch.object(lambda_cloud, "active_ssh_target") as target:
+        with pytest.raises(lambda_cloud.LambdaCloudError):
+            args.handler(args, object())
+    target.assert_not_called()
+    assert not rsync_peer.calls
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+def test_batch_rejects_ambiguous_rename_before_target_lookup(action):
+    source_flag = "--local-path" if action == "push" else "--remote-path"
+    destination_flag = "--remote-path" if action == "push" else "--local-path"
+    args = lambda_cloud.build_parser().parse_args(
+        [
+            action,
+            "--campaign",
+            "example",
+            source_flag,
+            "a",
+            "b",
+            destination_flag,
+            "dest",
+        ]
+    )
+    with patch.object(lambda_cloud, "active_ssh_target") as target:
+        with pytest.raises(lambda_cloud.LambdaCloudError, match="single"):
+            args.handler(args, object())
+    target.assert_not_called()
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+def test_repeated_source_option_keeps_every_path(action):
+    flag = "--local-path" if action == "push" else "--remote-path"
+    args = lambda_cloud.build_parser().parse_args(
+        [action, "--campaign", "example", flag, "a", "b", flag, "c"]
+    )
+    assert getattr(args, flag[2:].replace("-", "_")) == ["a", "b", "c"]
+
+
+def test_batch_missing_upload_fails_before_target_lookup(rsync_peer, monkeypatch):
+    (rsync_peer.local / "valid.txt").write_text("valid")
+    args = lambda_cloud.build_parser().parse_args(
+        ["push", "--campaign", "example", "--local-path", "valid.txt", "missing.txt"]
+    )
+    monkeypatch.setattr(lambda_cloud, "ROOT", rsync_peer.local)
+    with patch.object(lambda_cloud, "active_ssh_target") as target:
+        with pytest.raises(lambda_cloud.LambdaCloudError, match="does not exist"):
+            args.handler(args, object())
+    target.assert_not_called()
+    assert not rsync_peer.calls
+
+
+@pytest.mark.parametrize("action", ["push", "pull"])
+def test_batch_rejects_symlink_escape_before_target_lookup(
+    action, rsync_peer, monkeypatch
+):
+    (rsync_peer.local / "valid.txt").write_text("valid")
+    (rsync_peer.local / "outside").symlink_to(
+        rsync_peer.remote, target_is_directory=True
+    )
+    flag = "--local-path" if action == "push" else "--remote-path"
+    args = lambda_cloud.build_parser().parse_args(
+        [action, "--campaign", "example", flag, "valid.txt", "outside/file.txt"]
+    )
+    monkeypatch.setattr(lambda_cloud, "ROOT", rsync_peer.local)
+    with patch.object(lambda_cloud, "active_ssh_target") as target:
+        with pytest.raises(
+            lambda_cloud.LambdaCloudError, match="inside the repository"
+        ):
+            args.handler(args, object())
+    target.assert_not_called()
+    assert not rsync_peer.calls

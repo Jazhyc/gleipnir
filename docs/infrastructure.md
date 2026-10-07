@@ -72,10 +72,22 @@ shared fast-kernel environment sets this automatically when that toolkit path
 exists. The source build is cached by `uv`, but a cold build took about ten
 minutes on `gleipnir-improvement`.
 
-`sync-commit` transfers a committed snapshot. Use `push` for an explicit ignored
-input and `pull` for result collection. The helper never terminates an instance
-unless `terminate --yes` is invoked; do not do that without explicit user
-authorization.
+`sync-commit` transfers a committed snapshot. Use `push` for explicit ignored
+inputs and `pull` for result collection. Supply several paths after `--local-path`
+(push) or `--remote-path` (pull), or repeat that option, to transfer them in one
+rsync session, preserving their repository-relative locations. The opposite path
+option can rename a single source; batch transfers use matching paths on both
+sides. Directories in a batch are copied recursively:
+
+```bash
+python scripts/lambda_cloud.py push --campaign example \
+  --local-path data/example/input.jsonl data/example/manifest.json
+python scripts/lambda_cloud.py pull --campaign example \
+  --remote-path results/example/summary.json logs/lambda/example/
+```
+
+The helper never terminates an instance unless `terminate --yes` is invoked;
+do not do that without explicit user authorization.
 
 All SSH operations use the same non-interactive, fail-fast transport settings.
 Connections are multiplexed through a git-ignored control socket under `.lambda/`
@@ -139,6 +151,17 @@ the snapshot from `get-pod` before reconnecting. Keep `RUNPOD_API_KEY` local in
 the ignored `.env`; no account API key is copied to the Pod. Code sync excludes
 credentials and ignored model/data artifacts, which are transferred explicitly.
 Runpod network storage rejects chown, so rsync uses `--no-owner --no-group`.
+
+`push` and `pull` accept multiple repository-relative paths in one rsync session,
+preserving their directory structure. Quote names containing spaces. Pulls that
+include a directory path ending in `/` omit `*.tmp` files:
+
+```bash
+python scripts/runpod_cloud.py push \
+  data/example/input.jsonl data/example/manifest.json
+python scripts/runpod_cloud.py pull \
+  results/example/summary.json logs/runpod/example/
+```
 
 The official CUDA-13 image from template `a9dk3g7cny` is
 `runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster`. Bootstrap with
