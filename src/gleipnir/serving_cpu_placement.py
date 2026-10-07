@@ -49,11 +49,17 @@ class ProcessAffinity:
         if start_ticks(self.path / "stat") != self.birth:
             raise ValueError("process identity changed; refuse affinity mutation")
 
-    def apply(self, cpus: set[int] | None) -> dict[str, list[int]]:
+    def apply(
+        self, cpus: set[int] | None, *, leader_cpus: set[int] | None = None
+    ) -> dict[str, list[int]]:
         """Apply a bounded mask, or restore originals; verify all live threads."""
         self.check()
         if cpus is not None and (not cpus or not cpus <= self.leader_original):
             raise ValueError("CPU mask must be a nonempty subset of original affinity")
+        if leader_cpus is not None and (
+            cpus is None or not leader_cpus or not leader_cpus <= self.leader_original
+        ):
+            raise ValueError("leader mask requires bounded process affinity")
         for _ in range(4):
             for task in (self.path / "task").iterdir():
                 try:
@@ -65,7 +71,8 @@ class ProcessAffinity:
                         if original and original[0] == birth
                         else self.leader_original
                     )
-                    os.sched_setaffinity(tid, restore if cpus is None else cpus)
+                    target = leader_cpus if tid == self.pid and leader_cpus else cpus
+                    os.sched_setaffinity(tid, restore if cpus is None else target)
                 except ProcessLookupError:
                     continue
                 except FileNotFoundError:
@@ -77,7 +84,7 @@ class ProcessAffinity:
                     tid, birth = int(task.name), start_ticks(task / "stat")
                     original = self.original.get(tid)
                     expected = (
-                        cpus
+                        (leader_cpus if tid == self.pid and leader_cpus else cpus)
                         if cpus is not None
                         else (
                             original[1]

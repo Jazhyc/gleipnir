@@ -247,6 +247,17 @@ failure, restoring saved original masks on failure. Retain the healthy worker.
 PYTHONPATH=src:. python -m experiments.b200_inference_benchmark.cpu_placement --name cpu_placement01 --node 0
 ```
 
+The socket-wide and split variants completed without an eligible gain: paired
+c128 changes -1.38%/-0.26%; original affinity restored. A bounded follow-up
+`--hot-thread` compares original affinity with API cores 0-3/96-99, engine
+submission thread CPU 4, and background threads on the other local physical
+cores, excluding CPU 4's SMT sibling. This restricts migration of the critical
+thread while keeping background work off its physical core. It does not reserve
+cores against other tenants. Use three alternating c1 and six balanced c128
+pairs, one excluded warmup per mode/workload, and the same frozen selection and
+quality guards. Restore original masks on failure or no eligible gain. Stop
+after this follow-up; no memory migration, restart or new capacity.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt

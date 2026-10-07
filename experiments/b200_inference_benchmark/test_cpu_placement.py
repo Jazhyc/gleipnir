@@ -33,6 +33,8 @@ def test_restore_thread_masks_and_reject_pid_reuse(tmp_path, monkeypatch):
         lambda tid, cpus: masks.update({tid: set(cpus)}),
     )
     controller = placement.ProcessAffinity(100, proc=tmp_path)
+    assert controller.apply({2, 3}, leader_cpus={1}) == {"100": [1], "101": [2, 3]}
+    controller.apply(None)
     assert controller.apply({0, 1}) == {"100": [0, 1], "101": [0, 1]}
     # A thread created while pinned must restore the original process mask.
     task = process / "task" / "102"
@@ -44,6 +46,8 @@ def test_restore_thread_masks_and_reject_pid_reuse(tmp_path, monkeypatch):
     for invalid in [set(), {4}]:
         with pytest.raises(ValueError, match="subset"):
             controller.apply(invalid)
+    with pytest.raises(ValueError, match="leader mask"):
+        controller.apply(None, leader_cpus={1})
     (process / "stat").write_text(fake_stat(100, 501))
     before = dict(masks)
     with pytest.raises(ValueError, match="identity"):

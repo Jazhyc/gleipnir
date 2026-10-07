@@ -72,7 +72,7 @@ def choose_placement(comparisons: dict) -> str:
     return max(eligible)[1] if eligible else "original"
 
 
-async def measure(name: str, node: int) -> None:
+async def measure(name: str, node: int, *, hot_thread: bool = False) -> None:
     import httpx
 
     out = ROOT / "results/b200_inference_benchmark" / name
@@ -107,10 +107,16 @@ async def measure(name: str, node: int) -> None:
         raise ValueError("GPU-local node has too few physical cores for this protocol")
     api_cpus = set().union(*list(cores.values())[:4])
     configurations = {
-        "original": (None, None),
-        "local": (local, local),
-        "split": (api_cpus, local - api_cpus),
+        "original": (None, None, None),
+        "local": (local, local, None),
+        "split": (api_cpus, local - api_cpus, None),
     }
+    if hot_thread:
+        hot_core = list(cores.values())[4]
+        configurations = {
+            "original": (None, None, None),
+            "hot": (api_cpus, local - api_cpus - hot_core, {min(hot_core)}),
+        }
     manifest = json.loads((DATA / "manifest.json").read_text())
     workloads = {
         key: json.loads((DATA / f"{key}.json").read_text()) for key in ["quick", "full"]
@@ -125,8 +131,12 @@ async def measure(name: str, node: int) -> None:
         "server": server,
         "node": node,
         "configurations": {
-            key: {"api": sorted(a) if a else None, "engine": sorted(b) if b else None}
-            for key, (a, b) in configurations.items()
+            key: {
+                "api": sorted(a) if a else None,
+                "engine": sorted(b) if b else None,
+                "engine_leader": sorted(c) if c else None,
+            }
+            for key, (a, b, c) in configurations.items()
         },
         "original_affinity": {"api": api.apply(None), "engine": worker.apply(None)},
         "manifest_sha256": sha(DATA / "manifest.json"),
@@ -145,8 +155,8 @@ async def measure(name: str, node: int) -> None:
     def placement(mode):
         if controller.read()["mode"] != "native":
             raise ValueError("frontend mode changed during placement comparison")
-        a, b = configurations[mode]
-        return {"api": api.apply(a), "engine": worker.apply(b)}
+        a, b, leader = configurations[mode]
+        return {"api": api.apply(a), "engine": worker.apply(b, leader_cpus=leader)}
 
     async def infer(rows, concurrency):
         async with httpx.AsyncClient(
@@ -181,6 +191,11 @@ async def measure(name: str, node: int) -> None:
                     ("split", "original", "local"),
                 ]
             )
+            if hot_thread:
+                orders = [
+                    ("original", "hot") if pair % 2 == 0 else ("hot", "original")
+                    for pair in range(repetitions)
+                ]
             for pair, order in enumerate(orders):
                 for mode in order:
                     masks = placement(mode)
@@ -213,7 +228,7 @@ async def measure(name: str, node: int) -> None:
                         flush=True,
                     )
         comparisons = {}
-        for mode in ["local", "split"]:
+        for mode in configurations.keys() - {"original"}:
             comparison = {}
             for concurrency, key in [(1, "quick"), (128, "full")]:
                 passes = {
@@ -269,11 +284,12 @@ async def measure(name: str, node: int) -> None:
         mode = report["selected"] if completed else "original"
         masks = {}
         failures = []
-        for label, process, mask in zip(
-            ["api", "engine"], [api, worker], configurations[mode], strict=True
+        a, b, leader = configurations[mode]
+        for label, process, mask, leader_mask in zip(
+            ["api", "engine"], [api, worker], [a, b], [None, leader], strict=True
         ):
             try:
-                masks[label] = process.apply(mask)
+                masks[label] = process.apply(mask, leader_cpus=leader_mask)
             except Exception as error:
                 failures.append(error)
         if failures:
@@ -295,12 +311,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--node", required=True, type=int)
+    parser.add_argument("--hot-thread", action="store_true")
     args = parser.parse_args()
     out = ROOT / "results/b200_inference_benchmark" / args.name
     if Path(args.name).name != args.name or args.node < 0 or out.exists():
         raise ValueError("invalid run name or NUMA node")
     try:
-        asyncio.run(measure(args.name, args.node))
+        asyncio.run(measure(args.name, args.node, hot_thread=args.hot_thread))
     except BaseException as error:
         write(
             ROOT / "results/b200_inference_benchmark" / args.name / "failure.json",
