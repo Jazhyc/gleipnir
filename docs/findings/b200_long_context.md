@@ -112,7 +112,11 @@ clean. Local tests retain existing NVML and TorchScript deprecation warnings.
 The input-construction tokenizer warning concerns pre-crop text; endpoint
 counts verify that only the exact requested lengths reach the model.
 
-Closure health is 200. API/engine 29162/29185 remain warm; NVML reports
-168774 MiB allocated out of 183359 MiB on the verified B200 and 0% utilization.
-Preserve shared caches and failed receipts. No Pod/capacity lifecycle operation
-or automatic reference restore occurs.
+At benchmark closure, health is 200 and API/engine 29162/29185 are kept warm;
+NVML reports 168774 MiB allocated out of 183359 MiB and 0% utilization.
+On 2026-10-08 the user explicitly ends serving optimization and requests stopping
+vLLM. Identity-checked retirement verifies both processes exited, no GPU
+processes and 0 MiB GPU use. `long02/user_stop.json`, `user_stop_server.log` and
+their separate checksum manifest preserve this closure. The Pod remains running;
+shared caches, checkpoints, benchmark results and failed receipts remain intact.
+No capacity lifecycle operation or automatic reference restore occurs.
