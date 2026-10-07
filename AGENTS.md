@@ -27,6 +27,13 @@ and decisions when an experiment changes what the project should believe.
 Keep changing recipes and selections in their linked decision/configuration,
 and detailed run history in experiment records rather than this file.
 
+Read relevant document sections first: search filenames/headings with `rg`, then
+read bounded sections with their qualifications and exceptions. Expand when
+needed to resolve dependencies or ambiguity. Avoid full-file dumps and rereading
+unchanged documents already in context; inspect diffs after changes. Read
+applicable instruction files completely, including `AGENTS.md` and required
+task-specific guides; reuse them when already read and unchanged.
+
 ## Project Structure
 
 Reusable library code belongs in `src/gleipnir/`. Put each hypothesis in
