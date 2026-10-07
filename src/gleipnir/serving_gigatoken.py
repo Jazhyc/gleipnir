@@ -5,11 +5,61 @@ from __future__ import annotations
 import importlib.metadata
 import json
 import os
+import signal
+import threading
+import time
 from pathlib import Path
 from typing import Any
 
 VERSION = "0.10.0"
 ENTRYPOINT = "experiments.b200_inference_benchmark.frontend_server"
+
+
+class FrontendControl:
+    """Opt-in experiment control; switch only between drained request passes."""
+
+    def __init__(self) -> None:
+        self.mode = "native"
+        self.generation = 0
+        self.active = 0
+        self.calls = {"hf": 0, "native": 0}
+        self.seconds = {"hf": 0.0, "native": 0.0}
+        self.lock = threading.Lock()
+
+    def toggle(self) -> dict:
+        with self.lock:
+            if self.active:
+                raise RuntimeError("drain active encodes before switching frontend")
+            self.mode = "hf" if self.mode == "native" else "native"
+            self.generation += 1
+            return self._snapshot()
+
+    def _snapshot(self) -> dict:
+        return {
+            "mode": self.mode,
+            "generation": self.generation,
+            "active_encodes": self.active,
+            "calls": dict(self.calls),
+            "encode_seconds": dict(self.seconds),
+        }
+
+    def snapshot(self) -> dict:
+        with self.lock:
+            return self._snapshot()
+
+    def encode(self, native: Any, hf: Any, text: str, **kwargs) -> list[int]:
+        with self.lock:
+            mode = self.mode
+            self.active += 1
+        before = time.perf_counter()
+        try:
+            return (native if mode == "native" else hf).encode(text, **kwargs)
+        finally:
+            elapsed = time.perf_counter() - before
+            with self.lock:
+                self.active -= 1
+                self.calls[mode] += 1
+                self.seconds[mode] += elapsed
 
 
 class NativeEncoder:
@@ -88,6 +138,10 @@ def configure_frontend(
     command[index] = ENTRYPOINT
     env["PYTHONPATH"] = f"{package}:{env['PYTHONPATH']}"
     env["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(frontend["receipt_path"])
+    if frontend.get("ab_control"):
+        env["GLEIPNIR_GIGATOKEN_AB"] = "1"
+    else:
+        env.pop("GLEIPNIR_GIGATOKEN_AB", None)
     return {
         **frontend,
         "version": VERSION,
@@ -109,6 +163,27 @@ def install_native_encoder() -> None:
         raise ValueError("native frontend Gigatoken version drift")
     original_init = BaseRenderer.__init__
     receipt_path = Path(os.environ["GLEIPNIR_GIGATOKEN_RECEIPT"])
+    control = (
+        FrontendControl() if os.environ.get("GLEIPNIR_GIGATOKEN_AB") == "1" else None
+    )
+    receipt: dict = {}
+
+    def publish() -> None:
+        value = {**receipt, **({"ab_control": control.snapshot()} if control else {})}
+        temporary = receipt_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(value, indent=2) + "\n")
+        temporary.replace(receipt_path)
+
+    if control is not None:
+
+        def switch(signum, frame):
+            try:
+                control.toggle()
+            except RuntimeError:
+                return
+            publish()
+
+        signal.signal(signal.SIGUSR1, switch)
 
     def initialize(self, *args, **kwargs):
         original_init(self, *args, **kwargs)
@@ -116,23 +191,29 @@ def install_native_encoder() -> None:
             NativeEncoder(self.tokenizer) if self.tokenizer else None
         )
         if self._gleipnir_encoder is not None:
-            value = {
-                "backend": "gigatoken_native",
-                "version": VERSION,
-                "pid": os.getpid(),
-                "is_hf_compat": False,
-                "renderer_workers": self.model_config.renderer_num_workers,
-                "truncation_side": self._gleipnir_encoder.truncation_side,
-                "original_tokenizer_class": type(self.tokenizer).__name__,
-                "metadata_and_decode": "original HF tokenizer",
-            }
+            receipt.update(
+                {
+                    "backend": "gigatoken_native",
+                    "version": VERSION,
+                    "pid": os.getpid(),
+                    "is_hf_compat": False,
+                    "renderer_workers": self.model_config.renderer_num_workers,
+                    "truncation_side": self._gleipnir_encoder.truncation_side,
+                    "original_tokenizer_class": type(self.tokenizer).__name__,
+                    "metadata_and_decode": "original HF tokenizer",
+                }
+            )
             receipt_path.parent.mkdir(parents=True, exist_ok=True)
-            receipt_path.write_text(json.dumps(value, indent=2) + "\n")
-            print("native_gigatoken_frontend_initialized", value, flush=True)
+            publish()
+            print("native_gigatoken_frontend_initialized", receipt, flush=True)
 
     def encode(self, text, **kwargs):
         if self._gleipnir_encoder is None:
             raise ValueError("native frontend tokenizer is unavailable")
+        if control is not None:
+            return control.encode(
+                self._gleipnir_encoder, self.tokenizer, text, **kwargs
+            )
         return self._gleipnir_encoder.encode(text, **kwargs)
 
     BaseRenderer._encode = encode

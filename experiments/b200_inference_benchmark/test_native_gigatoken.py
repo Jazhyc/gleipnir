@@ -5,7 +5,11 @@ import json
 import numpy as np
 import pytest
 
-from gleipnir.serving_gigatoken import NativeEncoder, configure_frontend
+from gleipnir.serving_gigatoken import (
+    FrontendControl,
+    NativeEncoder,
+    configure_frontend,
+)
 from gleipnir.serving_runtime import sha
 
 
@@ -101,3 +105,38 @@ def test_frontend_binds_package_and_changes_only_cpu_launch(tmp_path):
     module.write_text("changed extension")
     with pytest.raises(ValueError, match="package drift"):
         configure_frontend(tmp_path, front, command, env)
+
+
+def test_control_routes_each_backend_and_records_completed_encodes():
+    class Encoder:
+        def __init__(self, value):
+            self.value = value
+
+        def encode(self, text, **kwargs):
+            assert text == "text" and kwargs == {"add_special_tokens": False}
+            return [self.value]
+
+    control = FrontendControl()
+    native, hf = Encoder(1), Encoder(2)
+    assert control.encode(native, hf, "text", add_special_tokens=False) == [1]
+    assert control.toggle()["mode"] == "hf"
+    assert control.encode(native, hf, "text", add_special_tokens=False) == [2]
+    state = control.toggle()
+    assert state["mode"] == "native" and state["generation"] == 2
+    assert state["calls"] == {"native": 1, "hf": 1}
+    assert state["active_encodes"] == 0
+
+
+def test_control_rejects_switch_during_encoding_and_drains_after_failure():
+    control = FrontendControl()
+
+    class Encoder:
+        def encode(self, text, **kwargs):
+            with pytest.raises(RuntimeError, match="drain active"):
+                control.toggle()
+            raise ValueError("encoding failure")
+
+    with pytest.raises(ValueError, match="encoding failure"):
+        control.encode(Encoder(), None, "text")
+    assert control.snapshot()["active_encodes"] == 0
+    assert control.toggle()["mode"] == "hf"

@@ -171,6 +171,27 @@ the small throughput decline to faster admission. Exclude profiled timing from
 speed claims; archived profile differences do not establish tokenizer causality.
 Stop after this bounded trace/analysis; no frontend, GPU kernel or capacity change.
 
+## Same-worker tokenizer A/B, 2026-10-07
+
+Hypothesis: the earlier small throughput decline may reflect different worker
+state rather than the tokenizer. Restart once to install opt-in `--frontend-ab`
+control, then keep exactly one API and GPU engine throughout the comparison.
+SIGUSR1 toggles only the API encoding function between the original cached HF
+tokenizer and native Gigatoken, within the same renderer pool. It is disabled
+by default. Reject switching during an active encode, acknowledge mode/generation
+atomically, and switch only after each full HTTP pass has drained. GPU kernels,
+compiled graph, model, decoder, request JSON, input order and memory stay fixed.
+
+Check exact token IDs in both modes, warm both workloads/backends, then alternate
+three paired c1/quick64 and six paired c128/full320 repetitions. Verify callback
+counters and API/engine PIDs at every switch. Report paired throughput ratios,
+latency, AUROC/score differences and encoder CPU totals. After timing, take
+HF/native/HF engine profiles to assess batch shapes and host-submission gaps;
+exclude these from speed claims and preserve the first profiler's initialization
+effects separately. Stop on identity/parity/switch/transport failure or completion
+of this bounded suite. Restore native mode and retain the worker. No new capacity,
+GPU arithmetic change, final-ID use or promotion is involved.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt

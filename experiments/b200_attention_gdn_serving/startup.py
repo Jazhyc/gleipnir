@@ -24,9 +24,12 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--frontend-validation")
+    parser.add_argument("--frontend-ab", action="store_true")
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("startup run name must be a directory stem")
+    if args.frontend_ab and not args.frontend_validation:
+        raise ValueError("frontend A/B requires native validation")
     base = yaml.safe_load((EXPERIMENT / "config.yaml").read_text())
     manifest = prepared_manifest(base)
     selected = resolve_kernel_baseline({"baseline": "selected"})
@@ -55,6 +58,7 @@ def main() -> None:
             "package_path": "/tmp/gleipnir-gigatoken-0.10.0",
             "validation": args.frontend_validation,
             "receipt_path": str(out / "frontend.json"),
+            "ab_control": args.frontend_ab,
         }
         write(out / "frontend_config.json", frontend)
     write(out / "condition.json", condition)
