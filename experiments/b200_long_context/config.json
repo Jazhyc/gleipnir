@@ -1,0 +1,17 @@
+{
+  "lengths": [8192, 16384, 32768, 65536, 131072, 262144],
+  "concurrency": 1,
+  "repeats": 5,
+  "warmups": 1,
+  "port": 8010,
+  "timeout_seconds": 900,
+  "startup_timeout_seconds": 1200,
+  "reference_run": "results/b200_score_scaling/scale01",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "gpu_uuid": "GPU-a2b24934-cf31-dd9e-91b5-397e49513463",
+  "context_limit": 262144,
+  "chunk_tokens": 32768,
+  "promote": false
+}
