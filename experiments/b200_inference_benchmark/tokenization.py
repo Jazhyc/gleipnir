@@ -45,7 +45,7 @@ def cpu_seconds(pid: int) -> float:
     return (int(fields[11]) + int(fields[12])) / os.sysconf("SC_CLK_TCK")
 
 
-async def measure(name: str, port: int, repeats: int) -> None:
+async def measure(name: str, port: int, repeats: int, concurrencies: list[int]) -> None:
     import httpx
     from transformers import AutoTokenizer
 
@@ -90,6 +90,8 @@ async def measure(name: str, port: int, repeats: int) -> None:
             for k in ["transformers", "tokenizers", "vllm", "httpx"]
         },
         "tokenizers_parallelism": os.environ.get("TOKENIZERS_PARALLELISM"),
+        "concurrencies": concurrencies,
+        "http_client_policy": "fresh connection pool per inference pass",
         "trials": [],
         "interpretation": (
             "Token-ID HTTP ablation also changes payload serialization and "
@@ -165,13 +167,26 @@ async def measure(name: str, port: int, repeats: int) -> None:
         write(output / "tokenize_endpoint.json", endpoint)
         write(output / "summary.json", report)
         print("endpoint_parity_complete rows=320", flush=True)
-        for concurrency, rows in [(1, quick), (128, full)]:
+        for concurrency in concurrencies:
+            rows = quick if concurrency == 1 else full
             variants = {"text": rows, "ids": token_rows(rows, tokens)}
             results = {"text": [], "ids": []}
+
+            async def inference_pass(mode, variants=variants, concurrency=concurrency):
+                async with httpx.AsyncClient(
+                    base_url=f"http://127.0.0.1:{port}",
+                    timeout=300,
+                    trust_env=False,
+                    limits=httpx.Limits(
+                        max_connections=256, max_keepalive_connections=128
+                    ),
+                ) as pass_client:
+                    return await trial(
+                        pass_client, variants[mode], manifest["token_ids"], concurrency
+                    )
+
             for mode in ["text", "ids"]:
-                values, seconds = await trial(
-                    client, variants[mode], manifest["token_ids"], concurrency
-                )
+                values, seconds = await inference_pass(mode)
                 write(
                     output / f"warmup_c{concurrency}_{mode}.json",
                     {"seconds": seconds, "values": values},
@@ -182,9 +197,7 @@ async def measure(name: str, port: int, repeats: int) -> None:
                         "api": cpu_seconds(server["pid"]),
                         "engine": cpu_seconds(worker),
                     }
-                    values, seconds = await trial(
-                        client, variants[mode], manifest["token_ids"], concurrency
-                    )
+                    values, seconds = await inference_pass(mode)
                     used = {
                         k: cpu_seconds(pid) - before[k]
                         for k, pid in [("api", server["pid"]), ("engine", worker)]
@@ -250,13 +263,16 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--port", type=int, default=8010)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument(
+        "--concurrency", type=int, nargs="+", choices=[1, 128], default=[1, 128]
+    )
     args = parser.parse_args()
     if Path(args.name).name != args.name or args.repeats < 1:
         raise ValueError("use a directory stem and positive repeat count")
     if (ROOT / "results/b200_inference_benchmark" / args.name).exists():
         raise FileExistsError("preserve the existing measurement artifacts")
     try:
-        asyncio.run(measure(args.name, args.port, args.repeats))
+        asyncio.run(measure(args.name, args.port, args.repeats, args.concurrency))
     except BaseException as error:
         write(
             ROOT / "results/b200_inference_benchmark" / args.name / "failure.json",
