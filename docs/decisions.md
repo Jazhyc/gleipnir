@@ -1,5 +1,12 @@
 # Decision log
 
+## 2026-10-08 — Default future experiments to optimized vLLM
+
+- Use the [optimized serving implementation](decisions/b200_monitor_score_reference.md)
+  for future experiment inference, serving and evaluation. Its decision and
+  [inference guide](agent_guides/inference.md) define the recipe, compatibility,
+  parity and frozen-control requirements.
+
 ## 2026-10-05 — Select native FP4 MLPs as the B200 training default
 
 - `qwen35_4b_b200_default` now selects the warmed native NVFP4 MLP recipe with

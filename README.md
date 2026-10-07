@@ -76,15 +76,13 @@ The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
 
-The B200 inference optimization baseline uses FROST FP4 MLPs, large GDN
-and full-attention projection GEMMs, symbolic-row SwiGLU overhead improvements,
-direct packed FP4 MLP activation output for large batches, and cuDNN MXFP8 full-attention
-prefill. Recurrence, KV cache and decode remain BF16, with FP32 gates/state. The user accepts the
-development quality tradeoff; strict failed parity remains recorded separately.
-The repaired two-logit monitoring endpoint, native Gigatoken and direct FROST
-host bindings are the selected serving reference. Its saved EU controls measure
-31.23 ms c1 median and 215707 input tokens/s at c128; see the
-[serving reference decision](docs/decisions/b200_monitor_score_reference.md).
+All future experiments default to the optimized vLLM implementation for
+inference, serving and evaluation. Use the cached two-logit monitoring path and
+its validated context/pooling corrections; the
+[serving decision](docs/decisions/b200_monitor_score_reference.md) defines the
+FP4/MXFP8 recipe, supported model/hardware envelope, adapter parity requirements
+and checksum-bound controls. Standing launch/lifecycle rules live in the
+[inference guide](docs/agent_guides/inference.md).
 
 A cache-free whole-prompt monitoring prototype removes persistent GPU cache
 storage. Same-host EU-RO-1 measurements reduce c1 median latency by 15%, with

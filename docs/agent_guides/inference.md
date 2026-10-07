@@ -8,14 +8,22 @@ Also read [compute.md](compute.md) before launching or operating a run.
 
 ## Serving and adapter parity
 
-For frozen text-only evaluation of standard base or PEFT LoRA models, default to
-one persistent vLLM engine with continuous batching, a constrained one-token
-response, and explicitly requested decision-token logprobs. Do not carry an
-eager training microbatch into large evaluation runs. Use Transformers eager
-evaluation only for a bounded backend-parity canary or when vLLM cannot represent
-the model/adapter, and document that exception. For every new adapter layout or
-backend combination, compare the master checkpoint with its serving artifact and
-record score agreement plus a nonzero adapter effect before scaling evaluation.
+Standing user preference, 2026-10-08: use the optimized vLLM implementation for
+inference, serving and evaluation in all future experiments. Monitor scoring
+uses the cached causal two-logit path in the
+[serving decision](../decisions/b200_monitor_score_reference.md), including its
+validated context handling and pooling boundary correction. Select this path
+explicitly in new experiment launch configurations; the decision defines the
+recipe and supported hardware/model envelope. Reuse a persistent engine and
+continuous batching rather than an eager training microbatch.
+
+New adapters and backend/layout combinations require master-to-serving score
+agreement and a nonzero adapter effect before scaling evaluation. Reuse unchanged
+native/kernel receipts and persistent caches. Record unsupported model/task/GPU
+combinations and any required backend exception explicitly; use Transformers
+eager for bounded parity diagnostics or unsupported adapters. Preserve frozen
+past evaluation contracts and their named controls. Training precision and
+optimization are governed by the separate training guide.
 
 Standing user preference, 2026-10-06: merge standard LoRA updates into BF16 base
 weights for future evaluations, serving without dynamic adapter projections.
@@ -58,22 +66,19 @@ labels to exact prompt identities. Reuse archived baseline predictions rather
 than rerunning the control. Small training-seen optimization sets are diagnostic
 and do not establish held-out quality parity or select production precision.
 
-## Current B200 optimization reference
+## B200 comparison controls
 
-Read the [selected reference decision](../decisions/b200_monitor_score_reference.md)
-and `experiments/b200_inference_benchmark/baseline.json` before preparing a new
-comparison. The checksum-bound selection supersedes the October 6 GDN-only
-reference below. Use the repaired two-logit score endpoint with cached causal
-LAST pooling and the recorded native Gigatoken/direct FROST host recipe,
-FP4 MLP/GDN/full-attention projections, selected SwiGLU/direct FP4 activation
-output and MXFP8 full-attention prefill. Recurrence, KV cache and decode remain
-BF16, with FP32 gates/state. Reuse archived controls and persistent caches;
-compatible trials keep the candidate warm. Compare c1 latency and c128 prompt
-throughput using all available matched baseline repeats; other combined-stack
-concurrency controls are unmeasured. Preserve strict numerical failures and
-explicit finite acceptance separately from passing checks. The acceptance is
-specific to this adapter and pinned recipe, does not change training or frozen
-past evaluations, and does not waive finite-output or future adapter checks.
+Read the [serving decision](../decisions/b200_monitor_score_reference.md) and
+`experiments/b200_inference_benchmark/baseline.json` before preparing comparisons.
+Its checksum-bound controls supersede the October 6 GDN-only reference below;
+the future-experiment default does not rewrite these frozen measurements.
+Compare timing and quality on matched concurrency/cohorts using all available
+repeats. The [concurrency](../findings/b200_score_scaling.md),
+[fixed 2K](../findings/b200_context_scaling.md) and
+[long-context](../findings/b200_long_context.md) records define their additional
+measurement contracts. Preserve failed strict checks separately from accepted
+finite quality. Acceptance remains adapter/recipe specific and does not waive
+finite-output checks, new-adapter parity or held-out evaluation requirements.
 
 Keep current selections in the checksum-bound baseline and its linked decision;
 avoid duplicating changing result paths, measurements or worker PIDs here.

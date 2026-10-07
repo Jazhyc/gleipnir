@@ -42,8 +42,9 @@
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
   development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
   engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
-- [B200 repaired score reference](decisions/b200_monitor_score_reference.md):
-  current cached scoring recipe and checksum-bound comparison controls.
+- [Optimized vLLM serving default](decisions/b200_monitor_score_reference.md):
+  future-experiment inference/evaluation recipe, supported context and model/GPU
+  envelope, parity requirements and frozen B200 comparison controls.
 - [B200 length-aware admission](findings/b200_length_admission.md): modest
   low-load short-request benefit, longer long-request tails and failed initial
   latency/fairness/pooled-AUROC screen on the selected scorer.
