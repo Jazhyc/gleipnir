@@ -132,6 +132,7 @@ async def measure(
     resumed_environment: dict | None = None,
     ready_prepare: Callable | None = None,
     command_prepare: Callable | None = None,
+    environment_prepare: Callable | None = None,
     startup_only: bool = False,
 ) -> None:
     settings = json.loads((experiment / "config.json").read_text())
@@ -224,6 +225,8 @@ async def measure(
         command = score_command(actual, hf_config, compute_sources)
     if command_prepare is not None:
         command = command_prepare(command, settings, hashes)
+    if environment_prepare is not None:
+        environment_prepare(environment, settings, hashes, out)
     environment["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     write(out / "parent_server.json", parent)
     write(

@@ -19,6 +19,8 @@ from experiments.b200_length_admission.run import (
     POLICY_SOURCE,
     SCHEDULER,
     admission_command,
+    policy_config,
+    process_is_live,
     require_idle_gpu,
 )
 from experiments.b200_length_admission.traffic import arrival_offsets, replay
@@ -57,7 +59,8 @@ class BaseScheduler:
     def _select_waiting_queue_for_scheduling(self):
         return self.skipped_waiting or self.waiting or None
 
-    def schedule(self):
+    def schedule(self, defer_prefills=False):
+        self.defer_prefills = defer_prefills
         return self._select_waiting_queue_for_scheduling()
 
 
@@ -208,8 +211,10 @@ def test_launch_changes_only_admission_and_binds_sources():
         assert command[command.index(flag) + 1] == parent[parent.index(flag) + 1]
     additional = json.loads(command[command.index("--additional-config") + 1])
     assert additional["monitor_score"] == {}
-    assert additional["length_admission"]["policy_sha256"] == "a"
-    assert additional["length_admission"]["max_wait_seconds"] == 0.25
+    assert "length_admission" not in additional
+    config = policy_config(settings(), {POLICY_SOURCE: "a", INTEGRATION_SOURCE: "b"})
+    assert config["policy_sha256"] == "a"
+    assert config["max_wait_seconds"] == 0.25
     for flag in ("--scheduler-cls", "--async-scheduling"):
         with pytest.raises(ValueError, match="already overrides"):
             admission_command(parent + [flag, "other"], settings(), {})
@@ -231,13 +236,24 @@ def test_mixed_control_changes_only_policy_mode():
     hashes = {POLICY_SOURCE: "a", INTEGRATION_SOURCE: "b"}
     candidate = admission_command(parent_command(), original, hashes)
     control = admission_command(parent_command(), original, hashes, control_only=True)
-    index = control.index("--additional-config") + 1
-    control_config = json.loads(control[index])
-    candidate_config = json.loads(candidate[index])
-    assert control_config["length_admission"]["mode"] == "fcfs"
-    control_config["length_admission"]["mode"] = "length_aware"
+    assert control == candidate
+    control_config = policy_config(original, hashes, control_only=True)
+    candidate_config = policy_config(original, hashes)
+    assert control_config["mode"] == "fcfs"
+    control_config["mode"] = "length_aware"
     assert control_config == candidate_config
     assert original["length_admission"]["mode"] == "length_aware"
+
+
+def test_exited_zombie_is_not_sent_to_live_stop_helper(tmp_path):
+    pid = tmp_path / "1234"
+    pid.mkdir()
+    stat = pid / "stat"
+    stat.write_text("1234 (API server) Z 1 2 3")
+    assert not process_is_live(1234, tmp_path)
+    stat.write_text("1234 (API server) S 1 2 3")
+    assert process_is_live(1234, tmp_path)
+    assert not process_is_live(9999, tmp_path)
 
 
 def test_retired_runtime_preserves_identity_caches_and_parent(tmp_path, monkeypatch):
@@ -329,15 +345,18 @@ def test_vllm_adapter_composes_upstream_schedule_and_rejects_source_drift(
         integration_sha256=hashlib.sha256(path.read_bytes()).hexdigest(),
     )
     vllm_config = SimpleNamespace(
-        additional_config={"length_admission": config},
+        additional_config={},
         scheduler_config=SimpleNamespace(
             async_scheduling=False, policy="fcfs", enable_chunked_prefill=True
         ),
         model_config=SimpleNamespace(runner_type="pooling"),
     )
+    monkeypatch.setenv("GLEIPNIR_LENGTH_ADMISSION_CONFIG", json.dumps(config))
     instance = module.LengthAwareScheduler(vllm_config)
-    assert instance.schedule().peek_request().request_id == "short"
+    assert instance.schedule(True).peek_request().request_id == "short"
+    assert instance.defer_prefills is True
     config["scheduler_sha256"] = "drift"
+    monkeypatch.setenv("GLEIPNIR_LENGTH_ADMISSION_CONFIG", json.dumps(config))
     with pytest.raises(ValueError, match="upstream source drift"):
         module.LengthAwareScheduler(vllm_config)
     vllm_config.scheduler_config.async_scheduling = True

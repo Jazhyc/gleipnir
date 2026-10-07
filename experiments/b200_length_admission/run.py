@@ -19,6 +19,19 @@ POLICY_SOURCE = "src/gleipnir/serving/length_admission.py"
 INTEGRATION_SOURCE = "src/gleipnir/serving/vllm/length_scheduler.py"
 
 
+def policy_config(settings: dict, hashes: dict, *, control_only: bool = False) -> dict:
+    """Bind CPU admission independently of the GPU compilation configuration."""
+    config = dict(settings["length_admission"])
+    if control_only:
+        config["mode"] = "fcfs"
+    AdmissionPolicy.from_dict(config)
+    config.update(
+        policy_sha256=hashes[POLICY_SOURCE],
+        integration_sha256=hashes[INTEGRATION_SOURCE],
+    )
+    return config
+
+
 def admission_command(
     command: list[str], settings: dict, hashes: dict, *, control_only: bool = False
 ) -> list[str]:
@@ -37,22 +50,13 @@ def admission_command(
         command[command.index("--scheduling-policy") + 1] != "fcfs"
     ):
         raise ValueError("admission trial requires upstream FCFS policy")
-    config = dict(settings["length_admission"])
-    if control_only:
-        config["mode"] = "fcfs"
-    AdmissionPolicy.from_dict(config)
-    config.update(
-        policy_sha256=hashes[POLICY_SOURCE],
-        integration_sha256=hashes[INTEGRATION_SOURCE],
-    )
+    policy_config(settings, hashes, control_only=control_only)
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
     if not additional.get("qk_mutation_analysis") or "monitor_score" not in additional:
         raise ValueError("parent score/mutation contract missing")
     if "length_admission" in additional:
         raise ValueError("parent already has an admission policy")
-    additional["length_admission"] = config
-    command[index] = json.dumps(additional, sort_keys=True)
     command += ["--scheduler-cls", SCHEDULER]
     if "--no-async-scheduling" not in command:
         command += ["--no-async-scheduling"]
@@ -69,6 +73,17 @@ def require_idle_gpu(*, allowed_pids: set[int] | None = None) -> None:
         raise ValueError(
             "GPU is occupied; admission trial does not stop other workloads"
         )
+
+
+def process_is_live(pid: int, proc_root: Path = Path("/proc")) -> bool:
+    """An unreaped API zombie is exited even while its /proc entry exists."""
+    try:
+        state = (
+            (proc_root / str(pid) / "stat").read_text().rsplit(") ", 1)[1].split()[0]
+        )
+    except FileNotFoundError:
+        return False
+    return state != "Z"
 
 
 async def run(
@@ -101,6 +116,12 @@ async def run(
         ]
         require_idle_gpu(allowed_pids={parent["pid"], worker})
     try:
+
+        def configure_policy(env, settings, hashes, out):
+            config = policy_config(settings, hashes, control_only=control_only)
+            env["GLEIPNIR_LENGTH_ADMISSION_CONFIG"] = json.dumps(config, sort_keys=True)
+            write(out / "length_admission.json", config)
+
         await measure(
             name,
             experiment=EXPERIMENT,
@@ -108,6 +129,7 @@ async def run(
             command_prepare=lambda c, s, h: admission_command(
                 c, s, h, control_only=control_only
             ),
+            environment_prepare=configure_policy,
             retired_parent=retired_parent,
             resumed_environment=environment,
             startup_only=control_only,
@@ -130,7 +152,7 @@ async def run(
                 and current.get("frontend", {}).get("receipt_path")
                 == str(out / "frontend.json")
             ):
-                if Path(f"/proc/{current['pid']}").exists():
+                if process_is_live(current["pid"]):
                     subprocess.run(
                         [
                             current["command"][0],
@@ -204,6 +226,9 @@ def main() -> None:
                 "command": command,
                 "sources": hashes,
                 "settings": settings,
+                "length_admission": policy_config(
+                    settings, hashes, control_only=args.control_only
+                ),
                 "launched": False,
             },
         )

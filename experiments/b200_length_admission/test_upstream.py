@@ -2,6 +2,7 @@
 
 import hashlib
 import inspect
+import json
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -61,7 +62,7 @@ def make_scheduler(mode, monkeypatch):
             pipeline_parallel_size=1,
         ),
         observability_config=SimpleNamespace(kv_cache_metrics=False),
-        additional_config={"length_admission": config},
+        additional_config={},
         lora_config=None,
         kv_events_config=None,
         kv_transfer_config=None,
@@ -86,6 +87,7 @@ def make_scheduler(mode, monkeypatch):
         ],
     )
     monkeypatch.setattr(length_scheduler.time, "time", lambda: 100.1)
+    monkeypatch.setenv("GLEIPNIR_LENGTH_ADMISSION_CONFIG", json.dumps(config))
     return length_scheduler.LengthAwareScheduler(
         vllm_config,
         kv,
@@ -108,7 +110,7 @@ def test_real_upstream_admission_keeps_chunk_budget(mode, first, monkeypatch):
     sched = make_scheduler(mode, monkeypatch)
     add(sched, "long", 20000)
     add(sched, "short", 768)
-    output = sched.schedule()
+    output = sched.schedule(False)
     assert output.scheduled_new_reqs[0].req_id == first
     assert sum(output.num_scheduled_tokens.values()) == 1024
     if mode == "length_aware":
@@ -128,3 +130,20 @@ def test_real_upstream_age_promotion_and_cancellation(monkeypatch):
     output = sched.schedule()
     assert [r.req_id for r in output.scheduled_new_reqs] == ["old_long"]
     assert output.num_scheduled_tokens == {"old_long": 1024}
+
+
+def test_real_engine_prefill_throttle_is_forwarded(monkeypatch):
+    sched = make_scheduler("length_aware", monkeypatch)
+    add(sched, "short", 768)
+    original = scheduler.Scheduler.schedule
+    calls = []
+
+    def record(self, throttle_prefills=False):
+        calls.append(throttle_prefills)
+        return original(self, throttle_prefills)
+
+    monkeypatch.setattr(scheduler.Scheduler, "schedule", record)
+    # Upstream allows prefills on an idle engine even when throttling is asked
+    # for; admission must preserve that behavior and forward the exact flag.
+    assert sched.schedule(throttle_prefills=True).num_scheduled_tokens == {"short": 768}
+    assert calls == [True]

@@ -15,6 +15,9 @@ prefill, token/sequence limits, caches, causal LAST pooling, precision, graph
 settings and the repaired classifier remain upstream. The baseline pooling
 runner already disables async scheduling by default; pin that explicitly here.
 Installed scheduler/queue and both helper source hashes must match at startup.
+CPU policy and source hashes are passed in `GLEIPNIR_LENGTH_ADMISSION_CONFIG`
+and saved as `length_admission.json`, separately from the GPU compilation key.
+The override forwards vLLM's per-step prefill-throttle argument unchanged.
 
 The first candidate is fixed in `config.json`; do not tune on final ID. Reuse all
 selected archived c1/quick64 and c128/full320 controls through the shared score

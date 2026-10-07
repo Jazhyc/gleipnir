@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import inspect
 import json
+import os
 import time
 from importlib.metadata import version
 from pathlib import Path
@@ -22,7 +23,7 @@ class LengthAwareScheduler(LengthAdmissionMixin, scheduler.Scheduler):
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        config = self.vllm_config.additional_config["length_admission"]
+        config = json.loads(os.environ["GLEIPNIR_LENGTH_ADMISSION_CONFIG"])
         if (
             version("vllm") != "0.24.0"
             or self.vllm_config.model_config.runner_type != "pooling"
@@ -55,6 +56,6 @@ class LengthAwareScheduler(LengthAdmissionMixin, scheduler.Scheduler):
             "Length admission initialized: %s", json.dumps(config, sort_keys=True)
         )
 
-    def schedule(self) -> scheduler.SchedulerOutput:
+    def schedule(self, throttle_prefills: bool = False) -> scheduler.SchedulerOutput:
         self.order_waiting(time.time())
-        return super().schedule()
+        return super().schedule(throttle_prefills)
