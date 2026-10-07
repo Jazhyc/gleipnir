@@ -1,9 +1,9 @@
 # Direct FROST bindings in FP4 LoRA training
 
-2026-10-07. Direct positional dispatch passes the native complete-MLP gates
-without changing outputs or gradients. The measured gain is modest and depends
-on physical token count. Keep this as an opt-in path: full optimizer-update
-throughput has not been measured and the training default is unchanged.
+2026-10-07. Direct positional dispatch preserves native and full-model numerics,
+but gives no measurable end-to-end training speedup on the frozen 320-row cohort.
+Pooled controls average 3.39498 s/update; direct bindings take 3.39585 s/update
+(0.026% slower). Keep the path opt-in and the selected training baseline unchanged.
 
 ## Intervention and numerical evidence
 
@@ -45,13 +45,76 @@ The first 4096-token control sample is 5.09956 ms; remaining control samples
 are 1.43302--1.52052 ms. Preserve it and the direct leg's 1.60563-ms first sample.
 Its cause is not isolated, so the 21.77% mean reduction is not evidence of a
 repeatable gain of that size. Median paired reductions are 2.34/4.09/0.68%.
-No whole-training gain is established. The largest-token result suggests
-limited benefit when GPU work dominates, but these timings alone do not
-attribute the bottleneck or predict a full-model speedup. Reuse native evidence
-for compatible follow-ups; a full-model promotion still requires its matched
-warmed-update and exact loss/gradient/update gates.
+These operator timings do not establish a whole-training gain or attribute the
+full-model bottleneck. The matched optimizer-update screen below measures the
+complete pipeline and does not meet the frozen >=2% promotion threshold.
 
-## Runtime, failed attempts and collection
+## Full optimizer-update screen
+
+`results/b200_mlp_gemm/frostresident03/` holds the completed screen on the same
+EU-RO-1 B200. Reuse the established 320 rows, explicit FP32 initialization,
+LR 5e-5, logical batch 32, 147 physical partitions and selected FP4-MLP/BF16-
+FlashQLA/FA4 recipe. One resident worker runs two controls, direct bindings and
+a restored control. Reset masters, optimizer/scheduler, RNG and data order
+between twenty-update trials; time all ten updates 11--20 per trial. Include
+forward/backward, finite-gradient checks, clipping and optimizer/scheduler work;
+exclude loading, validation, priming and adapter export. No profiler is active.
+
+| Trial | Warm mean, s/update | Actual tokens/s |
+| --- | ---: | ---: |
+| Original control | 3.38778 | 38,796 |
+| Reset repeat | 3.39819 | 38,677 |
+| Direct bindings | 3.39585 | 38,704 |
+| Restored control | 3.39896 | 38,669 |
+| Pooled controls | 3.39498 | 38,714 |
+
+Each timed leg processes 1,314,331 tokens. Keep every sample; the candidate sits
+inside the range of the three control means. Its 0.877 ms/update difference is
+0.026% slower, not a useful speedup. All timed updates have zero new native
+plans, Triton specializations, Dynamo graphs and Inductor cache misses.
+
+The first-logical-batch gate produces bitwise-equal loss (0.6376177072525024)
+and every adapter gradient, with finite/missing-gradient checks, unchanged
+masters and identical partitions. All four twenty-update loss histories and
+final FP32 master digests also agree exactly. Direct dispatch executes 889
+host calls in the targeted gate and 18,669 in training across all four K/N
+geometries; this is an exercised intervention, not a no-op hidden by graph
+replay. The full screen passes numerical/workload gates but fails the speed
+selection criterion. No precision, training default or quality claim changes.
+
+Initial EU setup lacks the frozen cohort/initialization and training-only
+FlashQLA/convolution dependencies. The user explicitly authorizes transferring
+these artifacts to this pod. Retain the interrupted workspace-copy installer
+and both rejected startups: `frostresident01` imports Quack 0.5.0 from the base
+serving runtime, incompatible with selected CUTLASS 4.8; restore the frozen
+Quack 0.6.5 overlay. `frostresident02` rejects the active runtime-M kernel
+source generation against historical hashes in the legacy profile helper.
+Use the standard recipe's existing checksum-bound runtime-shape equivalence
+proofs, checking both historical and active fingerprints; preserve the
+historical strict numerical failures. `frostresident03` then completes.
+
+Untimed priming takes 1,491.964 s. New variants take tens to hundreds of seconds;
+reused batches take about 2--5 s. Stage FlashQLA on local disk with a persistent
+47.3 MB dependency archive, and reuse the byte-matched staged FA4 overlay during
+priming while retaining the workspace original. Do not attribute a speed ratio
+to this storage change: different warmup batches encounter different cache keys.
+The worker environment already requests 16 compiler/build workers. Actual pod
+limits are 27.2 CPU equivalents and approximately 301 GiB RAM; RAM is not the
+limiter. These settings do not turn every demand-driven backend JIT call into
+parallel compilation. Future setup overlaps the independent FLA, convolution
+and FlashQLA jobs and launches against the verified local runtime; timed model
+trials remain sequential. Two concurrency/failure tests and 29 resident/runtime
+reuse checks pass; 36 source-generation/reference checks and Ruff pass.
+
+All 240 full-screen artifacts, source snapshots, failures and logs verify
+against collected checksums. Closure retains worker PID 22966 idle with the
+model and shared caches on pod `qobmmj1weyevg1`; inspect `worker.json` before
+reuse. vLLM remains stopped. Significant inherited warnings include experimental
+BLAS preference, FA4 AuxData adaptation, absent excluded vision modules in the
+text-only model, and unauthenticated HF metadata reads. Stack inspection fails
+because the container blocks debugger attachment; it does not alter the run.
+
+## Native-screen runtime, failed attempts and collection
 
 User-authorized vLLM retirement verifies API 20025 / engine 20048 identities
 and stops both processes before the probe. Pod `qobmmj1weyevg1` remains running
@@ -81,6 +144,6 @@ Artifacts are under `results/b200_frost_training/`, including all three probes,
 launch/retirement receipts, source synchronization manifest and obsolete-source
 archive, raw timing samples and closure. All 52 remote artifact checksums verify
 locally. Derived `native03/timing_summary.json` and CPU check logs are retained
-separately. Forty-seven focused binding/transport tests and Ruff pass. Closure
+separately. Forty-seven focused binding/transport tests and Ruff pass. The earlier native-screen closure
 has no GPU processes and 0 MiB in use; vLLM remains stopped, the B200 is retained,
 and no training recipe or quality selection is promoted.

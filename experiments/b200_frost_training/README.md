@@ -34,13 +34,13 @@ or thirty minutes. No teacher calls, held-out selection or automatic promotion.
 PYTHONPATH=src:. python -m experiments.b200_frost_training.probe --name native01
 ```
 
-A later full-model screen must use one resident worker, identical FP32 master,
+The full-model screen uses one resident worker, identical FP32 master,
 RNG/data order, physical partitions and optimizer/scheduler resets. Reuse the
 validated FP4 startup receipt and preserved strict failures. Require no new
 plans/specializations/graphs during timed updates and >=2% lower warmed mean
 complete-update time, with exact loss/gradient/update agreement. Reuse an
 existing same-host training control; an old NC2 timing cannot attribute a gain
-on the EU host. The full-model screen uses the frozen 320-row cohort and twenty complete
+on the EU host. Use the frozen 320-row cohort and twenty complete
 optimizer updates per trial; exclude updates 1--10 and retain all updates 11--20.
 Run two FP4 controls to verify resident reset stability, then direct bindings,
 then a final restored control. Targeted first-logical-batch validation requires
@@ -69,5 +69,10 @@ the context restores the original path even after a failed native call.
 
 `native03` passes all native gates. Median complete-MLP time falls 1.27/4.18/0.66%
 at the three shapes; the 4096-token mean is dominated by a preserved control
-outlier. This is not a measured optimizer-update gain. Keep the path opt-in;
-the selected training recipe is unchanged.
+outlier. The completed `frostresident03` whole-model screen finds no speedup:
+pooled controls 3.39498 s/update versus direct 3.39585 s/update (0.026% slower).
+First-batch gradients, loss histories and final adapter digests agree exactly;
+all timed updates are warm. Keep the path opt-in and the recipe unchanged.
+The worker remains resident; inspect its live receipt under
+`results/b200_mlp_gemm/frostresident03/worker.json` before reuse. Timings,
+startup failures and collection checks are in the linked finding.
