@@ -1,11 +1,45 @@
 {
   "model": "Qwen/Qwen3.5-4B",
   "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
-  "rows": [193, 4096, 16384],
+  "rows": [
+    193,
+    4096,
+    16384
+  ],
   "warmups": 6,
   "repeats": 10,
   "seed": 41,
   "max_seconds": 1800,
   "required_bitwise_parity": true,
-  "automatic_promotion": false
+  "automatic_promotion": false,
+  "full_model_screen": {
+    "launch_reference": "results/b200_mlp_gemm/warmedprofile01/summary.json",
+    "launch_reference_sha256": "64507ef439da31bb4294b54cc3f6a310b3e4e662d2a4fe224f3f493cba07c772",
+    "session": "frostresident02",
+    "trials": [
+      [
+        "01baseline",
+        "baseline"
+      ],
+      [
+        "02repeat",
+        "baseline"
+      ],
+      [
+        "03direct",
+        "candidate"
+      ],
+      [
+        "04control",
+        "baseline"
+      ]
+    ],
+    "timed_updates": [
+      11,
+      20
+    ],
+    "minimum_relative_improvement": 0.02,
+    "required_bitwise_loss_gradient_and_final_master_agreement": true,
+    "retain_worker": true
+  }
 }

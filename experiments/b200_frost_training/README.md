@@ -40,7 +40,21 @@ validated FP4 startup receipt and preserved strict failures. Require no new
 plans/specializations/graphs during timed updates and >=2% lower warmed mean
 complete-update time, with exact loss/gradient/update agreement. Reuse an
 existing same-host training control; an old NC2 timing cannot attribute a gain
-on the EU host. This full-model screen has not been launched or wired here.
+on the EU host. The full-model screen uses the frozen 320-row cohort and twenty complete
+optimizer updates per trial; exclude updates 1--10 and retain all updates 11--20.
+Run two FP4 controls to verify resident reset stability, then direct bindings,
+then a final restored control. Targeted first-logical-batch validation requires
+bitwise loss and all adapter gradients, unchanged masters and physical partitions.
+Record host-call counts: existing CUDA graphs can bypass Python dispatch entirely.
+Keep the worker resident; reuse shared caches and overwrite only the systems
+scratch adapter. Stop on nonfinite/missing gradients, workload drift, failed parity
+or timed compilation. No ID evaluation or precision change is included.
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 start --baseline-only
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 submit --id 03direct --variant candidate
+PYTHONPATH=src:. python -m experiments.b200_frost_training.resident --session frostresident02 submit --id 04control --variant baseline
+```
 
 The shared opt-in context is `training_frost_bindings()` from
 `gleipnir.kernels.fp4.frost_bindings`. After the native and targeted model gates

@@ -189,3 +189,42 @@ def test_control_import_does_not_load_training_stack():
         ],
         check=True,
     )
+
+
+def test_candidate_override_is_owned_and_records_execution(monkeypatch, tmp_path):
+    import hashlib
+    import json
+
+    from experiments.b200_mlp_gemm import resident_worker
+
+    worker = tmp_path / "experiments/worker/resident_worker.py"
+    worker.parent.mkdir(parents=True)
+    monkeypatch.setattr(resident_worker, "__file__", str(worker))
+    candidate = tmp_path / "experiments/frost/candidate.py"
+    candidate.parent.mkdir()
+    candidate.write_text("""from contextlib import contextmanager
+@contextmanager
+def intervention(trainer):
+    trainer.active = True
+    try: yield
+    finally: trainer.active = False
+def validate(trainer):
+    return {"accepted_for_timing": True}
+def finish():
+    return {"direct_calls": 17}
+""")
+    monkeypatch.setenv("GLEIPNIR_FP4_RESIDENT_CANDIDATE", str(candidate))
+    trial = tmp_path / "trial"
+    trial.mkdir()
+    request = {"source_sha256": hashlib.sha256(candidate.read_bytes()).hexdigest()}
+    trainer = SimpleNamespace(active=False)
+    with resident_worker.candidate_context(trainer, request, trial):
+        assert trainer.active
+    assert not trainer.active
+    assert json.loads((trial / "candidate_execution.json").read_text()) == {
+        "direct_calls": 17
+    }
+    monkeypatch.setenv("GLEIPNIR_FP4_RESIDENT_CANDIDATE", str(tmp_path / "outside.py"))
+    with pytest.raises(ValueError, match="experiment-owned"):
+        with resident_worker.candidate_context(trainer, request, trial):
+            pytest.fail("must not load outside source")

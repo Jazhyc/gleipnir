@@ -57,24 +57,47 @@ def candidate_context(trainer: Any, request: dict, trial: Path):
     """Reload one experiment-owned intervention file while retaining the model."""
     import types
 
-    source_path = Path(__file__).with_name("resident_candidate.py")
+    source_path = Path(
+        os.environ.get(
+            "GLEIPNIR_FP4_RESIDENT_CANDIDATE",
+            str(Path(__file__).with_name("resident_candidate.py")),
+        )
+    ).resolve()
+    if os.environ.get(
+        "GLEIPNIR_FP4_RESIDENT_CANDIDATE"
+    ) and not source_path.is_relative_to(
+        Path(__file__).resolve().parents[2] / "experiments"
+    ):
+        raise ValueError("resident candidate must be experiment-owned")
     source = source_path.read_bytes()
     if hashlib.sha256(source).hexdigest() != request["source_sha256"]:
         raise ValueError("candidate source checksum drift")
     (trial / "candidate_source.py").write_bytes(source)
-    module = types.ModuleType("experiments.b200_mlp_gemm.resident_candidate")
+    module_name = "experiments.b200_mlp_gemm.resident_candidate"
+    if os.environ.get("GLEIPNIR_FP4_RESIDENT_CANDIDATE"):
+        module_name = ".".join(
+            source_path.with_suffix("")
+            .relative_to(Path(__file__).resolve().parents[2])
+            .parts
+        )
+    module = types.ModuleType(module_name)
     module.__file__ = str(source_path)
-    module.__package__ = "experiments.b200_mlp_gemm"
+    module.__package__ = module_name.rsplit(".", 1)[0]
     exec(compile(source, str(source_path), "exec"), module.__dict__)
     with module.intervention(trainer):
         validation = module.validate(trainer)
+        if isinstance(validation, dict):
+            write_json(trial / "candidate_validation.json", validation)
         if (
             not isinstance(validation, dict)
             or validation.get("accepted_for_timing") is not True
         ):
             raise ValueError("candidate has no accepted targeted timing validation")
-        write_json(trial / "candidate_validation.json", validation)
-        yield
+        try:
+            yield
+        finally:
+            if callable(getattr(module, "finish", None)):
+                write_json(trial / "candidate_execution.json", module.finish())
 
 
 def capture_rng() -> dict:

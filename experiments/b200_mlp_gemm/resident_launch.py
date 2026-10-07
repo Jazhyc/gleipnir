@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -46,7 +47,12 @@ def main() -> None:
         request = {"id": args.id, "variant": args.variant}
         if args.variant == "candidate":
             request["source_sha256"] = sha(
-                Path(__file__).with_name("resident_candidate.py")
+                Path(
+                    os.environ.get(
+                        "GLEIPNIR_FP4_RESIDENT_CANDIDATE",
+                        str(Path(__file__).with_name("resident_candidate.py")),
+                    )
+                )
             )
         validate_request(request)
         if (root / args.id).exists() or (
