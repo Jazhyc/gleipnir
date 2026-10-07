@@ -24,8 +24,6 @@ Read every guide that applies when a task spans these areas. Routine code or
 documentation maintenance requires only the relevant context; the research
 program and historical logs are not universal startup reading. Update findings
 and decisions when an experiment changes what the project should believe.
-Keep changing recipes and selections in their linked decision/configuration,
-and detailed run history in experiment records rather than this file.
 
 Read relevant document sections first: search filenames/headings with `rg`, then
 read bounded sections with their qualifications and exceptions. Expand when
@@ -33,6 +31,22 @@ needed to resolve dependencies or ambiguity. Avoid full-file dumps and rereading
 unchanged documents already in context; inspect diffs after changes. Read
 applicable instruction files completely, including `AGENTS.md` and required
 task-specific guides; reuse them when already read and unchanged.
+
+## Maintaining required documentation
+
+Keep `AGENTS.md`, root/experiment READMEs, `docs/research_program.md` and required
+guides concise. Update existing sections in place; consolidate standing
+preferences and replace superseded guidance instead of appending dated updates.
+Give each rule, contract or selection one authoritative home and link to it.
+Keep specialized instructions in task-specific guides, current selections in
+decisions/configuration, and run history, timings, process state and numerical
+receipts in experiment records. Preserve historical evidence, frozen contracts
+and acceptance qualifications there. Add to the research program only when
+evidence changes scientific direction or evaluation principles.
+
+Before committing documentation changes, review the diff for duplication, stale
+claims and unnecessary growth. Prefer consolidation and links over expanding
+the mandatory reading set; retain the context needed to apply each instruction.
 
 ## Project Structure
 
