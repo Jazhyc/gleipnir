@@ -156,6 +156,12 @@ per-request delay or changed client timing boundaries; its frontend A/B control
 adds locks/counters but does not establish the cause of that floor. **Do not
 attribute the apparent 5.24x c1 difference solely to cache removal.** Host,
 driver, warm runtime and whole-prompt batching confound this comparison.
+The archived 149.69-ms reference itself was measured shortly after a fresh NC2
+server start; its client completed timing before enabling profiling. The later
+fresh NC2 cache-free server still measured 133.42 ms. Process age or accumulated
+profiling therefore does not explain the contrast by itself. Prioritize host
+CPU/dispatch, driver synchronization and environment differences as hypotheses,
+without assigning a cause until a matched comparison or request trace isolates it.
 
 The six c128 rates span **141,893–208,878 input tokens/s**; preserve this spread,
 rather than selecting the fastest pass. The median is 6.29% below the archived
