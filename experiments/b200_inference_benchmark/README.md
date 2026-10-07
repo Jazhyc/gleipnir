@@ -192,6 +192,30 @@ effects separately. Stop on identity/parity/switch/transport failure or completi
 of this bounded suite. Restore native mode and retain the worker. No new capacity,
 GPU arithmetic change, final-ID use or promotion is involved.
 
+Completed `gigatoken_ab01`: same API/engine 107583/107606 throughout all 18 timed
+passes, with exact live IDs in both modes. c1 median/p95 is 152.62/270.04 ms HF
+versus 148.88/191.96 ms native. Median c128 input throughput is 198633 versus
+196523 tokens/s; the six paired ratios give -1.11%, with the last two pairs
+essentially tied. Native encoder callback time falls 5.041 to 0.143 seconds per
+full320 pass, largely overlapping GPU work. In the warm matched engine profiles,
+native has 24.51 ms less kernel time and 79.27 ms more time before host launches;
+its GPU window grows 57.97 ms. Profiles do not isolate the responsible host
+operator or establish an intrinsic encoder penalty.
+
+c1 scores are exact; c128 macro/pooled AUROC shifts -0.0348/-0.0547 percentage
+points, with one already unstable threshold flip. No final-ID evaluation or GPU
+reference promotion follows. All 122 collected files verify, 34 focused tests
+and Ruff pass. Profiling is stopped and native mode is restored on the retained
+warm worker. See [the finding](../../docs/findings/b200_gigatoken_frontend.md).
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name unique_ab_start --frontend-validation results/b200_inference_benchmark/gigatoken_native_canary03/validation.json --frontend-ab
+PYTHONPATH=src:. python -m experiments.b200_inference_benchmark.gigatoken_ab --name unique_ab_result
+```
+
+The first command requires retiring the old API/engine. The second uses the
+loaded worker and verifies opt-in control/PID identity before each switch.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt

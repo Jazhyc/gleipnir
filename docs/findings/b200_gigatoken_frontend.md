@@ -112,7 +112,7 @@ recorded separately. Thirty native/launcher/cache tests and eight caller tests
 pass; Ruff passes. The restricted local threaded test stalled in event-loop
 waiting and was stopped; the caller tests passed on the pod.
 
-Retain native API/engine **106836/106874**, port 8010, on the existing NC2 B200.
+At this stage, retain native API/engine **106836/106874**, port 8010, on the existing NC2 B200.
 Only the engine owns GPU memory. CPU frontend selection remains opt-in via
 `startup --frontend-validation
 results/b200_inference_benchmark/gigatoken_native_canary02/validation.json`.
@@ -160,10 +160,106 @@ after this shape has executed gives 195081/190842/196593 input tokens/s, median
 below the separately recorded five-pass standard GPU reference (196866).
 Warming this profiled shape does not establish recovery or the cause of the
 difference. Do not present the original 2.56% observation as a demonstrated
-causal cost of native tokenization. A same-worker HF/native frontend A/B would
-be needed to settle that attribution; no such runtime-switch control is installed.
+causal cost of native tokenization. The same-worker HF/native frontend A/B
+follow-up is recorded below.
 
 Artifacts: `results/b200_attention_gdn_serving/gigatoken_native_profile01`,
 including trace, exact batch/kernel comparison, gap/first-batch diagnostics,
 executed profile/timing clients, predictions and checksum-verified receipts.
 Profiling is stopped and the sole native frontend server remains healthy.
+
+## Same-worker HF/native comparison
+
+The user requests the comparison and asks whether additional host time offsets
+Gigatoken's benefit. Restart once into `gigatoken_ab_start01`, then retain the
+same API **107583** and GPU engine **107606** for all conditions. An opt-in
+`--frontend-ab` controller routes encoding to cached HF or native Gigatoken
+within the same renderer thread pool. Both paths use the same controller timing
+and locking. Switch only after drained HTTP passes, verify callback counts and
+both PIDs, and require exact IDs for all 320 prompts in each mode. Original HF
+metadata/decode, HTTP text requests, GPU arithmetic, graph and caches stay fixed.
+
+All 18 timed passes complete: three alternating c1/quick64 pairs and six balanced
+c128/full320 pairs, after two excluded warmups per mode/workload. There is no
+caller-side encoding. Latency and tokens/s below are medians across each mode's
+passes; the throughput change uses the median of paired native/HF ratios.
+
+| Measurement | HF | Native Gigatoken | Change |
+| --- | ---: | ---: | ---: |
+| c1 median latency | 152.62 ms | 148.88 ms | -2.45% |
+| c1 p95 latency | 270.04 ms | 191.96 ms | -28.91% |
+| c1 input tokens/s | 26065 | 30099 | paired +15.18% |
+| c128 input tokens/s | 198633 | 196523 | paired -1.11% |
+| c128 median latency | 2.394 s | 2.404 s | +0.38% |
+| c128 p95 latency | 2.783 s | 2.831 s | +1.72% |
+| Encoder seconds per full320 pass | 5.041 | 0.143 | 35.2× faster |
+
+c128 paired changes are -1.66/-2.07/-1.15/-1.08/+0.05/-0.07%. The final two
+pairs are essentially tied. A seeded bootstrap of the six paired ratios gives
+a median-change interval of -1.865% to -0.010%; six repetitions on this frozen
+workload do not establish a universal production penalty. The same-worker
+comparison reduces the earlier apparent 2.56% decline and confirms the latency
+benefit, without demonstrating saturated throughput improvement.
+
+Encoder timing sums callback wall durations, not process CPU utilization or
+additional end-to-end elapsed time. Encoding overlaps engine execution at c128;
+saving about 4.90 encoder-seconds therefore does not imply a 4.90-second serving
+gain. At c1, latency directly benefits, particularly on longer prompts.
+
+### Matched engine profiles
+
+After timing, profile HF/native/HF on the same worker. Exclude all instrumented
+HTTP times from speed results. Preserve the first HF activation separately
+(42 physical batches, 44784 kernels); compare native against the later warm HF
+activation below. Each schedules exactly 1310581 input tokens and 39 full
+32768-token batches, excluding two zero-token execution annotations.
+
+| Engine observation | Warm HF | Native |
+| --- | ---: | ---: |
+| Nonempty physical GPU batches | 41 | 41 |
+| Other nonempty batch tokens | 398 / 32231 | 806 / 31823 |
+| CUDA kernels | 43688 | 43688 |
+| Summed kernel time | 5.80178 s | 5.77727 s |
+| First-to-last kernel window | 6.40544 s | 6.46341 s |
+| Kernel-free gaps | 605.09 ms | 687.57 ms |
+| Copies within gaps | 88.58 ms | 88.71 ms |
+| Before-next-launch time, excluding copies | 474.19 ms | 553.46 ms |
+| First nonempty context gap overlap | 256.52 ms | 280.83 ms |
+
+Native has 24.51 ms less summed kernel work but 79.27 ms more time before the
+next host launch, excluding copies. Its GPU window grows 57.97 ms. Thus additional
+host-submission delay does offset the small GPU-work saving in this matched
+trace. Unlike the old diagnostic, the first small context explains only 24.31 ms
+of the 82.48 ms additional total gaps. Shapes still differ despite equal batch
+and kernel counts. The engine-only profiler omits API tokenization, so these
+intervals do not identify the responsible host operator or prove that the native
+encoder intrinsically adds engine overhead. One native trace is insufficient
+for that causal claim. Instrumented HTTP times are 6.8383 s native versus 6.8086 s
+warm HF (+0.44%), rather than the unprofiled paired estimate.
+
+### Quality, artifacts and retained worker
+
+c1 scores and margins remain exactly equal, with zero flips and AUROC deltas.
+c128 source-macro/pooled AUROC changes by **-0.0348/-0.0547 percentage points**.
+Mean/max score difference is 0.001520/0.062298; margin difference is
+0.017188/0.437500. One threshold flip is on an already HF-unstable example.
+Exact IDs plus unchanged FP4 arithmetic can still produce scheduling-dependent
+scores. This is the frozen training-seen development population; no final-ID
+selection or precision promotion occurs.
+
+Artifacts: `results/b200_inference_benchmark/gigatoken_ab01` includes the executed
+client, all predictions, traces and executed profile-analysis script;
+`gigatoken_native_canary03` binds exact native/HF token parity and 99 fixtures;
+`results/b200_attention_gdn_serving/gigatoken_ab_start01` records startup and
+source snapshots. Readiness is 93.31 s and the twenty-row score canary is exact.
+All **122 collected files** in `gigatoken_ab_collection01/checksums.json` verify
+locally. Thirty-four focused tests and Ruff pass. Source/package hashes are
+reverified at closure; the selected GPU baseline checksum and compile identity
+remain unchanged.
+
+All profiles are stopped, native mode is restored (generation 70), and the sole
+GPU engine remains healthy and warm on port 8010. Campaign state records API/engine
+107583/107606, native frontend, validation and artifact paths. The A/B switch is
+opt-in and disabled for ordinary launches; use the guarded `ModeController`
+rather than sending signals to an arbitrary server. Gigatoken remains useful for
+interactive latency, with no established saturated-throughput gain.
