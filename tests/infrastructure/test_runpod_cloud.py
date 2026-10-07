@@ -194,3 +194,48 @@ def test_batch_rejects_symlink_escape_before_remote_operations(
             monkeypatch, rsync_peer.local, action, ["valid.txt", "outside/file.txt"]
         )
     assert not rsync_peer.calls
+
+
+def test_code_sync_keeps_refactored_data_package_but_excludes_artifacts(
+    rsync_peer, monkeypatch
+):
+    local, remote = rsync_peer.local, rsync_peer.remote
+    for name in [
+        "src/gleipnir/data/monitoring.py",
+        "data/private.json",
+        "results/run/receipt.json",
+        "logs/run/worker.log",
+        ".env",
+        ".env.example",
+    ]:
+        path = local / name
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("fixture")
+    pod = local / "pod.json"
+    pod.write_text(
+        json.dumps(
+            {
+                "ssh": {
+                    "direct": {
+                        "host": "198.51.100.2",
+                        "port": 12345,
+                        "username": "root",
+                    }
+                }
+            }
+        )
+    )
+    monkeypatch.setattr(runpod_cloud, "ROOT", local)
+    monkeypatch.setattr(
+        sys, "argv", ["runpod_cloud.py", "--pod-file", str(pod), "sync-code"]
+    )
+    runpod_cloud.main()
+    assert (remote / "src/gleipnir/data/monitoring.py").read_text() == "fixture"
+    assert (remote / ".env.example").exists()
+    for name in [
+        "data/private.json",
+        "results/run/receipt.json",
+        "logs/run/worker.log",
+        ".env",
+    ]:
+        assert not (remote / name).exists()
