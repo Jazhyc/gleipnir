@@ -132,6 +132,7 @@ async def measure(
     resumed_environment: dict | None = None,
     ready_prepare: Callable | None = None,
     command_prepare: Callable | None = None,
+    environment_prepare: Callable | None = None,
     startup_only: bool = False,
 ) -> None:
     settings = json.loads((experiment / "config.json").read_text())
@@ -224,6 +225,8 @@ async def measure(
         command = score_command(actual, hf_config, compute_sources)
     if command_prepare is not None:
         command = command_prepare(command, settings, hashes)
+    if environment_prepare is not None:
+        environment_prepare(environment, settings, hashes, out)
     environment["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     write(out / "parent_server.json", parent)
     write(
@@ -348,10 +351,17 @@ async def measure(
     if not canary["passed"]:
         raise ValueError("score endpoint canary failed")
     print("score_canary_passed", mean, correlation, flush=True)
-    passes = [
-        (1, "quick", settings["c1_repeats"]),
-        (128, "full", settings["c128_repeats"]),
-    ]
+    passes = (
+        [
+            (p["concurrency"], p["workload"], p["repeats"])
+            for p in settings["benchmark_passes"]
+        ]
+        if "benchmark_passes" in settings
+        else [
+            (1, "quick", settings["c1_repeats"]),
+            (128, "full", settings["c128_repeats"]),
+        ]
+    )
     if startup_only:
         # Keep a restored reference warm without rerunning timing controls.
         for c, key, _ in passes:
@@ -376,13 +386,16 @@ async def measure(
             )
             write(out / "summary.json", report)
             print("score_pass", c, index, seconds, flush=True)
+        reference_concurrency = settings.get("comparison_concurrency", c)
         controls = [
             json.loads(p.read_text())
-            for p in sorted(baseline.glob(f"c{c}_repeat*.json"))
+            for p in sorted(baseline.glob(f"c{reference_concurrency}_repeat*.json"))
         ]
         write(
             out / f"c{c}_comparison.json",
             {
+                "reference_concurrency": reference_concurrency,
+                "workload": key,
                 "scores": paired_score_summary(controls, candidate),
                 "ranking": ranking_comparison(rows, controls, candidate),
             },

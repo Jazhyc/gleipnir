@@ -1,0 +1,36 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "baseline": "selected",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "port": 8010,
+  "timeout_seconds": 180,
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "warmup_repeats": 1,
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "promote": false,
+  "score_parent": true,
+  "restore_selected_recipe": true,
+  "retirement_reason": "Screen length-aware admission on the selected score recipe",
+  "length_admission": {
+    "mode": "length_aware",
+    "length_buckets": [1024, 4096, 16384, 32768],
+    "max_wait_seconds": 0.25,
+    "scheduler_sha256": "df78076164fe02a63876d7690cefac810f1ba4d8fb58afc15e786c1608064090",
+    "request_queue_sha256": "4b8d938e5fb8152fe61030b8aa991f983fcac9a405c37ed8908045e05e82ae5e"
+  },
+  "mixed_traffic": {"requests_per_second": [40, 80], "seed": 17},
+  "additional_sources": [
+    "src/gleipnir/serving/triton_mutation.py",
+    "src/gleipnir/serving/reference.py",
+    "src/gleipnir/serving/score_runtime.py",
+    "src/gleipnir/serving/length_admission.py",
+    "src/gleipnir/serving/vllm/length_scheduler.py",
+    "experiments/b200_mutation_analysis/server.py",
+    "experiments/b200_length_admission/config.json",
+    "experiments/b200_length_admission/run.py",
+    "experiments/b200_length_admission/traffic.py",
+    "experiments/b200_length_admission/README.md"
+  ]
+}

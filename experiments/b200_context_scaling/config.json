@@ -1,0 +1,15 @@
+{
+  "target_tokens": 2048,
+  "count": 320,
+  "concurrencies": [1, 2, 4, 8, 16, 32, 64, 128],
+  "repeats": 3,
+  "warmups": 1,
+  "port": 8010,
+  "timeout_seconds": 180,
+  "reference_run": "results/b200_score_scaling/scale01",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "gpu_uuid": "GPU-a2b24934-cf31-dd9e-91b5-397e49513463",
+  "promote": false
+}

@@ -1,0 +1,63 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "baseline": "selected",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "port": 8010,
+  "timeout_seconds": 180,
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "warmup_repeats": 1,
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "promote": false,
+  "score_parent": true,
+  "restore_selected_recipe": true,
+  "retirement_reason": "User-requested selected reference concurrency scaling",
+  "additional_sources": [
+    "src/gleipnir/serving/triton_mutation.py",
+    "src/gleipnir/serving/reference.py",
+    "src/gleipnir/serving/score_runtime.py",
+    "experiments/b200_mutation_analysis/server.py",
+    "experiments/b200_score_scaling/run.py",
+    "experiments/b200_score_scaling/README.md",
+    "experiments/b200_score_scaling/config.json"
+  ],
+  "benchmark_passes": [
+    {
+      "concurrency": 1,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 2,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 4,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 16,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 32,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 64,
+      "workload": "full",
+      "repeats": 3
+    },
+    {
+      "concurrency": 128,
+      "workload": "full",
+      "repeats": 3
+    }
+  ],
+  "comparison_concurrency": 128
+}

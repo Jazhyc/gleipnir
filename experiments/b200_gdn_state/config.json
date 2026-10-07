@@ -16,6 +16,7 @@
   "additional_sources": [
     "src/gleipnir/serving/triton_mutation.py",
     "src/gleipnir/serving/reference.py",
+    "src/gleipnir/serving/score_runtime.py",
     "src/gleipnir/serving/gdn/state.py",
     "experiments/b200_mutation_analysis/server.py",
     "experiments/b200_gdn_state/worker.py",
