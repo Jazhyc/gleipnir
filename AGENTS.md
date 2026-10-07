@@ -10,10 +10,26 @@ model families, and deployment settings rather than benchmark-specific tricks.
 
 ## Before You Work
 
-Read `README.md`, `docs/research_program.md`, and the README in the experiment
-directory you will touch. Read relevant finding and decision records under
-`docs/` before changing data contracts, prompts, objectives, or evaluation.
-Update the docs when an experiment changes what the project should believe.
+Read [README.md](README.md), then the README in each experiment directory you
+will touch. Load additional instructions by task:
+
+- Research design, data contracts, prompts, objectives, evaluation methodology
+  or interpretation: read [the research program](docs/research_program.md) and
+  relevant findings/decisions under `docs/` before making changes. Use
+  [the documentation index](docs/README.md) to locate them.
+- Compute launch, monitoring, infrastructure, remote access or lifecycle work:
+  read [compute instructions](docs/agent_guides/compute.md).
+- Training implementation, configuration or optimization: read
+  [training instructions](docs/agent_guides/training.md).
+- Inference, serving, evaluation execution or kernel optimization: read
+  [inference instructions](docs/agent_guides/inference.md).
+
+Read every guide that applies when a task spans these areas. Routine code or
+documentation maintenance requires only the relevant context; the research
+program and historical logs are not universal startup reading. Update findings
+and decisions when an experiment changes what the project should believe.
+Keep changing recipes and selections in their linked decision/configuration,
+and detailed run history in experiment records rather than this file.
 
 ## Project Structure
 
@@ -61,194 +77,14 @@ labels, privileged rationale targets, and soft teacher distributions. Preserve
 FP32 master adapters; export lower-precision inference copies only after matched
 parity checks.
 
-## Compute
+## Compute boundaries
 
-### Experiment monitoring
-
-When launching or monitoring a long-running experiment, check startup frequently
-(roughly every 30–60 seconds) until model loading, compilation, and any preflight
-canaries have passed and actual training steps or evaluation outputs are advancing.
-Then schedule agent follow-ups every 10 minutes using the available in-chat
-scheduling/heartbeat mechanism. Each follow-up should inspect progress, logs,
-GPU health, and failures; report meaningful changes and revise the ETA when
-supported by measured throughput. Recheck startup closely for each new queued run.
-Stop the recurring follow-ups when the campaign completes, the user asks to stop
-monitoring, or a blocker requires user input; collect and summarize final results.
-
-These heartbeats must wake the agent to inspect the experiment. A remote queue
-timer, process watchdog, or log message is not a substitute. Verify that scheduling
-succeeded before claiming monitoring is active. If this session has no scheduling
-tool, explicitly tell the user that limitation; active-turn waiting can support
-checks but cannot promise a follow-up after the turn ends. Do not silently replace
-agent follow-ups with a remote polling loop.
-
-### Reuse validated training recipes
-
-Standing user preference, 2026-10-06: short systems-training optimization checks
-overwrite a shared scratch adapter/master instead of retaining weights for
-every condition. Keep per-trial configurations, timings, losses, gradient
-diagnostics, tensor digests and numerical receipts. Preserve one frozen original
-initialization for matched resets, compiler/kernel caches, and full research
-training/evaluation adapters. Expendable historical systems weight copies were
-explicitly authorized for deletion; this does not authorize deleting quality
-artifacts or caches. Use `results/systems_training_scratch/` for mutable weights
-and clearly mark receipts that point there as references to an overwritten slot.
-For ordinary Trainer screens, set `systems_adapter_scratch: true` in the screen
-configuration/job; this suppresses checkpoint copies and redirects only weights,
-while metadata stays per trial. Keep historical frozen configs unchanged.
-
-Standing user preference, 2026-10-05: keep a persistent, resident training worker
-when iterating on training-stack optimizations. Reuse the loaded model, compiler
-and kernel caches, native plans and packed frozen weights across compatible
-trials. Reset FP32 adapters, optimizer/scheduler state, RNG and data order for
-matched comparisons; verify reset correctness when establishing a worker.
-Do not reload the model, repeat full-shape replay or rerun unchanged startup
-diagnostics for every trial. Keep finite/missing-gradient update checks and run
-targeted checks when an intervention changes arithmetic or the supported envelope.
-Record the worker PID, active configuration and artifact/queue paths so later
-sessions can inspect and reuse it. Restart when changes require it or after a
-diagnosed failure; preserve artifacts and disk caches. This preference does not
-authorize launching new billable capacity or terminating existing capacity.
-Use the combined native FP4 MLP plus BF16 GDN/FA4 variant as the optimization
-baseline and, following the user's later explicit selection on 2026-10-05,
-the default B200 training recipe. This selection does not establish held-out
-quality equivalence with BF16.
-
-Standing user preference, 2026-10-03: reuse persistent compiler and kernel caches
-across compatible training runs on the network volume. Do not create a cold cache
-namespace for each experiment. Keep run outputs separate from shared caches, record
-the effective cache paths and runtime versions, and let compiler cache keys handle
-new kernels, shapes and configurations automatically. Use isolated cold caches only
-for an explicitly requested cold-start measurement or a diagnosed cache problem.
-Preserve these caches across Pod restarts and changes of physical host.
-
-Standing user preference, 2026-10-02: once a recipe has been validated, reuse
-its recorded startup validation and begin ordinary training without repeating
-numerical comparison canaries, packing isolation probes or longest-batch memory
-preflights. This instruction supersedes the repeated-startup-gate requirements
-below for unchanged validated recipes. Supported hard/soft binary loss mixtures
-and learning-rate sweeps do not by themselves require repeating those probes.
-Rerun diagnostics when hardware, kernel/compiler versions, precision, batching,
-packing code, supported objective family or context/memory envelope materially
-changes, when failures give reason to doubt the recipe, or when requested.
-Keep input/provenance checks and finite/missing-gradient checks during updates.
-Record the validation reference and its checksum; mark reused/skipped checks
-explicitly instead of claiming a new pass. Preserve historical failed receipts.
-Serving artifacts still need adapter-specific score parity before evaluation.
-
-### Infrastructure and execution
-
-Standing user preference, 2026-10-06: inference optimization reports must include
-prompt tokens per second alongside requests per second and request latency.
-Use prompt-token throughput as the main compute-throughput comparison for the
-one-token monitor, keeping the prompt-length distribution and cache policy fixed.
-Label input/prompt throughput explicitly rather than confusing it with generated
-output-token throughput.
-
-Use local Slurm GPU jobs for cluster experiments. Default to one `gpushort`
-`rtx_pro_6000` GPU, one CPU, and 32 GB RAM unless the workload requires a
-documented change. Redirect final logs to `logs/slurm/<experiment>/` and remove
-the temporary bootstrap output after redirection. Batch related inference
-conditions in one persistent vLLM process when possible.
-
-Run Slurm control and submission commands outside the filesystem/network
-sandbox. Restricted shells can block name resolution or controller sockets and
-make a healthy `slurm1` appear down. Before diagnosing a controller outage,
-repeat `scontrol ping` with sandbox escalation. Use ordinary `sbatch`/`salloc`
-jobs to hold GPUs: advanced reservations created with `scontrol` require Slurm
-administrator privileges.
-
-No Lambda Cloud training target is currently reserved. The former
-`gleipnir-improvement` instance was terminated on 2026-09-08 after explicit user
-authorization and verified artifact collection.
-Use `scripts/lambda_cloud.py` for SSH, sync, bootstrap, secret transfer, and
-artifact collection on any separately authorized future target. Probe and record
-its hardware before freezing a recipe. Never terminate an instance or launch
-billable capacity without the user's explicit instruction. Pull important
-artifacts before any termination.
-
-For text-only Qwen3.5 training on H100s, do not silently use Transformers'
-Torch gated-delta fallback. Use the causal-LM loader and verify the isolated,
-pinned `flash-linear-attention==0.5.2` and `fla-core==0.5.2` kernels before model
-import. The proven eager recipe is microbatch 8 with gradient accumulation 4
-(effective batch 32) and `torch.compile=false`; preserve that recipe unless a
-matched benchmark supports a change. Prefer standard QLoRA (4-bit NF4, double
-quantization, BF16 compute) when it permits the proven batch at high adapter
-ranks. Preflight the largest rank, fail closed if FLA is unavailable, and record
-kernel, quantization, batch, memory, and throughput metadata for every campaign.
-For direct-boundary objectives, avoid materializing full-sequence vocabulary
-logits when it prevents the proven batch; use a matched, recorded selected-token
-projection consistently across the campaign.
-
-For single-B200 Qwen3.5-4B training, use the user-selected
-`systems_screen@_global_: qwen35_4b_b200_default` profile: all 24 GDN layers
-use pinned FlashQLA with BF16 Q/K/V and FP32 gates/normalization; full attention
-uses pinned FlashAttention 4 4.0.0b33 with native causal variable-length packing.
-Load an unquantized BF16 base, use no model checkpointing, and keep the
-16,384-token packing budget, logical batch 32, and FP32 master adapters.
-Use native NVFP4 MLPs with hardware activation packing and fused descale in
-forward and base input gradients. Keep GDN projections/recurrence and full
-attention in BF16. Reuse the checksum-bound warmed03 FP4 receipt for compatible
-runs with explicit `selected_finite` acceptance; preserve its failed loss and
-strict 5% gradient comparisons and passing isolation/preflight separately.
-Reject missing/nonfinite gradients before updates. Keep the historical BF16 FA4
-recipe as `qwen35_4b_b200_bf16_fa4`, including its separate accepted 10% ceiling,
-and preserve original-FLA comparison profiles. Do not change frozen campaigns'
-recorded precision/receipts. See `docs/decisions/b200_native_fp4_training_recipe.md`.
-
-For frozen text-only evaluation of standard base or PEFT LoRA models, default to
-one persistent vLLM engine with continuous batching, a constrained one-token
-response, and explicitly requested decision-token logprobs. Do not carry an
-eager training microbatch into large evaluation runs. Use Transformers eager
-evaluation only for a bounded backend-parity canary or when vLLM cannot represent
-the model/adapter, and document that exception. For every new adapter layout or
-backend combination, compare the master checkpoint with its serving artifact and
-record score agreement plus a nonzero adapter effect before scaling evaluation.
-
-Standing user preference, 2026-10-06: merge standard LoRA updates into BF16 base
-weights for future evaluations, serving without dynamic adapter projections.
-Keep FP32 master adapters and pinned base weights persistent. On Runpod, store
-reconstructable merged checkpoints on ephemeral container storage, with merge
-source/file checksums and evaluation receipts on the network volume. Accumulate
-the merge in FP32 before exporting BF16 and run adapter-specific serving parity
-before scaling evaluation. Record unsupported layouts or failed parity explicitly;
-do not silently fall back or change frozen historical evaluation contracts.
-Changing adapters requires loading the corresponding merged model; preserve disk
-compiler caches across those restarts. See the merged serving protocol in
-`experiments/b200_inference_benchmark/README.md`.
-
-Standing user preference, 2026-10-06: when an inference change needs a different
-serving process, stop the old server rather than keeping both resident. Preserve
-its measured baseline results, merged checkpoint, logs and persistent caches.
-Reuse completed matched baseline results; do not retain or rerun a control merely
-because a new kernel is being tested. Keep the active candidate warm for compatible
-trials. This is process replacement, not authorization to terminate capacity.
-
-Standing user preference, 2026-10-06: every inference kernel update must report
-AUROC deviation against the same frozen baseline, alongside speed and score
-parity. Include pooled/per-source AUROC and macro across sources with both
-labels, repeat variation, explicit undefined single-label sources, and bind
-labels to exact prompt identities. Reuse archived baseline predictions rather
-than rerunning the control. Small training-seen optimization sets are diagnostic
-and do not establish held-out quality parity or select production precision.
-
-Standing user preference, 2026-10-06 (updated): use FROST native FP4 MLPs
-and all 48 large GDN QKV/Z and output projections as the B200 inference
-optimization baseline. Keep small gate projections, convolution and recurrence
-operands BF16, gates/state FP32, and full attention BF16 FlashInfer. The user
-explicitly accepts the c128 source-macro AUROC drop of 0.47 percentage points;
-retain the strict failed score-canary receipt separately as `user_accepted_finite`.
-The selected control is `results/b200_attention_gdn_serving/fp4_gdn_projection02`,
-with five-pass warmed confirmation at `fp4_gdn_confirmation01`, bound by
-`experiments/b200_inference_benchmark/baseline.json`. Prioritize c128 throughput,
-retaining peak throughput, lower-concurrency latency and AUROC diagnostics.
-New conditions compare against this selected baseline; preserve explicit
-historical references. Reuse archived controls and persistent caches. Stop the
-old server before changing active kernels so the candidate gets the whole GPU.
-Keep BF16 GDN/MLP and FP8 comparisons as historical context. This acceptance
-applies to the current adapter and pinned serving recipe; it changes neither
-training nor frozen past evaluations and does not waive missing/nonfinite
-outputs or adapter-specific checks for future layouts/adapters.
+Never launch billable capacity or terminate an instance without the user's
+explicit instruction. Collect important artifacts before termination. Preserve
+persistent compiler/kernel caches, frozen campaign contracts, failed receipts
+and quality artifacts. Verify live capacity before acting; historical
+running-status notes are not a live inventory. Existing user authorization
+continues to apply within its stated scope.
 
 ## Code, Tests, and Git
 
