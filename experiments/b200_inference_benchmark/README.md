@@ -110,6 +110,26 @@ ReadError; the server stayed healthy and `tokenization_batch02 --concurrency 128
 completed with fresh pools per pass. No kernel/reference change or restart.
 See [the tokenization finding](../../docs/findings/b200_serving_tokenization.md).
 
+## Gigatoken probe, 2026-10-07
+
+Hypothesis: Gigatoken 0.10.0 can recover the long-prompt text-frontend latency
+cost while preserving exact Qwen3.5 IDs. Install its binary wheel into isolated
+ephemeral `/tmp/gleipnir-gigatoken-0.10.0`, without modifying the locked runtime.
+Before inference, require exact parity on all 320 frozen prompts and 99 synthetic
+Unicode/special-token/truncation fixtures. Compare cold and three warmed serial
+CPU passes against the serving cached HF tokenizer. Use HF compatibility mode
+and the same length/special-token settings; do not assume bulk-file headline
+speedups apply to requests.
+
+If parity passes, alternate three text versus live-Gigatoken pairs at c1/quick64
+and c128/full320, with fresh clients and excluded warmups. Gigatoken encodes every
+request on one caller thread, then submits IDs; encode, thread handoff, queueing
+and JSON time stay inside response latency. Reuse the sole server and selected
+kernels; this is a caller-side integration feasibility test, not an installed
+server tokenizer replacement. Preserve AUROC/score diagnostics and exact source
+and package bindings. Stop on mismatch/nonfinite/transport failure or completion
+of this bounded suite. No restart, new capacity, final-ID use or promotion.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
