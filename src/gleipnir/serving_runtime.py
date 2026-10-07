@@ -13,6 +13,36 @@ from pathlib import Path
 
 DEFAULT_RUNTIME = Path("/tmp/gleipnir-serving-runtime")
 
+CUTLASS_IMPORT_BOOTSTRAP = (
+    '"""Select the pinned isolated CUTLASS implementation '
+    'after default site hooks."""\n'
+    "\n"
+    "import sys\n"
+    "from pathlib import Path\n"
+    "\n"
+    'implementation = Path(__file__).parent / "nvidia_cutlass_dsl/dsl_packages"\n'
+    'if not (implementation / "cutlass/__init__.py").is_file():\n'
+    '    raise RuntimeError("isolated CUTLASS implementation package is missing")\n'
+    "sys.path.insert(0, str(implementation))\n"
+)
+
+
+def prepare_cutlass_imports(overlay: Path) -> None:
+    """Give target-installed DSL wheels priority over default site .pth hooks."""
+    metadata = list(overlay.glob("nvidia_cutlass_dsl_libs_base-*.dist-info/METADATA"))
+    requires_core = any(
+        "Requires-Dist: nvidia-cutlass-dsl-libs-core" in p.read_text() for p in metadata
+    )
+    implementation = overlay / "nvidia_cutlass_dsl/dsl_packages/cutlass/__init__.py"
+    if requires_core and not implementation.is_file():
+        raise ValueError("isolated CUTLASS libs-core dependency is missing")
+    if not implementation.is_file():
+        return  # Earlier overlay layouts already expose their implementation.
+    bootstrap = overlay / "sitecustomize.py"
+    if bootstrap.exists() and bootstrap.read_text() != CUTLASS_IMPORT_BOOTSTRAP:
+        raise ValueError("preserve the existing overlay import hook before replacement")
+    bootstrap.write_text(CUTLASS_IMPORT_BOOTSTRAP)
+
 
 def copy_dependency_tree(source: Path, destination: Path, workers: int = 8) -> None:
     """Copy disjoint package trees concurrently, reusing already copied files."""
@@ -99,6 +129,9 @@ def runtime_binding(root: Path) -> dict:
         for name in ["pyproject.toml", "setup.py", ".git/HEAD"]:
             if (base / name).is_file():
                 files.append(base / name)
+        files.extend(sorted(base.glob("*.dist-info/METADATA")))
+        if (base / "sitecustomize.py").is_file():
+            files.append(base / "sitecustomize.py")
     values = {str(p.relative_to(root)): sha(p) for p in files}
     return {"source_root": str(root.resolve()), "files": values}
 
@@ -108,6 +141,7 @@ def stage_runtime(root: Path, target: Path = DEFAULT_RUNTIME) -> dict:
     root, target = root.resolve(), target.resolve()
     if target == root or target.is_relative_to(root) or root.is_relative_to(target):
         raise ValueError("runtime staging must be separate from source")
+    prepare_cutlass_imports(root / ".cache/kernels/fa4")
     binding = runtime_binding(root)
     manifest_path = target / "manifest.json"
     if manifest_path.exists():

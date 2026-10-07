@@ -10,6 +10,7 @@ from gleipnir.serving_compile_cache import ServingCompileConfig
 from gleipnir.serving_runtime import (
     copy_dependency_tree,
     local_serving_runtime,
+    prepare_cutlass_imports,
     runtime_binding,
     sha,
 )
@@ -118,6 +119,38 @@ def fixture_runtime(root):
         p.parent.mkdir(parents=True, exist_ok=True)
         p.write_text(name)
     return runtime_binding(root)
+
+
+def test_overlay_packages_and_import_bootstrap_invalidate_staged_runtime(tmp_path):
+    before = fixture_runtime(tmp_path)
+    overlay = tmp_path / ".cache/kernels/fa4"
+    metadata = overlay / "nvidia_cutlass_dsl_libs_core-4.8.0.dist-info/METADATA"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text("Name: nvidia-cutlass-dsl-libs-core\nVersion: 4.8.0\n")
+    packages = runtime_binding(tmp_path)
+    assert packages != before
+    bootstrap = overlay / "sitecustomize.py"
+    bootstrap.write_text("# Select the isolated implementation after site .pth files\n")
+    assert runtime_binding(tmp_path) != packages
+
+
+def test_missing_overlay_implementation_cannot_masquerade_as_new_version(tmp_path):
+    overlay = tmp_path / "fa4"
+    metadata = overlay / "nvidia_cutlass_dsl_libs_base-4.8.0.dist-info/METADATA"
+    metadata.parent.mkdir(parents=True)
+    metadata.write_text("Requires-Dist: nvidia-cutlass-dsl-libs-core==4.8.0\n")
+    with pytest.raises(ValueError, match="libs-core"):
+        prepare_cutlass_imports(overlay)
+    implementation = overlay / "nvidia_cutlass_dsl/dsl_packages/cutlass/__init__.py"
+    implementation.parent.mkdir(parents=True)
+    implementation.write_text("# isolated implementation\n")
+    prepare_cutlass_imports(overlay)
+    prepare_cutlass_imports(overlay)
+    bootstrap = overlay / "sitecustomize.py"
+    assert "sys.path.insert" in bootstrap.read_text()
+    bootstrap.write_text("# unrelated import policy\n")
+    with pytest.raises(ValueError, match="preserve"):
+        prepare_cutlass_imports(overlay)
 
 
 def test_local_runtime_rewrites_libraries_but_preserves_shared_caches(tmp_path):
