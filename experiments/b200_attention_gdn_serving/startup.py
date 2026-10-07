@@ -23,6 +23,7 @@ from experiments.b200_inference_benchmark.run import (
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
+    parser.add_argument("--frontend-validation")
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("startup run name must be a directory stem")
@@ -47,6 +48,15 @@ def main() -> None:
     config = {**base, **raw["serving_config_overrides"], "port": raw["port"]}
     out = OUTPUT / args.name
     out.mkdir(exist_ok=False)
+    frontend = None
+    if args.frontend_validation:
+        frontend = {
+            "backend": "gigatoken_native",
+            "package_path": "/tmp/gleipnir-gigatoken-0.10.0",
+            "validation": args.frontend_validation,
+            "receipt_path": str(out / "frontend.json"),
+        }
+        write(out / "frontend_config.json", frontend)
     write(out / "condition.json", condition)
     write(out / "manifest.json", manifest)
     for source in [
@@ -54,6 +64,14 @@ def main() -> None:
         "src/gleipnir/serving_cache_mirror.py",
         str(Path(__file__).relative_to(ROOT)),
         "experiments/b200_inference_benchmark/run.py",
+        *(
+            [
+                "src/gleipnir/serving_gigatoken.py",
+                "experiments/b200_inference_benchmark/frontend_server.py",
+            ]
+            if frontend is not None
+            else []
+        ),
     ]:
         target = out / "executed_sources" / source
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -63,7 +81,15 @@ def main() -> None:
         write(out / "merged_artifact.json", verify_merged_model(base, merged))
         asyncio.run(
             benchmark(
-                config, manifest, out, 64, False, merged, condition, startup_only=True
+                config,
+                manifest,
+                out,
+                64,
+                False,
+                merged,
+                condition,
+                startup_only=True,
+                frontend=frontend,
             )
         )
     except BaseException as error:

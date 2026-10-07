@@ -407,6 +407,7 @@ async def benchmark(
     kernel_condition: dict | None = None,
     *,
     startup_only: bool = False,
+    frontend: dict | None = None,
 ) -> None:
     import httpx
     import numpy as np
@@ -446,6 +447,13 @@ async def benchmark(
     runtime = local_serving_runtime(ROOT, server_environment)
     if runtime is not None:
         command[0] = runtime["python"]
+    frontend_receipt = None
+    if frontend is not None:
+        from gleipnir.serving_gigatoken import configure_frontend
+
+        frontend_receipt = configure_frontend(
+            ROOT, frontend, command, server_environment
+        )
     from gleipnir.serving_cache_mirror import compiler_mirror, persist_compiler_mirror
 
     mirror = compiler_mirror(ROOT, server_environment) if runtime is not None else None
@@ -454,6 +462,7 @@ async def benchmark(
         if (
             not compatible_server_command(receipt["command"], command)
             or receipt["config_sha256"] != manifest["config_sha256"]
+            or receipt.get("frontend") != frontend_receipt
         ):
             raise ValueError("resident server configuration drift")
         os.kill(receipt["pid"], 0)
@@ -488,6 +497,7 @@ async def benchmark(
             "started_at_unix": time.time(),
             "local_runtime": runtime,
             "compiler_mirror": mirror,
+            "frontend": frontend_receipt,
             "status": "starting",
             "cache_paths": {
                 **{k: v for k, v in server_environment.items() if "CACHE" in k},

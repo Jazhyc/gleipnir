@@ -130,6 +130,21 @@ server tokenizer replacement. Preserve AUROC/score diagnostics and exact source
 and package bindings. Stop on mismatch/nonfinite/transport failure or completion
 of this bounded suite. No restart, new capacity, final-ID use or promotion.
 
+Direct follow-up requested by the user: install native `Tokenizer.encode()` in
+the API renderer, preserving its HF tokenizer for metadata/decode and the existing
+one-worker renderer pool. Admit only token-neutral postprocessors; explicitly
+preserve left/right truncation and reject unsupported flags. Require exact IDs on
+full320 plus the 99 synthetic fixtures using the new helper. Stop the old server
+before launching the native frontend via `startup --frontend-validation`.
+Record frontend source/package/validation separately from unchanged GPU-source
+and arithmetic compiler identity; do not invalidate GPU caches for this CPU-only
+wrapper. Confirm exact twenty-row scoring and live native frontend initialization,
+then three warmed c1 and c128 text-request passes against the contemporaneous
+text controls in `gigatoken01`. No caller-side encoding or ID HTTP is used here.
+Stop on source/ID/score failure, startup failure or the bounded suite's completion.
+Retain the useful server; preserve failures and restore the original frontend if
+the native candidate materially regresses throughput. No precision promotion.
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
