@@ -3,7 +3,10 @@
 - Agent instructions by task: [compute and operations](agent_guides/compute.md),
   [training](agent_guides/training.md), and [inference/evaluation](agent_guides/inference.md).
   The root `AGENTS.md` defines when each guide must be read.
-- `research_program.md`: scope, research questions, and evaluation principles.
+- [Research program](research_program.md): current direction, guiding conclusions,
+  evaluation contract and open questions.
+- [Archived research program](research_program_history.md): historical chronology
+  retained before the 2026-10-07 simplification; includes superseded status notes.
 - [Monitoring sequence packing](research/monitoring_sequence_packing.md):
   prior Phoenix rejection, model/kernel boundary audit, CPU isolation controls,
   and the B200 BF16 integration and correctness gates.
