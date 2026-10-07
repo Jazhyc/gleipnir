@@ -159,7 +159,8 @@ def test_checkpointed_campaign_launch_uses_supported_compile_policy():
         version_base=None, config_dir=str(ROOT / "src/gleipnir/configs/systems_screen")
     ):
         recipe = OmegaConf.to_container(
-            compose(config_name=config["profile"]), resolve=True
+            # The historical 9B campaign predates the 4B-only FP4 default.
+            compose(config_name="qwen35_4b_b200_packed_sdpa"), resolve=True
         )["recipe"]
     for variant in ("regular", "injection_aware"):
         job = make_job(config, recipe, "9b", variant)
