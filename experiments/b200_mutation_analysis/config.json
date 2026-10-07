@@ -1,0 +1,22 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "baseline": "results/b200_monitor_score/score02",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "port": 8010,
+  "timeout_seconds": 180,
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "warmup_repeats": 1,
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "mutation_fix": true,
+  "promote": false,
+  "additional_sources": [
+    "src/gleipnir/serving/triton_mutation.py",
+    "experiments/b200_mutation_analysis/server.py",
+    "experiments/b200_mutation_analysis/run.py",
+    "experiments/b200_mutation_analysis/native.py",
+    "experiments/b200_mutation_analysis/config.json",
+    "experiments/b200_mutation_analysis/README.md"
+  ]
+}

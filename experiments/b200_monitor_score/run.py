@@ -9,6 +9,7 @@ import json
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -109,10 +110,18 @@ async def trial(
         return values, time.perf_counter() - before
 
 
-async def measure(name: str) -> None:
-    settings = json.loads((EXPERIMENT / "config.json").read_text())
+async def measure(
+    name: str,
+    *,
+    experiment: Path = EXPERIMENT,
+    result_group: str = "b200_monitor_score",
+    native_prepare: Callable | None = None,
+    retired_parent: Path | None = None,
+    resumed_environment: dict | None = None,
+) -> None:
+    settings = json.loads((experiment / "config.json").read_text())
     assert not settings["promote"] and settings["endpoint"] == ENDPOINT
-    out = ROOT / "results/b200_monitor_score" / name
+    out = ROOT / "results" / result_group / name
     out.mkdir(parents=True, exist_ok=False)
     write(out / "settings.json", settings)
     manifest = json.loads((DATA / "manifest.json").read_text())
@@ -121,35 +130,67 @@ async def measure(name: str) -> None:
         assert sha(DATA / f"{key}.json") == digest, "frozen prompt drift"
         workloads[key] = json.loads((DATA / f"{key}.json").read_text())
     write(out / "manifest.json", manifest)
-    hashes = {p: sha(ROOT / p) for p in SOURCES}
-    for p in SOURCES:
+    sources = [*SOURCES, *settings.get("additional_sources", [])]
+    hashes = {p: sha(ROOT / p) for p in sources}
+    for p in sources:
         target = out / "executed_sources" / p
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((ROOT / p).read_bytes())
-    parent = json.loads((SERVING / "server.json").read_text())
-    actual = [
-        v.decode()
-        for v in Path(f"/proc/{parent['pid']}/cmdline").read_bytes().split(b"\0")
-        if v
-    ]
-    if parent["status"] != "ready" or actual != parent["command"]:
-        raise ValueError("parent server identity changed")
+    parent = json.loads((retired_parent or (SERVING / "server.json")).read_text())
+    if retired_parent is None:
+        actual = [
+            v.decode()
+            for v in Path(f"/proc/{parent['pid']}/cmdline").read_bytes().split(b"\0")
+            if v
+        ]
+        if parent["status"] != "ready" or actual != parent["command"]:
+            raise ValueError("parent server identity changed")
+    else:
+        if (SERVING / "server.json").exists() or Path(
+            f"/proc/{parent['pid']}"
+        ).exists():
+            raise ValueError("retired-parent recovery requires no live server")
+        actual = parent["command"]
     # Retain the exact staged runtime environment in memory only; never emit it
     # into artifacts because inherited process environments can contain secrets.
-    environment = dict(
-        v.decode().split("=", 1)
-        for v in Path(f"/proc/{parent['pid']}/environ").read_bytes().split(b"\0")
-        if v
+    environment = (
+        resumed_environment
+        if retired_parent is not None
+        else dict(
+            v.decode().split("=", 1)
+            for v in Path(f"/proc/{parent['pid']}/environ").read_bytes().split(b"\0")
+            if v
+        )
     )
+    if environment is None:
+        raise ValueError("retired parent requires a verified runtime environment")
     merged = Path(actual[actual.index("--model") + 1])
     hf_config = json.loads((merged / "config.json").read_text())
     compute_sources = {
         p: digest
         for p, digest in hashes.items()
-        if p == "src/gleipnir/serving/monitor_score.py"
+        if p
+        in {
+            "src/gleipnir/serving/monitor_score.py",
+            "src/gleipnir/serving/triton_mutation.py",
+        }
         or p.endswith(("/server.py", "/worker.py"))
     }
-    command = score_command(actual, hf_config, compute_sources)
+    if settings.get("mutation_fix"):
+        if actual[actual.index("--runner") + 1] != "pooling":
+            raise ValueError("mutation trial requires the warm score parent")
+        command = actual.copy()
+        command[command.index("-m") + 1] = "experiments.b200_mutation_analysis.server"
+        index = command.index("--additional-config") + 1
+        additional = json.loads(command[index])
+        additional["gleipnir_frost_fp4"].update(compute_sources)
+        additional["qk_mutation_analysis"] = True
+        command[index] = json.dumps(additional, sort_keys=True)
+        environment["GLEIPNIR_STRIDE_VALIDATION"] = str(
+            (out / "native.json").relative_to(ROOT)
+        )
+    else:
+        command = score_command(actual, hf_config, compute_sources)
     environment["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     write(out / "parent_server.json", parent)
     write(
@@ -166,19 +207,22 @@ async def measure(name: str) -> None:
         out / "baseline_binding.json",
         {str(p.relative_to(ROOT)): sha(p) for p in [canary_path, *baseline_files]},
     )
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "experiments.b200_attention_gdn_serving.stop_server",
-            "--archive-name",
-            name,
-            "--reason",
-            "Replace generation with a two-logit monitoring endpoint",
-        ],
-        cwd=ROOT,
-        check=True,
-    )
+    if retired_parent is None:
+        subprocess.run(
+            [
+                sys.executable,
+                "-m",
+                "experiments.b200_attention_gdn_serving.stop_server",
+                "--archive-name",
+                name,
+                "--reason",
+                "Replace generation with a two-logit monitoring endpoint",
+            ],
+            cwd=ROOT,
+            check=True,
+        )
+    if native_prepare is not None:
+        native_prepare(environment, out)
     log = ROOT / "logs/runpod/b200_attention_gdn_serving/server.log"
     started = time.perf_counter()
     with log.open("x") as handle:
@@ -192,9 +236,8 @@ async def measure(name: str) -> None:
         )
     server = copy.deepcopy(parent)
     server["frontend"]["receipt_path"] = str(out / "frontend.json")
-    server["frontend"]["entrypoint_sha256"] = hashes[
-        "experiments/b200_monitor_score/server.py"
-    ]
+    entrypoint = command[command.index("-m") + 1].replace(".", "/") + ".py"
+    server["frontend"]["entrypoint_sha256"] = hashes[entrypoint]
     server.update(
         pid=process.pid,
         command=command,
