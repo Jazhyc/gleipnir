@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import copy
+import hashlib
 import inspect
 import json
 import subprocess
@@ -135,13 +136,21 @@ class ExistingServer:
         return None
 
 
-async def run(name: str, reuse_prepared: str | None = None) -> None:
-    settings = json.loads((EXPERIMENT / "config.json").read_text())
+async def run(
+    name: str, reuse_prepared: str | None = None, config_name: str = "config.json"
+) -> None:
+    config = EXPERIMENT / config_name
+    settings = json.loads(config.read_text())
+    admission = settings.get("admission", "grouped")
+    if admission not in {"grouped", "continuous"}:
+        raise ValueError("unknown client admission")
     out = ROOT / "results/b200_optimized_id" / name
     out.mkdir(parents=True, exist_ok=False)
     write(out / "settings.json", settings)
-    binding = json.loads(BINDING.read_text())
-    if binding["config_sha256"] != sha(EXPERIMENT / "config.json"):
+    binding = json.loads(
+        (ROOT / settings.get("binding", str(BINDING.relative_to(ROOT)))).read_text()
+    )
+    if binding["config_sha256"] != sha(config):
         raise ValueError("frozen experiment settings changed")
     for filename, expected in binding["files"].items():
         if sha(ROOT / filename) != expected:
@@ -277,6 +286,17 @@ async def run(name: str, reuse_prepared: str | None = None) -> None:
                     ],
                 },
             )
+            if settings.get("grouped_control") is not None:
+                old_rendered = json.loads(
+                    (
+                        ROOT
+                        / settings["grouped_control"]["directory"]
+                        / "rendered_binding.json"
+                    ).read_text()
+                )
+                current = json.loads((out / "rendered_binding.json").read_text())
+                if old_rendered != current:
+                    raise ValueError("continuous workload differs from grouped control")
             base = base_environment()
             base["PYTHONPATH"] = (
                 f"/tmp/gleipnir-serving-source-bootstrap:{base['PYTHONPATH']}"
@@ -375,52 +395,107 @@ async def run(name: str, reuse_prepared: str | None = None) -> None:
         )
         write(out / "training_warmup.json", {"seconds": seconds, "values": warm})
         report["status"] = "running"
+        report["admission"] = admission
+        write(out / "summary.json", report)
         for repeat in range(settings["repeats"]):
-            values, http_seconds, batch_records = [], 0.0, []
-            started = time.perf_counter()
-            for offset in range(0, len(workload), settings["batch_rows"]):
-                batch = workload[offset : offset + settings["batch_rows"]]
-                observed, elapsed = await trial(
-                    batch, settings["concurrency"], settings
+            if admission == "continuous":
+                from gleipnir.serving import admission as admission_module
+
+                (out / "client_source.py").write_bytes(
+                    Path(admission_module.__file__).read_bytes()
                 )
-                values.extend(observed)
-                http_seconds += elapsed
-                batch_name = (
-                    f"repeat{repeat}/batch{offset // settings['batch_rows']:03d}.json"
+                last_progress = 0
+
+                def progress(
+                    completed: int, total: int, repeat_index: int = repeat
+                ) -> None:
+                    nonlocal last_progress
+                    if (
+                        completed - last_progress >= settings["batch_rows"]
+                        or completed == total
+                    ):
+                        print("id_progress", repeat_index, completed, total, flush=True)
+                        last_progress = completed
+
+                (
+                    values,
+                    seconds,
+                    persistence,
+                ) = await admission_module.continuous_score_trial(
+                    workload,
+                    settings["concurrency"],
+                    settings,
+                    checkpoint=out / f"repeat{repeat}/responses.jsonl",
+                    contract={
+                        "config_sha256": sha(config),
+                        "input_binding_sha256": sha(out / "input_binding.json"),
+                        "merged_artifact_sha256": sha(out / "merged_artifact.json"),
+                        "server_command_sha256": hashlib.sha256(
+                            json.dumps(command, sort_keys=True).encode()
+                        ).hexdigest(),
+                    },
+                    progress=progress,
                 )
-                saved_at = time.perf_counter()
-                write(out / batch_name, observed)
-                save_seconds = time.perf_counter() - saved_at
-                lengths = [r["prompt_tokens"] for r in batch]
-                latencies = [r["latency_seconds"] for r in observed]
-                batch_records.append(
-                    {
-                        "batch": offset // settings["batch_rows"],
-                        "rows": len(batch),
-                        "prompt_tokens": sum(lengths),
-                        "http_seconds": elapsed,
-                        "save_seconds": save_seconds,
-                        "prompt_token_min": min(lengths),
-                        "prompt_token_max": max(lengths),
-                        "request_latency_p50_seconds": float(
-                            np.percentile(latencies, 50)
-                        ),
-                        "request_latency_p90_seconds": float(
-                            np.percentile(latencies, 90)
-                        ),
-                        "request_latency_max_seconds": max(latencies),
-                    }
-                )
-                print("id_progress", repeat, len(values), len(workload), flush=True)
-            seconds = time.perf_counter() - started
-            write(out / f"repeat{repeat}.json", values)
-            record = {
-                "repeat": repeat,
-                "first_id_shape_use_inclusive": repeat == 0,
-                "http_seconds": http_seconds,
-                "batch_records": batch_records,
-                **measurement_summary(values, seconds),
-            }
+                if persistence["resumed_rows"]:
+                    raise ValueError(
+                        "resumed segment cannot count as a complete timed pass"
+                    )
+                exported_at = time.perf_counter()
+                write(out / f"repeat{repeat}.json", values)
+                export_seconds = time.perf_counter() - exported_at
+                record = {
+                    "repeat": repeat,
+                    "admission": admission,
+                    "first_id_shape_use_inclusive": repeat == 0,
+                    "checkpoint": persistence,
+                    "prediction_export_seconds": export_seconds,
+                    **measurement_summary(values, seconds + export_seconds),
+                }
+            else:
+                values, http_seconds, batch_records = [], 0.0, []
+                started = time.perf_counter()
+                for offset in range(0, len(workload), settings["batch_rows"]):
+                    batch = workload[offset : offset + settings["batch_rows"]]
+                    observed, elapsed = await trial(
+                        batch, settings["concurrency"], settings
+                    )
+                    values.extend(observed)
+                    http_seconds += elapsed
+                    batch_index = offset // settings["batch_rows"]
+                    batch_name = f"repeat{repeat}/batch{batch_index:03d}.json"
+                    saved_at = time.perf_counter()
+                    write(out / batch_name, observed)
+                    save_seconds = time.perf_counter() - saved_at
+                    lengths = [r["prompt_tokens"] for r in batch]
+                    latencies = [r["latency_seconds"] for r in observed]
+                    batch_records.append(
+                        {
+                            "batch": offset // settings["batch_rows"],
+                            "rows": len(batch),
+                            "prompt_tokens": sum(lengths),
+                            "http_seconds": elapsed,
+                            "save_seconds": save_seconds,
+                            "prompt_token_min": min(lengths),
+                            "prompt_token_max": max(lengths),
+                            "request_latency_p50_seconds": float(
+                                np.percentile(latencies, 50)
+                            ),
+                            "request_latency_p90_seconds": float(
+                                np.percentile(latencies, 90)
+                            ),
+                            "request_latency_max_seconds": max(latencies),
+                        }
+                    )
+                    print("id_progress", repeat, len(values), len(workload), flush=True)
+                seconds = time.perf_counter() - started
+                write(out / f"repeat{repeat}.json", values)
+                record = {
+                    "repeat": repeat,
+                    "first_id_shape_use_inclusive": repeat == 0,
+                    "http_seconds": http_seconds,
+                    "batch_records": batch_records,
+                    **measurement_summary(values, seconds),
+                }
             report["passes"].append(record)
             write(out / "summary.json", report)
             print(
@@ -476,6 +551,7 @@ async def run(name: str, reuse_prepared: str | None = None) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
+    parser.add_argument("--config", default="config.json")
     parser.add_argument("--reuse-prepared")
     args = parser.parse_args()
     if args.name in {"", ".", ".."} or Path(args.name).name != args.name:
@@ -485,7 +561,9 @@ def main() -> None:
         or Path(args.reuse_prepared).name != args.reuse_prepared
     ):
         raise ValueError("prepared run name must be a stem")
-    asyncio.run(run(args.name, args.reuse_prepared))
+    if Path(args.config).name != args.config or not args.config.endswith(".json"):
+        raise ValueError("config must be an experiment JSON filename")
+    asyncio.run(run(args.name, args.reuse_prepared, args.config))
 
 
 if __name__ == "__main__":

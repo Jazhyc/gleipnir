@@ -103,3 +103,60 @@ def test_prepared_server_requires_exact_live_command(tmp_path, monkeypatch):
     (proc / "cmdline").write_bytes(b"python\0-m\0other.server\0")
     with pytest.raises(ValueError, match="no longer live"):
         run.ExistingServer({"pid": 123, "command": ["python", "-m", "expected.server"]})
+
+
+def test_continuous_analysis_pairs_grouped_control_and_reports_speed(tmp_path):
+    import json
+
+    from experiments.b200_optimized_id.analyze import analyze
+
+    rows, baseline = population()
+    control, candidate = tmp_path / "grouped", tmp_path / "continuous"
+    control.mkdir()
+    candidate.mkdir()
+    for directory in (control, candidate):
+        (directory / "reference.json").write_text(json.dumps(baseline))
+        (directory / "repeat0.json").write_text(
+            json.dumps([r | {"latency_seconds": 0.5} for r in baseline])
+        )
+        (directory / "workload.json").write_text(json.dumps(rows))
+    (control / "summary.json").write_text(
+        json.dumps(
+            {
+                "status": "complete",
+                "passes": [{"seconds": 4, "prompt_tokens_per_second": 2}],
+            }
+        )
+    )
+    (candidate / "summary.json").write_text(
+        json.dumps(
+            {
+                "status": "complete",
+                "passes": [{"seconds": 2, "prompt_tokens_per_second": 4}],
+            }
+        )
+    )
+    frozen = control / "repeat0.json"
+    (candidate / "settings.json").write_text(
+        json.dumps(
+            {
+                "repeats": 1,
+                "grouped_control": {
+                    "directory": str(control),
+                    "files_sha256": {
+                        str(frozen): hashlib.sha256(frozen.read_bytes()).hexdigest()
+                    },
+                },
+            }
+        )
+    )
+    result = analyze(candidate)
+    assert (
+        result["vs_grouped_optimized"]["paired"]["score"]["mean_absolute_difference"]
+        == 0
+    )
+    assert result["throughput_comparison"]["throughput_ratio"] == 2
+    assert result["throughput_comparison"]["elapsed_reduction_fraction"] == 0.5
+    frozen.write_text("[]")
+    with pytest.raises(ValueError, match="frozen grouped comparison"):
+        analyze(candidate)

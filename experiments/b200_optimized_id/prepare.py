@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import hashlib
 import json
 from pathlib import Path
@@ -34,7 +35,14 @@ def align_inputs(rows: list[dict], control: list[dict]) -> None:
 
 
 def main() -> None:
-    settings = json.loads((EXPERIMENT / "config.json").read_text())
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--config", default="config.json")
+    args = parser.parse_args()
+    if Path(args.config).name != args.config or not args.config.endswith(".json"):
+        raise ValueError("config must be an experiment JSON filename")
+    config = EXPERIMENT / args.config
+    settings = json.loads(config.read_text())
+    binding_path = ROOT / settings.get("binding", str(BINDING.relative_to(ROOT)))
     for field in (
         "input",
         "input_manifest",
@@ -77,8 +85,23 @@ def main() -> None:
             "serving_canary",
         )
     ]
+    grouped = settings.get("grouped_control")
+    if grouped is not None:
+        for filename, expected in grouped["files_sha256"].items():
+            if sha(ROOT / filename) != expected:
+                raise ValueError(f"grouped control changed: {filename}")
+            files.append(filename)
+        files.append(settings["retired_parent"])
+        control_settings = json.loads(
+            (ROOT / grouped["directory"] / "settings.json").read_text()
+        )
+        exclusions = {"admission", "binding", "grouped_control", "retired_parent"}
+        if {k: v for k, v in control_settings.items() if k not in exclusions} != {
+            k: v for k, v in settings.items() if k not in exclusions
+        }:
+            raise ValueError("continuous comparison changed more than client admission")
     binding = {
-        "config_sha256": sha(EXPERIMENT / "config.json"),
+        "config_sha256": sha(config),
         "files": {name: sha(ROOT / name) for name in files},
         "master_sha256": settings["master_sha256"],
         "serving_adapter_sha256": settings["serving_adapter_sha256"],
@@ -86,9 +109,9 @@ def main() -> None:
         "rows": len(rows),
         "prompt_tokens": sum(r["prompt_tokens"] for r in old),
     }
-    if BINDING.exists() and json.loads(BINDING.read_text()) != binding:
+    if binding_path.exists() and json.loads(binding_path.read_text()) != binding:
         raise ValueError("existing frozen ID binding changed")
-    write(BINDING, binding)
+    write(binding_path, binding)
     print("id_control_bound", len(rows), binding["prompt_tokens"])
 
 

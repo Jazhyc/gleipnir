@@ -70,3 +70,45 @@ tails but do not isolate their causal throughput cost.
 
 The completed one-pass result and its quality/throughput qualifications are in
 [the ID drift finding](../../docs/findings/b200_optimized_id.md).
+
+## Continuous-admission comparison
+
+Hypothesis: keeping admission slots filled instead of draining each 128-row
+partition increases full-ID throughput. The intervention is continuous client
+admission at concurrency 128, one shared HTTP connection pool, and an asynchronous
+append-only response journal. Keep the entire ordered workload, checkpoint,
+precision, server command, cache policy, context limit and engine limits fixed.
+Reuse the complete grouped `id02` predictions and timings without rerunning them;
+freeze their hashes in `continuous.json` and a separate input binding. Run one
+complete pass, report paired quality against both grouped optimized and archived
+BF16 predictions, and retain finite drift without ID selection or tuning.
+
+`gleipnir.serving.admission.continuous_score_trial` immediately replaces finished
+requests. A background writer flushes/fsyncs completion-order JSONL records while
+the HTTP workers proceed; final exports restore input order. Persisted records
+are resumable only with the same adapter/input/client contract and finite,
+untruncated, logit-consistent scores. Validate the whole prefix before discarding
+a torn final line; reject malformed interior records and duplicate indices.
+Request and writer failures cancel in-flight work and drain successful queued
+responses where storage remains healthy. A bounded writer queue applies
+backpressure if storage falls behind; an abrupt client kill can lose responses
+not yet persisted. Record I/O and queue-wait timings rather than assuming zero
+save overhead. Resumed segments remain diagnostics, not complete timed passes.
+
+Reuse the persistent native caches and the retired ID server's environment;
+recheck the real adapter canary, exclude quick64 warmup, time one full pass and
+retire the server afterward. Stop on the original identity/finite/native failures
+or journal failure. There is no quality promotion. A single sequential comparison
+also changes HTTP pool reuse and persistence, and cannot isolate the barrier's
+causal cost or establish a precise repeat distribution. Startup/compilation is
+excluded; previously seen ID shapes are cached, while new batch combinations
+can still encounter first-use work.
+
+```bash
+PYTHONPATH=src:. python -m experiments.b200_optimized_id.prepare --config continuous.json
+# Upload the new client, experiment sources and continuous binding only.
+PYTHONPATH=<frozen-serving-source-bootstrap>:src:. <serving-python> \
+  -m experiments.b200_optimized_id.run --config continuous.json --name continuous01
+PYTHONPATH=src:. python -m experiments.b200_optimized_id.analyze \
+  results/b200_optimized_id/continuous01
+```

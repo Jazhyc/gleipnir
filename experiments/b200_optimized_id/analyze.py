@@ -147,6 +147,39 @@ def analyze(directory: Path) -> dict:
         for i in range(len(summary["passes"]))
     ]
     result = compare(rows, baseline, runs)
+    if settings.get("grouped_control") is not None:
+        grouped = settings["grouped_control"]
+        root = Path(__file__).resolve().parents[2]
+        for filename, expected in grouped["files_sha256"].items():
+            if hashlib.sha256((root / filename).read_bytes()).hexdigest() != expected:
+                raise ValueError(f"frozen grouped comparison changed: {filename}")
+        control = root / grouped["directory"]
+        old_values = json.loads((control / "repeat0.json").read_text())
+        old_rows = json.loads((control / "reference.json").read_text())
+        grouped_values = [r | v for r, v in zip(old_rows, old_values, strict=True)]
+        result["vs_grouped_optimized"] = compare(rows, grouped_values, runs)
+        old_summary = json.loads((control / "summary.json").read_text())
+        if old_summary["status"] != "complete" or len(old_summary["passes"]) != 1:
+            raise ValueError("grouped control is not one complete pass")
+        a, b = old_summary["passes"][0], summary["passes"][0]
+        result["throughput_comparison"] = {
+            "grouped_seconds": a["seconds"],
+            "continuous_seconds": b["seconds"],
+            "grouped_input_tokens_per_second": a["prompt_tokens_per_second"],
+            "continuous_input_tokens_per_second": b["prompt_tokens_per_second"],
+            "elapsed_reduction_fraction": 1 - b["seconds"] / a["seconds"],
+            "throughput_ratio": b["prompt_tokens_per_second"]
+            / a["prompt_tokens_per_second"],
+            "repeats": 1,
+            "grouped_mean_http_requests_in_flight": sum(
+                r["latency_seconds"] for r in old_values
+            )
+            / a["seconds"],
+            "continuous_mean_http_requests_in_flight": sum(
+                r["latency_seconds"] for r in runs[0]
+            )
+            / b["seconds"],
+        }
     result["analysis_source_sha256"] = hashlib.sha256(
         Path(__file__).read_bytes()
     ).hexdigest()
@@ -162,6 +195,11 @@ def analyze(directory: Path) -> dict:
     (directory / "analysis_source.py").write_bytes(Path(__file__).read_bytes())
     print("ID metric deltas", result["metric_deltas"])
     print("ID score drift", result["score_drift"])
+    if "vs_grouped_optimized" in result:
+        print(
+            "vs grouped metric deltas", result["vs_grouped_optimized"]["metric_deltas"]
+        )
+        print("throughput", result["throughput_comparison"])
     return result
 
 
