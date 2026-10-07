@@ -47,3 +47,14 @@ Push only this experiment directory to the existing B200; do not overwrite its
 frozen serving sources or metadata reconciliation. Results and executed sources
 are under `results/b200_long_context/<name>/`; server lifecycle uses the shared
 identity-checked stop helper and metadata directory.
+
+The first extended attempt exposes a pinned vLLM 0.24.0 boundary bug: a running
+chunked pooling request reserves one generated-token position and stalls before
+its final input token at the exact context cap. Preserve `long01/boundary_stall.json`
+and that failed attempt. `PoolingContextScheduler` changes only this reservation
+to zero, with CPU-source/runtime checks and upstream FCFS order unchanged. A CPU
+test using the installed scheduler reproduces the stall and schedules the last
+token after correction. Retry with `python -m experiments.b200_long_context.resume
+--name long02 --failed-name long01`, reusing native/quality receipts and all GPU
+sources/compiler identity, rechecking the real canary and rerunning all six
+lengths on the same corrected configuration.

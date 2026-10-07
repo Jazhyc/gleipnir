@@ -6,6 +6,7 @@ import pytest
 
 from experiments.b200_long_context.envelope import enable, validate
 from experiments.b200_long_context.run import extended_command, synthetic
+from experiments.b200_long_context.summarize import records
 
 
 class CharacterTokenizer:
@@ -76,3 +77,11 @@ def test_native_receipt_requires_all_long_histories(tmp_path):
     }
     with pytest.raises(ValueError, match="chunk/history coverage"):
         validate(receipt, tmp_path)
+
+
+def test_export_distinguishes_unmeasured_and_invalid_outcomes():
+    with pytest.raises(ValueError, match="still active"):
+        records({"status": "running_extended"})
+    assert records({"status": "failed", "measurements": []}) == []
+    with pytest.raises(ValueError, match="invalid measured"):
+        records({"status": "complete", "measurements": [{"status": "failed"}]})
