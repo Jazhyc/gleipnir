@@ -12,6 +12,11 @@ if validation := os.environ.get("GLEIPNIR_FROST_WRAPPER_VALIDATION"):
 
     enable_worker_control(Path(__file__).resolve().parents[2], validation)
 
+if os.environ.get("GLEIPNIR_PROMPT_ONLY_TRACE"):
+    from experiments.b200_attention_gdn_serving.prompt_only_trace import enable_trace
+
+    enable_trace(Path(__file__).resolve().parents[2])
+
 if __name__ == "__main__":
     import json
     import sys

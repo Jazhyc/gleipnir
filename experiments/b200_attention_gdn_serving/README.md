@@ -1068,3 +1068,15 @@ and absence are verified. No worker remains. Retain the 300 GB NC2 network volum
 `ixbh81vf9c`, master adapter, shared disk caches and results for a later authorized
 allocation. Reconstruct the disposable merged model and restage the runtime;
 the experimental cache-free path remains unselected.
+
+The resumed investigation records operator progress before GPU launches and
+optionally synchronizes after each operator, saving exact whole-batch token IDs
+and tensor layouts for replay. Enable with `GLEIPNIR_PROMPT_ONLY_TRACE` pointing
+inside project `results/` and `GLEIPNIR_PROMPT_ONLY_TRACE_MODE=sync` (or `launch`).
+The `prompt_only_trace_state` worker RPC removes all diagnostic patches with
+`mode=off` after drained requests. Diagnostic timings cannot support speed
+claims, and synchronized success does not establish asynchronous stability.
+Preserve the last pending operator and failed batch before restarting; require
+repeated asynchronous full320 passes, c1 latency and baseline-relative AUROC
+before calling the stall fixed. Test irregular large FP4 row counts when the
+captured evidence implicates that path; do not assume attention is responsible.
