@@ -56,7 +56,7 @@ def main() -> None:
         torch=torch.__version__,
         cuda=torch.version.cuda,
         source_sha256=sha256_file(Path(__file__)),
-        helper_sha256=sha256_file(Path("src/gleipnir/flashqla_training.py")),
+        helper_sha256=sha256_file(Path("src/gleipnir/training/backends/flashqla.py")),
         output_relative_l2_gate=0.01,
         gradient_relative_l2_gate=0.02,
         warmup_calls=10,

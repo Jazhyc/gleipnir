@@ -157,12 +157,12 @@ def main(default_config: Path | None = None) -> None:
         *(
             ROOT / "src/gleipnir" / name
             for name in [
-                "packed_sequences.py",
+                "training/packing.py",
                 "training/packed.py",
                 "__init__.py",
                 "_compat.py",
-                "packed_training_screen.py",
-                "packed_benchmark.py",
+                "training/screens/packed.py",
+                "training/screens/benchmark.py",
                 "campaigns/training_command.py",
             ]
         ),

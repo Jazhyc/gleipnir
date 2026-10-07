@@ -53,13 +53,13 @@ def main() -> None:
     files = [
         Path(__file__).relative_to(ROOT),
         profile.relative_to(ROOT),
-        Path("src/gleipnir/validated_startup.py"),
+        Path("src/gleipnir/training/startup.py"),
         Path("src/gleipnir/training/packed.py"),
         Path("src/gleipnir/__init__.py"),
         Path("src/gleipnir/_compat.py"),
         Path("src/gleipnir/campaigns/training_command.py"),
-        Path("src/gleipnir/monitoring_campaign_runtime.py"),
-        Path("src/gleipnir/attention_backends.py"),
+        Path("src/gleipnir/campaigns/runtime.py"),
+        Path("src/gleipnir/training/backends/attention.py"),
         Path("experiments/deception_distillation/train_student_sft.py"),
     ]
     contract = {

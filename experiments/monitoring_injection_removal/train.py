@@ -66,7 +66,7 @@ def main() -> None:
             "experiments/deception_distillation/train_student_sft.py",
             "src/gleipnir/campaigns/training_command.py",
             "src/gleipnir/training/packed.py",
-            "src/gleipnir/packed_sequences.py",
+            "src/gleipnir/training/packing.py",
         ),
     )
 

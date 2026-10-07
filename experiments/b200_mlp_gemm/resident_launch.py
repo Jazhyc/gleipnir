@@ -110,7 +110,7 @@ def main() -> None:
             for x in source["source_sha256"]
             if not x.startswith("experiments/b200_mlp_gemm/")
         ],
-        Path("src/gleipnir/validated_startup.py"),
+        Path("src/gleipnir/training/startup.py"),
         Path("src/gleipnir/training/adaptive_microbatching.py"),
         Path("src/gleipnir/__init__.py"),
         Path("src/gleipnir/_compat.py"),

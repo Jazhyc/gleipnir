@@ -74,7 +74,7 @@ def validate_kernel_sources() -> None:
     """Require the source generation covered by recorded arithmetic validation."""
     for name, expected in KERNEL_SHA256.items():
         relative = canonical_source_reference("src/gleipnir/" + name)
-        source = Path(__file__).resolve().parents[2] / relative
+        source = Path(__file__).resolve().parents[4] / relative
         actual = hashlib.sha256(source.read_bytes()).hexdigest()
         if actual != expected:
             raise ValueError(f"validated native FP4 kernel source changed: {name}")

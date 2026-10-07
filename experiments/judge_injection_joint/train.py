@@ -78,7 +78,7 @@ def main() -> None:
             "src/gleipnir/training/binary_tasks.py",
             *DECISION_SOURCE_PATHS,
             "src/gleipnir/campaigns/training_command.py",
-            "src/gleipnir/packed_sequences.py",
+            "src/gleipnir/training/packing.py",
             "src/gleipnir/training/packed.py",
         ]
         write_json(

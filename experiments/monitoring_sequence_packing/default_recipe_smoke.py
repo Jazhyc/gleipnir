@@ -77,11 +77,11 @@ def main() -> None:
         "src/gleipnir/training/packed.py",
         "src/gleipnir/__init__.py",
         "src/gleipnir/_compat.py",
-        "src/gleipnir/packed_sequences.py",
-        "src/gleipnir/packed_training_screen.py",
+        "src/gleipnir/training/packing.py",
+        "src/gleipnir/training/screens/packed.py",
         "src/gleipnir/training/adaptive_microbatching.py",
-        "src/gleipnir/flashqla_training.py",
-        "src/gleipnir/bf16_lora.py",
+        "src/gleipnir/training/backends/flashqla.py",
+        "src/gleipnir/training/bf16_lora.py",
     ]
     contract = {
         "config": config,

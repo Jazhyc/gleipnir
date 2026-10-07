@@ -13,6 +13,7 @@ from typing import Any
 import torch
 from transformers import TrainerCallback
 
+from gleipnir._compat import canonical_source_reference
 from gleipnir.packed_benchmark import summarize
 from gleipnir.validated_startup import validation_reference as bf16_validation_reference
 
@@ -58,7 +59,9 @@ def profile_validation_reference(path: Path, **kwargs: Any) -> dict:
     ):
         relative = f"src/gleipnir/{name}"
         if (
-            hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()
+            hashlib.sha256(
+                (ROOT / canonical_source_reference(relative)).read_bytes()
+            ).hexdigest()
             != launch["source_sha256"][relative]
         ):
             raise ValueError(f"validated kernel source changed: {relative}")

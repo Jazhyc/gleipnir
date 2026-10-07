@@ -170,7 +170,7 @@ def main() -> None:
                         "src/gleipnir/training/packed.py",
                         "src/gleipnir/__init__.py",
                         "src/gleipnir/_compat.py",
-                        "src/gleipnir/packed_sequences.py",
+                        "src/gleipnir/training/packing.py",
                     ]
                 },
             },

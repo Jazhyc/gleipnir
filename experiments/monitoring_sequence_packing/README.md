@@ -64,7 +64,7 @@ all four deliberately incomplete configurations showed leakage. These are
 random-weight CPU reference results, not B200 kernel parity or quality evidence.
 
 The bounded explicit mask and layout builder live in
-`src/gleipnir/packed_sequences.py`. The default dense-mask limit is 2,048 tokens;
+`src/gleipnir/training/packing.py`. The default dense-mask limit is 2,048 tokens;
 never build a quadratic dense mask over a production 16k/30k packed row.
 
 ## Next B200 stage

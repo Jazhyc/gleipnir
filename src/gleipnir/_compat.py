@@ -28,7 +28,6 @@ MODULE_ALIASES = {
     "gleipnir.evaluation_watchdog": "gleipnir.evaluation.watchdog",
     "gleipnir.judge_injection_metrics": "gleipnir.evaluation.preferences",
     "gleipnir.monitoring_scoring": "gleipnir.evaluation.scoring",
-    "gleipnir.evaluation.campaign": "gleipnir.monitoring_campaign_evaluation",
     "gleipnir.adaptive_microbatching": "gleipnir.training.adaptive_microbatching",
     "gleipnir.binary_task_training": "gleipnir.training.binary_tasks",
     "gleipnir.branch_model": "gleipnir.training.branch_model",
@@ -190,6 +189,20 @@ MODULE_ALIASES = {
     "gleipnir.vllm_mixed_fp8": "gleipnir.serving.vllm.mixed_fp8",
     "gleipnir.vllm_nvfp4": "gleipnir.serving.vllm.nvfp4",
     "gleipnir.vllm_online_nvfp4": "gleipnir.serving.vllm.online_nvfp4",
+    "gleipnir.attention_backends": "gleipnir.training.backends.attention",
+    "gleipnir.bf16_lora": "gleipnir.training.bf16_lora",
+    "gleipnir.flashqla_training": "gleipnir.training.backends.flashqla",
+    "gleipnir.fouroversix_training": "gleipnir.training.backends.fouroversix",
+    "gleipnir.native_fp4_training": "gleipnir.training.backends.native_fp4",
+    "gleipnir.qwen35_fast_training": "gleipnir.training.backends.qwen35",
+    "gleipnir.packed_sequences": "gleipnir.training.packing",
+    "gleipnir.training_hotpath": "gleipnir.training.hotpath",
+    "gleipnir.validated_startup": "gleipnir.training.startup",
+    "gleipnir.packed_benchmark": "gleipnir.training.screens.benchmark",
+    "gleipnir.packed_training_screen": "gleipnir.training.screens.packed",
+    "gleipnir.precision_training_screen": "gleipnir.training.screens.precision",
+    "gleipnir.monitoring_campaign_runtime": "gleipnir.campaigns.runtime",
+    "gleipnir.monitoring_campaign_evaluation": "gleipnir.evaluation.campaign",
 }
 
 _CLI_MODULES = {

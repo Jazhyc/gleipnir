@@ -289,9 +289,9 @@ def main() -> None:
                 "training/packed.py",
                 "__init__.py",
                 "_compat.py",
-                "packed_training_screen.py",
-                "packed_benchmark.py",
-                "attention_backends.py",
+                "training/screens/packed.py",
+                "training/screens/benchmark.py",
+                "training/backends/attention.py",
                 "campaigns/training_command.py",
             )
         ],

@@ -20,7 +20,11 @@ from gleipnir._compat import canonical_source_reference
             "src/gleipnir/monitoring_systems_screen.py",
             "src/gleipnir/campaigns/systems_screen.py",
         ),
-        ("src/gleipnir/native_fp4_training.py", "src/gleipnir/native_fp4_training.py"),
+        (
+            "src/gleipnir/native_fp4_training.py",
+            "src/gleipnir/training/backends/native_fp4.py",
+        ),
+        ("src/gleipnir/__init__.py", "src/gleipnir/__init__.py"),
         (
             "results/prior/executed_sources/src/gleipnir/packed_training.py",
             "results/prior/executed_sources/src/gleipnir/packed_training.py",

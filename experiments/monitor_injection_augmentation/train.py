@@ -85,11 +85,11 @@ def main() -> None:
             *SCORING_SOURCE_PATHS,
             "experiments/monitoring_hard_labels/train.py",
             "src/gleipnir/campaigns/training.py",
-            "src/gleipnir/monitoring_campaign_runtime.py",
+            "src/gleipnir/campaigns/runtime.py",
             "experiments/deception_distillation/train_student_sft.py",
             "src/gleipnir/campaigns/training_command.py",
             "src/gleipnir/training/packed.py",
-            "src/gleipnir/packed_sequences.py",
+            "src/gleipnir/training/packing.py",
         ),
     )
     print("training_complete monitor_injection_augmentation", flush=True)

@@ -190,8 +190,10 @@ def main() -> None:
         )
     ]
     sources += [
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
         ROOT / "data/student_injection_awareness/soft_targets.jsonl",
-        ROOT / "src/gleipnir/validated_startup.py",
+        ROOT / "src/gleipnir/training/startup.py",
     ]
     sources.append(
         ROOT / "results/monitor_injection_augmentation/4b/augmented/token_audit.json"

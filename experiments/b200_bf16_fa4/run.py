@@ -110,7 +110,7 @@ def main() -> None:
         args.config,
         Path(__file__),
         ROOT / config["profile"],
-        ROOT / "src/gleipnir/packed_sequences.py",
+        ROOT / "src/gleipnir/training/packing.py",
         ROOT / "src/gleipnir/training/packed.py",
         ROOT / "src/gleipnir/__init__.py",
         ROOT / "src/gleipnir/_compat.py",

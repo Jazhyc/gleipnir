@@ -65,7 +65,7 @@ def main() -> None:
                 ROOT / relative
                 for relative in (
                     "experiments/deception_distillation/train_student_sft.py",
-                    "src/gleipnir/native_fp4_training.py",
+                    "src/gleipnir/training/backends/native_fp4.py",
                     "src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py",
                     "src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py",
                     "src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py",
@@ -73,10 +73,10 @@ def main() -> None:
                     "src/gleipnir/training/packed.py",
                     "src/gleipnir/__init__.py",
                     "src/gleipnir/_compat.py",
-                    "src/gleipnir/packed_sequences.py",
-                    "src/gleipnir/validated_startup.py",
-                    "src/gleipnir/monitoring_campaign_evaluation.py",
-                    "src/gleipnir/monitoring_campaign_runtime.py",
+                    "src/gleipnir/training/packing.py",
+                    "src/gleipnir/training/startup.py",
+                    "src/gleipnir/evaluation/campaign.py",
+                    "src/gleipnir/campaigns/runtime.py",
                     "src/gleipnir/campaigns/training_command.py",
                 )
             ],

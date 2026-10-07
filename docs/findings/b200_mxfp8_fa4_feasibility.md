@@ -72,7 +72,7 @@ Masking the output of noncausal attention cannot restore causal semantics.
 
 ## What can be reused and what must change
 
-Reuse `packed_fa4_interface` in `src/gleipnir/packed_sequences.py` as the
+Reuse `packed_fa4_interface` in `src/gleipnir/training/packing.py` as the
 integration boundary once a compatible kernel exists. It already delivers
 unpadded `(tokens, heads, dimension)` Q/K/V with independent cumulative sequence
 offsets. Replace only the eight full-attention layers; keep the 24 FlashQLA

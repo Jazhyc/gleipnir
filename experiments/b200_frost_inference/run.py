@@ -62,7 +62,7 @@ def main() -> None:
         "src/gleipnir/kernels/fp4/cudnn_fp4_gemm.py",
         "src/gleipnir/kernels/fp4/cudnn_fp4_epilogue.py",
         "src/gleipnir/kernels/fp4/cudnn_fp4_mlp.py",
-        "src/gleipnir/native_fp4_training.py",
+        "src/gleipnir/training/backends/native_fp4.py",
         "src/gleipnir/kernels/fp4/nvfp4_pack.py",
         "experiments/b200_frost_inference/worker.py",
     ]

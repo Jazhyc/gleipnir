@@ -109,8 +109,10 @@ def main() -> None:
     environment = gpu_environment(environment, 0, cache)
     environment["OMP_NUM_THREADS"] = "4"
     sources = [
-        ROOT / "src/gleipnir/fouroversix_training.py",
-        ROOT / "src/gleipnir/precision_training_screen.py",
+        ROOT / "src/gleipnir/__init__.py",
+        ROOT / "src/gleipnir/_compat.py",
+        ROOT / "src/gleipnir/training/backends/fouroversix.py",
+        ROOT / "src/gleipnir/training/screens/precision.py",
         ROOT / "experiments/deception_distillation/train_student_sft.py",
         *Path(__file__).parent.glob("*.py"),
         Path(__file__).with_name("README.md"),

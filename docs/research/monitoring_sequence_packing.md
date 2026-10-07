@@ -60,7 +60,7 @@ propagates cumulative sequence lengths through forward and backward scan,
 chunk construction and cumulative gate calculations. Its variable-length API
 uses physical batch one. Separate logical examples remain separate scans.
 
-Our [FlashQLA adapter](../../src/gleipnir/flashqla_training.py) forwards
+Our [FlashQLA adapter](../../src/gleipnir/training/backends/flashqla.py) forwards
 `cu_seqlens` through both the backend adapter and precision boundary. The
 [pinned FlashQLA implementation](https://github.com/QwenLM/FlashQLA/blob/da06429d54b0f577de0a638f451ac8f0b395e0ac/flash_qla/ops/gated_delta_rule/chunk/__init__.py)
 saves boundaries for backward and exposes automatic intra-card splitting. That
