@@ -30,6 +30,15 @@ and durable paths, transfer checks and writeback time. Compare with the
 95.44-second cached restart, keeping the same arithmetic and cache identity;
 preserve a failed mirror trial and fall back to the shared cache if needed.
 
+Measured: package staging plus computation-bound identity reduced an unchanged
+restart from 680.8 to 95.4 seconds; a new cache identity first took 441.9 seconds.
+The mirror reduced cached-graph loading from 19.3 to 14.7 seconds but its full
+startup took 105.3 seconds. It stays opt-in with `GLEIPNIR_COMPILER_MIRROR=1`.
+Default launches use the local dependency runtime and durable shared compiler
+caches. Both variants passed exact twenty-example serving parity. Full frozen
+development validation gave 198,904 input tokens/s, unchanged macro AUROC,
+pooled AUROC -0.0527 percentage points and no threshold flips.
+
 ## Large-prefill piecewise graphs (2026-10-07)
 
 Result: capture and numerical replay checks passed, but warm c128 throughput

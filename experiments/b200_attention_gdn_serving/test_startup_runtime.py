@@ -200,7 +200,11 @@ def test_compiler_mirror_persists_new_entries_without_deleting_shared_keys(tmp_p
         "mappings": {"VLLM_CACHE_ROOT": {"shared": str(shared), "local": str(local)}},
     }
     (folder / "manifest.json").write_text(json.dumps(data))
-    env = {"GLEIPNIR_SERVING_RUNTIME": str(target), "VLLM_CACHE_ROOT": str(shared)}
+    env = {
+        "GLEIPNIR_COMPILER_MIRROR": "1",
+        "GLEIPNIR_SERVING_RUNTIME": str(target),
+        "VLLM_CACHE_ROOT": str(shared),
+    }
     receipt = compiler_mirror(root, env)
     assert env["VLLM_CACHE_ROOT"] == str(local)
     (local / "new").write_text("compiled kernel")

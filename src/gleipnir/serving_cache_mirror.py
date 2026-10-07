@@ -51,6 +51,8 @@ def stage_compiler_mirror(root: Path, target: Path = DEFAULT_RUNTIME) -> dict:
 
 def compiler_mirror(root: Path, environment: dict) -> dict | None:
     """Activate a staged mirror without creating a per-experiment cache."""
+    if environment.get("GLEIPNIR_COMPILER_MIRROR") != "1":
+        return None
     target = Path(environment.get("GLEIPNIR_SERVING_RUNTIME", str(DEFAULT_RUNTIME)))
     path = target / "compiler_cache/manifest.json"
     if not path.exists():
