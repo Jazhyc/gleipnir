@@ -21,7 +21,15 @@ def module():
 def decoded_native(monkeypatch):
     calls = []
 
-    def kernel(x, weight, other, backward, hardware_packing=False, fused_descale=False):
+    def kernel(
+        x,
+        weight,
+        other,
+        backward,
+        hardware_packing=False,
+        fused_descale=False,
+        runtime_m=False,
+    ):
         calls.append(backward)
         w = weight if other is None else torch.cat((weight, other))
         return F.linear(x, w.t() if backward else w)
