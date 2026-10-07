@@ -323,3 +323,11 @@ Artifacts: `results/b200_inference_benchmark/gigatoken_host01` contains the
 executed offline analysis, exact input trace hashes, exclusive scope totals and
 CPU inventory. The retained server stays healthy in native mode; this diagnosis
 does not change code, kernels, affinity or the selected reference.
+
+The subsequent authorized [CPU-placement comparison](b200_serving_cpu_placement.md)
+tests socket-wide local affinity, disjoint API/engine groups and a fixed engine
+submission core across 45 timed passes. None meets the frozen combined timing
+rule; original masks are restored. There is no quota throttling during timed
+c128 passes, and engine main-thread runqueue waits remain below 1.21 ms per pass.
+This gives no evidence of significant CPU starvation and redirects investigation
+toward wrapper work/waits rather than adopting a CPU-local mask.

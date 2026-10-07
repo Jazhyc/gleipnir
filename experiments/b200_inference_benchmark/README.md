@@ -258,6 +258,15 @@ pairs, one excluded warmup per mode/workload, and the same frozen selection and
 quality guards. Restore original masks on failure or no eligible gain. Stop
 after this follow-up; no memory migration, restart or new capacity.
 
+Both suites complete (45 timed passes). Fixed-core paired throughput is -0.49%
+with only one of six improving pairs; c1 median improves 160.48 to 157.15 ms but
+p95 stays 195.33/195.35 ms. None of the three placements meets the frozen timing
+rule, so original masks are restored. c1 scores are exact; c128 macro/pooled
+AUROC shifts stay within 0.1 percentage points. No timed c128 pass is CPU-quota
+throttled; engine main-thread runqueue waits stay below 1.21 ms per pass.
+All 71 collected artifacts verify. The same warm native API/engine remains
+healthy. See [the CPU-placement finding](../../docs/findings/b200_serving_cpu_placement.md).
+
 ## Completed baseline, 2026-10-06
 
 All six timed passes complete on the 64-row quick workload (269,411 prompt
