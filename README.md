@@ -61,6 +61,9 @@ Matched monitoring throughput ablations use the config-driven
 only a Hydra YAML config and experiment README. Preparation resolves defaults
 and overrides into the hashed JSON execution contract; see
 [`docs/decisions/config_driven_systems_screens.md`](docs/decisions/config_driven_systems_screens.md).
+Full one-epoch monitoring campaigns use `gleipnir.campaigns.monitoring` for
+training, FP32 export, BF16 merge, new-adapter parity and registered ID/APPS
+evaluation; see the [campaign example](experiments/monitoring_campaign/README.md).
 The user-selected recipe for future single-B200 Qwen3.5-4B training is
 `systems_screen@_global_: qwen35_4b_b200_default`: native NVFP4 MLP forward and
 base input gradients with hardware activation packing and fused descale,
