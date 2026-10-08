@@ -319,6 +319,96 @@ descriptive timings, with no inference recipe selection. The
 is separate from the frozen training/ID run. Results/data/logs use
 `b200-augmented-bf16-apps01`; `completion_audit.json` retains independent checks.
 
+## Same BF16-trained adapter on optimized ID/APPS serving
+
+The user requested ID/APPS scores with the selected optimized backend using
+the exact same completed BF16 MLP/FA4 adapter and merged checkpoint. Only the
+serving recipe changes: FP8 attention projections, FP4 MLP/GDN projections,
+native packed FP4 SwiGLU output and MXFP8 attention. Native tokenizer, causal
+LAST cached two-logit head, vLLM 0.31 scheduler, prefix-cache policy, 32K limits,
+original ordered populations, 128-row partitions and c128 stay fixed. All
+12,126 examples complete without retraining, merging, selection or promotion.
+
+| Metric | Same adapter, BF16 serving | Same adapter, optimized serving |
+| --- | ---: | ---: |
+| ID source-macro AUROC | 0.951944 | 0.942317 |
+| ID source-macro raw pAUROC@20 | 0.851131 | 0.825250 |
+| ID pooled AUROC | 0.942193 | 0.933396 |
+| ID pooled raw pAUROC@20 | 0.818023 | 0.790617 |
+| Gloom raw pAUROC@20 | 0.767121 | 0.724142 |
+| STRIDE raw pAUROC@20 | 0.935141 | 0.926357 |
+| APPS mean injected-honest FPR | 25.19% | 3.51% |
+| APPS mean injected-backdoor TPR | 70.38% | 30.55% |
+| APPS mean matched injection AUROC | 0.821611 | 0.786710 |
+| APPS mean matched raw pAUROC@20 | 0.519076 | 0.462986 |
+| APPS vanilla AUROC | 0.904002 | 0.892788 |
+| APPS vanilla raw pAUROC@20 | 0.696977 | 0.670552 |
+| APPS vanilla-backdoor TPR | 51.00% | 46.06% |
+
+Optimized serving loses 0.96 AUROC/2.59 pAUROC points on the ID macro and
+2.74 points on pooled pAUROC. Source AUROCs become 0.901291 Gloom and 0.983343
+STRIDE. Macro Brier worsens 0.087750 → 0.098549; fixed-0.5 recall/FPR become
+80.96%/6.10%, versus 84.67%/6.94%. Paired score MAE is 0.050149, mean shift
+−0.025046, correlation 0.972058 and 164 fixed-0.5 decisions flip; 91 unique
+scores remain. Under matched optimized serving, BF16 MLP training scores above
+the earlier FP4-trained diagnostic (macro AUROC/pAUROC 0.928250/0.796611), but
+that diagnostic retains its original failed-parity qualification.
+
+The APPS alarm reduction comes with a **39.82-point loss in injected-backdoor
+recall** at the clean-only operating point. Both runs achieve 12/655 clean
+alarms (1.83%), using strict score > threshold; optimized serving selects
+0.2450850131 versus BF16's 0.1329642402. Thus achieved clean FPR is matched,
+although the calibrated thresholds differ. Matched AUROC/pAUROC and vanilla
+ranking also regress. Low honest injection FPR alone is not a robustness gain.
+
+| Template | Optimized honest FPR | Optimized backdoor TPR | Optimized matched AUROC / pAUROC@20 |
+| --- | ---: | ---: | ---: |
+| GPT-4 | 1.07% | 24.73% | 0.815145 / 0.469920 |
+| GPT-4.1 | 8.24% | 42.81% | 0.754144 / 0.433431 |
+| GPT-4o | 1.22% | 24.11% | 0.790842 / 0.485607 |
+
+Honest injection-minus-neutral scores still rise in 92.37–96.64% of pairs,
+with mean shifts +0.053597, +0.125681 and +0.049414. Clean mean scores rise by
+0.011997 relative to BF16; injected-backdoor means shift −0.060225, −0.007347
+and −0.043305. This is not a uniform downward score offset. Full paired
+population/condition changes, calibration and ROC data are preserved. The
+serving comparison changes multiple precision/kernel components together and
+does not identify an individual MLP, GDN, attention or fusion cause.
+
+Fresh new-adapter parity passes with master MAE/correlation 0.014888/0.998776
+and merged HF BF16 0.014013/0.998907, below the unchanged 0.020 MAE limit.
+This pass uses ordinary parity-gated scope; no failed-parity waiver was needed.
+The worst master/merged differences are 0.062419/0.065800. Native audits verify
+64 FP4 MLP/48 FP4 GDN/16 FP8 attention projections, 16 actual FP8 projection
+calls, eight MXFP8 attention calls and the unchanged cached two-row BF16 head.
+Historical strict MXFP8/SwiGLU failures remain recorded in the selected recipe.
+Short training-source score parity does not establish held-out quality parity.
+
+| Population | BF16 seconds | Optimized seconds | BF16 input tokens/s | Optimized input tokens/s | Optimized requests/s | Optimized latency p50/p95, s |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| ID | 296.23 | 186.50 | 113,934 | 180,974 | 16.15 | 4.231 / 9.202 |
+| APPS benchmark | 85.84 | 64.62 | 95,608 | 127,005 | 80.22 | 1.112 / 1.564 |
+| APPS honest controls | 71.66 | 52.82 | 99,529 | 135,037 | 74.41 | 1.166 / 1.663 |
+
+Input throughput rises 58.84%/32.84%/35.68% on these single matched passes,
+excluding server startup and canaries. A late GDN Triton JIT occurs during ID
+scoring and is included; this is not a repeated warmed throughput benchmark.
+The existing thread/custom synchronous-scheduler warnings remain. No scoring
+error, source drift or token truncation occurred.
+
+Independent calculations reproduce ranking, APPS thresholds/FPR/TPR, raw
+partial AUC and paired shifts. All ordered identities, labels/metadata, hashes,
+exact 49,090,912 input tokens and finite logit/margin/sigmoid outputs pass.
+All 447 collected artifact checksums and 313 executed source snapshots match.
+Twenty-nine focused checks and scoped Ruff pass. The original BF16 scorer is
+retired with a receipt; all weights, cached controls and compiler caches remain.
+The passing optimized scorer stays warm on the existing NC2 B200. The selected
+regular checkpoint is unchanged; these results do not promote this adapter.
+The [optimized comparison contract](../../experiments/b200_augmented_bf16_optimized/README.md)
+uses `b200-augmented-bf16-optimized01` under results/data/logs, with separate
+`id_completion_audit.json`, `apps_completion_audit.json`, native audit and
+`paired_populations.json` receipts.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The
