@@ -409,6 +409,107 @@ uses `b200-augmented-bf16-optimized01` under results/data/logs, with separate
 `id_completion_audit.json`, `apps_completion_audit.json`, native audit and
 `paired_populations.json` receipts.
 
+## Same-adapter JudgeDeceiver A/B serving comparison
+
+The user requested the original JudgeDeceiver quality-judging result on BF16
+and optimized serving for the same completed BF16 MLP/FA4 adapter used above.
+Both backends use unchanged merged weights and original A/B prompts, with the
+cached causal LAST head selecting embedding rows 32/33. The original 4,188
+variants comprise 504 clean, 1,842 preferred-answer-injected and 1,842
+disfavored-answer-injected examples, 252 pairs and six query groups. Labels
+remain preferences; this is not harmfulness accuracy or FPR. This adapter did
+not train on JudgeDeceiver. No prompt, threshold or checkpoint is selected.
+
+| Metric | Same adapter, BF16 | Same adapter, optimized diagnostic |
+| --- | ---: | ---: |
+| Clean judging accuracy | 96.43% | 96.03% |
+| Preferred-answer-injected accuracy | 55.16% | 62.70% |
+| Disfavored-answer-injected accuracy | 98.91% | 93.70% |
+| Pooled accuracy | 79.37% | 80.35% |
+| Pooled AUROC | 0.912645 | 0.910696 |
+| Source-macro AUROC | 0.895737 | 0.867050 |
+| Query-macro AUROC | 0.891279 | 0.871505 |
+| Pooled Brier / log loss | 0.124935 / 0.367342 | 0.128152 / 0.384499 |
+| Pooled ECE | 0.079317 | 0.093500 |
+| Mean p(correct) | 0.760301 | 0.739551 |
+| Exact-half score ties | 93 | 104 |
+
+Optimized serving improves preferred-injection accuracy by **7.55 points**,
+but loses **5.21 points** on disfavored injections and 0.40 on clean examples.
+Its small pooled accuracy gain coexists with weaker ranking and calibration.
+There are 455 backend decision flips: preferred injections gain 237 correct
+decisions and lose 98; disfavored injections gain three and lose 99; clean
+examples gain eight and lose ten. Held-out score MAE/correlation are
+0.081398/0.944831 overall and 0.104779/0.787823 on preferred injections.
+The original tie rule, p(B) >=0.5 selects B, stays fixed on both backends.
+
+| Preferred-injected source | Rows | BF16 accuracy | Optimized diagnostic accuracy |
+| --- | ---: | ---: | ---: |
+| LLMBar | 888 | 63.18% | 67.00% |
+| MT-Bench | 896 | 47.77% | 58.26% |
+| RLAIF | 20 | 60.00% | 80.00% |
+| Search | 38 | 39.47% | 57.89% |
+
+Preferred-injection mean p(correct) rises 0.559701 → 0.581852, while clean
+mean p(correct) falls 0.922725 → 0.881755. Paired preferred injection-minus-clean
+changes become −0.319952 versus −0.385486; correct-to-wrong injection flips
+fall 44.08% → 35.29%. Disfavored paired score changes worsen
+−0.028727 → −0.043464, and correct-to-wrong flips rise 0.92% → 5.16%.
+These flip rates retain all 1,842 paired variants as their denominator.
+Lower clean confidence contributes to the smaller paired preferred score loss;
+this is a mixed change in judging behavior, not uniform injection robustness.
+
+The [historical augmented 4B](augmented_judge_evaluation.md) scored 99.40% clean,
+62.65% preferred-injected and 99.67% disfavored-injected on these same prompts.
+Current optimized preferred accuracy is numerically similar, but the other
+conditions and pooled ranking are weaker. That comparison changes the trained
+adapter and serving stack; it does not isolate a training component. The matched
+current comparison changes several precision/kernel components together and
+does not identify an individual kernel cause. Six query groups and dependent
+orders/suffixes limit generalization; no harmfulness or broad robustness claim
+follows from this auxiliary task.
+
+Fresh A/B master-to-merged parity passes (MAE 0.005978, correlation 0.999348).
+BF16 serving passes against master (0.005759/0.999348) and merged
+(0.007201/0.999145). Optimized A/B **fails both MAE and correlation**:
+master 0.071835/0.959254, merged 0.067990/0.963210, with worst differences
+0.205520/0.184633 versus frozen MAE <=0.020/correlation >=0.99 limits.
+All scores are finite and adapter effect is 0.335484. Native audits verify the
+exact A/B head, 64 FP4 MLP/48 FP4 GDN/16 FP8 attention projections, 16 actual
+FP8 calls and MXFP8 attention. The user explicitly authorizes completing the
+optimized holdout as a **failed-parity diagnostic**. Its restart reproduces the
+failed canary exactly; the original failure, limits and scope remain intact.
+The monitoring 0/1 parity pass does not transfer to A/B judging.
+
+| Backend | Scoring seconds | Input tokens/s | Requests/s | Latency p50/p95, s |
+| --- | ---: | ---: | ---: | ---: |
+| BF16 | 36.51 | 41,674 | 114.71 | 0.896 / 1.274 |
+| Optimized diagnostic | 34.74 | 43,802 | 120.56 | 0.859 / 1.138 |
+
+This short-prompt single pass gains 5.10% input throughput, excluding references,
+startup and canaries. Optimized `_token_offsets`/`_produce` JIT occurs during
+the canary; no later Triton JIT is logged during holdout scoring. Existing
+thread, pooling-graph and custom-scheduler warnings remain. No inference error
+or truncation occurs. BF16 and optimized process replacements preserve compiler
+caches, merged weights and receipts; the diagnostic optimized **A/B** scorer
+remains warm on the existing NC2 B200. Monitoring needs a 0/1-head reload.
+
+Independent local checks reproduce ordered identities, all labels/metadata,
+prompts/tokens, finite logits/probabilities, accuracy/ranking/Brier/log loss,
+ties, paired injection effects and score-gate calculations for all 8,376
+predictions and 3,043,060 input tokens. All 664 collected checksums, 239 executed
+source snapshots and 27 pinned inputs match. Thirteen focused checks and scoped
+Ruff pass. `judge01` stops before reference scoring because its launcher omits
+the existing dependency overlays; the corrected shared runtime helper produces
+`judge02`'s passed BF16 result and failed optimized canary. The separately
+authorized `b200-augmented-judge-diagnostic01` reuses these controls by checksum
+and completes optimized scoring. Frozen contracts, failed receipts and complete
+predictions remain under their respective data/results/log trees; the final
+`completion_audit.json`, `collection_sha256.json` and immutable server-log
+snapshot preserve collection evidence. The
+[experiment contract](../../experiments/b200_augmented_judge/README.md) records
+the A/B binding and explicit diagnostic scope. No adapter promotion follows.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The

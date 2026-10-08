@@ -427,10 +427,12 @@ Receipts and setup logs are collected locally under `results/b200_provisioning/`
 and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The compiled
 optimized FP8-attention/FP4-MLP-GDN/MXFP8 scorer is now warm with the completed
 augmented BF16/FA4 adapter after its
-[same-adapter optimized evaluation](findings/b200_augmented_training.md#same-bf16-trained-adapter-on-optimized-idapps-serving), using
+[JudgeDeceiver comparison](findings/b200_augmented_training.md#same-adapter-judgedeceiver-ab-serving-comparison), using
 `/tmp/gleipnir-merged/bf16-augmented-fa4`. This changes the resident model, not
 the selected regular checkpoint; consult the live scorer receipt's
 `serving_precision` and native audit for its actual precision.
+The current resident surface is A/B, with user-authorized failed-parity
+diagnostic scope. Monitoring requires reloading the 0/1 head.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
