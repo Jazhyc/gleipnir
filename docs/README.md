@@ -62,7 +62,8 @@
   latency/fairness/pooled-AUROC screen on the selected scorer.
 - [B200 reference concurrency scaling](findings/b200_score_scaling.md): same
   full320 workload at c1/2/4/8/16/32/64/128, throughput plateau near c16, latency
-  growth and batch-dependent score diagnostics.
+  growth and batch-dependent score diagnostics; current FP8/0.31 NC2 host
+  comparison, c32 plateau and matched-recipe c128 timing/quality control.
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.

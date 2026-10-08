@@ -1,5 +1,8 @@
 # B200 selected reference concurrency scaling
 
+The current FP8/0.31 NC2 measurement is recorded in
+[the host comparison below](#current-fp8-scorer-on-nc2).
+
 2026-10-07. On this fixed workload, stock FCFS reaches 98.88% of measured peak
 throughput at client concurrency 16. Raising concurrency from 16 to 128 adds
 1.13% throughput while p95 latency grows 5.68-fold. This is a throughput/latency
@@ -101,3 +104,90 @@ warm, compiler/kernel caches intact and frozen serving sources available for
 its bound runtime. Current checkout/project-metadata backups remain under the
 admission source-reconciliation artifacts for restoration when this service is
 retired. No capacity creation, stop or termination occurs.
+
+## Current FP8 scorer on NC2
+
+2026-10-08. The same full320 cohort and timing protocol, now using the selected
+FP8/vLLM 0.31 recipe on user-provisioned US-NC-2 Pod `mnmqm5d3eiyvuz`.
+`current_config.json` freezes c1/2/4/8/16/32/64/128, one excluded full warmup and
+three timed passes at each level. Keep 32K context/chunk, 128 engine sequences,
+stock FCFS, merged adapter, native frontend and all other precision choices
+fixed. Host: Xeon Platinum 8568Y+, 20.4 CPU quota, 250,999,996,416-byte memory
+limit, B200 183,359 MiB, driver 595.91.07. No OOD or final-ID evaluation,
+threshold fitting, precision selection or promotion.
+
+Fresh-container startup required restoring the complete native tokenizer package
+and persistent path registration, six checksum-bound diagnostic generators, and
+TVM FFI in the retained CUTLASS overlay. That overlay's 0.1.14.post1 shadowed the
+locked 0.1.11 and aborted TileLang import after graph capture. A CPU-only import
+reproduces the failure; restoring 0.1.11 fixes it, with original files preserved.
+All six overlay package metadata hashes then match the accepted EU receipt.
+Scheduler preflight passes 3/3 without skips; native error, layout and QK checks
+match the earlier receipt, preserving the known strict MXFP8/BF16 failure.
+No runtime kernel source is replaced. The three failed starts are retained as
+`nc2_fp8_01/02/03`; source-restoration and dependency-reconciliation receipts
+record the actual changes. Staging now guards the dependency override and
+automatically restores/registers the tokenizer.
+
+Cold Torch compilation takes 53.03 seconds; the successful retry reuses it in
+2.77 seconds and reaches ready in 97.19 seconds. Its adapter canary matches the
+accepted FP8 scores exactly (MAE 0, correlation 1), with all 16 native FP8
+projections dispatched. Compiler/kernel caches remain persistent.
+
+Medians of the three timed full320 passes, excluding all eight warmups:
+
+| Concurrency | Input tokens/s | Repeat range | p50 | p95 | p99 |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 26,675 | 26,473–26,870 | 149.60 ms | 251.59 ms | 286.62 ms |
+| 2 | 46,473 | 46,454–46,930 | 157.69 ms | 281.85 ms | 311.32 ms |
+| 4 | 78,918 | 75,933–80,426 | 199.35 ms | 305.99 ms | 427.35 ms |
+| 8 | 114,389 | 111,741–115,277 | 273.88 ms | 437.30 ms | 512.64 ms |
+| 16 | 157,089 | 151,710–159,531 | 391.53 ms | 641.94 ms | 703.04 ms |
+| 32 | 179,248 | 174,354–180,357 | 687.06 ms | 955.08 ms | 1,117.41 ms |
+| 64 | 176,492 | 174,336–179,930 | 1,351.07 ms | 1,730.56 ms | 1,856.51 ms |
+| 128 | 175,093 | 166,769–176,741 | 2,567.11 ms | 3,077.45 ms | 3,362.89 ms |
+
+Concurrency 32 is the first point within 95% of measured peak. Raising it to
+128 decreases the median throughput by 2.32% while increasing p95 3.22-fold;
+the higher-level repeat ranges overlap, so do not interpret a precise best
+concurrency from these medians. The c1-to-c128 throughput ratio is 6.56 versus
+2.26 on the old curve. That full EU curve used 0.24/FP4 attention projections,
+so its apparent earlier c16 plateau is confounded by recipe as well as host.
+There is no archived full320 lower-concurrency FP8 timing curve.
+
+The matched-recipe control is all six archived FP8/0.31 c128/full320 passes:
+210,281 tokens/s median, range 200,626–211,291. NC2 c128 is 16.73% slower;
+p95 is 3.077 versus 2.751 seconds, 11.86% higher. This measures an environment
+difference, without isolating CPU, driver, storage or GPU as its cause. A runtime
+snapshot shows maximum SM clock (1,965 MHz) and no ongoing CPU-quota throttling;
+it is insufficient to attribute the low-concurrency slowdown. No resource,
+clock, scheduler or kernel settings are changed in response to the results.
+
+Quality deltas against repeat-median scores from all six FP8 c128 controls:
+
+| Concurrency | Pooled AUROC delta | Macro AUROC delta | Pooled pAUROC@20 delta | Macro pAUROC@20 delta | Score MAE | Threshold flips |
+| ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | +0.28520 pp | +0.24842 pp | +0.04493 pp | -0.29988 pp | 0.04429 | 18 |
+| 2 | +0.28520 pp | +0.24842 pp | +0.04493 pp | -0.29988 pp | 0.04429 | 18 |
+| 4 | +1.11150 pp | +2.74746 pp | +2.45898 pp | +1.93923 pp | 0.03075 | 12 |
+| 8 | +0.31450 pp | +1.18431 pp | +1.28018 pp | +0.55948 pp | 0.01556 | 7 |
+| 16 | +0.05274 pp | +0.02776 pp | -0.13674 pp | 0.00000 pp | 0.00236 | 1 |
+| 32 | -0.06837 pp | +0.00766 pp | -0.22464 pp | -0.11494 pp | 0.00187 | 1 |
+| 64 | -0.03712 pp | 0.00000 pp | -0.24418 pp | 0.00000 pp | 0.00147 | 1 |
+| 128 | +0.01563 pp | +0.05075 pp | +0.02930 pp | 0.00000 pp | 0.00185 | 1 |
+
+The c128 source-macro pAUROC@20 is unchanged at 0.779613; pooled pAUROC@20 is
+0.614100 versus 0.613807. Lower-concurrency score shifts remain substantial
+despite stable or improved ranking. This is the previously observed batch
+dependence of the quantized recipe, not strict score parity. These training-seen
+diagnostics do not select a quality-improving concurrency. Every repeat, source
+breakdown, calibration, ties, undefined single-label source and length-bin
+latency remains in the raw receipts.
+
+`results/b200_score_scaling/nc2_fp8_04/` contains all 24 timed passes, eight
+warmups, comparisons, audits and log snapshots. All 97 collected run/startup/
+validation artifacts pass SHA-256 checks. `current_summary` exports source-bound
+`scaling.json`, CSV and standalone PNG/SVG curves, distinguishing the older full
+curve from the same-recipe c128 control. Seventeen focused tests pass; Ruff is
+clean. API 9865 and sole GPU engine 9927 remain ready and warm, at 169,886 MiB
+GPU memory and 0% utilization at closure. Capacity remains running.

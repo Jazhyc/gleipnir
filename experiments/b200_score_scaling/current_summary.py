@@ -66,9 +66,20 @@ def summarize(directory: Path) -> dict:
             (directory / f"c{row['concurrency']}_comparison.json").read_text()
         )
         delta = comparison["ranking"]["auroc_delta"]
+        baseline = comparison["ranking"]["baseline_repeat_median_scores"]
+        candidate = comparison["ranking"]["candidate_repeat_median_scores"]
         row.update(
             pooled_auroc_delta_pp=100 * delta["pooled"],
             macro_auroc_delta_pp=100 * delta["macro"],
+            pooled_pauroc_at_20_delta_pp=100
+            * (
+                candidate["pooled"]["pauroc_at_20"] - baseline["pooled"]["pauroc_at_20"]
+            ),
+            macro_pauroc_at_20_delta_pp=100
+            * (
+                candidate["macro"]["macro"]["pauroc_at_20"]
+                - baseline["macro"]["macro"]["pauroc_at_20"]
+            ),
             score_mae=comparison["scores"]["score"]["mean_absolute_difference"],
             threshold_flips=comparison["scores"]["threshold_flips"],
             throughput_ratio_vs_old_recipe=row["prompt_tokens_per_second"]
@@ -107,14 +118,14 @@ def summarize(directory: Path) -> dict:
         writer = csv.DictWriter(handle, fieldnames=list(rows[0]))
         writer.writeheader()
         writer.writerows(rows)
+    from gleipnir.analysis.plotting import set_plot_style
+
+    set_plot_style()
     import matplotlib
 
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
 
-    from gleipnir.analysis.plotting import set_plot_style
-
-    set_plot_style()
     figure, axes = plt.subplots(1, 2, figsize=(13, 4.6), layout="constrained")
     xs = list(CONCURRENCIES)
     for values, color, label in (
@@ -142,6 +153,29 @@ def summarize(directory: Path) -> dict:
         s=100,
         color="#009E73",
         label="EU · 0.31 FP8 (c128)",
+    )
+    axes[0].errorbar(
+        [128],
+        [fp8_point["prompt_tokens_per_second"] / 1000],
+        yerr=[
+            [
+                (
+                    fp8_point["prompt_tokens_per_second"]
+                    - fp8_point["prompt_tokens_per_second_min"]
+                )
+                / 1000
+            ],
+            [
+                (
+                    fp8_point["prompt_tokens_per_second_max"]
+                    - fp8_point["prompt_tokens_per_second"]
+                )
+                / 1000
+            ],
+        ],
+        fmt="none",
+        color="#009E73",
+        capsize=4,
     )
     for key, label, color in (
         ("p50_seconds", "p50", "#0072B2"),

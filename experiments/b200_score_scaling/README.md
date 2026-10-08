@@ -60,3 +60,7 @@ identity, canary, finite/token-count, native/server/OOM failure or completion.
 Retain a successful scorer warm and preserve caches. Run with the staged 0.31
 interpreter through `experiments.b200_vllm031.runtime -m
 experiments.b200_score_scaling.current --name <run> --expected-gpu-uuid <live-uuid>`.
+Export the completed sweep's medians, ranges, quality deltas and standalone
+PNG/SVG curve with `python -m experiments.b200_score_scaling.current_summary
+results/b200_score_scaling/<run>`. The linked finding records the NC2 result and
+distinguishes the old full curve from the matched-recipe c128 comparison.
