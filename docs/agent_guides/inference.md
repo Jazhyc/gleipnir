@@ -25,8 +25,9 @@ eager for bounded parity diagnostics or unsupported adapters. Preserve frozen
 past evaluation contracts and their named controls. Training precision and
 optimization are governed by the separate training guide.
 
-Standing user preference, 2026-10-06: merge standard LoRA updates into BF16 base
-weights for future evaluations, serving without dynamic adapter projections.
+Standing user preference, 2026-10-08: create an adapter-specific merged BF16
+checkpoint for every trained adapter used in inference, serving or evaluation,
+serving without dynamic adapter projections.
 Keep FP32 master adapters and pinned base weights persistent. On Runpod, store
 reconstructable merged checkpoints on ephemeral container storage, with merge
 source/file checksums and evaluation receipts on the network volume. Accumulate

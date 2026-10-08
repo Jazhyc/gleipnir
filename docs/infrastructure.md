@@ -425,7 +425,10 @@ Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
 and `logs/runpod/b200_provisioning/`. The Pod is left RUNNING with an idle GPU.
-Reconstruct the disposable merged checkpoint before starting a scoring server.
+The accepted merged BF16 checkpoint is reconstructed on ephemeral storage at
+`/tmp/gleipnir-merged/fp4-full-training-bf16`. All source and output file hashes
+match the accepted artifact; the rebuild receipt is in the refresh directory's
+`merge01/`. Original FP32 adapters and pinned base weights remain on the volume.
 
 ## OpenRouter
 
