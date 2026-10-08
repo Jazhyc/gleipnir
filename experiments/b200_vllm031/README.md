@@ -41,8 +41,11 @@ Benchmark frozen quick64 at c1 with three repeats and full320 at c128 with six
 repeats, after excluded warmups and with fresh HTTP clients per pass. Compare
 all archived selected repeats: input tokens/s, requests/s, latency bins,
 score/margin differences, pooled/per-source/source-macro AUROC, repeat variation,
-ties, calibration and threshold flips. This training-seen systems set does not
-establish held-out quality. Report host/runtime differences explicitly.
+ties, calibration and threshold flips. This mixed systems set includes rows seen
+by the adapter during training and does not establish held-out quality; the
+[finding](../../docs/findings/b200_vllm031.md#development-cohort-quality) records
+its composition and exact training overlap. Report host/runtime differences
+explicitly.
 
 Stop on provenance drift, truncation, missing/nonfinite outputs, failed canary,
 startup failure, OOM or suite completion. On 2026-10-08 the user explicitly
