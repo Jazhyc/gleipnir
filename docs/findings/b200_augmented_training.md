@@ -1,4 +1,4 @@
-# Augmented monitor with current FP4 training
+# Augmented monitor training precision controls
 
 The original injection augmentation was replayed on the existing NC2 B200 with
 the current native FP4 MLP/BF16 FlashQLA/FA4 training framework. Training completed
@@ -180,6 +180,78 @@ successful control uses a separate frozen binding under
 paired comparison and `completion_audit.json` under
 `results/b200-augmented-bf16-id01/`. Its contract is in the
 [BF16 experiment README](../../experiments/b200_augmented_bf16_id/README.md).
+
+## Matched BF16 MLP training with FA4
+
+The user requested a fresh BF16 MLP training control while retaining FA4. The
+same initializer, seed, 8,688 augmented rows, teacher targets, optimizer/schedule
+and final one-epoch selection are fixed. All 4,556 physical batches match the
+FP4 run's examples, logical indices, lengths, tokens and update membership.
+The resolved jobs differ only in MLP precision, associated validation
+policy/reference and output bookkeeping. Use the retained BF16/FA4 receipt's
+10% gradient acceptance, preserving its original strict failures; this is reused
+validation, not a fresh numerical pass. Both adapters use the same NC2 BF16
+monitor server, compiled vLLM 0.31, cached BF16 two-logit head, causal LAST,
+native tokenizer, corrected scheduler and original grouped ID workload.
+Server commands and conditions match after excluding checkpoint paths and
+source fingerprints. This comparison does not use the selected quantized scorer.
+
+| ID metric, BF16 serving for both | FP4 MLP training | BF16 MLP training | Change, pp |
+| --- | ---: | ---: | ---: |
+| Source-macro AUROC | 0.947513 | 0.951944 | +0.44 |
+| Source-macro raw pAUROC@20 | 0.839096 | 0.851131 | +1.20 |
+| Gloom raw pAUROC@20 | 0.748649 | 0.767121 | +1.85 |
+| STRIDE raw pAUROC@20 | 0.929543 | 0.935141 | +0.56 |
+| Pooled raw pAUROC@20 | 0.802846 | 0.818023 | +1.52 |
+
+This one-seed result is consistent with FP4 MLP training contributing to the
+regression, but the recovery is modest. A 2.19-point gap remains to historical
+augmented BF16 pAUROC@20 (0.872983), whose serving, attention implementation
+and other stack details differ. This control does not separate MLP forward,
+input-gradient and fusion effects or reproduce the original augmentation gain.
+The reference-only base canaries also vary across launches (MAE 0.014904,
+maximum 0.054430) despite identical prompt hashes and pinned base shards; retain
+both receipts and within-launch master gates, without claiming bitwise runtime
+equivalence. No checkpoint or precision promotion follows from this ID pass.
+
+Macro Brier improves 0.103590 → 0.087750. At fixed threshold 0.5, macro recall
+rises 77.88% → 84.67% and FPR 4.17% → 6.94%. Paired mean score shift is
++0.044475, MAE 0.072932, correlation 0.952703 and 234 decisions flip. There are
+88 unique scores. Gloom/STRIDE AUROCs are 0.918147/0.985741; pooled AUROC is
+0.942193. APPS was not evaluated in this training control.
+
+Training completes all 272 updates and 83,969,213 tokens in 2,616.78 seconds
+(43.61 minutes), 3.98% longer than FP4. Mean loss is 0.240275; steady updates
+average 9.164 seconds excluding two warmup steps. Peak allocated/reserved memory
+is 148.34/149.40 GiB. All 256 exported adapter tensors are FP32. Initial tensor
+fingerprint is unchanged; final fingerprint is
+`5414f9a58a97d5b3eb14ffabdcbb7f6ed14567619de7d2cc73a958644d0a6fae`.
+Master file SHA256 is
+`708bbd7e774612664f8e8077c603366658181e2e5b9055c1f2a45dfd6f43519f`;
+rebased file SHA256 is
+`953aa9a92d6fe893dd8fef96c912ff3fd19a0d86f3694d8408089c474f227732`.
+The FP32-accumulated BF16 merge updates 128 projections in 47.98 seconds and
+is retained at `/tmp/gleipnir-merged/bf16-augmented-fa4`.
+
+Merged HF BF16 versus master parity passes at MAE/correlation
+0.002639/0.999856. The serving gate passes at 0.000205/0.999999 against the
+master and 0.002579/0.999854 against merged HF BF16. Native audits confirm
+BF16/unquantized linear weights, the exact classifier and eight actual BF16
+attention calls. ID scoring takes 296.23 seconds for 33,750,959 input tokens:
+113,934 input tokens/s, essentially the same as the preceding BF16 control's
+114,062. Request latency p50/p95 is 4.905/14.755 seconds. All ordered identities,
+metadata, prompt hashes, token counts, logits/margins/sigmoids and independent
+ROC calculations pass. All 732 collected artifact checksums, 311 executed
+source snapshots and 14 remote base/merged files match their frozen receipts.
+
+The generic campaign runner now supports the retained BF16/FA4 training profile
+and preserves pinned-kernel Python paths; 24 focused checks and scoped Ruff pass.
+The first CPU preparation was superseded before any GPU training to fix that
+launcher path issue. Preserve its binding under `b200-augmented-bf16-training01`;
+the completed run is `b200-augmented-bf16-training02` under results/data/logs.
+Its [experiment contract](../../experiments/b200_augmented_bf16_training/README.md)
+and independent training, serving, reference and completion audits retain the
+comparison. The passing BF16-trained scorer stays warm on the existing B200.
 
 ## Preparation failures and provenance
 

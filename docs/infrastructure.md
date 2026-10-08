@@ -425,9 +425,9 @@ Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
 and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The compiled
-BF16 scorer is now warm with the completed augmented FP4 adapter after its
-[same-checkpoint ID control](findings/b200_augmented_training.md#same-checkpoint-bf16-id-control), using
-`/tmp/gleipnir-merged/fp4-augmented-bf16`. This changes the resident model, not
+BF16 scorer is now warm with the completed augmented BF16/FA4 adapter after its
+[matched MLP training control](findings/b200_augmented_training.md#matched-bf16-mlp-training-with-fa4), using
+`/tmp/gleipnir-merged/bf16-augmented-fa4`. This changes the resident model, not
 the selected regular checkpoint; consult the live scorer receipt's
 `serving_precision` and native audit for its actual precision.
 The eager [Lens research results](findings/b200_vllm_lens.md) and

@@ -47,8 +47,9 @@ recorded explicitly in target provenance.
   ID ranking but transfers much less strongly and regresses vanilla APPS
   ranking. The [current 4B FP4 diagnostic](findings/b200_augmented_training.md)
   reduces APPS alarms but loses clean ID ranking and harmful-action recall.
-  Same-checkpoint BF16 ID serving recovers part of the ranking loss; the
-  historical augmentation gain remains unreproduced, and BF16 APPS is untested.
+  BF16 serving and matched BF16 MLP retraining with FA4 recover part of the ID
+  loss; the historical augmentation gain remains unreproduced, and BF16 APPS
+  is untested.
   These single-seed, limited-template, off-policy interventions do not establish
   recipe-independent, broad or adaptive robustness, or a monotonic size benefit.
 - **Quality judging and harmfulness monitoring have different targets.**
