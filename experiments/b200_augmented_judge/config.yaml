@@ -1,4 +1,4 @@
-campaign_id: b200-augmented-judge02
+campaign_id: b200-augmented-judge-diagnostic01
 adapter: results/b200-augmented-bf16-training02/4b/monitor
 merged_model: /tmp/gleipnir-merged/bf16-augmented-fa4
 base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
@@ -42,6 +42,36 @@ inputs:
   retired_parent:
     path: results/b200_vllm031/b200-augmented-judge01_parent_retired.json
     sha256: 0215504d3d4a3ee21a7168ea1e4395ba050ca171e5fe26593c836d4b79c5b931
+  reuse_manifest:
+    path: data/b200-augmented-judge02/manifest.json
+    sha256: 26b743962d47f0f320760c726009c3e8f43b7a1d787efcbe7bdbfb5b4386f549
+  completed_reference:
+    path: results/b200-augmented-judge02/reference.json
+    sha256: d537b422de5144af695a7884705bf109c46e29927093942227320746977c3e00
+  retired_candidate:
+    path: results/b200_vllm031/b200-augmented-judge02_optimized_failed_retired.json
+    sha256: 98eca2728eb4e51396e8570ae18e8d685945ef871cfe58a29cc439de13f0cbd8
+  original_failed_gate:
+    path: results/b200-augmented-judge02/optimized/parity.json
+    sha256: 6640d86d9493b05fb9ad329c4f1dda23e8899f65603fc74633e43ab5ca3cac1e
+  bf16_preferences_jsonl:
+    path: results/b200-augmented-judge02/bf16/preferences.jsonl
+    sha256: 69043e1007ecd6647882916ad1cc550d2deab0194b88c85b93402051cf63d8d2
+  bf16_summary_json:
+    path: results/b200-augmented-judge02/bf16/summary.json
+    sha256: 3eff658b287f7801a0364cdd92ebb3ff3d623a8c0d6acea66736d13aacf50769
+  bf16_timing_json:
+    path: results/b200-augmented-judge02/bf16/timing.json
+    sha256: d88584aa293668f6616a1e164c3c92bdb5a2ef420c243f579218429681af0e55
+  bf16_parity_json:
+    path: results/b200-augmented-judge02/bf16/parity.json
+    sha256: 1ee2a8f6d54d6c0c463090df69fc04d1d92d1138da6383786290a92b395a6f75
+  bf16_bf16_audit_json:
+    path: results/b200-augmented-judge02/bf16/bf16_audit.json
+    sha256: 6f0e713b574f12bda164cc8b1028c22cbb64f3c15a7498564d74c7d03900d980
+  bf16_complete_json:
+    path: results/b200-augmented-judge02/bf16/complete.json
+    sha256: 7808654fd2bbce634e8693aef1de7dc4807fa2532a3841b5c41fbde864ffab61
 parity:
   max_mean_absolute_difference: 0.02
   min_correlation: 0.99
@@ -58,5 +88,6 @@ evaluation:
   query_groups: 6
   pair_count: 252
   repeats: 1
-  failed_parity_diagnostic: false
+  failed_parity_diagnostic: true
   promote: false
+reuse_evaluation_root: results/b200-augmented-judge02

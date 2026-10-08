@@ -296,6 +296,22 @@ def retire(name: str, expected: dict) -> None:
     )
 
 
+def evaluation_gate(gate: dict, *, diagnostic: bool) -> None:
+    """The explicit A/B exception permits MAE and correlation drift, not NaNs."""
+    for value in gate.values():
+        if value["passed"]:
+            continue
+        if (
+            not diagnostic
+            or not value["finite"]
+            or value["correlation"] is None
+            or not np.isfinite(value["correlation"])
+            or not np.isfinite(value["mean_absolute_difference"])
+            or value["adapter_effect"] <= value["limits"]["min_adapter_effect"]
+        ):
+            raise ValueError("A/B score gate failed outside authorized finite scope")
+
+
 async def score(precision: str) -> None:
     from vllm.v1.core.sched import scheduler
 
@@ -427,8 +443,8 @@ async def score(precision: str) -> None:
             ):
                 raise ValueError("optimized A/B native audit incomplete")
         print("judge_serving_parity", precision, gate, flush=True)
-        if not all(cell["passed"] for cell in gate.values()):
-            raise ValueError("A/B serving parity failed; no diagnostic waiver")
+        diagnostic = C["evaluation"]["failed_parity_diagnostic"]
+        evaluation_gate(gate, diagnostic=diagnostic)
         active.update(status="ready", ready_at_unix=time.time())
         write_json(ACTIVE / "server.json", active)
         write_json(destination / "server.json", active)
@@ -473,7 +489,8 @@ async def score(precision: str) -> None:
             {
                 "passed": True,
                 "rows": 4188,
-                "scope": "parity_gated",
+                "scope": "failed_parity_diagnostic" if diagnostic else "parity_gated",
+                "parity_passed": all(g["passed"] for g in gate.values()),
                 "surface": "AB",
                 "decision_ids": [32, 33],
                 "prediction_sha256": file_hash(destination / "preferences.jsonl"),
@@ -550,7 +567,9 @@ def report() -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--stage", required=True, choices=("prepare", "reference", "all", "report")
+        "--stage",
+        required=True,
+        choices=("prepare", "reference", "all", "report", "diagnostic"),
     )
     args = parser.parse_args()
     if args.stage == "prepare":
@@ -560,6 +579,50 @@ def main() -> None:
         if args.stage == "reference":
             reference()
         elif args.stage == "report":
+            report()
+        elif args.stage == "diagnostic":
+            check(model=True)
+            if not C["evaluation"]["failed_parity_diagnostic"]:
+                raise ValueError("diagnostic scope was not frozen")
+            if (ACTIVE / "server.json").exists():
+                raise ValueError("retire the failed scorer before diagnostic startup")
+            retired = json.loads(source("retired_candidate").read_text())
+            if retired["status"] != "retired" or any(
+                Path(f"/proc/{retired[k]}").exists() for k in ("pid", "worker_pid")
+            ):
+                raise ValueError("failed scorer retirement is unverified")
+            original = ROOT / C["reuse_evaluation_root"]
+            old_manifest = json.loads(source("reuse_manifest").read_text())
+            if any(
+                old_manifest["files"][C["inputs"][name]["path"]]
+                != C["inputs"][name]["sha256"]
+                for name in ("test", "canary", "master", "master_config", "merge")
+            ):
+                raise ValueError("reused A/B control model/population changed")
+            saved_reference = json.loads(source("completed_reference").read_text())
+            if (
+                not saved_reference["merged_parity"]["passed"]
+                or saved_reference["manifest_sha256"]
+                != file_hash(source("reuse_manifest"))
+                or saved_reference["ids"]
+                != [r["id"] for r in read_rows(DATA / "canary_workload.jsonl")]
+            ):
+                raise ValueError("reused reference identity/gate changed")
+            shutil.copyfile(source("completed_reference"), OUT / "reference.json")
+            shutil.copytree(original / "bf16", OUT / "bf16")
+            write_json(
+                OUT / "reused_controls.json",
+                {
+                    "source": C["reuse_evaluation_root"],
+                    "manifest_sha256": file_hash(source("reuse_manifest")),
+                    "reference_sha256": file_hash(source("completed_reference")),
+                    "original_failed_gate_sha256": file_hash(
+                        source("original_failed_gate")
+                    ),
+                    "scope": "user_authorized_failed_parity_diagnostic",
+                },
+            )
+            asyncio.run(score("optimized"))
             report()
         else:
             check(model=True)

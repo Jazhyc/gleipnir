@@ -5,7 +5,11 @@ import json
 
 import pytest
 
-from experiments.b200_augmented_judge.run import bind_predictions, judge_command
+from experiments.b200_augmented_judge.run import (
+    bind_predictions,
+    evaluation_gate,
+    judge_command,
+)
 
 
 @pytest.fixture
@@ -97,3 +101,29 @@ def test_incomplete_reordered_duplicate_scores_fail(ids):
             [{"id": i, "score": 0.5} for i in ids],
             [{"id": "A", "label": 0}, {"id": "B", "label": 1}],
         )
+
+
+def test_authorized_ab_diagnostic_preserves_failed_ranking_gate():
+    value = {
+        "passed": False,
+        "finite": True,
+        "correlation": 0.959,
+        "mean_absolute_difference": 0.0718,
+        "adapter_effect": 0.335,
+        "limits": {"min_adapter_effect": 1e-6},
+    }
+    gate = {"master": value.copy(), "merged": value.copy()}
+    with pytest.raises(ValueError):
+        evaluation_gate(gate, diagnostic=False)
+    evaluation_gate(gate, diagnostic=True)
+    assert not gate["master"]["passed"]
+    for key, broken in (
+        ("finite", False),
+        ("correlation", None),
+        ("correlation", float("nan")),
+        ("adapter_effect", 0),
+        ("mean_absolute_difference", float("inf")),
+    ):
+        bad = {"master": {**value, key: broken}, "merged": value.copy()}
+        with pytest.raises(ValueError):
+            evaluation_gate(bad, diagnostic=True)

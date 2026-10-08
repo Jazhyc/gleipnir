@@ -44,3 +44,16 @@ available. Results/data/logs use `b200-augmented-judge02`. The first attempt sto
 because its subprocess omitted the existing reference dependency overlays; its
 failed log/status and parent retirement receipt remain under `judge01`.
 The retry uses the shared `training_environment` helper, with no package changes.
+
+## Authorized diagnostic follow-up
+
+BF16 completed all 4,188 variants. Optimized A/B parity failed before holdout
+scoring (master MAE 0.071835, correlation 0.959254; merged MAE 0.067990).
+Outputs, adapter effect and native dispatch pass. The user explicitly authorizes
+finishing optimized scoring as a failed-parity diagnostic.
+`b200-augmented-judge-diagnostic01` reuses the frozen `judge02` BF16 predictions
+and references, preserving its failed gate and retired-worker receipt.
+The changed scope does not relabel numerical failure as parity.
+Run `--stage prepare`, then `--stage diagnostic`; repeat finite/effect/native
+checks after restart, retain diagnostic scope even if fresh parity passes, and
+keep the finite diagnostic optimized A/B scorer warm.
