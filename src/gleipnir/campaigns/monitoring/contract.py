@@ -73,6 +73,11 @@ class Campaign:
             raise ValueError(
                 "initializer tensor fingerprint must not be the file checksum"
             )
+        if config["evaluation"].get("serving_precision", "optimized") not in (
+            "optimized",
+            "bf16",
+        ):
+            raise ValueError("unknown serving precision")
         if config["evaluation"]["port"] != 8010:
             raise ValueError("validated serving recipe uses port 8010")
         for name in ("batch_rows", "concurrency", "timeout_seconds"):

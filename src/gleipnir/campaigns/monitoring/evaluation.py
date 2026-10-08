@@ -227,6 +227,7 @@ async def optimized(ctx: Campaign) -> None:
 
     config = ctx.config
     diagnostic = config["evaluation"].get("failed_parity_diagnostic", False)
+    bf16 = config["evaluation"].get("serving_precision", "optimized") == "bf16"
     ctx.check()
     merged = json.loads((ctx.output / "merged_parity.json").read_text())
     if not merged["passed"]:
@@ -254,6 +255,10 @@ async def optimized(ctx: Campaign) -> None:
         raise ValueError("unrelated model remains on GPU")
     command[0] = sys.executable
     command[command.index("--model") + 1] = config["merged_model"]
+    if bf16:
+        from gleipnir.serving.bf16_monitor import command as bf16_command
+
+        command = bf16_command(command, ctx.sources())
     additional_index = command.index("--additional-config") + 1
     additional = json.loads(command[additional_index])
     additional["serving_condition"]["merged_model"] = config["merged_model"]
@@ -272,6 +277,9 @@ async def optimized(ctx: Campaign) -> None:
         GLEIPNIR_FLASHINFER_GDN_CP="auto",
         GLEIPNIR_VLLM031_SCHEDULER_BINDING=json.dumps(scheduler_binding),
     )
+    if bf16:
+        env.pop("GLEIPNIR_FROST_WRAPPER_VALIDATION", None)
+        env["GLEIPNIR_BF16_AUDIT"] = str(ctx.output / "bf16_audit.json")
     ctx.logs.mkdir(parents=True, exist_ok=True)
     with (ctx.logs / "server.log").open("x") as log:
         process = subprocess.Popen(
@@ -293,7 +301,8 @@ async def optimized(ctx: Campaign) -> None:
             "serving_sha256"
         ],
         "frontend": parent["frontend"],
-        "host_wrapper": parent["host_wrapper"],
+        "host_wrapper": None if bf16 else parent["host_wrapper"],
+        "serving_precision": "bf16" if bf16 else "optimized",
     }
     write_json(ctx.serving / "server.json", active)
     write_json(ctx.output / "server.json", active)
@@ -336,21 +345,29 @@ async def optimized(ctx: Campaign) -> None:
             master["base"],
             config["parity"],
         )
+        gate["serving_precision"] = "bf16" if bf16 else "optimized"
         gate["evaluation_scope"] = (
             "failed_parity_diagnostic" if diagnostic else "parity_gated"
         )
         write_json(ctx.output / "optimized_parity.json", gate)
         write_json(ctx.output / "optimized_canary_predictions.json", values)
-        archive_audits(ctx.output / "native_audits")
-        native = json.loads(
-            (ctx.output / "native_audits/native_attention_projections.json").read_text()
-        )
-        if (
-            not native["passed"]
-            or native["precision"] != "fp8"
-            or len(native["calls"]) != 16
-        ):
-            raise ValueError("actual FP8 projection dispatch changed")
+        if bf16:
+            native = json.loads((ctx.output / "bf16_audit.json").read_text())
+            if not native["passed"] or len(native["attention_calls"]) != 8:
+                raise ValueError("BF16 model/native attention audit incomplete")
+        else:
+            archive_audits(ctx.output / "native_audits")
+            native = json.loads(
+                (
+                    ctx.output / "native_audits/native_attention_projections.json"
+                ).read_text()
+            )
+            if (
+                not native["passed"]
+                or native["precision"] != "fp8"
+                or len(native["calls"]) != 16
+            ):
+                raise ValueError("actual FP8 projection dispatch changed")
         require_evaluation_gate(gate, diagnostic=diagnostic)
         active.update(status="ready", ready_at_unix=time.time())
         write_json(ctx.serving / "server.json", active)
