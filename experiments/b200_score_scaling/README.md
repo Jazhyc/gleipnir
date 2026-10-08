@@ -43,3 +43,20 @@ The completed sweep plateaus near client concurrency 16; see
 [the finding](../../docs/findings/b200_score_scaling.md) for medians, repeat ranges
 and quality variation. Export its table and standalone figures with
 `python -m experiments.b200_score_scaling.summarize results/b200_score_scaling/scale01`.
+
+## Current FP8 recipe on NC2
+
+The user requests a fresh host scaling comparison on 2026-10-08. Hypothesis:
+the current FP8/vLLM 0.31 scorer reaches a similar throughput plateau and latency
+curve on the new NC2 B200. `current_config.json` freezes the same full320 order
+and 1,310,581 tokens at c1/2/4/8/16/32/64/128, one excluded full warmup per level
+and three timed repeats. Keep the current serving selection and 128-sequence/32K
+engine limits fixed; reproduce its adapter canary before timing. Compare quality
+with all six archived current-FP8 c128 repeats, retaining calibration, ties and
+undefined sources. This training-seen cohort is diagnostic, with no promotion.
+The old full scaling curve used 0.24/FP4 attention projections; label that recipe
+difference and use the same-recipe archived FP8 c128 point separately. Stop on
+identity, canary, finite/token-count, native/server/OOM failure or completion.
+Retain a successful scorer warm and preserve caches. Run with the staged 0.31
+interpreter through `experiments.b200_vllm031.runtime -m
+experiments.b200_score_scaling.current --name <run> --expected-gpu-uuid <live-uuid>`.

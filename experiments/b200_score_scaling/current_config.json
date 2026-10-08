@@ -1,0 +1,33 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "workload": "data/b200_inference_benchmark/full.json",
+  "workload_sha256": "dc77d96ff22843da17029c7f3ebb3d52aba5166f21d1a84ea3da47f2f21facef",
+  "rows": 320,
+  "prompt_tokens": 1310581,
+  "concurrencies": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "timed_repeats": 3,
+  "warmup_repeats": 1,
+  "port": 8010,
+  "timeout_seconds": 180,
+  "reference_results": "results/b200_attention_precision/precision01/fp8",
+  "reference_repeats": 6,
+  "reference_sha256": {
+    "results/b200_attention_precision/precision01/fp8/c128_repeat0.json": "90aa89d7d49870e6a2d474b6c34b05d323f4fab5354a80e195b22ad7c13874d5",
+    "results/b200_attention_precision/precision01/fp8/c128_repeat1.json": "8fcda21a0f891b33146b1810134c6c662e76f39c6ec9d383fa149278267f8de7",
+    "results/b200_attention_precision/precision01/fp8/c128_repeat2.json": "b540a4eff8c1d4f8b3a6e14c81abc9ff6a6b28f80613a29172c5900830825dc3",
+    "results/b200_attention_precision/precision01/fp8/c128_repeat3.json": "39e1206f485cb9a41a98c795fdbd2e3ae95f379180dbcb55cc6415fc46325ac1",
+    "results/b200_attention_precision/precision01/fp8/c128_repeat4.json": "2f49352fe9960ea452010a9e8fd8d45c2db7a08b4b86e47ceab70b3e05ca0620",
+    "results/b200_attention_precision/precision01/fp8/c128_repeat5.json": "014c00d064dfe3baa1f86ef58bc0899eafffe3d226b6a9ccc73b0cb909fe04d7"
+  },
+  "promote": false,
+  "selection": "current checksum-bound FP8/vLLM 0.31 serving default; unchanged"
+}
