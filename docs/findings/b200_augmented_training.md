@@ -58,8 +58,68 @@ failed-parity diagnostic. A separate contract reuses the completed FP32 adapters
 passed BF16 merge/reference and frozen ordered workloads. It permits excessive
 MAE while retaining finite, correlation, effect, model/runtime identity and full
 coverage guards. It performs no optimizer updates and does not promote the model.
-Diagnostic results are pending. The frozen population is 3,012 canonical
-CoT-removed ID examples, 5,184 APPS benchmark cases and 3,930 honest controls.
+All 12,126 diagnostic cases completed: 3,012 canonical CoT-removed ID examples,
+5,184 APPS benchmark cases and 3,930 honest controls. On the diagnostic restart,
+canary MAE is 0.017989 against the master (correlation 0.997856) and 0.016483
+against merged BF16 (correlation 0.998456), passing the unchanged gate. Preserve
+the first failure and diagnostic scope. Weights and selected serving recipe are
+unchanged; startup/request-batch sensitivity was also seen in the regular APPS
+canary. This restart is not a quality promotion.
+
+## Held-out diagnostic results
+
+| Metric | Current regular FP4/optimized control | Augmented FP4/optimized diagnostic | Historical augmented BF16 |
+| --- | ---: | ---: | ---: |
+| ID source-macro AUROC | 0.957476 | 0.928250 | 0.962342 |
+| ID source-macro raw pAUROC@20 | 0.865432 | 0.796611 | 0.872983 |
+| Gloom pAUROC@20 | 0.785899 | 0.671511 | 0.809069 |
+| STRIDE pAUROC@20 | 0.944966 | 0.921710 | 0.936897 |
+| ID macro Brier | 0.106276 | 0.129423 | 0.084668 |
+| APPS mean injected-honest FPR | 74.05% | 31.30% | 44.43% |
+| APPS mean injected-backdoor TPR | 84.85% | 64.45% | 87.64% |
+| APPS mean matched injection AUROC | 0.613024 | 0.760377 | 0.859471 |
+| APPS vanilla AUROC | 0.918230 | 0.906117 | 0.925572 |
+
+The ID macro pAUROC regression is 6.88 percentage points against the current
+regular control, concentrated on Gloom (11.44 points). Pooled AUROC/pAUROC are
+0.918195/0.757487; source AUROCs are 0.874672 Gloom and 0.981828 STRIDE. There
+are 90 distinct scores; paired mean absolute score change versus the regular
+control is 0.078213, with 254 fixed-0.5 decision flips. Calibration also worsens.
+The regular ID control was scored on the EU host; the APPS control used this
+NC2 host. Historical BF16 comparisons combine training, serving and host
+changes. These controls do not isolate an FP4 effect or its interaction with
+augmentation. Short training-source parity does not establish held-out quality.
+
+APPS uses each model's clean-only strict `score > threshold` operating point
+allowing at most 2% clean FPR. The diagnostic threshold is 0.245085, with 9/655
+clean alarms (1.37%); the regular control has 12/655 (1.83%), with ties making
+the achieved rates differ. Injection results remain heterogeneous:
+
+| Template | Honest FPR, regular → augmented | Backdoor TPR, regular → augmented | Augmented matched AUROC / pAUROC@20 |
+| --- | ---: | ---: | ---: |
+| GPT-4 | 70.38% → 68.55% | 84.85% → 90.57% | 0.682491 / 0.212047 |
+| GPT-4.1 | 100% → 21.68% | 100% → 65.69% | 0.792933 / 0.483063 |
+| GPT-4o | 51.76% → 3.66% | 69.71% → 37.09% | 0.805707 / 0.502426 |
+
+Mean matched raw pAUROC@20 improves from 0.186397 to 0.399178. Injection-minus-
+neutral honest mean score changes are +0.350940, +0.173682 and +0.073027; GPT-4
+still causes many alarms and a larger paired score increase than the regular
+control (+0.173656). Vanilla raw pAUROC@20 regresses from 0.744354 to 0.682168
+and vanilla-backdoor TPR from 51.93% to 43.43%. Thus augmentation improves
+matched injection separation and reduces alarms for two templates, while
+losing harmful-action recall and clean ID ranking. This replica is not an
+overall quality improvement and was not promoted. No adaptive robustness claim
+follows from this one-seed, limited-template, off-policy diagnostic.
+
+ID, APPS benchmark and honest controls took 251.29, 63.58 and 52.53 seconds of
+HTTP scoring, respectively, excluding startup/audits; token totals are
+33,750,959, 8,207,435 and 7,132,518. Ordered identities, labels/metadata, rendered
+prompt hashes, exact server token counts, finite logits, margins and sigmoid
+scores were verified for every row. Independent ROC integration reproduces ID
+raw pAUROC and AUROC; independent threshold/FPR/TPR/matched-AUROC calculations
+reproduce the APPS summaries. Both original and shared summaries agree. All
+583 collected remote/local artifact checksums match, including master adapters,
+final optimizer/checkpoint state, predictions and 310 diagnostic source snapshots.
 
 ## Preparation failures and provenance
 

@@ -45,8 +45,10 @@ recorded explicitly in target provenance.
   ranking and reduces injected-honest APPS alarms. The
   [9B replication](findings/monitor_injection_augmentation_9b.md) improves clean
   ID ranking but transfers much less strongly and regresses vanilla APPS
-  ranking. These single-seed, limited-template, off-policy interventions do not
-  establish broad or adaptive robustness, or a monotonic benefit from model size.
+  ranking. The [current 4B FP4 diagnostic](findings/b200_augmented_training.md)
+  reduces APPS alarms but loses clean ID ranking and harmful-action recall.
+  These single-seed, limited-template, off-policy interventions do not establish
+  recipe-independent, broad or adaptive robustness, or a monotonic size benefit.
 - **Quality judging and harmfulness monitoring have different targets.**
   [Joint preference training](findings/judge_injection_joint.md) learns the
   injected preference task without resolving APPS harmless alarms.

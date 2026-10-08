@@ -50,7 +50,7 @@
   and matched overhead measurements.
 - [Current FP4 augmented training](findings/b200_augmented_training.md): exact
   augmentation replay, completed FP32 adapters and failed optimized parity;
-  authorized ID/APPS diagnostic.
+  ID ranking/recall regression and reduced APPS alarms in the authorized diagnostic.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,

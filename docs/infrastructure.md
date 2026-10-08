@@ -424,8 +424,11 @@ isolated 0.31 dependencies and native overlays are staged for the current recipe
 Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
-and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING; the selected
-compiled FP8 scorer is warm after the [APPS evaluation](findings/b200_apps.md).
+and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The compiled
+FP8 scorer is now warm with the completed augmented FP4 adapter after its
+[user-authorized diagnostic](findings/b200_augmented_training.md), using
+`/tmp/gleipnir-merged/fp4-augmented-bf16`. This changes the resident model, not
+the selected regular checkpoint; consult the live scorer receipt for its identity.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
