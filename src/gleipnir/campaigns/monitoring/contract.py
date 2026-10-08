@@ -162,8 +162,12 @@ class Campaign:
                 for p in (self.source_root / directory).rglob("*")
                 if p.suffix in (".py", ".yaml", ".json")
             )
+        paths.extend(
+            self.source_root / name for name in self.config.get("extra_sources", [])
+        )
         return {
-            str(p.relative_to(self.source_root)): file_hash(p) for p in sorted(paths)
+            str(p.relative_to(self.source_root)): file_hash(p)
+            for p in sorted(set(paths))
         }
 
     def inventory(self, *, runtime: bool = False) -> dict:

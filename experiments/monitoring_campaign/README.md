@@ -47,6 +47,10 @@ lists available evaluation groups. ID uses source-macro and pooled ranking plus
 calibration diagnostics; APPS uses the existing clean-only operating point,
 matched injection controls and raw partial AUC convention. New-adapter parity
 limits are explicit and do not inherit a historical finite-quality waiver.
+An explicitly authorized `evaluation.failed_parity_diagnostic: true` contract
+may exceed the MAE limit while preserving failed gate values and retaining
+finite/correlation/effect checks. Its summaries are labeled diagnostic; normal
+evaluation still stops on failed agreement.
 Outputs live under `results/<campaign_id>/`, data bindings under
 `data/<campaign_id>/`, logs under `logs/runpod/<campaign_id>/`; runtime executables
 and merged destination are configuration fields.
@@ -58,7 +62,9 @@ its original frozen controller and source binding.
 
 Validation uses mocked stage launches, CPU contract checks and the current
 artifact population. No second training run is required to test orchestration. The implementation
-passed 57 focused checks; CPU preparation of the real frozen population bound
+passed 58 focused checks; CPU preparation of the real frozen population bound
 93 prerequisite artifacts and 307 source files. Its receipt and source snapshot
 are in `results/monitoring-augmented-fp4-validation03/`; GPU stage launches were
-mocked, so this does not claim a second end-to-end training/evaluation run.
+mocked for the initial runner. Its shared completion validator also passed the
+real completed 272-update metadata. The authorized augmented diagnostic uses
+the shared optimized evaluator; see its [finding](../../docs/findings/b200_augmented_training.md).

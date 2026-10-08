@@ -280,3 +280,25 @@ def test_missing_runtime_or_wrong_checkout_fails_before_gpu(campaign):
     assert any(
         "missing executable training_python" in error for error in result["errors"]
     )
+
+
+def test_diagnostic_preserves_failed_mae_and_rejects_nonfinite_or_ranking_drift(
+    campaign,
+):
+    from gleipnir.campaigns.monitoring.evaluation import require_evaluation_gate
+
+    reference, base = [0.1, 0.2, 0.8, 0.9], [0.4] * 4
+    failed = agreement(
+        [0.13, 0.23, 0.83, 0.93], reference, base, campaign.config["parity"]
+    )
+    gate = {**failed, "versus_merged_bf16": dict(failed)}
+    assert not gate["passed"] and gate["finite"]
+    with pytest.raises(ValueError, match="agreement failed"):
+        require_evaluation_gate(gate, diagnostic=False)
+    require_evaluation_gate(gate, diagnostic=True)
+    assert not gate["passed"] and not gate["versus_merged_bf16"]["passed"]
+    for key, value in [("finite", False), ("correlation", 0.5), ("adapter_effect", 0)]:
+        broken = copy.deepcopy(gate)
+        broken["versus_merged_bf16"][key] = value
+        with pytest.raises(ValueError, match="agreement failed"):
+            require_evaluation_gate(broken, diagnostic=True)

@@ -48,6 +48,9 @@
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
+- [Current FP4 augmented training](findings/b200_augmented_training.md): exact
+  augmentation replay, completed FP32 adapters and failed optimized parity;
+  authorized ID/APPS diagnostic.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,

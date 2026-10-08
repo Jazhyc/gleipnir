@@ -1,0 +1,175 @@
+campaign_id: b200-augmented-training-diagnostic01
+seed: 0
+profile: qwen35_4b_b200_fp4_mlp
+training_rows: 8688
+injected_rows: 3475
+expected_steps: 272
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 83969213
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  training:
+    path: data/monitor_injection_augmentation/student_rows.jsonl
+    sha256: 84998c2f7727ed1249356b3d4ff126dab71bb4d5ca4255a073128f0b624519b6
+  augmentation_manifest:
+    path: data/monitor_injection_augmentation/manifest.json
+    sha256: e99a700ed1b588323e0f0a757e73e50046496fbc25c29c158b34b129dec99f51
+  ledger:
+    path: data/monitor_injection_augmentation/insertion_ledger.jsonl
+    sha256: 792a8c0a1a62ac3767bc731993a2f365c235693e6faa2ca2e082e382bdebac0a
+  clean_training:
+    path: data/student_injection_awareness/regular/student_rows.jsonl
+    sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+  teacher:
+    path: data/student_injection_awareness/soft_targets.jsonl
+    sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+  templates:
+    path: experiments/monitor_injection_augmentation/templates.json
+    sha256: 42b02227febfa4b03092a07e6ab4c199830468c62cf9198bee22097b86202226
+  token_audit:
+    path: results/monitor_injection_augmentation/4b/augmented/token_audit.json
+    sha256: ff621d307a46a76e734653575a442dcb2f135ca9af6cc86199b3b4fd42948ed9
+  old_completion:
+    path: results/monitor_injection_augmentation/4b/augmented/complete.json
+    sha256: c8ce07961cc66f6cec81104c5ce238f9cd8096c3c8dbfd9691e579be8e78fcc7
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  benchmark:
+    path: data/monitoring_injection_disentanglement/benchmark/neutral.jsonl
+    sha256: e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866
+  honest_controls:
+    path: data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl
+    sha256: 5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b
+  benchmark_workload:
+    path: results/b200_apps/apps02/benchmark_workload.jsonl
+    sha256: 9f04352d1bd7a7e4d698bec60592b5625d8190d48c900c15a301f4e9e8edc478
+  honest_controls_workload:
+    path: results/b200_apps/apps02/honest_controls_workload.jsonl
+    sha256: b48cbac4b4465cbd5bb77d1c68b72d4599f0bc415e382320107df87bc7587f8d
+  regular_id_predictions:
+    path: results/b200_attention_precision/precision01/fp8/id_predictions.json
+    sha256: cbe779af3c18fe9bbf3bc0d0b991e81e7bf03236f1ecf200c7abb326642698b2
+  regular_apps_summary:
+    path: results/b200_apps/apps02/summary.json
+    sha256: 4615654ab622df6539399a3b09b7137253e00c88a0edeed21f0d6883f0647f8d
+  historical_augmented_summary:
+    path: results/b200_augmented_training_controls/historical_augmented_summary.json
+    sha256: e4db56a614ba30a0ac84475a840ba8ea5811f167df872c7732ae1d656955396d
+  historical_augmented_id:
+    path: results/monitor_injection_augmentation/evaluation_regular/augmented/id.jsonl
+    sha256: d90936ba4caad62016ab549b236deed2b267922391d33561459000807a8d9759
+  startup_reference:
+    path: results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json
+    sha256: 14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  completed_master:
+    path: results/b200_augmented_training/4b/augmented/causal_adapter/adapter_model.safetensors
+    sha256: 8e65826845d589a6879e052205653512b4106f3529befda583a03329ac6f34ff
+  completed_serving:
+    path: results/b200_augmented_training/4b/augmented/model/adapter_model.safetensors
+    sha256: c6d8437e7f1accc9ec1dc4972bc82d525ff38a03e8723ac2545c777d79dbcccb
+  completed_training:
+    path: results/b200_augmented_training/4b/augmented/complete.json
+    sha256: 5b9ed3acfee073955caa0a9df7feb465f9517881bcc0981c5ebeb55cf70241ad
+  completed_metadata:
+    path: results/b200_augmented_training/4b/augmented/causal_adapter/training_metadata.json
+    sha256: ead084aff2d9530fee1f2721015b350e7d11418df5b3cdc89037b74396184344
+  original_failed_parity:
+    path: results/b200_augmented_training/optimized_parity.json
+    sha256: 227bbc01053580e22e4fca7bfc892045614ff3c9f385536de738c657676ea1a0
+  original_merge:
+    path: results/b200_augmented_training/merged_artifact.json
+    sha256: 2659b96a06ff287c2f79b6a21cca940e3825c13933d892dfa34dc0d793468050
+  original_merged_parity:
+    path: results/b200_augmented_training/merged_parity.json
+    sha256: eeaff51d4435ab356fdf1fc05948866b8ec0b1e66b9cff5d6e2bd51c57208c03
+  original_canary:
+    path: results/b200_augmented_training/canary_workload.jsonl
+    sha256: 00c6e27d406dfcad989a46f9d9449ae72c048c592c6a98d18c723ecbd9e01a70
+  original_manifest:
+    path: data/b200_augmented_training/manifest.json
+    sha256: 3ad6861356e886058903d1ed2a644d67bc733165990b9e2401520a7376004eaa
+  completed_reference:
+    path: results/b200_augmented_training/4b/augmented/parity_reference.json
+    sha256: 2f7e50d537fb9800a249358dcc7b7abd64f8b273ff1fad2c384b85438fa6601e
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+    benchmark: 5184
+    honest_controls: 3930
+  failed_parity_diagnostic: true
+merged_model: /tmp/gleipnir-merged/fp4-augmented-bf16
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9
+hypothesis: The original 40% injection augmentation reduces benign APPS injection
+  false positives while preserving ID ranking.
+intervention: Replay the original augmentation with current native FP4 training and
+  selected optimized inference.
+selection: Use only the final one-epoch adapter; no held-out checkpoint or recipe
+  selection.
+stop_condition: Stop on input/source/runtime drift, nonfinite outputs, failed merged/master
+  parity, correlation/effect guard failure or incomplete membership. Report excessive
+  optimized MAE as a failed-parity diagnostic, without changing the original gate
+  or promoting the model.
+augmentation_audit: true
+evaluations:
+- id
+- apps
+baselines:
+  regular_id:
+    kind: id
+    input: regular_id_predictions
+    qualification: Same adapter recipe on EU host; host and batch shape differ.
+  regular_apps:
+    kind: apps
+    input: regular_apps_summary
+    qualification: Same NC2 host and scoring recipe.
+  historical_augmented_apps:
+    kind: apps
+    input: historical_augmented_summary
+    keys:
+    - monitoring
+    - augmented
+    - neutral
+    qualification: Historical BF16 training and inference; not an isolated arithmetic
+      comparison.
+extra_sources:
+- experiments/b200_augmented_training/diagnostic.py
+- experiments/b200_augmented_training/campaign.py
+- experiments/b200_augmented_training/evaluate.py

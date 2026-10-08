@@ -226,6 +226,7 @@ async def optimized(ctx: Campaign) -> None:
     from gleipnir.serving.reference import selected_serving_default
 
     config = ctx.config
+    diagnostic = config["evaluation"].get("failed_parity_diagnostic", False)
     ctx.check()
     merged = json.loads((ctx.output / "merged_parity.json").read_text())
     if not merged["passed"]:
@@ -335,6 +336,9 @@ async def optimized(ctx: Campaign) -> None:
             master["base"],
             config["parity"],
         )
+        gate["evaluation_scope"] = (
+            "failed_parity_diagnostic" if diagnostic else "parity_gated"
+        )
         write_json(ctx.output / "optimized_parity.json", gate)
         write_json(ctx.output / "optimized_canary_predictions.json", values)
         archive_audits(ctx.output / "native_audits")
@@ -347,8 +351,7 @@ async def optimized(ctx: Campaign) -> None:
             or len(native["calls"]) != 16
         ):
             raise ValueError("actual FP8 projection dispatch changed")
-        if not gate["passed"] or not gate["versus_merged_bf16"]["passed"]:
-            raise ValueError("new-adapter optimized serving score agreement failed")
+        require_evaluation_gate(gate, diagnostic=diagnostic)
         active.update(status="ready", ready_at_unix=time.time())
         write_json(ctx.serving / "server.json", active)
         write_json(ctx.output / "server.json", active)
@@ -396,6 +399,11 @@ async def optimized(ctx: Campaign) -> None:
             ctx.output / "evaluation/complete.json",
             {
                 "rows": sum(len(v) for v in populations.values()),
+                "evaluation_scope": "failed_parity_diagnostic"
+                if diagnostic
+                else "parity_gated",
+                "parity_passed": gate["passed"]
+                and gate["versus_merged_bf16"]["passed"],
                 "config_sha256": file_hash(ctx.config_path),
                 "master_sha256": master["master_sha256"],
                 "files_sha256": {
@@ -522,6 +530,10 @@ def summarize(populations: dict[str, list[dict]], ctx: Campaign) -> dict:
             raise ValueError(f"unknown baseline kind: {spec['kind']}")
     return {
         "status": "complete",
+        "evaluation_scope": "failed_parity_diagnostic"
+        if ctx.config["evaluation"].get("failed_parity_diagnostic", False)
+        else "parity_gated",
+        "parity": json.loads((ctx.output / "optimized_parity.json").read_text()),
         "evaluations": evaluations,
         "baselines": baselines,
         "identity": {
@@ -531,3 +543,18 @@ def summarize(populations: dict[str, list[dict]], ctx: Campaign) -> dict:
             "merged_artifact_sha256": file_hash(ctx.output / "merged_artifact.json"),
         },
     }
+
+
+def require_evaluation_gate(gate: dict, *, diagnostic: bool) -> None:
+    """Explicit diagnostics may exceed MAE, never finite/ranking/effect guards."""
+    for value in (gate, gate["versus_merged_bf16"]):
+        if value["passed"]:
+            continue
+        if (
+            not diagnostic
+            or not value["finite"]
+            or value["correlation"] is None
+            or value["correlation"] < value["limits"]["min_correlation"]
+            or value["adapter_effect"] <= value["limits"]["min_adapter_effect"]
+        ):
+            raise ValueError("new-adapter optimized serving score agreement failed")
