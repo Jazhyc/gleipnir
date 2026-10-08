@@ -27,6 +27,11 @@ class AttentionTunedPreparationMxfp8ServingAuditWorker(
         from gleipnir.serving_fp4_tuning import retile
 
         condition = self.vllm_config.additional_config["serving_condition"]
+        if condition.get("attention_projection_precision") in {"bf16", "fp8"}:
+            # Candidate-specific projection validation/auditing belongs to the
+            # precision worker; preserve all inherited MLP/GDN/core checks.
+            super().load_model(load_dummy_weights=load_dummy_weights)
+            return
         path = condition["attention_projection_validation"]
         raw = (ROOT / path).read_bytes()
         receipt = json.loads(raw)

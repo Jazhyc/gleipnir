@@ -60,12 +60,26 @@ class MixedServingAuditWorker(ServingAuditWorker):
                     for check in layer._gleipnir_gdn_kernel_checks
                 )
             elif (
-                self.condition.get("attention_projection_precision") == "fp4"
+                self.condition.get("attention_projection_precision") in {"fp4", "fp8"}
                 and projection_identity(name) is not None
             ):
+                precision = self.condition["attention_projection_precision"]
+                expected_method, expected_dtype = (
+                    AttentionFp4Method,
+                    torch.float4_e2m1fn_x2,
+                )
+                if precision == "fp8":
+                    from gleipnir.serving.vllm.attention_precision import (
+                        AttentionFp8Method,
+                    )
+
+                    expected_method, expected_dtype = (
+                        AttentionFp8Method,
+                        torch.float8_e4m3fn,
+                    )
                 if (
-                    not isinstance(method, AttentionFp4Method)
-                    or layer.weight.dtype != torch.float4_e2m1fn_x2
+                    not isinstance(method, expected_method)
+                    or layer.weight.dtype != expected_dtype
                 ):
                     raise ValueError("FP4 full-attention projection scope changed")
                 attention_projections.add(projection_identity(name))
@@ -94,7 +108,7 @@ class MixedServingAuditWorker(ServingAuditWorker):
             raise ValueError("incomplete GDN projection coverage/native checks")
         if attention_projections != (
             EXPECTED
-            if self.condition.get("attention_projection_precision") == "fp4"
+            if self.condition.get("attention_projection_precision") in {"fp4", "fp8"}
             else set()
         ):
             raise ValueError("incomplete full-attention FP4 projection scope")
