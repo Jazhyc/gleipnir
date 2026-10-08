@@ -384,6 +384,29 @@ the standard; synthetic component timings alone do not promote a recipe.
 No in-chat scheduling tool is available: startup/progress checks are performed
 during the active turn, with no autonomous follow-up promised after it ends.
 
+### B200 terminated after serving precision screens, 2026-10-08
+
+At the user's explicit request, Pod `qobmmj1weyevg1`
+(`gleipnir-b200-cache-free`, EU-RO-1) was permanently terminated at
+2026-10-08 03:49:14 UTC. The delete API returned HTTP 204; a subsequent get
+returned HTTP 404 / `pod not found`. Local aliases record TERMINATED and no
+replacement capacity was launched.
+
+The GPU was idle before collection. All results, logs and inputs are collected
+locally; SHA-256 checks pass for 2,004 important artifact files, including the
+FP32 adapter. Verified compressed archives preserve compiler/kernel caches,
+native overlays (including both container-only symlink targets), staged runtime
+bundles and pinned model weights. Container-root compiler caches and package
+versions are also saved. Scratch quota and write stalls required an archive
+backup; incomplete cache mirrors are not authoritative. Backup checks and the
+sanitized lifecycle receipt are under
+`results/b200_shutdown/20261008_euro/`.
+
+This Pod's 100 GB `/workspace` was a Pod-attached volume, so termination deletes
+it and the 50 GB container disk. Resume from the local backups. The next focus
+is vLLM Lens integration; retain the
+[current serving selection](decisions/b200_monitor_score_reference.md).
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
