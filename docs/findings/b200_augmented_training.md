@@ -121,6 +121,66 @@ reproduce the APPS summaries. Both original and shared summaries agree. All
 583 collected remote/local artifact checksums match, including master adapters,
 final optimizer/checkpoint state, predictions and 310 diagnostic source snapshots.
 
+## Same-checkpoint BF16 ID control
+
+The user requested BF16 ID inference of the same completed FP4-trained augmented
+checkpoint. This control reuses the merged weights, NC2 host, vLLM 0.31 runtime,
+tokenizer, causal LAST two-logit head, ordered 3,012 examples, 128-row groups and
+concurrency 128. All MLP/GDN/attention projections and full-attention query/cache
+operands use unquantized BF16; FP32 GDN state/gates and the corrected synchronous
+FCFS scheduler remain. It changes the whole precision recipe together, without
+isolating a projection or kernel. There is no new training or APPS evaluation.
+
+| ID metric | Same checkpoint, optimized | Same checkpoint, BF16 | Change, pp |
+| --- | ---: | ---: | ---: |
+| Source-macro AUROC | 0.928250 | 0.947513 | +1.93 |
+| Source-macro raw pAUROC@20 | 0.796611 | 0.839096 | +4.25 |
+| Gloom raw pAUROC@20 | 0.671511 | 0.748649 | +7.71 |
+| STRIDE raw pAUROC@20 | 0.921710 | 0.929543 | +0.78 |
+| Pooled raw pAUROC@20 | 0.757487 | 0.802846 | +4.54 |
+
+BF16 recovers about 56% of the gap to historical augmented BF16 pAUROC@20
+(0.872983), leaving 3.39 points. Serving precision therefore explains a substantial
+part of this replica's observed loss. The remaining difference combines training
+and other historical stack changes; it does not isolate FP4 training or establish
+an augmentation interaction. The current regular optimized control remains
+0.865432; its archived full-BF16 control is 0.886090, with a different runtime,
+host and batching ([qualifications](b200_optimized_id.md)). The original
+augmentation gain has not been reproduced. No checkpoint or serving promotion
+uses these ID results.
+
+Macro Brier improves from 0.129423 to 0.103590. At the fixed 0.5 threshold, macro
+recall rises from 0.697774 to 0.778771 and FPR from 0.027359 to 0.041664. Paired
+score MAE is 0.065641, mean BF16-minus-optimized shift +0.050413, correlation
+0.964591 and 218 decisions flip. There are 87 unique BF16 scores versus 90
+optimized; the BF16 two-logit head still produces many ties.
+
+The unchanged adapter parity gate passes: MAE/correlation against the FP32 master
+are 0.005838/0.999594, and against merged HF BF16 0.004153/0.999755. Native audits
+verify all 177 linear modules are BF16/unquantized, 64 MLP/48 GDN/16 attention
+projection coverage, the exact two-row classifier and eight actual causal BF16
+attention calls. Short-canary parity still does not guarantee held-out agreement.
+
+HTTP scoring takes 295.90 seconds for 33,750,959 input tokens: 114,062 input
+tokens/s versus optimized 134,313 (251.29 seconds), a 15.08% throughput decrease
+in these single passes. BF16 request latency p50/p95 is 4.880/14.839 seconds.
+The existing thread/synchronous-scheduler performance warnings remain; there
+are no scoring failures. All row identities, metadata, prompt hashes, exact token
+counts, finite logits/margins/sigmoid scores and independently integrated ROC
+metrics pass. All 365 collected artifact checksums and 312 executed source
+snapshots match. The B200 remains running with this passing BF16 control warm;
+the selected regular checkpoint is unchanged.
+
+The initial CPU preparation rejected the optional historical prediction baseline
+because its provenance metadata uses a different nesting. All historical IDs and
+prompt hashes match; retain that baseline as a qualified cached comparison rather
+than weakening the shared identity guard. The failed attempt is preserved. The
+successful control uses a separate frozen binding under
+`data/b200-augmented-bf16-id01/`, with predictions, summary, parity, native audit,
+paired comparison and `completion_audit.json` under
+`results/b200-augmented-bf16-id01/`. Its contract is in the
+[BF16 experiment README](../../experiments/b200_augmented_bf16_id/README.md).
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The
