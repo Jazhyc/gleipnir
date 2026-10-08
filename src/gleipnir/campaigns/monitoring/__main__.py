@@ -72,9 +72,15 @@ def worker(ctx: Campaign, stage: str) -> None:
     else:
         python = config["training_python"]
         command = [python, "-m", "gleipnir.campaigns.monitoring", "_worker"]
-        env = training_environment(ctx.root, config["campaign_id"], native_fp4_mlp=True)
+        env = training_environment(
+            ctx.root,
+            config["campaign_id"],
+            native_fp4_mlp=ctx.job().get("native_fp4_mlp", False),
+        )
     env.update(
-        PYTHONPATH=f"{ctx.source_root / 'src'}:{ctx.source_root}",
+        PYTHONPATH=(
+            f"{ctx.source_root / 'src'}:{ctx.source_root}:{env.get('PYTHONPATH', '')}"
+        ),
         HF_HOME=str(ctx.root / ".cache/huggingface"),
         HF_HUB_CACHE=str(ctx.root / ".cache/huggingface/hub"),
         HF_HUB_OFFLINE="1",

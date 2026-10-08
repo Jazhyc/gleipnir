@@ -2,7 +2,8 @@
 
 Use `python -m gleipnir.campaigns.monitoring` for fresh, one-epoch
 Qwen3.5-4B campaigns on an existing authorized B200. The runner uses the selected
-native FP4 training profile, preserves FP32 adapters, merges a BF16 checkpoint
+native FP4 training profile or the retained `qwen35_4b_b200_bf16_fa4` control,
+preserves FP32 adapters, merges a BF16 checkpoint
 on ephemeral storage, checks that adapter's master/merged/optimized agreement,
 and runs registered `id` and/or `apps` evaluations. It does not provision or
 terminate capacity. GPU stages run in separate training and serving processes.
@@ -51,6 +52,8 @@ An explicitly authorized `evaluation.failed_parity_diagnostic: true` contract
 may exceed the MAE limit while preserving failed gate values and retaining
 finite/correlation/effect checks. Its summaries are labeled diagnostic; normal
 evaluation still stops on failed agreement.
+Set `evaluation.serving_precision: bf16` for an explicitly requested BF16
+serving control; it audits unquantized projections and actual BF16 attention.
 Outputs live under `results/<campaign_id>/`, data bindings under
 `data/<campaign_id>/`, logs under `logs/runpod/<campaign_id>/`; runtime executables
 and merged destination are configuration fields.

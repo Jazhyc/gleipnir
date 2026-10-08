@@ -21,6 +21,9 @@ from .contract import Campaign
 
 def validate_completion(metadata: dict, ctx: Campaign) -> None:
     config, job = ctx.config, ctx.job()
+    native = metadata["quantization"]["full_bf16_lora"].get("native_fp4_mlp")
+    if bool(native) != job.get("native_fp4_mlp", False):
+        raise ValueError("completed MLP training precision differs from profile")
     validate_training_metadata(
         metadata,
         job,
@@ -63,18 +66,31 @@ def train(ctx: Campaign) -> None:
     from safetensors import safe_open
 
     from gleipnir.training.backends.flashqla import load_flashqla
-    from gleipnir.training.backends.native_fp4 import (
-        validate_kernel_sources,
-        verify_native_fp4_runtime,
-    )
+    from gleipnir.training.startup import validation_reference
 
     ctx.check()
     if (ctx.output / "training_launch.json").exists():
         raise ValueError(
             "training was already launched; inspect its receipt instead of restarting"
         )
-    validate_kernel_sources()
-    runtime = verify_native_fp4_runtime()
+    job = ctx.job()
+    if job.get("native_fp4_mlp", False):
+        from gleipnir.training.backends.native_fp4 import (
+            validate_kernel_sources,
+            verify_native_fp4_runtime,
+        )
+
+        validate_kernel_sources()
+        runtime = verify_native_fp4_runtime()
+    else:
+        runtime = validation_reference(
+            Path(job["startup_validation_reference"]),
+            packed_attention_backend=job["packed_attention_backend"],
+            packed_attention_version=job["packed_attention_version"],
+            learning_gradient_tolerance=job["packing_learning_gradient_tolerance"],
+            expected_sha256=job["startup_validation_reference_sha256"],
+            verify_runtime=True,
+        )
     gpu_uuid = subprocess.check_output(
         ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"], text=True
     ).strip()
@@ -116,7 +132,6 @@ def train(ctx: Campaign) -> None:
     ).strip()
     if any(int(pid) != os.getpid() for pid in apps.split()):
         raise ValueError("training launch requires no unrelated GPU process")
-    job = ctx.job()
     command = training_command(job)
     command += [
         f"student.init_adapter={ctx.root / config['model']['initial_adapter']}",

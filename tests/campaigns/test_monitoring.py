@@ -164,6 +164,7 @@ def test_completed_coverage_uses_configured_row_count_and_rejects_duplicate(
         profile=lambda: {},
     )
     meta = {
+        "quantization": {"full_bf16_lora": {}},
         "adaptive_microbatching": {
             "logical_batch_sizes": [32, 3],
             "records": [
@@ -185,6 +186,10 @@ def test_completed_coverage_uses_configured_row_count_and_rejects_duplicate(
         "optimizer_step_timing": {"durations_seconds": [1, 2]},
     }
     validate_completion(meta, ctx)
+    meta["quantization"]["full_bf16_lora"]["native_fp4_mlp"] = {"base_forward": "nvfp4"}
+    with pytest.raises(ValueError, match="MLP training precision"):
+        validate_completion(meta, ctx)
+    meta["quantization"]["full_bf16_lora"].pop("native_fp4_mlp")
     meta["adaptive_microbatching"]["records"][1]["logical_indices"] = [0, 1, 1]
     with pytest.raises(ValueError, match="missing or repeated"):
         validate_completion(meta, ctx)
@@ -250,7 +255,11 @@ def test_new_adapter_gates_do_not_inherit_old_finite_waiver(campaign):
 def test_worker_uses_isolated_runtime_and_records_launch(campaign, monkeypatch, stage):
     captured = {}
     monkeypatch.setattr(Campaign, "check", lambda self: {})
-    monkeypatch.setattr(runner, "training_environment", lambda *a, **kw: {})
+    monkeypatch.setattr(
+        runner,
+        "training_environment",
+        lambda *a, **kw: {"PYTHONPATH": "/pinned-kernels"},
+    )
 
     def start(command, **kwargs):
         captured.update(command=command, **kwargs)
@@ -265,6 +274,8 @@ def test_worker_uses_isolated_runtime_and_records_launch(campaign, monkeypatch, 
     )
     assert captured["env"]["HF_HUB_OFFLINE"] == "1"
     assert captured["env"]["GLEIPNIR_CAMPAIGN_DRIVER_PID"]
+    if stage != "evaluate":
+        assert "/pinned-kernels" in captured["env"]["PYTHONPATH"].split(":")
     assert captured["start_new_session"]
     receipt = json.loads(
         (campaign.output / "stage_launches" / f"{stage}.json").read_text()
@@ -272,6 +283,56 @@ def test_worker_uses_isolated_runtime_and_records_launch(campaign, monkeypatch, 
     assert receipt["pid"] == 123 and receipt["command"] == captured["command"]
     assert Path(receipt["log"]).parent == campaign.logs / "stages"
     assert Path(receipt["log"]) != campaign.logs / "train.log"
+
+
+def test_bf16_profile_keeps_fa4_and_routes_runtime_without_fp4(campaign, monkeypatch):
+    config = copy.deepcopy(campaign.config)
+    config["profile"] = "qwen35_4b_b200_bf16_fa4"
+    bf16 = replace(campaign, config=config)
+    fp4_job, bf16_job = campaign.job(), bf16.job()
+    changed = {
+        key
+        for key in fp4_job.keys() | bf16_job.keys()
+        if fp4_job.get(key) != bf16_job.get(key)
+    }
+    assert changed == {
+        "native_fp4_mlp",
+        "native_fp4_mlp_parity_policy",
+        "startup_validation_reference_sha256",
+        "packing_learning_gradient_tolerance",
+    }
+    assert bf16_job["packed_attention_backend"] == "flash_attention_4"
+    assert not bf16_job.get("native_fp4_mlp", False)
+    captured = {}
+    monkeypatch.setattr(Campaign, "check", lambda self: {})
+
+    def environment(*args, **kwargs):
+        captured.update(kwargs)
+        return {}
+
+    monkeypatch.setattr(runner, "training_environment", environment)
+    monkeypatch.setattr(
+        runner.subprocess,
+        "Popen",
+        lambda *a, **kw: SimpleNamespace(pid=123, wait=lambda: 0),
+    )
+    runner.worker(bf16, "train")
+    assert captured["native_fp4_mlp"] is False
+
+
+def test_bf16_campaign_accepts_only_named_validated_profiles(tmp_path):
+    config = yaml.safe_load(EXAMPLE.read_text())
+    path = tmp_path / "config.yaml"
+    config["profile"] = "qwen35_4b_b200_bf16_fa4"
+    path.write_text(yaml.safe_dump(config))
+    assert (
+        Campaign.load(tmp_path, path).profile()["recipe"]["packed_attention_backend"]
+        == "flash_attention_4"
+    )
+    config["profile"] = "qwen35_4b_b200_fast"
+    path.write_text(yaml.safe_dump(config))
+    with pytest.raises(ValueError, match="validated"):
+        Campaign.load(tmp_path, path)
 
 
 def test_missing_runtime_or_wrong_checkout_fails_before_gpu(campaign):

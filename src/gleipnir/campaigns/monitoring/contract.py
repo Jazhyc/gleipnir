@@ -45,12 +45,12 @@ class Campaign:
             raise ValueError(
                 f"evaluations must be distinct registered names: {list(REGISTRY)}"
             )
-        if (
-            config["num_train_epochs"] != 1
-            or config["profile"] != "qwen35_4b_b200_fp4_mlp"
+        if config["num_train_epochs"] != 1 or config["profile"] not in (
+            "qwen35_4b_b200_fp4_mlp",
+            "qwen35_4b_b200_bf16_fa4",
         ):
             raise ValueError(
-                "runner currently supports the validated one-epoch B200 FP4 profile"
+                "runner supports the validated one-epoch B200 FP4 and BF16/FA4 profiles"
             )
         if config.get("evaluation", {}).get("promote", False):
             raise ValueError(
