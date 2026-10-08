@@ -51,6 +51,8 @@
 - [Full-attention precision recovery](findings/b200_attention_precision.md):
   frozen FP4/BF16/FP8 projection comparison, partial ID pAUROC recovery and
   development/ID quality, calibration and throughput tradeoffs.
+- [FP8 GDN projections](findings/b200_gdn_precision.md): small ID ranking gain,
+  improved calibration, development low-FPR regression and batch throughput cost.
 - [Optimized-stack ID drift](findings/b200_optimized_id.md): paired same-adapter
   ID regression, recovery groups and continuous-admission throughput/latency tradeoff.
 - [B200 length-aware admission](findings/b200_length_admission.md): modest

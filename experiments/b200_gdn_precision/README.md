@@ -4,6 +4,9 @@ Hypothesis: replacing the 24 GDN blocks' 48 FP4 QKV/Z and output projections
 with native FP8 W8A8 recovers low-FPR ranking at a modest throughput cost.
 One predeclared FP8 candidate; no automatic promotion or ID-driven search.
 
+Completed results and qualifications are in the
+[GDN precision finding](../../docs/findings/b200_gdn_precision.md).
+
 Freeze the current vLLM 0.31 FP8 full-attention default, final 272-update
 FP4/FA4-trained 4B adapter and original merged BF16 weights. Keep all 64 FP4
 MLP projections and native SwiGLU output, MXFP8 attention core, small BF16
