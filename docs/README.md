@@ -50,7 +50,8 @@
   and matched overhead measurements.
 - [Augmented training precision controls](findings/b200_augmented_training.md): exact
   augmentation replay, completed FP32 adapters and failed optimized parity;
-  ID/APPS diagnostic tradeoffs, BF16 serving recovery and matched BF16 MLP/FA4 training.
+  ID/APPS tradeoffs, BF16 serving recovery, matched BF16 MLP/FA4 training and
+  its BF16 APPS follow-up.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,

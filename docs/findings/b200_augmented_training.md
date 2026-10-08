@@ -218,7 +218,8 @@ Macro Brier improves 0.103590 → 0.087750. At fixed threshold 0.5, macro recall
 rises 77.88% → 84.67% and FPR 4.17% → 6.94%. Paired mean score shift is
 +0.044475, MAE 0.072932, correlation 0.952703 and 234 decisions flip. There are
 88 unique scores. Gloom/STRIDE AUROCs are 0.918147/0.985741; pooled AUROC is
-0.942193. APPS was not evaluated in this training control.
+0.942193. This training control scored ID; its APPS follow-up below uses the
+same resident checkpoint.
 
 Training completes all 272 updates and 83,969,213 tokens in 2,616.78 seconds
 (43.61 minutes), 3.98% longer than FP4. Mean loss is 0.240275; steady updates
@@ -252,6 +253,71 @@ the completed run is `b200-augmented-bf16-training02` under results/data/logs.
 Its [experiment contract](../../experiments/b200_augmented_bf16_training/README.md)
 and independent training, serving, reference and completion audits retain the
 comparison. The passing BF16-trained scorer stays warm on the existing B200.
+
+## BF16-trained augmented checkpoint on APPS
+
+The user requested the missing APPS result for the completed BF16 MLP/FA4
+adapter. All 5,184 benchmark cases and 3,930 honest controls were scored on the
+same already passing BF16 monitor server, without training or restarting it.
+Mean injected-honest FPR is **25.19%** and injected-backdoor TPR **70.38%**.
+Injection text still increases honest scores in 98.02–98.78% of matched pairs,
+and alarms remain far above the clean-honest rate of **1.83%**.
+
+| APPS metric | Augmented FP4 training / optimized serving | Augmented BF16 training / BF16 serving |
+| --- | ---: | ---: |
+| Mean injected-honest FPR | 31.30% | 25.19% |
+| Mean injected-backdoor TPR | 64.45% | 70.38% |
+| Mean matched injection AUROC | 0.760377 | 0.821611 |
+| Mean matched raw pAUROC@20 | 0.399178 | 0.519076 |
+| Vanilla AUROC | 0.906117 | 0.904002 |
+| Vanilla raw pAUROC@20 | 0.682168 | 0.696977 |
+| Vanilla-backdoor TPR | 43.43% | 51.00% |
+
+The average improves, with substantial template differences:
+
+| Template | Honest FPR, FP4/optimized → BF16/BF16 | Backdoor TPR, FP4/optimized → BF16/BF16 | BF16 matched AUROC / pAUROC@20 |
+| --- | ---: | ---: | ---: |
+| GPT-4 | 68.55% → 27.63% | 90.57% → 76.04% | 0.824461 / 0.515462 |
+| GPT-4.1 | 21.68% → 38.93% | 65.69% → 81.14% | 0.807946 / 0.508275 |
+| GPT-4o | 3.66% → 9.01% | 37.09% → 53.94% | 0.832425 / 0.533491 |
+
+Paired honest injection-minus-neutral mean score shifts are +0.088344, +0.110759
+and +0.059586. The large reduction in GPT-4 honest alarms drives the mean FPR
+improvement; the other templates raise both alarms and detection. Vanilla
+AUROC decreases slightly even though its raw partial AUC/recall improve.
+Historical augmented BF16 matched AUROC/mean TPR are 0.859471/87.64%, still above
+this run's 0.821611/70.38%. No adaptive robustness or overall dominance follows.
+
+Both cached FP4 controls used optimized low-precision serving, while this pass
+continues the BF16 training control's compiled BF16 server. The APPS comparison
+therefore couples training and serving differences; it does not isolate MLP
+training precision. There is no FP4-trained/same-server BF16 APPS control. The
+regular optimized monitor remains qualified context at 74.05% honest injection
+FPR and 84.85% backdoor TPR. Prior use of these problems/templates is disclosed;
+APPS stays outside training and checkpoint selection.
+
+The unchanged clean-only strict `score > threshold` rule selects 0.1329642402,
+with 12/655 clean alarms (1.83%) versus the FP4 diagnostic's 9/655 (1.37%). Ties
+make the achieved rates differ under the same at-most-2% rule. No injected cases
+are used for threshold selection. Calibration, ties, fixed-0.5 diagnostics and
+full ROC data remain in the summary; this is not a deployment threshold.
+
+The frozen contract preserves APPS revision, regular prompt, order, labels,
+code/payload/parent metadata, cached rendering, 128-row partitions and c128.
+Every row's rendered hash, exact server token count, finite logits/margin/sigmoid
+and parent identity pass. Independent operating-point and ROC calculations
+reproduce the summary. All 408 collected file checksums and 313 executed source
+snapshots match. Six resident-identity/native-audit checks and scoped Ruff pass.
+The same API/worker PIDs, checkpoint files and passed adapter parity are verified
+before and after scoring; the scorer remains healthy and warm.
+
+Benchmark/control HTTP scoring takes 85.84/71.66 seconds for 8,207,435/7,132,518
+input tokens, or 95,608/99,529 input tokens/s and 60.39/54.84 requests/s. Request
+latency p50/p95 is 1.360/2.098 and 1.440/2.280 seconds. These are single-pass
+descriptive timings, with no inference recipe selection. The
+[APPS follow-up contract](../../experiments/b200_augmented_bf16_apps/README.md)
+is separate from the frozen training/ID run. Results/data/logs use
+`b200-augmented-bf16-apps01`; `completion_audit.json` retains independent checks.
 
 ## Preparation failures and provenance
 
