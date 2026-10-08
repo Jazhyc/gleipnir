@@ -66,6 +66,8 @@ The root lock retains Transformers 5.14.1 (vLLM 0.31 requires <5.18) and TRL
 The preserved training environment is separate; this inference screen does
 not validate training under Torch 2.13. Published vLLM-lens 1.3.0 pins 0.30.0;
 any 0.31 lens compatibility test must record an explicit dependency override.
+Scheduler preflight reads the merged model configuration when available, otherwise
+the pinned base snapshot's cached configuration; it never loads model weights.
 
 Startup reconciles frozen diagnostic-generator bindings from the checksum-checked
 pre-migration source archive. It may restore only archived canary/comparison

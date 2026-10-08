@@ -407,6 +407,26 @@ it and the 50 GB container disk. Resume from the local backups. The next focus
 is vLLM Lens integration; retain the
 [current serving selection](decisions/b200_monitor_score_reference.md).
 
+### User-provisioned NC2 B200 refreshed, 2026-10-08
+
+The user allocated Pod `mnmqm5d3eiyvuz` in US-NC-2 with template `a9dk3g7cny`
+and the CUDA-13 image above, at $6.79/hour. Live SSH confirms B200 183,359 MiB,
+driver 595.91.07 and retained 300 GB network volume `ixbh81vf9c` at `/workspace`.
+Use the refreshed sanitized snapshot `.runpod/lens.json`. `PUBLIC_KEY` was empty;
+the documented SSH proxy provided access to install the existing project public
+key and start SSH in the container without a restart.
+
+The current tracked checkout and serving receipts are synchronized. Prior source
+is archived locally and remotely; obsolete source is quarantined under
+`results/b200_provisioning/20261008_nc2_refresh/retired_source/`. Adapters and
+frozen benchmark inputs pass checksums. The old 0.24 environment is preserved;
+isolated 0.31 dependencies and native overlays are staged for the current recipe.
+Scheduler/native preflight and FP8 startup preparation pass. The known strict
+MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
+Receipts and setup logs are collected locally under `results/b200_provisioning/`
+and `logs/runpod/b200_provisioning/`. The Pod is left RUNNING with an idle GPU.
+Reconstruct the disposable merged checkpoint before starting a scoring server.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

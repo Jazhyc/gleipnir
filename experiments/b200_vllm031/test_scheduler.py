@@ -9,13 +9,27 @@ from types import SimpleNamespace
 
 import pytest
 import torch
+import yaml
 
 from gleipnir.serving.monitor_score import classification_overrides
 
-MODEL = Path("/tmp/gleipnir-merged/fp4-full-training-bf16")
+ROOT = Path(__file__).resolve().parents[2]
+BENCHMARK = yaml.safe_load(
+    (ROOT / "experiments/b200_inference_benchmark/config.yaml").read_text()
+)
+MERGED_MODEL = Path("/tmp/gleipnir-merged/fp4-full-training-bf16")
+CACHED_MODEL = (
+    ROOT
+    / ".cache/huggingface/hub"
+    / ("models--" + BENCHMARK["model"].replace("/", "--"))
+    / "snapshots"
+    / BENCHMARK["revision"]
+)
+# These scheduler tests read architecture metadata and never load model weights.
+MODEL = MERGED_MODEL if (MERGED_MODEL / "config.json").is_file() else CACHED_MODEL
 pytestmark = pytest.mark.skipif(
-    version("vllm") != "0.31.0" or not MODEL.is_dir(),
-    reason="requires the isolated B200 0.31 runtime and preserved model config",
+    version("vllm") != "0.31.0" or not (MODEL / "config.json").is_file(),
+    reason="requires the isolated B200 0.31 runtime and pinned model config",
 )
 
 
