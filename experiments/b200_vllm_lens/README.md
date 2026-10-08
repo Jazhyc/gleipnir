@@ -19,9 +19,8 @@ Compare its adapter canary with the compiled selection, preserving a failed
 0.005-MAE reproduction flag when eager arithmetic differs. This does not waive
 or change the production selection's limit. Research operation requires finite
 scores and a nonzero adapter effect; Lens no-op/zero-vector correctness is
-measured against plain eager scoring. The initial `lens01` startup stops at that
-compiled-parity gate (MAE 0.013987, correlation 0.998307); retain its failed
-receipt. Reuse its compiled controls on retries with `--compiled-baseline`.
+measured against plain eager scoring. Reuse completed compiled controls on
+retries with `--compiled-baseline <previous-run-directory>`.
 
 Capture means the **post-decoder-layer residual stream**, including the residual
 half of Qwen's fused `(hidden, residual)` return, before final model normalization.
@@ -54,12 +53,18 @@ functional test, not a candidate to promote on ID/OOD.
 PYTHONPATH=src:. .venv-vllm031/bin/python -m experiments.b200_vllm_lens.stage
 PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
   -m experiments.b200_vllm031.runtime \
-  -m experiments.b200_vllm_lens.run --name lens01
+  -m experiments.b200_vllm_lens.run --name <run>
 ```
 
 The stage helper installs only the hash-locked Lens/compression wheels into an
 optional overlay and copies it to ephemeral storage. The run command configures
 that overlay and `VLLM_LENS_DISABLE=1`, preserving the 0.31 environment.
+For subsequent research launches without a benchmark, retire the verified
+existing scorer with `experiments.b200_vllm031.stop --archive-name <receipt>`
+and use the same runtime wrapper with `-m experiments.b200_vllm_lens.start
+--name <startup>`. It verifies provenance and hook coverage and keeps the server
+warm. The completed [integration finding](../../docs/findings/b200_vllm_lens.md)
+records correctness, performance, failed receipts and eager numerical drift.
 
 Use the client inside that overlay environment:
 
@@ -70,7 +75,9 @@ from vllm_lens import SteeringVector
 client = MonitorLensClient("http://127.0.0.1:8010")
 result = client.score(rendered_prompt, capture_layers=[0, 3, 31])
 h = result["activations"]["residual_stream"]  # (3, 1, 2560), native BF16
-vector = SteeringVector(activations=h[-1, :, :], layer_indices=[31], scale=0.1)
+reference = client.score(contrast_prompt, capture_layers=[31])
+direction = h[-1, 0] - reference["activations"]["residual_stream"][0, 0]
+vector = SteeringVector(activations=direction[None, :], layer_indices=[31], scale=0.1)
 steered = client.score(rendered_prompt, steering_vectors=[vector])
 ```
 
@@ -81,3 +88,11 @@ Lens's compressed tensor wire format. The client decodes tensors automatically.
 `GET /v1/monitor/lens/info` reports the supported shape and request-state counts.
 Default capture storage is bounded to 512 MiB per request; select fewer layers
 or positions for long prompts.
+
+Run the eight CPU contract tests in the optional overlay environment with
+`VLLM_LENS_DISABLE=1 PYTHONPATH=/tmp/gleipnir-vllm-lens-1.3.0:src:.
+/tmp/gleipnir-vllm031-runtime/bin/python -m pytest -q
+experiments/b200_vllm_lens/test_lens.py`. The main benchmark also checks the
+public client, all-token capture, GPU norm matching and real disconnect cleanup.
+Export tables and standalone figures with `python -m
+experiments.b200_vllm_lens.summarize results/b200_vllm_lens/<run>`.

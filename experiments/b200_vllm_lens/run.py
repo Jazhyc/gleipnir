@@ -112,6 +112,7 @@ async def run(name: str, compiled_baseline: Path | None = None) -> None:
     from experiments.b200_long_context.run import gpu
     from experiments.b200_vllm031.run import archive_audits
     from experiments.b200_vllm_lens.smoke import smoke
+    from experiments.b200_vllm_lens.verify_client import verify
     from gleipnir.serving.reference import selected_serving_default
 
     out = ROOT / "results/b200_vllm_lens" / name
@@ -119,6 +120,14 @@ async def run(name: str, compiled_baseline: Path | None = None) -> None:
     report = {"status": "starting", "promoted": False}
     write(out / "summary.json", report)
     settings = json.loads(Path(__file__).with_name("config.json").read_text())
+    if (
+        settings["timed_repeats"] != 3
+        or settings["warmup_repeats"] != 1
+        or settings["capture_layers"] != [31]
+        or settings["capture_positions"] != "last"
+        or settings["promote"]
+    ):
+        raise ValueError("Lens measurement contract changed")
     populations = {}
     for name_, contract in settings["workloads"].items():
         path = ROOT / contract["path"]
@@ -181,14 +190,17 @@ async def run(name: str, compiled_baseline: Path | None = None) -> None:
         ]
         write(out / "compiled_server.json", active)
         write(out / "reused_compiled_baseline.json", {"path": str(compiled_baseline)})
-    compiled_full = [
-        json.loads(
-            (
-                ROOT / f"results/b200_score_scaling/nc2_fp8_04/c128_repeat{i}.json"
-            ).read_text()
-        )
-        for i in range(3)
-    ]
+    reference = ROOT / settings["compiled_full_reference"]
+    bindings = json.loads((reference / "collection_manifest.json").read_text())["files"]
+    compiled_full = []
+    for i in range(3):
+        path = reference / f"c128_repeat{i}.json"
+        if (
+            hashlib.sha256(path.read_bytes()).hexdigest()
+            != bindings[str(path.relative_to(ROOT))]["sha256"]
+        ):
+            raise ValueError("compiled c128 reference checksum changed")
+        compiled_full.append(json.loads(path.read_text()))
     paired_score_summary(compiled_full, compiled_full)
     try:
         await start(out)
@@ -227,6 +239,7 @@ async def run(name: str, compiled_baseline: Path | None = None) -> None:
                     ),
                 },
             )
+        await verify(out)
         archive_audits(out)
         report.update(status="complete", server_retained_warm=True)
         write(out / "summary.json", report)

@@ -87,6 +87,11 @@ FP4/MXFP8 recipe, supported model/hardware envelope, adapter parity requirements
 and checksum-bound controls. Standing launch/lifecycle rules live in the
 [inference guide](docs/agent_guides/inference.md).
 
+For activation extraction and steering vectors, use the opt-in
+[vLLM Lens monitor integration](experiments/b200_vllm_lens/README.md). It exposes
+request-scoped residual capture and steering on the merged monitor in eager
+research mode, with a separate numerical baseline.
+
 A cache-free whole-prompt monitoring prototype removes persistent GPU cache
 storage. Same-host EU-RO-1 measurements reduce c1 median latency by 15%, with
 about 3% lower batch throughput. The earlier NC2 stall remains unresolved.

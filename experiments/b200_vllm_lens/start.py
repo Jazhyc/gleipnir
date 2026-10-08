@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
+import argparse
 import asyncio
 import hashlib
 import importlib.metadata
 import json
+import os
 import subprocess
 import sys
 import time
@@ -154,3 +156,20 @@ async def start(out: Path) -> dict:
         elif not gpu()["apps"]:
             (SERVING / "server.json").unlink(missing_ok=True)
         raise
+
+
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--name", required=True)
+    args = parser.parse_args()
+    if not args.name or args.name in {".", ".."} or Path(args.name).name != args.name:
+        raise ValueError("startup name must be a stem")
+    sys.path.insert(0, str(OVERLAY))
+    os.environ["VLLM_LENS_DISABLE"] = "1"
+    out = ROOT / "results/b200_vllm_lens" / args.name
+    out.mkdir(parents=True, exist_ok=False)
+    asyncio.run(start(out))
+
+
+if __name__ == "__main__":
+    main()

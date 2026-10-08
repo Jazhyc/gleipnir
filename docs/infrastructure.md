@@ -425,7 +425,9 @@ Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
 and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING; the current FP8
-scorer is warm after the [NC2 concurrency sweep](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2).
+eager [Lens research scorer](findings/b200_vllm_lens.md) is warm. The compiled
+selection and [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
+remain preserved for compatible future launches.
 The accepted merged BF16 checkpoint is reconstructed on ephemeral storage at
 `/tmp/gleipnir-merged/fp4-full-training-bf16`. All source and output file hashes
 match the accepted artifact; the rebuild receipt is in the refresh directory's
