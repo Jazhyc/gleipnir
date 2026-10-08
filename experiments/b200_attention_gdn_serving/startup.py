@@ -24,6 +24,8 @@ from gleipnir._compat import canonical_source_reference
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
+    parser.add_argument("--legacy-fp4", action="store_true")
+    parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--frontend-validation")
     parser.add_argument("--frontend-ab", action="store_true")
     parser.add_argument("--host-wrapper-validation")
@@ -31,6 +33,24 @@ def main() -> None:
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("startup run name must be a directory stem")
+    if not args.legacy_fp4:
+        if any(
+            (
+                args.frontend_validation,
+                args.frontend_ab,
+                args.host_wrapper_validation,
+                args.legacy_host,
+            )
+        ):
+            raise ValueError(
+                "archived frontend/host startup trials require --legacy-fp4"
+            )
+        from experiments.b200_attention_precision.startup import startup
+
+        asyncio.run(startup(args.name, prepare_only=args.prepare_only))
+        return
+    if args.prepare_only:
+        raise ValueError("prepare-only is supported by the current FP8 default")
     base = yaml.safe_load((EXPERIMENT / "config.yaml").read_text())
     manifest = prepared_manifest(base)
     selected = resolve_kernel_baseline({"baseline": "selected"})

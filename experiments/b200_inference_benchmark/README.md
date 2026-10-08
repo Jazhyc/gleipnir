@@ -1,6 +1,10 @@
 # Small production inference benchmark
 
-Current B200 optimization reference: the repaired cached two-logit score endpoint,
+The current launch recipe is the FP8 full-attention projection default in
+`serving_default.json`; `baseline.json` remains the frozen 0.24 comparison.
+See the [serving decision](../../docs/decisions/b200_monitor_score_reference.md).
+
+Frozen B200 optimization reference: the repaired cached two-logit score endpoint,
 retaining Direct FP4 projections/MLPs, cuDNN MXFP8 prefill, native Gigatoken and
 direct FROST bindings. `baseline.json` binds all saved score repeats and quality
 receipts; use the [selected decision](../../docs/decisions/b200_monitor_score_reference.md).

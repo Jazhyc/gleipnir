@@ -40,6 +40,50 @@ def selected_score_reference(root: Path) -> dict:
     return selection
 
 
+def selected_serving_default(root: Path) -> tuple[dict, list[str]]:
+    """Resolve the accepted current recipe separately from frozen comparisons."""
+    selection = json.loads(
+        (root / "experiments/b200_inference_benchmark/serving_default.json").read_text()
+    )
+    if selection["quality_status"] != "user_accepted_finite":
+        raise ValueError("serving default lacks explicit finite-quality acceptance")
+    for path, digest in selection["artifact_bindings"].items():
+        artifact = root / path
+        if not artifact.resolve().is_relative_to(root.resolve() / "results") or (
+            hashlib.sha256(artifact.read_bytes()).hexdigest() != digest
+        ):
+            raise ValueError(f"serving default artifact drift: {path}")
+    report = json.loads((root / selection["recipe_summary"]).read_text())
+    if report["status"] != "complete" or report["precision"] != "fp8":
+        raise ValueError("serving default is not a completed FP8 projection recipe")
+    command = report["command"].copy()
+    index = command.index("--additional-config") + 1
+    additional = json.loads(command[index])
+    condition = additional["serving_condition"]
+    if (
+        condition["attention_projection_precision"] != "fp8"
+        or condition["gdn_projection_precision"] != "fp4"
+        or condition["attention_precision"] != "mxfp8"
+        or command[command.index("--max-model-len") + 1] != "32768"
+        or command[command.index("--runner") + 1] != "pooling"
+    ):
+        raise ValueError("accepted serving precision/context contract changed")
+    # Tests and client launchers do not execute in the model. Their subsequent
+    # fixture cleanup retains the measured kernel identity; runtime sources
+    # still require exact agreement with the evaluated bytes.
+    for path, expected in additional["gleipnir_frost_fp4"].items():
+        if (
+            Path(path).name.startswith("test_")
+            or Path(path).name.endswith(("_canary.py", "_compare.py"))
+            or Path(path).name in {"run.py", "fp4_gemm_tune.py"}
+            or path == "src/gleipnir/serving/reference.py"
+        ):
+            continue
+        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"accepted serving runtime source drift: {path}")
+    return selection, command
+
+
 def selected_host_components(
     root: Path, output: Path, *, resident: dict | None = None
 ) -> tuple[dict | None, dict | None]:

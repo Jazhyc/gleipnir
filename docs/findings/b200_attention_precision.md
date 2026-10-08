@@ -5,8 +5,10 @@ recover 1.16 percentage points of ID source-macro pAUROC@20 over the 0.31 FP4
 recipe; BF16 projections recover 1.02 points. FP8 is slightly faster than BF16
 and slightly better on this single ID observation. Both leave a substantial
 gap from the same adapter's archived full BF16 serving result. The frozen
-development triage favors BF16, while ID is descriptive only; no reference or
-production precision is promoted.
+development triage favors BF16, while ID is descriptive only; the campaign
+does not automatically promote a recipe. After reviewing these results, the
+user explicitly selects FP8 projections as the default with its finite-quality
+tradeoffs; see the [serving decision](../decisions/b200_monitor_score_reference.md).
 
 ## Frozen intervention
 

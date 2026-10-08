@@ -80,7 +80,8 @@ measurement contracts. Preserve failed strict checks separately from accepted
 finite quality. Acceptance remains adapter/recipe specific and does not waive
 finite-output checks, new-adapter parity or held-out evaluation requirements.
 
-Keep current selections in the checksum-bound baseline and its linked decision;
+Keep the current launch selection and frozen comparison bindings separate, as
+defined in the linked serving decision;
 avoid duplicating changing result paths, measurements or worker PIDs here.
 
 ## Historical GDN baseline acceptance, 2026-10-06

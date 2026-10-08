@@ -78,7 +78,8 @@ The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
 
-All future experiments default to the optimized vLLM implementation for
+All future experiments default to the optimized vLLM 0.31 implementation with
+FP8 full-attention projections, FP4 MLP/GDN projections and MXFP8 attention for
 inference, serving and evaluation. Use the cached two-logit monitoring path and
 its validated context/pooling corrections; the
 [serving decision](docs/decisions/b200_monitor_score_reference.md) defines the

@@ -1,0 +1,55 @@
+{
+  "name": "vllm031_fp8_attention_fp4_mlp_gdn_mxfp8",
+  "selected_at": "2026-10-08",
+  "scope": "future Qwen3.5/Gleipnir 4B B200 inference, serving and evaluation through 32K",
+  "quality_status": "user_accepted_finite",
+  "user_selection": "Make FP8 full-attention projections the default after reviewing the frozen precision comparison.",
+  "recipe_summary": "results/b200_attention_precision/precision01/fp8/summary.json",
+  "canary_predictions": "results/b200_attention_precision/precision01/fp8/canary_predictions.json",
+  "native_validation": "results/b200_attention_precision/native01.json",
+  "host_parent": "results/b200_vllm031/diagnostic_default02/parent_server.json",
+  "runtime": {
+    "vllm": "0.31.0",
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "transformers": "5.14.1",
+    "flashinfer-python": "0.7.0.post1"
+  },
+  "attention_projection_precision": "fp8",
+  "gdn_projection_precision": "fp4",
+  "mlp_projection_precision": "fp4",
+  "attention_precision": "mxfp8",
+  "max_model_len": 32768,
+  "strict_master_passed": false,
+  "strict_old_serving_passed": false,
+  "reproduction_limits": {
+    "score_mae": 0.005,
+    "correlation": 0.995
+  },
+  "artifact_bindings": {
+    "results/b200_attention_gdn_serving/attention_fp4_canary02.json": "f1f2d1d3b73314457b55656bab080182316ff0e69861bbe89d803fba771e6ba0",
+    "results/b200_attention_gdn_serving/fp4_fusion_canary02_norm.json": "a85cd7e6d317dcd7dc694317a6e5970d52c39e2a3ecea9698b68aceac058778f",
+    "results/b200_attention_gdn_serving/fp4_fusion_canary02_silu.json": "ca203ba77343c005dae5235651a7f71d48ec432aa6a59e02d1c716d1ee32a2fc",
+    "results/b200_attention_gdn_serving/fp4_gemm_tune01.json": "1427d158087a024f0edbf6ccdb5d6399a6f7e0c15dd07f40be1f26d82218c9ed",
+    "results/b200_attention_gdn_serving/fp4_swiglu_native_output04.json": "a0d01c20cb2e65ababda1671b9ccd77f140efd8065fd92394fab4090111077f8",
+    "results/b200_attention_gdn_serving/fp4_swiglu_overhead03.json": "4908b586c37bb984c8792b62d879c3b16fa1a26db0a6cedb1c56636b0889289f",
+    "results/b200_attention_precision/native01.json": "0ac989fa53ab57c2c37d3a46e8c253023c2ed9b9a83cbed23af4d560a6f7d28f",
+    "results/b200_attention_precision/precision01/fp8/canary.json": "ed4b228d20cc2749658fc4f571d49e775dc8e388c70b0d23158496b967f57012",
+    "results/b200_attention_precision/precision01/fp8/canary_predictions.json": "668a7f863fdb54069207b9097e16c1de8b5629e900cd766a7d508ca459099712",
+    "results/b200_attention_precision/precision01/fp8/id_comparison.json": "7240fbf0dafd0cf7bed06803921d80ebbe5b4d02e8ff86769116b0612c87229c",
+    "results/b200_attention_precision/precision01/fp8/monitor_score.json": "461f8dae34c87ed5a164419a36b80c429c83328b0545d186cce07629e1013fd4",
+    "results/b200_attention_precision/precision01/fp8/native_attention_projections.json": "f8debb238425474ab8f272dc6e209a1afb78873de9d08fdd11c9999881e0d5a8",
+    "results/b200_attention_precision/precision01/fp8/summary.json": "f6d3aa3ce869cfdb2b0d3d30ae9c04033a1acd44873ab34cae6807cb59e61578",
+    "results/b200_vllm031/diagnostic_default02/parent_server.json": "ed3c1e04d9fd5e2c0de388ed187aa43a6636e8315f8094b0bdc1493555c8385b",
+    "results/b200_vllm031/validation02/native.json": "12be925e6bd7818537baa775ba77c736ae83399444c2c62c1e02244a7af5dbbe",
+    "results/b200_vllm031/vendor01.json": "a070cee9526ff5f23c81a4806bd514042e007398e64337a429a0851a55970bbe",
+    "results/b200_fp4_full_training/4b/fp4/parity_reference.json": "c7e634850afb0063da7554f9928278b43df870e5e61e810cdfaafa79ec066744",
+    "results/b200_optimized_id/id02/merged_artifact.json": "0deeae5e274419a22b5a612fbe6bbf31d48b9ed29889b78262ff58f1a490a4f3"
+  },
+  "master_canary": "results/b200_fp4_full_training/4b/fp4/parity_reference.json",
+  "merged_artifact": "results/b200_optimized_id/id02/merged_artifact.json",
+  "scheduler_binding": {
+    "upstream_sha256": "f820bee4f42b878b262a30f3728a97d7413477b2a277748e20f2528ac2ec2f2a",
+    "integration_sha256": "8f84add62595cee9d243449860f22c44d179943521ce6eebfb58ad0412c739f6"
+  }
+}

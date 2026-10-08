@@ -1,9 +1,18 @@
 # B200 attention and GDN throughput campaign
 
-## Selected serving reference, 2026-10-07
+## Current startup default
+
+Normal `startup --name ...` uses the user-selected vLLM 0.31 FP8 full-attention
+projection recipe. See the [serving decision](../../docs/decisions/b200_monitor_score_reference.md)
+for the accepted canary, native envelope and staged-runtime command. Use
+`--prepare-only` for a command-only preflight and `--legacy-fp4` for the archived
+startup/reference and its frontend/host ablations below. Frozen campaign
+configurations and numerical controls retain their original precision.
+
+## Historical serving reference, 2026-10-07
 
 The user selects native Gigatoken plus direct FROST host bindings on the existing
-Direct FP4/MXFP8 GPU recipe. Startup and selected comparisons resolve these
+Direct FP4/MXFP8 GPU recipe. Archived startup and selected comparisons resolve these
 checksum-bound CPU components automatically. At selection, API/engine 109400/109438
 was kept warm; the later cache-free trial retires it. Controls are c1 quick64 median/p95
 149.69/184.19 ms, c128 full320 throughput 197530 input tokens/s and macro/pooled
