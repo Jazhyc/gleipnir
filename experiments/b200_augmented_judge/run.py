@@ -8,7 +8,6 @@ import gc
 import importlib.metadata
 import inspect
 import json
-import os
 import shutil
 import subprocess
 import sys
@@ -564,9 +563,23 @@ def main() -> None:
             report()
         else:
             check(model=True)
-            retire("parent", json.loads(source("resident").read_text()))
+            if (ACTIVE / "server.json").exists():
+                retire("parent", json.loads(source("resident").read_text()))
+            else:
+                previous = json.loads(source("retired_parent").read_text())
+                resident = json.loads(source("resident").read_text())
+                if (
+                    previous["status"] != "retired"
+                    or previous["pid"] != resident["pid"]
+                    or Path(f"/proc/{previous['pid']}").exists()
+                    or Path(f"/proc/{previous['worker_pid']}").exists()
+                ):
+                    raise ValueError("previous parent retirement is unverified")
             write_json(OUT / "status.json", {"stage": "references"})
-            env = dict(os.environ, PYTHONPATH=f"{ROOT / 'src'}:{ROOT}")
+            from gleipnir.campaigns.runtime import training_environment
+
+            env = training_environment(ROOT, C["campaign_id"])
+            env["PYTHONPATH"] = f"{ROOT / 'src'}:{ROOT}:{env.get('PYTHONPATH', '')}"
             subprocess.run(
                 [
                     C["training_python"],

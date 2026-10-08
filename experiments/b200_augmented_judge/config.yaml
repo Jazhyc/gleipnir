@@ -1,4 +1,4 @@
-campaign_id: b200-augmented-judge01
+campaign_id: b200-augmented-judge02
 adapter: results/b200-augmented-bf16-training02/4b/monitor
 merged_model: /tmp/gleipnir-merged/bf16-augmented-fa4
 base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
@@ -39,6 +39,9 @@ inputs:
   resident:
     path: results/b200-augmented-bf16-optimized01/server.json
     sha256: e6be9d9539f42331361a833649551cc71124c3c077c4506a40275490179ca339
+  retired_parent:
+    path: results/b200_vllm031/b200-augmented-judge01_parent_retired.json
+    sha256: 0215504d3d4a3ee21a7168ea1e4395ba050ca171e5fe26593c836d4b79c5b931
 parity:
   max_mean_absolute_difference: 0.02
   min_correlation: 0.99

@@ -40,4 +40,7 @@ then `--stage all` in the selected serving runtime on the existing NC2 B200.
 The driver first runs bounded references in the preserved training runtime,
 then BF16 and optimized scoring. Keep the final passing optimized A/B scorer
 warm. No capacity changes. Active-turn monitoring only: no heartbeat tool is
-available. Results/data/logs use `b200-augmented-judge01`.
+available. Results/data/logs use `b200-augmented-judge02`. The first attempt stopped before reference scoring
+because its subprocess omitted the existing reference dependency overlays; its
+failed log/status and parent retirement receipt remain under `judge01`.
+The retry uses the shared `training_environment` helper, with no package changes.
