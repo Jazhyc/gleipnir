@@ -51,6 +51,10 @@ the evaluated FP8 canary within MAE 0.005/correlation 0.995, with exact tokens,
 finite margins and a nonzero adapter effect; verify actual native dispatch.
 This reproduction check does not establish held-out quality parity.
 
+The user accepts the remaining serving-quality tradeoff for now and defers
+further precision-recovery experiments while prioritizing mechanistic
+intervention integration. Keep this acceptance scoped to the evaluated recipe.
+
 The native envelope is the pinned Qwen3.5/Gleipnir 4B geometry on B200 SM100
 through 32K. New adapters require their own FP32-master/merged-serving parity
 and nonzero effect; this adapter's accepted drift does not waive their guards.
