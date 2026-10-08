@@ -1,0 +1,34 @@
+{
+  "populations": {
+    "benchmark": {
+      "input": "data/monitoring_injection_disentanglement/benchmark/neutral.jsonl",
+      "reference": "results/judge_injection_continuation/evaluation_regular/continued/benchmark_neutral.jsonl",
+      "rows": 5184
+    },
+    "honest_controls": {
+      "input": "data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl",
+      "reference": "results/judge_injection_continuation/evaluation_regular/continued/honest_controls_neutral.jsonl",
+      "rows": 3930
+    }
+  },
+  "files_sha256": {
+    "data/monitoring_injection_disentanglement/benchmark/neutral.jsonl": "e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866",
+    "results/judge_injection_continuation/evaluation_regular/continued/benchmark_neutral.jsonl": "bf494b8667325f47afb075f8cefa7361dae544903c6255f0307b833cec3a1749",
+    "results/judge_injection_continuation/evaluation_regular/continued/benchmark_neutral.contract.json": "4a4d67d5d9819577edd288e0d6b472cbe8507f6be4085307236c6e4232c2b7ba",
+    "data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl": "5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b",
+    "results/judge_injection_continuation/evaluation_regular/continued/honest_controls_neutral.jsonl": "10a9b7ea42132f68fbdd642d9c7f7a7670297ff91baefb0520c09b2335e97dd9",
+    "results/judge_injection_continuation/evaluation_regular/continued/honest_controls_neutral.contract.json": "105d4126b65c3999fde8d06297e44a2317f6e207f6e26708e2e5d30a33117b59",
+    "experiments/b200_inference_benchmark/serving_default.json": "9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8"
+  },
+  "selection": "experiments/b200_inference_benchmark/serving_default.json",
+  "startup_name": "apps_default02",
+  "merged_model": "/tmp/gleipnir-merged/fp4-full-training-bf16",
+  "master_sha256": "8dbc1a2e5445ca8807907692b64a59f637e00958d0c89f0d4182930cffef866c",
+  "serving_adapter_sha256": "d13be8b249129269cec572e36e2006a955fa56dec5a015bd93f35bd876c62751",
+  "batch_rows": 128,
+  "concurrency": 128,
+  "port": 8010,
+  "timeout_seconds": 300,
+  "repeats": 1,
+  "promote": false
+}
