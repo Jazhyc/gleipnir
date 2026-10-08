@@ -111,3 +111,31 @@ and eager/compiled residual normalization; no reference timing suite is rerun.
 Completed timings and quality are summarized with
 `python -m experiments.b200_vllm031.summarize <run-name>`.
 Use `--max-num-active-seqs 16` for the independent admission-cap comparison.
+
+## Fixed-adapter ID evaluation
+
+The user requests the same completed 272-update FP4/FA4-trained 4B adapter on
+the frozen 3,012-row CoT-removed ID set (946 STRIDE, 2,066 Gloom). Hypothesis:
+the migrated stock recipe changes low-FPR ranking relative to the same adapter's
+archived 0.24 optimized and BF16 dynamic-LoRA results. `id_config.json` freezes
+those controls, the canonical inputs, merged artifact and completed 0.31 stock
+diagnostic recipe. No checkpoint, backend, threshold or prompt selection.
+
+Run one complete pass with the original ordered 128-row partitions at c128,
+excluded quick64 warmup, synchronous stock FCFS, CUDA GDN/automatic context
+parallelism and the same 32K limits. Reuse native receipts and persistent caches.
+The existing failed 0.24 score-parity guard remains recorded; diagnostic
+continuation requires finite scores, exact tokens, nonzero adapter effect and
+reproduction of the archived 0.31 canary within MAE 0.005/correlation 0.995.
+Stop on provenance, reproduction, missing/nonfinite, truncation, transport or
+startup failure, or suite completion. Preserve partial batches as diagnostics.
+Report pooled/per-source/source-macro pAUROC@20 and AUROC, calibration, fixed-0.5
+thresholds, score/margin drift, ties, prompt throughput and latency. One pass
+does not measure repeat variation or promote a recipe. Retire only the owned
+evaluation server after collecting receipts; leave capacity and caches intact.
+
+```bash
+PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
+  -m experiments.b200_vllm031.runtime \
+  -m experiments.b200_vllm031.id --name id01
+```
