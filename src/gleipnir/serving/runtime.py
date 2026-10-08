@@ -69,7 +69,8 @@ def copy_dependency_tree(source: Path, destination: Path, workers: int = 8) -> N
             allowed = {
                 c.name
                 for c in children
-                if c.name != ".git" and not (c.parent == source and c.name == "lib64")
+                if c.name not in {".git", "__pycache__"}
+                and not (c.parent == source and c.name == "lib64")
             }
             for obsolete in dst.iterdir():
                 if obsolete.name not in allowed:
@@ -78,7 +79,7 @@ def copy_dependency_tree(source: Path, destination: Path, workers: int = 8) -> N
                     else:
                         obsolete.unlink()
             for child in children:
-                if child.name != ".git" and not (
+                if child.name not in {".git", "__pycache__"} and not (
                     child.parent == source and child.name == "lib64"
                 ):
                     pending.append((child, dst / child.name))
@@ -101,7 +102,9 @@ def copy_dependency_tree(source: Path, destination: Path, workers: int = 8) -> N
                 "rsync",
                 "-aL",
                 "--delete",
+                "--delete-excluded",
                 "--exclude=.git",
+                "--exclude=__pycache__",
                 f"{src}{suffix}",
                 f"{dst}{suffix}",
             ],

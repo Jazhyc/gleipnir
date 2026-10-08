@@ -1,0 +1,17 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "baseline": "selected",
+  "canary_reference": "results/b200_attention_gdn_serving/cached_restore_euro01/http_parity.json",
+  "port": 8010,
+  "timeout_seconds": 180,
+  "c1_repeats": 3,
+  "c128_repeats": 6,
+  "canary_mean_error_limit": 0.005,
+  "canary_correlation_floor": 0.995,
+  "promote": false,
+  "score_parent": true,
+  "restore_selected_recipe": false,
+  "target_vllm": "0.31.0",
+  "runner": "V1",
+  "gdn_backend": "flashinfer"
+}

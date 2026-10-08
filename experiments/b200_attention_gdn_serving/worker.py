@@ -109,7 +109,11 @@ class ServingAuditWorker(FrostAuditWorker):
                     "implementation": type(layer.impl).__name__,
                     "kv_cache_dtype": layer.kv_cache_dtype,
                     "supports_quant_query_input": layer.impl.supports_quant_query_input,
-                    "calculate_kv_scales": layer.calculate_kv_scales,
+                    # vLLM 0.28 removed runtime KV scale calculation.
+                    "calculate_kv_scales": getattr(layer, "calculate_kv_scales", None),
+                    "runtime_kv_scale_calculation_supported": hasattr(
+                        layer, "calculate_kv_scales"
+                    ),
                     "q_scale": layer._q_scale_float,
                     "k_scale": layer._k_scale_float,
                     "v_scale": layer._v_scale_float,

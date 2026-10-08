@@ -77,8 +77,8 @@ def validate_score_response(response: dict[str, Any], prompt_tokens: int) -> dic
 
 def install_score_api() -> None:
     """Register a score-only response around the supported classification API."""
-    if importlib.metadata.version("vllm") != "0.24.0":
-        raise ValueError("monitor scoring requires pinned vLLM 0.24.0")
+    if importlib.metadata.version("vllm") not in {"0.24.0", "0.31.0"}:
+        raise ValueError("monitor scoring requires vLLM 0.24.0 or 0.31.0")
 
     from fastapi import Depends, HTTPException, Request
     from fastapi.responses import JSONResponse, Response

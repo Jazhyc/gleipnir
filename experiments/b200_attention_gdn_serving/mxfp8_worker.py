@@ -10,6 +10,7 @@ from experiments.b200_attention_gdn_serving.mixed_worker import MixedServingAudi
 from experiments.b200_attention_gdn_serving.worker import ROOT, write
 from gleipnir.serving.sources import recorded_source_path
 from gleipnir.serving_mxfp8 import paged_forward
+from gleipnir.serving_precision import describe_attention_cache
 
 
 class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
@@ -57,11 +58,13 @@ class Mxfp8ServingAuditWorker(MixedServingAuditWorker):
                 raise ValueError("MXFP8 serving expects the pinned keyword prefill API")
             value = None
             if len(calls) < 8 and not torch.cuda.is_current_stream_capturing():
+                cache = describe_attention_cache(kwargs["kv_cache"])
                 value = {
                     "query_shape": list(kwargs["query"].shape),
-                    "cache_shape": list(kwargs["kv_cache"].shape),
+                    "cache_shape": cache["shape"],
+                    "cache_layout": cache["layout"],
                     "query_boundary_dtype": str(kwargs["query"].dtype),
-                    "cache_dtype": str(kwargs["kv_cache"].dtype),
+                    "cache_dtype": cache["dtype"],
                     "core_payload_dtype": "torch.float8_e4m3fn",
                     "core_scale_format": "E8M0 per 32 elements",
                     "causal_alignment": "bottom_right",

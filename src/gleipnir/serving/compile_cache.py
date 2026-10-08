@@ -103,7 +103,7 @@ def install_compile_identity(root: Path) -> None:
     """Wrap parsed engine args, using the upstream SupportsHash protocol."""
     from vllm.engine.arg_utils import AsyncEngineArgs
 
-    if importlib.metadata.version("vllm") != "0.24.0":
+    if importlib.metadata.version("vllm") not in {"0.24.0", "0.31.0"}:
         raise ValueError("serving compile identity requires the validated vLLM version")
     original = AsyncEngineArgs.from_cli_args.__func__
     original_create = AsyncEngineArgs.create_engine_config

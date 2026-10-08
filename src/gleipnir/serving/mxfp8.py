@@ -234,10 +234,37 @@ def forward_plan(device: torch.device):
     return plan
 
 
+def split_paged_cache(
+    cache: torch.Tensor | tuple[torch.Tensor, torch.Tensor],
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Accept the original HND cache or vLLM 0.31's strided K/V views."""
+    if isinstance(cache, tuple):
+        if len(cache) != 2:
+            raise ValueError("MXFP8 requires exactly two K/V cache views")
+        key, value = cache
+    else:
+        if cache.ndim != 5 or cache.shape[1] != 2:
+            raise ValueError("MXFP8 requires a combined HND cache")
+        key, value = cache.unbind(1)
+    if (
+        key.ndim != 4
+        or key.shape != value.shape
+        or key.shape[1] != 4
+        or key.shape[-1] != 256
+        or key.dtype != torch.bfloat16
+        or value.dtype != torch.bfloat16
+        or key.device != value.device
+        or key.stride(-1) != 1
+        or value.stride(-1) != 1
+    ):
+        raise ValueError("MXFP8 requires matching BF16 HND D256 K/V views")
+    return key, value
+
+
 def paged_forward(
     *,
     query: torch.Tensor,
-    kv_cache: torch.Tensor,
+    kv_cache: torch.Tensor | tuple[torch.Tensor, torch.Tensor],
     block_tables: torch.Tensor,
     cum_seq_lens_q: torch.Tensor,
     cum_seq_lens_kv: torch.Tensor,
@@ -249,12 +276,10 @@ def paged_forward(
     **kwargs,
 ) -> torch.Tensor:
     """Adapt only the audited BF16 causal TRTLLM prefill call; never fall back."""
+    key, value = split_paged_cache(kv_cache)
     if (
         query.shape[1:] != (16, 256)
         or query.dtype != torch.bfloat16
-        or kv_cache.dtype != torch.bfloat16
-        or kv_cache.ndim != 5
-        or kv_cache.shape[1:3] != (2, 4)
         or out.dtype != torch.bfloat16
         or batch_size != cum_seq_lens_q.numel() - 1
         or cum_seq_lens_kv.numel() != batch_size + 1
@@ -275,7 +300,6 @@ def paged_forward(
     ):
         if kwargs.get(name, neutral) != neutral:
             raise ValueError(f"unsupported MXFP8 serving option: {name}")
-    key, value = kv_cache.unbind(1)
     # TRTLLM's cum_seq_lens_kv counts cache pages. cuDNN's packed THD
     # offsets count tokens; derive them from exact lengths, including tails.
     token_offsets = torch.empty_like(cum_seq_lens_kv)

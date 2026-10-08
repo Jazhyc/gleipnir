@@ -13,6 +13,7 @@ dependencies = [
     "hydra-core",
     "huggingface-hub",
     "matplotlib>=3.9",
+    "ninja>=1.13",
     "numpy",
     "pandas",
     "peft==0.19.1",
@@ -24,8 +25,8 @@ dependencies = [
     "seaborn>=0.13.2",
     "torch",
     "transformers==5.14.1",
-    "trl[vllm]==1.9.0",
-    "vllm==0.24.0",
+    "trl==1.9.0",
+    "vllm==0.31.0",
     "wandb",
 ]
 

@@ -10,6 +10,12 @@ recurrence/cache and FP32 gates/state. Prefix caching remains off; chunked
 prefill and causal LAST pooling remain on. This selects the inference backend;
 the training recipe remains governed separately.
 
+The root dependency lock now uses vLLM 0.31. Its
+[migration screen](../findings/b200_vllm031.md) provides a compatible launcher but
+fails score agreement on this adapter; the user authorized diagnostic timing,
+not promotion. Retain the accepted 0.24 source/runtime snapshots and the frozen
+comparison control below. New dependency versions do not waive adapter parity.
+
 The audited native kernels currently target the recorded Qwen3.5/Gleipnir 4B
 projection shapes and B200 SM100 runtime. For another model, GPU or task,
 establish compatibility and validate the needed extension before a large run;

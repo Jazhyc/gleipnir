@@ -111,7 +111,10 @@ def test_command_keeps_cached_batching_and_replaces_generation():
         score_command([x for x in parent if x != "--enable-chunked-prefill"], {}, {})
 
 
-def test_route_uses_raw_classification_without_special_tokens(monkeypatch):
+@pytest.mark.parametrize("vllm_version", ["0.24.0", "0.31.0"])
+def test_route_uses_raw_classification_without_special_tokens(
+    monkeypatch, vllm_version
+):
     calls = []
     factories = ModuleType("vllm.entrypoints.pooling.factories")
     factories.init_pooling_state = lambda engine, state, args, logger, tasks: setattr(
@@ -159,7 +162,7 @@ def test_route_uses_raw_classification_without_special_tokens(monkeypatch):
         module.__dict__.update(attributes)
         monkeypatch.setitem(sys.modules, name, module)
     monkeypatch.setattr(
-        monitor_score.importlib.metadata, "version", lambda name: "0.24.0"
+        monitor_score.importlib.metadata, "version", lambda name: vllm_version
     )
     monitor_score.install_score_api()
     app = FastAPI()

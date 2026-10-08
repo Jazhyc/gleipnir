@@ -32,8 +32,10 @@ pytest
 ```
 
 The lock file pins the environment. At bootstrap, the current top-level inference
-stack is vLLM 0.24.0 and Transformers 5.14.1; neither NNsight nor the old
-competition runner is included.
+stack is vLLM 0.31.0 and Transformers 5.14.1; neither NNsight nor the old
+competition runner is included. The B200 migration and scheduler screen lives
+in [its experiment](experiments/b200_vllm031/README.md); frozen 0.24 serving
+controls and the preserved training runtime retain their original environments.
 
 ## Layout
 

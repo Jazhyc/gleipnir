@@ -207,11 +207,23 @@ def test_parallel_staging_dereferences_links_and_removes_obsolete_packages(tmp_p
     native.write_bytes(b"native library")
     alias = native.parent / "alias.so"
     alias.symlink_to(native)
+    bytecode = source / lib / "torch/_dynamo/__pycache__"
+    bytecode.mkdir(parents=True)
+    (bytecode / "transient.pyc.1234").write_bytes(b"in-progress bytecode")
+    stale = target / lib / "torch/_dynamo/removed/__pycache__"
+    stale.mkdir(parents=True)
+    (stale / "orphan.pyc").write_bytes(b"old interpreter bytecode")
+    compiler = source / "torch_compile_cache/torch_aot_compile/kernel.cubin"
+    compiler.parent.mkdir(parents=True)
+    compiler.write_bytes(b"persistent compiler artifact")
     (source / "lib64").symlink_to(source / "lib", target_is_directory=True)
     copy_dependency_tree(source, target, workers=2)
     copied = target / lib / "torch/lib/alias.so"
     assert copied.read_bytes() == b"native library" and not copied.is_symlink()
     assert not old.exists() and not (target / "lib64").exists()
+    assert not (target / lib / "torch/_dynamo/__pycache__").exists()
+    assert not stale.parent.exists()
+    assert (target / compiler.relative_to(source)).read_bytes() == compiler.read_bytes()
 
 
 def test_compiler_mirror_persists_new_entries_without_deleting_shared_keys(tmp_path):
