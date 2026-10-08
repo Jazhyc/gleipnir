@@ -1,0 +1,31 @@
+{
+  "workloads": {
+    "quick": {
+      "path": "data/b200_inference_benchmark/quick.json",
+      "sha256": "1b92a6835f7d6afe9453d1bce818ebd0da4ba8f4abe932a5349fda82edecaaa0",
+      "rows": 64,
+      "prompt_tokens": 269411
+    },
+    "full": {
+      "path": "data/b200_inference_benchmark/full.json",
+      "sha256": "dc77d96ff22843da17029c7f3ebb3d52aba5166f21d1a84ea3da47f2f21facef",
+      "rows": 320,
+      "prompt_tokens": 1310581
+    },
+    "canary": {
+      "path": "data/b200_inference_benchmark/canary.json",
+      "sha256": "00283e9c93bd21de1b8ddab05b14c10164c133a7682e29a86326e7bf880e511f",
+      "rows": 20,
+      "prompt_tokens": 51612
+    }
+  },
+  "timed_repeats": 3,
+  "warmup_repeats": 1,
+  "capture_layers": [
+    31
+  ],
+  "capture_positions": "last",
+  "gpu_uuid": "GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9",
+  "compiled_full_reference": "results/b200_score_scaling/nc2_fp8_04",
+  "promote": false
+}
