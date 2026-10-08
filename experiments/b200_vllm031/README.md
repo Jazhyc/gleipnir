@@ -85,6 +85,9 @@ environment through a `.pth` file copied into the staged environment. Registrati
 is once per Python environment; restoration is needed after losing container
 storage, not for ordinary scorer restarts. The directory must include its
 `gigatoken-0.10.0.dist-info` metadata as well as the native extension.
+Staging also checks that TVM FFI in the persistent and staged CUTLASS overlays
+matches the locked environment. An older volume's target-installed dependency
+can otherwise shadow the lock and abort TileLang import during engine startup.
 
 ```bash
 uv venv .venv-vllm031 --python 3.12

@@ -12,6 +12,22 @@ def main() -> None:
     root = Path(__file__).resolve().parents[2]
     source = root / ".venv-vllm031"
     target = Path("/tmp/gleipnir-vllm031-runtime")
+    packages = source / "lib/python3.12/site-packages"
+    tvm_metadata = list(packages.glob("apache_tvm_ffi-*.dist-info/METADATA"))
+    if len(tvm_metadata) != 1:
+        raise ValueError("locked TVM FFI metadata is incomplete")
+    tvm_digest = hashlib.sha256(tvm_metadata[0].read_bytes()).hexdigest()
+    for overlay in (
+        root / ".cache/kernels/fa4",
+        Path("/tmp/gleipnir-serving-runtime/fa4"),
+    ):
+        overlay_metadata = list(overlay.glob("apache_tvm_ffi-*.dist-info/METADATA"))
+        if (
+            len(overlay_metadata) != 1
+            or hashlib.sha256(overlay_metadata[0].read_bytes()).hexdigest()
+            != tvm_digest
+        ):
+            raise ValueError(f"restore the locked TVM FFI dependency in {overlay}")
     selection = json.loads(
         (root / "experiments/b200_inference_benchmark/serving_default.json").read_text()
     )
@@ -29,7 +45,6 @@ def main() -> None:
         frontend["package_files"],
     )
     files = [source / "pyvenv.cfg"]
-    packages = source / "lib/python3.12/site-packages"
     for pattern in (
         "vllm-*/METADATA",
         "torch-*/METADATA",
@@ -55,6 +70,7 @@ def main() -> None:
         "metadata_sha256": hashes,
         "persistent_caches_preserved": True,
         "native_tokenizer": tokenizer,
+        "tvm_ffi_metadata_sha256": tvm_digest,
     }
     output = root / "results/b200_vllm031/staged_runtime.json"
     output.write_text(json.dumps(receipt, indent=2) + "\n")
