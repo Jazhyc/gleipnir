@@ -5,6 +5,9 @@ projections with FP8 W8A8 recovers part of the earlier pAUROC@20 loss at a
 smaller throughput cost than BF16. BF16 supplies a projection-only recovery
 bound. The user authorizes all three conditions on the existing B200.
 
+The completed quality/speed comparison and its qualifications are recorded in
+[the precision finding](../../docs/findings/b200_attention_precision.md).
+
 Freeze vLLM 0.31, the completed 272-update FP4/FA4-trained 4B adapter and its
 FP32-accumulated/BF16-exported merged checkpoint. Keep all 64 FP4 MLP and 48
 FP4 GDN projections, native SwiGLU output, MXFP8 attention core, BF16 cache and

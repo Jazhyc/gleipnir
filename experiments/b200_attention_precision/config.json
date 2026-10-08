@@ -45,7 +45,7 @@
     "experiments/b200_attention_precision/native.py": "97a9c06c8ac87b74124a706a89ba817f50d68873b6d70f4c5f7f05acd3d87530",
     "experiments/b200_attention_precision/run.py": "2836be596570a2f7e0ed76fdad4ce17acb57c7fd64c266c60b6ce64664d1261b",
     "experiments/b200_attention_precision/server.py": "5530f0e19e44c3cdeba8eb42adff549a0d0c5872d6976f4b1cfa3e0b04cf2235",
-    "experiments/b200_attention_precision/test_precision.py": "a95ecf2fde1caae8f9699acd0f078c87c7f0a271b094f56245d08f62f68af620",
+    "experiments/b200_attention_precision/test_precision.py": "68b9789afae1bd03994c574191ee91197bfce1b66497aa8c17205a74b10791be",
     "experiments/b200_attention_precision/worker.py": "8479d79cd0be99fbcfaf4070c5089b309d6c1da17e87a5431114258a61f935b2",
     "experiments/b200_optimized_id/analyze.py": "d2666160e8e0c5fbe9785cbba29080b3cfca88b0526d296c55789dd48aaad26c",
     "experiments/b200_optimized_id/config.json": "c60bf659565add4dfa99facb76d7c490e4891a70e6d3ac902aa9b2a883c64d8c",

@@ -2,7 +2,6 @@
 
 import copy
 import json
-from pathlib import Path
 
 import pytest
 
@@ -92,14 +91,47 @@ def test_vision_scope_remains_excluded():
 
 
 @pytest.mark.parametrize("precision", ["bf16", "fp8"])
-def test_candidate_command_preserves_non_target_recipe(precision):
-    from experiments.b200_attention_precision.run import make_command
+def test_candidate_command_preserves_non_target_recipe(precision, monkeypatch):
+    from experiments.b200_attention_precision import run
 
-    root = Path(__file__).resolve().parents[2]
-    parent = json.loads(
-        (root / "results/b200_vllm031/diagnostic_default02/summary.json").read_text()
-    )["command"]
-    command = make_command(parent, precision, "results/native.json")
+    additional = {
+        "serving_condition": {
+            "gdn_projection_precision": "fp4",
+            "attention_precision": "mxfp8",
+            "attention_projection_precision": "fp4",
+            "fp4_preparation": "combined",
+        },
+        "gleipnir_frost_fp4": {"src/gleipnir/serving/vllm/frost_fp4.py": "old"},
+        "monitor_score": {"token_ids": [15, 16]},
+        "runtime_migration": {"vllm": "0.31.0", "gdn_cp": "auto"},
+    }
+    parent = [
+        "python",
+        "-m",
+        "old_server",
+        "--worker-cls",
+        "old_worker",
+        "--quantization",
+        "old_quantizer",
+        "--additional-config",
+        json.dumps(additional),
+        "--model",
+        "merged",
+        "--max-model-len",
+        "32768",
+        "--max-num-seqs",
+        "128",
+        "--max-num-batched-tokens",
+        "32768",
+        "--pooler-config",
+        "LAST",
+        "--hf-overrides",
+        "causal",
+        "--scheduler-cls",
+        "stock",
+    ]
+    monkeypatch.setattr(run, "sha", lambda path: "fixture_hash")
+    command = run.make_command(parent, precision, "results/native.json")
     for flag in [
         "--model",
         "--max-model-len",
