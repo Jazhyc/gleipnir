@@ -4,6 +4,9 @@ Hypothesis: restoring BF16 SwiGLU activation materialization and whole-row
 dynamic FP4 scaling recovers low-FPR ranking lost by direct packed output.
 The user requests this single predeclared ablation on the existing B200.
 
+Completed results and qualifications are in the
+[output-ablation finding](../../docs/findings/b200_swiglu_output.md).
+
 Keep the current FP8 full-attention / FP4 GDN and MLP-weight default, final
 272-update FP4/FA4-trained adapter, merged BF16 checkpoint, vLLM 0.31,
 MXFP8 attention core, native frontend/direct FROST, CUDA GDN/automatic context
