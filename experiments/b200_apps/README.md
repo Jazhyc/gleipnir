@@ -30,9 +30,14 @@ tasks/templates are dependent observations; no adaptive robustness, tuning,
 checkpoint selection or promotion follows.
 
 `config.json` pins inputs, archived rendering controls and model identities.
+Archived continued-adapter predictions verify rendering, metadata and token
+counts only; their scores are not a same-checkpoint numerical baseline.
 Run `python -m experiments.b200_apps.run --stage prepare --name apps02`, restore
-the compiled scorer with `experiments.b200_attention_precision.startup`, then
+the compiled scorer with `experiments.b200_attention_precision.startup --name
+apps_default02`, then
 run `--stage score --name apps02`. Preparation and scoring use the staged 0.31
 interpreter via `experiments.b200_vllm031.runtime`. Analyze locally with
 `python -m experiments.b200_apps.run --stage analyze --name apps02`.
 Artifacts live under `results/b200_apps/`; logs under `logs/runpod/b200_apps/`.
+The [completed finding](../../docs/findings/b200_apps.md) records injection
+alarms, matched discrimination, verification and the preserved startup failure.

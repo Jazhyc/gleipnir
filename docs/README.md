@@ -48,6 +48,8 @@
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
+- [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
+  matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,
   failed score agreement, paired native arithmetic, scheduler diagnostics and
   fixed-adapter ID ranking/calibration comparison.
