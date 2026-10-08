@@ -1,0 +1,59 @@
+campaign_id: b200-augmented-judge01
+adapter: results/b200-augmented-bf16-training02/4b/monitor
+merged_model: /tmp/gleipnir-merged/bf16-augmented-fa4
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9
+inputs:
+  test:
+    path: data/augmented_judge_evaluation/test.jsonl
+    sha256: 6e57d036ed0ab53346c6f4d1421d706bfbdb676248a0835a07d983d875622650
+  canary:
+    path: data/augmented_judge_evaluation/canary.jsonl
+    sha256: 86fa25e8aa79182399b54469d7233cf2e054c8ae0b825a05419c9a3f034a305c
+  original_manifest:
+    path: data/augmented_judge_evaluation/manifest.json
+    sha256: 3063df9fe562daad7395d6b4333a1fb988ea8c42ffef9e2a45e83219cdfe63d0
+  historical_augmented:
+    path: results/augmented_judge_evaluation/4b/augmented/preferences.jsonl
+    sha256: aadd050b2bf5e7eaad93fe4dffb57a53e5e34a02469a020e04704b1381a6bba8
+  historical_regular:
+    path: results/judge_injection_continuation/evaluation_regular/original/preferences.jsonl
+    sha256: 76c2ff86ffa7801d382d0179e43e7a863b59e4b06f68bb17e6ab88fab42ebb4e
+  completion:
+    path: results/b200-augmented-bf16-training02/4b/monitor/complete.json
+    sha256: b3dd859517d874ffaee942b898f027f2f67c86f8bd22da7316c1ed6bd188d133
+  master:
+    path: results/b200-augmented-bf16-training02/4b/monitor/causal_adapter/adapter_model.safetensors
+    sha256: 708bbd7e774612664f8e8077c603366658181e2e5b9055c1f2a45dfd6f43519f
+  master_config:
+    path: results/b200-augmented-bf16-training02/4b/monitor/causal_adapter/adapter_config.json
+    sha256: b2d8cd80e6e9b9f69155cfe74232ada391b613343f55973f0ab5db8fce1ee6de
+  merge:
+    path: results/b200-augmented-bf16-training02/merged_artifact.json
+    sha256: 008a4be188f5ba009fa95b9a47bcced7d2a331fa1b644772729a9eff812b2b45
+  selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  resident:
+    path: results/b200-augmented-bf16-optimized01/server.json
+    sha256: e6be9d9539f42331361a833649551cc71124c3c077c4506a40275490179ca339
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  port: 8010
+  concurrency: 128
+  batch_rows: 128
+  timeout_seconds: 300
+  rows: 4188
+  canary_rows: 30
+  tokens: 1521530
+  maximum_tokens: 594
+  query_groups: 6
+  pair_count: 252
+  repeats: 1
+  failed_parity_diagnostic: false
+  promote: false

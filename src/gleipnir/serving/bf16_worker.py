@@ -18,6 +18,8 @@ from gleipnir.serving.precision import describe_attention_cache
 
 
 class Bf16Worker(Worker):
+    decision_ids: tuple[int, int] = (15, 16)
+
     def save(self) -> None:
         write_json(Path(os.environ["GLEIPNIR_BF16_AUDIT"]), self.precision)
         write_json(
@@ -93,7 +95,9 @@ class Bf16Worker(Worker):
         if len(keys) != 1:
             raise ValueError("ambiguous BF16 classifier source")
         with safe_open(merged / mapping[keys[0]], framework="pt") as f:
-            expected = f.get_slice(keys[0])[15:17]
+            expected = torch.stack(
+                [f.get_slice(keys[0])[token] for token in self.decision_ids]
+            )
         if not torch.equal(head.weight.detach().cpu(), expected):
             raise ValueError("BF16 classifier source weight mismatch")
         from vllm.model_executor.layers.mamba.gdn.qwen_gdn_linear_attn import (
@@ -115,7 +119,12 @@ class Bf16Worker(Worker):
             passed=True,
             linears=linears,
             projection_counts={"mlp": 64, "gdn": 48, "attention": 16},
-            head={"dtype": "torch.bfloat16", "shape": [2, 2560], "source": keys[0]},
+            head={
+                "dtype": "torch.bfloat16",
+                "shape": [2, 2560],
+                "source": keys[0],
+                "decision_ids": list(self.decision_ids),
+            },
             quantization=None,
         )
         self.save()
