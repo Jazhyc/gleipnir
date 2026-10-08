@@ -10,6 +10,9 @@ The completed quality/speed comparison and its qualifications are recorded in
 The user subsequently selects FP8 projections as the default; the
 [serving decision](../../docs/decisions/b200_monitor_score_reference.md) owns
 the current selection, startup command and adapter-specific finite acceptance.
+Default startup also applies the migration runner's checked diagnostic-source
+restoration; retain `results/b200_vllm031/pre_migration_sources.tar.gz` and its
+`diagnostic_default02/source_restoration.json` receipt on a fresh workspace.
 
 Freeze vLLM 0.31, the completed 272-update FP4/FA4-trained 4B adapter and its
 FP32-accumulated/BF16-exported merged checkpoint. Keep all 64 FP4 MLP and 48

@@ -20,6 +20,7 @@ from experiments.b200_long_context.run import gpu, rpc
 from experiments.b200_monitor_score.run import SERVING, trial
 from experiments.b200_vllm031.run import archive_audits
 from experiments.b200_vllm031.runtime import candidate_environment
+from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
 from gleipnir.serving.reference import selected_serving_default
 
 
@@ -43,6 +44,26 @@ async def startup(name: str, *, prepare_only: bool = False) -> None:
     command[0] = sys.executable
     out = ROOT / "results/b200_attention_precision" / name
     out.mkdir(parents=True, exist_ok=False)
+    archive = ROOT / "results/b200_vllm031/pre_migration_sources.tar.gz"
+    archive_receipt = json.loads(
+        (
+            ROOT / "results/b200_vllm031/diagnostic_default02/source_restoration.json"
+        ).read_text()
+    )
+    if sha(archive) != archive_receipt["archive_sha256"]:
+        raise ValueError("diagnostic source archive checksum changed")
+    additional = json.loads(command[command.index("--additional-config") + 1])
+    restored = restore_diagnostic_sources(
+        ROOT, additional["serving_condition"], archive
+    )
+    write(
+        out / "source_restoration.json",
+        {
+            "archive_sha256": sha(archive),
+            "restored": restored,
+            "runtime_sources_replaced": False,
+        },
+    )
     write(out / "selection.json", selection)
     write(out / "command.json", command)
     write(out / "startup_source.json", {"sha256": sha(Path(__file__))})

@@ -76,7 +76,15 @@ The restoration receipt records every previous and restored hash. This preserves
 the original numerical evidence across the repository's source-layout changes.
 
 On the authorized B200, prepare `.venv-vllm031` without modifying the preserved
-0.24 environment, then use the retained native dependency overlays:
+0.24 environment and use the retained native dependency overlays. On a fresh
+container, keep the exact native Gigatoken package archive at
+`.cache/runtime-resume/gigatoken-0.10.0-exact.tar.gz`. The candidate staging helper
+restores its `/tmp/gleipnir-gigatoken-0.10.0` directory when missing, verifies the
+selected frontend's package hashes, and registers its path in the persistent
+environment through a `.pth` file copied into the staged environment. Registration
+is once per Python environment; restoration is needed after losing container
+storage, not for ordinary scorer restarts. The directory must include its
+`gigatoken-0.10.0.dist-info` metadata as well as the native extension.
 
 ```bash
 uv venv .venv-vllm031 --python 3.12

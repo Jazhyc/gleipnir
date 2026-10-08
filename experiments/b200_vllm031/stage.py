@@ -5,12 +5,29 @@ import json
 from pathlib import Path
 
 from gleipnir.serving.runtime import copy_dependency_tree
+from gleipnir.serving.tokenizer_setup import prepare_native_tokenizer
 
 
 def main() -> None:
     root = Path(__file__).resolve().parents[2]
     source = root / ".venv-vllm031"
     target = Path("/tmp/gleipnir-vllm031-runtime")
+    selection = json.loads(
+        (root / "experiments/b200_inference_benchmark/serving_default.json").read_text()
+    )
+    parent_path = root / selection["host_parent"]
+    if (
+        hashlib.sha256(parent_path.read_bytes()).hexdigest()
+        != selection["artifact_bindings"][selection["host_parent"]]
+    ):
+        raise ValueError("native tokenizer parent receipt changed")
+    frontend = json.loads(parent_path.read_text())["frontend"]
+    tokenizer = prepare_native_tokenizer(
+        Path(frontend["package_path"]),
+        root / ".cache/runtime-resume/gigatoken-0.10.0-exact.tar.gz",
+        [source / "lib/python3.12/site-packages"],
+        frontend["package_files"],
+    )
     files = [source / "pyvenv.cfg"]
     packages = source / "lib/python3.12/site-packages"
     for pattern in (
@@ -37,6 +54,7 @@ def main() -> None:
         "python": str(target / "bin/python"),
         "metadata_sha256": hashes,
         "persistent_caches_preserved": True,
+        "native_tokenizer": tokenizer,
     }
     output = root / "results/b200_vllm031/staged_runtime.json"
     output.write_text(json.dumps(receipt, indent=2) + "\n")
