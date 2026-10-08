@@ -132,7 +132,17 @@ async def condition(
     bf16_reference: list[dict],
     optimized_reference: list[dict],
     stock_id: list[dict],
+    *,
+    result_group: str = "b200_attention_precision",
+    command_builder=make_command,
+    canary_check=canary,
+    source_paths: list[str] | None = None,
+    config_path: Path | None = None,
+    scope_check=None,
+    comparison_key: str = "vs_fp4_031",
 ) -> None:
+    source_paths = SOURCE_PATHS if source_paths is None else source_paths
+    config_path = EXPERIMENT / "config.json" if config_path is None else config_path
     snapshot = gpu()
     if (
         snapshot["apps"]
@@ -140,15 +150,18 @@ async def condition(
         or (SERVING / "server.json").exists()
     ):
         raise ValueError("precision run requires verified idle B200")
-    out = ROOT / "results/b200_attention_precision" / name / precision
+    out = ROOT / "results" / result_group / name / precision
     out.mkdir(parents=True, exist_ok=False)
-    command = make_command(stock["command"], precision, native_path)
+    command = command_builder(stock["command"], precision, native_path)
     env = candidate_environment(ROOT)
     env["VLLM_GDN_DECODE_KERNEL"] = "cuda"
     env["GLEIPNIR_FLASHINFER_GDN_CP"] = "auto"
     env["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     parent = json.loads(
-        (ROOT / settings["candidate"] / "parent_server.json").read_text()
+        (
+            ROOT
+            / settings.get("host_parent", settings["candidate"] + "/parent_server.json")
+        ).read_text()
     )
     env["GLEIPNIR_FROST_WRAPPER_VALIDATION"] = parent["host_wrapper"]["validation"]
     from vllm.v1.core.sched import scheduler
@@ -160,11 +173,9 @@ async def condition(
     if scheduler_binding != stock["scheduler_binding"]:
         raise ValueError("stock scheduler binding changed")
     env["GLEIPNIR_VLLM031_SCHEDULER_BINDING"] = json.dumps(scheduler_binding)
-    log = (
-        ROOT / "logs/runpod/b200_attention_precision" / f"{name}_{precision}_server.log"
-    )
+    log = ROOT / "logs/runpod" / result_group / f"{name}_{precision}_server.log"
     log.parent.mkdir(parents=True, exist_ok=True)
-    for path in SOURCE_PATHS:
+    for path in source_paths:
         target = out / "executed_sources" / path
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes((ROOT / path).read_bytes())
@@ -177,9 +188,9 @@ async def condition(
         "trials": [],
         "id_passes": [],
         "command": command,
-        "source_hashes": {p: sha(ROOT / p) for p in SOURCE_PATHS},
+        "source_hashes": {p: sha(ROOT / p) for p in source_paths},
         "native_sha256": sha(ROOT / native_path),
-        "config_sha256": sha(EXPERIMENT / "config.json"),
+        "config_sha256": sha(config_path),
         "runtime": stock["runtime"],
         "finite_canary_diagnostic": True,
     }
@@ -230,7 +241,7 @@ async def condition(
         print("precision_ready", precision, report["startup_seconds"], flush=True)
         if (await rpc("frost_wrapper_state"))["mode"] != "direct":
             raise ValueError("direct FROST host binding changed")
-        await canary(settings, out)
+        await canary_check(settings, out)
         archive_audits(out)
         scope = json.loads((out / "native_attention_projections.json").read_text())
         if (
@@ -239,6 +250,8 @@ async def condition(
             != json.loads((out / "loaded_precision.json").read_text())["worker_pid"]
         ):
             raise ValueError("actual projection execution scope is incomplete")
+        if scope_check is not None:
+            scope_check(out)
         for concurrency, key, repeats in ((1, "quick", 3), (128, "full", 6)):
             workload = json.loads((DATA / f"{key}.json").read_text())
             warm, _ = await trial(workload, concurrency, settings)
@@ -310,7 +323,7 @@ async def condition(
         result["vs_optimized_024"] = compare(
             id_workload, optimized_reference, [observed]
         )
-        result["vs_fp4_031"] = compare(id_workload, stock_id, [observed])
+        result[comparison_key] = compare(id_workload, stock_id, [observed])
         result["analysis_source_sha256"] = sha(Path(inspect.getfile(compare)))
         (out / "analysis_source.py").write_bytes(
             Path(inspect.getfile(compare)).read_bytes()
@@ -323,7 +336,7 @@ async def condition(
             "precision_complete",
             precision,
             seconds,
-            result["vs_fp4_031"]["metric_deltas"],
+            result[comparison_key]["metric_deltas"],
             flush=True,
         )
     except BaseException as error:
