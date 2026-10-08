@@ -46,7 +46,8 @@
   future-experiment inference/evaluation recipe, supported context and model/GPU
   envelope, parity requirements and frozen B200 comparison controls.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,
-  failed score agreement, paired native arithmetic and authorized scheduler diagnostics.
+  failed score agreement, paired native arithmetic, scheduler diagnostics and
+  fixed-adapter ID ranking/calibration comparison.
 - [Optimized-stack ID drift](findings/b200_optimized_id.md): paired same-adapter
   ID regression, recovery groups and continuous-admission throughput/latency tradeoff.
 - [B200 length-aware admission](findings/b200_length_admission.md): modest
