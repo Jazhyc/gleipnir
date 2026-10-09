@@ -1,0 +1,61 @@
+{
+  "batch_rows": 128,
+  "campaign_id": "ranked20_refit01",
+  "capture_batch_rows": 32,
+  "capture_concurrency": 8,
+  "clamp_beta": 0.25,
+  "concurrency": 64,
+  "direction_layer": 20,
+  "inputs": {
+    "canary": {
+      "path": "results/activation-filter-ranked20-sdpa01/canary_workload.jsonl",
+      "sha256": "0202f829d52053bd262291667937fa50a56ad9a2aeeb6647f00d520d3c9c5cf1"
+    },
+    "canary_predictions": {
+      "path": "results/b200_sdpa_lens/activation_ranked20_projection01/canary_predictions.json",
+      "sha256": "328effafd5e467acf4290f8babeac3c673b16cba231932cea8a62906218b78d7"
+    },
+    "fitting": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/fit_workload.jsonl",
+      "sha256": "329347f26de03ac4a2e4babbcb50b0e144ab8ba54b373f0ad91f012e539ccc49"
+    },
+    "old_directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "old_project": {
+      "path": "results/activation_filter_projection/ranked20_projection01/apps_project.jsonl",
+      "sha256": "ac4edde6c6c35f1fc0ad11a899ed35f0f163809c2039fe3f72f9cdc0da6d021e"
+    },
+    "partition": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+      "sha256": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+    },
+    "plain": {
+      "path": "results/activation_filter_projection/ranked20_projection01/apps_plain.jsonl",
+      "sha256": "d5c944c6a73f6d8492395a95d2973f7a819e9446f2a798fe3bb178b25f2c0972"
+    },
+    "server": {
+      "path": "results/activation_filter_projection/ranked20_projection01/server.json",
+      "sha256": "7dc946d2879be0dd6fc28e24e5083f7447942f04335d1bf12b11382653712d58"
+    },
+    "startup_complete": {
+      "path": "results/b200_sdpa_lens/activation_ranked20_projection01/complete.json",
+      "sha256": "c5dcd1bb88f17437d17a837d5100cbc6f9ffef90778fa0fd09d5ba8566b43877"
+    },
+    "startup_config": {
+      "path": "results/b200_sdpa_lens/activation_ranked20_projection01/config.json",
+      "sha256": "f2e084e351f8da47e6f7faf7df9655c1f18fa3a496e5b2c0f42ffd53c5909e3c"
+    },
+    "startup_manifest": {
+      "path": "results/b200_sdpa_lens/activation_ranked20_projection01/manifest.json",
+      "sha256": "591cc4824a797ce8fc544d8fdb1bc11a6745de1e361edc09d56bc12ac610ce71"
+    },
+    "testing": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/apps_workload.jsonl",
+      "sha256": "d3aa35d21a38b272c3344a2fdbd2fa23cf42d46cac838d8b03dc676f1911c454"
+    }
+  },
+  "promote": false,
+  "random_seed": 0
+}
