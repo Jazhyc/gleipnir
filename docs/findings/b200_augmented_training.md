@@ -738,7 +738,11 @@ gap. The resolved job matches the frozen historical job except for run/output
 bookkeeping and initializer/startup-receipt checksum assertions. Keep the same
 FP32 initializer, augmented rows/teacher targets, optimizer/schedule, BF16 MLPs,
 FlashQLA, packing and compilation. The replay uses the current campaign framework
-and NC2 host; the historical run used the earlier source context and EU host.
+and the current NC2 Pod; the historical training launch used the earlier source
+context on NC2 Pod `3422tdq7tfog52`, as recorded in the
+[original augmentation findings](monitor_injection_augmentation.md). Later
+EU serving/evaluation work must not be confused with its training provenance.
+The runs share a region, without establishing the same physical host or runtime.
 SDPA is the dispatcher path, not a guarantee that no flash kernel is used.
 
 `b200-augmented-sdpa-replay02` completes 272 updates, all 4,556 matched physical
