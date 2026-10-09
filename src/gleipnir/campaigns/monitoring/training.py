@@ -85,9 +85,9 @@ def train(ctx: Campaign) -> None:
     else:
         runtime = validation_reference(
             Path(job["startup_validation_reference"]),
-            packed_attention_backend=job["packed_attention_backend"],
-            packed_attention_version=job["packed_attention_version"],
-            learning_gradient_tolerance=job["packing_learning_gradient_tolerance"],
+            packed_attention_backend=job.get("packed_attention_backend", "sdpa"),
+            packed_attention_version=job.get("packed_attention_version"),
+            learning_gradient_tolerance=job.get("packing_learning_gradient_tolerance"),
             expected_sha256=job["startup_validation_reference_sha256"],
             verify_runtime=True,
         )

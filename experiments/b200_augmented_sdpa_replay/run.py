@@ -113,8 +113,9 @@ def validate_replay(ctx: Campaign) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("prepare", "run"), required=True)
+    parser.add_argument("--config", type=Path, default=CONFIG)
     args = parser.parse_args()
-    ctx = Campaign.load(ROOT, CONFIG)
+    ctx = Campaign.load(ROOT, args.config)
     comparison = historical_job_comparison(ctx)
     if args.stage == "prepare":
         ctx.prepare()

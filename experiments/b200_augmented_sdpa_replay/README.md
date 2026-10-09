@@ -50,3 +50,11 @@ Run `python -m experiments.b200_augmented_sdpa_replay.run --stage prepare`, then
 The campaign runner launches each worker in its pinned runtime. Artifacts use
 `b200-augmented-sdpa-replay01`; a new merge is made only if needed, at
 `/tmp/gleipnir-merged/historical-augmented-sdpa-replay01`.
+
+Attempt 01 stops before Trainer launch because the historical profile lacks
+newer explicit startup fields. Preserve its failed receipts. The runner now
+binds the legacy receipt checksum and applies SDPA/version/tolerance defaults
+consistent with the existing validator. Restart with `--config
+experiments/b200_augmented_sdpa_replay/retry_config.yaml` for both stages;
+attempt 02 has separate `b200-augmented-sdpa-replay02` artifacts and merge path,
+with unchanged training arithmetic and inputs.
