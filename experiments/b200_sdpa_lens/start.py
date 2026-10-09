@@ -57,7 +57,7 @@ def lens_command(parent: dict, model: str) -> list[str]:
     return command
 
 
-async def start(name: str) -> None:
+async def start(name: str, *, config_path: Path = CONFIG) -> None:
     from vllm.v1.core.sched import scheduler
 
     from experiments.b200_long_context.run import gpu
@@ -68,7 +68,7 @@ async def start(name: str) -> None:
     from gleipnir.evaluation.http_score import score_batch
     from gleipnir.serving.reference import selected_serving_default
 
-    config = json.loads(CONFIG.read_text())
+    config = json.loads(config_path.read_text())
     out = ROOT / "results/b200_sdpa_lens" / name
     out.mkdir(parents=True, exist_ok=False)
     log = ROOT / "logs/runpod/b200_sdpa_lens" / f"{name}_server.log"
@@ -131,12 +131,12 @@ async def start(name: str) -> None:
     write_json(
         out / "manifest.json",
         {
-            "config_sha256": file_hash(CONFIG),
+            "config_sha256": file_hash(config_path),
             "sources": sources,
             "inputs": config["inputs"],
         },
     )
-    shutil.copyfile(CONFIG, out / "config.json")
+    shutil.copyfile(config_path, out / "config.json")
     # A stopped container's PID is not a live identity on this new pod.
     if (SERVING / "server.json").exists():
         shutil.copyfile(SERVING / "server.json", out / "terminated_pod_server.json")
@@ -288,12 +288,13 @@ async def start(name: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
+    parser.add_argument("--config", type=Path, default=CONFIG)
     args = parser.parse_args()
     if not args.name or args.name in {".", ".."} or Path(args.name).name != args.name:
         raise ValueError("startup name must be a stem")
     sys.path.insert(0, str(OVERLAY))
     os.environ["VLLM_LENS_DISABLE"] = "1"
-    asyncio.run(start(args.name))
+    asyncio.run(start(args.name, config_path=args.config))
 
 
 if __name__ == "__main__":

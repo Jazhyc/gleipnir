@@ -1,0 +1,35 @@
+{
+  "batch_rows": 128,
+  "campaign_id": "ranked20_projection01",
+  "capture_batch_rows": 32,
+  "capture_concurrency": 8,
+  "concurrency": 64,
+  "inputs": {
+    "compiled_benchmark": {
+      "path": "results/activation-filter-ranked20-sdpa01/evaluation/benchmark.jsonl",
+      "sha256": "0e57576b2929dc914c54cd04c7e7f90fa58ae61f2e292f91ab3250ecb1901e34"
+    },
+    "compiled_controls": {
+      "path": "results/activation-filter-ranked20-sdpa01/evaluation/honest_controls.jsonl",
+      "sha256": "47d0353b440632d086948bf9a6eaf317eef54d472ac8fd007de60afd67014363"
+    },
+    "directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "interventions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/interventions.json",
+      "sha256": "e3f5a409dfe1f3854206b603d546f6a76a6983d35e138f4bb8bae1a81257f0e8"
+    },
+    "partition": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+      "sha256": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+    },
+    "workload": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/apps_workload.jsonl",
+      "sha256": "d3aa35d21a38b272c3344a2fdbd2fa23cf42d46cac838d8b03dc676f1911c454"
+    }
+  },
+  "promote": false,
+  "startup_name": "activation_ranked20_projection01"
+}

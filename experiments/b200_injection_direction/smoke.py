@@ -12,7 +12,7 @@ from gleipnir.serving.lens import MonitorLensClient
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def main():
+def main(output_path: Path | None = None):
     client = MonitorLensClient("http://127.0.0.1:8010")
     rows = json.loads((ROOT / "data/b200_inference_benchmark/canary.json").read_text())
     row = min(rows, key=lambda r: r["prompt_tokens"])
@@ -71,7 +71,8 @@ def main():
         == 0
     )
     write_json(
-        ROOT
+        output_path
+        or ROOT
         / "results/b200_injection_direction/sdpa_injection_direction01"
         / "operator_smoke.json",
         {
