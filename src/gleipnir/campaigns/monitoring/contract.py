@@ -48,9 +48,11 @@ class Campaign:
         if config["num_train_epochs"] != 1 or config["profile"] not in (
             "qwen35_4b_b200_fp4_mlp",
             "qwen35_4b_b200_bf16_fa4",
+            "qwen35_4b_b200_packed_sdpa",
         ):
             raise ValueError(
-                "runner supports the validated one-epoch B200 FP4 and BF16/FA4 profiles"
+                "runner supports validated one-epoch B200 "
+                "FP4, BF16/FA4 and BF16/SDPA profiles"
             )
         if config.get("evaluation", {}).get("promote", False):
             raise ValueError(
@@ -128,6 +130,10 @@ class Campaign:
         config = self.config
         recipe = self.profile()["recipe"]
         recipe["startup_validation_reference"] = str(self.input("startup_reference"))
+        recipe.setdefault(
+            "startup_validation_reference_sha256",
+            config["inputs"]["startup_reference"]["sha256"],
+        )
         return {
             **recipe,
             "job_name": config["campaign_id"],
