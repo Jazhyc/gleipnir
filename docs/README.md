@@ -47,7 +47,11 @@
   envelope, parity requirements and frozen B200 comparison controls.
 - [SDPA injection-direction replication review](research/sdpa_injection_direction_replication.md):
   colleague's clamp/projection results, recall tradeoffs, Lens requirements and
-  unresolved direction-fitting contract; no campaign launched.
+  user-authorized small APPS fit contract; the linked experiment freezes the
+  current-model replication and disjoint task test partition.
+- [SDPA injection-direction results](findings/b200_injection_direction.md):
+  completed clamp/projection/random and additive controls, APPS false-alarm/
+  recall tradeoffs, ID guard, grouped uncertainty and independent receipts.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.

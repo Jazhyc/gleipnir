@@ -544,11 +544,16 @@ without a container restart. The checksum-identical SDPA merge and pinned
 vLLM 0.31/Torch 2.13/Lens 1.3.0 serving environment are restored; the training
 runtime remains archived. The
 [BF16 eager SDPA Lens baseline](findings/b200_vllm_lens.md#restored-bf16-lens-baseline-for-the-sdpa-adapter)
-passes master/native/functional checks and stays warm at localhost 8010, API
-1335/worker 1389. Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
+passes master/native/functional checks. Its original process was retired
+sequentially for the request-local clamp/span/readout extension; the updated
+engine passes fresh gates and stays warm at localhost 8010, API 2031/worker
+2070, after the completed
+[injection-direction campaign](findings/b200_injection_direction.md).
+Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and
-`results/b200_sdpa_lens/sdpa01/`. No dependency upgrade or new capacity.
+`results/b200_sdpa_lens/sdpa01/` and `sdpa02_projection/`. No dependency upgrade
+or new capacity.
 
 ## OpenRouter
 

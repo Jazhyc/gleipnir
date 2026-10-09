@@ -1,8 +1,11 @@
 # SDPA monitor replication of injection-direction interventions
 
-This is a review and proposed scope, not a launched or selected campaign. The
-user asked to inspect the colleague's branch while the BF16 eager SDPA Lens
-scorer remains available. Pin the external branch to commit
+This review informed the user-authorized
+[small-fit replication](../../experiments/b200_injection_direction/README.md),
+completed on the current BF16 eager SDPA Lens scorer; its
+[findings](../findings/b200_injection_direction.md) own the current-model results.
+No intervention is selected
+or promoted. Pin the external branch to commit
 `931fee0a1db369bc15c01009aa77219e7e106c14`. Its
 [ablation implementation](https://github.com/mkenney2/monitor-injection-evals/blob/931fee0a1db369bc15c01009aa77219e7e106c14/interp/ablate.py),
 [frozen fix](https://github.com/mkenney2/monitor-injection-evals/blob/931fee0a1db369bc15c01009aa77219e7e106c14/interp/frozen/frozen_fix.json)
@@ -86,12 +89,9 @@ requires a separate bounded full-vocabulary readout. Generation steering and
 attention-map patching likewise need separate supported paths; the current
 pooling capture/steering bridge does not provide those experiments.
 
-The research program currently reserves APPS for evaluation rather than training
-and checkpoint selection. A literal APPS-fit direction replay needs an explicitly
-separate exploratory contract, with fit tasks excluded from intervention test
-metrics; it must not relabel the existing full benchmark as held out. An
-alternative fits directions on paired augmentation-training trajectories and
-keeps APPS evaluation-only, with that deviation disclosed. Resolve this choice
-and freeze membership/parameters/stop conditions before launching. Training
-nondeterminism remains deferred. No model or serving default changes from this
-review.
+The user explicitly authorized a small APPS fitting portion for this exploratory
+replication. Its experiment contract freezes 64 fit tasks, excludes all their
+variants from the 591-task test partition, and fixes interventions before
+evaluation. This exception does not relabel the historical full benchmark as
+held out or authorize training/checkpoint selection on APPS. Training
+nondeterminism remains deferred. No model or serving default changes.

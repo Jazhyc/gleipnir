@@ -110,7 +110,7 @@ engine 11706; current lifecycle state is in [infrastructure](../infrastructure.m
 Capture buffers are empty after completion/disconnect. No capacity creation/
 termination or persistent cache reset occurs.
 
-## Next intervention study
+## Intervention study
 
 The user selected the completed current BF16/SDPA augmented replay as the next
 mechanistic-intervention target, because its injection sensitivity more closely
@@ -121,7 +121,8 @@ Freeze the intervention/selection contract and establish the matched plain
 research-serving baseline before attributing effects to steering. The current
 SDPA/FA4 comparisons do not resolve training nondeterminism; the user deferred
 that investigation. The restoration below establishes the runnable baseline;
-no learned-direction study or replacement capacity is launched.
+the user subsequently authorized the
+[small-fit injection-direction replication](b200_injection_direction.md).
 
 ## Restored BF16 Lens baseline for the SDPA adapter
 
@@ -158,8 +159,11 @@ the remote log. An initial test-helper JSON-index error is corrected and its
 failed log retained; no server failure occurs. Independent verification
 recomputes canary identity/logits/sigmoid/parity, validates native/smoke/client
 receipts and checks 29 collected files, eight executed/current sources and
-eight pinned inputs. The passing scorer remains warm: API 1335, worker 1389,
-localhost port 8010, zero ECC errors. Merged weights stay on the B200.
+eight pinned inputs. At restoration completion the passing scorer was API
+1335/worker 1389 on localhost 8010 with zero ECC errors. It was subsequently
+retired sequentially for the clamp/span/readout extension; current process
+state is in [infrastructure](../infrastructure.md). Merged weights stay on the
+B200.
 
 The [restoration contract](../../experiments/b200_sdpa_lens/README.md),
 `results/b200_sdpa_lens/sdpa01/` and `completion_audit.json` retain provenance.
