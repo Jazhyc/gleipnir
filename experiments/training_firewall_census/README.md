@@ -49,3 +49,8 @@ Run `python -m experiments.training_firewall_census.run`, then
 Configuration: `config.json`; rubric: `prompt.txt`.
 Artifacts: `results/training_firewall_census/qwen35_9b_v1/`.
 Startup/progress monitoring is active-turn only; no heartbeat tool is available.
+
+Full-length anchor misses require interpreting low scores as unverified absence,
+even when short controls pass. Preserve misses without revising the frozen rubric.
+The analysis adds a disclosed post-hoc literal firewall-keyword cross-check and
+manual counterexample review; record its motivation and results in the findings.

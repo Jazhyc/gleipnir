@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from pathlib import Path
 
 import numpy as np
@@ -13,11 +14,16 @@ from gleipnir.evaluation.direction_stats import correlation, distribution
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = ROOT / "experiments/training_firewall_census/config.json"
+FIREWALL_WORDS = re.compile(
+    r"\b(?:firewall\w*|iptables|ip6tables|nftables|ufw)\b", re.I
+)
 
 
 def join_predictions(predictions: list[dict], paired: list[dict]) -> list[dict]:
     """Require one concept score per original and exact evidence/label identity."""
     by_id = {r["id"]: r for r in predictions}
+    if len({r["index"] for r in paired}) != len(paired):
+        raise ValueError("duplicate activation membership")
     if len(by_id) != len(predictions) or set(by_id) != {r["index"] for r in paired}:
         raise ValueError("concept/activation membership mismatch")
     joined = []
@@ -30,6 +36,8 @@ def join_predictions(predictions: list[dict], paired: list[dict]) -> list[dict]:
             raise ValueError("non-original activation record")
         if not all(math.isfinite(prediction[k]) for k in ["score", "log_odds"]):
             raise ValueError("nonfinite concept score")
+        if not 0 <= prediction["score"] <= 1:
+            raise ValueError("invalid concept score range")
         joined.append(
             row
             | {
@@ -75,6 +83,19 @@ def describe(rows: list[dict]) -> dict:
                 ),
             }
         result["thresholds"][str(threshold)] = groups
+    if all("literal_firewall_keyword" in r for r in rows):
+        result["literal_keyword_diagnostic"] = {}
+        for keyword in [False, True]:
+            group = [r for r in rows if r["literal_firewall_keyword"] == keyword]
+            result["literal_keyword_diagnostic"][str(keyword)] = {
+                "rows": len(group),
+                "qwen_flagged_at_0_5": sum(r["firewall_score"] >= 0.5 for r in group),
+                **(
+                    {"delta_z20": distribution([r["delta_z20"] for r in group])}
+                    if group
+                    else {}
+                ),
+            }
     ranked = sorted(rows, key=lambda r: (-r["delta_z20"], r["index"]))
     result["top_delta_bands"] = {
         str(fraction): {
@@ -103,6 +124,14 @@ def analyze() -> None:
     )
     if len(joined) != config["expected_rows"]:
         raise ValueError("incomplete population")
+    clean_path = ROOT / config["input"]
+    if file_hash(clean_path) != config["input_sha256"]:
+        raise ValueError("original-data hash drift")
+    keywords = {
+        r["index"]: bool(FIREWALL_WORDS.search(r["student_prompt"]))
+        for r in read_rows(clean_path)
+    }
+    joined = [r | {"literal_firewall_keyword": keywords[r["index"]]} for r in joined]
     groups = {}
     for source in ["all", *sorted({r["source"] for r in joined})]:
         for label in ["all", 0, 1]:
@@ -140,12 +169,18 @@ def analyze() -> None:
                 "predictions": file_hash(out / "predictions.jsonl"),
                 "config": file_hash(CONFIG),
                 "analysis_script": file_hash(Path(__file__)),
+                "original_inputs": file_hash(clean_path),
             },
             "qualification": (
                 "Uncalibrated concept-model flags, not verified absence/presence "
                 "or causal influence. Pooled associations may reflect source, labels, "
                 "targets and length. Original duplicate exposure weights retained; "
                 "sensitivity uses first row per exact trajectory."
+            ),
+            "keyword_diagnostic": (
+                "Added after full-length anchor misses: literal firewall*, iptables, "
+                "ip6tables, nftables or ufw in original inputs. Not a semantic "
+                "classifier or verified absence; no change to the frozen Qwen rubric."
             ),
         },
     )

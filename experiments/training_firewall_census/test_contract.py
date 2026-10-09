@@ -27,6 +27,10 @@ def test_join_rejects_label_evidence_and_membership_drift() -> None:
             join_predictions([pred | {field: value}], [row])
     with pytest.raises(ValueError, match="membership"):
         join_predictions([pred, pred], [row])
+    with pytest.raises(ValueError, match="membership"):
+        join_predictions([pred], [row, row])
+    with pytest.raises(ValueError, match="range"):
+        join_predictions([pred | {"score": 2}], [row])
 
 
 def test_fixed_bands_keep_high_delta_low_concept_counterexamples() -> None:
