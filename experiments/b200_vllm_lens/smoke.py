@@ -17,46 +17,47 @@ from gleipnir.serving.monitor_score import validate_score_response
 from gleipnir.serving.reference import selected_serving_default
 
 
-async def smoke(out: Path) -> dict:
+async def smoke(out: Path, *, reproduction: dict | None = None) -> dict:
     from experiments.b200_monitor_score.run import trial
 
-    selection, _ = selected_serving_default(ROOT)
     canary = json.loads(
         (ROOT / "data/b200_inference_benchmark/canary.json").read_text()
     )
-    values, _ = await trial(canary, 4, {"port": 8010, "timeout_seconds": 300})
-    previous = json.loads((ROOT / selection["canary_predictions"]).read_text())
-    if [(r["id"], r["prompt_sha256"], r["prompt_tokens"]) for r in values] != [
-        (r["id"], r["prompt_sha256"], r["prompt_tokens"]) for r in previous
-    ]:
-        raise ValueError("eager canary token/prompt identity drift")
-    scores, expected = (
-        np.array([r["score"] for r in values]),
-        np.array([r["score"] for r in previous]),
-    )
-    mae = float(np.abs(scores - expected).mean())
-    correlation = float(np.corrcoef(scores, expected)[0, 1])
-    master = json.loads((ROOT / selection["master_canary"]).read_text())
-    effect = float(np.abs(scores - np.array(master["base"])).max())
-    reproduction = {
-        "score_mae": mae,
-        "correlation": correlation,
-        "adapter_effect": effect,
-        "passed": bool(np.isfinite(scores).all())
-        and mae <= 0.005
-        and correlation >= 0.995
-        and effect > 0,
-    }
-    write(out / "canary_predictions.json", values)
-    reproduction["research_eager_finite"] = (
-        bool(np.isfinite(scores).all()) and effect > 0
-    )
-    reproduction["mode"] = "user_authorized_research_eager"
-    write(out / "canary.json", reproduction)
-    if not reproduction["research_eager_finite"]:
-        raise ValueError(
-            "eager monitor failed finite output or nonzero adapter-effect checks"
+    if reproduction is None:
+        selection, _ = selected_serving_default(ROOT)
+        values, _ = await trial(canary, 4, {"port": 8010, "timeout_seconds": 300})
+        previous = json.loads((ROOT / selection["canary_predictions"]).read_text())
+        if [(r["id"], r["prompt_sha256"], r["prompt_tokens"]) for r in values] != [
+            (r["id"], r["prompt_sha256"], r["prompt_tokens"]) for r in previous
+        ]:
+            raise ValueError("eager canary token/prompt identity drift")
+        scores, expected = (
+            np.array([r["score"] for r in values]),
+            np.array([r["score"] for r in previous]),
         )
+        mae = float(np.abs(scores - expected).mean())
+        correlation = float(np.corrcoef(scores, expected)[0, 1])
+        master = json.loads((ROOT / selection["master_canary"]).read_text())
+        effect = float(np.abs(scores - np.array(master["base"])).max())
+        reproduction = {
+            "score_mae": mae,
+            "correlation": correlation,
+            "adapter_effect": effect,
+            "passed": bool(np.isfinite(scores).all())
+            and mae <= 0.005
+            and correlation >= 0.995
+            and effect > 0,
+        }
+        write(out / "canary_predictions.json", values)
+        reproduction["research_eager_finite"] = (
+            bool(np.isfinite(scores).all()) and effect > 0
+        )
+        reproduction["mode"] = "user_authorized_research_eager"
+        write(out / "canary.json", reproduction)
+        if not reproduction["research_eager_finite"]:
+            raise ValueError(
+                "eager monitor failed finite output or nonzero adapter-effect checks"
+            )
     row = min(canary, key=lambda r: r["prompt_tokens"])
     async with httpx.AsyncClient(
         base_url="http://127.0.0.1:8010", trust_env=False, timeout=300
