@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import importlib.metadata
 import json
 import uuid
@@ -85,8 +86,16 @@ def install_lens_api() -> None:
                 "request_id": key,
                 "capture_layers": request.capture_layers,
                 "capture_positions": request.capture_positions,
+                "capture_span_positions": request.capture_span_positions,
+                "full_readout": request.full_readout,
+                "directional_edits": [
+                    e.model_dump(mode="json") for e in request.directional_edits
+                ],
                 "steering_vectors": [v.model_dump(mode="json") for v in vectors],
             }
+            config["projection_identity"] = hashlib.sha256(
+                json.dumps(config["directional_edits"], sort_keys=True).encode()
+            ).hexdigest()
             internal = LensClassificationRequest(
                 model=request.model,
                 input=request.prompt,
@@ -98,7 +107,11 @@ def install_lens_api() -> None:
             if response.status_code != 200:
                 return response
             result = json.loads(response.body)
-            captured = (await engine.collective_rpc("lens_collect", args=(key,)))[0]
+            captured = (
+                await engine.collective_rpc(
+                    "lens_collect", args=(key, request.full_readout)
+                )
+            )[0]
             if captured["activation_layers"] != request.capture_layers:
                 raise RuntimeError("requested Lens layers did not all capture")
             positions = request.capture_positions
@@ -111,6 +124,10 @@ def install_lens_api() -> None:
             )
             if request.capture_layers and captured["activation_positions"] != expected:
                 raise RuntimeError("requested Lens token positions did not all capture")
+            if request.capture_span_positions and captured.get(
+                "span_capture_count"
+            ) != len(request.capture_span_positions):
+                raise RuntimeError("span mean capture coverage changed")
             result.update(captured)
             result["lens_request_id"] = key
             return JSONResponse(result)

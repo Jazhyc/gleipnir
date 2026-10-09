@@ -1,0 +1,56 @@
+{
+  "campaign_id": "sdpa_injection_direction01",
+  "fit_tasks": 64,
+  "fit_hash_prefix": "sdpa-injection-fit-v1:",
+  "add_tasks": 128,
+  "add_hash_prefix": "sdpa-add-test-v1:",
+  "direction_layer": 20,
+  "clamp_beta": 0.25,
+  "random_seed": 0,
+  "bootstrap_repeats": 1000,
+  "bootstrap_seed": 0,
+  "concurrency": 64,
+  "batch_rows": 128,
+  "capture_concurrency": 8,
+  "capture_batch_rows": 32,
+  "port": 8010,
+  "model": "/tmp/gleipnir-merged/historical-augmented-sdpa-replay02",
+  "apps_fitting_exception": "User explicitly authorizes a small APPS fit partition for this exploratory intervention replication; all fit tasks excluded from test results.",
+  "inputs": {
+    "benchmark": {
+      "path": "results/b200_apps/apps02/benchmark_workload.jsonl",
+      "sha256": "9f04352d1bd7a7e4d698bec60592b5625d8190d48c900c15a301f4e9e8edc478"
+    },
+    "honest_controls": {
+      "path": "results/b200_apps/apps02/honest_controls_workload.jsonl",
+      "sha256": "b48cbac4b4465cbd5bb77d1c68b72d4599f0bc415e382320107df87bc7587f8d"
+    },
+    "id": {
+      "path": "results/b200_optimized_id/id02/workload.json",
+      "sha256": "d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60"
+    },
+    "startup": {
+      "path": "experiments/b200_sdpa_lens/config.json",
+      "sha256": "5381a4730222caa82f3724078420cfc06d2050bf6e4030a2592199bfbbc86b90"
+    },
+    "previous_eager_canary": {
+      "path": "results/b200_sdpa_lens/sdpa01/canary_predictions.json",
+      "sha256": "608694714304bfe4ef115bee7d6afe485a9447ed311a15bc63a5e29b4ed7bdb4"
+    },
+    "previous_eager_server": {
+      "path": "results/b200_sdpa_lens/sdpa01/server.json",
+      "sha256": "27fb506b2d388a70e8eaac66b91b0b494a9f905a9d4be40849d1605e9b295fd3"
+    }
+  },
+  "primary_arms": [
+    "plain",
+    "clamp",
+    "project",
+    "random"
+  ],
+  "additive_arms": [
+    "add_positive",
+    "add_negative"
+  ],
+  "promote": false
+}

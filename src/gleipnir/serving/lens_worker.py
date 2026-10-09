@@ -12,6 +12,7 @@ from vllm_lens._helpers._serialize import serialize_tensor
 from vllm_lens._worker_ext import _apply_steering, _discover_layer_modules
 
 from gleipnir.serving.lens import KEY
+from gleipnir.serving.lens_projection import apply_projection, apply_projection_batch
 
 
 def residual_stream(output: Any) -> torch.Tensor:
@@ -55,6 +56,7 @@ class MonitorLensExtension:
         self._lens_layers = sorted(layer_map)
         self._lens_buffers = {}
         self._lens_vectors = {}
+        self._lens_edits = {}
         self._lens_handles = []
         for index, module in layer_map.items():
 
@@ -73,6 +75,7 @@ class MonitorLensExtension:
             "eager": True,
             "capture_requests": len(self._lens_buffers),
             "steering_requests": len(self._lens_vectors),
+            "projection_requests": len(getattr(self, "_lens_edits", {})),
             "semantics": "post-layer residual stream before final normalization",
         }
 
@@ -92,6 +95,10 @@ class MonitorLensExtension:
             if config and (
                 layer in config["capture_layers"]
                 or any(layer in v["layer_indices"] for v in config["steering_vectors"])
+                or any(
+                    layer in e["layer_indices"]
+                    for e in config.get("directional_edits", [])
+                )
             ):
                 active.append((i, state, config))
         if not active:
@@ -104,12 +111,95 @@ class MonitorLensExtension:
         lengths = [offsets[i] + boundaries[i + 1] - boundaries[i] for i in range(count)]
         source = residual_stream(output)
         modified = output
+        projected = set()
+        projected_active = [
+            (i, state, cfg)
+            for i, state, cfg in active
+            if any(
+                layer in e["layer_indices"] for e in cfg.get("directional_edits", [])
+            )
+        ]
+        if (
+            len(projected_active) == count
+            and len({cfg["projection_identity"] for _, _, cfg in projected_active}) == 1
+        ):
+            first = projected_active[0][2]
+            key = first["request_id"]
+            if key not in self._lens_edits:
+                self._lens_edits[key] = [
+                    e
+                    | {
+                        "direction": torch.tensor(
+                            e["direction"], device=source.device, dtype=torch.float32
+                        )
+                    }
+                    for e in first["directional_edits"]
+                ]
+            edit = self._lens_edits[key][0]
+            finals = []
+            for i, state, cfg in projected_active:
+                self._lens_edits[cfg["request_id"]] = self._lens_edits[key]
+                last = len(state.prompt_token_ids) - 1
+                if offsets[i] <= last < lengths[i]:
+                    finals.append(boundaries[i] + last - offsets[i])
+                projected.add(cfg["request_id"])
+            modified = (
+                (output[0].clone(), output[1])
+                if isinstance(output, tuple)
+                else output.clone()
+            )
+            target = modified[0] if isinstance(modified, tuple) else modified
+            apply_projection_batch(
+                target,
+                source,
+                edit["direction"],
+                edit["beta"],
+                edit["decision_centers"][layer],
+                edit["span_centers"][layer],
+                boundaries[-1],
+                finals,
+            )
         for index, _state, config in active:
             key = config["request_id"]
             start, end = boundaries[index : index + 2]
             absolute_start = offsets[index]
             if absolute_start < 0 or end > source.shape[0]:
                 raise RuntimeError("invalid pooling chunk boundaries")
+            edits = config.get("directional_edits", [])
+            if key not in projected and any(layer in e["layer_indices"] for e in edits):
+                if key not in self._lens_edits:
+                    self._lens_edits[key] = [
+                        e
+                        | {
+                            "direction": torch.tensor(
+                                e["direction"],
+                                device=source.device,
+                                dtype=torch.float32,
+                            )
+                        }
+                        for e in edits
+                    ]
+                if modified is output:
+                    modified = (
+                        (output[0].clone(), output[1])
+                        if isinstance(output, tuple)
+                        else output.clone()
+                    )
+                target = modified[0] if isinstance(modified, tuple) else modified
+                for edit in self._lens_edits[key]:
+                    if layer in edit["layer_indices"]:
+                        apply_projection(
+                            target,
+                            source,
+                            edit["direction"],
+                            edit["beta"],
+                            edit["decision_centers"][layer],
+                            edit["span_centers"][layer],
+                            start,
+                            end,
+                            absolute_start,
+                            len(_state.prompt_token_ids) - 1,
+                        )
             if any(layer in v["layer_indices"] for v in config["steering_vectors"]):
                 if key not in self._lens_vectors:
                     vectors = [
@@ -154,6 +244,30 @@ class MonitorLensExtension:
                 layer, {"positions": [], "values": [], "chunks": []}
             )
             record["chunks"].append([absolute_start, lengths[index]])
+            if config.get("full_readout") and layer == self._lens_layers[-1]:
+                final_position = len(state.prompt_token_ids) - 1
+                if absolute_start <= final_position < lengths[index]:
+                    at = start + final_position - absolute_start
+                    delta = modified[0] if isinstance(modified, tuple) else modified
+                    record["readout_delta"] = delta[at : at + 1].detach().cpu()
+                    if isinstance(modified, tuple) and modified[1] is not None:
+                        record["readout_residual"] = (
+                            modified[1][at : at + 1].detach().cpu()
+                        )
+
+            span = [
+                p
+                for p in config.get("capture_span_positions", [])
+                if absolute_start <= p < lengths[index]
+            ]
+            if span:
+                indices = torch.tensor(
+                    [start + p - absolute_start for p in span], device=hidden.device
+                )
+                total = hidden.index_select(0, indices).float().sum(0).detach().cpu()
+                record["span_sum"] = record.get("span_sum", 0) + total
+                record["span_count"] = record.get("span_count", 0) + len(span)
+
             positions = config["capture_positions"]
             if positions == "last":
                 positions = [len(state.prompt_token_ids) - 1]
@@ -172,10 +286,11 @@ class MonitorLensExtension:
                 record["values"].append(values)
         return modified if modified is not output else None
 
-    def lens_collect(self, key: str) -> dict:
+    def lens_collect(self, key: str, full_readout: bool = False) -> dict:
         """Transfer this request's native BF16 captures and remove its state."""
         records = self._lens_buffers.pop(key, {})
         self._lens_vectors.pop(key, None)
+        getattr(self, "_lens_edits", {}).pop(key, None)
         if not records:
             return {
                 "activations": {},
@@ -193,8 +308,51 @@ class MonitorLensExtension:
                 "missing, repeated or mismatched captured token positions"
             )
         tensor = torch.stack([torch.cat(records[i]["values"], dim=0) for i in layers])
+        activations = {"residual_stream": serialize_tensor(tensor)}
+        extra = {}
+        counts = [records[i].get("span_count", 0) for i in layers]
+        if any(counts):
+            if len(set(counts)) != 1 or not all(counts):
+                raise RuntimeError("span mean coverage differs across layers")
+            mean = torch.stack([records[i]["span_sum"] / counts[0] for i in layers])
+            if not bool(torch.isfinite(mean).all()):
+                raise RuntimeError("nonfinite span means")
+            activations["residual_span_mean"] = serialize_tensor(mean)
+            extra["span_capture_count"] = counts[0]
+        if full_readout:
+            if layers[-1] != self._lens_layers[-1] or tensor.shape[1] != 1:
+                raise ValueError("full readout requires final residual")
+            model = self.model_runner.get_model()
+            norms = [
+                m
+                for n, m in model.named_modules()
+                if n.endswith(".norm") and ".layers." not in n
+            ]
+            embeddings = [
+                m for n, m in model.named_modules() if n.endswith("embed_tokens")
+            ]
+            if len(norms) != 1 or len(embeddings) != 1:
+                raise ValueError("ambiguous full-vocabulary readout")
+            embedding = embeddings[0].weight
+            with torch.inference_mode():
+                record = records[layers[-1]]
+                delta = record["readout_delta"].to(embedding.device)
+                residual = record.get("readout_residual")
+                normalized = (
+                    norms[0](delta)
+                    if residual is None
+                    else norms[0](delta, residual.to(embedding.device))[0]
+                )
+                logits = torch.nn.functional.linear(
+                    normalized, embedding[: self.model_config.hf_text_config.vocab_size]
+                ).float()[0]
+                answer = logits[[15, 16]]
+                extra["p01"] = float((answer.logsumexp(0) - logits.logsumexp(0)).exp())
+                extra["readout_logits"] = answer.cpu().tolist()
+                extra["readout_method"] = "exact_fused_final_norm_tied_full_embedding"
         return {
-            "activations": {"residual_stream": serialize_tensor(tensor)},
+            **extra,
+            "activations": activations,
             "activation_layers": layers,
             "activation_positions": positions,
             "capture_chunks": {str(i): records[i]["chunks"] for i in layers},
@@ -203,3 +361,4 @@ class MonitorLensExtension:
     def lens_clear(self, key: str) -> None:
         self._lens_buffers.pop(key, None)
         self._lens_vectors.pop(key, None)
+        getattr(self, "_lens_edits", {}).pop(key, None)

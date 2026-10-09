@@ -120,6 +120,7 @@ async def start(name: str) -> None:
         "src/gleipnir/serving/lens.py",
         "src/gleipnir/serving/lens_api.py",
         "src/gleipnir/serving/lens_worker.py",
+        "src/gleipnir/serving/lens_projection.py",
         "src/gleipnir/serving/bf16_worker.py",
     ):
         sources[filename] = file_hash(ROOT / filename)
@@ -140,6 +141,11 @@ async def start(name: str) -> None:
         shutil.copyfile(SERVING / "server.json", out / "terminated_pod_server.json")
         (SERVING / "server.json").unlink()
     command = lens_command(parent, config["model"])
+    binding_index = command.index("--additional-config") + 1
+    additional = json.loads(command[binding_index])
+    additional["gleipnir_frost_fp4"].update(sources)
+    command[binding_index] = json.dumps(additional, sort_keys=True)
+
     env = candidate_environment(ROOT)
     env["PYTHONPATH"] += ":" + str(OVERLAY)
     env.update(

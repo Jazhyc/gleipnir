@@ -6,13 +6,24 @@ import math
 from typing import Any, Literal
 
 import requests
-from pydantic import ConfigDict, Field, StrictInt, field_validator
+from pydantic import BaseModel, ConfigDict, Field, StrictInt, field_validator
 
 from gleipnir.serving.monitor_score import MonitorScoreRequest, validate_score_response
 
 ENDPOINT = "/v1/monitor/lens"
 KEY = "gleipnir_lens"
 MAX_CAPTURE_BYTES = 512 * 1024 * 1024
+
+
+class DirectionalEdit(BaseModel):
+    """A single unit residual direction, clamped at selected decoder layers."""
+
+    model_config = ConfigDict(extra="forbid")
+    direction: list[float]
+    layer_indices: list[StrictInt]
+    beta: float = 1.0
+    decision_centers: list[float]
+    span_centers: list[float]
 
 
 class LensScoreRequest(MonitorScoreRequest):
@@ -22,8 +33,11 @@ class LensScoreRequest(MonitorScoreRequest):
     capture_layers: list[StrictInt] = Field(default_factory=list)
     capture_positions: Literal["all", "last"] | list[StrictInt] = "last"
     steering_vectors: list[dict[str, Any]] = Field(default_factory=list)
+    directional_edits: list[DirectionalEdit] = Field(default_factory=list, max_length=1)
+    capture_span_positions: list[StrictInt] = Field(default_factory=list)
+    full_readout: bool = False
 
-    @field_validator("capture_layers", "capture_positions")
+    @field_validator("capture_layers", "capture_positions", "capture_span_positions")
     @classmethod
     def unique_nonnegative(cls, value):
         if isinstance(value, list) and (
@@ -50,6 +64,35 @@ def validate_intervention(
     n = tokens if positions == "all" else 1 if positions == "last" else len(positions)
     if len(request.capture_layers) * n * hidden * 2 > MAX_CAPTURE_BYTES:
         raise ValueError("capture exceeds 512 MiB; select fewer layers or positions")
+    if request.capture_span_positions and (
+        not request.capture_layers
+        or any(i >= tokens for i in request.capture_span_positions)
+    ):
+        raise ValueError("span capture requires valid positions and layers")
+    if request.full_readout and (
+        layers - 1 not in request.capture_layers or positions != "last"
+    ):
+        raise ValueError("full readout requires final-layer last-token capture")
+    if request.directional_edits and request.steering_vectors:
+        raise ValueError("composition of projection and addition is not supported")
+    for edit in request.directional_edits:
+        d = torch.tensor(edit.direction, dtype=torch.float32)
+        if (
+            d.shape != (hidden,)
+            or not bool(torch.isfinite(d).all())
+            or abs(float(d.norm()) - 1.0) > 1e-3
+            or not math.isfinite(edit.beta)
+            or not 0 <= edit.beta <= 1
+            or not edit.layer_indices
+            or len(set(edit.layer_indices)) != len(edit.layer_indices)
+            or any(not 0 <= i < layers for i in edit.layer_indices)
+            or len(edit.decision_centers) != layers
+            or len(edit.span_centers) != layers
+            or not all(
+                math.isfinite(c) for c in edit.decision_centers + edit.span_centers
+            )
+        ):
+            raise ValueError("invalid unit direction, clamp centers or beta")
     vectors = []
     allowed = {
         "activations",
@@ -109,6 +152,9 @@ class MonitorLensClient:
         capture_layers: list[int] | None = None,
         capture_positions: Literal["all", "last"] | list[int] = "last",
         steering_vectors: list | None = None,
+        directional_edits: list[dict] | None = None,
+        capture_span_positions: list[int] | None = None,
+        full_readout: bool = False,
     ) -> dict[str, Any]:
         """Score one prompt, optionally returning selected residual activations."""
         from vllm_lens._helpers._serialize import deserialize_tensor
@@ -118,6 +164,9 @@ class MonitorLensClient:
             model=model,
             capture_layers=capture_layers or [],
             capture_positions=capture_positions,
+            directional_edits=directional_edits or [],
+            capture_span_positions=capture_span_positions or [],
+            full_readout=full_readout,
             steering_vectors=[
                 v.model_dump(mode="json") for v in steering_vectors or []
             ],
