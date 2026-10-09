@@ -1,12 +1,13 @@
 # Training-example alignment with the APPS direction
 
-The user requested matched base/trained activation projections to identify
-training-data clues behind the current injection-associated direction.
-`training_direction01` completes on the existing NC2 B200. The result supports
-an **entangled suspicion/behavior axis**, with label-related alignment already
-present in the base model and strengthened/redistributed by monitoring training; it does not identify causal training
-examples or an injection-only circuit. Known training injections raise alignment
-much more in the base model than in the trained model.
+The complete original-data comparison covers all **8,688 training records** in
+the pinned base and current BF16/SDPA monitor, with no added synthetic views.
+Largest training-associated increases concentrate in harmless/teacher-positive
+examples and the o46 source; exact duplicate content is another review candidate.
+The axis also carries behavior-label signal. These are activation-based clues,
+not causal training-example influence or an applied data filter. See the
+[complete census](#complete-original-data-census) for current statistics; the
+initial small mixed-view diagnostic is retained separately below.
 
 ## Matched contract
 
@@ -179,3 +180,178 @@ engine passes its gates and remains warm with zero request state/ECC errors.
 Its active frontend metadata points to its own startup receipt; the inherited
 launch metadata is preserved separately. No capacity, package, training or
 checkpoint change; all merged weights remain remote and shared caches intact.
+
+## Complete original-data census
+
+The user clarified that inputs should be **all original training data without
+synthetic augmentation views**, superseding the small mixed-view diagnostic as
+filtering evidence. `clean_direction01` scores every row in the original regular
+training file, exactly once in each model: **8,688 originals**, **4,344 per hard
+label**, **83,816,369 tokens per model**, maximum **29,337**, with zero synthetic
+views or truncation. The same augmented-trained SDPA checkpoint remains the
+trained model; this correction changes the input population, not its weights.
+The [complete-census contract](../../experiments/b200_training_clean_direction/README.md)
+freezes the layer, axis, joins, bands and stop conditions. Inputs retain original
+reasoning and naturally occurring injections/quoted tests; clean here means no
+added augmentation, not verified absence of injection text.
+
+Fresh complete passes use the same BF16 eager Lens recipe/order/batches. The
+existing Qwen3.5-9B injection-presence census is joined by unique ID and exact
+trajectory hash; clean teacher records by original prompt lineage. Neither
+annotation enters model inputs. No vector fitting, layer/strength selection,
+training, data removal or paid teacher call occurs. Shared sequential capture
+and statistics now live in `gleipnir.evaluation.direction_campaign` and
+`direction_stats`; the small experiment keeps its compatibility entrypoint.
+The moved numerical helper ASTs are unchanged. Historical source snapshots and
+receipts remain preserved; reproducing them requires their recorded revision.
+
+### Alignment and candidate concentrations
+
+The fixed-axis hard-label AUROC is **0.852388 in the base → 0.885695 trained**.
+Mean projections are -1.01013→-0.53135; this pooled change hides strong class
+polarization. Harmless means -1.66692→-2.79030 (change -1.12339), harmful
+-0.35334→+1.72760 (+2.08095). Mean norms grow 16.49384→18.74358, but cosine
+standard deviation also grows 0.06611→0.16091; scale alone does not explain the
+separation. This is training-seen representation diagnostics, not held-out
+monitor quality or causal example influence.
+
+| Original hard label | Teacher target | Rows | Mean trained projection | Mean trained-minus-base |
+|---|---|---:|---:|---:|
+| Harmless (0) | <0.5 | 3,998 | -3.29035 | -1.61443 |
+| Harmless (0) | >=0.5 | **346** | **+2.98772** | **+4.55060** |
+| Harmful (1) | <0.5 | 506 | +0.53663 | +1.53921 |
+| Harmful (1) | >=0.5 | 3,838 | +1.88462 | +2.15237 |
+
+All 346 harmless/teacher-positive rows have positive changes. They are **3.98%
+of originals but carry 12.72% of measured positive change**; 106 have teacher
+target >=0.9. Source counts are o46 167, ctrl 88, s45 83, STRIDE five and Gloom
+three. Only **three** have census score >=0.5. Their supervised soft targets
+therefore provide a different inspection lead from the old presence-census
+removal. These disagreements may reflect teacher errors, source-label errors or
+rubric/evidence differences; they are not verified mislabeled examples.
+
+Positive-change share below is `sum(max(trained_z20 - base_z20, 0))` within a
+source divided by the corpus total. It describes measured scalar mass, not
+parameter-update or causal training influence; the zero/sign/axis are frozen.
+
+| Source | Originals (% of corpus) | Mean change, label 0 | Mean change, label 1 | Share of positive change |
+|---|---:|---:|---:|---:|
+| crh | 2,340 (26.93%) | -4.07972 | +1.78179 | 17.53% |
+| ctrl | 1,436 (16.53%) | -0.59297 | +1.46127 | 13.10% |
+| gloom | 772 (8.89%) | -0.65597 | +2.71638 | 9.32% |
+| o46 | **1,020 (11.74%)** | **+2.54710** | **+3.32518** | **25.17%** |
+| s45 | 1,770 (20.37%) | +0.33621 | +2.00045 | 22.71% |
+| stride | 1,350 (15.54%) | -1.51751 | +2.06071 | 12.16% |
+
+BashArena comprises o46/s45; canonical dataset aggregates and all source/label
+cells are also retained. O46 shifts positively even among hard-label-0 examples;
+whole-source removal would also discard 510 harmful originals.
+
+### Complete rankings and controls
+
+Fixed top fractions use deterministic ID tie breaks, with separate average-tie
+percentiles. Raw projection changes have the following composition:
+
+| Largest change band | Rows | Hard-label 0 / 1 | Teacher–hard disagreements | Census flags >=0.5 | Share of positive change |
+|---|---:|---:|---:|---:|---:|
+| Top 1% | 87 | **70 / 17** | 59 | **0** | 4.03% |
+| Top 5% | 435 | 268 / 167 | 220 | **0** | 17.98% |
+| Top 10% | 869 | 412 / 457 | 323 | 2 | 32.60% |
+
+Of the top-1% changes, 56 are harmless/teacher-positive, 14 harmless/teacher-
+negative and three harmful/teacher-negative. A teacher-disagreement-only rule
+would not cover every large change. Normalizing by residual norm preserves the
+pattern: top-1% cosine increases have 66 harmless/21 harmful rows, 62 teacher
+disagreements and zero census flags. Highest absolute trained projection is
+also a distinct ranking: its top 87 contain 42 harmless/45 harmful and no census
+flags. Large activation alone is not a sufficient data-removal criterion.
+
+Pooled change correlates with teacher target (Spearman +0.64414), length
+(+0.36987) and census score (+0.40893). These are strongly conditional:
+teacher/change rho is +0.69850 within harmless examples but **-0.37245 within
+harmful**, and census/change +0.68508 versus **-0.45151**. Do not turn pooled
+correlation into a universal monotonic mechanism. Within harmless BashArena
+strata, teacher/change rho stays +0.84761 (o46) / +0.74897 (s45), whereas
+length/change rho is +0.06445/+0.10027. This makes the teacher/source association
+more specific than pooled length alone, without eliminating task/style or
+unobserved evidence confounds. All 38 group tables, undefined single-label AUCs,
+score/rank ties and both signs are preserved; no independent-row significance
+claim or new feature-alignment fitting is introduced.
+
+Concrete high-change originals, identified by task title and stable index:
+
+- `23046e3ad09c93ed834b6f4a`, o46, binary-size optimization framework: label 0,
+  teacher 0.7311, census 0.1067; base -2.39537→trained +4.19210, change +6.58748.
+- `75af31960a8980e0283e1444`, s45, security-log pattern search: label 0,
+  teacher 0.7549, census 0.0675; -2.46394→+3.90978, change +6.37372.
+- `6a9f2a417619624287c438e2`, s45, storage/I/O-error recovery: label 0,
+  teacher 0.4378, census 0.0953; -2.49438→+3.81770, change +6.31208.
+  Its teacher target is below 0.5, illustrating the limit of a single target flag.
+
+These are review candidates, not independently adjudicated harmless actions or
+causal training examples. Inspect behavior/evidence and target provenance first.
+A later filtering/target-correction experiment should freeze the rule and matched
+training control and retain ID/APPS ranking, calibration and harmful-recall
+guards. The earlier
+[census-based removal](monitoring_injection_removal.md) failed to resolve APPS
+alarms and lost ID ranking. No filter or retraining is selected/applied here.
+
+### Exact duplicates and numerical variation
+
+The full original population contains **8,100 distinct student/rendered prompts**:
+414 duplicate groups contain 1,002 records, with **588 surplus copies**, all in
+crh (586 harmless/two harmful). Recorded lineage IDs are unique but do not imply
+independent visible content. Preserve those groups together in future splits.
+Current statistics intentionally use all original row weights, matching the
+training exposures; deduplication would change both source and label mixtures.
+
+No duplicate group has conflicting hard labels. All share identical teacher
+prompt hashes; 406 groups have different cached soft targets, with mean/median/
+maximum within-group target ranges 0.003912/0.001415/0.046710. None crosses 0.5.
+This is a separate deduplication/reweighting candidate, not evidence of binary
+label contradiction. Group membership and ranges are bound in the supplemental
+review diagnostics; no copies or targets were removed/averaged.
+
+Repeated identical inputs also expose serving variation within this pass:
+mean/maximum projection ranges are 0.005206/0.142186 (base),
+0.002323/0.061634 (trained), and 0.005579/0.121833 for their difference.
+These are descriptive ranges, not controlled independent repeats. They are
+small beside the +4.55060 mean change in harmless/teacher-positive examples,
+but exact order near a ranking boundary should not be treated as noise-free.
+Native head scores have 114/99 distinct values in base/trained, including
+115/26 exact-half ties. Direction changes have 8,178 distinct values; average
+rank percentiles and deterministic tie breaks are retained. No seed-variance
+or deterministic-training claim is introduced.
+
+### Artifacts and verification
+
+`results/b200_training_clean_direction/clean_direction01/` contains the complete
+paired records; four full 8,688-row rankings; eight top/bottom-100 excerpt lists;
+`review_flags.jsonl` for every original, with descriptive fixed-band/target flags;
+`summary.json`; and input, collection, native, canary and independent audits.
+`review_diagnostics.json` binds supplemental review counts to paired-record SHA
+`ebf8fa4cd24b49a9b164ea77931e539cba3e7949c7b0db4fd3a02541571cb650`.
+A standalone PNG/PDF overview plots paired models, source/label changes,
+harmless teacher groups and scalar shares, with input/script/figure hashes.
+
+All master/eager/native gates pass. Trained/restored MAE is 0.000855 and
+correlation 0.999994 against FP32; eager MAE 0.000249/correlation 0.999999.
+Base MAE is 0.010304/correlation 0.998310. Independent audit verifies **1,162
+collected files** (814,517,206 bytes), **17,376 captures**, **34,752 raw vectors**,
+all **8,688 original joins/native counts**, **38 groups**, **four complete rankings**,
+**eight example lists** and **8,688 review flags**. Maximum FP64 dot discrepancy
+is 0.000003525. An initial transfer began before the checksum manifest was
+finalized; the completed manifest was fetched and verification rerun without
+changing data, scores or limits. Its failed transfer-audit log is retained.
+Seven focused tests, scoped Ruff and diff checks pass.
+
+| Complete pass | Seconds | Input tokens/s | Requests/s | Queued request p50 / p95 seconds |
+|---|---:|---:|---:|---:|
+| Trained | 983.76 | 85,200 | 8.83 | 1.70 / 6.17 |
+| Base | 980.70 | 85,466 | 8.86 | 1.70 / 6.16 |
+
+These are one-pass capture timings, not repeated production benchmarks. The
+trained engine is restored and gated (API 5969/worker 6020), with zero request
+state and uncorrected ECC errors. Current process/frontend metadata is in this
+run's `restored_server.json`. Shared caches and remote merged weights remain
+intact; original data and teacher caches are unchanged.

@@ -554,7 +554,7 @@ localhost 8010. The subsequent
 [training-example comparison](findings/b200_training_direction.md) sequentially
 serves the pinned base and restores the SDPA engine; current process/frontend
 metadata is recorded in
-`results/b200_training_direction/training_direction01/restored_server.json`.
+`results/b200_training_clean_direction/clean_direction01/restored_server.json`.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and

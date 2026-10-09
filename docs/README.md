@@ -59,8 +59,9 @@
   transfer despite near-complete geometric removal; numeric-output follow-up
   shows prompt sensitivity and answer-0 bias without reliable projection benefit.
 - [Training-example direction alignment](findings/b200_training_direction.md):
-  matched base/SDPA captures reveal behavior/teacher associations, candidate
-  examples and weaker responses to known training injections; no causal attribution.
+  complete original-data base/SDPA census, source and teacher–label candidate
+  concentrations, full rankings and review flags; earlier small augmented-pair
+  diagnostic remains separate, with no causal attribution or applied filtering.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
