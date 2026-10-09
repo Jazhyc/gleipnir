@@ -121,6 +121,7 @@ async def start(name: str) -> None:
         "src/gleipnir/serving/lens_api.py",
         "src/gleipnir/serving/lens_worker.py",
         "src/gleipnir/serving/lens_projection.py",
+        "src/gleipnir/serving/lens_readout.py",
         "src/gleipnir/serving/bf16_worker.py",
     ):
         sources[filename] = file_hash(ROOT / filename)

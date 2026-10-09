@@ -13,6 +13,7 @@ from vllm_lens._worker_ext import _apply_steering, _discover_layer_modules
 
 from gleipnir.serving.lens import KEY
 from gleipnir.serving.lens_projection import apply_projection, apply_projection_batch
+from gleipnir.serving.lens_readout import judge_readout
 
 
 def residual_stream(output: Any) -> torch.Tensor:
@@ -350,6 +351,7 @@ class MonitorLensExtension:
                 extra["p01"] = float((answer.logsumexp(0) - logits.logsumexp(0)).exp())
                 extra["readout_logits"] = answer.cpu().tolist()
                 extra["readout_method"] = "exact_fused_final_norm_tied_full_embedding"
+                extra["judge_readout"] = judge_readout(logits, normalized, embedding)
         return {
             **extra,
             "activations": activations,

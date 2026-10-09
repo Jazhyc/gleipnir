@@ -1,0 +1,53 @@
+{
+  "campaign_id": "sdpa_judge_projection01",
+  "startup": "sdpa03_judge_projection",
+  "concurrency": 32,
+  "batch_rows": 128,
+  "timeout": 300,
+  "rows": 4188,
+  "tokens": 1521530,
+  "canary_rows": 30,
+  "inputs": {
+    "test": {
+      "path": "data/augmented_judge_evaluation/test.jsonl",
+      "sha256": "6e57d036ed0ab53346c6f4d1421d706bfbdb676248a0835a07d983d875622650"
+    },
+    "canary": {
+      "path": "data/augmented_judge_evaluation/canary.jsonl",
+      "sha256": "86fa25e8aa79182399b54469d7233cf2e054c8ae0b825a05419c9a3f034a305c"
+    },
+    "workload": {
+      "path": "data/b200-augmented-judge02/test_workload.jsonl",
+      "sha256": "8fd38074a190fad6a4c0c40a612319508b8186e4354441b2a5642cfa527adfcc"
+    },
+    "canary_workload": {
+      "path": "data/b200-augmented-judge02/canary_workload.jsonl",
+      "sha256": "5dfa1f328f834ed5ec9cbc8a67d3969e1f20c8bdc086552a0a6194d01688d438"
+    },
+    "projection": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/interventions.json",
+      "sha256": "e3f5a409dfe1f3854206b603d546f6a76a6983d35e138f4bb8bae1a81257f0e8"
+    },
+    "directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "fit": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/fit_receipt.json",
+      "sha256": "d8f496cf2c1971d9be5055dc12588e852aa7a012e62efff6c5908c898fe5708e"
+    },
+    "previous_canary": {
+      "path": "results/b200_sdpa_lens/sdpa02_projection/canary_predictions.json",
+      "sha256": "fa227000fcc484a7403984349ee517c37fa6ee02b65f413959aa98a272771ef7"
+    },
+    "tokenizer": {
+      "path": "data/judge_injection_continuation/tokenizer/tokenizer.json",
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    }
+  },
+  "head_parity": {
+    "max_mean_absolute_difference": 0.02,
+    "min_correlation": 0.99
+  },
+  "promote": false
+}
