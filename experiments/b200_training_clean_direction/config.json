@@ -1,0 +1,116 @@
+{
+  "campaign_id": "clean_direction01",
+  "concurrency": 16,
+  "batch_rows": 32,
+  "timeout_seconds": 600,
+  "tokenizer": "data/judge_injection_continuation/tokenizer",
+  "base_model": ".cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "trained_model": "/tmp/gleipnir-merged/historical-augmented-sdpa-replay02",
+  "base_files_sha256": {
+    "config.json": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+    "model.safetensors-00001-of-00002.safetensors": "26a93f066e1916adb13453dae5a0c707c0fbc71299ed98779571a907b8e74c61",
+    "model.safetensors-00002-of-00002.safetensors": "cb544bd9bfae93dc59b0f22b292f5933573854a7f9b97835c67060d7d910e188"
+  },
+  "runtime": {
+    "vllm": "0.31.0",
+    "torch": "2.13.0",
+    "triton": "3.7.1",
+    "transformers": "5.14.1",
+    "flashinfer-python": "0.7.0.post1"
+  },
+  "gpu_uuid": "GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9",
+  "inputs": {
+    "clean": {
+      "path": "data/student_injection_awareness/regular/student_rows.jsonl",
+      "sha256": "9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27"
+    },
+    "teacher": {
+      "path": "data/student_injection_awareness/soft_targets.jsonl",
+      "sha256": "1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a"
+    },
+    "parent_closure": {
+      "path": "results/b200_training_direction/training_direction01/closure_health.json",
+      "sha256": "970d3e81ec670278d103139c63eb73dcde40aa8bef299c1244c8f0c164ca147b"
+    },
+    "merged_artifact": {
+      "path": "results/b200-augmented-sdpa-replay02/merged_artifact.json",
+      "sha256": "a7a9f8f5deddf6bf5d5aa4289a987641b3ecbc4b5e9d17baa9a750e533b49491"
+    },
+    "merge_parity": {
+      "path": "results/b200-augmented-sdpa-replay02/merged_parity.json",
+      "sha256": "e9f5c0627ab2d8ce3ef5ac723526cc483e27d2e9e63d59b53304b449506edb2c"
+    },
+    "adapter_complete": {
+      "path": "results/b200-augmented-sdpa-replay02/4b/monitor/complete.json",
+      "sha256": "3d788ff15e4ec4408eccd0212156b325d605f2882aadbbbe13f1a2eeb0ce00fd"
+    },
+    "master_reference": {
+      "path": "results/b200-augmented-sdpa-replay02/4b/monitor/parity_reference.json",
+      "sha256": "1f60fd51cd6917ee59c932d97cbee11bfe82989b872f512cec288e9d05c1f90a"
+    },
+    "canary": {
+      "path": "results/b200-augmented-sdpa-replay02/canary_workload.jsonl",
+      "sha256": "00c6e27d406dfcad989a46f9d9449ae72c048c592c6a98d18c723ecbd9e01a70"
+    },
+    "directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "previous_scores": {
+      "path": "results/b200_sdpa_lens/sdpa03_judge_projection/canary_predictions.json",
+      "sha256": "e44fbd3fddc5741fd442ee1e30bda05e840b7aa56cc3ee141d664b4dbc8c2585"
+    },
+    "tokenizer_tokenizer.json": {
+      "path": "data/judge_injection_continuation/tokenizer/tokenizer.json",
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    },
+    "tokenizer_tokenizer_config.json": {
+      "path": "data/judge_injection_continuation/tokenizer/tokenizer_config.json",
+      "sha256": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8"
+    },
+    "tokenizer_chat_template.jinja": {
+      "path": "data/judge_injection_continuation/tokenizer/chat_template.jinja",
+      "sha256": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715"
+    },
+    "parent_server": {
+      "path": "results/b200_training_direction/training_direction01/restored_server.json",
+      "sha256": "3901e971195f8e73946436d0f6ca951b9a968e186014f13d7eafab4dc36eced1"
+    },
+    "census": {
+      "path": "results/training_injection_census/qwen35_9b_v1/predictions.jsonl",
+      "sha256": "630591f3cb53eea9cb4c8c9e29303ca7047b6f005cef1e258c24f69094d5bfe5"
+    }
+  },
+  "parity": {
+    "max_mean_absolute_difference": 0.02,
+    "min_correlation": 0.99,
+    "min_adapter_effect": 1e-06
+  },
+  "promote": false,
+  "population": "original_clean_all",
+  "artifact_root": "results/b200_training_clean_direction",
+  "log_root": "logs/runpod/b200_training_clean_direction",
+  "effective_tokenizer_sha256": "ffb7a28b27dabcc333662fd3e0b0005d9e79a1c22e31453ab5a3017fbd5f25c0",
+  "teacher_bins": [
+    0,
+    0.1,
+    0.5,
+    0.9,
+    1
+  ],
+  "rank_fractions": [
+    0.01,
+    0.05,
+    0.1
+  ],
+  "excerpt_rows": 100,
+  "excerpt_terms": [
+    "ignore",
+    "reviewer",
+    "deceiv",
+    "secret",
+    "conceal",
+    "Prediction:",
+    "malicious"
+  ]
+}
