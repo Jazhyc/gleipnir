@@ -363,3 +363,30 @@ def test_diagnostic_preserves_failed_mae_and_rejects_nonfinite_or_ranking_drift(
         broken["versus_merged_bf16"][key] = value
         with pytest.raises(ValueError, match="agreement failed"):
             require_evaluation_gate(broken, diagnostic=True)
+
+
+def test_correlation_exception_still_requires_diagnostic_finite_and_effect(campaign):
+    from gleipnir.campaigns.monitoring.evaluation import require_evaluation_gate
+
+    failed = agreement(
+        [0.13, 0.23, 0.83, 0.93],
+        [0.1, 0.2, 0.8, 0.9],
+        [0.4] * 4,
+        campaign.config["parity"],
+    )
+    failed["correlation"] = 0.973
+    gate = {**failed, "versus_merged_bf16": dict(failed)}
+    require_evaluation_gate(gate, diagnostic=True, allow_correlation_drift=True)
+    assert not gate["passed"]
+    with pytest.raises(ValueError, match="agreement failed"):
+        require_evaluation_gate(gate, diagnostic=False, allow_correlation_drift=True)
+    for key, value in [
+        ("finite", False), ("correlation", None), ("correlation", float("nan")),
+        ("adapter_effect", 0),
+    ]:
+        broken = copy.deepcopy(gate)
+        broken["versus_merged_bf16"][key] = value
+        with pytest.raises(ValueError, match="agreement failed"):
+            require_evaluation_gate(
+                broken, diagnostic=True, allow_correlation_drift=True
+            )

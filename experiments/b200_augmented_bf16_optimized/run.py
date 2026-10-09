@@ -12,7 +12,7 @@ from pathlib import Path
 
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.campaigns.monitoring.evaluation import optimized
-from gleipnir.data.monitoring import write_json
+from gleipnir.data.monitoring import file_hash, write_json
 
 ROOT = Path(__file__).resolve().parents[2]
 CONFIG = Path(__file__).with_name("config.yaml")
@@ -42,6 +42,22 @@ def main() -> None:
             if path.exists() and path.read_bytes() != contents:
                 raise ValueError("prepared optimized reference changed")
             path.write_bytes(contents)
+        if "original_failed_gate" in ctx.config["inputs"]:
+            if not ctx.config["evaluation"].get("failed_parity_diagnostic", False):
+                raise ValueError("failed gate reuse requires explicit diagnostic scope")
+            write_json(
+                ctx.output / "authorization.json",
+                {
+                    "instruction": ctx.config["diagnostic_authorization"],
+                    "scope": "same historical adapter, optimized ID only; no promotion",
+                    "allow_correlation_drift": ctx.config["evaluation"].get(
+                        "allow_correlation_drift", False
+                    ),
+                    "original_failed_gate_sha256": file_hash(
+                        ctx.input("original_failed_gate")
+                    ),
+                },
+            )
         print("optimized_followup_prepared", flush=True)
         return
     ctx = Completed(ctx.root, ctx.config_path, ctx.config, ctx.source_root)

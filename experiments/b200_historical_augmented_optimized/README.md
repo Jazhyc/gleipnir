@@ -43,3 +43,13 @@ experiments/b200_historical_augmented_optimized/config.yaml --stage prepare`,
 then `--stage score` in the selected 0.31 runtime wrapper. Artifacts use
 `b200-historical-augmented-optimized-id01` under data/results/logs. Historical
 BF16 controls and adapter files remain intact.
+
+After the original canary failed at MAE 0.051628/correlation 0.973095, the user
+explicitly authorized both violations for ID-only diagnostic scoring. Keep the
+original contract/receipt intact; use `diagnostic_config.yaml` through the same
+prepare/score entrypoint, writing separate
+`b200-historical-augmented-optimized-diagnostic01` artifacts. Pin the original
+failed gate and preserve strict limits in all new receipts. The separate
+`allow_correlation_drift` exception applies only with diagnostic scope; finite
+scores/correlation, adapter effect, native audits and exact identities remain
+mandatory. This permits measurement, not checkpoint or recipe promotion.

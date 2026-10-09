@@ -18,6 +18,7 @@ def test_explicit_config_freezes_existing_merge_references(tmp_path, monkeypatch
         sources[name].write_bytes(name.encode())
     selected = []
     ctx = SimpleNamespace(
+        config={"inputs": {}},
         output=output,
         prepare=lambda: selected.append("prepared"),
         input=lambda name: sources[name],
