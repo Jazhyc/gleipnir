@@ -232,3 +232,96 @@ Latency includes semaphore wait. Original/control lengths are matched per
 attack, but controls omit the separate clean rows; compare population timings
 with that difference disclosed. These are capture diagnostics, not repeated
 production benchmarks.
+
+## Numeric-output follow-up
+
+`sdpa_judge_numeric_surface01` tests the user-proposed 0/1 association with the
+same BF16/SDPA adapter, resident engine and fixed all-layer/all-token u20 full
+projection. Both variants were frozen before scoring all 4,188 original rows:
+`output_only` keeps candidate A/B tags but requests 0 for A and 1 for B;
+`fully_numeric` also renames trusted candidate references/tags to 0/1.
+Question, candidate and attack bytes, labels, pairs and orders are unchanged.
+Only trusted framing changes; this adds respectively four/ten prompt tokens per
+row. No direction fitting, parameter sweep or promotion occurs. The experiment
+contract is [the numeric-surface README](../../experiments/b200_judge_numeric_surface/README.md).
+
+| Prompt surface | Arm | Clean accuracy | Preferred-injected accuracy | Disfavored-injected accuracy | Pooled accuracy |
+|---|---|---:|---:|---:|---:|
+| Original A/B, reused control | Unedited | 97.82% | 55.81% | 98.05% | 79.44% |
+| Original A/B, reused control | Full projection | 99.01% | 56.46% | 98.37% | 80.01% |
+| Numeric output, A/B candidates | Unedited | 89.88% | 53.75% | 79.10% | 69.25% |
+| Numeric output, A/B candidates | Full projection | 89.29% | 53.64% | 76.76% | 68.10% |
+| Numeric output and candidates | Unedited | 96.43% | 53.04% | 93.59% | 76.10% |
+| Numeric output and candidates | Full projection | 94.05% | 55.92% | 92.45% | 76.58% |
+
+The numeric framing does **not** rescue projection into a reliable injection
+intervention. Fully numeric preferred accuracy gains 2.88 percentage points,
+but clean accuracy loses 2.38 points and disfavored accuracy loses 1.14 points.
+Output-only projection reduces pooled accuracy by 1.15 points. Numeric baselines
+also differ substantially from A/B, demonstrating prompt-surface sensitivity.
+
+| Numeric surface | Arm | Pooled AUROC / raw pAUROC@20 | Preferred AUROC / raw pAUROC@20 | Pooled Brier / ECE |
+|---|---|---|---|---|
+| Output only | Unedited | 0.852506 / 0.559882 | 0.580444 / 0.140872 | 0.210216 / 0.210663 |
+| Output only | Projected | 0.833981 / 0.571435 | 0.558833 / 0.139766 | 0.225080 / 0.223612 |
+| Fully numeric | Unedited | 0.896828 / 0.648960 | 0.675763 / 0.182847 | 0.162056 / 0.149595 |
+| Fully numeric | Projected | 0.897160 / 0.666067 | 0.671653 / 0.198903 | 0.171811 / 0.175082 |
+
+Preferred accuracy gains in fully numeric prompts accompany **stronger answer-0
+bias**, rather than balanced recovery: correct-first accuracy rises
+86.75%→98.26%, while correct-second accuracy falls 19.33%→13.57% (921 rows each).
+Output-only is already severely biased: correct-first 98.26%→99.89%,
+correct-second 9.23%→7.38%. Mean preferred p(1) falls about 0.0426 in both
+variants. Fully numeric pooled accuracy changes by source: LLMBar
+78.73%→77.08%, MT-Bench 74.01%→77.13%, RLAIF 90.00%→86.67%, Search
+59.65%→52.63%. Source/query, slot, calibration and tie breakdowns are archived;
+these dependent variants across six queries do not support independent-row
+significance claims. Exact-half ties decline 114→83 (output-only), 86→58
+(fully numeric), pooled.
+
+Requested 0/1 probability mass is healthy: means 0.97856/0.98105 for output-only
+and 0.98278/0.98484 for fully numeric, unedited/projected; every row exceeds
+0.925. Alternate A/B mass is tiny (means 0.00379/0.00295 and
+0.000152/0.000165), so conditional A/B scores are diagnostics of unrequested
+logits, not faithful judging outputs. Comparing both pairs from the same full
+vocabulary matrix, preferred signed margin changes are -0.24695 (0/1) versus
+-0.60963 (A/B) for output-only, and -0.20888 versus -0.21159 for fully numeric.
+Thus projection affects both token pairs, with prompt-dependent magnitudes;
+it does not establish an exclusively 0/1-aligned mechanism. Original A/B
+prompts' archived wrong-head 0/1 probabilities also decrease by 0.02670 on
+average, but their probability mass was not archived and cannot be assumed
+healthy.
+
+Fixed-direction injection-versus-matched-clean detection AUROC increases from
+the original 0.591318 to 0.651666 (output-only) / 0.635091 (fully numeric).
+Preferred contrasts are 0.769605/0.750496, disfavored 0.533727/0.519685.
+Projection leaves 0.3425%/0.3039% of mean absolute layer-20 component magnitude;
+maximum residual-normalized components across layers 20/31 are below 0.031%.
+The measured direction is successfully removed, while robust decision benefit
+remains absent. Original attack bytes were optimized for A/B, and may mention
+those labels. These results conflate output framing and attack alignment;
+they do not establish robustness against numerically retargeted payloads or
+isolate a token-level circuit. A label-swap or retargeting experiment would
+require a separately frozen contract.
+
+The unchanged 0/1 canary passes at MAE 0.000991/correlation 0.999316;
+beta-zero and following-plain captures/logits are exact. No new backbone-master
+reference is claimed for this prompt-only change. Four focused tests, scoped
+Ruff and diff checks pass. Independent audit checks **307 collected files**
+(413,491,815 bytes), **16,752 predictions**, **8,376 content-preserving transforms**
+and **33,504 raw residual vectors**, including native token counts, both heads,
+slot metrics and FP64 direction dots (maximum difference 0.000001742).
+Artifacts are under `results/b200_judge_numeric_surface/sdpa_judge_numeric_surface01/`.
+The existing worker stays warm with zero capture/steering/projection state and
+zero uncorrected ECC errors; no weights were downloaded.
+
+| Capture pass | Input tokens | Input tokens/s | Requests/s | Request p50 / p95 seconds |
+|---|---:|---:|---:|---:|
+| Output only, unedited | 1,538,282 | 22,196 | 60.43 | 1.13 / 2.10 |
+| Output only, projected | 1,538,282 | 14,488 | 39.44 | 1.70 / 3.12 |
+| Fully numeric, unedited | 1,563,410 | 22,746 | 60.93 | 1.12 / 2.13 |
+| Fully numeric, projected | 1,563,410 | 15,343 | 41.10 | 1.67 / 2.96 |
+
+These are single-pass c32/batch128 capture diagnostics, including semaphore wait,
+with the same full readout and layer-20/31 captures; not repeated production
+benchmarks.

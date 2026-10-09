@@ -56,7 +56,8 @@
   unchanged APPS direction in original A/B judging, small mixed accuracy gains,
   calibration regression and matched readout/identity checks; fixed-direction
   captures and equal-length benign controls show partial, heterogeneous signal
-  transfer despite near-complete geometric removal.
+  transfer despite near-complete geometric removal; numeric-output follow-up
+  shows prompt sensitivity and answer-0 bias without reliable projection benefit.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
