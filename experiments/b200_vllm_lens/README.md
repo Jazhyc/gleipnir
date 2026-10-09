@@ -96,3 +96,9 @@ experiments/b200_vllm_lens/test_lens.py`. The main benchmark also checks the
 public client, all-token capture, GPU norm matching and real disconnect cleanup.
 Export tables and standalone figures with `python -m
 experiments.b200_vllm_lens.summarize results/b200_vllm_lens/<run>`.
+
+For the current SDPA-trained augmented adapter, use the separate
+[BF16 Lens restoration contract](../b200_sdpa_lens/README.md) and its startup
+entrypoint. It binds that adapter's master/merge/canary controls and preserves
+unquantized BF16 eager serving; the selected-backbone command above targets
+the regular optimized adapter.

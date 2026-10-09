@@ -533,10 +533,22 @@ cuDNN package 9.13.0.50; custom Torch 2.11 training and Torch 2.13/vLLM 0.31
 serving runtimes are absent from `/tmp`, as expected after termination.
 Both runtime/source archives and durable caches remain on the mounted volume.
 No restoration, server launch or experiment occurs during this inspection.
-Direct SSH refuses connections; the account SSH proxy works. Use the refreshed
+At inspection, direct SSH refused connections; the account SSH proxy worked.
+Use the refreshed
 sanitized alias `.runpod/sdpa-interventions.json` after enabling direct SSH for
 scripted access. The comparison receipt is
 `results/b200_provisioning/20261009_resume/environment_comparison.json`.
+
+The user subsequently authorized restoring Lens. Direct SSH is now enabled
+without a container restart. The checksum-identical SDPA merge and pinned
+vLLM 0.31/Torch 2.13/Lens 1.3.0 serving environment are restored; the training
+runtime remains archived. The
+[BF16 eager SDPA Lens baseline](findings/b200_vllm_lens.md#restored-bf16-lens-baseline-for-the-sdpa-adapter)
+passes master/native/functional checks and stays warm at localhost 8010, API
+1335/worker 1389. Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
+with the SSH helper. Restore and startup receipts use
+`results/b200_provisioning/20261009_lens_restore/` and
+`results/b200_sdpa_lens/sdpa01/`. No dependency upgrade or new capacity.
 
 ## OpenRouter
 

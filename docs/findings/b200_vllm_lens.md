@@ -120,5 +120,49 @@ activation-capture/steering integration to study prompt-injection responses.
 Freeze the intervention/selection contract and establish the matched plain
 research-serving baseline before attributing effects to steering. The current
 SDPA/FA4 comparisons do not resolve training nondeterminism; the user deferred
-that investigation. This records the next task, with no intervention run or
-replacement capacity launched today.
+that investigation. The restoration below establishes the runnable baseline;
+no learned-direction study or replacement capacity is launched.
+
+## Restored BF16 Lens baseline for the SDPA adapter
+
+On user-reserved NC2 Pod `64h2ad4w3nfq2q`, restore the checksum-verified vLLM
+0.31/Torch 2.13 serving runtime, Lens 1.3.0/native overlays and SDPA merged
+checkpoint from the retained volume. No package installation or new merge is
+needed. The training runtime remains archived. Direct SSH is enabled through
+the account proxy without restarting the container. The physical GPU, driver
+and cgroup limits match the prior NC2 Pod.
+
+`b200_sdpa_lens/sdpa01` launches the same adapter-specific unquantized BF16
+command, adding eager execution and request-scoped Lens hooks. Production
+selection remains unchanged. Startup takes 54.26 seconds, excluding archive
+restoration and prelaunch identity checks. Its 20-row master canary passes at
+MAE **0.000706**/correlation **0.999995**, maximum drift 0.004761 and adapter
+effect 0.897826. Against the same adapter's compiled BF16 canary, MAE is
+0.002009/correlation 0.999883, maximum drift 0.031209. This bounded gate is
+not a full ID/APPS eager quality evaluation. Reuse the existing merge/master
+receipt because every restored merge file is identical.
+
+Native audits verify all BF16 projections, eight actual causal BF16 attention
+calls and cached BF16 head rows 15/16. No-op capture/zero steering are exact;
+nonzero final-token steering changes logits by -0.5/-0.25 and the next plain
+request is restored exactly. Mixed-request plain score drift is zero. Six of
+eight 28,733-token concurrent requests exercise chunked capture. Absolute
+position isolation and invalid-position rejection pass. The public client
+verifies all-token shape `[2,270,2560]`, full/last equality, norm-matched
+relative addition 0.099990 for requested scale 0.1 and disconnect cleanup.
+Capture and steering request counts are both zero at closure.
+
+Thirty-one local campaign/startup tests and fifteen tests in the restored
+Lens runtime pass; fourteen inherited Torch deprecation warnings remain in
+the remote log. An initial test-helper JSON-index error is corrected and its
+failed log retained; no server failure occurs. Independent verification
+recomputes canary identity/logits/sigmoid/parity, validates native/smoke/client
+receipts and checks 29 collected files, eight executed/current sources and
+eight pinned inputs. The passing scorer remains warm: API 1335, worker 1389,
+localhost port 8010, zero ECC errors. Merged weights stay on the B200.
+
+The [restoration contract](../../experiments/b200_sdpa_lens/README.md),
+`results/b200_sdpa_lens/sdpa01/` and `completion_audit.json` retain provenance.
+The shared functional smoke accepts this adapter's prevalidated canary rather
+than comparing its scores with the regular adapter's canary. No full quality
+benchmark, intervention selection or determinism study occurs.
