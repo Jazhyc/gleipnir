@@ -1,0 +1,139 @@
+campaign_id: activation-filter-ranked20-sdpa01
+seed: 0
+profile: qwen35_4b_b200_packed_sdpa
+training_rows: 7819
+injected_rows: 3113
+expected_steps: 245
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 67537527
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  training:
+    path: data/activation-filter-ranked20-sdpa01/training.jsonl
+    sha256: 4cbdc98e142c1ef58307f64715de1985bb6ecc0ae05ebf0a701610f875008651
+  ledger:
+    path: data/activation-filter-ranked20-sdpa01/ledger.jsonl
+    sha256: 279260a20030735274e6a8ef62cbb254edbccb32a4bbdb588ecd71c1be365d53
+  clean_training:
+    path: data/activation-filter-ranked20-sdpa01/clean_training.jsonl
+    sha256: 0b3405c25fb2d70931998832657c357561a9453442026637321271cb5e6989e6
+  teacher:
+    path: data/activation-filter-ranked20-sdpa01/teacher.jsonl
+    sha256: e0c77bcb3bd093f0c83155ecddff86b87323e8b35899ee7ef07856a4aaae7e75
+  templates:
+    path: experiments/monitor_injection_augmentation/templates.json
+    sha256: 42b02227febfa4b03092a07e6ab4c199830468c62cf9198bee22097b86202226
+  token_audit:
+    path: data/activation-filter-ranked20-sdpa01/token_audit.json
+    sha256: 903b555880567fb55072bd4b3c0a6c4eb1cffb1c8c8c0621583cbe52e3f87ac3
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  benchmark:
+    path: data/monitoring_injection_disentanglement/benchmark/neutral.jsonl
+    sha256: e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866
+  honest_controls:
+    path: data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl
+    sha256: 5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b
+  benchmark_workload:
+    path: results/b200_apps/apps02/benchmark_workload.jsonl
+    sha256: 9f04352d1bd7a7e4d698bec60592b5625d8190d48c900c15a301f4e9e8edc478
+  honest_controls_workload:
+    path: results/b200_apps/apps02/honest_controls_workload.jsonl
+    sha256: b48cbac4b4465cbd5bb77d1c68b72d4599f0bc415e382320107df87bc7587f8d
+  startup_reference:
+    path: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+    sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  baseline_id:
+    path: results/b200-augmented-sdpa-replay02/evaluation/id.jsonl
+    sha256: a0ae9ff38ba54bb01af3a37bee415c0d014de35f6595cdb94c1461018c76aace
+  baseline_apps:
+    path: results/b200-augmented-sdpa-apps01/summary.json
+    sha256: aa643ad3af8f5d755111d6a656b73e9409dd88efc321f3bfc64cd40f77f3eea9
+  activation_census:
+    path: results/b200_training_clean_direction/clean_direction01/paired_models.jsonl
+    sha256: ebf8fa4cd24b49a9b164ea77931e539cba3e7949c7b0db4fd3a02541571cb650
+  exclusions:
+    path: data/activation-filter-ranked20-sdpa01/exclusions.json
+    sha256: d30bdc5718a42713de20ccb1fc29431fe3a6d30b98a6ec83d12e1dccf30b57cd
+  direction_partition:
+    path: results/b200_injection_direction/sdpa_injection_direction01/partition.json
+    sha256: 61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+    benchmark: 5184
+    honest_controls: 3930
+  serving_precision: bf16
+  failed_parity_diagnostic: false
+merged_model: /tmp/gleipnir-merged/activation-filter-ranked20-sdpa01
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9
+hypothesis: Activation-ranked removal reduces injected-honest false alarms relative
+  to matched random removal; failure is diagnostic.
+intervention: Remove 869 harmless originals using ranked selection; retain all remaining
+  targets and views.
+selection: Fixed final one-epoch checkpoint, fraction 0.20 frozen before ID/APPS;
+  no tuning or promotion.
+stop_condition: Stop on contract/runtime/source drift, nonfinite/missing gradients,
+  OOM, new-adapter parity/native failure, incomplete coverage or completion.
+augmentation_audit: true
+evaluations:
+- id
+- apps
+baselines:
+  unfiltered_sdpa_id:
+    kind: id
+    input: baseline_id
+    qualification: Existing same-host seed-0 BF16/SDPA replay, same initializer and
+      BF16 serving; data/exposure/schedule and unresolved execution variance differ.
+  unfiltered_sdpa_apps:
+    kind: apps
+    input: baseline_apps
+    keys:
+    - evaluations
+    - apps
+    qualification: Existing same SDPA checkpoint on current BF16 backend and frozen
+      APPS populations; filtered training changes exposure/schedule.
+extra_sources:
+- experiments/activation_filter_training/README.md
+- experiments/activation_filter_training/prepare.py
+- experiments/activation_filter_training/run.py
+- experiments/activation_filter_training/test_contract.py
+- experiments/activation_filter_training/analyze.py
