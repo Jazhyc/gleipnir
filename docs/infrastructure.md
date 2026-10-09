@@ -541,8 +541,7 @@ scripted access. The comparison receipt is
 
 The user subsequently authorized restoring Lens. Direct SSH is now enabled
 without a container restart. The checksum-identical SDPA merge and pinned
-vLLM 0.31/Torch 2.13/Lens 1.3.0 serving environment are restored; the training
-runtime remains archived. The
+vLLM 0.31/Torch 2.13/Lens 1.3.0 serving environment are restored. The
 [BF16 eager SDPA Lens baseline](findings/b200_vllm_lens.md#restored-bf16-lens-baseline-for-the-sdpa-adapter)
 passes master/native/functional checks. Its original process was retired
 sequentially for the request-local clamp/span/readout extension; the updated
@@ -556,8 +555,14 @@ metadata is recorded in
 `results/b200_training_clean_direction/clean_direction01/restored_server.json`.
 The later [firewall census](findings/training_firewall_census.md) retires this
 Lens engine sequentially for unadapted 9B scoring, then exits cleanly. The GPU
-is available, with merged checkpoint and compiler caches preserved; capacity
-remains running. The retirement receipt is
+returns to idle, with merged checkpoint and compiler caches preserved. The
+subsequent [activation-filter training comparison](findings/activation_filter_training.md)
+restores the checksum-bound Torch 2.11 training runtime and completes both
+BF16/SDPA training and BF16 ID/APPS evaluations. FP32 masters stay on the volume;
+both new merges stay under `/tmp/gleipnir-merged/`. The matched-control BF16 server
+is left warm on port 8010, recorded in
+`results/activation-filter-matched20-sdpa01/server.json`; Lens requires a sequential
+restart. Capacity remains running. The earlier Lens retirement receipt is
 `results/b200_vllm031/firewall_census01_before_qwen9b_retired.json`.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use

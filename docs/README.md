@@ -65,6 +65,9 @@
 - [Firewall-content census](findings/training_firewall_census.md): full 9B logit
   screen, source/teacher-conditioned associations, classifier misses and
   inspected high-change counterexamples without firewall content.
+- [Activation-ranked training removal](findings/activation_filter_training.md):
+  top-20% harmless removal and matched random control improve ID but worsen
+  held-out APPS injection discrimination; single-seed failed mitigation.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
