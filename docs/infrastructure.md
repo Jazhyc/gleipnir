@@ -437,6 +437,34 @@ FA4 repeat
 reuses its original scores; historical BF16/optimized diagnostic controls are
 preserved. The selected regular checkpoint remains unchanged. Check live
 processes and receipts before reuse.
+A sanitized live environment snapshot is saved under
+`results/b200_environment/20261009_nc2/`, with checksums, package inventories,
+loaded module paths, allowlisted process/runtime settings, mounts, Torch build
+information and the completed SDPA training/native/parity receipts. The host
+runs Ubuntu 24.04.4/kernel 6.8.0-142-generic on Xeon Platinum 8568Y+;
+the container sees 192 host threads but has a 20.4-CPU cgroup quota and
+233.76 GiB memory limit. Measured GPU memory is 183,359 MiB (SM 10.0), driver
+595.91.07, 1,000 W power limit, with CUDA toolkit 13.0.88. The retained network
+volume is 300 GB; `df` reports the shared filesystem's capacity, not its quota.
+The container root is 50 GB and `/dev/shm` is 117 GB.
+
+| Runtime | Python | Torch | Transformers | Triton | vLLM | FlashInfer | Loaded cuDNN |
+|---|---|---|---|---|---|---|---|
+| Training/reference | 3.12.3 | 2.11.0+cu130 | 5.14.1 | 3.7.1 overlay | 0.24.0 retained | 0.6.12 | 9.19.0 |
+| Current serving | 3.12.3 | 2.13.0+cu130 | 5.14.1 | 3.7.1 | 0.31.0 | 0.7.0.post1 | 9.26.0 |
+
+Training retains FLA 0.5.2, causal-conv1d 1.6.2.post1, FlashQLA
+0.1.3+da06429 and FA4 4.0.0b33 overlays; the completed replay uses SDPA full
+attention and BF16 MLPs. Shared training caches resolve to the preserved
+`student_injection_awareness` tree; serving additionally uses its persistent
+vLLM/FlashInfer/cuDNN caches. The serving snapshot includes the exact live
+command and model identity: compiled BF16, FlashInfer attention/GDN, causal LAST
+cached 0/1 head, context/token budget 32,768, max sequences 128, prefix cache
+off, chunked prefill on and the corrected synchronous pooling scheduler.
+Loaded library versions and executed training metadata take precedence over
+package inventory or fresh-process Torch defaults when reproducing a run.
+No secrets, model weights or full process environments are collected.
+
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
