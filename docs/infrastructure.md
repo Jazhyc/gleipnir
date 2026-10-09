@@ -518,6 +518,26 @@ the current SDPA-trained adapter's prompt-injection responses. Training
 determinism investigation is deferred at the user's request; it remains
 unresolved. This records the next task without authorizing new capacity today.
 
+### User-reserved NC2 B200 checked, 2026-10-09
+
+The user reserved Pod `64h2ad4w3nfq2q` (`probable_ivory_skunk`) after the
+catalog reported no B200 stock. A live read confirms RUNNING in US-NC-2, using
+same template `a9dk3g7cny`, CUDA-13 image and network volume `ixbh81vf9c`.
+Proxy SSH verifies the **same physical GPU UUID** as the terminated Pod,
+`GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9`, with unchanged driver 595.91.07,
+183,359 MiB VRAM, 1,000 W limit, kernel 6.8.0-142-generic, 20.4-CPU quota and
+233.76 GiB RAM limit; zero uncorrected volatile ECC errors.
+
+The fresh container has Python 3.12.3, base Torch 2.9.1+cu130/Triton 3.5.1 and
+cuDNN package 9.13.0.50; custom Torch 2.11 training and Torch 2.13/vLLM 0.31
+serving runtimes are absent from `/tmp`, as expected after termination.
+Both runtime/source archives and durable caches remain on the mounted volume.
+No restoration, server launch or experiment occurs during this inspection.
+Direct SSH refuses connections; the account SSH proxy works. Use the refreshed
+sanitized alias `.runpod/sdpa-interventions.json` after enabling direct SSH for
+scripted access. The comparison receipt is
+`results/b200_provisioning/20261009_resume/environment_comparison.json`.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
