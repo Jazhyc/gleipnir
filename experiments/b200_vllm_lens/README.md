@@ -83,11 +83,22 @@ steered = client.score(rendered_prompt, steering_vectors=[vector])
 
 `POST /v1/monitor/lens` accepts the ordinary model/prompt plus `capture_layers`,
 `capture_positions` (default `last`) and JSON-serialized `steering_vectors`.
+It also supports one activation-dependent `directional_edits` entry and
+`capture_span_positions`; their geometry/centering contract is in the
+[projection experiment](../b200_injection_direction/README.md).
 The response includes ordinary scores, activation layer/position metadata and
 Lens's compressed tensor wire format. The client decodes tensors automatically.
 `GET /v1/monitor/lens/info` reports the supported shape and request-state counts.
 Default capture storage is bounded to 512 MiB per request; select fewer layers
 or positions for long prompts.
+
+With `full_readout=True`, capture the final layer at `last`. The response adds
+exact fused-normalization full-vocabulary `readout_logits`/`p01` for 0/1,
+plus `judge_readout` for A/B token IDs 32/33: logits, probability mass and a
+same-hidden FP32 selected-row head check. The ordinary `score` remains
+p(1 | 0/1); derive p(B | A/B) from the auxiliary logit difference for the
+[preference task](../b200_projection_judge/README.md). This is a readout
+diagnostic, not a whole-backbone master reference or generation API.
 
 Run the eight CPU contract tests in the optional overlay environment with
 `VLLM_LENS_DISABLE=1 PYTHONPATH=/tmp/gleipnir-vllm-lens-1.3.0:src:.

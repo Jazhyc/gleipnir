@@ -52,6 +52,9 @@
 - [SDPA injection-direction results](findings/b200_injection_direction.md):
   completed clamp/projection/random and additive controls, APPS false-alarm/
   recall tradeoffs, ID guard, grouped uncertainty and independent receipts.
+- [Projection transfer to JudgeDeceiver](findings/b200_projection_judge.md):
+  unchanged APPS direction in original A/B judging, small mixed accuracy gains,
+  calibration regression and matched readout/identity checks.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.

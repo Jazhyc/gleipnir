@@ -546,14 +546,16 @@ runtime remains archived. The
 [BF16 eager SDPA Lens baseline](findings/b200_vllm_lens.md#restored-bf16-lens-baseline-for-the-sdpa-adapter)
 passes master/native/functional checks. Its original process was retired
 sequentially for the request-local clamp/span/readout extension; the updated
-engine passes fresh gates and stays warm at localhost 8010, API 2031/worker
-2070, after the completed
-[injection-direction campaign](findings/b200_injection_direction.md).
+engine passes fresh gates. Following the completed
+[injection-direction campaign](findings/b200_injection_direction.md), the A/B
+readout extension passed a sequential restart and
+[JudgeDeceiver transfer](findings/b200_projection_judge.md). It stays warm at
+localhost 8010, API 3883/worker 3935.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and
-`results/b200_sdpa_lens/sdpa01/` and `sdpa02_projection/`. No dependency upgrade
-or new capacity.
+`results/b200_sdpa_lens/sdpa01/`, `sdpa02_projection/` and
+`sdpa03_judge_projection/`. No dependency upgrade or new capacity.
 
 ## OpenRouter
 
