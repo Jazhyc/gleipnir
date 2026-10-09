@@ -54,3 +54,6 @@ Full-length anchor misses require interpreting low scores as unverified absence,
 even when short controls pass. Preserve misses without revising the frozen rubric.
 The analysis adds a disclosed post-hoc literal firewall-keyword cross-check and
 manual counterexample review; record its motivation and results in the findings.
+
+Completed results and classifier qualifications are recorded in the
+[firewall-content finding](../../docs/findings/training_firewall_census.md).

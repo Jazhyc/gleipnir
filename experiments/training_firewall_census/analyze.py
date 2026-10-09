@@ -205,6 +205,15 @@ def plot(rows: list[dict], out: Path) -> None:
     from gleipnir.analysis.plotting import set_plot_style
 
     set_plot_style()
+    plt.rcParams.update(
+        {
+            "axes.titlesize": 13,
+            "axes.labelsize": 12,
+            "xtick.labelsize": 11,
+            "ytick.labelsize": 11,
+            "legend.fontsize": 10,
+        }
+    )
     harmless = [r for r in rows if r["label"] == 0]
     bins = np.linspace(
         min(r["delta_z20"] for r in harmless), max(r["delta_z20"] for r in harmless), 51
@@ -212,6 +221,10 @@ def plot(rows: list[dict], out: Path) -> None:
     fig, axes = plt.subplots(2, 2, figsize=(13, 10), layout="constrained")
     for col, teacher_positive in enumerate([False, True]):
         group = [r for r in harmless if (r["soft_target"] >= 0.5) == teacher_positive]
+        rho = correlation(
+            [r["firewall_log_odds"] for r in group],
+            [r["delta_z20"] for r in group],
+        )
         ax = axes[0, col]
         ax.scatter(
             [r["firewall_log_odds"] for r in group],
@@ -224,7 +237,8 @@ def plot(rows: list[dict], out: Path) -> None:
         ax.set(
             title=(
                 f"Harmless / Kimi target {'≥' if teacher_positive else '<'}0.5 "
-                f"(n={len(group):,})"
+                f"(n={len(group):,})\n"
+                f"Spearman ρ = {rho:.3f}"
             ),
             xlabel="Qwen firewall log odds (0 = score 0.5)",
             ylabel="Alignment change (trained − base)",
@@ -272,10 +286,12 @@ def plot(rows: list[dict], out: Path) -> None:
         fontsize=10,
     )
     for suffix in ["png", "pdf"]:
+        fig.canvas.draw()
         fig.savefig(
             out / f"firewall_activation_distributions.{suffix}",
             dpi=170,
             bbox_inches="tight",
+            pad_inches=0.2,
             facecolor="white",
         )
     plt.close(fig)

@@ -62,6 +62,9 @@
   complete original-data base/SDPA census, source and teacher–label candidate
   concentrations, full rankings and review flags; earlier small augmented-pair
   diagnostic remains separate, with no causal attribution or applied filtering.
+- [Firewall-content census](findings/training_firewall_census.md): full 9B logit
+  screen, source/teacher-conditioned associations, classifier misses and
+  inspected high-change counterexamples without firewall content.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.

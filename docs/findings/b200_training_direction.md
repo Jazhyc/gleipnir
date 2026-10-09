@@ -355,6 +355,11 @@ selection, original input files and reconstruction script at
 prompts are preserved alongside them. Earlier bounded inventories omit code
 and are navigation aids, not substitutes for the original evidence.
 
+The subsequent [full Qwen firewall-content census](training_firewall_census.md)
+finds weak association within the harmless / Kimi-positive group and inspected
+high-change cases without firewall content. The seven extreme firewall examples
+are therefore not an exclusive account of learned alignment.
+
 ### Exact duplicates and numerical variation
 
 The full original population contains **8,100 distinct student/rendered prompts**:

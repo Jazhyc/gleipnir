@@ -549,12 +549,16 @@ sequentially for the request-local clamp/span/readout extension; the updated
 engine passes fresh gates. Following the completed
 [injection-direction campaign](findings/b200_injection_direction.md), the A/B
 readout extension passed a sequential restart and
-[JudgeDeceiver transfer](findings/b200_projection_judge.md). It stays warm at
-localhost 8010. The subsequent
+[JudgeDeceiver transfer](findings/b200_projection_judge.md). The subsequent
 [training-example comparison](findings/b200_training_direction.md) sequentially
-serves the pinned base and restores the SDPA engine; current process/frontend
+serves the pinned base and restores the SDPA engine; that process/frontend
 metadata is recorded in
 `results/b200_training_clean_direction/clean_direction01/restored_server.json`.
+The later [firewall census](findings/training_firewall_census.md) retires this
+Lens engine sequentially for unadapted 9B scoring, then exits cleanly. The GPU
+is available, with merged checkpoint and compiler caches preserved; capacity
+remains running. The retirement receipt is
+`results/b200_vllm031/firewall_census01_before_qwen9b_retired.json`.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and
