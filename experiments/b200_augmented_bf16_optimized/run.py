@@ -1,4 +1,4 @@
-"""Evaluate the completed BF16-trained adapter with selected optimized serving."""
+"""Evaluate a fixed completed adapter with selected optimized serving."""
 
 from __future__ import annotations
 
@@ -27,8 +27,9 @@ class Completed(Campaign):
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("prepare", "score"), required=True)
+    parser.add_argument("--config", type=Path, default=CONFIG)
     args = parser.parse_args()
-    ctx = Campaign.load(ROOT, CONFIG)
+    ctx = Campaign.load(ROOT, args.config)
     if args.stage == "prepare":
         ctx.prepare()
         for target, source in (
@@ -68,7 +69,15 @@ def main() -> None:
     write_json(ctx.output / "status.json", {"stage": "optimized_evaluation"})
     try:
         asyncio.run(optimized(ctx))
-        write_json(ctx.output / "status.json", {"stage": "complete", "rows": 12126})
+        write_json(
+            ctx.output / "status.json",
+            {
+                "stage": "complete",
+                "rows": sum(
+                    ctx.config["evaluation"]["populations"][s] for s in ctx.splits
+                ),
+            },
+        )
     except BaseException as error:
         write_json(ctx.output / "status.json", {"stage": "failed", "error": str(error)})
         raise
