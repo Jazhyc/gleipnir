@@ -45,6 +45,9 @@
 - [Optimized vLLM serving default](decisions/b200_monitor_score_reference.md):
   future-experiment inference/evaluation recipe, supported context and model/GPU
   envelope, parity requirements and frozen B200 comparison controls.
+- [SDPA injection-direction replication review](research/sdpa_injection_direction_replication.md):
+  colleague's clamp/projection results, recall tradeoffs, Lens requirements and
+  unresolved direction-fitting contract; no campaign launched.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
