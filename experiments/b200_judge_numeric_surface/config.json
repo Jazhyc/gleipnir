@@ -1,0 +1,68 @@
+{
+  "campaign_id": "sdpa_judge_numeric_surface01",
+  "variants": [
+    "output_only",
+    "fully_numeric"
+  ],
+  "concurrency": 32,
+  "batch_rows": 128,
+  "timeout_seconds": 300,
+  "capture_layers": [
+    20,
+    31
+  ],
+  "canary_max_mae": 0.005,
+  "canary_min_correlation": 0.995,
+  "projected_max_component_fraction": 0.02,
+  "inputs": {
+    "workload": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/workload.jsonl",
+      "sha256": "ef1cf7f9bccaf0d22a17dcdf58da8d118d47c516fe0edfb44c6710a57e7e8176"
+    },
+    "ab_plain": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/plain.jsonl",
+      "sha256": "330bdfd300b1386e29285360686f1181d4c58f068dda1d8869169e0e906a7200"
+    },
+    "ab_project": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/project.jsonl",
+      "sha256": "4e4f7284d8d7edf8ac3e85dfaa8a521ec8fe7899c1aabaf472ba6d985380de4e"
+    },
+    "parent_manifest": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/manifest.json",
+      "sha256": "049a36749ac67c940bf11c112581b0ed5f1ef5909c4e9169fbe6c1993e0c9140"
+    },
+    "canary_workload": {
+      "path": "data/b200-augmented-judge02/canary_workload.jsonl",
+      "sha256": "5dfa1f328f834ed5ec9cbc8a67d3969e1f20c8bdc086552a0a6194d01688d438"
+    },
+    "canary_scores": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/canary.jsonl",
+      "sha256": "afb4279463005c0d32dfb40854147736290a0c1b20753998d4042cc65357cfb4"
+    },
+    "readout_gate": {
+      "path": "results/b200_projection_judge/sdpa_judge_projection01/readout_gate.json",
+      "sha256": "d2abcb6939c112d6fe7548d4f8ea15b2079f25012d6daf9a53bad0f4119bb420"
+    },
+    "startup": {
+      "path": "results/b200_sdpa_lens/sdpa03_judge_projection/complete.json",
+      "sha256": "cbf928f79ec8f55a4228d7fd2946fce19de1a6987bcabb2763e7eafa909f670a"
+    },
+    "directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "interventions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/interventions.json",
+      "sha256": "e3f5a409dfe1f3854206b603d546f6a76a6983d35e138f4bb8bae1a81257f0e8"
+    },
+    "tokenizer": {
+      "path": "data/judge_injection_continuation/tokenizer/tokenizer.json",
+      "sha256": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42"
+    },
+    "prompt_header": {
+      "path": "experiments/judge_injection_continuation/prompt.txt",
+      "sha256": "b759e9b6cade1e8c12437cae377edea98e577b43d4873e9560afdc785066a90d"
+    }
+  },
+  "promote": false
+}
