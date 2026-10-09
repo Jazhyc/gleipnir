@@ -618,6 +618,64 @@ has been applied to this run. Artifacts use
 retains the stop condition and matched controls. Twenty-six focused checks and
 scoped Ruff pass for the shared follow-up entrypoint and completion accounting.
 
+## Historical augmented adapter: optimized ID diagnostic
+
+After the explicit MAE/correlation exception, the separate frozen
+`b200-historical-augmented-optimized-diagnostic01` run completes all 3,012 ID
+rows and 33,750,959 input tokens. The original failed run remains unchanged.
+The fixed historical BF16/SDPA-trained adapter, exact merged checkpoint, NC2
+host, tokenizer/head, request partitions and c128 match its completed BF16
+control; only the combined selected precision/kernel recipe changes.
+
+| Metric | Same adapter BF16 | Optimized diagnostic | Change |
+|---|---:|---:|---:|
+| Source-macro AUROC | 0.962251 | 0.950184 | -1.207 pp |
+| Source-macro raw pAUROC@20 | 0.872693 | 0.839574 | -3.312 pp |
+| Gloom AUROC | 0.938548 | 0.915313 | -2.324 pp |
+| Gloom raw pAUROC@20 | 0.809314 | 0.747317 | -6.200 pp |
+| STRIDE AUROC | 0.985954 | 0.985055 | -0.090 pp |
+| STRIDE raw pAUROC@20 | 0.936072 | 0.931831 | -0.424 pp |
+| Pooled AUROC / raw pAUROC@20 | 0.953143 / 0.843168 | 0.941335 / 0.805651 | -1.181 / -3.752 pp |
+| Input tokens/s | 114,427 | 182,426 | +59.43% |
+| Requests/s | 10.21 | 16.28 | +59.43% |
+| Scoring seconds | 294.96 | 185.01 | -37.27% |
+| Request latency p50 / p95, seconds | 4.873 / 14.807 | 4.176 / 9.127 | -14.30% / -38.36% |
+
+Most ranking loss occurs on Gloom. Scores shift downward on average by 0.031455;
+full-ID paired MAE/correlation are 0.053215/0.972552 with 163 fixed-0.5 decision
+flips. Macro recall falls from 83.11% to 78.28%, while macro FPR falls from
+4.90% to 3.90%. Macro Brier worsens from 0.084808 to 0.099758; pooled
+Brier/ECE/log loss become 0.109225/0.091548/0.349006. There are 95 distinct scores.
+Timing is one matched descriptive pass, without repeat-variation evidence.
+
+The repeated optimized canary again fails: master MAE/correlation
+0.052078/0.973127, merged HF BF16 0.052073/0.972475; maximum difference remains
+0.399759 and adapter effect 0.729889. Limits remain <=0.020/>=0.99 and both
+`passed` flags remain false. All scores are finite. Scope stays
+`failed_parity_diagnostic`, including completion/summary receipts, with a
+checksum-bound authorization referencing the original failed gate. Native
+audits verify 64 MLP/48 GDN/16 attention projections, 16 actual FP8 projection
+dispatches, eight MXFP8 attention calls and exact cached BF16 head rows 15/16.
+
+This fixed-checkpoint comparison demonstrates a serving contribution to the
+historical adapter's ID loss independently of training-run variability. It does
+not isolate quantization from kernels or attribute the loss to any one layer.
+The historical checkpoint remains stronger than the recent BF16-trained
+replica on the same optimized stack (0.942317/0.825250), so serving does not
+account for the entire replication gap. No promotion, new training, APPS or
+JudgeDeceiver evaluation is performed.
+
+Independent checks reproduce exact ordered prompts/tokens/labels/metadata,
+finite logits/margins/sigmoids, source/pooled/macro AUROC and raw pAUROC,
+Brier, threshold diagnostics, paired shifts and the canary agreement. All 370
+collected checksums, 313 executed/current sources and 102 locally available
+pinned inputs match; three pinned base files are verified remotely. Twenty-seven
+focused tests, scoped Ruff and diff checks pass. Artifacts, immutable log snapshot
+and `id_completion_audit.json` are collected; the authorized diagnostic scorer
+remains warm on the existing B200, with no ECC errors and no capacity change.
+The [diagnostic configuration](../../experiments/b200_historical_augmented_optimized/diagnostic_config.yaml)
+preserves the separate exception and unchanged controls.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The

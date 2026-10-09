@@ -430,7 +430,10 @@ adapter's completed
 is preserved. Its scorer was retired for the matched
 [optimized follow-up](findings/b200_augmented_training.md#historical-augmented-adapter-on-optimized-id-failed-canary),
 which stopped on failed MAE/correlation parity and shut down before held-out
-scoring. No scorer remains resident. The historical merged checkpoint stays at
+scoring. The explicitly authorized
+[optimized ID diagnostic](findings/b200_augmented_training.md#historical-augmented-adapter-optimized-id-diagnostic)
+then completed and its optimized 0/1 scorer remains warm with failed-parity
+diagnostic scope. The historical merged checkpoint stays at
 `/tmp/gleipnir-merged/historical-augmented-bf16`; the selected regular checkpoint
 remains unchanged. Check live processes and scorer receipts before reuse.
 The eager [Lens research results](findings/b200_vllm_lens.md) and

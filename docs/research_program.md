@@ -50,8 +50,10 @@ recorded explicitly in target provenance.
   BF16 serving and matched BF16 MLP retraining with FA4 recover part of the ID
   loss. The historical augmented checkpoint retains its original ID ranking
   on current BF16 serving; updated training replicas remain weaker.
-  Same-adapter optimized serving loses ID ranking and substantial APPS backdoor
-  recall despite passing its short score canary.
+  Same-adapter optimized serving loses ID ranking for both historical and recent
+  augmented checkpoints. The recent adapter also loses substantial APPS backdoor
+  recall despite passing its short score canary; historical optimized ID retains
+  explicit failed-parity diagnostic scope.
   These single-seed, limited-template, off-policy interventions do not establish
   recipe-independent, broad or adaptive robustness, or a monotonic size benefit.
 - **Quality judging and harmfulness monitoring have different targets.**
