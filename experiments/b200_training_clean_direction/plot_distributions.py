@@ -176,6 +176,34 @@ def plot(out: Path) -> None:
     )
     fig.supylabel("Density within each source / label group", fontsize=12)
     artifacts += save(fig, out, "direction_source_distributions")
+    fig, axes = plt.subplots(
+        1, 2, figsize=(13, 5), sharex=True, sharey=True, layout="constrained"
+    )
+    for ax, label, name in zip(axes, [0, 1], ["Harmless", "Harmful"], strict=True):
+        for positive, color in [(False, BLUE), (True, ORANGE)]:
+            mask = (labels == label) & ((targets >= 0.5) == positive)
+            histogram(
+                ax,
+                delta[mask],
+                delta_bins,
+                "Kimi K3 target ≥0.5" if positive else "Kimi K3 target <0.5",
+                color,
+            )
+            ax.axvline(delta[mask].mean(), color=color, ls=":", lw=1.5)
+        ax.axvline(0, color="gray", ls="--", lw=1)
+        ax.set_title(f"{name}-labeled records")
+        ax.set_xlabel("Projection change (trained − base)")
+        ax.legend()
+    axes[0].set_ylabel("Density within each teacher-target group")
+    fig.suptitle(
+        "Teacher-target split within each recorded behavior label", fontsize=16
+    )
+    fig.supxlabel(
+        "Identical bins and scales; each curve has area 1. "
+        "Colored dotted lines mark group means; gray dashed line marks zero.",
+        fontsize=10,
+    )
+    artifacts += save(fig, out, "direction_teacher_by_label_distributions")
     write_json(
         out / "distribution_plot_receipt.json",
         {

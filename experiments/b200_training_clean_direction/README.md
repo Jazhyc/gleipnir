@@ -70,6 +70,9 @@ After capture, reproduce the complete distribution figures with
 `direction_distributions.{png,pdf}` compares base/trained projections, changes
 by behavior label, source ECDFs and harmless teacher-target groups;
 `direction_source_distributions.{png,pdf}` separates each source by behavior label.
+`direction_teacher_by_label_distributions.{png,pdf}` compares the Kimi K3
+teacher-target split side by side for harmless and harmful records, with shared
+scales and dotted group means.
 Histograms use 50 common full-range bins and normalize within each group; counts
 are shown explicitly. All original records retain their training exposure weight,
 including duplicates. The plot receipt binds inputs, script, style and outputs.
