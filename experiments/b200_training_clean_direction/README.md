@@ -64,3 +64,12 @@ Run `python -m experiments.b200_training_clean_direction.prepare`, then
 `python -m gleipnir.evaluation.direction_campaign --config
 experiments/b200_training_clean_direction/config.json` in the pinned runtime.
 Artifacts: `results/b200_training_clean_direction/clean_direction01/`.
+
+After capture, reproduce the complete distribution figures with
+`PYTHONPATH=src:. python -m experiments.b200_training_clean_direction.plot_distributions`.
+`direction_distributions.{png,pdf}` compares base/trained projections, changes
+by behavior label, source ECDFs and harmless teacher-target groups;
+`direction_source_distributions.{png,pdf}` separates each source by behavior label.
+Histograms use 50 common full-range bins and normalize within each group; counts
+are shown explicitly. All original records retain their training exposure weight,
+including duplicates. The plot receipt binds inputs, script, style and outputs.

@@ -215,6 +215,17 @@ standard deviation also grows 0.06611→0.16091; scale alone does not explain th
 separation. This is training-seen representation diagnostics, not held-out
 monitor quality or causal example influence.
 
+Complete distribution figures are saved as `direction_distributions.{png,pdf}`
+and `direction_source_distributions.{png,pdf}` in the census artifact directory;
+the [experiment README](../../experiments/b200_training_clean_direction/README.md)
+provides the reproduction command. They include every original record, with
+common full-range histogram bins and unit area within each group. Base alignment
+is comparatively concentrated; trained alignment spreads in both directions.
+Source facets show that o46's positive shift occurs across both behavior labels,
+while harmless teacher-positive records form a strongly positive change group.
+These population views complement the fixed inspection bands without selecting
+a filtering threshold. Counts and original duplicate exposure weights are retained.
+
 | Original hard label | Teacher target | Rows | Mean trained projection | Mean trained-minus-base |
 |---|---|---:|---:|---:|
 | Harmless (0) | <0.5 | 3,998 | -3.29035 | -1.61443 |
