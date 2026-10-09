@@ -54,6 +54,12 @@ preserved locked environment. Monitor startup and actual progress in the agent
 turn; a process watchdog does not replace agent heartbeats. The current session
 has no in-chat scheduling tool, so do not promise follow-ups after yielding.
 
+Live execution helpers now reside in `gleipnir.evaluation.concept_census`;
+the original module preserves its public imports and CLI. Historical receipts
+retain their executed sources and hashes. Configured concepts and controls also
+support the [firewall census](../training_firewall_census/README.md); old caches
+must not be resumed against a changed source contract.
+
 Runpod B200 `3422tdq7tfog52` was explicitly authorized by the user for this
 pass, at a live quoted $6.79/hour in US-NC-2, with existing network volume
 `ixbh81vf9c` mounted at `/workspace`. The previous Pod could not resume because
