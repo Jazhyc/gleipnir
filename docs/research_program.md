@@ -52,6 +52,10 @@ recorded explicitly in target provenance.
   on current BF16 serving; updated training replicas remain weaker.
   One identical-seed BF16/FA4 repeat produces bitwise-identical FP32 adapters;
   observed same-seed execution noise does not explain that replication gap.
+  A matched current-framework SDPA replay partly recovers ID ranking but does
+  not reproduce the historical weights or full quality. This supports an
+  attention implementation contribution; relative SDPA/FA4 repeatability remains
+  unmeasured because the historical SDPA comparison also changes source/host.
   Same-adapter optimized serving loses ID ranking for both historical and recent
   augmented checkpoints. The recent adapter also loses substantial APPS backdoor
   recall despite passing its short score canary; historical optimized ID retains

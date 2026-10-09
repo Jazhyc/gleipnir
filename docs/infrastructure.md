@@ -424,13 +424,15 @@ isolated 0.31 dependencies and native overlays are staged for the current recipe
 Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
-and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING and idle after the
-[seed-0 BF16/FA4 repeat](findings/b200_augmented_training.md#same-seed-bf16fa4-training-repeat).
-Its FP32 master/export weights exactly reproduce the previous run. The user
-requested score reuse, so remaining merge/evaluation stages were stopped;
-no training/scoring process remains resident. Historical BF16 and optimized
-diagnostic controls are preserved in the linked findings. The selected regular
-checkpoint remains unchanged. Check live processes and receipts before reuse.
+and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING with the passing
+BF16 0/1 scorer from the
+[historical SDPA recipe replay](findings/b200_augmented_training.md#historical-bf16sdpa-recipe-replay)
+warm at `/tmp/gleipnir-merged/historical-augmented-sdpa-replay02`, with ordinary
+parity-gated scope. Its weights differ from historical, and fresh BF16 ID scoring
+partly recovers the current FA4 gap. The earlier bitwise-identical FA4 repeat
+reuses its original scores; historical BF16/optimized diagnostic controls are
+preserved. The selected regular checkpoint remains unchanged. Check live
+processes and receipts before reuse.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
