@@ -424,18 +424,13 @@ isolated 0.31 dependencies and native overlays are staged for the current recipe
 Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
-and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The historical
-adapter's completed
-[BF16 ID control](findings/b200_augmented_training.md#historical-augmented-adapter-on-current-bf16-id)
-is preserved. Its scorer was retired for the matched
-[optimized follow-up](findings/b200_augmented_training.md#historical-augmented-adapter-on-optimized-id-failed-canary),
-which stopped on failed MAE/correlation parity and shut down before held-out
-scoring. The explicitly authorized
-[optimized ID diagnostic](findings/b200_augmented_training.md#historical-augmented-adapter-optimized-id-diagnostic)
-then completed and its optimized 0/1 scorer remains warm with failed-parity
-diagnostic scope. The historical merged checkpoint stays at
-`/tmp/gleipnir-merged/historical-augmented-bf16`; the selected regular checkpoint
-remains unchanged. Check live processes and scorer receipts before reuse.
+and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING and idle after the
+[seed-0 BF16/FA4 repeat](findings/b200_augmented_training.md#same-seed-bf16fa4-training-repeat).
+Its FP32 master/export weights exactly reproduce the previous run. The user
+requested score reuse, so remaining merge/evaluation stages were stopped;
+no training/scoring process remains resident. Historical BF16 and optimized
+diagnostic controls are preserved in the linked findings. The selected regular
+checkpoint remains unchanged. Check live processes and receipts before reuse.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
@@ -447,6 +442,12 @@ The inactive `/tmp/gleipnir-merged/fp4-augmented-bf16` checkpoint is checksum-
 archived under `results/b200_historical_augmented_id_storage/` on the volume to
 make ephemeral room. Its `archive_receipt.json` records exact files and the
 original restore path; masters and merge receipts remain preserved.
+The inactive historical augmented and previous BF16/FA4 merged checkpoints are
+also checksum-archived on the volume under
+`results/b200_augmented_seed_repeat_storage/{historical-augmented-bf16,bf16-augmented-fa4}`.
+Its two archive receipts preserve all 12 files per checkpoint and their original
+ephemeral restore paths. Merged weights remain on the B200; local collection
+contains adapters, outputs and receipts.
 
 ## OpenRouter
 

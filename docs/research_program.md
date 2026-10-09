@@ -50,6 +50,8 @@ recorded explicitly in target provenance.
   BF16 serving and matched BF16 MLP retraining with FA4 recover part of the ID
   loss. The historical augmented checkpoint retains its original ID ranking
   on current BF16 serving; updated training replicas remain weaker.
+  One identical-seed BF16/FA4 repeat produces bitwise-identical FP32 adapters;
+  observed same-seed execution noise does not explain that replication gap.
   Same-adapter optimized serving loses ID ranking for both historical and recent
   augmented checkpoints. The recent adapter also loses substantial APPS backdoor
   recall despite passing its short score canary; historical optimized ID retains

@@ -38,6 +38,11 @@ Changing adapters requires loading the corresponding merged model; preserve disk
 compiler caches across those restarts. See the merged serving protocol in
 `experiments/b200_inference_benchmark/README.md`.
 
+If a training repeat reproduces the exact master/export weight hashes and
+equivalent adapter/base identities, reuse the existing merged checkpoint,
+parity and evaluation receipts. Record identity and score reuse explicitly;
+repeat scoring only when measuring serving variability or changing its recipe.
+
 ## Persistent serving process
 
 Standing user preference: when an inference change needs a different
