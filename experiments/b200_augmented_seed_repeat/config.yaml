@@ -1,0 +1,161 @@
+campaign_id: b200-augmented-bf16-seed0-repeat01
+seed: 0
+profile: qwen35_4b_b200_bf16_fa4
+training_rows: 8688
+injected_rows: 3475
+expected_steps: 272
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 83969213
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  training:
+    path: data/monitor_injection_augmentation/student_rows.jsonl
+    sha256: 84998c2f7727ed1249356b3d4ff126dab71bb4d5ca4255a073128f0b624519b6
+  augmentation_manifest:
+    path: data/monitor_injection_augmentation/manifest.json
+    sha256: e99a700ed1b588323e0f0a757e73e50046496fbc25c29c158b34b129dec99f51
+  ledger:
+    path: data/monitor_injection_augmentation/insertion_ledger.jsonl
+    sha256: 792a8c0a1a62ac3767bc731993a2f365c235693e6faa2ca2e082e382bdebac0a
+  clean_training:
+    path: data/student_injection_awareness/regular/student_rows.jsonl
+    sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+  teacher:
+    path: data/student_injection_awareness/soft_targets.jsonl
+    sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+  templates:
+    path: experiments/monitor_injection_augmentation/templates.json
+    sha256: 42b02227febfa4b03092a07e6ab4c199830468c62cf9198bee22097b86202226
+  token_audit:
+    path: results/monitor_injection_augmentation/4b/augmented/token_audit.json
+    sha256: ff621d307a46a76e734653575a442dcb2f135ca9af6cc86199b3b4fd42948ed9
+  old_completion:
+    path: results/monitor_injection_augmentation/4b/augmented/complete.json
+    sha256: c8ce07961cc66f6cec81104c5ce238f9cd8096c3c8dbfd9691e579be8e78fcc7
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  benchmark:
+    path: data/monitoring_injection_disentanglement/benchmark/neutral.jsonl
+    sha256: e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866
+  honest_controls:
+    path: data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl
+    sha256: 5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b
+  benchmark_workload:
+    path: results/b200_apps/apps02/benchmark_workload.jsonl
+    sha256: 9f04352d1bd7a7e4d698bec60592b5625d8190d48c900c15a301f4e9e8edc478
+  honest_controls_workload:
+    path: results/b200_apps/apps02/honest_controls_workload.jsonl
+    sha256: b48cbac4b4465cbd5bb77d1c68b72d4599f0bc415e382320107df87bc7587f8d
+  regular_id_predictions:
+    path: results/b200_attention_precision/precision01/fp8/id_predictions.json
+    sha256: cbe779af3c18fe9bbf3bc0d0b991e81e7bf03236f1ecf200c7abb326642698b2
+  regular_apps_summary:
+    path: results/b200_apps/apps02/summary.json
+    sha256: 4615654ab622df6539399a3b09b7137253e00c88a0edeed21f0d6883f0647f8d
+  historical_augmented_summary:
+    path: results/b200_augmented_training_controls/historical_augmented_summary.json
+    sha256: e4db56a614ba30a0ac84475a840ba8ea5811f167df872c7732ae1d656955396d
+  historical_augmented_id:
+    path: results/monitor_injection_augmentation/evaluation_regular/augmented/id.jsonl
+    sha256: d90936ba4caad62016ab549b236deed2b267922391d33561459000807a8d9759
+  startup_reference:
+    path: results/b200_bf16_fa4_accepted/flash_attention_4/causal_adapter/training_metadata.json
+    sha256: 185fa498f8ec31f07ae58a8213584c7a7f5b41738393ae75d97f91229a993364
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  fp4_trained_bf16_id:
+    path: results/b200-augmented-bf16-id01/evaluation/id.jsonl
+    sha256: 76b4897b27c078bdd3a4ec591896e0af79f5947888634f806bf50b06fd4d640c
+  fp4_trained_job:
+    path: results/b200_augmented_training/execution_contract.json
+    sha256: 89331fbda7f93f60a8bac1a5edd684b16a09bfe88d82e3dc7e00ee4b3ac2fcbb
+  seed0_bf16_id:
+    path: results/b200-augmented-bf16-training02/evaluation/id.jsonl
+    sha256: e96588c4981ddbc54082dd7ed48b64d300bd7d54c39dfb5217593042ac050f79
+  seed0_execution:
+    path: results/b200-augmented-bf16-training02/execution_contract.json
+    sha256: 1856a6027dc60303694ea09c6efaa43b58c1ab6ae6b47f411c4faadd96264aea
+  seed0_metadata:
+    path: results/b200-augmented-bf16-training02/4b/monitor/causal_adapter/training_metadata.json
+    sha256: 04842f015f46b5932058e3340e18afe8dcb1e0dd4b86934f30263648a06f3dfa
+  seed0_master:
+    path: results/b200-augmented-bf16-training02/4b/monitor/causal_adapter/adapter_model.safetensors
+    sha256: 708bbd7e774612664f8e8077c603366658181e2e5b9055c1f2a45dfd6f43519f
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+    benchmark: 5184
+    honest_controls: 3930
+  serving_precision: bf16
+  failed_parity_diagnostic: false
+merged_model: /tmp/gleipnir-merged/bf16-augmented-fa4-seed0-repeat01
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9
+hypothesis: Repeating the current BF16/FA4 seed-0 training from identical state produces
+  measurable checkpoint or ID score variation due to execution nondeterminism.
+intervention: Repeat the same current BF16 MLP/FA4 recipe, seed, initialization, data,
+  teacher targets, optimizer, packing and one-epoch schedule without enabling new
+  determinism controls; evaluate with matched BF16 serving.
+selection: Fixed final 272-update checkpoint; compare with the completed seed-0 BF16/FA4
+  run. One repeat estimates an observed difference, not a variance distribution. No
+  tuning or promotion.
+stop_condition: Stop on training-recipe/input/source/runtime drift, missing/nonfinite
+  gradients, OOM, failed master/merged/BF16 serving parity or native audits, incomplete
+  coverage or completion. Preserve all outputs.
+augmentation_audit: true
+evaluations:
+- id
+baselines:
+  fp4_trained_bf16:
+    kind: id
+    input: fp4_trained_bf16_id
+    qualification: Same NC2 host, initializer, data/order, training schedule, FlashQLA/FA4
+      and BF16 vLLM 0.31 grouped serving; MLP training precision differs.
+  regular_optimized:
+    kind: id
+    input: regular_id_predictions
+    qualification: Cached regular FP4-trained optimized scorer on EU host; augmentation,
+      host and serving differ.
+  seed0_bf16_repeat:
+    kind: id
+    input: seed0_bf16_id
+    qualification: Same seed-0 BF16/FA4 training recipe, initializer/data/order/schedule
+      and NC2 BF16 vLLM 0.31 grouped serving. Independent repeat; no new deterministic
+      mode.
+extra_sources:
+- experiments/b200_augmented_seed_repeat/README.md
