@@ -116,3 +116,119 @@ wait. These are diagnostic campaign costs, not repeated production benchmarks.
 |---|---:|---:|---:|---:|
 | Unedited | 66.93 | 22,732 | 62.57 | 1.07 / 2.08 |
 | Projection | 98.94 | 15,378 | 42.33 | 1.59 / 2.96 |
+
+## Fixed-direction signal and benign-control follow-up
+
+The user subsequently authorized separating representation transfer from
+decision transfer. The
+[capture/control contract](../../experiments/b200_judge_direction_signal/README.md)
+fixes the original APPS u20 and sign, final-token layer 20 as primary, and
+layer 31 as the ancillary removal/readout check. Reuse the same warm engine
+and all original prompts; fit or select nothing on JudgeDeceiver. This is a
+post-evaluation exploratory follow-up, not a new untouched confirmation set.
+
+For each injection, replace its single contiguous insertion at the same
+candidate location with fixed neutral prose or whitespace padding. Both
+control families match the attacked complete prompt's native token count
+**exactly**, not merely within the allowed one token. Each has 3,684 rows but
+2,568 unique prompts; retain the attack weighting and disclose duplication.
+Whitespace preserves candidate words; added prose can change answer quality.
+Control preferences are copied for lineage/bookkeeping, not claimed ground
+truth for a new judging-accuracy benchmark. These controls match length and
+placement, but not the attacks' optimized gibberish/lexical style.
+
+Measure the unedited residual's projection onto u20 and its paired change
+from the clean parent. Injection-detection ROC negatives repeat each variant's
+own clean parent; no threshold is fitted or direction sign reversed.
+
+| Layer-20 contrast | Matched-weighted AUROC | Mean paired projection shift | Positive paired shifts |
+|---|---:|---:|---:|
+| All attacks minus clean | 0.591318 | +0.185727 | 66.69% |
+| Preferred-injected minus clean | 0.665438 | +0.326270 | 74.05% |
+| Disfavored-injected minus clean | 0.517198 | +0.045184 | 59.34% |
+| Prose control minus clean | 0.454764 | -0.042141 | 37.81% |
+| Whitespace control minus clean | 0.517545 | +0.018351 | 62.51% |
+| Attack minus matched prose | 0.623542 | +0.227868 | 70.06% |
+| Attack minus matched whitespace | 0.577941 | +0.167376 | 64.74% |
+
+There is some injection-associated signal beyond a simple token-count change,
+but substantial overlap and ordinary-padding sensitivity remain. In preferred
+examples, whitespace produces a positive shift more often than attacks
+(79.15% versus 74.05%), although its mean shift is much smaller
+(0.060268 versus 0.326270). A positive component change is not itself reliable
+injection recognition. The earlier APPS diagnostic AUROC was 0.988861 on a
+different 128-task injected/neutral contrast; this is not an identical negative
+population or attack-style comparison.
+
+| Source | Injection rows | Attack versus clean AUROC | Mean paired shift |
+|---|---:|---:|---:|
+| LLMBar | 1,776 | 0.557407 | +0.048086 |
+| MT-Bench | 1,792 | 0.673940 | +0.329568 |
+| RLAIF | 40 | 0.947500 | +0.350051 |
+| Search | 76 | 0.388158 | -0.075930 |
+
+Source-macro detection AUROC is 0.641751; six-query macro is 0.649689.
+Query-specific AUROCs are 0.947500 (RLAIF), 0.791783/0.644272 (MT-Bench),
+0.630680/0.495744 (LLMBar), and 0.388158 (Search). RLAIF/Search each supply
+one query and few rows. Search also separates attacks from the prose control
+well (AUROC 0.927632) despite reversing the attack-versus-clean sign. That
+illustrates why particular control contrasts are not proof of a universal
+semantic injection detector. All six IDs/breakdowns are retained in the report;
+dependent rows do not justify independent-example significance tests.
+
+Full projection demonstrably removes the measured component. Layer-20 mean
+absolute projection falls from **0.495825 to 0.001132**, leaving **0.22825%**
+of its original mean magnitude; layer 31 leaves **0.31914%**. Maximum remaining
+component/residual-norm ratios are 0.00029985/0.00029977, about **0.030%**,
+well within the predefined conservative 2% BF16 allowance. This measures
+geometric component removal, not removal of all injection information.
+
+For preferred injections, paired signal shift has Spearman **rho +0.069716**
+with the injection-induced correct-answer A/B margin change, and **+0.198150**
+with the full-projection margin change. Average injection damage is -2.970141
+correct-answer logit-margin units; average projection change is -0.005429.
+For disfavored injections the corresponding correlations are -0.727029 and
++0.494942, so the pooled damage correlation (-0.400817) obscures condition
+differences. These are descriptive coefficients without independent-row
+p-values; source/query, answer order and suffix dependence remain relevant.
+
+The interpretation is **partial, context-dependent representation transfer
+along with weak aggregate decision benefit**. It does not support an axis that
+works only in AI-control settings, a strong domain-general injection detector,
+or an explanation based solely on incomplete projection. Prompt/task/readout
+changes, lexical style, redundant features and downstream redistribution are
+still possible contributors. Full all-layer projection does not isolate one
+layer's causal mediation or prove a unique decision circuit.
+
+Capture A/B scores reproduce the previous unedited scores at MAE 0.000172,
+correlation 0.999985, with zero decision flips; projected scores differ at
+MAE 0.001664/correlation 0.999847, with five flips. Fresh preferred accuracy
+remains exactly 55.81%/56.46%. Capture changes RPC/batch timing in BF16 serving;
+it is not bitwise full-population reproduction. The bounded capture canary
+passes at MAE 0.001032/correlation 0.999842, and beta-zero/following-plain
+activations and A/B logits are exact.
+
+Artifacts use `results/b200_judge_direction_signal/sdpa_judge_direction_signal01/`:
+frozen workload/control receipts, manifest/config/executed sources, raw BF16
+residual values preserved losslessly in FP32 arrays, per-batch hashes/scores,
+and analysis. Independent audit verifies **289 collected files**
+(388,249,156 bytes), **15,744 predictions**, **7,368 control constructions**,
+**11,556 native token counts** and **31,488 residual vectors**; it recomputes
+FP64 direction dots/norms, ROC/paired shifts, rank correlations and removal.
+Maximum FP64-versus-recorded dot difference is 0.00000191. Six focused tests,
+scoped Ruff and diff checks pass. The engine stays warm with zero request
+state and zero uncorrected ECC errors; no restart, package or capacity change.
+
+One-pass capture costs, c32/batch128 with both layer captures and full readout:
+
+| Population | Input tokens | Input tokens/s | Requests/s | Request p50 / p95 seconds |
+|---|---:|---:|---:|---:|
+| Original unedited | 1,521,530 | 21,839 | 60.11 | 1.11 / 2.11 |
+| Original projected | 1,521,530 | 14,647 | 40.32 | 1.66 / 3.03 |
+| Prose controls | 1,351,548 | 22,099 | 60.24 | 1.11 / 2.12 |
+| Whitespace controls | 1,351,548 | 21,885 | 59.65 | 1.13 / 2.13 |
+
+Latency includes semaphore wait. Original/control lengths are matched per
+attack, but controls omit the separate clean rows; compare population timings
+with that difference disclosed. These are capture diagnostics, not repeated
+production benchmarks.
