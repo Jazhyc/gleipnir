@@ -158,8 +158,9 @@ async def score(ctx: Campaign) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=("prepare", "score"), required=True)
+    parser.add_argument("--config", type=Path, default=CONFIG)
     args = parser.parse_args()
-    ctx = Campaign.load(ROOT, CONFIG)
+    ctx = Campaign.load(ROOT, args.config)
     if args.stage == "prepare":
         ctx.prepare()
         for name, source in (
