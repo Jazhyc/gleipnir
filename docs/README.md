@@ -54,7 +54,8 @@
   BF16/optimized ID/APPS and JudgeDeceiver comparisons, plus the historical
   adapter's current-stack BF16 ID control, authorized optimized ID diagnostic
   and bitwise-identical seed-0 BF16/FA4 training repeat; restoring SDPA partly
-  recovers ranking without reproducing the historical checkpoint.
+  recovers ID ranking without reproducing the historical checkpoint, while
+  increasing APPS injection alarms and reducing matched discrimination.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,

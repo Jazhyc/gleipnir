@@ -429,7 +429,11 @@ BF16 0/1 scorer from the
 [historical SDPA recipe replay](findings/b200_augmented_training.md#historical-bf16sdpa-recipe-replay)
 warm at `/tmp/gleipnir-merged/historical-augmented-sdpa-replay02`, with ordinary
 parity-gated scope. Its weights differ from historical, and fresh BF16 ID scoring
-partly recovers the current FA4 gap. The earlier bitwise-identical FA4 repeat
+partly recovers the current FA4 gap. Its
+[APPS follow-up](findings/b200_augmented_training.md#apps-follow-up-for-the-current-bf16sdpa-replay)
+completes on the unchanged scorer, with higher injection alarms and lower matched
+discrimination than the FA4-trained BF16 control. The earlier bitwise-identical
+FA4 repeat
 reuses its original scores; historical BF16/optimized diagnostic controls are
 preserved. The selected regular checkpoint remains unchanged. Check live
 processes and receipts before reuse.

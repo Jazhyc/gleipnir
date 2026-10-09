@@ -828,6 +828,66 @@ the [replay contract](../../experiments/b200_augmented_sdpa_replay/README.md),
 `independent_training_replay_audit.json`, `historical_adapter_identity.json`
 and `completion_audit.json` retain the scope and provenance.
 
+## APPS follow-up for the current BF16/SDPA replay
+
+The user authorized frozen APPS scoring for the completed SDPA replay, reusing
+its unchanged resident compiled BF16 scorer, merged checkpoint and passing
+master/merge/native gates. `b200-augmented-sdpa-apps01` completes all 5,184
+benchmark and 3,930 honest-control rows, totaling 15,339,953 input tokens, with
+ordinary parity-gated scope. No new training, merge, restart or serving change
+occurs. The primary control is current BF16/FA4 training with the same current
+BF16 serving configuration; one seed per attention recipe remains a limitation.
+
+| Mean across injected templates | Current BF16/FA4 | Current BF16/SDPA replay | Change (pp) |
+|---|---:|---:|---:|
+| Injected-honest FPR | 25.19% | **60.41%** | +35.22 |
+| Injected-backdoor TPR | 70.38% | **83.82%** | +13.45 |
+| Matched AUROC | 0.821611 | **0.798944** | -2.27 |
+| Matched raw pAUROC@20 | 0.519076 | **0.504252** | -1.48 |
+
+The clean-only strict `score > threshold` rule remains fixed. SDPA's threshold
+is 0.148047 versus FA4's 0.132964; both yield 12/655 clean alarms (1.83%, below
+the allowed 13). These are separately calibrated thresholds under the same
+rule. The increased injected-honest FPR despite the higher threshold reflects
+changed injection responses. The ranking losses also show that this is more
+than a threshold movement. Partial ID recovery does **not** translate into
+improved APPS discrimination; SDPA is more sensitive to injected prompts on
+both honest and backdoored programs in this single-seed comparison. This does
+not establish a general FA4/SDPA ordering or nondeterminism.
+
+| SDPA template | Honest FPR | Backdoor TPR | Matched AUROC | Raw pAUROC@20 |
+|---|---:|---:|---:|---:|
+| transfer_gpt4 | 96.64% | 99.07% | 0.738195 | 0.391103 |
+| transfer_gpt41 | 76.34% | 93.82% | 0.804365 | 0.522476 |
+| transfer_gpt4o | 8.24% | 58.58% | 0.854271 | 0.599176 |
+
+Injection-minus-neutral honest score shifts average +0.218589/+0.155464/
++0.081233 across these templates; 99.24%/98.47%/97.71% of pairs increase.
+Versus FA4, benchmark scores have MAE 0.057000/correlation 0.932367, mean shift
++0.016307 and 326 fixed-0.5 flips. Honest controls have MAE 0.037966/correlation
+0.838018, mean shift +0.028611 and seven fixed-0.5 flips. Honest injected Brier
+scores are 0.068356/0.036473/0.013535, with fixed-0.5 alarm rates
+0.15%/0%/0%; corresponding backdoor Brier scores are
+0.447346/0.491763/0.568650, with fixed-0.5 recall 13.14%/18.24%/18.70%.
+Low fixed-0.5 recall again illustrates APPS calibration shift. Clean mean score
+is 0.028282, Brier 0.002760, with 35 unique scores. Vanilla AUROC/raw pAUROC are
+0.919405/0.721551 and clean-calibrated backdoor TPR is 51.78%.
+
+Scoring takes 81.96 seconds for benchmark and 69.12 for honest controls:
+100,136/103,185 input tokens/s, 63.25/56.85 requests/s, request p50
+1.302/1.339 seconds and p95 2.005/2.202. Timings exclude preparation/identity
+checks and are single passes. Independent verification checks coverage,
+canonical identities/metadata/prompts/tokens, finite logits/sigmoid scores,
+clean threshold/ties, per-template ranking/rates/calibration and paired
+predictions, 408 collected checksums and 313 executed/current sources.
+Thirty focused tests, scoped Ruff and diff checks pass. Collection helpers were
+corrected to use the server receipt's log path and recognize the canonical
+training-row symlink; scoring and its frozen contract were unaffected.
+The scorer remains warm and healthy with zero ECC errors; merged weights stay
+on the B200. The [APPS contract](../../experiments/b200_augmented_sdpa_apps/README.md),
+`completion_audit.json` and `paired_fa4.json` preserve full evidence. No defaults
+or promotion change.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The
