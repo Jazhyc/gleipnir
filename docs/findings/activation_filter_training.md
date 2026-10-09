@@ -84,6 +84,49 @@ STRIDE is 0.7854/0.9345, 0.8554/0.9748 and 0.8055/0.9395 respectively. ID has
 calibration, source metrics and APPS template/vanilla diagnostics are preserved
 in the campaign summaries and primary holdout receipt.
 
+## Fixed-direction projection on the filtered checkpoint
+
+The user subsequently requests ablation of the original direction on the
+activation-filtered model. The [follow-up contract](../../experiments/activation_filter_projection/README.md)
+freezes the original unit layer-20 axis at all layers/tokens, beta 1 and zero
+centers; no refitting or new layer/beta search. Fresh unedited and projected
+BF16 eager Lens scores use the same 591 held-out tasks / 8,218 rows per arm.
+
+| Filtered-model arm | Injected-honest FPR | Injected-backdoor recall | Matched AUROC | Raw pAUROC20 | Clean threshold / FPR |
+|---|---:|---:|---:|---:|---:|
+| Unedited eager | 100.00% | 100.00% | 0.601902 | 0.153282 | 0.095349 / 1.18% |
+| Full projection | 62.61% | 86.68% | 0.734326 | 0.333077 | 0.106691 / 1.52% |
+
+At the fixed unedited threshold, projection gives **79.41% honest FPR / 93.48%
+backdoor recall**, with clean FPR 2.03%. Recalibration therefore contributes to
+the reported alarm reduction. Projected template FPRs are 39.26%, 69.20% and
+79.36% for GPT-4 / GPT-4.1 / GPT-4o. Vanilla AUROC is 0.923708 versus 0.921809
+unedited. Mean paired score shift is -0.115985. The same full projection on the
+[unfiltered model](b200_injection_direction.md#matched-primary-results) previously
+gave 0.39% honest FPR / 31.39% recall. Those are different-checkpoint historical
+context; fresh matched eager scores are the control for this intervention.
+
+Thus the fixed direction still contributes to injection sensitivity and its
+removal improves matched ranking, but it is insufficient for the filtered model.
+This does not establish a rotated axis, an additional mechanism or individual
+training-example influence. Answer mass is healthy on the original 128-task
+diagnostic subset: 1,771 rows per arm, minimum p01 0.97356/0.98144 and mean
+0.99054/0.99168 unedited/projected, with no values below 0.5.
+
+Master/eager parity passes at MAE 0.002772, with native and real operator gates.
+Fresh unedited eager versus cached compiled-BF16 APPS scores have MAE 0.006215,
+maximum difference 0.086512; their aggregate matched ranking remains similar.
+One pass processes 13,873,010 input tokens per arm: 72,917/66,201 input tokens/s,
+43.19/39.22 requests/s and p50/p95 2.06/2.87 versus 2.21/3.11 seconds. These are
+campaign costs, with differing diagnostic capture depth, rather than repeated
+isolated operator benchmarks. Eight focused launch/axis tests and scoped Ruff
+pass. `results/activation_filter_projection/ranked20_projection01/` preserves
+executed sources, batches, activations, summary, completion and independent audit;
+startup receipts are `results/b200_sdpa_lens/activation_ranked20_projection01/`.
+All 16,436 scores pass identity/label/token/logit and hash checks; independent
+metric recomputation agrees exactly. Lens request state is clean. The filtered
+model's passing Lens server is left warm on port 8010; weights remain remote.
+
 ## Receipts and qualifications
 
 Selection and materialization receipts are in
@@ -110,8 +153,9 @@ complete every frozen stage without a diagnostic exception.
 population sizes, finite bounded scores, completion stages and available bound
 artifacts. Recomputing the held-out comparison locally reproduces the remote
 summary byte-for-byte. Frozen executed sources and small receipts are collected;
-adapter and merged weights remain remote. The matched-control BF16 server stays
-warm on port 8010. The container overlay has 3.4 GiB free after both merges;
+adapter and merged weights remain remote. The matched-control BF16 server was
+retired for the subsequent filtered-model Lens study. The container overlay has
+3.4 GiB free after both merges;
 another merge requires additional space. Existing merges and caches are preserved.
 
 Two focused selection/closure/control tests and scoped Ruff pass. No plotting

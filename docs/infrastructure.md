@@ -560,9 +560,11 @@ subsequent [activation-filter training comparison](findings/activation_filter_tr
 restores the checksum-bound Torch 2.11 training runtime and completes both
 BF16/SDPA training and BF16 ID/APPS evaluations. FP32 masters stay on the volume;
 both new merges stay under `/tmp/gleipnir-merged/`. The matched-control BF16 server
-is left warm on port 8010, recorded in
-`results/activation-filter-matched20-sdpa01/server.json`; Lens requires a sequential
-restart. Capacity remains running. The earlier Lens retirement receipt is
+is subsequently retired for the fixed-direction projection follow-up. The
+activation-filtered model's passing BF16 eager Lens server remains warm on port
+8010, recorded in
+`results/b200_sdpa_lens/activation_ranked20_projection01/server.json`. Capacity
+remains running. The earlier Lens retirement receipt is
 `results/b200_vllm031/firewall_census01_before_qwen9b_retired.json`.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
