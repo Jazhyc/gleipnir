@@ -591,6 +591,33 @@ The selected regular checkpoint remains unchanged. Data/results/logs use
 [experiment contract](../../experiments/b200_historical_augmented_id/README.md)
 and `id_completion_audit.json` retain the numerical and provenance qualification.
 
+## Historical augmented adapter on optimized ID: failed canary
+
+The matched optimized follow-up reuses the historical adapter, existing merge,
+fresh master/merged references and canonical ID workload from the BF16 control.
+Its selected FP8 attention projections, FP4 MLP/GDN projections, packed FP4
+SwiGLU output and MXFP8 attention pass native audits, including the unchanged
+cached BF16 0/1 head. No training or new merge occurs.
+
+The 20-row optimized canary fails the frozen adapter-specific limits:
+master MAE/correlation are **0.051628/0.973095**, versus limits <=0.020/>=0.99;
+merged BF16 reference values are **0.051623/0.972439**. Maximum absolute score
+drift is 0.399759, adapter effect 0.729889, and every score is finite.
+The runner stops before any held-out ID scoring and shuts down its scorer.
+The completed BF16 control, failed parity receipt, native audits, source bindings
+and logs are preserved locally. The existing B200 remains allocated.
+
+This establishes score sensitivity to the combined serving recipe for a fixed
+historical checkpoint, independently of new training dynamics. It does not yet
+measure held-out AUROC/pAUROC or isolate an individual quantization/kernel
+component. Continuing requires a new explicit diagnostic exception for both
+MAE and correlation; previous adapters' exceptions do not transfer. No exception
+has been applied to this run. Artifacts use
+`b200-historical-augmented-optimized-id01`; the
+[frozen follow-up contract](../../experiments/b200_historical_augmented_optimized/README.md)
+retains the stop condition and matched controls. Twenty-six focused checks and
+scoped Ruff pass for the shared follow-up entrypoint and completion accounting.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The

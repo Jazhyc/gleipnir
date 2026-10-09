@@ -52,7 +52,7 @@
   augmentation replay, completed FP32 adapters and failed optimized parity;
   ID/APPS tradeoffs, BF16 serving recovery, matched BF16 MLP/FA4 training and
   BF16/optimized ID/APPS and JudgeDeceiver comparisons, plus the historical
-  adapter's current-stack BF16 ID control.
+  adapter's current-stack BF16 ID control and failed optimized canary.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,

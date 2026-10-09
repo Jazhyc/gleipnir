@@ -424,14 +424,15 @@ isolated 0.31 dependencies and native overlays are staged for the current recipe
 Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
-and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The compiled
-BF16 0/1 scorer is now warm with the preserved historical augmented adapter
-after its
-[current-stack ID control](findings/b200_augmented_training.md#historical-augmented-adapter-on-current-bf16-id), using
-`/tmp/gleipnir-merged/historical-augmented-bf16`. This changes the resident model, not
-the selected regular checkpoint; consult the live scorer receipt's
-`serving_precision` and native audit for its actual precision.
-Its fresh master/merged/serving gates pass with ordinary parity-gated scope.
+and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The historical
+adapter's completed
+[BF16 ID control](findings/b200_augmented_training.md#historical-augmented-adapter-on-current-bf16-id)
+is preserved. Its scorer was retired for the matched
+[optimized follow-up](findings/b200_augmented_training.md#historical-augmented-adapter-on-optimized-id-failed-canary),
+which stopped on failed MAE/correlation parity and shut down before held-out
+scoring. No scorer remains resident. The historical merged checkpoint stays at
+`/tmp/gleipnir-merged/historical-augmented-bf16`; the selected regular checkpoint
+remains unchanged. Check live processes and scorer receipts before reuse.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
