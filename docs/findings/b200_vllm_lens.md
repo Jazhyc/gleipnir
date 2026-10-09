@@ -105,6 +105,20 @@ ties, per-source results, undefined sources and length-bin latency are retained.
 native audits, executed sources, timed/warmup predictions and client checks.
 `summarize` exports source-bound JSON/CSV and PNG/SVG overhead figures. Important
 artifacts/logs are collected and checksum-verified locally and retained on the
-volume. The passing eager research scorer stays warm: API 11667, engine 11706.
+volume. At this experiment's completion the passing eager scorer was API 11667,
+engine 11706; current lifecycle state is in [infrastructure](../infrastructure.md).
 Capture buffers are empty after completion/disconnect. No capacity creation/
 termination or persistent cache reset occurs.
+
+## Next intervention study
+
+The user selected the completed current BF16/SDPA augmented replay as the next
+mechanistic-intervention target, because its injection sensitivity more closely
+resembles historical behavior. Use its preserved FP32 master and merged BF16
+checkpoint, with the frozen ID/APPS scores as controls. Build on the Lens
+activation-capture/steering integration to study prompt-injection responses.
+Freeze the intervention/selection contract and establish the matched plain
+research-serving baseline before attributing effects to steering. The current
+SDPA/FA4 comparisons do not resolve training nondeterminism; the user deferred
+that investigation. This records the next task, with no intervention run or
+replacement capacity launched today.

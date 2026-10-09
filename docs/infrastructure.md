@@ -424,10 +424,11 @@ isolated 0.31 dependencies and native overlays are staged for the current recipe
 Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
-and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING with the passing
+and `logs/runpod/b200_provisioning/`. Before the shutdown recorded below,
+the Pod ran the passing
 BF16 0/1 scorer from the
 [historical SDPA recipe replay](findings/b200_augmented_training.md#historical-bf16sdpa-recipe-replay)
-warm at `/tmp/gleipnir-merged/historical-augmented-sdpa-replay02`, with ordinary
+at `/tmp/gleipnir-merged/historical-augmented-sdpa-replay02`, with ordinary
 parity-gated scope. Its weights differ from historical, and fresh BF16 ID scoring
 partly recovers the current FA4 gap. Its
 [APPS follow-up](findings/b200_augmented_training.md#apps-follow-up-for-the-current-bf16sdpa-replay)
@@ -482,6 +483,40 @@ also checksum-archived on the volume under
 Its two archive receipts preserve all 12 files per checkpoint and their original
 ephemeral restore paths. Merged weights remain on the B200; local collection
 contains adapters, outputs and receipts.
+
+### NC2 B200 terminated after SDPA controls, 2026-10-09
+
+At the user's explicit request, Pod `mnmqm5d3eiyvuz` was permanently
+terminated. Delete returned HTTP 204; the independent read returned HTTP 404
+`pod not found`, verified at 04:31:03 UTC. A separate live volume read confirms
+`ixbh81vf9c` (`gleipnir-b200-workspace`, 300 GB) remains present. No replacement
+capacity was launched. Local aliases are marked TERMINATED.
+
+Before deletion, three ephemeral merge directories were copied to the network
+volume and every copied file was checksum-verified. The completed SDPA merge is
+under `results/b200_shutdown/20261009_nc2/merged_checkpoints/` as
+`historical-augmented-sdpa-replay02`; restore it to its recorded ephemeral path
+for compatible reuse. The bitwise-identical FA4 repeat's unfinished merge is
+preserved as incomplete evidence, not a usable checkpoint.
+Training/serving runtimes, Python and container compiler caches are preserved in
+the verified 9,387,527,896-byte `container_runtimes.tar.zst` (159,479 regular
+files); the separate source archive preserves Lens/Gigatoken and launcher
+contexts (4,563 verified files). Persistent compiler/kernel caches and all
+network-volume artifacts remain intact. Serial gzip was interrupted in favor
+of parallel zstd; its partial archive and switch receipt are retained.
+
+Local and remote checks verify 1,193 collected files across the SDPA replay,
+its APPS follow-up and the FA4 seed repeat. Adapters, results, frozen contracts,
+failed receipts and the sanitized environment snapshot are collected locally.
+Merged weights and large runtime archives remain exclusively on the network
+volume. Preservation/termination receipts and final server logs are under
+`results/b200_shutdown/20261009_nc2/`; restore archives and symlink targets before
+launching a compatible runtime, then validate the new live environment.
+
+The [next Lens study](findings/b200_vllm_lens.md#next-intervention-study) targets
+the current SDPA-trained adapter's prompt-injection responses. Training
+determinism investigation is deferred at the user's request; it remains
+unresolved. This records the next task without authorizing new capacity today.
 
 ## OpenRouter
 
