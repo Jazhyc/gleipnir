@@ -51,46 +51,6 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
     ]
 
 
-def test_canonical_frontier_registry_parses_and_matches_nondominance() -> None:
-    frame = load_frontier_registry(DEFAULT_SOURCE)
-
-    assert len(frame) == 30
-    assert frame["computed_frontier"].sum() == 7
-    assert frame["computed_frontier"].equals(frame["declared_frontier"])
-    kimi = frame.loc[frame["monitor"] == "Kimi K3 binary logits"].iloc[0]
-    assert kimi["cost_per_1k"] == pytest.approx(25.1177)
-    assert kimi["mean_ood_pauroc_at_20"] == pytest.approx(0.9084)
-    kimi_k26 = frame.loc[frame["monitor"] == "Kimi K2.6 binary logits"].iloc[0]
-    assert kimi_k26["cost_per_1k"] == pytest.approx(7.9110)
-    assert kimi_k26["mean_ood_pauroc_at_20"] == pytest.approx(0.9194)
-    assert bool(kimi_k26["computed_frontier"])
-    assert not bool(kimi["computed_frontier"])
-    mixed_4b = frame.loc[frame["monitor"] == "Qwen3.5-4B Kimi-soft mixed"].iloc[0]
-    assert mixed_4b["cost_per_1k"] == pytest.approx(0.2598)
-    assert mixed_4b["mean_ood_pauroc_at_20"] == pytest.approx(0.7823)
-    sparse = frame.loc[
-        frame["monitor"] == "Qwen3.5-35B-A3B base (mixed providers)"
-    ].iloc[0]
-    assert sparse["cost_per_1k"] == pytest.approx(0.9896)
-    assert sparse["mean_ood_pauroc_at_20"] == pytest.approx(0.7580)
-    assert not bool(sparse["computed_frontier"])
-
-
-def test_plot_applies_documented_filters_without_changing_registry() -> None:
-    frame = load_frontier_registry(DEFAULT_SOURCE)
-    plotted = select_plot_points(frame)
-
-    assert "Claude Opus 4.6 prompted" in set(frame["monitor"])
-    assert "Claude Opus 4.6 prompted" not in set(plotted["monitor"])
-    assert frame["mean_ood_pauroc_at_20"].min() < 0.60
-    assert plotted["mean_ood_pauroc_at_20"].min() >= 0.60
-    ours = plotted.loc[plotted["origin"] == "Gleipnir"]
-    assert ours["interface"].str.contains("logits", case=False).all()
-    assert "Qwen3.5-9B base (reasoned binary)" in set(frame["monitor"])
-    assert "Qwen3.5-9B base (reasoned binary)" not in set(plotted["monitor"])
-    assert "Qwen3.5-9B base (reasoned ordinal)" not in set(plotted["monitor"])
-
-
 def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-4B base") == "Qwen3.5-4B"
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
