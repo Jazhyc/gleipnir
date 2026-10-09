@@ -510,6 +510,87 @@ snapshot preserve collection evidence. The
 [experiment contract](../../experiments/b200_augmented_judge/README.md) records
 the A/B binding and explicit diagnostic scope. No adapter promotion follows.
 
+## Historical augmented adapter on current BF16 ID
+
+The user requested the preserved historical augmented 4B adapter on the current
+CoT-removed ID set using BF16 vLLM 0.31. Its original FP32 master/export hashes
+match locally and on NC2. The final 272-update BF16/SDPA-trained checkpoint stays
+fixed; fresh references and a FP32-accumulated BF16 merge use a separate output
+wrapper. Historical training files remain intact. No training, checkpoint
+selection or promotion occurs.
+
+All 3,012 ordered prompts, labels, rendered hashes and 33,750,959 input tokens
+match the existing workload. Current BF16 serving matches the recent controls:
+compiled vLLM 0.31, native tokenizer, causal LAST cached 0/1 head, BF16 projections
+and full-attention query/cache, FP32 GDN state/gates, CUDA GDN, automatic context
+parallelism, corrected synchronous scheduler, prefix caching off, 32K and c128.
+Matching runner/context/capacity/scheduler/cache/worker settings and projection
+audits are preserved in `serving_settings_comparison.json`.
+
+| Adapter / stack | ID macro AUROC | ID macro raw pAUROC@20 |
+| --- | ---: | ---: |
+| Historical augmented, previous BF16 stack | 0.962342 | 0.872983 |
+| Same historical adapter, current BF16 vLLM 0.31 | 0.962251 | 0.872693 |
+| Recent augmented, FP4 MLP/FA4 training, current BF16 serving | 0.947513 | 0.839096 |
+| Recent augmented, BF16 MLP/FA4 training, current BF16 serving | 0.951944 | 0.851131 |
+
+The historical checkpoint retains its original ID ranking: macro AUROC changes
+−0.009 percentage points and raw pAUROC −0.029 points. Paired score MAE is
+0.003450, mean shift −0.000221, correlation 0.999748 and ten fixed-0.5 decisions
+flip. Thus the historical checkpoint's quality survives the current BF16 stack.
+Under matched current BF16 serving, it exceeds the recent BF16/FA4 replica by
+**1.03 AUROC / 2.16 pAUROC points**, and the FP4/FA4 replica by
+**1.47 AUROC / 3.36 pAUROC points**. The remaining replica gap follows different
+trained checkpoints and training pipelines; this bridge does not identify FP4,
+FA4, optimizer dynamics, packing or another individual training component.
+The current regular optimized EU reference (0.957476/0.865432) remains qualified
+context, with a different adapter, serving precision and host. No matched current
+BF16 regular-adapter result is introduced by this request.
+
+Gloom AUROC/raw pAUROC are 0.938548/0.809314, STRIDE 0.985954/0.936072;
+pooled values are 0.953143/0.843168. Macro Brier is 0.084808, compared with
+historical 0.084668. At the fixed 0.5 threshold, macro recall/FPR are
+83.11%/4.90%, compared with 83.01%/5.00% historically. Pooled Brier/ECE/log loss
+are 0.089945/0.060092/0.295724, and 92 distinct scores remain. Full calibration,
+source and paired checkpoint views are retained.
+
+Fresh merged/master parity passes at MAE/correlation 0.003022/0.999843.
+Current serving versus master passes at 0.002711/0.999882, and versus merged HF
+BF16 at 0.003018/0.999839, under unchanged MAE <=0.020/correlation >=0.99
+limits. Adapter effect is 0.729132. Native audits verify BF16/unquantized
+projections, 64 MLP/48 GDN/16 attention coverage, exact BF16 head rows 15/16
+and eight actual BF16 attention calls. Scope is ordinary `parity_gated`.
+
+Scoring takes 294.96 seconds: **114,427 input tokens/s**, 10.21 requests/s,
+request latency p50/p95 4.873/14.807 seconds. The recent BF16-trained control
+takes 296.23 seconds at 113,934 input tokens/s, so these single-pass timings
+are similar. No inference Triton JIT is logged in this pass. Existing thread,
+pooling-graph and custom-scheduler warnings remain; the bounded HF reference
+also logs a PEFT exclude-filter warning, with its original text projection
+targets preserved. No scoring error, truncation or nonfinite value occurs.
+
+Independent checks reproduce ordered labels/metadata, prompt/token identity,
+finite logits/margins/sigmoids, pooled/source/macro AUROC and raw pAUROC,
+Brier, fixed-0.5 diagnostics and paired historical changes for every row.
+All 379 collected checksums, 313 executed/current sources and 94 locally
+available pinned inputs match; three pinned base config/shard files are
+verified remotely. Twenty-seven focused checks and scoped Ruff pass.
+
+The first CPU preflight stops on historical cached provenance nesting in 946
+STRIDE rows. A derived baseline view rewraps metadata only after all IDs, labels,
+sources, rendered hashes and token counts match; its scores and original
+metadata remain exact, with the raw source and derivation receipt preserved.
+The historical merge updates all 128 projections in 47.05 seconds. Ephemeral
+space is made available by checksum-archiving the unused FP4-augmented BF16
+merge on the persistent volume, preserving all 12 files, masters and merge
+receipts. The storage archive/restore receipt is collected separately.
+The former A/B scorer is retired with a receipt, and the passing historical
+BF16 0/1 scorer remains warm on the existing B200 with persistent caches intact.
+The selected regular checkpoint remains unchanged. Data/results/logs use
+`b200-historical-augmented-bf16-id01`; its
+[experiment contract](../../experiments/b200_historical_augmented_id/README.md)
+and `id_completion_audit.json` retain the numerical and provenance qualification.
+
 ## Preparation failures and provenance
 
 Before training, three failed attempts performed zero optimizer updates. The

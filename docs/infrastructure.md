@@ -425,14 +425,13 @@ Scheduler/native preflight and FP8 startup preparation pass. The known strict
 MXFP8/BF16 diagnostic failure exactly reproduces the earlier error measurements.
 Receipts and setup logs are collected locally under `results/b200_provisioning/`
 and `logs/runpod/b200_provisioning/`. The Pod remains RUNNING. The compiled
-optimized FP8-attention/FP4-MLP-GDN/MXFP8 scorer is now warm with the completed
-augmented BF16/FA4 adapter after its
-[JudgeDeceiver comparison](findings/b200_augmented_training.md#same-adapter-judgedeceiver-ab-serving-comparison), using
-`/tmp/gleipnir-merged/bf16-augmented-fa4`. This changes the resident model, not
+BF16 0/1 scorer is now warm with the preserved historical augmented adapter
+after its
+[current-stack ID control](findings/b200_augmented_training.md#historical-augmented-adapter-on-current-bf16-id), using
+`/tmp/gleipnir-merged/historical-augmented-bf16`. This changes the resident model, not
 the selected regular checkpoint; consult the live scorer receipt's
 `serving_precision` and native audit for its actual precision.
-The current resident surface is A/B, with user-authorized failed-parity
-diagnostic scope. Monitoring requires reloading the 0/1 head.
+Its fresh master/merged/serving gates pass with ordinary parity-gated scope.
 The eager [Lens research results](findings/b200_vllm_lens.md) and
 [NC2 concurrency measurements](findings/b200_score_scaling.md#current-fp8-scorer-on-nc2)
 remain preserved for compatible future launches.
@@ -440,6 +439,10 @@ The accepted merged BF16 checkpoint is reconstructed on ephemeral storage at
 `/tmp/gleipnir-merged/fp4-full-training-bf16`. All source and output file hashes
 match the accepted artifact; the rebuild receipt is in the refresh directory's
 `merge01/`. Original FP32 adapters and pinned base weights remain on the volume.
+The inactive `/tmp/gleipnir-merged/fp4-augmented-bf16` checkpoint is checksum-
+archived under `results/b200_historical_augmented_id_storage/` on the volume to
+make ephemeral room. Its `archive_receipt.json` records exact files and the
+original restore path; masters and merge receipts remain preserved.
 
 ## OpenRouter
 
