@@ -550,7 +550,11 @@ engine passes fresh gates. Following the completed
 [injection-direction campaign](findings/b200_injection_direction.md), the A/B
 readout extension passed a sequential restart and
 [JudgeDeceiver transfer](findings/b200_projection_judge.md). It stays warm at
-localhost 8010, API 3883/worker 3935.
+localhost 8010. The subsequent
+[training-example comparison](findings/b200_training_direction.md) sequentially
+serves the pinned base and restores the SDPA engine; current process/frontend
+metadata is recorded in
+`results/b200_training_direction/training_direction01/restored_server.json`.
 Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
 with the SSH helper. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and
