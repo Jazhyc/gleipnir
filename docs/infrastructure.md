@@ -568,19 +568,38 @@ retired for [regular-data concept-ablation training](findings/concept_ablation_t
 The new CAFT adapter completes BF16 ID/APPS evaluation. Its compiled BF16 scorer
 is then retired for the model-specific direction refit and subsequent original-
 axis projection/addition tests. The CAFT Lens process is later retired for
-[base-model JudgeDeceiver steering](findings/base_judge_steering.md); the passing
-unadapted base Lens server remains warm on port 8010, recorded in
+[base-model JudgeDeceiver steering](findings/base_judge_steering.md); its passing
+unadapted base Lens server is recorded in
 `results/base_judge_steering/base01/server.json`. FP32 masters and quality artifacts
-remain persistent; the new merge stays on ephemeral storage. The unused
+remain persistent. The unused
 matched-random-removal merge is byte-verified in a persistent archive before
-reclaiming its ephemeral copy. Capacity remains running. The earlier Lens
+reclaiming its ephemeral copy. The earlier Lens
 retirement receipt is
 `results/b200_vllm031/firewall_census01_before_qwen9b_retired.json`.
-Use `.runpod/sdpa-interventions.json` or `.runpod/lens.json`
-with the SSH helper. Restore and startup receipts use
+The now-terminated Pod's sanitized aliases are `.runpod/sdpa-interventions.json`
+and `.runpod/lens.json`. Restore and startup receipts use
 `results/b200_provisioning/20261009_lens_restore/` and
 `results/b200_sdpa_lens/sdpa01/`, `sdpa02_projection/` and
 `sdpa03_judge_projection/`. No dependency upgrade or new capacity.
+
+At the user's request on 2026-10-10, Pod `64h2ad4w3nfq2q` was permanently
+terminated after retiring its idle base Lens process and verifying preservation.
+Termination returned HTTP 204; an independent Pod read returned HTTP 404
+`pod not found`. A separate volume read confirms STANDARD volume `ixbh81vf9c`
+(`gleipnir-b200-workspace`, 300 GB, US-NC-2) remains present. Both local aliases
+are marked TERMINATED; no replacement capacity was launched.
+
+The new CAFT and activation-ranked-20% merged checkpoints are copied and
+checksum-verified under `results/b200_shutdown/20261010_mechanistic/merged_checkpoints/`.
+The SDPA merge's earlier persistent copy is reverified. The pinned runtime
+archive is reverified and reused; updated Lens/Gigatoken sources and container
+compiler caches are separately archive-verified. Masters, frozen contracts,
+failed receipts, scores, captures and persistent caches remain on the volume.
+Final server logs, preservation checks and termination evidence are collected
+locally under `results/b200_shutdown/20261010_mechanistic/`; large merge/runtime
+copies remain exclusively on the volume. The
+[CAFT release](findings/concept_ablation_training.md#execution-and-receipts)
+and injection-collection membership are independently verified before shutdown.
 
 ## OpenRouter
 
