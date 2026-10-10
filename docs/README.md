@@ -70,6 +70,9 @@
   held-out APPS injection discrimination; fixed-axis projection on the filtered
   checkpoint partly recovers ranking; model-specific refitting lowers calibrated
   FPR with substantial recall loss and a large calibration shift.
+- [Concept-ablation training](findings/concept_ablation_training.md): regular-data
+  training with the fixed injection axis removed at every residual layer, then
+  ordinary inference; BF16 parity, ID/APPS results and cached-control limitations.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
