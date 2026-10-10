@@ -4347,7 +4347,19 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         )
         print(f"packing_preflight={packing_metadata['preflight']}", flush=True)
 
+    concept_ablation_metadata = None
+    concept_ablation_handles = []
+    if concept_path := OmegaConf.select(cfg, "student.training.concept_ablation_path"):
+        from gleipnir.training.concept_ablation import install
+
+        concept_ablation_metadata, concept_ablation_handles = install(
+            model, Path(concept_path),
+            OmegaConf.select(cfg, "student.training.concept_ablation_sha256"),
+        )
+        print(f"concept_ablation={concept_ablation_metadata}", flush=True)
     train_output = trainer.train()
+    for handle in concept_ablation_handles:
+        handle.remove()
     native_mlp_calls = None
     if fp4_mlp_lora:
         from gleipnir.fouroversix_training import native_call_counts
@@ -4384,6 +4396,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             json.dumps(
                 {
                     **counts,
+                    "concept_ablation": concept_ablation_metadata,
                     "finetuning_mode": finetuning_mode,
                     "adapter_artifact": {
                         "path": adapter_weight_dir.as_posix(),

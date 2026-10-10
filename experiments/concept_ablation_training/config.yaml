@@ -1,0 +1,133 @@
+campaign_id: caft-regular-sdpa02
+seed: 0
+profile: qwen35_4b_b200_packed_sdpa
+training_rows: 8688
+injected_rows: 0
+expected_steps: 272
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 83816369
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  benchmark:
+    path: data/monitoring_injection_disentanglement/benchmark/neutral.jsonl
+    sha256: e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866
+  honest_controls:
+    path: data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl
+    sha256: 5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b
+  benchmark_workload:
+    path: results/b200_apps/apps02/benchmark_workload.jsonl
+    sha256: 9f04352d1bd7a7e4d698bec60592b5625d8190d48c900c15a301f4e9e8edc478
+  honest_controls_workload:
+    path: results/b200_apps/apps02/honest_controls_workload.jsonl
+    sha256: b48cbac4b4465cbd5bb77d1c68b72d4599f0bc415e382320107df87bc7587f8d
+  startup_reference:
+    path: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+    sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  training:
+    path: data/student_injection_awareness/regular/student_rows.jsonl
+    sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+  teacher:
+    path: data/student_injection_awareness/soft_targets.jsonl
+    sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+  token_audit:
+    path: results/student_injection_awareness/4b/regular/token_audit.json
+    sha256: 0db8abe9b9dfaff6b22284fb37bf957b65fa5adcaa4da9165b25bdfb0b6a51ba
+  concept_direction:
+    path: results/b200_injection_direction/sdpa_injection_direction01/directions.npz
+    sha256: 8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7
+  direction_partition:
+    path: results/b200_injection_direction/sdpa_injection_direction01/partition.json
+    sha256: 61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c
+  baseline_id:
+    path: results/b200_attention_precision/precision01/fp8/id_predictions.json
+    sha256: cbe779af3c18fe9bbf3bc0d0b991e81e7bf03236f1ecf200c7abb326642698b2
+  baseline_apps:
+    path: results/b200_apps/apps02/summary.json
+    sha256: 4615654ab622df6539399a3b09b7137253e00c88a0edeed21f0d6883f0647f8d
+  baseline_benchmark:
+    path: results/b200_apps/apps02/benchmark.jsonl
+    sha256: aa2d9f025055d7a2d2f5099505576b228642977d1321da03be68164a2f03f13d
+  baseline_controls:
+    path: results/b200_apps/apps02/honest_controls.jsonl
+    sha256: 2915873af3965e10b9c34f3d1677c475eec3e9cebad968a8489ce02d64a07ee2
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+    benchmark: 5184
+    honest_controls: 3930
+  serving_precision: bf16
+  failed_parity_diagnostic: false
+merged_model: /tmp/gleipnir-merged/caft-regular-sdpa02
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9
+hypothesis: Regular-data CAFT reduces APPS injected-honest alarms without synthetic
+  augmentation while retaining ID ranking and backdoor recall.
+intervention: Project the original unfiltered-model unit layer-20 injection axis out
+  after every decoder layer/all tokens during training and backward; remove hooks
+  for inference.
+selection: Final complete one-epoch checkpoint only. Fixed axis/geometry/seed; no
+  ID/APPS tuning or promotion.
+stop_condition: Stop on provenance/runtime drift, nonfinite/missing gradients, failed
+  operator or layer/token coverage, OOM, or new-adapter parity/native failure.
+augmentation_audit: false
+evaluations:
+- id
+- apps
+baselines:
+  cached_regular_id:
+    kind: id
+    input: baseline_id
+    qualification: User-requested cached regular FP4-trained optimized-serving control;
+      training precision, serving and host differ from this BF16/SDPA CAFT experiment.
+  cached_regular_apps:
+    kind: apps
+    input: baseline_apps
+    keys: []
+    qualification: User-requested cached regular FP4-trained optimized APPS control;
+      backend/host/precision differences retained, no new control training.
+extra_sources:
+- experiments/concept_ablation_training/__init__.py
+- experiments/concept_ablation_training/README.md
+- experiments/concept_ablation_training/test_projection.py
+- experiments/concept_ablation_training/prepare.py
+- experiments/concept_ablation_training/run.py
+concept_ablation: true

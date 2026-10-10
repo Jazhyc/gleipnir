@@ -38,6 +38,20 @@ def validate_completion(metadata: dict, ctx: Campaign) -> None:
         for start in range(0, config["training_rows"], batch)
     ]
     records = adaptive["records"]
+    if config.get("concept_ablation", False):
+        concept = metadata.get("concept_ablation")
+        if (
+            not concept
+            or concept["archive_sha256"] != job["concept_ablation_sha256"]
+            or not concept["operator_canary"]["passed"]
+            or concept["applied_layers"] != list(range(32))
+            or not concept["training_only"]
+            or not concept["forward_and_backward"]
+            or set(concept["calls"].values()) != {len(records)}
+        ):
+            raise ValueError(
+                "concept projection provenance or training coverage failed"
+            )
     if (
         adaptive["logical_batch_sizes"] != sizes
         or metadata["train_metrics"]["epoch"] != 1.0

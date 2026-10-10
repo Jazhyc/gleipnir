@@ -134,6 +134,11 @@ class Campaign:
             "startup_validation_reference_sha256",
             config["inputs"]["startup_reference"]["sha256"],
         )
+        if self.config.get("concept_ablation", False):
+            recipe["concept_ablation_path"] = str(self.input("concept_direction"))
+            recipe["concept_ablation_sha256"] = config["inputs"]["concept_direction"][
+                "sha256"
+            ]
         return {
             **recipe,
             "job_name": config["campaign_id"],

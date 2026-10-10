@@ -190,6 +190,13 @@ def training_command(job: dict[str, Any]) -> list[str]:
             command.append(
                 f"++student.training.startup_validation_reference_sha256={digest}"
             )
+    if job.get("concept_ablation_path"):
+        command.extend(
+            [
+                f"++student.training.concept_ablation_path={job['concept_ablation_path']}",
+                f"++student.training.concept_ablation_sha256={job['concept_ablation_sha256']}",
+            ]
+        )
     if "decision_tokens" in job:
         command.append(
             "++student.training.decision_tokens=" + json.dumps(job["decision_tokens"])
