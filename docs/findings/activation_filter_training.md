@@ -127,6 +127,51 @@ All 16,436 scores pass identity/label/token/logit and hash checks; independent
 metric recomputation agrees exactly. Lens request state is clean. The filtered
 model's passing Lens server is left warm on port 8010; weights remain remote.
 
+## Model-specific direction refit
+
+The user then authorizes fitting a direction on the filtered model itself. The
+[refit contract](../../experiments/activation_filter_refit/README.md) keeps the
+original 64-task / 896-row fitting population and 384 injected/neutral pairs,
+both labels, layer 20 and all-layer/all-token full-projection geometry. It uses
+the same resident Lens process and reuses its unedited/old-axis controls. Fresh
+20-row no-op scores reproduce exactly (MAE 0, correlation 1); no model, runtime,
+precision, partition or hyperparameter changes accompany the refit.
+
+The new axis has cosine **0.705254** with the old one. Its natural paired shift
+norm is **8.434516**, versus 7.072298 previously; this is a fit diagnostic, not
+evidence of stronger causal influence. All 591 test tasks remain disjoint.
+
+| Filtered-model arm | Injected-honest FPR | Injected-backdoor recall | Matched AUROC | Raw pAUROC20 | Clean threshold / FPR |
+|---|---:|---:|---:|---:|---:|
+| Unedited eager, reused | 100.00% | 100.00% | 0.601902 | 0.153282 | 0.095349 / 1.18% |
+| Old-axis projection, reused | 62.61% | 86.68% | 0.734326 | 0.333077 | 0.106691 / 1.52% |
+| Refitted-axis projection | 23.69% | 48.48% | 0.704681 | 0.283552 | 0.268941 / 0.68% |
+
+At the **fixed unedited threshold**, the refitted projection has **100% injected
+honest/backdoor alarms and 60.91% clean alarms**. Its lower recalibrated FPR
+therefore accompanies a substantial calibration shift. Score ties leave clean
+FPR below the allowed 2%. Relative to the old-axis projection, refitting lowers
+recalibrated FPR by 38.92 points and recall by 38.19 points, while losing 0.02965
+matched AUROC and 0.04952 pAUROC20. It improves ranking against unedited scoring
+but does not establish a better discriminator than the transferred axis.
+
+Refitted-template FPR/recall are 11.00%/27.10%, 17.94%/42.20% and 42.13%/76.16%
+for GPT-4 / GPT-4.1 / GPT-4o. Vanilla AUROC/pAUROC20 is 0.927657/0.761994, with
+49.40% backdoor recall. Mean score shift over all test rows is **+0.016400**,
+so this is not uniform score suppression. The 1,771-row answer-mass diagnostic
+has minimum p01 0.971995, mean 0.986894 and no values below 0.5.
+
+Capture costs 62.06 seconds for 1,466,943 fitting tokens (23,638 input tokens/s,
+14.44 requests/s). Projection costs 209.71 seconds for 13,873,010 test tokens
+(66,152 input tokens/s, 39.19 requests/s). These are one-pass campaign costs.
+Artifacts live in `results/activation_filter_refit/ranked20_refit01/`, with logs
+under `logs/runpod/activation_filter_refit/`. Independent audit reproduces the
+entire fitted mean and unit axis exactly, verifies all 384 pairs, fit/test
+separation, 896 capture scores, 8,218 new test scores and 28 tensor-batch hashes,
+and recomputes all three arms' threshold/ranking metrics exactly. The focused
+fit/test leakage test and scoped Ruff pass. Request state is clean and the
+unchanged passing Lens server stays warm; no weights were transferred.
+
 ## Receipts and qualifications
 
 Selection and materialization receipts are in
