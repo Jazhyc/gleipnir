@@ -54,3 +54,12 @@ Attempt 01 stops before any update: its absolute alignment tolerance ignored
 BF16 rounding. Attempt 02 retains the identical projection arithmetic and uses
 an explicit BF16 gradient reference plus <=0.1% relative alignment checks.
 The original failed contract, sources and receipts remain preserved.
+
+## Publication
+
+`PYTHONPATH=src:. python -m experiments.concept_ablation_training.publish`
+stages the checksum-bound FP32 master and rebased FP32 serving layout, exact
+student prompt, evaluation summaries, parity receipts and negative-result card.
+Add `--upload` to publish with local `HF_TOKEN` and add the verified release to
+the existing prompt-injection collection. No credentials or training rows are
+uploaded. Publication receipts live in `results/concept_ablation_training/`.

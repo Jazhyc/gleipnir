@@ -102,6 +102,16 @@ quality change. Complete source/calibration diagnostics remain in the summary.
 
 ## Execution and receipts
 
+The user-authorized research release is
+[Gleipnir-4B-ToolTrajectories-CAFT](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT),
+verified at revision `a0613f47678cc716e05a7210f7dc7c3fb96dd5e6` and added to the
+existing prompt-injection collection. It contains the FP32 causal master, rebased
+FP32 serving layout, frozen prompt, summary/parity receipts and negative-result
+model card. Publication does not promote this checkpoint. All remote file hashes
+and collection membership pass; `results/concept_ablation_training/upload.json`
+records the receipt. The [publication entrypoint](../../experiments/concept_ablation_training/publish.py)
+keeps credentials local and uploads no raw training or evaluation records.
+
 The successful campaign is `results/caft-regular-sdpa02/` on the same NC2 B200
 UUID `GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9`. Training takes approximately
 57m44s with finite recorded losses and gradients. Its FP32 master SHA256 is
