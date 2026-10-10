@@ -3,6 +3,7 @@
 import pytest
 import torch
 
+from experiments.b200_projection_judge.run import monitor_readout
 from gleipnir.serving.lens_readout import judge_readout
 
 
@@ -25,3 +26,18 @@ def test_ab_nonfinite_head_is_rejected():
     embedding[32, 0] = float("nan")
     with pytest.raises(ValueError, match="nonfinite"):
         judge_readout(torch.zeros(40), torch.ones(1, 2), embedding)
+
+
+def test_auxiliary_monitor_mass_is_preserved_separately():
+    result = monitor_readout({"p01": 0.001, "logits": [1.0, 2.0]}, {"margin": 1.0})
+    assert result == {
+        "monitor_p01": 0.001,
+        "monitor_logits": [1.0, 2.0],
+        "monitor_margin": 1.0,
+    }
+
+
+@pytest.mark.parametrize("mass", [float("nan"), -1.0, 2.0])
+def test_invalid_monitor_answer_mass_is_rejected(mass):
+    with pytest.raises(ValueError, match="monitor answer mass"):
+        monitor_readout({"p01": mass, "logits": [1.0, 2.0]}, {"margin": 1.0})

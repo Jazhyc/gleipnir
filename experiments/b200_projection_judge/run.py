@@ -38,6 +38,18 @@ def probability(logits: list[float]) -> float:
     )
 
 
+def monitor_readout(body: dict, monitor: dict) -> dict:
+    """Preserve unrequested 0/1 mass separately from A/B preference scores."""
+    mass = body["p01"]
+    if not math.isfinite(mass) or not 0 <= mass <= 1:
+        raise ValueError("invalid monitor answer mass")
+    return {
+        "monitor_p01": mass,
+        "monitor_margin": monitor["margin"],
+        "monitor_logits": body["logits"],
+    }
+
+
 def bind(workload: list[dict], labels: list[dict]) -> list[dict]:
     """Never swap preferences or drop dependent query/order/suffix variants."""
     if len(workload) != len(labels) or len({r["id"] for r in workload}) != len(
@@ -104,7 +116,13 @@ def checked(config: dict, out: Path) -> None:
 
 
 async def score(
-    config: dict, out: Path, rows: list[dict], arm: str, edit: dict | None
+    config: dict,
+    out: Path,
+    rows: list[dict],
+    arm: str,
+    edit: dict | None,
+    *,
+    record_full_readout: bool = False,
 ) -> list[dict]:
     folder = out / "batches" / arm
     folder.mkdir(parents=True, exist_ok=True)
@@ -164,6 +182,8 @@ async def score(
                 monitor_score=monitor["score"],
                 latency_seconds=time.perf_counter() - started,
             )
+            if record_full_readout:
+                value.update(monitor_readout(body, monitor))
             return value
 
         for offset in range(0, len(rows), config["batch_rows"]):
