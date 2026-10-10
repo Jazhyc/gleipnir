@@ -1,0 +1,62 @@
+{
+  "batch_rows": 128,
+  "campaign_id": "original01",
+  "capture_batch_rows": 32,
+  "capture_concurrency": 8,
+  "concurrency": 64,
+  "inputs": {
+    "canary": {
+      "path": "results/caft-regular-sdpa02/canary_workload.jsonl",
+      "sha256": "630ce77c951b3d7bbb1a16c442124fac3df042d09799d511888dec77caca701b"
+    },
+    "canary_predictions": {
+      "path": "results/b200_sdpa_lens/caft_refit01/canary_predictions.json",
+      "sha256": "093e225d75e23c531a8cf1ff937afb7883b1b5958de9025abc5be0fc09ba56e0"
+    },
+    "directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "interventions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/interventions.json",
+      "sha256": "e3f5a409dfe1f3854206b603d546f6a76a6983d35e138f4bb8bae1a81257f0e8"
+    },
+    "new_project": {
+      "path": "results/caft_direction_refit/caft_refit01/apps_project.jsonl",
+      "sha256": "59c1f0ba5f5f5a90b0f54100bdb2a8315c0edea853a77117d69a021a5eae1d9b"
+    },
+    "partition": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+      "sha256": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+    },
+    "plain": {
+      "path": "results/caft_direction_refit/caft_refit01/apps_plain.jsonl",
+      "sha256": "511a82cff68bc6ff060455ad881794fbde8af1c665ab1ad3e40b321ba6e26685"
+    },
+    "server": {
+      "path": "results/caft_direction_refit/caft_refit01/server.json",
+      "sha256": "632c3ef3f69471244ac1d357da8d9b9a7bfab669a986a3ad24cea8bd818f5121"
+    },
+    "startup_complete": {
+      "path": "results/b200_sdpa_lens/caft_refit01/complete.json",
+      "sha256": "b34a405b1929bcf0531343302c2768eef50672a05e8400adee1b6f4d28cc492d"
+    },
+    "startup_config": {
+      "path": "results/b200_sdpa_lens/caft_refit01/config.json",
+      "sha256": "b3266f90dee3a05c014ef08312cc2428ec55a7b8dee05ff33ba3b838292bcf6b"
+    },
+    "startup_manifest": {
+      "path": "results/b200_sdpa_lens/caft_refit01/manifest.json",
+      "sha256": "1dff4f21a093c14972afa2c795e6198a98e4f5287bee5d94f2a612d428916200"
+    },
+    "training_metadata": {
+      "path": "results/caft-regular-sdpa02/4b/monitor/causal_adapter/training_metadata.json",
+      "sha256": "38f8746f7bba035a70056e383b6604abe51b6d3467214d58bd76d7606f30c962"
+    },
+    "workload": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/apps_workload.jsonl",
+      "sha256": "d3aa35d21a38b272c3344a2fdbd2fa23cf42d46cac838d8b03dc676f1911c454"
+    }
+  },
+  "promote": false
+}
