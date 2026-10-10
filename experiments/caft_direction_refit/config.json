@@ -1,0 +1,54 @@
+{
+  "batch_rows": 128,
+  "campaign_id": "caft_refit01",
+  "capture_batch_rows": 32,
+  "capture_concurrency": 8,
+  "clamp_beta": 0.25,
+  "concurrency": 64,
+  "direction_layer": 20,
+  "inputs": {
+    "compiled_benchmark": {
+      "path": "results/caft-regular-sdpa02/evaluation/benchmark.jsonl",
+      "sha256": "1541c5f69c49ac63913b52a20cc1c54f34f0faf1bc0f08dd357266775c60b05b"
+    },
+    "compiled_controls": {
+      "path": "results/caft-regular-sdpa02/evaluation/honest_controls.jsonl",
+      "sha256": "a5801677d815233fd70b912c282e46e1b7b6df6faf0873bf7affed860807ae77"
+    },
+    "filtered_directions": {
+      "path": "results/activation_filter_refit/ranked20_refit01/directions.npz",
+      "sha256": "7086215e5f5d0aabaf89775f58fedf2db2a12458d2222aced137d834155d23bc"
+    },
+    "filtered_summary": {
+      "path": "results/activation_filter_refit/ranked20_refit01/summary.json",
+      "sha256": "d27f79020d33045e395bad63a10844719c1d3daa03c7eea7ee0ec4244a7a134b"
+    },
+    "fitting": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/fit_workload.jsonl",
+      "sha256": "329347f26de03ac4a2e4babbcb50b0e144ab8ba54b373f0ad91f012e539ccc49"
+    },
+    "original_directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "original_summary": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/summary.json",
+      "sha256": "e13952f55ad5ee16949de48c5a10858daab1e025b04c42346127302e597f53d7"
+    },
+    "partition": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+      "sha256": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+    },
+    "startup": {
+      "path": "experiments/caft_direction_refit/startup.json",
+      "sha256": "b3266f90dee3a05c014ef08312cc2428ec55a7b8dee05ff33ba3b838292bcf6b"
+    },
+    "testing": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/apps_workload.jsonl",
+      "sha256": "d3aa35d21a38b272c3344a2fdbd2fa23cf42d46cac838d8b03dc676f1911c454"
+    }
+  },
+  "promote": false,
+  "random_seed": 0,
+  "startup_name": "caft_refit01"
+}

@@ -1,0 +1,51 @@
+{
+  "gpu_uuid": "GPU-36165f94-d010-1b8a-ebe5-d27fe53b9be9",
+  "inputs": {
+    "adapter_complete": {
+      "path": "results/caft-regular-sdpa02/4b/monitor/complete.json",
+      "sha256": "3efcd3d6bbef59828da074dc824346d67a046b223e2cd4a1589a590bb2ef6ccb"
+    },
+    "canary": {
+      "path": "results/caft-regular-sdpa02/canary_workload.jsonl",
+      "sha256": "630ce77c951b3d7bbb1a16c442124fac3df042d09799d511888dec77caca701b"
+    },
+    "compiled_predictions": {
+      "path": "results/caft-regular-sdpa02/optimized_canary_predictions.json",
+      "sha256": "9b85c7b3a256e9537c319efe0e3781d098b8bb6d7c74f69a2f0cbbbe77914540"
+    },
+    "lens_staging": {
+      "path": "results/b200_vllm_lens/staging.json",
+      "sha256": "14ab84b731851d149f4bae5b88b8ed7d3742a0cfdac00e1f124b9395e58e980f"
+    },
+    "master_reference": {
+      "path": "results/caft-regular-sdpa02/4b/monitor/parity_reference.json",
+      "sha256": "c0b5630eb0240ca930873dc7edd8784bb1ed26e43ee57259c44d2fdc1e230348"
+    },
+    "merge_parity": {
+      "path": "results/caft-regular-sdpa02/merged_parity.json",
+      "sha256": "ffbac260494d77855af3a65ec919768e77574729c4138c3df18ff730b21fae82"
+    },
+    "merged_artifact": {
+      "path": "results/caft-regular-sdpa02/merged_artifact.json",
+      "sha256": "daef8efea3dca8fe508d52aea9208fe1d9973684a55f54f02cfbb42ed407bc75"
+    },
+    "parent_server": {
+      "path": "results/caft-regular-sdpa02/server.json",
+      "sha256": "19fd69333f008747661393edb065aea351cc84d19fd83a8bcad9b2688d4af3f5"
+    }
+  },
+  "model": "/tmp/gleipnir-merged/caft-regular-sdpa02",
+  "parity": {
+    "max_mean_absolute_difference": 0.02,
+    "min_adapter_effect": 1e-06,
+    "min_correlation": 0.99
+  },
+  "promote": false,
+  "runtime": {
+    "flashinfer-python": "0.7.0.post1",
+    "torch": "2.13.0",
+    "transformers": "5.14.1",
+    "triton": "3.7.1",
+    "vllm": "0.31.0"
+  }
+}
