@@ -72,7 +72,8 @@
   FPR with substantial recall loss and a large calibration shift.
 - [Concept-ablation training](findings/concept_ablation_training.md): regular-data
   training with the fixed injection axis removed at every residual layer, then
-  ordinary inference; BF16 parity, ID/APPS results and cached-control limitations.
+  ordinary inference; model-specific APPS refitting and projection also leave
+  injection alarms intact, with matched prior-model comparisons and control limits.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.

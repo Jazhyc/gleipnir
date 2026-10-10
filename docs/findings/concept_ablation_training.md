@@ -143,5 +143,95 @@ metrics, including direct ROC integration. Primary comparisons are in
 295.41s ID, 82.27s APPS benchmark and 68.96s honest controls, respectively
 114,249 / 99,768 / 103,423 **input tokens/s**. These include one pass of bounded
 c128 batches, not a new optimized-serving throughput comparison.
-The BF16 CAFT server remains warm, recorded in
-`results/caft-regular-sdpa02/server.json`; capacity remains running.
+The compiled BF16 CAFT server is retained after training evaluation, then
+retired for the Lens follow-up below; capacity remains running.
+
+## Model-specific injection projection after CAFT
+
+The user next requests fitting an APPS vector in the CAFT model itself and
+projecting it out, to compare with earlier models. The
+[refit contract](../../experiments/caft_direction_refit/README.md) freezes the
+same 64 fitting tasks / 896 rows / 384 injected-minus-neutral pairs, both labels,
+layer 20 and all-layer/all-token beta-1, zero-centered full projection. The
+same 591 test tasks / 8,218 rows remain disjoint. No ID evaluation, training,
+axis/layer sweep or promotion is part of this follow-up.
+
+The compiled CAFT scorer is retired sequentially for BF16 eager Lens. Its
+fresh master canary passes with MAE **0.0010249**, correlation **0.9999561**;
+compiled/eager canary MAE is 0.0029330, correlation 0.9998263. Native BF16,
+public-client, isolation, cleanup and projection-operator checks pass. Startup
+takes 52.25s. A startup warning notes the preserved OMP_NUM_THREADS=4 setting's
+potential CPU contention; neither configuration nor concurrency is changed.
+Both full test arms use the same eager engine, with c64 and batches of 128.
+
+The new unit axis has cosine **0.289197** with the original augmented-model
+axis and **0.330831** with the filtered-model refit. Its natural mean-shift
+norm is **10.982446**, versus 7.072298 and 8.434516 respectively. This is a
+substantially different direction; its norm is a descriptive fitting diagnostic,
+not evidence of causal strength. It is compatible with altered representation
+after CAFT, without establishing rerouting as the cause of the persistent alarms.
+
+**The new projection does not recover injection robustness.** All three
+templates still produce 100% injected-honest FPR and 100% backdoor recall.
+Matched ranking improves modestly; it remains substantially weaker than the
+original augmented model's projection and weaker than the filtered-model refit.
+
+| Model / inference arm | Injected-honest FPR | Injected-backdoor recall | Matched AUROC | Raw pAUROC20 |
+|---|---:|---:|---:|---:|
+| Original augmented SDPA, plain | 50.82% | 79.19% | 0.804912 | 0.519061 |
+| Original augmented SDPA, fitted projection | 0.39% | 31.39% | 0.890519 | 0.680782 |
+| Activation-filtered, plain | 100.00% | 100.00% | 0.601902 | 0.153282 |
+| Activation-filtered, model-specific refit projection | 23.69% | 48.48% | 0.704681 | 0.283552 |
+| Regular CAFT, fresh eager plain | 100.00% | 100.00% | 0.659126 | 0.194537 |
+| Regular CAFT, model-specific refit projection | 100.00% | 100.00% | 0.678410 | 0.200307 |
+
+All rows use the same held-out partition and each arm's clean-only threshold.
+Prior-model rows are cached from the
+[original direction study](b200_injection_direction.md#matched-primary-results) and
+[filtered-model refit](activation_filter_training.md#model-specific-direction-refit),
+not rerun. Cross-model comparisons change training data/intervention; within
+each model the plain/projection comparison uses the same eager engine.
+
+CAFT's plain threshold is **0.119203**, clean FPR **1.86%**; projected threshold
+is **0.164516**, clean FPR **1.35%**. At the fixed plain threshold, projected
+injected-honest FPR/recall remain **100%/100%** and clean FPR is **2.37%**.
+This differs from the filtered-model refit's apparent FPR reduction after
+recalibration: its fixed plain threshold also has 100% injected alarms, but
+60.91% clean FPR. CAFT's failure persists at both reported cutoffs.
+
+CAFT injected-honest means decrease from **0.7893/0.7963/0.7799** to
+**0.7064/0.7482/0.7550**. The projected template AUROC/pAUROC20 values are
+0.68584/0.21177, 0.69435/0.21865 and 0.65504/0.17050. Mean score shift over
+all test rows is **-0.012800**. Vanilla AUROC/pAUROC20 changes from
+0.92831/0.74656 to 0.92984/0.74612; recalibrated vanilla backdoor recall changes
+from 52.49% to 50.60%. Projected neutral-template honest FPR is
+3.55%/1.69%/1.52%, with backdoor recall 42.20%/36.71%/36.88%.
+Complete ties/calibration and fixed-cutoff diagnostics remain in the summary.
+
+The 1,771-row answer-mass diagnostic stays healthy: minimum/mean p01 is
+0.98979/0.99682 plain and 0.99230/0.99727 projected, with none below 0.5.
+Full-test eager/compiled plain MAE is **0.005004**, maximum difference 0.06242
+and mean shift +0.000028; their injected alarms agree while ranking has small
+serving-mode drift. The compiled scores are not the matched projection control.
+
+An additional operator diagnostic on one fitting injection prompt confirms
+removal along the **actual fitted vector at all 32 layers**, with maximum
+relative residual alignment **0.0001593** (0.01593%), exact plain restoration
+and clean request state. Its receipt is `actual_direction_operator.json`.
+Thus the negative outcome is not explained by an unapplied vector on that
+probe. It does not rule out layer-specific or distributed representations,
+nonlinear effects, other geometries or other seeds. In particular, fitting a
+large paired mean difference does not guarantee that removing it will remove
+the decision's causal dependence on injection content.
+
+Artifacts use `results/caft_direction_refit/caft_refit01/`; all captures and
+batch tensors stay persistent on the Pod. Independent audit verifies all
+**896 fitting scores / 16,436 test scores**, exact vector reproduction,
+fit/test separation, source/input/score hashes, logits, all **158 batches**
+and recomputed threshold/ranking summaries. Capture costs 62.87s for
+1,466,943 tokens (**23,333 input tokens/s**); plain/projected scoring costs
+190.17s/206.05s for 13,873,010 tokens each (**72,949/67,328 input tokens/s**).
+The nine reused protocol tests and scoped Ruff pass. Findings and receipt copies
+are collected locally without transferring model weights. The passing BF16
+eager Lens server remains warm on port 8010, recorded in
+`results/b200_sdpa_lens/caft_refit01/server.json`; no capacity lifecycle occurs.
