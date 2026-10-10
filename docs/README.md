@@ -72,8 +72,8 @@
   FPR with substantial recall loss and a large calibration shift.
 - [Concept-ablation training](findings/concept_ablation_training.md): regular-data
   training with the fixed injection axis removed at every residual layer, then
-  ordinary inference; original-axis and model-specific APPS projections also
-  leave injection alarms intact, with matched prior-model comparisons and limits.
+  ordinary inference; original-axis and refitted projections leave alarms intact,
+  while adding the original vector strongly raises clean/neutral honest alarms.
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.

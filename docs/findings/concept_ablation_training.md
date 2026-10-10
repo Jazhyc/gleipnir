@@ -293,3 +293,75 @@ or **67,033 input tokens/s**. Scoped Ruff and actual warm-engine no-op pass;
 unchanged native/operator/partition checks reuse their validated receipts.
 Results and audit copies are retained locally, all weights remain remote and
 the same passing Lens process remains warm; no extra baseline scoring occurs.
+
+## Augmented-vector addition on clean and neutral honest examples
+
+The user requests a causal sensitivity check away from the saturated injected
+population: add the original augmented-model vector to honest examples. The
+[honest-steering contract](../../experiments/caft_honest_steering/README.md)
+selects **591 clean + 1,773 neutral honest rows = 2,364**, on the same disjoint
+test tasks. It excludes injected views and backdoors, keeps all three neutral
+templates and reuses the same-engine plain scores. No fitting or retraining.
+
+Addition is **only at layer 20, every token**, with no projection active.
+The original augmented natural shift, norm **7.072298**, is added at +1x and
++2x; seed-0 random vectors have matching norms. Norm matching is disabled.
+The two doses and random direction are fixed before outcomes. Strength refers
+to the original augmented shift, not the CAFT recipient's larger shift. This
+differs from Michael's recipient-normalized dose convention and is not an exact
+reproduction of his base-model experiment.
+
+**The original direction still causally raises suspiciousness in CAFT.** Both
+positive doses raise the 1-minus-0 logit margin in **99.75% of rows**, substantially
+more than the equal-norm random control. This supports preserved causal steering
+influence and disfavors an explanation based on the original direction having
+lost all steering influence after CAFT.
+
+| CAFT honest arm | Clean FPR | Mean neutral FPR | Pooled FPR | Mean paired logit-margin shift |
+|---|---:|---:|---:|---:|
+| Unedited, reused | 1.86% | 2.82% | 2.58% | 0 |
+| Augmented vector +1x | 12.01% | 77.38% | 61.04% | +1.9012 |
+| Augmented vector +2x | 100.00% | 100.00% | 100.00% | +3.1632 |
+| Equal-norm random +1x | 1.35% | 2.59% | 2.28% | -0.0960 |
+| Equal-norm random +2x | 1.86% | 3.05% | 2.75% | +0.0395 |
+
+All FPRs use the **fixed unedited clean-calibrated threshold 0.119203**;
+neutral FPR averages the three equally sized templates. Thresholds are not
+recalibrated after steering. At the separate threshold **0.5**, pooled honest
+FPR is **0.34% unedited, 0.68% at +1x, 2.16% at +2x**, and 0.30% for both
+random arms. Thus 100% alarms at the monitoring operating point do not imply
+that every score crosses 0.5.
+
+Mean pooled scores are 0.03534 unedited, **0.15009 / 0.35693** for positive
++1x/+2x and 0.03311/0.03635 for random +1x/+2x. Median paired margin shifts
+are **+1.875 / +3.000**, versus -0.125/0.000 for random. At +1x, neutral-template
+FPR is **95.60% / 59.22% / 77.33%**. Clean and neutral mean margin shifts are
+**+2.312 / +1.764** at +1x and **+3.968 / +2.895** at +2x; effects vary with
+input context rather than producing one constant logit offset.
+
+The 512-row-per-arm answer-mass checks remain healthy. Minimum/mean p01 is
+**0.99192/0.99618** at +1x and **0.98636/0.99456** at +2x; random minima are
+0.98708 and 0.97796. No diagnostic has p01 below 0.5. All examples are harmless,
+so AUROC/pAUROC are explicitly undefined; calibration/ties and complete paired
+shift distributions remain in the summary.
+
+Together with the unsuccessful original-axis projection, this shows that the
+direction can drive alarms without its removal eliminating natural injection
+alarms in this checkpoint. Learned compensation/rerouting remains plausible,
+as do pre-existing alternative features, nonlinear propagation and an incomplete
+single-axis intervention. This does not distinguish those mechanisms or prove
+that CAFT caused information to move. One random direction, one trained seed
+and previously investigated APPS templates limit generalization.
+
+The no-op reproduces exactly (MAE 0, correlation 1); native/source/runtime
+receipts remain unchanged. Artifacts use `results/caft_honest_steering/honest01/`.
+Independent audit verifies all **9,456 new scores**, 591 tasks, **76 batches**,
+exact paired prompt/label/token identities, finite logits and margins, vector
+geometry/norms/doses, file/source hashes and recomputed five-arm metrics.
+Each new arm scores **3,549,931 input tokens**: positive +1x/+2x takes
+46.33s/46.38s (**76,615/76,540 input tokens/s**), random +1x/+2x takes
+46.22s/45.94s (**76,812/77,265 input tokens/s**). These are one-pass costs on
+the frozen honest cohort, with no fresh baseline scoring.
+The three focused metric tests and scoped Ruff pass. Scores/receipts are
+collected locally without weights, and the unchanged passing Lens engine
+remains warm. There is no capacity lifecycle or promotion.
