@@ -58,6 +58,9 @@
   captures and equal-length benign controls show partial, heterogeneous signal
   transfer despite near-complete geometric removal; numeric-output follow-up
   shows prompt sensitivity and answer-0 bias without reliable projection benefit.
+- [Base-model JudgeDeceiver steering](findings/base_judge_steering.md): the
+  augmented-monitor vector strongly biases unadapted judging toward B while
+  retaining its APPS alarm effect on the same base checkpoint.
 - [Training-example direction alignment](findings/b200_training_direction.md):
   complete original-data base/SDPA census, source and teacher–label candidate
   concentrations, full rankings and review flags; earlier small augmented-pair

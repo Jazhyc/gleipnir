@@ -365,3 +365,5 @@ the frozen honest cohort, with no fresh baseline scoring.
 The three focused metric tests and scoped Ruff pass. Scores/receipts are
 collected locally without weights, and the unchanged passing Lens engine
 remains warm. There is no capacity lifecycle or promotion.
+That CAFT process is subsequently retired for the
+[base-model JudgeDeceiver steering comparison](base_judge_steering.md).

@@ -566,9 +566,11 @@ model-specific refit evaluations, recorded in
 `results/b200_sdpa_lens/activation_ranked20_projection01/server.json`. It is then
 retired for [regular-data concept-ablation training](findings/concept_ablation_training.md).
 The new CAFT adapter completes BF16 ID/APPS evaluation. Its compiled BF16 scorer
-is then retired for the model-specific direction refit; the passing eager Lens
-server remains warm on port 8010, recorded in
-`results/b200_sdpa_lens/caft_refit01/server.json`. FP32 masters and quality artifacts
+is then retired for the model-specific direction refit and subsequent original-
+axis projection/addition tests. The CAFT Lens process is later retired for
+[base-model JudgeDeceiver steering](findings/base_judge_steering.md); the passing
+unadapted base Lens server remains warm on port 8010, recorded in
+`results/base_judge_steering/base01/server.json`. FP32 masters and quality artifacts
 remain persistent; the new merge stays on ephemeral storage. The unused
 matched-random-removal merge is byte-verified in a persistent archive before
 reclaiming its ephemeral copy. Capacity remains running. The earlier Lens
