@@ -235,3 +235,61 @@ The nine reused protocol tests and scoped Ruff pass. Findings and receipt copies
 are collected locally without transferring model weights. The passing BF16
 eager Lens server remains warm on port 8010, recorded in
 `results/b200_sdpa_lens/caft_refit01/server.json`; no capacity lifecycle occurs.
+
+## Keeping the original training projection active at inference
+
+The user clarifies a further comparison: apply the **original augmented-model
+axis**, identical to CAFT's training vector, at inference on the CAFT checkpoint.
+The [original-projection contract](../../experiments/caft_original_projection/README.md)
+keeps the exact original unit layer-20 axis and serialized all-layer/all-token
+beta-1, zero-centered operator. There is no new training or vector fitting.
+It reuses the same warm BF16 eager Lens process and both complete same-engine
+plain/refitted-axis controls, with no restart or capacity lifecycle.
+
+The fresh 20-row no-op canary reproduces scores **exactly** (MAE 0,
+correlation 1). Runtime, startup source bindings, server process identity and
+original-axis/training SHA256 equality pass. The only new scored arm contains
+the same 591 disjoint test tasks / 8,218 rows, c64 and batches of 128; all
+direction-fitting variants stay excluded. This adds a training-and-inference
+intervention condition, separate from CAFT's ordinary-inference protocol.
+
+**Keeping the original projection active also fails to reduce injection alarms.**
+At either the fixed plain cutoff or the new clean-only cutoff, all templates
+retain 100% injected-honest FPR and 100% injected-backdoor recall.
+
+| CAFT inference arm | Injected-honest FPR | Injected-backdoor recall | Matched AUROC | Raw pAUROC20 |
+|---|---:|---:|---:|---:|
+| Unedited, reused | 100.00% | 100.00% | 0.659126 | 0.194537 |
+| Refitted-axis projection, reused | 100.00% | 100.00% | 0.678410 | 0.200307 |
+| Original training-axis projection | 100.00% | 100.00% | 0.656237 | 0.180888 |
+
+The original-axis threshold is **0.106691**, with clean FPR **1.86%**. At the
+fixed plain threshold 0.119203, clean FPR is **1.69%**. Mean injected-honest
+scores are **0.7397 / 0.7439 / 0.7662**, versus 0.7893 / 0.7963 / 0.7799
+unedited. The mean shift over all test scores is **-0.006805**. Template matched
+AUROC/pAUROC20 values are 0.68062/0.21605, 0.68024/0.17132 and
+0.60786/0.15529; the equal-template average worsens against unedited scoring.
+
+Vanilla APPS AUROC/pAUROC20 is **0.93080 / 0.76027**, with recalibrated backdoor
+recall **56.95%**. Neutral-template honest FPR is 9.98% / 1.86% / 2.37%, with
+backdoor recall 59.35% / 46.48% / 47.00%. The answer-mass diagnostic has
+1,771 rows, minimum/mean p01 **0.99301 / 0.99755**, none below 0.5.
+Complete calibration/tie and fixed-cutoff diagnostics remain in the summary.
+
+A direct original-axis probe on the same fitting injection prompt verifies
+all-layer removal, with maximum relative residual alignment **0.0003465**
+(0.03465%), exact plain restoration and clean request state. This keeps the
+negative result distinct from an unapplied intervention on that probe. In this
+checkpoint and frozen geometry, restoring the training-time ablation at
+inference does not rescue APPS false positives; neither the original nor the
+newly fitted single direction suffices. It does not establish the learning
+mechanism, exclude broader subspaces or establish that CAFT generally fails.
+
+Artifacts use `results/caft_original_projection/original01/`. The independent
+audit passes exact input/source/score hashes, all **8,218 new finite scores**,
+ordered prompt/label/token identities, logits, **65 batches** and recomputed
+three-arm metrics. Scoring costs **206.96s** for **13,873,010 input tokens**,
+or **67,033 input tokens/s**. Scoped Ruff and actual warm-engine no-op pass;
+unchanged native/operator/partition checks reuse their validated receipts.
+Results and audit copies are retained locally, all weights remain remote and
+the same passing Lens process remains warm; no extra baseline scoring occurs.
