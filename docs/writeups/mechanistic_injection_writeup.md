@@ -301,8 +301,7 @@ One hypothesis is that the features underlying precision-sensitive behavior
 lie in lower-variance components, so inspecting only the leading PCs could miss
 them. Quantization sensitivity motivates testing this possibility, but does
 not establish a component's variance rank. We could examine components across
-the variance spectrum and compare their intervention effects under BF16 and
-optimized serving.
+the variance spectrum rather than restricting the analysis to the leading PCs.
 
 The
 [CAFT adapter](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT)
