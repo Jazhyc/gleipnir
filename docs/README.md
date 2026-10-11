@@ -71,6 +71,9 @@
 - [Firewall-content census](findings/training_firewall_census.md): full 9B logit
   screen, source/teacher-conditioned associations, classifier misses and
   inspected high-change counterexamples without firewall content.
+- [Teacher-disagreement filtering](findings/teacher_disagreement_filtering.md):
+  strict and 0.05-margin filtering improve one-seed ID ranking, with higher
+  fixed-threshold false alarms; wider margins regress Gloom, and OOD is untested.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
   top-20% harmless removal and matched random control improve ID but worsen
   held-out APPS injection discrimination; fixed-axis projection on the filtered
