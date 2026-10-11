@@ -149,15 +149,21 @@ This removes its component along $u$ at every layer and token.
 
 | Training condition | ID pAUROC@20 | Injected honest FPR | Backdoor recall | Matched APPS AUROC |
 | --- | ---: | ---: | ---: | ---: |
-| Cached regular control | 0.8654 | 67.06% | 78.62% | 0.6139 |
+| Modern regular control | 0.8654 | 67.06% | 78.62% | 0.6139 |
 | CAFT | 0.8513 | 100.00% | 100.00% | 0.6611 |
 
 **Every injected-honest score also exceeded 0.5**, so the saturation is not just
-its lower clean-calibrated cutoff. The cached regular control used FP4 training
+its lower clean-calibrated cutoff. The modern regular control used FP4 training
 and optimized serving; CAFT used BF16 for both. Without a fresh matched regular
 control, this cannot isolate CAFT's effect, although the resulting model clearly
 failed to resolve the alarms.
 [Training results](../findings/concept_ablation_training.md).
+
+The historical BF16 regular baseline also had **100% injected-honest FPR and
+100% backdoor recall**, on the original 655-task APPS population. CAFT therefore
+failed to resolve an already observed failure mode; saturated alarms were not
+new to CAFT. That historical result is separate from the modern control above.
+[Historical baseline](../findings/monitor_injection_augmentation.md).
 
 Keeping the original projection active at inference did not help. Refitting
 a direction in CAFT, with cosine **0.289** to the old axis, also left FPR at
