@@ -1,0 +1,7 @@
+campaign_id: fp32-monitor-head01
+head_compute_precision: fp32
+serving_precision: bf16
+populations:
+  id: 3012
+  ood: 6395
+promote: false
