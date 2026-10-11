@@ -1,0 +1,112 @@
+campaign_id: teacher-disagreement-control-sdpa04
+seed: 0
+profile: qwen35_4b_b200_packed_sdpa
+training_rows: 8688
+injected_rows: 0
+expected_steps: 272
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 83816369
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  startup_reference:
+    path: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+    sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  training:
+    path: data/student_injection_awareness/regular/student_rows.jsonl
+    sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+  teacher:
+    path: data/student_injection_awareness/soft_targets.jsonl
+    sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+  token_audit:
+    path: results/student_injection_awareness/4b/regular/token_audit.json
+    sha256: 0db8abe9b9dfaff6b22284fb37bf957b65fa5adcaa4da9165b25bdfb0b6a51ba
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+  serving_precision: bf16
+  failed_parity_diagnostic: false
+merged_model: /tmp/gleipnir-merged/teacher-disagreement-sweep
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: SET_BY_PREPARATION
+hypothesis: Removing confident teacher/source-label conflicts improves ID ranking
+  while preserving near-boundary uncertainty.
+intervention: Original unaugmented monitoring rows; unfiltered control and label-conditioned
+  deltas 0, 0.05, 0.1 and 0.2; retain original Kimi soft targets.
+selection: Final one-epoch checkpoint only; primary source-macro raw normalized pAUROC@20
+  versus reused unfiltered SDPA control with fresh matched BF16 ID evaluation; no
+  early stopping or promotion; OOD outside campaign.
+stop_condition: Stop queue on identity/runtime drift, nonfinite or missing gradients,
+  OOM, failed new-adapter parity or BF16 audits, incomplete coverage, or three-hour
+  arm deadline.
+augmentation_audit: false
+evaluations:
+- id
+extra_sources:
+- experiments/teacher_disagreement_filtering/README.md
+- experiments/teacher_disagreement_filtering/config.yaml
+- experiments/teacher_disagreement_filtering/__init__.py
+- experiments/teacher_disagreement_filtering/prepare.py
+- experiments/teacher_disagreement_filtering/run.py
+- experiments/teacher_disagreement_filtering/test_contract.py
+cached_control:
+  inputs:
+    cached_job:
+      path: results/student_injection_awareness/4b/regular/job.json
+      sha256: 9f52476961f602676647813cd510a1c509a6a31222fdca9d90dcfe0bc1d3f464
+    cached_metadata:
+      path: results/student_injection_awareness/4b/regular/causal_adapter/training_metadata.json
+      sha256: 91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f
+    cached_master_config:
+      path: results/student_injection_awareness/4b/regular/causal_adapter/adapter_config.json
+      sha256: bfa2a336a5a61294c1ce5c17d3d54efe5c48e65bc40754ad9d154cf18ebef67f
+    cached_master:
+      path: results/student_injection_awareness/4b/regular/causal_adapter/adapter_model.safetensors
+      sha256: ef2ed374f7f07dfcf1455fc3c78a7722a7ce128dac0263deb79e8cc27560b873
+    cached_export_config:
+      path: results/student_injection_awareness/4b/regular/model/adapter_config.json
+      sha256: bfa2a336a5a61294c1ce5c17d3d54efe5c48e65bc40754ad9d154cf18ebef67f
+    cached_export:
+      path: results/student_injection_awareness/4b/regular/model/adapter_model.safetensors
+      sha256: 2d6a96428ff904b6254f7b20924650e6c4da2b93046673b6937fc76189029924
+    cached_rebase:
+      path: results/student_injection_awareness/4b/regular/model/rebase_manifest.json
+      sha256: ee8ebf527bdb852078c900ce18dc60dccfdcf8a475545e8e8fca69f7ab7ca87d
