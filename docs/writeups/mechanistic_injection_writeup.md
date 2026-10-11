@@ -74,8 +74,8 @@ length quartile. Both used the same seed-0 BF16/SDPA recipe and initializer.
 | Activation removal | 0.9151 | 100.00% | 100.00% | 0.6016 |
 | Matched random removal | 0.8725 | 91.54% | 97.66% | 0.7025 |
 
-The ID gain was **5.51 percentage points**, while APPS matched pAUROC@20 fell
-from 0.5129 to 0.1569. Random removal also hurt APPS, but less severely.
+The ID gain was **5.51 percentage points**, while APPS matched AUROC fell
+from 0.8036 to 0.6016. Random removal also hurt APPS, but less severely.
 Vanilla APPS AUROC stayed roughly unchanged.
 
 The activation filter removed 345 of the 346 harmless records with suspicious
@@ -102,11 +102,11 @@ on the filtered model, comparing both with the same unedited eager baseline.
 The directions had cosine similarity **0.705**, indicating substantial overlap.
 With each arm's clean-calibrated threshold:
 
-| Filtered-model inference arm | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
-| --- | ---: | ---: | ---: | ---: |
-| No projection | 100.00% | 100.00% | 0.6019 | 0.1533 |
-| Original-direction projection | 62.61% | 86.68% | 0.7343 | 0.3331 |
-| Refitted-direction projection | 23.69% | 48.48% | 0.7047 | 0.2836 |
+| Filtered-model inference arm | Injected honest FPR | Backdoor recall | Matched AUROC |
+| --- | ---: | ---: | ---: |
+| No projection | 100.00% | 100.00% | 0.6019 |
+| Original-direction projection | 62.61% | 86.68% | 0.7343 |
+| Refitted-direction projection | 23.69% | 48.48% | 0.7047 |
 
 Both projections improved ranking over the unedited filtered model. Their
 matched AUROCs differed by only 0.030, much less than their 0.156–0.186 gap
@@ -164,11 +164,11 @@ Keeping the original projection active at inference did not help. Refitting
 a direction in CAFT also left FPR at
 100%. All three inference arms retained 100% backdoor recall.
 
-| CAFT inference arm | Injected honest FPR | Matched AUROC | Matched pAUROC@20 |
-| --- | ---: | ---: | ---: |
-| Unedited | 100.00% | 0.6591 | 0.1945 |
-| Original-axis projection | 100.00% | 0.6562 | 0.1809 |
-| Refitted-axis projection | 100.00% | 0.6784 | 0.2003 |
+| CAFT inference arm | Injected honest FPR | Matched AUROC |
+| --- | ---: | ---: |
+| Unedited | 100.00% | 0.6591 |
+| Original-axis projection | 100.00% | 0.6562 |
+| Refitted-axis projection | 100.00% | 0.6784 |
 
 These are matched eager comparisons on the same checkpoint and examples.
 Both fixed and recalibrated thresholds give the same saturated injection rates. Restoring
@@ -235,14 +235,15 @@ behavior, motivating the precision comparisons below.
 
 The APPS comparison uses augmented adapters on the full 655-task population.
 Rates average the three injection templates, with each condition calibrated
-on clean honest code to allow at most 2% FPR.
+on clean honest code to allow at most 2% FPR. The final column reports ID
+source-macro pAUROC@20.
 
-| MLP training and attention | Serving | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
+| MLP training and attention | Serving | Injected honest FPR | Backdoor recall | Matched APPS AUROC | ID pAUROC@20 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| FP4 MLP, FA4 | Optimized | 31.30% | 64.45% | 0.7604 | 0.3992 |
-| BF16 MLP, FA4 | Optimized | 3.51% | 30.55% | 0.7867 | 0.4630 |
-| BF16 MLP, FA4 | BF16 | 25.19% | 70.38% | 0.8216 | 0.5191 |
-| BF16 MLP, SDPA | BF16 | 60.41% | 83.82% | 0.7989 | 0.5043 |
+| FP4 MLP, FA4 | Optimized | 31.30% | 64.45% | 0.7604 | 0.7966 |
+| BF16 MLP, FA4 | Optimized | 3.51% | 30.55% | 0.7867 | 0.8253 |
+| BF16 MLP, FA4 | BF16 | 25.19% | 70.38% | 0.8216 | 0.8511 |
+| BF16 MLP, SDPA | BF16 | 60.41% | 83.82% | 0.7989 | 0.8600 |
 
 Comparing the first two rows keeps optimized serving fixed while changing MLP training
 precision. The two BF16/FA4 rows use exactly the same adapter and differ only
