@@ -1,4 +1,4 @@
-# Mechanistic interventions for prompt injection sensitivity in Gleipnir
+# Mechanistic interventions for prompt injection sensitivity in logit trained monitors
 
 *Initial draft, 11 October 2026*
 
