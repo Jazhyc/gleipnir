@@ -96,6 +96,9 @@
 - [Black-box APPS injection detection](findings/apps_injection_detection.md):
   matched base/SDPA BF16 presence prompting, near-perfect honest-code ranking,
   weak fixed-threshold recall and residual backdoor-related false positives.
+- [Safety/injection score fusion](findings/apps_score_fusion.md): task-disjoint
+  offline logistic combinations improve pooled behavior ranking but worsen
+  matched injected-honest/backdoor discrimination; no serving promotion.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,
   failed score agreement, paired native arithmetic, scheduler diagnostics and
   fixed-adapter ID ranking/calibration comparison.

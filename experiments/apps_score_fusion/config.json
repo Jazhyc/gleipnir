@@ -1,0 +1,25 @@
+{
+  "partition": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+  "master_sha256": "bdb702316b1d5e29cbdd8fba64888fe128b37bfd25030211b867d46372e8f5fd",
+  "arms": [
+    "safety_raw",
+    "safety_calibrated",
+    "two_score",
+    "interaction"
+  ],
+  "C": 1,
+  "max_iter": 1000,
+  "random_state": 0,
+  "threshold": "strict > cutoff; fitting negatives <=2% FPR",
+  "promote": false,
+  "files_sha256": {
+    "results/b200-augmented-sdpa-apps01/evaluation/benchmark.jsonl": "47231bea5e381fbfa801c2ae8a19e7ab81d6d36085f2053691ccd92f8892f6b5",
+    "results/b200-augmented-sdpa-apps01/evaluation/honest_controls.jsonl": "602de5b75370ef3f8e0639d5bafda556eec87e90dc92061f655ed6b15ef1317c",
+    "results/b200-augmented-sdpa-apps01/evaluation/complete.json": "5b4f37fa5af13d8aa6d9f424ed83b24c2b0cf547fc1ef2e24ece7e814cb3559f",
+    "results/apps_injection_detection/presence01/sdpa/predictions.jsonl": "ef3ff33dd8a66db3bf52751f80d1b6f3198252ee39c99fa0c9f17fde7218c35c",
+    "results/apps_injection_detection/presence01/sdpa/complete.json": "9bbd813a4d25e2a882ed646bfcd0f115c410b83c664926b2eeb26b565d37d4db",
+    "results/apps_injection_detection/presence01/sdpa/binding.json": "fdb64c45e3f0bf47d7ee91815affa9b94d798a80f71b4ed9d79a57d3029d09f8",
+    "results/b200-augmented-sdpa-replay02/merged_artifact.json": "a7a9f8f5deddf6bf5d5aa4289a987641b3ecbc4b5e9d17baa9a750e533b49491",
+    "results/b200_injection_direction/sdpa_injection_direction01/partition.json": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+  }
+}
