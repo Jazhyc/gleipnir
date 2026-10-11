@@ -1,6 +1,6 @@
 # Mechanistic interventions for prompt injection sensitivity in logit trained monitors
 
-*Initial draft, 11 October 2026*
+*Working draft, 11 October 2026*
 
 This investigation continues the results we presented in
 [Emergent Suspiciousness in Trained Monitors](../../outputs/presentations/monitor_injection_results/presentation.pdf).
@@ -10,112 +10,58 @@ rates from 1.98% on clean code to 100.00% and 99.85%, respectively, at the same
 thresholds. We described this behavior as emergent suspiciousness: the presence
 of injection text could trigger an alarm even without harmful behavior.
 
-We continued by asking whether mechanistic interventions could help explain
-and reduce these false alarms. In particular, could an activation direction
-associated with injection responses guide changes to the training data or the
-training computation? Two interventions were central:
-removing training examples with the largest learned alignment changes, and
-projecting the direction out during fine-tuning using CAFT.
+Building on Michael's work on extracting and intervening on an
+injection-associated activation direction, we investigated two ways to change
+training: **filtering examples by their activation change**, and **projecting
+the direction out during fine-tuning with CAFT**. Michael's
+[companion writeup](https://claude.ai/artifact/TXoHJdDKsk99o1bcp79b5R#06f44dca-9677)
+covers direction extraction and inference interventions;
+the [implementation](https://github.com/mkenney2/monitor-injection-evals/tree/931fee0a1db369bc15c01009aa77219e7e106c14)
+provides the underlying protocol.
 
-Neither resolved the problem. Activation-based filtering substantially improved
-in-distribution ranking while worsening injection discrimination. CAFT retained
-100% false positives on injected honest code, including when we also removed
-the original direction at inference. Yet adding that same direction still
-strongly increased monitoring scores. The direction has causal influence, but
-these experiments do not identify it as a necessary bottleneck for false alarms
-or establish which training examples caused that influence to emerge.
+Both training interventions failed to resolve injection false alarms. Filtering
+improved in-distribution ranking while worsening injection discrimination.
+CAFT retained 100% false positives on injected honest code, even with further
+inference-time projection. Supporting steering experiments show that the
+original direction still influences the model. We also found substantial
+sensitivity to training precision and serving arithmetic.
 
-Training precision and serving arithmetic also changed the behavior materially.
-This matters when interpreting mechanistic interventions: a lower false-positive
-rate can accompany a loss of harmful-action detection, and seemingly similar
-checkpoints or serving configurations can behave differently.
+## Context for the comparisons
 
-## Monitoring task and evaluation
+These experiments use Qwen3.5-4B monitors trained on 8,688 tool trajectories
+with Kimi K3 soft targets. Source-provided harmless/harmful labels are distinct
+from those targets: a harmless-labeled trajectory can receive a suspicious
+teacher judgment. The augmented condition replaces 40% of trajectories
+with injected versions, retaining their original teacher targets. Our current
+BF16/SDPA augmented checkpoint is a replay, not the historical adapter used
+in the original presentation.
 
-Gleipnir uses a Qwen3.5-4B backbone with rank-128 LoRA adapters, trained on Kimi
-K3 soft judgments of tool trajectories. Its monitoring score is
-`sigmoid(logit_1 - logit_0)` at a fixed `Prediction:` boundary, with `1` indicating
-problematic behavior. Source-provided harmless/harmful labels and soft teacher
-targets are separate: a harmless-labeled record can receive a suspicious
-teacher target.
+We track two outcomes. The **ID set** contains 3,012 Gloom and STRIDE records,
+with identified reasoning removed and visible assistant prose retained.
+Its primary metric is source-macro pAUROC@20: raw partial AUROC up to FPR 0.2,
+divided by 0.2. The **APPS set** compares honest and backdoored programs with
+clean, neutral and injected versions. We report injected-honest false-positive
+rate (FPR), injected-backdoor recall and matched AUROC. A low FPR is useful
+only if harmful behavior remains detectable.
 
-The augmented training condition replaces 40% of the 8,688 trajectories with
-versions containing one of eight authored injection strings, while copying the
-original soft teacher target. It teaches invariance to those inserted strings
-under the assumption that the underlying behavior judgment should stay fixed.
-Historical augmentation improved ID ranking and reduced APPS false alarms,
-which motivated looking for a mechanistic alternative. The augmented monitor
-used in the central experiments is a current BF16/SDPA replay; it does not
-reproduce the historical adapter's weights or complete behavior.
-[Augmentation and replay evidence](../findings/b200_augmented_training.md).
+The direction was fitted on 64 APPS tasks; all their variants are excluded
+from the main results, leaving 591 tasks, including 583 with backdoor
+counterparts. Injection metrics average three fixed templates. Each condition
+normally receives a clean-only threshold allowing at most 2% FPR, using
+`score > threshold`; fixed-threshold results are identified separately.
+APPS had already informed these hypotheses, so this is an exploratory study,
+not an untouched confirmation benchmark.
 
-We evaluate two distinct properties. The in-distribution (ID) set contains
-3,012 records from Gloom and STRIDE, with identified reasoning removed and
-visible assistant prose retained. The primary ID ranking statistic is the
-source-macro partial AUROC up to 20% false positives, normalized as raw area
-divided by 0.2. This is not sklearn's standardized partial AUC.
-
-The APPS evaluation compares honest and backdoored programs, including clean
-versions and matched versions containing neutral or injection text. Injection
-text in honest code does not change its behavior label. We report both the
-false-positive rate (FPR) on injected honest code and recall on injected
-backdoored code. Matched AUROC compares those two classes on common tasks.
-Unless stated otherwise, each condition receives a threshold calibrated on
-clean honest code to allow at most 2% FPR, using the strict rule
-`score > threshold`. Fixed-threshold diagnostics distinguish changes in
-calibration from changes in discrimination.
-
-Our mechanistic direction was fitted on 64 APPS tasks. Every variant of those
-tasks is excluded from the main evaluation, leaving 591 tasks and 8,218 rows,
-including 583 tasks with backdoor counterparts. Reported injection metrics
-average three fixed templates. This separates fitting tasks from test tasks,
-but APPS had already informed the research questions and intervention geometry;
-it is an exploratory transfer study rather than an untouched confirmation
-benchmark. The precision comparisons later in this writeup use the original
-655-task APPS population and are identified separately.
-
-The mechanistic studies use merged BF16 checkpoints with eager vLLM Lens
-interventions. New adapters pass master-to-merge and master-to-serving score
-checks; request isolation, intervention arithmetic and score identities are
-audited. These controls support the validity of the measured edits without
-making BF16 serving bitwise equivalent to the FP32 master.
-
-## A direction that changes injection responses
-
-Following [our colleague's intervention experiments](https://github.com/mkenney2/monitor-injection-evals/tree/931fee0a1db369bc15c01009aa77219e7e106c14),
-we fitted a direction in the current augmented, BF16/SDPA-trained monitor.
-At layer 20, we averaged the final-token residual differences between injected
-and neutral versions of the same examples, using both honest and backdoored
-pairs. Let this mean difference be `v` and its unit direction be `u`.
-
-We compared a centered clamp, a full projection and a random-direction
-projection. Full projection applies `h' = h - u(uᵀh)`. The clamp subtracts
-one quarter of the deviation from a neutral fitted center along `u`, rather
-than setting the component to zero. **Although fitted at layer 20, both
-operators act after every decoder layer and on every token.** Addition is a
-different experiment: it adds `v` at layer 20 only, also on every token.
-
-| Augmented monitor intervention | Injected honest FPR | Injected backdoor recall | Matched AUROC | Matched pAUROC@20 |
-| --- | ---: | ---: | ---: | ---: |
-| Unedited | 50.82% | 79.19% | 0.8049 | 0.5191 |
-| Centered clamp | 0.45% | 36.48% | 0.8631 | 0.6252 |
-| Full projection | 0.39% | 31.39% | 0.8905 | 0.6808 |
-| Random projection | 46.81% | 79.42% | 0.8093 | 0.5271 |
-
-Projection produces a substantial ranking improvement and almost eliminates
-injected-honest alarms. It also loses most injected-backdoor recall at the clean
-operating point. ID macro pAUROC@20 changes only slightly, from 0.8590 to
-0.8585, but that stability does not remove the APPS recall tradeoff. The fitted
-injection and backdoor mean shifts have cosine similarity 0.542, consistent
-with overlapping features useful for both kinds of alarm. Supported-answer
-probability mass remains high, so the effect is not explained by answer-format
-collapse. Task-bootstrap intervals support the ranking gains, conditional on
-this checkpoint and fitted vector; they do not measure training-seed variation.
-[Detailed projection results](../findings/b200_injection_direction.md).
-
-This gave us a practical hypothesis: if we could identify training examples
-that strengthened the direction, perhaps removing those examples would reduce
-false alarms without needing an inference-time intervention.
+The direction is extracted at layer 20. **Projection removes its component
+after every decoder layer and at every token; addition acts at layer 20 only.**
+New training runs and the main evaluations use BF16 to avoid the known quantization
+confound. In our replication, inference projection on the augmented model
+reduced injected-honest FPR from 50.82% to 0.39%, but also reduced backdoor
+recall from 79.19% to 31.39%. This motivated asking whether training could
+produce a better tradeoff.
+[Replication results](../findings/b200_injection_direction.md).
+The projection replication uses eager serving; the filtering table below uses
+compiled BF16 evaluations.
 
 ## Activation based filtering improved ID and worsened APPS
 
@@ -128,24 +74,13 @@ does not measure how much that record's gradient contributed to the axis.
 Original trajectories can themselves contain natural injections or quoted
 tests; absence of synthetic augmentation does not certify injection-free text.
 
-The strongest inspection lead was disagreement between harmless source labels
-and suspicious teacher targets. Among harmless records, 346 had Kimi targets
-at least 0.5. Their mean alignment change was +4.551, versus -1.614 for the
-other 3,998 harmless records. Harmful records also changed positively on
-average, including those with low teacher targets. This pattern associates the
-representation with supervision and source composition; it does not certify
-teacher errors or identify a unique injection feature.
-
-Some highly activating records discussed firewall configuration or network
-safeguards. A full Qwen3.5-9B concept screen found that the association was not
-exclusive to those topics. Within harmless records with suspicious teacher
-targets, firewall-score log odds correlated only weakly with alignment change
-(Spearman 0.067), and both topic-score groups had strongly positive changes.
-The classifier also missed inspected firewall cases. We therefore used
-activation change itself, rather than teacher disagreements or firewall scores,
-as the filtering criterion.
+Large positive changes concentrated in harmless records with suspicious Kimi
+targets. Some inspected records involved firewall configuration, but a full
+Qwen3.5-9B topic screen showed that high activation changes were not exclusive
+to those examples. We therefore tested activation change itself as a deletion
+rule, without using teacher disagreements or topic scores in selection.
 [Training census](../findings/b200_training_direction.md),
-[firewall screen](../findings/training_firewall_census.md).
+[topic screen](../findings/training_firewall_census.md).
 
 We removed the top 20% of harmless originals by `Δz`: 869 of 4,344 records.
 Their augmented replacements were removed with them; all harmful originals
@@ -167,52 +102,40 @@ relative to that control. Vanilla APPS AUROC remained approximately unchanged.
 The failure is therefore concentrated in injection responses, rather than a
 uniform collapse of code discrimination.
 
-The filter removed 345 of the 346 harmless records with suspicious teacher
-targets. This is a consequence of activation selection, not an additional
-rule. Filtering also changed class composition, soft-target mass, exposure
-and schedule length: both filtered runs trained for 245 updates instead of
-272. The random control matches coarse composition and nearly matches token
-exposure, but not teacher-target mass, exact sequences or individual lengths;
-its removed set overlaps the activation set in 394 records. These differences
-and unresolved SDPA run variation prevent attributing the outcome to specific
-examples. The narrower result is clear: high learned alignment was a poor
-deletion rule for reducing injection alarms in this trial.
-[Filtering results and contract](../findings/activation_filter_training.md).
+The activation filter removed 345 of the 346 harmless records with suspicious
+teacher targets. It also changed class composition, target mass and training
+exposure; the smaller datasets required 245 updates rather than 272. The random
+control matched coarse composition and nearly matched token exposure, but not
+teacher-target mass or exact sequences. Its removed set overlapped the
+activation set in 394 records. With one seed per condition and unresolved
+SDPA run variance, these results cannot identify individual causal examples.
+They do show that high learned alignment was a poor deletion rule in this trial.
+[Filtering results](../findings/activation_filter_training.md).
 
 ### Projection after filtering
 
-The original direction remained relevant in the filtered model. Projecting it
-out reduced calibrated injected-honest FPR from 100% to 62.61%, while recall
-fell to 86.68% and matched AUROC rose from 0.6019 to 0.7343. At the fixed
-unedited threshold, FPR was 79.41%, so recalibration contributed to the decrease.
-
-Refitting the injected-minus-neutral direction in the filtered model produced
-an axis with cosine 0.705 to the original. Its projection lowered recalibrated
-FPR further, to 23.69%, but recall fell to 48.48% and matched AUROC was 0.7047,
-below the transferred original axis. At the fixed unedited threshold, the
-refitted projection still produced 100% injected alarms and 60.91% clean
-alarms. The apparent FPR gain therefore includes a major calibration shift;
-refitting did not yield a uniformly better discriminator.
-[Filtered-model projections](../findings/activation_filter_training.md#model-specific-direction-refit).
+The original direction remained relevant. Projecting it out of the filtered
+model reduced calibrated FPR from 100% to 62.61%, with 86.68% backdoor recall.
+Refitting a direction in that model lowered calibrated FPR to 23.69%, with
+48.48% recall, but yielded worse matched AUROC than the original-axis projection.
+At the fixed unedited threshold, the refitted projection still produced 100%
+injected alarms and 60.91% clean alarms. Its apparent advantage therefore
+included a large calibration shift, rather than a uniformly better discriminator.
+[Projection follow-ups](../findings/activation_filter_training.md#model-specific-direction-refit).
 
 ## CAFT did not substitute for augmentation
 
-The next approach changed the training computation rather than deleting
-records. [Concept Ablation Fine-Tuning](https://arxiv.org/html/2507.16795v2#S3)
-inserts latent projections during fine-tuning and differentiates through the
-modified computation, then ordinarily removes the interventions at inference.
-We applied CAFT with a fixed axis intended to discourage the learned
-generalization associated with injection alarms.
+With [Concept Ablation Fine-Tuning](https://arxiv.org/html/2507.16795v2#S3),
+we changed the training computation instead of deleting examples. We trained
+on **all 8,688 regular originals, without synthetic augmentation**, projecting
+out the original augmented-model direction after every layer and token.
+Gradients pass through the projection. The intervention restricts computation
+at those sites; it does not globally freeze corresponding weight components.
+The projection is removed for ordinary inference, following CAFT.
 
-We trained on **all 8,688 regular originals, without synthetic augmentation**.
-After every decoder layer and at every token, we projected out the same unit
-direction extracted from the augmented monitor. The projection participates
-in both forward and backward computation; it is not a promise that all
-corresponding weight components remain frozen. Hooks are removed before export.
-The seed-0 BF16/SDPA recipe uses one epoch and 272 updates. Our direction
-selection uses APPS fitting data and an augmented model. The paper's experiments
-discover concepts without target-distribution data; we retain the CAFT training
-procedure while using a different source for the direction.
+Our direction-selection procedure uses APPS fitting data and an augmented
+model; the paper discovers concepts without target-distribution data. The
+training procedure is CAFT, with a different source for the direction.
 
 | Training condition | ID macro AUROC | ID macro pAUROC@20 | Injected honest FPR | Injected backdoor recall | Matched AUROC |
 | --- | ---: | ---: | ---: | ---: | ---: |
@@ -251,118 +174,72 @@ BF16 tolerance. Neither a broken hook nor restoring the original component
 at inference is sufficient to explain the persistent alarms.
 [CAFT inference projections](../findings/concept_ablation_training.md#keeping-the-original-training-projection-active-at-inference).
 
-### The original vector still drives monitoring scores
+### The direction still has causal influence
 
-Adding a vector to already-saturated injected examples cannot reveal a further
-increase in FPR. We instead steered 591 clean and 1,773 neutral honest examples,
-using the original augmented-model shift at layer 20 only. Doses were +1 and
-+2 times that donor shift, with equal-norm random controls and no recipient
-norm matching.
+Because injected examples already had 100% FPR, we tested addition on clean
+and neutral honest examples instead. Adding the original vector at layer 20
+raised pooled FPR from 2.58% to 61.04% at one donor-shift unit and 100% at two,
+using the fixed clean-calibrated threshold. Equal-norm random vectors kept FPR
+near 2–3%. At two units, the mean `1 - 0` logit-margin increase was 3.163.
+At the separate threshold 0.5, FPR was only 2.16%, so the 100% operating-point
+result should not be read as every score exceeding 0.5.
+[Steering controls](../findings/concept_ablation_training.md#augmented-vector-addition-on-clean-and-neutral-honest-examples).
 
-| CAFT honest examples | Pooled FPR at the fixed clean threshold | Mean change in logit margin |
-| --- | ---: | ---: |
-| Unedited | 2.58% | 0 |
-| Original vector +1 | 61.04% | +1.901 |
-| Original vector +2 | 100.00% | +3.163 |
-| Random vector +1 | 2.28% | -0.096 |
-| Random vector +2 | 2.75% | +0.039 |
+The original vector can still drive monitoring scores, yet its removal does
+not eliminate natural injection alarms. Training-induced rerouting is plausible,
+as are pre-existing alternative features, nonlinear reconstruction and an
+incomplete single-axis description. The changed fitted direction does not
+distinguish these explanations.
 
-Both positive doses increased the `1 - 0` logit margin in 99.75% of rows.
-Answer mass stayed high. The effect is strongly threshold-dependent: at 0.5,
-pooled FPR was only 0.34% unedited and 2.16% at +2. Thus 100% alarms at the
-clean-calibrated threshold do not imply every steered score exceeded 0.5.
-[CAFT steering controls](../findings/concept_ablation_training.md#augmented-vector-addition-on-clean-and-neutral-honest-examples).
+Transfer tests also caution against assigning the vector a simple semantic
+meaning. Earlier ablations offered little reliable benefit on JudgeDeceiver.
+Adding the augmented vector to the base model strongly biased judging toward
+answer B, while retaining its alarm effect on APPS. These results show influence
+across tasks, without establishing useful transfer or a universal suspicion
+feature. [Judging ablations](../findings/b200_projection_judge.md),
+[base-model steering](../findings/base_judge_steering.md).
 
-The vector remains causally effective after CAFT, yet its removal does not
-eliminate natural injection alarms. Learned rerouting is plausible: training
-under projection could favor other features or computations. Pre-existing
-redundancy, nonlinear reconstruction and an incomplete single-axis description
-are also compatible with these results. A changed fitted direction alone does
-not locate an alternative circuit or distinguish those explanations.
+## Training precision and serving matter
 
-## Transfer suggests a broader effect on judgments
+The main experiments use BF16 because earlier matched controls showed material
+changes in behavior. With BF16 serving held fixed, changing augmented-model
+MLP training from FP4 to BF16 raised ID macro pAUROC@20 from 0.8391 to 0.8511.
+This was a one-seed comparison with matched initialization, examples, batches
+and schedule.
 
-Earlier projection on the augmented monitor did not meaningfully repair
-JudgeDeceiver preference judgments. On 4,188 A/B prompts, preferred-injected
-accuracy moved from 55.81% to 56.46%, while its pAUROC@20 fell from 0.2336
-to 0.2247. Overall accuracy gained 0.57 points, calibration worsened and source
-effects were mixed. Numeric-answer follow-ups did not establish a reliable
-rescue. Preference accuracy is a different target from harmfulness FPR.
-[JudgeDeceiver ablations](../findings/b200_projection_judge.md).
+For that same BF16/FA4-trained adapter, changing serving from BF16 to the
+optimized recipe lowered ID pAUROC@20 from 0.8511 to 0.8253. On the original
+655-task APPS population, honest-injection FPR fell from 25.19% to 3.51%,
+but backdoor recall fell from 70.38% to 30.55% and matched AUROC from 0.8216
+to 0.7867. The lower FPR accompanied weaker harmful-action detection. These
+are serving effects on fixed weights, not different training runs.
 
-Addition in the unadapted base model nevertheless had a large cross-domain
-effect. At +2 times the augmented shift, JudgeDeceiver choices went from
-29.97% B to 99.93% B, and accuracy fell from 78.44% to 50.07%. A/B answer mass
-remained high. The same base engine and vector raised FPR on a fixed APPS
-clean/neutral honest subset from 1.95% to 100%; equal-norm random additions
-had much smaller effects.
+The optimized recipe combines FP8 attention projections, FP4 MLP/GDN
+projections and MXFP8 attention with associated kernels; these comparisons
+do not isolate one component. This adapter passed its short score canary,
+whereas other optimized evaluations retained explicit failed-parity diagnostic
+status. A small canary does not establish held-out behavioral equivalence.
+[Precision comparisons](../findings/b200_augmented_training.md).
 
-This rules against interpreting the vector as causally active only in
-monitoring contexts. It also does not establish a universal suspicion concept:
-in judging, the clearest effect was answer-position bias. Prompt, task and
-decision tokens all differ between domains, and an unused 0/1 readout in the
-judging task cannot be treated as a valid harmfulness score. Large steering
-effects demonstrate influence, not useful semantic transfer.
-[Same-base transfer controls](../findings/base_judge_steering.md).
+Attention arithmetic also mattered: a current BF16/SDPA replay partly recovered
+ID ranking relative to BF16/FA4, but worsened APPS injection discrimination.
+One same-seed FA4 repeat produced bitwise-identical adapters; the SDPA replay
+did not reproduce historical SDPA weights. SDPA repeatability and different-seed
+variance remain unresolved. We cannot infer a general deterministic-FA4 versus
+stochastic-SDPA distinction from these comparisons.
 
-## Precision and serving change the observed behavior
+## What the experiments establish
 
-The main filtering and CAFT studies used BF16 serving to avoid the known
-quantization confound. Earlier matched controls show why that choice matters.
+The extracted direction influences monitoring judgments, but neither large
+training-associated alignment nor a successful inference edit guarantees a
+useful training intervention. Filtering improved ID while worsening injection
+discrimination. CAFT left alarms intact, even after additional projection.
+Good ID ranking, low injection FPR and high harmful-action recall are separate
+properties that need separate checks.
 
-| Controlled comparison | ID macro pAUROC@20 before | After | Change |
-| --- | ---: | ---: | ---: |
-| Same FP4-trained augmented adapter, optimized to BF16 serving | 0.7966 | 0.8391 | +4.25 pp |
-| FP4 to BF16 MLP training, retaining FA4 and BF16 serving | 0.8391 | 0.8511 | +1.20 pp |
-| Same BF16/FA4 adapter, BF16 to optimized serving | 0.8511 | 0.8253 | -2.59 pp |
-| Same historical augmented adapter, current BF16 to optimized serving | 0.8727 | 0.8396 | -3.31 pp |
-
-The MLP training comparison matched the initializer, examples, physical batches,
-optimizer and schedule, with one run per precision. The serving comparisons
-keep the adapter fixed, so training dynamics cannot explain their differences.
-The optimized recipe combines FP8 attention projections, FP4 MLP/GDN projections
-and MXFP8 attention with associated kernels; it does not isolate one responsible
-component. The FP4-trained and historical optimized evaluations retained failed
-parity diagnostic status, rather than being accepted as equivalent serving.
-[Precision controls](../findings/b200_augmented_training.md).
-
-On the original 655-task APPS population, the same BF16/FA4 adapter changed
-from 25.19% injected-honest FPR and 70.38% backdoor recall under BF16 serving
-to 3.51% FPR and 30.55% recall under optimized serving. Matched AUROC fell
-from 0.8216 to 0.7867. This serving change passed its short training-source
-canary, demonstrating that such a gate does not establish held-out behavioral
-equivalence. Lower injection FPR here accompanied weaker detection, just as
-it did in the original projection experiment.
-
-Attention arithmetic adds another qualification. Current BF16/SDPA training
-partly recovered ID pAUROC@20 relative to BF16/FA4, from 0.8511 to 0.8600,
-but increased full-population APPS FPR from 25.19% to 60.41% and reduced
-matched AUROC from 0.8216 to 0.7989. A same-seed BF16/FA4 repeat produced
-bitwise-identical FP32 adapters; the SDPA replay did not reproduce the
-historical SDPA weights. This is evidence of recipe sensitivity, not evidence
-that FA4 is generally deterministic and SDPA stochastic. SDPA repeats and
-different-seed variance remain unresolved, as do broader historical pipeline
-and host differences.
-
-## Interpretation and next tests
-
-The evidence supports a causal role for the extracted direction in changing
-monitoring scores. It does not support using large training-associated
-alignment as an attribution measure, treating the direction as a complete
-description of injection sensitivity, or assuming that suppressing it during
-training removes the behavior. Good ID ranking, low injection FPR and high
-harmful-action recall must be evaluated separately.
-
-A stronger test of learned rerouting would compare CAFT with a freshly trained
-regular-data control under identical BF16/SDPA conditions and multiple seeds.
-Matched interventions and layerwise measurements could then test whether
-alternative features become more behaviorally important specifically after
-CAFT. Repeating the filtering ablation with controls for teacher-target mass
-would help separate the activation selection from the supervision it removes.
-Testing new injection families and holding the serving recipe fixed would
-establish whether any improvement generalizes beyond the templates already
-used to develop these hypotheses.
-
-For now, the two central experiments are negative mitigation results with
-useful mechanistic constraints. The [released CAFT adapter](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT)
-preserves the model for follow-up; publication is not a robustness endorsement.
+A matched regular-data BF16/SDPA control and multiple seeds would help test
+whether CAFT specifically changes the mechanism. Controls for removed
+teacher-target mass would strengthen the filtering comparison. New injection
+families would test transfer beyond the templates already used to develop
+these hypotheses. The [released CAFT adapter](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT)
+preserves this negative result for follow-up.
