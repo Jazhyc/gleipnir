@@ -15,7 +15,7 @@ and reduce these false alarms. In particular, could an activation direction
 associated with injection responses guide changes to the training data or the
 training computation? Two interventions were central:
 removing training examples with the largest learned alignment changes, and
-projecting the direction out during fine-tuning using a CAFT-style procedure.
+projecting the direction out during fine-tuning using CAFT.
 
 Neither resolved the problem. Activation-based filtering substantially improved
 in-distribution ranking while worsening injection discrimination. CAFT retained
@@ -201,7 +201,7 @@ The next approach changed the training computation rather than deleting
 records. [Concept Ablation Fine-Tuning](https://arxiv.org/html/2507.16795v2#S3)
 inserts latent projections during fine-tuning and differentiates through the
 modified computation, then ordinarily removes the interventions at inference.
-We tested a fixed-axis adaptation intended to discourage the learned
+We applied CAFT with a fixed axis intended to discourage the learned
 generalization associated with injection alarms.
 
 We trained on **all 8,688 regular originals, without synthetic augmentation**.
@@ -209,10 +209,10 @@ After every decoder layer and at every token, we projected out the same unit
 direction extracted from the augmented monitor. The projection participates
 in both forward and backward computation; it is not a promise that all
 corresponding weight components remain frozen. Hooks are removed before export.
-The seed-0 BF16/SDPA recipe uses one epoch and 272 updates. Our vector comes
-from APPS fitting data and an augmented model, unlike the paper's discovery
-procedure without target-distribution data. This is an adaptation, not a
-replication of its full method.
+The seed-0 BF16/SDPA recipe uses one epoch and 272 updates. Our direction
+selection uses APPS fitting data and an augmented model. The paper's experiments
+discover concepts without target-distribution data; we retain the CAFT training
+procedure while using a different source for the direction.
 
 | Training condition | ID macro AUROC | ID macro pAUROC@20 | Injected honest FPR | Injected backdoor recall | Matched AUROC |
 | --- | ---: | ---: | ---: | ---: | ---: |
