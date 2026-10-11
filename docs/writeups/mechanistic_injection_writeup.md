@@ -59,7 +59,8 @@ labels. High changes also occur outside firewall-related examples.
 We ranked all original harmless training records by $\Delta z(x)$, then removed
 the top **20%:
 869 of 4,344**. Their augmented replacements were removed too; harmful identities
-were retained. Retraining kept augmentation for the remaining data. A random
+were retained. Retraining used the filtered augmented dataset: 7,819 records,
+including 3,113 injected replacements. A random
 control matched removal counts by source, label, augmentation status and
 length quartile. Both used the same seed-0 BF16/SDPA recipe and initializer.
 
