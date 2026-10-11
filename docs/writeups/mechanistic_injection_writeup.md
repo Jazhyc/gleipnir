@@ -75,12 +75,21 @@ from 0.5129 to 0.1569. Random removal also hurt APPS, but less severely.
 Vanilla APPS AUROC stayed roughly unchanged.
 
 The activation filter removed 345 of the 346 harmless records with suspicious
-Kimi targets. That was a consequence of selection, not part of the rule.
-The control did not match teacher-target mass, and its removed set overlapped
-ours in 394 records. Both filtered runs had fewer updates, 245 rather than 272.
-These composition/exposure changes and one seed per condition limit attribution.
-In particular, projection change was useful for finding a correlated group,
-but did not give us a successful deletion rule or causal example attribution.
+Kimi targets, although teacher disagreement was not part of the selection rule.
+One hypothesis is that the ID pAUROC@20 gain came partly from accidentally
+removing these teacher false positives, giving the student fewer targets that
+conflicted with the ground truth. It remains unclear why those disagreements
+stood out in projection changes along this suspiciousness direction. Directly
+filtering teacher–ground-truth disagreements would be worth testing later.
+
+Both filtered runs had 245 updates rather than 272 because we trained for one
+epoch on fewer records. This was by design: the ablations changed the data
+mixture under a one-epoch training rule, rather than keeping optimization steps
+constant. The results therefore include both the changed mixture and reduced
+training exposure. The random control did not match teacher-target mass, and
+its removed set overlapped ours in 394 records. With one seed per condition,
+we cannot yet isolate the source of the ID gain or attribute it to individual
+examples.
 [Full filtering results](../findings/activation_filter_training.md).
 
 Projecting the old direction out after filtering reduced calibrated FPR to
