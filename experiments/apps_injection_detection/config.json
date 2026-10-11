@@ -1,0 +1,37 @@
+{
+  "name": "presence01",
+  "model_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "base_model": ".cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+  "sdpa_model": "/tmp/gleipnir-merged/historical-augmented-sdpa-replay02",
+  "tokenizer": "data/judge_injection_continuation/tokenizer",
+  "gpu_uuid": "GPU-d1d0c3f4-e2cb-db0c-34ee-2b1d179ea70b",
+  "driver": "580.126.09",
+  "runtime": {
+    "vllm": "0.31.0",
+    "torch": "2.13.0",
+    "transformers": "5.14.1",
+    "triton": "3.7.1",
+    "flashinfer-python": "0.7.0.post1"
+  },
+  "files_sha256": {
+    "data/monitoring_injection_disentanglement/benchmark/neutral.jsonl": "e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866",
+    "data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl": "5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b",
+    "experiments/training_injection_census/prompt.txt": "1e27ec89c406844956dae125c26ed0b27ff6bf4f344a0e7a75612a1b738d8334",
+    "results/b200-augmented-sdpa-replay02/server.json": "fd9bfb921c68e5097ad0c669040dfef3368c1a047070309697dcf44baa6173aa",
+    "results/b200-augmented-sdpa-replay02/merged_artifact.json": "a7a9f8f5deddf6bf5d5aa4289a987641b3ecbc4b5e9d17baa9a750e533b49491",
+    "results/b200-augmented-sdpa-replay02/merged_parity.json": "e9f5c0627ab2d8ce3ef5ac723526cc483e27d2e9e63d59b53304b449506edb2c",
+    "results/b200-augmented-sdpa-replay02/canary_workload.jsonl": "00c6e27d406dfcad989a46f9d9449ae72c048c592c6a98d18c723ecbd9e01a70",
+    "results/b200-augmented-sdpa-replay02/4b/monitor/parity_reference.json": "1f60fd51cd6917ee59c932d97cbee11bfe82989b872f512cec288e9d05c1f90a"
+  },
+  "base_files_sha256": {
+    "config.json": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+    "model.safetensors-00001-of-00002.safetensors": "26a93f066e1916adb13453dae5a0c707c0fbc71299ed98779571a907b8e74c61",
+    "model.safetensors-00002-of-00002.safetensors": "cb544bd9bfae93dc59b0f22b292f5933573854a7f9b97835c67060d7d910e188"
+  },
+  "batch_rows": 128,
+  "port": 8010,
+  "concurrency": 128,
+  "timeout_seconds": 300,
+  "expected_rows": 9114,
+  "promote": false
+}
