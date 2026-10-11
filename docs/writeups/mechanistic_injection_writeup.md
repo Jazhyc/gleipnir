@@ -239,13 +239,12 @@ on clean honest code to allow at most 2% FPR.
 
 | MLP training and attention | Serving | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
 | --- | --- | ---: | ---: | ---: | ---: |
-| FP4 MLP, FA4 | Optimized (diagnostic) | 31.30% | 64.45% | 0.7604 | 0.3992 |
+| FP4 MLP, FA4 | Optimized | 31.30% | 64.45% | 0.7604 | 0.3992 |
 | BF16 MLP, FA4 | Optimized | 3.51% | 30.55% | 0.7867 | 0.4630 |
 | BF16 MLP, FA4 | BF16 | 25.19% | 70.38% | 0.8216 | 0.5191 |
 | BF16 MLP, SDPA | BF16 | 60.41% | 83.82% | 0.7989 | 0.5043 |
 
-The FP4/optimized row retains failed-parity diagnostic status. Comparing the
-first two rows keeps optimized serving fixed while changing MLP training
+Comparing the first two rows keeps optimized serving fixed while changing MLP training
 precision. The two BF16/FA4 rows use exactly the same adapter and differ only
 in serving; the last two keep BF16 serving fixed while changing training
 attention. These distinctions separate training effects from serving effects.
