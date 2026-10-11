@@ -21,6 +21,15 @@ For each example, we measured how much more its activation aligned with the
 suspiciousness direction in the fine-tuned model than in the base model.
 The hypothesis was that removing these examples would reduce injection alarms.
 
+Let $u$ be the fixed unit suspiciousness direction, and $h_{\ell,t}(x)$ the
+residual activation for example $x$ at layer $\ell$ and token $t$. At layer 20
+and the final prompt token $T$, we measured:
+
+$$
+\Delta z(x) = u^\top h^{\mathrm{trained}}_{20,T}(x)
+            - u^\top h^{\mathrm{base}}_{20,T}(x).
+$$
+
 ![Trained-minus-base projection changes for harmless and harmful records, split by Kimi K3 target](../../figures/direction_teacher_by_label_distributions.png)
 
 Layer-20 projection changes across all 8,688 originals, split by Kimi K3 target
@@ -28,8 +37,8 @@ Layer-20 projection changes across all 8,688 originals, split by Kimi K3 target
 shift strongly positive; the harmful groups overlap much more. Each curve has
 area 1, and dotted lines mark group means.
 
-We ranked all original harmless training records by trained-minus-base layer-20
-alignment with the augmented model's direction, then removed the top **20%:
+We ranked all original harmless training records by $\Delta z(x)$, then removed
+the top **20%:
 869 of 4,344**. Their augmented replacements were removed too; harmful identities
 were retained. Retraining kept augmentation for the remaining data. A random
 control matched removal counts by source, label, augmentation status and
@@ -69,6 +78,16 @@ originals, without augmentation**, using the augmented model's unit layer-20
 axis after every layer and token. Training differentiated through the projection;
 ordinary inference removed it. The run used seed 0 and BF16/SDPA. The direction
 source differs from the paper's concept-discovery procedure.
+
+Using the same $u$, CAFT replaces each residual activation during fine-tuning
+with:
+
+$$
+h^{\perp}_{\ell,t}(x)
+= h_{\ell,t}(x) - u\bigl(u^\top h_{\ell,t}(x)\bigr).
+$$
+
+This removes its component along $u$ at every layer and token.
 
 | Training condition | ID pAUROC@20 | Injected honest FPR | Backdoor recall | Matched APPS AUROC |
 | --- | ---: | ---: | ---: | ---: |
