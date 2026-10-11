@@ -1,0 +1,7 @@
+campaign_id: strict-pauc02
+weight: 0.1
+beta: 0.2
+temperature: 1.0
+source_reduction: macro_active_sources
+selection: final_one_epoch_only
+promotion: false
