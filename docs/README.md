@@ -79,6 +79,9 @@
   worse Brier; one-seed historical-serving comparison limits attribution.
 - [Default strict teacher filtering](decisions/strict_teacher_filtering.md):
   selected training-data rule, resolved campaign preparation and control opt-out.
+- [FP32 monitor-head resolution](findings/monitor_score_resolution.md): most
+  strict-model score ties disappear, with small ID/OOD ranking gains and nearly
+  unchanged measured throughput; no serving-default promotion.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
   top-20% harmless removal and matched random control improve ID but worsen
   held-out APPS injection discrimination; fixed-axis projection on the filtered

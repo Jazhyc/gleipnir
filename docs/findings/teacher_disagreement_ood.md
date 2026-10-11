@@ -162,3 +162,7 @@ recipe selection or OOD tuning occurred in this saved-score audit.
 Reproduce with `PYTHONPATH=src:. .venv/bin/python scripts/audit_monitor_score_resolution.py`.
 Its checksum-bound full source/pooled metrics and rounding diagnostics are in
 `results/teacher-disagreement-strict-ood01/score_resolution_audit.json`.
+
+The subsequent [FP32-head test](monitor_score_resolution.md) scores all ID/OOD
+rows with genuinely finer projection outputs. It removes most ties while
+finding only small ranking gains; the original results above remain frozen.
