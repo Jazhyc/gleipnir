@@ -220,6 +220,19 @@ it does not establish a shared meaning of suspiciousness across the two tasks.
 
 ## Precision sensitivity
 
+Alongside the mechanistic experiments, we optimized training and serving on
+the B200. Our goal was to make control monitoring fast and economical enough
+for widespread enterprise use, where monitoring many agent trajectories adds
+latency and compute cost. Faster training also lets us run more experiments
+and iterate on architectural changes.
+
+For training, we used sequence packing, compilation, FlashAttention 4 and FP4
+arithmetic for the frozen MLP computations, while retaining FP32 master
+adapters. For serving, we built on vLLM with direct two-logit scoring, fused
+kernels, FP8 attention projections, FP4 MLP/GDN projections and MXFP8 attention.
+These changes targeted throughput and latency, but also changed numerical
+behavior, motivating the precision comparisons below.
+
 The historical regular control and CAFT both used BF16/SDPA training and BF16
 serving, but historical runtime and host differences remain. Their comparison
 matches the precision and attention recipe rather than the exact execution
@@ -233,8 +246,8 @@ For that same BF16/FA4 adapter, switching BF16 serving to the optimized recipe
 lowered ID pAUROC@20 to **0.8253**. On full APPS, FPR fell **25.19% → 3.51%**,
 but recall also fell **70.38% → 30.55%** and matched AUROC **0.8216 → 0.7867**.
 This changes serving on fixed weights, so training-run variation cannot explain
-it. The recipe combines FP8 attention projections, FP4 MLP/GDN projections and
-MXFP8 attention; the responsible component is not isolated. It passed the short
+it. The comparison changes multiple precision and kernel components together,
+so the responsible component is not isolated. It passed the short
 canary despite the held-out changes.
 [Precision comparisons](../findings/b200_augmented_training.md).
 
