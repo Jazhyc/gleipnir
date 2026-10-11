@@ -38,6 +38,9 @@
   project narrative before export to Google Docs.
 - `writeups/gleipnir_lesswrong_writeup.md`: faithful copy of the submitted MATS
   project narrative for small clarity edits before web publication.
+- [Mechanistic injection writeup](writeups/mechanistic_injection_writeup.md):
+  initial draft centered on activation-based data filtering and CAFT, with
+  steering, ablation, transfer and precision controls as supporting evidence.
 - `findings/`: durable per-experiment findings; create one document per track.
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
   development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
