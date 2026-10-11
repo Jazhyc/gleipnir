@@ -92,12 +92,25 @@ mixture, target-mass and exposure changes, so the teacher-disagreement
 explanation for the ID gain remains a hypothesis.
 [Full filtering results](../findings/activation_filter_training.md).
 
-Projecting the old direction out after filtering reduced calibrated FPR to
-62.61%, with 86.68% backdoor recall. A model-specific refit lowered calibrated
-FPR to 23.69%, with 48.48% recall, but gave worse matched AUROC than the old
-axis. At the fixed unedited threshold, that refit still gave **100% injected
-alarms and 60.91% clean alarms**. Its apparent FPR advantage depended heavily
-on recalibration.
+On the activation-filtered checkpoint, we compared both directions against
+the same unedited eager baseline. With each arm's clean-calibrated threshold:
+
+| Filtered-model inference arm | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
+| --- | ---: | ---: | ---: | ---: |
+| No projection | 100.00% | 100.00% | 0.6019 | 0.1533 |
+| Original-direction projection | 62.61% | 86.68% | 0.7343 | 0.3331 |
+| Refitted-direction projection | 23.69% | 48.48% | 0.7047 | 0.2836 |
+
+Keeping the unedited threshold fixed at 0.095349 instead:
+
+| Filtered-model inference arm | Clean honest FPR | Injected honest FPR | Backdoor recall |
+| --- | ---: | ---: | ---: |
+| No projection | 1.18% | 100.00% | 100.00% |
+| Original-direction projection | 2.03% | 79.41% | 93.48% |
+| Refitted-direction projection | 60.91% | 100.00% | 100.00% |
+
+The refit's lower recalibrated FPR comes with lower recall and ranking than
+the original direction, and depends heavily on the calibration shift.
 [Projection follow-ups](../findings/activation_filter_training.md#model-specific-direction-refit).
 
 ## CAFT on regular data
