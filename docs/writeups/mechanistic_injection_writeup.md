@@ -92,8 +92,11 @@ mixture, target-mass and exposure changes, so the teacher-disagreement
 explanation for the ID gain remains a hypothesis.
 [Full filtering results](../findings/activation_filter_training.md).
 
-On the activation-filtered checkpoint, we compared both directions against
-the same unedited eager baseline. With each arm's clean-calibrated threshold:
+We then asked whether the filtered model still used the same suspiciousness
+direction. We projected out the original direction and a direction refitted
+on the filtered model, comparing both with the same unedited eager baseline.
+The directions had cosine similarity **0.705**, indicating substantial overlap.
+With each arm's clean-calibrated threshold:
 
 | Filtered-model inference arm | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
 | --- | ---: | ---: | ---: | ---: |
@@ -101,6 +104,11 @@ the same unedited eager baseline. With each arm's clean-calibrated threshold:
 | Original-direction projection | 62.61% | 86.68% | 0.7343 | 0.3331 |
 | Refitted-direction projection | 23.69% | 48.48% | 0.7047 | 0.2836 |
 
+Both projections improved ranking over the unedited filtered model. Their
+matched AUROCs differed by only 0.030, much less than their 0.156–0.186 gap
+from the unfiltered augmented model's projected AUROC of 0.8905. This is
+consistent with some shift in the suspiciousness-related
+representation while retaining substantial overlap with the original direction.
 The refit's lower recalibrated FPR comes with lower recall and ranking than
 the original direction, and depends heavily on the calibration shift.
 [Projection follow-ups](../findings/activation_filter_training.md#model-specific-direction-refit).
