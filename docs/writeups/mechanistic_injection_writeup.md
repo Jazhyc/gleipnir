@@ -177,6 +177,14 @@ the original component at ordinary inference therefore does not explain the
 failure on its own.
 [Inference checks](../findings/concept_ablation_training.md#keeping-the-original-training-projection-active-at-inference).
 
+The model still learned to flag prompt injections despite the training-time
+ablation. This suggests that the response could be carried by other computations
+that the original projection did not block. Repeating the same contrastive
+extraction procedure produced a different direction, but its ablation also
+failed to reduce false alarms. As the next section shows, the original direction
+still increased suspiciousness when added to the model: it retained that causal
+role, rather than simply becoming unrelated to the behavior.
+
 ## Supporting steering and transfer checks
 
 The old direction still affects CAFT. On clean/neutral honest examples, adding
