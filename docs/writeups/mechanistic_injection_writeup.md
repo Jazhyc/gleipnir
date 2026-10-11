@@ -160,12 +160,6 @@ This removes its component along $u$ at every layer and token.
 its lower clean-calibrated cutoff. The historical control also had saturated
 alarms, so CAFT failed to resolve the existing failure mode.
 
-Both conditions used BF16/SDPA training and BF16 serving. We recomputed the
-historical APPS metrics from cached scores on the same 591-task holdout.
-Historical runtime and host differences remain, so this is a closer recipe
-comparison rather than an exactly matched execution control.
-[Comparison records](../findings/concept_ablation_training.md#historical-bf16-regular-comparison).
-
 Keeping the original projection active at inference did not help. Refitting
 a direction in CAFT, with cosine **0.289** to the old axis, also left FPR at
 100%. All three inference arms retained 100% backdoor recall.
@@ -207,6 +201,11 @@ both tasks, but this does not establish a common semantic suspicion feature.
 [base-model steering](../findings/base_judge_steering.md).
 
 ## Precision sensitivity
+
+The historical regular control and CAFT both used BF16/SDPA training and BF16
+serving, but historical runtime and host differences remain. Their comparison
+matches the precision and attention recipe rather than the exact execution
+stack. [Comparison records](../findings/concept_ablation_training.md#historical-bf16-regular-comparison).
 
 With BF16 serving held fixed, changing augmented-model MLP training from FP4
 to BF16 raised ID pAUROC@20 from **0.8391 to 0.8511** in the matched one-seed
