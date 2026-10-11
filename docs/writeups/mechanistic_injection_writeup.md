@@ -87,9 +87,9 @@ epoch on fewer records. This was by design: the ablations changed the data
 mixture under a one-epoch training rule, rather than keeping optimization steps
 constant. The results therefore include both the changed mixture and reduced
 training exposure. The random control did not match teacher-target mass, and
-its removed set overlapped ours in 394 records. With one seed per condition,
-we cannot yet isolate the source of the ID gain or attribute it to individual
-examples.
+its removed set overlapped ours in 394 records. We did not separate these
+mixture, target-mass and exposure changes, so the teacher-disagreement
+explanation for the ID gain remains a hypothesis.
 [Full filtering results](../findings/activation_filter_training.md).
 
 Projecting the old direction out after filtering reduced calibrated FPR to
