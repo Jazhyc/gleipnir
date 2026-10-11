@@ -171,8 +171,7 @@ a direction in CAFT, with cosine **0.289** to the old axis, also left FPR at
 | Refitted-axis projection | 100.00% | 0.6784 | 0.2003 |
 
 These are matched eager comparisons on the same checkpoint and examples.
-Both fixed and recalibrated thresholds give the same saturated injection rates,
-and operator checks confirm the projection works to BF16 tolerance. Restoring
+Both fixed and recalibrated thresholds give the same saturated injection rates. Restoring
 the original component at ordinary inference therefore does not explain the
 failure on its own.
 [Inference checks](../findings/concept_ablation_training.md#keeping-the-original-training-projection-active-at-inference).
