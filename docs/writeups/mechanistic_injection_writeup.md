@@ -17,9 +17,16 @@ raw pAUROC@20. The precision comparison below uses the full 655-task APPS set.
 
 ## Activation based filtering
 
-We used **trained projection − base projection** onto the suspiciousness
+We used trained projection − base projection onto the suspiciousness
 direction to find examples where fine-tuning strengthened that component.
 The hypothesis was that removing these examples would reduce injection alarms.
+
+![Trained-minus-base projection changes for harmless and harmful records, split by Kimi K3 target](../../figures/direction_teacher_by_label_distributions.png)
+
+Layer-20 projection changes across all 8,688 originals, split by Kimi K3 target
+(below 0.5 or at least 0.5). Harmless records with suspicious teacher targets
+shift strongly positive; the harmful groups overlap much more. Each curve has
+area 1, and dotted lines mark group means.
 
 We ranked all original harmless training records by trained-minus-base layer-20
 alignment with the augmented model's direction, then removed the top **20%:

@@ -1,0 +1,18 @@
+{
+  "original_records": 8688,
+  "histogram_bins": 50,
+  "full_range_included": true,
+  "within_group_density_area": 1,
+  "input_sha256": "ebf8fa4cd24b49a9b164ea77931e539cba3e7949c7b0db4fd3a02541571cb650",
+  "script_sha256": "cdb83e6ee6b9e97c329195a1e10fd15f43573b2d1b082d4c4b549a59ce70683b",
+  "style_sha256": "549fcb59e6bd07b0b7c866f6e1ee6db7893d9271b505217eab9e0a9595093205",
+  "qualification": "Post-capture descriptive visualization; no data filtering, refit, tail selection or new model requests.",
+  "source_artifact_directory": "results/b200_training_clean_direction/clean_direction01",
+  "script": "experiments/b200_training_clean_direction/plot_distributions.py",
+  "artifacts": {
+    "direction_teacher_by_label_distributions.png": "8459f9208141bb39a4ce8948101ba87f0629ad33774b04913d77aa364468aa61",
+    "direction_teacher_by_label_distributions.pdf": "5c33d8c6943aa3c4300c95e7c67cc6451005094b9f926061617850824a139cf4"
+  },
+  "panels": "source harmless/harmful labels, each split by Kimi K3 target <0.5 versus >=0.5",
+  "measurement": "final-token layer-20 projection onto the fixed APPS unit direction: trained minus base"
+}

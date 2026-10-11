@@ -3,6 +3,28 @@
 This directory contains publication-ready figures generated from canonical
 repository data rather than hand-maintained plotting copies.
 
+## Projection changes by teacher target and behavior label
+
+`direction_teacher_by_label_distributions.png` and `.pdf` reproduce the existing
+complete original-training census figure used in the
+[mechanistic writeup](../docs/writeups/mechanistic_injection_writeup.md).
+Two panels show layer-20 trained-minus-base projection changes for harmless
+and harmful records, each split at Kimi K3 target 0.5. All 8,688 originals are
+included, with identical bins/scales, unit area per curve and dotted group means.
+These are descriptive activation changes, not causal training-example influence.
+
+Regenerate the census plots with:
+
+```bash
+PYTHONPATH=src:. .venv/bin/python -m experiments.b200_training_clean_direction.plot_distributions
+```
+
+The entrypoint reads ignored `results/b200_training_clean_direction/clean_direction01/paired_models.jsonl`
+and exports to that directory. Copy this named PNG/PDF pair to `figures/` after
+checking its plot receipt. The adjacent `.provenance.json` binds the input,
+plotting sources and copied exports; [full findings](../docs/findings/b200_training_direction.md)
+document the data and interpretation.
+
 ## Matched teacher final-boundary scores
 
 `teacher_final_boundary_histograms.png` and `.svg` compare Qwen3.5-27B-FP8
