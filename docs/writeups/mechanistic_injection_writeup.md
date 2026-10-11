@@ -233,11 +233,6 @@ kernels, FP8 attention projections, FP4 MLP/GDN projections and MXFP8 attention.
 These changes targeted throughput and latency, but also changed numerical
 behavior, motivating the precision comparisons below.
 
-The historical regular control and CAFT both used BF16/SDPA training and BF16
-serving, but historical runtime and host differences remain. Their comparison
-matches the precision and attention recipe rather than the exact execution
-stack. [Comparison records](../findings/concept_ablation_training.md#historical-bf16-regular-comparison).
-
 With BF16 serving held fixed, changing augmented-model MLP training from FP4
 to BF16 raised ID pAUROC@20 from **0.8391 to 0.8511** in the matched one-seed
 comparison.
