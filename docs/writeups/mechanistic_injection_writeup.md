@@ -161,7 +161,7 @@ its lower clean-calibrated cutoff. The historical control also had saturated
 alarms, so CAFT failed to resolve the existing failure mode.
 
 Keeping the original projection active at inference did not help. Refitting
-a direction in CAFT, with cosine **0.289** to the old axis, also left FPR at
+a direction in CAFT also left FPR at
 100%. All three inference arms retained 100% backdoor recall.
 
 | CAFT inference arm | Injected honest FPR | Matched AUROC | Matched pAUROC@20 |
@@ -179,7 +179,8 @@ failure on its own.
 The model still learned to flag prompt injections despite the training-time
 ablation. This suggests that the response could be carried by other computations
 that the original projection did not block. Repeating the same contrastive
-extraction procedure produced a different direction, but its ablation also
+extraction procedure produced a direction with cosine similarity 0.289 to the
+original, indicating limited overlap, but its ablation also
 failed to reduce false alarms. As the next section shows, the original direction
 still increased suspiciousness when added to the model: it retained that causal
 role, rather than simply becoming unrelated to the behavior.
