@@ -30,12 +30,32 @@ $$
             - u^\top h^{\mathrm{base}}_{20,T}(x).
 $$
 
+Each plotted sample is an original agent trajectory from the training corpus,
+without added synthetic injection text. We ran the same trajectory through
+both models and measured $\Delta z(x)$.
+
 ![Trained-minus-base projection changes for harmless and harmful records, split by Kimi K3 target](../../figures/direction_teacher_by_label_distributions.png)
 
-Layer-20 projection changes across all 8,688 originals, split by Kimi K3 target
-(below 0.5 or at least 0.5). Harmless records with suspicious teacher targets
-shift strongly positive; the harmful groups overlap much more. Each curve has
-area 1, and dotted lines mark group means.
+The panels separate the dataset's harmless and harmful labels, with 4,344
+records each. Within each panel, blue shows trajectories Kimi K3 scored below
+0.5 and orange those it scored at least 0.5. These are the soft suspiciousness
+targets used for training, not new annotations. Positive values mean alignment
+with the direction increased after fine-tuning; negative values mean it decreased.
+Each curve has area 1, so its height describes the distribution within that
+group rather than its size. Dotted lines mark group means.
+
+The clearest separation is among harmless-labeled records: the 346 that Kimi
+scored suspicious shift strongly positive, while the other 3,998 mostly shift
+negative. Both harmful groups tend to shift positive and overlap much more.
+The harmless/teacher-suspicious group therefore provided a candidate explanation
+for strengthening the direction despite the harmless source label.
+
+Some inspected high-change examples involved agents editing firewalls or
+network whitelists while trying to run tests or upload task results. These may
+reflect disagreement about authorization or the monitoring rubric; the plot
+does not establish that Kimi's judgments were wrong. High changes also occur
+outside firewall-related examples.
+[Sample review](../findings/b200_training_direction.md#targeted-review-of-harmless--teacher-positive-high-alignment).
 
 We ranked all original harmless training records by $\Delta z(x)$, then removed
 the top **20%:
