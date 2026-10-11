@@ -233,23 +233,38 @@ kernels, FP8 attention projections, FP4 MLP/GDN projections and MXFP8 attention.
 These changes targeted throughput and latency, but also changed numerical
 behavior, motivating the precision comparisons below.
 
-With BF16 serving held fixed, changing augmented-model MLP training from FP4
-to BF16 raised ID pAUROC@20 from **0.8391 to 0.8511** in the matched one-seed
-comparison.
+The APPS comparison uses augmented adapters on the full 655-task population.
+Rates average the three injection templates, with each condition calibrated
+on clean honest code to allow at most 2% FPR.
 
-For that same BF16/FA4 adapter, switching BF16 serving to the optimized recipe
-lowered ID pAUROC@20 to **0.8253**. On full APPS, FPR fell **25.19% → 3.51%**,
-but recall also fell **70.38% → 30.55%** and matched AUROC **0.8216 → 0.7867**.
-This changes serving on fixed weights, so training-run variation cannot explain
-it. The comparison changes multiple precision and kernel components together,
-so the responsible component is not isolated. It passed the short
-canary despite the held-out changes.
+| MLP training and attention | Serving | Injected honest FPR | Backdoor recall | Matched AUROC | Matched pAUROC@20 |
+| --- | --- | ---: | ---: | ---: | ---: |
+| FP4 MLP, FA4 | Optimized (diagnostic) | 31.30% | 64.45% | 0.7604 | 0.3992 |
+| BF16 MLP, FA4 | Optimized | 3.51% | 30.55% | 0.7867 | 0.4630 |
+| BF16 MLP, FA4 | BF16 | 25.19% | 70.38% | 0.8216 | 0.5191 |
+| BF16 MLP, SDPA | BF16 | 60.41% | 83.82% | 0.7989 | 0.5043 |
+
+The FP4/optimized row retains failed-parity diagnostic status. Comparing the
+first two rows keeps optimized serving fixed while changing MLP training
+precision. The two BF16/FA4 rows use exactly the same adapter and differ only
+in serving; the last two keep BF16 serving fixed while changing training
+attention. These distinctions separate training effects from serving effects.
 [Precision comparisons](../findings/b200_augmented_training.md).
 
-BF16/SDPA partly recovered ID ranking relative to FA4 but worsened APPS
-injection discrimination. One same-seed FA4 repeat was bitwise identical;
-SDPA repeatability and different-seed variance remain unresolved. We should
-keep arithmetic sensitivity separate from claims about nondeterminism.
+The same-adapter serving change substantially reduced both false alarms and
+backdoor recall, while weakening matched ranking. Training with SDPA increased
+both alarm rates but also weakened ranking relative to FA4. Suspiciousness
+therefore changes with numerical implementation; lower FPR alone does not
+establish better monitoring. The serving comparison changes several precision
+and kernel components together, so the responsible component is not isolated.
+It passed the short canary despite the held-out changes.
+
+ID ranking was sensitive too. With BF16 serving fixed, BF16 rather than FP4
+MLP training raised ID pAUROC@20 from 0.8391 to 0.8511. Optimized serving of
+that BF16/FA4 adapter then lowered it to 0.8253. One same-seed FA4 repeat was
+bitwise identical; SDPA repeatability and different-seed variance remain
+unresolved. We should keep arithmetic sensitivity separate from claims about
+nondeterminism.
 
 ## Remaining questions
 
