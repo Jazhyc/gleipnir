@@ -1,6 +1,6 @@
 # Mechanistic interventions for prompt injection sensitivity in logit trained monitors
 
-*Results memo for Michael, 11 October 2026*
+*Working draft, 11 October 2026*
 
 Following up on our
 [emergent suspiciousness results](../../outputs/presentations/monitor_injection_results/presentation.pdf),
