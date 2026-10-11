@@ -61,11 +61,12 @@ points over regular. The strict candidate's pooled pAUROC is 0.710063, pooled
 AUROC 0.926191 and pooled Brier 0.140908. Full per-source calibration,
 threshold diagnostics and pooled metrics for all references are saved.
 
-The native BF16 candidate produces only **80 unique scores**, versus 1,987
-for cached Gleipnir 4B and 1,927 for cached regular. Ties are retained in the
-metrics, not jittered. This score-resolution difference and the small aggregate
-gain limit any claim of robust transfer; one seed supplies no training-repeat
-uncertainty estimate. Filtering also changes composition and update count.
+The native BF16 candidate produces **80 unique scores**, versus 1,987 for
+cached Gleipnir 4B and 1,927 for cached regular. However, the saved-score audit
+below shows that the historical counts mostly reflect tiny numerical residuals,
+not materially finer binary-margin resolution. Ties are retained in the metrics,
+not jittered. The small aggregate gain, historical comparison and single seed
+limit claims of robust transfer. Filtering changes composition and update count.
 
 ## Execution and audit
 
@@ -127,3 +128,37 @@ include between-class separation; this descriptive comparison does not isolate
 the effect of filtering or measure training-seed variability. Full source-level
 statistics and checksums are in the figure's `.provenance.json`; regenerate with
 `PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py`.
+
+## Saved-score resolution audit
+
+The strict run's two logits range from 16.625 to 23.875, where BF16 spacing is
+0.125. Every observed logit and margin lies exactly on that grid. Score
+normalization already subtracts logits and computes sigmoid using Python floats;
+the apparent quantization therefore precedes endpoint probability arithmetic.
+The two-row classifier is deliberately BF16 in the current serving contract.
+
+Both historical caches' logprob differences lie within `2.3842e-7` of the same
+0.125 margin grid. Removing those residuals leaves 82 released-model margins
+and 90 regular-model margins, versus 80 strict-model margins. Coarsening these
+saved values tests numerical tie-breaking only; it does not reconstruct missing
+FP32-head results or change model inference.
+
+| Cached model | Original unique scores | Grid margins | Macro AUROC change | Macro pAUROC@20 change |
+|---|---:|---:|---:|---:|
+| Strict | 80 | 80 | 0 | 0 |
+| Released Gleipnir 4B | 1,987 | 82 | -0.000089 | -0.000313 |
+| Regular unfiltered 4B | 1,927 | 90 | -0.000050 | -0.000055 |
+
+Threshold decisions remain identical and Brier changes are below `1e-10`.
+This corrects the earlier interpretation of historical score uniqueness: tiny
+logprob residuals split many ties, but have little aggregate metric effect.
+It does not establish that recovering genuinely finer margins would be useless.
+The clean prospective test is the same checkpoint and BF16 backbone with an
+FP32 computation/output for just the final two-row projection, followed by
+matched score, tie, ranking, calibration and throughput comparisons. Casting
+already-rounded outputs to FP32 cannot recover lost precision. No GPU run,
+recipe selection or OOD tuning occurred in this saved-score audit.
+
+Reproduce with `PYTHONPATH=src:. .venv/bin/python scripts/audit_monitor_score_resolution.py`.
+Its checksum-bound full source/pooled metrics and rounding diagnostics are in
+`results/teacher-disagreement-strict-ood01/score_resolution_audit.json`.

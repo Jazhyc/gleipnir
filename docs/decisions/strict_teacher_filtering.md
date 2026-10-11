@@ -29,7 +29,7 @@ rows (9.81%), reducing training from 83.82M to 75.85M tokens and 272 to 245
 updates. Strict filtering improves one-seed ID ranking but increases false
 alarms at threshold 0.5. The [OOD follow-up](../findings/teacher_disagreement_ood.md)
 finds a small, uneven ranking gain against historical cached references, with
-mixed-data and score-resolution qualifications. This default is the user's
+mixed-data and historical-serving qualifications. This default is the user's
 selection for data efficiency and observed ranking; it does not establish
 universal quality improvement or calibration equivalence. Keep negative results
 and evaluate source-specific calibration and transfer for new campaigns.
