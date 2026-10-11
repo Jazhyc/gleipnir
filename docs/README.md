@@ -77,6 +77,8 @@
 - [Strict-filtering OOD transfer](findings/teacher_disagreement_ood.md): small
   macro ranking gain over cached Gleipnir 4B, with source regressions and
   worse Brier; one-seed historical-serving comparison limits attribution.
+- [Default strict teacher filtering](decisions/strict_teacher_filtering.md):
+  selected training-data rule, resolved campaign preparation and control opt-out.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
   top-20% harmless removal and matched random control improve ID but worsen
   held-out APPS injection discrimination; fixed-axis projection on the filtered

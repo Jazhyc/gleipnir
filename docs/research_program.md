@@ -27,6 +27,10 @@ private reasoning, so action-only claims require the input audits and cleanup
 contract below. Teachers may retain richer information, with that privilege
 recorded explicitly in target provenance.
 
+Future training uses the user-selected
+[strict agreement filter](decisions/strict_teacher_filtering.md) by default,
+with explicit unfiltered controls and unchanged held-out populations.
+
 ## Conclusions that guide new work
 
 - **Data and ID improvements do not guarantee transfer.** The completed

@@ -6,6 +6,11 @@ file on 2026-10-07; their scope and historical acceptance remain intact.
 
 Also read [compute.md](compute.md) before launching or operating a run.
 
+Future binary tool-trajectory training defaults to strict teacher/source-label
+agreement filtering. Use the shared campaign preparation path; the
+[filtering decision](../decisions/strict_teacher_filtering.md) defines the rule,
+provenance, historical-contract handling and explicit control opt-out.
+
 ## Reuse validated training recipes
 
 Standing user preference, 2026-10-06: short systems-training optimization checks

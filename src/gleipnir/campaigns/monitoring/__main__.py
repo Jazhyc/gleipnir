@@ -131,6 +131,10 @@ def execute(
     launch: Callable[[Campaign, str], None] = worker,
 ) -> dict:
     """Skip only complete, hash-bound stages; never silently repeat training."""
+    if isinstance(ctx, Campaign):
+        from .filtering import resolve_filter
+
+        ctx = resolve_filter(ctx)
     inventory = ctx.inventory(runtime=True)
     if not inventory["passed"]:
         raise ValueError(
@@ -252,6 +256,10 @@ def main() -> None:
     if args.config is None:
         parser.error("--config is required")
     ctx = Campaign.load(args.root, args.config)
+    if args.action == "prepare" or (ctx.data / "strict_filter/config.yaml").exists():
+        from .filtering import resolve_filter
+
+        ctx = resolve_filter(ctx)
     if args.action == "inventory":
         value = ctx.inventory()
         print(json.dumps(value, indent=2))

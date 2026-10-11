@@ -32,6 +32,14 @@ cover supplied trajectory hashes; absent grouping lineage cannot be inferred.
 The initializer's file SHA256 is distinct from `model.initial_tensor_sha256`,
 the training engine's ordered tensor fingerprint.
 
+New `prepare`/`run` campaigns default to strict teacher/source-label agreement
+filtering before freezing training inputs. The resolved config and paired
+subsets live in `data/<campaign_id>/strict_filter/`; preparation recounts tokens
+and updates and records removal provenance. Resume accepts the original config
+and follows its checksum-bound resolved config. Set `teacher_filter: none` for
+an unfiltered control. Historical prepared campaigns retain their contracts.
+See the [default filtering decision](../../docs/decisions/strict_teacher_filtering.md).
+
 To start training before waiting for later stages, use `run --through train`.
 Continue with `run --resume`. Completed stages are skipped only after checking
 their input/source binding and every saved output checksum, including adapter

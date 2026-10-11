@@ -38,6 +38,8 @@ class Campaign:
     def load(cls, root: Path, config_path: Path) -> Campaign:
         root, config_path = root.resolve(), config_path.resolve()
         config = yaml.safe_load(config_path.read_text())
+        if config.get("teacher_filter", "strict") not in ("strict", "none"):
+            raise ValueError("teacher_filter must be strict or none")
         if not re.fullmatch(r"[a-zA-Z0-9_-]+", config["campaign_id"]):
             raise ValueError("campaign_id must be a simple directory name")
         names = config["evaluations"]
@@ -312,6 +314,12 @@ class Campaign:
         config = self.config
         rows = read_rows(self.input("training"))
         validate_targets(rows, read_rows(self.input("teacher")))
+        if config.get("teacher_filter", "strict") != "none":
+            from .filtering import retained_indices
+
+            retained = retained_indices(rows, read_rows(self.input("teacher")))
+            if len(retained) != len(rows):
+                raise ValueError("resolve strict teacher filtering before preparation")
         job = self.job()
         if (
             len(rows) != config["training_rows"]
