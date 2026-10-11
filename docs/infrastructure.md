@@ -618,6 +618,15 @@ The [injection-detection experiment](../experiments/apps_injection_detection/REA
 records the matched base/SDPA evaluation; hardware/runtime/model bindings are
 under `results/apps_injection_detection/presence01/{base,sdpa}/binding.json`.
 
+At the user's request, this Pod was permanently terminated on 2026-10-11 after
+verifying both completed experiments, the persistent SDPA merge and runtime
+backup, and archiving current container caches. Deletion returned HTTP 204;
+an independent read returned HTTP 404. Volume `ixbh81vf9c` remains present
+(STANDARD, 300 GB, US-NC-2). `.runpod/apps-detection.json` is marked TERMINATED.
+Preservation and termination receipts are collected locally under
+`results/b200_shutdown/20261011_injection/`; model/runtime backups and both
+experiment result sets remain on the volume. No replacement capacity launched.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
