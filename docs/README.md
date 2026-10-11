@@ -82,6 +82,8 @@
 - [FP32 monitor-head resolution](findings/monitor_score_resolution.md): most
   strict-model score ties disappear, with small ID/OOD ranking gains and nearly
   unchanged measured throughput; no serving-default promotion.
+- [Single partial-AUROC variant](findings/partial_auroc.md): a small tail-ranking
+  term improves OOD pAUROC but regresses ID Gloom; no default promotion.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
   top-20% harmless removal and matched random control improve ID but worsen
   held-out APPS injection discrimination; fixed-axis projection on the filtered

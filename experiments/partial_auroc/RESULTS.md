@@ -1,36 +1,35 @@
-# Initial launch record
+# Completed run record
 
-On 2026-10-12, `strict-pauc02` passed preparation and began the single variant
-defined in [config.yaml](config.yaml) and [README.md](README.md). The detached
-driver launched at 00:14:41 CEST on existing Runpod B200 `rzarg8j8x0so3i` in
-NC2. Driver PID 6712, Trainer PID 6881; verify live receipts before using these
-historical PIDs. No new capacity or lifecycle action occurred.
+`strict-pauc02` launched at **00:14:41 CEST on 2026-10-12** on existing Runpod
+B200 `rzarg8j8x0so3i` in NC2 and completed at **01:51:07 CEST**. Implementation:
+`d6b1637`; 39 focused tests and lint passed. No new capacity or termination
+occurred. Driver/scorer processes retired; the Pod remains running.
 
-At the initial startup check, seven of 245 optimizer updates had completed.
-The fresh parameter-gradient replay canary passed with maximum error
-`5.551115123125783e-17`; all observed native score/replay margin differences
-were zero and gradients were finite. 39 focused tests and lint passed.
-Implementation: `d6b1637`. Startup compiled distinct gradient/no-gradient
-specializations into the persistent cache; expected recompilation messages and
-the existing experimental cuBLAS preference warning are retained in logs.
+The final source-macro normalized pAUROC@20 is **0.872081 ID** and **0.795452
+OOD**, versus **0.896106 / 0.787535** for the matched strict soft-BCE checkpoint
+with FP32 head computation. OOD gains 0.7918 percentage points, while ID loses
+2.4025 points. No default promotion occurred. The complete source/calibration/
+threshold results and qualifications are in the
+[findings](../../docs/findings/partial_auroc.md).
+
+All 245 updates and all 7,836 training rows completed. The fresh gradient replay
+canary passed with maximum parameter error `5.551115123125783e-17`; every native
+score/replay margin difference was zero and all logged gradient norms were
+finite. Both forward passes cover 75,851,675 tokens each, with 1,032.90 s spent
+on the additional score passes. Master/merge/serving gates and the actual
+BF16-backbone/FP32-head dispatch passed. All 9,407 matched predictions and
+receipts were collected and independently audited locally; weights remain on
+the persistent volume. Historical PIDs are not a live capacity inventory.
 
 The earlier `strict-pauc01` attempt failed at offline tokenizer lookup because
 the custom launcher omitted persistent HF cache paths. No model loaded and no
 optimizer update occurred. Its launch/failure receipts and logs remain intact.
-The corrected attempt changes cache/PATH setup and artifact name only; objective,
-data, initialization, optimizer and selection settings are unchanged.
+The corrected attempt changed cache/PATH setup and artifact name only; objective,
+data, initialization, optimizer and selection settings were unchanged.
 
-Quality results are pending. The automated queue runs final-epoch master/merge/
-FP32-head serving checks and complete ID/OOD evaluation, with the archived strict
-FP32-head predictions as the reference. It writes the final `comparison.json`
-and stops on failure without retraining or waiving parity. The initial estimate
-was completion around 01:45–02:00 CEST; this is an estimate, not a completion
-receipt or scheduled agent follow-up.
-
-Live state: `results/strict-pauc02/runner.json`; objective checks:
-`partial_auc_training.json`; final metrics: `comparison.json` in the same
-directory. Logs: `logs/runpod/strict-pauc02/`. Read those receipts for later
-status; this document records the initial launch only. The scorer retires after
-evaluation and the Pod remains running. Important initial receipts and the
-failed startup logs were collected locally. No recurring agent scheduler is
-available; the earlier unattended-execution preference applies to the queue.
+Receipts: `results/strict-pauc02/runner.json`, `partial_auc_training.json`,
+`comparison.json` and `completion_audit.json`; logs:
+`logs/runpod/strict-pauc02/`. The shared ephemeral merge slot contains only the
+candidate; original strict master/export and the archived prior merge manifest
+are preserved. The detached queue completed without an agent scheduler or
+recurring agent follow-up.
