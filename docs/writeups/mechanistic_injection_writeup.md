@@ -17,8 +17,8 @@ raw pAUROC@20. The precision comparison below uses the full 655-task APPS set.
 
 ## Activation based filtering
 
-We used trained projection − base projection onto the suspiciousness
-direction to find examples where fine-tuning strengthened that component.
+For each example, we measured how much more its activation aligned with the
+suspiciousness direction in the fine-tuned model than in the base model.
 The hypothesis was that removing these examples would reduce injection alarms.
 
 ![Trained-minus-base projection changes for harmless and harmful records, split by Kimi K3 target](../../figures/direction_teacher_by_label_distributions.png)
