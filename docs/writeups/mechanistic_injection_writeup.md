@@ -185,26 +185,49 @@ failed to reduce false alarms. As the next section shows, the original direction
 still increased suspiciousness when added to the model: it retained that causal
 role, rather than simply becoming unrelated to the behavior.
 
-## Supporting steering and transfer checks
+## Preserved causal influence after CAFT
 
-The old direction still affects CAFT. On clean/neutral honest examples, adding
-one or two units of the original donor shift at layer 20 raised pooled FPR
-from 2.58% to **61.04% / 100%** at the fixed clean threshold. Equal-norm random
-controls stayed near 2–3%. The two-unit mean logit-margin shift was **+3.163**.
-At threshold 0.5, FPR was only 2.16%, so the 100% operating-point rate does
+We added the original direction at layer 20 on clean and neutral honest examples,
+where CAFT's alarms were not already saturated. Doses are in units of the
+original augmented-model mean shift, with equal-norm random controls. FPR uses
+CAFT's fixed clean-calibrated threshold, 0.1192.
+
+| CAFT steering arm | Pooled honest FPR | Mean change in 1-minus-0 logit margin |
+| --- | ---: | ---: |
+| No steering | 2.58% | 0 |
+| Original direction +1 | 61.04% | +1.901 |
+| Original direction +2 | 100.00% | +3.163 |
+| Random direction +1 | 2.28% | -0.096 |
+| Random direction +2 | 2.75% | +0.039 |
+
+The original direction therefore still increases suspiciousness. At threshold
+0.5, the +2 arm's FPR was only 2.16%, so the 100% operating-point rate does
 not mean all scores exceeded 0.5.
 [CAFT steering](../findings/concept_ablation_training.md#augmented-vector-addition-on-clean-and-neutral-honest-examples).
 
-This leaves rerouting plausible, but does not distinguish it from existing
-redundancy, nonlinear reconstruction or an incomplete one-axis intervention.
-The direction retains causal influence without being a necessary bottleneck
-for these alarms.
+A working hypothesis is that the optimization pressure during training favors
+broad suspicion of injection text. When the original direction is ablated,
+the model may learn a different computation for producing that response.
+The original direction retains its steering influence, but its removal is no
+longer an effective control point for natural injection alarms. This is
+consistent with a shift in computation; we have not yet identified that computation.
 
-The JudgeDeceiver follow-ups also complicate its interpretation. Projection
-on the augmented monitor offered little reliable benefit. Addition in the
-base model instead drove **99.93% B choices** at two units, reducing accuracy
-from 78.44% to 50.07%, while retaining its APPS alarm effect. The vector affects
-both tasks, but this does not establish a common semantic suspicion feature.
+For context, we also tested the vector in the unadapted base model on both
+APPS honest examples and JudgeDeceiver. The same doses produced:
+
+| Base-model steering arm | APPS honest FPR | JudgeDeceiver accuracy | B choices |
+| --- | ---: | ---: | ---: |
+| No steering | 1.95% | 78.44% | 29.97% |
+| Original direction +1 | 87.30% | 69.29% | 74.98% |
+| Original direction +2 | 100.00% | 50.07% | 99.93% |
+| Random direction +1 | 2.15% | 78.63% | 30.59% |
+| Random direction +2 | 2.54% | 77.91% | 27.91% |
+
+APPS uses 512 clean/neutral honest rows at its fixed base threshold, 0.5;
+judging uses 4,188 A/B prompts. Earlier projection on the augmented monitor
+had offered little reliable judging benefit. Here, addition affects both tasks,
+but its judging effect is dominated by choosing B, rather than better injection
+handling. This limits a simple semantic interpretation of the direction.
 [Judging ablations](../findings/b200_projection_judge.md),
 [base-model steering](../findings/base_judge_steering.md).
 
@@ -235,9 +258,9 @@ keep arithmetic sensitivity separate from claims about nondeterminism.
 
 ## Remaining questions
 
-The main unresolved issue is whether CAFT changes the mechanism or simply
-leaves other routes available. A matched regular-data BF16/SDPA control and
-multiple seeds would help distinguish those cases. For filtering, a control
+The main unresolved issue is whether training pressure shifted the computation
+that produces injection alarms, and where that computation resides. A matched
+regular-data BF16/SDPA control would help test whether CAFT caused the shift. For filtering, a control
 matching removed teacher-target mass would separate activation selection from
 its supervision changes. The
 [CAFT adapter](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT)
