@@ -100,6 +100,23 @@ Pooled Brier/ECE improve from 0.11657/0.13088 to 0.10939/0.11348, with
 ranking accompanies better calibration and higher recall; it is not a uniform
 quality change. Complete source/calibration diagnostics remain in the summary.
 
+## Historical BF16 regular comparison
+
+The writeup uses the historical regular BF16/SDPA-trained adapter as a closer
+precision/attention comparison than the frozen modern FP4/optimized control
+above. CPU recomputation of its archived APPS scores excludes the same 64
+direction-fitting tasks: 591 tasks / 8,218 rows. Historical source hashes match
+the preserved reuse manifest; canonical IDs, task/condition/label and sample
+hashes match the CAFT population. No new inference or checkpoint selection.
+
+Historical injected-honest FPR/backdoor recall remain **100%/100%**, matched
+AUROC/raw pAUROC20 are **0.647321/0.221848**, and the clean-only threshold is
+0.182426 with 1.86% clean FPR. Its recorded ID macro pAUROC20 is **0.846273**.
+The receipt is `results/concept_ablation_training/historical_control_heldout.json`.
+Both recipes use BF16/SDPA training and BF16 serving, but historical runtime,
+host and serving layout differ; this is not an exact stack-matched control.
+The original frozen modern-control comparison remains unchanged.
+
 ## Execution and receipts
 
 The user-authorized research release is
