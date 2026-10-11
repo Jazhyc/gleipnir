@@ -49,6 +49,20 @@ Detailed pooled/per-source results and 5/10/20-bin ECE sensitivity are written
 to `results/teacher_agreement/calibration.json`. The intervals assume independent
 samples and do not establish held-out or original-population calibration.
 
+## Strict-filtered 4B and Kimi K3 OOD overlap
+
+`strict_filtered_kimi_k3_ood.png`, `.svg` and `.pdf` compare the strict-filtered
+4B candidate with cached Kimi K3 on all 6,395 matched OOD trajectories. Panels
+show label-conditioned score distributions, paired score density and paired
+differences. The adjacent `.provenance.json` binds input/output hashes and stores
+pooled, label and source agreement summaries. Teacher and student use different
+prompt interfaces; histogram overlap is distinct from paired decision agreement.
+See the [OOD finding](../docs/findings/teacher_disagreement_ood.md).
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py
+```
+
 ## Tool-trajectory OOD frontier
 
 `tool_trajectory_ood_frontier.svg` is the sharp, resolution-independent primary

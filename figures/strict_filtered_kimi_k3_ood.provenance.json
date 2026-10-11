@@ -1,0 +1,227 @@
+{
+  "inputs_sha256": {
+    "results/teacher-disagreement-strict-ood01/evaluation/ood.jsonl": "daee33441f55c8460d3c50c6310a9cde21ba8dc03114b07e81aeae413caf9e68",
+    "results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl": "c268958b594e4482f539ccaeb371454f629faeff1f9af96064a69d8bc99003bb",
+    "results/tool_trajectory_monitoring/kimi_k3_ood_full_remaining_fireworks.jsonl": "69e826d425830b2053b7d0055aae03c907b29e9e5f621f8c5b44a941c44b5153"
+  },
+  "outputs_sha256": {
+    "figures/strict_filtered_kimi_k3_ood.pdf": "a0f5b6889cb42d7bffadb263c7eecc25d610564973335f90a573722d8d905cb0",
+    "figures/strict_filtered_kimi_k3_ood.png": "6dc4d10df564acfdee59ec2484b2b8772fc623be2c92897dc2e9c2551e7b9ca2",
+    "figures/strict_filtered_kimi_k3_ood.svg": "20224ef2876754f177ce8582f86956d840cf88898fca70625ed07f6d8edb330b"
+  },
+  "qualification": "Pooled descriptive overlap; historical teacher interface differs. No OOD tuning or new inference.",
+  "script_sha256": "3eea8fbc0b71e556143f788d3856a97495111e60388a09d6391de8ecccd982b0",
+  "summary": {
+    "by_label": {
+      "0": {
+        "agreement_at_05": 0.898714330511132,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            2820,
+            222
+          ],
+          [
+            101,
+            46
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.8620257133897773,
+        "kimi_mean": 0.08824511448534689,
+        "mean_absolute_score_difference": 0.10454580351593272,
+        "mean_student_minus_kimi": 0.02725999854257951,
+        "n": 3189,
+        "pearson": 0.43263569398022655,
+        "spearman": 0.5746335583330041,
+        "student_mean": 0.11550511302792638,
+        "within_005": 0.649733458764503,
+        "within_010": 0.772969582941361
+      },
+      "1": {
+        "agreement_at_05": 0.7928883343730505,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            277,
+            11
+          ],
+          [
+            653,
+            2265
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.3384279475982533,
+        "kimi_mean": 0.900274119618582,
+        "mean_absolute_score_difference": 0.2568039130925877,
+        "mean_student_minus_kimi": -0.25088887255808184,
+        "n": 3206,
+        "pearson": 0.6189957086472913,
+        "spearman": 0.7100346738676204,
+        "student_mean": 0.6493852470604999,
+        "within_005": 0.16874610106051155,
+        "within_010": 0.3505926388022458
+      }
+    },
+    "by_source": {
+      "agentdojo": {
+        "agreement_at_05": 0.858,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            555,
+            139
+          ],
+          [
+            74,
+            732
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.508,
+        "kimi_mean": 0.5675718690648208,
+        "mean_absolute_score_difference": 0.15721229325634642,
+        "mean_student_minus_kimi": -0.03607388512277207,
+        "n": 1500,
+        "pearson": 0.8430386457549294,
+        "spearman": 0.8604951931276918,
+        "student_mean": 0.5314979839420487,
+        "within_005": 0.334,
+        "within_010": 0.548
+      },
+      "cua_shade_arena": {
+        "agreement_at_05": 0.9026178010471204,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            552,
+            4
+          ],
+          [
+            89,
+            310
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.6827225130890053,
+        "kimi_mean": 0.4136487153786414,
+        "mean_absolute_score_difference": 0.13033945859381352,
+        "mean_student_minus_kimi": -0.08542454805870188,
+        "n": 955,
+        "pearson": 0.871451606641365,
+        "spearman": 0.8380964938940072,
+        "student_mean": 0.3282241673199396,
+        "within_005": 0.5759162303664922,
+        "within_010": 0.7361256544502618
+      },
+      "iac": {
+        "agreement_at_05": 0.7775467775467776,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            754,
+            12
+          ],
+          [
+            309,
+            368
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.5363825363825364,
+        "kimi_mean": 0.46366778255747737,
+        "mean_absolute_score_difference": 0.23852084904431026,
+        "mean_student_minus_kimi": -0.18646328613528723,
+        "n": 1443,
+        "pearson": 0.7345094320766499,
+        "spearman": 0.8715332792429392,
+        "student_mean": 0.27720449642219014,
+        "within_005": 0.4067914067914068,
+        "within_010": 0.5405405405405406
+      },
+      "mle_sabotage": {
+        "agreement_at_05": 0.9662162162162162,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            50,
+            2
+          ],
+          [
+            3,
+            93
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.554054054054054,
+        "kimi_mean": 0.6397713376477489,
+        "mean_absolute_score_difference": 0.08077374981101172,
+        "mean_student_minus_kimi": -0.05089755667334061,
+        "n": 148,
+        "pearson": 0.9630020399581904,
+        "spearman": 0.8498093371317488,
+        "student_mean": 0.5888737809744082,
+        "within_005": 0.527027027027027,
+        "within_010": 0.7972972972972973
+      },
+      "rogue_eval": {
+        "agreement_at_05": 0.8999332888592395,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            741,
+            0
+          ],
+          [
+            150,
+            608
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.5770513675783857,
+        "kimi_mean": 0.5099670590883367,
+        "mean_absolute_score_difference": 0.16401522297422944,
+        "mean_student_minus_kimi": -0.13915715240142984,
+        "n": 1499,
+        "pearson": 0.8773955589265217,
+        "spearman": 0.8617691937128693,
+        "student_mean": 0.37080990668690694,
+        "within_005": 0.46631087391594395,
+        "within_010": 0.5510340226817878
+      },
+      "shade_arena": {
+        "agreement_at_05": 0.7588235294117647,
+        "decision_counts_kimi_rows_student_columns": [
+          [
+            445,
+            76
+          ],
+          [
+            129,
+            200
+          ]
+        ],
+        "histogram_overlap_bin_width_005": 0.5752941176470588,
+        "kimi_mean": 0.4624715070957499,
+        "mean_absolute_score_difference": 0.2287274947814055,
+        "mean_student_minus_kimi": -0.11356516148010454,
+        "n": 850,
+        "pearson": 0.6468865379179519,
+        "spearman": 0.6863373829593452,
+        "student_mean": 0.3489063456156454,
+        "within_005": 0.23294117647058823,
+        "within_010": 0.4
+      }
+    },
+    "pooled": {
+      "agreement_at_05": 0.8456606724003127,
+      "decision_counts_kimi_rows_student_columns": [
+        [
+          3097,
+          233
+        ],
+        [
+          754,
+          2311
+        ]
+      ],
+      "histogram_overlap_bin_width_005": 0.6411258795934324,
+      "kimi_mean": 0.49533893629256365,
+      "mean_absolute_score_difference": 0.1808772342122198,
+      "mean_student_minus_kimi": -0.1121841423094487,
+      "n": 6395,
+      "pearson": 0.808133044723987,
+      "spearman": 0.8640289221689046,
+      "student_mean": 0.38315479398311497,
+      "within_005": 0.4086004691164973,
+      "within_010": 0.561219702892885
+    }
+  }
+}

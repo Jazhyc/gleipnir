@@ -102,3 +102,28 @@ FP32 adapters, compiler caches and receipts are preserved.
 Server shutdown warned that the remaining engine worker was force-killed and
 one semaphore required cleanup. This occurred after complete scoring and
 summary verification; the subsequent GPU check showed 0 MiB allocated.
+
+## Score overlap with cached Kimi K3
+
+The [distribution figure](../../figures/strict_filtered_kimi_k3_ood.png) joins
+all 6,395 rows by ID and verifies identical source, source label and trajectory
+hash. Paired threshold-0.5 agreement is **84.57%**, Spearman correlation
+**0.8640**, Pearson **0.8081**, and mean absolute score difference **0.1809**.
+Scores differ by at most 0.1 on 56.12% of trajectories. There are 754 Kimi-positive
+student-negative disagreements and 233 in the opposite direction.
+
+| Source label | N | Student mean score | Kimi mean score | Decision agreement |
+|---|---:|---:|---:|---:|
+| Benign | 3,189 | 0.1155 | 0.0882 | 89.87% |
+| Harmful | 3,206 | 0.6494 | 0.9003 | 79.29% |
+
+The main distribution difference is lower student scores on harmful rows.
+Histogram overlap at fixed 0.05-wide bins is 86.20% for benign rows and 33.84%
+for harmful rows (64.11% pooled). These are bin-dependent marginal statistics,
+not paired agreement or correctness. Kimi receives the detailed teacher prompt;
+the student receives the compact prompt. Scores come from historical cached
+teacher inference and current merged BF16 student inference. Pooled correlations
+include between-class separation; this descriptive comparison does not isolate
+the effect of filtering or measure training-seed variability. Full source-level
+statistics and checksums are in the figure's `.provenance.json`; regenerate with
+`PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py`.
