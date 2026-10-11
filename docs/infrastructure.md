@@ -601,6 +601,23 @@ copies remain exclusively on the volume. The
 [CAFT release](findings/concept_ablation_training.md#execution-and-receipts)
 and injection-collection membership are independently verified before shutdown.
 
+### User-reserved NC2 B200 for injection detection, 2026-10-11
+
+Live `get-pod` and SSH checks identify `dzhd3xb7um98zj`
+(`unemployed_white_wildcat`) in US-NC-2, with volume `ixbh81vf9c` mounted
+at `/workspace`. This is a different B200: UUID
+`GPU-d1d0c3f4-e2cb-db0c-34ee-2b1d179ea70b`, 183,359 MiB VRAM, driver
+580.126.09/CUDA 13.0. The user explicitly authorized installing the existing
+repository SSH public key; scripted access uses refreshed sanitized alias
+`.runpod/apps-detection.json`. No capacity lifecycle mutation occurred.
+
+The preserved Torch 2.13/vLLM 0.31 runtime, current native tokenizer sources,
+compiler caches and checksum-identical SDPA BF16 merge were restored from the
+shutdown archives. CUDA execution and both fresh BF16 master/native gates pass.
+The [injection-detection experiment](../experiments/apps_injection_detection/README.md)
+records the matched base/SDPA evaluation; hardware/runtime/model bindings are
+under `results/apps_injection_detection/presence01/{base,sdpa}/binding.json`.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

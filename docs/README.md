@@ -93,6 +93,9 @@
   increasing APPS injection alarms and reducing matched discrimination.
 - [Current monitor on APPS](findings/b200_apps.md): injected-honest alarms,
   matched backdoor discrimination and frozen optimized-stack evaluation.
+- [Black-box APPS injection detection](findings/apps_injection_detection.md):
+  matched base/SDPA BF16 presence prompting, near-perfect honest-code ranking,
+  weak fixed-threshold recall and residual backdoor-related false positives.
 - [vLLM 0.31 migration](findings/b200_vllm031.md): source-compatible B200 runtime,
   failed score agreement, paired native arithmetic, scheduler diagnostics and
   fixed-adapter ID ranking/calibration comparison.
