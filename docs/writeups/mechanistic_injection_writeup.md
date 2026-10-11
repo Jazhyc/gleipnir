@@ -2,10 +2,18 @@
 
 *Initial draft, 11 October 2026*
 
-Our monitors sometimes treat prompt injection text as evidence of harmful
-behavior even when the underlying code is honest. We investigated whether an
-activation direction associated with these false alarms could help us change
-the training data or the training computation. Two interventions were central:
+This investigation continues the results we presented in
+[Emergent Suspiciousness in Trained Monitors](../../outputs/presentations/monitor_injection_results/presentation.pdf).
+Our trained 4B and 9B monitors initially appeared highly robust to injected
+backdoors. However, adding the same injection text to honest code raised alarm
+rates from 1.98% on clean code to 100.00% and 99.85%, respectively, at the same
+thresholds. We described this behavior as emergent suspiciousness: the presence
+of injection text could trigger an alarm even without harmful behavior.
+
+We continued by asking whether mechanistic interventions could help explain
+and reduce these false alarms. In particular, could an activation direction
+associated with injection responses guide changes to the training data or the
+training computation? Two interventions were central:
 removing training examples with the largest learned alignment changes, and
 projecting the direction out during fine-tuning using a CAFT-style procedure.
 
