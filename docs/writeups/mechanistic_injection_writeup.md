@@ -261,10 +261,13 @@ It passed the short canary despite the held-out changes.
 
 ID ranking was sensitive too. With BF16 serving fixed, BF16 rather than FP4
 MLP training raised ID pAUROC@20 from 0.8391 to 0.8511. Optimized serving of
-that BF16/FA4 adapter then lowered it to 0.8253. One same-seed FA4 repeat was
-bitwise identical; SDPA repeatability and different-seed variance remain
-unresolved. We should keep arithmetic sensitivity separate from claims about
-nondeterminism.
+that BF16/FA4 adapter then lowered it to 0.8253.
+
+The same-seed FA4 repeat was bitwise identical in the same software environment
+on the same B200 node. Moving to another node may introduce hardware-dependent
+numerical variation and could contribute to replication differences, but we
+have not isolated that effect. SDPA repeatability and different-seed variance
+also remain unresolved.
 
 ## Remaining questions
 
