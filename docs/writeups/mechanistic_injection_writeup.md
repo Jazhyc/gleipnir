@@ -121,8 +121,8 @@ the original direction, and depends heavily on the calibration shift.
 
 We applied [CAFT](https://arxiv.org/html/2507.16795v2#S3) to all **8,688 regular
 originals, without augmentation**, using the augmented model's unit layer-20
-axis after every layer and token. Training differentiated through the projection;
-ordinary inference removed it. The run used seed 0 and BF16/SDPA. The direction
+axis after every layer and token. The ablation was active during training and
+removed for ordinary inference. The run used seed 0 and BF16/SDPA. The direction
 was obtained differently from the paper's concept-discovery procedure.
 
 In their PCA approach, the authors extracted principal components of
