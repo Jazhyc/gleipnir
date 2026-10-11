@@ -73,7 +73,10 @@
   inspected high-change counterexamples without firewall content.
 - [Teacher-disagreement filtering](findings/teacher_disagreement_filtering.md):
   strict and 0.05-margin filtering improve one-seed ID ranking, with higher
-  fixed-threshold false alarms; wider margins regress Gloom, and OOD is untested.
+  fixed-threshold false alarms; wider margins regress Gloom.
+- [Strict-filtering OOD transfer](findings/teacher_disagreement_ood.md): small
+  macro ranking gain over cached Gleipnir 4B, with source regressions and
+  worse Brier; one-seed historical-serving comparison limits attribution.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
   top-20% harmless removal and matched random control improve ID but worsen
   held-out APPS injection discrimination; fixed-axis projection on the filtered

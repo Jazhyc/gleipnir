@@ -5,7 +5,9 @@ teacher/source-label agreement filtering. Source-macro raw normalized pAUROC@20
 increases from **0.846812 to 0.895914 (+4.91 percentage points)**. Keeping a
 0.05 uncertainty margin also improves ranking; wider margins do not produce a
 monotonic benefit. Strict filtering substantially increases false positives at
-the frozen 0.5 threshold. No OOD evaluation or model promotion occurred.
+the frozen 0.5 threshold. The subsequent
+[strict OOD follow-up](teacher_disagreement_ood.md) finds a small, uneven
+ranking gain over cached Gleipnir 4B. No model promotion occurred.
 
 ## Contract and population
 
@@ -78,9 +80,10 @@ The detached `sweep04` queue completed on 2026-10-11 at **20:51 CEST**, in
 and ID scoring. The reused control was evaluated without retraining. Earlier
 replaced/failed startup receipts remain preserved separately.
 
-The NC2 B200 is idle after retiring the final scorer. All FP32 adapters remain
-on the persistent workspace volume. The user-requested shared ephemeral merge
-slot retains only the last arm's merge; prior manifests/checksums and retirement
+At ID completion the NC2 B200 was idle after retiring the final scorer. All
+FP32 adapters remain on the persistent workspace volume. The user-requested
+shared ephemeral merge slot retained only the last ID arm's merge; the OOD follow-up later replaced it
+with the reconstructed strict arm. Prior manifests/checksums and retirement
 receipts remain persistent, with reconstruction required for superseded weights.
 No capacity lifecycle action was taken after completion.
 

@@ -483,6 +483,11 @@ seeds. For deterministic literal-logit API baselines, record the single-run
 nature explicitly rather than presenting a bootstrap interval as seed
 variability.
 
+The [strict-filtering transfer diagnostic](../findings/teacher_disagreement_ood.md)
+completed all 6,395 rows at Mean-OOD pAUROC@20 `0.786936`. It remains outside
+the frontier table because it is a single trained seed, compared against cached
+historical models, rather than the required three-paired-seed aggregate.
+
 ## Sources
 
 - [Gleipnir 4B release](https://huggingface.co/Jazhyc/Gleipnir-4B)
