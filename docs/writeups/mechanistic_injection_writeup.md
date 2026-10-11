@@ -212,24 +212,11 @@ The original direction retains its steering influence, but its removal is no
 longer an effective control point for natural injection alarms. This is
 consistent with a shift in computation; we have not yet identified that computation.
 
-For context, we also tested the vector in the unadapted base model on both
-APPS honest examples and JudgeDeceiver. The same doses produced:
-
-| Base-model steering arm | APPS honest FPR | JudgeDeceiver accuracy | B choices |
-| --- | ---: | ---: | ---: |
-| No steering | 1.95% | 78.44% | 29.97% |
-| Original direction +1 | 87.30% | 69.29% | 74.98% |
-| Original direction +2 | 100.00% | 50.07% | 99.93% |
-| Random direction +1 | 2.15% | 78.63% | 30.59% |
-| Random direction +2 | 2.54% | 77.91% | 27.91% |
-
-APPS uses 512 clean/neutral honest rows at its fixed base threshold, 0.5;
-judging uses 4,188 A/B prompts. Earlier projection on the augmented monitor
-had offered little reliable judging benefit. Here, addition affects both tasks,
-but its judging effect is dominated by choosing B, rather than better injection
-handling. This limits a simple semantic interpretation of the direction.
-[Judging ablations](../findings/b200_projection_judge.md),
-[base-model steering](../findings/base_judge_steering.md).
+In a separate test on the unadapted base model, adding the direction raised
+APPS alarms but mainly biased JudgeDeceiver judgments toward B. This suggests
+a context-dependent effect and raises the possibility of polysemanticity;
+it does not establish a shared meaning of suspiciousness across the two tasks.
+[Base-model transfer](../findings/base_judge_steering.md).
 
 ## Precision sensitivity
 
