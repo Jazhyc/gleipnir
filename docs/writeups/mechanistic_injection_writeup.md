@@ -101,14 +101,6 @@ the same unedited eager baseline. With each arm's clean-calibrated threshold:
 | Original-direction projection | 62.61% | 86.68% | 0.7343 | 0.3331 |
 | Refitted-direction projection | 23.69% | 48.48% | 0.7047 | 0.2836 |
 
-Keeping the unedited threshold fixed at 0.095349 instead:
-
-| Filtered-model inference arm | Clean honest FPR | Injected honest FPR | Backdoor recall |
-| --- | ---: | ---: | ---: |
-| No projection | 1.18% | 100.00% | 100.00% |
-| Original-direction projection | 2.03% | 79.41% | 93.48% |
-| Refitted-direction projection | 60.91% | 100.00% | 100.00% |
-
 The refit's lower recalibrated FPR comes with lower recall and ranking than
 the original direction, and depends heavily on the calibration shift.
 [Projection follow-ups](../findings/activation_filter_training.md#model-specific-direction-refit).
