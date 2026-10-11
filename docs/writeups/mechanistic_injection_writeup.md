@@ -17,13 +17,9 @@ raw pAUROC@20. The precision comparison below uses the full 655-task APPS set.
 
 ## Activation based filtering
 
-The hypothesis was that fine-tuning strengthened a suspiciousness-associated
-direction that already affected the base model. Comparing trained and base
-activations on the same original records was meant to highlight inputs where
-this component had been amplified, giving us candidate training examples that
-might reinforce the response. Removing those candidates could then test whether
-they contributed to injection false alarms. The difference was a clue for
-filtering, not a direct measure of each example's causal training influence.
+We used **trained projection − base projection** onto the suspiciousness
+direction to find examples where fine-tuning strengthened that component.
+The hypothesis was that removing these examples would reduce injection alarms.
 
 We ranked all original harmless training records by trained-minus-base layer-20
 alignment with the augmented model's direction, then removed the top **20%:
