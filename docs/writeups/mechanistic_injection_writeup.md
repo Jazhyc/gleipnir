@@ -1,4 +1,4 @@
-# Mechanistic interventions for prompt injection sensitivity in logit trained monitors
+# Mechanistic interventions for prompt injection sensitivity in logit-based trained monitors
 
 *Working draft, 11 October 2026*
 
@@ -10,7 +10,7 @@ worsened APPS discrimination; CAFT left injected-honest FPR at 100%, even
 with additional inference-time projection.
 
 The main results use the current BF16/SDPA 4B replay, rather than the historical
-augmented checkpoint. APPS excludes the 64 direction-fitting tasks, leaving
+augmented checkpoint. The APPS evaluation excludes 64 direction-fitting tasks, leaving
 591 test tasks; rates average the three templates at each condition's clean-only
 2%-FPR operating point unless marked fixed-threshold. ID figures are source-macro
 raw pAUROC@20. The precision comparison below uses the full 655-task APPS set.
