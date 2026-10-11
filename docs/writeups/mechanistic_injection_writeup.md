@@ -269,12 +269,41 @@ numerical variation and could contribute to replication differences, but we
 have not isolated that effect. SDPA repeatability and different-seed variance
 also remain unresolved.
 
-## Remaining questions
+## Future experiments
 
-The main unresolved issue is whether training pressure shifted the computation
-that produces injection alarms, and where that computation resides. A matched
-regular-data BF16/SDPA control would help test whether CAFT caused the shift. For filtering, a control
-matching removed teacher-target mass would separate activation selection from
-its supervision changes. The
+### Robustness to serving quantization
+
+Try quantization-aware training that reflects the intended serving arithmetic,
+and test whether it reduces behavioral changes between BF16 and optimized
+serving. We could also give more weight to losses on examples in the tails of
+the teacher's logits, testing whether this preserves ranking in the low-FPR
+region measured by ID pAUROC@20. Comparing ordinary and tail-weighted losses
+under both serving recipes would test whether quantization interacts with this
+part of the supervision. APPS FPR and backdoor recall should remain separate
+checks on the resulting behavior.
+
+### Filtering conflicting teacher supervision
+
+Test whether removing teacher signal that contradicts the ground truth improves
+classifier quality. Compare removing disagreeing records with suppressing or
+correcting their conflicting teacher targets while retaining the examples.
+This would follow up on the ID gain from activation filtering and help separate
+the effect of conflicting supervision from the broader mixture change.
+
+### PCA based CAFT
+
+Replicate the [paper's PCA approach](https://arxiv.org/html/2507.16795v2#S3):
+decompose base-to-fine-tuned activation changes, interpret the components,
+and use the selected directions for CAFT. Test whether these directions
+generalize better across domains than our contrastively extracted APPS vector.
+
+One hypothesis is that the features underlying precision-sensitive behavior
+lie in lower-variance components, so inspecting only the leading PCs could miss
+them. Quantization sensitivity motivates testing this possibility, but does
+not establish a component's variance rank. We could examine components across
+the variance spectrum and compare their intervention effects under BF16 and
+optimized serving.
+
+The
 [CAFT adapter](https://huggingface.co/Jazhyc/Gleipnir-4B-ToolTrajectories-CAFT)
 is available for follow-up.
