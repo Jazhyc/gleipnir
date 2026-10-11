@@ -123,7 +123,19 @@ We applied [CAFT](https://arxiv.org/html/2507.16795v2#S3) to all **8,688 regular
 originals, without augmentation**, using the augmented model's unit layer-20
 axis after every layer and token. Training differentiated through the projection;
 ordinary inference removed it. The run used seed 0 and BF16/SDPA. The direction
-source differs from the paper's concept-discovery procedure.
+was obtained differently from the paper's concept-discovery procedure.
+
+In their PCA approach, the authors extracted principal components of
+base-to-fine-tuned activation differences, then inspected examples with high
+and low projections to identify undesirable concepts. This allowed direction
+discovery without contrastive examples of the target failure mode.
+[CAFT direction discovery](https://arxiv.org/html/2507.16795v2#S3).
+
+We already had a specific failure mode and could construct matched injected
+and neutral examples. We obtained $u$ from their mean activation difference.
+Our hypothesis was that this contrast would give a stronger representation of
+the unwanted response and make extraction simpler than interpreting PCA
+components.
 
 Using the same $u$, CAFT replaces each residual activation during fine-tuning
 with:
