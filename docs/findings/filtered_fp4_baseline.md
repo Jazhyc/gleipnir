@@ -33,8 +33,22 @@ runtime is 2,336.893 seconds (38 minutes 57 seconds), mean training loss is
 0.1944368, and steady update timing averages 9.0347 seconds after the first
 86.6203-second update. Initial GPU memory is about 146 GiB. The completed FP32
 master SHA256 is `4eb97e5385f53b135c0b77cb92d0cbbfa78a661100f9ba8ac4205dbabb34f057`.
-Master-reference scoring finishes; merge, serving parity and ID results remain
-pending at this status check. Completion metadata is collected locally.
+Master-reference scoring, merge and merged-reference finish. Master/BF16-merge
+parity passes: score MAE 0.0011047, maximum difference 0.0074601 and correlation
+0.99998785, with nonzero adapter effect 0.87237.
+
+Optimized evaluation fails before producing canary predictions or ID metrics.
+The MXFP8 attention kernel's first compilation raises CUTLASS
+`DSLUserCodeError[TYPE_UNSTABLE_JOIN]`: `k_row` has type `None` on one path and
+`Int32` on another in generated `serving_exp2_d31b2dfc...py:1319`.
+The engine exits, producing HTTP 500 at the score endpoint; the client connection
+errors are secondary. The loaded CUTLASS distribution reports pinned 4.8.0.
+This is an execution failure, not evidence of failed optimized score parity.
+The campaign preserves its failed evaluate stage and retires the scorer; no GPU
+compute process remains at the check. Training is not repeated and no arithmetic
+fallback or parity waiver is applied. ID baseline completion requires fixing and
+validating this serving compilation failure with the same preserved adapter.
+Completion metadata, passing merge parity and failure logs are collected locally.
 
 Verification: 29 existing campaign/filtering tests pass; log is
 `logs/local/filtered_fp4_baseline/tests.log`. No training implementation changed.
