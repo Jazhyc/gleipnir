@@ -53,6 +53,18 @@ Kimi targets and are not comparable to recovery KL against the BF16 student.
 Completed training and quality results are pending. Fresh-base mismatch remains
 a limitation to report even if the final trained adapter passes parity.
 
+## Larger-packing follow-up
+
+CPU-only replay of the frozen 245 logical batches counts 4,139 physical passes
+at 16,384 tokens, 3,657 at 20,480, 3,221 at 24,576 and 2,482 at 32,768. Thus
+24K/32K remove 22.18%/40.03% of physical passes while retaining logical batch 32;
+this is not a GPU timing or numerical-equivalence result. The largest physical
+row stays 29,337 through 24K because long singletons already exceed the budget;
+32K permits 32,768-token rows. Receipt: `packing_budget_counts.json` under the
+active output. The active 16K campaign stays frozen. A later matched screen must
+check packed-boundary isolation, finite gradients/memory and changed quantized
+kernel/numerical behavior before treating fewer passes as a throughput gain.
+
 Sources/contracts and receipts: `results/kimi-direct-qat02/`; logs:
 `logs/runpod/kimi-direct-qat02/all.log`. Failed initial alignment and repeats stay
 under `results/kimi-direct-qat01/`. The automatic pipeline trains, preserves
