@@ -73,6 +73,37 @@ or the point in their upstream pipeline where content was removed or flattened.
 
 ## Reproduction and consequence
 
+### Other OOD sources
+
+The follow-up checked the other five pinned parquet hashes and inspected their
+available raw representations. This omission is broader than SHADE:
+
+| Source | Prepared assistant bodies | Raw nonempty assistant content strings |
+|---|---|---:|
+| AgentDojo | All 6,380 sections empty | 6,857 |
+| IaC | All 27,734 sections empty | 24,780 |
+| Rogue Eval | All 3,533 sections empty | 3,039 |
+| CUA SHADE | All 24,571 sections contain tool names only | Raw typed messages unavailable in this artifact |
+| MLE sabotage | Visible plans/code retained | Separate thinking field excluded |
+
+Counts come from `results/ood_reasoning_audit/summary.json`; nonempty raw strings
+include placeholders such as `(no content)` and are not counts of confirmed
+public prose. Additional hash-bound samples are saved in
+`results/shade_prose_audit/other_sources.json`. AgentDojo row 1 contains a
+user-facing explanation of spending calculations absent from the transcript;
+IaC row 1 announces a final CDK synthesis check; Rogue Eval row 1 contains a
+user-facing implementation plan alongside deliberation. These examples confirm
+loss of potentially useful task commentary, without resolving provider-private
+boundaries. Some final-report text survives as `submit` arguments, as the earlier
+audit records; empty assistant bodies do not mean all natural-language reporting
+was removed from every tool call.
+
+CUA's artifact establishes a restricted representation but cannot establish
+which additional public prose existed upstream. No comparable blanket-prose
+omission was found for MLE in the available representation; this does not certify
+its completeness against original producer traces. Any correction should audit
+all affected sources, not assume only the 850 SHADE rows require new scoring.
+
 Run `python -m experiments.ood_reasoning_audit.shade_prose`. Ignored
 `results/shade_prose_audit/` contains the census, full message-indexed content
 evidence, pinned original source snapshots, revision trees and checksums.
