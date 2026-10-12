@@ -66,6 +66,9 @@ training, FP32 export, BF16 merge, new-adapter parity and registered ID/APPS
 evaluation; see the [campaign example](experiments/monitoring_campaign/README.md).
 New tool-trajectory training uses strict teacher/source-label agreement
 filtering by default; see the [filtering decision](docs/decisions/strict_teacher_filtering.md).
+Future merged-weight QAT uses the original arithmetic with lean MLP/GDN work,
+MXFP8 forward and BF16 FA4 surrogate backward; see the
+[QAT recipe selection](docs/decisions/qat_reference_training.md).
 The user-selected recipe for future single-B200 Qwen3.5-4B training is
 `systems_screen@_global_: qwen35_4b_b200_default`: native NVFP4 MLP forward and
 base input gradients with hardware activation packing and fused descale,

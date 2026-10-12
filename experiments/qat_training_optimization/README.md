@@ -48,12 +48,14 @@ Launch on the existing remote checkout:
 /tmp/gleipnir-serving-runtime/venv/bin/python -m experiments.qat_training_optimization.launch
 ```
 
-The reusable context applies after `quantization_recovery.install(model, root)`:
+The user-selected future-QAT context applies after
+`quantization_recovery.install(model, root)`; see the
+[recipe selection](../../docs/decisions/qat_reference_training.md):
 
 ```python
-from gleipnir.training.qat_optimization import optimized_path
+from gleipnir.training.qat_reference import attention_runtime
 
-with optimized_path(model, fp8=False, mlp=True, gdn=True):
+with attention_runtime(model):
     # Run the normal packed binary-KL training loop.
     ...
 ```
