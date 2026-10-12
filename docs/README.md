@@ -103,7 +103,8 @@
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
 - [Strict-filtered FP4/FA4 baseline](findings/filtered_fp4_baseline.md): restored
-  NC2 runtime, frozen one-epoch campaign and existing SDPA comparison; results pending.
+  NC2 runtime, completed BF16/optimized ID comparisons, compiler repair and
+  serving speed/quality/repeatability tradeoffs against the existing SDPA control.
 - [Augmented training precision controls](findings/b200_augmented_training.md): exact
   augmentation replay, completed FP32 adapters and failed optimized parity;
   ID/APPS tradeoffs, BF16 serving recovery, matched BF16 MLP/FA4 training and

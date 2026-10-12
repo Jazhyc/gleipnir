@@ -123,6 +123,44 @@ throughput above. The candidate retires after the check, with no GPU compute
 process remaining. The original serving selection is preserved; the tested repair
 is available through the explicitly bound `TypedCoordinateWorker` candidate.
 
+## Full repaired optimized-serving ID comparison
+
+At the user's request, the [optimized ID contract](../../experiments/filtered_fp4_baseline/optimized_id.md)
+freezes two ordered passes over the same 3,012 examples, reusing the completed
+adapter/merge and `native02` repair. All three new startup canaries pass the
+master gate (MAEs 0.0058295, 0.0058295, 0.0119203; correlations 0.99980557,
+0.99980557, 0.99750763). All raw canary repeats are retained. Both full ID passes
+complete without compiler or scoring failures; native audits confirm MXFP8
+attention and FP8 attention projections.
+
+| ID metric | Same-adapter BF16 | Optimized pass 1 | Optimized pass 2 |
+| --- | ---: | ---: | ---: |
+| Source-macro raw normalized pAUROC@20 | 0.887045 | 0.850308 | 0.847754 |
+| Source-macro AUROC | 0.962825 | 0.948017 | 0.947345 |
+| Pooled AUROC | 0.956521 | 0.941193 | 0.940109 |
+| Pooled raw normalized pAUROC@20 | 0.855490 | 0.812779 | 0.808482 |
+| Pooled Brier | 0.082633 | 0.097521 | 0.098278 |
+| Pooled ECE | 0.047501 | 0.054901 | 0.058461 |
+| Gloom raw normalized pAUROC@20 | 0.818870 | 0.742780 | 0.738401 |
+| STRIDE raw normalized pAUROC@20 | 0.955219 | 0.957835 | 0.957107 |
+| Prompt tokens/second, c128 | 112,743 | 179,427 | 177,828 |
+| Scoring seconds | 299.362 | 188.104 | 189.796 |
+
+The mean macro pAUROC loss is 3.80 percentage points, concentrated in Gloom;
+STRIDE is slightly better. The optimized recipe is about 1.58 times faster.
+The 0.255-percentage-point macro pAUROC repeat range is smaller than the
+BF16-to-optimized gap. Repeated optimized scores have MAE 0.0137278,
+correlation 0.9960503 and maximum difference 0.3535179; 41/3,012 decisions
+flip at 0.5. BF16 repeat variation is unmeasured. This compares the combined
+serving precision/kernel recipe on fixed weights, not isolated projection
+quantization or training effects. No held-out selection or promotion occurs.
+
+Raw predictions, batch timing, source/command bindings, dispatch audits,
+calibration/threshold/tie diagnostics, parity gates and repeat comparison are
+collected under `results/filtered-fp4-fa4-optimized-id01/`. The candidate is
+retired and the GPU has no compute process; the Pod remains running. The fixed
+BF16 baseline and failed original optimized receipt are preserved.
+
 Verification: 31 campaign/filter/source checks pass; log is
 `logs/local/filtered_fp4_baseline/bf16_compiler_tests.log`. Ruff passes. No training
 implementation changed. Native experimental-API and shutdown semaphore warnings
