@@ -24,9 +24,9 @@ def stage_environment(root: Path, environment: dict[str, str]) -> dict[str, str]
     }
 
 
-def main():
+def main(config_path: str = "experiments/native_fp8_qat/config.yaml"):
     root = Path.cwd()
-    path = root / "experiments/native_fp8_qat/config.yaml"
+    path = root / config_path
     config = yaml.safe_load(path.read_text())
     output = root / "results" / config["experiment"]
     output.mkdir(parents=True, exist_ok=True)
@@ -44,7 +44,15 @@ def main():
         teacher = root / "data" / config["teacher_experiment"]
         if file_hash(teacher / "teacher.jsonl") != config["teacher_sha256"]:
             raise ValueError("frozen teacher drift")
-        stages = generate(root, output)
+        stages = generate(
+            root,
+            output,
+            config_path=config_path,
+            runtime_module=config.get(
+                "runtime_module", "experiments.native_fp8_qat.runtime"
+            ),
+            native_attention_backward=config.get("native_attention_backward", False),
+        )
         sources = [
             *stages.values(),
             path,
@@ -52,6 +60,8 @@ def main():
             root / "src/gleipnir/training/qat_optimization.py",
             root / "src/gleipnir/training/quantization_recovery.py",
             root / "src/gleipnir/kernels/fp4/decode.py",
+            *sorted(path.parent.glob("*.py")),
+            *[root / source for source in config.get("extra_sources", [])],
         ]
         bindings = {str(p.relative_to(root)): file_hash(p) for p in sources}
         write_json(
@@ -102,7 +112,13 @@ def main():
             raise ValueError("unsafe ephemeral merge slot")
         old = json.loads((destination / "merge_manifest.json").read_text())
         previous = json.loads(
-            (root / "results/quantization-recovery01/merged_artifact.json").read_text()
+            (
+                root
+                / config.get(
+                    "merge_predecessor",
+                    "results/quantization-recovery01/merged_artifact.json",
+                )
+            ).read_text()
         )
         if old["adapter_sha256"] != previous["adapter_sha256"]:
             raise ValueError("ephemeral merge predecessor ownership changed")
