@@ -28,10 +28,13 @@ receipts are collected locally under `results/filtered-fp4-fa4-baseline01/` and
 `logs/runpod/filtered-fp4-fa4-baseline01/`. This launch receipt is not a completed
 quality result. No in-chat scheduler is available; the Pod stays running.
 
-Initial active-turn checks confirm the selected native FP4/FA4 implementation
-loads and reaches update 9/245 with finite loss and gradient norms. The early
-steady rate is approximately 10 seconds/update after first-update compilation;
-GPU memory is about 146 GiB. Completion and ID metrics remain pending.
+Training completes all 245 updates and the exact one-epoch population. Trainer
+runtime is 2,336.893 seconds (38 minutes 57 seconds), mean training loss is
+0.1944368, and steady update timing averages 9.0347 seconds after the first
+86.6203-second update. Initial GPU memory is about 146 GiB. The completed FP32
+master SHA256 is `4eb97e5385f53b135c0b77cb92d0cbbfa78a661100f9ba8ac4205dbabb34f057`.
+Master-reference scoring finishes; merge, serving parity and ID results remain
+pending at this status check. Completion metadata is collected locally.
 
 Verification: 29 existing campaign/filtering tests pass; log is
 `logs/local/filtered_fp4_baseline/tests.log`. No training implementation changed.
