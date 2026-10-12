@@ -28,5 +28,10 @@ receipts are collected locally under `results/filtered-fp4-fa4-baseline01/` and
 `logs/runpod/filtered-fp4-fa4-baseline01/`. This launch receipt is not a completed
 quality result. No in-chat scheduler is available; the Pod stays running.
 
+Initial active-turn checks confirm the selected native FP4/FA4 implementation
+loads and reaches update 9/245 with finite loss and gradient norms. The early
+steady rate is approximately 10 seconds/update after first-update compilation;
+GPU memory is about 146 GiB. Completion and ID metrics remain pending.
+
 Verification: 29 existing campaign/filtering tests pass; log is
 `logs/local/filtered_fp4_baseline/tests.log`. No training implementation changed.
