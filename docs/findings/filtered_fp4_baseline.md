@@ -50,5 +50,80 @@ fallback or parity waiver is applied. ID baseline completion requires fixing and
 validating this serving compilation failure with the same preserved adapter.
 Completion metadata, passing merge parity and failure logs are collected locally.
 
-Verification: 29 existing campaign/filtering tests pass; log is
-`logs/local/filtered_fp4_baseline/tests.log`. No training implementation changed.
+## BF16 serving follow-up
+
+At the user's request, `filtered-fp4-fa4-bf16-serving01` reuses the verified
+adapter, master reference, merge and merged-reference receipts, with no training
+or merge repeated. All 3,012 frozen ID examples complete under regular BF16
+vLLM serving. Fresh master/serving MAE is 0.0010124 and correlation 0.99998745;
+the BF16 projection/attention audit passes. Scoring takes 299.362 seconds for
+33,750,959 prompt tokens, or 112,743 prompt tokens/second. This is one ordered
+c128 pass, not a repeated throughput benchmark.
+
+| ID metric | FP4/FA4 training, BF16 serving | Filtered SDPA control, BF16 serving |
+| --- | ---: | ---: |
+| Source-macro raw normalized pAUROC@20 | 0.887045 | 0.895914 |
+| Source-macro AUROC | 0.962825 | 0.963772 |
+| Pooled AUROC | 0.956521 | 0.953400 |
+| Pooled raw normalized pAUROC@20 | 0.855490 | 0.855463 |
+| Pooled Brier | 0.082633 | 0.108310 |
+| Pooled ECE | 0.047501 | 0.095864 |
+| Pooled recall at 0.5 | 0.904851 | 0.943408 |
+| Pooled FPR at 0.5 | 0.143875 | 0.297009 |
+
+Gloom pAUROC is 0.818870 versus 0.828524; STRIDE is 0.955219 versus 0.963304.
+The combined training recipe loses 0.887 percentage points of source-macro
+pAUROC, while calibration and fixed-threshold false alarms improve. One seed
+and historical source/host qualifications remain; attention and MLP precision
+change together. The copied comparator description in the frozen BF16 YAML
+retains the original optimized-serving wording; actual serving in this follow-up
+and the control is BF16, as audited above. No ID selection or promotion occurs.
+
+Setup-only quoting, adapter-link and missing-completion-receipt failures are
+retained. The evaluation stage had not scored any rows when the missing receipt
+failed; its orphan server was verified and retired before recovery. The corrected
+evaluation completes, with `recovery_status.json` binding all outputs while the
+original failed status/log remains. Predictions, calibration, threshold/tie
+diagnostics, source bindings, audits and reuse receipts are collected locally.
+The BF16 scorer is retired before the authorized compiler checks; the Pod stays
+running.
+
+## Compiler compatibility repair
+
+The opt-in [repair](../../experiments/filtered_fp4_baseline/compiler_repair.md)
+initializes six TMA KV coordinates to `cutlass.Int32(0)` at producer entry.
+All coordinate values are overwritten before use. AST checks preserve every
+original statement and reject source drift. Vendor sources, the frozen default,
+historical receipts and old compiled caches remain unchanged; derived-source
+hashing creates a separate kernel identity.
+
+The B200 native test compiles and all seven finite/quantized-reference checks
+pass, including causal/paged/asymmetric lengths, batch 128, 32K histories,
+changed pages/lengths and graph replay. Maximum quantized-reference relative L2
+is 0.0016667 (limit 0.01). The stricter BF16-relative 0.05 precision gate still
+fails, with a maximum 0.0533631; retain `passed=false`, `arithmetic_passed=true`
+and `diagnostic_only=true` separately. The receipt and logs are under
+`results/filtered_fp4_compiler_repair/native01.json` and matching Runpod logs.
+`native02.json` refreshes the final source binding after removing a trailing
+blank line, reusing the identical derived kernel; AST identity and the original
+model-test source are archived beside the receipts.
+A bounded actual-model serving check is separate from this operator validation.
+
+The repaired optimized server completes three c4 passes on the same 20
+training-source canary rows (51,132 prompt tokens). The final pass passes
+master/serving parity (MAE 0.0058295, correlation 0.99980557) and BF16-serving
+agreement (MAE 0.0053273, correlation 0.99982085). All three passes retain pooled,
+macro and each of five sources' AUROC 1.0, a zero AUROC deviation from the saved
+BF16 canary. This easy training-seen cohort does not establish ID/OOD equivalence.
+Canary Brier varies 0.0067544–0.0116641 across passes; only the final raw prediction
+set is archived, so do not claim all-repeat score parity. First-pass throughput
+is 16,006 prompt tokens/s; the two warm passes are 51,462 and 48,483 prompt
+tokens/s. These short c4 diagnostics are not comparable to the c128 full-ID
+throughput above. The candidate retires after the check, with no GPU compute
+process remaining. The original serving selection is preserved; the tested repair
+is available through the explicitly bound `TypedCoordinateWorker` candidate.
+
+Verification: 31 campaign/filter/source checks pass; log is
+`logs/local/filtered_fp4_baseline/bf16_compiler_tests.log`. Ruff passes. No training
+implementation changed. Native experimental-API and shutdown semaphore warnings
+are retained in the logs; both tested model-server processes are verified retired.

@@ -1,0 +1,112 @@
+campaign_id: filtered-fp4-fa4-bf16-serving01
+seed: 0
+profile: qwen35_4b_b200_fp4_mlp
+training_rows: 7836
+injected_rows: 0
+expected_steps: 245
+learning_rate: 5.0e-05
+num_train_epochs: 1.0
+logical_batch_size: 32
+soft_loss_weight: 1.0
+direct_loss_weight: 0.0
+expected_training_tokens: 75851675
+model:
+  id: Qwen/Qwen3.5-4B
+  revision: 851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+  initial_adapter: results/fp4_row_aot_training/initial_adapter
+  initial_tensor_sha256: a6b1d2e9fd89efff9523150a76035a2e5d27900eaae3c7a4820e3b9277078f11
+inputs:
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_manifest:
+    path: data/id_cot_only_evaluation/evaluation.manifest.json
+    sha256: abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  startup_reference:
+    path: results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json
+    sha256: 14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb
+  serving_selection:
+    path: experiments/b200_inference_benchmark/serving_default.json
+    sha256: 9313b60e55068e4724b49a4a6e1f833682608dd80751f1ee927f71deac9404b8
+  initial_adapter_config:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_config.json
+    sha256: 4607ecf03870fda3f42eab777720edccf220b99fc6644211de514f0739af6a9e
+  initial_weights:
+    path: results/fp4_row_aot_training/initial_adapter/adapter_model.safetensors
+    sha256: 5da72480668385805032c5039e5c4a29e7f6257762185da79d13a5c70443f3b0
+  training:
+    path: data/filtered-fp4-fa4-baseline01/strict_filter/training.jsonl
+    sha256: 9043e2c92189bc51fba06179db769c6a20f0576a00198043a43807625a9c653a
+  teacher:
+    path: data/filtered-fp4-fa4-baseline01/strict_filter/teacher.jsonl
+    sha256: ba8b8b9cf5dc0a5d4e325be75612923d67cd250df31138c0c8b7c08e3d2e59bd
+  token_audit:
+    path: data/filtered-fp4-fa4-baseline01/strict_filter/token_audit.json
+    sha256: 8f74c6f4ab5e5ab5de1944ef8c52c03b7c4cc8ded5df3d18092c5c2c0a8603a2
+  filtered_sdpa_id:
+    path: results/teacher-disagreement-delta000-sdpa04/evaluation/id.jsonl
+    sha256: 7304c7f2085a1edddc70cd73fd3754fc5cc144a62c3de368e52c80560479aae7
+  unfiltered_training:
+    path: data/student_injection_awareness/regular/student_rows.jsonl
+    sha256: 9e05722a6eb5d6d58a52a5d2437cb35a2a76e299de7e87a3c8787ddfeae1ee27
+  unfiltered_teacher:
+    path: data/student_injection_awareness/soft_targets.jsonl
+    sha256: 1ae8c3cccc2546335f8002d1475cd86d7a7e059fedb66345d1aa13d6a30a526a
+  unfiltered_token_audit:
+    path: results/student_injection_awareness/4b/regular/token_audit.json
+    sha256: 0db8abe9b9dfaff6b22284fb37bf957b65fa5adcaa4da9165b25bdfb0b6a51ba
+  filter:
+    path: data/filtered-fp4-fa4-baseline01/strict_filter/filter.json
+    sha256: c7d40d8977cf9db6f747613aa2e384cf2069988f08d81311d3457dd404e7f001
+  unfiltered_config:
+    path: experiments/filtered_fp4_baseline/config.yaml
+    sha256: d488051252dbb3bbe9efe1702088cfb484c472ead14caae280ca774a5e818e45
+parity:
+  rows_per_source_label: 2
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  batch_rows: 128
+  concurrency: 128
+  port: 8010
+  timeout_seconds: 300
+  repeats: 1
+  promote: false
+  populations:
+    id: 3012
+  failed_parity_diagnostic: false
+  serving_precision: bf16
+merged_model: /tmp/gleipnir-merged/filtered-fp4-fa4-baseline
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+gpu_uuid: GPU-480a554d-fe81-e7b9-bd55-02ca0244f4aa
+hypothesis: Measure the completed strict-filtered FP4/FA4 adapter using regular BF16
+  serving on frozen ID inputs.
+intervention: Reuse completed training, master reference, BF16 merge and merged parity;
+  change only serving to regular BF16.
+selection: Final one-epoch adapter only; report source-macro raw normalized pAUROC@20
+  and all registered ID diagnostics. No ID tuning or OOD evaluation, and no automatic
+  promotion.
+stop_condition: Stop on source/input/runtime drift, nonfinite or missing gradients,
+  OOM, failed new-adapter serving parity, or incomplete training/evaluation coverage;
+  preserve failed receipts and do not retry training automatically.
+augmentation_audit: false
+evaluations:
+- id
+extra_sources:
+- experiments/filtered_fp4_baseline/bf16_serving.md
+- experiments/filtered_fp4_baseline/bf16_serving.yaml
+teacher_filter: strict
+baselines:
+  filtered_sdpa_id:
+    kind: id
+    input: filtered_sdpa_id
+    qualification: Same strict-filtered rows, initialization, objective, seed and
+      one-epoch selection; historical BF16/SDPA training and BF16 serving versus current
+      FP4/FA4 training and optimized serving. Combined recipe comparison, not isolated
+      FP4 effect.
