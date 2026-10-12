@@ -19,6 +19,14 @@ in addition to compute. The workspace survives stopping but is deleted on
 termination; collect important artifacts first. No independent network volume
 was created, and existing EU/NC2 network volumes were not attached or modified.
 
-Use `scripts/runpod_cloud.py --pod-file .runpod/qat.json` for SSH and transfers.
 Sanitized allocation metadata is saved locally under
-`results/b200_provisioning/20261012_qat/`. The Pod is left running.
+`results/b200_provisioning/20261012_qat/`.
+
+The user subsequently requested termination to restrict future capacity to
+US-NC-2 or EU regions with existing setup. The delete returned HTTP 204 and
+an independent lookup returned HTTP 404 on 2026-10-12. Termination deletes
+the Pod-attached workspace and container disk; no independent CA2 volume
+exists. Hardware receipts were already collected locally. The connection
+alias is marked TERMINATED, and no replacement Pod was launched. A live
+network-volume inventory confirms retained EU volume `cb7bxu71ug` and NC2
+volume `ixbh81vf9c`. The termination receipt is beside the allocation metadata.

@@ -112,10 +112,12 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 ## Runpod
 
 For the 2026-10-12 QAT preparation, one B200 was provisioned in US-CA-2
-after EU-RO-1 and US-NC-2 catalog reads showed no B200 stock. Hardware and
-SSH checks pass; no training is launched. See the
+after EU-RO-1 and US-NC-2 catalog reads showed no B200 stock. It was then
+terminated at the user's request, including its Pod-attached workspace;
+the existing EU/NC2 network volumes remain intact. No training was launched. See the
 [provisioning receipt](findings/b200_qat_provisioning.md) for storage,
-runtime qualifications and the connection alias. Verify live state before reuse.
+runtime qualifications and termination verification. Future capacity should
+use NC2 or EU to reuse the existing setup.
 
 On 2026-10-01 the user authorized resuming FP4 training work, then explicitly
 selected B300 after B200 capacity exhausted. New Pod `mqj2vv2h99ldie`
