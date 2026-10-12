@@ -1,0 +1,20 @@
+experiment: qat-training-optimization02
+implementation:
+  fp8: false
+  mlp: true
+  gdn: true
+reference_config: experiments/quantization_recovery/config.yaml
+teacher_cache: data/quantization-recovery01/teacher.jsonl
+teacher_sha256: 968b2312940d8124439a5197bf24d50a331531e5647efc0951a900de9fc96ec2
+teacher_model: completed_strict_filtered_Qwen3.5-4B_BF16
+kimi_cache: data/filtered-fp4-fa4-baseline01/strict_filter/teacher.jsonl
+kimi_sha256: ba8b8b9cf5dc0a5d4e325be75612923d67cd250df31138c0c8b7c08e3d2e59bd
+updates: 20
+measured_start: 11
+minimum_speedup: 0.02
+numerical:
+  operator_relative_l2: 0.01
+  score_mae: 0.002
+  score_max: 0.01
+  loss_absolute: 0.0001
+  gradient_relative_l2: 0.01
