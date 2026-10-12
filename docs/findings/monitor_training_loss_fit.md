@@ -126,6 +126,39 @@ separate three-epoch MIL OOD result cannot fill that gap. The local audit under
 parent list, metadata hashes, objective weights and per-epoch log extraction.
 No new inference, training or lifecycle operation was performed for this review.
 
+## Retrospective hard-label ID loss
+
+Cached historical endpoint predictions allow a separate validation-loss check
+without new inference or teacher calls. Stable binary cross-entropy against
+source hard labels, pooled over all 3,012 original ID rows, is:
+
+| Training population | Epochs | ID hard-label CE |
+|---|---:|---:|
+| Fixed 20% subset | 1 | 0.285057 |
+| Fixed 20% subset | 2 | 0.279356 |
+| Fixed 20% subset | 3 | 0.277718 |
+| Fixed 20% subset | 5 | 0.275413 |
+| Full dataset, 2e-5 | 1 | 0.297105 |
+| Full dataset, 2e-5 | 2 | 0.274273 |
+
+All six files share exact ordered IDs, labels, sources, original/rendered
+prompt hashes and token counts. The local receipt
+`results/training_loss_capacity_audit/id_hard_label_ce.json` binds prediction
+hashes and pooled/source-macro/per-source losses. Pooled ID loss improves over
+these durations, despite non-monotonic pAUROC; the endpoints do not show a clear
+aggregate hard-label validation-loss reversal.
+
+These are fresh runs with different decay schedules, not checkpoints along one
+training trajectory. The saved intermediate directories are final endpoints or
+systems preflights; no usable within-run ID loss curve was found. No aligned
+Kimi ID response cache was found locally. Hard-label ID CE and soft-teacher
+training CE use different targets, so their absolute levels are not a matching
+train/validation loss gap. For a future run, same-checkpoint hard-label CE on a
+fixed training cohort and ID can be logged without additional teacher requests,
+alongside soft training loss and ID pAUROC. ID teacher KL would additionally
+require aligned cached teacher scores. Historical reasoning-bearing ID remains
+a distinct contract from current CoT-removed validation.
+
 ## Completion and independent audit
 
 `final-training-fit02` completed at **03:14:02 CEST on 2026-10-12**, 43m07s
