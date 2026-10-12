@@ -1,0 +1,44 @@
+evaluation_id: filtered-fp4-fa4-optimized-id01
+training_performed: false
+id_repeats: 2
+batch_rows: 128
+concurrency: 128
+port: 8010
+timeout_seconds: 300
+gpu_uuid: GPU-480a554d-fe81-e7b9-bd55-02ca0244f4aa
+parity:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+selection: Same completed final one-epoch adapter; two descriptive ID passes, no tuning,
+  checkpoint selection or promotion.
+stop_condition: Stop on input/source/weight drift, failed parity, nonfinite scores,
+  server failure or incomplete coverage; preserve failed receipts.
+inputs:
+  workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  bf16_summary:
+    path: results/filtered-fp4-fa4-bf16-serving01/summary.json
+    sha256: 397fec2593e91b01a647f01877a6c2b4c843d6829f9ad53a36b5513d34998847
+  bf16_predictions:
+    path: results/filtered-fp4-fa4-bf16-serving01/evaluation/id.jsonl
+    sha256: b8f27f08c52739c1105501bce23a11df5b540bee2545f4133f2654710e3312f0
+  native:
+    path: results/filtered_fp4_compiler_repair/native02.json
+    sha256: 5ad462c758def168e3302f4582b9c45280c7f05cf954a6282b07ea53432fc90d
+  master_reference:
+    path: results/filtered-fp4-fa4-baseline01/4b/monitor/parity_reference.json
+    sha256: 2d56d7ed2b75815b23789db73fe97ea9e430ab5a375d21f8af19917bbbe4cca4
+  canary_workload:
+    path: results/filtered-fp4-fa4-baseline01/canary_workload.jsonl
+    sha256: bd2bf9536ffd2f6003c679f069afd8d502aa6e2c420b6940969ae3dfe3231b5e
+  bf16_canary:
+    path: results/filtered-fp4-fa4-bf16-serving01/optimized_canary_predictions.json
+    sha256: 7990e9cb3a376281f52b3ba19f004870079dc74fbd4acf83c6ada54472a7b777
+  training_runner:
+    path: results/filtered-fp4-fa4-baseline01/runner.json
+    sha256: 204981acbb7e3f0d84d7cbf4079fe26bf1932bbb0c52ec65e5d06d230e2da968
