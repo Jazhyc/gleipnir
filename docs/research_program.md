@@ -101,6 +101,9 @@ full-input scores and broader prose-removal ablations are different contracts.
   training and checkpoint selection for these injection comparisons.
 - Keep the six-source OOD suite outside prompt, recipe, threshold, checkpoint
   and stopping choices; disclose prior use when interpreting later results.
+  Retain its frozen inputs for paper comparability under the user's
+  [OOD input decision](decisions/frozen_ood_comparability.md); prose restoration
+  remains a deferred diagnostic.
 - Distinguish uncertainty caused by missing observable evidence from
   presentation changes that truly preserve the label. Evaluate transfer before
   further scaling.

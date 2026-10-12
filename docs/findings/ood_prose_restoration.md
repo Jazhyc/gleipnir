@@ -1,5 +1,9 @@
 # Recovering the original OOD public monitoring surface
 
+Restoration and corrected-input rescoring are deferred by the user's
+[comparability decision](../decisions/frozen_ood_comparability.md). The existing
+OOD inputs and reported scores remain the evaluation reference.
+
 The restoration request exposed an upstream recoverability gap: the available
 ControlArena parquets flatten assistant content into strings, and the available
 full-prose CUA exports do not match our frozen rollouts. The reproducible
