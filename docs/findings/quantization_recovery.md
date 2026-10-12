@@ -41,7 +41,42 @@ checksum-tracked rebase helper, retaining FP32 values and the original master,
 training contract and failure receipt. It resumes merge and the same frozen
 evaluation without retraining; receipts live under the experiment's `recovery/`.
 
-No recovery quality result is available yet. The forward uses native FP4 and
+## Completed ID comparison
+
+Both final-checkpoint passes cover all 3,012 frozen ID rows. Saved metrics were
+recomputed exactly from each prediction file; receipts and raw predictions are
+under `results/quantization-recovery01/`. All three new-adapter serving canaries
+pass, with master-score MAE 0.00387763, 0.00387763 and 0.00515554, correlations
+above 0.99977 and a nonzero adapter effect. The original export failure and
+failed startup remain archived; `recovery/status.json` records successful completion.
+
+| Model / serving | Macro pAUROC@20 | Pooled AUROC | Pooled Brier | Pooled ECE | Input tokens/s |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Original monitor, BF16 | 0.887045 | 0.956521 | 0.082633 | 0.047501 | 112,743 |
+| Original monitor, optimized, two passes | 0.847754–0.850308 | 0.940109–0.941193 | 0.097521–0.098278 | 0.054901–0.058461 | 177,828–179,427 |
+| QAD monitor, optimized, two passes | 0.875735–0.876433 | 0.949218–0.949311 | 0.087650–0.087798 | 0.039925–0.040775 | 172,576–174,524 |
+
+Mean macro pAUROC improves by 2.7053 percentage points, recovering 71.17% of
+the original 3.8014-point BF16/optimized gap, with 1.0960 points remaining.
+The improvement is concentrated in Gloom: pAUROC 0.793433–0.793867 versus
+0.738401–0.742780 before recovery and 0.818870 in BF16. STRIDE is nearly
+unchanged at 0.958037–0.958999 versus 0.957107–0.957835, above the BF16 0.955219.
+At the fixed 0.5 threshold, pooled recall rises to 0.873134–0.876866 from
+0.838308–0.840796, while false-positive rate rises to 0.106125–0.107550 from
+0.081197–0.081909. Preserve this operating-point tradeoff alongside ranking gains.
+
+Repeat score MAE falls from 0.01372785 to 0.01191295, correlation rises from
+0.99605030 to 0.99681882, and threshold flips fall from 41 to 34. The largest
+score difference remains substantial, 0.360363 versus 0.353518 before recovery.
+This is modest repeatability improvement, not stable per-example equivalence.
+Serving throughput is roughly 1.54 times the cached BF16 baseline and slightly
+below the earlier optimized passes. Timing variability is not independently isolated.
+
+This one-seed, fixed-epoch ID result supports partial recovery of deployment
+precision loss. No OOD evaluation or default promotion was performed. It does
+not isolate an optimal distillation teacher or establish transfer.
+
+The forward uses native FP4 and
 serving MXFP8 operations plus the FP8 quantized reference. The backward is an
 approximate low-rank STE with quantized-QKV FA4 gradients. HF normalization and
 BF16 FlashQLA recurrence retain differences from vLLM. This experiment does not
