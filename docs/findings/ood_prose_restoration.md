@@ -105,7 +105,41 @@ the public sources inspected; this is a search result, not a claim that none
 exists anywhere. Dataset environments and tasks are not a fixed rollout archive,
 and rerunning them would generate new behavior rather than reconstruct old traces.
 
-### Still required for restoration
+### Conversion-stage audit
+
+The producer release itself has two different views: `messages` retains the
+assistant strings; `formatted_transcript` removes their prose. Across all 7,500
+producer rows, all 161,413 formatted assistant sections have empty prose bodies.
+For each of the 5,292 matched OOD rows, the producer's formatted assistant/tool
+sections are identical to Sinha's prepared assistant/tool sections. System and
+user context are compared separately: downstream processing also changes that
+context (including removal of continuation nudges and the Rogue Eval setting
+envelope), so these are not claims of identical entire input strings.
+
+This corrects an overly narrow attribution: the prose omission is already in
+the original producer's action-only view and is not established as a new Sinha
+preprocessing mistake. The producer's
+[paper §4.1](https://arxiv.org/html/2603.00829) defines its primary monitoring
+input in terms of queries, tool calls and outputs with agent reasoning removed.
+The observed role-level omission is consistent with a broad implementation of
+that action-only choice; it still removes useful public-facing reporting.
+
+The Anthropic-compatible view rewraps the same generic assistant strings into
+`type: text` blocks: 7,301 rows match exactly, and the other 199 differ only by
+omission of whitespace-only text blocks. All 7,500 match after that exclusion.
+These conversion annotations do not restore original native reasoning boundaries.
+
+Public producer/coauthor repositories and preprocessing scripts were inspected
+and pinned under `results/ood_visible_prose/conversion_trace/`. The public
+`_inspect_export_to_parquet.py` found in the deliberative-monitor repository
+exports judge scores rather than these rollout messages. No exact matching
+native-message-to-string exporter or original action-only formatter source was
+located in those public repositories. Thus the omission stage is established by
+paired artifact evidence, while whether/how native block types were lost earlier
+remains unresolved; they might already have been plain strings in the source.
+The comparison entrypoint reproduces the field census and paired-view matches.
+
+### Remaining source input
 
 For the four ControlArena sources, obtain the original typed sample messages
 from the producer's evaluation logs, or a documented export preserving the

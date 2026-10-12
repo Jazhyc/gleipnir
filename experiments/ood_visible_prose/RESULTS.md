@@ -69,3 +69,14 @@ they do not supply matched typed messages for our four OOD settings. The exports
 retain native message objects, metadata, scores, archive member identity and
 checksums. Three focused export/comparison tests pass; full receipts and matched
 producer IDs are under `results/ood_visible_prose/original_control_comparison01/`.
+
+The subsequent conversion audit verifies zero nonempty prose bodies across
+161,413 assistant sections in the producer's own `formatted_transcript`.
+All 5,292 matched frozen assistant/tool views equal that producer view, despite
+separate system/user context edits. Omission therefore predates the Sinha
+prepared benchmark. The producer's Anthropic-compatible text view matches its
+generic assistant strings in 7,301 rows exactly; the other 199 differ only by
+removal of whitespace-only blocks. None recovers original provider block types.
+Four focused tests and lint pass for this extension. Source-search snapshots and
+diagnostics remain under `results/ood_visible_prose/conversion_trace/`; the exact
+native flattening/role-only formatter implementation was not found publicly.

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import re
 import zipfile
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -56,6 +57,33 @@ def canonical(messages: list[dict[str, Any]], generic: bool, normalize: bool) ->
 def identity(value: Any) -> str:
     """Fingerprint canonical evidence without using labels to select a match."""
     return hashlib.sha256(json.dumps(value, sort_keys=True).encode()).hexdigest()
+
+
+def formatted_sections(text: str) -> list[tuple[str, str]]:
+    """Parse producer role sections without interpreting their semantic content."""
+    headers = list(
+        re.finditer(r"^\[(SYSTEM|USER|ASSISTANT|TOOL|TOOL CALLS)\]\n", text, re.M)
+    )
+    return [
+        (
+            header[1],
+            text[
+                header.end() : headers[i + 1].start()
+                if i + 1 < len(headers)
+                else len(text)
+            ].strip(),
+        )
+        for i, header in enumerate(headers)
+    ]
+
+
+def observable_sections(text: str) -> list[tuple[str, str]]:
+    """Compare assistant/tool views separately from context/system/user edits."""
+    return [
+        (role, body)
+        for role, body in formatted_sections(text)
+        if role not in {"USER", "SYSTEM"}
+    ]
 
 
 def export_archive(path: Path, output: Path) -> dict[str, Any]:
@@ -114,6 +142,8 @@ def main() -> None:
     exact = defaultdict(list)
     normalized = defaultdict(list)
     tool_index = defaultdict(list)
+    formatted_census = Counter()
+    anthropic_census = Counter()
     with (OUTPUT / "producer_export.jsonl").open("w") as stream:
         for record in records:
             messages = json.loads(record["messages"])
@@ -124,7 +154,41 @@ def main() -> None:
                 "messages": messages,
                 "label": record["ground_truth"],
                 "visibility": "flattened_unresolved",
+                "formatted_transcript_json_sha256": identity(
+                    record["formatted_transcript"]
+                ),
+                "formatted_observable_sha256": identity(
+                    observable_sections(record["formatted_transcript"])
+                ),
             }
+            sections = formatted_sections(record["formatted_transcript"])
+            formatted_census["rows"] += 1
+            formatted_census["assistant_sections"] += sum(
+                role == "ASSISTANT" for role, _ in sections
+            )
+            formatted_census["nonempty_assistant_bodies"] += sum(
+                role == "ASSISTANT" and bool(body) for role, body in sections
+            )
+            anthropic = json.loads(record["anthropic_messages"])
+            generic_texts = [
+                m["content"]
+                for m in messages
+                if m["role"] == "assistant" and m.get("content")
+            ]
+            converted_texts = [
+                block["text"]
+                for m in anthropic
+                if m["role"] == "assistant" and isinstance(m.get("content"), list)
+                for block in m["content"]
+                if block["type"] == "text"
+            ]
+            anthropic_census["rows"] += 1
+            anthropic_census["assistant_text_rewrapped_exactly"] += (
+                generic_texts == converted_texts
+            )
+            anthropic_census["rewrapped_except_whitespace_only_blocks"] += [
+                text for text in generic_texts if text.strip()
+            ] == [text for text in converted_texts if text.strip()]
             exact[identity(a)].append(item)
             normalized[identity(b)].append(item)
             tool_index[
@@ -166,6 +230,11 @@ def main() -> None:
                 counter["ordered_tool_payload_and_result_match"] += bool(verified)
                 counter["exact_all_roles_content_match"] += bool(precise)
                 counter["normalized_all_roles_content_match"] += bool(cleaned)
+                observable = identity(observable_sections(row["transcript"]))
+                counter["producer_and_author_assistant_tool_views_identical"] += any(
+                    item["formatted_observable_sha256"] == observable
+                    for item in cleaned
+                )
                 counter["unique_normalized_match"] += len(cleaned) == 1
                 counter["conflicting_labels_on_normalized_match"] += (
                     len({item["label"] for item in cleaned}) > 1
@@ -208,6 +277,8 @@ def main() -> None:
             "and_empty_callless_assistants_only"
         ),
         "restoration_accepted": False,
+        "producer_formatted_census": dict(formatted_census),
+        "producer_anthropic_rewrap_census": dict(anthropic_census),
         "comparison_code_sha256": file_hash(Path(__file__)),
         "restoration_config_sha256": file_hash(Path(__file__).with_name("config.json")),
         "outputs": {p.name: file_hash(p) for p in OUTPUT.glob("*.jsonl")},

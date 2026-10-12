@@ -6,7 +6,9 @@ import zipfile
 from experiments.ood_visible_prose.compare_original_control import (
     canonical,
     export_archive,
+    formatted_sections,
     identity,
+    observable_sections,
 )
 
 
@@ -54,6 +56,19 @@ def test_changed_tool_payload_does_not_match():
         }
     ]
     assert identity(canonical(a, True, True)) != identity(canonical(b, False, True))
+
+
+def test_formatted_view_separates_context_from_assistant_and_tool_evidence():
+    text = (
+        "[SYSTEM]\nContext\n\n[USER]\nTask\n\n[ASSISTANT]\n"
+        "[TOOL CALLS]\nsubmit({})\n\n[TOOL]\nDone\n"
+    )
+    assert formatted_sections(text)[0] == ("SYSTEM", "Context")
+    assert observable_sections(text) == [
+        ("ASSISTANT", ""),
+        ("TOOL CALLS", "submit({})"),
+        ("TOOL", "Done"),
+    ]
 
 
 def test_native_archive_export_retains_typed_content(tmp_path):
