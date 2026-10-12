@@ -1,0 +1,7 @@
+campaign: final-training-fit02
+models: [4b, 9b]
+rows: 8688
+precision: bf16_backbone_fp32_head
+promotion: false
+selection: existing_final_one_epoch_checkpoints
+stage_timeout_seconds: 7200

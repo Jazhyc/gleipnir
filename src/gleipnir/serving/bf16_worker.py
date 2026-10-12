@@ -80,7 +80,7 @@ class Bf16Worker(Worker):
             raise ValueError("BF16 control must retain exactly one two-row head")
         head = next(iter(heads.values()))
         if (
-            head.weight.shape != (2, 2560)
+            head.weight.shape != (2, config.hf_text_config.hidden_size)
             or head.weight.dtype != torch.bfloat16
             or head.bias is not None
         ):
@@ -121,7 +121,7 @@ class Bf16Worker(Worker):
             projection_counts={"mlp": 64, "gdn": 48, "attention": 16},
             head={
                 "dtype": "torch.bfloat16",
-                "shape": [2, 2560],
+                "shape": [2, config.hf_text_config.hidden_size],
                 "source": keys[0],
                 "decision_ids": list(self.decision_ids),
             },
