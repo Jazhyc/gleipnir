@@ -1,5 +1,6 @@
 """Automatic native-FP8 QAT, FP32 export, owned merge and frozen ID evaluation."""
 
+import importlib
 import json
 import shutil
 import subprocess
@@ -42,9 +43,15 @@ def main(config_path: str = "experiments/native_fp8_qat/config.yaml"):
         status("preparing")
         check(config)
         teacher = root / "data" / config["teacher_experiment"]
-        if file_hash(teacher / "teacher.jsonl") != config["teacher_sha256"]:
+        teacher_cache = root / config.get(
+            "teacher_cache", str((teacher / "teacher.jsonl").relative_to(root))
+        )
+        if file_hash(teacher_cache) != config["teacher_sha256"]:
             raise ValueError("frozen teacher drift")
-        stages = generate(
+        generator = generate
+        if config.get("stage_generator"):
+            generator = importlib.import_module(config["stage_generator"]).generate
+        stages = generator(
             root,
             output,
             config_path=config_path,
@@ -92,6 +99,12 @@ def main(config_path: str = "experiments/native_fp8_qat/config.yaml"):
                 timeout=7200,
             )
 
+        from experiments.b200_vllm031.runtime import candidate_environment
+
+        if "initial-serving" in stages:
+            run_stage(
+                "initial-serving", config["serving_python"], candidate_environment(root)
+            )
         run_stage("train", config["training_python"], env)
         run_stage("reference", config["training_python"], env)
         complete = json.loads((output / "training_complete.json").read_text())
@@ -136,8 +149,6 @@ def main(config_path: str = "experiments/native_fp8_qat/config.yaml"):
             revision="851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
         )
         write_json(output / "merged_artifact.json", report)
-        from experiments.b200_vllm031.runtime import candidate_environment
-
         run_stage("evaluate", config["serving_python"], candidate_environment(root))
         result = json.loads((output / "summary.json").read_text())
         baseline = json.loads((root / config["quality_reference"]).read_text())
