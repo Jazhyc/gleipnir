@@ -111,6 +111,12 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 
 ## Runpod
 
+For the 2026-10-12 QAT preparation, one B200 was provisioned in US-CA-2
+after EU-RO-1 and US-NC-2 catalog reads showed no B200 stock. Hardware and
+SSH checks pass; no training is launched. See the
+[provisioning receipt](findings/b200_qat_provisioning.md) for storage,
+runtime qualifications and the connection alias. Verify live state before reuse.
+
 On 2026-10-01 the user authorized resuming FP4 training work, then explicitly
 selected B300 after B200 capacity exhausted. New Pod `mqj2vv2h99ldie`
 (`gleipnir-b300-fp4`) was allocated in US-WA-2 at $7.89/hour with a 100 GB Pod
