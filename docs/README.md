@@ -163,6 +163,8 @@
 - [Improvement campaign inventory](findings/gleipnir_improvement_shutdown_inventory.md):
   verified artifact retention, final ablation outcomes, and confirmed termination
   of the two-H100 `gleipnir-improvement` instance.
+- [Teacher filtering campaign shutdown](findings/teacher_sweep_shutdown.md):
+  verified adapter/cache retention and confirmed NC2 B200 termination.
 - `findings/monitoring_length_shortcut_audit.md`: source-specific length cues,
   paired inert-padding sensitivity, and the decision not to prioritize a
   length-specific regularizer.

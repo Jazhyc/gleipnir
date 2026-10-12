@@ -3,7 +3,8 @@
 `strict-pauc02` launched at **00:14:41 CEST on 2026-10-12** on existing Runpod
 B200 `rzarg8j8x0so3i` in NC2 and completed at **01:51:07 CEST**. Implementation:
 `d6b1637`; 39 focused tests and lint passed. No new capacity or termination
-occurred. Driver/scorer processes retired; the Pod remains running.
+occurred during the run. Driver/scorer processes retired; the Pod was subsequently
+[terminated after preservation](../../docs/findings/teacher_sweep_shutdown.md).
 
 The final source-macro normalized pAUROC@20 is **0.872081 ID** and **0.795452
 OOD**, versus **0.896106 / 0.787535** for the matched strict soft-BCE checkpoint
@@ -29,7 +30,7 @@ data, initialization, optimizer and selection settings were unchanged.
 
 Receipts: `results/strict-pauc02/runner.json`, `partial_auc_training.json`,
 `comparison.json` and `completion_audit.json`; logs:
-`logs/runpod/strict-pauc02/`. The shared ephemeral merge slot contains only the
-candidate; original strict master/export and the archived prior merge manifest
-are preserved. The detached queue completed without an agent scheduler or
+`logs/runpod/strict-pauc02/`. At completion the shared ephemeral merge slot held
+the candidate; original strict master/export and the archived prior merge
+manifest are preserved. The detached queue completed without an agent scheduler or
 recurring agent follow-up.

@@ -190,6 +190,6 @@ locally without model weights. Preserved preparation/schema failures and the
 receipt-only compatibility fix are in the experiment record. Scorer shutdown
 logged an EngineDeadError for 4B and semaphore cleanup warnings after complete
 scoring; there were no excluded rows or scoring failures. The subsequent live
-GPU check shows 0% utilization and 0 MiB allocated. Capacity remains running,
-original adapters/caches remain intact, and only the final 9B merge occupies
-the shared disposable slot.
+GPU check showed 0% utilization and 0 MiB allocated. The Pod was subsequently
+[terminated after preservation](teacher_sweep_shutdown.md); original adapters
+and caches remain on the retained network volume.

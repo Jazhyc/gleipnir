@@ -19,9 +19,9 @@ with actual BF16 backbone/native attention and FP32 two-row head dispatch.
 The independent local completion audit verifies all **17,376 raw predictions**,
 original teacher/label identities, reconstructed rendered prompts, paired token
 counts, input/prediction hashes and full CE/entropy/KL/MAE recomputation.
-Original master/export weights are preserved; only the final 9B merge remains
-in the shared ephemeral slot. The owned scorers retired, with GPU utilization
-0% and allocation 0 MiB at the subsequent live check. The Pod remains running.
+Original master/export weights are preserved. The owned scorers retired, with
+GPU utilization 0% and allocation 0 MiB at the subsequent live check. The Pod
+was subsequently [terminated after preservation](../../docs/findings/teacher_sweep_shutdown.md).
 Shutdown logged a 4B EngineDeadError and semaphore cleanup warnings after
 complete scoring; no predictions failed or were excluded.
 

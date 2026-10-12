@@ -89,6 +89,6 @@ Expected compilation specializations, PEFT config/exclusion warnings and the
 experimental cuBLAS preference warning remain in logs. Scorer shutdown reports
 one semaphore cleanup warning after complete predictions; no rows failed or
 were excluded. The owned driver/scorer processes retired, and a subsequent
-live GPU check shows 0% utilization and 0 MiB allocated. The Pod remains running,
-with persistent adapters/caches and only the candidate in the shared disposable
-merged-model slot; the previous strict master/export remain preserved.
+live GPU check showed 0% utilization and 0 MiB allocated. The Pod was subsequently
+[terminated after preservation](teacher_sweep_shutdown.md); persistent adapters
+and caches, including the previous strict master/export, remain preserved.
