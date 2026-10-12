@@ -86,6 +86,46 @@ online-loss plot. Regenerate with
 `PYTHONPATH=src:. .venv/bin/python scripts/plot_monitor_training_losses.py`;
 its provenance binds metadata, teacher targets, source and exports.
 
+## Historical multi-epoch 4B losses
+
+Saved soft-only runs supply an exposure diagnostic. In the
+[five-epoch 20% subset run](../../experiments/monitoring_subset_duration/README.md),
+all epochs reuse the same 1,738 parents and fixed Kimi targets, with fresh AdamW
+2e-5 training, rank-128 NF4 QLoRA/BF16 and a five-epoch linear schedule.
+There are no MIL, prefix, completion or hard-label auxiliary terms.
+
+| Epoch within that five-epoch run | Mean logged online CE |
+|---|---:|
+| 1 | 0.339623 |
+| 2 | 0.200761 |
+| 3 | 0.181323 |
+| 4 | 0.167294 |
+| 5 | 0.159901 |
+
+These are 11 five-update reports per epoch, not fixed-checkpoint losses.
+The selected targets have row-mean entropy **0.151576457 nats**; that is a
+reference, not an exact entropy correction for differently weighted log windows.
+Repeated exposure continues to reduce the training objective well after one
+epoch under this recipe. This supports removable optimization/exposure error,
+without establishing the final adapter's exact training KL or an OOD gain.
+
+The [full-data two-epoch 2e-5 run](../../experiments/monitoring_duration/README.md)
+also falls from 0.239100 to 0.180161 in mean logged CE grouped by reported epoch.
+Five-update windows can straddle its epoch boundary. Its historical ID pAUROC
+improves from the separate one-epoch endpoint's 0.871066 to 0.882952; at 1e-5,
+two epochs instead worsen ID ranking. On the 20% subset, soft-only historical
+ID pAUROC at 1/2/3/5 epochs is 0.886670/0.875770/0.886438/0.890454.
+Loss reduction therefore does not imply monotonic held-out improvement.
+
+These historical NF4/2e-5 unfiltered runs differ from the recent BF16/5e-5
+one-epoch pair in precision, schedule, and sometimes training population.
+Historical ID retains reasoning, unlike the current CoT-removed contract.
+No matched OOD scoring was completed for these soft-only duration cells; the
+separate three-epoch MIL OOD result cannot fill that gap. The local audit under
+`results/training_loss_capacity_audit/multi_epoch.json` binds the selected
+parent list, metadata hashes, objective weights and per-epoch log extraction.
+No new inference, training or lifecycle operation was performed for this review.
+
 ## Completion and independent audit
 
 `final-training-fit02` completed at **03:14:02 CEST on 2026-10-12**, 43m07s
