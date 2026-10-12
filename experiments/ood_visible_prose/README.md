@@ -36,6 +36,16 @@ Full-suite readiness, unresolved evidence, upstream searches and scientific
 limitations are recorded in `RESULTS.md`. Do not compute a six-source average
 from a smaller ready subset or reuse scores for changed prompts.
 
+The original producer comparison runs with
+`.venv/bin/python -m experiments.ood_visible_prose.compare_original_control`.
+It exports the pinned producer parquet's messages to JSONL, compares each frozen
+ControlArena row without label-based matching, and independently extracts native
+sample JSON from the two public `.eval` archives under
+`data/ood_visible_prose/original_logs/`. Outputs and source checksums are in
+`results/ood_visible_prose/original_control_comparison01/`. This is an independent
+native-message export, not ControlArena's provider-API formatter. The raw archives
+are from a separate Bash cohort and cannot replace our four OOD sources.
+
 The pinned CUA precursor can be downloaded without paid inference:
 
 ```bash

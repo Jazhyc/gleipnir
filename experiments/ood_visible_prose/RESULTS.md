@@ -34,3 +34,38 @@ synthetic typed fixtures; they do not establish original-data recoverability.
 Fourteen focused tests and Ruff checks pass. The local completion audit verifies
 output checksums, unique IDs and exact 6,395-ID parent coverage. Upstream download
 checksums are in `results/ood_visible_prose/upstream_checksums.json`.
+
+## Original producer comparison
+
+The subsequent independent export/comparison matches all 5,292 ControlArena OOD
+rows against `Syghmon/blackboxmonitorsMATS@ccb77e37589baaee1f0e16ac9ab89ceac8f6cc8a`.
+All ordered tool payloads and complete tool-result sequences match. Full role/
+content streams match after removing leading empty think wrappers, assistant
+outer whitespace and empty call-less assistant messages only. Nonempty reasoning,
+inline literals and tool arguments are never removed by that normalization.
+
+| Source | Rows | Exact full-content matches | Formatting-normalized matches |
+|---|---:|---:|---:|
+| AgentDojo | 1,500 | 982 | 1,500 |
+| IaC | 1,443 | 807 | 1,443 |
+| Rogue Eval | 1,499 | 999 | 1,499 |
+| SHADE | 850 | 364 | 850 |
+
+Normalized matching identifies a unique producer record for 5,290 rows. Two
+AgentDojo rows have duplicate producer records with identical compared content;
+no matched normalized content has conflicting labels.
+
+The producer's 7,500 generic records still have untyped assistant strings. Their
+Anthropic conversion contains text/tool-use/tool-result blocks, but no thinking
+blocks, and uses generated tool IDs; these are converted exports rather than
+evidence of original provider-private/public boundaries. No restoration was
+accepted on that basis.
+
+Two actual `.eval` logs from
+`syghmon/scheming-exploration@00b143361b06852400a278dd2c477686daf4025a`
+were independently exported: 257 attack and 257 honest samples from a separate
+May 2025 Bash cohort. These contain 2,469 assistant messages, all string-valued;
+they do not supply matched typed messages for our four OOD settings. The exports
+retain native message objects, metadata, scores, archive member identity and
+checksums. Three focused export/comparison tests pass; full receipts and matched
+producer IDs are under `results/ood_visible_prose/original_control_comparison01/`.

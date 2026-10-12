@@ -74,6 +74,39 @@ Source snapshots, metadata, checksums and match diagnostics are saved under
 
 ## Remaining input requirement
 
+### Original producer release and raw archives
+
+A subsequent search found the underlying 7,500-trajectory producer release,
+`Syghmon/blackboxmonitorsMATS@ccb77e37589baaee1f0e16ac9ab89ceac8f6cc8a`
+(research-use-only). Its `control_arena.parquet` SHA256 is
+`17897773c5e7bceae54195482b2389888a30e191b8a5182380d32e1994d165f9`.
+An independent JSONL export and comparison links all 5,292 frozen ControlArena
+OOD rows to that release. All ordered tool payloads/results match; the complete
+role/content streams also match after narrowly specified formatting cleanup.
+Exact vs normalized counts, source identifiers and qualifications are in the
+[experiment record](../../experiments/ood_visible_prose/RESULTS.md#original-producer-comparison).
+
+Thus the content retained in Sinha's `trajectory_data` matches the producer's
+release; its evaluated `transcript` omits the assistant prose. This establishes
+content lineage and the difference between the released views, not the exact
+private/public boundary or the original exporter implementation. The producer's
+generic messages are already strings. Its separately converted Anthropic view
+does not recover native thinking types; API-compatible `type: text` annotations
+must not be mistaken for original provider metadata.
+
+The original producer's public
+[scheming-exploration repository](https://github.com/syghmon/scheming-exploration/tree/00b143361b06852400a278dd2c477686daf4025a)
+contains two real `.eval` archives. Independent native-sample export preserves
+514 Bash samples and their messages without formatting/coercing content.
+They are a different cohort, with string-valued assistant messages, rather than
+the required matching OOD logs. The repository README identifies them as trusted
+monitor Bash evaluations. No matching original OOD `.eval` archive was found in
+the public sources inspected; this is a search result, not a claim that none
+exists anywhere. Dataset environments and tasks are not a fixed rollout archive,
+and rerunning them would generate new behavior rather than reconstruct old traces.
+
+### Still required for restoration
+
 For the four ControlArena sources, obtain the original typed sample messages
 from the producer's evaluation logs, or a documented export preserving the
 same boundaries. For CUA, obtain full public transcripts for the large cohort
