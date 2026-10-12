@@ -4,8 +4,8 @@
   BF16 distillation, merged-weight deployment simulation and fresh numerical gates.
 - [QAT training optimization](findings/qat_training_optimization.md): matched
   MLP/GDN contraction screens, rejected native FP8 parity and Kimi cache support.
-- [Native FP8 QAT and MXFP8 backward](findings/native_fp8_qat.md): active fixed-epoch
-  quality test and successful serving-forward/native-backward attention probes.
+- [Native FP8 QAT and MXFP8 backward](findings/native_fp8_qat.md): faster training
+  with an ID quality regression, plus successful native-backward attention probes.
 
 - Agent instructions by task: [compute and operations](agent_guides/compute.md),
   [training](agent_guides/training.md), and [inference/evaluation](agent_guides/inference.md).
