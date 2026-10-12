@@ -47,3 +47,19 @@ Launch on the existing remote checkout:
 ```bash
 /tmp/gleipnir-serving-runtime/venv/bin/python -m experiments.qat_training_optimization.launch
 ```
+
+The reusable context applies after `quantization_recovery.install(model, root)`:
+
+```python
+from gleipnir.training.qat_optimization import optimized_path
+
+with optimized_path(model, fp8=False, mlp=True, gdn=True):
+    # Run the normal packed binary-KL training loop.
+    ...
+```
+
+`gleipnir.training.distillation_targets.load_binary_targets` accepts the frozen
+Kimi cache with `teacher_model="moonshotai/kimi-k3"` and
+`prompt_contract="privileged"`; record its returned binding receipt. The config
+contains both exact cache checksums. Actual measurements and qualifications live
+in the [finding](../../docs/findings/qat_training_optimization.md).

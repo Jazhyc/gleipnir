@@ -81,3 +81,6 @@ serving MXFP8 operations plus the FP8 quantized reference. The backward is an
 approximate low-rank STE with quantized-QKV FA4 gradients. HF normalization and
 BF16 FlashQLA recurrence retain differences from vLLM. This experiment does not
 claim an exact serving derivative or that a short canary establishes ID quality.
+
+The [training systems follow-up](qat_training_optimization.md) preserves this
+reference implementation and screens reusable MLP/GDN optimizations separately.

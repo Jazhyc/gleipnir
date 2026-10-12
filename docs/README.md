@@ -2,6 +2,8 @@
 
 - [Quantization-aware recovery](findings/quantization_recovery.md): same-model
   BF16 distillation, merged-weight deployment simulation and fresh numerical gates.
+- [QAT training optimization](findings/qat_training_optimization.md): matched
+  MLP/GDN contraction screens, rejected native FP8 parity and Kimi cache support.
 
 - Agent instructions by task: [compute and operations](agent_guides/compute.md),
   [training](agent_guides/training.md), and [inference/evaluation](agent_guides/inference.md).
