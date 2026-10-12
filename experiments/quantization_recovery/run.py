@@ -123,6 +123,17 @@ def server_command(config, output, *, bf16, model):
             mxfp8_coordinate_repair="typed_int32",
             merged_model=str(model),
         )
+        from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+
+        archive = ROOT / "results/b200_vllm031/pre_migration_sources.tar.gz"
+        restored = restore_diagnostic_sources(ROOT, data["serving_condition"], archive)
+        write_json(
+            output / "source_restoration.json",
+            {
+                "archive_sha256": file_hash(archive),
+                "restored": restored,
+            },
+        )
         for path in [
             "experiments/filtered_fp4_baseline/compiler_repair.py",
             "experiments/filtered_fp4_baseline/compiler_repair_worker.py",
@@ -354,6 +365,15 @@ def main():
                 import shutil
 
                 from gleipnir.adapters.merge import merge_checkpoint
+                from gleipnir.adapters.rebase import rebase_adapter
+
+                complete = json.loads((output / "training_complete.json").read_text())
+                master_weights = output / "causal_adapter/adapter_model.safetensors"
+                if file_hash(master_weights) != complete["master_sha256"]:
+                    raise ValueError("completed QAD master drift before rebase")
+                rebased = rebase_adapter(
+                    output / "causal_adapter", output / "merged_adapter"
+                )
 
                 # Replace only this explicitly owned, reconstructable ephemeral
                 # slot after all teacher logits and original merge receipts exist.
@@ -376,12 +396,11 @@ def main():
                     if file_hash(destination / name) != digest:
                         raise ValueError("predecessor merged checkpoint drift")
                 shutil.rmtree(destination)
-                complete = json.loads((output / "training_complete.json").read_text())
                 report = merge_checkpoint(
                     ROOT / config["base_model"],
-                    output / "causal_adapter",
+                    output / "merged_adapter",
                     destination,
-                    expected_adapter_sha256=complete["master_sha256"],
+                    expected_adapter_sha256=rebased["destination_sha256"],
                     model_id="Qwen/Qwen3.5-4B",
                     revision="851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
                 )

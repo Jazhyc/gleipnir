@@ -32,6 +32,15 @@ zero. Preserve the original failed tracebacks and
 receipts. An earlier bookkeeping failure came from archived `canary-N` display
 IDs; joins now verify actual source IDs and rendered prompt hashes.
 
+The fixed epoch completed all 245 updates over 7,836 rows in 3,955.95 seconds
+(65.93 minutes), preserving the FP32 master with SHA256
+`eb08e1371e72cde91243b4f0792270aa52ea97e855d9a9099a4b436f85659770`.
+The original pipeline omitted the shared causal-to-multimodal adapter-key
+conversion and stopped before merging. The export recovery uses the existing
+checksum-tracked rebase helper, retaining FP32 values and the original master,
+training contract and failure receipt. It resumes merge and the same frozen
+evaluation without retraining; receipts live under the experiment's `recovery/`.
+
 No recovery quality result is available yet. The forward uses native FP4 and
 serving MXFP8 operations plus the FP8 quantized reference. The backward is an
 approximate low-rank STE with quantized-QKV FA4 gradients. HF normalization and

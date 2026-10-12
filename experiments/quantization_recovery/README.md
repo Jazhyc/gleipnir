@@ -48,3 +48,9 @@ gated stages. Outputs are under `results/quantization-recovery01/`, teacher cach
 under its `data/` tree and logs under `logs/runpod/quantization-recovery01/`.
 Use the existing NC2 B200 and shared persistent compiler caches. No in-chat
 scheduler is available; detached automation does not promise later agent checks.
+
+The completed initial run required `python -m experiments.quantization_recovery.recover`
+to resume after an adapter-key export mismatch. This validates the original
+training contract and master, uses the shared causal-to-multimodal key conversion
+without changing FP32 values, and resumes the unchanged evaluation. Preserve the
+original failure and source archive; do not restart training to repair export.
