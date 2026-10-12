@@ -53,6 +53,11 @@ Fresh simulator alignment passes with score MAE 0.00369567, correlation
 This is aggregate alignment, not exact per-example parity. Packing isolation
 and the 29,337-token longest backward pass also succeed. Peak allocation is
 137,556,206,080 bytes (128.11 GiB). Actual finite optimizer updates are advancing.
+The first matched updates 11–20 average 13.23681 seconds versus 15.91791 for the
+two completed structural controls, a 16.84% time reduction and 23,394 training
+tokens/s. The first 640 source IDs match exactly. This is an early timing window,
+not a completed full-epoch or quality result; the comparison receipt is
+`initial_timing_comparison.json` under the active campaign output.
 Unchanged native FP8 GEMM and FP4 decoder checks are explicitly reused with
 checksums and source identities.
 
