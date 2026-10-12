@@ -1,0 +1,22 @@
+{
+  "variant": "ood-public-prose-v1",
+  "frozen_inputs": "data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl",
+  "frozen_sha256": "ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2",
+  "source_directory": "data/tool_trajectory_monitoring/source/deliberative-monitor-pipeline-2f10f4e/filtered_eval",
+  "output": "data/ood_visible_prose/restoration01",
+  "cua_public_candidate": {
+    "path": "data/ood_visible_prose/upstream/cua_shade_arena_aware.parquet",
+    "sha256": "fe65babd4770ad93fb3fd1ecff2732741307577879d16f92145f022a8f16d0f7",
+    "repo": "adityaasinha28/cua_shade_arena_aware",
+    "revision": "a968cce314ff353580628a0f920dda62acd5ba9e",
+    "license": "unspecified_by_upstream"
+  },
+  "sources": {
+    "agentdojo": ["ctrl_agentdojo.parquet", "9d0c7024826eb78357c45fea852225219788533bb7617a79017afd2530a14608", 1500],
+    "iac": ["ctrl_iac.parquet", "f57d279b10e9b3eabf8c35dd0340d7799d861b5bb851280391413c6249105d42", 1443],
+    "rogue_eval": ["ctrl_rogue_eval.parquet", "937acc7e2f2a99958b1e450a06d210fcad292f10f09d2e8fa74b8c414f50c3db", 1499],
+    "shade_arena": ["ctrl_shade.parquet", "1a7aac49a5cca05a2a30ef66a04528b8ce623fa64ce633196d379f781527c1b1", 850],
+    "cua_shade_arena": ["cua_shade.parquet", "53b1adf597dc226249f1b0d2111cd079898d45608c955747ea2613d27092b19e", 955],
+    "mle_sabotage": ["mle_sabotage.parquet", "133388e49e3837c059e76e6140349889cfde6ccd039bcd5cb89e507ea592c2b0", 148]
+  }
+}

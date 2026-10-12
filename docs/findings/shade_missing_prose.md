@@ -117,3 +117,8 @@ should recover provider/source message boundaries first, restore confirmed publi
 prose only, and retain the frozen representation as the historical comparator.
 Both Kimi and the students saw the restricted input, so omission alone does not
 explain the student–teacher gap.
+
+The subsequent [restoration preparation](ood_prose_restoration.md) checks AISI's
+typed message/export rules and public precursor rollouts. It records the missing
+original boundaries and exact CUA matches explicitly; no corrected full suite
+is currently ready for evaluation.

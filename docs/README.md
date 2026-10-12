@@ -7,6 +7,8 @@
   evaluation contract and open questions.
 - [SHADE missing assistant prose](findings/shade_missing_prose.md): prepared
   inputs omit reports/commentary; raw content mixes prose and deliberation.
+- [OOD prose restoration](findings/ood_prose_restoration.md): original AISI
+  message boundaries, exact-rollout matching and remaining recovery gaps.
 - [Archived research program](research_program_history.md): historical chronology
   retained before the 2026-10-07 simplification; includes superseded status notes.
 - [Monitoring sequence packing](research/monitoring_sequence_packing.md):
