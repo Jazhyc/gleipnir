@@ -1,5 +1,8 @@
 # Documentation index
 
+- [Quantization-aware recovery](findings/quantization_recovery.md): same-model
+  BF16 distillation, merged-weight deployment simulation and fresh numerical gates.
+
 - Agent instructions by task: [compute and operations](agent_guides/compute.md),
   [training](agent_guides/training.md), and [inference/evaluation](agent_guides/inference.md).
   The root `AGENTS.md` defines when each guide must be read.
