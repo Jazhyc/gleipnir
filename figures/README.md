@@ -63,6 +63,19 @@ See the [OOD finding](../docs/findings/teacher_disagreement_ood.md).
 PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py
 ```
 
+## Matched 4B/9B training losses
+
+`monitor_training_losses.png`, `.svg` and `.pdf` compare the regular 8,688-row
+4B/9B runs: five-update online loss reports, trailing 50-update averages and
+whole-population teacher entropy. These are changing-checkpoint training losses,
+not a final-checkpoint training evaluation. The adjacent provenance file binds
+inputs and exports; [findings](../docs/findings/monitor_training_loss_fit.md)
+record the comparison and its capacity/optimization qualifications.
+
+```bash
+PYTHONPATH=src:. .venv/bin/python scripts/plot_monitor_training_losses.py
+```
+
 ## Tool-trajectory OOD frontier
 
 `tool_trajectory_ood_frontier.svg` is the sharp, resolution-independent primary

@@ -82,6 +82,8 @@
 - [FP32 monitor-head resolution](findings/monitor_score_resolution.md): most
   strict-model score ties disappear, with small ID/OOD ranking gains and nearly
   unchanged measured throughput; no serving-default promotion.
+- [Matched 4B/9B training losses](findings/monitor_training_loss_fit.md): modest
+  9B online teacher-fit advantage; final-checkpoint fit and capacity remain unresolved.
 - [Single partial-AUROC variant](findings/partial_auroc.md): a small tail-ranking
   term improves OOD pAUROC but regresses ID Gloom; no default promotion.
 - [Activation-ranked training removal](findings/activation_filter_training.md):
