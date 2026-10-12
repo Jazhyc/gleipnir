@@ -102,6 +102,8 @@
 - [vLLM Lens monitor integration](findings/b200_vllm_lens.md): request-scoped
   residual capture/steering, chunk and batch isolation, eager numerical baseline
   and matched overhead measurements.
+- [Strict-filtered FP4/FA4 baseline](findings/filtered_fp4_baseline.md): restored
+  NC2 runtime, frozen one-epoch campaign and existing SDPA comparison; results pending.
 - [Augmented training precision controls](findings/b200_augmented_training.md): exact
   augmentation replay, completed FP32 adapters and failed optimized parity;
   ID/APPS tradeoffs, BF16 serving recovery, matched BF16 MLP/FA4 training and
