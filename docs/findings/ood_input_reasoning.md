@@ -12,6 +12,11 @@ keeps its separate thinking traces outside the transcript while retaining
 visible plans and submitted code. This supports a narrower conclusion than
 claiming every natural-language fragment is semantically free of reasoning.
 
+The subsequent [SHADE prose audit](shade_missing_prose.md) finds that the prepared
+inputs also omit public-facing reports/commentary alongside untyped deliberation.
+This audit establishes frozen-input identity and absence of confirmed thinking
+leakage, not preservation of all publicly observable assistant behavior.
+
 | Source | Rows | Evidence in actual monitor input |
 | --- | ---: | --- |
 | AgentDojo | 1,500 | All 6,380 assistant bodies empty; calls/results retained |

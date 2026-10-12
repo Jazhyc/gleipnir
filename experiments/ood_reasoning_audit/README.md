@@ -25,3 +25,12 @@ Stop on hash, identity, or prompt mismatch. Record every marker or overlap for
 manual review. `python -m experiments.ood_reasoning_audit.run` writes ignored
 artifacts to `results/ood_reasoning_audit/`; conclusions belong in `docs/findings/`.
 No inference, paid API calls, or remote experiment polling is needed.
+
+The SHADE prose follow-up runs with
+`python -m experiments.ood_reasoning_audit.shade_prose`. It verifies the pinned
+850-row parquet hash and inventories raw assistant content against the prepared
+transcript, saving counts and message-indexed evidence under
+`results/shade_prose_audit/`. Tag and side-task-string counts are diagnostics,
+not public/private classifiers. No prose is restored and no scoring is run.
+Original-author visibility code and manually reviewed examples are described in
+[the findings](../../docs/findings/shade_missing_prose.md).
