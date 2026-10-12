@@ -6,8 +6,8 @@
   MLP/GDN contraction screens, rejected native FP8 parity and Kimi cache support.
 - [Native FP8 QAT and MXFP8 backward](findings/native_fp8_qat.md): faster training
   with an ID quality regression, plus successful native-backward attention probes.
-- [Native MXFP8 backward QAT](findings/native_mxfp8_qat.md): attention-only
-  full-model checks and an automatic fixed-epoch quality comparison.
+- [Native MXFP8 backward QAT](findings/native_mxfp8_qat.md): 6.1% faster full-model
+  training with a further ID ranking regression against FA4 surrogate backward.
 
 - Agent instructions by task: [compute and operations](agent_guides/compute.md),
   [training](agent_guides/training.md), and [inference/evaluation](agent_guides/inference.md).
