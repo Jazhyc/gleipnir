@@ -71,8 +71,9 @@ tested trajectories, rather than establishing a 4–7% full-corpus wall-time gai
 It does not replace the frozen historical training entrypoint or promote a model.
 
 Only the shared scratch adapter is overwritten. The completed research adapter
-is preserved. The model worker remains resident and idle as PID 7591, with
-receipt and log paths under the experiment's results and Runpod log directories.
+is preserved. The model worker completed as PID 7591 and remained resident until
+its graceful retirement for the [native FP8 quality campaign](native_fp8_qat.md).
+Receipt and log paths remain under the experiment's results and Runpod log directories.
 Fourteen focused CPU tests and Ruff pass.
 
 An isolated FP8 projection profile, collected only after the model timing worker
