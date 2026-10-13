@@ -1,5 +1,6 @@
-"""Restore the original FP4-trained adapter and score frozen OOD in BF16 only."""
+"""Reconstruct a fixed adapter and evaluate configured frozen OOD serving paths."""
 
+import argparse
 import json
 import shutil
 import subprocess
@@ -15,10 +16,16 @@ from gleipnir.campaigns.runtime import training_environment
 from gleipnir.data.monitoring import file_hash, read_rows, write_json
 
 
+def load_config():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--config", default="experiments/filtered_fp4_ood/config.yaml")
+    path = Path(parser.parse_args().config).resolve()
+    return path, yaml.safe_load(path.read_text())
+
+
 def main():
     root = Path.cwd()
-    config_path = root / "experiments/filtered_fp4_ood/config.yaml"
-    config = yaml.safe_load(config_path.read_text())
+    config_path, config = load_config()
     output = root / "results" / config["experiment"]
     output.mkdir(parents=True, exist_ok=True)
     status_path = output / "status.json"
@@ -31,8 +38,11 @@ def main():
 
     try:
         status("preparing")
-        if config["conditions"] != ["bf16"]:
-            raise ValueError("the user selected BF16-only evaluation")
+        if not config["conditions"] or not set(config["conditions"]) <= {
+            "bf16",
+            "optimized",
+        }:
+            raise ValueError("unsupported serving conditions")
         gpu = subprocess.check_output(
             ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"], text=True
         ).strip()
@@ -43,6 +53,7 @@ def main():
             for p in [
                 config_path,
                 *sorted(config_path.parent.glob("*.py")),
+                *sorted((root / "experiments/filtered_fp4_ood").glob("*.py")),
                 root / "experiments/quantization_recovery/run.py",
                 root / "src/gleipnir/campaigns/monitoring/evaluation.py",
             ]
@@ -94,16 +105,27 @@ def main():
                 "files_sha256": bindings,
                 "rows": 6395,
                 "source_counts": COUNTS,
-                "selection": "fixed_original_adapter_no_ood_tuning",
+                "selection": config.get(
+                    "selection", "fixed_original_adapter_no_ood_tuning"
+                ),
             },
         )
-        for path in [config_path, *sorted(config_path.parent.glob("*.py"))]:
+        for path in [
+            config_path,
+            *sorted((root / "experiments/filtered_fp4_ood").glob("*.py")),
+        ]:
             destination = output / "source_archive" / path.relative_to(root)
             destination.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(path, destination)
         status("merge")
         subprocess.run(
-            [config["training_python"], "-m", "experiments.filtered_fp4_ood.merge"],
+            [
+                config["training_python"],
+                "-m",
+                "experiments.filtered_fp4_ood.merge",
+                "--config",
+                str(config_path),
+            ],
             cwd=root,
             env={
                 **training_environment(root, config["experiment"], native_fp4_mlp=True),
@@ -114,7 +136,13 @@ def main():
         )
         status("evaluate")
         subprocess.run(
-            [config["serving_python"], "-m", "experiments.filtered_fp4_ood.evaluate"],
+            [
+                config["serving_python"],
+                "-m",
+                "experiments.filtered_fp4_ood.evaluate",
+                "--config",
+                str(config_path),
+            ],
             cwd=root,
             env=candidate_environment(root),
             check=True,
@@ -127,7 +155,7 @@ def main():
 
 
 def restore_merge(root: Path, config, output: Path):
-    """Replace only the owned QAD64 slot and reproduce original merged weights."""
+    """Reuse a verified candidate or replace only the owned merged-model slot."""
     slot = Path(config["teacher_merge"])
     if (
         slot.is_symlink()
@@ -135,6 +163,23 @@ def restore_merge(root: Path, config, output: Path):
     ):
         raise ValueError("unsafe owned merge slot")
     old = json.loads((slot / "merge_manifest.json").read_text())
+    if old["adapter_sha256"] == config.get("serving_adapter_sha256"):
+        for name, expected in old["files_sha256"].items():
+            if file_hash(slot / name) != expected:
+                raise ValueError("existing candidate merge file drift")
+        original = json.loads((root / config["original_merge"]).read_text())
+        for name, expected in original["files_sha256"].items():
+            if (
+                name != "merge_manifest.json"
+                and old["files_sha256"].get(name) != expected
+            ):
+                raise ValueError("existing candidate differs from original merge")
+        write_json(output / "merged_artifact.json", old)
+        write_json(
+            output / "merge_identity.json",
+            {"passed": True, "original_files_verified": True, "merge_reused": True},
+        )
+        return
     previous = json.loads((root / config["merge_predecessor"]).read_text())
     if old["adapter_sha256"] != previous["adapter_sha256"]:
         raise ValueError("merge predecessor ownership drift")

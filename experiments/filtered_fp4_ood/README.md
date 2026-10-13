@@ -38,3 +38,8 @@ running. Entrypoint: `python -m experiments.filtered_fp4_ood.launch`. Artifacts:
 `results/filtered-fp4-ood01/`; logs: `logs/runpod/filtered-fp4-ood01/`.
 No in-chat scheduler is available; check startup through advancing scores during
 the active turn without promising later agent wakeups.
+
+The shared runner also accepts an explicit `--config` for fixed-checkpoint
+follow-ups. The [QAD OOD contract](../qad_ood/README.md) adds sequential BF16 and
+optimized conditions with separate receipts. This does not change the completed
+original campaign's frozen configuration or source archive.

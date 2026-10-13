@@ -42,6 +42,7 @@ def test_launch_refuses_active_gpu(monkeypatch, tmp_path):
     path = tmp_path / "experiments/filtered_fp4_ood/config.yaml"
     path.parent.mkdir(parents=True)
     path.write_text("experiment: test\n")
+    monkeypatch.setattr(launch, "load_config", lambda: (path, {"experiment": "test"}))
     monkeypatch.setattr(launch.subprocess, "check_output", lambda *a, **k: "123\n")
     with pytest.raises(RuntimeError, match="active compute"):
         launch.main()

@@ -2,13 +2,9 @@
 
 from pathlib import Path
 
-import yaml
-
-from experiments.filtered_fp4_ood.run import restore_merge
+from experiments.filtered_fp4_ood.run import load_config, restore_merge
 
 if __name__ == "__main__":
     root = Path.cwd()
-    config = yaml.safe_load(
-        (root / "experiments/filtered_fp4_ood/config.yaml").read_text()
-    )
+    _, config = load_config()
     restore_merge(root, config, root / "results" / config["experiment"])

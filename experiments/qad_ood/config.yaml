@@ -1,0 +1,72 @@
+experiment: qad-ood01
+seed: 0
+training_rows: 7836
+training_tokens: 75851675
+updates: 245
+learning_rate: 1.0e-05
+temperature: 1.0
+logical_batch: 32
+packing_budget: 16384
+max_length: 29696
+warmup_ratio: 0.03
+weight_decay: 0.0
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+initial_adapter: results/quantization-recovery01/causal_adapter
+initial_adapter_sha256: eb08e1371e72cde91243b4f0792270aa52ea97e855d9a9099a4b436f85659770
+teacher_merge: /tmp/gleipnir-merged/filtered-fp4-fa4-baseline
+gpu_uuid: GPU-480a554d-fe81-e7b9-bd55-02ca0244f4aa
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+inputs:
+  ood:
+    path: data/student_injection_awareness/regular/ood.jsonl
+    sha256: 42556d4f6ef6f7715b3b27f0b4d6f11ae83ef9c8499009489799032c2abbbf73
+  workload:
+    path: data/teacher-disagreement-strict-ood01/workload.jsonl
+    sha256: 9319514878c9ee468b117c4a622847baf025070f6b5abacee4d90af456cf9f4a
+alignment:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  repeats: 1
+  concurrency: 128
+  batch_rows: 128
+  port: 8010
+  timeout_seconds: 300
+  promote: false
+conditions:
+- bf16
+- optimized
+repeats: 1
+merge_predecessor: results/filtered-fp4-ood01/merged_artifact.json
+original_merge: results/quantization-recovery01/merged_artifact.json
+master_reference: results/quantization-recovery01/parity_reference.json
+canary: data/qad-ood01/canary_workload.jsonl
+canonical_ood: data/student_injection_awareness/regular/ood.jsonl
+ood_workload: data/teacher-disagreement-strict-ood01/workload.jsonl
+cached_references:
+  filtered_sdpa: results/teacher-disagreement-strict-ood01/evaluation/ood.jsonl
+  gleipnir4b: results/tool_trajectory_distillation_ood/runs/4b/adapters/soft-n21837-mixed-qwen35-4b-seed0/predictions.jsonl
+  unfiltered_regular: results/student_injection_awareness/4b/regular/ood/predictions.jsonl
+  fp4_bf16_repeat1: results/filtered-fp4-ood01/evaluation/repeat1/ood.jsonl
+  fp4_bf16_repeat2: results/filtered-fp4-ood01/evaluation/repeat2/ood.jsonl
+reference_sha256:
+  filtered_sdpa: daee33441f55c8460d3c50c6310a9cde21ba8dc03114b07e81aeae413caf9e68
+  gleipnir4b: 4b05a5a3175040ce05db7bbdd08d24cb6fc7583c13cabb8a9c8f1f3cb467b4e7
+  unfiltered_regular: ec13af3996bb8361f0cb3fb4d398fcbd8500f3486bb54136b933d37176a2249d
+  fp4_bf16_repeat1: a30ae4c87bf529e24b50e14a01741018ccbc549fc6957c1aa2e4d4a8ba2187ed
+  fp4_bf16_repeat2: b54fa1679ab071b5ee76f0d4553cb020e7e096d7239fc45cb75a7b4c5d11df23
+reference_source:
+  results/quantization-recovery01/merged_artifact.json: abae9633448fb94e36074b481c9314af98462cc527514cde5c4d65a3b1e93ae6
+  results/quantization-recovery01/parity_reference.json: 4ae1b62b6075b0337861ffb833c02e25fc656f6e88b99f50a9e4cef3c57b8882
+  results/filtered-fp4-ood01/merged_artifact.json: 9c2acb4ef63487eebe476c6a1728a08c653e9b7a5ec490373bde34923b159516
+  results/quantization-recovery01/recovery/resume.json: bda1815b418d8a71641ae9f89dc8194187a02aeb7632aa13a452655315ee4121
+  results/quantization-recovery01/training_complete.json: 1f1871af89690bfaedef7c408701898c4008d29af23fff02e13b543c114f2dd3
+  results/quantization-recovery01/merged_adapter/adapter_config.json: 0570c9ae2bb60020957569f8d72d6356e8d39bbd6862bcf4f00427943a4134a2
+  results/quantization-recovery01/causal_adapter/adapter_config.json: 0570c9ae2bb60020957569f8d72d6356e8d39bbd6862bcf4f00427943a4134a2
+  data/qad-ood01/canary_workload.jsonl: 7932192e0942c81fef7580cf1b9dc49f7940a1c5358a6fa9f0a5b99f67be09a7
+serving_adapter: results/quantization-recovery01/merged_adapter
+serving_adapter_sha256: dbc4de301d7279c53c5c19aca9d9f145248d430c7a92d3330db7f492693981a9
+selection: fixed_full_QAD_final_epoch_no_ood_tuning
+previous_status: results/filtered-fp4-ood01/status.json

@@ -1,5 +1,7 @@
 # Documentation index
 
+- [Full QAD OOD follow-up](findings/qad_ood.md): fixed full-epoch checkpoint,
+  sequential BF16 and optimized serving on unchanged OOD inputs.
 - [Filtered FP4/FA4 OOD evaluation](findings/filtered_fp4_ood.md): fixed original
   adapter, unchanged OOD inputs and two BF16-only passes against cached controls.
 - [Network-volume checkpoint cleanup](findings/network_volume_cleanup.md):
