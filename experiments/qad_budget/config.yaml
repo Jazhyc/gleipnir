@@ -1,0 +1,78 @@
+experiment: qad-budget-sweep01
+seed: 0
+training_rows: 7836
+training_tokens: 75851675
+updates: 245
+learning_rate: 1.0e-05
+temperature: 1.0
+logical_batch: 32
+packing_budget: 16384
+max_length: 29696
+warmup_ratio: 0.03
+weight_decay: 0.0
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+initial_adapter: results/filtered-fp4-fa4-baseline01/4b/monitor/causal_adapter
+initial_adapter_sha256: 4eb97e5385f53b135c0b77cb92d0cbbfa78a661100f9ba8ac4205dbabb34f057
+teacher_merge: /tmp/gleipnir-merged/filtered-fp4-fa4-baseline
+gpu_uuid: GPU-480a554d-fe81-e7b9-bd55-02ca0244f4aa
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+inputs:
+  training:
+    path: data/filtered-fp4-fa4-baseline01/strict_filter/training.jsonl
+    sha256: 9043e2c92189bc51fba06179db769c6a20f0576a00198043a43807625a9c653a
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  workload:
+    path: data/quantization-recovery01/workload.jsonl
+    sha256: dfa694769c97e12b875135bdc1378b34c306142b9d29aab630be5a1f9df90fda
+alignment:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  repeats: 2
+  concurrency: 128
+  batch_rows: 128
+  port: 8010
+  timeout_seconds: 300
+  promote: false
+teacher_experiment: quantization-recovery01
+teacher_sha256: 968b2312940d8124439a5197bf24d50a331531e5647efc0951a900de9fc96ec2
+quality_reference: results/quantization-recovery01/summary.json
+quality_max_macro_pauc_drop: 0.005
+runtime_module: experiments.qad_budget.runtime
+native_attention_backward: false
+merge_predecessor: results/kimi-direct-qat02/merged_artifact.json
+extra_sources:
+- src/gleipnir/training/qat_reference.py
+- results/quantization-recovery01/summary.json
+- results/quantization-recovery01/preflight.json
+- results/qat-training-optimization02/verified_comparison.json
+- results/quantization-recovery01/decoder_canary.json
+- experiments/qad_budget/generate.py
+- experiments/qad_budget/launch.py
+- experiments/qad_budget/prepare.py
+- experiments/qad_budget/run.py
+- experiments/qad_budget/runtime.py
+- experiments/qad_budget/test_budget.py
+- experiments/qad_budget/config.yaml
+stage_generator: experiments.qad_budget.generate
+reference_sources:
+  src/gleipnir/training/qat_optimization.py: 85f9cefd6b82ef078b382cf55140a90110ba6df9a001a0ac8d4129fe0165e97e
+  src/gleipnir/training/quantization_recovery.py: ca24aafaef3637f4723ca37adc9d902e35ee27867f4143eb64c292957de50a88
+  src/gleipnir/kernels/fp4/decode.py: dcae04c14a5fb4e7bf6ba2219f594e205803f07367a8e2d4686060ce7c724382
+structural_reference:
+  path: results/qat-training-optimization02/verified_comparison.json
+  sha256: a7c48807f9ece3be0871450595f2e209c00e5707d817cb1186b4b4c78f767d11
+decoder_reference:
+  path: results/quantization-recovery01/decoder_canary.json
+  sha256: c21f5171c44775ae9df6da5f4f47c360affcbf3969d5a53c16fdb43c162bc487
+reference_workload_experiment: quantization-recovery01
+startup_reference:
+  path: results/quantization-recovery01/preflight.json
+  sha256: 1bb8ffcefed22b6115d4bd3671be9ff6a05b7047b9eaa0336501dbcc0b68c99a

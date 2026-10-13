@@ -1,5 +1,7 @@
 # Documentation index
 
+- [Short QAD budgets](findings/qad_budget.md): nested 32/64-update recovery arms
+  with fixed schedules and automatic frozen ID comparisons.
 - [Direct Kimi QAT](findings/kimi_direct_qat.md): completed fresh-adapter
   distillation with worse ID ranking than direct and two-stage baselines.
 - [Quantization-aware recovery](findings/quantization_recovery.md): same-model

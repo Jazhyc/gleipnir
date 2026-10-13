@@ -110,7 +110,7 @@ def main(config_path: str = "experiments/native_fp8_qat/config.yaml"):
         complete = json.loads((output / "training_complete.json").read_text())
         master = output / "causal_adapter"
         if (
-            complete["updates"] != 245
+            complete["updates"] != config["updates"]
             or file_hash(master / "adapter_model.safetensors")
             != complete["master_sha256"]
         ):
