@@ -86,9 +86,10 @@ The preceding fixed-batch, checkpoint and FA4 screen remains recorded in
 Start with [the research program](docs/research_program.md), then read the README
 inside the experiment you are changing.
 
-All future experiments default to the optimized vLLM 0.31 implementation with
-FP8 full-attention projections, FP4 MLP/GDN projections and MXFP8 attention for
-inference, serving and evaluation. Use the cached two-logit monitoring path and
+Ordinary adapter iteration and training-recipe comparisons use BF16 vLLM 0.31.
+Reserve optimized FP8 full-attention projections, FP4 MLP/GDN projections and
+MXFP8 attention for QAD-adapted deployment candidates. Use the cached two-logit
+monitoring path and
 its validated context/pooling corrections; the
 [serving decision](docs/decisions/b200_monitor_score_reference.md) defines the
 FP4/MXFP8 recipe, supported model/hardware envelope, adapter parity requirements

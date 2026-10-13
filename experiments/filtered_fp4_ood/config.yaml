@@ -1,0 +1,60 @@
+experiment: filtered-fp4-ood01
+seed: 0
+training_rows: 7836
+training_tokens: 75851675
+updates: 245
+learning_rate: 1.0e-05
+temperature: 1.0
+logical_batch: 32
+packing_budget: 16384
+max_length: 29696
+warmup_ratio: 0.03
+weight_decay: 0.0
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+initial_adapter: results/filtered-fp4-fa4-baseline01/4b/monitor/causal_adapter
+initial_adapter_sha256: 4eb97e5385f53b135c0b77cb92d0cbbfa78a661100f9ba8ac4205dbabb34f057
+teacher_merge: /tmp/gleipnir-merged/filtered-fp4-fa4-baseline
+gpu_uuid: GPU-480a554d-fe81-e7b9-bd55-02ca0244f4aa
+training_python: /tmp/gleipnir-serving-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+inputs:
+  ood:
+    path: data/student_injection_awareness/regular/ood.jsonl
+    sha256: 42556d4f6ef6f7715b3b27f0b4d6f11ae83ef9c8499009489799032c2abbbf73
+  workload:
+    path: data/teacher-disagreement-strict-ood01/workload.jsonl
+    sha256: 9319514878c9ee468b117c4a622847baf025070f6b5abacee4d90af456cf9f4a
+alignment:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  repeats: 2
+  concurrency: 128
+  batch_rows: 128
+  port: 8010
+  timeout_seconds: 300
+  promote: false
+conditions:
+- bf16
+repeats: 2
+merge_predecessor: results/qad-budget64-01/merged_artifact.json
+original_merge: results/filtered-fp4-fa4-baseline01/merged_artifact.json
+master_reference: results/filtered-fp4-fa4-baseline01/4b/monitor/parity_reference.json
+canary: results/filtered-fp4-fa4-baseline01/canary_workload.jsonl
+canonical_ood: data/student_injection_awareness/regular/ood.jsonl
+ood_workload: data/teacher-disagreement-strict-ood01/workload.jsonl
+cached_references:
+  filtered_sdpa: results/teacher-disagreement-strict-ood01/evaluation/ood.jsonl
+  gleipnir4b: results/tool_trajectory_distillation_ood/runs/4b/adapters/soft-n21837-mixed-qwen35-4b-seed0/predictions.jsonl
+  unfiltered_regular: results/student_injection_awareness/4b/regular/ood/predictions.jsonl
+reference_sha256:
+  filtered_sdpa: daee33441f55c8460d3c50c6310a9cde21ba8dc03114b07e81aeae413caf9e68
+  gleipnir4b: 4b05a5a3175040ce05db7bbdd08d24cb6fc7583c13cabb8a9c8f1f3cb467b4e7
+  unfiltered_regular: ec13af3996bb8361f0cb3fb4d398fcbd8500f3486bb54136b933d37176a2249d
+reference_source:
+  results/filtered-fp4-fa4-baseline01/merged_artifact.json: 97ac21df0d6c5511cfa2cec74b9b4b56408a06c4c3726d38a6b1371788a615fc
+  results/filtered-fp4-fa4-baseline01/4b/monitor/parity_reference.json: 2d56d7ed2b75815b23789db73fe97ea9e430ab5a375d21f8af19917bbbe4cca4
+  results/filtered-fp4-fa4-baseline01/canary_workload.jsonl: bd2bf9536ffd2f6003c679f069afd8d502aa6e2c420b6940969ae3dfe3231b5e
+serving_adapter: results/filtered-fp4-fa4-baseline01/4b/monitor/model
+serving_adapter_sha256: be3df0c241ac8daa551e77519ebb4c4d725cc8ebd7673ea43f2c9e9b7acb9b16

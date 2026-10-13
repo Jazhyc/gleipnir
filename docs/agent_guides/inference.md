@@ -8,13 +8,15 @@ Also read [compute.md](compute.md) before launching or operating a run.
 
 ## Serving and adapter parity
 
-Standing user preference, 2026-10-08: use the optimized vLLM implementation for
-inference, serving and evaluation in all future experiments. Monitor scoring
+Standing user preference, updated 2026-10-13: use BF16 vLLM for ordinary adapter
+iteration and training-recipe comparisons. Use optimized precision serving only
+for QAD-adapted deployment candidates. Monitor scoring
 uses the cached causal two-logit path in the
 [serving decision](../decisions/b200_monitor_score_reference.md), including its
 validated context handling and pooling boundary correction. Select this path
 explicitly in new experiment launch configurations; the decision defines the
-recipe and supported hardware/model envelope. Reuse a persistent engine and
+precision selection, recipe and supported hardware/model envelope. Reuse a
+persistent engine and
 continuous batching rather than an eager training microbatch.
 
 New adapters and backend/layout combinations require master-to-serving score

@@ -1,14 +1,19 @@
-# Optimized vLLM serving default and frozen comparisons
+# Monitor serving precision and frozen comparisons
 
-The user selects **FP8 full-attention projections on vLLM 0.31** on 2026-10-08
-for future inference, serving and evaluation after reviewing the
+The optimized deployment recipe uses **FP8 full-attention projections on vLLM 0.31**,
+selected on 2026-10-08 after reviewing the
 [projection-precision comparison](../findings/b200_attention_precision.md).
-This explicitly supersedes the development triage's BF16 preference. The
-current selection is checksum-bound in
+The optimized recipe is checksum-bound in
 `experiments/b200_inference_benchmark/serving_default.json`, resolved by
 `gleipnir.serving.reference.selected_serving_default`.
 
 ## Current recipe
+
+User update, 2026-10-13: use BF16 serving for ordinary adapter iteration and
+training-recipe comparisons; reserve the optimized precision recipe below for
+QAD-adapted deployment candidates. This supersedes the blanket optimized-serving
+default for future experiments. Both paths retain adapter-specific merged weights,
+score parity and native dispatch checks; frozen historical comparisons stay fixed.
 
 Use the causal LAST two-logit monitor, native Gigatoken and direct FROST host
 bindings, **16 full-attention QKV/output FP8 W8A8 projections**, all 64 FP4 MLP

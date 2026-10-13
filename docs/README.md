@@ -1,5 +1,9 @@
 # Documentation index
 
+- [Filtered FP4/FA4 OOD evaluation](findings/filtered_fp4_ood.md): fixed original
+  adapter, unchanged OOD inputs and two BF16-only passes against cached controls.
+- [Network-volume checkpoint cleanup](findings/network_volume_cleanup.md):
+  seven reconstructable merges pruned, preserving verified bases and FP32 adapters.
 - [Short QAD budgets](findings/qad_budget.md): 9/17-minute recovery arms improve
   optimized ID ranking but retain less recovery than the full 66-minute run.
 - [Direct Kimi QAT](findings/kimi_direct_qat.md): completed fresh-adapter
@@ -62,7 +66,7 @@
 - [Blackwell inference search](findings/blackwell_inference_search.md): frozen
   development vLLM/kernel search, frozen full-512 FP8 confirmation, independent
   engine restarts and rejected native FP4 layouts on one RTX PRO 6000 allocation.
-- [Optimized vLLM serving default](decisions/b200_monitor_score_reference.md):
+- [Monitor serving precision](decisions/b200_monitor_score_reference.md):
   future-experiment inference/evaluation recipe, supported context and model/GPU
   envelope, parity requirements and frozen B200 comparison controls.
 - [SDPA injection-direction replication review](research/sdpa_injection_direction_replication.md):
