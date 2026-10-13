@@ -111,9 +111,12 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 
 ## Runpod
 
-The user-provisioned NC2 B200 `fs334v0u4zysvn` uses the retained volume for
-the [strict-filtered FP4/FA4 baseline](findings/filtered_fp4_baseline.md).
-Runtime restoration and preparation pass; verify live campaign state before reuse.
+The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
+user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
+the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
+preservation and completed experiment artifacts. The old SSH snapshot is marked
+terminated. Provision replacement capacity only with fresh authorization and
+verify live campaign state before reuse.
 
 For the 2026-10-12 QAT preparation, one B200 was provisioned in US-CA-2
 after EU-RO-1 and US-NC-2 catalog reads showed no B200 stock. It was then

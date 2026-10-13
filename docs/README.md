@@ -1,5 +1,7 @@
 # Documentation index
 
+- [QAT campaign shutdown](findings/qat_shutdown.md): verified B200 termination,
+  retained NC2 volume and checksummed runtime/adapter preservation for resumption.
 - [Full QAD OOD follow-up](findings/qad_ood.md): fixed full-epoch checkpoint,
   BF16 transfer improvement but a substantial optimized-serving penalty.
 - [Filtered FP4/FA4 OOD evaluation](findings/filtered_fp4_ood.md): fixed original
