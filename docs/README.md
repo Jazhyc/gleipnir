@@ -1,7 +1,7 @@
 # Documentation index
 
-- [Direct Kimi QAT](findings/kimi_direct_qat.md): fresh-adapter quantization-aware
-  distillation from cached Kimi K3 targets with the selected lean QAT arithmetic.
+- [Direct Kimi QAT](findings/kimi_direct_qat.md): completed fresh-adapter
+  distillation with worse ID ranking than direct and two-stage baselines.
 - [Quantization-aware recovery](findings/quantization_recovery.md): same-model
   BF16 distillation, merged-weight deployment simulation and fresh numerical gates.
 - [QAT training optimization](findings/qat_training_optimization.md): matched

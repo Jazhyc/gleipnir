@@ -50,8 +50,50 @@ archives and matched seed-zero training order are independently verified locally
 Initial real-update KL is 0.646350/0.492393, with finite unclipped norms
 38.17382/38.38422; updates retain the declared norm-1 clipping. These losses use
 Kimi targets and are not comparable to recovery KL against the BF16 student.
-Completed training and quality results are pending. Fresh-base mismatch remains
-a limitation to report even if the final trained adapter passes parity.
+All 245 updates and both frozen 3,012-row ID passes complete. Fresh-base mismatch
+remains a reported limitation; final trained-adapter serving parity passes.
+
+## Completed quality comparison
+
+Training takes 3,928.68 seconds (65.48 minutes), versus 3,955.95 seconds
+(65.93 minutes) for the original recovery QAT stage. Direct training removes the
+preceding trained-teacher stage and scoring dependency; it does not materially
+reduce QAT epoch time. Fresh initialization, targets, learning rate and total
+training budget differ, so this is not an isolated teacher or speed comparison.
+
+| Model, optimized serving | Macro raw pAUROC@20, two passes | Pooled AUROC, two passes |
+| --- | ---: | ---: |
+| Original direct Kimi baseline, selected FP4/FA4 training | 0.850308 / 0.847754 | 0.941193 / 0.940109 |
+| Original two-stage QAD | 0.875735 / 0.876433 | 0.949218 / 0.949311 |
+| Direct Kimi QAT | 0.806866 / 0.806531 | 0.921229 / 0.920517 |
+
+Mean macro pAUROC is 0.806698, 6.9386 percentage points below two-stage QAD and
+4.2332 points below the original direct-distillation optimized baseline. This
+fails the predeclared 0.5-point quality gate; no model or recipe promotion occurs.
+Most regression against QAD is in Gloom: pAUROC is 0.660763/0.660950 versus
+0.793433/0.793867. STRIDE is 0.952969/0.952112 versus 0.958037/0.959000.
+The result does not establish that Kimi is a worse teacher: the recovery model
+also receives a preceding full training epoch and uses a different schedule.
+The direct-baseline comparison retains Kimi/init/schedule but changes the combined
+training arithmetic and implementation. Both are one-seed comparisons; no OOD
+transfer is measured.
+
+Pooled Brier is 0.113538/0.113700 and ECE 0.054632/0.051917. Optimized serving
+input throughput is 175,707/176,526 tokens/s. Repeat score MAE is 0.016542,
+maximum difference 0.377374, correlation 0.994777 and 58 threshold flips.
+Pooled unique scores are 93/95. All three final-adapter serving canaries pass:
+MAE 0.004004, correlation above 0.99992, maximum difference 0.019022 and
+nonzero adapter effect 0.926617. This is much closer alignment than the untrained
+initialization; short-canary acceptance does not establish complete-ID parity.
+
+The FP32 master is preserved remotely and locally, SHA256
+`8e6cf6fd0f3c9972b1c970d804ee6c82c61fbad4442480b0d69a9f0b0797aa96`.
+Independent verification checks complete finite updates, FP32 tensor types,
+master/source hashes, original privileged Kimi target identity, matched training
+order and ID/prompt/source-label coverage, with exact metric recalculation.
+The receipt is `results/kimi-direct-qat02/verified_comparison.json`. The final
+server exits; the B200 is idle and remains running, with prior masters and caches
+preserved.
 
 ## Larger-packing follow-up
 
