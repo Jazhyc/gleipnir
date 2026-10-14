@@ -82,8 +82,9 @@ Its checksum-bound controls supersede the October 6 GDN-only reference below;
 the future-experiment default does not rewrite these frozen measurements.
 Compare timing and quality on matched concurrency/cohorts using all available
 repeats. The [concurrency](../findings/b200_score_scaling.md),
-[fixed 2K](../findings/b200_context_scaling.md) and
-[long-context](../findings/b200_long_context.md) records define their additional
+[fixed 2K](../findings/b200_context_scaling.md),
+[long-context](../findings/b200_long_context.md) and
+[1M-context](../findings/b200_context_million.md) records define their additional
 measurement contracts. Preserve failed strict checks separately from accepted
 finite quality. Acceptance remains adapter/recipe specific and does not waive
 finite-output checks, new-adapter parity or held-out evaluation requirements.

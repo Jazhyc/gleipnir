@@ -65,7 +65,10 @@ through 32K. New adapters require their own FP32-master/merged-serving parity
 and nonzero effect; this adapter's accepted drift does not waive their guards.
 Other models, hardware or extended contexts require explicit validation.
 The earlier 0.24 `LongContextWorker` receipts through 262,144 positions remain
-separate historical evidence, not validation of the new FP8 default. Keep
+separate historical evidence, not validation of the new FP8 default. The
+[1M-context baseline](../findings/b200_context_million.md) measures this
+default with an opt-in MXFP8 length bound and, beyond 256K, YaRN; it is an
+experimental systems measurement, not a selected context envelope. Keep
 cache-free and length-aware admission alternatives experimental.
 
 ## Frozen comparison controls

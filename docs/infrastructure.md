@@ -111,6 +111,15 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 
 ## Runpod
 
+On 2026-10-15 the user provided EU-RO-1 B200 Pod `cvjantiismcaod`
+($7.99/hour) with network volume `cb7bxu71ug` at `/workspace`. Its template
+leaves `PUBLIC_KEY` empty: install the project key and start SSH (after
+`ssh-keygen -A`) through the Runpod proxy, then use the sanitized
+`.runpod/long-context-1m.json`. The serving stack was restored from the local
+2026-10-07 EU bundle plus the locked 0.31 environment; the previous checkout
+is kept as `/workspace/gleipnir-eu-20261004`. The Pod remains running; see
+the [1M-context finding](findings/b200_context_million.md) for node identity.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache

@@ -164,6 +164,9 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
+- [B200 FP8 default contexts to 1M](findings/b200_context_million.md): C1
+  1K–1M sweep with node/environment receipts, YaRN beyond 256K, chunk cost fit
+  (attention 90% at 1M) and power-capped clocks on long attention.
 - [B200 single-request long contexts](findings/b200_long_context.md): exact
   8K–256K capacity/latency sweep, bounded temporary memory, and an opt-in fix for
   the pinned pooling scheduler's exact-cap stall.
