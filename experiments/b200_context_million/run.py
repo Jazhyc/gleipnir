@@ -10,6 +10,7 @@ import statistics
 import subprocess
 import sys
 import time
+from dataclasses import dataclass, field
 from pathlib import Path
 
 import httpx
@@ -35,7 +36,29 @@ EXPERIMENT = Path(__file__).parent
 WORKER = "experiments.b200_context_million.worker.LongContextWorker"
 
 
-def phase_command(parent: list[str], phase: dict, chunk: int) -> list[str]:
+@dataclass(frozen=True)
+class Variant:
+    """Server worker, bound sources and pre-launch checks for one sweep."""
+
+    experiment: Path = EXPERIMENT
+    result_group: str = "b200_context_million"
+    worker: str = WORKER
+    sources: tuple[str, ...] = (
+        "experiments/b200_context_million/worker.py",
+        "experiments/b200_context_million/envelope.py",
+    )
+    # (module, receipt filename, environment variable naming the receipt path)
+    checks: tuple[tuple[str, str, str], ...] = field(default_factory=tuple)
+    # Extra worker receipts under the shared serving directory to archive.
+    audits: tuple[str, ...] = field(default_factory=tuple)
+
+
+DEFAULT = Variant()
+
+
+def phase_command(
+    parent: list[str], phase: dict, chunk: int, variant: Variant = DEFAULT
+) -> list[str]:
     """Change only context length, worker telemetry and, for YaRN, RoPE scaling."""
     if (
         parent[parent.index("--max-model-len") + 1] != "32768"
@@ -51,11 +74,10 @@ def phase_command(parent: list[str], phase: dict, chunk: int) -> list[str]:
     command = parent.copy()
     command[0] = sys.executable
     command[command.index("--max-model-len") + 1] = str(phase["context_limit"])
-    command[command.index("--worker-cls") + 1] = WORKER
+    command[command.index("--worker-cls") + 1] = variant.worker
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
-    for filename in ("worker.py", "envelope.py"):
-        path = str((EXPERIMENT / filename).relative_to(ROOT))
+    for path in variant.sources:
         additional["gleipnir_frost_fp4"][path] = sha(ROOT / path)
     command[index] = json.dumps(additional, sort_keys=True)
     override = phase["rope_override"]
@@ -253,15 +275,19 @@ async def run_phase(
     out: Path,
     report: dict,
 ) -> None:
-    selection, parent, binding, native = (
-        context[k] for k in ("selection", "command", "binding", "native")
+    selection, parent, binding, native, variant = (
+        context[k] for k in ("selection", "command", "binding", "native", "variant")
     )
     out.mkdir()
-    command = phase_command(parent, phase, settings["chunk_tokens"])
+    command = phase_command(parent, phase, settings["chunk_tokens"], variant)
     env = server_environment(selection, out, binding, native)
+    env.update(context["check_env"])
     write(out / "command.json", command)
     log = (
-        ROOT / "logs/runpod/b200_context_million" / f"{out.parent.name}_{out.name}.log"
+        ROOT
+        / "logs/runpod"
+        / variant.result_group
+        / f"{out.parent.name}_{out.name}.log"
     )
     log.parent.mkdir(parents=True, exist_ok=True)
     if gpu()["apps"] or (SERVING / "server.json").exists():
@@ -325,6 +351,10 @@ async def run_phase(
         raise
     finally:
         archive_audits(out)
+        for filename in variant.audits:
+            source = SERVING / filename
+            if source.exists():
+                write(out / filename, json.loads(source.read_text()))
         if process.poll() is None and (SERVING / "server.json").exists():
             retire(f"{out.parent.name}_{out.name}", env)
         elif process.poll() is not None and (SERVING / "server.json").exists():
@@ -332,16 +362,21 @@ async def run_phase(
                 (SERVING / "server.json").unlink()
 
 
-async def run(name: str, phases: list[str] | None) -> None:
-    settings = json.loads((EXPERIMENT / "config.json").read_text())
-    out = ROOT / "results/b200_context_million" / name
+async def run(name: str, phases: list[str] | None, variant: Variant = DEFAULT) -> None:
+    settings = json.loads((variant.experiment / "config.json").read_text())
+    out = ROOT / "results" / variant.result_group / name
     out.mkdir(parents=True, exist_ok=False)
     write(out / "settings.json", settings)
-    for p in EXPERIMENT.iterdir():
-        if p.suffix in {".py", ".json", ".md"}:
-            destination = out / "executed_sources" / p.name
-            destination.parent.mkdir(exist_ok=True)
-            destination.write_bytes(p.read_bytes())
+    executed = {
+        p.relative_to(ROOT)
+        for directory in {EXPERIMENT, variant.experiment}
+        for p in directory.iterdir()
+        if p.suffix in {".py", ".json", ".md"}
+    } | {Path(source) for source in variant.sources}
+    for relative in sorted(executed):
+        destination = out / "executed_sources" / relative
+        destination.parent.mkdir(parents=True, exist_ok=True)
+        destination.write_bytes((ROOT / relative).read_bytes())
     report = {"status": "preparing", "phases": [], "promoted": False}
     write(out / "summary.json", report)
     try:
@@ -427,11 +462,26 @@ async def run(name: str, phases: list[str] | None) -> None:
             ROOT,
             max(p["context_limit"] for p in settings["phases"]),
         )
+        check_env = {}
+        for module, filename, variable in variant.checks:
+            receipt = out / filename
+            with (out / f"{Path(filename).stem}.log").open("x") as handle:
+                subprocess.run(
+                    [sys.executable, "-m", module, "--output", str(receipt)],
+                    cwd=ROOT,
+                    env=env,
+                    stdout=handle,
+                    stderr=subprocess.STDOUT,
+                    check=True,
+                )
+            check_env[variable] = str(receipt.relative_to(ROOT))
         context = {
             "selection": selection,
             "command": command,
             "binding": binding,
             "native": native,
+            "variant": variant,
+            "check_env": check_env,
         }
         for phase in settings["phases"]:
             if phases and phase["name"] not in phases:
@@ -450,7 +500,7 @@ async def run(name: str, phases: list[str] | None) -> None:
         report["environment_drift_during_run"] = drift(start, end)
         report["status"] = "complete"
         write(out / "summary.json", report)
-        print("context_million_complete", flush=True)
+        print(f"{variant.result_group}_complete", flush=True)
     except BaseException as error:
         report.update(status="failed", error=f"{type(error).__name__}: {error}")
         report["gpu"] = gpu()
