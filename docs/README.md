@@ -164,6 +164,9 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
+- [Short-request host overhead](findings/b200_host_overhead.md): C1 steps are
+  host-bound; gated GDN route and lean GDN host path (both adopted) save ~5 ms;
+  lean custom-op dispatch is within noise; remaining host time is diffuse.
 - [Length-gated GDN prefill route](findings/b200_gdn_route.md): non-CP below 8K
   tokens per call saves 2.3–2.9 ms on short C1 requests (paired, same server);
   long chunks unchanged bitwise. Adopted in the FP8 default.
