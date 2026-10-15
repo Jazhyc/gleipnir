@@ -136,6 +136,8 @@ the user authorized the following:
 - **Transfer Pod.** RTX PRO 6000 Pod `stl3t4uz49abia` ($2.49/hour,
   `.runpod/nc2-transfer.json`) mounts NC2 volume `ixbh81vf9c`. It was created
   through the Runpod REST API with the project key in `PUBLIC_KEY`.
+  At the user's request it was terminated after the copy (delete 204, lookup
+  404); NC2 volume `ixbh81vf9c` (300 GB) is retained.
 - **EU volume.** `cb7bxu71ug` grew from 100 to 200 GB after the copy hit its
   quota. The size cannot shrink.
 - **EU container.** Resized from 50 to 150 GB. The resize restarted the Pod and
