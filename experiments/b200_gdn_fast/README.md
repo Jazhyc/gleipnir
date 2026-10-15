@@ -92,6 +92,8 @@ including skipping vLLM's reserved null block 0.
   prior state, 128 short sequences, and a null-block slot.
 - `conv_bench.py`: in isolation, the fused path takes 0.33–0.73 of upstream's
   time (1K 0.148 → 0.049 ms; 32K 0.795 → 0.581 ms).
+- Full-stack 1K–1M C1 rerun with the strided norm: `full03`, summarized in
+  `docs/findings/b200_context_million.md`.
 - `paired_norm.py --option fused_conv` (`conv01`): every C1 score is bitwise
   equal. In serving, however, 1K and quick64 are about 2 ms slower in 4/4
   rounds, 8K–32K is within noise, and full320 c128 throughput ratios are

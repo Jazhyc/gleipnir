@@ -108,3 +108,27 @@ summarized `scaling.{json,csv,png,svg}`. Server logs are under
 `logs/runpod/b200_context_million/`. Both servers were retired by identity
 check. The GPU is idle (0 MiB) and the Pod remains running. No capacity
 lifecycle operation was performed.
+
+## Adopted-stack rerun (`full03`, 2026-10-15)
+
+The same sweep ran on the adopted default: last-layer trim, the 8K GDN route
+gate, the lean GDN path and the strided norm (fused conv off). It used the
+same EU-RO-1 host model, driver and VBIOS, but a different GPU
+(`GPU-e5eb9962…`). All 13 points have scores bitwise equal to `million01`
+(≥8K) or `full02` (<8K). `experiments/b200_gdn_fast/compare_sweep.py` writes
+`results/b200_gdn_fast/full03/comparison.{json,png,svg}`.
+
+| Tokens | Baseline ms | Adopted ms | Change |
+| ---: | ---: | ---: | ---: |
+| 1K | 35.47 | 30.77 | −13.2% |
+| 4K | 37.93 | 31.96 | −15.7% |
+| 8K | 55.82 | 50.14 | −10.2% |
+| 32K | 207.49 | 197.33 | −4.9% |
+| 128K | 1,256.47 | 1,188.74 | −5.4% |
+| 256K | 3,648.04 | 3,381.76 | −7.3% |
+| 512K (YaRN) | 11,702.63 | 10,544.59 | −9.9% |
+| 1M (YaRN) | 43,080.79 | 38,665.44 | −10.2% |
+
+Peak C1 throughput is 175K input tokens/s at 16K (was 166K). Median SM clocks
+at 32K–128K ran 50–160 MHz lower than in `million01` (power-capped), so those
+mid-length gains are, if anything, understated.
