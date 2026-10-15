@@ -164,6 +164,9 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
+- [Length-gated GDN prefill route](findings/b200_gdn_route.md): non-CP below 8K
+  tokens per call saves 2.3–2.9 ms on short C1 requests (paired, same server);
+  long chunks unchanged bitwise. Not yet adopted.
 - [Kernel profile of the adopted default](findings/b200_kernel_profile.md):
   MXFP8 attention is 60–84% of GPU time from 256K; FP4 GEMMs and GDN dominate
   mid-length/c128; short requests are host-bound. Ranked candidates follow.

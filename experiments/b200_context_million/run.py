@@ -60,6 +60,8 @@ class Variant:
     server: str | None = None
     # (worker RPC method, receipt filename) collected after measurement.
     rpc_audits: tuple[tuple[str, str], ...] = field(default_factory=tuple)
+    # Extra server environment, e.g. GDN route settings.
+    environment: dict[str, str] = field(default_factory=dict)
 
 
 DEFAULT = Variant()
@@ -294,6 +296,7 @@ async def run_phase(
     command = phase_command(parent, phase, settings["chunk_tokens"], variant)
     env = server_environment(selection, out, binding, native)
     env.update(context["check_env"])
+    env.update(variant.environment)
     write(out / "command.json", command)
     log = (
         ROOT
