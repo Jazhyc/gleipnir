@@ -94,6 +94,9 @@ gaps between steps.
   preparation and the between-step gap. That bounds the gain at roughly 3–7%
   at saturation, smaller than the FP4 GEMM share (about 37%). It would need a
   pooling-compatible async path and a re-validated scheduler correction.
+- **Async trial.** [Async scheduling](../../experiments/b200_async_scheduling/README.md)
+  with an async variant of the scheduler correction gains 2.3–2.6% at
+  c32–c128 but loses 4–9% at c2–c4 on both workloads. Not adopted.
 
 ## Optimization candidates
 

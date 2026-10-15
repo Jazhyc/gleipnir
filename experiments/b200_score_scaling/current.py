@@ -70,6 +70,7 @@ async def run(
     expected_gpu_uuid: str,
     pre_adoption: bool = False,
     workload_name: str = "full320",
+    async_scheduling: bool = False,
 ) -> None:
     from experiments.b200_attention_precision.startup import startup
     from experiments.b200_long_context.run import gpu
@@ -110,7 +111,11 @@ async def run(
     write(
         out / "settings.json",
         settings
-        | {"expected_gpu_uuid": expected_gpu_uuid, "pre_adoption": pre_adoption},
+        | {
+            "expected_gpu_uuid": expected_gpu_uuid,
+            "pre_adoption": pre_adoption,
+            "async_scheduling": async_scheduling,
+        },
     )
     write(out / "selection.json", selection)
     write(out / "initial_gpu.json", snapshot)
@@ -128,18 +133,25 @@ async def run(
             "memory_limit": cgroup("memory.max", "memory/memory.limit_in_bytes"),
         },
     )
-    for path in (
-        Path(__file__),
-        config,
-        EXPERIMENT / "README.md",
-    ):
+    sources = [Path(__file__), config, EXPERIMENT / "README.md"]
+    if async_scheduling:
+        variant = ROOT / "experiments/b200_async_scheduling"
+        sources += [variant / "scheduler.py", variant / "launch.py"]
+    for path in sources:
         target = out / "executed_sources" / path.relative_to(ROOT)
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_bytes(path.read_bytes())
     write(out / "summary.json", report)
     try:
         # Pre-adoption control: the FP8 recipe without trim, GDN gate or fast path.
-        await startup(name + "_startup", last_query=not pre_adoption)
+        transform = None
+        if async_scheduling:
+            from experiments.b200_async_scheduling.launch import async_command
+
+            transform = async_command
+        await startup(
+            name + "_startup", last_query=not pre_adoption, transform=transform
+        )
         server = json.loads((SERVING / "server.json").read_text())
         write(out / "server.json", server)
         write(
@@ -218,11 +230,18 @@ def main() -> None:
     parser.add_argument("--expected-gpu-uuid", required=True)
     parser.add_argument("--pre-adoption", action="store_true")
     parser.add_argument("--workload", choices=sorted(CONFIGS), default="full320")
+    parser.add_argument("--async-scheduling", action="store_true")
     args = parser.parse_args()
     if args.name in {"", ".", ".."} or Path(args.name).name != args.name:
         raise ValueError("run name must be a stem")
     asyncio.run(
-        run(args.name, args.expected_gpu_uuid, args.pre_adoption, args.workload)
+        run(
+            args.name,
+            args.expected_gpu_uuid,
+            args.pre_adoption,
+            args.workload,
+            args.async_scheduling,
+        )
     )
 
 
