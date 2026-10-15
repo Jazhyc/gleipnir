@@ -35,10 +35,15 @@ class FastGdnMixin:
         gdn_fast.install(layers, fresh)
         write("gdn_fast.json", {"worker_pid": os.getpid(), "layers": len(layers)})
 
-    def set_gdn_fast(self, enabled: bool, strided_norm: bool | None = None) -> dict:
+    def set_gdn_fast(
+        self,
+        enabled: bool,
+        strided_norm: bool | None = None,
+        fused_conv: bool | None = None,
+    ) -> dict:
         from gleipnir.serving import gdn_fast
 
-        return gdn_fast.set_enabled(enabled, strided_norm)
+        return gdn_fast.set_enabled(enabled, strided_norm, fused_conv)
 
     def gdn_fast_audit(self) -> dict:
         from gleipnir.serving import gdn_fast

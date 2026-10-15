@@ -76,3 +76,28 @@ same tile shape. Nothing is copied.
 
 The user adopted it on 2026-10-15. It is on by default, startup requires
 that it ran, and the selection binds the file and both receipts.
+
+## Fused conv1d + post-conv (exact, not adopted)
+
+`gleipnir.serving.gdn_conv_fused` computes the width-4 causal conv for one
+head's channels inside the post-conv program, using upstream's exact
+arithmetic: an FP32 accumulator, BF16 products oldest tap first, SiLU, and a
+BF16 round. It then applies post-conv's L2 norm and gates on the same
+`[16, 128]` tile. A second kernel writes the conv state as upstream does,
+including skipping vLLM's reserved null block 0.
+
+- `conv_probe.py` (`conv_probe02`): q/k/v/g/beta and the conv state are
+  bitwise equal to upstream on 7/7 cases. The cases are 1K and 32K, fresh and
+  continued, variable-length batches, sequences shorter than 3 tokens with
+  prior state, 128 short sequences, and a null-block slot.
+- `conv_bench.py`: in isolation, the fused path takes 0.33–0.73 of upstream's
+  time (1K 0.148 → 0.049 ms; 32K 0.795 → 0.581 ms).
+- `paired_norm.py --option fused_conv` (`conv01`): every C1 score is bitwise
+  equal. In serving, however, 1K and quick64 are about 2 ms slower in 4/4
+  rounds, 8K–32K is within noise, and full320 c128 throughput ratios are
+  0.971/0.973/0.994/0.998. A likely cause is the Python launch cost of the
+  ~30-argument Triton kernels on every layer, which exceeds the GPU saving at
+  short lengths.
+
+Kept off (`_STATE["fused_conv"] = False`); the selection binds the current
+file, and default behavior is unchanged.

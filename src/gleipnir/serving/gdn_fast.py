@@ -28,23 +28,39 @@ _STATE: dict[str, Any] = {
     "enabled": True,
     # Bitwise-exact strided gated norm (norm_probe01, norm01); adopted 2026-10-15.
     "strided_norm": True,
+    # Bitwise-exact fused conv1d + post-conv (conv_probe02); off until adopted.
+    "fused_conv": False,
     "step": None,
+    "conv_step": None,
     "fast": 0,
     "fallback": 0,
     "strided_norms": 0,
+    "fused_convs": 0,
 }
 _NORM_WEIGHTS: dict[int, torch.Tensor] = {}
 
 
-def set_enabled(enabled: bool, strided_norm: bool | None = None) -> dict:
+def set_enabled(
+    enabled: bool, strided_norm: bool | None = None, fused_conv: bool | None = None
+) -> dict:
     _STATE["enabled"] = bool(enabled)
     if strided_norm is not None:
         _STATE["strided_norm"] = bool(strided_norm)
+    if fused_conv is not None:
+        _STATE["fused_conv"] = bool(fused_conv)
     return audit()
 
 
 def audit() -> dict:
-    keys = ("enabled", "strided_norm", "fast", "fallback", "strided_norms")
+    keys = (
+        "enabled",
+        "strided_norm",
+        "fused_conv",
+        "fast",
+        "fallback",
+        "strided_norms",
+        "fused_convs",
+    )
     return {k: _STATE[k] for k in keys}
 
 
@@ -159,29 +175,62 @@ def fast_core(
     conv_weights = layer.conv1d.weight.view(
         layer.conv1d.weight.size(0), layer.conv1d.weight.size(2)
     )
-    conv_output = kernels.causal_conv1d_fn(
-        mixed_qkv.transpose(0, 1),
-        conv_weights,
-        layer.conv1d.bias,
-        activation=layer.activation,
-        conv_states=conv_state,
-        has_initial_state=attn_metadata.has_initial_state,
-        cache_indices=attn_metadata.non_spec_state_indices_tensor,
-        query_start_loc=attn_metadata.non_spec_query_start_loc,
-        metadata=attn_metadata,
-    ).transpose(0, 1)
-    query, key, value, g, beta = kernels.fused_post_conv_prep(
-        conv_output=conv_output,
-        a=a,
-        b=b,
-        A_log=layer.A_log,
-        dt_bias=layer.dt_bias,
-        num_k_heads=layer.num_k_heads // layer.tp_size,
-        head_k_dim=layer.head_k_dim,
-        head_v_dim=layer.head_v_dim,
-        apply_l2norm=True,
-        output_g_exp=False,
-    )
+    if (
+        _STATE["fused_conv"]
+        and layer.activation in ("silu", "swish")
+        and conv_weights.shape[1] == 4
+        and conv_state.dtype == mixed_qkv.dtype
+        and attn_metadata.non_spec_state_indices_tensor.ndim == 1
+    ):
+        from gleipnir.serving.gdn_conv_fused import fused_conv_post, token_map
+
+        cached = _STATE["conv_step"]
+        if cached is None or cached[0] is not attn_metadata:
+            query_start = attn_metadata.non_spec_query_start_loc
+            cached = (attn_metadata, token_map(query_start, tokens))
+            _STATE["conv_step"] = cached
+        query, key, value, g, beta = fused_conv_post(
+            mixed_qkv,
+            conv_weights,
+            layer.conv1d.bias,
+            conv_state,
+            attn_metadata.non_spec_state_indices_tensor,
+            attn_metadata.has_initial_state,
+            attn_metadata.non_spec_query_start_loc,
+            a,
+            b,
+            layer.A_log,
+            layer.dt_bias,
+            layer.num_k_heads // layer.tp_size,
+            layer.head_k_dim,
+            layer.head_v_dim,
+            seq_pos=cached[1],
+        )
+        _STATE["fused_convs"] += 1
+    else:
+        conv_output = kernels.causal_conv1d_fn(
+            mixed_qkv.transpose(0, 1),
+            conv_weights,
+            layer.conv1d.bias,
+            activation=layer.activation,
+            conv_states=conv_state,
+            has_initial_state=attn_metadata.has_initial_state,
+            cache_indices=attn_metadata.non_spec_state_indices_tensor,
+            query_start_loc=attn_metadata.non_spec_query_start_loc,
+            metadata=attn_metadata,
+        ).transpose(0, 1)
+        query, key, value, g, beta = kernels.fused_post_conv_prep(
+            conv_output=conv_output,
+            a=a,
+            b=b,
+            A_log=layer.A_log,
+            dt_bias=layer.dt_bias,
+            num_k_heads=layer.num_k_heads // layer.tp_size,
+            head_k_dim=layer.head_k_dim,
+            head_v_dim=layer.head_v_dim,
+            apply_l2norm=True,
+            output_g_exp=False,
+        )
     cu_seqlens, all_fresh = step_metadata(attn_metadata, fresh)
     indices = attn_metadata.prefill_state_indices
     # Upstream applies the same conversions in vLLM's FlashInfer wrapper.

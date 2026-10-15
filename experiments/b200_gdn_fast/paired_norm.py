@@ -1,4 +1,4 @@
-"""In-server A/B of the strided gated norm inside the adopted GDN fast path."""
+"""In-server A/B of one GDN fast-path option (strided norm or fused conv)."""
 
 from __future__ import annotations
 
@@ -20,8 +20,9 @@ from experiments.b200_monitor_score.run import trial
 WORKLOAD = ROOT / "results/b200_context_million/million01/workload.json"
 SELECTION = ROOT / "experiments/b200_inference_benchmark/serving_default.json"
 SETTINGS = {"port": 8010, "timeout_seconds": 600}
-ARMS = {"strided": True, "copy": False}
+ARMS = {"on": True, "off": False}
 C1 = {
+    "synthetic_1k": (1024, 30),
     "synthetic_8k": (8192, 12),
     "synthetic_16k": (16384, 8),
     "synthetic_32k": (32768, 5),
@@ -60,7 +61,7 @@ def stack_command(command: list[str]) -> list[str]:
     return command
 
 
-async def run(name: str, rounds: int) -> None:
+async def run(name: str, rounds: int, option: str) -> None:
     out = ROOT / "results/b200_gdn_fast" / name
     out.mkdir(parents=True, exist_ok=False)
     startup_name = f"{name}_server"
@@ -82,7 +83,7 @@ async def run(name: str, rounds: int) -> None:
         for index in range(rounds):
             order = list(ARMS) if index % 2 == 0 else list(reversed(ARMS))
             for arm in order:
-                await rpc("set_gdn_fast", {"enabled": True, "strided_norm": ARMS[arm]})
+                await rpc("set_gdn_fast", {"enabled": True, option: ARMS[arm]})
                 for case, rows in c1.items():
                     await sequential(rows[:3])
                     values = await sequential(rows)
@@ -106,7 +107,7 @@ async def run(name: str, rounds: int) -> None:
                     }
                 )
             write(out / "rounds.json", results)
-        await rpc("set_gdn_fast", {"enabled": True, "strided_norm": False})
+        await rpc("set_gdn_fast", {"enabled": True, option: ARMS["off"]})
         summary = {}
         for case, arms in results.items():
             entry = {
@@ -115,16 +116,16 @@ async def run(name: str, rounds: int) -> None:
             }
             entry["paired_p50_difference_ms"] = [
                 s["p50_ms"] - c["p50_ms"]
-                for s, c in zip(arms["strided"], arms["copy"], strict=True)
+                for s, c in zip(arms["on"], arms["off"], strict=True)
             ]
             if case == "full_c128":
                 entry["paired_throughput_ratio"] = [
                     s["input_tokens_per_second"] / c["input_tokens_per_second"]
-                    for s, c in zip(arms["strided"], arms["copy"], strict=True)
+                    for s, c in zip(arms["on"], arms["off"], strict=True)
                 ]
             else:
                 entry["scores_bitwise_equal"] = all(
-                    p["scores"] == arms["copy"][0]["scores"]
+                    p["scores"] == arms["off"][0]["scores"]
                     for a in arms
                     for p in arms[a]
                 )
@@ -152,10 +153,13 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--rounds", type=int, default=4)
+    parser.add_argument(
+        "--option", choices=["strided_norm", "fused_conv"], default="strided_norm"
+    )
     args = parser.parse_args()
     if Path(args.name).name != args.name:
         raise ValueError("run name must be a stem")
-    asyncio.run(run(args.name, args.rounds))
+    asyncio.run(run(args.name, args.rounds, args.option))
 
 
 if __name__ == "__main__":
