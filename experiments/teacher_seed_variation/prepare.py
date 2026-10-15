@@ -81,6 +81,9 @@ def scoring_config(seed: dict, name: str) -> dict:
         parent_campaign=parent,
         score_splits=splits,
     )
+    # The shared summary computes ID metrics whenever "id" is listed; an
+    # OOD-only context must not inherit it (failed teacher-seed-sdpa-s1-ood01).
+    config["evaluations"] = [s for s in ("id",) if s in splits]
     config["evaluation"]["populations"] = {
         s: {"id": 3012, "ood": 6395}[s] for s in splits
     }

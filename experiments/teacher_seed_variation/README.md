@@ -54,3 +54,54 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare \
 PYTHONPATH=src:. <training-python> -m experiments.teacher_seed_variation.run
 python -m experiments.teacher_seed_variation.compare
 ```
+
+## Results (2026-10-15/16, EU-RO-1 B200 `GPU-e5eb9962…`)
+
+Seed 1 trained all 245 updates (about 11–12 s per update once compiled). It
+passed master, merge and BF16 serving parity (merged correlation 0.99998,
+adapter effect 0.85).
+
+The seed-0 rescore re-merged bitwise-identical weights. Its drift against the
+cached Oct 11/12 scores is under 0.002 points on ID and OOD (mean score shift
+0.0013–0.0017, 3 and 9 threshold flips). That matches the FP4/FA4
+serving-repeat floor (0.015 points, mean shift 0.0015), so serving is not a
+confound.
+
+Source-macro pAUROC@20 (`results/teacher_seed_variation/comparison.json`):
+
+| Teacher, BF16 serving | ID | OOD |
+| --- | ---: | ---: |
+| BF16/SDPA seed 0 (rescored) | 0.8959 | 0.7869 |
+| BF16/SDPA seed 1 | 0.8978 | 0.8125 |
+| FP4/FA4 seed 0 | 0.8870 | 0.7380 |
+
+Differences in points, by source:
+
+| Comparison | ID macro | OOD macro | OOD AgentDojo | CUA-SHADE | IAC | Rogue eval | SHADE-Arena |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| Seed 1 − seed 0 | +0.19 | **+2.56** | −0.50 | −0.77 | +8.35 | +1.15 | +7.12 |
+| FP4/FA4 − SDPA seed 0 | −0.89 | **−4.89** | −3.79 | −3.51 | −8.27 | −7.81 | −5.98 |
+
+MLE sabotage is saturated (1.0) in every run. Between seeds, 340/3,012 ID and
+497/6,395 OOD scores cross 0.5 (mean shifts 0.096 and 0.077).
+
+**What this means.**
+- **Seed effect.** Data order alone moves OOD macro pAUROC by 2.6 points, about
+  half the FP4/FA4 gap, and moves IAC and SHADE-Arena by about 7–8 points each.
+  On ID, the per-source seed swing (±1.2–1.6) exceeds the whole FP4/FA4 gap.
+- **The FP4/FA4 gap.** Its pattern differs from the seed effect: all five
+  unsaturated OOD sources are worse (−3.5 to −8.3), while the seed change is
+  mixed in sign. Rogue eval (−7.8 vs ±1.2) and AgentDojo/CUA-SHADE (−3.5 to −3.8
+  vs under ±0.8) fall outside the single observed seed swing.
+- **Not established.** With one seed difference, neither the seed spread nor
+  the size of an FP4/FA4 effect is established. The factorial cells need
+  multiple seeds, or a per-source analysis against a measured seed
+  distribution, before attributing OOD differences to MLP precision or
+  attention.
+
+**Failure and recovery.** The OOD-only seed-1 scoring context inherited
+`evaluations: [id]`, so the shared summary raised `KeyError: 'id'` after all
+6,395 rows were scored and parity-gated. The predictions were kept with
+`results/teacher-seed-sdpa-s1-ood01/recovery.json`. The seed-0 rescore ran
+afterwards with user approval, with unchanged hash-bound sources.
+`scoring_config` now sets evaluations from the scored splits, for future runs.

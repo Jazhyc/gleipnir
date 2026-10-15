@@ -52,3 +52,4 @@ def test_scoring_contexts_bind_fixed_parents_and_splits():
         assert config["score_splits"] == splits
         assert set(config["evaluation"]["populations"]) == set(splits)
         assert Path(config["merged_model"]).name == name
+        assert ("id" in config["evaluations"]) == ("id" in splits)
