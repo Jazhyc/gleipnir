@@ -105,3 +105,40 @@ MLE sabotage is saturated (1.0) in every run. Between seeds, 340/3,012 ID and
 `results/teacher-seed-sdpa-s1-ood01/recovery.json`. The seed-0 rescore ran
 afterwards with user approval, with unchanged hash-bound sources.
 `scoring_config` now sets evaluations from the scored splits, for future runs.
+
+## Three-seed spread (seed 2 added 2026-10-16)
+
+Seed 2 trained 245 updates in 2,886 s with a warm compile cache. It passed
+master, merge and serving parity, and was scored on ID and OOD (`status_s2`).
+Source-macro and per-source pAUROC@20 for BF16/SDPA seeds 0/1/2, with the
+FP4/FA4 seed-0 teacher (`comparison.json` → `seed_spread`):
+
+| Split / source | Seed 0 | Seed 1 | Seed 2 | Mean | SD (pt) | Range (pt) | FP4/FA4 | FP4/FA4 − lowest seed (pt) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| ID macro | 0.8959 | 0.8978 | 0.9142 | 0.9026 | 1.01 | 1.83 | 0.8870 | −0.89 |
+| ID Gloom | 0.8285 | 0.8168 | 0.8619 | 0.8357 | 2.34 | 4.51 | 0.8189 | +0.21 |
+| ID STRIDE | 0.9633 | 0.9788 | 0.9665 | 0.9696 | 0.82 | 1.55 | 0.9552 | −0.81 |
+| OOD macro | 0.7869 | 0.8125 | 0.7768 | 0.7921 | 1.84 | 3.57 | 0.7380 | **−3.87** |
+| AgentDojo | 0.9298 | 0.9248 | 0.8506 | 0.9017 | 4.44 | 7.92 | 0.8919 | +4.13 |
+| CUA-SHADE | 0.7717 | 0.7640 | 0.7679 | 0.7679 | 0.39 | 0.77 | 0.7366 | **−2.74** |
+| IAC | 0.8123 | 0.8958 | 0.8451 | 0.8511 | 4.21 | 8.35 | 0.7296 | **−8.27** |
+| Rogue eval | 0.9696 | 0.9812 | 0.9765 | 0.9758 | 0.58 | 1.15 | 0.8916 | **−7.81** |
+| SHADE-Arena | 0.2380 | 0.3092 | 0.2209 | 0.2561 | 4.68 | 8.83 | 0.1783 | **−4.26** |
+| MLE sabotage | 1.0000 | 1.0000 | 0.9995 | 0.9998 | 0.03 | 0.05 | 1.0000 | +0.05 |
+
+What this shows:
+- **SDPA seed noise is large and source-dependent.** OOD macro SD is 1.8
+  points (range 3.6). AgentDojo, IAC and SHADE-Arena have SDs of 4–5 points;
+  CUA-SHADE and Rogue eval stay under 0.6.
+- **ID and OOD do not move together across seeds.** Seed 2 has the best ID
+  macro (+1.8) and the worst OOD macro (−1.0 versus seed 0).
+- **The FP4/FA4 OOD deficit survives the seed noise.** FP4/FA4 is below every
+  SDPA seed on OOD macro (5.4 points under the mean, about 2.9 SDs) and on
+  CUA-SHADE, IAC, Rogue eval and SHADE-Arena. On the low-noise sources
+  (CUA-SHADE, Rogue eval) the gap is 5–14 SDs. AgentDojo is within the
+  seed range.
+- **The ID deficit is marginal.** ID macro is 0.89 points below the lowest
+  SDPA seed, and Gloom is inside the range.
+- **Limit.** FP4/FA4 has one seed, so its own spread is unmeasured. The
+  attribution to MLP precision versus attention still needs the off-diagonal
+  cells.
