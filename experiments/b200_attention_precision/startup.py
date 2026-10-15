@@ -10,6 +10,7 @@ import json
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from pathlib import Path
 
 import httpx
@@ -25,7 +26,12 @@ from gleipnir.serving.reference import selected_serving_default
 
 
 async def startup(
-    name: str, *, prepare_only: bool = False, last_query: bool = True
+    name: str,
+    *,
+    prepare_only: bool = False,
+    last_query: bool = True,
+    transform: Callable[[list[str]], list[str]] | None = None,
+    environment: dict[str, str] | None = None,
 ) -> None:
     """Reproduce the accepted recipe and guard its canary before retaining it.
 
@@ -49,6 +55,9 @@ async def startup(
     if binding != selection["scheduler_binding"]:
         raise ValueError("accepted pooling scheduler source changed")
     command[0] = sys.executable
+    if transform is not None:
+        # Diagnostic launchers (e.g. host profiling) replace only entry points.
+        command = transform(command)
     out = ROOT / "results/b200_attention_precision" / name
     out.mkdir(parents=True, exist_ok=False)
     archive = ROOT / "results/b200_vllm031/pre_migration_sources.tar.gz"
@@ -95,6 +104,9 @@ async def startup(
     env["VLLM_GDN_DECODE_KERNEL"] = "cuda"
     env["GLEIPNIR_FLASHINFER_GDN_CP"] = "auto"
     env["GLEIPNIR_VLLM031_SCHEDULER_BINDING"] = json.dumps(binding)
+    if environment:
+        # Diagnostic launches only; recorded with the server receipt.
+        env.update(environment)
     log = ROOT / "logs/runpod/b200_attention_precision" / f"{name}_server.log"
     log.parent.mkdir(parents=True, exist_ok=True)
     started = time.perf_counter()
@@ -116,6 +128,7 @@ async def startup(
         "serving_default": selection["name"],
         "frontend": parent["frontend"] | {"receipt_path": str(out / "frontend.json")},
         "host_wrapper": parent["host_wrapper"],
+        "environment_overrides": environment or {},
     }
     write(SERVING / "server.json", active)
     write(out / "server.json", active)
