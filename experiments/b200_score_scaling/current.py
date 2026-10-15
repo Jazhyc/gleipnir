@@ -20,6 +20,8 @@ from gleipnir.serving.reference import selected_serving_default
 ROOT = Path(__file__).resolve().parents[2]
 EXPERIMENT = Path(__file__).parent
 CONCURRENCIES = (1, 2, 4, 8, 16, 32, 64, 128)
+FULL320 = "data/b200_inference_benchmark/full.json"
+CONFIGS = {"full320": "current_config.json", "twok": "twok_config.json"}
 
 
 def write(path: Path, value: object) -> None:
@@ -44,9 +46,8 @@ def validate_contract(settings: dict, rows: list[dict], references: list[list]) 
         or settings["promote"]
         or len(rows) != 320
         or settings["rows"] != 320
-        or sum(r["prompt_tokens"] for r in rows) != 1_310_581
-        or settings["prompt_tokens"] != 1_310_581
-        or len(references) != 6
+        or sum(r["prompt_tokens"] for r in rows) != settings["prompt_tokens"]
+        or len(references) != len(settings["reference_sha256"])
     ):
         raise ValueError("current scaling workload/repeat contract changed")
     identity = [(r["id"], r["prompt_sha256"], r["prompt_tokens"]) for r in rows]
@@ -55,16 +56,28 @@ def validate_contract(settings: dict, rows: list[dict], references: list[list]) 
         for run in references
     ):
         raise ValueError("current scaling reference identity changed")
-    paired_score_summary(references, references)
+    if settings["workload"] == FULL320:
+        if settings["prompt_tokens"] != 1_310_581 or len(references) != 6:
+            raise ValueError("full320 workload/reference contract changed")
+        paired_score_summary(references, references)
+    elif references or any(r["prompt_tokens"] != 2048 for r in rows):
+        # Cropped 2K windows carry no labels; there is no quality reference.
+        raise ValueError("fixed 2K workload contract changed")
 
 
-async def run(name: str, expected_gpu_uuid: str, pre_adoption: bool = False) -> None:
+async def run(
+    name: str,
+    expected_gpu_uuid: str,
+    pre_adoption: bool = False,
+    workload_name: str = "full320",
+) -> None:
     from experiments.b200_attention_precision.startup import startup
     from experiments.b200_long_context.run import gpu
     from experiments.b200_monitor_score.run import SERVING, trial
     from experiments.b200_vllm031.run import archive_audits
 
-    settings = json.loads((EXPERIMENT / "current_config.json").read_text())
+    config = EXPERIMENT / CONFIGS[workload_name]
+    settings = json.loads(config.read_text())
     workload = ROOT / settings["workload"]
     if hashlib.sha256(workload.read_bytes()).hexdigest() != settings["workload_sha256"]:
         raise ValueError("current scaling workload checksum changed")
@@ -117,7 +130,7 @@ async def run(name: str, expected_gpu_uuid: str, pre_adoption: bool = False) -> 
     )
     for path in (
         Path(__file__),
-        EXPERIMENT / "current_config.json",
+        config,
         EXPERIMENT / "README.md",
     ):
         target = out / "executed_sources" / path.relative_to(ROOT)
@@ -165,6 +178,8 @@ async def run(name: str, expected_gpu_uuid: str, pre_adoption: bool = False) -> 
                     measured["latency"],
                     flush=True,
                 )
+            if not references:
+                continue
             write(
                 out / f"c{concurrency}_comparison.json",
                 {
@@ -202,10 +217,13 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--expected-gpu-uuid", required=True)
     parser.add_argument("--pre-adoption", action="store_true")
+    parser.add_argument("--workload", choices=sorted(CONFIGS), default="full320")
     args = parser.parse_args()
     if args.name in {"", ".", ".."} or Path(args.name).name != args.name:
         raise ValueError("run name must be a stem")
-    asyncio.run(run(args.name, args.expected_gpu_uuid, args.pre_adoption))
+    asyncio.run(
+        run(args.name, args.expected_gpu_uuid, args.pre_adoption, args.workload)
+    )
 
 
 if __name__ == "__main__":

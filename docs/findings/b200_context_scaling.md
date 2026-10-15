@@ -81,3 +81,42 @@ Four focused window/identity/export tests pass; Ruff is clean.
 Closure health is 200. API PID 27565 and sole GPU engine 27588 remain unchanged,
 with 172288 MiB GPU allocation and 0% utilization after timing. Leave the
 reference warm and persistent compiler/kernel caches intact.
+
+## Adopted long-context stack (paired control, 2026-10-15)
+
+The same frozen 320 windows (`twok01/workload.json`, SHA-256 `bf7a1252…`) were
+run through `experiments.b200_score_scaling.current --workload twok` on the
+EU-RO-1 B200 `GPU-e5eb9962…`, back to back:
+
+- `twok_stack01`: the adopted FP8/vLLM 0.31 default (trim, 8K GDN gate, lean
+  GDN path, strided norm).
+- `twok_pre01`: `--pre-adoption`, the same FP8 recipe without those layers.
+
+Each level uses one excluded warmup and three timed passes. Medians:
+
+| Concurrency | Pre-adoption tokens/s | Adopted tokens/s | Change | p50 pre → adopted | p95 pre → adopted |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 62,717 | 72,491 | +15.6% | 32.5 → 28.1 ms | 34.8 → 29.0 ms |
+| 2 | 70,442 | 83,092 | +18.0% | 57.7 → 49.0 ms | 60.4 → 50.4 ms |
+| 4 | 138,311 | 157,424 | +13.8% | 58.9 → 51.8 ms | 59.9 → 52.8 ms |
+| 8 | 181,952 | 204,584 | +12.4% | 89.2 → 79.4 ms | 90.9 → 80.5 ms |
+| 16 | 230,938 | 253,532 | +9.8% | 138.6 → 126.8 ms | 165.9 → 146.1 ms |
+| 32 | 241,503 | 259,641 | +7.5% | 264.3 → 245.7 ms | 293.0 → 272.9 ms |
+| 64 | 238,593 | 258,903 | +8.5% | 535.8 → 492.6 ms | 568.2 → 523.3 ms |
+| 128 | 236,466 | 254,711 | +7.7% | 1,066.5 → 985.8 ms | 1,084.7 → 1,026.4 ms |
+
+Repeat ranges are separate at every level. The exceptions are one slow
+adopted pass each at c32 (228,539) and c128 (228,064); they are retained and
+do not move the medians. Throughput saturates from c16. The plateau rises
+from about 241K to 260K tokens/s, 2.8% above the original 0.24/FP4-attention
+`twok01` peak (252,647). The small-batch gain (+12–18% at c1–c8) is larger
+than at saturation (+7–10%): there, the remaining time is mostly the FP4 GEMMs
+(MLP gate/up and down plus GDN projections, about 37% of batched kernel time
+in the kernel profile) and GDN, which these layers do not change.
+
+Scores are numerical diagnostics only, since the windows carry no labels.
+Every c1–c8 pass repeats bitwise within an arm. Between arms, 306 of 320 c1
+scores differ (MAE 0.084), from the GDN gate's non-CP route for single sub-8K
+requests (see the [full320 paired run](b200_score_scaling.md#adopted-long-context-stack-on-eu-ro-1-paired-control)).
+From c16 up the arms differ in only 2–4 windows (MAE ≤ 0.002), within
+between-pass batch variation.

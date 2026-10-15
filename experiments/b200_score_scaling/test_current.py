@@ -28,6 +28,19 @@ def test_full_cohort_is_identical_at_every_level():
         validate_contract(settings, rows[:64], controls)
 
 
+def test_fixed_2k_windows_need_exact_lengths_and_no_references():
+    settings = json.loads((Path(__file__).parent / "twok_config.json").read_text())
+    rows = [
+        {"id": str(i), "prompt_sha256": str(i), "prompt_tokens": 2048}
+        for i in range(320)
+    ]
+    validate_contract(settings, rows, [])
+    rows[0]["prompt_tokens"] = 2047
+    rows[1]["prompt_tokens"] = 2049
+    with pytest.raises(ValueError, match="fixed 2K"):
+        validate_contract(settings, rows, [])
+
+
 def test_reference_order_and_token_counts_are_checked():
     settings, rows, controls = fixture()
     controls[-1][0]["prompt_tokens"] += 1

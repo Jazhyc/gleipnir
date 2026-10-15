@@ -1,0 +1,25 @@
+{
+  "endpoint": "/v1/monitor/score",
+  "workload": "results/b200_context_scaling/twok01/workload.json",
+  "workload_sha256": "bf7a1252da0991af9156d7e081fdf7b84708034ffd4264c2777055a9074d472c",
+  "rows": 320,
+  "prompt_tokens": 655360,
+  "concurrencies": [
+    1,
+    2,
+    4,
+    8,
+    16,
+    32,
+    64,
+    128
+  ],
+  "timed_repeats": 3,
+  "warmup_repeats": 1,
+  "port": 8010,
+  "timeout_seconds": 180,
+  "promote": false,
+  "selection": "current checksum-bound FP8/vLLM 0.31 serving default; unchanged; fixed 2,048-token windows from twok01",
+  "reference_sha256": {},
+  "kind": "cropped_text_systems_only_no_labels"
+}
