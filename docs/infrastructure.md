@@ -129,6 +129,35 @@ base. The `/tmp` runtimes and merged checkpoint are reconstructable from the
 local bundle, the volume environment and the FP32 master. No replacement
 capacity was launched.
 
+Later on 2026-10-15 the user provided a second EU-RO-1 B200 Pod,
+`gswwir1daslht0` (snapshot `.runpod/long-context-2.json`), on the same volume.
+For the [seed-variation run](../experiments/teacher_seed_variation/README.md),
+the user authorized the following:
+- **Transfer Pod.** RTX PRO 6000 Pod `stl3t4uz49abia` ($2.49/hour,
+  `.runpod/nc2-transfer.json`) mounts NC2 volume `ixbh81vf9c`. It was created
+  through the Runpod REST API with the project key in `PUBLIC_KEY`.
+- **EU volume.** `cb7bxu71ug` grew from 100 to 200 GB after the copy hit its
+  quota. The size cannot shrink.
+- **EU container.** Resized from 50 to 150 GB. The resize restarted the Pod and
+  wiped `/tmp`; SSH moved to port 32443. The pre-restart container caches are
+  archived in `results/b200_shutdown/20261015_eu_resize/`.
+
+The EU volume now holds:
+- the NC2 runtime archive (SHA-256 `c4d76a28…`, verified);
+- the NC2 FLA, causal-conv1d and Triton builds under `.cache/kernels-nc2/`, and
+  FlashQLA at `.cache/kernels/flashqla-da06429`;
+- the NC2 training compiler cache, `.cache/training/student_injection_awareness`
+  (not yet linked as `shared`);
+- the SDPA, FP4/FA4 and QAD masters, with hashes verified.
+
+After a restart:
+1. Restore the EU serving bundle and stage vLLM 0.31.
+2. Extract the archive's `tmp/gleipnir-serving-runtime` to
+   `/tmp/gleipnir-training-runtime` (its FA4/MXFP8 overlays differ from the
+   EU serving runtime's).
+3. Link `/tmp/gleipnir-{qwen35-fla,qwen35-causal-conv1d,triton-3.7.1}` to
+   `.cache/kernels-nc2/`.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
