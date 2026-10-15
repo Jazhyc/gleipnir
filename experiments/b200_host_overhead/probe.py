@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+import signal
 import statistics
 import subprocess
 import sys
@@ -28,9 +29,14 @@ def diagnostic_command(command: list[str]) -> list[str]:
         raise ValueError("selected server module changed")
     command[2] = "experiments.b200_host_overhead.server"
     worker = command.index("--worker-cls") + 1
-    if not command[worker].endswith("LastQueryPrecisionWorker"):
+    timing = {
+        "LastQueryPrecisionWorker": "HostTimingWorker",
+        "FastGdnWorker": "HostTimingFastWorker",
+    }
+    selected = command[worker].rsplit(".", 1)[-1]
+    if selected not in timing:
         raise ValueError("selected worker changed")
-    command[worker] = "experiments.b200_host_overhead.worker.HostTimingWorker"
+    command[worker] = f"experiments.b200_host_overhead.worker.{timing[selected]}"
     return command
 
 
@@ -131,8 +137,9 @@ async def run(name: str, sample_seconds: float, gdn_cp: str) -> None:
             try:
                 process.wait(timeout=60)
             except subprocess.TimeoutExpired:
-                process.terminate()
-                process.wait(timeout=30)
+                # py-spy writes its buffered samples on SIGINT, not SIGTERM.
+                process.send_signal(signal.SIGINT)
+                process.wait(timeout=60)
         report["sampled_1k"] = {
             "client": latency_summary(sampled),
             "engine_step": step_summary(timing["steps"]),

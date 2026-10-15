@@ -3,10 +3,10 @@
 import os
 
 from experiments.b200_attention_gdn_serving.worker import write
-from experiments.b200_gdn_route.worker import GatedPrecisionWorker
+from experiments.b200_gdn_route.worker import GatedPrecisionWorker, GatedTrimWorker
 
 
-class FastGdnWorker(GatedPrecisionWorker):
+class FastGdnMixin:
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
         from vllm.model_executor.layers.mamba.gdn.qwen_gdn_linear_attn import (
             QwenGatedDeltaNetAttention,
@@ -44,3 +44,11 @@ class FastGdnWorker(GatedPrecisionWorker):
         from gleipnir.serving import gdn_fast
 
         return gdn_fast.audit()
+
+
+class FastGdnWorker(FastGdnMixin, GatedPrecisionWorker):
+    """The selected default: last-query attention, gated GDN, lean GDN host path."""
+
+
+class FastGatedTrimWorker(FastGdnMixin, GatedTrimWorker):
+    """Long-context telemetry worker with the full adopted serving stack."""

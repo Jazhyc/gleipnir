@@ -4,11 +4,12 @@ import os
 import time
 from typing import Any
 
+from experiments.b200_gdn_fast.worker import FastGdnWorker
 from experiments.b200_host_overhead.tracing import allow_profiler_attach
 from experiments.b200_last_layer_trim.worker import LastQueryPrecisionWorker
 
 
-class HostTimingWorker(LastQueryPrecisionWorker):
+class HostTimingMixin:
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
         allow_profiler_attach()
         self.step_timings: list[dict] = []
@@ -30,3 +31,11 @@ class HostTimingWorker(LastQueryPrecisionWorker):
         if reset:
             self.step_timings = []
         return {"pid": os.getpid(), "steps": timings}
+
+
+class HostTimingWorker(HostTimingMixin, LastQueryPrecisionWorker):
+    """Diagnostic timing on the last-query default (host01, host02)."""
+
+
+class HostTimingFastWorker(HostTimingMixin, FastGdnWorker):
+    """Diagnostic timing on the default with gated and lean GDN."""

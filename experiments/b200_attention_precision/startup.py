@@ -44,7 +44,7 @@ async def startup(
         selection = {
             k: v
             for k, v in selection.items()
-            if k not in {"last_query_attention", "gdn_route"}
+            if k not in {"last_query_attention", "gdn_route", "gdn_fast"}
         }
     if {n: importlib.metadata.version(n) for n in selection["runtime"]} != selection[
         "runtime"
@@ -218,6 +218,11 @@ async def startup(
                 or route["non_cp"] == 0
             ):
                 raise ValueError("selected GDN route gate is not active")
+        if "gdn_fast" in selection:
+            fast = await rpc("gdn_fast_audit")
+            write(out / "gdn_fast_audit.json", fast)
+            if not fast["enabled"] or fast["fast"] == 0:
+                raise ValueError("selected GDN fast path is not active")
         active.update(status="ready", ready_at_unix=time.time())
         write(SERVING / "server.json", active)
         write(out / "server.json", active)

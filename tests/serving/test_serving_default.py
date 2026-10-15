@@ -187,5 +187,5 @@ def test_default_stacks_gdn_route_on_last_query_worker(tmp_path):
     _, control = selected_serving_default(tmp_path, last_query=False)
     assert "gdn_route" not in json.loads(control[-1])
     route_source.write_text("changed\n")
-    with pytest.raises(ValueError, match="GDN route source drift"):
+    with pytest.raises(ValueError, match="worker layer source drift"):
         selected_serving_default(tmp_path)

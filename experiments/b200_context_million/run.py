@@ -402,7 +402,8 @@ async def run(name: str, phases: list[str] | None, variant: Variant = DEFAULT) -
         snapshot_gpu = gpu()
         if snapshot_gpu["apps"] or (SERVING / "server.json").exists():
             raise ValueError("long-context run requires an idle GPU and no server")
-        selection, command = selected_serving_default(ROOT)
+        # Variants supply their whole worker stack; start from the base recipe.
+        selection, command = selected_serving_default(ROOT, last_query=False)
         from vllm.v1.core.sched import scheduler
 
         binding = {
