@@ -51,6 +51,10 @@ class Variant:
     checks: tuple[tuple[str, str, str], ...] = field(default_factory=tuple)
     # Extra worker receipts under the shared serving directory to archive.
     audits: tuple[str, ...] = field(default_factory=tuple)
+    # Server entry module replacing the selected precision server, if any.
+    server: str | None = None
+    # (worker RPC method, receipt filename) collected after measurement.
+    rpc_audits: tuple[tuple[str, str], ...] = field(default_factory=tuple)
 
 
 DEFAULT = Variant()
@@ -75,6 +79,10 @@ def phase_command(
     command[0] = sys.executable
     command[command.index("--max-model-len") + 1] = str(phase["context_limit"])
     command[command.index("--worker-cls") + 1] = variant.worker
+    if variant.server is not None:
+        if command[1:3] != ["-m", "experiments.b200_attention_precision.server"]:
+            raise ValueError("selected precision server module changed")
+        command[2] = variant.server
     index = command.index("--additional-config") + 1
     additional = json.loads(command[index])
     for path in variant.sources:
@@ -339,6 +347,8 @@ async def run_phase(
         write(out / "environment_ready.json", snapshot(ROOT))
         report["status"] = f"measuring_{phase['name']}"
         await measure(rows, settings, out, record)
+        for method, filename in variant.rpc_audits:
+            write(out / filename, await rpc(method))
         write(
             out / "closure.json", {**gpu(), "memory": await rpc("long_context_memory")}
         )

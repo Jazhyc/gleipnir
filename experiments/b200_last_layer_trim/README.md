@@ -53,6 +53,36 @@ completed `results/b200_context_million/million01`; do not rerun it.
 4. Speed: median C1 latency and input tokens/s per length against `million01`,
    with clock/power samples. There is no promotion; the user decides adoption.
 
+## Follow-ups: finished-only attention and tail trim
+
+User-requested after `trim01`. Both reuse the same runner, settings, node and
+`million01` control, and are frozen before running:
+
+- `finished` (`trim02`): layer-31 attention runs only for prefill requests whose
+  prompt completes in this step. This is vLLM's own pooling test,
+  prompt length == computed + scheduled tokens, read from the runner's CPU state
+  in attention-batch order and checked against the attention metadata. A
+  mid-prompt chunk does no layer-31 attention or MXFP8 history packing. The
+  kernel gate adds subset cases (every other request) through the serving
+  metadata-selection helper. Expected: bitwise equality with `million01`,
+  as for `trim01`; speed closer to the fitted b/8 prediction.
+- `tail` (`trim03`): additionally, layer 31's gate, output projection,
+  post-attention norm and MLP run eagerly only on the selected rows. This is a
+  custom op registered as a vLLM splitting op (like attention), so CUDA graphs
+  never capture a row selection. Small-M GEMM kernels and eager-versus-compiled
+  elementwise rounding may change low bits. Required: canary reproduction of
+  the FP8 default (MAE <=0.005, correlation >=0.995), finite outputs, and
+  reported synthetic score differences from `million01`. Expected gain: about
+  1/32 of linear work, under 2.5% at short contexts and under 0.5% at 1M.
+
+```bash
+... -m experiments.b200_last_layer_trim.run --name trim02 --variant finished
+... -m experiments.b200_last_layer_trim.run --name trim03 --variant tail
+```
+
+Outcome: `trim02` is bitwise exact with no gain over `trim01`; `trim03` is
+not exact (scores up to 0.037 from the baseline) and no faster. See the finding.
+
 Stop on failed kernel gate, identity/canary/token/finite failure, OOM, timeout
 or completion. Retire only this run's verified server; never change capacity.
 

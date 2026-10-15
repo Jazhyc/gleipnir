@@ -165,8 +165,8 @@
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
 - [Last-query final-layer attention](findings/b200_last_layer_trim.md): bitwise
-  unchanged scores with 6.4–10.3% lower C1 latency from 256K to 1M; no
-  measurable short-context change.
+  unchanged scores with 6.4–10.3% lower C1 latency from 256K to 1M; finished-only
+  selection adds nothing, and the output-projection/MLP trim drifts with no gain.
 - [B200 FP8 default contexts to 1M](findings/b200_context_million.md): C1
   1K–1M sweep with node/environment receipts, YaRN beyond 256K, chunk cost fit
   (attention 90% at 1M) and power-capped clocks on long attention.

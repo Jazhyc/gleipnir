@@ -76,13 +76,49 @@ outputs, not by a running call count.
 
 ## Artifacts
 
-`results/b200_last_layer_trim/trim01/` contains the kernel receipt
+`results/b200_last_layer_trim/trim01/` (and `trim02`/`trim03`) contain the kernel receipt
 (`last_query.json`), per-phase commands, canaries, audits, quality diagnostic,
 raw repeats, GPU samples, environment snapshots and `comparison.json` (from
 `experiments/b200_last_layer_trim/compare.py`). Logs are under
 `logs/runpod/b200_last_layer_trim/`. Both servers were retired by identity
 check. The GPU is idle and the Pod remains running.
 
-Possible follow-ups: trimming layer 31's output projection and MLP to the
-selected rows (about 1/32 of linear work; it needs static-shape handling under
-compilation), or avoiding the full K/V history pack in the last layer.
+## Follow-ups: finished-only attention and tail trim
+
+Both follow-ups were user-requested and frozen before running, on the same
+node with no environment drift.
+
+**`trim02`, finished-only attention: exact, no extra gain.** Layer-31
+attention, and its MXFP8 history packing, run only for prefill requests whose
+prompt completes in the step. The kernel gate passes 8/8 bitwise, including
+two request-subset cases. The audit shows 1,354 of 1,575 native and 44 of 362
+YaRN prefill steps attended. All synthetic and canary scores equal `million01`
+bitwise. Latency matches `trim01` within noise: 32K 206.6 ms, 256K 3.43 s,
+512K 10.73 s, 1M 38.56 s (−10.5% vs baseline). Packing the history on
+mid-prompt chunks was therefore not a measurable cost.
+
+The shortfall against the fitted b/8 prediction at shorter lengths has
+another cause. One plausible cause is that the median SM clock falls with
+context, so even per-chunk linear work slows at long lengths, and the fit
+assigns that to the attention term. This is not profiled.
+
+**`trim03`, finished-only attention plus the layer-31 tail on selected rows:
+not exact, no gain.** The gate, output projection, post-attention norm and MLP
+run eagerly on pooled rows inside a vLLM splitting op. Latency equals `trim02`
+within noise at every length (1K 35.48 ms, 256K 3.40 s, 1M 38.32 s). Scores are
+no longer bitwise. Synthetic scores differ from `million01` by up to 0.037
+(typically 0.006–0.016), and the native canary MAE is 0.0040 against the FP8
+default, inside the 0.005 limit. The full320 c128 diagnostic gives score MAE
+0.0078 against the archived repeats (0.0011–0.0015 for the other runs), two
+threshold flips, and pooled/macro AUROC +0.039/−0.58 pp.
+
+This drift exceeds low-bit rounding. A plausible cause is that the eager
+small-row MLP takes a different FP4/SwiGLU quantization path from the compiled
+graph; this is unverified. With no measurable speed benefit, the tail trim is
+not worth its numerical change.
+
+**Assessment.** The single-request saving comes from removing layer-31
+attention (`trim01`). Finished-only selection is equally exact and equally
+fast, but depends on runner state for no measured gain. The simplest exact
+variant, `trim01`, is the natural candidate if adopted. Adoption remains the
+user's decision.
