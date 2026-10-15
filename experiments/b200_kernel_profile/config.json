@@ -1,0 +1,33 @@
+{
+  "phases": [
+    {
+      "name": "native",
+      "context_limit": 262144,
+      "rope_override": null,
+      "canary_gate": true,
+      "quality_diagnostic": false,
+      "lengths": [1024, 8192, 32768, 262144],
+      "batched": true
+    },
+    {
+      "name": "yarn",
+      "context_limit": 1048576,
+      "rope_override": {
+        "rope_type": "yarn",
+        "factor": 4.0,
+        "original_max_position_embeddings": 262144
+      },
+      "canary_gate": false,
+      "quality_diagnostic": false,
+      "lengths": [1048576],
+      "batched": false
+    }
+  ],
+  "port": 8010,
+  "timeout_seconds": 1800,
+  "startup_timeout_seconds": 2400,
+  "chunk_tokens": 32768,
+  "workload": "results/b200_context_million/million01/workload.json",
+  "long_context_validation": "results/b200_context_million/million01/native.json",
+  "last_query_validation": "results/b200_last_layer_trim/trim02/last_query.json"
+}

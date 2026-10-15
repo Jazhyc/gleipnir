@@ -164,6 +164,9 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
+- [Kernel profile of the adopted default](findings/b200_kernel_profile.md):
+  MXFP8 attention is 60–84% of GPU time from 256K; FP4 GEMMs and GDN dominate
+  mid-length/c128; short requests are host-bound. Ranked candidates follow.
 - [Last-query final-layer attention](findings/b200_last_layer_trim.md): adopted
   in the FP8 default; bitwise unchanged C1 scores, 6.4–10.3% lower C1 latency
   from 256K to 1M and 5.7% higher same-node c128 throughput. Finished-only
