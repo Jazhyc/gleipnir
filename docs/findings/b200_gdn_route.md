@@ -4,8 +4,8 @@
 single-GPU context-parallel (CP) GDN prefill is slower than its non-CP route
 for chunks under 8K tokens and faster from 8K up. A gate that forces non-CP
 below 8,192 tokens per call saves about 2.3–2.9 ms (7–8%) on short C1
-requests. Long chunks and batches keep their exact current arithmetic. Not yet
-adopted. See [the experiment](../../experiments/b200_gdn_route/README.md).
+requests. Long chunks and batches keep their exact current arithmetic. Adopted
+into the FP8 default (see Adoption). See [the experiment](../../experiments/b200_gdn_route/README.md).
 
 ## Why
 
@@ -46,6 +46,21 @@ against the archived FP8 repeats gives score MAE 0.0012, one threshold flip,
 and pooled/macro AUROC −0.10/−0.02 pp, comparable to the other runs' batch
 variation. At 32K and above, `gated02` C1 scores equal `million01` bitwise
 wherever both exist.
+
+## Adoption
+
+The user adopted the gate on 2026-10-15. `adopt01` launches the selected
+default through normal startup. The canary gives MAE 0.0005, and the startup
+check confirms routing. The run then switches the threshold in-server between
+8,192 (gated) and 1 (auto) for four alternating rounds per workload:
+
+| Workload | Auto | Gated | Paired |
+| --- | ---: | ---: | --- |
+| quick64 c1, p50 | 34.07 ms | 31.75 ms | gated faster 4/4 (−1.5 to −3.4 ms) |
+| quick64 c1, input tokens/s | 93,382 | 96,413 | ratios 1.019–1.055 |
+| full320 c128, input tokens/s | 213,528 | 210,180 | ratios 0.998, 1.001, 0.949, 1.004 |
+
+The batched median is unchanged within noise; one round is low.
 
 ## Notes
 
