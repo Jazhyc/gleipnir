@@ -59,6 +59,42 @@ launches). A 0.24-era large-prefill graph capture
 ([finding](b200_prefill_graph_capture.md)) cut launches 55% but regressed c1
 and c128, so graphs alone are not the indicated fix.
 
+## Saturated batches on the adopted stack (`saturation01`, 2026-10-15)
+
+`saturation.py` traces the adopted default (trim, GDN gate, lean GDN path,
+strided norm) at the two throughput plateaus. Each case gets one excluded
+warmup, an untraced pass with per-step timing, and a traced pass. In the
+trace, each GPU idle gap is assigned relative to the step's GPU-side
+`execute_context_*` annotation, using the matching CPU annotation to split
+gaps between steps.
+
+| Case | GPU idle (traced) | Step-start input prep | Other in-step | Between steps | GPU step |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| 2K windows, c32 | 7.2% | 5.2% | 0.8% | 1.2% | 124 ms |
+| full320, c128 | 5.8% | 4.0% | 0.9% | 0.9% | 143 ms |
+| full320, c128, `profile02` (before lean GDN path) | 9.5% | 7.9% | 0.8% | 0.8% | 151 ms |
+
+- **Where the idle sits.** About 90% of in-step idle falls in the first tenth
+  of the step: a median 4.9–5.1 ms from the step's GPU start to the embedding
+  kernel. Those gaps end with pinned host-to-device input copies, fills and
+  the embedding. This is the CPU preparing the batch: token IDs, positions,
+  block tables, and attention/GDN metadata and state indices for 16–41
+  requests. Recorded torch ops cover only about half of that time; the rest is
+  untraced Python in vLLM's input preparation and metadata builders. Launch
+  rate is not the limit: untraced `execute_model` takes 29–32 ms of CPU per
+  step against 124–143 ms of GPU work.
+- **Untraced estimate.** Taking traced GPU busy time against the untraced
+  engine span gives about 6.6% idle (2K c32) and 2.7% (full320 c128). The
+  profiler inflates host time, so the traced shares are upper bounds.
+- **Cause.** The serving engine runs `--no-async-scheduling`. vLLM 0.31
+  disables async scheduling for pooling runners, and the zero-output-token
+  scheduler correction (`experiments/b200_vllm031/scheduler.py`) requires it
+  off. Step N+1's scheduling and input preparation therefore cannot overlap
+  step N's GPU work. Async scheduling would hide both the step-start
+  preparation and the between-step gap. That bounds the gain at roughly 3–7%
+  at saturation, smaller than the FP4 GEMM share (about 37%). It would need a
+  pooling-compatible async path and a re-validated scheduler correction.
+
 ## Optimization candidates
 
 These are candidates only; none was tested.

@@ -20,6 +20,7 @@ class HostTimingMixin:
         result = super().execute_model(scheduler_output)
         self.step_timings.append(
             {
+                "started": started,
                 "seconds": time.perf_counter() - started,
                 "tokens": int(scheduler_output.total_num_scheduled_tokens),
             }
