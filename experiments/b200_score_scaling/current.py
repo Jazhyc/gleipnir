@@ -27,6 +27,14 @@ def write(path: Path, value: object) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def cgroup(v2: str, *v1: str) -> str:
+    """Read a cgroup v2 limit, falling back to the v1 file(s) on older hosts."""
+    root = Path("/sys/fs/cgroup")
+    if (root / v2).exists():
+        return (root / v2).read_text().strip()
+    return " ".join((root / name).read_text().strip() for name in v1) + " (cgroup v1)"
+
+
 def validate_contract(settings: dict, rows: list[dict], references: list[list]) -> None:
     """Reject changed cohorts, incomplete controls and recipe selection."""
     if (
@@ -50,7 +58,7 @@ def validate_contract(settings: dict, rows: list[dict], references: list[list]) 
     paired_score_summary(references, references)
 
 
-async def run(name: str, expected_gpu_uuid: str) -> None:
+async def run(name: str, expected_gpu_uuid: str, pre_adoption: bool = False) -> None:
     from experiments.b200_attention_precision.startup import startup
     from experiments.b200_long_context.run import gpu
     from experiments.b200_monitor_score.run import SERVING, trial
@@ -68,7 +76,7 @@ async def run(name: str, expected_gpu_uuid: str) -> None:
         references.append(json.loads(value.read_text()))
     rows = json.loads(workload.read_text())
     validate_contract(settings, rows, references)
-    selection, command = selected_serving_default(ROOT)
+    selection, command = selected_serving_default(ROOT, last_query=not pre_adoption)
     for flag, value in (
         ("--max-num-seqs", "128"),
         ("--max-num-batched-tokens", "32768"),
@@ -86,7 +94,11 @@ async def run(name: str, expected_gpu_uuid: str) -> None:
     out = ROOT / "results/b200_score_scaling" / name
     out.mkdir(parents=True, exist_ok=False)
     report = {"status": "starting", "trials": [], "promoted": False}
-    write(out / "settings.json", settings | {"expected_gpu_uuid": expected_gpu_uuid})
+    write(
+        out / "settings.json",
+        settings
+        | {"expected_gpu_uuid": expected_gpu_uuid, "pre_adoption": pre_adoption},
+    )
     write(out / "selection.json", selection)
     write(out / "initial_gpu.json", snapshot)
     write(
@@ -97,8 +109,10 @@ async def run(name: str, expected_gpu_uuid: str) -> None:
                 for line in Path("/proc/cpuinfo").read_text().splitlines()
                 if line.startswith("model name")
             ),
-            "cpu_quota": Path("/sys/fs/cgroup/cpu.max").read_text().strip(),
-            "memory_limit": Path("/sys/fs/cgroup/memory.max").read_text().strip(),
+            "cpu_quota": cgroup(
+                "cpu.max", "cpu/cpu.cfs_quota_us", "cpu/cpu.cfs_period_us"
+            ),
+            "memory_limit": cgroup("memory.max", "memory/memory.limit_in_bytes"),
         },
     )
     for path in (
@@ -111,7 +125,8 @@ async def run(name: str, expected_gpu_uuid: str) -> None:
         target.write_bytes(path.read_bytes())
     write(out / "summary.json", report)
     try:
-        await startup(name + "_startup")
+        # Pre-adoption control: the FP8 recipe without trim, GDN gate or fast path.
+        await startup(name + "_startup", last_query=not pre_adoption)
         server = json.loads((SERVING / "server.json").read_text())
         write(out / "server.json", server)
         write(
@@ -186,10 +201,11 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--expected-gpu-uuid", required=True)
+    parser.add_argument("--pre-adoption", action="store_true")
     args = parser.parse_args()
     if args.name in {"", ".", ".."} or Path(args.name).name != args.name:
         raise ValueError("run name must be a stem")
-    asyncio.run(run(args.name, args.expected_gpu_uuid))
+    asyncio.run(run(args.name, args.expected_gpu_uuid, args.pre_adoption))
 
 
 if __name__ == "__main__":

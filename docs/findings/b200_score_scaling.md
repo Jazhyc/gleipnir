@@ -191,3 +191,43 @@ validation artifacts pass SHA-256 checks. `current_summary` exports source-bound
 curve from the same-recipe c128 control. Seventeen focused tests pass; Ruff is
 clean. API 9865 and sole GPU engine 9927 remain ready and warm, at 169,886 MiB
 GPU memory and 0% utilization at closure. Capacity remains running.
+
+## Adopted long-context stack on EU-RO-1 (paired control)
+
+2026-10-15, EU-RO-1 Pod `gswwir1daslht0` (AMD EPYC 9555, cgroup v1 quota 23.8
+CPUs, B200 `GPU-e5eb9962…`, driver 580.126.20). Same full320 protocol, run
+twice back to back on this GPU:
+
+- `euro_stack02`: the adopted default, i.e. last-layer trim, the 8K GDN route
+  gate, the lean GDN path and the strided norm.
+- `euro_pre01`: `current --pre-adoption`, the same FP8 recipe without those
+  layers.
+
+Medians of three timed passes:
+
+| Concurrency | Pre-adoption tokens/s | Adopted tokens/s | Change | p50 pre → adopted | p95 pre → adopted |
+| ---: | ---: | ---: | ---: | ---: | ---: |
+| 1 | 90,351 | 101,868 | +12.7% | 33.9 → 29.0 ms | 129.6 → 122.1 ms |
+| 2 | 105,976 | 119,660 | +12.9% | 61.8 → 53.3 ms | 166.8 → 153.1 ms |
+| 4 | 154,667 | 167,766 | +8.5% | 85.6 → 79.9 ms | 219.1 → 211.8 ms |
+| 8 | 188,665 | 207,330 | +9.9% | 152.4 → 154.6 ms | 315.5 → 276.1 ms |
+| 16 | 207,753 | 224,562 | +8.1% | 296.3 → 280.6 ms | 471.1 → 439.1 ms |
+| 32 | 211,863 | 225,820 | +6.6% | 616.5 → 573.7 ms | 795.4 → 745.0 ms |
+| 64 | 209,855 | 224,534 | +7.0% | 1,224.7 → 1,138.5 ms | 1,431.6 → 1,315.8 ms |
+| 128 | 208,064 | 223,755 | +7.5% | 2,340.8 → 2,175.4 ms | 2,671.1 → 2,599.2 ms |
+
+Repeat ranges do not overlap at any level. The pre-adoption c128 median
+reproduces the archived same-recipe 210,281 tokens/s within 1.1%. Throughput
+still plateaus from c16–c32.
+
+**Scores.** Each arm repeats bitwise at c1. Between arms, c1 scores are
+bitwise equal for all 55 prompts of at least 8,192 tokens, but 239 of 265
+shorter prompts change (MAE 0.055, max 0.348). The cause is the GDN gate:
+below 8K, a single request now takes FlashInfer's non-CP route instead of CP.
+The startup canary runs at c4, where both arms already take the non-CP route,
+so it could not show this. At c128, both arms are within batch variation of
+the archived FP8 repeats: MAE 0.0012 versus 0.0007, with 1 and 0 threshold
+flips. Against those c128 repeats, c1 pooled/macro AUROC deltas are
++1.33/+1.97 pp adopted and +0.29/+0.25 pp pre-adoption. On this training-seen
+cohort, that sits inside the c4–c8 batch-shape variation (up to 2.7 pp), so it
+is not a quality claim.

@@ -45,7 +45,10 @@ route's: the canary differs from the default by MAE 0.0005 (correlation
 against the archived FP8 repeats gives score MAE 0.0012, one threshold flip,
 and pooled/macro AUROC −0.10/−0.02 pp, comparable to the other runs' batch
 variation. At 32K and above, `gated02` C1 scores equal `million01` bitwise
-wherever both exist.
+wherever both exist. The canary runs at c4, where CP auto already picks non-CP. For single
+short requests the route change is larger: full320 C1 scores below 8K differ
+from the pre-adoption recipe by MAE 0.055, max 0.348, in 239 of 265 prompts
+(see [the paired scaling run](b200_score_scaling.md#adopted-long-context-stack-on-eu-ro-1-paired-control)).
 
 ## Adoption
 

@@ -64,3 +64,5 @@ Export the completed sweep's medians, ranges, quality deltas and standalone
 PNG/SVG curve with `python -m experiments.b200_score_scaling.current_summary
 results/b200_score_scaling/<run>`. The linked finding records the NC2 result and
 distinguishes the old full curve from the matched-recipe c128 comparison.
+`--pre-adoption` launches the FP8 recipe without the trim, GDN gate and fast
+path (`startup(last_query=False)`) as a same-GPU control for the adopted stack.
