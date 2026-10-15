@@ -16,6 +16,20 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 PARENT = "teacher-disagreement-delta000-sdpa04"
 SEED1 = "teacher-seed-sdpa-s1-01"
+
+
+def campaign(seed: int) -> str:
+    return f"teacher-seed-sdpa-s{seed}-01"
+
+
+def scoring_plan(seed: int) -> dict[str, tuple[str, list[str]]]:
+    """Seed 1 also rescored seed 0 as the serving-drift control; later seeds
+    need only their own OOD scores."""
+    if seed == 1:
+        return SCORING
+    return {f"teacher-seed-sdpa-s{seed}-ood01": (f"results/{campaign(seed)}", ["ood"])}
+
+
 OOD = {
     "ood": (
         "data/student_injection_awareness/regular/ood.jsonl",
@@ -38,7 +52,7 @@ FIELDS = {
         "relative to the FP4/FA4 teacher gap on OOD and ID."
     ),
     "intervention": (
-        "Retrain the seed-0 strict-filtered BF16/SDPA campaign with seed 1 only "
+        "Retrain the seed-0 strict-filtered BF16/SDPA campaign with seed {seed} only "
         "(data order and packing); initialization, data, targets and schedule fixed."
     ),
     "selection": (
@@ -52,18 +66,20 @@ FIELDS = {
 }
 
 
-def seed_config(parent: dict, gpu_uuid: str, selection_sha: str) -> dict:
+def seed_config(parent: dict, gpu_uuid: str, selection_sha: str, seed: int = 1) -> dict:
     """Change only seed, identity, GPU, merge slot, serving hash and contract text."""
+    if seed < 1:
+        raise ValueError("seed 0 is the existing parent campaign")
     config = copy.deepcopy(parent)
     config.update(
-        campaign_id=SEED1,
-        seed=1,
+        campaign_id=campaign(seed),
+        seed=seed,
         gpu_uuid=gpu_uuid,
-        merged_model=f"/tmp/gleipnir-merged/{SEED1}",
+        merged_model=f"/tmp/gleipnir-merged/{campaign(seed)}",
         extra_sources=sorted(
             str(p.relative_to(ROOT)) for p in HERE.iterdir() if p.suffix == ".py"
         ),
-        **FIELDS,
+        **{k: v.format(seed=seed) for k, v in FIELDS.items()},
     )
     config["inputs"]["serving_selection"]["sha256"] = selection_sha
     # The NC2 training runtime is restored beside the EU serving runtime, whose
@@ -73,7 +89,7 @@ def seed_config(parent: dict, gpu_uuid: str, selection_sha: str) -> dict:
 
 
 def scoring_config(seed: dict, name: str) -> dict:
-    parent, splits = SCORING[name]
+    parent, splits = scoring_plan(seed["seed"])[name]
     config = copy.deepcopy(seed)
     config.update(
         campaign_id=name,
@@ -92,7 +108,7 @@ def scoring_config(seed: dict, name: str) -> dict:
     return config
 
 
-def prepare(gpu_uuid: str) -> dict:
+def prepare(gpu_uuid: str, seed_number: int = 1) -> dict:
     if not gpu_uuid.startswith("GPU-"):
         raise ValueError("a verified live GPU UUID is required")
     parent = yaml.safe_load((ROOT / "data" / PARENT / "config.yaml").read_text())
@@ -109,11 +125,12 @@ def prepare(gpu_uuid: str) -> dict:
     if frozen[OOD["ood_workload"][0]] != file_hash(ROOT / OOD["ood_workload"][0]):
         raise ValueError("frozen OOD workload drift")
     selection_sha = file_hash(ROOT / SELECTION)
-    seed = seed_config(parent, gpu_uuid, selection_sha)
+    seed = seed_config(parent, gpu_uuid, selection_sha, seed_number)
+    plan = scoring_plan(seed_number)
     written = {}
     for name, config in [
-        (SEED1, seed),
-        *[(n, scoring_config(seed, n)) for n in SCORING],
+        (campaign(seed_number), seed),
+        *[(n, scoring_config(seed, n)) for n in plan],
     ]:
         data = ROOT / "data" / name
         if data.exists():
@@ -121,13 +138,13 @@ def prepare(gpu_uuid: str) -> dict:
         data.mkdir(parents=True)
         (data / "config.yaml").write_text(yaml.safe_dump(config, sort_keys=False))
         written[name] = str((data / "config.yaml").relative_to(ROOT))
-    for name in SCORING:
+    for name in plan:
         ctx = Campaign(
             ROOT,
             ROOT / written[name],
             yaml.safe_load((ROOT / written[name]).read_text()),
         )
-        parent_dir = ROOT / SCORING[name][0]
+        parent_dir = ROOT / plan[name][0]
         files = {
             written[name]: file_hash(ROOT / written[name]),
             **{spec["path"]: spec["sha256"] for spec in ctx.config["inputs"].values()},
@@ -151,7 +168,10 @@ def prepare(gpu_uuid: str) -> dict:
         },
         "configs": written,
     }
-    write_json(ROOT / "results/teacher_seed_variation/preparation.json", report)
+    suffix = "" if seed_number == 1 else f"_s{seed_number}"
+    write_json(
+        ROOT / f"results/teacher_seed_variation/preparation{suffix}.json", report
+    )
     print("seed_variation_prepared", json.dumps(written), flush=True)
     return report
 
@@ -159,4 +179,6 @@ def prepare(gpu_uuid: str) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu-uuid", required=True)
-    prepare(parser.parse_args().gpu_uuid)
+    parser.add_argument("--seed", type=int, default=1)
+    args = parser.parse_args()
+    prepare(args.gpu_uuid, args.seed)

@@ -15,7 +15,7 @@ from pathlib import Path
 import yaml
 
 from experiments.teacher_disagreement_filtering.run import retire
-from experiments.teacher_seed_variation.prepare import ROOT, SCORING, SEED1
+from experiments.teacher_seed_variation.prepare import ROOT, campaign, scoring_plan
 from gleipnir.campaigns.monitoring.__main__ import execute
 from gleipnir.campaigns.monitoring.contract import Campaign
 from gleipnir.campaigns.monitoring.evaluation import optimized
@@ -23,7 +23,12 @@ from gleipnir.campaigns.monitoring.training import merge
 from gleipnir.campaigns.runtime import training_environment
 from gleipnir.data.monitoring import file_hash, write_json
 
-STATUS = ROOT / "results/teacher_seed_variation/status.json"
+
+def status_path(seed: int) -> Path:
+    suffix = "" if seed == 1 else f"_s{seed}"
+    return ROOT / f"results/teacher_seed_variation/status{suffix}.json"
+
+
 STAGE_TIMEOUT = 3 * 3600
 
 
@@ -123,22 +128,24 @@ def score(name: str) -> None:
     retire(ctx)
 
 
-def run() -> None:
+def run(seed_number: int) -> None:
+    status = status_path(seed_number)
+    name0 = campaign(seed_number)
     gpu = subprocess.check_output(
         ["nvidia-smi", "--query-gpu=uuid", "--format=csv,noheader"], text=True
     ).strip()
-    seed = Campaign.load(ROOT, ROOT / "data" / SEED1 / "config.yaml")
+    seed = Campaign.load(ROOT, ROOT / "data" / name0 / "config.yaml")
     if gpu != seed.config["gpu_uuid"]:
         raise ValueError("authorized GPU identity changed")
-    if STATUS.exists():
+    if status.exists():
         raise ValueError("seed-variation queue already launched")
     state = {"status": "running", "driver_pid": os.getpid(), "stages": {}}
-    write_json(STATUS, state)
+    write_json(status, state)
     try:
-        for name in [SEED1, *SCORING]:
+        for name in [name0, *scoring_plan(seed_number)]:
             state["stages"][name] = {"status": "running", "started": time.time()}
-            write_json(STATUS, state)
-            if name == SEED1:
+            write_json(status, state)
+            if name == name0:
                 inventory = seed.inventory(runtime=True)
                 if not inventory["passed"]:
                     raise ValueError("\n".join(inventory["errors"]))
@@ -147,14 +154,14 @@ def run() -> None:
             else:
                 score(name)
             state["stages"][name].update(status="complete", finished=time.time())
-            write_json(STATUS, state)
+            write_json(status, state)
             print("seed_variation_stage_complete", name, flush=True)
     except BaseException as error:
         state.update(status="failed", error=f"{type(error).__name__}: {error}")
-        write_json(STATUS, state)
+        write_json(status, state)
         raise
     state["status"] = "complete"
-    write_json(STATUS, state)
+    write_json(status, state)
     print("seed_variation_complete", flush=True)
 
 
@@ -162,13 +169,15 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--stage", choices=["merge", "score"])
     parser.add_argument("name", nargs="?")
+    parser.add_argument("--seed", type=int, default=1)
     args = parser.parse_args()
     if args.stage == "merge":
         reconstruct(scoring_context(args.name))
     elif args.stage == "score":
         asyncio.run(optimized(scoring_context(args.name)))
     else:
-        STATUS.parent.mkdir(parents=True, exist_ok=True)
-        with (STATUS.parent / "queue.lock").open("a") as lock:
+        status = status_path(args.seed)
+        status.parent.mkdir(parents=True, exist_ok=True)
+        with (status.parent / "queue.lock").open("a") as lock:
             fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-            run()
+            run(args.seed)

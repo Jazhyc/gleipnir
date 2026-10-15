@@ -22,6 +22,10 @@ PREDICTIONS = {
         "id": "results/teacher-seed-sdpa-s1-01/evaluation/id.jsonl",
         "ood": "results/teacher-seed-sdpa-s1-ood01/evaluation/ood.jsonl",
     },
+    "sdpa_seed2": {
+        "id": "results/teacher-seed-sdpa-s2-01/evaluation/id.jsonl",
+        "ood": "results/teacher-seed-sdpa-s2-ood01/evaluation/ood.jsonl",
+    },
     "fp4_fa4_seed0_pass1": {
         "id": "results/filtered-fp4-fa4-bf16-serving01/evaluation/id.jsonl",
         "ood": "results/filtered-fp4-ood01/evaluation/repeat1/ood.jsonl",
@@ -33,6 +37,8 @@ PREDICTIONS = {
 PAIRS = {
     "serving_drift_seed0": ("sdpa_seed0_rescored", "sdpa_seed0_cached"),
     "seed1_minus_seed0": ("sdpa_seed1", "sdpa_seed0_rescored"),
+    "seed2_minus_seed0": ("sdpa_seed2", "sdpa_seed0_rescored"),
+    "seed2_minus_seed1": ("sdpa_seed2", "sdpa_seed1"),
     "fp4_fa4_serving_repeat": ("fp4_fa4_seed0_pass2", "fp4_fa4_seed0_pass1"),
     "fp4_fa4_minus_sdpa_seed0": ("fp4_fa4_seed0_pass1", "sdpa_seed0_rescored"),
 }
@@ -70,7 +76,11 @@ def score_difference(a: list[dict], b: list[dict]) -> dict:
 
 def compare() -> dict:
     rows = {
-        model: {split: load(path, split) for split, path in paths.items()}
+        model: {
+            split: load(path, split)
+            for split, path in paths.items()
+            if (ROOT / path).is_file()
+        }
         for model, paths in PREDICTIONS.items()
     }
     models = {
@@ -80,7 +90,7 @@ def compare() -> dict:
     pairs = {}
     for name, (a, b) in PAIRS.items():
         pairs[name] = {}
-        for split in set(rows[a]) & set(rows[b]):
+        for split in sorted(set(rows[a]) & set(rows[b])):
             ma, mb = models[a][split], models[b][split]
             pairs[name][split] = {
                 "macro_pauroc_at_20_delta": ma["macro"]["pauroc_at_20"]
@@ -94,13 +104,43 @@ def compare() -> dict:
                 },
                 "scores": score_difference(rows[a][split], rows[b][split]),
             }
+    seeds = ["sdpa_seed0_rescored", "sdpa_seed1", "sdpa_seed2"]
+    spread = {}
+    for split in ("id", "ood"):
+        present = [m for m in seeds if split in models[m]]
+        if len(present) < 2:
+            continue
+        sources = models[present[0]][split]["by_source"]
+        spread[split] = {
+            "seeds": present,
+            **{
+                key: {
+                    "mean": statistics.fmean(values),
+                    "sd": statistics.stdev(values),
+                    "range": max(values) - min(values),
+                }
+                for key, values in [
+                    (
+                        "macro_pauroc_at_20",
+                        [models[m][split]["macro"]["pauroc_at_20"] for m in present],
+                    ),
+                    *[
+                        (s, [models[m][split]["by_source"][s] for m in present])
+                        for s in sources
+                        if sources[s] is not None
+                    ],
+                ]
+            },
+        }
     report = {
+        "seed_spread": spread,
         "models": models,
         "pairs": pairs,
         "predictions_sha256": {
             p: file_hash(ROOT / p)
             for paths in PREDICTIONS.values()
             for p in paths.values()
+            if (ROOT / p).is_file()
         },
     }
     out = ROOT / "results/teacher_seed_variation/comparison.json"

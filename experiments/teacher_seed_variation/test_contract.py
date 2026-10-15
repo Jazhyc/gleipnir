@@ -10,6 +10,7 @@ from experiments.teacher_seed_variation.prepare import (
     ROOT,
     SCORING,
     scoring_config,
+    scoring_plan,
     seed_config,
 )
 
@@ -53,3 +54,15 @@ def test_scoring_contexts_bind_fixed_parents_and_splits():
         assert set(config["evaluation"]["populations"]) == set(splits)
         assert Path(config["merged_model"]).name == name
         assert ("id" in config["evaluations"]) == ("id" in splits)
+
+
+def test_later_seeds_change_only_seed_identity_and_score_ood():
+    base = parent()
+    config = seed_config(base, "GPU-test", "0" * 64, seed=2)
+    assert config["seed"] == 2 and config["campaign_id"] == "teacher-seed-sdpa-s2-01"
+    assert "seed 2" in config["intervention"]
+    plan = scoring_plan(2)
+    assert list(plan) == ["teacher-seed-sdpa-s2-ood01"]
+    scoring = scoring_config(config, "teacher-seed-sdpa-s2-ood01")
+    assert scoring["evaluations"] == [] and scoring["score_splits"] == ["ood"]
+    assert scoring["parent_campaign"] == "results/teacher-seed-sdpa-s2-01"
