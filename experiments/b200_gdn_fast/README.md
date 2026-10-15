@@ -48,3 +48,31 @@ adopted gated worker, with `set_gdn_fast` and `gdn_fast_audit` RPCs.
 ... -m experiments.b200_gdn_fast.paired --name fast01
 ... -m experiments.b200_gdn_fast.canary_check --name canary01
 ```
+
+## Strided gated norm (exact, not yet enabled)
+
+Upstream's gated RMS norm flattens the output gate, a strided slice of the
+packed projection, to `[tokens × heads, 128]`. That forces an `aten::reshape`
+clone, which is most of the profile's direct-copy time: 7.3 ms per 32K step,
+and 292 ms per full320 c128 pass. `strided_gated_norm` launches the same FLA
+Triton kernel over `[tokens, heads × 128]` rows with `group_size=128`, the
+per-head weight tiled across groups, and the `ROWS_PER_BLOCK` upstream picks
+for `tokens × heads` rows. Each (token, head) row therefore reduces with the
+same tile shape. Nothing is copied.
+
+- `norm_probe.py` (`norm_probe01`): bitwise equal to upstream for 1–32,768
+  tokens and every norm-before-gate/activation combination (24/24).
+- `paired_norm.py` (`norm01`): one server with the adopted stack, four
+  alternating rounds. Every C1 score is bitwise equal.
+
+  | Case | Copy | Strided |
+  | --- | ---: | ---: |
+  | 8K | 48.9 ms | 46.8 ms |
+  | 16K | 95.1 ms | 88.6 ms |
+  | 32K | 197.4 ms | 189.2 ms |
+  | quick64 | 30.4 ms | 29.7 ms |
+
+  full320 c128 throughput ratios are 1.054/0.975/1.049/1.041.
+
+The path is off by default (`_STATE["strided_norm"]`) until adopted; the
+selection binds the current file.
