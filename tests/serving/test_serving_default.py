@@ -88,3 +88,69 @@ def test_default_rejects_reference_artifact_drift(tmp_path):
     report.write_text("{}")
     with pytest.raises(ValueError, match="artifact drift"):
         selected_serving_default(tmp_path)
+
+
+def last_query_fixture(root):
+    source, report, _ = fixture(root)
+    command = json.loads(report.read_text())
+    additional = command["command"][-1]
+    command["command"][-2:] = [
+        "--worker-cls",
+        "experiments.precision.AttentionPrecisionWorker",
+        "--additional-config",
+        additional,
+    ]
+    report.write_text(json.dumps(command))
+    trim_source = root / "src/last_query.py"
+    trim_source.write_text("final layer\n")
+    receipt = root / "results/trim/last_query.json"
+    receipt.parent.mkdir(parents=True)
+    receipt.write_text('{"passed": true}\n')
+    selection_path = root / "experiments/b200_inference_benchmark/serving_default.json"
+    selection = json.loads(selection_path.read_text())
+
+    def digest(path):
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    selection["artifact_bindings"] = {
+        "results/fp8/summary.json": digest(report),
+        "results/trim/last_query.json": digest(receipt),
+    }
+    selection["last_query_attention"] = {
+        "worker": "experiments.trim.LastQueryPrecisionWorker",
+        "replaces_worker": "experiments.precision.AttentionPrecisionWorker",
+        "validation": "results/trim/last_query.json",
+        "sources": {"src/last_query.py": digest(trim_source)},
+    }
+    selection_path.write_text(json.dumps(selection))
+    return trim_source, selection_path
+
+
+def test_default_applies_bound_last_query_attention(tmp_path):
+    last_query_fixture(tmp_path)
+    _, command = selected_serving_default(tmp_path)
+    assert command[command.index("--worker-cls") + 1] == (
+        "experiments.trim.LastQueryPrecisionWorker"
+    )
+    additional = json.loads(command[-1])
+    assert additional["last_query_attention"]["validation"] == (
+        "results/trim/last_query.json"
+    )
+    assert "src/last_query.py" in additional["gleipnir_frost_fp4"]
+    assert "src/kernel.py" in additional["gleipnir_frost_fp4"]
+
+
+def test_default_rejects_last_query_source_drift(tmp_path):
+    trim_source, _ = last_query_fixture(tmp_path)
+    trim_source.write_text("changed\n")
+    with pytest.raises(ValueError, match="last-query source drift"):
+        selected_serving_default(tmp_path)
+
+
+def test_default_rejects_unexpected_replaced_worker(tmp_path):
+    _, selection_path = last_query_fixture(tmp_path)
+    selection = json.loads(selection_path.read_text())
+    selection["last_query_attention"]["replaces_worker"] = "other.Worker"
+    selection_path.write_text(json.dumps(selection))
+    with pytest.raises(ValueError, match="unexpected worker"):
+        selected_serving_default(tmp_path)

@@ -24,6 +24,18 @@ FP32 gates/state, prefix caching off, chunked prefill, synchronous stock FCFS,
 weight scales, dynamic per-token activation scales and native CUTLASS GEMM.
 Training precision is a separate selection.
 
+User selection, 2026-10-15: the default also runs **last-query final-layer
+attention**. Layer 31 writes K/V for every token but attends only from each
+prefill request's last token through the same MXFP8 path; unpooled rows are
+zero. `selected_serving_default` applies it by swapping in
+`LastQueryPrecisionWorker` and binding the 8-case bitwise kernel receipt and
+sources. Launchers that substitute their own worker class keep the untrimmed
+recipe; `startup --without-last-query` launches it explicitly as a control. It
+requires causal LAST pooling and the TRTLLM prefill path, and fails closed
+otherwise. Evidence and the same-node adoption A/B are in the
+[last-query finding](../findings/b200_last_layer_trim.md). The BF16 iteration
+server is unchanged until its own attention path is validated.
+
 Send complete rendered prompts to `POST /v1/monitor/score`; see the
 [endpoint contract](../../experiments/b200_monitor_score/README.md).
 

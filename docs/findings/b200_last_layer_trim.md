@@ -74,6 +74,27 @@ The archived worker receipt records installation and the first (profiling)
 call. Per-request trim activity is evidenced by the timings and bitwise
 outputs, not by a running call count.
 
+## Adoption
+
+The user adopted `trim01` (last-query attention for all prefill requests, no
+finished-only selection, no tail trim) into the FP8 serving default on
+2026-10-15. `adopt02` runs a same-node A/B through the normal canary-guarded
+startup: the untrimmed control first, then the adopted recipe. Both canaries
+reproduce the default exactly (MAE 0). The adopted worker audits layer-31
+installation.
+
+| Workload | Control input tokens/s | Adopted | Ratio | Scores |
+| --- | ---: | ---: | ---: | --- |
+| quick64, c1, 3 passes | 94,149 (94,077–94,483) | 94,250 (94,172–94,322) | 1.001 | bitwise equal in every pass |
+| full320, c128, 3 passes | 202,099 (185,798–208,629) | 213,650 (213,549–214,016) | 1.057 | within batch nondeterminism |
+
+At c128, the adopted minimum exceeds the control maximum; median p50 latency
+falls from 2.37 to 2.28 s. Full320 contains prompts up to about 28.7K tokens,
+so attention is a larger share than in quick64. c128 scores vary with batch
+composition: control-vs-control passes differ by MAE 0.0035 (maximum 0.286),
+and control-vs-adopted by the same MAE 0.0035. Three passes per arm do not
+establish a precise batched gain.
+
 ## Artifacts
 
 `results/b200_last_layer_trim/trim01/` (and `trim02`/`trim03`) contain the kernel receipt

@@ -24,11 +24,18 @@ from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
 from gleipnir.serving.reference import selected_serving_default
 
 
-async def startup(name: str, *, prepare_only: bool = False) -> None:
-    """Reproduce the accepted recipe and guard its canary before retaining it."""
+async def startup(
+    name: str, *, prepare_only: bool = False, last_query: bool = True
+) -> None:
+    """Reproduce the accepted recipe and guard its canary before retaining it.
+
+    `last_query=False` launches the pre-adoption recipe as an explicit control.
+    """
     if not name or Path(name).name != name:
         raise ValueError("startup name must be a stem")
-    selection, command = selected_serving_default(ROOT)
+    selection, command = selected_serving_default(ROOT, last_query=last_query)
+    if not last_query:
+        selection = {k: v for k, v in selection.items() if k != "last_query_attention"}
     if {n: importlib.metadata.version(n) for n in selection["runtime"]} != selection[
         "runtime"
     ]:
@@ -175,6 +182,16 @@ async def startup(name: str, *, prepare_only: bool = False) -> None:
             raise ValueError("default actual FP8 projection dispatch changed")
         if not receipt["passed"]:
             raise ValueError("accepted FP8 default reproduction failed")
+        if "last_query_attention" in selection:
+            trim = json.loads((SERVING / "last_query_attention.json").read_text())
+            write(out / "last_query_attention.json", trim)
+            if (
+                not trim["passed"]
+                or trim["finished_only"]
+                or trim["trim_tail"]
+                or not trim["layer"].endswith("layers.31.self_attn.attn")
+            ):
+                raise ValueError("selected last-query attention is not active")
         active.update(status="ready", ready_at_unix=time.time())
         write(SERVING / "server.json", active)
         write(out / "server.json", active)
@@ -214,8 +231,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", required=True)
     parser.add_argument("--prepare-only", action="store_true")
+    parser.add_argument("--without-last-query", action="store_true")
     args = parser.parse_args()
-    asyncio.run(startup(args.name, prepare_only=args.prepare_only))
+    asyncio.run(
+        startup(
+            args.name,
+            prepare_only=args.prepare_only,
+            last_query=not args.without_last_query,
+        )
+    )
 
 
 if __name__ == "__main__":

@@ -164,9 +164,10 @@
 - [B200 fixed 2K context scaling](findings/b200_context_scaling.md): cropped
   exact-2048-token systems workload, higher request throughput, plateau near
   c16/32 and unchanged warm reference.
-- [Last-query final-layer attention](findings/b200_last_layer_trim.md): bitwise
-  unchanged scores with 6.4–10.3% lower C1 latency from 256K to 1M; finished-only
-  selection adds nothing, and the output-projection/MLP trim drifts with no gain.
+- [Last-query final-layer attention](findings/b200_last_layer_trim.md): adopted
+  in the FP8 default; bitwise unchanged C1 scores, 6.4–10.3% lower C1 latency
+  from 256K to 1M and 5.7% higher same-node c128 throughput. Finished-only
+  selection adds nothing; the output-projection/MLP trim drifts with no gain.
 - [B200 FP8 default contexts to 1M](findings/b200_context_million.md): C1
   1K–1M sweep with node/environment receipts, YaRN beyond 256K, chunk cost fit
   (attention 90% at 1M) and power-capped clocks on long attention.

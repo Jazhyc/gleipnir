@@ -34,6 +34,11 @@ from gleipnir.serving.reference import selected_serving_default
 
 EXPERIMENT = Path(__file__).parent
 WORKER = "experiments.b200_context_million.worker.LongContextWorker"
+# The selected default, before and after last-query attention was adopted.
+PARENT_WORKERS = {
+    "experiments.b200_attention_precision.worker.AttentionPrecisionWorker",
+    "experiments.b200_last_layer_trim.worker.LastQueryPrecisionWorker",
+}
 
 
 @dataclass(frozen=True)
@@ -71,8 +76,7 @@ def phase_command(
         or parent[parent.index("--runner") + 1] != "pooling"
         or "--enable-chunked-prefill" not in parent
         or "--no-enable-prefix-caching" not in parent
-        or parent[parent.index("--worker-cls") + 1]
-        != "experiments.b200_attention_precision.worker.AttentionPrecisionWorker"
+        or parent[parent.index("--worker-cls") + 1] not in PARENT_WORKERS
     ):
         raise ValueError("selected parent context/scheduler recipe changed")
     command = parent.copy()

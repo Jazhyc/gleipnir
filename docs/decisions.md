@@ -1,5 +1,13 @@
 # Decision log
 
+## 2026-10-15 — Adopt last-query final-layer attention in the FP8 default
+
+- The optimized serving default runs layer-31 attention only from each prefill
+  request's last token. Scores are bitwise unchanged at C1. C1 latency drops
+  6.4–10.3% from 256K to 1M, and same-node full320 c128 throughput rises 5.7%.
+  See the [serving decision](decisions/b200_monitor_score_reference.md) and
+  [finding](findings/b200_last_layer_trim.md).
+
 ## 2026-10-08 — Default future experiments to optimized vLLM
 
 - Use the [optimized serving implementation](decisions/b200_monitor_score_reference.md)

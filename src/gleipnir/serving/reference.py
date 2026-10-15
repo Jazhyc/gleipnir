@@ -40,7 +40,9 @@ def selected_score_reference(root: Path) -> dict:
     return selection
 
 
-def selected_serving_default(root: Path) -> tuple[dict, list[str]]:
+def selected_serving_default(
+    root: Path, *, last_query: bool = True
+) -> tuple[dict, list[str]]:
     """Resolve the accepted current recipe separately from frozen comparisons."""
     selection = json.loads(
         (root / "experiments/b200_inference_benchmark/serving_default.json").read_text()
@@ -81,7 +83,36 @@ def selected_serving_default(root: Path) -> tuple[dict, list[str]]:
             continue
         if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
             raise ValueError(f"accepted serving runtime source drift: {path}")
+    trim = selection.get("last_query_attention")
+    if trim is not None and last_query:
+        apply_last_query(root, command, trim, selection["artifact_bindings"])
     return selection, command
+
+
+def apply_last_query(
+    root: Path, command: list[str], trim: dict, bindings: dict[str, str]
+) -> None:
+    """Select final-layer last-query attention with its bound receipt/sources.
+
+    Launchers that substitute their own worker class keep the untrimmed recipe.
+    """
+    worker = command.index("--worker-cls") + 1
+    if command[worker] != trim["replaces_worker"]:
+        raise ValueError("last-query attention replaces an unexpected worker")
+    if trim["validation"] not in bindings:
+        raise ValueError("last-query kernel receipt is not artifact-bound")
+    index = command.index("--additional-config") + 1
+    additional = json.loads(command[index])
+    for path, expected in trim["sources"].items():
+        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"accepted last-query source drift: {path}")
+        additional["gleipnir_frost_fp4"][path] = expected
+    additional["last_query_attention"] = {
+        "validation": trim["validation"],
+        "validation_sha256": bindings[trim["validation"]],
+    }
+    command[worker] = trim["worker"]
+    command[index] = json.dumps(additional, sort_keys=True)
 
 
 def selected_host_components(

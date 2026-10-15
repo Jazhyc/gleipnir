@@ -6,12 +6,13 @@ import re
 from pathlib import Path
 
 from experiments.b200_attention_gdn_serving.worker import write
+from experiments.b200_attention_precision.worker import AttentionPrecisionWorker
 from experiments.b200_context_million.worker import LongContextWorker
 
 ROOT = Path(__file__).resolve().parents[2]
 
 
-def validate(receipt: dict) -> None:
+def validate(receipt: dict, gpu: str | None = None) -> None:
     """Require complete bitwise kernel coverage from unchanged executed sources."""
     from experiments.b200_inference_benchmark.run import sha
     from experiments.b200_last_layer_trim.native import CASES, SUBSETS
@@ -27,15 +28,31 @@ def validate(receipt: dict) -> None:
     for path, expected in receipt["sources"].items():
         if sha(ROOT / path) != expected:
             raise ValueError(f"last-query source changed: {path}")
+    if gpu is not None and receipt.get("gpu") != gpu:
+        raise ValueError("last-query kernel receipt hardware changed")
 
 
-class LastLayerTrimWorker(LongContextWorker):
-    """Last-query attention in the final layer (all prefill requests)."""
+def validation_path(additional: dict) -> Path:
+    """The selected default binds its receipt; experiment runners use the env."""
+    selected = additional.get("last_query_attention")
+    if selected is not None:
+        from experiments.b200_inference_benchmark.run import sha
+
+        path = ROOT / selected["validation"]
+        if sha(path) != selected["validation_sha256"]:
+            raise ValueError("selected last-query receipt changed")
+        return path
+    return ROOT / os.environ["GLEIPNIR_LAST_QUERY_VALIDATION"]
+
+
+class LastQueryMixin:
+    """Install last-query attention on the final layer after the base load."""
 
     finished_only = False
     trim_tail = False
 
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        import torch
         from vllm.forward_context import get_forward_context
         from vllm.model_executor.layers.attention import Attention
         from vllm.v1.attention.backends.flashinfer import TRTLLMPrefill
@@ -43,10 +60,9 @@ class LastLayerTrimWorker(LongContextWorker):
         from gleipnir.serving import last_query_tail
         from gleipnir.serving.last_query_attention import LastQueryState, install
 
-        receipt = json.loads(
-            (ROOT / os.environ["GLEIPNIR_LAST_QUERY_VALIDATION"]).read_text()
-        )
-        validate(receipt)
+        additional = self.vllm_config.additional_config
+        receipt = json.loads(validation_path(additional).read_text())
+        validate(receipt, torch.cuda.get_device_name())
         if self.trim_tail:
             last_query_tail.register()
         super().load_model(load_dummy_weights=load_dummy_weights)
@@ -150,6 +166,14 @@ class LastLayerTrimWorker(LongContextWorker):
 
             audit["tail"] = last_query_tail.audit(self.tail_name)
         return audit
+
+
+class LastLayerTrimWorker(LastQueryMixin, LongContextWorker):
+    """Long-context telemetry worker with last-query final-layer attention."""
+
+
+class LastQueryPrecisionWorker(LastQueryMixin, AttentionPrecisionWorker):
+    """The selected FP8 default with last-query final-layer attention."""
 
 
 class FinishedTrimWorker(LastLayerTrimWorker):
