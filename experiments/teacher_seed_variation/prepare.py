@@ -25,6 +25,7 @@ OOD = {
 }
 OOD_MANIFEST = "data/teacher-disagreement-strict-ood01/manifest.json"
 SELECTION = "experiments/b200_inference_benchmark/serving_default.json"
+TRAINING_PYTHON = "/tmp/gleipnir-training-runtime/venv/bin/python"
 # Scoring contexts: (parent results directory, splits). Seed 0 is rescored in
 # the same serving session as a drift control for its cached Oct-11/12 scores.
 SCORING = {
@@ -65,6 +66,9 @@ def seed_config(parent: dict, gpu_uuid: str, selection_sha: str) -> dict:
         **FIELDS,
     )
     config["inputs"]["serving_selection"]["sha256"] = selection_sha
+    # The NC2 training runtime is restored beside the EU serving runtime, whose
+    # FA4/MXFP8 overlays differ; FlashQLA files match the seed-0 receipt.
+    config["training_python"] = TRAINING_PYTHON
     return config
 
 

@@ -19,6 +19,7 @@ ALLOWED = {
     "gpu_uuid",
     "merged_model",
     "extra_sources",
+    "training_python",
     *FIELDS,
 }
 

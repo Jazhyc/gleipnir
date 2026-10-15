@@ -29,7 +29,16 @@ later precision cells may select on OOD. This run sets the noise floor for
 that.
 
 **Runtime.** Training runs on the EU-RO-1 B200 with the NC2 training runtime
-restored from `container_runtimes.tar.zst` (SHA-256 `c4d76a28…`). The original
+restored from `container_runtimes.tar.zst` (SHA-256 `c4d76a28…`).
+- The runtime sits at `/tmp/gleipnir-training-runtime`, because the EU serving
+  runtime keeps `/tmp/gleipnir-serving-runtime` (its FA4/MXFP8 overlays differ).
+- FLA, causal-conv1d and Triton link to `.cache/kernels-nc2/`; FlashQLA is at
+  `.cache/kernels/flashqla-da06429`.
+- Versions match the seed-0 receipt, and all 43 FlashQLA files match their
+  hashes.
+- The EU `.cache/kernels/fa4` overlay has identical TVM-FFI code to NC2's; it
+  lacks NC2's CUDA-12 CUTLASS libraries, `quack` and `torch_c_dlpack_ext`,
+  which SDPA training does not use. The original
 seed-0 run used a different host and GPU, so seed and host effects are
 confounded at the seed-0/seed-1 boundary. Same-host repeatability of this
 recipe is bitwise for BF16/FA4 (augmented line) and assumed, not measured,
