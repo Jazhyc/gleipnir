@@ -26,8 +26,8 @@ import torch
 
 _STATE: dict[str, Any] = {
     "enabled": True,
-    # Bitwise-exact strided gated norm (norm_probe01, norm01); off until adopted.
-    "strided_norm": False,
+    # Bitwise-exact strided gated norm (norm_probe01, norm01); adopted 2026-10-15.
+    "strided_norm": True,
     "step": None,
     "fast": 0,
     "fallback": 0,

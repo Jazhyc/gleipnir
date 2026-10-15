@@ -51,7 +51,9 @@
     "results/b200_gdn_route/paired02/summary.json": "e960ba19e8572724eb7f6ce49c6bd7717bdbcd40f3f11cd03c8eba6d30f6170f",
     "results/b200_gdn_fast/fast01/summary.json": "9931a0ff42c9525c8939dcd8fc0caa98ed4ce1b8bc9b4021149dcde44e7b0b36",
     "results/b200_gdn_fast/native02.json": "2e0c40fb3c008e2d30b776cca6f76a577416ddbcd212d971283f882723ea31c5",
-    "results/b200_gdn_fast/canary01/summary.json": "c152a2a246cea16f4c48f06a2b8c8aa3b1a54b3007f1ff076aab3614f3c4f295"
+    "results/b200_gdn_fast/canary01/summary.json": "c152a2a246cea16f4c48f06a2b8c8aa3b1a54b3007f1ff076aab3614f3c4f295",
+    "results/b200_gdn_fast/norm_probe01.json": "80b26c4740062dd94b95154ad010a2b2a8259eab6b0c5d9bccdbcd45e42e742d",
+    "results/b200_gdn_fast/norm01/summary.json": "44eab101398f8b2cd7c9bda93e267e6c2b8e002b2919501975c8f8f7bdae345a"
   },
   "master_canary": "results/b200_fp4_full_training/4b/fp4/parity_reference.json",
   "merged_artifact": "results/b200_optimized_id/id02/merged_artifact.json",
@@ -94,11 +96,14 @@
     "evidence": [
       "results/b200_gdn_fast/fast01/summary.json",
       "results/b200_gdn_fast/native02.json",
-      "results/b200_gdn_fast/canary01/summary.json"
+      "results/b200_gdn_fast/canary01/summary.json",
+      "results/b200_gdn_fast/norm_probe01.json",
+      "results/b200_gdn_fast/norm01/summary.json"
     ],
     "sources": {
       "experiments/b200_gdn_fast/worker.py": "9da0d2a95277ca75ee9ff82ff2134fc9c215d2932f1d19faae1410ca555031c8",
-      "src/gleipnir/serving/gdn_fast.py": "d23a80322a519c694928d427c105cc35f1d092b6833751d563b70ad3c914c0f4"
-    }
+      "src/gleipnir/serving/gdn_fast.py": "d1427546f3b520f1b6762e00cf3d78a1dd7ffe44fe6fcc869569359e0992f6bb"
+    },
+    "strided_norm_selected_at": "2026-10-15"
   }
 }

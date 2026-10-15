@@ -49,7 +49,7 @@ adopted gated worker, with `set_gdn_fast` and `gdn_fast_audit` RPCs.
 ... -m experiments.b200_gdn_fast.canary_check --name canary01
 ```
 
-## Strided gated norm (exact, not yet enabled)
+## Strided gated norm (exact, adopted)
 
 Upstream's gated RMS norm flattens the output gate, a strided slice of the
 packed projection, to `[tokens × heads, 128]`. That forces an `aten::reshape`
@@ -74,5 +74,5 @@ same tile shape. Nothing is copied.
 
   full320 c128 throughput ratios are 1.054/0.975/1.049/1.041.
 
-The path is off by default (`_STATE["strided_norm"]`) until adopted; the
-selection binds the current file.
+The user adopted it on 2026-10-15. It is on by default, startup requires
+that it ran, and the selection binds the file and both receipts.

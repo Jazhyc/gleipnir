@@ -44,6 +44,12 @@ exact current arithmetic. `selected_serving_default` stacks
 sources and paired evidence. Startup checks that the gate routed calls after
 the canary. See the [GDN route finding](../findings/b200_gdn_route.md).
 
+User selection, 2026-10-15: `FastGdnWorker` adds the lean GDN prefill host path,
+with unchanged kernels and the strided gated norm. It is bitwise identical to
+upstream GDN, and startup checks that both ran. See
+`experiments/b200_gdn_fast/README.md` and the
+[host-overhead finding](../findings/b200_host_overhead.md).
+
 Send complete rendered prompts to `POST /v1/monitor/score`; see the
 [endpoint contract](../../experiments/b200_monitor_score/README.md).
 

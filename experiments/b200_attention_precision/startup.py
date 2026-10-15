@@ -221,7 +221,12 @@ async def startup(
         if "gdn_fast" in selection:
             fast = await rpc("gdn_fast_audit")
             write(out / "gdn_fast_audit.json", fast)
-            if not fast["enabled"] or fast["fast"] == 0:
+            if (
+                not fast["enabled"]
+                or fast["fast"] == 0
+                or not fast["strided_norm"]
+                or fast["strided_norms"] == 0
+            ):
                 raise ValueError("selected GDN fast path is not active")
         active.update(status="ready", ready_at_unix=time.time())
         write(SERVING / "server.json", active)
