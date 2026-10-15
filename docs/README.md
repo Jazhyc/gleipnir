@@ -1,5 +1,7 @@
 # Documentation index
 
+- [Precision selection on OOD](decisions/precision_selection_on_ood.md): precision
+  and kernel choices may select on the frozen OOD suite under frozen rules.
 - [QAT campaign shutdown](findings/qat_shutdown.md): verified B200 termination,
   retained NC2 volume and checksummed runtime/adapter preservation for resumption.
 - [Full QAD OOD follow-up](findings/qad_ood.md): fixed full-epoch checkpoint,
