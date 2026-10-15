@@ -17,9 +17,11 @@ test enforces this.
 **Runtime.** The NC2 training runtime is the same as in the seed runs. For
 FA4 cells, `.cache/kernels/fa4` points at the NC2 FA4 overlay
 (`/tmp/gleipnir-training-runtime/fa4`). Its TVM-FFI, CUTLASS-DSL, FA4 and
-metadata hashes match the NC2 overlay the FP4/FA4 teacher trained with. The
-EU overlay is kept as `.cache/kernels/fa4-euro-20261015` and must be restored
-before restaging EU serving. Serving reads its own staged copy.
+metadata hashes match the NC2 overlay the FP4/FA4 teacher trained with. On
+the EU volume this path was already a symlink to the EU serving runtime's
+overlay (`/tmp/gleipnir-serving-runtime/fa4`), which stays untouched. Point
+the link back there before restaging EU serving. Serving reads its staged
+copy either way.
 
 **Scoring and selection.** BF16 serving on ID (through the runner) and on the
 frozen OOD suite. Comparisons are descriptive against the three-seed SDPA
