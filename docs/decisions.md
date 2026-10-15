@@ -1,5 +1,12 @@
 # Decision log
 
+## 2026-10-15 — Gate the GDN context-parallel prefill route by length
+
+- The FP8 default takes FlashInfer's non-CP GDN prefill below 8,192 tokens per
+  call. In a same-server A/B through normal startup, quick64 c1 p50 is 2.3 ms
+  lower and full320 c128 throughput is unchanged. Canary MAE is 0.0005. See the
+  [finding](findings/b200_gdn_route.md).
+
 ## 2026-10-15 — Adopt last-query final-layer attention in the FP8 default
 
 - The optimized serving default runs layer-31 attention only from each prefill

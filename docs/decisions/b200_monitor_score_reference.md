@@ -36,6 +36,14 @@ otherwise. Evidence and the same-node adoption A/B are in the
 [last-query finding](../findings/b200_last_layer_trim.md). The BF16 iteration
 server is unchanged until its own attention path is validated.
 
+User selection, 2026-10-15: the default also gates FlashInfer's single-GPU
+context-parallel GDN prefill by chunk length. Calls with fewer than 8,192
+tokens take the non-CP route; longer calls keep FlashInfer's own choice and
+exact current arithmetic. `selected_serving_default` stacks
+`GatedPrecisionWorker` on the last-query worker and binds the threshold,
+sources and paired evidence. Startup checks that the gate routed calls after
+the canary. See the [GDN route finding](../findings/b200_gdn_route.md).
+
 Send complete rendered prompts to `POST /v1/monitor/score`; see the
 [endpoint contract](../../experiments/b200_monitor_score/README.md).
 

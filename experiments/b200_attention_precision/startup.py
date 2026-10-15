@@ -41,7 +41,11 @@ async def startup(
         raise ValueError("startup name must be a stem")
     selection, command = selected_serving_default(ROOT, last_query=last_query)
     if not last_query:
-        selection = {k: v for k, v in selection.items() if k != "last_query_attention"}
+        selection = {
+            k: v
+            for k, v in selection.items()
+            if k not in {"last_query_attention", "gdn_route"}
+        }
     if {n: importlib.metadata.version(n) for n in selection["runtime"]} != selection[
         "runtime"
     ]:
@@ -205,6 +209,15 @@ async def startup(
                 or not trim["layer"].endswith("layers.31.self_attn.attn")
             ):
                 raise ValueError("selected last-query attention is not active")
+        if "gdn_route" in selection:
+            route = await rpc("gdn_route_audit")
+            write(out / "gdn_route_audit.json", route)
+            if (
+                route["cp_min_tokens"] != selection["gdn_route"]["cp_min_tokens"]
+                or route["min_tokens"] != route["cp_min_tokens"]
+                or route["non_cp"] == 0
+            ):
+                raise ValueError("selected GDN route gate is not active")
         active.update(status="ready", ready_at_unix=time.time())
         write(SERVING / "server.json", active)
         write(out / "server.json", active)

@@ -46,7 +46,9 @@
     "results/b200_fp4_full_training/4b/fp4/parity_reference.json": "c7e634850afb0063da7554f9928278b43df870e5e61e810cdfaafa79ec066744",
     "results/b200_optimized_id/id02/merged_artifact.json": "0deeae5e274419a22b5a612fbe6bbf31d48b9ed29889b78262ff58f1a490a4f3",
     "results/b200_last_layer_trim/trim02/last_query.json": "42bcb0b09f4ac3c9271d520e0f44c192b08b36ceb4144f1de22694efe1c804de",
-    "results/b200_last_layer_trim/trim01/comparison.json": "b38ac1ed82f3e57b87c489417fbe28f7376ba44acc75227f2f7db00996a51a52"
+    "results/b200_last_layer_trim/trim01/comparison.json": "b38ac1ed82f3e57b87c489417fbe28f7376ba44acc75227f2f7db00996a51a52",
+    "results/b200_gdn_route/paired01/summary.json": "21aae0af18d6ff6731af905743fcb7b2438ccd32bb4d6ddeb1525830c930b8da",
+    "results/b200_gdn_route/paired02/summary.json": "e960ba19e8572724eb7f6ce49c6bd7717bdbcd40f3f11cd03c8eba6d30f6170f"
   },
   "master_canary": "results/b200_fp4_full_training/4b/fp4/parity_reference.json",
   "merged_artifact": "results/b200_optimized_id/id02/merged_artifact.json",
@@ -64,6 +66,21 @@
     "sources": {
       "experiments/b200_last_layer_trim/worker.py": "44ec81ef2a6fa4391cd9fecc22d0af5def16eb783d1091fbd1e98e38ec6bf3ba",
       "src/gleipnir/serving/last_query_attention.py": "b0fab6a628ec049cf83ac76435fa7e4adbfc90a4d77b93972457f02aba28bd7d"
+    }
+  },
+  "gdn_route": {
+    "selected_at": "2026-10-15",
+    "user_selection": "Adopt the length-gated GDN prefill route (non-CP below 8192 tokens per call).",
+    "cp_min_tokens": 8192,
+    "worker": "experiments.b200_gdn_route.worker.GatedPrecisionWorker",
+    "replaces_worker": "experiments.b200_last_layer_trim.worker.LastQueryPrecisionWorker",
+    "evidence": [
+      "results/b200_gdn_route/paired01/summary.json",
+      "results/b200_gdn_route/paired02/summary.json"
+    ],
+    "sources": {
+      "experiments/b200_gdn_route/worker.py": "031800e29f1070f866ed4e746e76921fea941223856f16868d54bd58ee82ce07",
+      "src/gleipnir/serving/gdn_route.py": "60fbe7bc3e4d64307f786659b04a077e157b7276aa27091032e006bb95bbb7bd"
     }
   }
 }

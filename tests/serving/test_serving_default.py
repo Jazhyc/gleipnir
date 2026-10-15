@@ -154,3 +154,38 @@ def test_default_rejects_unexpected_replaced_worker(tmp_path):
     selection_path.write_text(json.dumps(selection))
     with pytest.raises(ValueError, match="unexpected worker"):
         selected_serving_default(tmp_path)
+
+
+def test_default_stacks_gdn_route_on_last_query_worker(tmp_path):
+    _, selection_path = last_query_fixture(tmp_path)
+    route_source = tmp_path / "src/gdn_route.py"
+    route_source.write_text("gate\n")
+    evidence = tmp_path / "results/route/summary.json"
+    evidence.parent.mkdir(parents=True)
+    evidence.write_text("{}\n")
+    selection = json.loads(selection_path.read_text())
+
+    def digest(path):
+        return hashlib.sha256(path.read_bytes()).hexdigest()
+
+    selection["artifact_bindings"]["results/route/summary.json"] = digest(evidence)
+    selection["gdn_route"] = {
+        "cp_min_tokens": 8192,
+        "worker": "experiments.route.GatedPrecisionWorker",
+        "replaces_worker": "experiments.trim.LastQueryPrecisionWorker",
+        "evidence": ["results/route/summary.json"],
+        "sources": {"src/gdn_route.py": digest(route_source)},
+    }
+    selection_path.write_text(json.dumps(selection))
+    _, command = selected_serving_default(tmp_path)
+    assert command[command.index("--worker-cls") + 1] == (
+        "experiments.route.GatedPrecisionWorker"
+    )
+    additional = json.loads(command[-1])
+    assert additional["gdn_route"] == {"cp_min_tokens": 8192}
+    assert "last_query_attention" in additional
+    _, control = selected_serving_default(tmp_path, last_query=False)
+    assert "gdn_route" not in json.loads(control[-1])
+    route_source.write_text("changed\n")
+    with pytest.raises(ValueError, match="GDN route source drift"):
+        selected_serving_default(tmp_path)

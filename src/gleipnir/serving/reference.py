@@ -86,7 +86,30 @@ def selected_serving_default(
     trim = selection.get("last_query_attention")
     if trim is not None and last_query:
         apply_last_query(root, command, trim, selection["artifact_bindings"])
+        route = selection.get("gdn_route")
+        if route is not None:
+            apply_gdn_route(root, command, route, selection["artifact_bindings"])
     return selection, command
+
+
+def apply_gdn_route(
+    root: Path, command: list[str], route: dict, bindings: dict[str, str]
+) -> None:
+    """Gate FlashInfer's single-GPU CP GDN prefill on the last-query worker."""
+    worker = command.index("--worker-cls") + 1
+    if command[worker] != route["replaces_worker"]:
+        raise ValueError("GDN route gate replaces an unexpected worker")
+    if any(path not in bindings for path in route["evidence"]):
+        raise ValueError("GDN route evidence is not artifact-bound")
+    index = command.index("--additional-config") + 1
+    additional = json.loads(command[index])
+    for path, expected in route["sources"].items():
+        if hashlib.sha256((root / path).read_bytes()).hexdigest() != expected:
+            raise ValueError(f"accepted GDN route source drift: {path}")
+        additional["gleipnir_frost_fp4"][path] = expected
+    additional["gdn_route"] = {"cp_min_tokens": int(route["cp_min_tokens"])}
+    command[worker] = route["worker"]
+    command[index] = json.dumps(additional, sort_keys=True)
 
 
 def apply_last_query(
