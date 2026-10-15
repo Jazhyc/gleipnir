@@ -114,11 +114,20 @@ library and is applied automatically to SSH, rsync, push, pull, and code sync.
 On 2026-10-15 the user provided EU-RO-1 B200 Pod `cvjantiismcaod`
 ($7.99/hour) with network volume `cb7bxu71ug` at `/workspace`. Its template
 leaves `PUBLIC_KEY` empty: install the project key and start SSH (after
-`ssh-keygen -A`) through the Runpod proxy, then use the sanitized
-`.runpod/long-context-1m.json`. The serving stack was restored from the local
-2026-10-07 EU bundle plus the locked 0.31 environment; the previous checkout
-is kept as `/workspace/gleipnir-eu-20261004`. The Pod remains running; see
-the [1M-context finding](findings/b200_context_million.md) for node identity.
+`ssh-keygen -A`) through the Runpod proxy. The serving stack was restored from
+the local 2026-10-07 EU bundle plus the locked 0.31 environment. The previous
+checkout is kept as `/workspace/gleipnir-eu-20261004`; see the
+[1M-context finding](findings/b200_context_million.md) for node identity.
+
+At the user's request the Pod was terminated later on 2026-10-15. The GPU was
+idle, all session results and logs were collected locally (dry-run check: no
+missing files), and container-only compiler caches were archived with a
+checksum to both the volume and `results/b200_shutdown/20261015_eu/`. Delete
+returned HTTP 204 and the lookup returned 404. Volume `cb7bxu71ug` is retained
+with the repository, `.venv-vllm031`, persistent compiler caches and the HF
+base. The `/tmp` runtimes and merged checkpoint are reconstructable from the
+local bundle, the volume environment and the FP32 master. No replacement
+capacity was launched.
 
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
