@@ -38,10 +38,10 @@ Record the worker PID, active configuration and artifact/queue paths so later
 sessions can inspect and reuse it. Restart when changes require it or after a
 diagnosed failure; preserve artifacts and disk caches. This preference does not
 authorize launching new billable capacity or terminating existing capacity.
-Use the combined native FP4 MLP plus BF16 GDN/FA4 variant as the optimization
-baseline and, following the user's later explicit selection on 2026-10-05,
-the default B200 training recipe. This selection does not establish held-out
-quality equivalence with BF16.
+The default B200 training recipe is BF16 with SDPA attention
+([decision](../decisions/b200_bf16_sdpa_training_default.md), 2026-10-16). It
+supersedes the 2026-10-05 native FP4/FA4 default. The FP4/FA4 recipe remains
+the systems optimization baseline.
 
 Standing user preference, 2026-10-02: once a recipe has been validated, reuse
 its recorded startup validation and begin ordinary training without repeating
@@ -75,21 +75,24 @@ projection consistently across the campaign.
 ## Single-B200 Qwen3.5-4B training
 
 For single-B200 Qwen3.5-4B training, use the user-selected
-`systems_screen@_global_: qwen35_4b_b200_default` profile: all 24 GDN layers
-use pinned FlashQLA with BF16 Q/K/V and FP32 gates/normalization; full attention
-uses pinned FlashAttention 4 4.0.0b33 with native causal variable-length packing.
-Load an unquantized BF16 base, use no model checkpointing, and keep the
-16,384-token packing budget, logical batch 32, and FP32 master adapters.
-Use native NVFP4 MLPs with hardware activation packing and fused descale in
-forward and base input gradients. Keep GDN projections/recurrence and full
-attention in BF16. Reuse the checksum-bound warmed03 FP4 receipt for compatible
-runs with explicit `selected_finite` acceptance; preserve its failed loss and
-strict 5% gradient comparisons and passing isolation/preflight separately.
-Reject missing/nonfinite gradients before updates. Keep the historical BF16 FA4
-recipe as `qwen35_4b_b200_bf16_fa4`, including its separate accepted 10% ceiling,
-and preserve original-FLA comparison profiles. Do not change frozen campaigns'
-recorded precision/receipts. See `docs/decisions/b200_native_fp4_training_recipe.md`.
+`systems_screen@_global_: qwen35_4b_b200_default` profile, which aliases
+`qwen35_4b_b200_packed_sdpa`:
+- BF16 MLPs; all 24 GDN layers use pinned FlashQLA with BF16 Q/K/V and FP32
+  gates/normalization;
+- full attention uses segmented causal SDPA;
+- unquantized BF16 base, no model checkpointing, 16,384-token packing budget,
+  logical batch 32 and FP32 master adapters;
+- reuse the accepted BF16/SDPA startup receipt, and reject missing/nonfinite
+  gradients before updates.
 
-Read the [native FP4 recipe decision](../decisions/b200_native_fp4_training_recipe.md)
-before preparing a B200 run. It binds the startup receipt, source/runtime
-checks and accepted numerical limits.
+See the [BF16/SDPA decision](../decisions/b200_bf16_sdpa_training_default.md).
+
+The other recipes stay available by explicit profile name:
+- native FP4/FA4: `qwen35_4b_b200_fp4_mlp`, with its warmed03 receipt and
+  `selected_finite` acceptance; see
+  [its decision](../decisions/b200_native_fp4_training_recipe.md);
+- BF16/FA4: `qwen35_4b_b200_bf16_fa4`, with its accepted 10% ceiling;
+- composite FP4/SDPA: `qwen35_4b_b200_fp4_mlp_sdpa`.
+
+Preserve original-FLA comparison profiles, and do not change frozen campaigns'
+recorded precision or receipts.

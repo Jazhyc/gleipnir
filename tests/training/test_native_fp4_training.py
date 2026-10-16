@@ -40,7 +40,7 @@ def profile(name="qwen35_4b_b200_default"):
 
 def student_config(max_steps=512):
     job = {
-        **profile()["recipe"],
+        **profile("qwen35_4b_b200_fp4_mlp")["recipe"],
         "job_name": "native-fp4-test",
         "output_dir": "results/native-fp4-test",
         "student_rows": "data/test.jsonl",
@@ -62,7 +62,9 @@ def student_config(max_steps=512):
 
 @pytest.mark.parametrize("max_steps", [-1, 512])
 def test_default_reaches_the_ordinary_trainer_without_the_timing_limit(max_steps):
-    assert profile() == profile("qwen35_4b_b200_fp4_mlp")
+    # The default alias moved to BF16/SDPA on 2026-10-16; FP4 stays explicit.
+    assert profile() == profile("qwen35_4b_b200_packed_sdpa")
+    assert not profile()["recipe"].get("native_fp4_mlp", False)
     student = student_config(max_steps)
     assert validate_packed_training_config(student)
     assert student["training"]["max_steps"] == max_steps

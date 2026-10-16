@@ -1,5 +1,7 @@
 # Documentation index
 
+- [BF16/SDPA training default](decisions/b200_bf16_sdpa_training_default.md):
+  replaces the FP4/FA4 default after the teacher precision factorial.
 - [Precision selection on OOD](decisions/precision_selection_on_ood.md): precision
   and kernel choices may select on the frozen OOD suite under frozen rules.
 - [QAT campaign shutdown](findings/qat_shutdown.md): verified B200 termination,

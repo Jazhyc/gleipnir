@@ -1,5 +1,6 @@
-# User-selected B200 baseline, 2026-10-05. Keep BF16 comparison explicitly named.
-# See docs/decisions/b200_native_fp4_training_recipe.md.
+# User-selected B200 training default, 2026-10-16: BF16 MLP with SDPA attention.
+# See docs/decisions/b200_bf16_sdpa_training_default.md. The previous FP4/FA4
+# default remains available as qwen35_4b_b200_fp4_mlp.
 defaults:
-  - qwen35_4b_b200_fp4_mlp
+  - qwen35_4b_b200_packed_sdpa
   - _self_

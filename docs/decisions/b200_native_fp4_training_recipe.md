@@ -1,5 +1,9 @@
 # Native FP4 MLP B200 training default
 
+Superseded as the default on 2026-10-16 by
+[BF16/SDPA](b200_bf16_sdpa_training_default.md); the profile below remains
+available as `qwen35_4b_b200_fp4_mlp`.
+
 On 2026-10-05 the user explicitly selected “Make the FP4 baseline the default”.
 `qwen35_4b_b200_default` now aliases `qwen35_4b_b200_fp4_mlp`. Preserve the
 previous BF16 FA4 recipe as `qwen35_4b_b200_bf16_fa4`; historical benchmark
