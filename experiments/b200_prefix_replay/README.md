@@ -35,3 +35,40 @@ PYTHONPATH=src:. python -m experiments.b200_prefix_replay.prepare
 PYTHONPATH=src:. <serving-python> -m experiments.b200_vllm031.runtime \
   -m experiments.b200_prefix_replay.run --name replay01
 ```
+
+## Result (`replay03`, 2026-10-16, EU-RO-1 B200)
+
+`replay01` failed because the container restart had removed the ephemeral
+merge; `merge03` rebuilt it with identical checksums. `replay02` failed
+because the production monitor audit rejects prefix caching; `worker.py`
+masks the flag only during that audit. Both failures are retained.
+
+| Policy | Checks | Cached total | Uncached estimate | Speed-up | Prefix hit fraction | Recomputed tokens/check (median) |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: |
+| Every action | 598 | 595 s | 7,665 s | 12.9× | 99.6% | 1,836 |
+| Escalated (7.2%) | 52 | 95 s | 747 s | 7.9× | 96.2% | 14,432 |
+
+The uncached estimates interpolate the same-server uncached rescoring
+(log-log). Median per-check latency for every-action monitoring:
+
+| Context | Cached | Uncached |
+| --- | ---: | ---: |
+| <64K | 0.09 s | 0.22 s |
+| 64–256K | 0.32 s | 1.84 s |
+| 256–600K | 0.79 s | 7.1 s |
+| 600K–1.04M | 1.54 s | 23.8 s |
+
+At 1.04M tokens: 2.15 s cached versus 38.0 s uncached. Cached latency still
+grows with context, because the recomputed tokens attend over the whole
+history.
+
+**Score parity: not exact.** Rescoring 8 checks (15K–1.04M) uncached gives
+|cached − uncached| of 0.054, 0.034, 0.028, 0.062, 0.060, 0.151, 0.048 and 0.0
+(mean 0.055). That matches the deterministic path-dependence measured
+elsewhere: the GDN route gate changed C1 scores by MAE 0.055. Cached requests
+process about 2K new tokens per call (non-CP GDN route, different chunk
+boundaries), whereas uncached prefill runs 32K chunks (CP route). Enabling
+prefix caching also shifts the c4 canary slightly against the same YaRN stack
+without caching (MAE 0.0043). The cause is not isolated. Before production use,
+compare cached and uncached with the GDN route held fixed, and decide whether
+this path-dependence is acceptable.
