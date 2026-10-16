@@ -154,3 +154,35 @@ loop stays uncompiled, as the untrimmed router does. The question is whether
 the packed (trimmed) vs. singleton (untrimmed) gradient comparison returns
 under the strict 0.05 gate. The trim canary and timing are measured again
 against the same 4.924 s control.
+
+**Result.** Same GPU, the same 10 batches and the same 4.924 s control:
+
+| | eager trim | compiled trim |
+|---|---:|---:|
+| mean update | 4.684 s (−4.9%) | **4.663 s (−5.3%)** |
+| median update | 4.585 s | 4.560 s |
+| per-batch change | −4.3 to −5.4% | −4.6 to −5.9% |
+| canary, 65-sequence pack: gradient rel. L2 (noise 0.42–0.43%) | 1.10% | **0.62%** |
+| canary, longest example (noise 1.0–1.1%) | 1.14% | 1.57% |
+| canary, loss / logit max difference | 0.0008 / 0.125 | 0.00007 / 0.125 |
+| peak allocated | 143.38 GiB | 143.38 GiB |
+| new Dynamo graphs during measured updates | 0 | 0 |
+
+The compiled run's 10 losses again track the control. Step 10 is 0.3245
+vs. 0.3254, and the after-probe loss is 0.7927 vs. 0.7794.
+
+**Why the strict isolation gate still reads 0.0550.** Its loss and gradient
+comparison uses only two examples, truncated to 127 and 129 tokens. The packed
+(trimmed) loss, 0.9398481, is identical to the last digit in the eager and
+compiled runs, so compilation is not the cause.
+- **Size of the effect.** Decision logits near 10–20 have a BF16 ulp of
+  0.0625–0.125. One ulp on one logit, times the BCE slope (about 0.3), averaged
+  over two examples, is about 0.019. That matches the observed 0.018 shift, and
+  the trim canary shows exactly a 0.125 logit difference.
+- **Why it can't pass.** The control passes bitwise because its packed and
+  singleton runs execute identical kernels per segment. The trim runs layer
+  31's projections and MLP on 2 rows instead of 256, so cuBLAS selects
+  different kernels and rounding.
+- **Conclusion.** On this probe the 0.05 gate acts as a bitwise-equality test.
+  Any non-bitwise change to layer 31 fails it. The configured 0.15 learning
+  tolerance accepts the trim.
