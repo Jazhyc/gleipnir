@@ -76,14 +76,17 @@ projection consistently across the campaign.
 
 For single-B200 Qwen3.5-4B training, use the user-selected
 `systems_screen@_global_: qwen35_4b_b200_default` profile, which aliases
-`qwen35_4b_b200_packed_sdpa`:
+`qwen35_4b_b200_packed_sdpa_trim` (the untrimmed recipe stays available as
+`qwen35_4b_b200_packed_sdpa`):
 - BF16 MLPs; all 24 GDN layers use pinned FlashQLA with BF16 Q/K/V and FP32
   gates/normalization;
 - full attention uses segmented causal SDPA;
 - unquantized BF16 base, no model checkpointing, 16,384-token packing budget,
   logical batch 32 and FP32 master adapters;
 - reuse the accepted BF16/SDPA startup receipt, and reject missing/nonfinite
-  gradients before updates.
+  gradients before updates;
+- compiled final-layer trim (layer 31 computed only at decision positions),
+  guarded by its own pre-update canary.
 
 See the [BF16/SDPA decision](../decisions/b200_bf16_sdpa_training_default.md).
 

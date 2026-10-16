@@ -63,7 +63,10 @@ def main() -> None:
     ]
     (source,) = [s for s in sources if s["job_name"] == config["condition_source"]]
     profile = yaml.safe_load((ROOT / config["profile"]).read_text())
-    job = smoke_job(config, source, profile["recipe"])
+    # Opt-in recipe keys layered on the file profile (e.g. last_layer_trim).
+    job = smoke_job(
+        config, source, {**profile["recipe"], **config.get("recipe_overrides", {})}
+    )
     output = Path(job["output_dir"])
     output.mkdir(parents=True, exist_ok=False)
     initial = ROOT / config["initial_adapter"]

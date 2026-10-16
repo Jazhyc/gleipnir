@@ -1,0 +1,9 @@
+# BF16/SDPA packed recipe with the compiled final-layer trim, user-selected as
+# the default on 2026-10-16. See docs/decisions/b200_bf16_sdpa_training_default.md.
+# The untrimmed recipe stays frozen as qwen35_4b_b200_packed_sdpa.
+defaults:
+  - qwen35_4b_b200_packed_sdpa
+  - _self_
+
+recipe:
+  last_layer_trim: true

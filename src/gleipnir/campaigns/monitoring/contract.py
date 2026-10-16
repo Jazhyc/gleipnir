@@ -52,6 +52,7 @@ class Campaign:
             "qwen35_4b_b200_fp4_mlp_sdpa",
             "qwen35_4b_b200_bf16_fa4",
             "qwen35_4b_b200_packed_sdpa",
+            "qwen35_4b_b200_packed_sdpa_trim",
         ):
             raise ValueError(
                 "runner supports validated one-epoch B200 "

@@ -62,8 +62,12 @@ def student_config(max_steps=512):
 
 @pytest.mark.parametrize("max_steps", [-1, 512])
 def test_default_reaches_the_ordinary_trainer_without_the_timing_limit(max_steps):
-    # The default alias moved to BF16/SDPA on 2026-10-16; FP4 stays explicit.
-    assert profile() == profile("qwen35_4b_b200_packed_sdpa")
+    # The default alias moved to BF16/SDPA (with the compiled final-layer trim)
+    # on 2026-10-16; FP4 stays explicit.
+    assert profile() == profile("qwen35_4b_b200_packed_sdpa_trim")
+    assert profile()["recipe"]["last_layer_trim"] is True
+    untrimmed = profile("qwen35_4b_b200_packed_sdpa")
+    assert {**untrimmed["recipe"], "last_layer_trim": True} == profile()["recipe"]
     assert not profile()["recipe"].get("native_fp4_mlp", False)
     student = student_config(max_steps)
     assert validate_packed_training_config(student)

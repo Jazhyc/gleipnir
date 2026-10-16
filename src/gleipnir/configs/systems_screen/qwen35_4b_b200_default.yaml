@@ -1,6 +1,7 @@
-# User-selected B200 training default, 2026-10-16: BF16 MLP with SDPA attention.
-# See docs/decisions/b200_bf16_sdpa_training_default.md. The previous FP4/FA4
-# default remains available as qwen35_4b_b200_fp4_mlp.
+# User-selected B200 training default, 2026-10-16: BF16 MLP with SDPA attention
+# and the compiled final-layer trim. See
+# docs/decisions/b200_bf16_sdpa_training_default.md. The untrimmed BF16/SDPA
+# recipe is qwen35_4b_b200_packed_sdpa; FP4/FA4 remains qwen35_4b_b200_fp4_mlp.
 defaults:
-  - qwen35_4b_b200_packed_sdpa
+  - qwen35_4b_b200_packed_sdpa_trim
   - _self_
