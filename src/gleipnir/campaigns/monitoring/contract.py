@@ -164,6 +164,11 @@ class Campaign:
             "causal_adapter_dir": str(self.adapter / "causal_adapter"),
             "model_dir": str(self.adapter / "model"),
             "hydra_log_dir": str(self.logs / "hydra"),
+            **{
+                key: float(config[key])
+                for key in ("soft_kd_temperature", "soft_target_logit_scale")
+                if key in config
+            },
         }
 
     def sources(self) -> dict[str, str]:

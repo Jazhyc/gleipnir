@@ -59,6 +59,10 @@ def validate_training_metadata(
         or losses["direct_weight"] != job["direct_loss_weight"]
         or losses["completion_weight"] != 0
         or losses["accumulation_policy"] != "sum_per_example_over_logical_batch_v1"
+        or any(
+            losses.get(key, 1.0) != job.get(key, 1.0)
+            for key in ("soft_kd_temperature", "soft_target_logit_scale")
+        )
     ):
         raise ValueError("objective or equal-example weighting drift")
     if (

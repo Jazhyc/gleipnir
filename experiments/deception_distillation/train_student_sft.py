@@ -1182,8 +1182,13 @@ def soft_binary_distillation_losses(
     target_logit_center: float = 0.0,
     target_logit_scale: float = 1.0,
     huber_delta: float = 1.0,
+    kd_temperature: float = 1.0,
 ) -> torch.Tensor:
-    """Return row-wise teacher probability or standardized-margin losses."""
+    """Return row-wise teacher probability or standardized-margin losses.
+
+    ``kd_temperature`` divides both student and (transformed) teacher margins
+    and scales the BCE by T^2, so T > 1 shifts gradient toward confident rows.
+    """
     if binary_logits.ndim != 2 or binary_logits.shape[1] != 2:
         raise ValueError("binary logits must have shape (batch, 2)")
     if soft_targets.shape != binary_logits.shape[:1]:
@@ -1196,6 +1201,10 @@ def soft_binary_distillation_losses(
         raise ValueError("soft target logit scale must be finite and positive")
     if not np.isfinite(huber_delta) or huber_delta <= 0:
         raise ValueError("soft Huber delta must be finite and positive")
+    if not np.isfinite(kd_temperature) or kd_temperature <= 0:
+        raise ValueError("soft KD temperature must be finite and positive")
+    if loss_type != "bce" and kd_temperature != 1.0:
+        raise ValueError("soft KD temperature requires the BCE soft loss")
 
     targets = soft_targets.float()
     if not torch.isfinite(targets).all():
@@ -1204,7 +1213,11 @@ def soft_binary_distillation_losses(
         raise ValueError("binary soft targets must be strictly between zero and one")
 
     student_margins = binary_logits[:, 1].float() - binary_logits[:, 0].float()
-    identity_transform = target_logit_center == 0.0 and target_logit_scale == 1.0
+    identity_transform = (
+        target_logit_center == 0.0
+        and target_logit_scale == 1.0
+        and kd_temperature == 1.0
+    )
     if loss_type == "bce" and identity_transform:
         return F.binary_cross_entropy_with_logits(
             student_margins, targets, reduction="none"
@@ -1214,9 +1227,10 @@ def soft_binary_distillation_losses(
         target_logit_scale
     )
     if loss_type == "bce":
-        transformed_targets = torch.sigmoid(teacher_margins)
-        return F.binary_cross_entropy_with_logits(
-            student_margins,
+        t = float(kd_temperature)
+        transformed_targets = torch.sigmoid(teacher_margins / t)
+        return t**2 * F.binary_cross_entropy_with_logits(
+            student_margins / t,
             transformed_targets,
             reduction="none",
         )
@@ -1236,6 +1250,7 @@ def soft_binary_distillation_loss(
     target_logit_center: float = 0.0,
     target_logit_scale: float = 1.0,
     huber_delta: float = 1.0,
+    kd_temperature: float = 1.0,
 ) -> torch.Tensor:
     """Match a teacher probability or standardized margin at the binary boundary."""
     return soft_binary_distillation_losses(
@@ -1245,6 +1260,7 @@ def soft_binary_distillation_loss(
         target_logit_center=target_logit_center,
         target_logit_scale=target_logit_scale,
         huber_delta=huber_delta,
+        kd_temperature=kd_temperature,
     ).mean()
 
 
@@ -2022,6 +2038,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     soft_huber_delta = float(
         OmegaConf.select(cfg, "student.training.soft_huber_delta", default=1.0)
     )
+    soft_kd_temperature = float(
+        OmegaConf.select(cfg, "student.training.soft_kd_temperature", default=1.0)
+    )
     ordinal_soft_loss_weight = float(
         OmegaConf.select(cfg, "student.training.ordinal_soft_loss_weight", default=0.0)
     )
@@ -2064,6 +2083,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         or soft_loss_type != "bce"
         or soft_target_logit_center != 0.0
         or soft_target_logit_scale != 1.0
+        or soft_kd_temperature != 1.0
         or completion_loss_weight
         or pairwise_loss_weight
         or mil_loss_weight
@@ -2167,6 +2187,10 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         raise ValueError(
             "student.training.soft_target_logit_scale must be finite and positive"
         )
+    if not np.isfinite(soft_kd_temperature) or soft_kd_temperature <= 0:
+        raise ValueError("student.training.soft_kd_temperature must be positive")
+    if soft_kd_temperature != 1.0 and soft_loss_type != "bce":
+        raise ValueError("student.training.soft_kd_temperature requires BCE")
     if not np.isfinite(soft_huber_delta) or soft_huber_delta <= 0:
         raise ValueError(
             "student.training.soft_huber_delta must be finite and positive"
@@ -2349,6 +2373,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         target_logit_center=soft_target_logit_center,
                         target_logit_scale=soft_target_logit_scale,
                         huber_delta=soft_huber_delta,
+                        kd_temperature=soft_kd_temperature,
                     )
                     prefix_term = (
                         soft_loss_weight
@@ -2510,6 +2535,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         target_logit_center=soft_target_logit_center,
                         target_logit_scale=soft_target_logit_scale,
                         huber_delta=soft_huber_delta,
+                        kd_temperature=soft_kd_temperature,
                     )
                     if prefix_loss_weight and prefix_parent_indices.numel():
                         weights = torch.ones_like(soft_losses)
@@ -2941,6 +2967,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         f"soft_target_logit_center={soft_target_logit_center} "
         f"soft_target_logit_scale={soft_target_logit_scale} "
         f"soft_huber_delta={soft_huber_delta} "
+        f"soft_kd_temperature={soft_kd_temperature} "
         f"ordinal_soft_loss_weight={ordinal_soft_loss_weight} "
         f"soft_teacher_artifact={soft_teacher_artifact} "
         f"pairwise_temperature={pairwise_temperature} "
@@ -4560,6 +4587,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         "pairwise_weight": pairwise_loss_weight,
                         "soft_weight": soft_loss_weight,
                         "soft_type": soft_loss_type,
+                        "soft_target_logit_scale": soft_target_logit_scale,
+                        "soft_kd_temperature": soft_kd_temperature,
                         "mil_weight": mil_loss_weight,
                         "prefix_weight": prefix_loss_weight,
                         "prefix_normalization": "parent_mean_one_sample_v1",
