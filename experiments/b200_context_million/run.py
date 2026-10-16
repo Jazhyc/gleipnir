@@ -10,6 +10,7 @@ import statistics
 import subprocess
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -62,6 +63,10 @@ class Variant:
     rpc_audits: tuple[tuple[str, str], ...] = field(default_factory=tuple)
     # Extra server environment, e.g. GDN route settings.
     environment: dict[str, str] = field(default_factory=dict)
+    # Optional server command change after phase_command (e.g. prefix caching).
+    transform: Callable[[list[str]], list[str]] | None = None
+    # Optional replacement for the fixed-length measurement (e.g. a replay).
+    measurement: Callable | None = None
 
 
 DEFAULT = Variant()
@@ -294,6 +299,8 @@ async def run_phase(
     )
     out.mkdir()
     command = phase_command(parent, phase, settings["chunk_tokens"], variant)
+    if variant.transform is not None:
+        command = variant.transform(command)
     env = server_environment(selection, out, binding, native)
     env.update(context["check_env"])
     env.update(variant.environment)
@@ -353,7 +360,7 @@ async def run_phase(
             await quality(settings, out)
         write(out / "environment_ready.json", snapshot(ROOT))
         report["status"] = f"measuring_{phase['name']}"
-        await measure(rows, settings, out, record)
+        await (variant.measurement or measure)(rows, settings, out, record)
         for method, filename in variant.rpc_audits:
             write(out / filename, await rpc(method))
         write(

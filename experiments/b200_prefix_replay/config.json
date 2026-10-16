@@ -1,0 +1,40 @@
+{
+  "phases": [
+    {
+      "name": "yarn",
+      "context_limit": 1048576,
+      "rope_override": {
+        "rope_type": "yarn",
+        "factor": 4.0,
+        "original_max_position_embeddings": 262144
+      },
+      "canary_gate": false,
+      "quality_diagnostic": false,
+      "lengths": [
+        32768
+      ]
+    }
+  ],
+  "concurrency": 1,
+  "repeats": 5,
+  "warmups": 1,
+  "port": 8010,
+  "timeout_seconds": 3600,
+  "startup_timeout_seconds": 2400,
+  "chunk_tokens": 32768,
+  "quality_passes": 3,
+  "quality_controls": "results/b200_attention_precision/precision01/fp8",
+  "historical_workload": "results/b200_long_context/long02/workload.json",
+  "promote": false,
+  "replay_session": "data/b200_prefix_replay/session.json",
+  "baseline_targets": [
+    16384,
+    32768,
+    65536,
+    131072,
+    262144,
+    524288,
+    786432,
+    1037565
+  ]
+}
