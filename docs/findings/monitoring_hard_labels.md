@@ -277,3 +277,14 @@ finite raw logprobs, normalized-score reconstruction, zero truncation, complete
 ranking and calibration recomputation, adapter identities, summary checksum and
 preservation of the original ID summary. Its checked script is the ignored
 `results/monitoring_hard_labels/audit_ood_completion.py`.
+
+## Strict-filtered follow-up (2026-10-16)
+
+On the current strict-filtered BF16/SDPA recipe (seed 1, LR 5e-5), a 0.3 hard
+fraction scored 0.9056 ID pAUROC@20 against 0.8978 for the soft-only control.
+- The gain is +0.78 points: Gloom +2.15, STRIDE −0.59, Brier −0.009.
+- It is below the frozen 1.0-point bar and inside the seed 0–2 range, so it
+  did not advance.
+- Filtering appears to capture much of the original gain.
+
+See the [follow-up experiment](../../experiments/filtered_hard_labels/README.md).

@@ -58,8 +58,33 @@ PYTHONPATH=src:. <training-python> -m experiments.filtered_hard_labels.run
 python -m experiments.filtered_hard_labels.compare
 ```
 
-## Status
+## Result (2026-10-16, EU-RO-1 `GPU-3d8d6bde…`)
 
-Launched 2026-10-16 18:10 UTC on Pod `q7io6ui6gwbqo6` (`GPU-3d8d6bde…`). The
-inventory passed, and the trainer resolved soft 0.7 / direct 0.3 at LR 5e-5.
-The first updates have finite losses (0.67, 0.61).
+The run lasted 18:10–19:15 UTC. Training, master, merge and serving parity all
+passed, and the merged slot was released after scoring.
+
+| ID, 3,012 rows | pAUROC@20 | Gloom | STRIDE | AUROC | Brier |
+|---|---:|---:|---:|---:|---:|
+| control (seed 1) | 0.8978 | 0.8168 | 0.9788 | 0.9627 | 0.0722 |
+| seeds 0 / 2 (context) | 0.8959 / 0.9142 | 0.829 / 0.862 | 0.963 / 0.967 | 0.964 / 0.973 | 0.089 / 0.061 |
+| **hard 0.3** | **0.9056** | 0.8383 | 0.9729 | 0.9701 | 0.0633 |
+| Δ vs. control | **+0.78** | +2.15 | −0.59 | +0.0074 | −0.0090 |
+
+**The arm does not advance under the frozen rule.** Its gain of 0.78 points is
+below the 1.0-point bar. No source loses more than 1.0, and Brier improves.
+
+- **Within seed range.** The result sits inside the seed 0–2 range
+  (0.896–0.914). On one seed it is consistent with a small benefit or none.
+- **The prediction was wrong on Gloom.** I expected the 0.3 mix to act like a
+  milder version of sharpening, which lost 13.6 Gloom points. It gained 2.1
+  instead. So the mix and sharpening do not act alike on Gloom, even though
+  both mostly move the less confident targets.
+- **Smaller effect than the old screen.** The old unfiltered 2e-5 screen gained
+  2.8 points. That fits the idea that most of that gain came from overriding
+  conflicting targets, which the strict filter now removes. But this is one
+  seed, and the LR differs.
+- **Diagnostics.** Mean absolute score difference vs. control is 0.082, with 239
+  threshold flips. Median |margin| is 2.88, and 16% of rows have |margin| > 4.
+
+Receipts: `results/filtered_hard_labels/{comparison,status}.json` and
+`results/filtered-hard030-01/`.
