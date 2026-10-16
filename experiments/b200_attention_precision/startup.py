@@ -268,12 +268,24 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     parser.add_argument("--prepare-only", action="store_true")
     parser.add_argument("--without-last-query", action="store_true")
+    parser.add_argument(
+        "--prefix-caching",
+        action="store_true",
+        help="opt-in align-mode prefix caching for synchronous monitoring; "
+        "scores are not identical to uncached serving",
+    )
     args = parser.parse_args()
+    transform = None
+    if args.prefix_caching:
+        from experiments.b200_prefix_replay.serving import prefix_cached_command
+
+        transform = prefix_cached_command
     asyncio.run(
         startup(
             args.name,
             prepare_only=args.prepare_only,
             last_query=not args.without_last_query,
+            transform=transform,
         )
     )
 

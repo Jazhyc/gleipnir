@@ -72,3 +72,14 @@ prefix caching also shifts the c4 canary slightly against the same YaRN stack
 without caching (MAE 0.0043). The cause is not isolated. Before production use,
 compare cached and uncached with the GDN route held fixed, and decide whether
 this path-dependence is acceptable.
+
+## Opt-in prefix-cached serving
+
+`python -m experiments.b200_attention_precision.startup --name NAME --prefix-caching`
+launches the selected default with align-mode prefix caching. The only changes
+are `--enable-prefix-caching --mamba-cache-mode align` and the
+`PrefixCachedFastGdnWorker` subclass. All startup audits and the canary gate
+still apply. Use it for synchronous monitoring of growing sessions only:
+- cached scores differ from uncached scores by up to about 0.15;
+- benchmark and evaluation runners replay identical prompts and must keep
+  caching off (they assert `--no-enable-prefix-caching`).
