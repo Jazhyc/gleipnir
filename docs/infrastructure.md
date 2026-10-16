@@ -144,6 +144,17 @@ the user authorized the following:
   wiped `/tmp`; SSH moved to port 32443. The pre-restart container caches are
   archived in `results/b200_shutdown/20261015_eu_resize/`.
 
+At the user's request, `gswwir1daslht0` was terminated on 2026-10-16:
+delete returned HTTP 204 and the lookup 404. Before termination the GPU was
+idle and all session results, adapters, configs and logs were collected
+locally, with remote and local file counts matching. Container-only caches
+are archived on the volume as
+`results/b200_shutdown/20261016_eu/container_caches.tar.zst` (SHA-256
+`f2dab5b4…`). Both volumes are retained: EU `cb7bxu71ug` (200 GB) and NC2
+`ixbh81vf9c` (300 GB). Three older Pods remain EXITED (stopped, not
+terminated). The kernel links `.cache/kernels/{fa4,nvidia_mxfp8}` point at the
+EU serving runtime.
+
 The EU volume now holds:
 - the NC2 runtime archive (SHA-256 `c4d76a28…`, verified);
 - the NC2 FLA, causal-conv1d and Triton builds under `.cache/kernels-nc2/`, and

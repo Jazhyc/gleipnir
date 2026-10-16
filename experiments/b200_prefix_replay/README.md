@@ -83,3 +83,11 @@ still apply. Use it for synchronous monitoring of growing sessions only:
 - cached scores differ from uncached scores by up to about 0.15;
 - benchmark and evaluation runners replay identical prompts and must keep
   caching off (they assert `--no-enable-prefix-caching`).
+
+**Startup validation (`prefix_optin01`).** `--prefix-caching` started the
+default stack with align-mode caching and `PrefixCachedFastGdnWorker`, and all
+audits passed. The canary gate then refused it: MAE 0.0083 against the 0.005
+default-reproduction limit (correlation 0.9991). The canary prompts share the
+monitor header, and cached scoring is path-dependent. A separate acceptance
+limit for cached serving is a pending user decision; until then the flag
+cannot complete startup.
