@@ -30,6 +30,14 @@ CELLS = {
             "training_metadata.json"
         ),
     },
+    # Composite validation: SDPA receipt for attention, FP4 receipt for MLP.
+    "fp4-sdpa": {
+        "profile": "qwen35_4b_b200_fp4_mlp_sdpa",
+        "startup_reference": (
+            "results/student_injection_awareness/4b/regular/causal_adapter/"
+            "training_metadata.json"
+        ),
+    },
 }
 FIELDS = {
     "hypothesis": (
