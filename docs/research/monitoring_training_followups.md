@@ -212,6 +212,9 @@ test, not established evidence for Qwen monitoring or LoRA factor averaging.
   all-prefix objective. See [prefix results](../../experiments/monitoring_prefix_supervision/README.md),
   [branching results](../../experiments/monitoring_branching/README.md), and
   [teacher agreement](../findings/matched_qwen_kimi_teacher_agreement.md).
+- Distillation temperature: on the BF16/SDPA recipe, KD T=2 and T=4 and
+  teacher-target sharpening all lowered ID pAUROC@20 (−1.8 to −6.9 points).
+  See the [temperature screen](../findings/distillation_temperature.md).
 - Hard-label anchoring: replicated internal deception gains did not establish
   broad external-transfer improvement. Label semantics can differ from the
   monitoring rubric. See the [external comparison](../../experiments/aisi_lie_detection_transfer/README.md).

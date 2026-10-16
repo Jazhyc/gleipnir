@@ -100,9 +100,49 @@ done
 PYTHONPATH=src:. <training-python> -m experiments.distillation_temperature.run
 ```
 
-## Status
+## Results (2026-10-16, EU-RO-1 `GPU-3d8d6bde…`)
 
-Launched 2026-10-16 14:38 UTC on Pod `q7io6ui6gwbqo6` (`GPU-3d8d6bde…`), driver
-PID 4924. All three inventories passed. The T=2 arm's first updates have finite
-losses (about 2.1–2.5, which includes the T² scale). After scoring, run
-`python -m experiments.distillation_temperature.compare`.
+None of the three arms advances. T = 1 stays the soft-loss temperature. Every
+arm scores below all three baseline seeds (0.896–0.914).
+
+| ID, 3,012 rows | pAUROC@20 | Δ vs. control | Gloom Δ | STRIDE Δ | Brier Δ | median \|margin\| |
+|---|---:|---:|---:|---:|---:|---:|
+| control (seed 1) | 0.8978 | — | (0.8168) | (0.9788) | (0.0722) | 2.25 |
+| KD T=2 | 0.8789 | −1.89 | −0.94 | −2.85 | +0.002 | 2.88 |
+| KD T=4 | 0.8802 | −1.76 | +0.01 | −3.53 | +0.004 | 3.25 |
+| sharpen ×2 | 0.8291 | **−6.87** | **−13.64** | −0.10 | +0.019 | 3.38 |
+
+Δ columns are in pAUROC@20 points, except Brier. The control row shows absolute
+values in parentheses.
+
+- **Distillation temperature.** Higher T did what the audit predicted for the
+  margins. The share of ID rows with |margin| > 4 rose from 12% to 24% (T=2) and
+  31% (T=4), and unique scores rose from 98 to 117 and 140. Ranking still got
+  worse, mainly on STRIDE.
+  - So compressed margins are not what limits the student. Weighting the
+    confident rows more costs ranking quality on this ID set.
+  - The drop is about two seed SDs on one seed, but both arms agree.
+- **Sharpening.** It loses 13.6 Gloom points, far beyond seed noise, while
+  STRIDE is unchanged.
+  - Gloom's teacher targets are the least confident (median |margin| 3.9).
+    Doubling them discards the graded uncertainty that the Gloom ranking
+    depends on.
+  - This differs from the earlier 0.3 hard-label mix, which was unfiltered, used
+    LR 2e-5 and gained 3.2 Gloom points. Sharpening every target is not a
+    substitute for that mix.
+- **Scores vs. control.** Mean absolute score difference is 0.070, 0.090 and
+  0.110, with 183, 229 and 294 threshold flips.
+
+**Operational note.** The sharpening arm trained fully, but its merge failed
+with `No space left on device`. The two finished arms' merged checkpoints were
+still occupying the 50 GB container disk. `recover.py` handled it:
+1. It retired those checkpoints after the `release_merge` checks.
+2. It archived the failed receipt and log (`runner_failed_merge_attempt.json`,
+   `merge_failed_attempt.log`).
+3. It resumed the campaign from the merge step. Training was not repeated.
+
+Later multi-arm queues on this Pod should release each merged slot after
+scoring.
+
+Receipts: `results/distillation_temperature/{comparison,status}.json` and
+`results/<arm>/`.

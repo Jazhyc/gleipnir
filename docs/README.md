@@ -1,5 +1,7 @@
 # Documentation index
 
+- [Distillation temperature](findings/distillation_temperature.md): T=2/4 KD
+  and target sharpening all lower ID pAUROC@20; keep T = 1.
 - [Opt-in prefix-cached serving](decisions/prefix_cached_serving.md):
   synchronous-monitoring mode with accepted cached-score drift.
 - [BF16/SDPA training default](decisions/b200_bf16_sdpa_training_default.md):
