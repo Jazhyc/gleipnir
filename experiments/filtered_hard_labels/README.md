@@ -60,6 +60,6 @@ python -m experiments.filtered_hard_labels.compare
 
 ## Status
 
-Launched 2026-10-16 18:50 UTC on Pod `q7io6ui6gwbqo6` (`GPU-3d8d6bde…`). The
+Launched 2026-10-16 18:10 UTC on Pod `q7io6ui6gwbqo6` (`GPU-3d8d6bde…`). The
 inventory passed, and the trainer resolved soft 0.7 / direct 0.3 at LR 5e-5.
 The first updates have finite losses (0.67, 0.61).
