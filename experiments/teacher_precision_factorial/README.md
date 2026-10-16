@@ -64,3 +64,60 @@ Single seed per cell, so the per-source estimates are noisy:
 - **Large sign changes** (AgentDojo −14.7/+13.7, CUA-SHADE +3.7) show strong
   cell-specific variation or interaction, which one seed cannot resolve.
 - **Next.** The FP4/SDPA cell measures the FP4 effect without FA4.
+
+## FP4/SDPA result and full 2×2 (`teacher-cell-fp4-sdpa-s0-01`, 2026-10-16)
+
+Training: 245 updates in 3,308 s (cold FP4 compile), train loss 0.190.
+Startup took the composite reuse path
+(`reuse_composite_sdpa_packing_and_native_fp4_mlp`) with native FP4 active.
+Master, merge and BF16 serving parity passed (OOD serving parity passed).
+`results/teacher_precision_factorial/factorial_comparison.json`.
+
+Source-macro pAUROC@20. BF16/SDPA is the three-seed mean (SD); other cells
+are seed 0:
+
+| | BF16 MLP, SDPA | FP4 MLP, SDPA | BF16 MLP, FA4 | FP4 MLP, FA4 |
+| --- | ---: | ---: | ---: | ---: |
+| ID macro | 0.9026 (1.01) | 0.8715 | 0.8605 | 0.8870 |
+| ID Gloom | 0.8357 (2.34) | 0.7792 | 0.7546 | 0.8189 |
+| ID STRIDE | 0.9696 (0.82) | 0.9638 | 0.9664 | 0.9552 |
+| OOD macro | 0.7921 (1.84) | **0.8136** | 0.7579 | 0.7380 |
+| AgentDojo | 0.9017 (4.44) | 0.9679 | 0.7549 | 0.8919 |
+| CUA-SHADE | 0.7679 (0.39) | 0.7335 | 0.8044 | 0.7366 |
+| IAC | 0.8511 (4.21) | 0.8833 | 0.7729 | 0.7296 |
+| Rogue eval | 0.9758 (0.58) | 0.9618 | 0.9342 | 0.8916 |
+| SHADE-Arena | 0.2561 (4.68) | 0.3353 | 0.2818 | 0.1783 |
+
+Simple effects on OOD macro (points):
+
+| Effect | Change |
+| --- | ---: |
+| FP4 at SDPA | +2.2 |
+| FP4 at FA4 | −2.0 |
+| FA4 at BF16 | −3.4 |
+| FA4 at FP4 | −7.6 |
+
+What this shows:
+- **FA4 is the consistent OOD harm.** It lowers OOD macro under both MLP
+  precisions, and Rogue eval falls 4–7 points (7–12 SDs).
+- **FP4 alone does not reduce OOD macro.** FP4/SDPA sits at the top of the
+  SDPA seed range (+2.2, just above seed 1's 0.8125). The FP4/FA4 deficit
+  comes mostly from FA4, plus an FP4×FA4 interaction (FA4 costs 7.6 points
+  with FP4 versus 3.4 with BF16).
+- **FP4 still costs the low-noise sources.** Under SDPA, CUA-SHADE drops 3.4
+  (about 9 SDs) and Rogue eval 1.4 (about 2.4 SDs). The macro gain comes from
+  the high-variance AgentDojo, IAC and SHADE-Arena.
+- **ID favours BF16/SDPA over every other cell** (−1.6 to −4.2 points), mostly
+  through Gloom.
+- **Limits.** One seed per off-diagonal and FP4/FA4 cell. Per-source
+  differences in the high-variance sources are within or near the SDPA seed
+  spread.
+
+**Teacher implication.** Avoid FA4 in teacher training. BF16/SDPA remains the
+best-supported teacher: three seeds, best ID, OOD within noise of FP4/SDPA.
+FP4/SDPA is a plausible OOD alternative, but its low-noise-source losses and
+ID loss would need more seeds before choosing it.
+
+**Pod state.** `.cache/kernels/fa4` and `.cache/kernels/nvidia_mxfp8` still
+point at the NC2 training runtime. Repoint them to
+`/tmp/gleipnir-serving-runtime/{fa4,mxfp8}` before restaging EU serving.
