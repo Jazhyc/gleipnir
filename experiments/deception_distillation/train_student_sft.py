@@ -3849,6 +3849,31 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             trainer.lr_scheduler = None
             return trainer.create_optimizer()
 
+        screen_output = Path(str(precision_screen_cfg.output_dir))
+        screen_trim: dict[str, Any] = {}
+
+        def install_screen_compile():
+            compiled = apply_selective_torch_compile_policy(
+                model,
+                selective_torch_compile_policy,
+                backend=selective_torch_compile_backend,
+                mode=selective_torch_compile_mode,
+                dynamic=selective_torch_compile_dynamic,
+            )
+            if bool(precision_screen_cfg.get("last_layer_trim", False)):
+                # After compilation: the untrimmed path stays the compiled one.
+                trim, receipt = install_checked_last_layer_trim(
+                    model,
+                    trainer,
+                    dataset,
+                    screen_output,
+                    cfg,
+                    adaptive_policy,
+                    bool(precision_screen_cfg.get("sequence_packing", False)),
+                )
+                screen_trim.update(trim=trim, **receipt)
+            return compiled
+
         run_precision_training_screen(
             model=model,
             features=[dict(dataset[i]) for i in range(len(dataset))],
@@ -3858,13 +3883,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             scheduler_factory=lambda optimizer, steps: trainer.create_scheduler(
                 steps, optimizer
             ),
-            install_compile=lambda: apply_selective_torch_compile_policy(
-                model,
-                selective_torch_compile_policy,
-                backend=selective_torch_compile_backend,
-                mode=selective_torch_compile_mode,
-                dynamic=selective_torch_compile_dynamic,
-            ),
+            install_compile=install_screen_compile,
             output=Path(str(precision_screen_cfg.output_dir)),
             seed=int(cfg.seed),
             policy=adaptive_policy,
@@ -3922,6 +3941,11 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                 "fp32_projection": fp32_projection_metadata,
             },
         )
+        if trim := screen_trim.pop("trim", None):
+            (screen_output / "last_layer_trim.json").write_text(
+                json.dumps({**screen_trim, "training": trim.metadata()}, indent=2)
+                + "\n"
+            )
         return
     execution_audit_cfg = OmegaConf.select(
         cfg, "student.training.execution_audit", default=None

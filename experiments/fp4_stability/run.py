@@ -574,6 +574,8 @@ def main() -> None:
                     "++student.training.precision_screen.packing_only="
                     f"{str(config.get('packing_only', True)).lower()}"
                 )
+            if config.get("last_layer_trim", False):
+                command.append("++student.training.precision_screen.last_layer_trim=true")
             if config.get("packing_learning_gradient_tolerance") is not None:
                 command.append(
                     "++student.training.precision_screen.packing_learning_gradient_tolerance="
