@@ -113,3 +113,35 @@ runs each example unpacked, which the trim rejected. Unpacked calls now fall
 back to the exact untrimmed layer and are counted. The isolation check
 therefore compares trimmed packs with untrimmed singletons, which is a second
 check of the trim.
+
+## Result (fourth attempt, 2026-10-16 20:19–20:24 UTC)
+
+The run used the same GPU as the control, the same 10 measured batches and
+identical physical partitions:
+
+| packed benchmark | control | trim | change |
+|---|---:|---:|---:|
+| mean update | 4.924 s | 4.684 s | **−4.9%** |
+| median update | 4.827 s | 4.585 s | −5.0% |
+| peak allocated | 147.14 GiB | 143.38 GiB | −3.8 GiB |
+| new Dynamo graphs during measured updates | 0 | 0 | |
+
+- **Speed.** Every measured batch is faster, by 4.3–5.4%. That is above the
+  FLOP estimate, because the trim also removes layer 31's full-size zero-grad
+  backward and its stored activations.
+- **Learning.**
+  - The 10 losses track the control within 0.002–0.018: step 1 is
+    0.6035 vs. 0.6005, and step 10 is 0.3325 vs. 0.3254.
+  - Gradient norms track as well.
+  - The after-training probe loss is 0.7780 vs. 0.7794.
+- **Isolation.** The compiled packing-isolation check passed, with repeat,
+  perturbation and cross-example gradients all 0. Packed (trimmed) vs. singleton
+  (untrimmed) gives a gradient relative L2 of 0.0556 and loss 0.9398 vs. 0.9576;
+  the control gives 0.0061 and equal losses. That exceeds the strict 0.05 gate
+  but is accepted under the configured 0.15 learning tolerance. The likely cause
+  is that the trimmed layer runs eager while the singleton reference runs the
+  compiled layer: eager vs. compiled moves the probe loss by 0.01–0.02 in both
+  runs. The trainer canary, which compares trimmed and untrimmed packs under
+  the same compile state, shows 1.10% against a 0.43% noise floor.
+- **Trimmed calls.** The run made 195 trimmed calls and 2 unpacked untrimmed
+  calls.
