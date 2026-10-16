@@ -50,8 +50,16 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
     """Reject unsupported ordinary packing before loading the model."""
     training = student["training"]
     from gleipnir.native_fp4_training import validate_native_fp4_config
+    from gleipnir.training.backends.native_fp4_sdpa import (
+        is_native_fp4_sdpa,
+        validate_native_fp4_sdpa_config,
+    )
 
-    selected_native_fp4 = validate_native_fp4_config(student)
+    selected_native_fp4 = (
+        validate_native_fp4_sdpa_config(student)
+        if is_native_fp4_sdpa(training)
+        else validate_native_fp4_config(student)
+    )
     enabled = training.get("sequence_packing", False)
     if type(enabled) is not bool:
         raise ValueError("sequence_packing must be boolean")

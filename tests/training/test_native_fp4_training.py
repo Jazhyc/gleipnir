@@ -12,6 +12,7 @@ from omegaconf import OmegaConf
 from gleipnir import native_fp4_training as native
 from gleipnir.monitoring_training_command import training_command
 from gleipnir.packed_training import validate_packed_training_config
+from gleipnir.training.backends import native_fp4_sdpa as native_sdpa
 from gleipnir.validated_startup import validation_reference
 from tests.helpers.paths import ROOT
 
@@ -267,7 +268,7 @@ def test_fp4_sdpa_profile_is_a_separate_recorded_recipe():
     assert validate_packed_training_config(student)
     training = student["training"]
     assert training["startup_validation_reference_sha256"] == (
-        native.SDPA_REFERENCE_SHA256
+        native_sdpa.SDPA_REFERENCE_SHA256
     )
     for field, value in [
         ("native_fp4_sdpa_composite_authority", None),
@@ -284,15 +285,15 @@ def test_fp4_sdpa_profile_is_a_separate_recorded_recipe():
 
 
 def test_fp4_sdpa_composite_binds_both_receipts_without_fresh_claims():
-    sdpa = ROOT / native.SDPA_REFERENCE
+    sdpa = ROOT / native_sdpa.SDPA_REFERENCE
     receipt = validation_reference(
         sdpa,
         packed_attention_backend="sdpa",
-        expected_sha256=native.SDPA_REFERENCE_SHA256,
+        expected_sha256=native_sdpa.SDPA_REFERENCE_SHA256,
         native_fp4_mlp=True,
     )
     assert receipt["policy"] == "reuse_composite_sdpa_packing_and_native_fp4_mlp"
-    assert receipt["reference_sha256"] == native.SDPA_REFERENCE_SHA256
+    assert receipt["reference_sha256"] == native_sdpa.SDPA_REFERENCE_SHA256
     assert receipt["native_fp4_reference_sha256"] == native.REFERENCE_SHA256
     assert receipt["attention_backend"] == "sdpa"
     assert receipt["waived_checks"] == ["loss_parity", "gradient_relative_l2"]

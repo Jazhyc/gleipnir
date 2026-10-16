@@ -191,10 +191,10 @@ def composite_native_fp4_sdpa_reference(
         REFERENCE,
         REFERENCE_SHA256,
         RUNTIME_SHAPE_VALIDATION,
-        SDPA_REFERENCE_SHA256,
         validate_native_fp4_reference,
         verify_native_fp4_runtime,
     )
+    from gleipnir.training.backends.native_fp4_sdpa import SDPA_REFERENCE_SHA256
 
     if expected_sha256 != SDPA_REFERENCE_SHA256:
         raise ValueError("native FP4 SDPA composite requires the accepted SDPA receipt")
