@@ -31,55 +31,20 @@ def _final_layer(model: Any) -> tuple[int, Any]:
     return len(layers) - 1, layers[-1]
 
 
-def trimmed_layer_forward(
-    layer: Any,
-    hidden_states: torch.Tensor,
-    position_embeddings: tuple[torch.Tensor, torch.Tensor],
-    attention_mask: Any = None,
-    position_ids: Any = None,
-    past_key_values: Any = None,
-    **kwargs: Any,
+@torch.compiler.disable
+def _decision_attention(
+    attn: Any,
+    query: torch.Tensor,
+    key: torch.Tensor,
+    value: torch.Tensor,
+    cumulative: torch.Tensor,
 ) -> torch.Tensor:
-    cumulative = kwargs.get("cu_seq_lens_q")
-    sequence_ids = kwargs.get("seq_idx")
-    if (
-        cumulative is None
-        or sequence_ids is None
-        or hidden_states.shape[0] != 1
-        or attention_mask is not None
-        or past_key_values is not None
-        or not torch.equal(cumulative, kwargs["cu_seq_lens_k"])
-    ):
-        raise ValueError("last-layer trim requires the packed training path")
-    attn = layer.self_attn
-    tokens, head_dim = hidden_states.shape[1], attn.head_dim
-    if int(cumulative[-1]) != tokens:
-        raise ValueError("packed boundaries do not cover the final layer input")
-    positions = cumulative[1:].long() - 1
-    selected = positions.numel()
+    """One query per segment through the untrimmed router's SDPA entry point.
 
-    normed = layer.input_layernorm(hidden_states)
-    query, gate = torch.chunk(
-        attn.q_proj(normed.index_select(1, positions)).view(
-            1, selected, -1, head_dim * 2
-        ),
-        2,
-        dim=-1,
-    )
-    gate = gate.reshape(1, selected, -1)
-    query = attn.q_norm(query).transpose(1, 2)
-    key = attn.k_norm(attn.k_proj(normed).view(1, tokens, -1, head_dim)).transpose(1, 2)
-    value = attn.v_proj(normed).view(1, tokens, -1, head_dim).transpose(1, 2)
-    from transformers.models.qwen3_5.modeling_qwen3_5 import apply_rotary_pos_emb
-
-    cos, sin = position_embeddings
-    query = apply_rotary_pos_emb(
-        query, query, cos.index_select(1, positions), sin.index_select(1, positions)
-    )[0]
-    key = apply_rotary_pos_emb(key, key, cos, sin)[1]
-    # Each decision query is its sequence's last token: it attends to every key
-    # of its own sequence. Use the same Transformers SDPA entry point as the
-    # untrimmed segmented router, one query per segment (non-causal for q=1).
+    Each decision query is its sequence's last token, so it attends to every
+    key of its own sequence (non-causal for q=1). Kept out of compilation, as
+    the untrimmed segmented router is.
+    """
     from transformers.integrations.sdpa_attention import sdpa_attention_forward
 
     cuts = cumulative.tolist()
@@ -97,16 +62,84 @@ def trimmed_layer_forward(
         )
         rows.append(row)
     # Each row is (batch, query, heads, head_dim), as the untrimmed path returns.
-    output = torch.cat(rows, dim=1).reshape(1, selected, -1) * torch.sigmoid(gate)
+    return torch.cat(rows, dim=1)
+
+
+def trimmed_layer_core(
+    layer: Any,
+    hidden_states: torch.Tensor,
+    cos: torch.Tensor,
+    sin: torch.Tensor,
+    positions: torch.Tensor,
+    cumulative: torch.Tensor,
+) -> torch.Tensor:
+    """Layer body for packed decision positions; the compilation target."""
+    from transformers.models.qwen3_5.modeling_qwen3_5 import apply_rotary_pos_emb
+
+    attn = layer.self_attn
+    tokens, head_dim = hidden_states.shape[1], attn.head_dim
+    selected = positions.shape[0]
+    normed = layer.input_layernorm(hidden_states)
+    query, gate = torch.chunk(
+        attn.q_proj(normed.index_select(1, positions)).view(
+            1, selected, -1, head_dim * 2
+        ),
+        2,
+        dim=-1,
+    )
+    gate = gate.reshape(1, selected, -1)
+    query = attn.q_norm(query).transpose(1, 2)
+    key = attn.k_norm(attn.k_proj(normed).view(1, tokens, -1, head_dim)).transpose(1, 2)
+    value = attn.v_proj(normed).view(1, tokens, -1, head_dim).transpose(1, 2)
+    query = apply_rotary_pos_emb(
+        query, query, cos.index_select(1, positions), sin.index_select(1, positions)
+    )[0]
+    key = apply_rotary_pos_emb(key, key, cos, sin)[1]
+    output = _decision_attention(attn, query, key, value, cumulative)
+    output = output.reshape(1, selected, -1) * torch.sigmoid(gate)
     hidden = hidden_states.index_select(1, positions) + attn.o_proj(output)
     hidden = hidden + layer.mlp(layer.post_attention_layernorm(hidden))
     return hidden_states.new_zeros(hidden_states.shape).index_copy(1, positions, hidden)
 
 
+def trimmed_layer_forward(
+    layer: Any,
+    hidden_states: torch.Tensor,
+    position_embeddings: tuple[torch.Tensor, torch.Tensor],
+    attention_mask: Any = None,
+    position_ids: Any = None,
+    past_key_values: Any = None,
+    *,
+    core: Callable[..., torch.Tensor] = trimmed_layer_core,
+    **kwargs: Any,
+) -> torch.Tensor:
+    cumulative = kwargs.get("cu_seq_lens_q")
+    sequence_ids = kwargs.get("seq_idx")
+    if (
+        cumulative is None
+        or sequence_ids is None
+        or hidden_states.shape[0] != 1
+        or attention_mask is not None
+        or past_key_values is not None
+        or not torch.equal(cumulative, kwargs["cu_seq_lens_k"])
+    ):
+        raise ValueError("last-layer trim requires the packed training path")
+    if int(cumulative[-1]) != hidden_states.shape[1]:
+        raise ValueError("packed boundaries do not cover the final layer input")
+    positions = cumulative[1:].long() - 1
+    cos, sin = position_embeddings
+    return core(layer, hidden_states, cos, sin, positions, cumulative)
+
+
 class LastLayerTrim:
     """Switchable wrapper; disabled calls the existing (compiled) forward."""
 
-    def __init__(self, model: Any) -> None:
+    def __init__(
+        self,
+        model: Any,
+        compile_function: Callable[[Callable], Callable] | None = None,
+    ) -> None:
+        """``compile_function`` should match the selective policy's settings."""
         self.layer_index, self.layer = _final_layer(model)
         if getattr(self.layer, ATTRIBUTE, None) is not None:
             raise ValueError("last-layer trim is already installed")
@@ -114,6 +147,12 @@ class LastLayerTrim:
         self.enabled = True
         self.calls = 0
         self.unpacked_calls = 0
+        self.compiled = compile_function is not None
+        core = (
+            trimmed_layer_core
+            if compile_function is None
+            else compile_function(trimmed_layer_core)
+        )
 
         def forward(*args: Any, **kwargs: Any) -> torch.Tensor:
             if not self.enabled:
@@ -123,7 +162,7 @@ class LastLayerTrim:
                 self.unpacked_calls += 1
                 return self.original(*args, **kwargs)
             self.calls += 1
-            return trimmed_layer_forward(self.layer, *args, **kwargs)
+            return trimmed_layer_forward(self.layer, *args, core=core, **kwargs)
 
         self.layer.forward = forward
         setattr(self.layer, ATTRIBUTE, self)
@@ -135,6 +174,7 @@ class LastLayerTrim:
             "trimmed_calls": self.calls,
             "unpacked_untrimmed_calls": self.unpacked_calls,
             "attention": "per_segment_sdpa_decision_queries",
+            "compiled": self.compiled,
         }
 
 

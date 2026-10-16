@@ -765,6 +765,7 @@ def install_checked_last_layer_trim(
     cfg: Any,
     adaptive_policy: Any,
     packing_enabled: bool,
+    compile_function: Callable[[Callable], Callable] | None = None,
 ) -> tuple[Any, dict]:
     """Trim the final layer, after a real-pack trim-off/on gradient canary."""
     from gleipnir.training.last_layer_trim import LastLayerTrim, gradient_parity
@@ -803,7 +804,7 @@ def install_checked_last_layer_trim(
     handle = base.lm_head.register_forward_hook(
         lambda _module, _inputs, output: captured.__setitem__("logits", output)
     )
-    trim = LastLayerTrim(model)
+    trim = LastLayerTrim(model, compile_function=compile_function)
     decision_ids = list(trainer.direct_target_ids)
     results = {}
     try:
@@ -3591,6 +3592,19 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             default=True,
         )
     )
+
+    def trim_compile_function() -> Callable[[Callable], Callable] | None:
+        """Compile the trimmed final layer exactly as the policy compiles layers."""
+        if selective_torch_compile_policy in {"none", "linear_attention_shells_only"}:
+            return None
+        return lambda function: torch.compile(
+            function,
+            backend=selective_torch_compile_backend,
+            mode=selective_torch_compile_mode,
+            dynamic=selective_torch_compile_dynamic,
+            fullgraph=False,
+        )
+
     allow_unspec_int_on_nn_module = bool(
         OmegaConf.select(
             cfg, "student.training.allow_unspec_int_on_nn_module", default=False
@@ -3877,6 +3891,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     cfg,
                     adaptive_policy,
                     bool(precision_screen_cfg.get("sequence_packing", False)),
+                    compile_function=trim_compile_function(),
                 )
                 screen_trim.update(trim=trim, **receipt)
             return compiled
@@ -4507,7 +4522,14 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     last_layer_trim = None
     if bool(OmegaConf.select(cfg, "student.training.last_layer_trim", default=False)):
         last_layer_trim, last_layer_trim_metadata = install_checked_last_layer_trim(
-            model, trainer, dataset, output_dir, cfg, adaptive_policy, packing_enabled
+            model,
+            trainer,
+            dataset,
+            output_dir,
+            cfg,
+            adaptive_policy,
+            packing_enabled,
+            compile_function=trim_compile_function(),
         )
     train_output = trainer.train()
     if last_layer_trim is not None:

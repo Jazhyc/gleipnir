@@ -145,3 +145,12 @@ identical physical partitions:
   the same compile state, shows 1.10% against a 0.43% noise floor.
 - **Trimmed calls.** The run made 195 trimmed calls and 2 unpacked untrimmed
   calls.
+
+## Compiled trim (fifth attempt)
+
+At the user's request, the trimmed layer is now compiled with the selective
+policy's backend, mode and dynamic setting. Only the per-segment attention
+loop stays uncompiled, as the untrimmed router does. The question is whether
+the packed (trimmed) vs. singleton (untrimmed) gradient comparison returns
+under the strict 0.05 gate. The trim canary and timing are measured again
+against the same 4.924 s control.

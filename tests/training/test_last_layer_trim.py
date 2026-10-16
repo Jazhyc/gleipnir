@@ -3,7 +3,11 @@ import torch
 from transformers import Qwen3_5ForCausalLM
 from transformers.models.qwen3_5.configuration_qwen3_5 import Qwen3_5TextConfig
 
-from gleipnir.training.last_layer_trim import LastLayerTrim, gradient_parity
+from gleipnir.training.last_layer_trim import (
+    LastLayerTrim,
+    gradient_parity,
+    trimmed_layer_forward,
+)
 from gleipnir.training.packing import (
     forward_packed_monitoring_logits,
     installed_segmented_sdpa,
@@ -163,3 +167,18 @@ def test_campaign_command_and_validation_bind_the_trim() -> None:
     validate_training_metadata(
         metadata, trim_job, "a", expected_steps=1, profile=profile
     )
+
+
+def test_compiled_trim_matches_the_eager_trim() -> None:
+    model = tiny_model()
+    ids = torch.randint(0, 64, (1, sum(LENGTHS)))
+    with installed_segmented_sdpa():
+        trim = LastLayerTrim(
+            model,
+            compile_function=lambda f: torch.compile(f, backend="eager", dynamic=True),
+        )
+        compiled = packed_forward(model, ids)
+        trim.layer.forward = lambda *a, **k: trimmed_layer_forward(trim.layer, *a, **k)
+        eager = packed_forward(model, ids)
+    assert trim.metadata()["compiled"] and trim.calls == 1
+    assert torch.allclose(compiled, eager, atol=1e-6)
