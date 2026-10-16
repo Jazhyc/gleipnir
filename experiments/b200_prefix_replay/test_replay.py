@@ -85,3 +85,12 @@ def test_opt_in_serving_changes_only_cache_flags_and_worker():
     other[2] = "some.OtherWorker"
     with pytest.raises(ValueError, match="default worker"):
         prefix_cached_command(other)
+
+
+def test_opt_in_canary_limits_are_looser_than_default_but_bounded():
+    from experiments.b200_prefix_replay.serving import CANARY_LIMITS
+
+    assert CANARY_LIMITS == {"score_mae": 0.02, "correlation": 0.99}
+    observed = {"score_mae": 0.008315, "correlation": 0.999129}  # prefix_optin01
+    assert observed["score_mae"] <= CANARY_LIMITS["score_mae"]
+    assert observed["correlation"] >= CANARY_LIMITS["correlation"]

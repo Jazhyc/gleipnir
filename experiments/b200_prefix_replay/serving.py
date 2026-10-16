@@ -16,6 +16,10 @@ ROOT = Path(__file__).resolve().parents[2]
 DEFAULT_WORKER = "experiments.b200_gdn_fast.worker.FastGdnWorker"
 CACHED_WORKER = "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
 WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"
+# User decision 2026-10-16: accept cached-scoring drift for opt-in synchronous
+# monitoring (docs/decisions/prefix_cached_serving.md). Same limits as the
+# campaigns' new-adapter serving parity; the default stack keeps 0.005.
+CANARY_LIMITS = {"score_mae": 0.02, "correlation": 0.99}
 
 
 def prefix_cached_command(command: list[str]) -> list[str]:

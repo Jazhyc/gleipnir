@@ -32,6 +32,7 @@ async def startup(
     last_query: bool = True,
     transform: Callable[[list[str]], list[str]] | None = None,
     environment: dict[str, str] | None = None,
+    canary_limits: dict | None = None,
 ) -> None:
     """Reproduce the accepted recipe and guard its canary before retaining it.
 
@@ -170,7 +171,8 @@ async def startup(
         if [r["prompt_sha256"] for r in values] != master["prompt_sha256"]:
             raise ValueError("default master canary prompt identity changed")
         effect = float(np.abs(scores - np.array(master["base"])).max())
-        limits = selection["reproduction_limits"]
+        # Opt-in modes with a recorded user decision may pass their own limits.
+        limits = canary_limits or selection["reproduction_limits"]
         receipt = {
             "passed": bool(np.isfinite(scores).all())
             and mae <= limits["score_mae"]
@@ -180,6 +182,8 @@ async def startup(
             "score_mae": mae,
             "correlation": correlation,
             "quality_status": "user_accepted_finite",
+            "limits": limits,
+            "limits_policy": "override" if canary_limits else "selected_default",
             "inherited_strict_master_passed": False,
             "inherited_strict_old_serving_passed": False,
         }
@@ -275,17 +279,21 @@ def main() -> None:
         "scores are not identical to uncached serving",
     )
     args = parser.parse_args()
-    transform = None
+    transform, canary_limits = None, None
     if args.prefix_caching:
-        from experiments.b200_prefix_replay.serving import prefix_cached_command
+        from experiments.b200_prefix_replay.serving import (
+            CANARY_LIMITS,
+            prefix_cached_command,
+        )
 
-        transform = prefix_cached_command
+        transform, canary_limits = prefix_cached_command, CANARY_LIMITS
     asyncio.run(
         startup(
             args.name,
             prepare_only=args.prepare_only,
             last_query=not args.without_last_query,
             transform=transform,
+            canary_limits=canary_limits,
         )
     )
 

@@ -88,6 +88,7 @@ still apply. Use it for synchronous monitoring of growing sessions only:
 default stack with align-mode caching and `PrefixCachedFastGdnWorker`, and all
 audits passed. The canary gate then refused it: MAE 0.0083 against the 0.005
 default-reproduction limit (correlation 0.9991). The canary prompts share the
-monitor header, and cached scoring is path-dependent. A separate acceptance
-limit for cached serving is a pending user decision; until then the flag
-cannot complete startup.
+monitor header, and cached scoring is path-dependent. The user then accepted the drift for this opt-in mode
+([decision](../../docs/decisions/prefix_cached_serving.md)). Its canary now
+uses MAE ≤ 0.02 and correlation ≥ 0.99, which the observed values pass. That
+startup has not been rerun live since the Pod was terminated.
