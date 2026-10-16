@@ -186,3 +186,40 @@ compiled runs, so compilation is not the cause.
 - **Conclusion.** On this probe the 0.05 gate acts as a bitwise-equality test.
   Any non-bitwise change to layer 31 fails it. The configured 0.15 learning
   tolerance accepts the trim.
+
+## Host-sync removal (2026-10-16, `1227ef1`)
+
+**Audit of the control.** The run made 195 synchronizing calls per update,
+about 26 per packed microbatch. The training-path sources were:
+- the attention router's `tolist()` (59);
+- pack metadata built from Python lists (37);
+- Trainer input copies (30);
+- soft-target checks (22);
+- FlashQLA's index helper (22);
+- the decision-id tensor (7).
+
+The benchmark's own per-microbatch checks added 15. In the profiled update, the GPU was idle for 18.7% of
+the wall time.
+
+**Fix.** The fixes change no values. Pack boundaries reach the routers and the
+trim from the host, keyed by tensor identity with a counted `tolist()`
+fallback. Metadata and packed batches use pinned non-blocking copies. Targets
+are range-checked during collation, and decision ids are cached. FlashQLA's
+pinned package is unchanged.
+
+| run (same GPU) | mean update | median | per-batch change |
+|---|---:|---:|---:|
+| control → control + fixes | 4.924 → 4.907 s (−0.35%) | 4.827 → 4.813 s | −0.1 to −0.6% |
+| trim → trim + fixes | 4.663 → 4.644 s (−0.42%) | 4.560 → 4.546 s | −0.1 to −0.6% |
+
+- **Correctness.** Losses for updates 1 and 2 equal the earlier runs bitwise.
+  Updates 3 onward cannot be compared exactly, because the backward pass is not
+  run-to-run deterministic even for identical code: two identical control runs
+  end update 10 at 0.3254 and 0.3782.
+- **Syncs.** The audit of the trim with fixes counts 39 syncs per update:
+  FlashQLA 22, benchmark-only 15, gradient clipping 2.
+- **Idle time.** The profiled update's idle share falls to 7.2%.
+- **Conclusion.** The wall-time gain is only about 20 ms per update, so
+  training is GPU-bound. The profiler-measured idle time was mostly profiler
+  overhead. Larger gains need kernel work: FlashQLA/GDN backward, attention or
+  the MLP.
