@@ -9,9 +9,9 @@ values. The serving equivalent left scores bitwise unchanged
 `gleipnir.training.last_layer_trim` changes what layer 31 computes on the
 packed path:
 - **Every token** still gets the input norm and the K/V projections.
-- **Decision positions only** get the gated q projection, attention (one
-  masked SDPA call: each decision query sees only its own sequence), the o
-  projection, the MLP and the norms.
+- **Decision positions only** get the gated q projection, attention (the same
+  Transformers SDPA entry point the untrimmed router uses, with one query per
+  segment), the o projection, the MLP and the norms.
 - **Other output rows are zero.** The LM head reads only decision positions
   (`logits_to_keep`).
 
@@ -34,8 +34,9 @@ gradients cleared and no optimizer step. It runs two cases: one real
 multi-sequence pack filling the 16,384-token budget, and the longest single
 example. It also measures a trim-off repeat as the noise floor. It requires:
 - finite logits and gradients;
-- a nonzero gradient on every layer-31 LoRA parameter;
-- global gradient relative L2 ≤ 1%;
+- a gradient on every layer-31 LoRA parameter that the untrimmed reference
+  trains (zero-initialized LoRA B leaves A without gradient in both modes);
+- global gradient relative L2 ≤ the trim-off repeat's noise floor + 1 point;
 - decision-logit maximum absolute difference ≤ 0.125, which is two BF16 ulps
   at |logit| 8–16.
 
@@ -64,3 +65,37 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --co
 PYTHONPATH=src:. <training-python> -m experiments.b200_training_trim.run
 python -m experiments.b200_training_trim.compare
 ```
+
+## Run log
+
+**Full campaign (stopped).** The run started 19:39 UTC and was stopped during
+model load, at the user's request, in favour of the ten-update benchmark. No
+canary or update ran.
+
+**Benchmark control.** The first launch used the baseline config's
+`packing_only: false`, which also times padded batching. It was stopped after
+12 minutes and is kept as `screen_control_padded_stopped`. The packed-only
+control completed 19:58–20:08 UTC with the same partitions as the recorded
+baseline: **4.924 s mean update** (median 4.827 s), against 5.145 s on NC2. This
+host is about 4% faster, so the trim is compared with this control, not the
+recorded number.
+
+**Trim canary, first attempt.** The pack builder took examples in dataset
+order and stopped short of two sequences (`screen_trim_failed01`). It now packs
+the shortest examples first.
+
+**Trim canary, second attempt (failed).** This version used one masked SDPA
+call.
+
+| case | trim vs. reference, grad rel. L2 | trim-off repeat (noise) | logit max diff |
+|---|---:|---:|---:|
+| 16,099-token pack, 65 sequences | 1.01% | 0.43% | 0.125 |
+| longest example, 28,733 tokens | 1.09% | 1.30% | 0 |
+
+The trim did not lose any trained gradient. The flagged layer-31 LoRA A
+matrices have zero gradient in both modes because their B matrices start at
+zero. Two changes followed, both fixed before the next run:
+- the attention now uses per-segment Transformers SDPA, matching the untrimmed
+  kernels;
+- the gates are relative to the reference and to its noise floor, because
+  BF16 backward on this recipe is not run-to-run deterministic.

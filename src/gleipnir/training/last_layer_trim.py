@@ -7,7 +7,7 @@ queries, output projection, MLP and norms are needed only at those decision
 positions. Other rows of the returned hidden state are zero; the LM head
 reads only decision positions (``logits_to_keep``), so they never reach the
 loss. Gradients are mathematically unchanged; arithmetic differs only by
-kernel choice (one masked SDPA call instead of per-segment causal SDPA).
+kernel shape (one query per segment instead of the whole segment).
 """
 
 from __future__ import annotations
@@ -16,7 +16,6 @@ from collections.abc import Callable
 from typing import Any
 
 import torch
-import torch.nn.functional as F
 
 ATTRIBUTE = "_gleipnir_last_layer_trim"
 
@@ -79,22 +78,26 @@ def trimmed_layer_forward(
     )[0]
     key = apply_rotary_pos_emb(key, key, cos, sin)[1]
     # Each decision query is its sequence's last token: it attends to every key
-    # of its own sequence and none of the others.
-    allowed = (
-        sequence_ids[0][None, :]
-        == torch.arange(selected, device=sequence_ids.device, dtype=sequence_ids.dtype)[
-            :, None
-        ]
-    )
-    output = F.scaled_dot_product_attention(
-        query,
-        key,
-        value,
-        attn_mask=allowed[None, None],
-        scale=attn.scaling,
-        enable_gqa=True,
-    )
-    output = output.transpose(1, 2).reshape(1, selected, -1) * torch.sigmoid(gate)
+    # of its own sequence. Use the same Transformers SDPA entry point as the
+    # untrimmed segmented router, one query per segment (non-causal for q=1).
+    from transformers.integrations.sdpa_attention import sdpa_attention_forward
+
+    cuts = cumulative.tolist()
+    rows = []
+    for index, (start, end) in enumerate(zip(cuts[:-1], cuts[1:], strict=True)):
+        row, _ = sdpa_attention_forward(
+            attn,
+            query[:, :, index : index + 1],
+            key[:, :, start:end],
+            value[:, :, start:end],
+            None,
+            dropout=0.0,
+            scaling=attn.scaling,
+            is_causal=True,
+        )
+        rows.append(row)
+    # Each row is (batch, query, heads, head_dim), as the untrimmed path returns.
+    output = torch.cat(rows, dim=1).reshape(1, selected, -1) * torch.sigmoid(gate)
     hidden = hidden_states.index_select(1, positions) + attn.o_proj(output)
     hidden = hidden + layer.mlp(layer.post_attention_layernorm(hidden))
     return hidden_states.new_zeros(hidden_states.shape).index_copy(1, positions, hidden)
@@ -125,7 +128,7 @@ class LastLayerTrim:
             "enabled": self.enabled,
             "layer_index": self.layer_index,
             "trimmed_calls": self.calls,
-            "attention": "masked_sdpa_decision_queries",
+            "attention": "per_segment_sdpa_decision_queries",
         }
 
 
@@ -183,10 +186,16 @@ def gradient_parity(
         }
 
     final_layer = f"layers.{trim.layer_index}."
+    # Zero-initialized LoRA B leaves A without gradient in both modes; flag only
+    # parameters the untrimmed reference trains that the trim does not.
     missing = [
         name
-        for (name, _), grad in zip(parameters, candidate[2], strict=True)
-        if final_layer in name and not bool(grad.abs().sum() > 0)
+        for (name, _), ref, grad in zip(
+            parameters, reference[2], candidate[2], strict=True
+        )
+        if final_layer in name
+        and bool(ref.abs().sum() > 0)
+        and not bool(grad.abs().sum() > 0)
     ]
     finite = all(bool(torch.isfinite(g).all()) for g in candidate[2]) and bool(
         torch.isfinite(candidate[1]).all()

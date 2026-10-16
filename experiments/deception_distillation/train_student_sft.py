@@ -829,12 +829,14 @@ def install_checked_last_layer_trim(
     passed = all(
         r["finite"]
         and not r["final_layer_parameters_without_gradient"]
-        and r["trim_vs_reference"]["gradient_relative_l2"] <= gradient_tolerance
+        and r["trim_vs_reference"]["gradient_relative_l2"]
+        <= r["noise_floor"]["gradient_relative_l2"] + gradient_tolerance
         and r["trim_vs_reference"]["logit_max_abs"] <= logit_tolerance
         for r in results.values()
     )
     receipt = {
         "passed": passed,
+        "gradient_rule": "trim relative L2 <= trim-off repeat noise floor + tolerance",
         "gradient_tolerance": gradient_tolerance,
         "logit_tolerance": logit_tolerance,
         "cases": results,
