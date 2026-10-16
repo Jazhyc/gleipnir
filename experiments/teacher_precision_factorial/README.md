@@ -33,3 +33,34 @@ to the SDPA seed SD.
 
 **Stop** on input or runtime drift, nonfinite or missing gradients, failed
 parity, incomplete scoring, or completion.
+
+## BF16/FA4 result (`teacher-cell-bf16-fa4-s0-01`, 2026-10-16)
+
+Training: 245 updates in 2,248 s, train loss 0.1869. Startup reuse of the
+accepted BF16/FA4 receipt passed, as did master, merge and BF16 serving parity
+(OOD serving parity passed). pAUROC@20 against the three SDPA seeds
+(`results/teacher_precision_factorial/bf16_fa4_comparison.json`):
+
+| Split / source | SDPA mean (SD) | BF16/FA4 | FP4/FA4 | FA4 effect (BF16/FA4 − SDPA mean) | FP4 effect at FA4 |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| ID macro | 0.9026 (1.01) | 0.8605 | 0.8870 | −4.21 | +2.65 |
+| ID Gloom | 0.8357 (2.34) | 0.7546 | 0.8189 | −8.11 | +6.42 |
+| ID STRIDE | 0.9696 (0.82) | 0.9664 | 0.9552 | −0.32 | −1.11 |
+| OOD macro | 0.7921 (1.84) | 0.7579 | 0.7380 | −3.42 | −1.99 |
+| AgentDojo | 0.9017 (4.44) | 0.7549 | 0.8919 | −14.68 | +13.70 |
+| CUA-SHADE | 0.7679 (0.39) | 0.8044 | 0.7366 | +3.66 | −6.78 |
+| IAC | 0.8511 (4.21) | 0.7729 | 0.7296 | −7.82 | −4.33 |
+| Rogue eval | 0.9758 (0.58) | 0.9342 | 0.8916 | −4.15 | −4.27 |
+| SHADE-Arena | 0.2561 (4.68) | 0.2818 | 0.1783 | +2.58 | −10.36 |
+
+Single seed per cell, so the per-source estimates are noisy:
+- **FA4 explains most of the OOD macro loss.** BF16/FA4 is below every SDPA
+  seed (−3.4 points, about 1.9 SDs). Rogue eval falls −4.2 (about 7 SDs).
+- **FA4 also causes a large ID loss, concentrated in Gloom** (−8.1), matching
+  the augmented-line SDPA/FA4 finding.
+- **FP4 adds further OOD loss under FA4** (−2.0 macro). The low-noise sources
+  agree (Rogue eval −4.3, CUA-SHADE −6.8), as do IAC and SHADE-Arena. It
+  partly offsets the FA4 ID loss.
+- **Large sign changes** (AgentDojo −14.7/+13.7, CUA-SHADE +3.7) show strong
+  cell-specific variation or interaction, which one seed cannot resolve.
+- **Next.** The FP4/SDPA cell measures the FP4 effect without FA4.
