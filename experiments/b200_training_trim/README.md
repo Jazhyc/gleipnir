@@ -223,3 +223,17 @@ pinned package is unchanged.
   training is GPU-bound. The profiler-measured idle time was mostly profiler
   overhead. Larger gains need kernel work: FlashQLA/GDN backward, attention or
   the MLP.
+
+## Default-recipe smoke (ordinary Trainer, 2026-10-16 21:09–21:30 UTC)
+
+`default_smoke.yaml` runs two ordinary Trainer updates with the trim on, after
+the full startup validation; the run includes cold compiler caches.
+- **Canary.** It passed:
+  - packed: 0.55% gradient rel. L2 against a 0.44% noise floor, logit max
+    0.125;
+  - longest: 1.52% against 1.51%, logit max 0.
+- **Training.** Both updates completed, with logical batches `[32, 32]` and 16
+  physical calls, all trimmed and none falling back. Peak allocation was
+  146.5 GiB. The adapter saved.
+- **Validation.** The metadata passes `validate_training_metadata` under the
+  `qwen35_4b_b200_default` profile with `last_layer_trim`.
