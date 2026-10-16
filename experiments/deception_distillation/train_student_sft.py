@@ -774,15 +774,20 @@ def install_checked_last_layer_trim(
         raise ValueError("last-layer trim requires adaptive sequence packing")
     budget = adaptive_policy.max_padded_tokens
     lengths = [len(dataset[i]["direct_input_ids"]) for i in range(len(dataset))]
+    # Shortest-first: the most sequences one pack can hold within the budget.
     packed, total = [], 0
-    for index, length in enumerate(lengths):
-        if total + length <= budget:
-            packed.append(index)
-            total += length
+    for index in sorted(range(len(lengths)), key=lengths.__getitem__):
+        if total + lengths[index] > budget:
+            break
+        packed.append(index)
+        total += lengths[index]
     longest = max(range(len(lengths)), key=lengths.__getitem__)
     cases = {"packed": packed, "longest": [longest]}
     if len(packed) < 2:
-        raise ValueError("trim canary needs a multi-sequence pack")
+        raise ValueError(
+            f"trim canary needs a multi-sequence pack: budget={budget}, "
+            f"shortest={sorted(lengths)[:4]}, rows={len(lengths)}"
+        )
     gradient_tolerance = float(
         OmegaConf.select(
             cfg, "student.training.last_layer_trim_gradient_tolerance", default=0.01

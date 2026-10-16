@@ -5,7 +5,7 @@ set -euo pipefail
 cd /workspace/gleipnir
 export HF_HOME=/workspace/gleipnir/.cache/huggingface HF_HUB_OFFLINE=1 TRANSFORMERS_OFFLINE=1
 export PYTHONPATH=/workspace/gleipnir/src:/workspace/gleipnir PYTHONUNBUFFERED=1 WANDB_MODE=disabled
-for condition in control trim; do
+for condition in ${@:-control trim}; do
   echo "screen_start $condition $(date -Is)"
   /tmp/gleipnir-training-runtime/venv/bin/python experiments/fp4_stability/run.py \
     --config experiments/b200_training_trim/screen_$condition.yaml
