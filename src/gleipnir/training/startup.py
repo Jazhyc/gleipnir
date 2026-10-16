@@ -27,6 +27,10 @@ def validation_reference(
     native_fp4_mlp: bool = False,
 ) -> dict[str, Any]:
     """Load a completed packed recipe receipt for explicitly selected reuse."""
+    if native_fp4_mlp and packed_attention_backend == "sdpa":
+        return composite_native_fp4_sdpa_reference(
+            path, expected_sha256=expected_sha256, verify_runtime=verify_runtime
+        )
     contents = path.read_bytes()
     digest = hashlib.sha256(contents).hexdigest()
     if expected_sha256 is not None and digest != expected_sha256:
@@ -170,6 +174,58 @@ def validation_reference(
         "reference_compile_canary": metadata.get("selective_torch_compile", {}).get(
             "canary"
         ),
+    }
+
+
+def composite_native_fp4_sdpa_reference(
+    path: Path, *, expected_sha256: str | None, verify_runtime: bool
+) -> dict[str, Any]:
+    """Native FP4 MLP with SDPA packing: two receipts, each within its own scope.
+
+    The accepted BF16/SDPA receipt covers attention packing, FlashQLA and the
+    compile/adaptive canaries. The checksum-bound FP4 receipt covers the MLP
+    arithmetic under the user's finite acceptance (loss and gradient parity
+    waived, isolation enforced). No fresh probe of the combination is claimed.
+    """
+    from gleipnir.training.backends.native_fp4 import (
+        REFERENCE,
+        REFERENCE_SHA256,
+        RUNTIME_SHAPE_VALIDATION,
+        SDPA_REFERENCE_SHA256,
+        validate_native_fp4_reference,
+        verify_native_fp4_runtime,
+    )
+
+    if expected_sha256 != SDPA_REFERENCE_SHA256:
+        raise ValueError("native FP4 SDPA composite requires the accepted SDPA receipt")
+    attention = validation_reference(
+        path,
+        packed_attention_backend="sdpa",
+        expected_sha256=SDPA_REFERENCE_SHA256,
+    )
+    fp4_path = Path(__file__).resolve().parents[3] / REFERENCE
+    fp4_contents = fp4_path.read_bytes()
+    fp4_metadata = json.loads(fp4_contents)
+    validate_native_fp4_reference(
+        fp4_metadata, hashlib.sha256(fp4_contents).hexdigest()
+    )
+    return {
+        **attention,
+        "policy": "reuse_composite_sdpa_packing_and_native_fp4_mlp",
+        "native_fp4_mlp": fp4_metadata["quantization"]["full_bf16_lora"][
+            "native_fp4_mlp"
+        ],
+        "native_fp4_mlp_parity_policy": "selected_finite",
+        "waived_checks": ["loss_parity", "gradient_relative_l2"],
+        "native_fp4_runtime": verify_native_fp4_runtime() if verify_runtime else {},
+        "native_fp4_source_validation": deepcopy(RUNTIME_SHAPE_VALIDATION),
+        "native_fp4_reference_path": str(fp4_path),
+        "native_fp4_reference_sha256": REFERENCE_SHA256,
+        "composite_scope": {
+            "attention_packing_flashqla_compile": "bf16_sdpa_receipt",
+            "mlp_arithmetic": "native_fp4_receipt",
+            "fresh_combined_probe": False,
+        },
     }
 
 

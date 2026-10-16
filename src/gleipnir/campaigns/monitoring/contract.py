@@ -49,6 +49,7 @@ class Campaign:
             )
         if config["num_train_epochs"] != 1 or config["profile"] not in (
             "qwen35_4b_b200_fp4_mlp",
+            "qwen35_4b_b200_fp4_mlp_sdpa",
             "qwen35_4b_b200_bf16_fa4",
             "qwen35_4b_b200_packed_sdpa",
         ):

@@ -238,3 +238,80 @@ def test_environment_retains_existing_caches_and_adds_pinned_overlay(tmp_path):
     assert env["CUDNN_FRONTEND_COMPILED_CACHE"] == str(
         tmp_path / ".cache/training/shared/cudnn_frontend"
     )
+
+
+def sdpa_student_config():
+    job = {
+        **profile("qwen35_4b_b200_fp4_mlp_sdpa")["recipe"],
+        "job_name": "native-fp4-sdpa-test",
+        "output_dir": "results/native-fp4-sdpa-test",
+        "student_rows": "data/test.jsonl",
+        "soft_targets": "data/soft.jsonl",
+        "causal_adapter_dir": "results/native-fp4-sdpa-test/causal_adapter",
+        "max_steps": -1,
+    }
+    command = training_command(job)
+    token = "user-2026-10-16-fp4-sdpa-teacher-factorial"
+    assert f"++student.training.native_fp4_sdpa_composite_authority={token}" in command
+    assert not any("packed_attention_backend" in part for part in command)
+    with initialize_config_dir(
+        config_dir=str(ROOT / "experiments/tool_trajectory_monitoring"),
+        version_base=None,
+    ):
+        cfg = compose(config_name="distillation_config", overrides=command[6:])
+        return OmegaConf.to_container(cfg.student, resolve=True)
+
+
+def test_fp4_sdpa_profile_is_a_separate_recorded_recipe():
+    student = sdpa_student_config()
+    assert validate_packed_training_config(student)
+    training = student["training"]
+    assert training["startup_validation_reference_sha256"] == (
+        native.SDPA_REFERENCE_SHA256
+    )
+    for field, value in [
+        ("native_fp4_sdpa_composite_authority", None),
+        ("native_fp4_sdpa_composite_authority", " "),
+        ("startup_validation_reference_sha256", native.REFERENCE_SHA256),
+        ("packing_learning_gradient_tolerance", 0.05),
+        ("packing_timing_authority", "benchmark only"),
+        ("native_fp4_mlp_parity_policy", "strict"),
+    ]:
+        changed = deepcopy(student)
+        changed["training"][field] = value
+        with pytest.raises(ValueError, match="native FP4"):
+            validate_packed_training_config(changed)
+
+
+def test_fp4_sdpa_composite_binds_both_receipts_without_fresh_claims():
+    sdpa = ROOT / native.SDPA_REFERENCE
+    receipt = validation_reference(
+        sdpa,
+        packed_attention_backend="sdpa",
+        expected_sha256=native.SDPA_REFERENCE_SHA256,
+        native_fp4_mlp=True,
+    )
+    assert receipt["policy"] == "reuse_composite_sdpa_packing_and_native_fp4_mlp"
+    assert receipt["reference_sha256"] == native.SDPA_REFERENCE_SHA256
+    assert receipt["native_fp4_reference_sha256"] == native.REFERENCE_SHA256
+    assert receipt["attention_backend"] == "sdpa"
+    assert receipt["waived_checks"] == ["loss_parity", "gradient_relative_l2"]
+    assert receipt["composite_scope"]["fresh_combined_probe"] is False
+    assert receipt["performed_this_run"] is False
+    assert receipt["native_fp4_mlp"]["hardware_packing"] is True
+    with pytest.raises(ValueError, match="accepted SDPA receipt"):
+        validation_reference(
+            sdpa,
+            packed_attention_backend="sdpa",
+            expected_sha256=native.REFERENCE_SHA256,
+            native_fp4_mlp=True,
+        )
+    fa4 = validation_reference(
+        ROOT / native.REFERENCE,
+        packed_attention_backend="flash_attention_4",
+        packed_attention_version="4.0.0b33",
+        learning_gradient_tolerance=0.05,
+        expected_sha256=native.REFERENCE_SHA256,
+        native_fp4_mlp=True,
+    )
+    assert fa4["policy"] == "reuse_selected_finite_native_fp4_recipe"

@@ -13,6 +13,16 @@ from gleipnir._compat import canonical_source_reference
 
 REFERENCE = "results/b200_mlp_gemm/warmed03/causal_adapter/training_metadata.json"
 REFERENCE_SHA256 = "14ab15279bb8895cf32353117d5c1cf957ad45d2b0ca9d7205067db27d77edeb"
+# FP4 MLP with SDPA packing (user authority 2026-10-16, extending the
+# 2026-10-05 FP4 finite acceptance) reuses this accepted BF16/SDPA receipt for
+# attention packing and the FP4 receipt above for MLP arithmetic.
+SDPA_REFERENCE = (
+    "results/student_injection_awareness/4b/regular/causal_adapter/"
+    "training_metadata.json"
+)
+SDPA_REFERENCE_SHA256 = (
+    "91fadffbe9e69523c1c65cf485393ce2cc2f08aea8dafb2987f7c7663fa5f69f"
+)
 HISTORICAL_KERNEL_SHA256 = {
     "cudnn_fp4_mlp.py": (
         "64f968420eec392171cad076116e7a2c00e298f0b08285be0871deed29fd1a93"
@@ -90,6 +100,28 @@ def validate_native_fp4_config(student: Mapping[str, Any]) -> bool:
         return False
     quantization = student.get("quantization", {})
     adaptive = training.get("adaptive_microbatching", {})
+    # SDPA packing is a separate, explicitly authorized composite recipe; see
+    # gleipnir.training.startup.composite_native_fp4_sdpa_reference.
+    sdpa = training.get("packed_attention_backend") is None
+    if sdpa:
+        authority = training.get("native_fp4_sdpa_composite_authority")
+        if not isinstance(authority, str) or not authority.strip():
+            raise ValueError("native FP4 with SDPA requires recorded user authority")
+    attention = (
+        {
+            "packed_attention_backend": None,
+            "packed_attention_version": None,
+            "packing_learning_gradient_tolerance": None,
+            "startup_validation_reference_sha256": SDPA_REFERENCE_SHA256,
+        }
+        if sdpa
+        else {
+            "packed_attention_backend": "flash_attention_4",
+            "packed_attention_version": "4.0.0b33",
+            "packing_learning_gradient_tolerance": 0.05,
+            "startup_validation_reference_sha256": REFERENCE_SHA256,
+        }
+    )
     expected = {
         "sequence_packing": True,
         "native_fp4_mlp_parity_policy": "selected_finite",
@@ -103,10 +135,7 @@ def validate_native_fp4_config(student: Mapping[str, Any]) -> bool:
         "allow_unspec_int_on_nn_module": False,
         "eager_attention_interface": False,
         "packing_compile_cache_limit": 64,
-        "packed_attention_backend": "flash_attention_4",
-        "packed_attention_version": "4.0.0b33",
-        "packing_learning_gradient_tolerance": 0.05,
-        "startup_validation_reference_sha256": REFERENCE_SHA256,
+        **attention,
         "per_device_train_batch_size": 32,
         "gradient_accumulation_steps": 1,
     }
