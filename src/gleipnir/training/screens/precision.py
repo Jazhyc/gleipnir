@@ -502,19 +502,44 @@ def run_precision_training_screen(
             torch.cuda.reset_peak_memory_stats(device)
             torch.cuda.synchronize(device)
             start = time.perf_counter()
+            from gleipnir.training import host_profile
+
+            host_dir = host_profile.output_dir() if pass_index == 0 else None
             for step in range(steps):
                 indices = order[step * 32 : (step + 1) * 32]
                 torch.cuda.synchronize(device)
                 step_start = time.perf_counter()
-                measurement = backward([features[i] for i in indices])
-                norm = torch.nn.utils.clip_grad_norm_(
-                    parameters, max_grad_norm, error_if_nonfinite=True
-                )
-                if float(norm) <= 0:
-                    raise ValueError("training adapter gradient is zero")
-                lr = optimizer.param_groups[0]["lr"]
-                optimizer.step()
-                scheduler.step()
+
+                def update(indices=indices, optimizer=optimizer, scheduler=scheduler):
+                    measurement = backward([features[i] for i in indices])
+                    norm = torch.nn.utils.clip_grad_norm_(
+                        parameters, max_grad_norm, error_if_nonfinite=True
+                    )
+                    if float(norm) <= 0:
+                        raise ValueError("training adapter gradient is zero")
+                    lr = optimizer.param_groups[0]["lr"]
+                    optimizer.step()
+                    scheduler.step()
+                    return measurement, norm, lr
+
+                if host_dir is None:
+                    measurement, norm, lr = update()
+                else:
+                    # Diagnostic only: audits every measured update and traces
+                    # the fifth; this run's timings are not a speed receipt.
+                    with host_profile.sync_audit() as syncs:
+                        if step == 4:
+                            (measurement, norm, lr), trace = (
+                                host_profile.profile_update(update)
+                            )
+                            host_profile.write(host_dir, "update05_trace.json", trace)
+                        else:
+                            measurement, norm, lr = update()
+                    host_profile.write(
+                        host_dir,
+                        f"update{step + 1:02d}_syncs.json",
+                        {"total": sum(syncs.values()), "sites": dict(syncs)},
+                    )
                 torch.cuda.synchronize(device)
                 measurement.update(
                     step=step + 1,
