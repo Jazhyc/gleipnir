@@ -40,6 +40,8 @@ SUPPORTED_QWEN_MODELS = {
     "Qwen/Qwen3.5-27B-FP8",
     "Qwen/Qwen3.5-122B-A10B-FP8",
     "Qwen/Qwen3.8-27B-FP8",
+    "Qwen/Qwen3.6-27B",
+    "Qwen/Qwen3.8-27B",
 }
 
 
