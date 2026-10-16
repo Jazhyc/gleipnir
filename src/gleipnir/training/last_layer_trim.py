@@ -113,9 +113,14 @@ class LastLayerTrim:
         self.original: Callable[..., torch.Tensor] = self.layer.forward
         self.enabled = True
         self.calls = 0
+        self.unpacked_calls = 0
 
         def forward(*args: Any, **kwargs: Any) -> torch.Tensor:
             if not self.enabled:
+                return self.original(*args, **kwargs)
+            if kwargs.get("cu_seq_lens_q") is None:
+                # Unpacked diagnostics (e.g. singleton references) stay exact.
+                self.unpacked_calls += 1
                 return self.original(*args, **kwargs)
             self.calls += 1
             return trimmed_layer_forward(self.layer, *args, **kwargs)
@@ -128,6 +133,7 @@ class LastLayerTrim:
             "enabled": self.enabled,
             "layer_index": self.layer_index,
             "trimmed_calls": self.calls,
+            "unpacked_untrimmed_calls": self.unpacked_calls,
             "attention": "per_segment_sdpa_decision_queries",
         }
 

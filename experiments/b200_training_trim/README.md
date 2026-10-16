@@ -99,3 +99,17 @@ zero. Two changes followed, both fixed before the next run:
   kernels;
 - the gates are relative to the reference and to its noise floor, because
   BF16 backward on this recipe is not run-to-run deterministic.
+
+**Third attempt (`screen_trim_failed03`).** The trim canary passed:
+
+| case | trim vs. reference | noise floor | logit max diff |
+|---|---:|---:|---:|
+| 16,099-token pack, 65 sequences | 1.10% | 0.43% | 0.125 |
+| longest example, 28,733 tokens | 1.14% | 1.01% | 0 |
+
+Per-segment SDPA did not shrink the packed-case excess. The screen's compiled
+packing-isolation check then stopped on the trim's own guard: its reference
+runs each example unpacked, which the trim rejected. Unpacked calls now fall
+back to the exact untrimmed layer and are counted. The isolation check
+therefore compares trimmed packs with untrimmed singletons, which is a second
+check of the trim.

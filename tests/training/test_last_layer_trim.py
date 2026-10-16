@@ -64,13 +64,19 @@ def test_trim_matches_full_layer_logits_and_gradients() -> None:
     assert parity["worst_parameter_relative_l2"] < 1e-4
 
 
-def test_trim_rejects_the_unpacked_path_and_double_install() -> None:
+def test_trim_falls_back_when_unpacked_and_rejects_double_install() -> None:
     model = tiny_model()
     LastLayerTrim(model)
     with pytest.raises(ValueError, match="already installed"):
         LastLayerTrim(model)
-    with pytest.raises(ValueError, match="packed training path"):
-        model(input_ids=torch.randint(0, 64, (1, 8)), use_cache=False)
+    ids = torch.randint(0, 64, (1, 8))
+    trim = model.model.layers[-1]._gleipnir_last_layer_trim
+    trim.enabled = False
+    expected = model(input_ids=ids, use_cache=False).logits
+    trim.enabled = True
+    # Unpacked calls fall back to the exact untrimmed layer.
+    assert torch.equal(model(input_ids=ids, use_cache=False).logits, expected)
+    assert trim.unpacked_calls == 1 and trim.calls == 0
 
 
 def test_disabled_trim_is_the_original_forward() -> None:
