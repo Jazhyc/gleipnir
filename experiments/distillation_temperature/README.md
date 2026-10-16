@@ -99,3 +99,10 @@ for a in kd-temperature-t2-01 kd-temperature-t4-01 kd-sharpen-t050-01; do
 done
 PYTHONPATH=src:. <training-python> -m experiments.distillation_temperature.run
 ```
+
+## Status
+
+Launched 2026-10-16 14:38 UTC on Pod `q7io6ui6gwbqo6` (`GPU-3d8d6bde…`), driver
+PID 4924. All three inventories passed. The T=2 arm's first updates have finite
+losses (about 2.1–2.5, which includes the T² scale). After scoring, run
+`python -m experiments.distillation_temperature.compare`.

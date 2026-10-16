@@ -171,6 +171,15 @@ After a restart:
 3. Link `/tmp/gleipnir-{qwen35-fla,qwen35-causal-conv1d,triton-3.7.1}` to
    `.cache/kernels-nc2/`.
 
+`logs/runpod/distillation_temperature/restore.sh` scripts these steps and also
+unpacks the 2026-10-16 container caches (about 2.5 minutes in total).
+
+On 2026-10-16 the user provided EU-RO-1 B200 Pod `q7io6ui6gwbqo6` ($7.99/hour,
+snapshot `.runpod/distillation-temperature.json`). It runs on the same machine
+(`2mj1yzztlz17`) and volume, but on GPU `GPU-3d8d6bde…`. As before, its
+template leaves `PUBLIC_KEY` empty, so the project key was installed through
+the Runpod proxy.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
