@@ -65,6 +65,12 @@ def validate_training_metadata(
         )
     ):
         raise ValueError("objective or equal-example weighting drift")
+    trim = metadata.get("last_layer_trim")
+    if job.get("last_layer_trim", False) != (trim is not None) or (
+        trim is not None
+        and not (trim["canary"]["passed"] and trim["training"]["trimmed_calls"] > 0)
+    ):
+        raise ValueError("last-layer trim requested/recorded mismatch")
     if (
         metadata["gradient_checkpointing"]
         or metadata["quantization"]["enabled"]

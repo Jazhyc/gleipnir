@@ -757,6 +757,94 @@ def decoder_autocast(input_ids: torch.Tensor) -> Any:
     )
 
 
+def install_checked_last_layer_trim(
+    model: Any,
+    trainer: Any,
+    dataset: Any,
+    output_dir: Path,
+    cfg: Any,
+    adaptive_policy: Any,
+    packing_enabled: bool,
+) -> tuple[Any, dict]:
+    """Trim the final layer, after a real-pack trim-off/on gradient canary."""
+    from gleipnir.training.last_layer_trim import LastLayerTrim, gradient_parity
+    from gleipnir.training.packing import collate_packed_monitoring
+
+    if not packing_enabled or adaptive_policy is None:
+        raise ValueError("last-layer trim requires adaptive sequence packing")
+    budget = adaptive_policy.max_padded_tokens
+    lengths = [len(dataset[i]["direct_input_ids"]) for i in range(len(dataset))]
+    packed, total = [], 0
+    for index, length in enumerate(lengths):
+        if total + length <= budget:
+            packed.append(index)
+            total += length
+    longest = max(range(len(lengths)), key=lengths.__getitem__)
+    cases = {"packed": packed, "longest": [longest]}
+    if len(packed) < 2:
+        raise ValueError("trim canary needs a multi-sequence pack")
+    gradient_tolerance = float(
+        OmegaConf.select(
+            cfg, "student.training.last_layer_trim_gradient_tolerance", default=0.01
+        )
+    )
+    logit_tolerance = float(
+        OmegaConf.select(
+            cfg, "student.training.last_layer_trim_logit_tolerance", default=0.125
+        )
+    )
+    base = model.get_base_model() if hasattr(model, "get_base_model") else model
+    captured: dict[str, torch.Tensor] = {}
+    handle = base.lm_head.register_forward_hook(
+        lambda _module, _inputs, output: captured.__setitem__("logits", output)
+    )
+    trim = LastLayerTrim(model)
+    decision_ids = list(trainer.direct_target_ids)
+    results = {}
+    try:
+        for name, indices in cases.items():
+
+            def loss_forward(indices=indices):
+                batch = collate_packed_monitoring([dataset[i] for i in indices])
+                prepared = trainer._prepare_inputs(batch)
+                with torch.autocast(device_type="cuda", dtype=torch.bfloat16):
+                    return trainer.compute_loss(model, prepared)
+
+            result = gradient_parity(
+                model,
+                trim,
+                loss_forward,
+                capture=lambda: captured["logits"][0][:, decision_ids],
+            )
+            result.update(indices=indices, tokens=sum(lengths[i] for i in indices))
+            results[name] = result
+            print(f"last_layer_trim_canary[{name}]={result}", flush=True)
+    finally:
+        handle.remove()
+    passed = all(
+        r["finite"]
+        and not r["final_layer_parameters_without_gradient"]
+        and r["trim_vs_reference"]["gradient_relative_l2"] <= gradient_tolerance
+        and r["trim_vs_reference"]["logit_max_abs"] <= logit_tolerance
+        for r in results.values()
+    )
+    receipt = {
+        "passed": passed,
+        "gradient_tolerance": gradient_tolerance,
+        "logit_tolerance": logit_tolerance,
+        "cases": results,
+        **trim.metadata(),
+    }
+    output_dir.mkdir(parents=True, exist_ok=True)
+    (output_dir / "last_layer_trim_canary.json").write_text(
+        json.dumps(receipt, indent=2, allow_nan=False) + "\n"
+    )
+    if not passed:
+        raise ValueError(f"last-layer trim canary failed: {receipt}")
+    trim.calls = 0
+    return trim, {"canary": receipt}
+
+
 def forward_final_token_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -4384,7 +4472,15 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             OmegaConf.select(cfg, "student.training.concept_ablation_sha256"),
         )
         print(f"concept_ablation={concept_ablation_metadata}", flush=True)
+    last_layer_trim_metadata = None
+    last_layer_trim = None
+    if bool(OmegaConf.select(cfg, "student.training.last_layer_trim", default=False)):
+        last_layer_trim, last_layer_trim_metadata = install_checked_last_layer_trim(
+            model, trainer, dataset, output_dir, cfg, adaptive_policy, packing_enabled
+        )
     train_output = trainer.train()
+    if last_layer_trim is not None:
+        last_layer_trim_metadata["training"] = last_layer_trim.metadata()
     for handle in concept_ablation_handles:
         handle.remove()
     native_mlp_calls = None
@@ -4603,6 +4699,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     },
                     "quantization": quantization_metadata,
                     "sequence_packing": packing_metadata,
+                    "last_layer_trim": last_layer_trim_metadata,
                     "mlp_precision": mlp_precision_metadata,
                     "native_mlp_calls": native_mlp_calls,
                     "flash_linear_attention": {

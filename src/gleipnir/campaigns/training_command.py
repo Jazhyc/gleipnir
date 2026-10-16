@@ -159,6 +159,8 @@ def training_command(job: dict[str, Any]) -> list[str]:
     for key in ("soft_kd_temperature", "soft_target_logit_scale"):
         if key in job:
             command.append(f"++student.training.{key}={float(job[key])}")
+    if job.get("last_layer_trim", False):
+        command.append("++student.training.last_layer_trim=true")
     for key in ("mil_top_k", "mil_max_instances"):
         if key in job:
             command.append(f"student.training.{key}={int(job[key])}")

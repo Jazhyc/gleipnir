@@ -169,6 +169,11 @@ class Campaign:
                 for key in ("soft_kd_temperature", "soft_target_logit_scale")
                 if key in config
             },
+            **(
+                {"last_layer_trim": True}
+                if config.get("last_layer_trim", False)
+                else {}
+            ),
         }
 
     def sources(self) -> dict[str, str]:
