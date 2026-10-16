@@ -151,10 +151,14 @@ async def replay(rows: list[dict], settings: dict, out: Path, record: dict) -> N
 
 
 def variant():
+    base = full_stack()
     return dataclasses.replace(
-        full_stack(),
+        base,
         experiment=EXPERIMENT,
         result_group="b200_prefix_replay",
+        worker="experiments.b200_prefix_replay.worker.PrefixReplayWorker",
+        sources=(*base.sources, "experiments/b200_prefix_replay/worker.py"),
+        audits=(*base.audits, "prefix_replay_worker.json"),
         transform=enable_prefix_caching,
         measurement=replay,
     )
