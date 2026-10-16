@@ -182,3 +182,46 @@ def test_compiled_trim_matches_the_eager_trim() -> None:
         eager = packed_forward(model, ids)
     assert trim.metadata()["compiled"] and trim.calls == 1
     assert torch.allclose(compiled, eager, atol=1e-6)
+
+
+def test_packed_forward_uses_host_cuts_without_device_readback() -> None:
+    from gleipnir.training import packing
+
+    model = tiny_model()
+    ids = torch.randint(0, 64, (1, sum(LENGTHS)))
+    with installed_segmented_sdpa():
+        packing.HOST_CUT_FALLBACKS["count"] = 0
+        packed_forward(model, ids)
+        assert packing.HOST_CUT_FALLBACKS["count"] == 0
+        layout = packing.PackedSequenceLayout(LENGTHS)
+        kwargs = layout.kernel_kwargs()
+        assert packing.host_cuts(kwargs["cu_seq_lens_q"]) == list(layout.offsets)
+        assert packing.HOST_CUT_FALLBACKS["count"] == 1
+
+
+def test_host_built_kernel_kwargs_match_the_device_formulas() -> None:
+    from gleipnir.training.packing import PackedSequenceLayout
+
+    layout = PackedSequenceLayout(LENGTHS)
+    kwargs = layout.kernel_kwargs()
+    expected_positions = torch.cat([torch.arange(n) for n in LENGTHS]).unsqueeze(0)
+    expected_ids = torch.repeat_interleave(
+        torch.arange(len(LENGTHS), dtype=torch.int32), torch.tensor(LENGTHS)
+    ).unsqueeze(0)
+    assert torch.equal(kwargs["position_ids"], expected_positions)
+    assert torch.equal(kwargs["seq_idx"], expected_ids)
+    assert kwargs["cu_seq_lens_q"].tolist() == list(layout.offsets)
+    assert kwargs["cu_seq_lens_q"].dtype == torch.int32
+    assert layout.decision_positions().tolist() == [o - 1 for o in layout.offsets[1:]]
+
+
+def test_packed_collation_flags_soft_target_validity_on_the_host() -> None:
+    from gleipnir.training.packing import collate_packed_monitoring
+
+    good = {"direct_input_ids": [1, 2], "binary_label": 1, "dataset_id": 0}
+    assert collate_packed_monitoring([{**good, "soft_target": 0.5}])[
+        "soft_targets_host_valid"
+    ]
+    for bad in (0.0, 1.0, float("nan")):
+        batch = collate_packed_monitoring([{**good, "soft_target": bad}])
+        assert batch["soft_targets_host_valid"] is False

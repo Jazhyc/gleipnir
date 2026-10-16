@@ -8,11 +8,41 @@ from __future__ import annotations
 
 from collections.abc import Callable, Iterator, Sequence
 from contextlib import contextmanager
+from contextvars import ContextVar
 from dataclasses import dataclass
 from itertools import accumulate
 from typing import Any
 
 import torch
+
+# Host copy of the active pack's boundaries, keyed by the exact device tensor
+# they describe. Set around each packed forward, outside compiled layers, so
+# attention routers need not read boundaries back from the device.
+_HOST_CUTS: ContextVar[tuple[torch.Tensor, tuple[int, ...]] | None] = ContextVar(
+    "gleipnir_packed_host_cuts", default=None
+)
+HOST_CUT_FALLBACKS = {"count": 0}
+
+
+def host_cuts(cumulative: torch.Tensor) -> list[int]:
+    """Boundaries as host integers; synchronizes only outside a packed forward."""
+    active = _HOST_CUTS.get()
+    if active is not None and active[0] is cumulative:
+        return list(active[1])
+    HOST_CUT_FALLBACKS["count"] += 1
+    return cumulative.tolist()
+
+
+def same_boundaries(query: torch.Tensor, key: torch.Tensor) -> bool:
+    """Identity first: packed kwargs pass one tensor for Q and K boundaries."""
+    return query is key or torch.equal(query, key)
+
+
+def _to_device(tensor: torch.Tensor, device: torch.device | str) -> torch.Tensor:
+    """Copy host-built metadata without a blocking pageable transfer."""
+    if torch.device(device).type != "cuda":
+        return tensor.to(device)
+    return tensor.pin_memory().to(device, non_blocking=True)
 
 
 @dataclass(frozen=True)
@@ -40,14 +70,19 @@ class PackedSequenceLayout:
 
     def kernel_kwargs(self, device: torch.device | str = "cpu") -> dict:
         """Use one boundary source for positions, convolution and recurrence."""
-        cumulative = torch.tensor(self.offsets, dtype=torch.int32, device=device)
-        positions = torch.cat(
-            [torch.arange(length, device=device) for length in self.lengths]
-        ).unsqueeze(0)
-        sequence_ids = torch.repeat_interleave(
-            torch.arange(len(self.lengths), dtype=torch.int32, device=device),
-            torch.tensor(self.lengths, device=device),
-        ).unsqueeze(0)
+        # Built on the host (identical values), then one non-blocking copy each.
+        cumulative = _to_device(torch.tensor(self.offsets, dtype=torch.int32), device)
+        positions = _to_device(
+            torch.cat([torch.arange(length) for length in self.lengths]).unsqueeze(0),
+            device,
+        )
+        sequence_ids = _to_device(
+            torch.repeat_interleave(
+                torch.arange(len(self.lengths), dtype=torch.int32),
+                torch.tensor(self.lengths),
+            ).unsqueeze(0),
+            device,
+        )
         return {
             "position_ids": positions,
             "seq_idx": sequence_ids,
@@ -60,7 +95,7 @@ class PackedSequenceLayout:
 
     def decision_positions(self, device: torch.device | str = "cpu") -> torch.Tensor:
         """Return one last-input-token index per original monitoring example."""
-        return torch.tensor(self.offsets[1:], dtype=torch.long, device=device) - 1
+        return _to_device(torch.tensor(self.offsets[1:], dtype=torch.long) - 1, device)
 
     def dense_causal_mask(
         self, device: torch.device | str = "cpu", *, max_tokens: int = 2048
@@ -108,14 +143,28 @@ def collate_packed_monitoring(features: Sequence[dict[str, Any]]) -> dict:
         "dataset_ids": torch.tensor([f["dataset_id"] for f in features]),
     }
     if all("soft_target" in f for f in features):
-        batch["soft_targets"] = torch.tensor(
+        targets = torch.tensor(
             [f["soft_target"] for f in features], dtype=torch.float32
         )
+        # Host-side check lets the loss skip per-microbatch device reductions;
+        # invalid targets still reach the loss's own checks and raise there.
+        batch["soft_targets_host_valid"] = bool(
+            torch.isfinite(targets).all()
+            and (targets > 0).all()
+            and (targets < 1).all()
+        )
+        batch["soft_targets"] = targets
     elif any("soft_target" in f for f in features):
         raise ValueError("mixed missing soft targets in packed batch")
     from gleipnir.binary_task_training import collate_binary_task_fields
 
     batch.update(collate_binary_task_fields(features))
+    if torch.cuda.is_available():
+        # Pinned host tensors let the trainer copy them without blocking.
+        batch = {
+            k: v.pin_memory() if isinstance(v, torch.Tensor) else v
+            for k, v in batch.items()
+        }
     return batch
 
 
@@ -147,9 +196,9 @@ def segmented_sdpa_interface(original: Callable) -> Callable:
             return original(module, query, key, value, attention_mask, **kwargs)
         if query.shape[0] != 1 or attention_mask is not None:
             raise ValueError("segmented SDPA requires one unpadded flattened row")
-        if not torch.equal(cumulative, kwargs["cu_seq_lens_k"]):
+        if not same_boundaries(cumulative, kwargs["cu_seq_lens_k"]):
             raise ValueError("packed self attention requires matching Q/K boundaries")
-        cuts = cumulative.tolist()
+        cuts = host_cuts(cumulative)
         if cuts[0] != 0 or cuts[-1] != query.shape[2]:
             raise ValueError("attention boundaries do not cover the input")
         options = {
@@ -253,9 +302,9 @@ def packed_fa4_interface(original: Callable, kernel: Callable) -> Callable:
             return original(module, query, key, value, attention_mask, **kwargs)
         if query.shape[0] != 1 or attention_mask is not None:
             raise ValueError("packed FA4 requires one unpadded flattened row")
-        if not torch.equal(cumulative, kwargs["cu_seq_lens_k"]):
+        if not same_boundaries(cumulative, kwargs["cu_seq_lens_k"]):
             raise ValueError("packed self attention requires matching Q/K boundaries")
-        cuts = cumulative.tolist()
+        cuts = host_cuts(cumulative)
         if (
             cumulative.dtype != torch.int32
             or cuts[0] != 0
@@ -306,7 +355,11 @@ def forward_packed_monitoring_logits(
         kwargs["input_ids"] = input_ids
     else:
         kwargs["inputs_embeds"] = inputs_embeds
-    outputs = model(**kwargs)
+    token = _HOST_CUTS.set((kwargs["cu_seq_lens_q"], layout.offsets))
+    try:
+        outputs = model(**kwargs)
+    finally:
+        _HOST_CUTS.reset(token)
     if outputs.logits.shape[:2] != (1, len(lengths)):
         raise ValueError("packed model did not preserve every decision boundary")
     return outputs.logits[0], outputs

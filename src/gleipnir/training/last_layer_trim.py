@@ -17,6 +17,8 @@ from typing import Any
 
 import torch
 
+from gleipnir.training.packing import host_cuts, same_boundaries
+
 ATTRIBUTE = "_gleipnir_last_layer_trim"
 
 
@@ -47,7 +49,7 @@ def _decision_attention(
     """
     from transformers.integrations.sdpa_attention import sdpa_attention_forward
 
-    cuts = cumulative.tolist()
+    cuts = host_cuts(cumulative)
     rows = []
     for index, (start, end) in enumerate(zip(cuts[:-1], cuts[1:], strict=True)):
         row, _ = sdpa_attention_forward(
@@ -121,10 +123,10 @@ def trimmed_layer_forward(
         or hidden_states.shape[0] != 1
         or attention_mask is not None
         or past_key_values is not None
-        or not torch.equal(cumulative, kwargs["cu_seq_lens_k"])
+        or not same_boundaries(cumulative, kwargs["cu_seq_lens_k"])
     ):
         raise ValueError("last-layer trim requires the packed training path")
-    if int(cumulative[-1]) != hidden_states.shape[1]:
+    if host_cuts(cumulative)[-1] != hidden_states.shape[1]:
         raise ValueError("packed boundaries do not cover the final layer input")
     positions = cumulative[1:].long() - 1
     cos, sin = position_embeddings

@@ -1279,6 +1279,7 @@ def soft_binary_distillation_losses(
     target_logit_scale: float = 1.0,
     huber_delta: float = 1.0,
     kd_temperature: float = 1.0,
+    validate_targets: bool = True,
 ) -> torch.Tensor:
     """Return row-wise teacher probability or standardized-margin losses.
 
@@ -1303,10 +1304,14 @@ def soft_binary_distillation_losses(
         raise ValueError("soft KD temperature requires the BCE soft loss")
 
     targets = soft_targets.float()
-    if not torch.isfinite(targets).all():
-        raise ValueError("binary soft targets must be finite")
-    if (targets <= 0).any() or (targets >= 1).any():
-        raise ValueError("binary soft targets must be strictly between zero and one")
+    if validate_targets:
+        # Each check synchronizes; packed collation performs them on the host.
+        if not torch.isfinite(targets).all():
+            raise ValueError("binary soft targets must be finite")
+        if (targets <= 0).any() or (targets >= 1).any():
+            raise ValueError(
+                "binary soft targets must be strictly between zero and one"
+            )
 
     student_margins = binary_logits[:, 1].float() - binary_logits[:, 0].float()
     identity_transform = (
@@ -2384,6 +2389,21 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     class AuxiliarySFTTrainer(Trainer):
         """Completion SFT with optional direct-label and within-dataset rank losses."""
 
+        def _prepare_input(self, data):
+            # Pinned host tensors (packed batches) copy without blocking the host.
+            if isinstance(data, torch.Tensor) and data.is_pinned():
+                return data.to(self.args.device, non_blocking=True)
+            return super()._prepare_input(data)
+
+        def _direct_label_ids(self, device: torch.device) -> torch.Tensor:
+            """Decision-token ids as a cached device tensor (no per-call copy)."""
+            cache = self.__dict__.setdefault("_direct_label_id_cache", {})
+            if device not in cache:
+                cache[device] = torch.tensor(
+                    self.direct_target_ids, device=device, dtype=torch.long
+                )
+            return cache[device]
+
         def _get_train_sampler(self, train_dataset=None):
             if task_mixture is not None:
                 from gleipnir.binary_task_training import TaskMixtureSampler
@@ -2438,6 +2458,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             binary_labels = inputs.pop("binary_labels", None)
             dataset_ids = inputs.pop("dataset_ids", None)
             soft_targets = inputs.pop("soft_targets", None)
+            soft_targets_host_valid = inputs.pop("soft_targets_host_valid", False)
             soft_rating_targets = inputs.pop("soft_rating_targets", None)
             mil_positions = inputs.pop("mil_positions", None)
             mil_position_mask = inputs.pop("mil_position_mask", None)
@@ -2558,11 +2579,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         head_logits, token_logits
                     )
                 else:
-                    label_ids = torch.tensor(
-                        self.direct_target_ids,
-                        device=direct_input_ids.device,
-                        dtype=torch.long,
-                    )
+                    label_ids = self._direct_label_ids(direct_input_ids.device)
                     mil_logits = None
                     if mil_loss_weight:
                         if mil_positions is None or mil_position_mask is None:
@@ -2632,6 +2649,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         target_logit_scale=soft_target_logit_scale,
                         huber_delta=soft_huber_delta,
                         kd_temperature=soft_kd_temperature,
+                        # Packed collation range-checks targets on the host.
+                        validate_targets=not soft_targets_host_valid,
                     )
                     if prefix_loss_weight and prefix_parent_indices.numel():
                         weights = torch.ones_like(soft_losses)
