@@ -184,3 +184,12 @@ reliability curve tracks the diagonal with populated middle bins, and both
 models are slightly underconfident at predicted 0.1–0.3 (observed 0.27–0.39).
 Kimi keeps a log-loss edge from Qwen3.8's more confident errors. The
 Qwen3.5 figure was FP8 on an older stack (`experiments/teacher_agreement`).
+
+## Unadapted Qwen3.8-27B under the compact student prompt (2026-10-17)
+
+`student_prompt_config.py` freezes `qwen38_27b_id_student.json`: the
+zero-shot ID config with only the prompt role/template (student,
+`f104aa18…`) and input (`data/id_cot_only_evaluation`, the same 3,012 ids)
+changed. The 27B token audit (33,750,959 tokens, maximum 29,513) equals the
+trained campaign's ID scoring. Question: how much of the trained 27B's ID gain
+(0.8869 → 0.9217) is adaptation to the compact prompt rather than to Kimi?
