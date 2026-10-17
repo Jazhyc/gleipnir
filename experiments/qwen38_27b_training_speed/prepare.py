@@ -29,6 +29,8 @@ CHECKPOINTING = {
     "gdn_ckpt": ("linear_attention_only", None),
     # Store every other attention layer (7, 15, ..., 63); checkpoint the rest.
     "attn8": ("explicit", sorted(GDN_LAYERS + list(range(3, 64, 8)))),
+    # Store 12 attention layers; checkpoint attention layers 3, 19, 35 and 51.
+    "attn12": ("explicit", sorted(GDN_LAYERS + list(range(3, 64, 16)))),
 }
 
 

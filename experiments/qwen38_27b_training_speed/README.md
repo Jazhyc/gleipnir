@@ -122,3 +122,25 @@ takes 0.112 s per layer at 28,733 tokens and 0.037 s at 16,384. FA4 is the
 only faster kernel in the repo, but it was rejected for quality on the 4B
 ([decision](../../docs/decisions/b200_bf16_sdpa_training_default.md)), so it
 is not tried without the user's say-so.
+
+## Recompute arms
+
+Storing a full-attention layer (no checkpoint) saves its recompute: about
+0.23 s per update for an attention layer (attention forward plus GEMMs)
+versus about 0.12 s for a GDN layer, so attention layers are stored first.
+
+| arm | stored layers | preflight peak | measured peak | mean update | change | result |
+|---|---|---:|---:|---:|---:|---|
+| control01 | none | 90.5 GB | 87.8 GiB | 27.80 s | | control |
+| gdnckpt01 | all 16 attention | 176.4 GiB | OOM at update 2 (176.7 GiB allocated) | | | failed |
+| attn801 | attention 7, 15, …, 63 | 127.3 GiB | 130.0 GiB | **26.36 s** | **−5.2%** | accepted |
+
+attn801 is faster on every batch (−3.2 to −5.9%), adds no Dynamo graphs, and
+its losses equal the control's bitwise for updates 1–2 and then drift by
+about as much as an identical control repeat (`screen_control01_audit`).
+
+**Trim, first attempt (`screen_trim01`, failed).** The trim canary OOMed at
+178 GiB during startup: it runs before the Trainer first calls
+`model.train()`, and Transformers checkpoints only in training mode, so the
+canary's 16K-pack backward ran uncheckpointed. The canary now runs in
+training mode (`979eff9`); dropout is 0, so values are unchanged.
