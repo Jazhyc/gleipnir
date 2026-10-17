@@ -76,6 +76,7 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
+| **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **2.2742** | **0.8901** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -97,6 +98,7 @@ Gleipnir rows are backed by the completed
 [`tool_trajectory_qwen4b_ood_benchmark.md`](../findings/tool_trajectory_qwen4b_ood_benchmark.md),
 [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md),
 [`tool_trajectory_qwen27b_ood_benchmark.md`](../findings/tool_trajectory_qwen27b_ood_benchmark.md),
+[`qwen27b_generations_ood.md`](../findings/qwen27b_generations_ood.md),
 [`tool_trajectory_qwen35b_a3b_ood_benchmark.md`](../findings/tool_trajectory_qwen35b_a3b_ood_benchmark.md),
 [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md),
 [`tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md),
@@ -264,6 +266,26 @@ larger than the 4B-to-9B gain (`0.0801`), supporting a steep capacity effect
 under this immediate-logit interface. The remaining gap to Kimi K3 is `0.0689`.
 That cross-family gap cannot be attributed to parameter count alone because
 architecture, pretraining, post-training, and provider inference all change.
+
+## Qwen3.8-27B base result
+
+The unadapted Qwen3.8-27B (revision `1d4bf0f2…`, BF16, vLLM 0.31 on B200) reaches
+`0.890067` Mean-OOD pAUROC@20 and `0.9535` Mean-OOD AUROC under the frozen
+Qwen3.5-27B full-teacher-prompt contract
+([finding](../findings/qwen27b_generations_ood.md)). It renders every prompt
+byte-identically to Qwen3.5-27B, so the mean input is the same
+9,466.7113 tokens plus one output token.
+
+Cost uses OpenRouter's `qwen/qwen3.8-27b` list price on 2026-10-17
+(`$0.24/M` input, `$2.20/M` output, from the models API): `$2.2720/1K` input
+plus `$0.0022/1K` output gives `$2.2742/1K`. The Qwen3.5-27B row keeps its
+historical paper proxy; OpenRouter now lists that model at `$0.26/M` input, so
+the two 27B costs come from different price sources.
+
+The point is new frontier: Jev 1.13 is the best cheaper row (`0.8495`), and the
+next higher-quality frontier point is Kimi K2.6 (`0.9194` at `$7.9110/1K`). It
+dominates none of the previous frontier points. Qwen3.8 is `0.0506` above
+Qwen3.5-27B and `0.0183` below Kimi K3 at about 1/11 of Kimi K3's cost.
 
 ## Qwen3.5-9B immediate ordinal result
 
@@ -496,6 +518,8 @@ historical models, rather than the required three-paired-seed aggregate.
 - [Sinha et al., Appendix E cost accounting and Table 4](https://arxiv.org/html/2605.29601v1#A5.SS5)
 - [Qwen3.5-4B model card](https://huggingface.co/Qwen/Qwen3.5-4B)
 - [Qwen3.5-27B model card](https://huggingface.co/Qwen/Qwen3.5-27B)
+- [Qwen3.8-27B model card](https://huggingface.co/Qwen/Qwen3.8-27B)
+- [OpenRouter Qwen3.8-27B listing](https://openrouter.ai/qwen/qwen3.8-27b)
 - [OpenRouter model catalog search for Qwen3.5-4B](https://openrouter.ai/models?q=qwen3.5-4b)
 - [OpenRouter model catalog search for Qwen3.5-27B](https://openrouter.ai/models?q=qwen3.5-27b)
 - [`tool_trajectory_gpt_oss_ood_benchmark.md`](../findings/tool_trajectory_gpt_oss_ood_benchmark.md)
