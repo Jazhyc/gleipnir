@@ -1,0 +1,35 @@
+# Qwen3.8-27B BF16/SDPA packed recipe with the compiled final-layer trim and
+# 12 of 16 full-attention layers stored (not checkpointed), user-selected as
+# the 27B training default on 2026-10-17. See
+# docs/decisions/qwen38_27b_b200_training_default.md and
+# experiments/qwen38_27b_training_speed/README.md. Everything else is the 4B
+# BF16/SDPA/trim recipe; the 27B cannot run uncheckpointed (~330 GB for a
+# 16K pack), so every GDN layer and attention layers 3, 19, 35 and 51 recompute.
+defaults:
+  - qwen35_4b_b200_packed_sdpa_trim
+  - _self_
+
+recipe:
+  model: Qwen/Qwen3.8-27B
+  model_revision: 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0
+  gradient_checkpointing: true
+  gradient_checkpointing_policy: explicit
+  gradient_checkpointing_layer_indices: ${_authoring.layer_indices.checkpointed}
+  nonreentrant_checkpointing: true
+  selective_torch_compile_policy: checkpointed_full_attention_and_linear_shell
+  packing_compile_cache_limit: 128
+
+_authoring:
+  layer_indices:
+    linear_attention: [0, 1, 2, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 36, 37, 38, 40, 41, 42, 44, 45, 46, 48, 49, 50, 52, 53, 54, 56, 57, 58, 60, 61, 62]
+    all: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40, 41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, 52, 53, 54, 55, 56, 57, 58, 59, 60, 61, 62, 63]
+    checkpointed: [0, 1, 2, 3, 4, 5, 6, 8, 9, 10, 12, 13, 14, 16, 17, 18, 19, 20, 21, 22, 24, 25, 26, 28, 29, 30, 32, 33, 34, 35, 36, 37, 38, 40, 41, 42, 44, 45, 46, 48, 49, 50, 51, 52, 53, 54, 56, 57, 58, 60, 61, 62]
+
+metadata_expectations:
+  gradient_checkpointing: true
+  gradient_checkpointing_policy: explicit
+  gradient_checkpointing_layer_indices: ${_authoring.layer_indices.checkpointed}
+  checkpointed_layer_indices: ${_authoring.layer_indices.checkpointed}
+  gated_delta_backend.replaced_layers: 48
+  sequence_packing.compile_cache_limit: 128
+  selective_torch_compile.policy: checkpointed_full_attention_and_linear_shell

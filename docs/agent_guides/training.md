@@ -99,3 +99,12 @@ The other recipes stay available by explicit profile name:
 
 Preserve original-FLA comparison profiles, and do not change frozen campaigns'
 recorded precision or receipts.
+
+## Single-B200 Qwen3.8-27B training
+
+Use `systems_screen@_global_: qwen38_27b_b200_default`, which aliases
+`qwen38_27b_b200_packed_sdpa_trim_attn12`: the 4B BF16/SDPA/trim recipe plus
+checkpointing of all GDN layers and attention layers 3, 19, 35 and 51, with
+the other 12 attention layers stored. See the
+[27B decision](../decisions/qwen38_27b_b200_training_default.md), including
+what the first 27B campaign must still validate.

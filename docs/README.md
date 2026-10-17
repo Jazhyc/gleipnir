@@ -1,5 +1,8 @@
 # Documentation index
 
+- [Qwen3.8-27B training default](decisions/qwen38_27b_b200_training_default.md):
+  BF16/SDPA with trim and 12 stored attention layers, 25.0 s per benchmark
+  update (−10.1%).
 - [Qwen 27B generations OOD](findings/qwen27b_generations_ood.md): unadapted
   Qwen3.8-27B leads 3.6 and 3.5 (0.890 / 0.873 / 0.839 Mean-OOD pAUROC@20).
 - [Distillation temperature](findings/distillation_temperature.md): T=2/4 KD

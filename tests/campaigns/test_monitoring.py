@@ -335,6 +335,24 @@ def test_bf16_campaign_accepts_only_named_validated_profiles(tmp_path):
         Campaign.load(tmp_path, path)
 
 
+def test_27b_profile_requires_the_27b_model(tmp_path):
+    config = yaml.safe_load(EXAMPLE.read_text())
+    path = tmp_path / "config.yaml"
+    config["profile"] = "qwen38_27b_b200_default"
+    path.write_text(yaml.safe_dump(config))
+    with pytest.raises(ValueError, match="requires Qwen/Qwen3.8-27B"):
+        Campaign.load(tmp_path, path)
+    config["model"]["id"] = "Qwen/Qwen3.8-27B"
+    path.write_text(yaml.safe_dump(config))
+    recipe = Campaign.load(tmp_path, path).profile()["recipe"]
+    assert recipe["last_layer_trim"] is True
+    assert len(recipe["gradient_checkpointing_layer_indices"]) == 52
+    config["profile"] = "qwen35_4b_b200_packed_sdpa_trim"
+    path.write_text(yaml.safe_dump(config))
+    with pytest.raises(ValueError, match="requires Qwen/Qwen3.5-4B"):
+        Campaign.load(tmp_path, path)
+
+
 def test_missing_runtime_or_wrong_checkout_fails_before_gpu(campaign):
     result = campaign.inventory(runtime=True)
     assert any("GPU run must use" in error for error in result["errors"])

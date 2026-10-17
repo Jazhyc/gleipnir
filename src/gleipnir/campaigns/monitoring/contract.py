@@ -23,6 +23,10 @@ from gleipnir.data.monitoring import (
 )
 
 REGISTRY = {"id": ("id",), "apps": ("benchmark", "honest_controls")}
+QWEN38_27B_PROFILES = (
+    "qwen38_27b_b200_default",
+    "qwen38_27b_b200_packed_sdpa_trim_attn12",
+)
 
 
 @dataclass(frozen=True)
@@ -53,6 +57,7 @@ class Campaign:
             "qwen35_4b_b200_bf16_fa4",
             "qwen35_4b_b200_packed_sdpa",
             "qwen35_4b_b200_packed_sdpa_trim",
+            *QWEN38_27B_PROFILES,
         ):
             raise ValueError(
                 "runner supports validated one-epoch B200 "
@@ -62,8 +67,13 @@ class Campaign:
             raise ValueError(
                 "held-out campaign evaluations cannot promote a checkpoint"
             )
-        if config["model"]["id"] != "Qwen/Qwen3.5-4B":
-            raise ValueError("runner currently supports the validated Qwen3.5-4B model")
+        expected_model = (
+            "Qwen/Qwen3.8-27B"
+            if config["profile"] in QWEN38_27B_PROFILES
+            else "Qwen/Qwen3.5-4B"
+        )
+        if config["model"]["id"] != expected_model:
+            raise ValueError(f"profile {config['profile']} requires {expected_model}")
         for name, spec in config.get("baselines", {}).items():
             if spec["kind"] not in names or spec["input"] not in config["inputs"]:
                 raise ValueError(

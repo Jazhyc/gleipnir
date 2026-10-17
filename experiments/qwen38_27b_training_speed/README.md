@@ -5,6 +5,10 @@ iterating on the training stack with the same ten-update packed benchmark used
 for the 4B ([trim experiment](../b200_training_trim/README.md)). This is
 systems work only: no quality selection, no ID/OOD evaluation.
 
+**Status (2026-10-17): complete.** The user selected trim + 12 stored
+attention layers (24.99 s, −10.1%) as the 27B default and stopped further
+optimization ([decision](../../docs/decisions/qwen38_27b_b200_training_default.md)).
+
 **Model.** `Qwen/Qwen3.8-27B` @ `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`,
 64 layers (48 GDN, 16 full attention, final layer full attention), hidden
 5,120, untied embeddings ([architecture](../../docs/research/qwen38_27b_serving_transfer.md)).

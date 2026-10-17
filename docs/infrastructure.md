@@ -181,6 +181,14 @@ template leaves `PUBLIC_KEY` empty, so the project key was installed through
 the Runpod proxy. At the user's instruction it was terminated on 2026-10-17 at about
 03:06 UTC, after all results were pulled; network volume `cb7bxu71ug` is kept.
 
+On 2026-10-17 the user provided EU-RO-1 B200 Pod `ljzun21fdpft92`
+($7.99/hour, snapshot `.runpod/qwen38-27b-training.json`) on the same machine
+and volume, GPU `GPU-7a2d0c53…`, driver 580.126.20. The project key was
+installed through the proxy; at the user's request the container disk was
+resized from 50 to 300 GB (SSH moved to port 37846). The runtime is restored
+by `logs/runpod/qwen38_27b_training/restore.sh`, and the Qwen3.8-27B weights
+are on the container disk at `/root/hf-27b` (lost on termination).
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache

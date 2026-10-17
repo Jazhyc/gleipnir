@@ -1,0 +1,6 @@
+# User-selected Qwen3.8-27B B200 training default, 2026-10-17: BF16/SDPA with
+# the compiled final-layer trim and 12 stored attention layers. See
+# docs/decisions/qwen38_27b_b200_training_default.md.
+defaults:
+  - qwen38_27b_b200_packed_sdpa_trim_attn12
+  - _self_
