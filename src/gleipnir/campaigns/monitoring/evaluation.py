@@ -358,7 +358,9 @@ async def optimized(ctx: Campaign) -> None:
         write_json(ctx.output / "optimized_canary_predictions.json", values)
         if bf16:
             native = json.loads((ctx.output / "bf16_audit.json").read_text())
-            if not native["passed"] or len(native["attention_calls"]) != 8:
+            # Pre-27B receipts lack attention_layers; the 4B has 8.
+            expected = native.get("attention_layers", 8)
+            if not native["passed"] or len(native["attention_calls"]) != expected:
                 raise ValueError("BF16 model/native attention audit incomplete")
         else:
             archive_audits(ctx.output / "native_audits")

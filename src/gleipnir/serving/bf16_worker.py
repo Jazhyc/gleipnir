@@ -68,13 +68,24 @@ class Bf16Worker(Worker):
             for n in linears
             if n.endswith((".self_attn.qkv_proj", ".self_attn.o_proj"))
         ]
-        if (len(mlps), len(gdns), len(attn)) != (64, 48, 16):
+        # Two projections per MLP, GDN mixer and attention mixer (4B: 32/24/8).
+        kinds = config.hf_text_config.layer_types
+        full = sum(kind == "full_attention" for kind in kinds)
+        counts = {
+            "mlp": 2 * len(kinds),
+            "gdn": 2 * (len(kinds) - full),
+            "attention": 2 * full,
+        }
+        if (len(mlps), len(gdns), len(attn)) != tuple(counts.values()):
             raise ValueError(
                 f"BF16 projection coverage drift: {(len(mlps), len(gdns), len(attn))}"
             )
         layers = [m for m in model.modules() if isinstance(m, Attention)]
-        if len(layers) != 8 or any(m.kv_cache_dtype != "auto" for m in layers):
-            raise ValueError("BF16 control requires eight unquantized attention caches")
+        if len(layers) != full or any(m.kv_cache_dtype != "auto" for m in layers):
+            raise ValueError(
+                "BF16 control requires unquantized caches on every attention layer"
+            )
+        self.attention_layers = full
         heads = {id(m.score): m.score for m in model.modules() if hasattr(m, "score")}
         if len(heads) != 1 or any(hasattr(m, "lm_head") for m in model.modules()):
             raise ValueError("BF16 control must retain exactly one two-row head")
@@ -110,7 +121,7 @@ class Bf16Worker(Worker):
             m for m in model.modules() if isinstance(m, QwenGatedDeltaNetAttention)
         ]
         if (
-            len(recurrence) != 24
+            len(recurrence) != len(kinds) - full
             or any(m.gdn_prefill_backend != "flashinfer" for m in recurrence)
             or {m.gdn_decode_kernel for m in gdn_layers} != {"cuda"}
         ):
@@ -118,7 +129,8 @@ class Bf16Worker(Worker):
         self.precision.update(
             passed=True,
             linears=linears,
-            projection_counts={"mlp": 64, "gdn": 48, "attention": 16},
+            projection_counts=counts,
+            attention_layers=full,
             head={
                 "dtype": "torch.bfloat16",
                 "shape": [2, config.hf_text_config.hidden_size],
@@ -156,7 +168,7 @@ class Bf16Worker(Worker):
                     "causal": True,
                 }
             )
-            if len(self.precision["attention_calls"]) == 8:
+            if len(self.precision["attention_calls"]) == self.attention_layers:
                 self.save()
                 flashinfer.trtllm_batch_context_with_kv_cache = original
             return value
