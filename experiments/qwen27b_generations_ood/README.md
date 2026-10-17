@@ -120,7 +120,8 @@ the Qwen3.8 contract above:
 
 Both runs scored every row and passed the canary (ID 1,519 s; training
 3,714 s). `compare_id_train.py` joins the training predictions with the Kimi
-K3 soft targets by `rendered_prompt_sha256` and writes
+K3 soft targets by row id and checks `rendered_prompt_sha256`
+(414 prompts are shared by more than one row) and writes
 `results/qwen27b_generations_ood/id_train_comparison.json`. Metrics are
 source-macro; the threshold is 0.5.
 
@@ -138,7 +139,7 @@ students:
 
 | subset | rows | Qwen3.8 pAUROC@20 / AUROC | Kimi K3 pAUROC@20 / AUROC | score corr. | same side of 0.5 | label acc. Qwen / Kimi |
 |---|---:|---:|---:|---:|---:|---:|
-| all | 8,688 | 0.9298 / 0.9828 | 0.9651 / 0.9918 | 0.946 | 94.0% | 90.6% / 90.2% |
+| all | 8,688 | 0.9298 / 0.9828 | 0.9636 / 0.9914 | 0.946 | 94.0% | 90.6% / 90.2% |
 | strict-filtered | 7,836 | 0.9901 / 0.9979 | 1.0000 / 1.0000 | 0.969 | 96.9% | 96.9% / 100% |
 | removed | 852 | 0.0019 / 0.1577 | 0 / 0 | 0.566 | 67.0% | 33.0% / 0% |
 
@@ -151,7 +152,7 @@ removed rows, AUROC covers only the three sources with both classes there
 |---|---:|---:|
 | BashArena | 0.8653 | 0.9476 |
 | BashBench | 0.9705 | 0.9656 |
-| CoT-Red-Handed | 0.9189 | 0.9651 |
+| CoT-Red-Handed | 0.9189 | 0.9575 |
 | Gloom | 0.9387 | 0.9670 |
 | STRIDE | 0.9555 | 0.9801 |
 
@@ -159,8 +160,8 @@ removed rows, AUROC covers only the three sources with both classes there
 - **ID.** Zero-shot, Qwen3.8 is within 0.9–2.7 points of the trained 4B
   students on macro pAUROC@20. It leads seeds 0 and 1 on Gloom and on macro
   AUROC, and trails all three on Test STRIDE.
-- **Training rows.** Kimi ranks the rows better: 3.5 points of macro
-  pAUROC@20, mostly BashArena (8.2) and CoT-Red-Handed (4.6). Accuracy at 0.5
+- **Training rows.** Kimi ranks the rows better: 3.4 points of macro
+  pAUROC@20, mostly BashArena (8.2) and CoT-Red-Handed (3.9). Accuracy at 0.5
   is level.
 - **Removed rows.** Qwen3.8 mostly makes Kimi's errors: it lands on the
   label's side for 33% of them (BashArena 40%, Gloom 6%, STRIDE 8%).

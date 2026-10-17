@@ -62,19 +62,25 @@ def main() -> None:
             ROOT / "data/tool_trajectory_monitoring/teacher_training/prompts.jsonl"
         )
     }
-    kimi = {r["rendered_prompt_sha256"]: r for r in rows(KIMI)}
-    strict = {r["teacher_rendered_prompt_sha256"] for r in rows(STRICT)}
+    # Some rows share an identical prompt; join by row identity, then check it.
+    kimi = {str(r["index"]): r for r in rows(KIMI)}
+    strict = {str(r["index"]) for r in rows(STRICT)}
     joined = []
     for rid, row in prompts.items():
         meta = row["metadata"]
-        k = kimi[meta["rendered_prompt_sha256"]]
+        k = kimi[rid]
+        if (
+            k["rendered_prompt_sha256"] != meta["rendered_prompt_sha256"]
+            or qwen[rid]["source_prompt_sha256"] != meta["rendered_prompt_sha256"]
+        ):
+            raise ValueError(f"prompt identity drift: {rid}")
         joined.append(
             (
                 meta["source_dataset"],
                 int(meta["ground_truth"]),
                 float(qwen[rid]["score"]),
                 float(k["soft_target"]),
-                meta["rendered_prompt_sha256"] in strict,
+                rid in strict,
             )
         )
     for subset, keep in {

@@ -32,7 +32,7 @@ checked for this BF16 checkpoint.
 
 **ID and training rows (2026-10-17).** On ID, unadapted Qwen3.8-27B scores
 0.8869 macro pAUROC@20, against 0.896–0.914 for the trained 4B students. On
-all 8,688 training rows it scores 0.9298, against 0.9651 for Kimi K3; the gap
+all 8,688 training rows it scores 0.9298, against 0.9636 for Kimi K3; the gap
 is mostly BashArena. On the 852 rows the strict filter removes, it lands on the
 label's side for only 33%, so it mostly shares Kimi's errors there.
 
