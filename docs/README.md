@@ -1,5 +1,7 @@
 # Documentation index
 
+- [Qwen3.8-27B monitor training](findings/qwen38_27b_monitor_training.md):
+  trained 27B reaches 0.922 ID pAUROC@20 (+3.5 over unadapted); OOD pending.
 - [First trained Qwen3.8-27B](findings/qwen38_27b_campaign.md): 0.9217 ID
   pAUROC@20, best so far; OOD not yet run.
 - [Qwen3.8-27B training default](decisions/qwen38_27b_b200_training_default.md):

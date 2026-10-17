@@ -92,3 +92,42 @@ layers, 128/96/32 MLP/GDN/attention projections, 16 attention calls). All
   below all three 4B seeds.
 - **Not yet known.** OOD, the frozen test suite where the unadapted 27B
   scores 0.890; fine-tuning toward Kimi could trade some of that away.
+
+**Training (17:53–22:28 UTC).** 245 updates in 15,200 s (4 h 13 min; 57–73 s
+per update after warm-up), mean training loss 0.149. The first 20 updates
+averaged 0.179 and the last 50 0.129, at Kimi's mean target entropy over these
+rows (0.128), the floor of the soft-BCE objective. Completion validation
+passed (step count, recipe metadata, trim, initial and final master digests).
+
+**Merge and parity.** Master reference, merge (55 GB BF16) and merged parity
+completed by 22:42; merged vs. FP32 master: correlation 0.99991, MAE 0.0016,
+max 0.030, adapter effect 0.73.
+
+**Scoring-source re-binding.** The first resume stopped on campaign source
+drift: a prepared campaign pins its sources, and the BF16 serving fixes
+(`1b66597`) changed `evaluation.py`, `bf16_monitor.py` and `bf16_worker.py`
+after preparation. `rebind_evaluation_sources.py` verified every completed
+stage's bound outputs, allowed only those three scoring-stage files, archived
+the manifest (`manifest.pre_rebind_20261017T224617Z.json`) and recorded the
+old/new hashes under `source_rebindings`. No completed stage ran the changed
+code.
+
+**ID scoring (BF16 vLLM 0.31, 1,456 s).** Serving vs. FP32 master
+correlation 0.99999, MAE 0.0007; the BF16 audit passed with the 27B geometry
+(16 attention layers, 32/96/128 attention/GDN/MLP projections, 16 attention
+calls). All 3,012 rows scored (`compare.py`;
+`results/qwen38-27b-s0-01/id_comparison.json`):
+
+| ID, 3,012 rows | macro pAUROC@20 | macro AUROC | Brier | Gloom | Test STRIDE |
+|---|---:|---:|---:|---:|---:|
+| **27B trained, seed 0** | **0.9217** | **0.9822** | 0.0759 | **0.8868** | 0.9567 |
+| 27B unadapted | 0.8869 | 0.9730 | 0.0812 | 0.8454 | 0.9284 |
+| 4B seed 0 | 0.8959 | 0.9638 | 0.1083 | 0.8285 | 0.9633 |
+| 4B seed 1 | 0.8978 | 0.9627 | 0.0862 | 0.8168 | 0.9788 |
+| 4B seed 2 | 0.9142 | 0.9734 | 0.0687 | 0.8619 | 0.9665 |
+
+**Reading.** Training adds 3.5 points over the unadapted 27B and 2.6 over the
+same-seed 4B; against the best 4B seed (+0.75) the gap is within 4B seed
+variation (about 1 point). The gain is mostly Gloom (best of any model) and
+AUROC; on Test STRIDE the 27B improves on zero-shot but stays below all three
+4B seeds. One 27B seed; OOD is not yet scored.
