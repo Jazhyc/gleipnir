@@ -815,6 +815,10 @@ def install_checked_last_layer_trim(
     trim = LastLayerTrim(model, compile_function=compile_function)
     decision_ids = list(trainer.direct_target_ids)
     results = {}
+    # Checkpointed layers recompute only in training mode; the model is still in
+    # its post-load eval mode here.
+    was_training = model.training
+    model.train()
     try:
         for name, indices in cases.items():
 
@@ -835,6 +839,7 @@ def install_checked_last_layer_trim(
             print(f"last_layer_trim_canary[{name}]={result}", flush=True)
     finally:
         handle.remove()
+        model.train(was_training)
     passed = all(
         r["finite"]
         and not r["final_layer_parameters_without_gradient"]

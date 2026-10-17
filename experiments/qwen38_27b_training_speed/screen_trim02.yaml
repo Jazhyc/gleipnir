@@ -1,0 +1,40 @@
+jobs: results/qwen38_27b_training_speed/jobs.jsonl
+preflight_jobs: results/qwen38_27b_training_speed/preflight_jobs.jsonl
+condition_source: singleton
+output: results/qwen38_27b_training_speed/screen_trim02
+logs: logs/runpod/qwen38_27b_training_speed/screen_trim02
+kernel_target: .cache/kernels/fouroversix-1.0.5
+compiler_cache: .cache/training/b200_training_trim/gpu-0
+compiler_cache_state: shared_eu_cache
+conditions:
+- bf16
+diagnostics_only: false
+steps: 10
+timing_repeats: 0
+backward_mode: dequantized_bf16
+row_scaled_activations: false
+fused_row_scaling: false
+gradient_validation: clip_norm
+emulate_precision_casts: true
+compile_backend: inductor
+eager_rmsnorm_interfaces: false
+eager_mlp_activation_interfaces: false
+compile_policy: checkpointed_full_attention_and_linear_shell
+gated_delta_backend: flashqla
+flashqla_auto_cp: false
+flashqla_canary: results/nf4_flashqla_bf16_precise_canary/canary.json
+gated_delta_bf16_boundary: true
+gated_delta_boundary_policy: bf16_fp32_gates_norm
+ten_step_learning_comparison: true
+fp32_lm_head: false
+full_bf16_lora: true
+
+sequence_packing: true
+packing_only: true
+packing_learning_gradient_tolerance: 0.15
+packing_compile_cache_limit: 128
+
+bf16_reduced_precision_reduction: false
+
+bf16_split_k_reduction: false
+last_layer_trim: true
