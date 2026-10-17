@@ -141,6 +141,7 @@ about as much as an identical control repeat (`screen_control01_audit`).
 
 | attn1201 | attention 7, 11, 15, 23, 27, 31, 39, 43, 47, 55, 59, 63 | 151.8 GiB | 154.6 GiB | **25.65 s** | **−7.7%** | accepted |
 | trim02 | none; compiled final-layer trim | 84.3 GiB | 87.8 GiB | **26.93 s** | **−3.1%** | accepted |
+| **trim_attn1201** | attn1201's layers + compiled trim | 151.8 GiB | 154.6 GiB | **24.99 s** | **−10.1%** | accepted |
 
 "Stored" means not checkpointed: the layer keeps its activations for
 backward instead of recomputing them from its input.
@@ -157,3 +158,14 @@ track the control (update 10: 0.2139 vs. 0.2184).
 `model.train()`, and Transformers checkpoints only in training mode, so the
 canary's 16K-pack backward ran uncheckpointed. The canary now runs in
 training mode (`979eff9`); dropout is 0, so values are unchanged.
+
+**Combination (`screen_trim_attn1201`).** The gains add: every batch is
+9.1–11.6% faster than control01. The trim canary passed (pack 1.08% vs. 1.04%
+noise; longest row 2.04% vs. 1.12% noise, inside the +1-point tolerance;
+logits within one ulp). Losses track the trim02 run (update 10: 0.2187 vs.
+0.2139). At 24.99 s per update, one strict-filtered epoch (245 updates) is
+about 1.7 h of updates, against 1.9 h for control01.
+
+**Memory margin.** The 151.8 GiB preflight covers the benchmark's longest row
+(28,733 tokens); full-campaign rows reach 29,696 tokens (+3%), leaving about
+20 GiB of the 178 GiB GPU. Storing all 16 attention layers does not fit.
