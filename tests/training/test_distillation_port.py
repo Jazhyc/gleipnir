@@ -308,6 +308,10 @@ def test_explicit_checkpointing_uses_only_requested_linear_layers() -> None:
     ]
     with pytest.raises(ValueError, match="restricted to linear attention"):
         apply_gradient_checkpointing_policy(model, "explicit", [3])
+    indices = apply_gradient_checkpointing_policy(
+        model, "explicit", [0, 3], allow_full_attention=True
+    )
+    assert indices == [0, 3]
 
 
 def test_trainer_manages_only_global_checkpointing() -> None:

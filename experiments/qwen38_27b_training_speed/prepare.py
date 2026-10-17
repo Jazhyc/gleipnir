@@ -21,10 +21,14 @@ MODEL = "Qwen/Qwen3.8-27B"
 REVISION = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
 
 
-# Arm name -> (checkpoint policy, explicit GDN layer indices or None).
+GDN_LAYERS = [i for i in range(64) if i % 4 != 3]
+# Arm name -> (checkpoint policy, explicit layer indices or None).
 CHECKPOINTING = {
     "": ("all", None),
+    # OOM: storing all 16 attention layers needs >178 GiB.
     "gdn_ckpt": ("linear_attention_only", None),
+    # Store every other attention layer (7, 15, ..., 63); checkpoint the rest.
+    "attn8": ("explicit", sorted(GDN_LAYERS + list(range(3, 64, 8)))),
 }
 
 

@@ -197,8 +197,14 @@ def apply_gradient_checkpointing_policy(
     model: torch.nn.Module,
     policy: str,
     layer_indices: Sequence[int] | None = None,
+    *,
+    allow_full_attention: bool = False,
 ) -> list[int]:
-    """Checkpoint all, all linear-attention, or explicit decoder layers."""
+    """Checkpoint all, all linear-attention, or explicit decoder layers.
+
+    Explicit full-attention layers need a compile policy that supports
+    checkpointed full attention (``allow_full_attention``).
+    """
     if policy not in {"all", "linear_attention_only", "explicit"}:
         raise ValueError(
             "student.training.gradient_checkpointing_policy must be all, "
@@ -221,8 +227,10 @@ def apply_gradient_checkpointing_policy(
         raise ValueError("checkpointing layer indices must be unique")
     if any(index < 0 or index >= len(layers) for index in requested):
         raise ValueError("checkpointing layer index is out of range")
-    if policy == "explicit" and any(
-        layer_types[index] != "linear_attention" for index in requested
+    if (
+        policy == "explicit"
+        and not allow_full_attention
+        and any(layer_types[index] != "linear_attention" for index in requested)
     ):
         raise ValueError("explicit checkpointing is restricted to linear attention")
     requested_set = set(requested)
@@ -3696,6 +3704,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             model,
             gradient_checkpointing_policy,
             checkpointing_layer_indices,
+            allow_full_attention=selective_torch_compile_policy
+            == "checkpointed_full_attention_and_linear_shell",
         )
     else:
         checkpointed_layer_indices = []
@@ -3834,6 +3844,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             model,
             gradient_checkpointing_policy,
             checkpointing_layer_indices,
+            allow_full_attention=selective_torch_compile_policy
+            == "checkpointed_full_attention_and_linear_shell",
         )
     precision_screen_cfg = OmegaConf.select(
         cfg, "student.training.precision_screen", default=None
