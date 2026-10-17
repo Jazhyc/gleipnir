@@ -139,6 +139,7 @@ attn801 is faster on every batch (−3.2 to −5.9%), adds no Dynamo graphs, and
 its losses equal the control's bitwise for updates 1–2 and then drift by
 about as much as an identical control repeat (`screen_control01_audit`).
 
+| attn1201 | attention 7, 11, 15, 23, 27, 31, 39, 43, 47, 55, 59, 63 | 151.8 GiB | 154.6 GiB | **25.65 s** | **−7.7%** | accepted |
 | trim02 | none; compiled final-layer trim | 84.3 GiB | 87.8 GiB | **26.93 s** | **−3.1%** | accepted |
 
 "Stored" means not checkpointed: the layer keeps its activations for
