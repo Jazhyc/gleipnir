@@ -41,6 +41,9 @@ PYTHONPATH=src .venv/bin/python scripts/plot_teacher_score_histograms.py
 
 The script prints the input SHA256 and descriptive summary statistics.
 
+`qwen38_27b_kimi_training_calibration.png` and `.svg` show label reliability
+of unadapted Qwen3.8-27B (BF16) and Kimi K3 on all 8,688 training rows, from
+`experiments/qwen27b_generations_ood/calibration_train.py`.
 `teacher_final_boundary_calibration.png` and `.svg` show reliability diagrams
 on these same 640 samples, with 10 equal-width bins, bin counts and descriptive
 95% Wilson event-rate intervals. Regenerate with

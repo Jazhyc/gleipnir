@@ -165,3 +165,22 @@ removed rows, AUROC covers only the three sources with both classes there
   is level.
 - **Removed rows.** Qwen3.8 mostly makes Kimi's errors: it lands on the
   label's side for 33% of them (BashArena 40%, Gloom 6%, STRIDE 8%).
+
+**Calibration on the training rows** (`calibration_train.py`;
+`results/qwen27b_generations_ood/training_calibration.json`;
+`figures/qwen38_27b_kimi_training_calibration.{png,svg}`). Label calibration,
+10 equal-width bins; training rows are Kimi's distillation inputs (50%
+positive), so this is a diagnostic, not held-out calibration.
+
+| | Qwen3.8-27B | Kimi K3 | Qwen3.5-27B FP8 (earlier) |
+|---|---:|---:|---:|
+| ECE, 640-row matched subset of the earlier comparison | 0.059 | 0.044 | 0.117 |
+| ECE, all 8,688 rows (5 / 20 bins) | 0.043 (0.043 / 0.044) | 0.037 (0.037 / 0.038) | |
+| Brier / log loss, all rows | 0.0743 / 0.284 | 0.0747 / 0.251 | |
+| mean confidence − accuracy, all rows | +0.041 | +0.037 | |
+
+The calibration gap to Kimi that Qwen3.5 showed has mostly closed: Qwen3.8's
+reliability curve tracks the diagonal with populated middle bins, and both
+models are slightly underconfident at predicted 0.1–0.3 (observed 0.27–0.39).
+Kimi keeps a log-loss edge from Qwen3.8's more confident errors. The
+Qwen3.5 figure was FP8 on an older stack (`experiments/teacher_agreement`).
