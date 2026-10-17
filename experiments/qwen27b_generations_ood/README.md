@@ -65,3 +65,47 @@ HF_HOME=/root/hf-27b HF_HUB_OFFLINE=1 PYTHONPATH=src:. <vllm-0.31-python> \
   --config experiments/qwen27b_generations_ood/qwen36_27b.json \
   --output results/qwen27b_generations_ood/qwen36_27b
 ```
+
+## Results (2026-10-16/17, B200 `GPU-3d8d6bde…`, vLLM 0.31.0)
+
+Every run scored all 6,395 rows, passed its canary, and hit no stop condition.
+Each scoring invocation took about 2,190 s (36.5 min), and engine start-up
+took about 64 s.
+
+| strict OOD | Qwen3.5-27B | Qwen3.6-27B | **Qwen3.8-27B** |
+|---|---:|---:|---:|
+| **Mean-OOD pAUROC@20** | 0.8388 | 0.8726 | **0.8901** |
+| macro AUROC | 0.9369 | **0.9538** | 0.9535 |
+| macro Brier | 0.1067 | 0.1050 | **0.0823** |
+| macro balanced accuracy | 0.8659 | 0.8734 | **0.8894** |
+| tied rows | 2,360 | 2,107 | **1,837** |
+
+| pAUROC@20 by source | 3.5 | 3.6 | 3.8 |
+|---|---:|---:|---:|
+| AgentDojo | 0.9134 | 0.9446 | **0.9657** |
+| CUA-SHADE-Arena | 0.8151 | 0.8513 | **0.8648** |
+| IaC | 0.8860 | 0.8754 | **0.9678** |
+| MLE-Sabotage | 0.9908 | 0.9990 | **1.0000** |
+| Rogue Eval | 0.9340 | 0.9694 | **0.9862** |
+| SHADE-Arena | 0.4935 | **0.5957** | 0.5560 |
+
+**Drift control.** The 3.5 rerun matches its 2026-08-31 result:
+- Mean-OOD pAUROC@20 is 0.8388 vs. 0.8395, and every source is within 0.003;
+- row scores correlate at 0.9997, with MAE 0.0039;
+- 30 rows flip at the 0.5 threshold.
+
+So the stack change from vLLM 0.24 on an RTX PRO 6000 to vLLM 0.31 on a B200
+does not affect the comparison.
+
+**Reading.**
+- **Qwen3.8 ranks first.** It is best on five of six sources and on
+  calibration. It is 5.1 points above 3.5 and 1.8 above 3.6. The gap to the
+  Kimi K3 teacher (0.9084) narrows from 6.9 points (3.5) to 1.8.
+- **Qwen3.6 leads only on SHADE-Arena:** 0.596 vs. 0.556. SHADE-Arena remains
+  every model's weakest source.
+- **Limits of the evidence.**
+  - These are single unadapted checkpoints at a fixed prompt interface.
+  - ID was not scored.
+  - The BF16 run did not repeat the earlier FP8 batch/singleton consistency
+    gate. The earlier FP8 Qwen3.8 consistency failure has not been checked for
+    BF16.
