@@ -139,6 +139,18 @@ attn801 is faster on every batch (−3.2 to −5.9%), adds no Dynamo graphs, and
 its losses equal the control's bitwise for updates 1–2 and then drift by
 about as much as an identical control repeat (`screen_control01_audit`).
 
+| trim02 | none; compiled final-layer trim | 84.3 GiB | 87.8 GiB | **26.93 s** | **−3.1%** | accepted |
+
+"Stored" means not checkpointed: the layer keeps its activations for
+backward instead of recomputing them from its input.
+
+**Trim (`screen_trim02`).** Its canary passed: gradient relative L2
+1.08% against a 0.99% repeat noise floor on a 16K multi-sequence pack, and
+1.99% against 1.75% on the 28,733-token row; logit maximum difference 0.125
+(one BF16 ulp) and 0; no trained final-layer parameter lost its gradient.
+Every batch is faster (−1.9 to −4.2%), peak memory is unchanged, and losses
+track the control (update 10: 0.2139 vs. 0.2184).
+
 **Trim, first attempt (`screen_trim01`, failed).** The trim canary OOMed at
 178 GiB during startup: it runs before the Trainer first calls
 `model.train()`, and Transformers checkpoints only in training mode, so the
