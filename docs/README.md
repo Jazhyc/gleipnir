@@ -1,5 +1,7 @@
 # Documentation index
 
+- [First trained Qwen3.8-27B](findings/qwen38_27b_campaign.md): 0.9217 ID
+  pAUROC@20, best so far; OOD not yet run.
 - [Qwen3.8-27B training default](decisions/qwen38_27b_b200_training_default.md):
   BF16/SDPA with trim and 12 stored attention layers, 25.0 s per benchmark
   update (−10.1%).

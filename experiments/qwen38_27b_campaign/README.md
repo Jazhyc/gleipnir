@@ -46,3 +46,49 @@ All startup gates passed: FlashQLA model canary finite (gradient relative L2
 and the longest-32 memory preflight (154 GiB of 178). The first update ran by
 about 18:13; the first eight averaged about 70 s including warm-up (progress
 bar ETA 4 h 38 min).
+
+**Training (17:53–22:28 UTC).** 245 updates in 15,200 s of updates (train
+stage 16,301 s with startup gates), about 62 s per update (~4,990
+tokens/s). Mean training loss 0.149: the first 20 updates averaged 0.179 and
+the last 50 averaged 0.129, at Kimi's mean target entropy on these rows
+(0.128). Completion validation passed.
+
+**Merge and parity.** Master reference 223 s, merge 379 s, merged parity
+172 s (correlation 0.99991, MAE 0.0016, maximum 0.030, adapter effect 0.73).
+The driver paused after merged parity as planned.
+
+**Scoring-source re-binding.** A prepared campaign pins its sources for its
+whole life (`_prepare` only re-checks an existing manifest), so the resume
+first stopped on source drift in `evaluation.py`. Nothing ran.
+`rebind_evaluation_sources.py` verified every completed stage's bound outputs,
+allowed only the three scoring-stage files of `1b66597`
+(`evaluation.py`, `bf16_monitor.py`, `bf16_worker.py`) to change, archived the
+old manifest and executed sources (`*.pre_rebind_20261017T224617Z*`) and
+recorded the change under `source_rebindings` in the new manifest. The
+`evaluation.py` change touches only the BF16 attention-call count in the
+scoring path, not merged parity.
+
+**ID scoring (1,735 s stage; 1,456 s for 3,012 rows, 33.75M tokens).**
+Serving parity against the FP32 master: correlation 0.99999, MAE 0.0007,
+maximum 0.010. The BF16 audit passed with the 27B geometry (16 attention
+layers, 128/96/32 MLP/GDN/attention projections, 16 attention calls). All
+3,012 rows scored. The scorer was retired afterwards.
+
+## Result (`compare.py`, `results/qwen38-27b-s0-01/id_comparison.json`)
+
+| ID, 3,012 rows | macro pAUROC@20 | macro AUROC | Brier | Gloom exfiltration | Test STRIDE |
+|---|---:|---:|---:|---:|---:|
+| **27B trained, seed 0** | **0.9217** | **0.9822** | 0.0759 | **0.8868** | 0.9567 |
+| 27B unadapted | 0.8869 | 0.9730 | 0.0812 | 0.8454 | 0.9284 |
+| 4B seed 0 | 0.8959 | 0.9638 | 0.1083 | 0.8285 | 0.9633 |
+| 4B seed 1 | 0.8978 | 0.9627 | 0.0862 | 0.8168 | 0.9788 |
+| 4B seed 2 | 0.9142 | 0.9734 | 0.0687 | 0.8619 | 0.9665 |
+
+- **The hypothesis holds on ID:** +3.5 points over the unadapted 27B and +2.6
+  over the seed-0 4B. Against the best 4B seed (+0.75) the gap is inside the
+  4B's seed-to-seed spread (about 1 point), and the 27B has one seed.
+- **Where it gains.** Gloom (0.887, the best of any model) and macro AUROC
+  (0.982). On Test STRIDE it improves on zero-shot (0.928 → 0.957) but stays
+  below all three 4B seeds.
+- **Not yet known.** OOD, the frozen test suite where the unadapted 27B
+  scores 0.890; fine-tuning toward Kimi could trade some of that away.
