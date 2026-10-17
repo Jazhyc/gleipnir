@@ -76,7 +76,7 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
-| **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **2.2742** | **0.8901** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -276,16 +276,18 @@ Qwen3.5-27B full-teacher-prompt contract
 byte-identically to Qwen3.5-27B, so the mean input is the same
 9,466.7113 tokens plus one output token.
 
-Cost uses OpenRouter's `qwen/qwen3.8-27b` list price on 2026-10-17
-(`$0.24/M` input, `$2.20/M` output, from the models API): `$2.2720/1K` input
-plus `$0.0022/1K` output gives `$2.2742/1K`. The Qwen3.5-27B row keeps its
-historical paper proxy; OpenRouter now lists that model at `$0.26/M` input, so
-the two 27B costs come from different price sources.
+Qwen3.8-27B has the same architecture and parameter count as Qwen3.5-27B
+(`Qwen3_5ForConditionalGeneration`, 27.78B), so its cost uses the same paper
+hosted proxy (`$0.195/M` input, `$1.56/M` output): `$1.8476/1K`. The two 27B
+points therefore differ only in quality. For reference, OpenRouter listed
+`qwen/qwen3.8-27b` at `$0.24/M` input and `$2.20/M` output on 2026-10-17, which
+would give `$2.2742/1K`.
 
 The point is new frontier: Jev 1.13 is the best cheaper row (`0.8495`), and the
 next higher-quality frontier point is Kimi K2.6 (`0.9194` at `$7.9110/1K`). It
-dominates none of the previous frontier points. Qwen3.8 is `0.0506` above
-Qwen3.5-27B and `0.0183` below Kimi K3 at about 1/11 of Kimi K3's cost.
+dominates none of the previous frontier points; at equal cost it is `0.0506`
+above Qwen3.5-27B. It is `0.0183` below Kimi K3 at about 1/14 of Kimi K3's
+cost.
 
 ## Qwen3.5-9B immediate ordinal result
 
