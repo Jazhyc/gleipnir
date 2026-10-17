@@ -109,6 +109,12 @@ def profile_update(action: Callable[[], Any]) -> tuple[Any, dict]:
     ]
     span = (max(b for _, b in device) - min(a for a, _ in device)) / 1e6
     busy = interval_union(device) / 1e6
+    kernel_seconds: Counter = Counter()
+    kernel_calls: Counter = Counter()
+    for e in events:
+        if e.device_type == DeviceType.CUDA:
+            kernel_seconds[e.name] += (e.time_range.end - e.time_range.start) / 1e6
+            kernel_calls[e.name] += 1
     api = Counter()
     api_seconds = Counter()
     for e in events:
@@ -124,6 +130,10 @@ def profile_update(action: Callable[[], Any]) -> tuple[Any, dict]:
         "device_idle_fraction_of_wall": 1 - busy / wall,
         "cuda_api_calls": dict(api),
         "cuda_api_seconds": dict(api_seconds),
+        "top_kernels": [
+            {"name": name[:300], "seconds": seconds, "calls": kernel_calls[name]}
+            for name, seconds in kernel_seconds.most_common(200)
+        ],
     }
 
 

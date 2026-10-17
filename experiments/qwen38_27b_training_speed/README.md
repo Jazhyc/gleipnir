@@ -56,3 +56,69 @@ bash experiments/qwen38_27b_training_speed/screen.sh control01   # on the Pod
 resized to 300 GB at the user's request. Runtime restored with
 `logs/runpod/qwen38_27b_training/restore.sh`; weights downloaded to
 `/root/hf-27b` (52 GB). `control01` launched 14:48 UTC.
+
+## Control01 (2026-10-17 14:48–15:13 UTC)
+
+The run completed with finite gradients, all ten updates and no new Dynamo
+graphs during measured updates (18 frames). The longest-32 preflight
+(28,733-token maximum, 711,225 tokens) peaked at 90.5 GB allocated. Initial
+master digest `4093b2aa…` (fresh seed-0 LoRA: 512 tensors, 637.5M parameters).
+
+| ten-update packed benchmark | 4B control (same benchmark) | 27B control01 |
+|---|---:|---:|
+| mean update | 4.924 s | **27.80 s** (5.6×) |
+| median update | 4.827 s | 27.09 s |
+| per-batch range | 2.89–7.22 s | 16.80–40.81 s |
+| tokens/s | 26,693 | 4,728 |
+| peak allocated, measured updates | 147.1 GiB (no checkpointing) | 87.8 GiB (all layers checkpointed) |
+| loss, update 1 → 10 | 0.600 → 0.325 | 0.373 → 0.218 |
+
+At this speed one strict-filtered epoch (245 updates) is about 1.9 h of
+updates, before startup.
+
+**FlashQLA model canary.** Gradient relative L2 against pinned FLA is 0.339
+(4B: 0.129; both above the 0.05 gate and accepted, as before, because they
+are finite under the ten-step comparison). Losses differ on a few batches by
+0.02–0.05, as on the 4B. The error grows toward early layers in both models:
+
+| depth band (eighths, last → first) | 8th | 7th | 6th | 5th | 4th | 3rd | 2nd | 1st |
+|---|---:|---:|---:|---:|---:|---:|---:|---:|
+| 4B | 0.021 | 0.032 | 0.039 | 0.054 | 0.086 | 0.113 | 0.166 | 0.210 |
+| 27B | 0.058 | 0.091 | 0.124 | 0.131 | 0.138 | 0.298 | 0.846 | 0.945 |
+
+This is consistent with small per-kernel BF16 differences (the isolated
+kernel canary agrees within 2%) amplified through twice the depth, not a
+grouped-head fault: Transformers expands q/k to 48 heads before the kernel
+(`modeling_qwen3_5.py:523-525`). For quality work it means early-layer 27B
+LoRA gradients are sensitive to GDN arithmetic. It does not affect timing.
+
+## Where the time goes (profiled update 5, `screen_control01_audit`)
+
+`GLEIPNIR_HOST_PROFILE_DIR` traced update 5 (189K tokens, 41.6 s wall, GPU
+busy 96.5%). `top_kernels` in `host_profile_control01/update05_trace.json`:
+
+| kernel class | time | share |
+|---|---:|---:|
+| GEMMs (cuBLAS nvjet) | 18.7 s | 46.5% |
+| full-attention SDPA (PyTorch FA2 kernels, head dim 256) | 10.5 s | 26.2% |
+| Triton fused elementwise | 4.0 s | 10.0% |
+| FlashQLA GDN | 2.4 s | 6.1% |
+| copies | 2.4 s | 6.0% |
+| norms, other elementwise | 1.3 s | 3.2% |
+| causal conv1d | 0.8 s | 2.0% |
+
+- Host overhead is not the bottleneck (3.5% idle).
+- GEMMs run near peak (about 3×10¹⁶ FLOPs in 18.7 s), so they speed up only
+  by doing less work. Full recompute accounts for about a third of GEMM time
+  plus a second attention forward (544 forward vs. 512 backward attention
+  calls).
+
+**Attention backends** (`attention_backends.py`, 27B shapes through the
+Transformers SDPA entry point; `attention_backends01.json`). Only FA2 runs:
+cuDNN attention rejects head dim 256 (limit 128 in this PyTorch build), and
+memory-efficient attention requires equal query/KV heads. FA2 matches an FP32
+reference within 0.2–0.3% (output and q/k/v gradients); forward+backward
+takes 0.112 s per layer at 28,733 tokens and 0.037 s at 16,384. FA4 is the
+only faster kernel in the repo, but it was rejected for quality on the 4B
+([decision](../../docs/decisions/b200_bf16_sdpa_training_default.md)), so it
+is not tried without the user's say-so.

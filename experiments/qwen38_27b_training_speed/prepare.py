@@ -3,12 +3,13 @@
 The jobs copy the frozen 4B benchmark jobs (same 320 rows, Kimi targets,
 selection, seed, LR, rank and logical batch) and change only the model, the
 output paths and the memory policy: every decoder layer is checkpointed
-(non-reentrant), because the 4B's uncheckpointed recipe needs ~330 GB of
+(non-reentrant) in the control, because the 4B's uncheckpointed recipe needs ~330 GB of
 activations for a 16K-token 27B pack.
 """
 
 from __future__ import annotations
 
+import itertools
 import json
 from pathlib import Path
 
@@ -20,15 +21,23 @@ MODEL = "Qwen/Qwen3.8-27B"
 REVISION = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
 
 
-def job_27b(job: dict, prefix: str) -> dict:
-    out = REMOTE / prefix / job["job_name"]
+# Arm name -> (checkpoint policy, explicit GDN layer indices or None).
+CHECKPOINTING = {
+    "": ("all", None),
+    "gdn_ckpt": ("linear_attention_only", None),
+}
+
+
+def job_27b(job: dict, prefix: str, arm: str = "") -> dict:
+    policy, indices = CHECKPOINTING[arm]
+    out = REMOTE / (f"{prefix}_{arm}" if arm else prefix) / job["job_name"]
     return {
         **job,
         "model": MODEL,
         "model_revision": REVISION,
         "gradient_checkpointing": True,
-        "gradient_checkpointing_policy": "all",
-        "gradient_checkpointing_layer_indices": None,
+        "gradient_checkpointing_policy": policy,
+        "gradient_checkpointing_layer_indices": indices,
         "nonreentrant_checkpointing": True,
         "output_dir": str(out),
         "causal_adapter_dir": str(out / "causal_adapter"),
@@ -39,17 +48,21 @@ def job_27b(job: dict, prefix: str) -> dict:
 
 def main() -> None:
     OUTPUT.mkdir(parents=True, exist_ok=True)
-    for name, prefix in (("jobs", "runs"), ("preflight_jobs", "preflight")):
+    for (name, prefix), arm in itertools.product(
+        (("jobs", "runs"), ("preflight_jobs", "preflight")), CHECKPOINTING
+    ):
         rows = [
             json.loads(line)
             for line in (SOURCE / f"{name}.jsonl").read_text().splitlines()
             if line
         ]
         text = "".join(
-            json.dumps(job_27b(row, prefix), sort_keys=True) + "\n" for row in rows
+            json.dumps(job_27b(row, prefix, arm), sort_keys=True) + "\n"
+            for row in rows
         )
-        (OUTPUT / f"{name}.jsonl").write_text(text)
-        print(f"wrote {OUTPUT / f'{name}.jsonl'} ({len(rows)} jobs)")
+        path = OUTPUT / (f"{name}_{arm}.jsonl" if arm else f"{name}.jsonl")
+        path.write_text(text)
+        print(f"wrote {path} ({len(rows)} jobs)")
 
 
 if __name__ == "__main__":
