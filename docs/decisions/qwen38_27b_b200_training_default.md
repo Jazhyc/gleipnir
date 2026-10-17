@@ -22,8 +22,9 @@ with only what the 27B needs changed:
 the ten-update packed benchmark, the same GPU, the same batches.
 - **Speed.** 24.99 s per update against 27.80 s with every layer checkpointed
   (−10.1%; every batch −9 to −12%). The trim gives −3.1% alone and the 12
-  stored attention layers −7.7%. One strict-filtered epoch is about 1.7 h of
-  updates.
+  stored attention layers −7.7%. Epoch time scales with tokens (benchmark
+  updates average 131K, training updates 310K): a strict-filtered epoch is
+  about 4.0 h of updates instead of 4.5 h.
 - **Correctness.** The trim canary passed: gradients within the repeat noise
   floor plus 1 point, logits within one BF16 ulp. Losses track the control
   within run-to-run noise. Storing layers does not change arithmetic.

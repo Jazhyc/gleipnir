@@ -77,8 +77,9 @@ master digest `4093b2aa…` (fresh seed-0 LoRA: 512 tensors, 637.5M parameters).
 | peak allocated, measured updates | 147.1 GiB (no checkpointing) | 87.8 GiB (all layers checkpointed) |
 | loss, update 1 → 10 | 0.600 → 0.325 | 0.373 → 0.218 |
 
-At this speed one strict-filtered epoch (245 updates) is about 1.9 h of
-updates, before startup.
+Benchmark updates average about 131K tokens; strict-filtered training
+updates average 310K (75.85M tokens over 245 updates), so epoch time scales
+with tokens (4,728 tokens/s here), not with benchmark update time.
 
 **FlashQLA model canary.** Gradient relative L2 against pinned FLA is 0.339
 (4B: 0.129; both above the 0.05 gate and accepted, as before, because they
@@ -167,8 +168,11 @@ training mode (`979eff9`); dropout is 0, so values are unchanged.
 9.1–11.6% faster than control01. The trim canary passed (pack 1.08% vs. 1.04%
 noise; longest row 2.04% vs. 1.12% noise, inside the +1-point tolerance;
 logits within one ulp). Losses track the trim02 run (update 10: 0.2187 vs.
-0.2139). At 24.99 s per update, one strict-filtered epoch (245 updates) is
-about 1.7 h of updates, against 1.9 h for control01.
+0.2139). At 24.99 s per update the benchmark runs at 5,260 tokens/s against 4,728
+for control01. Epoch time scales with tokens: a strict-filtered epoch
+(75.85M tokens) is about 4.0 h of updates at that rate, against 4.5 h for
+control01. (The 4B's 26,693 tokens/s gives 47 min, matching its measured
+~50-minute epoch.)
 
 **Memory margin.** The 151.8 GiB preflight covers the benchmark's longest row
 (28,733 tokens); full-campaign rows reach 29,696 tokens (+3%), leaving about
