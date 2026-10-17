@@ -222,10 +222,16 @@ def install_with_model_canary(
         raise ValueError("unsupported backend/boundary configuration")
     modules = [m for m in model.modules() if hasattr(m, "chunk_gated_delta_rule")]
     originals = [(m, m.chunk_gated_delta_rule) for m in modules]
-    if len(modules) != 24 or any(
+    config = getattr(model, "config", None)
+    config = getattr(config, "text_config", None) or config
+    layer_types = getattr(config, "layer_types", None) or []
+    expected = sum(kind == "linear_attention" for kind in layer_types)
+    if not modules or len(modules) != expected or any(
         not f.__module__.startswith("fla.ops.") for _, f in originals
     ):
-        raise ValueError("expected all 24 Qwen4B layers to use pinned FLA")
+        raise ValueError(
+            f"expected all {expected} linear-attention layers to use pinned FLA"
+        )
     if layer_indices is not None:
         layer_indices = list(layer_indices)
         available = {m.layer_idx for m in modules}

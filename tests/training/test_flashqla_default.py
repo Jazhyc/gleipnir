@@ -1,6 +1,7 @@
 """Check that the selected B200 recipe reaches training and keeps truthful gates."""
 
 from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 import torch
@@ -101,6 +102,9 @@ def test_selected_model_canary_accepts_finite_nonzero_gradients_and_restores_fai
     model = torch.nn.Module()
     model.weight = torch.nn.Parameter(torch.tensor(1.0))
     model.layers = torch.nn.ModuleList([torch.nn.Module() for _ in range(24)])
+    model.config = SimpleNamespace(
+        layer_types=(["linear_attention"] * 3 + ["full_attention"]) * 8
+    )
     for layer in model.layers:
         layer.chunk_gated_delta_rule = reference
 
