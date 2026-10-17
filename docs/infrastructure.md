@@ -179,7 +179,7 @@ snapshot `.runpod/distillation-temperature.json`). It runs on the same machine
 (`2mj1yzztlz17`) and volume, but on GPU `GPU-3d8d6bde…`. As before, its
 template leaves `PUBLIC_KEY` empty, so the project key was installed through
 the Runpod proxy. At the user's instruction it was terminated on 2026-10-17 at about
-03:20 UTC, after all results were pulled; network volume `cb7bxu71ug` is kept.
+03:06 UTC, after all results were pulled; network volume `cb7bxu71ug` is kept.
 
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
