@@ -53,6 +53,9 @@
   fixed-backbone, existing-teacher-data proposals, their empirical and literature
   motivation, and a candidate comparison plan; research backlog rather than a
   launched campaign or selected recipe.
+- [Qwen3.8-27B serving transfer](research/qwen38_27b_serving_transfer.md):
+  backlog note on which 4B serving optimizations transfer to the 27B, what
+  needs adapting or revalidating, and a four-step plan; not launched.
 - `research/tool_transcript_monitoring.md`: operational paper notes, dataset
   provenance, and the proposed exploratory Kimi-logit scaling design for
   action-only agent monitoring.
