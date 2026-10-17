@@ -41,3 +41,33 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --co
 PYTHONPATH=src:. <training-python> -m experiments.qwen38_teacher_4b.run
 python -m experiments.qwen38_teacher_4b.compare
 ```
+
+## Result (2026-10-17 01:54–02:57 UTC, B200 `GPU-3d8d6bde…`)
+
+All stages completed: train, master reference, merge, merged parity
+(correlation 0.99986) and full ID scoring (3,012 rows). The driver took
+62 minutes end to end. The merged slot was released.
+
+| ID | Kimi seed 1 (control) | Kimi seed 0 | Kimi seed 2 | **Qwen3.8 teacher, seed 1** |
+|---|---:|---:|---:|---:|
+| macro pAUROC@20 | 0.8978 | 0.8959 | 0.9142 | **0.8792** |
+| macro AUROC | 0.9627 | 0.9638 | 0.9734 | 0.9589 |
+| macro Brier | 0.0722 | 0.0889 | 0.0607 | 0.0716 |
+| Gloom exfiltration pAUROC@20 | 0.8168 | 0.8285 | 0.8619 | 0.7770 |
+| Test STRIDE pAUROC@20 | 0.9788 | 0.9633 | 0.9665 | 0.9815 |
+
+**Decision: does not advance.** Macro pAUROC@20 is −1.86 points against the
+control, and Gloom is −3.98 (the rule allows −1.0). STRIDE is +0.27; Brier is
+flat. Scores move a lot relative to the control: MAE 0.103, with 286 rows
+crossing 0.5.
+
+**Reading.**
+- The Qwen3.8-distilled student is below all three Kimi-distilled seeds,
+  and below its own unadapted teacher on ID (0.8869).
+- At this scale, same-family transfer does not make up for the weaker
+  teacher. The loss is concentrated on Gloom, where unadapted Qwen3.8 is
+  itself strong (0.845), so the student did not inherit it.
+- Limits: one seed, and the row set changed with the teacher (7,874 vs.
+  7,836 rows). The Kimi seed spread on macro pAUROC@20 is 1.8 points, about
+  the size of this gap, but Gloom's −4.0 falls outside the Kimi seeds'
+  0.817–0.862 range.
