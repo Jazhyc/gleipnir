@@ -21,6 +21,9 @@ ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 INPUT = "data/id_cot_only_evaluation"
 STUDENT_CONFIG = ROOT / "experiments/id_cot_only_evaluation/config.json"
+# The scorer reads student manifests in the prompt-cache schema; this one
+# restates the evaluation manifest's identity in that schema.
+MANIFEST = ROOT / "data/qwen27b_generations_ood/id_student.manifest.json"
 
 
 def main() -> None:
@@ -49,6 +52,26 @@ def main() -> None:
         for row in rows
     ]
     lengths = [len(ids) for ids in tokenizer(rendered)["input_ids"]]
+    source_manifest = ROOT / INPUT / "evaluation.manifest.json"
+    original = json.loads(source_manifest.read_text())
+    if original["output_sha256"] != sha256_file(path) or original["rows"] != len(rows):
+        raise ValueError("evaluation manifest does not describe the input")
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(
+        json.dumps(
+            {
+                "output": f"{INPUT}/prompts.jsonl",
+                "output_sha256": original["output_sha256"],
+                "rows": original["rows"],
+                "prompt_set_id": student["prompt_set_id"],
+                "student_template_sha256": original["student_template_sha256"],
+                "source_manifest": str(source_manifest.relative_to(ROOT)),
+                "source_manifest_sha256": sha256_file(source_manifest),
+            },
+            indent=2,
+        )
+        + "\n"
+    )
     config = copy.deepcopy(base)
     config["campaign_id"] = "qwen27b-generations-id-student-prompt-qwen38_27b-v1"
     config["hypothesis"] = (
@@ -63,8 +86,8 @@ def main() -> None:
         **config["scope"],
         "input": f"{INPUT}/prompts.jsonl",
         "input_sha256": sha256_file(path),
-        "manifest": f"{INPUT}/evaluation.manifest.json",
-        "manifest_sha256": sha256_file(ROOT / INPUT / "evaluation.manifest.json"),
+        "manifest": str(MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": sha256_file(MANIFEST),
         "rows": len(rows),
     }
     config["engine"]["audited_total_prompt_tokens"] = sum(lengths)

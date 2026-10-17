@@ -7,8 +7,8 @@
     "role": "descriptive_id_evaluation",
     "input": "data/id_cot_only_evaluation/prompts.jsonl",
     "input_sha256": "7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4",
-    "manifest": "data/id_cot_only_evaluation/evaluation.manifest.json",
-    "manifest_sha256": "abcc8267a77f6eff0a252ea846a6a59283e8a027cc860210e3984064eec611f1",
+    "manifest": "data/qwen27b_generations_ood/id_student.manifest.json",
+    "manifest_sha256": "f5599d0953463a4d579f6cc589a8093cce3e2bafc7d0461df3c7c42a8b22baf4",
     "rows": 3012,
     "sources": [
       "gloom_exfiltration",

@@ -193,3 +193,16 @@ zero-shot ID config with only the prompt role/template (student,
 changed. The 27B token audit (33,750,959 tokens, maximum 29,513) equals the
 trained campaign's ID scoring. Question: how much of the trained 27B's ID gain
 (0.8869 → 0.9217) is adaptation to the compact prompt rather than to Kimi?
+
+The scorer reads student-prompt manifests in the prompt-cache schema, so the
+builder writes `data/qwen27b_generations_ood/id_student.manifest.json`
+restating the evaluation manifest's identity (same input hash `7a4ec604…`,
+original manifest hash recorded). The vLLM runtime's `bin/` must be on `PATH`
+(FlashInfer JIT calls `ninja`):
+
+```bash
+PATH=<vllm-0.31-runtime>/bin:$PATH HF_HOME=/root/hf-27b HF_HUB_OFFLINE=1 PYTHONPATH=src:. \
+  <vllm-0.31-python> -m experiments.tool_trajectory_monitoring.benchmark_qwen_ood \
+  --config experiments/qwen27b_generations_ood/qwen38_27b_id_student.json \
+  --output results/qwen27b_generations_ood/qwen38_27b_id_student
+```
