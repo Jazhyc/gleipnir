@@ -67,6 +67,10 @@ class Campaign:
             raise ValueError(
                 "held-out campaign evaluations cannot promote a checkpoint"
             )
+        if config["profile"] in QWEN38_27B_PROFILES and not config.get(
+            "full_startup_validation", False
+        ):
+            raise ValueError("27B profiles have no startup receipt to reuse")
         expected_model = (
             "Qwen/Qwen3.8-27B"
             if config["profile"] in QWEN38_27B_PROFILES
@@ -140,14 +144,26 @@ class Campaign:
                 compose(config_name=self.config["profile"]), resolve=True
             )
 
+    def base_files(self) -> dict[str, str]:
+        """Pinned base snapshot files: the campaign's own manifest, else the
+        serving selection's merge sources (the validated 4B)."""
+        if "base_files" in self.config:
+            return dict(self.config["base_files"])
+        selection = json.loads(self.input("serving_selection").read_text())
+        merge = json.loads((self.root / selection["merged_artifact"]).read_text())
+        return dict(merge["source_files_sha256"])
+
     def job(self) -> dict:
         config = self.config
         recipe = self.profile()["recipe"]
-        recipe["startup_validation_reference"] = str(self.input("startup_reference"))
-        recipe.setdefault(
-            "startup_validation_reference_sha256",
-            config["inputs"]["startup_reference"]["sha256"],
-        )
+        if not config.get("full_startup_validation", False):
+            recipe["startup_validation_reference"] = str(
+                self.input("startup_reference")
+            )
+            recipe.setdefault(
+                "startup_validation_reference_sha256",
+                config["inputs"]["startup_reference"]["sha256"],
+            )
         if self.config.get("concept_ablation", False):
             recipe["concept_ablation_path"] = str(self.input("concept_direction"))
             recipe["concept_ablation_sha256"] = config["inputs"]["concept_direction"][
@@ -219,9 +235,10 @@ class Campaign:
             "token_audit",
             "initial_weights",
             "initial_adapter_config",
-            "startup_reference",
             "serving_selection",
         }
+        if not self.config.get("full_startup_validation", False):
+            required.add("startup_reference")
         required |= {s for s in self.splits} | {s + "_workload" for s in self.splits}
         if self.config.get("augmentation_audit", False):
             required |= {"clean_training", "ledger", "templates"}
@@ -239,11 +256,10 @@ class Campaign:
             for key in ("merged_artifact", "host_parent", "recipe_summary"):
                 path = selection[key]
                 specs.setdefault(f"serving:{path}", (self.root / path, None))
-            merge_path = self.root / selection["merged_artifact"]
-            if merge_path.is_file():
-                for path, sha in json.loads(merge_path.read_text())[
-                    "source_files_sha256"
-                ].items():
+            if "base_files" in self.config or (
+                self.root / selection["merged_artifact"]
+            ).is_file():
+                for path, sha in self.base_files().items():
                     specs[f"base:{path}"] = (
                         self.root / self.config["base_model"] / path,
                         sha,
@@ -351,7 +367,7 @@ class Campaign:
             raise ValueError("training population/update count changed")
         if job["effective_batch_size"] != config["logical_batch_size"]:
             raise ValueError("logical batch size disagrees with selected profile")
-        if (
+        if not config.get("full_startup_validation", False) and (
             job["startup_validation_reference_sha256"]
             != config["inputs"]["startup_reference"]["sha256"]
         ):

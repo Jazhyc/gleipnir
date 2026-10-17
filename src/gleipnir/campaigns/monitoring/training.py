@@ -96,6 +96,9 @@ def train(ctx: Campaign) -> None:
 
         validate_kernel_sources()
         runtime = verify_native_fp4_runtime()
+    elif config.get("full_startup_validation", False):
+        # No reusable receipt: the trainer runs every startup gate itself.
+        runtime = {"startup_validation": "full"}
     else:
         runtime = validation_reference(
             Path(job["startup_validation_reference"]),
@@ -121,7 +124,8 @@ def train(ctx: Campaign) -> None:
         raise ValueError("original adapter initialization changed")
     with safe_open(str(initial), framework="pt") as weights:
         keys = [k for k in weights.keys() if "lora_B" in k]
-        if len(keys) != 128 or any(
+        pairs = sum("lora_A" in k for k in weights.keys())
+        if not keys or len(keys) != pairs or any(
             torch.count_nonzero(weights.get_tensor(k)) for k in keys
         ):
             raise ValueError("replication requires the original fresh zero-B adapter")
@@ -228,10 +232,8 @@ def merge(ctx: Campaign) -> None:
     config = ctx.config
     ctx.check()
     complete = json.loads((ctx.adapter / "complete.json").read_text())
-    selection = json.loads(ctx.input("serving_selection").read_text())
-    old = json.loads((ctx.root / selection["merged_artifact"]).read_text())
     base = ctx.root / config["base_model"]
-    for name, expected in old["source_files_sha256"].items():
+    for name, expected in ctx.base_files().items():
         if file_hash(base / name) != expected:
             raise ValueError("pinned base weight/config identity changed")
     report = merge_checkpoint(

@@ -340,6 +340,10 @@ def test_27b_profile_requires_the_27b_model(tmp_path):
     path = tmp_path / "config.yaml"
     config["profile"] = "qwen38_27b_b200_default"
     path.write_text(yaml.safe_dump(config))
+    with pytest.raises(ValueError, match="no startup receipt"):
+        Campaign.load(tmp_path, path)
+    config["full_startup_validation"] = True
+    path.write_text(yaml.safe_dump(config))
     with pytest.raises(ValueError, match="requires Qwen/Qwen3.8-27B"):
         Campaign.load(tmp_path, path)
     config["model"]["id"] = "Qwen/Qwen3.8-27B"
@@ -347,6 +351,7 @@ def test_27b_profile_requires_the_27b_model(tmp_path):
     recipe = Campaign.load(tmp_path, path).profile()["recipe"]
     assert recipe["last_layer_trim"] is True
     assert len(recipe["gradient_checkpointing_layer_indices"]) == 52
+    assert "startup_validation_reference" not in Campaign.load(tmp_path, path).job()
     config["profile"] = "qwen35_4b_b200_packed_sdpa_trim"
     path.write_text(yaml.safe_dump(config))
     with pytest.raises(ValueError, match="requires Qwen/Qwen3.5-4B"):

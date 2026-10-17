@@ -203,10 +203,15 @@ def frozen_workloads(ctx: Campaign) -> dict[str, list[dict]]:
     workloads = validate_workloads(ctx)
     # Frozen prompts were rendered from these exact tokenizer assets. New
     # adapters change weights, not the pinned model's tokenizer/chat template.
-    selection = json.loads(ctx.input("serving_selection").read_text())
-    old_merge = json.loads((ctx.root / selection["merged_artifact"]).read_text())
     merged = json.loads((ctx.output / "merged_artifact.json").read_text())
-    for name, expected in old_merge["files_sha256"].items():
+    if "base_files" in ctx.config:
+        # Models without a validated merge: the pinned base snapshot's assets.
+        assets = ctx.config["base_files"]
+    else:
+        selection = json.loads(ctx.input("serving_selection").read_text())
+        old_merge = json.loads((ctx.root / selection["merged_artifact"]).read_text())
+        assets = old_merge["files_sha256"]
+    for name, expected in assets.items():
         if (
             "safetensors" not in name
             and name != "config.json"

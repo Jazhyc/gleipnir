@@ -73,6 +73,7 @@ def validate_training_metadata(
         raise ValueError("last-layer trim requested/recorded mismatch")
     if (
         metadata["gradient_checkpointing"]
+        != profile["metadata_expectations"].get("gradient_checkpointing", False)
         or metadata["quantization"]["enabled"]
         or metadata["direct_logits_mode"] != "selected_positions"
         or metadata["optimization"]["learning_rate"] != job["learning_rate"]
