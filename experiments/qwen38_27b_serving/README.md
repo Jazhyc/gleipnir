@@ -160,3 +160,16 @@ Score correlation 0.995 (MAE 0.022, maximum 0.22); 59 of 3,012 rows cross
 at BF16 in the campaign). Without QAD the quantized 27B loses 0.17 ID points;
 this is reported, not gated, per the user. A QAD-adapted 27B would be the
 deployment candidate.
+
+**c1 latency by length (phase 1 vs BF16).** The quantized path is about 2×
+faster from ~1.5K tokens up (4,856 tokens: 108 vs 219 ms; 14,373: 315 vs 650
+ms) but has a flat ~49 ms floor from ~260 to ~1,400 tokens (BF16 27–74 ms),
+while a 188-token request takes 19 ms. A length-independent floor points to
+host/launch overhead; the working hypothesis (unverified) is that very short
+steps run inside vLLM CUDA graphs while 260+ tokens run outside them, where
+each of the 240 FP4 projections adds a Python custom-op call and separate
+activation-packing launches. A host profile (`GLEIPNIR_HOST_PROFILE_DIR`) of
+a ~500-token request would confirm it; fused producers and graph capture for
+these sizes are the fixes. Long-context throughput additionally needs MXFP8
+attention: phase 1 quantizes only projections (linear in tokens), so at
+~1M-token contexts the BF16 attention layers dominate and the speedup shrinks.

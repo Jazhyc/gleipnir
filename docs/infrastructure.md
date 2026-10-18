@@ -189,6 +189,16 @@ resized from 50 to 300 GB (SSH moved to port 37846). The runtime is restored
 by `logs/runpod/qwen38_27b_training/restore.sh`, and the Qwen3.8-27B weights
 are on the container disk at `/root/hf-27b` (lost on termination).
 
+At the user's request it was terminated on 2026-10-18 at about 02:54 UTC
+(delete 204, lookup 404; no Pods remain). Before termination the GPU was idle,
+all session results, adapters, configs and logs were pulled locally, and the
+container-only compiler caches were archived on the volume as
+`results/b200_shutdown/20261018_eu/container_caches.tar.zst` (SHA-256
+`37ee8670…`). Both volumes are retained (EU `cb7bxu71ug` 200 GB, NC2
+`ixbh81vf9c` 300 GB). The 27B base weights and merged checkpoints were on the
+container disk; they are re-downloadable and reconstructable from the FP32
+master.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
