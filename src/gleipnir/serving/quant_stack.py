@@ -211,6 +211,36 @@ def mxfp8_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
     return receipt
 
 
+def mxfp8_long_context(root: Path, config: Any, text: Any, gpu: str) -> dict:
+    """Raise the MXFP8 length bound after the served-heads envelope receipt.
+
+    The 4B 1M envelope (``experiments/b200_context_million/envelope.py``)
+    changes only the descriptor/producer bound; its receipt here comes from
+    ``experiments/qwen38_27b_serving/mxfp8_envelope.py`` at the served heads.
+    """
+    from experiments.b200_context_million.envelope import CHUNK, enable, validate
+    from gleipnir.serving import mxfp8
+
+    limit = config.model_config.max_model_len
+    binding = config.additional_config.get("mxfp8_long_context") or {}
+    path = root / binding.get("validation", "")
+    if not path.is_file() or file_hash(path) != binding.get("validation_sha256"):
+        raise ValueError("MXFP8 beyond 32K requires a hash-bound envelope receipt")
+    receipt = json.loads(path.read_text())
+    validate(receipt, root, limit)
+    served = {
+        "query_heads": text.num_attention_heads,
+        "kv_heads": text.num_key_value_heads,
+        "head_dim": text.head_dim,
+    }
+    if receipt.get("attention_shape") != served or receipt.get("gpu") != gpu:
+        raise ValueError(f"MXFP8 envelope receipt does not cover {served} on {gpu}")
+    if config.scheduler_config.max_num_batched_tokens != CHUNK:
+        raise ValueError("long-context MXFP8 requires the 32K chunk budget")
+    enable(mxfp8, limit)
+    return {"limit": limit, "validation_sha256": binding["validation_sha256"]}
+
+
 class Mxfp8AttentionMixin:
     """cuDNN MXFP8 prefill attention at the served model's GQA heads.
 
@@ -227,16 +257,18 @@ class Mxfp8AttentionMixin:
         import torch
         import vllm.v1.attention.backends.flashinfer as backend
 
-        from gleipnir.serving.mxfp8 import MAX_BATCH, MAX_LENGTH
+        from gleipnir.serving import mxfp8
         from gleipnir.serving.mxfp8_geometry import paged_forward
 
         config = self.vllm_config
         text = config.model_config.hf_text_config
-        if (
-            config.scheduler_config.max_num_seqs > MAX_BATCH
-            or config.model_config.max_model_len > MAX_LENGTH
-        ):
-            raise ValueError("MXFP8 serving envelope is 128 sequences x 32K tokens")
+        limit = config.model_config.max_model_len
+        if config.scheduler_config.max_num_seqs > mxfp8.MAX_BATCH:
+            raise ValueError("MXFP8 serving envelope is 128 sequences")
+        if limit > mxfp8.MAX_LENGTH:
+            self.precision["mxfp8_long_context"] = mxfp8_long_context(
+                ROOT, config, text, torch.cuda.get_device_name()
+            )
         receipt = mxfp8_receipt(
             ROOT, config.additional_config, text, torch.cuda.get_device_name()
         )
