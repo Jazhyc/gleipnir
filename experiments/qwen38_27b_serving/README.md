@@ -251,8 +251,35 @@ unchanged, 7 s capture and 0.9 GiB graph memory. This confirms the host
 overhead hypothesis above. Padding shifts c1 scores by 0.005 mean / 0.083 max
 against full02, comparable to batch-composition noise.
 
-**Status.** The optimized 27B path is now 2.28× BF16 at c128, about 2.2× at
-long prompts at c1, and faster than BF16 at short prompts, at −0.29 ID pAUROC@20
-points without QAD. Not yet ported: native SwiGLU FP4 output (needs an N256
-tile and 27B store constants; 4–11% on that operator on the 4B for M ≥ 1536).
-Long-context (≥ 32K) throughput with MXFP8 is not measured here.
+**Native SwiGLU FP4 output** (user request, same day).
+`fp4_geometry_swiglu.py` reuses the 4B source transform and weight
+interleaving, substitutes the 27B output width in the direct stores, and
+compiles a tile that divides the gate/up width (the 4B's N192 does not divide
+34,816 and its stores guard rows only). `fp4_swiglu_native02.json`: both
+256×256 and 256×128 compile and pass every check on all nine row counts
+(packing equals the independent E4M3/E2M1 reference exactly; arithmetic and
+changed replay ≤ 0.003; rows isolated); the generated source at the 4B width
+equals the 4B module's. Activation error against BF16 is 0.15–0.21 relative L2
+(4B receipt: 0.07–0.09), consistent with more 16-value blocks of the ×20
+outlier row saturating at the unit-global-scale ceiling (448 × 6); unverified.
+Full-MLP speed with 256×128 is 1.04–1.13× at 17–4,096 rows and 0.96–0.99× at
+29K–32K (the reverse of the 4B); the frozen rule (longest contiguous ≥ 2% run)
+selected rows 17–1,536.
+
+`native01` (full stack + native output + graphs to 2,048; native on all 64
+MLPs): c128 52,309 / 53,092 / 52,388 (2.28×, same as graphs01); c1 medians
+22.9 / 24.0 / 63.3 / 130.0 / 375.2 ms across the bands above, slightly slower
+than graphs01 in every band; c1 scores drift 0.013 mean / 0.132 max against
+full02. ID (`nativeid01`): pAUROC@20 0.9192 / AUROC 0.9817, MAE 0.0215, 58
+flips, 53,775 prompt tokens/s (full01: 0.9188, 54,238). Most ID prompts exceed
+the band, so this barely exercises the native arithmetic. **Rejected for the
+27B:** the operator gain does not reach the served model (inside graph-captured
+steps the MLP is a small share and the dispatch adds an op), and it changes
+activation quantization. The code and receipt are kept.
+
+**Status.** Recommended optimized 27B configuration: `QuantFullWorker`
+(MXFP8 attention, tuned FP4 tiles, fused producers, last-query, lean GDN)
+with piecewise graphs to 2,048 tokens (`graphs01`): 2.28× BF16 at c128, about
+2.2× on long prompts at c1, faster than BF16 on short prompts, at −0.29 ID
+pAUROC@20 points without QAD. Long-context (> 32K) throughput with MXFP8 is
+not measured here.
