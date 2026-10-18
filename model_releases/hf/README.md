@@ -39,7 +39,14 @@ The adapter weights and release metadata are distributed under the MIT License,
 which is included in each staged repository. The Qwen base-model terms and the
 terms of the upstream training data and teacher provider still apply.
 
-Published: `Jazhyc/Gleipnir-27B` at revision `7a932209dbd926e71d96f79a7c8fa19246a6c4c5`
-(2026-10-18; public; all 12 files verified against `release_manifest.json` on
-the Hub), in the Efficient Control Monitoring collection after Gleipnir 4B and
-9B.
+Published: `Jazhyc/Gleipnir-27B` (2026-10-18; public), in the Efficient Control
+Monitoring collection after Gleipnir 4B and 9B. First upload `7a932209`; the
+card was then corrected to describe what it is trained for (tool-use agent
+sabotage/exfiltration monitoring, no deception datasets) at `e5c4a7a6`, with
+all 12 files verified against `release_manifest.json` on the Hub.
+
+Versioning: the repos are research previews. Each was tagged `v0.1` on
+2026-10-18 at its current commit (4B `411bdb7c`, 9B `bd86dda2`, 27B
+`e5c4a7a6`). Retrained adapters on the same base go to the same repo with a
+card changelog and the next `v0.x` tag; a public launch rewrites the cards and
+tags `v1.0`; a different base model gets a new repo name.

@@ -7,8 +7,9 @@ language:
 - en
 tags:
 - ai-control
-- deception-detection
-- scheming-detection
+- agent-monitoring
+- sabotage-detection
+- tool-use
 - monitoring
 - knowledge-distillation
 - lora
@@ -34,9 +35,13 @@ model-index:
 
 # Gleipnir 27B
 
-Gleipnir 27B is a research monitor for detecting deception, scheming, and other
-control-relevant problematic behavior in visible AI-agent trajectories. It is
-a rank-128 LoRA adapter for `Qwen/Qwen3.8-27B`, not a standalone model.
+Gleipnir 27B is a research monitor for AI control: it scores visible
+trajectories of tool-using AI agents for sabotage, data exfiltration, and other
+covert unauthorized actions taken while appearing to do an assigned task. It
+is a rank-128 LoRA adapter for `Qwen/Qwen3.8-27B`, not a standalone model.
+
+Unlike Gleipnir 4B and 9B, it was not trained on general deception datasets;
+its training data is agent tool-use trajectories only (see Training).
 
 This release is an early research artifact intended for reproducibility and
 follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
@@ -99,8 +104,12 @@ released artifacts, not a controlled model-size study.
 
 Gleipnir 27B was trained for one epoch on 7,836 action-only tool trajectories:
 the 8,688 tool-trajectory training rows after removing those where Kimi K3's
-decision disagrees with the source label. It used no deception-dataset rows.
-Training used only Kimi K3's soft probability over the literal decision tokens.
+decision disagrees with the source label. The sources are covert coding
+sabotage (CoT-Red-Handed, 1,949 rows), shell sabotage and exfiltration
+(BashArena 2,504 and BashBench 1,348), and synthetic misaligned-agent scenarios
+(STRIDE 1,310 and Gloom 725). It used no deception-dataset rows. Training used
+only Kimi K3's soft probability over the literal decision tokens; source labels
+were used for filtering, provenance, and evaluation.
 
 - Base: `Qwen/Qwen3.8-27B` at revision
   `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
