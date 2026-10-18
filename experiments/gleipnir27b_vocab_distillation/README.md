@@ -85,6 +85,15 @@ does not change ranking (0.9216 vs the BF16 campaign's 0.9217), though it
 separates all 3,012 margins where the BF16 head gives 122 distinct values.
 ID has been read many times, so this is not a selection; OOD follows.
 
+**Correction.** The frozen teacher ID prompts keep STRIDE agent reasoning and
+`think` calls on 937 rows, which the canonical CoT-removed ID input removes,
+so the comparison above is clean on Gloom but not on STRIDE. Rescored on the
+canonical CoT-removed trajectories rendered with the teacher template
+(`teacher:id_cot_removed`), Gleipnir 27B reaches **0.9420** macro pAUROC@20
+(AUROC 0.9863; Gloom 0.9187, STRIDE 0.9653), still +2.0 points over the
+student prompt. The OOD comparison is unaffected: both OOD prompt sets hold
+byte-identical trajectories.
+
 ## Result: Gleipnir 27B under the teacher prompt (OOD)
 
 On the frozen 6,395-row OOD suite (unweighted six-source mean), Gleipnir 27B

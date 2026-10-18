@@ -19,7 +19,7 @@ points above the 4B students (0.777–0.813). One seed; the 4B OOD seed SD is
 1.8 points.
 
 Scored under the full teacher prompt instead of the student prompt it was
-trained on, the same checkpoint reaches 0.9456 ID and **0.9352 Mean-OOD**
+trained on, the same checkpoint reaches 0.9420 ID (CoT-removed) and **0.9352 Mean-OOD**
 pAUROC@20, mostly from SHADE-Arena (0.730 vs. 0.588); see
 [vocab distillation](../../experiments/gleipnir27b_vocab_distillation/README.md).
 

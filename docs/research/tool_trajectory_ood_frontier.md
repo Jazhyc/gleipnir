@@ -304,7 +304,7 @@ under the full teacher prompt, the interface of the unadapted 27B and Kimi
 rows. It reaches `0.9352` Mean-OOD pAUROC@20 and `0.9790` Mean-OOD AUROC
 (stock vLLM 0.31 BF16, FP32 LM head;
 [experiment](../../experiments/gleipnir27b_vocab_distillation/README.md)).
-The prompt was chosen on ID (0.9456 vs. 0.9216 under the compact student
+The prompt was chosen on CoT-removed ID (0.9420 vs. 0.9216 under the compact student
 prompt it was trained on), not on OOD. The workload renders byte-identically
 to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
 output token), so at the shared 27B proxy (`$0.195/M` input, `$1.56/M`
