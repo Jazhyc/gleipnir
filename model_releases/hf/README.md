@@ -38,3 +38,8 @@ reuse a pre-existing repository unless `--allow-existing` is given.
 The adapter weights and release metadata are distributed under the MIT License,
 which is included in each staged repository. The Qwen base-model terms and the
 terms of the upstream training data and teacher provider still apply.
+
+Published: `Jazhyc/Gleipnir-27B` at revision `7a932209dbd926e71d96f79a7c8fa19246a6c4c5`
+(2026-10-18; public; all 12 files verified against `release_manifest.json` on
+the Hub), in the Efficient Control Monitoring collection after Gleipnir 4B and
+9B.
