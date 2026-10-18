@@ -13,7 +13,8 @@ Rows are rendered exactly as the frozen ID/OOD benchmark renders them
 - ``teacher:train``: the 8,688-row teacher-prompt pool (the 7,836 strict-
   filtered student rows are flagged);
 - ``teacher:id``: the 3,012 ID rows under the full teacher prompt;
-- ``student:id``: the 3,012 ID rows under the compact student prompt.
+- ``student:id``: the 3,012 ID rows under the compact student prompt;
+- ``teacher:ood``: the frozen 6,395-row OOD suite under the full teacher prompt.
 
 Writes per job: ``hidden.npy`` (rows x hidden, FP32), ``rows.jsonl`` (id,
 label, source, prompt tokens, rendered-prompt hash, logprob_0/1, margin,
@@ -48,6 +49,10 @@ INPUTS = {
         None,
     ),
     ("student", "id"): ("data/id_cot_only_evaluation/prompts.jsonl", None),
+    ("teacher", "ood"): (
+        "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+        "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9",
+    ),
 }
 STUDENT_TRAINING = ROOT / "data/qwen38-27b-s0-01/strict_filter/training.jsonl"
 SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"

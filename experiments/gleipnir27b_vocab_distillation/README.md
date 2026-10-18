@@ -32,7 +32,10 @@ Kimi rather than independent judgments; the full-vocabulary signal is new.
   extracted under the compact student prompt (the trained model's interface)
   for a model × prompt comparison.
 - **Rows.** The 8,688-row teacher-prompt training pool (the 7,836 student
-  rows flagged) and the 3,012 ID rows.
+  rows flagged) and the 3,012 ID rows; for Gleipnir also the frozen 6,395-row
+  OOD suite under the teacher prompt (`queue02.sh`, user request after the ID
+  result below), scored against its student-prompt OOD 0.9087 and the
+  unadapted model's teacher-prompt OOD 0.8901.
 - **Signal.** Stock vLLM 0.31 BF16, embed pooling of the final normed hidden
   state at the last token; logits = hidden @ lm_head.T in **FP32** (user
   request), which removes the BF16 head's 1/8-logit rounding near ±20 and the
@@ -71,3 +74,13 @@ decision position is unlikely to add over binary distillation, and step 2
 should not spend seeds on it; if it does, step 2 freezes a tail loss and
 weight from these measurements. Single extraction, no seeds; probe results
 are descriptive.
+
+## Interim result: Gleipnir 27B under the teacher prompt (ID)
+
+Gleipnir 27B was trained on the compact student prompt, yet on the 3,012 ID
+rows (FP32 head) it ranks better under the full teacher prompt: macro
+pAUROC@20 0.9456 vs 0.9216 (AUROC 0.9875 vs 0.9821; Gloom 0.9187 vs 0.8865,
+STRIDE 0.9726 vs 0.9567), with 9.9% more prompt tokens. The FP32 head alone
+does not change ranking (0.9216 vs the BF16 campaign's 0.9217), though it
+separates all 3,012 margins where the BF16 head gives 122 distinct values.
+ID has been read many times, so this is not a selection; OOD follows.

@@ -81,7 +81,7 @@ def head_features(model: str, hidden: np.ndarray, tokens=None):
     return np.concatenate(out_logprobs), np.concatenate(bf16_margin)
 
 
-def probe(train_x, train_y, groups, test_x) -> tuple[np.ndarray, dict]:
+def probe(train_x, train_y, groups) -> tuple[object, dict]:
     """Standardized L2 logistic regression; C chosen by grouped 5-fold CV."""
     from sklearn.linear_model import LogisticRegression
     from sklearn.metrics import roc_auc_score
@@ -103,8 +103,7 @@ def probe(train_x, train_y, groups, test_x) -> tuple[np.ndarray, dict]:
             )
         cv[c] = float(roc_auc_score(train_y, scores))
     best = max(cv, key=cv.get)
-    fitted = model(best).fit(train_x, train_y)
-    return fitted.predict_proba(test_x)[:, 1], {"c": best, "cv_auroc": cv}
+    return model(best).fit(train_x, train_y), {"c": best, "cv_auroc": cv}
 
 
 def main() -> None:
@@ -128,6 +127,8 @@ def main() -> None:
     for model in ("gleipnir", "base"):
         for job in ("student_id", "teacher_id", "teacher_train"):
             data[(model, job)] = load(args.name, f"{model}_{job}")
+    if (OUT / args.name / "gleipnir_teacher_ood").is_dir():
+        data[("gleipnir", "teacher_ood")] = load(args.name, "gleipnir_teacher_ood")
 
     # 1. Parity and quality.
     report["parity"] = {
@@ -147,10 +148,10 @@ def main() -> None:
             "logit_margin_1_minus_0",
         ),
     }
-    report["id_quality"] = {
+    report["quality"] = {
         f"{model}_{job}": quality(rows, sigmoid([r["margin"] for r in rows]))
         for (model, job), (rows, _) in data.items()
-        if job.endswith("_id")
+        if not job.endswith("_train")
     }
 
     # 2. Mass outside {0, 1}.
@@ -168,7 +169,8 @@ def main() -> None:
         }
     report["outside_01_mass"] = mass
 
-    # 3. Probes: train on the 7,836 student rows, evaluate on ID (teacher prompt).
+    # 3. Probes: train on the 7,836 student rows, evaluate on ID (teacher prompt)
+    # and, for Gleipnir, on the OOD suite (teacher prompt) when it was extracted.
     report["probes"] = {}
     for model in ("gleipnir", "base"):
         train_rows, train_hidden = data[(model, "teacher_train")]
@@ -198,10 +200,27 @@ def main() -> None:
             ),
             "hidden": (train_hidden, test_hidden),
         }
+        ood = data.get((model, "teacher_ood"))
+        if ood is not None:
+            ood_rows, ood_hidden = ood
+            ood_tail, _ = head_features(model, ood_hidden, tokens)
+            ood_margin = np.array([[r["margin"]] for r in ood_rows])
+            ood_x = {
+                "margin": ood_margin,
+                "margin_plus_tail": np.hstack([ood_margin, centered(ood_tail)]),
+                "hidden": ood_hidden,
+            }
         results = {}
         for arm, (train_x, test_x) in arms.items():
-            scores, fit = probe(train_x, y, groups, test_x)
-            results[arm] = {**fit, "id": quality(test_rows, scores)}
+            fitted, fit = probe(train_x, y, groups)
+            results[arm] = {
+                **fit,
+                "id": quality(test_rows, fitted.predict_proba(test_x)[:, 1]),
+            }
+            if ood is not None:
+                results[arm]["ood"] = quality(
+                    ood_rows, fitted.predict_proba(ood_x[arm])[:, 1]
+                )
         ties = {
             "fp32_unique_margins": len({round(r["margin"], 6) for r in test_rows}),
             "bf16_unique_margins": len(set(np.round(test_bf16, 6).tolist())),
