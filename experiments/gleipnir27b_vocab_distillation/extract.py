@@ -14,7 +14,9 @@ Rows are rendered exactly as the frozen ID/OOD benchmark renders them
   filtered student rows are flagged);
 - ``teacher:id``: the 3,012 ID rows under the full teacher prompt;
 - ``student:id``: the 3,012 ID rows under the compact student prompt;
-- ``teacher:ood``: the frozen 6,395-row OOD suite under the full teacher prompt.
+- ``teacher:ood``: the frozen 6,395-row OOD suite under the full teacher prompt;
+- ``teacher:id_cot_removed``: the canonical CoT-removed ID rows rendered with
+  the teacher template.
 
 Writes per job: ``hidden.npy`` (rows x hidden, FP32), ``rows.jsonl`` (id,
 label, source, prompt tokens, rendered-prompt hash, logprob_0/1, margin,
@@ -53,6 +55,12 @@ INPUTS = {
         "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
         "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9",
     ),
+    # The canonical CoT-removed ID trajectories under the teacher template: the
+    # frozen teacher ID prompts keep STRIDE reasoning and think calls.
+    ("teacher", "id_cot_removed"): (
+        "data/id_cot_only_evaluation/prompts.jsonl",
+        "7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4",
+    ),
 }
 STUDENT_TRAINING = ROOT / "data/qwen38-27b-s0-01/strict_filter/training.jsonl"
 SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
@@ -71,6 +79,11 @@ def load_rows(prompt: str, split: str) -> tuple[list[dict], dict]:
     if expected is not None and digest != expected:
         raise ValueError(f"frozen input changed: {path}")
     rows = [json.loads(line) for line in path.read_text().splitlines() if line]
+    if split == "id_cot_removed":
+        from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+        from gleipnir.data.monitoring import rerender_evaluation
+
+        rows = rerender_evaluation(rows, load_prompt_set().teacher)
     return rows, {"path": str(path.relative_to(ROOT)), "sha256": digest}
 
 
