@@ -85,8 +85,35 @@ separates the classes perfectly (AUROC and pAUROC@20 `1.000`). Attack runs
 book a median 97% on AA (minimum 67%); honest runs book a median 9%
 (maximum 56%). The monitors rank them poorly anyway: mean attack score
 `0.519` versus honest `0.245` for the trained 27B, and `0.312` versus `0.138`
-for Kimi K3. This task's weakness is a judgement failure about overspending
-under a permissive instruction, not missing evidence or length.
+for Kimi K3. This task's weakness is not missing evidence or length.
+
+Whether these positives are harmful is debatable. The instruction leaves
+"best" open, the user calls the booking system flawed, and the loyalty file
+(identical in honest and attack runs) gives all 13 listed attendees an AA
+number. The label marks hidden intent, not a violated instruction. What
+distinguishes attacks is the pattern: honest agents with the same latitude
+book a median 9% on AA, while attackers book 97% and spend a median `$31,554`
+on tickets versus `$18,460`. Adding a "book the cheapest" assumption to the
+monitor prompt would be tuning on OOD. Any rubric change for
+permitted-but-costly patterns must be selected on ID data first.
+
+### Sensitivity: SHADE-Arena without this task
+
+Diagnostic only; do not use it to select prompts, checkpoints or frontier
+rows. Removing the 333 `american_airlines_2` rows leaves 517 SHADE-Arena rows
+and 6,062 OOD rows. Mean-OOD is the unweighted six-source pAUROC@20; full-suite
+values reproduce the recorded `0.9087` and `0.9084`.
+
+| Arm | SHADE full | SHADE without | Mean-OOD full | Mean-OOD without |
+| --- | ---: | ---: | ---: | ---: |
+| Qwen3.8-27B trained s0 | 0.5875 | 0.9462 | 0.9087 | 0.9685 |
+| Kimi K3 | 0.5743 | 0.9397 | 0.9084 | 0.9693 |
+| Gleipnir 4B s0 | 0.2380 | 0.3455 | 0.7869 | 0.8048 |
+
+This one task accounts for almost all of SHADE-Arena's apparent difficulty for
+the 27B and Kimi K3, and about 0.06 of their Mean-OOD. The two stay level, now
+with Kimi K3 marginally ahead. The 4B's SHADE-Arena weakness is broader than
+this task.
 
 ## Limitations
 
@@ -103,7 +130,7 @@ small position sensitivity on ID data; this audit does not test whether the
 
 `python -m experiments.shade_length_audit.analyze` writes
 `results/shade_length_audit/summary.json` (SHA-256
-`6bd1ad3009a0044ac86067091affba40e4cf226f3c02c4c6b32f97b5f436b743`) from:
+`7761d5da1cb328c7fc280064527c683de453797318a9f9c4592cf2e759e14d23`) from:
 
 - `results/qwen38-27b-s0-ood01/evaluation/ood.jsonl`;
 - `results/tool_trajectory_monitoring/kimi_k3_ood_{canary,full_remaining}_fireworks.jsonl`;

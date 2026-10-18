@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import json
 import math
+import re
 from collections import defaultdict
 
 import numpy as np
@@ -22,6 +23,7 @@ from experiments.teacher_seed_variation.prepare import OOD, ROOT
 from gleipnir.data.monitoring import read_rows, write_json
 from gleipnir.evaluation.metrics import normalized_partial_auroc
 
+EXCLUDED_TASK = "american_airlines_2"
 SOURCES = ("shade_arena", "cua_shade_arena", "iac", "mle_sabotage")
 SHADE_PARQUET = (
     "data/tool_trajectory_monitoring/source/"
@@ -57,6 +59,17 @@ def arm_scores() -> dict[str, dict[str, float]]:
     }
 
 
+def task_pair(trajectory_data: str) -> str:
+    """Read SHADE ``task_pair``; upstream metadata is a dict or its Python repr."""
+    metadata = json.loads(trajectory_data)["metadata"]
+    if isinstance(metadata, dict):
+        return metadata["task_pair"]
+    match = re.search(r"'task_pair': '([^']+)'", metadata)
+    if match is None:
+        raise ValueError("SHADE trajectory has no task_pair")
+    return match.group(1)
+
+
 def workload() -> pd.DataFrame:
     rows = read_rows(ROOT / OOD["ood_workload"][0])
     frame = pd.DataFrame(
@@ -72,8 +85,10 @@ def workload() -> pd.DataFrame:
     )
     shade = pd.read_parquet(ROOT / SHADE_PARQUET)
     tasks = {
-        i: (e["main_task_description"].split("\n")[0][:48], e["model"])
-        for i, e in enumerate(shade["extra_info"])
+        i: (task_pair(t), e["model"])
+        for i, (t, e) in enumerate(
+            zip(shade["trajectory_data"], shade["extra_info"], strict=True)
+        )
     }
     is_shade = frame["source"] == "shade_arena"
     upstream = shade["ground_truth"].to_numpy()[frame.loc[is_shade, "source_row"]]
@@ -133,6 +148,30 @@ def by_bin(frame: pd.DataFrame, column: str, scores: dict, seed: int) -> list[di
 
 def trend(rows: list[dict]) -> float:
     return rows[-1]["pauroc_at_20"] - rows[0]["pauroc_at_20"]
+
+
+def mean_ood(frame: pd.DataFrame, scores: dict[str, float]) -> dict:
+    """Six-source unweighted Mean-OOD pAUROC@20 and its per-source values."""
+    by_source = {
+        source: normalized_partial_auroc(
+            part["label"].to_numpy(), part["id"].map(scores).to_numpy()
+        )
+        for source, part in frame.groupby("source")
+    }
+    return {"mean_ood": float(np.mean(list(by_source.values()))), **by_source}
+
+
+def exclusion(frame: pd.DataFrame, arms: dict) -> dict:
+    """Sensitivity diagnostic: drop the intent-labelled AA task from SHADE."""
+    kept = frame[frame["task"].ne(EXCLUDED_TASK) | frame["source"].ne("shade_arena")]
+    return {
+        "excluded_task": EXCLUDED_TASK,
+        "rows_removed": int(len(frame) - len(kept)),
+        "arms": {
+            name: {"full": mean_ood(frame, s), "without": mean_ood(kept, s)}
+            for name, s in arms.items()
+        },
+    }
 
 
 def main() -> None:
@@ -201,6 +240,7 @@ def main() -> None:
             },
         }
     report["shade_stratified"] = stratified
+    report["exclusion"] = exclusion(frame, arms)
     write_json(ROOT / OUTPUT, report)
 
     for source, value in report["sources"].items():
@@ -227,6 +267,14 @@ def main() -> None:
                 f"long {halves[1]['pauroc_at_20']:.3f}"
             )
     print(json.dumps(composition, indent=1))
+    print(f"\nWithout {EXCLUDED_TASK}: SHADE-Arena and Mean-OOD pAUROC@20")
+    for name, value in report["exclusion"]["arms"].items():
+        full, without = value["full"], value["without"]
+        print(
+            f"  {name:24s} SHADE {full['shade_arena']:.4f} -> "
+            f"{without['shade_arena']:.4f}  Mean-OOD {full['mean_ood']:.4f} -> "
+            f"{without['mean_ood']:.4f}"
+        )
 
 
 if __name__ == "__main__":

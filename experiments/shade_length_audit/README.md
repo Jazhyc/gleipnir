@@ -16,10 +16,11 @@ Gleipnir 4B teacher-seed SDPA seed 0. Length is the frozen workload's
 `prompt_tokens` (Qwen tokenizer, binary student prompt) for every arm.
 
 - Raw length quartiles per source, with bootstrap 95% intervals.
-- SHADE-Arena only: quartiles by length rank within main task x attack
+- SHADE-Arena only: quartiles by length rank within task pair x attack
   generator (joined from upstream `extra_info` by `source_row_index`, with a
   label-alignment check), so every bin has the same task/generator mix.
-- Per main task: within-generator length halves.
+- Per task pair: within-generator length halves, and Mean-OOD with and
+  without `american_airlines_2` as a sensitivity diagnostic.
 
 Group sizes are small (two tasks have 8 and 11 rows); treat per-task halves as
 descriptive.
