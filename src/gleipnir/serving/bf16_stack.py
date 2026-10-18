@@ -75,8 +75,9 @@ class FastGdnMixin:
 class LastQueryMixin:
     """Last-query attention on the final layer, which must be full attention.
 
-    Requires a BF16 bitwise receipt (``last_query_bf16.py``) for the served
-    attention shape, bound through ``--additional-config``.
+    Requires a bitwise receipt for the served attention shape and precision
+    (``last_query_bf16.py``, or ``last_query_mxfp8.py`` under
+    ``Mxfp8AttentionMixin``), bound through ``--additional-config``.
     """
 
     def load_model(self, *, load_dummy_weights: bool = False) -> None:
@@ -99,11 +100,13 @@ class LastQueryMixin:
             "head_dim": text.head_dim,
         }
         shape = receipt.get("attention_shape", {})
-        if receipt.get("precision") != "bf16" or any(
+        precision = getattr(self, "attention_precision", "bf16")
+        if receipt.get("precision") != precision or any(
             shape.get(key) != value for key, value in served.items()
         ):
             raise ValueError(
-                f"last-query receipt {shape} does not cover BF16 attention {served}"
+                f"last-query receipt {shape} does not cover {precision} attention"
+                f" {served}"
             )
         super().load_model(load_dummy_weights=load_dummy_weights)
         pooler = self.vllm_config.model_config.pooler_config

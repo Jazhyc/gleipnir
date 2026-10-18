@@ -6,12 +6,15 @@ full-attention projections whose expected shapes come from the served model's
 config, BF16 FlashInfer attention, and the config-derived last-query and lean
 GDN layers from ``bf16_stack``. The 4B default's hash-bound modules are reused
 by import only. Not yet included: fused FP4 producers, native SwiGLU output,
-tuned GEMM tiles and MXFP8 attention.
+tuned GEMM tiles. ``Mxfp8AttentionMixin`` adds config-derived MXFP8 prefill
+attention (phase 2).
 """
 
 from __future__ import annotations
 
+import json
 import os
+from pathlib import Path
 from typing import Any
 
 import torch
@@ -19,6 +22,7 @@ from vllm.config import get_current_vllm_config
 from vllm.model_executor.layers.linear import LinearBase
 from vllm.model_executor.layers.quantization import register_quantization_config
 
+from gleipnir.data.monitoring import file_hash
 from gleipnir.serving.bf16_stack import FastGdnMixin, LastQueryMixin
 from gleipnir.serving.bf16_worker import Bf16Worker
 from gleipnir.serving.fp4.attention import projection_identity
@@ -27,6 +31,7 @@ from gleipnir.serving.vllm.attention_precision import AttentionFp8Method, fp8_li
 from gleipnir.serving.vllm.frost_gdn_fp4 import CheckedGdnFp4Method, FrostGdnFp4Config
 
 NAME = "gleipnir_geometry_fp8_fp4"
+ROOT = Path(__file__).resolve().parents[3]
 
 
 def attention_weight_shape(text: Any, layer: int, projection: str) -> tuple[int, int]:
@@ -172,5 +177,181 @@ class QuantAuditWorker(Bf16Worker):
         print("quantized_projection_audit_passed", counts, flush=True)
 
 
+def mxfp8_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
+    """Validate the bound ``mxfp8_canary`` receipt for the served attention."""
+    binding = additional.get("mxfp8_attention") or {}
+    path = root / binding.get("validation", "")
+    if not path.is_file() or file_hash(path) != binding.get("validation_sha256"):
+        raise ValueError("MXFP8 attention requires a hash-bound canary receipt")
+    receipt = json.loads(path.read_text())
+    served = {
+        "query_heads": text.num_attention_heads,
+        "kv_heads": text.num_key_value_heads,
+        "head_dim": text.head_dim,
+    }
+    if (
+        receipt.get("precision") != "mxfp8"
+        or receipt.get("attention_shape") != served
+        or not receipt.get("arithmetic_passed")
+        or len(receipt.get("checks", [])) != 7
+        or not all((receipt.get("base_equivalence") or {}).get("bitwise", [False]))
+        or receipt.get("kv_metadata_contract")
+        != "TRTLLM cumulative pages plus exact token lengths"
+        or any(
+            not c["finite"] or not c["quantized_relative_l2"] <= 0.01
+            for c in receipt["checks"]
+        )
+    ):
+        raise ValueError(f"MXFP8 receipt does not cover attention {served}")
+    if receipt.get("gpu") != gpu:
+        raise ValueError("MXFP8 receipt hardware changed")
+    for source, expected in receipt["sources"].items():
+        if file_hash(root / source) != expected:
+            raise ValueError(f"MXFP8 validation source drift: {source}")
+    return receipt
+
+
+class Mxfp8AttentionMixin:
+    """cuDNN MXFP8 prefill attention at the served model's GQA heads.
+
+    Replaces vLLM's FlashInfer TRTLLM prefill call with
+    ``mxfp8_geometry.paged_forward`` (decode stays BF16 FlashInfer) before the
+    BF16 attention audit wraps it, so the audit observes, and then restores,
+    the MXFP8 call. Last-query attention runs through the same call and needs
+    an MXFP8 last-query receipt (``last_query_mxfp8.py``).
+    """
+
+    attention_precision = "mxfp8"
+
+    def install_attention_audit(self) -> None:
+        import torch
+        import vllm.v1.attention.backends.flashinfer as backend
+
+        from gleipnir.serving.mxfp8 import MAX_BATCH, MAX_LENGTH
+        from gleipnir.serving.mxfp8_geometry import paged_forward
+
+        config = self.vllm_config
+        text = config.model_config.hf_text_config
+        if (
+            config.scheduler_config.max_num_seqs > MAX_BATCH
+            or config.model_config.max_model_len > MAX_LENGTH
+        ):
+            raise ValueError("MXFP8 serving envelope is 128 sequences x 32K tokens")
+        receipt = mxfp8_receipt(
+            ROOT, config.additional_config, text, torch.cuda.get_device_name()
+        )
+        heads = {
+            "query_heads": text.num_attention_heads,
+            "kv_heads": text.num_key_value_heads,
+        }
+        self.precision["mxfp8_attention"] = {
+            "passed": False,
+            "validation_sha256": file_hash(
+                ROOT / config.additional_config["mxfp8_attention"]["validation"]
+            ),
+            "strict_native_precision_passed": receipt["passed"],
+            "kernel": "cuDNN SdpaFwdDslSm100 D256 MXFP8 THD",
+            "decode": "unchanged BF16 FlashInfer",
+            "calls": 0,
+            **heads,
+        }
+
+        def forward(*args, **kwargs):
+            if args:
+                raise ValueError("MXFP8 serving expects the pinned keyword prefill API")
+            result = paged_forward(**heads, **kwargs)
+            audit = self.precision["mxfp8_attention"]
+            if not torch.cuda.is_current_stream_capturing():
+                audit["calls"] += 1
+                if not audit["passed"]:
+                    audit["passed"] = True
+                    self.save()
+            return result
+
+        backend.trtllm_batch_context_with_kv_cache = forward
+        super().install_attention_audit()
+
+
+class TunedGemmMixin:
+    """Install receipt-selected FROST FP4 tiles at the served model's shapes.
+
+    The receipt (``experiments/qwen38_27b_serving/fp4_gemm_tune.py``) is bound
+    through ``--additional-config`` ``fp4_gemm_tuning``; arithmetic is the same
+    cuDNN graph as the untuned plan, recompiled with a pinned tile.
+    """
+
+    def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        import torch
+
+        from gleipnir.kernels.fp4.cudnn_fp4_epilogue import Nvfp4ScaledGemm
+        from gleipnir.serving.fp4.tuning import ShapeTunedGemm, retile, row_band
+        from gleipnir.serving.fp4_geometry_tuning import fp4_shapes, validate_selection
+        from gleipnir.serving.vllm import frost_fp4 as frost
+
+        binding = self.vllm_config.additional_config.get("fp4_gemm_tuning") or {}
+        path = ROOT / binding.get("validation", "")
+        if not path.is_file() or file_hash(path) != binding.get("validation_sha256"):
+            raise ValueError("FP4 GEMM tuning requires a hash-bound sweep receipt")
+        receipt = json.loads(path.read_text())
+        shapes = fp4_shapes(self.vllm_config.model_config.hf_text_config)
+        selected = validate_selection(receipt, shapes)
+        if receipt["gpu"] != torch.cuda.get_device_name():
+            raise ValueError("FP4 GEMM tuning hardware changed")
+        for source, digest in receipt["sources"].items():
+            if file_hash(ROOT / source) != digest:
+                raise ValueError(f"FP4 GEMM tuning source drift: {source}")
+        super().load_model(load_dummy_weights=load_dummy_weights)
+        audit = {
+            "passed": False,
+            "selected": selected,
+            "validation_sha256": binding["validation_sha256"],
+            "calls": [],
+        }
+        self.precision["gemm_tuning"] = audit
+        seen = set()
+
+        def observed(name, m, tile):
+            if torch.cuda.is_current_stream_capturing():
+                return
+            key = (name, row_band(m))
+            if key in seen:
+                return
+            if tile != selected[name][key[1]]:
+                raise ValueError("unexpected native GEMM tile dispatch")
+            seen.add(key)
+            audit["calls"].append({"shape": name, "m": m, "band": key[1], "tile": tile})
+            audit["passed"] = {c["shape"] for c in audit["calls"]} == set(shapes)
+            self.save()
+
+        for name, (k, n) in shapes.items():
+            plans = {
+                tile: retile(
+                    Nvfp4ScaledGemm(frost.PLAN_ROWS, k, n, runtime_m=True), tile
+                )
+                for tile in set(selected[name].values())
+            }
+            frost._PLANS[frost.plan_key(torch.cuda.current_device(), k, n)] = (
+                ShapeTunedGemm(
+                    plans,
+                    selected[name],
+                    audit=lambda m, tile, shape=name: observed(shape, m, tile),
+                )
+            )
+        self.save()
+        print("fp4_gemm_tuning_installed", selected, flush=True)
+
+
 class QuantLastQueryFastGdnWorker(FastGdnMixin, LastQueryMixin, QuantAuditWorker):
     """Phase 1 optimized stack: FP8/FP4 projections, last-query, lean GDN."""
+
+
+class QuantMxfp8LastQueryFastGdnWorker(
+    FastGdnMixin, LastQueryMixin, Mxfp8AttentionMixin, QuantAuditWorker
+):
+    """Phase 1 plus MXFP8 prefill attention (last-query runs on MXFP8)."""
+
+
+class QuantTunedMxfp8LastQueryFastGdnWorker(
+    TunedGemmMixin, QuantMxfp8LastQueryFastGdnWorker
+):
+    """MXFP8 attention stack with receipt-selected FP4 GEMM tiles."""
