@@ -16,6 +16,7 @@ import re
 from pathlib import Path
 
 from experiments.b200_attention_gdn_serving.worker import write
+from experiments.b200_gdn_route.worker import GdnRouteMixin
 from gleipnir.serving.bf16_worker import Bf16Worker
 
 
@@ -180,6 +181,14 @@ class Bf16LastQueryWorker(LastQueryMixin, Bf16Worker):
 
 class Bf16LastQueryFastGdnWorker(FastGdnMixin, Bf16LastQueryWorker):
     """Last-query attention and the lean GDN host path on the BF16 worker."""
+
+
+class Bf16GatedLastQueryFastGdnWorker(GdnRouteMixin, Bf16LastQueryFastGdnWorker):
+    """The full BF16 stack: route gate, last-query attention, lean GDN path.
+
+    The route threshold is model-dependent (FlashInfer's CP choice depends on
+    heads x sequences); bind a threshold measured for the served model.
+    """
 
 
 def receipt_binding(root: Path, receipt: Path) -> dict:
