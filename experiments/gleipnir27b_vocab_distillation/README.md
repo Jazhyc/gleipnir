@@ -84,3 +84,64 @@ STRIDE 0.9726 vs 0.9567), with 9.9% more prompt tokens. The FP32 head alone
 does not change ranking (0.9216 vs the BF16 campaign's 0.9217), though it
 separates all 3,012 margins where the BF16 head gives 122 distinct values.
 ID has been read many times, so this is not a selection; OOD follows.
+
+## Result: Gleipnir 27B under the teacher prompt (OOD)
+
+On the frozen 6,395-row OOD suite (unweighted six-source mean), Gleipnir 27B
+scored under the full teacher prompt reaches **0.9352 Mean-OOD pAUROC@20**
+(AUROC 0.9790), against 0.9087 under its compact student prompt, 0.8901 for
+the unadapted model under the teacher prompt and 0.9084 for Kimi K3. One
+extraction, one seed; ID has been read many times, OOD once for this arm.
+
+| strict OOD, pAUROC@20 | teacher prompt | student prompt | unadapted, teacher prompt |
+|---|---:|---:|---:|
+| **Mean-OOD** | **0.9352** | 0.9087 | 0.8901 |
+| AgentDojo | 0.9990 | 0.9983 | 0.9657 |
+| CUA-SHADE-Arena | 0.8911 | 0.8806 | 0.8648 |
+| IaC | 0.9931 | 0.9871 | 0.9678 |
+| MLE-Sabotage | 1.0000 | 1.0000 | 1.0000 |
+| Rogue Eval | 0.9982 | 0.9989 | 0.9862 |
+| SHADE-Arena | 0.7298 | 0.5875 | 0.5560 |
+
+Most of the gain is SHADE-Arena (+14.2 points), the source whose score is
+dominated by the `american_airlines_2` task
+([audit](../../docs/findings/shade_length_audit.md)); the other sources move
+by at most 1.1 points.
+
+## Diagnostic result (`diagnostic.json`)
+
+- **Parity.** Gleipnir student-prompt ID vs the campaign scorer: MAE 0.044,
+  correlation 0.99988, 17 threshold flips. Base teacher-prompt ID / train vs
+  `qwen27b_generations_ood`: MAE 0.112 / 0.110, correlation 0.9997 / 0.9998.
+- **Quality (ID macro pAUROC@20).** Gleipnir 0.9216 student / 0.9456 teacher
+  prompt; base 0.8478 student / 0.8869 teacher prompt. The teacher prompt
+  helps both models by 2.4–3.9 points.
+- **Ties.** FP32 head: 3,011 distinct ID margins of 3,012; BF16 head: 133
+  (Gleipnir) and 214 (base). Mean BF16–FP32 margin difference 0.06–0.07.
+- **Mass outside {0, 1}.** Median 5.4–6.6e-4 for Gleipnir on every job;
+  base 1.5e-5 (student prompt) to 1.3e-4 (teacher prompt). The 256 selected
+  tail tokens hold 97.7% (Gleipnir) / 99.9% (base) of it.
+- **Probes** (train on the 7,836 student rows, teacher prompt):
+
+  | probe | Gleipnir ID | Gleipnir OOD | base ID |
+  |---|---:|---:|---:|
+  | margin | 0.9456 | 0.9352 | 0.8869 |
+  | margin + 256 tail log-probs | 0.9460 | 0.9420 | 0.8596 |
+  | hidden state (linear) | 0.9486 | 0.9459 | 0.9117 |
+
+  Gleipnir's grouped-CV training AUROC is 0.9998–1.0 for every arm (it was
+  trained on these rows), so C selection is uninformative there. The tail's
+  OOD +0.7 points is SHADE-Arena +9.7 offset by AgentDojo −3.2 and
+  CUA-SHADE −1.5.
+- **What training changed.** Margin correlation with the base 0.951 (train)
+  / 0.973 (ID); median |margin| 4.6 vs 5.3 (train) and 3.4 vs 5.4 (ID), so
+  Gleipnir is less extreme; top-8 token overlap 0.79. Training-row margin vs
+  Kimi logit correlation 0.983 (Gleipnir) vs 0.951 (base).
+
+**Decision (frozen rule).** The tail does not beat the margin on ID (+0.0004
+for Gleipnir; −0.027 for the base), so step 2 should not spend seeds on a
+full-vocabulary KL at the decision position. The linear hidden-state readout
+adds at most 0.3 (ID) / 1.1 (OOD) points over Gleipnir's margin, a small
+ceiling for feature distillation. The large effect is the prompt: Gleipnir's
+binary margin under the teacher prompt is the strongest teacher signal
+measured, on ID and OOD.
