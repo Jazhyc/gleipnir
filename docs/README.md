@@ -2,8 +2,8 @@
 
 - [Qwen3.8-27B monitor training](findings/qwen38_27b_monitor_training.md):
   trained 27B reaches 0.922 ID pAUROC@20 (+3.5 over unadapted); OOD pending.
-- [First trained Qwen3.8-27B](findings/qwen38_27b_campaign.md): 0.9217 ID
-  pAUROC@20, best so far; OOD not yet run.
+- [First trained Qwen3.8-27B](findings/qwen38_27b_campaign.md): 0.9217 ID and
+  0.9087 OOD pAUROC@20, level with its Kimi K3 teacher on OOD.
 - [Qwen3.8-27B training default](decisions/qwen38_27b_b200_training_default.md):
   BF16/SDPA with trim and 12 stored attention layers, 25.0 s per benchmark
   update (−10.1%).

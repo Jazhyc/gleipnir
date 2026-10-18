@@ -131,3 +131,35 @@ same-seed 4B; against the best 4B seed (+0.75) the gap is within 4B seed
 variation (about 1 point). The gain is mostly Gloom (best of any model) and
 AUROC; on Test STRIDE the 27B improves on zero-shot but stays below all three
 4B seeds. One 27B seed; OOD is not yet scored.
+
+## OOD (`ood.py`, `compare_ood.py`; 2026-10-18 00:16–01:02 UTC)
+
+An OOD-only scoring context (`qwen38-27b-s0-ood01`) reused the 4B
+seed-variation scorer: it re-merged the FP32 master into a fresh slot
+(byte-identical to the campaign merge, so its parity receipt was reused),
+passed BF16 serving parity (correlation 0.99999, MAE 0.0007) and the BF16
+audit, scored all 6,395 frozen OOD rows and retired the scorer. All 6,395
+stored workload token counts match the 27B tokenizer (`ood_tokenizer_audit.py`).
+
+| strict OOD, pAUROC@20 | 27B trained | 27B unadapted | Kimi K3 | 4B seeds 0 / 1 / 2 |
+|---|---:|---:|---:|---|
+| **Mean-OOD** | **0.9087** | 0.8901 | 0.9084 | 0.7869 / 0.8125 / 0.7768 |
+| AgentDojo | 0.9983 | 0.9657 | 0.9997 | 0.9298 / 0.9248 / 0.8506 |
+| CUA-SHADE-Arena | 0.8806 | 0.8648 | 0.8856 | 0.7717 / 0.7640 / 0.7679 |
+| IaC | 0.9871 | 0.9678 | 0.9920 | 0.8123 / 0.8958 / 0.8451 |
+| MLE-Sabotage | 1.0000 | 1.0000 | 1.0000 | 1.0000 / 1.0000 / 0.9995 |
+| Rogue Eval | 0.9989 | 0.9862 | 0.9986 | 0.9696 / 0.9812 / 0.9765 |
+| SHADE-Arena | 0.5875 | 0.5560 | 0.5745 | 0.2380 / 0.3092 / 0.2209 |
+| macro AUROC | 0.9679 | 0.9535 | 0.9616 | 0.9222 / 0.9255 / 0.9061 |
+
+The unadapted 27B and Kimi K3 were scored under the full teacher prompt; the
+trained 27B and 4B students under the compact student prompt. Kimi's
+SHADE-Arena value is implied by its recorded Mean-OOD and other sources.
+
+- Training raises OOD as well as ID (+1.9 points over zero-shot; every
+  unsaturated source improves), so fitting Kimi did not erode the 27B's
+  generalization.
+- The trained 27B ties its teacher on Mean-OOD (+0.0003), leads it on
+  SHADE-Arena (0.588 vs. 0.575) and Rogue Eval, and is within 0.5 points on
+  the rest; one seed, against a 4B OOD seed SD of 1.8 points.
+- It is 9.6–13.2 points above the 4B students, most of all on SHADE-Arena.
