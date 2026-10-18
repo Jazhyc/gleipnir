@@ -1,7 +1,10 @@
 # Transferring the 4B serving optimizations to Qwen3.8-27B
 
-Status: backlog, written 2026-10-17. Nothing here has been launched. Return to
-it when a GPU is available for 27B serving work.
+Status: arithmetic-preserving part done 2026-10-18
+([experiment](../../experiments/qwen38_27b_serving/README.md)): last-query
+attention + the lean GDN host path give +2.3% BF16 c128 prompt throughput and
+−8.3% c1 latency with no score change; the GDN route gate brings nothing on
+the 27B. The FP8/FP4 recipe (steps 3–4 below) waits for a QAD-adapted 27B.
 
 **Why.** Unadapted Qwen3.8-27B reaches 0.890 Mean-OOD pAUROC@20 at the
 shared 27B cost proxy ($1.85/1K), on the OOD frontier and 1.8 points below

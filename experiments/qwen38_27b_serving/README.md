@@ -79,3 +79,25 @@ every-other-request subsets.
 - Fast GDN alone is +1.99%, just under the frozen 2% bar; last-query alone
   (+0.40%) is small, as expected for one of 64 layers. Together they pass
   (+2.28% throughput, −8.3% c1 latency).
+
+**GDN route gate (`route_sweep.py`, `route01`, 01:52–01:57 UTC).** In-server
+paired A/B at C1 (BF16 + last-query + fast GDN; 3 alternating rounds):
+FlashInfer's `auto` route versus non-CP for every chunk. Median p50: 1K
+49.2 vs 49.2 ms, 4K 181.9 vs 182.4, 8K 357.6 vs 357.2, 16K 725.0 vs 722.8
+(non-CP faster 3/3, −0.3%), 32K 1,510.0 vs 1,510.9, quick64 33.3 vs 36.1.
+Scores stable within each arm; the audit shows both routes ran (22,656 auto,
+22,608 non-CP calls). No length shows a meaningful difference, so the gate,
+which is not bitwise, is rejected for the 27B: its 4B gain came from CP setup
+overhead that is negligible next to the 27B's GDN work.
+
+## Result
+
+Recommended BF16 27B serving stack: **last-query final-layer attention + the
+lean GDN host path** (`Bf16LastQueryFastGdnWorker` with the BF16 last-query
+receipt): +2.28% c128 prompt-token throughput and −8.3% c1 median latency,
+scores within control repeat noise and no AUROC change. Arithmetic-preserving
+changes give only a few percent on the 27B because its serving time is
+dominated by BF16 GEMMs; the larger levers are the precision recipe (reserved
+for a QAD-adapted 27B) and the opt-in prefix-cached mode
+([decision](../../docs/decisions/prefix_cached_serving.md)). Adoption as the
+27B BF16 serving path is the user's decision.
