@@ -232,6 +232,9 @@
 - `findings/monitoring_length_shortcut_audit.md`: source-specific length cues,
   paired inert-padding sensitivity, and the decision not to prioritize a
   length-specific regularizer.
+- [SHADE-Arena length audit](findings/shade_length_audit.md): the upstream
+  28K filter's 43% SHADE-Arena cut, and length-dependent OOD monitor quality
+  after task/generator stratification.
 - `migrations/`: historical material carried over from precursor projects.
 
 Experiment READMEs describe executable work. Documents here record conclusions

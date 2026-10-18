@@ -48,6 +48,12 @@ from raw trajectory state and a frozen Noul question. Its information and
 instruction interface differs from the full teacher chat prompt; its point
 compares complete monitor configurations, not an isolated model substitution.
 
+The suite inherits the paper's 28,000-token input filter, which removed 43% of
+SHADE-Arena but at most 4% of any other source. Monitor quality falls with
+length inside the retained SHADE-Arena rows, so its scores are optimistic for
+the full benchmark; see the
+[SHADE-Arena length audit](../findings/shade_length_audit.md).
+
 ## Reference table
 
 Rows are ordered by cost. `Frontier` is point-estimate nondominance after adding
