@@ -419,6 +419,98 @@ class ProducerFusionMixin:
         print("fp4_producers_installed", audit["install"], flush=True)
 
 
+def swiglu_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
+    """Validate the bound native SwiGLU canary receipt; return its selection."""
+    binding = additional.get("fp4_swiglu_native") or {}
+    path = root / binding.get("validation", "")
+    if not path.is_file() or file_hash(path) != binding.get("validation_sha256"):
+        raise ValueError("native SwiGLU output requires a hash-bound canary receipt")
+    receipt = json.loads(path.read_text())
+    selection = receipt.get("selection") or {}
+    tile = selection.get("tile")
+    rows = [r for r in receipt.get("results", []) if r.get("tile") == tile]
+    checks = ("packing_reference", "arithmetic", "changed_replay", "packing_replay")
+    if (
+        receipt.get("state") != "completed"
+        or not receipt.get("passed")
+        or not receipt.get("base_identity")
+        or not receipt.get("weight_permutation_exact")
+        or receipt.get("geometry")
+        != {"hidden": text.hidden_size, "mlp": text.intermediate_size}
+        or selection.get("minimum_rows") is None
+        or {r["m"] for r in rows} != set(receipt.get("rows", [None]))
+        or any(
+            not r.get("passed")
+            or not r.get("finite")
+            or not r.get("zero_row_exact")
+            or not r.get("unchanged_rows_exact")
+            or any(not r[k]["relative_l2"] <= 0.01 for k in checks)
+            for r in rows
+        )
+    ):
+        raise ValueError("native SwiGLU receipt does not cover the served geometry")
+    if receipt.get("gpu") != gpu:
+        raise ValueError("native SwiGLU receipt hardware changed")
+    for source, digest in receipt["sources"].items():
+        if file_hash(root / source) != digest:
+            raise ValueError(f"native SwiGLU source drift: {source}")
+    return {**selection, "kernel": receipt["kernel"]}
+
+
+class NativeSwiGluMixin:
+    """Native FP4 SwiGLU output in the receipt-selected row band.
+
+    Stack outside ``ProducerFusionMixin``: rows outside the band keep the
+    fused producer. Activation quantization changes (local E4M3 scales,
+    unit global inverse); drift is reported, not gated.
+    """
+
+    def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        import torch
+
+        from gleipnir.serving import fp4_geometry_swiglu as native
+
+        text = self.vllm_config.model_config.hf_text_config
+        selection = swiglu_receipt(
+            ROOT, self.vllm_config.additional_config, text, torch.cuda.get_device_name()
+        )
+        kernel, hashes = native.load_kernel(
+            ROOT,
+            ROOT / "results/qwen38_27b_serving/native_swiglu_serving_kernel",
+            text.intermediate_size,
+        )
+        if hashes != selection["kernel"]:
+            raise ValueError("native SwiGLU generated source drift")
+        super().load_model(load_dummy_weights=load_dummy_weights)
+        tile = tuple(int(v) for v in selection["tile"].split("x"))
+        plan = native.NativeSwiGlu(
+            kernel, text.hidden_size, text.intermediate_size, tile=tile
+        )
+        plan.compile()
+        band = (selection["minimum_rows"], selection["maximum_rows"])
+        layers = len(text.layer_types)
+        audit = {"passed": False, "band": list(band), "native_layers": [], **hashes}
+        self.precision["fp4_swiglu_native"] = audit
+        seen = set()
+
+        def observed(layer, rows, backend):
+            if torch.cuda.is_current_stream_capturing() or backend != "native":
+                return
+            if layer in seen:
+                return
+            seen.add(layer)
+            audit["native_layers"] = sorted(seen)
+            audit["passed"] = len(seen) == layers
+            if audit["passed"] or len(seen) == 1:
+                self.save()
+
+        audit["install"] = native.install(
+            self.model_runner.get_model(), text, plan, band, observed
+        )
+        self.save()
+        print("fp4_swiglu_native_installed", audit["install"], flush=True)
+
+
 class QuantLastQueryFastGdnWorker(FastGdnMixin, LastQueryMixin, QuantAuditWorker):
     """Phase 1 optimized stack: FP8/FP4 projections, last-query, lean GDN."""
 
@@ -439,3 +531,12 @@ class QuantFullWorker(
     TunedGemmMixin, ProducerFusionMixin, QuantMxfp8LastQueryFastGdnWorker
 ):
     """Phase 2 without native SwiGLU output: tuned tiles and fused producers."""
+
+
+class QuantNativeWorker(
+    TunedGemmMixin,
+    NativeSwiGluMixin,
+    ProducerFusionMixin,
+    QuantMxfp8LastQueryFastGdnWorker,
+):
+    """The full phase 2 stack, with native FP4 SwiGLU output in its row band."""

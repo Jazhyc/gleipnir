@@ -65,6 +65,7 @@ def main() -> None:
     parser.add_argument("--worker", default=bf16_launch.BF16_WORKER)
     parser.add_argument("--additional", default="{}")
     parser.add_argument("--quantization")
+    parser.add_argument("--compilation", default="{}", help="vLLM compilation config")
     args = parser.parse_args()
     out = OUT / args.name
     out.mkdir(parents=True, exist_ok=False)
@@ -77,6 +78,8 @@ def main() -> None:
     )
     if args.quantization:
         quantized_command(command, args.quantization, json.loads(args.additional))
+    if json.loads(args.compilation):
+        command += ["--compilation-config", args.compilation]
     env = bf16_launch.environment(ROOT, selection, out / "bf16_audit.json")
     process = bf16_launch.start(
         ROOT, command, env, LOGS / f"{args.name}.log", out / "server.json"
