@@ -67,13 +67,23 @@ async def measure(out: Path, repeats: int) -> None:
     write_json(out / "c1_repeat0.json", {"rows": rows, "seconds": seconds})
 
 
-def run(name: str, worker: str, additional: dict, repeats: int) -> None:
+def run(
+    name: str,
+    worker: str,
+    additional: dict,
+    repeats: int,
+    quantization: str | None = None,
+) -> None:
     out = OUT / name
     out.mkdir(parents=True, exist_ok=False)
     audit = out / "bf16_audit.json"
     selection, command = bf16_launch.bf16_command(
         ROOT, MODEL, sources(), worker=worker, additional=additional
     )
+    if quantization is not None:
+        # Same server and harness; the quantized server registers the config.
+        command[command.index("-m") + 1] = "experiments.qwen38_27b_serving.quant_server"
+        command += ["--quantization", quantization]
     env = bf16_launch.environment(ROOT, selection, audit)
     process = bf16_launch.start(
         ROOT, command, env, LOGS / f"{name}.log", out / "server.json"
@@ -155,12 +165,19 @@ def main() -> None:
     r.add_argument("--worker", default=bf16_launch.BF16_WORKER)
     r.add_argument("--additional", default="{}")
     r.add_argument("--repeats", type=int, default=3)
+    r.add_argument("--quantization")
     c = sub.add_parser("compare")
     c.add_argument("control")
     c.add_argument("candidate")
     args = parser.parse_args()
     if args.action == "run":
-        run(args.name, args.worker, json.loads(args.additional), args.repeats)
+        run(
+            args.name,
+            args.worker,
+            json.loads(args.additional),
+            args.repeats,
+            args.quantization,
+        )
     else:
         report = compare(args.control, args.candidate)
         print(
