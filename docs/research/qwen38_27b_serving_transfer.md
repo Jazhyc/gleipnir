@@ -8,6 +8,19 @@ the 27B. Per the user (2026-10-18) regular evaluations stay on stock BF16, and
 these layers join the FP8/FP4 recipe (steps 3–4 below) in the optimized path
 for a QAD-adapted 27B.
 
+**Quantized phase 1 done (2026-10-18):** FP8 attention projections + FROST FP4
+MLP/GDN with config-derived geometry (`src/gleipnir/serving/quant_stack.py`),
+BF16 attention, last-query and lean GDN: 2.08× BF16 c128 throughput, ID
+pAUROC@20 0.9200 vs 0.9217 at BF16 (no QAD). c1 latency is 33% worse on short
+prompts. **Phase 2 (open):** fused FP4 producers (derived guards; whole-row
+Triton programs at K=17,408 need re-timing), native SwiGLU output with a tile
+that divides 34,816 plus a column guard (N192 does not divide it and the
+custom stores do not bound-check columns), a 27B FP4 GEMM tuning table, MXFP8
+attention keyed on head counts and validated at 24/4 heads, regenerated
+receipts, a flattened worker and a 27B startup. Build these as new geometry
+modules; the 4B default's sources are hash-bound
+([port plan and results](../../experiments/qwen38_27b_serving/README.md)).
+
 **Why.** Unadapted Qwen3.8-27B reaches 0.890 Mean-OOD pAUROC@20 at the
 shared 27B cost proxy ($1.85/1K), on the OOD frontier and 1.8 points below
 Kimi K3 ([finding](../findings/qwen27b_generations_ood.md),
