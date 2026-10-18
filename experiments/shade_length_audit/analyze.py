@@ -151,14 +151,21 @@ def trend(rows: list[dict]) -> float:
 
 
 def mean_ood(frame: pd.DataFrame, scores: dict[str, float]) -> dict:
-    """Six-source unweighted Mean-OOD pAUROC@20 and its per-source values."""
-    by_source = {
-        source: normalized_partial_auroc(
-            part["label"].to_numpy(), part["id"].map(scores).to_numpy()
-        )
-        for source, part in frame.groupby("source")
-    }
-    return {"mean_ood": float(np.mean(list(by_source.values()))), **by_source}
+    """Six-source unweighted means of pAUROC@20 and AUROC, with per-source values."""
+    out = {}
+    for metric, fn in (
+        ("pauroc_at_20", normalized_partial_auroc),
+        ("auroc", roc_auc_score),
+    ):
+        by_source = {
+            source: float(fn(part["label"].to_numpy(), part["id"].map(scores)))
+            for source, part in frame.groupby("source")
+        }
+        out[metric] = {
+            "mean_ood": float(np.mean(list(by_source.values()))),
+            **by_source,
+        }
+    return out
 
 
 def exclusion(frame: pd.DataFrame, arms: dict) -> dict:
@@ -267,14 +274,15 @@ def main() -> None:
                 f"long {halves[1]['pauroc_at_20']:.3f}"
             )
     print(json.dumps(composition, indent=1))
-    print(f"\nWithout {EXCLUDED_TASK}: SHADE-Arena and Mean-OOD pAUROC@20")
+    print(f"\nWithout {EXCLUDED_TASK}: SHADE-Arena and Mean-OOD")
     for name, value in report["exclusion"]["arms"].items():
-        full, without = value["full"], value["without"]
-        print(
-            f"  {name:24s} SHADE {full['shade_arena']:.4f} -> "
-            f"{without['shade_arena']:.4f}  Mean-OOD {full['mean_ood']:.4f} -> "
-            f"{without['mean_ood']:.4f}"
-        )
+        for metric in ("pauroc_at_20", "auroc"):
+            full, without = value["full"][metric], value["without"][metric]
+            print(
+                f"  {name:24s} {metric:12s} SHADE {full['shade_arena']:.4f} -> "
+                f"{without['shade_arena']:.4f}  Mean-OOD {full['mean_ood']:.4f} -> "
+                f"{without['mean_ood']:.4f}"
+            )
 
 
 if __name__ == "__main__":

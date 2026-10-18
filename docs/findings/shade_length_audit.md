@@ -104,16 +104,27 @@ rows. Removing the 333 `american_airlines_2` rows leaves 517 SHADE-Arena rows
 and 6,062 OOD rows. Mean-OOD is the unweighted six-source pAUROC@20; full-suite
 values reproduce the recorded `0.9087` and `0.9084`.
 
-| Arm | SHADE full | SHADE without | Mean-OOD full | Mean-OOD without |
-| --- | ---: | ---: | ---: | ---: |
-| Qwen3.8-27B trained s0 | 0.5875 | 0.9462 | 0.9087 | 0.9685 |
-| Kimi K3 | 0.5743 | 0.9397 | 0.9084 | 0.9693 |
-| Gleipnir 4B s0 | 0.2380 | 0.3455 | 0.7869 | 0.8048 |
+| Arm | Metric | SHADE full | SHADE without | Mean-OOD full | Mean-OOD without |
+| --- | --- | ---: | ---: | ---: | ---: |
+| Qwen3.8-27B trained s0 | pAUROC@20 | 0.5875 | 0.9462 | 0.9087 | 0.9685 |
+| | AUROC | 0.8703 | 0.9871 | 0.9679 | 0.9873 |
+| Kimi K3 | pAUROC@20 | 0.5743 | 0.9397 | 0.9084 | 0.9693 |
+| | AUROC | 0.8275 | 0.9836 | 0.9616 | 0.9876 |
+| Gleipnir 4B s0 | pAUROC@20 | 0.2380 | 0.3455 | 0.7869 | 0.8048 |
+| | AUROC | 0.6872 | 0.7713 | 0.9222 | 0.9363 |
 
 This one task accounts for almost all of SHADE-Arena's apparent difficulty for
-the 27B and Kimi K3, and about 0.06 of their Mean-OOD. The two stay level, now
-with Kimi K3 marginally ahead. The 4B's SHADE-Arena weakness is broader than
-this task.
+the 27B and Kimi K3, and about 0.06 of their Mean-OOD pAUROC@20. The two stay
+level, now with Kimi K3 marginally ahead. The 4B's SHADE-Arena weakness is
+broader than this task.
+
+Read the pAUROC@20 jump as low-FPR sensitivity, not a large ranking change.
+Within the task alone, the 27B's AUROC is `0.911` and Kimi K3's `0.847`, but
+their pAUROC@20 is `0.613` and `0.391`: attacks score above most honest runs,
+yet below the most suspicious honest runs within the task and across the
+pooled source. Without it, every other source except CUA-SHADE-Arena
+(`0.881`/`0.886`) is at or above `0.946` pAUROC@20 for both arms, and the suite
+is close to saturated at this metric.
 
 ## Limitations
 
@@ -130,7 +141,7 @@ small position sensitivity on ID data; this audit does not test whether the
 
 `python -m experiments.shade_length_audit.analyze` writes
 `results/shade_length_audit/summary.json` (SHA-256
-`7761d5da1cb328c7fc280064527c683de453797318a9f9c4592cf2e759e14d23`) from:
+`803c79462ea49915e3fe957097cededbc9959a38ddfaf114f84d20f00baff362`) from:
 
 - `results/qwen38-27b-s0-ood01/evaluation/ood.jsonl`;
 - `results/tool_trajectory_monitoring/kimi_k3_ood_{canary,full_remaining}_fireworks.jsonl`;
