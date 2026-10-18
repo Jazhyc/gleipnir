@@ -206,3 +206,22 @@ PATH=<vllm-0.31-runtime>/bin:$PATH HF_HOME=/root/hf-27b HF_HUB_OFFLINE=1 PYTHONP
   --config experiments/qwen27b_generations_ood/qwen38_27b_id_student.json \
   --output results/qwen27b_generations_ood/qwen38_27b_id_student
 ```
+
+**Result (2026-10-17, 3,012 rows, 1,456 s of scoring after canary).**
+
+| unadapted Qwen3.8-27B, ID | macro pAUROC@20 | macro AUROC | Brier | Gloom | STRIDE |
+|---|---:|---:|---:|---:|---:|
+| full teacher prompt | 0.8869 | 0.9730 | 0.0812 | 0.8454 | 0.9284 |
+| compact student prompt | 0.8485 | 0.9640 | 0.0895 | 0.7901 | 0.9070 |
+| trained 27B (student prompt) | 0.9217 | 0.9822 | 0.0759 | 0.8868 | 0.9567 |
+
+The compact prompt costs the unadapted model 3.8 points (Gloom 5.5), so the
+trained 27B gains 7.3 points over the same prompt. Teacher- and student-prompt
+scores correlate at 0.965 (MAE 0.049). The 4B full-prompt ablation found no
+inference-time prompt effect after training; whether training on the full
+prompt ends higher for the 27B is untested.
+
+**Other models on ID** (same 3,012 rows, teacher prompt): Qwen3.5-27B FP8
+zero-shot scored 0.9134 (vLLM 0.24, H100; `experiments/qwen122b_id`), 2.6
+points above Qwen3.8-27B zero-shot, reversing the OOD order (0.839 vs. 0.890).
+FP8 against BF16 was not isolated on ID.
