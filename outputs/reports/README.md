@@ -12,5 +12,7 @@ directory (needs `latexmk`/`pdflatex`; on Hábrók, put the
   ([proposal.pdf](sprint_proposal/proposal.pdf)). Numbers come from the
   [OOD frontier registry](../../docs/research/tool_trajectory_ood_frontier.md),
   the [27B campaign](../../docs/findings/qwen38_27b_campaign.md) and the
-  [vocab-distillation diagnostic](../../experiments/gleipnir27b_vocab_distillation/README.md)
+  [vocab-distillation diagnostic](../../experiments/gleipnir27b_vocab_distillation/README.md),
+  the [GPT-6 Luna benchmark](../../docs/findings/openai_luna_ood_benchmark.md)
+  and the [4B B200 latency baseline](../../docs/decisions/b200_inference_benchmark.md)
   at revision `5ef9e5b`.

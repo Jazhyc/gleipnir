@@ -1,9 +1,10 @@
 \documentclass[10pt]{article}
-\usepackage[a4paper,margin=0.75in,top=0.6in,bottom=0.6in]{geometry}
+\usepackage[a4paper,margin=0.68in,top=0.5in,bottom=0.5in]{geometry}
 \usepackage[T1]{fontenc}
 \usepackage{newtxtext,newtxmath}
 \usepackage{microtype}
 \usepackage{xcolor}
+\usepackage{booktabs}
 \usepackage{enumitem}
 \usepackage{titlesec}
 \usepackage[hidelinks,bookmarks=false,pdftitle={Gleipnir sprint proposal},pdfauthor={Jeremias Ferrao}]{hyperref}
@@ -24,16 +25,45 @@
 {\normalsize Two-week sprint proposal \,\textbar\, Jeremias Ferrao \,\textbar\, MATS exploration phase \,\textbar\, 19 October 2026}
 
 \vspace{-4pt}
-\section{The project}
-Gleipnir trains small open-weight monitors that score AI-agent trajectories for scheming, sabotage, deception and other
-control-relevant behaviour. The core recipe is \emph{binary-logit distillation}: a strong teacher reads the trajectory
-and its probability on the decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that
-emits the same single token. There is no generated rationale, so a monitor call costs one prefill. On the six-source,
-6,395-row OOD suite of Sinha et al.\ (mean pAUROC@20, never used for selection), the released \textbf{Gleipnir 4B}
-scores \textbf{0.782 at \$0.26 per 1K} evaluations, the cheapest point on the cost--performance frontier, ahead of the
-paper's trained Qwen3.5-4B SFT+RL (0.684) and Qwen3.5-27B SFT+RL (0.831 at \$2.78). Trained the same way,
-\textbf{Gleipnir 27B} (Qwen3.8-27B) reaches \textbf{0.935}: above its own teacher Kimi K3 (0.908 at \$25) and close
-to prompted Claude Opus 4.6 (0.942 at \$95), at about 1/15 of Kimi's cost.
+\section{The problem: synchronous monitoring with a minimal safety tax}
+The strongest AI control protocols are \emph{synchronous}: a trusted monitor scores each action an untrusted agent
+proposes \emph{before} it executes, so a suspicious step can be blocked, resampled or escalated before it does harm.
+This puts the monitor on the critical path of every agent step for every user. Its latency is added to each action and
+its compute scales with the whole deployment. Frontier models are good monitors but too slow and expensive to run on
+every step, so in practice one either monitors asynchronously (after the damage) or pays a large \emph{safety tax}.
+A small monitor with frontier-level quality removes that trade-off: one GPU serves many concurrent agents, and the
+per-action overhead is a small fraction of the agent's own inference cost.
+
+\begin{minipage}[t]{0.50\textwidth}
+\vspace{0pt}
+\textbf{Gleipnir} trains small open-weight monitors for scheming, sabotage, deception and other control-relevant
+behaviour in agent trajectories. The core recipe is \emph{binary-logit distillation}: a strong teacher's probability on
+the decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that emits that single token.
+With no generated rationale, a monitor call is one prefill; Gleipnir 4B scores a $\sim$4K-token trajectory in a median
+0.15\,s on one B200 in unoptimised BF16. On the out-of-distribution suite of Sinha et al.\ (never used for selection),
+Gleipnir 4B is the cheapest point on the cost--performance frontier, and Gleipnir 27B surpasses its own teacher at
+1/14 of the cost. \textbf{The sprint's goal is to move the 4B towards the 27B's quality at the 4B's cost.}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\textwidth}
+\vspace{0pt}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+Monitor & pAUROC@20 & \$/1K evals \\
+\midrule
+\textbf{Gleipnir 4B (ours)} & \textbf{0.782} & \textbf{0.26} \\
+Qwen3.5-4B SFT+RL$^{a}$ & 0.684 & 0.36 \\
+GPT-6 Luna (OpenAI)$^{b}$ & 0.837 & 0.84 \\
+\textbf{Gleipnir 27B (ours)}$^{c}$ & \textbf{0.935} & \textbf{1.85} \\
+Qwen3.5-27B SFT+RL$^{a}$ & 0.831 & 2.78 \\
+Kimi K3 (our teacher) & 0.908 & 25.12 \\
+Claude Opus 4.6, prompted$^{a}$ & 0.942 & 94.79 \\
+\bottomrule
+\end{tabular}\\[2pt]
+{\scriptsize Mean pAUROC@20 over six OOD sources (6,395 trajectories); uncached list price.
+$^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.
+$^{c}$Full teacher prompt; 0.909 at \$1.69 with its compact training prompt.}
+\end{minipage}
 
 \section{Sprint plan \,(deliverable: Gleipnir v1 model release + technical report)}
 \phase{Week 1: make the 4B much better, using Gleipnir 27B as an intermediate teacher.}
