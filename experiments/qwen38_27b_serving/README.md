@@ -283,3 +283,51 @@ with piecewise graphs to 2,048 tokens (`graphs01`): 2.28× BF16 at c128, about
 2.2× on long prompts at c1, faster than BF16 on short prompts, at −0.29 ID
 pAUROC@20 points without QAD. Long-context (> 32K) throughput with MXFP8 is
 not measured here.
+
+## Long context, 1K–1M tokens (2026-10-18)
+
+User request: latency and throughput of the recommended optimized stack
+against stock BF16 from 1K to 1M tokens. `long_context.py` (`long01`):
+concurrency 1, the deterministic unlabelled synthetic prompts of
+`b200_long_context` (exact token counts), one excluded warmup then 5 requests
+(3 from 128K). As in `b200_context_million`: native RoPE to the checkpoint's
+262,144 positions, then YaRN ×4 (`--max-model-len 1048576`) for 512K and 1M,
+with a 256K overlap. Unchanged 32K chunk budget, 128-sequence cap and
+scheduler; the optimized stack is `QuantFullWorker` with graphs to 2,048.
+
+MXFP8 beyond 32K needs a raised descriptor/producer bound;
+`mxfp8_envelope.py` ports the 4B 1M envelope check to 24/4 heads
+(`mxfp8_envelope01.json`): short and batched outputs bitwise unchanged after
+raising the bound; 32K query chunks against 64K–1M histories (pages beyond
+2^31 cache elements) and a 32K+17 history within 0.0017 of the quantized
+oracle (limit 0.01); 0.054–0.056 from full BF16 (recorded, as for the 4B).
+`Mxfp8AttentionMixin` raises the bound only with this hash-bound receipt.
+
+| prompt tokens | BF16 median (range) | optimized median (range) | speedup | optimized prompt tok/s |
+|---:|---:|---:|---:|---:|
+| 1K | 0.056 s (0.053–0.057) | 0.029 s (0.029–0.034) | 1.95× | 35,573 |
+| 2K | 0.094 s | 0.046 s | 2.05× | 44,693 |
+| 4K | 0.186 s | 0.082 s | 2.27× | 49,998 |
+| 8K | 0.363 s | 0.159 s | 2.29× | 51,652 |
+| 16K | 0.730 s | 0.330 s | 2.21× | 49,700 |
+| 32K | 1.533 s | 0.697 s | 2.20× | 46,989 |
+| 64K | 3.395 s | 1.575 s | 2.16× | 41,613 |
+| 128K | 8.537 s | 3.940 s | 2.17× | 33,270 |
+| 256K | 24.99 s | 11.04 s | 2.26× | 23,751 |
+| 256K (YaRN) | 25.09 s | 11.07 s | 2.27× | 23,672 |
+| 512K (YaRN) | 82.86 s | 35.41 s | 2.34× | 14,806 |
+| 1M (YaRN) | 298.5 s (296.6–302.8) | 128.6 s (128.3–128.6) | **2.32×** | 8,156 |
+
+- The speedup holds from 4K to 1M (2.2–2.3×) and grows slightly where
+  attention dominates (512K–1M): MXFP8 prefill attention keeps pace with the
+  FP8/FP4 projections, so the throughput gain does not collapse at long
+  context. Without it (phase 1), attention would run in BF16 and the speedup
+  would shrink toward 1× as attention's share grows; that arm was not run.
+- Latency grows roughly quadratically past 64K (each doubling ×2.4–3.6), as
+  attention takes over. At 1M BF16 runs at 3,512 prompt tokens/s, the
+  optimized stack at 8,156.
+- YaRN does not change timing (256K: 25.09 vs 24.99 s BF16, 11.07 vs 11.04 s
+  optimized). Startup 92–100 s; GPU memory in use 160–170 GB for both.
+- Scores repeat exactly within each stack; they differ between stacks by up
+  to 0.14 on these repetitive unlabelled prompts and beyond 256K are YaRN
+  outputs, so they are not quality evidence.

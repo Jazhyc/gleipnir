@@ -18,7 +18,9 @@ FP4 tile table, fused norm/SwiGLU/vendor FP4 producers and CUDA graphs up to
 (no QAD), and the short-prompt latency floor gone (256–1,500 tokens: 22 ms vs
 34 ms at BF16). Native SwiGLU FP4 output was ported (256×128 tile) and
 rejected: operator gain at 17–4,096 rows but no end-to-end gain and changed
-activation quantization. Open: a long-context (> 32K) measurement. Build these as new geometry
+activation quantization. Long context (1K–1M at c1, YaRN beyond 256K): the
+optimized stack stays 2.2–2.3× faster than BF16 at every length (1M: 128.6 s
+vs 298.5 s), with a 27B MXFP8 1M envelope receipt. Build these as new geometry
 modules; the 4B default's sources are hash-bound
 ([port plan and results](../../experiments/qwen38_27b_serving/README.md)).
 
