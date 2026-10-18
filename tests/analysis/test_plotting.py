@@ -77,9 +77,14 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-4B SFT+RL"]["xytext"] == (18, -14)
-    # Qwen3.8-27B sits directly above Qwen3.5-27B at the shared 27B cost.
+    # Qwen3.8-27B sits above Qwen3.5-27B at the shared 27B cost; its trained
+    # point is up and left, so the base label moves right.
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B base"]["xytext"] == (0, -18)
-    assert MANUAL_COMPARISON_LABELS["Qwen3.8-27B base"]["xytext"] == (0, 18)
+    assert MANUAL_COMPARISON_LABELS["Qwen3.8-27B base"]["xytext"] == (10, -4)
+    assert MANUAL_COMPARISON_LABELS["Qwen3.8-27B Kimi-soft strict"]["xytext"] == (
+        -10,
+        6,
+    )
     assert MANUAL_COMPARISON_LABELS["Qwen3.5-27B SFT+RL"] == {
         "xytext": (0, -36),
         "ha": "center",
@@ -106,6 +111,7 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
     ] == [
         ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft mixed"),
         ("Qwen3.5-9B base", "Qwen3.5-9B Kimi-soft mixed"),
+        ("Qwen3.8-27B base", "Qwen3.8-27B Kimi-soft strict"),
     ]
     assert all(
         float(method["mean_ood_pauroc_at_20"]) > float(base["mean_ood_pauroc_at_20"])

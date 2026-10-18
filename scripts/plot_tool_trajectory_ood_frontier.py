@@ -39,10 +39,12 @@ EXCLUDED_MONITORS = {
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft mixed": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
+    "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
 }
 BASE_TO_METHOD = {
     "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft mixed",
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
+    "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
 PAPER_COMPARISON_MONITORS = {
     "Kimi-K2.6 SFT",
@@ -83,7 +85,13 @@ MANUAL_COMPARISON_LABELS = {
     },
     "Qwen3.5-4B SFT+RL": {"xytext": (18, -14), "ha": "left", "va": "top"},
     "Qwen3.5-27B base": {"xytext": (0, -18), "ha": "center", "va": "top"},
-    "Qwen3.8-27B base": {"xytext": (0, 18), "ha": "center", "va": "bottom"},
+    # The trained 27B sits just up and left of its base at a lower cost.
+    "Qwen3.8-27B base": {"xytext": (10, -4), "ha": "left", "va": "top"},
+    "Qwen3.8-27B Kimi-soft strict": {
+        "xytext": (-10, 6),
+        "ha": "right",
+        "va": "bottom",
+    },
     "Qwen3.5-27B SFT+RL": {"xytext": (0, -36), "ha": "center", "va": "top"},
     "Claude Sonnet 4.6 prompted": {
         "xytext": (0, -18),

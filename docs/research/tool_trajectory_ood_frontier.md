@@ -75,8 +75,9 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Compact student specification, immediate `0\|1` logits** | **1.6892** | **0.9087** | **yes** |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
-| **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **no** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -288,6 +289,24 @@ next higher-quality frontier point is Kimi K2.6 (`0.9194` at `$7.9110/1K`). It
 dominates none of the previous frontier points; at equal cost it is `0.0506`
 above Qwen3.5-27B. It is `0.0183` below Kimi K3 at about 1/14 of Kimi K3's
 cost.
+
+## Qwen3.8-27B Kimi-soft result
+
+Qwen3.8-27B trained for one epoch on the strict-filtered Kimi K3 soft targets
+(seed 0, `qwen38_27b_b200_default`, BF16 serving; campaign
+`qwen38-27b-s0-01`) reaches `0.9087` Mean-OOD pAUROC@20 and `0.9679` Mean-OOD
+AUROC under the compact student prompt
+([finding](../findings/qwen38_27b_campaign.md)). The frozen OOD workload has
+55,346,879 input tokens (mean 8,654.7113; identical under the 27B tokenizer)
+plus one output token, so at the shared 27B proxy (`$0.195/M` input,
+`$1.56/M` output) it costs `$1.6892/1K`. Training cost is excluded under the
+registry contract.
+
+It dominates the unadapted Qwen3.8-27B (`0.8901` at `$1.8476/1K`), which
+leaves the frontier, and is level with its teacher Kimi K3 (`0.9084` at
+`$25.1177/1K`, about 15 times the cost). The next higher-quality frontier
+point remains Kimi K2.6 (`0.9194` at `$7.9110/1K`). One seed; the 4B
+students' OOD seed SD is 1.8 points.
 
 ## Qwen3.5-9B immediate ordinal result
 
