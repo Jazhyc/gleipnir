@@ -21,7 +21,7 @@
 
 \begin{document}
 
-{\Large\bfseries\color{accent} Gleipnir: Frontier-Quality AI Control Monitors at Small-Model Latency}\\[2pt]
+{\Large\bfseries\color{accent} Gleipnir: Frontier-Quality AI Control Monitors at Small-Model Cost}\\[2pt]
 {\normalsize Two-week sprint proposal \,\textbar\, Jeremias Ferrao \,\textbar\, MATS exploration phase \,\textbar\, 19 October 2026}
 
 \vspace{-4pt}
@@ -41,7 +41,7 @@ behaviour in agent trajectories. The core recipe is \emph{binary-logit distillat
 the decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that emits that single token.
 With no generated rationale, a monitor call is one prefill; Gleipnir 4B scores a $\sim$4K-token trajectory in a median
 0.15\,s on one B200 in unoptimised BF16. On the out-of-distribution suite of Sinha et al.\ (never used for selection),
-Gleipnir 4B is the cheapest point on the cost--performance frontier, and Gleipnir 27B surpasses its own teacher at
+Gleipnir 4B is the cheapest point on the cost--performance frontier (cost is the standard proxy, as latency varies widely across providers), and Gleipnir 27B surpasses its own teacher at
 1/14 of the cost. \textbf{The sprint's goal is to move the 4B towards the 27B's quality at the 4B's cost.}
 \end{minipage}\hfill
 \begin{minipage}[t]{0.47\textwidth}
@@ -96,7 +96,7 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
         have gradients. Which attacker (white-box, transfer, LLM-rewriter, latent) would give results the control
         community finds convincing, and is a white-box blind-spot map still valuable as a worst-case bound?
   \item \textbf{Convincing benchmarks.} Beyond MonitoringBench and SleightBench, which held-out monitoring evaluations
-        would the community find most convincing for a performance--latency claim?
+        would the community find most convincing for a performance--cost claim?
   \item \textbf{Interpretability and scope.} Which mechanistic analyses of the monitor (e.g.\ what drives its suspicion
         score) would most strengthen the report, and what to cut if two weeks proves tight.
 \end{itemize}
