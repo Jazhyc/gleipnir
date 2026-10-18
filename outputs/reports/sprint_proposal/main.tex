@@ -101,14 +101,15 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
         score) would most strengthen the report, and what to cut if two weeks proves tight.
 \end{itemize}
 
-\section{The rest of the suite (described in the final report and release)}
+\section{Completed earlier in the exploration phase (included in the final report and release)}
 \begin{itemize}
-  \item \textbf{Inference optimisation.} Prefill-only B200 serving with FP4/MXFP8 kernels and prefix caching; the
-        quantised 27B reaches 2.08$\times$ throughput for $-0.17$ ID points, and a 1K--1M-token long-context sweep.
+  \item \textbf{Inference optimisation.} Prefill-only B200 serving with FP4/MXFP8 kernels: up to 1.6$\times$ throughput
+        for the 4B and 2.2--2.3$\times$ for the 27B across 4K--1M-token contexts over BF16. Opt-in prefix caching
+        monitors every action of a 1M-token agent session 12.9$\times$ faster.
   \item \textbf{Quantisation-aware distillation (QAD)} so that low-precision deployment copies keep BF16 ranking quality.
-  \item \textbf{Mechanistic ablations against injection-triggered suspicion.} Monitors flag harmless code once
-        monitor-directed injection or jailbreak text is present; we ablate the responsible directions in training and
-        serving to remove that shortcut without losing harmful-action recall.
+  \item \textbf{Serving-time ablation of injection-triggered suspicion.} Monitors flag harmless code once
+        monitor-directed injection or jailbreak text is present. Removing the responsible residual-stream direction at
+        inference time cuts these false alarms to below 0.5\%, with no retraining.
 \end{itemize}
 
 \end{document}
