@@ -199,6 +199,17 @@ container-only compiler caches were archived on the volume as
 container disk; they are re-downloadable and reconstructable from the FP32
 master.
 
+Later on 2026-10-18 the user provided EU-RO-1 B200 Pod `wdbgkrnymh3n8h`
+($7.99/hour, snapshot `.runpod/qwen38-27b-serving2.json`) on a different
+machine (`ods55hcq87v4`, `GPU-4b31de30…`, driver 580.178.04), same volume. At
+the user's request the container disk was resized from 50 to 300 GB (SSH moved
+to port 19986). The proxy user is the Pod's `machine.podHostId` from the
+GraphQL API (`wdbgkrnymh3n8h-64411953`), not a fixed suffix; the proxy answers
+"container not found" for a wrong one. `logs/runpod/qwen38_27b_serving/restore.sh`
+restores the runtime with the 2026-10-18 container caches and downloads the
+27B base to `/root/hf-27b` after `.venv` exists (about 3 minutes);
+`experiments/qwen38_27b_serving/remerge.py` rebuilds the merged checkpoint.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache

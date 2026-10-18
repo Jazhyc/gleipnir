@@ -12,12 +12,12 @@ for a QAD-adapted 27B.
 MLP/GDN with config-derived geometry (`src/gleipnir/serving/quant_stack.py`),
 BF16 attention, last-query and lean GDN: 2.08× BF16 c128 throughput, ID
 pAUROC@20 0.9200 vs 0.9217 at BF16 (no QAD). c1 latency is 33% worse on short
-prompts. **Phase 2 (open):** fused FP4 producers (derived guards; whole-row
-Triton programs at K=17,408 need re-timing), native SwiGLU output with a tile
-that divides 34,816 plus a column guard (N192 does not divide it and the
-custom stores do not bound-check columns), a 27B FP4 GEMM tuning table, MXFP8
-attention keyed on head counts and validated at 24/4 heads, regenerated
-receipts, a flattened worker and a 27B startup. Build these as new geometry
+prompts. **Phase 2 mostly done (2026-10-18):** MXFP8 attention at 24/4 heads, a 27B
+FP4 tile table, fused norm/SwiGLU/vendor FP4 producers and CUDA graphs up to
+2,048 tokens: 2.28× BF16 c128 throughput, ID pAUROC@20 0.9188 vs 0.9217 at BF16
+(no QAD), and the short-prompt latency floor gone (256–1,500 tokens: 22 ms vs
+34 ms at BF16). Open: native SwiGLU FP4 output (N256 tile, 27B store
+constants) and a long-context measurement. Build these as new geometry
 modules; the 4B default's sources are hash-bound
 ([port plan and results](../../experiments/qwen38_27b_serving/README.md)).
 

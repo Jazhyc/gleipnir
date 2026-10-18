@@ -173,3 +173,86 @@ a ~500-token request would confirm it; fused producers and graph capture for
 these sizes are the fixes. Long-context throughput additionally needs MXFP8
 attention: phase 1 quantizes only projections (linear in tokens), so at
 ~1M-token contexts the BF16 attention layers dominate and the speedup shrinks.
+
+## Quantized stack, phase 2 (2026-10-18, second Pod)
+
+Same user scope (drift reported, not gated). New EU-RO-1 B200 Pod
+`wdbgkrnymh3n8h` (`GPU-4b31de30…`, driver 580.178.04); every condition below
+reran on this GPU. `remerge.py` rebuilt the merged checkpoint byte-identical
+to the campaign merge (all source and output hashes, 219 s), so the
+campaign's parity and ID receipts apply.
+
+**Ported modules** (new geometry modules; the 4B default's hash-bound sources
+are reused by import only):
+- `mxfp8_geometry.py` + `Mxfp8AttentionMixin`: the 4B MXFP8 producers with a
+  cuDNN plan and guards for the served GQA heads, installed ahead of the BF16
+  attention audit (which would otherwise restore BF16 after its count).
+- `fp4_geometry_tuning.py` + `TunedGemmMixin`: the four FROST FP4 shapes from
+  the config (27B: gate_up 5120×34816, GDN in 5120×16384, down 17408×5120,
+  GDN out 6144×5120; the derivation reproduces the 4B table exactly).
+- `fp4_geometry_producers.py` + `ProducerFusionMixin`: the 4B fused
+  residual-RMSNorm and SwiGLU FP4 producers and the vendor GDN packer with
+  K-checked wrappers, own op names and config-derived install scope.
+- `QuantFullWorker` stacks all of these with last-query and lean GDN.
+
+**Receipts** (`results/qwen38_27b_serving/`):
+- `mxfp8_canary01.json` (24/4 heads): 7/7 within 0.0015–0.0017 of the FP32
+  MXFP8 oracle (limit 0.01); bitwise equal to the 4B module at 16/4. Relative
+  to full BF16 attention 0.040–0.053, 4 of 7 over the strict 0.05, as in the
+  4B receipt (accepted there as finite only); recorded, not gated.
+- `last_query_mxfp8.json`: 8/8 bitwise, including the 1M-token history.
+- `fp4_gemm_tune01.json`: all tiles pass; only the two down projections gain
+  at M ≤ 4096 (128×128 cluster 2×1, +5–6%); the base tile elsewhere.
+- `fp4_producers01.json`: all checks within 0.006 decoded / 0.0003 GEMM L2,
+  exact residuals. SwiGLU (8 warps) 1.0×/1.6×/2.3× at 1/129/32768 rows,
+  norm (4 warps) 2.0×/2.5×/3.3×; vendor 0.5× at 1 row, 2.2× at 32768. The
+  feared K17408 spills did not appear.
+
+**Bench** (full320 c128 × 3, quick64 c1; scores on the training-seen
+diagnostic workload):
+
+| condition | c128 prompt tok/s | vs BF16 | macro AUROC Δ | 0.5 flips |
+|---|---|---:|---:|---:|
+| control02 (BF16) | 23,100 / 23,093 / 23,075 | 1.00× | | |
+| quant02 (phase 1) | 47,905 / 47,889 / 47,775 | 2.07× | −0.30 pt | 8 |
+| mxfp801 (+ MXFP8 attention) | 48,074 / 50,111 / 50,024 | 2.14× | +0.37 pt | 9 |
+| tuned01 (+ tuned tiles) | 48,459 / 50,117 / 50,062 | 2.15× | +0.37 pt | 9 |
+| **full01** (+ fused producers) | 52,306 / 53,088 / 53,052 | **2.29×** | −1.11 pt | 8 |
+| graphs01 (full, graphs ≤ 2,048) | 52,069 / 53,126 / 53,064 | 2.28× | −1.11 pt | 8 |
+
+Every live audit passed (MXFP8 on all 16 attention layers; tuned tiles on all
+four shapes; norm, SwiGLU and vendor producers observed).
+
+**ID drift (`fullid01`, all 3,012 frozen rows, c128).** Macro pAUROC@20
+0.9188 / AUROC 0.9816 (BF16 0.9217 / 0.9822; phase 1 0.9200 / 0.9818). Gloom
+exfiltration 0.8824 (BF16 0.8868), STRIDE 0.9552 (0.9567). Score MAE 0.0215,
+correlation 0.9952, 57 rows cross 0.5 (phase 1: 0.0222, 0.9950, 59). 54,238
+prompt tokens/s, 622 s for all rows (BF16 campaign 1,456 s: 2.34×). The
+shutdown `EngineDeadError` in the log follows the harness SIGTERM after all
+3,012 requests returned.
+
+**c1 latency floor.** Median latency by prompt length (quick64; ms; full02
+and graphs01 are medians of 3 passes, the others 1):
+
+| prompt tokens (rows) | BF16 | phase 1 | full02 | **graphs01** |
+|---|---:|---:|---:|---:|
+| < 256 (8) | 26.3 | 19.5 | 17.8 | 19.8 |
+| 256–1,500 (36) | 34.0 | 50.5 | 54.8 | **22.4** |
+| 1,500–4,000 (2) | 127.6 | 68.0 | 66.1 | 59.9 |
+| 4,000–10,000 (8) | 279.3 | 133.5 | 123.6 | 122.7 |
+| 10,000+ (10) | 822.6 | 409.2 | 369.5 | 369.1 |
+
+vLLM captures piecewise graphs only up to 256 tokens; above that the
+quantized stack's ~5× more custom ops per layer run eagerly from Python, and
+each added layer made the floor worse (phase 1 50.5 → full 54.8 ms). Extending
+capture to 2,048 tokens (`--compilation`; 47 sizes, padding ≤ 25%, all inside
+the M ≤ 4096 tile band) removes it: 22.4 ms, faster than BF16, with c128
+unchanged, 7 s capture and 0.9 GiB graph memory. This confirms the host
+overhead hypothesis above. Padding shifts c1 scores by 0.005 mean / 0.083 max
+against full02, comparable to batch-composition noise.
+
+**Status.** The optimized 27B path is now 2.28× BF16 at c128, about 2.2× at
+long prompts at c1, and faster than BF16 at short prompts, at −0.29 ID pAUROC@20
+points without QAD. Not yet ported: native SwiGLU FP4 output (needs an N256
+tile and 27B store constants; 4–11% on that operator on the 4B for M ≥ 1536).
+Long-context (≥ 32K) throughput with MXFP8 is not measured here.
