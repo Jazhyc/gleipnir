@@ -1,18 +1,20 @@
 # Hugging Face adapter releases
 
-This directory holds the reviewed, tracked inputs for the Gleipnir 4B and
-Gleipnir 9B Hugging Face releases. The large model files remain under ignored
+This directory holds the reviewed, tracked inputs for the Gleipnir 4B, 9B
+and 27B Hugging Face releases. The large model files remain under ignored
 `results/` paths and are copied into an ignored staging directory only after
 their checksums and adapter contracts pass.
 
-Prepare both release directories with:
+Prepare the release directories with (`--model 4b|9b|27b` for one):
 
 ```bash
 python scripts/prepare_hf_adapter_release.py
 ```
 
-This creates `results/huggingface_release/Gleipnir-4B/` and
-`results/huggingface_release/Gleipnir-9B/`. Each directory contains:
+This creates `results/huggingface_release/Gleipnir-{4B,9B,27B}/`. A model whose
+recipe differs from the shared `training` block (the 27B: strict-filtered
+tool trajectories only, BF16 base) overrides those fields in its own
+`training` entry. Each directory contains:
 
 - the FP32 causal-LM PEFT adapter at the repository root;
 - the parity-checked Qwen image-text/vLLM key layout under `vllm/`;

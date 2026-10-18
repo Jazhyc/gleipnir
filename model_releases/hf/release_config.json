@@ -42,6 +42,36 @@
         "pooled_auroc": 0.9355070171618869,
         "pooled_pauroc_at_20": 0.7836630889831644
       }
+    },
+    "27b": {
+      "base_model": "Qwen/Qwen3.8-27B",
+      "base_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+      "card": "model_releases/hf/gleipnir-27b/README.md",
+      "display_name": "Gleipnir 27B",
+      "job_name": "qwen38-27b-s0-01",
+      "repo_name": "Gleipnir-27B",
+      "source_dir": "results/qwen38-27b-s0-01/4b/monitor/causal_adapter",
+      "source_sha256": "024586b667d7abe5ad066380fae005244af896d1d29c2cdefac87a9bc7f127c9",
+      "serving_dir": "results/qwen38-27b-s0-01/4b/monitor/model",
+      "serving_sha256": "0225c39546cb1d7c61940f0a1198626fbd375cae88c96902a906a3423d9e9f9e",
+      "training_metadata_sha256": "714b4726b9c16f355b378d3bca8e374877c0be1f4b291a8d4e895dedcb4cf98f",
+      "evaluation": {
+        "mean_ood_auroc": 0.9678610124659818,
+        "mean_ood_pauroc_at_20": 0.9087389139338361,
+        "pooled_auroc": 0.9747551187243579,
+        "pooled_pauroc_at_20": 0.9233996267972777,
+        "id_rows": 3012,
+        "id_macro_pauroc_at_20": 0.9217123390089397,
+        "id_macro_auroc": 0.9821546923068138
+      },
+      "training": {
+        "data_rows": 7836,
+        "deception_rows": 0,
+        "tool_trajectory_rows": 7836,
+        "data_filter": "strict teacher/source-label agreement on the 8,688 tool-trajectory rows",
+        "quantization": "none; BF16 base with FP32 master LoRA",
+        "recipe": "qwen38_27b_b200_default (BF16/SDPA, final-layer trim, 12 stored attention layers)"
+      }
     }
   },
   "prompt": {
@@ -59,7 +89,7 @@
     "teacher": "moonshotai/kimi-k3",
     "rank": 128,
     "lora_alpha": 256,
-    "learning_rate": 0.00005,
+    "learning_rate": 5e-05,
     "effective_batch_size": 32,
     "max_length": 29696,
     "quantization": "NF4 double-quantized QLoRA with BF16 compute"

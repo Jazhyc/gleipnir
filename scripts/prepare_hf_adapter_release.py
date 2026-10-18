@@ -81,9 +81,10 @@ def validate_adapter_directory(
     adapter_config = load_json(config_path)
     if adapter_config.get("base_model_name_or_path") != model["base_model"]:
         raise ValueError(f"base-model identity drifted in {config_path}")
-    if adapter_config.get("peft_type") != "LORA" or int(
-        adapter_config.get("r", -1)
-    ) != 128:
+    if (
+        adapter_config.get("peft_type") != "LORA"
+        or int(adapter_config.get("r", -1)) != 128
+    ):
         raise ValueError(f"expected a rank-128 LoRA in {config_path}")
     details = inspect_adapter(weights_path)
     if details["sha256"] != expected_sha256:
@@ -108,9 +109,7 @@ def validate_model(
     if f"base_model: {model['base_model']}" not in card:
         raise ValueError(f"model card base identity drifted for {name}")
 
-    source = validate_adapter_directory(
-        source_dir, model, str(model["source_sha256"])
-    )
+    source = validate_adapter_directory(source_dir, model, str(model["source_sha256"]))
     serving = validate_adapter_directory(
         serving_dir, model, str(model["serving_sha256"])
     )
@@ -188,12 +187,12 @@ def training_summary(spec: dict[str, Any]) -> dict[str, Any]:
         "source_commit": metadata.get("commit"),
         "training": {
             **common["training"],
+            # Models trained with a different recipe override the shared fields.
+            **model.get("training", {}),
             "peak_cuda_memory_allocated_bytes": metadata.get(
                 "peak_cuda_memory_allocated_bytes"
             ),
-            "runtime_seconds": metadata.get("train_metrics", {}).get(
-                "train_runtime"
-            ),
+            "runtime_seconds": metadata.get("train_metrics", {}).get("train_runtime"),
             "trainable_parameters": metadata.get("trainable_parameters"),
         },
     }
@@ -276,9 +275,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--config", type=Path, default=DEFAULT_CONFIG)
     parser.add_argument("--output-dir", type=Path, default=DEFAULT_OUTPUT)
-    parser.add_argument(
-        "--model", choices=("all", "4b", "9b"), default="all"
-    )
+    parser.add_argument("--model", default="all", help="a release key or 'all'")
     return parser.parse_args()
 
 
@@ -287,6 +284,8 @@ def main() -> None:
     config = load_json(args.config.resolve())
     if config.get("format_version") != 1:
         raise ValueError("unsupported release config version")
+    if args.model != "all" and args.model not in config["models"]:
+        raise ValueError(f"unknown release {args.model}: {sorted(config['models'])}")
     selected = list(config["models"]) if args.model == "all" else [args.model]
     specs = [validate_model(name, config["models"][name], config) for name in selected]
     instruction_path, contract = prompt_contract(config)

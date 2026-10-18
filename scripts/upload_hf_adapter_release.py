@@ -47,7 +47,7 @@ def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--release-dir", type=Path, required=True)
     parser.add_argument("--namespace", required=True)
-    parser.add_argument("--model", choices=("all", "4b", "9b"), default="all")
+    parser.add_argument("--model", choices=("all", "4b", "9b", "27b"), default="all")
     parser.add_argument("--private", action="store_true")
     parser.add_argument("--allow-existing", action="store_true")
     return parser.parse_args()
@@ -55,7 +55,7 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
-    suffixes = ("4B", "9B") if args.model == "all" else (args.model.upper(),)
+    suffixes = ("4B", "9B", "27B") if args.model == "all" else (args.model.upper(),)
     releases = [
         args.release_dir.resolve() / f"Gleipnir-{suffix}" for suffix in suffixes
     ]
