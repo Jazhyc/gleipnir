@@ -22,6 +22,7 @@ from experiments.qwen38_27b_serving.bench import (
     OUT,
     ROOT,
     SETTINGS,
+    quantized_command,
     sources,
 )
 from gleipnir.data.monitoring import write_json
@@ -75,8 +76,7 @@ def main() -> None:
         additional=json.loads(args.additional),
     )
     if args.quantization:
-        command[command.index("-m") + 1] = "experiments.qwen38_27b_serving.quant_server"
-        command += ["--quantization", args.quantization]
+        quantized_command(command, args.quantization, json.loads(args.additional))
     env = bf16_launch.environment(ROOT, selection, out / "bf16_audit.json")
     process = bf16_launch.start(
         ROOT, command, env, LOGS / f"{args.name}.log", out / "server.json"

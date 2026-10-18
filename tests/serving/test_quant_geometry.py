@@ -84,3 +84,36 @@ def test_mxfp8_receipt_rejects_source_drift(tmp_path):
     (tmp_path / "kernel.py").write_text("changed\n")
     with pytest.raises(ValueError, match="source drift"):
         check(text(64, 5120, 24, 4))
+
+
+def qwen_text(hidden, mlp, value_heads):
+    return SimpleNamespace(
+        hidden_size=hidden,
+        intermediate_size=mlp,
+        linear_num_key_heads=16,
+        linear_key_head_dim=128,
+        linear_num_value_heads=value_heads,
+        linear_value_head_dim=128,
+    )
+
+
+def test_fp4_tuning_shapes_reproduce_the_4b_table():
+    from gleipnir.serving.fp4.tuning import SHAPES
+    from gleipnir.serving.fp4_geometry_tuning import fp4_shapes
+
+    assert fp4_shapes(qwen_text(2560, 9216, 32)) == SHAPES
+
+
+def test_27b_fp4_shapes_and_producer_widths():
+    from gleipnir.serving.fp4_geometry_producers import producer_k, vendor_k
+    from gleipnir.serving.fp4_geometry_tuning import fp4_shapes
+
+    text = qwen_text(5120, 17408, 48)
+    assert fp4_shapes(text) == {
+        "mlp_gate_up": (5120, 34816),
+        "gdn_input": (5120, 16384),
+        "mlp_down": (17408, 5120),
+        "gdn_output": (6144, 5120),
+    }
+    assert producer_k(text) == {"silu": 17408, "norm": 5120}
+    assert vendor_k(text) == {5120, 6144}

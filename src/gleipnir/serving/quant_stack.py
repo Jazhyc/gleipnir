@@ -341,6 +341,84 @@ class TunedGemmMixin:
         print("fp4_gemm_tuning_installed", selected, flush=True)
 
 
+def producer_receipt(root: Path, additional: dict, text: Any, gpu: str) -> dict:
+    """Validate the bound ``fp4_producers_canary`` receipt; return its warps."""
+    from gleipnir.serving.fp4_geometry_producers import (
+        NORM_WARPS,
+        SILU_WARPS,
+        producer_k,
+        vendor_k,
+    )
+
+    binding = additional.get("fp4_producers") or {}
+    path = root / binding.get("validation", "")
+    if not path.is_file() or file_hash(path) != binding.get("validation_sha256"):
+        raise ValueError("fused FP4 producers require a hash-bound canary receipt")
+    receipt = json.loads(path.read_text())
+    modes = receipt.get("modes", {})
+    expected = {
+        "silu": 4 * len(SILU_WARPS),
+        "norm": 4 * len(NORM_WARPS),
+        "vendor": 4 * len(vendor_k(text)),
+    }
+    if (
+        not receipt.get("passed")
+        or receipt.get("producer_k") != producer_k(text)
+        or set(receipt.get("vendor_k", [])) != vendor_k(text)
+        or {mode: len(modes.get(mode, {}).get("checks", [])) for mode in expected}
+        != expected
+        or any(
+            not r["finite"]
+            or not r["relative_l2"] <= 0.01
+            or not r["gemm_relative_l2"] <= 0.01
+            for section in modes.values()
+            for r in section["checks"]
+        )
+    ):
+        raise ValueError("fused FP4 producer receipt does not cover the served widths")
+    if receipt.get("gpu") != gpu:
+        raise ValueError("fused FP4 producer receipt hardware changed")
+    for source, digest in receipt["sources"].items():
+        if file_hash(root / source) != digest:
+            raise ValueError(f"fused FP4 producer source drift: {source}")
+    return {mode: modes[mode]["selected_warps"] for mode in ("silu", "norm")}
+
+
+class ProducerFusionMixin:
+    """Fused residual-norm and SwiGLU FP4 producers plus vendor GDN packing.
+
+    Every MLP consumes packed activations from its post-attention norm and
+    feeds the down projection from the fused SwiGLU producer; GDN projection
+    inputs use the vendor CUDA packer. Shapes and counts come from the config.
+    """
+
+    def load_model(self, *, load_dummy_weights: bool = False) -> None:
+        import torch
+
+        from gleipnir.serving import fp4_geometry_producers as producers
+
+        text = self.vllm_config.model_config.hf_text_config
+        warps = producer_receipt(
+            ROOT, self.vllm_config.additional_config, text, torch.cuda.get_device_name()
+        )
+        super().load_model(load_dummy_weights=load_dummy_weights)
+        audit = {"passed": False, "warps": warps, "seen": {}}
+        self.precision["fp4_producers"] = audit
+
+        def observed(kind, shape):
+            if torch.cuda.is_current_stream_capturing() or kind in audit["seen"]:
+                return
+            audit["seen"][kind] = list(shape)
+            audit["passed"] = set(audit["seen"]) == {"vendor", "silu", "norm"}
+            self.save()
+
+        audit["install"] = producers.install(
+            self.model_runner.get_model(), text, warps=warps, audit=observed
+        )
+        self.save()
+        print("fp4_producers_installed", audit["install"], flush=True)
+
+
 class QuantLastQueryFastGdnWorker(FastGdnMixin, LastQueryMixin, QuantAuditWorker):
     """Phase 1 optimized stack: FP8/FP4 projections, last-query, lean GDN."""
 
@@ -355,3 +433,9 @@ class QuantTunedMxfp8LastQueryFastGdnWorker(
     TunedGemmMixin, QuantMxfp8LastQueryFastGdnWorker
 ):
     """MXFP8 attention stack with receipt-selected FP4 GEMM tiles."""
+
+
+class QuantFullWorker(
+    TunedGemmMixin, ProducerFusionMixin, QuantMxfp8LastQueryFastGdnWorker
+):
+    """Phase 2 without native SwiGLU output: tuned tiles and fused producers."""

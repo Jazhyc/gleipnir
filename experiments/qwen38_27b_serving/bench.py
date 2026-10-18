@@ -48,7 +48,7 @@ def sources() -> dict[str, str]:
     return {str(p.relative_to(ROOT)): file_hash(p) for p in paths}
 
 
-async def measure(out: Path, repeats: int) -> None:
+async def measure(out: Path, repeats: int, c1_repeats: int = 1) -> None:
     loads = workloads()
     await trial(loads["quick"], 128, SETTINGS)  # warmup and compile
     for repeat in range(repeats):
@@ -63,8 +63,29 @@ async def measure(out: Path, repeats: int) -> None:
             f"{summary['requests_per_second']:.3f} req/s",
             flush=True,
         )
-    rows, seconds = await trial(loads["quick"], 1, SETTINGS)
-    write_json(out / "c1_repeat0.json", {"rows": rows, "seconds": seconds})
+    for repeat in range(c1_repeats):
+        rows, seconds = await trial(loads["quick"], 1, SETTINGS)
+        write_json(out / f"c1_repeat{repeat}.json", {"rows": rows, "seconds": seconds})
+
+
+def quantized_command(command: list[str], quantization: str, additional: dict) -> None:
+    """Serve through the quantized server; record the precisions it actually uses.
+
+    ``bf16_command`` labels every precision BF16; the quantized stack keeps the
+    same server and harness but must not inherit that label.
+    """
+    command[command.index("-m") + 1] = "experiments.qwen38_27b_serving.quant_server"
+    command += ["--quantization", quantization]
+    i = command.index("--additional-config") + 1
+    config = json.loads(command[i])
+    config["serving_condition"].update(
+        quantization=quantization,
+        attention_projection_precision="fp8",
+        mlp_precision="fp4",
+        gdn_projection_precision="fp4",
+        attention_precision="mxfp8" if "mxfp8_attention" in additional else "bf16",
+    )
+    command[i] = json.dumps(config, sort_keys=True)
 
 
 def run(
@@ -73,6 +94,8 @@ def run(
     additional: dict,
     repeats: int,
     quantization: str | None = None,
+    compilation: dict | None = None,
+    c1_repeats: int = 1,
 ) -> None:
     out = OUT / name
     out.mkdir(parents=True, exist_ok=False)
@@ -81,16 +104,18 @@ def run(
         ROOT, MODEL, sources(), worker=worker, additional=additional
     )
     if quantization is not None:
-        # Same server and harness; the quantized server registers the config.
-        command[command.index("-m") + 1] = "experiments.qwen38_27b_serving.quant_server"
-        command += ["--quantization", quantization]
+        quantized_command(command, quantization, additional)
+    if compilation:
+        if "--compilation-config" in command:
+            raise ValueError("selected command already sets a compilation config")
+        command += ["--compilation-config", json.dumps(compilation, sort_keys=True)]
     env = bf16_launch.environment(ROOT, selection, audit)
     process = bf16_launch.start(
         ROOT, command, env, LOGS / f"{name}.log", out / "server.json"
     )
     try:
         startup = bf16_launch.wait_ready(process, SETTINGS["port"])
-        asyncio.run(measure(out, repeats))
+        asyncio.run(measure(out, repeats, c1_repeats))
         native = json.loads(audit.read_text())
         if not native["passed"] or len(native["attention_calls"]) != native.get(
             "attention_layers"
@@ -103,6 +128,9 @@ def run(
                 "additional": additional,
                 "startup_seconds": startup,
                 "repeats": repeats,
+                "c1_repeats": c1_repeats,
+                "quantization": quantization,
+                "compilation": compilation,
                 "model": str(MODEL),
             },
         )
@@ -166,6 +194,8 @@ def main() -> None:
     r.add_argument("--additional", default="{}")
     r.add_argument("--repeats", type=int, default=3)
     r.add_argument("--quantization")
+    r.add_argument("--compilation", default="{}", help="vLLM compilation config")
+    r.add_argument("--c1-repeats", type=int, default=1)
     c = sub.add_parser("compare")
     c.add_argument("control")
     c.add_argument("candidate")
@@ -177,6 +207,8 @@ def main() -> None:
             json.loads(args.additional),
             args.repeats,
             args.quantization,
+            json.loads(args.compilation),
+            args.c1_repeats,
         )
     else:
         report = compare(args.control, args.candidate)
