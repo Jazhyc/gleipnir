@@ -78,6 +78,12 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "center",
         "va": "top",
     },
+    # Below its point: the frontier now passes just above K2.6 logits.
+    "Kimi K2.6 binary logits": {
+        "xytext": (0, -18),
+        "ha": "center",
+        "va": "top",
+    },
     "Kimi-K2.6 SFT": {
         "xytext": (0, -18),
         "ha": "center",
@@ -85,7 +91,7 @@ MANUAL_COMPARISON_LABELS = {
     },
     "Qwen3.5-4B SFT+RL": {"xytext": (18, -14), "ha": "left", "va": "top"},
     "Qwen3.5-27B base": {"xytext": (0, -18), "ha": "center", "va": "top"},
-    # The trained 27B sits just up and left of its base at a lower cost.
+    # The trained 27B sits directly above its base at the same cost.
     "Qwen3.8-27B base": {"xytext": (10, -4), "ha": "left", "va": "top"},
     "Qwen3.8-27B Kimi-soft strict": {
         "xytext": (-10, 6),

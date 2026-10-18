@@ -81,19 +81,19 @@ and at least as accurate, with one strict improvement.
 | **Gleipnir** | **Qwen3.5-9B base (reasoned binary)** | **Full binary specification, visible analysis then `0\|1` logits** | **1.0054** | **0.6923** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (reasoned ordinal)** | **Full severity specification, visible analysis then 0--10 integer** | **1.0293** | **0.6656** | **no** |
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Compact student specification, immediate `0\|1` logits** | **1.6892** | **0.9087** | **yes** |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
 | **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **no** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.9352** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
-| **Gleipnir** | **Kimi K2.6 binary logits** | **Full binary specification, immediate `0\|1` logits** | **7.9110** | **0.9194** | **yes** |
+| **Gleipnir** | **Kimi K2.6 binary logits** | **Full binary specification, immediate `0\|1` logits** | **7.9110** | **0.9194** | **no** |
 | Paper | Kimi-K2.6 SFT | Trained, short prompt, generated rationale + 0--10 score | 10.175 | 0.841 | no |
 | Paper | Claude Haiku 4.5 prompted | Full specification, generated rationale + 0--10 score | 19.746 | 0.794 | no |
 | **Gleipnir** | **Kimi K3 binary logits** | **Full binary specification, immediate `0\|1` logits** | **25.1177** | **0.9084** | **no** |
 | Paper | GPT-5.4 prompted | Full specification, generated rationale + 0--10 score | 44.376 | 0.899 | no |
 | Paper | Gemini 2.5 Pro prompted | Full specification, generated rationale + 0--10 score | 45.254 | 0.802 | no |
-| Paper | Claude Sonnet 4.6 prompted | Full specification, generated rationale + 0--10 score | 58.850 | 0.929 | yes |
+| Paper | Claude Sonnet 4.6 prompted | Full specification, generated rationale + 0--10 score | 58.850 | 0.929 | no |
 | Paper | Gemini 3.1 Pro prompted | Full specification, generated rationale + 0--10 score | 73.218 | 0.940 | yes |
 | Paper | Claude Opus 4.6 prompted | Full specification, generated rationale + 0--10 score | 94.794 | 0.942 | yes |
 
@@ -135,7 +135,7 @@ output proxy, the same compact prompt costs `$0.8659/1K`. It improves
 pAUROC@20 by `0.0388` over mixed 4B at `3.33x` the hosted inference proxy.
 GPT-6 Luna dominates it at the dated API prices: `0.8365` at `$0.8355/1K`.
 With Jev's retained result included, the next observed frontier point above
-mixed 4B is Jev 1.13 at `0.8495` and `$0.3887/1K`, followed by Kimi K2.6.
+mixed 4B is Jev 1.13 at `0.8495` and `$0.3887/1K`, followed by Gleipnir 27B.
 The 9B result remains a matched student comparison.
 
 Both adapters were trained for one epoch with rank-128 QLoRA using Kimi K3
@@ -299,20 +299,33 @@ cost.
 ## Qwen3.8-27B Kimi-soft result
 
 Qwen3.8-27B trained for one epoch on the strict-filtered Kimi K3 soft targets
-(seed 0, `qwen38_27b_b200_default`, BF16 serving; campaign
-`qwen38-27b-s0-01`) reaches `0.9087` Mean-OOD pAUROC@20 and `0.9679` Mean-OOD
-AUROC under the compact student prompt
-([finding](../findings/qwen38_27b_campaign.md)). The frozen OOD workload has
-55,346,879 input tokens (mean 8,654.7113; identical under the 27B tokenizer)
-plus one output token, so at the shared 27B proxy (`$0.195/M` input,
-`$1.56/M` output) it costs `$1.6892/1K`. Training cost is excluded under the
-registry contract.
+(seed 0, `qwen38_27b_b200_default`; campaign `qwen38-27b-s0-01`) is entered
+under the full teacher prompt, the interface of the unadapted 27B and Kimi
+rows. It reaches `0.9352` Mean-OOD pAUROC@20 and `0.9790` Mean-OOD AUROC
+(stock vLLM 0.31 BF16, FP32 LM head;
+[experiment](../../experiments/gleipnir27b_vocab_distillation/README.md)).
+The prompt was chosen on ID (0.9456 vs. 0.9216 under the compact student
+prompt it was trained on), not on OOD. The workload renders byte-identically
+to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
+output token), so at the shared 27B proxy (`$0.195/M` input, `$1.56/M`
+output) it costs `$1.8476/1K`. Training cost is excluded under the registry
+contract.
 
-It dominates the unadapted Qwen3.8-27B (`0.8901` at `$1.8476/1K`), which
-leaves the frontier, and is level with its teacher Kimi K3 (`0.9084` at
-`$25.1177/1K`, about 15 times the cost). The next higher-quality frontier
-point remains Kimi K2.6 (`0.9194` at `$7.9110/1K`). One seed; the 4B
-students' OOD seed SD is 1.8 points.
+This row replaces the campaign's compact-student-prompt entry (`0.9087`
+Mean-OOD pAUROC@20, `0.9679` AUROC, `$1.6892/1K`;
+[finding](../findings/qwen38_27b_campaign.md)). Almost all of the gain is
+SHADE-Arena (`0.7298` vs. `0.5875`); the other five sources move by at most
+`0.011`.
+
+At equal cost it dominates the unadapted Qwen3.8-27B (`0.8901`) by `0.0451`.
+It also dominates Kimi K2.6 (`0.9194` at `$7.9110/1K`) and Claude Sonnet 4.6
+(`0.929` at `$58.850/1K`), which leave the frontier, and Kimi K3 (`0.9084`).
+The next higher-quality frontier points are Gemini 3.1 Pro (`0.940` at
+`$73.218/1K`) and Claude Opus 4.6 (`0.942` at `$94.794/1K`), `0.005`–`0.007`
+higher at about 40–51 times the cost under the paper's generated-rationale
+interface. One seed; the 4B students' OOD seed SD is 1.8 points, and
+SHADE-Arena is dominated by one task
+([length audit](../findings/shade_length_audit.md)).
 
 ## Qwen3.5-9B immediate ordinal result
 
