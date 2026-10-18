@@ -111,3 +111,52 @@ What these measurements establish for a future optimized 27B path:
 Arithmetic-preserving changes give only a few percent on the 27B because BF16
 GEMMs dominate its serving time; the larger lever is the precision recipe,
 which waits for a QAD-adapted 27B.
+
+## Quantized stack, phase 1 (2026-10-18)
+
+User request: complete the optimized 27B stack, in phases; drift is reported
+against BF16, not gated (no QAD-adapted 27B exists, so this is not a
+deployment selection).
+
+**Phase 1** (`src/gleipnir/serving/quant_stack.py`, quantization
+`gleipnir_geometry_fp8_fp4`, server `quant_server.py`): the unchanged FROST FP4
+MLP and GDN methods; FP8 per-token/per-channel CUTLASS attention projections
+checked against config-derived shapes (27B qkv 14336×5120 with the output
+gate, o 5120×6144; `test_quant_geometry.py` also pins the 4B shapes); BF16
+FlashInfer attention with last-query (the BF16 receipt still applies) and the
+lean GDN path. `QuantAuditWorker` counts coverage from `layer_types`. The 4B
+default's hash-bound modules are reused by import only.
+
+**quant01** (02:26–02:30 UTC, same harness and GPU). Load audit: 32 FP8
+attention, 128 FP4 MLP, 96 FP4 GDN projections (97 small linears stay BF16);
+FROST layer-0 reference self-checks passed; last-query on layer 63.
+
+| | control01 (BF16) | quant01 |
+|---|---:|---:|
+| c128 prompt tok/s (3 repeats) | 22,874 / 22,990 / 22,943 | 47,757 / 47,524 / 47,614 (**2.08×**) |
+| c128 requests/s | 5.60 | 11.63 |
+| c1 p50 latency | 38.3 ms | 51.0 ms (+33%) |
+| score MAE / max vs BF16 (diagnostic workload) | | 0.023 / 0.43 |
+| macro AUROC Δ (diagnostic workload) | | −0.30 pt |
+
+Throughput doubles; short-request latency worsens because the unfused FP4 path
+packs activations separately and uses untuned small-M plans. That is what the
+deferred phase-2 pieces address: fused FP4 producers, native SwiGLU output
+(needs a new tile: N192 does not divide 34,816 and its stores do not guard
+columns), tuned GEMM tiles, and MXFP8 attention (24/4 heads never validated).
+
+**ID drift (`id_drift.py`, `quantid01`, 02:31–02:44 UTC).** All 3,012 frozen
+ID rows (the campaign's student-prompt workload) through the phase-1 stack at
+c128, against the campaign's BF16 ID predictions:
+
+| ID | BF16 pAUROC@20 / AUROC | phase 1 pAUROC@20 / AUROC |
+|---|---:|---:|
+| macro | 0.9217 / 0.9822 | **0.9200 / 0.9818** |
+| Gloom exfiltration | 0.8868 / 0.9742 | 0.8848 / 0.9734 |
+| Test STRIDE | 0.9567 / 0.9901 | 0.9552 / 0.9903 |
+
+Score correlation 0.995 (MAE 0.022, maximum 0.22); 59 of 3,012 rows cross
+0.5. ID throughput 48,827 prompt tokens/s (691 s for all rows, against 1,456 s
+at BF16 in the campaign). Without QAD the quantized 27B loses 0.17 ID points;
+this is reported, not gated, per the user. A QAD-adapted 27B would be the
+deployment candidate.
