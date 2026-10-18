@@ -1,0 +1,84 @@
+\documentclass[10pt]{article}
+\usepackage[a4paper,margin=0.75in,top=0.6in,bottom=0.6in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{newtxtext,newtxmath}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[hidelinks,bookmarks=false,pdftitle={Gleipnir sprint proposal},pdfauthor={Jeremias Ferrao}]{hyperref}
+
+\definecolor{accent}{HTML}{1F4E79}
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.5em}{}
+\titlespacing*{\section}{0pt}{7pt}{3pt}
+\setlist{nosep,leftmargin=1.1em,topsep=1pt}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{3pt}
+\pagestyle{empty}
+
+\newcommand{\phase}[1]{\textbf{\color{accent}#1}}
+
+\begin{document}
+
+{\Large\bfseries\color{accent} Gleipnir: Frontier-Quality AI Control Monitors at Small-Model Latency}\\[2pt]
+{\normalsize Two-week sprint proposal \,\textbar\, Jeremias Ferrao \,\textbar\, MATS exploration phase \,\textbar\, 19 October 2026}
+
+\vspace{-4pt}
+\section{The project}
+Gleipnir trains small open-weight monitors that score AI-agent trajectories for scheming, sabotage, deception and other
+control-relevant behaviour. The core recipe is \emph{binary-logit distillation}: a strong teacher reads the trajectory
+and its probability on the decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that
+emits the same single token. There is no generated rationale, so a monitor call costs one prefill. On the six-source,
+6,395-row OOD suite of Sinha et al.\ (mean pAUROC@20, never used for selection), the released \textbf{Gleipnir 4B}
+scores \textbf{0.782 at \$0.26 per 1K} evaluations, the cheapest point on the cost--performance frontier, ahead of the
+paper's trained Qwen3.5-4B SFT+RL (0.684) and Qwen3.5-27B SFT+RL (0.831 at \$2.78). Trained the same way,
+\textbf{Gleipnir 27B} (Qwen3.8-27B) reaches \textbf{0.935}: above its own teacher Kimi K3 (0.908 at \$25) and close
+to prompted Claude Opus 4.6 (0.942 at \$95), at about 1/15 of Kimi's cost.
+
+\section{Sprint plan \,(deliverable: Gleipnir v1 model release + technical report)}
+\phase{Week 1: make the 4B much better, using Gleipnir 27B as an intermediate teacher.}
+\begin{itemize}
+  \item \textbf{Teacher-assistant distillation} (Kimi K3 $\rightarrow$ Gleipnir 27B $\rightarrow$ 4B). The 27B shares the
+        4B's exact 248K-token vocabulary and model family, is now a stronger monitor than Kimi, and is cheap enough to
+        relabel freely. The unadapted 27B was a \emph{worse} teacher than Kimi ($-1.9$ ID points), so the gain must come
+        from the trained intermediate.
+  \item \textbf{Richer supervision channels.} (i)~Full-vocabulary KL at the decision position. A first probe diagnostic
+        finds the non-decision tail adds little over the binary margin (+0.04 ID / +0.7 OOD points), so this gets one
+        controlled arm rather than a sweep. (ii)~Soft auxiliary targets such as the \emph{index of the harmful action},
+        giving the student grounded evidence about \emph{where} the misbehaviour is, which also helps human auditors.
+  \item Recipe and checkpoint choices are frozen on the held-out ID set; OOD is read once, at the end.
+\end{itemize}
+\phase{Week 2: find the blind spots and evaluate on benchmarks the project has never touched.}
+\begin{itemize}
+  \item \textbf{Adversarial attacks on the final monitors.} Because the score is a single logit margin, white-box
+        attacks are straightforward: gradient-guided token optimisation (GCG-style) restricted to text an agent controls
+        (its messages, comments and tool arguments), with embedding-space attacks as an upper bound. Then test whether
+        the attacks transfer to black-box settings, to the 27B and to frontier monitors. Report attack success against
+        edit budget and categorise the blind spots found.
+  \item \textbf{Fresh benchmarks.} One-shot evaluation of the frozen release checkpoints on MonitoringBench and SleightBench
+        (unseen throughout the project), with metrics and baselines fixed before scoring.
+  \item \textbf{Release.} Model cards, weights, evaluation code and the technical report.
+\end{itemize}
+
+\section{Where Neel's input would help most}
+\begin{itemize}
+  \item \textbf{Attack threat model.} White-box gradient attacks are the easiest to run, but a scheming agent will not
+        have gradients. Which attacker (white-box, transfer, LLM-rewriter, latent) would give results the control
+        community finds convincing, and is a white-box blind-spot map still valuable as a worst-case bound?
+  \item \textbf{New benchmarks.} Access to or contacts for MonitoringBench and SleightBench, and suggestions for other
+        held-out monitoring evaluations that would make the release more credible.
+  \item \textbf{Interpretability and scope.} Which mechanistic analyses of the monitor (e.g.\ what drives its suspicion
+        score) would most strengthen the report, and what to cut if two weeks proves tight.
+\end{itemize}
+
+\section{The rest of the suite (described in the final report and release)}
+\begin{itemize}
+  \item \textbf{Inference optimisation.} Prefill-only B200 serving with FP4/MXFP8 kernels and prefix caching; the
+        quantised 27B reaches 2.08$\times$ throughput for $-0.17$ ID points, and a 1K--1M-token long-context sweep.
+  \item \textbf{Quantisation-aware distillation (QAD)} so that low-precision deployment copies keep BF16 ranking quality.
+  \item \textbf{Mechanistic ablations against injection-triggered suspicion.} Monitors flag harmless code once
+        monitor-directed injection or jailbreak text is present; we ablate the responsible directions in training and
+        serving to remove that shortcut without losing harmful-action recall.
+\end{itemize}
+
+\end{document}

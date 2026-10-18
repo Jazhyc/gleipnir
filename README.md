@@ -46,6 +46,8 @@ controls and the preserved training runtime retain their original environments.
 - `cluster/slurm/`: reusable Slurm entrypoints for Hábrók/RUG.
 - `scripts/`: operational and plotting entrypoints, including Lambda Cloud management.
 - `figures/`: tracked, reproducible figures and their regeneration commands.
+- `outputs/reports/<report_name>/`: self-contained LaTeX reports and proposals
+  with committed PDFs; see [the reports index](outputs/reports/README.md).
 - `outputs/presentations/<presentation_name>/`: self-contained LaTeX/Beamer
   presentations, with committed public PDFs, local slides, styling, assets and
   build instructions.
