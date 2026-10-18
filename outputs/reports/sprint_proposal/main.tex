@@ -53,16 +53,15 @@ Monitor & pAUROC@20 & \$/1K evals \\
 \midrule
 \textbf{Gleipnir 4B (ours)} & \textbf{0.782} & \textbf{0.26} \\
 Qwen3.5-4B SFT+RL$^{a}$ & 0.684 & 0.36 \\
-GPT-6 Luna (OpenAI)$^{b}$ & 0.837 & 0.84 \\
-\textbf{Gleipnir 27B (ours)}$^{c}$ & \textbf{0.935} & \textbf{1.85} \\
+GPT-6 Luna$^{b}$ & 0.837 & 0.84 \\
+\textbf{Gleipnir 27B (ours)} & \textbf{0.935} & \textbf{1.85} \\
 Qwen3.5-27B SFT+RL$^{a}$ & 0.831 & 2.78 \\
 Kimi K3 (our teacher) & 0.908 & 25.12 \\
 Claude Opus 4.6, prompted$^{a}$ & 0.942 & 94.79 \\
 \bottomrule
 \end{tabular}\\[2pt]
 {\scriptsize Mean pAUROC@20 over six OOD sources (6,395 trajectories); uncached list price.
-$^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.
-$^{c}$Full teacher prompt; 0.909 at \$1.69 with its compact training prompt.}
+$^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 \end{minipage}
 
 \section{Sprint plan \,(deliverable: Gleipnir v1 model release + technical report)}
