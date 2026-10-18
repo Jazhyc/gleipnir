@@ -90,14 +90,24 @@ Scores stable within each arm; the audit shows both routes ran (22,656 auto,
 which is not bitwise, is rejected for the 27B: its 4B gain came from CP setup
 overhead that is negligible next to the 27B's GDN work.
 
-## Result
+## Result and decision
 
-Recommended BF16 27B serving stack: **last-query final-layer attention + the
-lean GDN host path** (`Bf16LastQueryFastGdnWorker` with the BF16 last-query
-receipt): +2.28% c128 prompt-token throughput and −8.3% c1 median latency,
-scores within control repeat noise and no AUROC change. Arithmetic-preserving
-changes give only a few percent on the 27B because its serving time is
-dominated by BF16 GEMMs; the larger levers are the precision recipe (reserved
-for a QAD-adapted 27B) and the opt-in prefix-cached mode
-([decision](../../docs/decisions/prefix_cached_serving.md)). Adoption as the
-27B BF16 serving path is the user's decision.
+User decision, 2026-10-18: **regular evaluations of every model (4B and 27B)
+use stock vLLM BF16** (`Bf16Worker`). All serving optimizations belong to the
+optimized path, together with quantization, for QAD-adapted deployment
+candidates, so the final comparison is stock BF16 against fully optimized QAD.
+The arithmetic-preserving stack is therefore not a separate evaluation mode.
+
+What these measurements establish for a future optimized 27B path:
+- **Carry over:** last-query final-layer attention and the lean GDN host path
+  (together +2.28% c128 prompt throughput, −8.3% c1 latency at BF16, scores
+  within repeat noise). Their config-derived mixins are in
+  `src/gleipnir/serving/bf16_stack.py`; the BF16 last-query receipt covers the
+  27B attention shape.
+- **Leave out:** the GDN route gate (no gain on the 27B at any length).
+- The 4B optimized default keeps its own hash-bound workers; the generic
+  mixins are building blocks for the 27B path, not a change to the 4B default.
+
+Arithmetic-preserving changes give only a few percent on the 27B because BF16
+GEMMs dominate its serving time; the larger lever is the precision recipe,
+which waits for a QAD-adapted 27B.

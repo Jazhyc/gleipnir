@@ -4,7 +4,9 @@ Status: arithmetic-preserving part done 2026-10-18
 ([experiment](../../experiments/qwen38_27b_serving/README.md)): last-query
 attention + the lean GDN host path give +2.3% BF16 c128 prompt throughput and
 −8.3% c1 latency with no score change; the GDN route gate brings nothing on
-the 27B. The FP8/FP4 recipe (steps 3–4 below) waits for a QAD-adapted 27B.
+the 27B. Per the user (2026-10-18) regular evaluations stay on stock BF16, and
+these layers join the FP8/FP4 recipe (steps 3–4 below) in the optimized path
+for a QAD-adapted 27B.
 
 **Why.** Unadapted Qwen3.8-27B reaches 0.890 Mean-OOD pAUROC@20 at the
 shared 27B cost proxy ($1.85/1K), on the OOD frontier and 1.8 points below
