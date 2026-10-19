@@ -34,8 +34,8 @@ let far more researchers study and modify monitors, and fast monitoring enables 
 
 \begin{minipage}[t]{0.50\textwidth}
 \vspace{0pt}
-\textbf{Gleipnir} trains small open-weight monitors for scheming, sabotage, deception and other control-relevant
-behaviour in agent trajectories, using \emph{binary-logit distillation}: the teacher Kimi K3's probability on the
+\textbf{Gleipnir} trains small open-weight monitors that flag harmful or misaligned actions in agent trajectories,
+using \emph{binary-logit distillation}: the teacher Kimi K3's probability on the
 decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that emits that single token.
 On the out-of-distribution suite of Sinha et al., Gleipnir 4B is the cheapest point on
 the cost--performance frontier. Gleipnir 27B
