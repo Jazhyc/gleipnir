@@ -66,17 +66,17 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 \end{minipage}
 
 \section{Sprint plan \,(deliverable: Gleipnir v1 model release + technical report)}
-\phase{Week 1: Make the 4B much better, using Gleipnir 27B as an intermediate teacher.}
+\phase{Week 1: Improve on Gleipnir 4B's recipe of distilling Kimi K3's binary logits directly.}
 \begin{itemize}
   \item \textbf{Teacher-assistant distillation} (Kimi K3 $\rightarrow$ Gleipnir 27B $\rightarrow$ 4B). The 27B shares the
         4B's exact 248K-token vocabulary and model family, is now a stronger monitor than Kimi, and is cheap enough to
-        relabel freely. The unadapted 27B was a \emph{worse} teacher than Kimi ($-1.9$ ID points), so the gain must come
-        from the trained intermediate.
+        relabel freely, so it may transmit more useful information than Kimi's binary targets alone.
   \item \textbf{Richer supervision channels.} (i)~Full-vocabulary KL at the decision position. A first probe diagnostic
         finds the non-decision tail adds little over the binary margin (+0.04 ID / +0.7 OOD points), so this gets one
         controlled arm rather than a sweep. (ii)~Soft auxiliary targets such as the \emph{index of the harmful action},
         giving the student grounded evidence about \emph{where} the misbehaviour is, which also helps human auditors.
-  \item Recipe and checkpoint choices are frozen on the held-out ID set; OOD is read once, at the end.
+  \item Every arm is compared with the current Kimi K3 recipe. Recipe and checkpoint choices are frozen on the held-out
+        ID set; OOD is read once, at the end.
 \end{itemize}
 \phase{Week 2: Find the blind spots and evaluate on benchmarks the project has never touched.}
 \begin{itemize}
