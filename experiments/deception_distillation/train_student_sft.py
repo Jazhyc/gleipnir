@@ -4131,7 +4131,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         run_execution_audit(
             model=model,
             features=[dict(dataset[i]) for i in range(len(dataset))],
-            collator=CompletionOnlyCollator(tokenizer.pad_token_id),
+            collator=collator
+            if aux_loss_weight
+            else CompletionOnlyCollator(tokenizer.pad_token_id),
             loss_forward=audit_loss_forward,
             optimizer_factory=audit_optimizer_factory,
             scheduler_factory=audit_scheduler_factory,
@@ -4526,7 +4528,10 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         adaptive_gradient_canary = gradient_partition_canary(
             model,
             canary_features,
-            CompletionOnlyCollator(tokenizer.pad_token_id),
+            # With continuations, one-row packs are the singleton references.
+            collator
+            if aux_loss_weight
+            else CompletionOnlyCollator(tokenizer.pad_token_id),
             canary_loss_forward,
             adaptive_policy,
             candidate_collator=collate_packed_monitoring if packing_enabled else None,
@@ -4567,7 +4572,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                     result = gradient_partition_canary(
                         model,
                         canary_features,
-                        CompletionOnlyCollator(tokenizer.pad_token_id),
+                        collator
+                        if aux_loss_weight
+                        else CompletionOnlyCollator(tokenizer.pad_token_id),
                         canary_loss_forward,
                         probe_policy,
                     )
