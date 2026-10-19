@@ -10,10 +10,10 @@ seed-1 control's (`teacher-seed-sdpa-s1-01`). Two things change:
   KL at weight ``AUX_LOSS_WEIGHT`` alongside the unchanged soft BCE.
 
 The continuation is the teacher's own token sequence after
-``Prediction:{label}``: the forced ``\\nPosition:`` tokens (unsupervised), then
-the generated Position quote and Reason sentence. Position tokens are
-supervised only when the quote grounds (unique, agent-authored, label-
-consistent); Reason tokens always, when the output parses.
+``Prediction:{label}``: the forced ``\\nPosition:`` tokens (unsupervised: the
+teacher has no distribution there), then every generated token, all
+supervised (user decision: no grounding mask). Grounding is recorded per row
+as a diagnostic only.
 """
 
 from __future__ import annotations
@@ -78,10 +78,13 @@ FIELDS = {
 }
 
 
-def position_supervised(label: int, check: dict) -> bool:
+def position_grounded(label: int, check: dict) -> bool:
+    """Diagnostic: the quote points at the agent's own action (or none on 0)."""
     if label == 0:
         return check["status"] == "none"
-    return check["status"] == "unique" and check.get("speaker") == "agent"
+    return (
+        check["status"] in {"unique", "ambiguous"} and check.get("speaker") == "agent"
+    )
 
 
 def aux_fields(extracted: dict, trajectory: str, tokenizer) -> dict:
@@ -93,31 +96,26 @@ def aux_fields(extracted: dict, trajectory: str, tokenizer) -> dict:
         raise ValueError(f"empty teacher continuation: {extracted['id']}")
     target = parse_continuation(extracted["text"])
     check = grounding(trajectory, label, target)
-    position_ok = position_supervised(label, check)
-    reason_ok = target.reason is not None
-    reason_start = extracted["text"].find("\nReason:")
     top_ids, top_logprobs, mask = [], [], []
     # Positions 0..len(forced)-2 predict the rest of the forced prefix.
     for token in forced[1:]:
         top_ids.append([token] * TOP)
         top_logprobs.append([0.0] + [PAD_LOGPROB] * (TOP - 1))
         mask.append(False)
-    for index, step in enumerate(extracted["steps"]):
+    for step in extracted["steps"]:
         if len(step["top_ids"]) != TOP:
             raise ValueError(f"teacher top-k width drift: {extracted['id']}")
-        start = len(tokenizer.decode(generated[:index]))
-        in_position = reason_start < 0 or start < reason_start
         top_ids.append(step["top_ids"])
         top_logprobs.append(step["top_logprobs"])
-        mask.append(position_ok if in_position else reason_ok)
+        mask.append(True)
     return {
         "aux_input_ids": forced + generated[:-1],
         "aux_top_ids": top_ids,
         "aux_top_logprobs": top_logprobs,
         "aux_mask": mask,
         "aux_grounding": check,
-        "aux_position_supervised": position_ok,
-        "aux_reason_supervised": reason_ok,
+        "aux_position_grounded": position_grounded(label, check),
+        "aux_well_formed": target.well_formed,
         "aux_teacher_text": extracted["text"],
     }
 
@@ -260,8 +258,8 @@ def prepare(gpu_uuid: str) -> dict:
         "teacher_template_sha256": teacher_template.template_sha256,
         "rows": len(arm_rows),
         "aux_loss_weight": AUX_LOSS_WEIGHT,
-        "position_supervised_rows": sum(r["aux_position_supervised"] for r in arm_rows),
-        "reason_supervised_rows": sum(r["aux_reason_supervised"] for r in arm_rows),
+        "position_grounded_rows": sum(r["aux_position_grounded"] for r in arm_rows),
+        "well_formed_rows": sum(r["aux_well_formed"] for r in arm_rows),
         "continuation_tokens": len(supervised),
         "supervised_tokens": sum(supervised),
         "training_tokens": sum(totals),

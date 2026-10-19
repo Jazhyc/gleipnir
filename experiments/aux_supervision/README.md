@@ -41,9 +41,8 @@ That run copied long analyses as hard text. This arm differs in three ways:
 - **Grounding** (`targets.grounding`). A positive's quote is `unique` (exactly
   once), `ambiguous`, `absent` or `none_on_positive`, plus the speaker of the
   nearest preceding role tag (agent or other). A negative's is `none` or
-  `quote_on_negative`. Rows whose position is not unique, agent-authored and
-  label-consistent get their Position line masked in training; the Reason
-  is kept.
+  `quote_on_negative`. It gates the pilot. In training it is a diagnostic
+  only; see step 2.
 
 **Pilot gate (frozen before any outputs).** 200 rows, stratified by source
 and label (seed 0), each from the trained Gleipnir 27B (merged
@@ -109,10 +108,13 @@ four criteria. Gleipnir 27B is selected, per the user direction.
   decision token, the forced `\nPosition:` tokens and the teacher's
   generated tokens. A test checks that the forced prefix tokenizes the same
   in context as alone.
-  - Unsupervised: the forced tokens.
-  - Supervised: the Position tokens when the quote grounds (unique,
-    agent-authored, label-consistent), and the Reason tokens whenever the
-    output parses. On the pilot this was about 56 of 62 tokens per row.
+  - Unsupervised: the forced tokens, where the teacher has no distribution.
+  - Supervised: every generated token, Position and Reason, on every row.
+    User decision before training (2026-10-19): no grounding mask. Most
+    "ambiguous" quotes were correct pointers to an action the agent
+    repeated or that a tool echoed back, so masking would hide real
+    problematic actions. Grounding (`aux_position_grounded`) is recorded
+    per row as a diagnostic only.
 - **Loss.** Soft BCE on the decision is unchanged. Added to it is
   `0.1 × mean over rows of [mean over supervised positions of
   KL(teacher ‖ student)]`, over the teacher's top 64 ids plus one tail
