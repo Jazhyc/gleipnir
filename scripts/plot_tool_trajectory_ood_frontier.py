@@ -196,6 +196,7 @@ def _display_label(monitor: str) -> str:
         "Kimi K3 binary logits": "Kimi K3",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
+        "pplx-decider v1.2 native readout": "pplx-decider v1.2",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",

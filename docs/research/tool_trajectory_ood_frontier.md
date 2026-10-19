@@ -44,7 +44,8 @@ binary-logit boundary. GPT-6 Luna is one Standard API run at temperature 1,
 with reasoning disabled and actual terminal binary token logprobs. They are
 comparable in dataset, metric, and uncached cost convention, but do not reproduce
 the paper's trained interfaces. Jev 1.13 returns a native binary probability
-from raw trajectory state and a frozen Noul question. Its information and
+from raw trajectory state and a frozen Noul question; pplx-decider v1.2 is
+scored on the same request through its own readout head. Its information and
 instruction interface differs from the full teacher chat prompt; its point
 compares complete monitor configurations, not an isolated model substitution.
 
@@ -62,13 +63,14 @@ and at least as accurate, with one strict improvement.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.7823** | **yes** |
+| **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.7823** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
-| **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **yes** |
+| **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
@@ -115,6 +117,7 @@ and
 [`tool_trajectory_kimi_k26_ood_benchmark.md`](../findings/tool_trajectory_kimi_k26_ood_benchmark.md)
 and [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
 and [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
+and [`pplx_decider_ood_benchmark.md`](../findings/pplx_decider_ood_benchmark.md)
 audits, the completed
 [`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md)
 record, and the exact accounting in
@@ -125,7 +128,8 @@ record, and the exact accounting in
 The full-mixed Qwen3.5-4B adapter reaches `0.7823` Mean-OOD pAUROC@20 and
 `0.9086` Mean-OOD AUROC. Its compact student prompt averages 8,654.7113 input
 tokens, so the paper's `$0.03/M` input and `$0.15/M` output 4B proxy costs
-`$0.2598/1K`. It becomes the lowest-cost observed frontier point and dominates
+`$0.2598/1K`. It was the lowest-cost observed frontier point until
+pplx-decider v1.2 (below) dominated it, and it dominates
 the unadapted 4B full-prompt baseline: it is 8.6% cheaper and improves
 pAUROC@20 by `0.1649`.
 
@@ -134,8 +138,8 @@ The full-mixed Qwen3.5-9B adapter reaches `0.8212` Mean-OOD pAUROC@20 and
 output proxy, the same compact prompt costs `$0.8659/1K`. It improves
 pAUROC@20 by `0.0388` over mixed 4B at `3.33x` the hosted inference proxy.
 GPT-6 Luna dominates it at the dated API prices: `0.8365` at `$0.8355/1K`.
-With Jev's retained result included, the next observed frontier point above
-mixed 4B is Jev 1.13 at `0.8495` and `$0.3887/1K`, followed by Gleipnir 27B.
+pplx-decider v1.2 (`0.8956` at `$0.1763/1K`) now dominates both mixed 4B
+and Jev 1.13; the next frontier point above it is Gleipnir 27B.
 The 9B result remains a matched student comparison.
 
 Both adapters were trained for one epoch with rank-128 QLoRA using Kimi K3
@@ -440,8 +444,9 @@ AUROC. At the recorded `$0.042/M` input and `$0/M` output rates, its
 charge is zero. The native probability comes from raw trajectory state plus
 the frozen Noul question rather than full teacher chat-prompt logprobs.
 
-Jev inserts a frontier point between Gleipnir 4B and Kimi K2.6, dominating
-GPT-6 Luna, Gleipnir 9B, and Qwen27B on these dated point estimates. It retains
+Jev inserted a frontier point between Gleipnir 4B and Kimi K2.6, dominating
+GPT-6 Luna, Gleipnir 9B, and Qwen27B on these dated point estimates.
+pplx-decider v1.2 later dominated it on the same requests. It retains
 95 unique scores, so ties are much more frequent than for token-logprob
 monitors. SHADE-Arena remains weak at `0.4415` pAUROC. Two full responses
 report input usage slightly above the configured 32,000-token window; saved
@@ -449,6 +454,31 @@ records do not establish whether the provider internally truncated them.
 The [finding](../findings/tool_trajectory_jev_ood_benchmark.md) preserves this
 context discrepancy and the different native interface. Do not infer a
 prompt-matched model advantage or calibrated deployment performance.
+
+## pplx-decider v1.2 native-readout frontier movement
+
+At the user's request on 2026-10-19, Perplexity's open `pplx-decider-v1.2`
+(Qwen3.8-27B backbone, revision `cce0f3f8…`) was scored locally on all 6,395
+frozen IDs. It ran in its own `pplx_decider` runtime, with the exact Jev
+states and Noul question. The readout logit margin reaches `0.8955830038`
+Mean-OOD pAUROC@20 and `0.9576814579` Mean-OOD AUROC.
+
+Cost: 56,359,499 local joint-sequence input tokens at the OpenRouter list
+price of the `-20261016` endpoint (`$0.02/M` input, no output charge, no
+caching) give **`$0.176261/1K`**. The hosted endpoint's serving and billing
+are not observed.
+
+It becomes the lowest-cost frontier point. It dominates Gleipnir 4B
+(`0.7823` at `$0.2598/1K`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
+beats Jev on all six sources on identical requests. The next frontier point
+is Gleipnir 27B (`0.9352` at `$1.8476/1K`). SHADE-Arena stays weakest at
+`0.6054`.
+
+The 4B sibling `pplx-decider-flash-v1.2` scores `0.5350` at `$0.0881/1K`.
+At the user's request it is not added, because it falls below base
+Qwen3.5-4B (`0.6175`). See the
+[finding](../findings/pplx_decider_ood_benchmark.md) for identities,
+fast-path qualifications and the Flash teacher-specification arm.
 
 ## Kimi K2.6 Inceptron frontier movement
 
@@ -569,6 +599,9 @@ historical models, rather than the required three-paired-seed aggregate.
 - [`tool_trajectory_kimi_ood_benchmark.md`](../findings/tool_trajectory_kimi_ood_benchmark.md)
 - [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
 - [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
+- [`pplx_decider_ood_benchmark.md`](../findings/pplx_decider_ood_benchmark.md)
+- [pplx-decider-v1.2 model card](https://huggingface.co/perplexity-ai/pplx-decider-v1.2)
+- [OpenRouter pplx-decider-v1.2 listing](https://openrouter.ai/perplexity/pplx-decider-v1.2)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)
 - [`tool_trajectory_qwen_ordinal_ood_benchmark.md`](../findings/tool_trajectory_qwen_ordinal_ood_benchmark.md)
 - [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md)

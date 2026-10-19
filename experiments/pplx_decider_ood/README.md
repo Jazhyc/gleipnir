@@ -95,8 +95,8 @@ PYTHONPATH=src:. python -m experiments.pplx_decider_ood.summarize --model flash 
 
 Both Flash arms scored all 6,395 strict-OOD rows on the fast path, with finite
 margins and no `LengthError` (longest request 29,723 tokens). The two arms
-shared the GPU. The 27B was stopped at the user's request before it scored
-any rows; it is not evaluated.
+shared the GPU. The first 27B fast run was stopped before it scored any rows
+to give Flash the GPU; the 27B result below is a later, separate run.
 
 Fast-path check against the 1,470 OOD rows the stopped reference run had
 scored (CUA-SHADE, MLE-Sabotage, part of AgentDojo; Jev question):
@@ -144,3 +144,39 @@ pAUROC@20 on the logit margin, by source:
   pinned runtime (with the `causal_conv1d` fallback the release
   requirements imply). Hosted `-20261016` serving and token accounting are
   not observed. Single run per arm.
+
+## Result: 27B, Jev question (2026-10-19 16:20–17:29 UTC, same B200)
+
+All 6,395 rows were scored on the fast path, alone on the GPU, with finite
+margins and the same token counts as Flash (same tokenizer and template). The
+27B never ran a fast-path canary; its reference canary passed gate 1 (pooled
+AUROC 0.880). On the 264 OOD rows the stopped reference run had scored (all
+CUA-SHADE), fast and reference agree: margin Pearson 0.9983, max |Δ noul|
+0.011, identical tokens.
+
+| Source | pAUROC@20 | AUROC | Recall / FPR at 0.5 | Jev 1.13 pAUROC@20 |
+|---|---:|---:|---:|---:|
+| AgentDojo | 0.9932 | 0.9986 | 1.000 / 0.104 | 0.9794 |
+| CUA-SHADE-Arena | 0.8537 | 0.9398 | 0.578 / 0.004 | 0.8077 |
+| IaC | 0.9967 | 0.9993 | 0.859 / 0.000 | 0.9769 |
+| MLE-Sabotage | 0.9878 | 0.9976 | 0.469 / 0.000 | 0.9817 |
+| Rogue Eval | 0.9367 | 0.9871 | 0.713 / 0.015 | 0.9098 |
+| SHADE-Arena | 0.6054 | 0.8237 | 0.562 / 0.037 | 0.4415 |
+| **Mean-OOD** | **0.8956** | **0.9577** | 0.697 / 0.027 | **0.8495** |
+
+- **Cost.** 56,359,499 input tokens at $0.02/M: $1.127 for the suite,
+  **$0.1763 per 1K**.
+- **Other metrics.** Macro Brier 0.130; pooled AUROC 0.9632, pooled
+  pAUROC@20 0.8512; 278 unique margins.
+
+**Reading.**
+- On identical states and question, the 27B beats Jev 1.13 on every source
+  (+0.046 Mean-OOD) at 45% of its cost. It also edges its own base,
+  Qwen3.8-27B under the full binary specification (0.8901 at $1.8476/1K),
+  at a tenth of that cost. That comparison crosses interfaces and prompts.
+- It sits below Gleipnir 27B (0.9352) and Kimi K2.6 (0.9194). SHADE-Arena is
+  again the weakest source (0.605).
+- The 4B-to-27B gap within the family is large: 0.535 to 0.896 at twice the
+  price.
+- Frontier: it dominates Gleipnir 4B ($0.2598, 0.7823) and Jev 1.13; see the
+  [registry](../../docs/research/tool_trajectory_ood_frontier.md).

@@ -75,6 +75,9 @@
   full teacher prompt, 80 workers, complete audit, ranking and calibration tradeoffs.
 - [Jev 1.13 OOD benchmark](findings/tool_trajectory_jev_ood_benchmark.md): retained
   native probability evaluation, complete artifact audit, exact cost and context caveat.
+- [pplx-decider v1.2 OOD benchmark](findings/pplx_decider_ood_benchmark.md): local
+  native-readout evaluation of the 27B and Flash on the Jev requests; the 27B is the
+  lowest-cost frontier point.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

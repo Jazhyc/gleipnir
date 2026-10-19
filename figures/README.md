@@ -134,6 +134,13 @@ Gleipnir 9B. All comparison points remain visible. The native state/question
 interface and two provider-usage/context discrepancies are documented in
 `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
 
+pplx-decider v1.2 (27B) is included at `$0.1763/1K` and `0.8956` Mean-OOD
+pAUROC@20. It was scored locally on the Jev requests and priced at its OpenRouter
+list rate. It is the lowest-cost frontier point and dominates Gleipnir 4B and
+Jev 1.13; both remain visible. Its Flash sibling (`0.5350`) falls below the
+plotted range and is not in the registry; see
+`docs/findings/pplx_decider_ood_benchmark.md`.
+
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:
 
