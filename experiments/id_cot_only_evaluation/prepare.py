@@ -57,12 +57,8 @@ def strip_cot(trajectory: str, raw: dict) -> tuple[str, int, int]:
     return text, calls, removed
 
 
-def main() -> None:
-    if (ROOT / "status.json").exists():
-        raise FileExistsError("Existing run must not be reset")
-    config = json.loads(CONFIG.read_text())
-    source = Path("data/tool_trajectory_monitoring/distillation_id/prompts.jsonl")
-    assert sha256_file(source) == config["scope"]["source_input_sha256"]
+def materialize(source: Path) -> tuple[list[dict], list[dict], str]:
+    """Return cleaned rows, the per-row removal audit and the student template hash."""
     raw = source_records()
     template = load_prompt_set().student
     output, audit = [], []
@@ -100,16 +96,36 @@ def main() -> None:
             }
         )
     assert len(output) == len({r["id"] for r in output}) == 3012
-    atomic_write_jsonl(Path(config["scope"]["input"]), output)
-    config["scope"]["input_sha256"] = sha256_file(Path(config["scope"]["input"]))
+    return output, audit, template.template_sha256
+
+
+def write_evaluation(
+    source: Path, output_path: Path, manifest_path: Path
+) -> list[dict]:
+    """Write the cleaned rows and their manifest; return the removal audit."""
+    output, audit, template_sha256 = materialize(source)
+    atomic_write_jsonl(output_path, output)
     manifest = {
-        "output_sha256": config["scope"]["input_sha256"],
-        "source_sha256": config["scope"]["source_input_sha256"],
-        "student_template_sha256": template.template_sha256,
+        "output_sha256": sha256_file(output_path),
+        "source_sha256": sha256_file(source),
+        "student_template_sha256": template_sha256,
         "transformation": "source-typed-reasoning-and-think-only-v1",
         "rows": len(output),
     }
-    atomic_write_json(Path(config["scope"]["manifest"]), manifest)
+    atomic_write_json(manifest_path, manifest)
+    return audit
+
+
+def main() -> None:
+    if (ROOT / "status.json").exists():
+        raise FileExistsError("Existing run must not be reset")
+    config = json.loads(CONFIG.read_text())
+    source = Path("data/tool_trajectory_monitoring/distillation_id/prompts.jsonl")
+    assert sha256_file(source) == config["scope"]["source_input_sha256"]
+    audit = write_evaluation(
+        source, Path(config["scope"]["input"]), Path(config["scope"]["manifest"])
+    )
+    config["scope"]["input_sha256"] = sha256_file(Path(config["scope"]["input"]))
     config["scope"]["manifest_sha256"] = sha256_file(Path(config["scope"]["manifest"]))
     atomic_write_json(CONFIG, config)
     ROOT.mkdir(parents=True, exist_ok=True)

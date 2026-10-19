@@ -21,6 +21,24 @@ scheming, and other control-relevant problematic behavior. They are not
 standalone models or production safety systems; see the model cards for the
 frozen prompt, direct binary-logit interface, results, and limitations.
 
+## Evaluation data
+
+- **ID and OOD.** The upstream datasets declare no license, so we don't
+  redistribute them. To rebuild the frozen sets locally and check them against
+  their pinned SHA256s, run
+  `python scripts/build_eval_datasets.py {id,ood,all}`. This needs an
+  `HF_TOKEN`, Hugging Face access to the Qwen3-8B and Kimi-K3 tokenizers and
+  about 5 minutes once the tokenizers are cached. It makes no paid API calls. `--verify-only` checks existing
+  outputs without rebuilding.
+- **APPS.** The injection benchmark and our honest-code controls are in the
+  private dataset
+  [`Jazhyc/gleipnir-apps-injection-evals`](https://huggingface.co/datasets/Jazhyc/gleipnir-apps-injection-evals).
+  The upstream author permitted us to share it. Re-stage it with
+  `python scripts/release_hf_apps_dataset.py prepare`, then push with
+  `python scripts/release_hf_apps_dataset.py upload --namespace Jazhyc`.
+  Uploads are private unless you pass `--public`. The card is in
+  `data_releases/hf/`.
+
 ## Quick start
 
 ```bash
