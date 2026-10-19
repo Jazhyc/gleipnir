@@ -80,11 +80,9 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 \end{itemize}
 \phase{Week 2: find the blind spots and evaluate on benchmarks the project has never touched.}
 \begin{itemize}
-  \item \textbf{Adversarial attacks on the final monitors.} Because the score is a single logit margin, white-box
-        attacks are straightforward: gradient-guided token optimisation (GCG-style) restricted to text an agent controls
-        (its messages, comments and tool arguments), with embedding-space attacks as an upper bound. Then test whether
-        the attacks transfer to black-box settings, to the 27B and to frontier monitors. Report attack success against
-        edit budget and categorise the blind spots found.
+  \item \textbf{Adversarial attacks on the final monitors.} Two settings: \emph{white-box}, since the released
+        weights are public, and \emph{black-box}, with query access only, as for a similar monitor served behind an API.
+        Measure how easily harmful trajectories can be made to pass, and categorise the blind spots found.
   \item \textbf{Fresh benchmarks.} One-shot evaluation of the frozen release checkpoints on MonitoringBench and SleightBench
         (unseen throughout the project), with metrics fixed beforehand.
   \item \textbf{Release.} Model cards, weights, evaluation code and the technical report.
@@ -92,9 +90,8 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 
 \section{Where Neel's input would help most}
 \begin{itemize}
-  \item \textbf{Attack threat model.} The released monitors are open-weight, so anyone can run white-box
-        attacks against them. Which attacks (gradient-based token optimisation, LLM rewriters, latent-space) would best
-        expose their blind spots and give results the control community finds convincing?
+  \item \textbf{Attack methods.} Which white-box and black-box attacks would best expose the monitors' blind
+        spots and give results the control community finds convincing?
   \item \textbf{Convincing benchmarks.} Beyond MonitoringBench and SleightBench, which benchmarks would convince the community?
   \item \textbf{Comparison with white-box probes.} Our benchmarks use closed-model trajectories, and generating open-model
         data ourselves is too slow. Which AI control papers report probe scores on open-model agent trajectories we can also score?
