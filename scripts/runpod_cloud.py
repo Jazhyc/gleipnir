@@ -19,22 +19,25 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[1]
 REMOTE_ROOT = "/workspace/gleipnir"
+# Local-state names carry no trailing slash so they also match files and
+# symlinks: a git worktree's .git is a file, and a worktree may link .venv or
+# .cache to the main checkout. A synced link would replace the Pod's own.
 EXCLUDES = (
-    ".git/",
-    ".runpod/",
-    ".lambda/",
+    ".git",
+    ".runpod",
+    ".lambda",
     ".env",
     ".env.*",
-    ".venv/",
-    ".cache/",
+    ".venv",
+    ".cache",
     ".cache-runtime.env",
-    ".uv-cache/",
+    ".uv-cache",
     "__pycache__/",
     ".pytest_cache/",
     ".ruff_cache/",
-    ".codex/",
-    ".agents/",
-    ".aws/",
+    ".codex",
+    ".agents",
+    ".aws",
     "/data/",
     "/results/",
     "/logs/",
