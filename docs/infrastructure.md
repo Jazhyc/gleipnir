@@ -210,6 +210,25 @@ restores the runtime with the 2026-10-18 container caches and downloads the
 27B base to `/root/hf-27b` after `.venv` exists (about 3 minutes);
 `experiments/qwen38_27b_serving/remerge.py` rebuilds the merged checkpoint.
 
+On 2026-10-19 the user provided EU-RO-1 B200 Pod `hhja1i6l6de288`
+($7.99/hour, snapshot `.runpod/pplx-decider.json`) on machine
+`2mj1yzztlz17` (`GPU-58276fb0…`), same volume. At the user's request:
+- the container disk was resized from 50 to 300 GB (SSH port 24334);
+- it ran the [pplx-decider benchmark](findings/pplx_decider_ood_benchmark.md)
+  and the [auxiliary-target](../experiments/aux_supervision/README.md)
+  extraction.
+
+The template leaves `sshd` stopped after every restart, so the key and
+`sshd` are reinstalled through the proxy each time.
+
+At about 20:10 UTC the host restarted the container on its own. It came back
+with driver 595.91.07 (previously 580.126.20), and the GPU fabric stayed
+"In Progress". CUDA then failed with error 802, "system not yet
+initialized", and Runpod's UI flagged the GPU. At the user's request the Pod
+was terminated at about 20:40 UTC (delete 204, lookup 404). Before that, the
+failed training receipts were preserved on the volume and the logs pulled.
+No B200 was available in EU-RO-1 for an immediate replacement.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
