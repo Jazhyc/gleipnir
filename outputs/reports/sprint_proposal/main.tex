@@ -82,7 +82,9 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 \begin{itemize}
   \item \textbf{Adversarial attacks on the final monitors.} Two settings: \emph{white-box}, since the released
         weights are public, and \emph{black-box}, with query access only, as for a similar monitor served behind an API.
-        Measure how easily harmful trajectories can be made to pass, and categorise the blind spots found.
+        The single-score interface changes the attack surface: there is no output text to steer, only one probability to
+        lower, which a black-box attacker can query directly. Measure how easily harmful trajectories can be made to pass,
+        and categorise the blind spots found.
   \item \textbf{Fresh benchmarks.} One-shot evaluation of the frozen release checkpoints on MonitoringBench and SleightBench
         (unseen throughout the project), with metrics fixed beforehand.
   \item \textbf{Release.} Model cards, weights, evaluation code and the technical report.
