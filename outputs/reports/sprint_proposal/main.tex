@@ -92,9 +92,9 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 
 \section{Where Neel's input would help most}
 \begin{itemize}
-  \item \textbf{Attack threat model.} White-box gradient attacks are the easiest to run, but a scheming agent will not
-        have gradients. Which attacker (white-box, transfer, LLM-rewriter, latent) would give results the control
-        community finds convincing, and is a white-box blind-spot map still valuable as a worst-case bound?
+  \item \textbf{Attack threat model.} The released monitors are open-weight, so anyone can run white-box
+        attacks against them. Which attacks (gradient-based token optimisation, LLM rewriters, latent-space) would best
+        expose their blind spots and give results the control community finds convincing?
   \item \textbf{Convincing benchmarks.} Beyond MonitoringBench and SleightBench, which benchmarks would convince the community?
   \item \textbf{Comparison with white-box probes.} Our benchmarks use closed-model trajectories, and generating open-model
         data ourselves is too slow. Which AI control papers report probe scores on open-model agent trajectories we can also score?
