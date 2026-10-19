@@ -26,9 +26,9 @@
 
 \vspace{-4pt}
 \section{The problem: monitoring every agent action with a minimal safety tax}
-Monitors are now built into widely used agent harnesses, where they score each action \emph{before} it executes. This
-puts the monitor on the critical path of every agent step for every user: its latency adds to each action and its
-compute scales with the deployment. Frontier models monitor well but are too slow and expensive for this, imposing a
+Monitors are now built into widely used agent harnesses, where they score agent actions \emph{before} they execute. This
+puts the monitor on the critical path of each action it checks: its latency adds to that action and its compute
+scales with the deployment. Frontier models monitor well but are too slow and expensive for this, imposing a
 large \emph{safety tax}. Small, locally hosted monitors with frontier-level quality remove that trade-off. They also
 let far more researchers study and modify monitors, and fast monitoring enables new control protocols.
 
