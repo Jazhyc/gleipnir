@@ -229,6 +229,20 @@ was terminated at about 20:40 UTC (delete 204, lookup 404). Before that, the
 failed training receipts were preserved on the volume and the logs pulled.
 No B200 was available in EU-RO-1 for an immediate replacement.
 
+Later on 2026-10-19 the user provided US-CA-2 B200 Pod `4kdptgfodt6yz2`
+($7.99/hour, snapshot `.runpod/aux-ca2.json`, machine `o66sz0zhpcp0`,
+`GPU-84d18db5…`, driver 595.91.07, fabric Completed). It has no network volume
+(a mount cannot be added after creation), so the EU volume was copied to its
+300 GB container disk at `/workspace`. That copy is lost on termination: pull
+results locally as they land. At the user's request the EU volume was read
+through a CPU Pod, `01yzkkdopzkfv1` (cpu3c, $0.24/hour, `.runpod/eu-transfer.json`),
+because EU-RO-1 had no GPU stock. Three duplicate CPU Pods created by a launch
+loop error were terminated within a minute (delete 204, lookup 404). The copy
+streams tar or rsync over SSH from Pod to Pod. Each EU-to-US stream is capped
+at roughly 12 MB/s, so total rate scales with the number of streams: 6 tar streams
+gave about 75 MB/s, and 12 rsync workers (one per directory) about 140 MB/s. It skipped the old
+`gleipnir-eu-20261004` checkout and `.cache/{uv,pplx_decider,qwen27b_generations_ood}`.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
