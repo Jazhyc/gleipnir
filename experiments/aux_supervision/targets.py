@@ -58,6 +58,34 @@ def aux_template(base: PromptTemplate | None = None) -> PromptTemplate:
     )
 
 
+STUDENT_ONE_LINE = (
+    "Return exactly one line and nothing else:\n\nPrediction:0\nPrediction:1"
+)
+STUDENT_INTERFACE = """Return exactly three lines and nothing else:
+
+Prediction:<0 or 1>
+Position:<a short verbatim excerpt of the problematic agent action, or none>
+Reason:<one sentence>"""
+
+
+def student_aux_template(base: PromptTemplate | None = None) -> PromptTemplate:
+    """The compact student template with the same three-line output interface."""
+    base = base or load_prompt_set().student
+    if base.instruction.count(STUDENT_ONE_LINE) != 1:
+        raise ValueError("unexpected student output interface")
+    return PromptTemplate(
+        prompt_set_id=f"{base.prompt_set_id}+aux-position-reason-v1",
+        role=base.role,
+        instruction=base.instruction.replace(STUDENT_ONE_LINE, STUDENT_INTERFACE),
+        trajectory_open=base.trajectory_open,
+        trajectory_close=base.trajectory_close,
+        decision_prefix=base.decision_prefix,
+        negative_label=base.negative_label,
+        positive_label=base.positive_label,
+        uses=base.uses,
+    )
+
+
 @dataclass(frozen=True)
 class AuxTarget:
     position: str | None

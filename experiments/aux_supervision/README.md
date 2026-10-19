@@ -95,17 +95,48 @@ four criteria. Gleipnir 27B is selected, per the user direction.
   fixed before this table (Position now runs up to the `Reason:` line).
 - **Cost.** 58.6 generated tokens per row on average.
 
-## Training and evaluation (step 2, designed after the pilot)
+## Training and evaluation (step 2, frozen before training)
 
-- **Loss.** A top-64 KL (with a tail bucket) over the auxiliary tokens is
-  added to the packed BF16/SDPA trainer, which supports only binary losses
-  today. It has a frozen weight and is normalized per row. Soft BCE on the
-  decision is unchanged.
-- **Student prompt.** The compact student prompt gains the same three-line
-  output description, used in both training and inference. Because this
-  also changes the decision context, a prompt-only control (new prompt, no
-  auxiliary loss) may be needed to attribute any gain.
-- **Selection.** Seed 1, identical rows and exposures to the control, judged
-  by the frozen ID advancement rule (`distillation_temperature/compare.py`:
-  macro gain ≥ 1.0 point, no source loss > 1.0, Brier rise ≤ 0.005) against
-  0.8978. Advancing means more seeds, never promotion. OOD is not used.
+- **Rows and decision targets.** The seed-1 control's 7,836 rows in its
+  order, with its Kimi K3 soft targets byte-identical. Same LR, schedule,
+  initialization, logical batch 32 and one epoch, on the untrimmed
+  `qwen35_4b_b200_packed_sdpa` profile.
+- **Student prompt.** The compact student prompt with only its output section
+  replaced by the three-line interface (`targets.student_aux_template`,
+  SHA-256 `be772c6d…`). It is used in training and in ID scoring. ID uses
+  the canonical CoT-removed trajectories rendered with it.
+- **Continuation** (`prepare.aux_fields`). After `Prediction:` come the
+  decision token, the forced `\nPosition:` tokens and the teacher's
+  generated tokens. A test checks that the forced prefix tokenizes the same
+  in context as alone.
+  - Unsupervised: the forced tokens.
+  - Supervised: the Position tokens when the quote grounds (unique,
+    agent-authored, label-consistent), and the Reason tokens whenever the
+    output parses. On the pilot this was about 56 of 62 tokens per row.
+- **Loss.** Soft BCE on the decision is unchanged. Added to it is
+  `0.1 × mean over rows of [mean over supervised positions of
+  KL(teacher ‖ student)]`, over the teacher's top 64 ids plus one tail
+  bucket, in FP32 (`gleipnir.training.aux_distillation.topk_tail_kl`).
+  - The decision and continuation logits come from one LM-head pass over
+    the selected positions only (`forward_packed_monitoring_logits_with_aux`).
+  - Tests confirm that a continuation leaves the decision logit unchanged.
+  - With the weight at 0, the trainer runs the old code path.
+  - The weight of 0.1 was fixed before training, with no sweep.
+- **Startup.** The objective family is new, so every startup gate runs
+  (`full_startup_validation`; training guide). Startup canaries use one-row
+  packs as their singleton references, and the truncation helper keeps each
+  continuation whole.
+- **Selection.** The frozen ID advancement rule
+  (`distillation_temperature/compare.py`: macro gain ≥ 1.0 point, no source
+  loss > 1.0, Brier rise ≤ 0.005) against the control's 0.8978. Advancing
+  means more seeds, never promotion. OOD is not used.
+- **Attribution limit.** The arm changes both the prompt and the loss. If it
+  advances, a prompt-only control (new prompt, weight 0) separates the two.
+
+```bash
+PYTHONPATH=src:. .venv-vllm031/bin/python -m experiments.aux_supervision.extract --model gleipnir --name full01
+PYTHONPATH=src:. python -m experiments.aux_supervision.prepare --gpu-uuid UUID
+PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --config data/aux-position-reason-s1-01/config.yaml
+PYTHONPATH=src:. <training-python> -m experiments.aux_supervision.run
+python -m experiments.aux_supervision.compare
+```

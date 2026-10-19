@@ -102,6 +102,11 @@ def validate_packed_training_config(student: Mapping[str, Any]) -> bool:
         or training.get("decision_head_mode", "token_logits") != "token_logits"
     ):
         raise ValueError("ordinary packing supports per-example binary LM-head losses")
+    if training.get("aux_loss_weight", 0) and (
+        training.get("last_layer_trim", False) or not training.get("soft_loss_weight")
+    ):
+        # The trim computes the last layer only at decision positions.
+        raise ValueError("auxiliary continuation KL needs untrimmed soft packing")
     validate_compile_cache_limit(training.get("packing_compile_cache_limit", 64))
     tolerance = training.get("packing_learning_gradient_tolerance")
     validate_learning_tolerance(tolerance)

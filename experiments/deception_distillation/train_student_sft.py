@@ -1821,6 +1821,38 @@ def select_rating_uncertainty_with_certain_anchors(
     ]
 
 
+def aux_continuation_feature(record: dict[str, Any], tokenizer: Any) -> dict[str, Any]:
+    """Validate a row's auxiliary continuation and its per-position targets.
+
+    ``aux_input_ids`` are fed after the decision prefix, starting with the
+    decision token; position t's logits are distilled toward the teacher's
+    top-k at ``aux_top_ids[t]``. The decision itself stays under soft BCE.
+    """
+    inputs = [int(token) for token in record["aux_input_ids"]]
+    top_ids = record["aux_top_ids"]
+    top_logprobs = record["aux_top_logprobs"]
+    mask = [bool(value) for value in record["aux_mask"]]
+    length = len(inputs)
+    if not length or not len(top_ids) == len(top_logprobs) == len(mask) == length:
+        raise ValueError(f"auxiliary targets misaligned for index={record['index']}")
+    if any(
+        len(ids) != len(lps) for ids, lps in zip(top_ids, top_logprobs, strict=True)
+    ):
+        raise ValueError(f"auxiliary top-k misaligned for index={record['index']}")
+    label_token = tokenizer.encode(str(int(record["label"])), add_special_tokens=False)
+    if inputs[:1] != label_token:
+        raise ValueError(
+            "auxiliary continuation must start with the label for "
+            f"index={record['index']}"
+        )
+    return {
+        "aux_length": length,
+        "aux_top_ids": [[int(i) for i in ids] for ids in top_ids],
+        "aux_top_logprobs": [[float(v) for v in lps] for lps in top_logprobs],
+        "aux_mask": mask,
+    }
+
+
 def tokenize_record(
     record: dict[str, Any],
     tokenizer: Any,
@@ -1840,6 +1872,7 @@ def tokenize_record(
     include_prefix_target: bool = False,
     mil_max_instances: int = 8,
     per_record_binary_task: bool = False,
+    include_aux_target: bool = False,
 ) -> dict[str, Any]:
     effective_completion_max_length = (
         max_length if completion_max_length is None else completion_max_length
@@ -1937,6 +1970,15 @@ def tokenize_record(
                 maximum_instances=mil_max_instances,
             )
             tokenized["mil_positions"] = mil_positions
+        elif include_aux_target:
+            direct_ids = tokenizer.encode(serialized_direct, add_special_tokens=False)
+            tokenized.update(aux_continuation_feature(record, tokenizer))
+            if len(direct_ids) + tokenized["aux_length"] > max_length:
+                raise ValueError(
+                    "auxiliary continuation exceeds student.max_length for "
+                    f"index={record['index']}"
+                )
+            direct_ids = direct_ids + list(record["aux_input_ids"])
         else:
             direct_ids = tokenizer.encode(
                 serialized_direct,
@@ -2358,6 +2400,26 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         raise ValueError(
             "prefix supervision requires binary soft token-logit loss alone"
         )
+    aux_loss_weight = float(
+        OmegaConf.select(cfg, "student.training.aux_loss_weight", default=0.0)
+    )
+    if not np.isfinite(aux_loss_weight) or aux_loss_weight < 0:
+        raise ValueError("auxiliary loss weight must be finite and nonnegative")
+    if aux_loss_weight and (
+        not soft_loss_weight
+        or completion_loss_weight
+        or pairwise_loss_weight
+        or mil_loss_weight
+        or prefix_loss_weight
+        or ordinal_soft_loss_weight
+        or per_record_binary_task
+        or decision_head_mode != "token_logits"
+        or not OmegaConf.select(cfg, "student.training.sequence_packing", default=False)
+        or OmegaConf.select(cfg, "student.training.last_layer_trim", default=False)
+    ):
+        raise ValueError(
+            "auxiliary continuation KL requires packed soft token-logit loss alone"
+        )
 
     adaptive_cfg = OmegaConf.select(cfg, "student.training.adaptive_microbatching")
     adaptive_enabled = bool(adaptive_cfg and adaptive_cfg.enabled)
@@ -2479,6 +2541,14 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             prefix_attention_mask = inputs.pop("prefix_attention_mask", None)
             prefix_soft_targets = inputs.pop("prefix_soft_targets", None)
             prefix_parent_indices = inputs.pop("prefix_parent_indices", None)
+            aux_lengths = inputs.pop("aux_lengths", None)
+            aux_top_ids = inputs.pop("aux_top_ids", None)
+            aux_top_logprobs = inputs.pop("aux_top_logprobs", None)
+            aux_mask = inputs.pop("aux_mask", None)
+            inputs.pop("aux_targets_host_valid", None)
+            if aux_loss_weight and (aux_lengths is None or packed_lengths is None):
+                raise ValueError("auxiliary targets require packed continuation fields")
+            aux_logits = None
             outputs = None
             loss = None
             if prefix_loss_weight:
@@ -2607,7 +2677,20 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                             )
                         )
                     else:
-                        if packed_lengths is not None:
+                        if packed_lengths is not None and aux_loss_weight:
+                            from gleipnir.packed_sequences import (
+                                forward_packed_monitoring_logits_with_aux,
+                            )
+
+                            next_logits, aux_logits, direct_outputs = (
+                                forward_packed_monitoring_logits_with_aux(
+                                    model,
+                                    direct_input_ids,
+                                    tuple(packed_lengths),
+                                    tuple(aux_lengths),
+                                )
+                            )
+                        elif packed_lengths is not None:
                             from gleipnir.packed_sequences import (
                                 forward_packed_monitoring_logits,
                             )
@@ -2675,6 +2758,18 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                         else soft_losses.mean()
                     )
                     loss = loss + soft_loss_weight * soft_loss
+                if aux_loss_weight:
+                    from gleipnir.training.aux_distillation import topk_tail_kl
+
+                    device = aux_logits.device
+                    aux_rows = topk_tail_kl(
+                        aux_logits,
+                        aux_top_ids.to(device, non_blocking=True),
+                        aux_top_logprobs.to(device, non_blocking=True),
+                        aux_mask.to(device, non_blocking=True),
+                        tuple(aux_lengths),
+                    )
+                    loss = loss + aux_loss_weight * aux_rows.mean()
                 if mil_loss_weight:
                     if soft_targets is None or mil_logits is None:
                         raise ValueError(
@@ -3018,6 +3113,7 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             include_prefix_target=bool(prefix_loss_weight),
             mil_max_instances=mil_max_instances,
             per_record_binary_task=per_record_binary_task,
+            include_aux_target=bool(aux_loss_weight),
         )
         for record in records
     ]
@@ -3821,6 +3917,12 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
             {},
         )
     collator = CompletionOnlyCollator(tokenizer.pad_token_id)
+    if aux_loss_weight:
+        from gleipnir.packed_sequences import collate_packed_monitoring
+
+        # Continuation targets exist only in packed batches; a one-row pack is
+        # the singleton reference for every startup canary.
+        collator = collate_packed_monitoring
     optimizer_step_timer = OptimizerStepTimer()
     trainer = trainer_cls(
         model=model,
@@ -4154,8 +4256,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         else:
             probe_features = []
             for i, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
-                feature = dict(dataset[i % len(dataset)])
-                feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
+                from gleipnir.packed_sequences import truncate_direct_prefix
+
+                feature = truncate_direct_prefix(dataset[i % len(dataset)], length)
                 probe_features.append(feature)
 
             def kernel_loss_forward(batch):
@@ -4384,8 +4487,9 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
     ):
         canary_features = []
         for index, length in enumerate([2048, 2048, 2048, 2048, 1024, 512, 256, 128]):
-            feature = dict(dataset[index % len(dataset)])
-            feature["direct_input_ids"] = feature["direct_input_ids"][-length:]
+            from gleipnir.packed_sequences import truncate_direct_prefix
+
+            feature = truncate_direct_prefix(dataset[index % len(dataset)], length)
             canary_features.append(feature)
         canary_forward_calls = []
 
@@ -4550,7 +4654,8 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
         from gleipnir.training.concept_ablation import install
 
         concept_ablation_metadata, concept_ablation_handles = install(
-            model, Path(concept_path),
+            model,
+            Path(concept_path),
             OmegaConf.select(cfg, "student.training.concept_ablation_sha256"),
         )
         print(f"concept_ablation={concept_ablation_metadata}", flush=True)
@@ -4755,6 +4860,14 @@ def train(cfg: DictConfig, packing_metadata: dict[str, Any]) -> None:
                             else None
                         ),
                         "completion_weight": completion_loss_weight,
+                        **(
+                            {
+                                "aux_loss_weight": aux_loss_weight,
+                                "aux_objective": "top_k_tail_kl_v1",
+                            }
+                            if aux_loss_weight
+                            else {}
+                        ),
                         "accumulation_policy": (
                             "sum_per_example_over_logical_batch_v1"
                             if adaptive_enabled

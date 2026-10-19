@@ -15,6 +15,7 @@ from gleipnir.packed_sequences import (
     forward_packed_monitoring_logits,
     installed_segmented_sdpa,
     packed_partition,
+    truncate_direct_prefix,
 )
 from gleipnir.precision_training_screen import run_precision_training_screen
 from gleipnir.training_execution_audit import tensor_digest, use_forwards
@@ -139,9 +140,10 @@ def packing_isolation_canary(
     was_training = model.training
     try:
         for lengths in [(1, 3), (63, 65), (127, 129)]:
-            items = [dict(features[i]) for i in range(2)]
-            for item, length in zip(items, lengths, strict=True):
-                item["direct_input_ids"] = item["direct_input_ids"][-length:]
+            items = [
+                truncate_direct_prefix(features[i], length)
+                for i, length in zip(range(2), lengths, strict=True)
+            ]
             lengths = tuple(len(f["direct_input_ids"]) for f in items)
             ids = collate_packed_monitoring(items)["direct_input_ids"].to(device)
             altered = ids.clone()
