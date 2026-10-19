@@ -236,7 +236,7 @@ Later on 2026-10-19 the user provided US-CA-2 B200 Pod `4kdptgfodt6yz2`
 300 GB container disk at `/workspace`. That copy is lost on termination: pull
 results locally as they land. At the user's request the EU volume was read
 through a CPU Pod, `01yzkkdopzkfv1` (cpu3c, $0.24/hour, `.runpod/eu-transfer.json`),
-because EU-RO-1 had no GPU stock. Three duplicate CPU Pods created by a launch
+because EU-RO-1 had no GPU stock. At the user's request it was terminated after the copy was verified (delete 204, lookup 404), with its temporary transfer key revoked on both Pods; volume `cb7bxu71ug` is retained. Three duplicate CPU Pods created by a launch
 loop error were terminated within a minute (delete 204, lookup 404). The copy
 streams tar or rsync over SSH from Pod to Pod. Each EU-to-US stream is capped
 at roughly 12 MB/s, so total rate scales with the number of streams: 6 tar streams
