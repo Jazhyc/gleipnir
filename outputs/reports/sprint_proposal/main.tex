@@ -26,13 +26,11 @@
 
 \vspace{-4pt}
 \section{The problem: synchronous monitoring with a minimal safety tax}
-The strongest AI control protocols are \emph{synchronous}: a trusted monitor scores each action an untrusted agent
-proposes \emph{before} it executes, so a suspicious step can be blocked, resampled or escalated before it does harm.
-This puts the monitor on the critical path of every agent step for every user. Its latency is added to each action and
-its compute scales with the whole deployment. Frontier models are good monitors but too slow and expensive to run on
-every step, so in practice one either monitors asynchronously (after the damage) or pays a large \emph{safety tax}.
-A small monitor with frontier-level quality removes that trade-off: one GPU serves many concurrent agents, and the
-per-action overhead is a small fraction of the agent's own inference cost.
+Monitors are now built into widely used agent harnesses, where they score each action \emph{before} it executes. This
+puts the monitor on the critical path of every agent step for every user: its latency adds to each action and its
+compute scales with the deployment. Frontier models monitor well but are too slow and expensive for this, imposing a
+large \emph{safety tax}. Small, locally hosted monitors with frontier-level quality remove that trade-off. They also
+let far more researchers study and modify monitors, and fast monitoring enables new control protocols.
 
 \begin{minipage}[t]{0.50\textwidth}
 \vspace{0pt}
