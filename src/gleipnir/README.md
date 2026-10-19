@@ -15,6 +15,7 @@ Use canonical package paths for new code; moved implementations have one home.
 | `data/` | Campaign inputs, augmentation, filtering and prefix preparation | [monitoring.py](data/monitoring.py), [branches.py](data/branches.py), [exclusions.py](data/exclusions.py), [nested_subsets.py](data/nested_subsets.py), [transcript_injection.py](data/transcript_injection.py) |
 | `campaigns/` | Training launches, isolated runtime setup, matched systems screens and stage coordination | [monitoring/](campaigns/monitoring/), [systems_screen.py](campaigns/systems_screen.py), [runtime.py](campaigns/runtime.py), [training.py](campaigns/training.py), [training_command.py](campaigns/training_command.py), [lanes.py](campaigns/lanes.py) |
 | `evaluation/` | Campaign orchestration, scores, calibration, preference diagnostics, sharding and recovery | [campaign.py](evaluation/campaign.py), [binary.py](evaluation/binary.py), [scoring.py](evaluation/scoring.py), [metrics.py](evaluation/metrics.py), [preferences.py](evaluation/preferences.py), [direction_campaign.py](evaluation/direction_campaign.py), [direction_stats.py](evaluation/direction_stats.py) |
+| `adversarial/` | Stress tests of released monitors: prompt contract, pinned Hub monitors, checksum-checked eval sets, Transformers scorer, low-FPR metrics | [contract.py](adversarial/contract.py), [scorer.py](adversarial/scorer.py), [eval_sets.py](adversarial/eval_sets.py) |
 | `configs/` | Packaged Hydra configuration | [configs/](configs/) |
 
 Use `gleipnir.training.optimizers` for optimizer code. Historical
