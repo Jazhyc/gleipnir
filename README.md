@@ -31,7 +31,7 @@ frozen prompt, direct binary-logit interface, results, and limitations.
   about 5 minutes once the tokenizers are cached. It makes no paid API calls. `--verify-only` checks existing
   outputs without rebuilding.
 - **APPS.** The injection benchmark and our honest-code controls are in the
-  private dataset
+  public dataset
   [`Jazhyc/gleipnir-apps-injection-evals`](https://huggingface.co/datasets/Jazhyc/gleipnir-apps-injection-evals).
   The upstream author permitted us to share it. Re-stage it with
   `python scripts/release_hf_apps_dataset.py prepare`, then push with
