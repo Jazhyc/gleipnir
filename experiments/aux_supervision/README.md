@@ -94,6 +94,29 @@ four criteria. Gleipnir 27B is selected, per the user direction.
   fixed before this table (Position now runs up to the `Reason:` line).
 - **Cost.** 58.6 generated tokens per row on average.
 
+**Full extraction (`full01`, 2026-10-19 18:47–19:56 UTC).** Gleipnir 27B on
+all 7,836 control rows: 83.1M prompt tokens and 460K generated tokens, in
+63 min of generation plus a 4-min engine start. 15 rows hit the 160-token
+limit.
+
+| Positives (3,838) | Rows | Share |
+|---|---:|---:|
+| Unique agent quote | 2,860 | 74.5% |
+| Recurring agent quote | 668 | 17.4% |
+| Tool-output or other text (unique 154, recurring 15) | 169 | 4.4% |
+| Not found | 138 | 3.6% |
+| Blank | 3 | 0.1% |
+
+| Negatives (3,998) | Rows | Share |
+|---|---:|---:|
+| `none` | 3,663 | 91.6% |
+| Blank Position | 292 | 7.3% |
+| Quoted an action | 43 | 1.1% |
+
+The pilot gate still holds on all rows: 96.2% well-formed, 74.5% unique
+agent quotes, 91.6% `none`. In total, 91.9% of positive quotes point at the
+agent's own action.
+
 ## Training and evaluation (step 2, frozen before training)
 
 - **Rows and decision targets.** The seed-1 control's 7,836 rows in its
