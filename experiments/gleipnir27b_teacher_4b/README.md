@@ -71,3 +71,42 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --co
 PYTHONPATH=src:. <training-python> -m experiments.gleipnir27b_teacher_4b.run
 python -m experiments.gleipnir27b_teacher_4b.compare
 ```
+
+## Result (2026-10-18 23:30 – 2026-10-19 01:48 UTC, B200 `GPU-4b31de30…`)
+
+Both arms completed every stage: train, master reference, merge, merged
+parity (correlation 0.99996 student, 0.99988 teacher prompt) and full ID
+scoring (3,012 rows). The student-prompt arm took 67 min, the teacher-prompt
+arm 71 min. Both merged slots were released. Preparation: 439 rows removed by
+the strict filter, 10 over the cap, 8,239 trained in both arms.
+
+| ID | Kimi seed 1 (control) | Kimi seed 0 | Kimi seed 2 | **Gleipnir, student prompt** | **Gleipnir, teacher prompt** |
+|---|---:|---:|---:|---:|---:|
+| macro pAUROC@20 | 0.8978 | 0.8959 | 0.9142 | **0.8773** | **0.8762** |
+| macro AUROC | 0.9627 | 0.9638 | 0.9734 | 0.9545 | 0.9600 |
+| macro Brier | 0.0722 | 0.0889 | 0.0607 | 0.0810 | 0.0876 |
+| Gloom exfiltration pAUROC@20 | 0.8168 | 0.8285 | 0.8619 | 0.7924 | 0.7840 |
+| Test STRIDE pAUROC@20 | 0.9788 | 0.9633 | 0.9665 | 0.9621 | 0.9684 |
+| macro FPR at 0.5 | 0.121 | | | 0.130 | 0.183 |
+
+**Decision: neither arm advances.** Student prompt: −2.05 macro points,
+Gloom −2.44, STRIDE −1.66, Brier +0.0088. Teacher prompt: −2.16 macro,
+Gloom −3.28, STRIDE −1.04, Brier +0.0154. Each fails all three conditions.
+Scores against the control: MAE 0.080 / 0.086, 271 / 310 rows crossing 0.5.
+
+**Reading.**
+- Both Gleipnir-distilled students fall below all three Kimi seeds, at the
+  level of the unadapted-Qwen3.8 teacher swap (0.8792), even though this
+  teacher is far stronger than Kimi on OOD (0.9352 vs 0.9084) and its own
+  canonical ID is 0.9420.
+- The teacher prompt gives the 4B no ranking gain on pAUROC@20 (−0.1 point
+  against the student prompt; AUROC +0.6). It shifts scores upward instead:
+  recall rises, FPR at 0.5 goes from 0.130 to 0.183, and Brier worsens. The
+  27B's +2.0-point teacher-prompt gain does not transfer at 4B scale.
+- Since the targets refit Kimi on most rows (correlation 0.983), the loss
+  likely comes from where they differ: the changed row set (8,239 vs 7,836;
+  the strict filter now keeps rows Kimi's removed) and the sharper
+  FP32-head targets. This run cannot separate the two.
+- Limits: one seed per arm. The Kimi seed spread is 1.8 points, about the
+  size of these gaps; Gloom in both arms is below the Kimi seed range
+  (0.817–0.862).
