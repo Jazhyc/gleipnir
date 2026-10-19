@@ -1,8 +1,9 @@
 """Released Hub monitors, pinned to the revisions under test.
 
 Adapter revisions are the Hub commits reviewed on 2026-10-20; base revisions
-come from each release's training_summary.json. The Hub 4B predates the 4B in
-recent results, so compare its scores only with scores from the same revision.
+come from each release's training_summary.json. The Hub 4B is the project's
+"cached released Gleipnir 4B" OOD control (source-macro pAUROC@20 0.782350);
+the adversarial baseline reproduces it to 0.0003.
 """
 
 from __future__ import annotations
