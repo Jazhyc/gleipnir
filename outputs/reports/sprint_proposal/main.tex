@@ -35,12 +35,13 @@ let far more researchers study and modify monitors, and fast monitoring enables 
 \begin{minipage}[t]{0.50\textwidth}
 \vspace{0pt}
 \textbf{Gleipnir} trains small open-weight monitors for scheming, sabotage, deception and other control-relevant
-behaviour in agent trajectories. The core recipe is \emph{binary-logit distillation}: a strong teacher's probability on
-the decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that emits that single token.
-With no generated rationale, a monitor call is one prefill; Gleipnir 4B scores a $\sim$4K-token trajectory in a median
-0.15\,s on one B200 in unoptimised BF16. On the out-of-distribution suite of Sinha et al.\ (never used for selection),
-Gleipnir 4B is the cheapest point on the cost--performance frontier (cost is the standard proxy, as latency varies widely across providers), and Gleipnir 27B surpasses its own teacher at
-1/14 of the cost. \textbf{The sprint's goal is to move the 4B towards the 27B's quality at the 4B's cost.}
+behaviour in agent trajectories, using \emph{binary-logit distillation}: a strong teacher's probability on the
+decision token (\texttt{0}\,|\,\texttt{1}) becomes a soft target for a LoRA student that emits that single token.
+On the out-of-distribution suite of Sinha et al.\ (never used for selection), Gleipnir 4B is the cheapest point on
+the cost--performance frontier (cost is the standard proxy, as latency varies widely across providers). Gleipnir 27B
+surpasses its teacher Kimi K3 and nearly matches prompted Claude Opus 4.6 at $\sim$1/50 of its cost.
+\textbf{The sprint brings the 4B closer to the 27B and makes the monitors deployment-ready}: robust to attacks
+and jailbreaks, validated on untouched benchmarks and efficient to serve.
 \end{minipage}\hfill
 \begin{minipage}[t]{0.47\textwidth}
 \vspace{0pt}
