@@ -8,6 +8,11 @@ Also read [compute.md](compute.md) before launching or operating a run.
 
 ## Serving and adapter parity
 
+Importing `gleipnir` puts the running interpreter's `bin/` first on `PATH`
+(`src/gleipnir/_environment.py`), so JIT builders find the venv's `ninja`
+without activating it. Launch runners through a project entrypoint that
+imports `gleipnir`; scripts that don't import it must set `PATH` themselves.
+
 Standing user preference, updated 2026-10-13: use BF16 vLLM for ordinary adapter
 iteration and training-recipe comparisons. Use optimized precision serving only
 for QAD-adapted deployment candidates. Monitor scoring
