@@ -66,7 +66,7 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
 \end{minipage}
 
 \section{Sprint plan \,(deliverable: Gleipnir v1 model release + technical report)}
-\phase{Week 1: make the 4B much better, using Gleipnir 27B as an intermediate teacher.}
+\phase{Week 1: Make the 4B much better, using Gleipnir 27B as an intermediate teacher.}
 \begin{itemize}
   \item \textbf{Teacher-assistant distillation} (Kimi K3 $\rightarrow$ Gleipnir 27B $\rightarrow$ 4B). The 27B shares the
         4B's exact 248K-token vocabulary and model family, is now a stronger monitor than Kimi, and is cheap enough to
@@ -78,7 +78,7 @@ $^{a}$Sinha et al.'s reported result. $^{b}$Binary log-probs, reasoning off.}
         giving the student grounded evidence about \emph{where} the misbehaviour is, which also helps human auditors.
   \item Recipe and checkpoint choices are frozen on the held-out ID set; OOD is read once, at the end.
 \end{itemize}
-\phase{Week 2: find the blind spots and evaluate on benchmarks the project has never touched.}
+\phase{Week 2: Find the blind spots and evaluate on benchmarks the project has never touched.}
 \begin{itemize}
   \item \textbf{Adversarial attacks on the final monitors.} Two settings: \emph{white-box}, since the released
         weights are public, and \emph{black-box}, with query access only, as for a similar monitor served behind an API.
