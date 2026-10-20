@@ -28,7 +28,7 @@ It labels Gemini 3.1 Pro, the top of the paper frontier. It leaves the
 Kimi-K2.6 SFT frontier point unlabelled, because its logit-based counterpart
 is not shown, and the Qwen3.5 SFT+RL frontier points too, so the figure
 emphasizes decision models over the interface comparison. It separates
-Gleipnir from the other direct-score monitors, meaning every non-paper row read
+Gleipnir from the other decision monitors: every non-paper row, read directly
 from 0/1 logits or native probabilities (decision models, general LLMs and
 base models).
 Both figures draw an arrow from Gemini 3.1 Pro to the on-demand Gleipnir 27B,

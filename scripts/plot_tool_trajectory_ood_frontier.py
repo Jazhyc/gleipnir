@@ -63,7 +63,7 @@ CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
     "Paper": "Sinha et al.",
     "Gleipnir": "Gleipnir",
-    "Other": "Other direct-score monitors",
+    "Other": "Decision monitors",
 }
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
