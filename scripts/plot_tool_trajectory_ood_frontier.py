@@ -696,25 +696,16 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         loc="left",
         fontsize=20.5,
         fontweight="bold",
-        pad=46,
-    )
-    axis.text(
-        0.0,
-        1.052,
-        "Strict six-source OOD suite · lower cost and higher performance are better",
-        transform=axis.transAxes,
-        fontsize=12.5,
-        fontweight="bold",
-        color="#4B5563",
+        pad=23,
     )
     axis.text(
         0.0,
         1.015,
-        "* Committed-use GPU pricing; the dashed line is its frontier",
+        "Strict six-source OOD suite · lower cost and higher performance are better",
         transform=axis.transAxes,
-        fontsize=12.5,
+        fontsize=11.5,
         fontweight="bold",
-        color="#374151",
+        color="#4B5563",
     )
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
@@ -737,7 +728,9 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         for category in LEGEND_ORDER
         for color in [CATEGORY_PALETTE[category]]
     ]
-    legend_handles.append(
+    # The frontier entries form their own titled legend under the main one,
+    # so the legend explains the dashed line and the asterisks.
+    frontier_handles = [
         Line2D(
             [],
             [],
@@ -747,18 +740,50 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Frontier",
-        )
+            label="On-demand GPUs",
+        ),
+        Line2D(
+            [],
+            [],
+            color="#374151",
+            linestyle=(0, (5, 3)),
+            marker="D",
+            markerfacecolor="white",
+            markeredgecolor=ORIGIN_PALETTE["Gleipnir"],
+            markeredgewidth=2.0,
+            linewidth=2.2,
+            markersize=10.5,
+            label="Committed GPUs*",
+        ),
+    ]
+    legend_style = {
+        "frameon": True,
+        "prop": {"size": 13.5, "weight": "bold"},
+        "handlelength": 2.2,
+        "labelspacing": 0.65,
+    }
+    frontier_legend = axis.legend(
+        handles=frontier_handles,
+        loc="lower right",
+        title="Frontier",
+        title_fontproperties={"size": 13.5, "weight": "bold"},
+        alignment="left",
+        **legend_style,
+    )
+    axis.add_artist(frontier_legend)
+    figure.tight_layout()
+    # Stack the category legend directly above the frontier legend.
+    renderer = figure.canvas.get_renderer()
+    frontier_box = frontier_legend.get_window_extent(renderer).transformed(
+        axis.transAxes.inverted()
     )
     axis.legend(
         handles=legend_handles,
         loc="lower right",
-        frameon=True,
-        prop={"size": 13.5, "weight": "bold"},
-        handlelength=2.2,
-        labelspacing=0.65,
+        bbox_to_anchor=(frontier_box.x1, frontier_box.y1 + 0.012),
+        borderaxespad=0,
+        **legend_style,
     )
-    figure.tight_layout()
     return figure
 
 
