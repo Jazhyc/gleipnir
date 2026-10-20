@@ -61,7 +61,7 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B"
     assert _display_label("Qwen3.5-4B SFT+RL") == "Qwen3.5-4B SFT+RL"
     assert _display_label("Qwen3.5-27B SFT+RL") == "Qwen3.5-27B SFT+RL"
-    assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
+    assert _display_label("Qwen3.5-4B Kimi-soft strict seed average") == "Gleipnir 4B"
     assert _display_label("Qwen3.5-9B Kimi-soft mixed") == "Gleipnir 9B"
 
 
@@ -109,7 +109,7 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
     assert [
         (str(base["monitor"]), str(method["monitor"])) for base, method in pairs
     ] == [
-        ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft mixed"),
+        ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft strict seed average"),
         ("Qwen3.5-9B base", "Qwen3.5-9B Kimi-soft mixed"),
         ("Qwen3.8-27B base", "Qwen3.8-27B Kimi-soft strict"),
     ]

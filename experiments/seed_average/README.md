@@ -71,10 +71,12 @@ OOD pAUROC@20 by source:
   Merged parity: mean difference 0.0022, correlation 0.99992, maximum
   difference 0.025. The OOD re-merge reproduced the first merge's hashes.
 - **Hardware qualification.** The average was merged and scored on an
-  EU-NL-1 B300 (`GPU-02557ba6…`, sm_103, driver 595.91.07). The seed
-  baselines were scored on B200s. No same-hardware seed rescore was run.
-  Earlier B200 rescoring moved the scores by under 0.002 points (seed
-  variation README).
+  EU-NL-1 B300 (`GPU-02557ba6…`, sm_103, driver 595.91.07); the seed
+  baselines were scored on B200s. Seed 1 was rescored on ID on the same B300
+  (`teacher-seed-sdpa-s1-b300-rescore01`, identical re-merge). It scored
+  0.8984, against 0.8978 on the B200: +0.06 points, mean absolute score
+  difference 0.0019, 5 of 3,012 threshold flips. The average leads seed 1 on
+  the same hardware by 1.40 points.
 - **First attempt.** It stopped at the build's own check, because PEFT lists
   target modules in arbitrary order. Its receipts are preserved under
   `*_failed_target_order01`; the fix compares the modules as sets.

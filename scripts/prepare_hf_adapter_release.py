@@ -81,11 +81,12 @@ def validate_adapter_directory(
     adapter_config = load_json(config_path)
     if adapter_config.get("base_model_name_or_path") != model["base_model"]:
         raise ValueError(f"base-model identity drifted in {config_path}")
+    rank = int(model.get("lora_rank", 128))
     if (
         adapter_config.get("peft_type") != "LORA"
-        or int(adapter_config.get("r", -1)) != 128
+        or int(adapter_config.get("r", -1)) != rank
     ):
-        raise ValueError(f"expected a rank-128 LoRA in {config_path}")
+        raise ValueError(f"expected a rank-{rank} LoRA in {config_path}")
     details = inspect_adapter(weights_path)
     if details["sha256"] != expected_sha256:
         raise ValueError(
@@ -128,7 +129,11 @@ def validate_model(
     if sha256_file(metadata_path) != model["training_metadata_sha256"]:
         raise ValueError(f"training metadata checksum drifted for {name}")
     metadata = load_json(metadata_path)
-    if metadata.get("model") != model["base_model"]:
+    # A seed-average adapter carries its averaging receipt, not trainer metadata.
+    base = metadata.get("model") or metadata.get("seed_average", {}).get(
+        "base_model_name_or_path"
+    )
+    if base != model["base_model"]:
         raise ValueError(f"training base identity drifted for {name}")
 
     return {
@@ -185,6 +190,11 @@ def training_summary(spec: dict[str, Any]) -> dict[str, Any]:
             **model["evaluation"],
         },
         "source_commit": metadata.get("commit"),
+        **(
+            {"seed_average": {"sources": metadata["sources"]}}
+            if "seed_average" in metadata
+            else {}
+        ),
         "training": {
             **common["training"],
             # Models trained with a different recipe override the shared fields.

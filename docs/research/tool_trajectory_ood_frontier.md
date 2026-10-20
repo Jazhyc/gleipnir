@@ -64,7 +64,7 @@ and at least as accurate, with one strict improvement.
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.7823** | **no** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.8108** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
@@ -123,20 +123,28 @@ audits, the completed
 record, and the exact accounting in
 [`tool_trajectory_inference_economics.md`](tool_trajectory_inference_economics.md).
 
-## Kimi-soft mixed student results
+## Kimi-soft student results
 
-The full-mixed Qwen3.5-4B adapter reaches `0.7823` Mean-OOD pAUROC@20 and
-`0.9086` Mean-OOD AUROC. Its compact student prompt averages 8,654.7113 input
-tokens, so the paper's `$0.03/M` input and `$0.15/M` output 4B proxy costs
-`$0.2598/1K`. It was the lowest-cost observed frontier point until
-pplx-decider v1.2 (below) dominated it, and it dominates
-the unadapted 4B full-prompt baseline: it is 8.6% cheaper and improves
-pAUROC@20 by `0.1649`.
+Gleipnir 4B (v0.2) is the exact weight average of three Qwen3.5-4B seeds.
+They were trained on the strict-filtered tool-trajectory data only, the same
+recipe as Gleipnir 27B ([seed average](../../experiments/seed_average/README.md)).
+It reaches `0.8108` Mean-OOD pAUROC@20 and `0.9199` Mean-OOD AUROC. The
+frozen ID-only rule selected it; OOD was scored once and never used for
+selection. It was scored on a B300, while the seeds were scored on B200s.
+Its compact student prompt is unchanged at 8,654.7113 mean input tokens over
+the same frozen rows, so the paper's `$0.03/M` input and `$0.15/M` output 4B
+proxy costs `$0.2598/1K`. pplx-decider v1.2 (below) dominates it. It
+dominates the unadapted 4B full-prompt baseline: it is 8.6% cheaper and
+improves pAUROC@20 by `0.1933`.
+
+It replaces the v0.1 point, the full-mixed adapter trained with 13,149
+deception rows (`0.7823` Mean-OOD pAUROC@20, `0.9086` AUROC, same cost). The
+three individual seeds score `0.7869`, `0.8125` and `0.7768`.
 
 The full-mixed Qwen3.5-9B adapter reaches `0.8212` Mean-OOD pAUROC@20 and
 `0.9215` Mean-OOD AUROC. At the frozen dated `$0.10/M` input and `$0.40/M`
 output proxy, the same compact prompt costs `$0.8659/1K`. It improves
-pAUROC@20 by `0.0388` over mixed 4B at `3.33x` the hosted inference proxy.
+pAUROC@20 by `0.0388` over the v0.1 mixed 4B at `3.33x` the hosted inference proxy.
 GPT-6 Luna dominates it at the dated API prices: `0.8365` at `$0.8355/1K`.
 pplx-decider v1.2 (`0.8956` at `$0.1763/1K`) now dominates both mixed 4B
 and Jev 1.13; the next frontier point above it is Gleipnir 27B.
@@ -216,8 +224,8 @@ At the 2026-08-31 OpenRouter headline `$0.03/$0.17` route it costs
 | Paper-matched (`$0.039/$0.18`) | 0.326671 | 0.017578 | **0.344248** | no |
 | Higher-priced route (`$0.15/$0.60`) | 1.256425 | 0.058593 | **1.315018** | no |
 
-At every listed rate the mixed Qwen3.5-4B student strictly dominates this
-point: it costs `$0.2598/1K` and reaches `0.7823`. The GPT-OSS result remains
+At every listed rate the Gleipnir 4B student strictly dominates this
+point: it costs `$0.2598/1K` and reaches `0.8108`. The GPT-OSS result remains
 useful evidence that reasoning helps that model family, not an operational
 efficiency win.
 
@@ -242,7 +250,7 @@ Mean-OOD AUROC using the full teacher prompt and terminal binary logprobs.
 Darkbloom FP4 served 4,545 rows before a throughput-driven handoff to Parasail
 FP8 for the remaining 1,850. The uncached list-price cost is `$0.9896/1K`
 using the actual token totals and each provider's frozen rate. This point is
-dominated by the lower-cost mixed 4B student (`0.7823` at `$0.2598/1K`), and
+dominated by the lower-cost Gleipnir 4B student (`0.8108` at `$0.2598/1K`), and
 falls below the dense Qwen3.5-27B base (`0.8395` at `$1.8476/1K`).
 
 The handoff follows source order: Parasail scored all 850 SHADE-Arena rows and
@@ -469,7 +477,7 @@ caching) give **`$0.176261/1K`**. The hosted endpoint's serving and billing
 are not observed.
 
 It becomes the lowest-cost frontier point. It dominates Gleipnir 4B
-(`0.7823` at `$0.2598/1K`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
+(`0.8108` at `$0.2598/1K` for v0.2; v0.1 scored `0.7823`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
 beats Jev on all six sources on identical requests. The next frontier point
 is Gleipnir 27B (`0.9352` at `$1.8476/1K`). SHADE-Arena stays weakest at
 `0.6054`.

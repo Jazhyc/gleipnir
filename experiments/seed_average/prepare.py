@@ -26,6 +26,8 @@ OUT = ROOT / "results/seed_average"
 CONTROL = "teacher-seed-sdpa-s1-01"
 AVERAGE = "teacher-seed-sdpa-avg012-01"
 AVERAGE_OOD = "teacher-seed-sdpa-avg012-ood01"
+# Same-hardware drift control: seed 1 rescored on ID on the B300.
+SEED1_RESCORE = "teacher-seed-sdpa-s1-b300-rescore01"
 SEEDS = {
     0: "teacher-disagreement-delta000-sdpa04",
     1: "teacher-seed-sdpa-s1-01",
@@ -84,6 +86,43 @@ def scoring_config(average: dict) -> dict:
     for key, (path, _) in OOD.items():
         config["inputs"][key] = {"path": path, "sha256": file_hash(ROOT / path)}
     return config
+
+
+def rescore_config(gpu_uuid: str) -> dict:
+    """Seed 1's own config, scoring only ID from its existing FP32 master."""
+    config = yaml.safe_load((ROOT / "data" / CONTROL / "config.yaml").read_text())
+    config.update(
+        campaign_id=SEED1_RESCORE,
+        gpu_uuid=gpu_uuid,
+        merged_model=f"/tmp/gleipnir-merged/{SEED1_RESCORE}",
+        parent_campaign=f"results/{CONTROL}",
+        score_splits=["id"],
+    )
+    config["evaluations"] = ["id"]
+    config["evaluation"]["populations"] = {"id": 3012}
+    return config
+
+
+def prepare_rescore(gpu_uuid: str) -> dict:
+    data = ROOT / "data" / SEED1_RESCORE
+    if data.exists():
+        raise ValueError(f"refuse to overwrite {data}")
+    data.mkdir(parents=True)
+    path = data / "config.yaml"
+    path.write_text(yaml.safe_dump(rescore_config(gpu_uuid), sort_keys=False))
+    ctx = Campaign(ROOT, path, yaml.safe_load(path.read_text()))
+    files = {
+        str(path.relative_to(ROOT)): file_hash(path),
+        **{spec["path"]: spec["sha256"] for spec in ctx.config["inputs"].values()},
+    }
+    manifest = {
+        "files_sha256": files,
+        "source_sha256": ctx.sources(),
+        "parent": f"results/{CONTROL}",
+    }
+    write_json(data / "manifest.json", manifest)
+    print("seed_average_rescore_prepared", SEED1_RESCORE, flush=True)
+    return manifest
 
 
 def prepare(gpu_uuid: str) -> dict:
@@ -149,4 +188,6 @@ def prepare(gpu_uuid: str) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu-uuid", required=True)
-    prepare(parser.parse_args().gpu_uuid)
+    parser.add_argument("--rescore", action="store_true")
+    args = parser.parse_args()
+    (prepare_rescore if args.rescore else prepare)(args.gpu_uuid)

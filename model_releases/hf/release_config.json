@@ -10,18 +10,38 @@
       "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
       "card": "model_releases/hf/gleipnir-4b/README.md",
       "display_name": "Gleipnir 4B",
-      "job_name": "soft-n21837-mixed-qwen35-4b-seed0",
+      "job_name": "teacher-seed-sdpa-avg012-01",
       "repo_name": "Gleipnir-4B",
-      "source_dir": "results/tool_trajectory_distillation_mixed_qwen4b/runs/soft-n21837-mixed-qwen35-4b-seed0/causal_adapter",
-      "source_sha256": "5c4688931ac9168e0d27aa501b73141180b74fe01e0ec147448f7661f16c7bc6",
-      "serving_dir": "results/tool_trajectory_distillation_mixed_qwen4b/runs/soft-n21837-mixed-qwen35-4b-seed0/model",
-      "serving_sha256": "df07134f64377fffb0b88c83a7f84ec695b5f25c9ed020a15a0033cf5695cac5",
-      "training_metadata_sha256": "e2625a5e62eb8b9ca3224c9467b067b46c95e814b2453169d3b864ae9d98729a",
+      "source_dir": "results/teacher-seed-sdpa-avg012-01/4b/monitor/causal_adapter",
+      "source_sha256": "97d234eed23fdfae6c42ad33484dec3dbe1b44b883d3d3f0eab9ca85c375f160",
+      "serving_dir": "results/teacher-seed-sdpa-avg012-01/4b/monitor/model",
+      "serving_sha256": "899bd4a1110d85d161480396f5da941a20331bb1ed8d6795564b51cb0981fea3",
+      "training_metadata_sha256": "19cee491e7f82cbde2063198b00c7548bcde1b3284abd42db57c444c7aca81f8",
       "evaluation": {
-        "mean_ood_auroc": 0.9085838367121424,
-        "mean_ood_pauroc_at_20": 0.7823496091532877,
-        "pooled_auroc": 0.9135125481052597,
-        "pooled_pauroc_at_20": 0.7015311400680013
+        "mean_ood_auroc": 0.9199434727441426,
+        "mean_ood_pauroc_at_20": 0.8108067636569362,
+        "pooled_auroc": 0.933485192686103,
+        "pooled_pauroc_at_20": 0.7513537737507168,
+        "id_rows": 3012,
+        "id_macro_pauroc_at_20": 0.9124357490223991,
+        "id_macro_auroc": 0.9701910642290321
+      },
+      "lora_rank": 384,
+      "training": {
+        "data_rows": 7836,
+        "deception_rows": 0,
+        "tool_trajectory_rows": 7836,
+        "data_filter": "strict teacher/source-label agreement on the 8,688 tool-trajectory rows",
+        "quantization": "none; BF16 base with FP32 master LoRA",
+        "recipe": "BF16/SDPA, three seeds (0, 1, 2) differing only in data order, exact weight average",
+        "seed": [
+          0,
+          1,
+          2
+        ],
+        "rank": 384,
+        "lora_alpha": 768,
+        "weight_average": "rank-384 LoRA stacking the three rank-128 seed adapters (A stacked, B/3, alpha 768); exactly the mean update, max relative error 2.2e-8"
       }
     },
     "9b": {

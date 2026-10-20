@@ -50,3 +50,13 @@ Versioning: the repos are research previews. Each was tagged `v0.1` on
 `e5c4a7a6`). Retrained adapters on the same base go to the same repo with a
 card changelog and the next `v0.x` tag; a public launch rewrites the cards and
 tags `v1.0`; a different base model gets a new repo name.
+
+Gleipnir 4B v0.2 (2026-10-20): the exact three-seed weight average of the
+strict-filtered tool-trajectory-only recipe shared with the 27B
+([seed average](../../experiments/seed_average/README.md)). It is a rank-384
+adapter, so its config sets `lora_rank: 384`. It was staged with
+`--output-dir results/huggingface_release_v0.2` and uploaded with
+`--allow-existing` as commit `7776a3e3`. All 10 manifest files were verified
+on the Hub, and the commit is tagged `v0.2`; `v0.1` still pins the mixed-data
+adapter. The 9B and 27B cards still list the v0.1 4B numbers in their
+comparison tables.

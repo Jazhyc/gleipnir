@@ -10,7 +10,13 @@ import time
 from pathlib import Path
 
 from experiments.seed_average.average import build
-from experiments.seed_average.prepare import AVERAGE, AVERAGE_OOD, OUT, ROOT
+from experiments.seed_average.prepare import (
+    AVERAGE,
+    AVERAGE_OOD,
+    OUT,
+    ROOT,
+    SEED1_RESCORE,
+)
 from experiments.teacher_disagreement_filtering.run import retire
 from experiments.teacher_seed_variation.run import score
 from gleipnir.adapters.rebase import rebase_adapter
@@ -88,7 +94,12 @@ def run() -> None:
 
 
 if __name__ == "__main__":
+    import sys
+
     OUT.mkdir(parents=True, exist_ok=True)
     with (OUT / "queue.lock").open("a") as lock:
         fcntl.flock(lock, fcntl.LOCK_EX | fcntl.LOCK_NB)
-        run()
+        if sys.argv[1:] == ["--rescore"]:
+            score(SEED1_RESCORE)  # Identical re-merge, then ID scoring only.
+        else:
+            run()

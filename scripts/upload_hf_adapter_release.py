@@ -50,6 +50,9 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--model", choices=("all", "4b", "9b", "27b"), default="all")
     parser.add_argument("--private", action="store_true")
     parser.add_argument("--allow-existing", action="store_true")
+    parser.add_argument(
+        "--commit-message", help="defaults to a generic release message"
+    )
     return parser.parse_args()
 
 
@@ -74,7 +77,8 @@ def main() -> None:
             repo_id=repo_id,
             repo_type="model",
             folder_path=release,
-            commit_message=f"Release {manifest['display_name']} research artifact",
+            commit_message=args.commit_message
+            or f"Release {manifest['display_name']} research artifact",
         )
         uploaded.append(repo_id)
     print(json.dumps({"uploaded": uploaded}, sort_keys=True))

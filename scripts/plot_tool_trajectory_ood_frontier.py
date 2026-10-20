@@ -37,12 +37,12 @@ EXCLUDED_MONITORS = {
     "Qwen3.5-9B base (reasoned binary)",
 }
 GLEIPNIR_METHODS = {
-    "Qwen3.5-4B Kimi-soft mixed": "Gleipnir 4B",
+    "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
     "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
 }
 BASE_TO_METHOD = {
-    "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft mixed",
+    "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft strict seed average",
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
@@ -60,6 +60,12 @@ MANUAL_COMPARISON_LABELS = {
     "GPT-6 Luna binary logprobs": {
         "xytext": (-5, 8),
         "ha": "right",
+        "va": "bottom",
+    },
+    # Above its point, clear of the improvement arrow from the base 4B.
+    "Qwen3.5-4B Kimi-soft strict seed average": {
+        "xytext": (0, 14),
+        "ha": "center",
         "va": "bottom",
     },
     "Qwen3.5-9B Kimi-soft mixed": {

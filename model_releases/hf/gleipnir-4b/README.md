@@ -7,8 +7,9 @@ language:
 - en
 tags:
 - ai-control
-- deception-detection
-- scheming-detection
+- agent-monitoring
+- sabotage-detection
+- tool-use
 - monitoring
 - knowledge-distillation
 - lora
@@ -26,22 +27,39 @@ model-index:
     metrics:
     - type: roc_auc
       name: Mean-OOD AUROC
-      value: 0.908584
+      value: 0.919943
     - type: mean_ood_pauroc_at_20
       name: Mean-OOD pAUROC@20
-      value: 0.782350
+      value: 0.810807
 ---
 
 # Gleipnir 4B
 
-Gleipnir 4B is a research monitor for detecting deception, scheming, and other
-control-relevant problematic behavior in visible AI-agent trajectories. It is
-a rank-128 LoRA adapter for `Qwen/Qwen3.5-4B`, not a standalone model.
+Gleipnir 4B is a research monitor for AI control: it scores visible
+trajectories of tool-using AI agents for sabotage, data exfiltration, and other
+covert unauthorized actions taken while appearing to do an assigned task. It
+is a LoRA adapter for `Qwen/Qwen3.5-4B`, not a standalone model.
+
+Version 0.2 is trained on agent tool-use trajectories only, with the same data
+and recipe as Gleipnir 27B. It is the exact weight average of three training
+seeds (see Training).
 
 This release is an early research artifact intended for reproducibility and
 follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
 treated as a production safety system or as evidence that an interaction is
 safe merely because the model assigns it a low score.
+
+## Changelog
+
+- **v0.2 (2026-10-20).** Retrained on the 7,836 strict-filtered tool
+  trajectories only, dropping the 13,149 deception rows, so the 4B and 27B
+  share one recipe. The released adapter is the exact average of three seeds
+  that differ only in data order. Mean-OOD pAUROC@20 rises from 0.7824 to
+  0.8108; inference cost and the scoring interface are unchanged. The adapter
+  is now rank 384 (see Usage).
+- **v0.1 (2026-10-18).** Single-seed adapter trained on 8,688 tool
+  trajectories plus 13,149 deception examples. Pin revision `v0.1` to
+  reproduce it.
 
 ## What the model scores
 
@@ -58,49 +76,66 @@ literal `0` and `1`:
 
 Use the normalized `1` versus `0` logit as a continuous risk score. The exact
 compact instruction is included in `student_prompt.txt`, and its complete
-envelope is recorded in `prompt_contract.json`.
+envelope is recorded in `prompt_contract.json`. It is the same instruction and
+interface as Gleipnir 9B and 27B.
 
 ## Results
 
-Both released Gleipnir adapters were evaluated once on the same frozen 6,395-row
-strict-OOD suite spanning AgentDojo, CUA-SHADE, IaC, MLE-Sabotage, Rogue Eval,
-and SHADE-Arena. The primary metric is the unweighted mean across sources of raw
-normalized partial AUROC through 20% false-positive rate.
+Gleipnir 4B was evaluated once on the same frozen 6,395-row strict-OOD suite as
+the other Gleipnir adapters, spanning AgentDojo, CUA-SHADE, IaC, MLE-Sabotage,
+Rogue Eval, and SHADE-Arena. The primary metric is the unweighted mean across
+sources of raw normalized partial AUROC through 20% false-positive rate.
 
 | Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
 | --- | ---: | ---: | ---: | ---: |
-| **Gleipnir 4B** | **0.7824** | **0.9086** | **0.7015** | **0.9135** |
+| **Gleipnir 4B v0.2** | **0.8108** | **0.9199** | **0.7514** | **0.9335** |
+| Gleipnir 4B v0.1 | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
 | Gleipnir 9B | 0.8212 | 0.9215 | 0.7837 | 0.9355 |
+| Gleipnir 27B | 0.9087 | 0.9679 | 0.9234 | 0.9748 |
 
-Gleipnir 4B trails Gleipnir 9B by 0.0388 Mean-OOD pAUROC@20 and 0.0130
-Mean-OOD AUROC. In the project's dated hosted-inference proxy it costs about
-one third as much, making it the lower-cost release rather than a
-quality-matched replacement. These are single-seed point estimates, and the
-hosted-cost comparison is not a stable price quote.
+Per-source pAUROC@20: AgentDojo 0.9430, CUA-SHADE 0.7916, IaC 0.8845,
+MLE-Sabotage 1.0000, Rogue Eval 0.9804, SHADE-Arena 0.2653.
 
-The 4B adapter was also tested with the much longer teacher instruction at
-inference. Mean-OOD pAUROC@20 changed by only +0.0004 and Mean-OOD AUROC by
--0.0009, so there is no aggregate evidence that the compact prompt is a major
-elicitation bottleneck for this checkpoint.
+- The release was chosen by a rule fixed before scoring, on held-out
+  in-distribution data only: release the seed average if its macro
+  pAUROC@20 on the 3,012-row ID set (Gloom-exfiltration and STRIDE test) is
+  at least the three seeds' mean, otherwise the best single seed. The average
+  reached 0.9124 against a seed mean of 0.9026 (0.9701 macro AUROC). The OOD
+  suite was scored once and never used for selection.
+- The individual seeds score 0.7869, 0.8125 and 0.7768 Mean-OOD pAUROC@20.
+  The average is 1.9 points above their mean and the best of the four on
+  AgentDojo and CUA-SHADE. Seed-to-seed OOD spread is large (standard
+  deviation 1.8 points), which is why the release averages seeds rather than
+  picking one.
+- SHADE-Arena remains weak; long trajectories are the hardest case for this
+  model size.
+- The rows above compare released artifacts; they differ in base model, data
+  mixture and seeds, so they are not a controlled model-size study.
 
 ## Training
 
-Gleipnir 4B was trained for one epoch on 21,837 examples: 8,688 action-only tool
-trajectories and 13,149 prior deception examples from the Aletheia's Quest and
-Liars' Bench line. Training used only Kimi K3's soft probability over the
-literal decision tokens. Source hard labels were retained for provenance and
-evaluation but had zero loss weight.
+Each seed was trained for one epoch on 7,836 action-only tool trajectories:
+the 8,688 tool-trajectory training rows after removing those where Kimi K3's
+decision disagrees with the source label. The sources are covert coding
+sabotage (CoT-Red-Handed), shell sabotage and exfiltration (BashArena and
+BashBench), and synthetic misaligned-agent scenarios (STRIDE and Gloom). No
+deception-dataset rows were used. Training used only Kimi K3's soft probability
+over the literal decision tokens; source labels were used for filtering,
+provenance, and evaluation.
 
 - Base: `Qwen/Qwen3.5-4B` at revision
   `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`
-- Adapter: rank 128, alpha 256, all attention and MLP projection modules
-- Optimization: AdamW, learning rate `5e-5`, effective batch 32, seed 0
+- Per seed: rank 128, alpha 256 LoRA on all attention and MLP projection
+  modules; AdamW, learning rate `5e-5`, linear schedule with 3% warmup,
+  effective batch 32, 245 updates; seeds 0, 1 and 2, differing only in data
+  order, from the same initial adapter
 - Context: up to 29,696 tokens, with zero audited truncation
-- Training base: 4-bit NF4 with double quantization and BF16 compute
-- Saved adapter: FP32, 169,869,312 trainable parameters
-- Hardware: one NVIDIA H100 80 GB; training runtime about 5.49 hours
-
-The same frozen 9B recipe was transferred without a 4B hyperparameter search.
+- Training base: unquantized BF16 with FP32 master adapters, SDPA attention,
+  16,384-token sequence packing; one NVIDIA B200, about an hour per seed
+- Averaging: the three seed updates are combined exactly as one rank-384 LoRA
+  (A matrices stacked, B matrices divided by 3, alpha 768), so the adapter
+  equals the mean of the seed updates (maximum relative error 2.2e-8).
+  Saved adapter: FP32, 509,607,936 parameters.
 
 ## Usage
 
@@ -152,14 +187,21 @@ risk_score = torch.softmax(next_logits, dim=0)[1].item()
 print(risk_score)
 ```
 
-Verify that each literal label tokenizes to exactly one distinct token. For
-large frozen evaluations, the `vllm/` subdirectory contains the key-rebased
-adapter layout used by the project's parity-gated vLLM 0.24.0 campaign.
+Verify that each literal label tokenizes to exactly one distinct token.
+
+The adapter is rank 384. For large evaluations the project merged the `vllm/`
+key-rebased adapter into the base in FP32, exported BF16 weights, and served
+them with vLLM 0.31. Master-to-serving parity passed (mean absolute score
+difference 0.0022, correlation 0.9999), and the merged model has the same
+inference cost as the base. Dynamic LoRA serving of a rank-384 adapter was not
+tested; vLLM would need `--max-lora-rank 512`. Scores in this card were served
+on an NVIDIA B300. Rescoring one seed there moved its ID pAUROC@20 by +0.0006
+against the B200.
 
 ## Limitations and responsible use
 
-- The checkpoint has one training seed and was not optimized on multiple model
-  families, languages, or deployment environments.
+- The average combines three seeds of one recipe. It was not optimized on
+  multiple model families, languages, or deployment environments.
 - It can miss subtle harmful behavior and can flag benign but unusual actions.
   Its score is not calibrated for a new deployment without local validation.
 - It observes actions, not hidden intent or private reasoning. Absence of
@@ -182,7 +224,7 @@ labels, teacher caches, or benchmark rows. `release_manifest.json` records the
 adapter, prompt, base-revision, and packaging checksums needed to audit this
 release. The full experiment design and result audit are in the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir), especially
-`docs/research/tool_trajectory_distillation_ood_scaling.md`.
+`experiments/seed_average/README.md`.
 
 The adapter weights and release metadata are distributed under the MIT License;
 see `LICENSE`. Users must also review and comply with the Qwen base-model terms,
