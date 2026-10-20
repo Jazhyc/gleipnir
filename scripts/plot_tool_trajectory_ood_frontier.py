@@ -82,9 +82,11 @@ BASE_TO_METHOD = {
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
 # Labelled paper points. Gemini 3.1 Pro marks the top of the paper frontier.
-# The main figure drops the Kimi-K2.6 SFT label: its logit-based counterpart is
-# not shown there, though the point stays on the paper frontier.
-MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT"}
+# The main figure keeps these points on the paper frontier but drops their
+# labels: Kimi-K2.6 SFT's logit-based counterpart is not shown there, and the
+# SFT+RL labels served the interface-bottleneck comparison, which the figure no
+# longer emphasizes over decision models (user, 2026-10-20).
+MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT", "Qwen3.5-4B SFT+RL", "Qwen3.5-27B SFT+RL"}
 PAPER_COMPARISON_MONITORS = {
     "Gemini 3.1 Pro prompted",
     "Kimi-K2.6 SFT",

@@ -24,9 +24,10 @@ The main figure is simplified (user decision, 2026-10-20). It drops:
 - paper points that are neither on the paper frontier nor labelled
   comparisons.
 
-It labels Gemini 3.1 Pro, the top of the paper frontier, and leaves the
+It labels Gemini 3.1 Pro, the top of the paper frontier. It leaves the
 Kimi-K2.6 SFT frontier point unlabelled, because its logit-based counterpart
-is not shown. It also separates Gleipnir from third-party decision models.
+is not shown, and the Qwen3.5 SFT+RL frontier points too, so the figure
+emphasizes decision models over the interface comparison. It also separates Gleipnir from third-party decision models.
 Both figures draw an arrow from Gemini 3.1 Pro to the on-demand Gleipnir 27B,
 labelled with the cost ratio and score gain (188× cheaper, +1.1 points). The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
