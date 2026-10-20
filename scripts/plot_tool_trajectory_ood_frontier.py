@@ -700,7 +700,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.text(
         0.0,
         1.015,
-        "Strict six-source OOD suite · lower cost and higher performance are better",
+        "Strict six-source OOD suite · lower cost and higher performance are better"
+        " · * committed-use GPU pricing (dashed frontier)",
         transform=axis.transAxes,
         fontsize=11.5,
         fontweight="bold",
@@ -736,22 +737,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Frontier, on-demand GPUs",
-        )
-    )
-    legend_handles.append(
-        Line2D(
-            [],
-            [],
-            color="#374151",
-            linestyle=(0, (5, 3)),
-            marker="D",
-            markerfacecolor="white",
-            markeredgecolor=ORIGIN_PALETTE["Gleipnir"],
-            markeredgewidth=2.0,
-            linewidth=2.2,
-            markersize=10.5,
-            label="Frontier*, committed GPUs",
+            label="Frontier",
         )
     )
     axis.legend(
