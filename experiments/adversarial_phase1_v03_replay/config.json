@@ -1,0 +1,37 @@
+{
+  "target_monitor": "4b-refresh",
+  "target": {
+    "adapter": "Jazhyc/Gleipnir-4B",
+    "adapter_revision": "e36aa2bb864639da79173eafd0460a45d21e6bcb",
+    "base": "Qwen/Qwen3.5-4B",
+    "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
+  },
+  "adapter_sha256": "0716efc123175c2714ebc24a16d5348a4e357050036f99d8568293d74d6ad579",
+  "output": "results/adversarial_phase1_v03_replay",
+  "source_files": {
+    "results/adversarial_baseline_4b/apps-neutral/predictions.jsonl": "816ea2a6612ff84f0a5b95a1cfe60797447a8767354125455b9f05c41b338e17",
+    "results/adversarial_baseline_4b/apps-controls-neutral/predictions.jsonl": "f726b6f343a05301deeda8269a7fea12b2196538ab6b69e82e386dc4b2b46639",
+    "results/adversarial_a2_cover_comments/generations.jsonl": "46e31c68196992f5e7ab617f495e3a0a411eac3f416fbd0ccc9c568b34899706",
+    "results/adversarial_a2_cover_comments/predictions.jsonl": "8d5bcb286359b6656843986d97a57bd446d7ae6bff9d6dc26f1db796ba4096f7",
+    "results/adversarial_a2_high_effort/generations.jsonl": "e9450fcf30703314b257766bb58345613ab3179e31707d35515a6d11481f80a8",
+    "results/adversarial_a2_high_effort/predictions.jsonl": "c057d0af2839e2b4f15412eb87229619d07e04bbb275b1dd46ea8ef43520d5d4",
+    "results/adversarial_a3_random_search/report.json": "3ebb47b7f8d3edba5780ffd609a89129c4984656f4ef6a85307b0ebd9f092e5e",
+    "results/adversarial_a3_random_search/queries.jsonl": "66e3aee19df60a55ee6f44d334166eb5f167b5582599520c8df935d5df60c02c",
+    "results/adversarial_a4_feedback/manifest.json": "d68400ef89fd94647655a5ef7245e99523b9fe6a0bbfd9ae6d9d4ecd227709f4",
+    "results/adversarial_a4_feedback/generations.jsonl": "9e17385526a3117f63534cbf25071e9fed1ee9d71db9d8f545e367fd1a7ae285",
+    "results/adversarial_a4_feedback/queries.jsonl": "0753a4d53a37578cd6801fa2df51957eff2d44ed1850201adba7037e2e4144eb",
+    "results/adversarial_a4_feedback/report.json": "34745a43f0b107a0e9c7aecc7ca42f1133f7740976724fdbf54ef856dfd78922"
+  },
+  "task_ids": [
+    "741"
+  ],
+  "fprs": [
+    0.01,
+    0.02
+  ],
+  "gpu_budget_seconds": 3600,
+  "physical_call_cap": 2700,
+  "parity_tolerance": 1e-06,
+  "a1_tasks": 64,
+  "api_budget_usd": 0
+}
