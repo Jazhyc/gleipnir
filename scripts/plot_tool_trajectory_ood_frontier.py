@@ -108,15 +108,15 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "right",
         "va": "bottom",
     },
-    # Decider and Mercury Decide sit close together: Decider above-left,
-    # inside the committed frontier; Mercury Decide below-right.
+    # Below-right, clear of both Gleipnir frontiers. Mercury Decide (full
+    # figure only) goes further below so the two labels stay apart.
     "pplx-decider v1.2 native readout": {
-        "xytext": (-8, 8),
-        "ha": "right",
-        "va": "bottom",
+        "xytext": (12, -12),
+        "ha": "left",
+        "va": "top",
     },
     "Mercury Decide native probabilities": {
-        "xytext": (4, -14),
+        "xytext": (12, -21),
         "ha": "left",
         "va": "top",
     },
