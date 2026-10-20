@@ -58,12 +58,12 @@ MAIN_FIGURE_OMISSIONS = {
     "Qwen3.5-35B-A3B base (mixed providers)",
     "Kimi K2.6 binary logits",
 }
-CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Third-party": "#B279A2"}
-CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Third-party": "s"}
+CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Other": "#B279A2"}
+CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
     "Paper": "Sinha et al.",
     "Gleipnir": "Gleipnir",
-    "Third-party": "Third-party decision models",
+    "Other": "Other direct-score monitors",
 }
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
@@ -358,7 +358,7 @@ def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFra
             selected["monitor"].isin(GLEIPNIR_METHODS),
         ],
         ["Paper", "Gleipnir"],
-        default="Third-party",
+        default="Other",
     )
     return selected
 

@@ -194,6 +194,6 @@ def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:
     assert "Kimi K2.6 binary logits" not in main.index
     assert {"Kimi K3 binary logits", "GPT-6 Luna binary logprobs"} <= set(main.index)
     assert main.loc["Qwen3.8-27B Kimi-soft strict", "category"] == "Gleipnir"
-    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Third-party"
+    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Other"
     paper = main.loc[main["origin"].eq("Paper")]
     assert len(paper) < int(full["origin"].eq("Paper").sum())
