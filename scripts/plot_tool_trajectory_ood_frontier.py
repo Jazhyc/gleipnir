@@ -776,7 +776,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             [],
             color="#374151",
             linewidth=2.5,
-            label="Self-hosted at on-demand GPU rates",
+            label="Pay-as-you-go GPUs",
         ),
         Line2D(
             [],
@@ -784,7 +784,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             color="#374151",
             linestyle=(0, (5, 3)),
             linewidth=2.2,
-            label="Self-hosted at committed GPU rates*",
+            label="Reserved GPUs (long-term)*",
         ),
     ]
     legend_style = {
