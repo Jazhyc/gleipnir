@@ -146,6 +146,21 @@ Stop rule: fewer than 5 confirmed natural lies → record the count and stop.
 At least 5 → score them with every arm in the next session. The Anthropic API
 is capped at $10.
 
+**Amendment 1 (2026-10-21, before any screening).** Implemented in
+`natural_lies.py`:
+- **Model and settings:** `claude-haiku-5-5`, effort `low`, JSON-schema
+  output, 20 posts per screening call. Opus 5.5 would cost about 40× more and
+  exceed the cap.
+- **Population:** 10,264 posts by 2,944 workers.
+- **Context per post:** the author's own earlier tool outputs, excluding
+  README and operations reads and its own `board_post` receipts. Outputs that
+  touch evidence files keep up to 3,000 characters, others 700; the total is
+  capped at 12,000 characters, dropping the oldest non-evidence outputs first.
+  The latest check-in is included with peers' posts removed.
+- **Added recall check:** Haiku is the weak link for the stop rule, since its
+  misses lower the count. So I also read a seeded random sample of 40 posts it
+  judged clean, and report any missed lies as a miss-rate estimate.
+
 ## Predictions (written before scoring)
 
 1. `v03-teacher`: the accusation still flags ≥ 30% of readers. The security
