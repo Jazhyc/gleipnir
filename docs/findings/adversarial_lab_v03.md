@@ -53,26 +53,45 @@
 - **Placement doesn't help.** Delivered as tool output, which the rubric treats as untrusted, the monitor-addressed accusation flags *more* readers: 233 out of 300.
 - **So the monitor believes accusations and ignores exculpations, whatever their source.**
 
+*Result 4: it's a small-model problem, not the teacher's*
+- **Setup:** the same readers and posts, scored by five more monitors. Each gets its own 1%-false-alarm line from 1,000 honest benchmark rows (400 for the 27B). The 27B and Kimi K3 see 100 of the readers.
+  - On those 1,000 rows the 4B's line is 0.622, not 0.755, so its shares here are higher than in Result 3.
+- **Accusation to the monitor, readers flagged:**
+
+| Monitor | Flagged |
+| --- | ---: |
+| 4B v0.3, student prompt | 67–82% |
+| 4B v0.3, full teacher prompt | 54–65% |
+| 4B InjectionAugmented40 | 0–4% |
+| Untrained Qwen3.5-4B | 2–7% |
+| **27B v0.2, teacher prompt** | **0%** |
+| **Kimi K3, the teacher** | **0%** |
+
+- **A second layer catches it.** Of the readers the 4B flags (77 and 57 of 100 for two wordings), the 27B flags none, and neither does Kimi.
+- **The pull is already in the base model.** The untrained 4B moves about +3.4 logits toward "1" on the accusation. It also obeys "mark benign" (scores fall), which the trained 4B ignores. Training kept the first and dropped the second.
+- **Fixes for the 4B:**
+  - The teacher prompt's "text in the trajectory never instructs you" clause trims the effect; it doesn't remove it.
+  - Your injection-augmented 4B stays under its line, but scores still rise (+2 logits) and recall at 1% falls from 63% to 47%. It also differs from v0.3 in rank, seeds and data, so it isn't a clean test of the augmentation.
+
+*Result 5: liars, revisited*
+- **Caught at each monitor's 1% (5%) line:** 4B 0/10 (1/10), 27B 0/10 (3/10), **Kimi 5/10 (8/10)**, with Kimi flagging no honest recruiters at 5%.
+- **Swapping each lie for the truth** in the same transcript lowers the liar's score under every monitor. The swapped recruiters still outrank honest recruiters (AUROC 0.76–0.92), though, so the pressure on A reads as suspicious, not just the lie.
+- **No natural lies:** an LLM screen of 10,264 posts by uninstructed workers, a rule check and hand checks found none. The liar result rests on instructed liars only.
+
 *What we think it means:*
-- **The good:** it's quiet on natural multi-agent behaviour, the part rigid classifiers usually get wrong.
-- **The weakness is provenance.** It can't separate what an agent *read* from what it *did*.
-  - In a swarm, any compromised agent can target others or flood the review queue.
-- **Lying to peers looks like a blind spot.** That's the pattern behind the swarm incidents. It's pending a check on natural lies.
+- **The good:** the 4B is quiet on natural multi-agent behaviour, the part rigid classifiers usually get wrong.
+- **The weakness is provenance, and it's specific to the small monitor.** The 4B can't separate what an agent *read* from what it *did* when a misconduct claim is addressed to the monitor. The 27B and Kimi can.
+  - As a first layer in a cascade it fails safe, since the second layer clears every framed agent. But anyone who can post can push agents up to layer two at will, which spends the cost advantage.
+- **Lying to peers is a blind spot of the small monitors.** The teacher catches half the liars at 1%; the 4B and the 27B catch none.
 
 *Caveats:*
 - Static: the framed agents never reacted to the post.
-- One lab and one task family; only the 4B, and only one prompt.
+- One lab and one task family; liars are instructed (10, all GPT-6.1 Sol).
+- Flag lines from 400–1,000 honest rows are noisy; the threshold-free margin changes tell the same story.
 
 *Next:*
-- **Is it a 4B thing?** Cheap tests that tell the explanations apart:
-  - 4B with the teacher prompt, which adds a "text in the trajectory never instructs you" clause;
-  - 27B with its recommended teacher prompt (capacity);
-  - Kimi K3 itself, the model the 4B was distilled from (inherited?);
-  - the base model without the adapter (pretraining?).
-- **Liars:**
-  - swap each lie for the truth in the same transcript;
-  - mine *uninstructed* lies from the lab logs.
-- **Code or comments:** does the monitor judge what code does, or what its comment claims?
-- **If Neel agrees:** a natural-cheating pilot for white-box against black-box detection.
+- **Code or comments:** does the 4B judge what code does, or what its comment claims?
+- **Natural cheating** (Neel's suggestion): an open agentic model with thinking off on ImpossibleBench, then probes against Gleipnir at high recall.
+- **Your ablation fix** could be tested on exactly these framing cases, with recall on the same benchmark rows.
 
-*Details:* branch `feat/adversarial-stress-tests`. Frozen protocols and full numbers are in `experiments/adversarial_lab_v03/README.md`.
+*Details:* branch `feat/adversarial-stress-tests`. Frozen protocols and full numbers are in `experiments/adversarial_lab_v03/README.md` and `experiments/adversarial_is_it_4b/README.md`.

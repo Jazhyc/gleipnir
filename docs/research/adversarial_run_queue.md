@@ -8,7 +8,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- **Is the framing effect a 4B thing? (steps 0–3, 21 October).** 4B v0.3 with the teacher prompt, the untrained base, InjectionAugmented40, the 27B with its teacher prompt and Kimi K3 on the same framing readers and liars; a lie-for-truth swap; recall-first lines; a natural-lie search. [Protocol](../../experiments/adversarial_is_it_4b/README.md).
+Nothing. The H100 VM is paused (`541509`).
 
 ## Next, in order
 
@@ -42,6 +42,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Done
 
+- **Is the framing effect a 4B thing? (steps 0–3, 21 October).** It is a small-model effect. The accusation to the monitor flags 54–82% of readers for 4B v0.3 (either prompt), but 0% for the 27B with its teacher prompt and 0% for Kimi K3, and neither flags any reader the 4B flags. The untrained base already leans toward the accusation; InjectionAugmented40 stays under its line, at lower recall. Kimi catches 5 of 10 liars at 1%; swapping lies for truth lowers every monitor's liar scores; no natural lies were found. See the [protocol and results](../../experiments/adversarial_is_it_4b/README.md).
 - **Lab v0.3 follow-up** (20 October): placement, rewordings, benign notes, and one-machine thresholds. A monitor-directed misconduct claim flags 43–78% of innocent readers across wordings and both placements, while a benign note flags none. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **Lab v0.3, Runs 0–2 plus the drift check** (20 October). There are almost no false alarms on natural lab behaviour, and 0 of 10 liars are flagged, though they rank well. One monitor-directed peer post gets 69% of honest readers flagged at 1%. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **4B v0.1 baseline.** It reproduces the card, and injected text backfires: [baseline](../../experiments/adversarial_baseline_4b/README.md).
