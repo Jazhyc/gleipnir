@@ -12,7 +12,20 @@ The current plot is tracked as a sharp vector
 [`SVG`](../../figures/tool_trajectory_ood_frontier.svg) with a
 [`PNG`](../../figures/tool_trajectory_ood_frontier.png) fallback and is
 regenerated directly from the table below with
-`python scripts/plot_tool_trajectory_ood_frontier.py`. Shared plotting helpers
+`python scripts/plot_tool_trajectory_ood_frontier.py`.
+
+The main figure is simplified (user decision, 2026-10-20). It drops:
+
+- weaker siblings of decision models (Microsoft-Decision-1, d1);
+- base models without an improvement arrow (Qwen3.5-9B, Qwen3.5-27B,
+  Qwen3.5-35B-A3B);
+- Kimi K2.6 (the teacher is Kimi K3);
+- paper points that are neither on the paper frontier nor labelled
+  comparisons.
+
+It also separates Gleipnir from third-party decision models. The appendix
+figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
+eligible row. Shared plotting helpers
 live in `src/gleipnir/analysis/plotting.py`; see
 [`../../figures/README.md`](../../figures/README.md) before adding another plot.
 

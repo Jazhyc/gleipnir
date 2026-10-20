@@ -169,3 +169,18 @@ def test_pricing_regimes_have_separate_frontiers() -> None:
     assert not frame.loc[committed, "on_demand_frontier"].any()
     assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
     assert not frame.loc[[decider], "committed_frontier"].any()
+
+
+def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE)
+    main = select_plot_points(frame).set_index("monitor")
+    full = select_plot_points(frame, full=True).set_index("monitor")
+
+    assert "d1 native probabilities" in full.index
+    assert "d1 native probabilities" not in main.index
+    assert "Kimi K2.6 binary logits" not in main.index
+    assert {"Kimi K3 binary logits", "GPT-6 Luna binary logprobs"} <= set(main.index)
+    assert main.loc["Qwen3.8-27B Kimi-soft strict", "category"] == "Gleipnir"
+    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Third-party"
+    paper = main.loc[main["origin"].eq("Paper")]
+    assert len(paper) < int(full["origin"].eq("Paper").sum())

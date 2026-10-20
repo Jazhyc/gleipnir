@@ -32,12 +32,34 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
+FULL_OUTPUTS = [
+    REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.png",
+    REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
+]
 EXCLUDED_MONITORS = {
     "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
     # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
     # the registry keeps its row.
     "Qwen3.5-9B Kimi-soft mixed",
+}
+# Omitted from the main figure only (user, 2026-10-20); the full appendix
+# figure keeps them. Weaker siblings of decision models, early base-model
+# references without an improvement arrow, and Kimi K2.6 (the teacher is K3).
+MAIN_FIGURE_OMISSIONS = {
+    "Microsoft-Decision-1 native probabilities",
+    "d1 native probabilities",
+    "Qwen3.5-9B base",
+    "Qwen3.5-27B base",
+    "Qwen3.5-35B-A3B base (mixed providers)",
+    "Kimi K2.6 binary logits",
+}
+CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Third-party": "#B279A2"}
+CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Third-party": "s"}
+CATEGORY_LABELS = {
+    "Paper": "Sinha et al.",
+    "Gleipnir": "Gleipnir",
+    "Third-party": "Third-party decision models",
 }
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
@@ -286,8 +308,12 @@ def _display_label(monitor: str) -> str:
     return "\n".join(textwrap.fill(line, width=22) for line in display.split("\n"))
 
 
-def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
-    """Apply documented presentation-only omissions to registry points."""
+def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFrame:
+    """Apply documented presentation-only omissions to registry points.
+
+    The main figure also drops ``MAIN_FIGURE_OMISSIONS`` and paper points that
+    are neither on the paper frontier nor labelled comparisons.
+    """
     is_ours = frame["origin"].eq("Gleipnir")
     is_binary_score_interface = frame["interface"].str.contains(
         "logits|logprobs|native binary probability", case=False, na=False
@@ -297,7 +323,26 @@ def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
         & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
         & (~is_ours | is_binary_score_interface)
     )
-    return frame.loc[included].copy()
+    if not full:
+        paper = frame["origin"].eq("Paper") & included
+        paper_frontier = pd.Series(False, index=frame.index)
+        paper_frontier[paper] = pareto_frontier_mask(
+            frame.loc[paper, "cost_per_1k"].to_numpy(),
+            frame.loc[paper, "mean_ood_pauroc_at_20"].to_numpy(),
+        )
+        included &= ~frame["monitor"].isin(MAIN_FIGURE_OMISSIONS) & (
+            ~paper | paper_frontier | frame["monitor"].isin(PAPER_COMPARISON_MONITORS)
+        )
+    selected = frame.loc[included].copy()
+    selected["category"] = np.select(
+        [
+            selected["origin"].eq("Paper"),
+            selected["monitor"].isin(GLEIPNIR_METHODS),
+        ],
+        ["Paper", "Gleipnir"],
+        default="Third-party",
+    )
+    return selected
 
 
 def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
@@ -346,9 +391,9 @@ def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
 
 
-def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
+def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
-    frame = select_plot_points(frame)
+    frame = select_plot_points(frame, full=full)
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
@@ -410,15 +455,14 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             zorder=2,
         )
 
-    markers = {"Paper": "o", "Gleipnir": "D"}
     committed = frame["pricing"].eq("committed")
-    for origin, group in frame.loc[~committed].groupby("origin", sort=False):
+    for category, group in frame.loc[~committed].groupby("category", sort=False):
         sns.scatterplot(
             data=group,
             x="cost_per_1k",
             y="mean_ood_pauroc_at_20",
-            color=ORIGIN_PALETTE.get(origin, "#777777"),
-            marker=markers.get(origin, "o"),
+            color=CATEGORY_PALETTE[category],
+            marker=CATEGORY_MARKERS[category],
             s=92,
             alpha=0.78,
             edgecolor="#374151",
@@ -432,8 +476,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             data=group_frontier,
             x="cost_per_1k",
             y="mean_ood_pauroc_at_20",
-            color=ORIGIN_PALETTE.get(origin, "#777777"),
-            marker=markers.get(origin, "o"),
+            color=CATEGORY_PALETTE[category],
+            marker=CATEGORY_MARKERS[category],
             s=165,
             edgecolor="#111827",
             linewidth=1.5,
@@ -571,23 +615,19 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
-    origin_labels = {
-        "Paper": "Sinha et al.",
-        "Gleipnir": "Decision models",
-    }
     legend_handles = [
         Line2D(
             [],
             [],
-            marker=markers[origin],
+            marker=CATEGORY_MARKERS[category],
             linestyle="none",
             markerfacecolor=color,
             markeredgecolor="#374151",
             markeredgewidth=0.65,
             markersize=10.5,
-            label=origin_labels.get(origin, origin),
+            label=CATEGORY_LABELS[category],
         )
-        for origin, color in ORIGIN_PALETTE.items()
+        for category, color in CATEGORY_PALETTE.items()
     ]
     legend_handles.append(
         Line2D(
@@ -656,18 +696,26 @@ def parse_args() -> argparse.Namespace:
             "PNG and SVG."
         ),
     )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Plot every registry point (the appendix figure)",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     frame = load_frontier_registry(args.source)
-    plotted = select_plot_points(frame)
+    plotted = select_plot_points(frame, full=args.full)
     omitted_count = len(frame) - len(plotted)
-    outputs = args.output or [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
+    default_outputs = (
+        FULL_OUTPUTS if args.full else [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
+    )
+    outputs = args.output or default_outputs
     frontier_count = int(plotted["computed_frontier"].sum())
     for output_path in outputs:
-        output = save_figure(plot_frontier(frame), output_path)
+        output = save_figure(plot_frontier(frame, full=args.full), output_path)
         print(
             f"Wrote {output} from {len(plotted)} plotted points "
             f"({frontier_count} frontier; {omitted_count} omitted)."
