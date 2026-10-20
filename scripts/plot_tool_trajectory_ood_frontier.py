@@ -43,10 +43,8 @@ GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
     "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
-    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": (
-        "Gleipnir 4B\n(committed GPUs)"
-    ),
-    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B\n(committed GPUs)",
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": "Gleipnir 4B*",
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B*",
 }
 # Self-hosted rows are priced at on-demand or committed-use GPU rates. Each
 # regime gets its own frontier against the list-priced rows.
@@ -75,7 +73,7 @@ MANUAL_COMPARISON_LABELS = {
     },
     # Below-right, clear of the y-axis tick labels.
     "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": {
-        "xytext": (-2, -22),
+        "xytext": (-2, -14),
         "ha": "left",
         "va": "top",
     },
@@ -589,7 +587,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markeredgewidth=2.0,
             linewidth=2.2,
             markersize=10.5,
-            label="Frontier, Gleipnir committed",
+            label="Frontier, Gleipnir* committed GPUs",
         )
     )
     legend_handles.append(
