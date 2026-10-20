@@ -531,6 +531,29 @@ is a hosted list price, while the Gleipnir rows are self-hosted break-even
 at full utilization. SHADE-Arena stays weakest at
 `0.6054`.
 
+**Self-hosting it costs far more than its list price.**
+- **Measured.** The published fast path (packed batches, `torch.compile`,
+  CUDA graphs) scored the full workload on our B200 at 13,515 prompt
+  tokens/s (56,359,499 tokens in 4,170 s).
+- **Break-even.** At the same `$7.99/h`, 100%-utilization rule as the
+  Gleipnir rows, that is `$0.164/M` tokens, or `$1.447/1K` evaluations:
+  8.2 times the `$0.02/M` list price.
+- **Flash.** pplx-decider-flash v1.2 behaves the same way: 30,655 tokens/s,
+  `$0.072/M`, 7.2 times its `$0.01/M` price.
+- **What the list price implies.** Matching `$0.02/M` at `$7.99/h` would
+  need about 111K tokens/s on one B200. For comparison, Gleipnir 27B (same
+  Qwen3.8-27B backbone, causal attention) reaches 53.9K tokens/s on our
+  optimized stack, at which the Decider would still break even at about
+  `$0.041/M`. The Decider's bidirectional attention and custom readout also
+  keep it out of standard causal serving stacks.
+- **Conclusion.** The list price implies a serving stack well beyond the
+  published one, cheaper GPUs, or pricing below cost.
+- **Plotting.** The plot keeps the list price, which is what users pay.
+  Plotted at self-hosted break-even, it would sit well behind Gleipnir 27B.
+- **Caveat.** Only the documented runtime configuration was measured, with
+  no batch-size tuning or quantization.
+- **Receipts.** `results/pplx_decider_ood/{decider,flash}/full_fast.receipt.json`.
+
 The 4B sibling `pplx-decider-flash-v1.2` scores `0.5350` at `$0.0881/1K`.
 At the user's request it is not added, because it falls below base
 Qwen3.5-4B (`0.6175`). See the
