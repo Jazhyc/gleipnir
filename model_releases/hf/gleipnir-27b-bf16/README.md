@@ -74,8 +74,32 @@ risk_score = torch.softmax(next_logits, dim=0)[1].item()
 print(risk_score)
 ```
 
-The project's stock BF16 results were served by vLLM 0.31 through its own
-monitor-scoring endpoint, which reads the same two final-position logits.
+### vLLM
+
+For throughput on any GPU, serve this repository with stock vLLM 0.31.
+Its pooling runner turns the model into a classifier over the `0` and `1`
+logits at the last position:
+
+```bash
+vllm serve Jazhyc/Gleipnir-27B-BF16 --revision v0.2 --served-model-name monitor \
+  --dtype bfloat16 --language-model-only --max-model-len 32768 --no-enable-prefix-caching \
+  --runner pooling --convert classify \
+  --pooler-config '{"pooling_type": "LAST", "use_activation": false}' \
+  --hf-overrides '{"classifier_from_token": ["0", "1"], "method": "no_post_processing",
+    "num_labels": 2, "is_causal": true, "text_config": {"classifier_from_token": ["0", "1"],
+    "method": "no_post_processing", "num_labels": 2, "is_causal": true, "mamba_ssm_dtype": "float32"}}'
+
+curl -s localhost:8000/classify -H 'Content-Type: application/json' -d '{"model": "monitor",
+  "input": "<rendered prompt>", "add_special_tokens": false, "use_activation": false}'
+# data[0].probs holds the raw [logit_0, logit_1]; score = softmax(...)[1]
+```
+
+The classifier settings repeat inside `text_config` because the Qwen
+checkpoint wraps the language model. `mamba_ssm_dtype` keeps the GDN state
+in FP32, as in the project's runs. Send the same rendered prompt as in the
+Transformers example. On an RTX PRO 6000 this reproduced the project's
+recorded BF16 results on the ID split (0.9421 against 0.9420 pAUROC@20;
+per-row MAE 0.0014) at 6.5K prompt tokens/s.
 
 For the highest throughput on an NVIDIA B200, use the project's optimized
 serving image, which loads this checkpoint and quantizes it at load time; see

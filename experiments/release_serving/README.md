@@ -40,6 +40,9 @@ These are packaging releases: the weights are unchanged.
     compile race, up to three attempts.
 - `validate.py`: scores a target's frozen ID and OOD workloads against a
   running server.
+- `stock_vllm.py` (with `cluster/slurm/release_stock_vllm.sh`): the
+  documented stock `vllm serve` recipe for the `-BF16` repositories, and a
+  check against the recorded BF16 rows.
 
 ## Validation (frozen before the build, 2026-10-20)
 
@@ -181,6 +184,22 @@ metrics move by about 0.001.
     warm caches; the 27B shows no warm-up effect.
   - **Decision:** a persistent compile-cache mount is optional, not
     needed.
+
+## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
+
+Public `-BF16` repositories at their release tags, served with the recipe in
+`stock_vllm.py`. Reports are in `results/release_serving/stock_vllm/`.
+
+| Model | Split | pAUROC@20 (recorded BF16) | Per-row MAE | Max diff | Corr. | Prompt tok/s |
+|---|---|---:|---:|---:|---:|---:|
+| 4B (job 33133031) | ID | 0.9335 (0.9332) | 0.0040 | 0.044 | 0.99986 | 36.7K |
+| 4B | OOD | 0.8045 (0.8039) | 0.0046 | 0.073 | 0.99978 | 36.4K |
+| 27B (job 33135694) | ID | 0.9421 (0.9420) | 0.0014 | 0.022 | 0.99998 | 6.5K |
+
+The 27B was checked on ID only, to fit the cluster time limit. The servers
+were ready after 230 s (4B) and 150 s (27B), downloads included. The
+cluster's default `.venv` (vLLM 0.24) returned NaN logits with this recipe
+(job 33132534).
 
 ## Deferred image features (next B200 session)
 

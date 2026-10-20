@@ -85,6 +85,13 @@ restoring the volume stack:
 
   Never ship partially traced compile caches.
 
+Stock `vllm serve` of the released `-BF16` repositories is documented in the
+root README and validated with `cluster/slurm/release_stock_vllm.sh`. It
+needs the locked vLLM 0.31 environment `.venv-vllm031`
+(`UV_PROJECT_ENVIRONMENT=.venv-vllm031 uv sync --locked`); the cluster's
+default `.venv` keeps vLLM 0.24 for frozen controls, and that version
+returned NaN logits there.
+
 ## Persistent serving process
 
 Standing user preference: when an inference change needs a different

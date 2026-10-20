@@ -38,6 +38,10 @@ BF16_ROWS = {
         "id": "results/qad-v02-bf16-01/evaluation/id.jsonl",
         "ood": "results/qad-v02-bf16-01/evaluation/ood.jsonl",
     },
+    "27b": {
+        "id": "results/optimized_gap/bf16_teacher_id.jsonl",
+        "ood": "results/optimized_gap/bf16_teacher_ood.jsonl",
+    },
 }
 
 
@@ -99,6 +103,7 @@ def main() -> None:
     parser.add_argument("model", choices=sorted(BF16_ROWS))
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--splits", nargs="+", choices=("id", "ood"))
     args = parser.parse_args()
     target = TARGETS[args.model]
     report = {
@@ -107,6 +112,8 @@ def main() -> None:
         "splits": {},
     }
     for split, (workload_path, _, _) in target.validation.items():
+        if args.splits and split not in args.splits:
+            continue
         workload = rows(workload_path)
         started = time.perf_counter()
         scored = []

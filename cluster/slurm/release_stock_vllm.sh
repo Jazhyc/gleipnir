@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #SBATCH --job-name=gleipnir-stock-vllm
-#SBATCH --time=02:00:00
+#SBATCH --time=04:00:00
 #SBATCH --mem=64GB
 #SBATCH --partition=gpushort
 #SBATCH --gpus-per-node=rtx_pro_6000:1
@@ -13,6 +13,7 @@
 set -euo pipefail
 cd "${SLURM_SUBMIT_DIR:-$(pwd)}"
 MODEL=${1:-4b}
+shift || true
 mkdir -p logs/slurm/release_serving results/release_serving/stock_vllm
 log="logs/slurm/release_serving/stock-vllm-${MODEL}-${SLURM_JOB_ID}.out"
 exec >"${log}" 2>&1
@@ -42,5 +43,5 @@ until curl -sf localhost:8000/health >/dev/null; do
 done
 echo "ready after $(( $(date +%s) - started )) s"
 python -m experiments.release_serving.stock_vllm "${MODEL}" \
-  --output "results/release_serving/stock_vllm/${MODEL}.json"
+  --output "results/release_serving/stock_vllm/${MODEL}.json" "$@"
 echo STOCK_VLLM_DONE

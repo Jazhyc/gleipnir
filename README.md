@@ -35,8 +35,36 @@ run it:
 1. **Transformers + PEFT** (any GPU): load the base model and the adapter
    repository. The model cards have a complete example. Use this to merge or
    fine-tune the adapter.
-2. **Merged BF16** (any GPU): load `Jazhyc/Gleipnir-{4B,27B}-BF16` directly
-   with Transformers. Its scores are reproducible from run to run.
+2. **Merged BF16 with stock vLLM** (any GPU; the throughput route off the
+   B200). Serve `Jazhyc/Gleipnir-{4B,27B}-BF16` with vLLM 0.31's pooling
+   runner, which turns the model into a classifier over the `0` and `1`
+   logits at the last position. Use the 27B repository and `v0.2` for the
+   27B. Transformers also loads these repositories directly.
+
+   ```bash
+   vllm serve Jazhyc/Gleipnir-4B-BF16 --revision v0.4 --served-model-name monitor \
+     --dtype bfloat16 --language-model-only --max-model-len 32768 --no-enable-prefix-caching \
+     --runner pooling --convert classify \
+     --pooler-config '{"pooling_type": "LAST", "use_activation": false}' \
+     --hf-overrides '{"classifier_from_token": ["0", "1"], "method": "no_post_processing",
+       "num_labels": 2, "is_causal": true, "text_config": {"classifier_from_token": ["0", "1"],
+       "method": "no_post_processing", "num_labels": 2, "is_causal": true, "mamba_ssm_dtype": "float32"}}'
+
+   curl -s localhost:8000/classify -H 'Content-Type: application/json' -d '{"model": "monitor",
+     "input": "<rendered prompt>", "add_special_tokens": false, "use_activation": false}'
+   # data[0].probs holds the raw [logit_0, logit_1]; score = softmax(...)[1]
+   ```
+
+   - **Overrides.** The classifier settings repeat inside `text_config`,
+     because Qwen3.5/3.8 wrap the language model; `mamba_ssm_dtype` keeps
+     the GDN state FP32.
+   - **Validated** on an RTX PRO 6000 against the recorded BF16 scores
+     (`cluster/slurm/release_stock_vllm.sh`). For the 4B: ID 0.9335 against
+     0.9332 and OOD 0.8045 against 0.8039, per-row MAE 0.004, 36K prompt
+     tokens/s. For the 27B (ID only): 0.9421 against 0.9420, per-row MAE
+     0.0014, 6.5K prompt tokens/s. Scores are reproducible to about 0.005
+     per row.
+   - **Prefix caching** stays off, matching the evaluated setup.
 3. **Optimized B200 serving** (fastest; one NVIDIA B200 only). The image
    quantizes the BF16 checkpoint at load (FP8 attention projections, FP4
    MLP/GDN, MXFP8 attention). One B200 scores about 226K prompt tokens/s
