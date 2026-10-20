@@ -77,6 +77,33 @@ By source (pAUROC@20): AgentDojo 0.9430 → 0.7913 (−0.152), SHADE-Arena
   optimized scores from this host's merge. Both pass parity against the same
   FP32 master.
 
+### Gleipnir 27B: optimized minus BF16, −0.25 points on Mean-OOD pAUROC@20
+
+`opt27b_eu02` used the identical re-merge (rebuilt on the host that made the
+campaign merge) and `QuantFullWorker` with the `graphs01` flags. The first
+attempt (`opt27b_eu01`) hit the intermittent MXFP8 compile failure; the
+retry ran through.
+
+| Gleipnir 27B, OOD | BF16 | Optimized | Change |
+|---|---:|---:|---:|
+| Mean-OOD pAUROC@20 | 0.9087 | 0.9062 | −0.0025 |
+| Mean-OOD AUROC | 0.9679 | 0.9723 | +0.0045 |
+| Pooled pAUROC@20 | 0.9234 | 0.9219 | −0.0015 |
+| Mean Brier | 0.0574 | 0.0564 | −0.0010 |
+
+By source (pAUROC@20): AgentDojo 0.9983 → 0.9843 (−0.014), CUA-SHADE
+0.8806 → 0.8741 (−0.006), IaC 0.9871 → 0.9851 (−0.002), SHADE-Arena
+0.5875 → 0.5950 (+0.008); MLE-Sabotage and Rogue Eval unchanged. Mean
+absolute score change 0.0255 (maximum 0.41), 108 threshold flips;
+53.9K prompt tokens/s.
+
+**Reading.** The same FP8/FP4/MXFP8 recipe costs the 27B a quarter of a
+point and the 4B over five points. Most of the QAD headroom is in the 4B.
+The 27B's optimized stack already almost matches BF16 without QAD. The 4B's
+ID loss for this recipe was much smaller (−0.29 ID points was the 27B
+figure; the 4B ID gap was not rerun here). The 4B's OOD drift is
+concentrated in AgentDojo and SHADE-Arena.
+
 ### Findings while getting there
 
 - **Merges are not bit-portable across CPU vendors.** FP32 `b @ a` uses
