@@ -167,6 +167,9 @@ It replaced the v0.1 point, the full-mixed adapter trained with 13,149
 deception rows (`0.7823` Mean-OOD pAUROC@20, `0.9086` AUROC, same cost). The
 three individual seeds score `0.7869`, `0.8125` and `0.7768`.
 
+Gleipnir 9B is kept in the table but not plotted (user decision, 2026-10-20):
+Gleipnir 4B v0.3 supersedes it, and it is no longer being optimized.
+
 The full-mixed Qwen3.5-9B adapter reaches `0.8212` Mean-OOD pAUROC@20 and
 `0.9215` Mean-OOD AUROC. At the frozen dated `$0.10/M` input and `$0.40/M`
 output proxy, the same compact prompt costs `$0.8659/1K`. It improves

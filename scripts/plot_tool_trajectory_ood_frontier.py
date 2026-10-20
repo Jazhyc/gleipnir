@@ -35,6 +35,9 @@ DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.
 EXCLUDED_MONITORS = {
     "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
+    # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
+    # the registry keeps its row.
+    "Qwen3.5-9B Kimi-soft mixed",
 }
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
