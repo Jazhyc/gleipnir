@@ -1,0 +1,61 @@
+experiment: qad-v02-01
+seed: 0
+training_rows: 7836
+training_tokens: 75851675
+updates: 245
+learning_rate: 1.0e-5
+temperature: 1.0
+logical_batch: 32
+packing_budget: 16384
+max_length: 29696
+warmup_ratio: 0.03
+weight_decay: 0.0
+base_model: .cache/huggingface/hub/models--Qwen--Qwen3.5-4B/snapshots/851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a
+# Gleipnir 4B v0.2: the exact rank-384 three-seed average (BF16/SDPA seeds).
+initial_adapter: results/teacher-seed-sdpa-avg012-01/4b/monitor/causal_adapter
+initial_adapter_sha256: 97d234eed23fdfae6c42ad33484dec3dbe1b44b883d3d3f0eab9ca85c375f160
+# The v0.2 merge built and parity-checked on this host (optimized_gap).
+teacher_merge: /tmp/gleipnir-merged/gleipnir4b-v02-ood-optimized01
+teacher_merge_artifact: results/gleipnir4b-v02-ood-optimized01/merged_artifact.json
+gpu_uuid: GPU-3d8d6bde-5512-8b51-90a1-09e467c5bd50
+training_python: /tmp/gleipnir-training-runtime/venv/bin/python
+serving_python: /tmp/gleipnir-vllm031-runtime/bin/python
+inputs:
+  training:
+    path: data/teacher-disagreement-delta000-sdpa04/training.jsonl
+    sha256: 9043e2c92189bc51fba06179db769c6a20f0576a00198043a43807625a9c653a
+  id:
+    path: data/id_cot_only_evaluation/prompts.jsonl
+    sha256: 7a4ec604740b4b3b7bd70aafd4473b1b6bfcbf92706bcd23b90ed8df2c4bc1b4
+  id_workload:
+    path: results/b200_optimized_id/id02/workload.json
+    sha256: d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60
+  # Same 7,836 rows and prompt bytes: built from training sha 9043e2c9.
+  workload:
+    path: data/quantization-recovery01/workload.jsonl
+    sha256: dfa694769c97e12b875135bdc1378b34c306142b9d29aab630be5a1f9df90fda
+alignment:
+  max_mean_absolute_difference: 0.02
+  min_correlation: 0.99
+  min_adapter_effect: 1.0e-06
+evaluation:
+  repeats: 1
+  concurrency: 128
+  batch_rows: 128
+  port: 8010
+  timeout_seconds: 300
+  promote: false
+teacher_experiment: qad-v02-01
+# Canary ids/base scores and the current optimized server's canary on v0.2.
+canary_reference: results/teacher-seed-sdpa-avg012-01/4b/monitor/parity_reference.json
+initial_server_canary: results/gleipnir4b-v02-ood-optimized01/optimized_canary_predictions.json
+reference_sources:
+  src/gleipnir/training/qat_optimization.py: 85f9cefd6b82ef078b382cf55140a90110ba6df9a001a0ac8d4129fe0165e97e
+  src/gleipnir/training/quantization_recovery.py: ca24aafaef3637f4723ca37adc9d902e35ee27867f4143eb64c292957de50a88
+  src/gleipnir/kernels/fp4/decode.py: dcae04c14a5fb4e7bf6ba2219f594e205803f07367a8e2d4686060ce7c724382
+structural_reference:
+  path: results/qat-training-optimization02/verified_comparison.json
+  sha256: a7c48807f9ece3be0871450595f2e209c00e5707d817cb1186b4b4c78f767d11
+decoder_reference:
+  path: results/quantization-recovery01/decoder_canary.json
+  sha256: c21f5171c44775ae9df6da5f4f47c360affcbf3969d5a53c16fdb43c162bc487
