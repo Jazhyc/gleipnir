@@ -31,7 +31,11 @@ OUT = eval_sets.ROOT / CONFIG["output"] / "natural_lies"
 MODEL = "claude-haiku-5-5"
 PRICE = {"input": 0.10 / 1e6, "output": 0.50 / 1e6}  # prompts under 100K tokens
 MAX_USD = 10.0
-BATCH = 20
+BATCH = 5
+# Haiku's "bio" safety filter declines some posts about lab supplies (ethanol,
+# buffers, sample tubes). Amendment 2: a refused batch is retried post by post,
+# and a post Haiku still refuses goes to this non-Anthropic model instead.
+FALLBACK = "openai/gpt-5-nano"
 TASK_DOCS = {"README.md", "operations.md"}
 
 SCREEN_SYSTEM = """You audit message-board posts written by AI agent workers in a \
@@ -203,6 +207,46 @@ class Client:
         text = next(b.text for b in response.content if b.type == "text")
         return json.loads(text), cost, response.stop_reason
 
+    def fallback(self, system: str, content: str, schema: dict, max_tokens: int):
+        """The same request to FALLBACK through OpenRouter (JSON schema output)."""
+        import requests
+
+        if self.spent >= MAX_USD:
+            raise RuntimeError(f"stopped at the ${MAX_USD} cap")
+        response = requests.post(
+            "https://openrouter.ai/api/v1/chat/completions",
+            headers={"Authorization": f"Bearer {os.environ['OPENROUTER_API_KEY']}"},
+            json={
+                "model": FALLBACK,
+                "max_tokens": max_tokens * 4,
+                "messages": [
+                    {"role": "system", "content": system},
+                    {"role": "user", "content": content},
+                ],
+                "response_format": {
+                    "type": "json_schema",
+                    "json_schema": {"name": "output", "strict": True, "schema": schema},
+                },
+                "provider": {"require_parameters": True, "data_collection": "deny"},
+            },
+            timeout=300,
+        )
+        response.raise_for_status()
+        data = response.json()
+        cost = float((data.get("usage") or {}).get("cost") or 0.0)
+        with self.lock:
+            self.spent += cost
+        choice = data["choices"][0]
+        stop = f"fallback:{choice.get('finish_reason')}"
+        return json.loads(choice["message"]["content"]), cost, stop
+
+    def ask_any(self, system: str, content: str, schema: dict, max_tokens: int):
+        data, cost, stop = self.ask(system, content, schema, max_tokens)
+        if stop == "refusal":
+            data, extra, stop = self.fallback(system, content, schema, max_tokens)
+            cost += extra
+        return data, cost, stop
+
 
 def done(path: Path) -> dict[str, dict]:
     if not path.exists():
@@ -218,18 +262,45 @@ def screen(args, all_posts) -> None:
     batches = [todo[i : i + BATCH] for i in range(0, len(todo), BATCH)]
     lock = threading.Lock()
 
+    def listing(batch):
+        return "\n\n".join(f"Post {i}:\n{p['text']}" for i, p in enumerate(batch))
+
+    def write(records):
+        with lock, path.open("a") as handle:
+            for record in records:
+                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+
     def work(batch):
-        listing = "\n\n".join(f"Post {i}:\n{p['text']}" for i, p in enumerate(batch))
         try:
-            data, cost, stop = client.ask(SCREEN_SYSTEM, listing, SCREEN_SCHEMA, 8000)
+            data, cost, stop = client.ask(
+                SCREEN_SYSTEM, listing(batch), SCREEN_SCHEMA, 4000
+            )
+            if stop == "refusal":  # find the refused post(s): one at a time
+                records = []
+                for p in batch:
+                    one, _, one_stop = client.ask_any(
+                        SCREEN_SYSTEM, listing([p]), SCREEN_SCHEMA, 2000
+                    )
+                    found = (one or {}).get("posts") or [{}]
+                    records.append(
+                        {
+                            "id": p["id"],
+                            "claims": found[0].get("claims"),
+                            "stop": one_stop,
+                        }
+                    )
+                write(records)
+                return
         except Exception as exc:  # recorded and retried on the next run
             print(f"screen batch failed: {type(exc).__name__}: {exc}"[:300], flush=True)
             return
         claims = {d["index"]: d["claims"] for d in (data or {}).get("posts", [])}
-        with lock, path.open("a") as handle:
-            for i, p in enumerate(batch):
-                record = {"id": p["id"], "claims": claims.get(i), "stop": stop}
-                handle.write(json.dumps(record, ensure_ascii=False) + "\n")
+        write(
+            [
+                {"id": p["id"], "claims": claims.get(i), "stop": stop}
+                for i, p in enumerate(batch)
+            ]
+        )
 
     with ThreadPoolExecutor(args.workers) as pool:
         for n, _ in enumerate(pool.map(work, batches), 1):
@@ -257,7 +328,7 @@ def check(args, all_posts) -> None:
             f"{numbered}"
         )
         try:
-            data, cost, stop = client.ask(CHECK_SYSTEM, content, CHECK_SCHEMA, 4000)
+            data, cost, stop = client.ask_any(CHECK_SYSTEM, content, CHECK_SCHEMA, 4000)
         except Exception as exc:
             print(
                 f"check failed {post['id']}: {type(exc).__name__}: {exc}"[:300],

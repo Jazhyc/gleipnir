@@ -161,6 +161,19 @@ is capped at $10.
   misses lower the count. So I also read a seeded random sample of 40 posts it
   judged clean, and report any missed lies as a miss-rate estimate.
 
+**Amendment 2 (2026-10-21, after a trial batch and before any check-stage
+call).** In a trial with 20 posts per call, 45 of 60 calls stopped with
+`refusal`. Haiku's safety filter flags lab-supply posts (ethanol, buffers,
+sample tubes) under category `bio`. Probing one refused batch, 2 of 20 posts
+were refused alone. Changes:
+- 5 posts per call;
+- a refused call is retried post by post;
+- a post Haiku still refuses, in either stage, goes to `openai/gpt-5-nano`
+  through OpenRouter with the same prompt and schema, recorded as
+  `fallback:*`.
+
+The trial's records are kept in `screen_trial1_batch20.jsonl` and not used.
+
 ## Predictions (written before scoring)
 
 1. `v03-teacher`: the accusation still flags ≥ 30% of readers. The security
