@@ -40,6 +40,9 @@ QAD_EVAL = "qad-v02-optimized01"
 # bundles quack 0.6.5 for CUTLASS DSL 4.8; the EU serving overlay behind
 # .cache/kernels/fa4 lacks it, so the venv's older quack fails to import.
 TRAINING_FA4 = "/tmp/gleipnir-training-runtime/fa4"
+# The EU network volume is at its quota; the reconstructable campaign-layout
+# copy of the master lives on container disk, linked from the results tree.
+PACKAGE_ROOT = Path("/root/qad-v02-package")
 
 
 def training_stage_environment(environment: dict[str, str]) -> dict[str, str]:
@@ -96,8 +99,11 @@ def package(output: Path) -> None:
     master = output / "causal_adapter"
     if file_hash(master / "adapter_model.safetensors") != complete["master_sha256"]:
         raise ValueError("completed QAD master drift")
-    adapter = output / "4b/monitor"
+    if (output / "4b").exists() or (output / "4b").is_symlink():
+        raise ValueError("refuse to overwrite an existing campaign-layout package")
+    adapter = PACKAGE_ROOT / "4b/monitor"
     shutil.copytree(master, adapter / "causal_adapter")
+    (output / "4b").symlink_to(PACKAGE_ROOT / "4b")
     rebase_adapter(adapter / "causal_adapter", adapter / "model")
     reference = json.loads((output / "parity_reference.json").read_text())
     if reference["master_sha256"] != complete["master_sha256"]:
@@ -121,6 +127,69 @@ def package(output: Path) -> None:
             "teacher_sha256": complete["teacher_sha256"],
         },
     )
+
+
+def resume_from_package() -> None:
+    """Repackage and evaluate after a driver lost during packaging.
+
+    Training and the FP32 reference must be complete and hash-consistent; the
+    incomplete package is kept aside, never overwritten.
+    """
+    config = load_config(ROOT)
+    output = ROOT / "results" / config["experiment"]
+    previous = json.loads((output / "status.json").read_text())
+    if previous["phase"] != "package":
+        raise ValueError(f"resume expects a lost package phase, not {previous}")
+    complete = json.loads((output / "training_complete.json").read_text())
+    reference = json.loads((output / "parity_reference.json").read_text())
+    master = output / "causal_adapter/adapter_model.safetensors"
+    if (
+        complete["updates"] != config["updates"]
+        or file_hash(master) != complete["master_sha256"]
+        or reference["master_sha256"] != complete["master_sha256"]
+    ):
+        raise ValueError("training/reference receipts are not complete and consistent")
+    # The lost package is a reconstructable duplicate of the master (copy plus
+    # partial rebase, empty manifest) that filled the volume quota: record and
+    # remove it rather than keep a second 4 GB copy.
+    incomplete = output / "4b"
+    removed = []
+    if incomplete.exists() and not incomplete.is_symlink():
+        manifest = incomplete / "monitor/model/rebase_manifest.json"
+        if manifest.exists() and manifest.stat().st_size:
+            raise ValueError("existing package looks complete; inspect before resuming")
+        removed = [
+            {"path": str(p.relative_to(ROOT)), "bytes": p.stat().st_size}
+            for p in sorted(incomplete.rglob("*"))
+            if p.is_file()
+        ]
+        shutil.rmtree(incomplete)
+    write_json(
+        output / "resume_from_package.json",
+        {
+            "previous_status": previous,
+            "cause": "network volume quota exceeded during packaging",
+            "removed_incomplete_package": removed,
+            "resumed_at_unix": time.time(),
+        },
+    )
+
+    def status(phase, **fields):
+        write_json(
+            output / "status.json", {"phase": phase, "at_unix": time.time(), **fields}
+        )
+        print("qad_v02", phase, json.dumps(fields), flush=True)
+
+    try:
+        status("package", resumed=True)
+        package(output)
+        status("evaluate")
+        scoring_context(QAD_EVAL, f"results/{config['experiment']}", ["id", "ood"])
+        score(QAD_EVAL)
+        status("complete")
+    except BaseException as error:
+        status("failed", error=f"{type(error).__name__}: {error}")
+        raise
 
 
 def main():
@@ -219,4 +288,6 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import sys
+
+    resume_from_package() if sys.argv[1:] == ["--resume-package"] else main()
