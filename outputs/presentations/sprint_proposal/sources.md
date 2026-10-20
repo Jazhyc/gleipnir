@@ -2,7 +2,7 @@
 
 Numbers are from the
 [OOD frontier registry](../../../docs/research/tool_trajectory_ood_frontier.md)
-at revision `6f8b81f` (registry SHA-256 `5a23ac27…164c6`).
+at revision `9e45f8a` (registry SHA-256 `5a23ac27…164c6`).
 
 - **Metric.** Unweighted mean over six OOD sources of the paper's raw normalized
   pAUROC@20 on the strict 6,395-row suite of Sinha et al. (2026),
