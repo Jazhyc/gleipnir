@@ -56,7 +56,7 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-4B base") == "Qwen3.5-4B"
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
-    assert _display_label("Kimi K3 binary logits") == "Kimi K3"
+    assert _display_label("Kimi K3 binary logits") == "Kimi K3 (teacher)"
     assert _display_label("Kimi K2.6 binary logits") == "Kimi K2.6"
     assert _display_label("Kimi-K2.6 SFT") == "Kimi-K2.6 SFT"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
@@ -69,9 +69,9 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
 
 def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
     assert MANUAL_COMPARISON_LABELS["Kimi K3 binary logits"] == {
-        "xytext": (0, -18),
+        "xytext": (0, 12),
         "ha": "center",
-        "va": "top",
+        "va": "bottom",
     }
     assert MANUAL_COMPARISON_LABELS["Kimi-K2.6 SFT"] == {
         "xytext": (0, -18),

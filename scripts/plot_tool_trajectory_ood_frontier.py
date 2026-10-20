@@ -162,10 +162,11 @@ MANUAL_COMPARISON_LABELS = {
         "va": "top",
     },
     "Qwen3.5-9B base": {"xytext": (12, -3), "ha": "left", "va": "top"},
+    # Above its point, clear of the prior frontier passing below it.
     "Kimi K3 binary logits": {
-        "xytext": (0, -18),
+        "xytext": (0, 12),
         "ha": "center",
-        "va": "top",
+        "va": "bottom",
     },
     # Below its point: the frontier now passes just above K2.6 logits.
     "Kimi K2.6 binary logits": {
@@ -318,7 +319,7 @@ def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
 def _display_label(monitor: str) -> str:
     replacements = {
         "Kimi K2.6 binary logits": "Kimi K2.6",
-        "Kimi K3 binary logits": "Kimi K3",
+        "Kimi K3 binary logits": "Kimi K3 (teacher)",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
         "pplx-decider v1.2 native readout": "Decider v1.2",
@@ -450,7 +451,8 @@ def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> float | None:
     gain = 100 * (target["mean_ood_pauroc_at_20"] - source["mean_ood_pauroc_at_20"])
     axis.text(
         np.sqrt(start[0] * end[0]),
-        (start[1] + end[1]) / 2 - 0.004,
+        # Just under the arc, which bows above the chord at its midpoint.
+        (start[1] + end[1]) / 2 + 0.005,
         f"{ratio:.0f}× cheaper, {gain:+.1f} pp pAUROC",
         fontsize=13,
         fontweight="bold",
@@ -788,7 +790,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             [],
             color="#374151",
             linewidth=2.5,
-            label="Available now (on-demand GPUs)",
+            label="Available now / on-demand GPUs",
         ),
         Line2D(
             [],
@@ -796,7 +798,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             color="#374151",
             linestyle=(0, (5, 3)),
             linewidth=2.2,
-            label="At scale (reserved GPUs)*",
+            label="At scale / reserved GPUs*",
         ),
     ]
     legend_style = {
