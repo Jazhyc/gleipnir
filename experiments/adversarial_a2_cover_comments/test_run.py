@@ -78,3 +78,51 @@ def test_timeout_is_charged():
 def test_wilson():
     lo, hi = wilson(0, 100)
     assert abs(lo) < 1e-10 and 0.03 < hi < 0.04
+
+
+def test_http_error_metadata_redacts_secret():
+    import io
+    import urllib.error
+
+    cfg = AttackerConfig("test", ("test",), 0.7, 100, "low", 1, 1)
+    budget = Budget(1)
+
+    def fail(*args):
+        raise urllib.error.HTTPError(
+            "https://example.test",
+            429,
+            "rate limit",
+            {"retry-after": "30", "x-request-id": "req-123"},
+            io.BytesIO(
+                b'{"error":{"code":429,"message":"Bearer private-key rejected"}}'
+            ),
+        )
+
+    with pytest.raises(AttackerError) as caught:
+        complete(
+            [{"role": "user", "content": "x"}],
+            cfg,
+            budget,
+            key="private-key",
+            post=fail,
+        )
+    details = caught.value.details
+    assert details["http_status"] == 429
+    assert details["retry-after"] == "30"
+    assert details["x-request-id"] == "req-123"
+    assert "private-key" not in str(details)
+    assert budget.spent_usd > 0 and budget.outstanding_usd == 0
+
+
+def test_provider_error_with_http_200():
+    cfg = AttackerConfig("test", ("test",), 0.7, 100, "low", 1, 1)
+    with pytest.raises(AttackerError) as caught:
+        complete(
+            [{"role": "user", "content": "x"}],
+            cfg,
+            Budget(1),
+            key="private",
+            post=lambda *a: {"error": {"code": 503, "message": "Provider unavailable"}},
+        )
+    assert caught.value.details["provider_code"] == "503"
+    assert caught.value.details["provider_message"] == "Provider unavailable"

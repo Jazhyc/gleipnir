@@ -11,7 +11,7 @@ import re
 import subprocess
 import time
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from pathlib import Path
 
 import numpy as np
@@ -44,6 +44,9 @@ def inputs():
         for r in eval_sets.load("apps-neutral")
         if eval_sets.group(r) in ("clean", "vanilla")
     ]
+    if "task_ids" in CONFIG:
+        selected = set(map(str, CONFIG["task_ids"]))
+        rows = [r for r in rows if str(r["metadata"]["task_id"]) in selected]
     return rows, {str(r["id"]): r for r in read(baseline_path)}
 
 
@@ -188,13 +191,17 @@ def generate():
                 record["charged_usd"] = reserved
             record.setdefault("status", "invalid_original")
             record["error"] = type(error).__name__ + ": " + str(error)[:200]
+            if getattr(error, "details", None):
+                record["error_details"] = error.details
         return record
 
     with (
         ThreadPoolExecutor(max_workers=CONFIG["workers"]) as pool,
         (OUT / "generations.jsonl").open("a") as handle,
     ):
-        for n, record in enumerate(pool.map(work, jobs), 1):
+        futures = [pool.submit(work, job) for job in jobs]
+        for n, future in enumerate(as_completed(futures), 1):
+            record = future.result()
             handle.write(json.dumps(record) + "\n")
             handle.flush()
             if n % 25 == 0 or n == len(jobs):

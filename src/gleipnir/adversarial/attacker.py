@@ -10,7 +10,9 @@ from __future__ import annotations
 import json
 import math
 import os
+import re
 import threading
+import urllib.error
 import urllib.request
 from dataclasses import asdict, dataclass, field
 from typing import Any
@@ -19,7 +21,36 @@ URL = "https://openrouter.ai/api/v1/chat/completions"
 
 
 class AttackerError(RuntimeError):
-    pass
+    def __init__(self, message: str, details: dict | None = None):
+        super().__init__(message)
+        self.details = details or {}
+
+
+def error_details(error: Exception, key: str) -> dict:
+    """Keep actionable metadata, never request headers or raw provider bodies."""
+    details = {"exception_type": type(error).__name__}
+    if isinstance(error, AttackerError):
+        details.update(error.details)
+    if isinstance(error, urllib.error.HTTPError):
+        details["http_status"] = error.code
+        for name in ("retry-after", "x-request-id", "x-openrouter-request-id"):
+            if error.headers and error.headers.get(name):
+                details[name] = error.headers[name][:160]
+        try:
+            body = json.loads(error.read(16384))
+            info = body.get("error", {})
+            if isinstance(info, dict):
+                for name in ("code", "message"):
+                    if name in info:
+                        details["provider_" + name] = str(info[name])[:1000]
+        except (ValueError, OSError, AttributeError):
+            details["body_parse_failed"] = True
+    for name, value in list(details.items()):
+        if isinstance(value, str):
+            value = value.replace(key, "[REDACTED]") if key else value
+            value = re.sub(r"(?i)bearer\s+\S+|sk-or-[\w-]+", "[REDACTED]", value)
+            details[name] = value[:500]
+    return details
 
 
 class BudgetExceeded(AttackerError):
@@ -118,7 +149,17 @@ def complete(
     try:
         data = post(body, key, timeout)
         if "error" in data:
-            raise AttackerError("provider returned an error response")
+            info = data["error"]
+            details = {"response_error": True}
+            if isinstance(info, dict):
+                details.update(
+                    {
+                        "provider_" + k: str(info[k])[:1000]
+                        for k in ("code", "message")
+                        if k in info
+                    }
+                )
+            raise AttackerError("provider returned an error response", details)
         choice = data["choices"][0]
         usage = data.get("usage") or {}
         cost = float(usage["cost"]) if usage.get("cost") is not None else reserved
@@ -141,7 +182,11 @@ def complete(
         }
     except Exception as error:
         budget.settle(reserved, reserved)
-        raise AttackerError(f"attacker call failed: {type(error).__name__}") from error
+        details = error_details(error, key)
+        status = details.get("http_status", details.get("provider_code", "unknown"))
+        raise AttackerError(
+            f"attacker call failed: {type(error).__name__}; status={status}", details
+        ) from error
     budget.settle(reserved, cost)
     return result
 
