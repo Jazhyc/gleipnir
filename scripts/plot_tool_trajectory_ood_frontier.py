@@ -736,7 +736,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Frontier, Gleipnir on-demand",
+            label="Frontier, on-demand GPUs",
         )
     )
     legend_handles.append(
@@ -751,7 +751,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgewidth=2.0,
             linewidth=2.2,
             markersize=10.5,
-            label="Frontier, Gleipnir* committed GPUs",
+            label="Frontier*, committed GPUs",
         )
     )
     axis.legend(
