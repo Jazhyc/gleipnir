@@ -252,6 +252,19 @@ terminated (delete 204, lookup 404; no Pods remain). The one-line arm's
 trained adapter was lost with the container disk and must be retrained. Both
 volumes are retained (EU `cb7bxu71ug`, NC2 `ixbh81vf9c`).
 
+Later on 2026-10-20 the user provided an EU-NL-1 B300 Pod, `c2e3gj1pmm1jo2`
+($8.99/hour, snapshot `.runpod/seed-average-b300.json`, `GPU-02557ba6…`,
+sm_103, 275 GB, driver 595.91.07). It has no network volume. A 2-vCPU
+`ubuntu:24.04` CPU Pod on volume `cb7bxu71ug` copied a 45 GB working set to
+its container disk in about 3 minutes of transfer, at about 410 MB/s:
+- Files over 512 MB went as 256 MB byte ranges over 16 parallel SSH streams.
+- The vLLM environment's small files went through 16 parallel tar streams.
+- Sizes matched for all 79,588 entries, and SHA-256 for the 7 large files.
+
+The default PyTorch image never started on a 2-vCPU CPU Pod. Both CPU Pods
+were terminated afterwards, one by the user. The training and serving stack
+ran on sm_103 unchanged (FP32 reference, merge, vLLM 0.31 scoring).
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache

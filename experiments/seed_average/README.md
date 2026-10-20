@@ -33,3 +33,51 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --co
 PYTHONPATH=src:. <training-python> -m experiments.seed_average.run
 python -m experiments.seed_average.compare
 ```
+
+## Result (2026-10-20)
+
+**Release decision under the frozen rule: the average.** Its ID macro
+pAUROC@20 is 0.9124, above the three-seed mean of 0.9026
+(`results/seed_average/comparison.json`).
+
+| Model | ID macro pAUROC@20 | ID Gloom | ID STRIDE | ID Brier | OOD macro pAUROC@20 | OOD AUROC |
+|---|---:|---:|---:|---:|---:|---:|
+| Seed 0 | 0.8959 | 0.8285 | 0.9633 | 0.0889 | 0.7869 | 0.9222 |
+| Seed 1 | 0.8978 | 0.8168 | 0.9788 | 0.0722 | 0.8125 | 0.9255 |
+| Seed 2 | 0.9142 | 0.8619 | 0.9665 | 0.0607 | 0.7768 | 0.9061 |
+| Seed mean | 0.9026 | | | | 0.7921 | |
+| **Average** | **0.9124** | 0.8517 | 0.9732 | 0.0622 | **0.8108** | 0.9199 |
+
+OOD pAUROC@20 by source:
+
+| Source | Seed 0 | Seed 1 | Seed 2 | Average |
+|---|---:|---:|---:|---:|
+| AgentDojo | 0.9298 | 0.9248 | 0.8506 | **0.9430** |
+| CUA-SHADE | 0.7717 | 0.7640 | 0.7679 | **0.7916** |
+| IAC | 0.8123 | 0.8958 | 0.8451 | 0.8845 |
+| MLE sabotage | 1.0000 | 1.0000 | 0.9995 | 1.0000 |
+| Rogue eval | 0.9696 | 0.9812 | 0.9765 | 0.9804 |
+| SHADE-Arena | 0.2380 | 0.3092 | 0.2209 | 0.2653 |
+
+- **ID.** The average is 1.0 point above the seed mean and within 0.2 of the
+  best seed. Its Brier (0.0622) is the second best.
+- **OOD.** Reported once, never selected on. The average is 1.9 points above
+  the seed mean, within 0.2 of the best seed, and 3.4 above the ID-best seed
+  (seed 2). It is the best of the four on AgentDojo and CUA-SHADE. It never
+  falls below the middle seed on any source.
+- **Score shifts.** Versus seeds 0, 1 and 2, mean absolute score differences
+  are 0.081, 0.054 and 0.041 on ID, and 0.050, 0.049 and 0.042 on OOD.
+- **Pipeline.** The build was exact (maximum relative update error 2.2e-8).
+  Merged parity: mean difference 0.0022, correlation 0.99992, maximum
+  difference 0.025. The OOD re-merge reproduced the first merge's hashes.
+- **Hardware qualification.** The average was merged and scored on an
+  EU-NL-1 B300 (`GPU-02557ba6…`, sm_103, driver 595.91.07). The seed
+  baselines were scored on B200s. No same-hardware seed rescore was run.
+  Earlier B200 rescoring moved the scores by under 0.002 points (seed
+  variation README).
+- **First attempt.** It stopped at the build's own check, because PEFT lists
+  target modules in arbitrary order. Its receipts are preserved under
+  `*_failed_target_order01`; the fix compares the modules as sets.
+- **Evaluation design.** OOD reuses the seed-variation scoring context,
+  which merges a second time. One context scoring both splits would avoid
+  that.
