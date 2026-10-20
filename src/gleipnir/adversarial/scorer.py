@@ -55,9 +55,12 @@ class Scorer:
             device_map={"": device},
             attn_implementation="sdpa",
         )
-        self.model = PeftModel.from_pretrained(
-            base, self.spec.adapter, revision=self.spec.adapter_revision
-        ).eval()
+        if self.spec.adapter is None:
+            self.model = base.eval()
+        else:
+            self.model = PeftModel.from_pretrained(
+                base, self.spec.adapter, revision=self.spec.adapter_revision
+            ).eval()
         self.token_ids = binary_token_ids(self.tokenizer)
 
     def encode(self, user_prompt: str) -> list[int]:
@@ -72,12 +75,13 @@ class Scorer:
         """P("1") over the 0/1 logits at the decision position, plus raw logits.
 
         `adapter=False` scores the unadapted base, for the adapter-effect check.
+        Monitors loaded without an adapter ignore it.
         """
         torch = self.torch
         ids = self.encode(user_prompt)
         with torch.inference_mode():
             inputs = torch.tensor([ids], device=self.device)
-            if adapter:
+            if adapter or self.spec.adapter is None:
                 logits = self.model(input_ids=inputs, logits_to_keep=1).logits
             else:
                 with self.model.disable_adapter():

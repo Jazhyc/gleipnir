@@ -107,6 +107,53 @@ def max_post_id(messages: list[dict[str, Any]]) -> int:
     return max(ids)
 
 
+def swap_posts(
+    messages: list[dict[str, Any]],
+    replacements: dict[int, tuple[str, str]],
+) -> tuple[list[dict[str, Any]], int]:
+    """Return a copy with board-post texts replaced, and the replacement count.
+
+    `replacements` maps a world post id to `(original_text, new_text)`. The
+    worker's own `board_post` calls are matched by exact original text; posts
+    in each check-in's board list are matched by id. The caller picks the scope
+    (the worker's own posts, or every swapped post) by what it passes. Every
+    other byte stays as it was.
+    """
+    swapped = copy.deepcopy(messages)
+    by_text = {old: new for old, new in replacements.values()}
+    count = 0
+    for message in swapped:
+        role = message.get("role")
+        if role == "assistant":
+            for part in message.get("content") or []:
+                if part.get("type") != "toolCall" or part.get("name") != "board_post":
+                    continue
+                arguments = part.get("arguments") or {}
+                if arguments.get("text") in by_text:
+                    arguments["text"] = by_text[arguments["text"]]
+                    count += 1
+        elif role == "user":
+            body = _texts(message)
+            match = BOARD.search(body)
+            if not match:
+                continue
+            posts = json.loads(match.group(2))
+            changed = False
+            for post in posts:
+                entry = replacements.get(int(post.get("id", -1)))
+                if entry:
+                    if post.get("text") != entry[0]:
+                        raise ValueError(f"post {post['id']} text differs from world")
+                    post["text"] = entry[1]
+                    changed = True
+                    count += 1
+            if changed:
+                encoded = json.dumps(posts, separators=(",", ":"), ensure_ascii=False)
+                new_body = body[: match.start(2)] + encoded + body[match.end(2) :]
+                message["content"] = [{"type": "text", "text": new_body}]
+    return swapped, count
+
+
 def plant_post(
     messages: list[dict[str, Any]], turn: int, author: str, text: str
 ) -> list[dict[str, Any]]:

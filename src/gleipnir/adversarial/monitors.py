@@ -12,8 +12,10 @@ from typing import NamedTuple
 
 
 class Monitor(NamedTuple):
-    adapter: str
-    adapter_revision: str
+    """A Hub monitor. `adapter=None` loads `base` alone (merged or untrained)."""
+
+    adapter: str | None
+    adapter_revision: str | None
     base: str
     base_revision: str
 
@@ -44,5 +46,35 @@ MONITORS = {
         "e5c4a7a65f41e6059b8723f74dac15410896e94b",
         "Qwen/Qwen3.8-27B",
         "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+    ),
+    # Merged BF16 checkpoints (2026-10-20): the v0.3 4B adapter (identical in
+    # v0.4) and the v0.1 27B adapter (identical in v0.2), merged in FP32 into
+    # the bases above and cast once to BF16. Revisions are the `v0.4`/`v0.2` tags.
+    "4b-v03-merged": Monitor(
+        None,
+        None,
+        "Jazhyc/Gleipnir-4B-BF16",
+        "1157856e4136add70907d4b689f2d73da58f08fb",
+    ),
+    "27b-merged": Monitor(
+        None,
+        None,
+        "Jazhyc/Gleipnir-27B-BF16",
+        "d3e995c137e5a2a8637e6ecdde26c6666864e71a",
+    ),
+    # The untrained 4B base, scored with the student prompt.
+    "4b-base": Monitor(
+        None,
+        None,
+        "Qwen/Qwen3.5-4B",
+        "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+    ),
+    # 4B trained with 40% injected views, labels unchanged (2026-10-04; rank
+    # 128, one seed). Master adapter SHA256 3ecfd0d3...
+    "4b-ia40": Monitor(
+        "Jazhyc/Gleipnir-4B-ToolTrajectories-InjectionAugmented40",
+        "26638fd37e615e74e09613a4f961c0f2343f5e64",
+        "Qwen/Qwen3.5-4B",
+        "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
     ),
 }

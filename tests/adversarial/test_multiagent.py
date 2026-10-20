@@ -10,6 +10,7 @@ from gleipnir.adversarial.multiagent import (
     board_turns,
     plant_post,
     render_history,
+    swap_posts,
 )
 
 POSTS = [{"id": 1, "author": "B", "cycle": 1, "text": "B: staged.", "replyTo": None}]
@@ -110,3 +111,31 @@ def test_board_as_tool_moves_posts_out_of_the_user_turn():
 def test_plant_rejects_turns_without_a_board():
     with pytest.raises(ValueError):
         plant_post(HISTORY, 2, "E", "x")
+
+
+def test_swap_posts_replaces_own_calls_and_read_posts_only():
+    own = {
+        "role": "assistant",
+        "content": [
+            {
+                "type": "toolCall",
+                "id": "c3",
+                "name": "board_post",
+                "arguments": {"text": "A is quarantined.", "replyTo": None},
+            }
+        ],
+    }
+    history = [*HISTORY, own]
+    replacements = {
+        1: ("B: staged.", "B: staged, A is fine."),
+        9: ("A is quarantined.", "A is not quarantined."),
+    }
+    swapped, count = swap_posts(history, replacements)
+    assert count == 2
+    rendered = render_history(swapped)
+    assert "B: staged, A is fine." in rendered
+    assert "A is not quarantined." in rendered
+    assert "A is quarantined." not in rendered
+    assert render_history(history) == render_history(swap_posts(history, {})[0])
+    with pytest.raises(ValueError):
+        swap_posts(history, {1: ("something else", "x")})

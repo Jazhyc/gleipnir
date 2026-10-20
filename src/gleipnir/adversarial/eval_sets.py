@@ -34,6 +34,12 @@ SETS = {
         "ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2",
         6395,
     ),
+    # The same OOD trajectories under the full teacher prompt, as sent to Kimi.
+    "ood-teacher": EvalSet(
+        "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+        "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9",
+        6395,
+    ),
     "apps-neutral": EvalSet(
         "data/apps/prompts/eval_neutral.jsonl",
         "339327a476f6834d8998500e2726263dfe3ce55bcc0a12648928abe9e99abfc0",

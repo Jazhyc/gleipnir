@@ -8,13 +8,15 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-Nothing. The H100 VM is paused (`541309`); the A100 was deleted on 20 October.
+- **Is the framing effect a 4B thing? (steps 0–3, 21 October).** 4B v0.3 with the teacher prompt, the untrained base, InjectionAugmented40, the 27B with its teacher prompt and Kimi K3 on the same framing readers and liars; a lie-for-truth swap; recall-first lines; a natural-lie search. [Protocol](../../experiments/adversarial_is_it_4b/README.md).
 
 ## Next, in order
 
-1. **Real swarm posts as framing (lab Run 3).** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated).
-2. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md).
-3. **27B, teacher prompt, on the primary endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
+1. **Natural-cheating pilot** (Neel recommended reward-hacking benchmarks on the 20 October drop-in): an open agentic model with thinking off on ImpossibleBench, then probes against Gleipnir at high recall. Needs a split agreed with Jeremias and a GPU top-up.
+2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half.
+3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md).
+4. **Real swarm posts as framing (lab Run 3), only if there is spare time.** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated).
+5. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
 
 ## Later
 
