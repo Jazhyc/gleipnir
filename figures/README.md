@@ -83,7 +83,8 @@ PYTHONPATH=src:. .venv/bin/python scripts/plot_monitor_training_losses.py
 
 `tool_trajectory_ood_frontier.svg` is the sharp, resolution-independent primary
 artifact; a high-resolution PNG is retained for software that does not render
-SVG. Both are generated directly from the reference table in
+SVG. SVG text is saved as outlines, so it renders identically without the
+Cantarell font installed. Both are generated directly from the reference table in
 `docs/research/tool_trajectory_ood_frontier.md`. The script validates the
 table's declared frontier against recomputed point-estimate nondominance before
 plotting:

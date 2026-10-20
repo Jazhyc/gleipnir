@@ -37,7 +37,9 @@ def set_plot_style() -> None:
             "font.sans-serif": ["Cantarell", "DejaVu Sans"],
             "font.weight": "bold",
             "savefig.dpi": 300,
-            "svg.fonttype": "none",
+            # Text as outlines: viewers without Cantarell would otherwise
+            # substitute a wider font and spill labels out of place.
+            "svg.fonttype": "path",
         },
     )
 
