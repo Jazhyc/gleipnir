@@ -143,3 +143,31 @@ meet all of these:
 The model cards disclose that optimized-serving scores vary between runs by
 about 0.01 per row for the 4B and about 0.006 for the 27B, while ranking
 metrics move by about 0.001.
+
+## Final image check and release (2026-10-20)
+
+- **Final image check.** A fresh Pod (US-TX-6, Intel Xeon 6972P) ran the
+  final digest `15673c65…`. The compile caches came up empty, as the
+  whiteout layer intends.
+  - **4B:** ready in 139 s, including its 8.8 GB download. pAUROC@20 ID
+    0.9119 and OOD 0.7700 (recorded 0.9117 and 0.7703); MAE 0.0119 and
+    0.0097; 205–213K tok/s.
+  - **27B:** ready in 219 s, including its 52 GB download. ID 0.9450
+    (recorded 0.9444); MAE 0.0072; 53.9K tok/s.
+- **Revised gates.** All 15 split-passes with a same-host repeat pass:
+  - **MAE ratio:** image-vs-recorded MAE is 1.00–1.20× the host's own
+    repeat MAE.
+  - **Correlation:** within 0.001 of the repeat correlation.
+  - **Ranking:** |Δ pAUROC@20| ≤ 0.0019.
+  - **Splits without a repeat.** The fresh-host 27B OOD (its pass b was cut
+    short when the Pod was terminated) passes against the build-host
+    repeat: MAE 0.0060 against 0.0057. The final-image passes are single
+    passes; they match the other hosts' agreement levels.
+- **Published:**
+  - `Jazhyc/Gleipnir-4B@v0.4` and `Jazhyc/Gleipnir-27B@v0.2` (updated cards,
+    unchanged adapters);
+  - `Jazhyc/Gleipnir-4B-BF16@v0.4` and `Jazhyc/Gleipnir-27B-BF16@v0.2`
+    (public; weight hashes match `release_manifest.json` anonymously).
+- **Image visibility.** The GHCR package `gleipnir-serve` is private until
+  its visibility is changed in the GitHub package settings; the GitHub API
+  cannot change it.
