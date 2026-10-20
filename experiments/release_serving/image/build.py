@@ -69,7 +69,7 @@ def main() -> None:
             "-t",
             args.image,
             "--entrypoint",
-            ENTRYPOINT,
+            f"/opt/nvidia/nvidia_entrypoint.sh,{ENTRYPOINT}",
             "--cmd",
             "4b",
             "--workdir",
