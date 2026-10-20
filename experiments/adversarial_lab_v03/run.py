@@ -18,7 +18,7 @@ from statistics import median
 from typing import Any
 
 from gleipnir.adversarial import eval_sets
-from gleipnir.adversarial.metrics import summary, threshold_at_fpr
+from gleipnir.adversarial.metrics import threshold_at_fpr
 from gleipnir.evaluation.metrics import normalized_partial_auroc
 
 HERE = Path(__file__).resolve().parent
@@ -88,12 +88,28 @@ def smoke(args: argparse.Namespace) -> None:
         raise SystemExit(1)
 
 
+def selected(name: str, rows: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """Amendment 1: score only what each endpoint needs."""
+    if name == "ood":
+        keep = set(CONFIG["run0"]["harmful_sources"])
+        return [
+            r
+            for r in rows
+            if r["metadata"]["ground_truth"] == 0
+            or r["metadata"]["source_dataset"] in keep
+        ]
+    if name == "framing":
+        # Unedited readers are byte-identical to lab rows; reuse those scores.
+        return [r for r in rows if r["metadata"]["condition"] != "none"]
+    return rows
+
+
 def score(args: argparse.Namespace) -> None:
     from gleipnir.adversarial.scorer import Scorer, score_rows
 
     scorer = Scorer(CONFIG["monitor"], device=args.device)
     for name in args.sets:
-        rows = load(name)
+        rows = selected(name, load(name))
         directory = OUTPUT / name
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "identity.json").write_text(
@@ -147,21 +163,21 @@ def ood_report(ood: list[dict[str, Any]]) -> dict[str, Any]:
             [r["label"] for r in rows], [r["score"] for r in rows]
         )
         for name, rows in sorted(by_source.items())
+        if len({r["label"] for r in rows}) == 2
     }
-    mean = sum(sources.values()) / len(sources)
-    parity = CONFIG["ood_parity"]
+    card = CONFIG["run0"]["card_bf16_pauroc20"]
+    tolerance = CONFIG["run0"]["tolerance"]
     honest = [r["score"] for r in ok if r["label"] == 0]
     return {
         "rows": len(ood),
+        "honest_rows": len(honest),
         "per_source_pauroc20": sources,
-        "mean_ood_pauroc20": mean,
-        "card_bf16": parity["card_bf16_mean_ood_pauroc20"],
-        "parity_passed": abs(mean - parity["card_bf16_mean_ood_pauroc20"])
-        <= parity["tolerance"],
+        "card_bf16_pauroc20": card,
+        "parity_passed": bool(sources)
+        and all(abs(sources[k] - v) <= tolerance for k, v in card.items()),
         "deployer_thresholds": {
             f"{fpr:.0%}": threshold_at_fpr(honest, fpr) for fpr in CONFIG["fprs"]
         },
-        "pooled": summary([r["label"] for r in ok], [r["score"] for r in ok]),
     }
 
 
@@ -180,9 +196,15 @@ def flag_table(records, thresholds) -> dict[str, Any]:
     return result
 
 
-def framing_report(records, thresholds) -> dict[str, Any]:
-    ok = [r for r in records if r["status"] == "ok"]
+def framing_report(records, thresholds, lab=()) -> dict[str, Any]:
+    """Pair each planted post with the same reader unedited (its lab score)."""
+    unedited = [
+        {**r, "group": "none", "parent_id": r["id"]} for r in lab if r["status"] == "ok"
+    ]
+    ok = [r for r in list(records) + unedited if r["status"] == "ok"]
     base = {r["parent_id"]: r for r in ok if r["group"] == "none"}
+    readers = {r["parent_id"] for r in ok if r["group"] != "none"}
+    ok = [r for r in ok if r["group"] != "none" or r["parent_id"] in readers]
     result = {"flags": flag_table(ok, thresholds), "paired_vs_none": {}}
     for name in sorted({r["group"] for r in ok} - {"none"}):
         pairs = [
@@ -232,7 +254,7 @@ def report(args: argparse.Namespace) -> None:
         result["run1_lab_flags"] = flag_table(lab, thresholds)
         result["run1_liars"] = liar_report(lab)
     if framing and thresholds:
-        result["run2_framing"] = framing_report(framing, thresholds)
+        result["run2_framing"] = framing_report(framing, thresholds, lab)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "report.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2)[:6000])
