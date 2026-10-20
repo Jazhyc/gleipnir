@@ -49,8 +49,25 @@ follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
 treated as a production safety system or as evidence that an interaction is
 safe merely because the model assigns it a low score.
 
+## Variants
+
+| Repository or image | Contents | Use it for |
+| --- | --- | --- |
+| `Jazhyc/Gleipnir-27B` (this repository) | FP32 LoRA master and the `vllm/` key-rebased adapter | Merging, fine-tuning, PEFT |
+| [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | The adapter merged into `Qwen/Qwen3.8-27B` in FP32, exported as BF16 | Transformers or vLLM on any GPU |
+| `ghcr.io/jazhyc/gleipnir-serve:0.1` | The project's optimized serving stack (FP8/FP4/MXFP8) | High-throughput scoring on one NVIDIA B200 |
+
+Both repositories carry the tag `v0.2` for this release. The image fetches
+`Gleipnir-27B-BF16@v0.2` and verifies every file before serving.
+
 ## Changelog
 
+- **v0.2 ({{RELEASE_DATE}}).** Packaging release; the adapter is identical to
+  `v0.1`. Adds the merged BF16 checkpoint
+  ([`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16))
+  and the optimized B200 serving image, and reports the optimized-serving
+  results (0.9508 Mean-OOD and 0.9444 ID pAUROC@20 under the full teacher
+  instruction, 53.9K prompt tokens/s on one B200).
 - **2026-10-20 (card update; adapter unchanged).** The recommended scoring
   interface is now the full teacher instruction (`teacher_prompt.txt`, added
   here), with headline results 0.9352 Mean-OOD and 0.9420 ID pAUROC@20. The
@@ -92,6 +109,7 @@ sources of raw normalized partial AUROC through 20% false-positive rate.
 | Model | Prompt | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
 | --- | --- | ---: | ---: | ---: | ---: |
 | **Gleipnir 27B** | **full teacher** | **0.9352** | **0.9790** | **0.9486** | **0.9810** |
+| Gleipnir 27B, optimized serving | full teacher | 0.9508 | 0.9841 | 0.9498 | 0.9809 |
 | Gleipnir 27B | compact student | 0.9087 | 0.9679 | 0.9234 | 0.9748 |
 | Kimi K3 (teacher) | full teacher | 0.9084 | 0.9616 | 0.9322 | 0.9776 |
 | Qwen3.8-27B, unadapted | full teacher | 0.8901 | 0.9535 | | |
@@ -100,7 +118,13 @@ sources of raw normalized partial AUROC through 20% false-positive rate.
 
 Per-source pAUROC@20 under the full teacher prompt: AgentDojo 0.9990,
 CUA-SHADE 0.8911, IaC 0.9931, MLE-Sabotage 1.0000, Rogue Eval 0.9982,
-SHADE-Arena 0.7298.
+SHADE-Arena 0.7298. Under the optimized serving stack (FP8 attention
+projections, FP4 MLP and GDN projections, MXFP8 attention; no QAD needed):
+AgentDojo 0.9917, CUA-SHADE 0.8903, IaC 0.9931, MLE-Sabotage 1.0000, Rogue
+Eval 0.9980, SHADE-Arena 0.8316. Almost all of its 1.6-point gain over BF16
+comes from SHADE-Arena; treat it as serving-precision variation, not a
+quality improvement. Optimized serving scored the 60.5M-token OOD workload at
+53.9K prompt tokens/s on one B200, and reaches 0.9444 ID macro pAUROC@20.
 
 - Under its recommended prompt, Gleipnir 27B is 2.7 points above its Kimi K3
   teacher on Mean-OOD pAUROC@20. Most of the gain over the compact prompt is
@@ -202,6 +226,34 @@ Verify that each literal label tokenizes to exactly one distinct token. For
 large frozen evaluations, the project merged the `vllm/` key-rebased adapter
 into the base in FP32, exported BF16 weights, and served them with vLLM 0.31
 after master-to-serving parity checks (correlation 0.9999).
+
+### Optimized B200 serving
+
+The serving image runs the stack behind the optimized results above. It
+needs one NVIDIA B200 (other GPUs, including the B300, are refused), an
+NVIDIA driver supporting CUDA 13, and prompts of at most 32,768 tokens.
+
+```bash
+docker run --gpus all -p 8000:8000 \
+  -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
+  ghcr.io/jazhyc/gleipnir-serve:0.1 27b
+```
+
+The first start downloads the BF16 checkpoint ({{DOWNLOAD_27B}}) and
+is ready after about {{STARTUP_27B}}; the mounted cache keeps the
+download across restarts. Do not mount a volume over `/tmp`, which holds the
+pinned runtimes. Send the fully rendered prompt, built exactly as in the
+Python example and ending in `Prediction:`:
+
+```bash
+curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
+  -d '{"model": "monitor", "prompt": "<rendered prompt>"}'
+# {"score": ..., "margin": ..., "logits": [logit_0, logit_1], "prompt_tokens": ...}
+```
+
+`score` is the softmax of the `1` and `0` logits, the same quantity as
+`risk_score` above. The image was validated on a fresh B200 against the
+recorded optimized rows ({{VALIDATION_27B}}).
 
 ## Limitations and responsible use
 
