@@ -61,7 +61,7 @@ MAIN_FIGURE_OMISSIONS = {
 CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Other": "#B279A2"}
 CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
-    "Paper": "Sinha et al.",
+    "Paper": "Reasoning monitors (Sinha et al.)",
     "Gleipnir": "Gleipnir (ours)",
     "Other": "Decision monitors",
 }
@@ -764,21 +764,38 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         "title_fontproperties": {"size": 13.5, "weight": "bold"},
         "alignment": "left",
     }
+    figure.tight_layout()
+    # Stack the category legend above the frontier legend, both right-aligned
+    # and as wide as the wider of the two.
+    renderer = figure.canvas.get_renderer()
+
+    def axes_box(legend):
+        return legend.get_window_extent(renderer).transformed(axis.transAxes.inverted())
+
     frontier_legend = axis.legend(
         handles=frontier_handles, loc="lower right", title="Frontier", **legend_style
     )
-    axis.add_artist(frontier_legend)
-    figure.tight_layout()
-    # Stack the category legend directly above the frontier legend.
-    renderer = figure.canvas.get_renderer()
-    frontier_box = frontier_legend.get_window_extent(renderer).transformed(
-        axis.transAxes.inverted()
+    category_legend = axis.legend(
+        handles=legend_handles, loc="lower right", title="Monitor type", **legend_style
     )
+    frontier_box, category_box = axes_box(frontier_legend), axes_box(category_legend)
+    width = max(frontier_box.width, category_box.width)
+    frontier_legend = axis.legend(
+        handles=frontier_handles,
+        title="Frontier",
+        loc="lower left",
+        bbox_to_anchor=(frontier_box.x1 - width, frontier_box.y0, width, 0),
+        mode="expand",
+        borderaxespad=0,
+        **legend_style,
+    )
+    axis.add_artist(frontier_legend)
     axis.legend(
         handles=legend_handles,
-        loc="lower right",
         title="Monitor type",
-        bbox_to_anchor=(frontier_box.x1, frontier_box.y1 + 0.012),
+        loc="lower left",
+        bbox_to_anchor=(frontier_box.x1 - width, frontier_box.y1 + 0.012, width, 0),
+        mode="expand",
         borderaxespad=0,
         **legend_style,
     )

@@ -30,7 +30,8 @@ is not shown, and the Qwen3.5 SFT+RL frontier points too, so the figure
 emphasizes decision models over the interface comparison. It separates
 Gleipnir from the other decision monitors: every non-paper row, read directly
 from 0/1 logits or native probabilities (decision models, general LLMs and
-base models).
+base models). Paper rows appear as reasoning monitors (generated rationale,
+then a 0–10 score).
 Both figures draw an arrow from Gemini 3.1 Pro to the on-demand Gleipnir 27B,
 labelled with the cost ratio and score gain (188× cheaper, +1.1 points). The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
