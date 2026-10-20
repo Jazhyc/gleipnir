@@ -737,7 +737,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
     # The title states the finding; the subtitle says what is plotted.
     axis.set_title(
-        "A distilled decision monitor beats the best reasoning monitor"
+        "Our distilled decision monitor beats the best reasoning monitor"
         f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
         if cost_ratio
         else "Monitoring cost and performance on tool trajectories",
