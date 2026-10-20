@@ -22,11 +22,17 @@ def main() -> None:
     parser.add_argument("model", choices=sorted(TARGETS))
     parser.add_argument("--base", type=Path, required=True, help="pinned base snapshot")
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--adapter",
+        type=Path,
+        help="adapter copy to merge instead of the recorded path; the recorded"
+        " adapter SHA-256 is still required",
+    )
     args = parser.parse_args()
     recorded = json.loads((ROOT / TARGETS[args.model].merged_artifact).read_text())
     report = merge_checkpoint(
         args.base,
-        Path(recorded["adapter"]),
+        args.adapter or Path(recorded["adapter"]),
         Path(recorded["destination"]),
         expected_adapter_sha256=recorded["adapter_sha256"],
         model_id=recorded["model"],

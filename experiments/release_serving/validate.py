@@ -1,6 +1,8 @@
 """Validate a running release server against the recorded optimized rows.
 
-Scores a target's frozen ID and OOD workloads at concurrency 128 and compares
+Scores a target's frozen ID and OOD workloads the way the recorded campaign
+did (workload order, sequential batches of 128 rows, a fresh client per
+batch, so batch composition matches) and compares
 them with the rows of the run whose scores the model card reports: per-row
 score agreement, source-macro pAUROC@20 on both, and prompt throughput.
 Labels come from the 4B records (both models share the row IDs).
@@ -18,12 +20,13 @@ import numpy as np
 import pandas as pd
 
 from experiments.release_serving.targets import ROOT, TARGETS
-from gleipnir.data.monitoring import read_rows, write_json
+from gleipnir.data.monitoring import read_rows, write_json, write_rows
 from gleipnir.evaluation.http_score import score_batch
 from gleipnir.evaluation.metrics import evaluate_binary_monitor
 
 GATES = {"score_mae": 0.005, "correlation": 0.999, "pauroc_difference": 0.005}
 ID_SOURCES = {"gloom_exfiltration", "test_stride"}
+BATCH_ROWS = 128
 
 
 def rows(path: str) -> list[dict]:
@@ -61,6 +64,9 @@ def main() -> None:
     parser.add_argument("model", choices=sorted(TARGETS))
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--rows-output", type=Path, help="directory for per-split scored rows"
+    )
     args = parser.parse_args()
     target = TARGETS[args.model]
     config = {"port": args.port, "concurrency": 128, "timeout_seconds": 600}
@@ -70,8 +76,23 @@ def main() -> None:
         recorded = {r["id"]: float(r["score"]) for r in read_rows(ROOT / recorded_path)}
         if {r["id"] for r in workload} != set(recorded):
             raise ValueError(f"{split} workload and recorded rows differ")
-        scored, seconds = asyncio.run(score_batch(workload, config))
+        scored, seconds = [], 0.0
+        for start in range(0, len(workload), BATCH_ROWS):
+            values, elapsed = asyncio.run(
+                score_batch(workload[start : start + BATCH_ROWS], config)
+            )
+            scored += values
+            seconds += elapsed
         new = {r["id"]: float(r["score"]) for r in scored}
+        if args.rows_output:
+            args.rows_output.mkdir(parents=True, exist_ok=True)
+            write_rows(
+                args.rows_output / f"{split}.jsonl",
+                [
+                    {"id": r["id"], "score": r["score"], "margin": r["margin"]}
+                    for r in scored
+                ],
+            )
         ids = sorted(new)
         a = np.array([new[i] for i in ids])
         b = np.array([recorded[i] for i in ids])

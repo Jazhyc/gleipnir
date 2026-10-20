@@ -20,8 +20,13 @@ until grep -q gleipnir_serve_ready $L/serve_$M.log; do
   sleep 5
 done
 echo "ready $M after $(( $(date +%s) - started )) s"
-PYTHONPATH=src:. $PY -m experiments.release_serving.validate $M --port 8000 \
-  --output results/release_serving/$M/build_validation.json > $L/validate_$M.log 2>&1 || true
-tail -3 $L/validate_$M.log
+# Two saved passes: validation against the recorded rows, and the stack's own
+# same-host run-to-run variation (pass a vs pass b).
+for pass in a b; do
+  PYTHONPATH=src:. $PY -m experiments.release_serving.validate $M --port 8000 \
+    --output results/release_serving/$M/build_validation_$pass.json \
+    --rows-output results/release_serving/$M/build_$pass > $L/validate_${M}_$pass.log 2>&1 || true
+  tail -1 $L/validate_${M}_$pass.log
+done
 kill $SERVER; wait $SERVER || true
 echo "TRACE_DONE $M"
