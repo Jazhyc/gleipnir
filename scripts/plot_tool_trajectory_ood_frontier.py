@@ -761,14 +761,11 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         "prop": {"size": 13.5, "weight": "bold"},
         "handlelength": 2.2,
         "labelspacing": 0.65,
+        "title_fontproperties": {"size": 13.5, "weight": "bold"},
+        "alignment": "left",
     }
     frontier_legend = axis.legend(
-        handles=frontier_handles,
-        loc="lower right",
-        title="Frontier",
-        title_fontproperties={"size": 13.5, "weight": "bold"},
-        alignment="left",
-        **legend_style,
+        handles=frontier_handles, loc="lower right", title="Frontier", **legend_style
     )
     axis.add_artist(frontier_legend)
     figure.tight_layout()
@@ -780,6 +777,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.legend(
         handles=legend_handles,
         loc="lower right",
+        title="Monitor type",
         bbox_to_anchor=(frontier_box.x1, frontier_box.y1 + 0.012),
         borderaxespad=0,
         **legend_style,
