@@ -410,12 +410,12 @@ def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
 
 
-def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> None:
-    """Arrow from the reference monitor to Gleipnir 27B with the cost ratio."""
+def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> float | None:
+    """Arrow from the reference monitor to Gleipnir 27B; returns the cost ratio."""
     source = frame.loc[frame["monitor"].eq(COST_CALLOUT[0])]
     target = frame.loc[frame["monitor"].eq(COST_CALLOUT[1])]
     if len(source) != 1 or len(target) != 1:
-        return
+        return None
     source, target = source.iloc[0], target.iloc[0]
     start = (source["cost_per_1k"], source["mean_ood_pauroc_at_20"])
     end = (target["cost_per_1k"], target["mean_ood_pauroc_at_20"])
@@ -439,7 +439,7 @@ def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> None:
     axis.text(
         np.sqrt(start[0] * end[0]),
         (start[1] + end[1]) / 2 - 0.004,
-        f"{ratio:.0f}× cheaper, {gain:+.1f} points",
+        f"{ratio:.0f}× cheaper, {gain:+.1f} pp pAUROC",
         fontsize=13,
         fontweight="bold",
         color="#111827",
@@ -447,6 +447,7 @@ def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> None:
         va="top",
         zorder=4,
     )
+    return ratio
 
 
 def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
@@ -546,7 +547,29 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             zorder=2.5,
         )
 
-    _draw_cost_callout(axis, frame)
+    cost_ratio = _draw_cost_callout(axis, frame)
+    # Direction cue in the empty upper-left corner.
+    axis.annotate(
+        "Better",
+        xy=(0.015, 0.975),
+        xytext=(0.085, 0.86),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        fontsize=13,
+        fontweight="bold",
+        color="#6B7280",
+        ha="center",
+        va="center",
+        arrowprops={
+            "arrowstyle": "-|>",
+            "color": "#6B7280",
+            "linewidth": 1.8,
+            "mutation_scale": 16,
+            "shrinkA": 12,
+            "shrinkB": 0,
+        },
+        zorder=2,
+    )
 
     committed = frame["pricing"].eq("committed")
     for category, group in frame.loc[~committed].groupby("category", sort=False):
@@ -690,9 +713,13 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     finally:
         np.random.set_state(random_state)
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
-    axis.set_ylabel("Mean-OOD pAUROC@20")
+    axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
+    # The title states the finding; the subtitle says what is plotted.
     axis.set_title(
-        "Monitoring cost and performance on tool trajectories",
+        "A distilled decision monitor beats the best reasoning monitor"
+        f" at 1/{cost_ratio:.0f} of the cost"
+        if cost_ratio
+        else "Monitoring cost and performance on tool trajectories",
         loc="left",
         fontsize=20.5,
         fontweight="bold",
@@ -701,7 +728,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.text(
         0.0,
         1.015,
-        "Strict six-source OOD suite · lower cost and higher performance are better",
+        "Monitoring cost and performance on agent tool trajectories · mean over"
+        " six held-out out-of-distribution (OOD) sources",
         transform=axis.transAxes,
         fontsize=11.5,
         fontweight="bold",

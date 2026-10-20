@@ -125,9 +125,9 @@ def test_cost_callout_reports_gemini_to_gleipnir_27b_ratio() -> None:
     frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
     figure, axis = plt.subplots()
     axis.set_xscale("log")
-    _draw_cost_callout(axis, frame)
+    assert round(_draw_cost_callout(axis, frame)) == 188
     labels = [text.get_text() for text in axis.texts if text.get_text()]
-    assert labels == ["188× cheaper, +1.1 points"]
+    assert labels == ["188× cheaper, +1.1 pp pAUROC"]
     plt.close(figure)
 
 
