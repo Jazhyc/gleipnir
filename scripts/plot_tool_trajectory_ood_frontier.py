@@ -185,13 +185,17 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "center",
         "va": "top",
     },
-    # Left of its point: it sits at the right edge of the axes.
+    # Above its point, clear of the cost callout arrow; it sits at the right
+    # edge of the axes.
     "Gemini 3.1 Pro prompted": {
-        "xytext": (-12, 4),
+        "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     },
 }
+# Cost-saving callout: an arrow from the strongest paper monitor to the
+# on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
+COST_CALLOUT = ("Gemini 3.1 Pro prompted", "Qwen3.8-27B Kimi-soft strict")
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -401,6 +405,45 @@ def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
 
 
+def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> None:
+    """Arrow from the reference monitor to Gleipnir 27B with the cost ratio."""
+    source = frame.loc[frame["monitor"].eq(COST_CALLOUT[0])]
+    target = frame.loc[frame["monitor"].eq(COST_CALLOUT[1])]
+    if len(source) != 1 or len(target) != 1:
+        return
+    source, target = source.iloc[0], target.iloc[0]
+    start = (source["cost_per_1k"], source["mean_ood_pauroc_at_20"])
+    end = (target["cost_per_1k"], target["mean_ood_pauroc_at_20"])
+    axis.annotate(
+        "",
+        xy=end,
+        xytext=start,
+        arrowprops={
+            "arrowstyle": "-|>",
+            "color": "#374151",
+            "linewidth": 1.8,
+            "mutation_scale": 16,
+            "shrinkA": 9,
+            "shrinkB": 11,
+            "connectionstyle": "arc3,rad=0.04",
+        },
+        zorder=2,
+    )
+    ratio = source["cost_per_1k"] / target["cost_per_1k"]
+    gain = 100 * (target["mean_ood_pauroc_at_20"] - source["mean_ood_pauroc_at_20"])
+    axis.text(
+        np.sqrt(start[0] * end[0]),
+        (start[1] + end[1]) / 2 - 0.004,
+        f"{ratio:.0f}× cheaper, {gain:+.1f} points",
+        fontsize=13,
+        fontweight="bold",
+        color="#111827",
+        ha="center",
+        va="top",
+        zorder=4,
+    )
+
+
 def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame, full=full)
@@ -464,6 +507,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             },
             zorder=2,
         )
+
+    _draw_cost_callout(axis, frame)
 
     committed = frame["pricing"].eq("committed")
     for category, group in frame.loc[~committed].groupby("category", sort=False):

@@ -8,6 +8,7 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
     MANUAL_COMPARISON_LABELS,
     _display_label,
+    _draw_cost_callout,
     _improvement_pairs,
     _label_obstacles,
     _markdown_cells,
@@ -96,7 +97,7 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
-        "xytext": (-12, 4),
+        "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     }
@@ -116,6 +117,18 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
         float(method["mean_ood_pauroc_at_20"]) > float(base["mean_ood_pauroc_at_20"])
         for base, method in pairs
     )
+
+
+def test_cost_callout_reports_gemini_to_gleipnir_27b_ratio() -> None:
+    import matplotlib.pyplot as plt
+
+    frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
+    figure, axis = plt.subplots()
+    axis.set_xscale("log")
+    _draw_cost_callout(axis, frame)
+    labels = [text.get_text() for text in axis.texts if text.get_text()]
+    assert labels == ["188× cheaper, +1.1 points"]
+    plt.close(figure)
 
 
 def test_paper_frontier_reconstructs_the_pre_gleipnir_low_cost_curve() -> None:
