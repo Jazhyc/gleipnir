@@ -243,6 +243,12 @@ at roughly 12 MB/s, so total rate scales with the number of streams: 6 tar strea
 gave about 75 MB/s, and 12 rsync workers (one per directory) about 140 MB/s. It skipped the old
 `gleipnir-eu-20261004` checkout and `.cache/{uv,pplx_decider,qwen27b_generations_ood}`.
 
+At about 01:40 UTC on 2026-10-20 the container became unreachable: Runpod
+reported the Pod RUNNING with no runtime or ports, SSH timed out, and the UI
+flagged a host problem. The one-line auxiliary arm had just finished training
+(about step 232 of 245); its outputs were on the container disk only. The
+queued seed average had not started. No lifecycle action was taken.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
