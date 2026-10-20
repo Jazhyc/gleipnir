@@ -165,3 +165,34 @@ PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --co
 PYTHONPATH=src:. <training-python> -m experiments.aux_supervision.run
 python -m experiments.aux_supervision.compare
 ```
+
+## Result (seed 1, 2026-10-20)
+
+The arm **does not advance**: it is worse than the seed-matched control
+(`results/aux_supervision/comparison.json`).
+
+| ID metric | Control `teacher-seed-sdpa-s1-01` | Aux arm | Δ |
+|---|---:|---:|---:|
+| Macro pAUROC@20 | 0.8978 | 0.8610 | −3.68 |
+| gloom_exfiltration pAUROC@20 | 0.8168 | 0.7529 | −6.39 |
+| test_stride pAUROC@20 | 0.9788 | 0.9690 | −0.98 |
+| Macro AUROC | 0.9627 | 0.9540 | −0.87 |
+| Macro Brier | 0.0722 | 0.0796 | +0.0073 |
+
+- **Against seed noise.** The arm is below all three Kimi-distilled seeds
+  (0.8959, 0.8978, 0.9142, a 1.8-point spread). It fails all three rule
+  criteria.
+- **Scores.** Mean absolute score change versus the control is 0.057, with 208
+  threshold flips.
+- **Run.** The arm ran on US-CA-2 B200 `GPU-84d18db5…`. Training took
+  47.6 minutes, as fast as the controls (seed 2: 48.1 minutes), so the
+  continuation adds no meaningful cost.
+- **Startup and parity.** Every startup gate passed. FlashQLA was accepted
+  under `selected_finite`. Merged parity: maximum error 0.0018, correlation
+  0.99991.
+- **Teacher top-64 mass.** The teacher's top 64 tokens hold 99.81% of its
+  probability mass on average. The 1st percentile is 0.971, and 4.2% of
+  tokens leave out more than 1%. Truncation does not explain the result.
+- **Attribution.** The prompt and the loss changed together, so this seed
+  cannot say which hurt. Earlier failed attempts are preserved under
+  `*_failed_adaptive_canary01` and `*_failed_gpu_fabric02`.
