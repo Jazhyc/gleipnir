@@ -36,6 +36,19 @@ V02 = "results/teacher-seed-sdpa-avg012-01"
 TEMPLATE = "data/gleipnir4b-v02-ood-optimized01/config.yaml"
 BASELINE_ID = "gleipnir4b-v02-id-optimized01"
 QAD_EVAL = "qad-v02-optimized01"
+# The QAD stages were validated with the NC2 runtime's FA4 overlay, which
+# bundles quack 0.6.5 for CUTLASS DSL 4.8; the EU serving overlay behind
+# .cache/kernels/fa4 lacks it, so the venv's older quack fails to import.
+TRAINING_FA4 = "/tmp/gleipnir-training-runtime/fa4"
+
+
+def training_stage_environment(environment: dict[str, str]) -> dict[str, str]:
+    paths = environment["PYTHONPATH"].split(":")
+    matches = [i for i, p in enumerate(paths) if p.endswith(".cache/kernels/fa4")]
+    if len(matches) != 1:
+        raise ValueError("training FA4 overlay layout changed")
+    paths[matches[0]] = TRAINING_FA4
+    return {**environment, "PYTHONPATH": ":".join(paths)}
 
 
 def scoring_context(name: str, parent: str, splits: list[str]) -> None:
@@ -142,8 +155,9 @@ def main():
         from experiments.b200_vllm031.runtime import candidate_environment
 
         status("baseline")
-        scoring_context(BASELINE_ID, V02, ["id"])
-        score(BASELINE_ID)
+        if not (ROOT / "results" / BASELINE_ID / "evaluation/complete.json").exists():
+            scoring_context(BASELINE_ID, V02, ["id"])
+            score(BASELINE_ID)
         run(
             "teacher",
             config["serving_python"],
@@ -178,14 +192,15 @@ def main():
                 "teacher_sha256": file_hash(teacher / "teacher.jsonl"),
                 "workload_sha256": file_hash(teacher / "workload.jsonl"),
                 "gpu_uuid": gpu_uuid,
+                "training_fa4_overlay": TRAINING_FA4,
             },
         )
         for source in sources:
             target = output / "source_archive" / source.relative_to(ROOT)
             target.parent.mkdir(parents=True, exist_ok=True)
             shutil.copy2(source, target)
-        environment = training_environment(
-            ROOT, config["experiment"], native_fp4_mlp=True
+        environment = training_stage_environment(
+            training_environment(ROOT, config["experiment"], native_fp4_mlp=True)
         )
         for name in ("train", "reference"):
             for source, checksum in bindings.items():
