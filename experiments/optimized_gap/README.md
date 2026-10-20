@@ -135,6 +135,24 @@ on SHADE-Arena; 53.9K prompt tokens/s.
   separate quantization from the scoring path. Under the student prompt, the
   campaign's BF16 reference came from the server, and the gap was −0.25.
 
+### Gleipnir 27B teacher-prompt ID through the optimized stack (for cascades)
+
+`teacher_workload.py --split id` re-renders the 3,012 canonical CoT-removed
+ID rows with the teacher template, exactly as the BF16 extraction did, and
+every prompt matches its recorded SHA-256. `opt27b_teacher_id_eu01` scored
+them through the same optimized stack, compiling on the first attempt.
+
+| Gleipnir 27B, teacher-prompt ID | BF16 (extraction) | Optimized | Change |
+|---|---:|---:|---:|
+| Macro pAUROC@20 | 0.9420 | 0.9444 | +0.0024 |
+| Macro AUROC | 0.9863 | 0.9870 | +0.0007 |
+| Macro Brier | 0.0590 | 0.0643 | +0.0053 |
+| Gloom / STRIDE | 0.9187 / 0.9653 | 0.9238 / 0.9649 | |
+
+Mean absolute score change 0.0244 (maximum 0.38), 85 threshold flips;
+44.8K prompt tokens/s. With this run, both models have optimized-serving
+scores on ID and OOD, the inputs for an offline 4B→27B cascade.
+
 ### Findings while getting there
 
 - **Merges are not bit-portable across CPU vendors.** FP32 `b @ a` uses

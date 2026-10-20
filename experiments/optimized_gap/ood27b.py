@@ -117,7 +117,8 @@ def main() -> None:
     write_json(out / "ood_gap.json", report)
     c, b = report["condition"]["macro"], report["bf16"]["macro"]
     print(
-        f"OOD pAUROC@20 {c['pauroc_at_20']:.4f} (BF16 {b['pauroc_at_20']:.4f}) "
+        f"{split.upper()} pAUROC@20 {c['pauroc_at_20']:.4f} "
+        f"(BF16 {b['pauroc_at_20']:.4f}) "
         f"AUROC {c['auroc']:.4f} (BF16 {b['auroc']:.4f}) "
         f"MAE {report['scores_vs_bf16']['mae']:.4f}",
         flush=True,
