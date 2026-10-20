@@ -481,7 +481,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
 
     origin_labels = {
         "Paper": "Sinha et al.",
-        "Gleipnir": "Decision models (single-pass score)",
+        "Gleipnir": "Decision models",
     }
     legend_handles = [
         Line2D(
