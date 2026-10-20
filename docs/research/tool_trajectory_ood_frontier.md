@@ -24,7 +24,9 @@ The main figure is simplified (user decision, 2026-10-20). It drops:
 - paper points that are neither on the paper frontier nor labelled
   comparisons.
 
-It also separates Gleipnir from third-party decision models. The appendix
+It labels Gemini 3.1 Pro, the top of the paper frontier, and leaves the
+Kimi-K2.6 SFT frontier point unlabelled, because its logit-based counterpart
+is not shown. It also separates Gleipnir from third-party decision models. The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
 eligible row. Shared plotting helpers
 live in `src/gleipnir/analysis/plotting.py`; see

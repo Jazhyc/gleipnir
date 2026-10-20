@@ -80,7 +80,12 @@ BASE_TO_METHOD = {
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
+# Labelled paper points. Gemini 3.1 Pro marks the top of the paper frontier.
+# The main figure drops the Kimi-K2.6 SFT label: its logit-based counterpart is
+# not shown there, though the point stays on the paper frontier.
+MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT"}
 PAPER_COMPARISON_MONITORS = {
+    "Gemini 3.1 Pro prompted",
     "Kimi-K2.6 SFT",
     "Qwen3.5-4B SFT+RL",
     "Qwen3.5-27B SFT+RL",
@@ -179,9 +184,10 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "center",
         "va": "top",
     },
+    # Left of its point: it sits at the right edge of the axes.
     "Gemini 3.1 Pro prompted": {
-        "xytext": (0, 18),
-        "ha": "center",
+        "xytext": (-12, 4),
+        "ha": "right",
         "va": "bottom",
     },
 }
@@ -505,6 +511,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         | frame["origin"].eq("Gleipnir")
         | frame["monitor"].isin(PAPER_COMPARISON_MONITORS)
     ].sort_values("cost_per_1k")
+    if not full:
+        labelled = labelled.loc[~labelled["monitor"].isin(MAIN_FIGURE_UNLABELLED)]
     label_bbox = {
         "boxstyle": "round,pad=0.12",
         "facecolor": "white",

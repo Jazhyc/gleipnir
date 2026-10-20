@@ -96,8 +96,8 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
-        "xytext": (0, 18),
-        "ha": "center",
+        "xytext": (-12, 4),
+        "ha": "right",
         "va": "bottom",
     }
 
