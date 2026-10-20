@@ -85,7 +85,7 @@ and at least as accurate, with one strict improvement.
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
 | **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.9352** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving** | **1.8476** | **0.9508** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -96,8 +96,8 @@ and at least as accurate, with one strict improvement.
 | Paper | GPT-5.4 prompted | Full specification, generated rationale + 0--10 score | 44.376 | 0.899 | no |
 | Paper | Gemini 2.5 Pro prompted | Full specification, generated rationale + 0--10 score | 45.254 | 0.802 | no |
 | Paper | Claude Sonnet 4.6 prompted | Full specification, generated rationale + 0--10 score | 58.850 | 0.929 | no |
-| Paper | Gemini 3.1 Pro prompted | Full specification, generated rationale + 0--10 score | 73.218 | 0.940 | yes |
-| Paper | Claude Opus 4.6 prompted | Full specification, generated rationale + 0--10 score | 94.794 | 0.942 | yes |
+| Paper | Gemini 3.1 Pro prompted | Full specification, generated rationale + 0--10 score | 73.218 | 0.940 | no |
+| Paper | Claude Opus 4.6 prompted | Full specification, generated rationale + 0--10 score | 94.794 | 0.942 | no |
 
 The 17 paper reference rows reproduce Appendix E, Table 4. Their exact token
 counts and prices remain in the paper rather than being duplicated here. The
@@ -313,9 +313,24 @@ cost.
 Qwen3.8-27B trained for one epoch on the strict-filtered Kimi K3 soft targets
 (seed 0, `qwen38_27b_b200_default`; campaign `qwen38-27b-s0-01`) is entered
 under the full teacher prompt, the interface of the unadapted 27B and Kimi
-rows. It reaches `0.9352` Mean-OOD pAUROC@20 and `0.9790` Mean-OOD AUROC
-(stock vLLM 0.31 BF16, FP32 LM head;
-[experiment](../../experiments/gleipnir27b_vocab_distillation/README.md)).
+rows. It is plotted at its optimized-serving score. Gleipnir models are
+entered as they will be served (user decision, 2026-10-20). Cost stays at the
+dated proxy until project serving prices are set.
+
+- **Optimized serving.** `QuantFullWorker`, with FP8 attention projections,
+  FP4 MLP and GDN, MXFP8 attention and CUDA graphs to 2,048 tokens, and no
+  QAD. It reaches `0.9508` Mean-OOD pAUROC@20 and `0.9841` Mean-OOD AUROC
+  ([optimized gap](../../experiments/optimized_gap/README.md)).
+- **BF16 reference.** Stock vLLM 0.31 BF16 with an FP32 LM head reaches
+  `0.9352` and `0.9790`
+  ([experiment](../../experiments/gleipnir27b_vocab_distillation/README.md)).
+- **Where the difference is.** The `+0.0156` difference is almost entirely
+  SHADE-Arena (`0.8316` against `0.7298`); AgentDojo moves `−0.0073` and the
+  other four sources at most `0.0008`. SHADE-Arena is one-task-dominated, so
+  read this as a serving perturbation that happens to help, not as a quality
+  gain.
+- **QAD.** Under the compact student prompt the same stack moves the 27B by
+  `−0.0025`, so it needs no QAD.
 The prompt was chosen on CoT-removed ID (0.9420 vs. 0.9216 under the compact student
 prompt it was trained on), not on OOD. The workload renders byte-identically
 to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
@@ -329,13 +344,14 @@ Mean-OOD pAUROC@20, `0.9679` AUROC, `$1.6892/1K`;
 SHADE-Arena (`0.7298` vs. `0.5875`); the other five sources move by at most
 `0.011`.
 
-At equal cost it dominates the unadapted Qwen3.8-27B (`0.8901`) by `0.0451`.
+At equal cost it dominates the unadapted Qwen3.8-27B (`0.8901`) by `0.0607`
+(`0.0451` for the BF16 score).
 It also dominates Kimi K2.6 (`0.9194` at `$7.9110/1K`) and Claude Sonnet 4.6
 (`0.929` at `$58.850/1K`), which leave the frontier, and Kimi K3 (`0.9084`).
-The next higher-quality frontier points are Gemini 3.1 Pro (`0.940` at
-`$73.218/1K`) and Claude Opus 4.6 (`0.942` at `$94.794/1K`), `0.005`–`0.007`
-higher at about 40–51 times the cost under the paper's generated-rationale
-interface. One seed; the 4B students' OOD seed SD is 1.8 points, and
+At its optimized-serving score it is the highest-scoring row and also
+dominates Gemini 3.1 Pro (`0.940` at `$73.218/1K`) and Claude Opus 4.6
+(`0.942` at `$94.794/1K`), which leave the frontier. They cost about 40–51
+times as much. At the BF16 score (`0.9352`) both would remain above it. One seed; the 4B students' OOD seed SD is 1.8 points, and
 SHADE-Arena is dominated by one task
 ([length audit](../findings/shade_length_audit.md)).
 
@@ -479,7 +495,7 @@ are not observed.
 It becomes the lowest-cost frontier point. It dominates Gleipnir 4B
 (`0.8108` at `$0.2598/1K` for v0.2; v0.1 scored `0.7823`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
 beats Jev on all six sources on identical requests. The next frontier point
-is Gleipnir 27B (`0.9352` at `$1.8476/1K`). SHADE-Arena stays weakest at
+is Gleipnir 27B (`0.9508` at `$1.8476/1K`, optimized serving; `0.9352` BF16). SHADE-Arena stays weakest at
 `0.6054`.
 
 The 4B sibling `pplx-decider-flash-v1.2` scores `0.5350` at `$0.0881/1K`.

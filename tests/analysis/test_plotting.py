@@ -144,7 +144,7 @@ def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None
     registry = tmp_path / "frontier.md"
     source = DEFAULT_SOURCE.read_text(encoding="utf-8")
     registry.write_text(
-        source.replace("| **0.9352** | **yes** |", "| **0.9352** | **no** |", 1),
+        source.replace("| **0.9508** | **yes** |", "| **0.9508** | **no** |", 1),
         encoding="utf-8",
     )
 
