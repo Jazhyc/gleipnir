@@ -43,7 +43,8 @@ trajectories of tool-using AI agents for sabotage, data exfiltration, and other
 covert unauthorized actions taken while appearing to do an assigned task. It
 is a LoRA adapter for `Qwen/Qwen3.5-4B`, not a standalone model.
 
-Version 0.3 is trained on agent tool-use trajectories only, with the same data
+Version 0.4 packages the v0.3 weights unchanged. They are trained on agent
+tool-use trajectories only, with the same data
 and recipe as Gleipnir 27B. It is the exact weight average of three training
 seeds, followed by quantization-aware distillation (QAD) for the project's
 optimized FP8/FP4/MXFP8 serving stack (see Training). The one checkpoint is
@@ -54,8 +55,24 @@ follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
 treated as a production safety system or as evidence that an interaction is
 safe merely because the model assigns it a low score.
 
+## Variants
+
+| Repository or image | Contents | Use it for |
+| --- | --- | --- |
+| `Jazhyc/Gleipnir-4B` (this repository) | FP32 LoRA master and the `vllm/` key-rebased adapter | Merging, fine-tuning, PEFT |
+| [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | The adapter merged into `Qwen/Qwen3.5-4B` in FP32, exported as BF16 | Transformers or vLLM on any GPU |
+| `ghcr.io/jazhyc/gleipnir-serve:0.1` | The project's optimized serving stack (FP8/FP4/MXFP8) | High-throughput scoring on one NVIDIA B200 |
+
+Both repositories carry the tag `v0.4` for this release. The image fetches
+`Gleipnir-4B-BF16@v0.4` and verifies every file before serving.
+
 ## Changelog
 
+- **v0.4 (2026-10-20).** Packaging release; the adapter is identical to
+  v0.3. Adds the merged BF16 checkpoint
+  ([`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16))
+  and the optimized B200 serving image, validated on a fresh host against the
+  v0.3 optimized results (see Usage).
 - **v0.3 (2026-10-20).** The v0.2 average plus same-model QAD (245 updates)
   for optimized serving. Under BF16 serving it matches v0.2 on OOD (0.8039
   against 0.8108 Mean-OOD pAUROC@20, within seed noise) and is better on ID
@@ -242,6 +259,34 @@ come from vLLM 0.31 on an NVIDIA B200, under stock BF16 serving and under the
 project's optimized stack (BF16 serving canary 0.0019; optimized canary
 0.0095, correlation 0.9995). Dynamic LoRA serving of a rank-384 adapter was
 not tested; vLLM would need `--max-lora-rank 512`.
+
+### Optimized B200 serving
+
+The serving image runs the stack behind the optimized results above. It
+needs one NVIDIA B200 (other GPUs, including the B300, are refused), an
+NVIDIA driver supporting CUDA 13, and prompts of at most 32,768 tokens.
+
+```bash
+docker run --gpus all -p 8000:8000 \
+  -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
+  ghcr.io/jazhyc/gleipnir-serve:0.1 4b
+```
+
+The first start downloads the BF16 checkpoint (8.8 GB) and
+is ready after about two and a half minutes (139 s including the download on a fresh B200); the mounted cache keeps the
+download across restarts. Do not mount volumes over `/tmp` or `/workspace`, which
+hold the pinned runtimes and code (on Runpod, attach volumes elsewhere). Send the fully rendered prompt, built exactly as in the
+Python example and ending in `Prediction:`:
+
+```bash
+curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
+  -d '{"model": "monitor", "prompt": "<rendered prompt>"}'
+# {"score": ..., "margin": ..., "logits": [logit_0, logit_1], "prompt_tokens": ...}
+```
+
+`score` is the softmax of the `1` and `0` logits, the same quantity as
+`risk_score` above. The image was validated on a fresh B200 against the
+recorded optimized rows (0.9119 ID and 0.7700 Mean-OOD pAUROC@20 against the recorded 0.9117 and 0.7703. Optimized-serving scores are not bit-reproducible: two runs of the same server differ by about 0.01 in mean absolute score while ranking metrics move by about 0.001; use stock BF16 serving when per-row reproducibility matters).
 
 ## Limitations and responsible use
 

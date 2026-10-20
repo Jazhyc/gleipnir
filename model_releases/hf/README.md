@@ -88,3 +88,18 @@ QAD for optimized serving ([QAD](../../experiments/qad_v02/README.md)).
 - **Publication.** Staged at `results/huggingface_release_v0.3` and uploaded
   as commit `e36aa2bb`. All 10 files were verified on the Hub, with no stale
   files, and the commit is tagged `v0.3`; `v0.1` and `v0.2` remain pinnable.
+
+## Merged BF16 repositories and the serving image
+
+From Gleipnir 4B v0.4 and 27B v0.2, each model also has a merged BF16
+repository: `Jazhyc/Gleipnir-4B-BF16` and `Jazhyc/Gleipnir-27B-BF16`. Their
+cards are `gleipnir-{4b,27b}-bf16/README.md`. A model's adapter and BF16
+repositories carry the same version tag.
+
+- **Building them.** The checkpoints are byte-identical remerges of the
+  evaluated merges. They are built and uploaded on the B200 build Pod (never
+  staged on the cluster), using
+  [`experiments/release_serving`](../../experiments/release_serving/README.md).
+- **Release record.** `experiments/release_serving/release_manifest.json`
+  records the file hashes, HF commits and the optimized serving image
+  `ghcr.io/jazhyc/gleipnir-serve:0.1`.

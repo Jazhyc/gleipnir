@@ -1,36 +1,20 @@
-% Short sprint pitch: approach, frontier, sprint avenues, feedback.
+% Short sprint pitch: motivation and approach, frontier, sprint avenues, feedback, logistics.
 
-\begin{frame}{Core idea: ask for one decision and distill its logits}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Prior work: distill rationales}
-                Teacher writes a rationale and a 0--10 score.
-                \medskip
-
-                Student learns to reproduce the text (SFT), then RL.
-                \medskip
-
-                Every evaluation \textbf{generates hundreds of tokens}.
-            \end{block}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Gleipnir: distill the decision}
-                Ask the teacher (Kimi K3) for a single token: \texttt{0} or \texttt{1}.
-                \medskip
-
-                The student matches the teacher's \textbf{probability} on that token
-                (soft logit targets, LoRA).
-                \medskip
-
-                Every evaluation is \textbf{one prefill}; the score is a calibrated probability.
-            \end{block}
-        \end{column}
-    \end{columns}
+\begin{frame}{Motivation and core idea}
+    \begin{block}{Motivation}
+        Make monitoring cheap enough to run on every agent action everywhere.
+        Global deployment makes misalignment much easier to detect.
+    \end{block}
     \bigskip
 
-    {\small No rationale targets and no RL. The teacher's uncertainty carries the
-    information that rationales would otherwise have to carry.}
-    \medskip
+    \begin{itemize}
+        \item \textbf{Prior work} distills a teacher's written rationale and score,
+              so each evaluation generates hundreds of tokens.
+        \item \textbf{Gleipnir} asks the teacher (Kimi K3) for a single decision,
+              \texttt{0} or \texttt{1}, and distills its \textbf{probability} on that token.
+              Each evaluation is one forward pass over the trajectory.
+    \end{itemize}
+    \vfill
 
     {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
     \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
@@ -46,7 +30,7 @@
 \begin{frame}{Status: ahead of the proposal}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
-            \textbf{Proposal, week 1: improve the monitors}
+            \textbf{Phase 1: improve the monitors}
             \begin{itemize}
                 \item \alert{Done.} Gleipnir 4B (seed average + quantization-aware
                       distillation) and Gleipnir 27B are frozen release candidates.
@@ -54,10 +38,10 @@
             \end{itemize}
         \end{column}
         \begin{column}{0.48\textwidth}
-            \textbf{Proposal, week 2: stress-test them}
+            \textbf{Phase 2: stress-test them}
             \begin{itemize}
-                \item \alert{Starting now}: the whole sprint goes to the second half
-                      of the proposal.
+                \item \alert{Starting now}, still in week 1, because training
+                      finished sooner than planned.
                 \item Both monitors are frozen, so every result describes the
                       release checkpoints.
             \end{itemize}
@@ -66,12 +50,12 @@
     \bigskip
 
     \begin{block}{Sprint deliverable}
-        A \textbf{model card} for each monitor that tells the community what it is good at,
-        where it fails and how easily it can be fooled.
+        A \textbf{technical report} on both monitors that tells the community what they
+        are good at, where they fail and how easily they can be fooled.
     \end{block}
 \end{frame}
 
-\begin{frame}{Four avenues for the model card}
+\begin{frame}{Four avenues for the technical report}
     \begin{columns}[T,onlytextwidth]
         \begin{column}{0.48\textwidth}
             \begin{block}{1. Fresh benchmarks}
@@ -104,7 +88,7 @@
 
 \begin{frame}{Where we would like feedback}
     \begin{itemize}
-        \item \textbf{Priorities.} Which of the four avenues would make the model card most
+        \item \textbf{Priorities.} Which of the four avenues would make the technical report most
               useful to the control community in two weeks?
         \item \textbf{Benchmarks.} Beyond MonitoringBench and SleightBench, which results would
               be most convincing?
@@ -114,5 +98,18 @@
               black-box query attacks as for an API-served monitor too?
         \item \textbf{New domains.} Which setting would cheap monitoring unlock that matters
               most: agent swarms or long-horizon sessions?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Logistics}
+    \begin{itemize}
+        \item \textbf{TA.} Could we be paired with a TA who is interested in AI control
+              and monitoring?
+        \item \textbf{Schedule.} Jeremias attends EMNLP from 23 to 30 October, so his
+              productivity will be reduced that week. Could we extend the sprint by working
+              on 31~October and 1~November?
+        \item \textbf{Compute.} Training the monitors and optimizing inference used most
+              of the current budget. Could we get a larger one once we share a detailed
+              plan of the experiments and their costs?
     \end{itemize}
 \end{frame}

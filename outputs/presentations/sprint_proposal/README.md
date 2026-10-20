@@ -2,13 +2,14 @@
 
 Authors: Jeremias Ferrao and Abhinav Kumar.
 
-Short, self-contained Beamer pitch (six slides) for the two-week sprint. It updates the
+Short, self-contained Beamer pitch (seven slides) for the two-week sprint. It updates the
 [written proposal](../../reports/sprint_proposal/): both monitors are now
 release candidates, so the sprint moves straight to stress-testing them for a
-public model card. The slides cover the core idea (one binary decision and
-teacher-logit distillation instead of rationale distillation), the OOD frontier
+technical report on both. The slides cover a short motivation (monitoring cheap enough to deploy
+everywhere) and the core idea (one binary decision and teacher-logit
+distillation instead of rationale distillation), the OOD frontier
 plot, titled with the cost reduction (Gleipnir 27B beats Gemini 3.1 Pro at 1/188 of its cost),
-four candidate sprint avenues, and the questions we want feedback on.
+four candidate sprint avenues, the questions we want feedback on, and logistics (a TA, the schedule around EMNLP and the compute budget).
 
 Read the compiled deck: [presentation.pdf](presentation.pdf). See
 [sources.md](sources.md) for numbers, provenance and pricing conventions.
