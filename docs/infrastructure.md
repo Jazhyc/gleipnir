@@ -264,6 +264,11 @@ its container disk in about 3 minutes of transfer, at about 410 MB/s:
 The default PyTorch image never started on a 2-vCPU CPU Pod. Both CPU Pods
 were terminated afterwards, one by the user. The training and serving stack
 ran on sm_103 unchanged (FP32 reference, merge, vLLM 0.31 scoring).
+The optimized serving stacks did not: their workers reject kernel receipts
+validated on another GPU model (`last-query kernel receipt hardware changed`;
+see [optimized gap](../experiments/optimized_gap/README.md)). At the user's
+request the B300 was terminated at about 03:50 UTC (delete 204, lookup 404; no
+Pods remain). All artifacts were pulled first, with file sizes verified.
 
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
