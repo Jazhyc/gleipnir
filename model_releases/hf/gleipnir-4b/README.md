@@ -25,12 +25,15 @@ model-index:
       type: gleipnir-six-source-strict-ood
       name: Six-source strict-OOD action-only tool-trajectory suite
     metrics:
-    - type: roc_auc
-      name: Mean-OOD AUROC
-      value: 0.919943
     - type: mean_ood_pauroc_at_20
-      name: Mean-OOD pAUROC@20
-      value: 0.810807
+      name: Mean-OOD pAUROC@20 (optimized FP8/FP4/MXFP8 serving)
+      value: 0.770275
+    - type: mean_ood_pauroc_at_20
+      name: Mean-OOD pAUROC@20 (BF16 serving)
+      value: 0.803876
+    - type: roc_auc
+      name: Mean-OOD AUROC (BF16 serving)
+      value: 0.921072
 ---
 
 # Gleipnir 4B
@@ -40,9 +43,11 @@ trajectories of tool-using AI agents for sabotage, data exfiltration, and other
 covert unauthorized actions taken while appearing to do an assigned task. It
 is a LoRA adapter for `Qwen/Qwen3.5-4B`, not a standalone model.
 
-Version 0.2 is trained on agent tool-use trajectories only, with the same data
+Version 0.3 is trained on agent tool-use trajectories only, with the same data
 and recipe as Gleipnir 27B. It is the exact weight average of three training
-seeds (see Training).
+seeds, followed by quantization-aware distillation (QAD) for the project's
+optimized FP8/FP4/MXFP8 serving stack (see Training). The one checkpoint is
+meant for both stock BF16 and optimized serving.
 
 This release is an early research artifact intended for reproducibility and
 follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
@@ -51,6 +56,12 @@ safe merely because the model assigns it a low score.
 
 ## Changelog
 
+- **v0.3 (2026-10-20).** The v0.2 average plus same-model QAD (245 updates)
+  for optimized serving. Under BF16 serving it matches v0.2 on OOD (0.8039
+  against 0.8108 Mean-OOD pAUROC@20, within seed noise) and is better on ID
+  (0.9332 against 0.9124). Under optimized serving, QAD recovers the full ID
+  loss (0.9117 against 0.8807 without QAD) and part of the OOD loss (0.7703
+  against 0.7579). Same rank-384 layout and interface.
 - **v0.2 (2026-10-20).** Retrained on the 7,836 strict-filtered tool
   trajectories only, dropping the 13,149 deception rows, so the 4B and 27B
   share one recipe. The released adapter is the exact average of three seeds
@@ -86,17 +97,46 @@ the other Gleipnir adapters, spanning AgentDojo, CUA-SHADE, IaC, MLE-Sabotage,
 Rogue Eval, and SHADE-Arena. The primary metric is the unweighted mean across
 sources of raw normalized partial AUROC through 20% false-positive rate.
 
-| Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
+Gleipnir 4B v0.3 under both serving paths, against v0.2:
+
+| Model / serving | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | ID macro pAUROC@20 | ID macro AUROC |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| **v0.3, BF16** | **0.8039** | **0.9211** | **0.7671** | **0.9332** | **0.9782** |
+| **v0.3, optimized** | **0.7703** | **0.9138** | **0.7005** | **0.9117** | **0.9711** |
+| v0.2, BF16 | 0.8108 | 0.9199 | 0.7514 | 0.9124 | 0.9702 |
+| v0.2, optimized (no QAD) | 0.7579 | 0.9006 | 0.6570 | 0.8807 | 0.9571 |
+
+Per-source OOD pAUROC@20:
+
+| Source | v0.3 BF16 | v0.3 optimized | v0.2 BF16 | v0.2 optimized |
 | --- | ---: | ---: | ---: | ---: |
-| **Gleipnir 4B v0.2** | **0.8108** | **0.9199** | **0.7514** | **0.9335** |
-| Gleipnir 4B v0.1 | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
-| Gleipnir 9B | 0.8212 | 0.9215 | 0.7837 | 0.9355 |
-| Gleipnir 27B (full teacher prompt) | 0.9352 | 0.9790 | 0.9486 | 0.9810 |
+| AgentDojo | 0.9462 | 0.8401 | 0.9430 | 0.7913 |
+| CUA-SHADE | 0.7418 | 0.7493 | 0.7916 | 0.7805 |
+| IaC | 0.8618 | 0.8214 | 0.8845 | 0.8347 |
+| MLE-Sabotage | 1.0000 | 1.0000 | 1.0000 | 0.9990 |
+| Rogue Eval | 0.9742 | 0.9586 | 0.9804 | 0.9567 |
+| SHADE-Arena | 0.2993 | 0.2524 | 0.2653 | 0.1852 |
 
-Per-source pAUROC@20: AgentDojo 0.9430, CUA-SHADE 0.7916, IaC 0.8845,
-MLE-Sabotage 1.0000, Rogue Eval 0.9804, SHADE-Arena 0.2653.
+The optimized stack runs FP8 attention projections, FP4 MLP and GDN
+projections and MXFP8 attention. On one B200 it scored the 55.3M-token OOD
+workload at 226K prompt tokens/s against 120K for stock BF16, 1.89 times the
+throughput.
 
-- The release was chosen by a rule fixed before scoring, on held-out
+- **BF16 serving.** v0.3 is level with v0.2 on OOD: macro pAUROC@20 −0.7
+  points, within seed noise, with AUROC and pooled pAUROC@20 slightly higher.
+  It is 2.1 points better on ID. CUA-SHADE (−5.0) and IaC (−2.3) are lower,
+  and SHADE-Arena (+3.4) is higher.
+- **Optimized serving.** QAD recovers the full ID loss but only about a
+  quarter of the OOD loss: v0.3 optimized remains 3.4 points below v0.3 BF16
+  on Mean-OOD pAUROC@20, concentrated in AgentDojo. Use BF16 serving when
+  off-distribution quality matters most; use optimized serving for
+  throughput.
+
+Comparison with the other releases (Mean-OOD pAUROC@20): Gleipnir 9B 0.8212
+(compact prompt) and Gleipnir 27B 0.9352 (full teacher prompt, BF16) or
+0.9508 (its optimized stack, no QAD needed).
+
+- The v0.2 base was chosen by a rule fixed before scoring, on held-out
   in-distribution data only: release the seed average if its macro
   pAUROC@20 on the 3,012-row ID set (Gloom-exfiltration and STRIDE test) is
   at least the three seeds' mean, otherwise the best single seed. The average
@@ -109,10 +149,8 @@ MLE-Sabotage 1.0000, Rogue Eval 0.9804, SHADE-Arena 0.2653.
   picking one.
 - SHADE-Arena remains weak; long trajectories are the hardest case for this
   model size.
-- The rows above compare released artifacts; they differ in base model, data
-  mixture, seeds and evaluation prompt (Gleipnir 27B is scored under its
-  recommended full teacher prompt), so they are not a controlled model-size
-  study.
+- The release comparisons differ in base model, data mixture, seeds,
+  evaluation prompt and serving, so they are not a controlled model-size study.
 
 ## Training
 
@@ -137,7 +175,12 @@ provenance, and evaluation.
 - Averaging: the three seed updates are combined exactly as one rank-384 LoRA
   (A matrices stacked, B matrices divided by 3, alpha 768), so the adapter
   equals the mean of the seed updates (maximum relative error 2.2e-8).
-  Saved adapter: FP32, 509,607,936 parameters.
+- QAD (v0.3): starting from the averaged FP32 adapter, the model distils its
+  own BF16 scores on the same 7,836 rows while its forward pass runs the
+  optimized serving quantization (NVFP4 MLP/GDN, FP8 attention projections,
+  MXFP8 attention). It uses a straight-through low-rank backward, KL at
+  temperature 1, AdamW `1e-5`, 3% warmup and linear decay, and 245 updates
+  (64 minutes on one B200). Saved adapter: FP32, 509,607,936 parameters.
 
 ## Usage
 
@@ -192,13 +235,13 @@ print(risk_score)
 Verify that each literal label tokenizes to exactly one distinct token.
 
 The adapter is rank 384. For large evaluations the project merged the `vllm/`
-key-rebased adapter into the base in FP32, exported BF16 weights, and served
-them with vLLM 0.31. Master-to-serving parity passed (mean absolute score
-difference 0.0022, correlation 0.9999), and the merged model has the same
-inference cost as the base. Dynamic LoRA serving of a rank-384 adapter was not
-tested; vLLM would need `--max-lora-rank 512`. Scores in this card were served
-on an NVIDIA B300. Rescoring one seed there moved its ID pAUROC@20 by +0.0006
-against the B200.
+key-rebased adapter into the base in FP32 and exported BF16 weights; the
+merged model has the same inference cost as the base. Master-to-merged parity
+passed (mean absolute score difference 0.0030, correlation 0.99992). Scores
+come from vLLM 0.31 on an NVIDIA B200, under stock BF16 serving and under the
+project's optimized stack (BF16 serving canary 0.0019; optimized canary
+0.0095, correlation 0.9995). Dynamic LoRA serving of a rank-384 adapter was
+not tested; vLLM would need `--max-lora-rank 512`.
 
 ## Limitations and responsible use
 
@@ -226,7 +269,7 @@ labels, teacher caches, or benchmark rows. `release_manifest.json` records the
 adapter, prompt, base-revision, and packaging checksums needed to audit this
 release. The full experiment design and result audit are in the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir), especially
-`experiments/seed_average/README.md`.
+`experiments/qad_v02/README.md` and `experiments/seed_average/README.md`.
 
 The adapter weights and release metadata are distributed under the MIT License;
 see `LICENSE`. Users must also review and comply with the Qwen base-model terms,

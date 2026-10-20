@@ -75,3 +75,16 @@ are unchanged:
   similar OOD quality (0.8212 against 0.8108 pAUROC@20, within seed noise) at
   about 3.3 times the hosted cost. It is kept as a research artifact, and its
   comparison table is refreshed. Commit `9c4c246e`; 10 files verified.
+
+Gleipnir 4B v0.3 (2026-10-20, user request): the v0.2 average plus same-model
+QAD for optimized serving ([QAD](../../experiments/qad_v02/README.md)).
+- **Source.** The release adapter is the QAD master (`0716efc1…`) in the
+  campaign-layout copy `results/qad-v02-01/4b/monitor`. Its
+  `training_metadata.json` was added there to record the base, the QAD
+  receipt and the starting adapter.
+- **Results.** The card reports BF16 serving (0.8039 OOD, 0.9332 ID
+  pAUROC@20) and optimized serving (0.7703 OOD, 0.9117 ID, 1.89 times BF16
+  throughput).
+- **Publication.** Staged at `results/huggingface_release_v0.3` and uploaded
+  as commit `e36aa2bb`. All 10 files were verified on the Hub, with no stale
+  files, and the commit is tagged `v0.3`; `v0.1` and `v0.2` remain pinnable.

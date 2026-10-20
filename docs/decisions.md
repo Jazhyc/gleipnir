@@ -15,6 +15,10 @@
   (`−0.0025` under the student prompt, `+0.0156` under the teacher prompt).
   QAD effort goes to Gleipnir 4B, which loses `0.0529` under optimized
   serving ([optimized gap](../experiments/optimized_gap/README.md)).
+- Update, same day: Gleipnir 4B v0.3 (v0.2 plus QAD) is entered at its
+  optimized-serving score, `0.7703` (BF16 `0.8039`). QAD recovered 98% of the
+  ID loss but 23% of the OOD loss
+  ([QAD](../experiments/qad_v02/README.md)).
 
 ## 2026-10-20 — Evaluate Gleipnir 27B under the full teacher prompt
 

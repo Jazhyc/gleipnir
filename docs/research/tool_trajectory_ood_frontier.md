@@ -64,7 +64,7 @@ and at least as accurate, with one strict improvement.
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits** | **0.2598** | **0.8108** | **no** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving** | **0.2598** | **0.7703** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
@@ -125,19 +125,35 @@ record, and the exact accounting in
 
 ## Kimi-soft student results
 
-Gleipnir 4B (v0.2) is the exact weight average of three Qwen3.5-4B seeds.
-They were trained on the strict-filtered tool-trajectory data only, the same
-recipe as Gleipnir 27B ([seed average](../../experiments/seed_average/README.md)).
-It reaches `0.8108` Mean-OOD pAUROC@20 and `0.9199` Mean-OOD AUROC. The
-frozen ID-only rule selected it; OOD was scored once and never used for
-selection. It was scored on a B300, while the seeds were scored on B200s.
-Its compact student prompt is unchanged at 8,654.7113 mean input tokens over
-the same frozen rows, so the paper's `$0.03/M` input and `$0.15/M` output 4B
-proxy costs `$0.2598/1K`. pplx-decider v1.2 (below) dominates it. It
-dominates the unadapted 4B full-prompt baseline: it is 8.6% cheaper and
-improves pAUROC@20 by `0.1933`.
+Gleipnir 4B v0.3 starts from the exact weight average of three Qwen3.5-4B
+seeds. They were trained on the strict-filtered tool-trajectory data only, the
+same recipe as Gleipnir 27B ([seed average](../../experiments/seed_average/README.md)).
+Same-model quantization-aware distillation then adapts it to optimized
+serving ([QAD](../../experiments/qad_v02/README.md)). Like the 27B, it is
+plotted at its optimized-serving score (user decision, 2026-10-20):
 
-It replaces the v0.1 point, the full-mixed adapter trained with 13,149
+| Gleipnir 4B, Mean-OOD | pAUROC@20 | AUROC |
+| --- | ---: | ---: |
+| **v0.3, optimized serving (plotted)** | **`0.7703`** | `0.9138` |
+| v0.3, BF16 serving | `0.8039` | `0.9211` |
+| v0.2, BF16 serving | `0.8108` | `0.9199` |
+| v0.2, optimized serving without QAD | `0.7579` | `0.9006` |
+
+- **What QAD recovered.** It recovers 98% of the optimized-serving ID loss
+  and 23% of the OOD loss.
+- **Throughput.** Optimized serving runs at 1.89 times the BF16 throughput
+  on the B200 (226K against 120K prompt tokens/s on this workload).
+- **Selection.** The seed average was selected by a frozen ID-only rule, and
+  OOD was never used for selection.
+- **Cost.** The compact student prompt is unchanged at 8,654.7113 mean input
+  tokens over the same frozen rows. At the paper's `$0.03/M` input and
+  `$0.15/M` output 4B proxy it costs `$0.2598/1K`, kept until project
+  serving prices are set.
+- **Frontier.** pplx-decider v1.2 (below) dominates it. It dominates the
+  unadapted 4B full-prompt baseline: it is 8.6% cheaper and improves
+  pAUROC@20 by `0.1528`.
+
+It replaced the v0.1 point, the full-mixed adapter trained with 13,149
 deception rows (`0.7823` Mean-OOD pAUROC@20, `0.9086` AUROC, same cost). The
 three individual seeds score `0.7869`, `0.8125` and `0.7768`.
 
@@ -225,7 +241,7 @@ At the 2026-08-31 OpenRouter headline `$0.03/$0.17` route it costs
 | Higher-priced route (`$0.15/$0.60`) | 1.256425 | 0.058593 | **1.315018** | no |
 
 At every listed rate the Gleipnir 4B student strictly dominates this
-point: it costs `$0.2598/1K` and reaches `0.8108`. The GPT-OSS result remains
+point: it costs `$0.2598/1K` and reaches `0.7703` (optimized serving). The GPT-OSS result remains
 useful evidence that reasoning helps that model family, not an operational
 efficiency win.
 
@@ -250,7 +266,7 @@ Mean-OOD AUROC using the full teacher prompt and terminal binary logprobs.
 Darkbloom FP4 served 4,545 rows before a throughput-driven handoff to Parasail
 FP8 for the remaining 1,850. The uncached list-price cost is `$0.9896/1K`
 using the actual token totals and each provider's frozen rate. This point is
-dominated by the lower-cost Gleipnir 4B student (`0.8108` at `$0.2598/1K`), and
+dominated by the lower-cost Gleipnir 4B student (`0.7703` at `$0.2598/1K`), and
 falls below the dense Qwen3.5-27B base (`0.8395` at `$1.8476/1K`).
 
 The handoff follows source order: Parasail scored all 850 SHADE-Arena rows and
@@ -493,7 +509,7 @@ caching) give **`$0.176261/1K`**. The hosted endpoint's serving and billing
 are not observed.
 
 It becomes the lowest-cost frontier point. It dominates Gleipnir 4B
-(`0.8108` at `$0.2598/1K` for v0.2; v0.1 scored `0.7823`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
+(`0.7703` at `$0.2598/1K` for v0.3 under optimized serving; v0.1 scored `0.7823`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
 beats Jev on all six sources on identical requests. The next frontier point
 is Gleipnir 27B (`0.9508` at `$1.8476/1K`, optimized serving; `0.9352` BF16). SHADE-Arena stays weakest at
 `0.6054`.
