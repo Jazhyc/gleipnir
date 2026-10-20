@@ -62,7 +62,7 @@ Both repositories carry the tag `v0.2` for this release. The image fetches
 
 ## Changelog
 
-- **v0.2 ({{RELEASE_DATE}}).** Packaging release; the adapter is identical to
+- **v0.2 (2026-10-20).** Packaging release; the adapter is identical to
   `v0.1`. Adds the merged BF16 checkpoint
   ([`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16))
   and the optimized B200 serving image, and reports the optimized-serving
@@ -239,8 +239,8 @@ docker run --gpus all -p 8000:8000 \
   ghcr.io/jazhyc/gleipnir-serve:0.1 27b
 ```
 
-The first start downloads the BF16 checkpoint ({{DOWNLOAD_27B}}) and
-is ready after about {{STARTUP_27B}}; the mounted cache keeps the
+The first start downloads the BF16 checkpoint (52 GB) and
+is ready after about four minutes (219 s including the download on a fresh B200; slower links take longer); the mounted cache keeps the
 download across restarts. Do not mount a volume over `/tmp`, which holds the
 pinned runtimes. Send the fully rendered prompt, built exactly as in the
 Python example and ending in `Prediction:`:
@@ -253,7 +253,7 @@ curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
 
 `score` is the softmax of the `1` and `0` logits, the same quantity as
 `risk_score` above. The image was validated on a fresh B200 against the
-recorded optimized rows ({{VALIDATION_27B}}).
+recorded optimized rows (0.9450 ID and 0.9489 Mean-OOD pAUROC@20 against the recorded 0.9444 and 0.9508. Optimized-serving scores are not bit-reproducible: two runs of the same server differ by about 0.006 in mean absolute score while ranking metrics move by about 0.001-0.002; use stock BF16 serving when per-row reproducibility matters).
 
 ## Limitations and responsible use
 

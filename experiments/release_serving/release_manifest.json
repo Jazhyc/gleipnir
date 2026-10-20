@@ -1,0 +1,71 @@
+{
+ "format_version": 1,
+ "date": "2026-10-20",
+ "image": {
+  "name": "ghcr.io/jazhyc/gleipnir-serve:0.1",
+  "digest": "sha256:15673c65761f156292ae06efb3b47a196cd2eb2bcf8531ce4ffe31037ec8966c",
+  "base": "runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster"
+ },
+ "models": {
+  "4b": {
+   "version": "v0.4",
+   "adapter_repo": "Jazhyc/Gleipnir-4B",
+   "merged_repo": "Jazhyc/Gleipnir-4B-BF16",
+   "merged_weights_commit": "3599d85e662976d074d0e2cb0e97f11d7637c4b5",
+   "adapter_sha256": "4eec7b62b9af53f144bf727bb77c204bcaa71c770766e97b360bb4536a1fd775",
+   "merged_files_sha256": {
+    "chat_template.jinja": "a4aee8afcf2e0711942cf848899be66016f8d14a889ff9ede07bca099c28f715",
+    "config.json": "ddc63e1c717afa86c865bb5e01313d89d72bb53b97ad4a8a03ba8510c0621670",
+    "merges.txt": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+    "model.safetensors-00001-of-00002.safetensors": "a09acf28b860115a6332799b54f64769b2d3cc0c6a96ed0dee3239b9e9450304",
+    "model.safetensors-00002-of-00002.safetensors": "fb91b9a933c439e12aaa9016e73c855101d612fb93d3cc0d500365d85c176e50",
+    "model.safetensors.index.json": "cf3f798ee02ba45f9622aa8892a47369ab667d0afbf154ee7c2212de42e6302d",
+    "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+    "tokenizer.json": "5f9e4d4901a92b997e463c1f46055088b6cca5ca61a6522d1b9f64c4bb81cb42",
+    "tokenizer_config.json": "316230d6a809701f4db5ea8f8fc862bc3a6f3229c937c174e674ff3ca0a64ac8",
+    "video_preprocessor_config.json": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+    "vocab.json": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+   },
+   "identity": "byte-identical remerge of results/qad-v02-optimized01 (the run behind the card's optimized scores)"
+  },
+  "27b": {
+   "version": "v0.2",
+   "adapter_repo": "Jazhyc/Gleipnir-27B",
+   "merged_repo": "Jazhyc/Gleipnir-27B-BF16",
+   "merged_weights_commit": "8717723720437913169d07ad783db08232fe6981",
+   "adapter_sha256": "0225c39546cb1d7c61940f0a1198626fbd375cae88c96902a906a3423d9e9f9e",
+   "merged_files_sha256": {
+    "chat_template.jinja": "c3cf9e34abf4f9e36c2d72165aa9c132d3e2a725b6c2586aaa3a8af9d7a81041",
+    "config.json": "191e0af232104ed8b65258cf3fb2b842e288008baca7633c11b82a1ac7203aab",
+    "crc32.txt": "b42dd291f5f98b05807e458f5b47849969a9b3326acbf0c97d28b05826740b83",
+    "generation_config.json": "e70c136c1b78ddc1fb0905bac8e733a4dc448d4f852a5dd75143fffc70be550e",
+    "merges.txt": "a9d356d7bdf1ef4949e3e748e95b8e10ad9d4e2e838eddc38a0a7b6b94d1db8d",
+    "model-00001-of-00018.safetensors": "54644157945ea00db40a95030abbd1ac6284f47b851394035a1dde0e0b9466ec",
+    "model-00002-of-00018.safetensors": "44a1360d39ca41e6f1fc6676bf44cfcd13dd7a17ca64e2be648bba1a3de912d1",
+    "model-00003-of-00018.safetensors": "2e1bf62cbcd406eaa64b60d10353e1f0ef4039d0976e56f05cabe953454f9968",
+    "model-00004-of-00018.safetensors": "642ca676b4d818986487e6b46d20df10b459b10d364cced1792dec4a0ad0073e",
+    "model-00005-of-00018.safetensors": "802b9584a7fe63bfbef89ffc417b3ff79ed03bccd3a4c0837b58b772a720565b",
+    "model-00006-of-00018.safetensors": "3b21915e0a9b383ab8c5613a8443456f1bada973d9223e0d66fd9c939259b321",
+    "model-00007-of-00018.safetensors": "f4128a0017b61b5cbe9b56dd33b0346d229f5addb285870bbc0680a9b85a9599",
+    "model-00008-of-00018.safetensors": "8e89314f7d51bea05c9b4f19d01ca206a65750c7021d9b034e2f0c0df0bde127",
+    "model-00009-of-00018.safetensors": "baeb95b7ce1fc684800b0d1286c8ab1e38ce68f42ccbe796281644b5c7c9aef7",
+    "model-00010-of-00018.safetensors": "33f02f4783d5d9744f076b33af40e7d36720c506120af9ced30ff21c771fdca4",
+    "model-00011-of-00018.safetensors": "c12076c79b17a2a615ab1aa55ade5e4bb66c262b87a89905fb0eabc5035e86cf",
+    "model-00012-of-00018.safetensors": "8bf3624a25c167d2c993a994ec37b1f98581443bb263313552bf467ec318b916",
+    "model-00013-of-00018.safetensors": "e0179e39730719f94e18274a2c723f61bdc3a833f27208db031e8e77bf6b31c5",
+    "model-00014-of-00018.safetensors": "70cd8a9cc01d3c9cb8c058e1d49e784d9efe8f8dc48cef84ec9dd1b0df6b38e7",
+    "model-00015-of-00018.safetensors": "72cccdca3587df22022bc550bf24130e6abdea1501e6da6b752333d8b5b79b0e",
+    "model-00016-of-00018.safetensors": "1d38a98da354c8035c9d6aaa75a8a25f633656b37453b1f98f1f4dea8172bac5",
+    "model-00017-of-00018.safetensors": "675ab75e6917d41ddd249dd417c3a08169f110627edfb14ca41e58109b8d9747",
+    "model-00018-of-00018.safetensors": "1d3479509e21494658f9b64d317f5ea8e55c4025d28c702d6c4d0b356ce8ea06",
+    "model.safetensors.index.json": "77042094076611b69791a610065f28b7013b8c621795fa86ddccc8bac7d1b9df",
+    "preprocessor_config.json": "27225450ac9c6529872ee1924fcb0962ff5634834f817040f444118116f4e516",
+    "tokenizer.json": "0997f410c57a1f4e53b09e4be8f4a172d90edd9564368fb0847030937229b9f3",
+    "tokenizer_config.json": "b11349aafa7cdc6a320767cf7ceb29ed82f7eda5d65e8e0819e76f0ce947bf27",
+    "video_preprocessor_config.json": "7768af27c1fafa9cc9011c1dc20067e03f8915e03b63504550e11d5066986d13",
+    "vocab.json": "ce99b4cb2983d118806ce0a8b777a35b093e2000a503ebde25853284c9dfa003"
+   },
+   "identity": "byte-identical remerge of results/qwen38-27b-s0-01 (served as opt27b_teacher_eu01)"
+  }
+ }
+}

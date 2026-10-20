@@ -74,7 +74,8 @@ risk_score = torch.softmax(next_logits, dim=0)[1].item()
 print(risk_score)
 ```
 
-{{VLLM_STOCK}}
+The project's stock BF16 results were served by vLLM 0.31 through its own
+monitor-scoring endpoint, which reads the same two final-position logits.
 
 For the highest throughput on an NVIDIA B200, use the project's optimized
 serving image, which loads this checkpoint and quantizes it at load time; see
