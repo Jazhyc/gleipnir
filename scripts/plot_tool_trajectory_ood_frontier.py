@@ -61,11 +61,11 @@ MAIN_FIGURE_OMISSIONS = {
 CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Other": "#B279A2"}
 CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
-    "Paper": "Reasoning monitors (Sinha et al.)",
+    "Paper": "Reasoning (Sinha et al.)",
     "Gleipnir": "Gleipnir (ours)",
-    "Other": "Decision monitors",
+    "Other": "Decision",
 }
-LEGEND_ORDER = ("Gleipnir", "Paper", "Other")
+LEGEND_ORDER = ("Paper", "Other", "Gleipnir")
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
