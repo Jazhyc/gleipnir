@@ -168,6 +168,16 @@ metrics move by about 0.001.
     unchanged adapters);
   - `Jazhyc/Gleipnir-4B-BF16@v0.4` and `Jazhyc/Gleipnir-27B-BF16@v0.2`
     (public; weight hashes match `release_manifest.json` anonymously).
-- **Image visibility.** The GHCR package `gleipnir-serve` is private until
-  its visibility is changed in the GitHub package settings; the GitHub API
-  cannot change it.
+- **Image visibility.** The user made the GHCR package `gleipnir-serve`
+  public in the GitHub package settings (the API cannot change it).
+  Anonymous pulls of `:0.1` resolve to digest `15673c65…`.
+- **Compile caches** are rebuilt in each new container (about a minute of
+  startup). vLLM compiles one graph for the whole 1–32,768-token range and
+  captures CUDA graphs before reporting ready, so no request waits on
+  compilation.
+  - **Throughput:** cold-start and warm-cache throughput are equal after
+    the first few thousand requests.
+  - **Warm-up:** the 4B's first split runs about 5% slower with or without
+    warm caches; the 27B shows no warm-up effect.
+  - **Decision:** a persistent compile-cache mount is optional, not
+    needed.
