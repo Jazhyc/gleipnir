@@ -58,24 +58,32 @@ the full benchmark; see the
 ## Reference table
 
 Gleipnir release models (Gleipnir 4B v0.3 and Gleipnir 27B) are priced at
-self-hosted break-even (user decision, 2026-10-20): one B200 at `$7.99/h`,
-100% utilized, on this benchmark's workload. The cost is the measured
-optimized-serving wall time for all 6,395 rows, times the hourly rate, per
-1,000 rows. Other rows keep their list prices or hosted proxies, so the
-comparison mixes self-hosted cost with provider prices that include
-utilization and margin.
-At the inference-provider estimate of `$3.44/h` (CoreWeave's committed-use
-ceiling), Gleipnir 4B v0.3 costs `$0.0366/1K` and Gleipnir 27B `$0.1677/1K`.
-The plot keeps `$7.99/h`. Rate sources and the full comparison are in
-[B200 hourly rate sources](tool_trajectory_inference_economics.md#b200-hourly-rate-sources).
+self-hosted break-even (user decisions, 2026-10-20). The cost is the measured
+optimized-serving wall time for all 6,395 rows on one 100%-utilized B200,
+times an hourly rate, per 1,000 rows. Each model has two rows:
 
-Rows are ordered by cost. `Frontier` is point-estimate nondominance after adding
-all Gleipnir rows currently in this file: no other row is both no more expensive
-and at least as accurate, with one strict improvement.
+- **On-demand:** `$7.99/h`, our Runpod rate.
+- **Committed GPUs:** `$3.44/h`, CoreWeave's published committed-use ceiling
+  (60% off its $8.60 on-demand rate). This is the rate an inference provider
+  with a long-term contract could approach.
+
+Rate sources are in
+[B200 hourly rate sources](tool_trajectory_inference_economics.md#b200-hourly-rate-sources).
+Other rows keep their list prices or hosted proxies, which include provider
+utilization and margin.
+
+Rows are ordered by cost. `Frontier` is point-estimate nondominance: no other
+row is both no more expensive and at least as accurate, with one strict
+improvement. Each pricing regime has its own frontier: on-demand rows compete
+with list-priced rows, and committed-GPU rows compete with list-priced rows.
+Committed-GPU rows report their regime's frontier; all other rows report the
+on-demand regime. The plot draws both frontiers.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted B200 break-even** | **0.0850** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0366** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0850** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1677** | **0.9508** | **yes** |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
@@ -83,7 +91,7 @@ and at least as accurate, with one strict improvement.
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted B200 break-even** | **0.3896** | **0.9508** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.3896** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
@@ -527,7 +535,7 @@ price of the `-20261016` endpoint (`$0.02/M` input, no output charge, no
 caching) give **`$0.176261/1K`**. The hosted endpoint's serving and billing
 are not observed.
 
-It is a frontier point between the two self-hosted Gleipnir models: above
+It is an on-demand frontier point between the two self-hosted Gleipnir models: above
 Gleipnir 4B v0.3 (`0.7703` at `$0.0850/1K`) at about twice its cost, and below
 Gleipnir 27B (`0.9508` at `$0.3896/1K`). It dominates Jev 1.13 (`0.8495` at
 `$0.3887/1K`) and beats it on all six sources on identical requests. Its cost
@@ -555,6 +563,9 @@ at full utilization. SHADE-Arena stays weakest at
 - **Conclusion.** The list price is feasible with discounted GPUs and a
   serving stack about 3.5 times faster than the published one. Otherwise it
   is priced below cost.
+- **Committed GPUs.** Against Gleipnir rows at committed-GPU rates, the
+  Decider leaves the frontier: Gleipnir 27B (`0.9508` at `$0.1677/1K`) is
+  both cheaper and better.
 - **Plotting.** The plot keeps the list price, which is what users pay.
   Plotted at self-hosted break-even, it would sit well behind Gleipnir 27B.
 - **Caveat.** Only the documented runtime configuration was measured, with

@@ -149,3 +149,23 @@ def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None
 
     with pytest.raises(ValueError, match="Qwen3.8-27B Kimi-soft strict"):
         load_frontier_registry(registry)
+
+
+def test_pricing_regimes_have_separate_frontiers() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE).set_index("monitor")
+    committed = [
+        "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)",
+        "Qwen3.8-27B Kimi-soft strict (committed GPUs)",
+    ]
+    on_demand = [
+        "Qwen3.5-4B Kimi-soft strict seed average",
+        "Qwen3.8-27B Kimi-soft strict",
+    ]
+    decider = "pplx-decider v1.2 native readout"
+
+    assert (frame.loc[committed, "pricing"] == "committed").all()
+    assert (frame.loc[on_demand, "pricing"] == "on_demand").all()
+    assert frame.loc[committed, "committed_frontier"].all()
+    assert not frame.loc[committed, "on_demand_frontier"].any()
+    assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
+    assert not frame.loc[[decider], "committed_frontier"].any()

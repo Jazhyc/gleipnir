@@ -43,7 +43,15 @@ GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
     "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": (
+        "Gleipnir 4B\n(committed GPUs)"
+    ),
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B\n(committed GPUs)",
 }
+# Self-hosted rows are priced at on-demand or committed-use GPU rates. Each
+# regime gets its own frontier against the list-priced rows.
+ON_DEMAND_MARKER = "on-demand B200 break-even"
+COMMITTED_MARKER = "committed-use B200 break-even"
 BASE_TO_METHOD = {
     "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft strict seed average",
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
@@ -62,6 +70,18 @@ MANUAL_COMPARISON_LABELS = {
     },
     "GPT-6 Luna binary logprobs": {
         "xytext": (-5, 8),
+        "ha": "right",
+        "va": "bottom",
+    },
+    # Below-right, clear of the y-axis tick labels.
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": {
+        "xytext": (-2, -22),
+        "ha": "left",
+        "va": "top",
+    },
+    # Above its point, between the Decider and the on-demand 27B.
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": {
+        "xytext": (-8, 12),
         "ha": "right",
         "va": "bottom",
     },
@@ -184,9 +204,20 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     if not declared.isin({"yes", "no"}).all():
         raise ValueError("Frontier cells must be either 'yes' or 'no'")
     frame["declared_frontier"] = declared.eq("yes")
-    frame["computed_frontier"] = pareto_frontier_mask(
-        frame["cost_per_1k"].to_numpy(),
-        frame["mean_ood_pauroc_at_20"].to_numpy(),
+    frame["pricing"] = np.select(
+        [
+            frame["interface"].str.contains(ON_DEMAND_MARKER, regex=False),
+            frame["interface"].str.contains(COMMITTED_MARKER, regex=False),
+        ],
+        ["on_demand", "committed"],
+        default="list",
+    )
+    frame["on_demand_frontier"] = _regime_frontier(frame, "committed")
+    frame["committed_frontier"] = _regime_frontier(frame, "on_demand")
+    # A row's Frontier cell is its status within its own pricing regime;
+    # list-priced rows report the on-demand regime.
+    frame["computed_frontier"] = frame["on_demand_frontier"].where(
+        frame["pricing"].ne("committed"), frame["committed_frontier"]
     )
     mismatches = frame.loc[
         frame["declared_frontier"] != frame["computed_frontier"], "monitor"
@@ -197,6 +228,17 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
             + ", ".join(mismatches)
         )
     return frame
+
+
+def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
+    """Nondominance among rows outside one self-hosted pricing regime."""
+    rows = frame["pricing"].ne(excluded_pricing)
+    mask = pd.Series(False, index=frame.index)
+    mask[rows] = pareto_frontier_mask(
+        frame.loc[rows, "cost_per_1k"].to_numpy(),
+        frame.loc[rows, "mean_ood_pauroc_at_20"].to_numpy(),
+    )
+    return mask
 
 
 def _display_label(monitor: str) -> str:
@@ -216,7 +258,7 @@ def _display_label(monitor: str) -> str:
     }
     display = replacements.get(monitor, monitor)
     display = re.sub(r"\s+base(?=$|\s+\()", "", display)
-    return textwrap.fill(display, width=22)
+    return "\n".join(textwrap.fill(line, width=22) for line in display.split("\n"))
 
 
 def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
@@ -237,12 +279,13 @@ def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     """Sample points and frontier segments for label collision avoidance."""
     x_parts = [frame["cost_per_1k"].to_numpy()]
     y_parts = [frame["mean_ood_pauroc_at_20"].to_numpy()]
-    frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
-    for (_, start), (_, end) in zip(
-        frontier.iloc[:-1].iterrows(),
-        frontier.iloc[1:].iterrows(),
-        strict=True,
-    ):
+    segments = []
+    for column in ("on_demand_frontier", "committed_frontier"):
+        frontier = frame.loc[frame[column]].sort_values("cost_per_1k")
+        segments += zip(
+            frontier.iloc[:-1].iterrows(), frontier.iloc[1:].iterrows(), strict=True
+        )
+    for (_, start), (_, end) in segments:
         fractions = np.linspace(0.1, 0.9, 9)
         start_cost = float(start["cost_per_1k"])
         end_cost = float(end["cost_per_1k"])
@@ -284,7 +327,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
-    axis.set_xticks([0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
+    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
@@ -293,7 +336,10 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     )
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
-    frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
+    frontier = frame.loc[frame["on_demand_frontier"]].sort_values("cost_per_1k")
+    committed_frontier = frame.loc[frame["committed_frontier"]].sort_values(
+        "cost_per_1k"
+    )
     paper_frontier = _paper_frontier(frame)
     axis.plot(
         paper_frontier["cost_per_1k"],
@@ -310,6 +356,15 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         color="#374151",
         linewidth=2.3,
         alpha=0.82,
+        zorder=1,
+    )
+    axis.plot(
+        committed_frontier["cost_per_1k"],
+        committed_frontier["mean_ood_pauroc_at_20"],
+        color="#374151",
+        linestyle=(0, (5, 3)),
+        linewidth=2.0,
+        alpha=0.7,
         zorder=1,
     )
 
@@ -331,7 +386,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         )
 
     markers = {"Paper": "o", "Gleipnir": "D"}
-    for origin, group in frame.groupby("origin", sort=False):
+    committed = frame["pricing"].eq("committed")
+    for origin, group in frame.loc[~committed].groupby("origin", sort=False):
         sns.scatterplot(
             data=group,
             x="cost_per_1k",
@@ -358,6 +414,17 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             linewidth=1.5,
             legend=False,
             ax=axis,
+            zorder=3,
+        )
+    for _, row in frame.loc[committed].iterrows():
+        axis.scatter(
+            row["cost_per_1k"],
+            row["mean_ood_pauroc_at_20"],
+            marker="D",
+            s=165 if row["computed_frontier"] else 92,
+            facecolor="white",
+            edgecolor=ORIGIN_PALETTE["Gleipnir"],
+            linewidth=2.2,
             zorder=3,
         )
 
@@ -507,7 +574,22 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Current frontier",
+            label="Current frontier (on-demand GPUs)",
+        )
+    )
+    legend_handles.append(
+        Line2D(
+            [],
+            [],
+            color="#374151",
+            linestyle=(0, (5, 3)),
+            marker="D",
+            markerfacecolor="white",
+            markeredgecolor=ORIGIN_PALETTE["Gleipnir"],
+            markeredgewidth=2.0,
+            linewidth=2.2,
+            markersize=10.5,
+            label="Committed-use GPU frontier",
         )
     )
     legend_handles.append(

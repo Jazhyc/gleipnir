@@ -12,9 +12,10 @@
   Gleipnir 27B.
 - Other rows keep list prices or hosted proxies, which include provider
   utilization and margin.
-- User decision (same day): the registry also reports an inference-provider
-  estimate at `$3.44/h`, CoreWeave's published committed-use ceiling (60% off
-  $8.60). The plot keeps `$7.99/h`. Sources are under
+- User decision (same day): each release model also gets a committed-GPU
+  row at `$3.44/h`, CoreWeave's published committed-use ceiling (60% off
+  $8.60), as an inference-provider estimate. The plot shows on-demand and
+  committed-GPU frontiers separately. Sources are under
   [B200 hourly rate sources](research/tool_trajectory_inference_economics.md#b200-hourly-rate-sources).
 - For a per-token endpoint, throughput is flat to about 32K tokens and falls
   beyond it (27B optimized: about 1.4× the per-token cost at 128K, 2.2× at
