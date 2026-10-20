@@ -9,7 +9,7 @@ technical report on both. The slides cover a short motivation (monitoring cheap 
 everywhere) and the core idea (one binary decision and teacher-logit
 distillation instead of rationale distillation), the OOD frontier
 plot, titled with the cost reduction (Gleipnir 27B beats Gemini 3.1 Pro at 1/188 of its cost),
-four candidate sprint avenues, the questions we want feedback on, and logistics (a TA and the schedule around EMNLP).
+four candidate sprint avenues, the questions we want feedback on, and logistics (a TA, the schedule around EMNLP and the compute budget).
 
 Read the compiled deck: [presentation.pdf](presentation.pdf). See
 [sources.md](sources.md) for numbers, provenance and pricing conventions.
