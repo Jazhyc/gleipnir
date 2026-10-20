@@ -612,9 +612,11 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             row["mean_ood_pauroc_at_20"],
             marker="D",
             s=165 if row["computed_frontier"] else 92,
-            facecolor="white",
-            edgecolor=ORIGIN_PALETTE["Gleipnir"],
-            linewidth=2.2,
+            # Same style as the on-demand Gleipnir points; the asterisk in the
+            # label marks the committed-rate pricing.
+            facecolor=ORIGIN_PALETTE["Gleipnir"],
+            edgecolor="#111827" if row["computed_frontier"] else "#374151",
+            linewidth=1.5 if row["computed_frontier"] else 0.65,
             zorder=3,
         )
 
