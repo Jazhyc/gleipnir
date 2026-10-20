@@ -12,6 +12,7 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     _improvement_pairs,
     _label_obstacles,
     _markdown_cells,
+    _one_significant_figure,
     _paper_frontier,
     load_frontier_registry,
     select_plot_points,
@@ -129,6 +130,12 @@ def test_cost_callout_reports_gemini_to_gleipnir_27b_ratio() -> None:
     labels = [text.get_text() for text in axis.texts if text.get_text()]
     assert labels == ["188× cheaper, +1.1 pp pAUROC"]
     plt.close(figure)
+
+
+def test_headline_ratio_rounds_to_one_significant_figure() -> None:
+    assert _one_significant_figure(187.9) == 200
+    assert _one_significant_figure(437.0) == 400
+    assert _one_significant_figure(14.6) == 10
 
 
 def test_paper_frontier_reconstructs_the_pre_gleipnir_low_cost_curve() -> None:

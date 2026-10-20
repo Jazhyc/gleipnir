@@ -33,7 +33,7 @@ from 0/1 logits or native probabilities (decision models, general LLMs and
 base models). Paper rows appear as reasoning monitors (generated rationale,
 then a 0–10 score).
 Both figures draw an arrow from Gemini 3.1 Pro to the on-demand Gleipnir 27B,
-labelled with the cost ratio and score gain (188× cheaper, +1.1 pp pAUROC); the title states the same ratio. The appendix
+labelled with the cost ratio and score gain (188× cheaper, +1.1 pp pAUROC); the title rounds it to ~200×. The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
 eligible row. Shared plotting helpers
 live in `src/gleipnir/analysis/plotting.py`; see

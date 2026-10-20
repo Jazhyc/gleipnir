@@ -450,6 +450,11 @@ def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> float | None:
     return ratio
 
 
+def _one_significant_figure(value: float) -> float:
+    """Round to one significant figure for headline text (188 -> 200)."""
+    return round(value, -int(np.floor(np.log10(abs(value)))))
+
+
 def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame, full=full)
@@ -717,7 +722,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     # The title states the finding; the subtitle says what is plotted.
     axis.set_title(
         "A distilled decision monitor beats the best reasoning monitor"
-        f" at 1/{cost_ratio:.0f} of the cost"
+        f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
         if cost_ratio
         else "Monitoring cost and performance on tool trajectories",
         loc="left",
