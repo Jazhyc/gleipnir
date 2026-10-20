@@ -64,6 +64,10 @@ optimized-serving wall time for all 6,395 rows, times the hourly rate, per
 1,000 rows. Other rows keep their list prices or hosted proxies, so the
 comparison mixes self-hosted cost with provider prices that include
 utilization and margin.
+At the inference-provider estimate of `$3.44/h` (CoreWeave's committed-use
+ceiling), Gleipnir 4B v0.3 costs `$0.0366/1K` and Gleipnir 27B `$0.1677/1K`.
+The plot keeps `$7.99/h`. Rate sources and the full comparison are in
+[B200 hourly rate sources](tool_trajectory_inference_economics.md#b200-hourly-rate-sources).
 
 Rows are ordered by cost. `Frontier` is point-estimate nondominance after adding
 all Gleipnir rows currently in this file: no other row is both no more expensive
@@ -541,13 +545,16 @@ at full utilization. SHADE-Arena stays weakest at
 - **Flash.** pplx-decider-flash v1.2 behaves the same way: 30,655 tokens/s,
   `$0.072/M`, 7.2 times its `$0.01/M` price.
 - **What the list price implies.** Matching `$0.02/M` at `$7.99/h` would
-  need about 111K tokens/s on one B200. For comparison, Gleipnir 27B (same
+  need about 111K tokens/s on one B200, or about 47.8K at the `$3.44/h`
+  provider estimate, where the published fast path costs `$0.0707/M`
+  (`$0.6231/1K`). For comparison, Gleipnir 27B (same
   Qwen3.8-27B backbone, causal attention) reaches 53.9K tokens/s on our
-  optimized stack, at which the Decider would still break even at about
-  `$0.041/M`. The Decider's bidirectional attention and custom readout also
+  optimized stack, at which the Decider would break even at about
+  `$0.041/M` at `$7.99/h` or `$0.0177/M` at `$3.44/h`. The Decider's bidirectional attention and custom readout also
   keep it out of standard causal serving stacks.
-- **Conclusion.** The list price implies a serving stack well beyond the
-  published one, cheaper GPUs, or pricing below cost.
+- **Conclusion.** The list price is feasible with discounted GPUs and a
+  serving stack about 3.5 times faster than the published one. Otherwise it
+  is priced below cost.
 - **Plotting.** The plot keeps the list price, which is what users pay.
   Plotted at self-hosted break-even, it would sit well behind Gleipnir 27B.
 - **Caveat.** Only the documented runtime configuration was measured, with
