@@ -1,4 +1,4 @@
-% Short sprint pitch: approach, frontier, cost, sprint avenues, feedback.
+% Short sprint pitch: approach, frontier, sprint avenues, feedback.
 
 \begin{frame}{Core idea: ask for one decision and distill its logits}
     \begin{columns}[T,onlytextwidth]
@@ -36,38 +36,11 @@
     \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
 \end{frame}
 
-\begin{frame}{Where we stand on the cost--performance frontier}
+\begin{frame}{Frontier quality at about 1/200 of the cost}
     \centering
     \includegraphics[height=0.80\textheight]{ood_frontier.pdf}
 
     {\scriptsize 6,395 OOD trajectories from six sources (Sinha et al.). Gleipnir at self-hosted B200 break-even; * committed GPUs.}
-\end{frame}
-
-\begin{frame}{About 200$\times$ cheaper than the prior frontier, at equal quality}
-    \centering
-    \begin{tabular}{@{}lrr@{}}
-        \toprule
-        Monitor & Mean-OOD pAUROC@20 & \$ / 1K evaluations \\
-        \midrule
-        Gemini 3.1 Pro, prompted (prior frontier top) & 0.940 & 73.22 \\
-        Claude Opus 4.6, prompted & 0.942 & 94.79 \\
-        \textbf{Gleipnir 27B} & \textbf{0.951} & \textbf{0.39} \;(0.17*) \\
-        \midrule
-        Qwen3.5-4B SFT+RL (Sinha et al.) & 0.684 & 0.36 \\
-        \textbf{Gleipnir 4B} & \textbf{0.770} & \textbf{0.085} \;(0.037*) \\
-        \bottomrule
-    \end{tabular}
-    \bigskip
-
-    \begin{block}{}
-        \centering
-        Gleipnir 27B beats Gemini 3.1 Pro at \textbf{1/188 of the cost} on-demand
-        (1/437 with committed GPUs).
-    \end{block}
-    \medskip
-
-    {\scriptsize * Committed-use B200 rate (\$3.44/h); otherwise on-demand (\$7.99/h).
-    The cost is inference only and excludes training.}
 \end{frame}
 
 \begin{frame}{Status: ahead of the proposal}
