@@ -37,6 +37,7 @@ FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
 ]
 EXCLUDED_MONITORS = {
+    # Ties Gemini 3.1 Pro (0.942 vs 0.940) but would stretch the x-axis past $80.
     "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
     # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
