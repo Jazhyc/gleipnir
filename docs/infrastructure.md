@@ -270,6 +270,25 @@ see [optimized gap](../experiments/optimized_gap/README.md)). At the user's
 request the B300 was terminated at about 03:50 UTC (delete 204, lookup 404; no
 Pods remain). All artifacts were pulled first, with file sizes verified.
 
+Later on 2026-10-20 the user provided EU-RO-1 B200 Pod `lpjt8h7c2ccygh` on
+machine `2mj1yzztlz17` (`GPU-3d8d6bde…`, driver 595.91.07, AMD EPYC 9555;
+snapshot `.runpod/optimized-gap-eu.json`), on volume `cb7bxu71ug`. It ran:
+- the optimized-serving gap runs for both release candidates;
+- the Gleipnir 4B v0.2 QAD;
+- the 27B teacher-prompt ID and OOD runs.
+
+Two volume issues:
+- **Quota.** The volume hit its 200 GB quota during QAD packaging. The
+  campaign-layout copy moved to container disk, leaving about 4 GB free
+  ([QAD](../experiments/qad_v02/README.md)).
+- **Bound sources.** The volume checkout still has the bound pre-PATH-fix
+  `src/gleipnir/__init__.py` (`b6acfaad…`) that optimized serving requires;
+  the next code sync restores the repository version.
+
+At the user's request the Pod was terminated (delete 204, lookup 404; no
+Pods remain). Key artifacts were first verified locally by SHA-256. The
+volume is retained.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
