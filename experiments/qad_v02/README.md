@@ -65,3 +65,60 @@ PYTHONPATH=src:. <training-python> -m experiments.qad_v02.run
   - packed isolation: 0.0;
   - longest row (29,337 tokens): finite gradients (norm 31.8), peak 129.4 GiB.
     Rank 384 adds about 1.3 GiB over the original rank-128 run.
+- **Training.** 245 updates in 64.3 minutes. Every loss and gradient was
+  finite, with KL following the original QAD trajectory (same seed and batch
+  order). One isolated gradient-norm spike reached 8.2 (the original peaked
+  at 3.0). FP32 master `0716efc1…`.
+- **Packaging stall.** The driver died silently while copying the
+  campaign-layout package onto the EU network volume, which had hit its
+  200 GB quota (a later write returned `Disk quota exceeded`). Training and
+  reference receipts were complete. The verified-identical duplicate master
+  copy and the partial package (about 4 GB) were removed; this is recorded in
+  `resume_from_package.json`. `run.py --resume-package` rebuilt the package on
+  container disk, linked from `results/qad-v02-01/4b`, and evaluated.
+- **Gates.** Merged parity: mean difference 0.0030, correlation 0.99992.
+  Optimized canary gate: 0.0095 and 0.99946. MXFP8 compiled on the first
+  attempt.
+
+## Result: ID fully recovered, OOD mostly not
+
+| Macro pAUROC@20 | v0.2 BF16 | v0.2 optimized | QAD, optimized | Gap recovered |
+|---|---:|---:|---:|---:|
+| ID (3,012) | 0.9124 | 0.8807 | **0.9117** | **97.6%** |
+| OOD (6,395) | 0.8108 | 0.7579 | **0.7703** | **23.4%** |
+
+| Other metrics | v0.2 BF16 | v0.2 optimized | QAD, optimized |
+|---|---:|---:|---:|
+| ID AUROC / Brier | 0.9702 / 0.0622 | 0.9571 / 0.0740 | 0.9711 / 0.0615 |
+| OOD AUROC / Brier | 0.9199 / 0.1339 | 0.9006 / 0.1557 | 0.9138 / 0.1579 |
+| OOD pooled pAUROC@20 | 0.7514 | 0.6570 | 0.7005 |
+
+OOD pAUROC@20 by source (BF16 → optimized → QAD optimized):
+
+| Source | BF16 | Optimized | QAD optimized |
+|---|---:|---:|---:|
+| AgentDojo | 0.9430 | 0.7913 | 0.8401 |
+| SHADE-Arena | 0.2653 | 0.1852 | 0.2524 |
+| Rogue Eval | 0.9804 | 0.9567 | 0.9586 |
+| MLE-Sabotage | 1.0000 | 0.9990 | 1.0000 |
+| IaC | 0.8845 | 0.8347 | 0.8214 |
+| CUA-SHADE | 0.7916 | 0.7805 | 0.7493 |
+
+- **ID.** QAD from the BF16/SDPA model closes the optimized-serving ID gap
+  almost completely: Gloom 0.7897 → 0.8513 against 0.8517 in BF16. The
+  FP4/FA4-based QAD recovered 71%.
+- **OOD.** The gap only partly closes: −5.3 → −4.05 points.
+  - AgentDojo recovers about a third (+4.9) and SHADE-Arena most of its loss
+    (+6.7).
+  - IaC (−1.3) and CUA-SHADE (−3.1) get worse than optimized serving without
+    QAD.
+  - Pooled pAUROC@20 recovers more (0.657 → 0.701); OOD Brier gets slightly
+    worse.
+- **Scores.** QAD-optimized scores still differ from BF16 by 0.052 (ID) and
+  0.060 (OOD) on average, with 152 and 438 threshold flips. Matching the
+  teacher's ranking on the training distribution did not make per-example
+  scores match off-distribution.
+- **Reading.** Same-model QAD fits the quantized model to its BF16 self where
+  the distillation data is; the OOD drift lies outside it. That fits the
+  original QAD's ID-only recovery and points at the distillation data
+  distribution, not at the arithmetic.
