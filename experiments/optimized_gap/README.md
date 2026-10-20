@@ -103,6 +103,38 @@ The 27B's optimized stack already almost matches BF16 without QAD. The 4B's
 drift is concentrated in AgentDojo and SHADE-Arena. Its ID gap was not
 measured here.
 
+### Gleipnir 27B under its default full teacher prompt: optimized minus BF16, +1.6 points
+
+Per the decision to evaluate Gleipnir 27B under the full teacher prompt,
+`teacher_workload.py` rendered the 6,395 teacher-prompt OOD rows. Every
+rendered prompt matches the SHA-256 recorded by the BF16 extraction that
+scored 0.9352 (`gleipnir27b_vocab_distillation/extract01`, vLLM BF16 hidden
+state with an FP32 LM head). `opt27b_teacher_eu01` scored them through the
+same optimized stack; it compiled on the first attempt.
+
+| Gleipnir 27B, teacher prompt, OOD | BF16 (extraction) | Optimized | Change |
+|---|---:|---:|---:|
+| Mean-OOD pAUROC@20 | 0.9352 | 0.9508 | +0.0156 |
+| Mean-OOD AUROC | 0.9790 | 0.9841 | +0.0051 |
+| Pooled pAUROC@20 | 0.9486 | 0.9498 | +0.0012 |
+| Mean Brier | 0.0460 | 0.0458 | −0.0002 |
+
+By source (pAUROC@20): SHADE-Arena 0.7298 → 0.8316 (+0.102), AgentDojo
+0.9990 → 0.9917 (−0.007); the other four move by at most 0.001. Mean
+absolute score change 0.0247 (maximum 0.40), 122 threshold flips, 56 of them
+on SHADE-Arena; 53.9K prompt tokens/s.
+
+- **SHADE-Arena drives the whole gain.** Optimized serving raises its positive
+  scores by 0.043 on average and its negatives by 0.009, which improves
+  low-FPR separation. SHADE-Arena is the suite's most fragile source (one task
+  dominates its score; see the SHADE length audit), so treat the gain as a
+  serving perturbation that happens to help, not a quality improvement.
+- **Two scoring paths are mixed.** The reference is the extraction (pooled
+  hidden state with an FP32 head), while the optimized number comes from the
+  monitor server. A BF16 monitor-server run on the same workload would
+  separate quantization from the scoring path. Under the student prompt, the
+  campaign's BF16 reference came from the server, and the gap was −0.25.
+
 ### Findings while getting there
 
 - **Merges are not bit-portable across CPU vendors.** FP32 `b @ a` uses
