@@ -63,6 +63,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("model", choices=sorted(TARGETS))
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument("--splits", nargs="+", choices=("id", "ood"))
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument(
         "--rows-output", type=Path, help="directory for per-split scored rows"
@@ -72,6 +73,8 @@ def main() -> None:
     config = {"port": args.port, "concurrency": 128, "timeout_seconds": 600}
     report = {"model": args.model, "gates": GATES, "splits": {}}
     for split, (workload_path, recorded_path, card) in target.validation.items():
+        if args.splits and split not in args.splits:
+            continue
         workload = rows(workload_path)
         recorded = {r["id"]: float(r["score"]) for r in read_rows(ROOT / recorded_path)}
         if {r["id"] for r in workload} != set(recorded):

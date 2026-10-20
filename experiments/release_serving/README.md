@@ -127,3 +127,19 @@ pre-repeat pass gave 0.9119 ID and 0.7700 OOD.
   |---|---|---|---|---:|
   | ID | 0.9110 / 0.9121 (0.9117) | 0.0102, 0.9976 | 0.0122, 0.9968 | 202–215K tok/s |
   | OOD | 0.7693 / 0.7698 (0.7703) | 0.0088, 0.9964 | 0.0104, 0.9955 | 210K tok/s |
+
+## Gate revision (user decision, 2026-10-20)
+
+The frozen per-row gates (MAE ≤ 0.005, correlation ≥ 0.999 against the
+recorded rows) fail on every split, including same-server reruns. They are
+kept above as the pre-registered result. The user accepted replacement gates
+measured against the stack's own same-host repeat noise. Each split must
+meet all of these:
+
+1. image-vs-recorded MAE ≤ 1.25 × the host's pass-a-vs-pass-b MAE;
+2. image-vs-recorded correlation ≥ the host's repeat correlation − 0.001;
+3. |Δ source-macro pAUROC@20| ≤ 0.005, unchanged.
+
+The model cards disclose that optimized-serving scores vary between runs by
+about 0.01 per row for the 4B and about 0.006 for the 27B, while ranking
+metrics move by about 0.001.
