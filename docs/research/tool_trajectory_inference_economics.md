@@ -60,6 +60,51 @@ Use uncached input in the main comparison. The current Kimi policy prefix did
 not produce cross-row cache reuse in the paid canary, and the paper also omits
 cache discounts.
 
+## B200 hourly rate sources
+
+Self-hosted break-even uses two hourly rates, checked 2026-10-20. Both assume
+100% utilization on this benchmark's workload.
+
+- **Self-hosted, `$7.99/h` (plotted).** Our Runpod on-demand B200 rate.
+  This matches the median on-demand rate across 19 providers on
+  [GetDeploying](https://getdeploying.com/gpus/nvidia-b200), and the
+  [Ornn OCPI-B200 index](https://data.ornn.com/markets/b200) of transacted
+  neocloud rentals ($7.71 on 2026-10-04).
+- **Inference provider, `$3.44/h` (estimate).** CoreWeave lists the HGX B200
+  at $68.80/h per 8-GPU node ($8.60 per GPU) and states "up to 60% discounts
+  over our On-Demand prices for committed usage"
+  ([CoreWeave pricing](https://www.coreweave.com/pricing)). The ceiling gives
+  $8.60 × 0.4 = $3.44 per GPU-hour. CoreWeave publishes no term rates, so
+  this is the best published committed rate at a prominent neocloud, not a
+  quoted contract.
+  - A $2.65/h CoreWeave reserved figure appears second-hand. It is not on
+    the cited page ([Inworld, 2026-04-13](https://inworld.ai/resources/nvidia-b200-gpu-cloud)),
+    and it matches a separately reported H100 price, so it is not used.
+
+Context for the provider estimate (aggregator or vendor claims, not used
+directly):
+
+| Tier | $/GPU-hour | Sources |
+|---|---:|---|
+| Neocloud on-demand | 7.7–8.6 | [Together](https://www.together.ai/gpu/nvidia-hgx-b200) $8.19; CoreWeave $8.60; Nebius $8.50 from 2026-10-01 ([Spheron](https://www.spheron.network/blog/nebius-gpu-price-hike-2026-h100-to-b300-rates-rise-up-to-21/)); SemiAnalysis index $8.01 ([Shattered](https://shattered.io/nvidia-b200-cloud-price-79-percent-surge-2026/)) |
+| Reserved, 3–12 months | 4.9–6.8 | Together $6.79 for 91–180 days; median reserved $5.62, Cirrascale $4.86 for 12 months, Hyperstack from $5.10 ([GetDeploying](https://getdeploying.com/gpus/nvidia-b200)) |
+| Owned, all-in over 3 years | 2.3–3.0 | [Mercatus](https://www.mercatus-ai.com/blog/b200-server-price) $2.84 at 70% and $2.33 at 90% utilization ($450K 8-GPU server, power, colocation, operations); [AMCompute](https://www.amcompute.com/blog/tco-own-vs-rent-gpu-clusters) $2.30–2.88; [Silicon Analysts](https://siliconanalysts.com/analysis/nvidia-b200-blackwell-cost-breakdown) about $2.50–3.00 before power |
+| Hyperscaler | 12–14 | AWS p6-b200 $14.24 on demand ([Holori](https://calculator.holori.com/aws/ec2/p6-b200.48xlarge)), $12.36 under Capacity Blocks ([Spheron](https://www.spheron.network/blog/gpu-cloud-pricing-comparison-2026/)) |
+
+B200 rental prices rose through late 2026. Record a new dated entry rather
+than replacing these rates.
+
+| Model (measured B200 throughput) | Prompt tokens/s | $/1K at $7.99/h | $/1K at $3.44/h | $/M at $3.44/h | List price |
+|---|---:|---:|---:|---:|---:|
+| Gleipnir 4B v0.3, optimized | 226K | 0.0850 | 0.0366 | 0.0042 | — |
+| Gleipnir 27B, optimized, teacher prompt | 53.9K | 0.3896 | 0.1677 | 0.0177 | — |
+| pplx-decider v1.2, published fast path | 13.5K | 1.4473 | 0.6231 | 0.0707 | $0.02/M ($0.1763/1K) |
+| pplx-decider-flash v1.2, published fast path | 30.7K | 0.6379 | 0.2747 | 0.0312 | $0.01/M ($0.0881/1K) |
+
+At $3.44/h, the Decider's $0.02/M list price needs about 47.8K prompt tokens
+per second. That is 3.5 times its published fast path and within reach of a
+stack like our optimized 27B (53.9K tokens/s, `$0.0177/M`).
+
 ## Gleipnir Qwen3.5 exact accounting
 
 The completed binary 4B, 9B, and 27B runs share a byte-identical tokenizer and

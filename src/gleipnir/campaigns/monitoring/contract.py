@@ -193,7 +193,11 @@ class Campaign:
             "hydra_log_dir": str(self.logs / "hydra"),
             **{
                 key: float(config[key])
-                for key in ("soft_kd_temperature", "soft_target_logit_scale")
+                for key in (
+                    "soft_kd_temperature",
+                    "soft_target_logit_scale",
+                    "aux_loss_weight",
+                )
                 if key in config
             },
             **(
@@ -256,9 +260,10 @@ class Campaign:
             for key in ("merged_artifact", "host_parent", "recipe_summary"):
                 path = selection[key]
                 specs.setdefault(f"serving:{path}", (self.root / path, None))
-            if "base_files" in self.config or (
-                self.root / selection["merged_artifact"]
-            ).is_file():
+            if (
+                "base_files" in self.config
+                or (self.root / selection["merged_artifact"]).is_file()
+            ):
                 for path, sha in self.base_files().items():
                     specs[f"base:{path}"] = (
                         self.root / self.config["base_model"] / path,

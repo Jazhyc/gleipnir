@@ -12,14 +12,57 @@ durable conclusions live in `docs/`.
 
 ## Released models
 
-- [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B)
-- [Gleipnir 9B](https://huggingface.co/Jazhyc/Gleipnir-9B)
+| Model | Adapter (FP32 LoRA) | Merged BF16 checkpoint | Mean-OOD pAUROC@20 |
+| --- | --- | --- | ---: |
+| Gleipnir 4B v0.4 | [`Jazhyc/Gleipnir-4B`](https://huggingface.co/Jazhyc/Gleipnir-4B) | [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | 0.804 (BF16), 0.770 (optimized) |
+| Gleipnir 27B v0.2 | [`Jazhyc/Gleipnir-27B`](https://huggingface.co/Jazhyc/Gleipnir-27B) | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | 0.935 (BF16), 0.951 (optimized) |
 
-Both are MIT-licensed rank-128 LoRA research artifacts for reproducibility and
-follow-up work. They score visible AI-agent trajectories for deception,
-scheming, and other control-relevant problematic behavior. They are not
-standalone models or production safety systems; see the model cards for the
-frozen prompt, direct binary-logit interface, results, and limitations.
+- **What they are.** MIT-licensed research monitors that score visible
+  AI-agent tool-use trajectories for sabotage, exfiltration and other covert
+  unauthorized actions. They are not production safety systems.
+- **Model cards.** The cards give the scoring prompt, the binary-logit
+  interface, results and limitations.
+- **Gleipnir 9B** ([`Jazhyc/Gleipnir-9B`](https://huggingface.co/Jazhyc/Gleipnir-9B))
+  is superseded by Gleipnir 4B.
+
+## Running inference
+
+Each model scores one fully rendered prompt: the instruction from the model
+card, the trajectory, the chat template, then `Prediction:`. The score is the
+softmax of the next-token logits for `1` and `0`. There are three ways to
+run it:
+
+1. **Transformers + PEFT** (any GPU): load the base model and the adapter
+   repository. The model cards have a complete example. Use this to merge or
+   fine-tune the adapter.
+2. **Merged BF16** (any GPU): load `Jazhyc/Gleipnir-{4B,27B}-BF16` directly
+   with Transformers. Its scores are reproducible from run to run.
+3. **Optimized B200 serving** (fastest; one NVIDIA B200 only). The image
+   quantizes the BF16 checkpoint at load (FP8 attention projections, FP4
+   MLP/GDN, MXFP8 attention). One B200 scores about 226K prompt tokens/s
+   with the 4B and 54K with the 27B.
+
+   ```bash
+   docker run --gpus all -p 8000:8000 \
+     -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
+     ghcr.io/jazhyc/gleipnir-serve:0.1 4b    # or 27b
+
+   curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
+     -d '{"model": "monitor", "prompt": "<rendered prompt ending in Prediction:>"}'
+   # {"score": ..., "margin": ..., "logits": [logit_0, logit_1], "prompt_tokens": ...}
+   ```
+
+   - **First start.** The image downloads and verifies the checkpoint (8.8 GB
+     or 52 GB) and is ready in about 2.5 minutes (4B) or 4 minutes (27B).
+     The `/models` mount keeps the download across restarts.
+   - **Prompts.** At most 32,768 tokens.
+   - **Mounts.** Do not mount volumes over `/tmp` or `/workspace`, which hold
+     the pinned runtime and code; on Runpod, attach volumes elsewhere, for
+     example `/models`.
+   - **Reproducibility.** Optimized scores vary between runs by about 0.01
+     (4B) or 0.006 (27B) per row. Ranking metrics move by about 0.001.
+   - **How it was validated:** see
+     [`experiments/release_serving`](experiments/release_serving/README.md).
 
 ## Evaluation data
 

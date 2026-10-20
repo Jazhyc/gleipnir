@@ -1,0 +1,115 @@
+% Short sprint pitch: motivation and approach, frontier, sprint avenues, feedback, logistics.
+
+\begin{frame}{Motivation and core idea}
+    \begin{block}{Motivation}
+        Make monitoring cheap enough to run on every agent action everywhere.
+        Global deployment makes misalignment much easier to detect.
+    \end{block}
+    \bigskip
+
+    \begin{itemize}
+        \item \textbf{Prior work} distills a teacher's written rationale and score,
+              so each evaluation generates hundreds of tokens.
+        \item \textbf{Gleipnir} asks the teacher (Kimi K3) for a single decision,
+              \texttt{0} or \texttt{1}, and distills its \textbf{probability} on that token.
+              Each evaluation is one forward pass over the trajectory.
+    \end{itemize}
+    \vfill
+
+    {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
+    \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
+\end{frame}
+
+\begin{frame}{Frontier quality at about 1/200 of the cost}
+    \centering
+    \includegraphics[height=0.80\textheight]{ood_frontier.pdf}
+
+    {\scriptsize 6,395 OOD trajectories from six sources (Sinha et al.). Gleipnir at self-hosted B200 break-even; * committed GPUs.}
+\end{frame}
+
+\begin{frame}{Status: ahead of the proposal}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \textbf{Phase 1: improve the monitors}
+            \begin{itemize}
+                \item \alert{Done.} Gleipnir 4B (seed average + quantization-aware
+                      distillation) and Gleipnir 27B are frozen release candidates.
+                \item Optimized B200 serving and release packaging are built.
+            \end{itemize}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \textbf{Phase 2: stress-test them}
+            \begin{itemize}
+                \item \alert{Starting now}, still in week 1, because training
+                      finished sooner than planned.
+                \item Both monitors are frozen, so every result describes the
+                      release checkpoints.
+            \end{itemize}
+        \end{column}
+    \end{columns}
+    \bigskip
+
+    \begin{block}{Sprint deliverable}
+        A \textbf{technical report} on both monitors that tells the community what they
+        are good at, where they fail and how easily they can be fooled.
+    \end{block}
+\end{frame}
+
+\begin{frame}{Four avenues for the technical report}
+    \begin{columns}[T,onlytextwidth]
+        \begin{column}{0.48\textwidth}
+            \begin{block}{1. Fresh benchmarks}
+                \small One-shot evaluation of the frozen monitors on benchmarks never
+                used in the project (MonitoringBench, SleightBench).
+            \par\smallskip{\scriptsize\emph{Low effort}}
+            \end{block}
+            \begin{block}{2. Black-box vs.\ white-box monitors}
+                \small Compare against probes. We know of no benchmark with
+                \emph{open-model} agents on control tasks; building one is slow.
+            \par\smallskip{\scriptsize\emph{High effort}}
+            \end{block}
+        \end{column}
+        \begin{column}{0.48\textwidth}
+            \begin{block}{3. Attacks and mechanistic fixes}
+                \small The weights are public, so white-box attacks on one
+                decision logit are easy to find. How easily does a decision flip?
+                Can ablating directions remove unwanted traits?
+            \par\smallskip{\scriptsize\emph{Medium effort}}
+            \end{block}
+            \begin{block}{4. Newly affordable domains}
+                \small Settings that were too costly to monitor before, such as
+                agent swarms: one million actions cost \$390 with Gleipnir 27B
+                compared with \$73K with Gemini 3.1 Pro.
+            \par\smallskip{\scriptsize\emph{Medium effort}}
+            \end{block}
+        \end{column}
+    \end{columns}
+\end{frame}
+
+\begin{frame}{Where we would like feedback}
+    \begin{itemize}
+        \item \textbf{Priorities.} Which of the four avenues would make the technical report most
+              useful to the control community in two weeks?
+        \item \textbf{Benchmarks.} Beyond MonitoringBench and SleightBench, which results would
+              be most convincing?
+        \item \textbf{White-box comparison.} Is there existing data with open-model agents on
+              control tasks, or is building our own worth the time?
+        \item \textbf{Attacks.} Which attack settings would be credible: white-box only, or
+              black-box query attacks as for an API-served monitor too?
+        \item \textbf{New domains.} Which setting would cheap monitoring unlock that matters
+              most: agent swarms or long-horizon sessions?
+    \end{itemize}
+\end{frame}
+
+\begin{frame}{Logistics}
+    \begin{itemize}
+        \item \textbf{TA.} Could we be paired with a TA who is interested in AI control
+              and monitoring?
+        \item \textbf{Schedule.} Jeremias attends EMNLP from 23 to 30 October, so his
+              productivity will be reduced that week. Could we extend the sprint by working
+              on 31~October and 1~November?
+        \item \textbf{Compute.} Training the monitors and optimizing inference used most
+              of the current budget. Could we get a larger one once we share a detailed
+              plan of the experiments and their costs?
+    \end{itemize}
+\end{frame}

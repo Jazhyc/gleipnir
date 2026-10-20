@@ -33,7 +33,10 @@ def retained_indices(rows: list[dict], targets: list[dict]) -> list[int]:
 
 
 def token_lengths(ctx: Campaign, rows: list[dict]) -> list[int]:
-    """Recount actual untruncated decision-boundary inputs on CPU."""
+    """Recount actual untruncated training inputs on CPU.
+
+    That is the decision-boundary prompt plus any auxiliary continuation.
+    """
     from transformers import AutoTokenizer
 
     tokenizer = AutoTokenizer.from_pretrained(
@@ -52,7 +55,12 @@ def token_lengths(ctx: Campaign, rows: list[dict]) -> list[int]:
             for row in rows[start : start + 64]
         ]
         lengths.extend(
-            map(len, tokenizer(prompts, add_special_tokens=False)["input_ids"])
+            len(ids) + len(row.get("aux_input_ids", ()))
+            for ids, row in zip(
+                tokenizer(prompts, add_special_tokens=False)["input_ids"],
+                rows[start : start + 64],
+                strict=True,
+            )
         )
     return lengths
 

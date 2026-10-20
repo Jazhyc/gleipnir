@@ -156,6 +156,10 @@ def collate_packed_monitoring(features: Sequence[dict[str, Any]]) -> dict:
         batch["soft_targets"] = targets
     elif any("soft_target" in f for f in features):
         raise ValueError("mixed missing soft targets in packed batch")
+    if all("aux_length" in f for f in features):
+        batch.update(collate_aux_targets(features))
+    elif any("aux_length" in f for f in features):
+        raise ValueError("mixed missing auxiliary targets in packed batch")
     from gleipnir.binary_task_training import collate_binary_task_fields
 
     batch.update(collate_binary_task_fields(features))
@@ -331,6 +335,98 @@ def packed_fa4_interface(original: Callable, kernel: Callable) -> Callable:
     return attention
 
 
+def collate_aux_targets(features: Sequence[dict[str, Any]]) -> dict:
+    """Concatenate per-row continuation targets in pack order.
+
+    Each row's last ``aux_length`` input positions are its continuation; the
+    logits there predict ``aux_top_ids`` (teacher top-k) one token ahead.
+    """
+    lengths = tuple(int(f["aux_length"]) for f in features)
+    for f, length in zip(features, lengths, strict=True):
+        if length < 1 or not (
+            len(f["aux_top_ids"])
+            == len(f["aux_top_logprobs"])
+            == len(f["aux_mask"])
+            == length
+        ):
+            raise ValueError("auxiliary targets disagree with the continuation length")
+        if length >= len(f["direct_input_ids"]):
+            raise ValueError("auxiliary continuation leaves no decision prompt")
+    top_logprobs = torch.tensor(
+        [step for f in features for step in f["aux_top_logprobs"]],
+        dtype=torch.float32,
+    )
+    return {
+        "aux_lengths": lengths,
+        "aux_top_ids": torch.tensor(
+            [step for f in features for step in f["aux_top_ids"]], dtype=torch.long
+        ),
+        "aux_top_logprobs": top_logprobs,
+        "aux_mask": torch.tensor(
+            [m for f in features for m in f["aux_mask"]], dtype=torch.bool
+        ),
+        "aux_targets_host_valid": bool(torch.isfinite(top_logprobs).all()),
+    }
+
+
+def truncate_direct_prefix(feature: dict[str, Any], length: int) -> dict[str, Any]:
+    """Left-truncate a feature's prompt for canaries, keeping any continuation.
+
+    Without a continuation this is ``direct_input_ids[-length:]``. With one,
+    the continuation stays whole and at least one prompt token remains, so
+    targets stay aligned to the end-relative readout positions.
+    """
+    feature = dict(feature)
+    ids = list(feature["direct_input_ids"])
+    aux = int(feature.get("aux_length", 0))
+    if not aux:
+        feature["direct_input_ids"] = ids[-length:]
+        return feature
+    prompt = ids[:-aux][-max(length - aux, 1) :]
+    feature["direct_input_ids"] = prompt + ids[-aux:]
+    return feature
+
+
+def aux_readout_positions(
+    lengths: tuple[int, ...], aux_lengths: tuple[int, ...]
+) -> tuple[torch.Tensor, torch.Tensor]:
+    """Decision and continuation readout positions in a packed sequence.
+
+    Row i occupies ``[start_i, end_i)``. Its decision readout sits before the
+    continuation at ``end_i - 1 - K_i``; continuation logits are read at
+    ``end_i - K_i .. end_i - 1``. With K_i = 0 this is the plain last token.
+    """
+    layout = PackedSequenceLayout(lengths)
+    if len(aux_lengths) != len(lengths):
+        raise ValueError("one auxiliary length is required per packed row")
+    decisions, continuation = [], []
+    for end, length, aux in zip(layout.offsets[1:], lengths, aux_lengths, strict=True):
+        if not 0 <= aux < length:
+            raise ValueError("auxiliary continuation leaves no decision prompt")
+        decisions.append(end - 1 - aux)
+        continuation.extend(range(end - aux, end))
+    return torch.tensor(decisions, dtype=torch.long), torch.tensor(
+        continuation, dtype=torch.long
+    )
+
+
+def forward_packed_monitoring_logits_with_aux(
+    model: Any,
+    input_ids: torch.Tensor,
+    lengths: tuple[int, ...],
+    aux_lengths: tuple[int, ...],
+    *,
+    inputs_embeds: torch.Tensor | None = None,
+) -> tuple[torch.Tensor, torch.Tensor, Any]:
+    """Project decision and continuation positions in one LM-head pass."""
+    decisions, continuation = aux_readout_positions(lengths, aux_lengths)
+    keep = torch.cat([decisions, continuation]).to(input_ids.device)
+    logits, outputs = _forward_packed_selected(
+        model, input_ids, lengths, keep, inputs_embeds
+    )
+    return logits[: len(lengths)], logits[len(lengths) :], outputs
+
+
 def forward_packed_monitoring_logits(
     model: Any,
     input_ids: torch.Tensor,
@@ -339,6 +435,17 @@ def forward_packed_monitoring_logits(
     inputs_embeds: torch.Tensor | None = None,
 ) -> tuple[torch.Tensor, Any]:
     """Select every example's decision boundary without projecting all tokens."""
+    keep = PackedSequenceLayout(lengths).decision_positions(input_ids.device)
+    return _forward_packed_selected(model, input_ids, lengths, keep, inputs_embeds)
+
+
+def _forward_packed_selected(
+    model: Any,
+    input_ids: torch.Tensor,
+    lengths: tuple[int, ...],
+    keep: torch.Tensor,
+    inputs_embeds: torch.Tensor | None,
+) -> tuple[torch.Tensor, Any]:
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 
     if not getattr(
@@ -350,7 +457,7 @@ def forward_packed_monitoring_logits(
         raise ValueError("packed input shape disagrees with sequence lengths")
     kwargs = layout.kernel_kwargs(input_ids.device)
     kwargs["attention_mask"] = {"full_attention": None, "linear_attention": None}
-    kwargs["logits_to_keep"] = layout.decision_positions(input_ids.device)
+    kwargs["logits_to_keep"] = keep
     if inputs_embeds is None:
         kwargs["input_ids"] = input_ids
     else:
@@ -360,6 +467,6 @@ def forward_packed_monitoring_logits(
         outputs = model(**kwargs)
     finally:
         _HOST_CUTS.reset(token)
-    if outputs.logits.shape[:2] != (1, len(lengths)):
+    if outputs.logits.shape[:2] != (1, len(keep)):
         raise ValueError("packed model did not preserve every decision boundary")
     return outputs.logits[0], outputs

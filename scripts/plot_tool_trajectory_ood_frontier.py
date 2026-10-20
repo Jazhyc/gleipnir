@@ -32,34 +32,115 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
+FULL_OUTPUTS = [
+    REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.png",
+    REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
+]
 EXCLUDED_MONITORS = {
+    # Ties Gemini 3.1 Pro (0.942 vs 0.940) but would stretch the x-axis past $80.
     "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
+    # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
+    # the registry keeps its row.
+    "Qwen3.5-9B Kimi-soft mixed",
+}
+# Omitted from the main figure only (user, 2026-10-20); the full appendix
+# figure keeps them. Less prominent decision models (reported in the final
+# report's table instead), early base-model references without an improvement
+# arrow, and Kimi K2.6 (the teacher is K3).
+MAIN_FIGURE_OMISSIONS = {
+    "Microsoft-Decision-1 native probabilities",
+    "d1 native probabilities",
+    "Mercury Decide native probabilities",
+    "d1-ultra native probabilities",
+    "Qwen3.5-9B base",
+    "Qwen3.5-27B base",
+    "Qwen3.5-35B-A3B base (mixed providers)",
+    "Kimi K2.6 binary logits",
+}
+CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Third-party": "#B279A2"}
+CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Third-party": "s"}
+CATEGORY_LABELS = {
+    "Paper": "Sinha et al.",
+    "Gleipnir": "Gleipnir",
+    "Third-party": "Third-party decision models",
 }
 GLEIPNIR_METHODS = {
-    "Qwen3.5-4B Kimi-soft mixed": "Gleipnir 4B",
+    "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
     "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": "Gleipnir 4B*",
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B*",
 }
+# Self-hosted rows are priced at on-demand or committed-use GPU rates. Each
+# regime gets its own frontier against the list-priced rows.
+ON_DEMAND_MARKER = "on-demand B200 break-even"
+COMMITTED_MARKER = "committed-use B200 break-even"
 BASE_TO_METHOD = {
-    "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft mixed",
+    "Qwen3.5-4B base": "Qwen3.5-4B Kimi-soft strict seed average",
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
+# Labelled paper points. Gemini 3.1 Pro marks the top of the paper frontier.
+# The main figure drops the Kimi-K2.6 SFT label: its logit-based counterpart is
+# not shown there, though the point stays on the paper frontier.
+MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT"}
 PAPER_COMPARISON_MONITORS = {
+    "Gemini 3.1 Pro prompted",
     "Kimi-K2.6 SFT",
     "Qwen3.5-4B SFT+RL",
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
     "Jev 1.13 native probabilities": {
-        "xytext": (0, 18),
+        "xytext": (0, -14),
         "ha": "center",
-        "va": "bottom",
+        "va": "top",
     },
     "GPT-6 Luna binary logprobs": {
         "xytext": (-5, 8),
         "ha": "right",
+        "va": "bottom",
+    },
+    # Below-right, clear of the y-axis tick labels.
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": {
+        "xytext": (-2, -14),
+        "ha": "left",
+        "va": "top",
+    },
+    # Above its point, between the Decider and the on-demand 27B.
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": {
+        "xytext": (-8, 12),
+        "ha": "right",
+        "va": "bottom",
+    },
+    # Below-right, clear of both Gleipnir frontiers. Mercury Decide (full
+    # figure only) goes further below so the two labels stay apart.
+    "pplx-decider v1.2 native readout": {
+        "xytext": (12, -12),
+        "ha": "left",
+        "va": "top",
+    },
+    "Mercury Decide native probabilities": {
+        "xytext": (12, -21),
+        "ha": "left",
+        "va": "top",
+    },
+    "d1-ultra native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    # Left of its point, clear of the improvement arrow from the base 4B.
+    "d1 native probabilities": {
+        "xytext": (-10, 0),
+        "ha": "right",
+        "va": "center",
+    },
+    # Above its point, clear of the improvement arrow from the base 4B.
+    "Qwen3.5-4B Kimi-soft strict seed average": {
+        "xytext": (0, 14),
+        "ha": "center",
         "va": "bottom",
     },
     "Qwen3.5-9B Kimi-soft mixed": {
@@ -104,9 +185,10 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "center",
         "va": "top",
     },
+    # Left of its point: it sits at the right edge of the axes.
     "Gemini 3.1 Pro prompted": {
-        "xytext": (0, 18),
-        "ha": "center",
+        "xytext": (-12, 4),
+        "ha": "right",
         "va": "bottom",
     },
 }
@@ -175,9 +257,20 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     if not declared.isin({"yes", "no"}).all():
         raise ValueError("Frontier cells must be either 'yes' or 'no'")
     frame["declared_frontier"] = declared.eq("yes")
-    frame["computed_frontier"] = pareto_frontier_mask(
-        frame["cost_per_1k"].to_numpy(),
-        frame["mean_ood_pauroc_at_20"].to_numpy(),
+    frame["pricing"] = np.select(
+        [
+            frame["interface"].str.contains(ON_DEMAND_MARKER, regex=False),
+            frame["interface"].str.contains(COMMITTED_MARKER, regex=False),
+        ],
+        ["on_demand", "committed"],
+        default="list",
+    )
+    frame["on_demand_frontier"] = _regime_frontier(frame, "committed")
+    frame["committed_frontier"] = _regime_frontier(frame, "on_demand")
+    # A row's Frontier cell is its status within its own pricing regime;
+    # list-priced rows report the on-demand regime.
+    frame["computed_frontier"] = frame["on_demand_frontier"].where(
+        frame["pricing"].ne("committed"), frame["committed_frontier"]
     )
     mismatches = frame.loc[
         frame["declared_frontier"] != frame["computed_frontier"], "monitor"
@@ -190,6 +283,17 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     return frame
 
 
+def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
+    """Nondominance among rows outside one self-hosted pricing regime."""
+    rows = frame["pricing"].ne(excluded_pricing)
+    mask = pd.Series(False, index=frame.index)
+    mask[rows] = pareto_frontier_mask(
+        frame.loc[rows, "cost_per_1k"].to_numpy(),
+        frame.loc[rows, "mean_ood_pauroc_at_20"].to_numpy(),
+    )
+    return mask
+
+
 def _display_label(monitor: str) -> str:
     replacements = {
         "Kimi K2.6 binary logits": "Kimi K2.6",
@@ -197,6 +301,10 @@ def _display_label(monitor: str) -> str:
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
         "pplx-decider v1.2 native readout": "Decider v1.2",
+        "Mercury Decide native probabilities": "Mercury Decide",
+        "d1-ultra native probabilities": "d1-ultra",
+        "d1 native probabilities": "d1",
+        "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",
@@ -207,11 +315,15 @@ def _display_label(monitor: str) -> str:
     }
     display = replacements.get(monitor, monitor)
     display = re.sub(r"\s+base(?=$|\s+\()", "", display)
-    return textwrap.fill(display, width=22)
+    return "\n".join(textwrap.fill(line, width=22) for line in display.split("\n"))
 
 
-def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
-    """Apply documented presentation-only omissions to registry points."""
+def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFrame:
+    """Apply documented presentation-only omissions to registry points.
+
+    The main figure also drops ``MAIN_FIGURE_OMISSIONS`` and paper points that
+    are neither on the paper frontier nor labelled comparisons.
+    """
     is_ours = frame["origin"].eq("Gleipnir")
     is_binary_score_interface = frame["interface"].str.contains(
         "logits|logprobs|native binary probability", case=False, na=False
@@ -221,19 +333,39 @@ def select_plot_points(frame: pd.DataFrame) -> pd.DataFrame:
         & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
         & (~is_ours | is_binary_score_interface)
     )
-    return frame.loc[included].copy()
+    if not full:
+        paper = frame["origin"].eq("Paper") & included
+        paper_frontier = pd.Series(False, index=frame.index)
+        paper_frontier[paper] = pareto_frontier_mask(
+            frame.loc[paper, "cost_per_1k"].to_numpy(),
+            frame.loc[paper, "mean_ood_pauroc_at_20"].to_numpy(),
+        )
+        included &= ~frame["monitor"].isin(MAIN_FIGURE_OMISSIONS) & (
+            ~paper | paper_frontier | frame["monitor"].isin(PAPER_COMPARISON_MONITORS)
+        )
+    selected = frame.loc[included].copy()
+    selected["category"] = np.select(
+        [
+            selected["origin"].eq("Paper"),
+            selected["monitor"].isin(GLEIPNIR_METHODS),
+        ],
+        ["Paper", "Gleipnir"],
+        default="Third-party",
+    )
+    return selected
 
 
 def _label_obstacles(frame: pd.DataFrame) -> tuple[np.ndarray, np.ndarray]:
     """Sample points and frontier segments for label collision avoidance."""
     x_parts = [frame["cost_per_1k"].to_numpy()]
     y_parts = [frame["mean_ood_pauroc_at_20"].to_numpy()]
-    frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
-    for (_, start), (_, end) in zip(
-        frontier.iloc[:-1].iterrows(),
-        frontier.iloc[1:].iterrows(),
-        strict=True,
-    ):
+    segments = []
+    for column in ("on_demand_frontier", "committed_frontier"):
+        frontier = frame.loc[frame[column]].sort_values("cost_per_1k")
+        segments += zip(
+            frontier.iloc[:-1].iterrows(), frontier.iloc[1:].iterrows(), strict=True
+        )
+    for (_, start), (_, end) in segments:
         fractions = np.linspace(0.1, 0.9, 9)
         start_cost = float(start["cost_per_1k"])
         end_cost = float(end["cost_per_1k"])
@@ -269,13 +401,13 @@ def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
 
 
-def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
+def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
-    frame = select_plot_points(frame)
+    frame = select_plot_points(frame, full=full)
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
-    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
+    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
@@ -284,7 +416,10 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     )
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
-    frontier = frame.loc[frame["computed_frontier"]].sort_values("cost_per_1k")
+    frontier = frame.loc[frame["on_demand_frontier"]].sort_values("cost_per_1k")
+    committed_frontier = frame.loc[frame["committed_frontier"]].sort_values(
+        "cost_per_1k"
+    )
     paper_frontier = _paper_frontier(frame)
     axis.plot(
         paper_frontier["cost_per_1k"],
@@ -301,6 +436,15 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         color="#374151",
         linewidth=2.3,
         alpha=0.82,
+        zorder=1,
+    )
+    axis.plot(
+        committed_frontier["cost_per_1k"],
+        committed_frontier["mean_ood_pauroc_at_20"],
+        color="#374151",
+        linestyle=(0, (5, 3)),
+        linewidth=2.0,
+        alpha=0.7,
         zorder=1,
     )
 
@@ -321,14 +465,14 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             zorder=2,
         )
 
-    markers = {"Paper": "o", "Gleipnir": "D"}
-    for origin, group in frame.groupby("origin", sort=False):
+    committed = frame["pricing"].eq("committed")
+    for category, group in frame.loc[~committed].groupby("category", sort=False):
         sns.scatterplot(
             data=group,
             x="cost_per_1k",
             y="mean_ood_pauroc_at_20",
-            color=ORIGIN_PALETTE.get(origin, "#777777"),
-            marker=markers.get(origin, "o"),
+            color=CATEGORY_PALETTE[category],
+            marker=CATEGORY_MARKERS[category],
             s=92,
             alpha=0.78,
             edgecolor="#374151",
@@ -342,13 +486,24 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             data=group_frontier,
             x="cost_per_1k",
             y="mean_ood_pauroc_at_20",
-            color=ORIGIN_PALETTE.get(origin, "#777777"),
-            marker=markers.get(origin, "o"),
+            color=CATEGORY_PALETTE[category],
+            marker=CATEGORY_MARKERS[category],
             s=165,
             edgecolor="#111827",
             linewidth=1.5,
             legend=False,
             ax=axis,
+            zorder=3,
+        )
+    for _, row in frame.loc[committed].iterrows():
+        axis.scatter(
+            row["cost_per_1k"],
+            row["mean_ood_pauroc_at_20"],
+            marker="D",
+            s=165 if row["computed_frontier"] else 92,
+            facecolor="white",
+            edgecolor=ORIGIN_PALETTE["Gleipnir"],
+            linewidth=2.2,
             zorder=3,
         )
 
@@ -357,6 +512,8 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
         | frame["origin"].eq("Gleipnir")
         | frame["monitor"].isin(PAPER_COMPARISON_MONITORS)
     ].sort_values("cost_per_1k")
+    if not full:
+        labelled = labelled.loc[~labelled["monitor"].isin(MAIN_FIGURE_UNLABELLED)]
     label_bbox = {
         "boxstyle": "round,pad=0.12",
         "facecolor": "white",
@@ -470,20 +627,19 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
-    origin_labels = {"Paper": "Sinha et al.", "Gleipnir": "Ours (binary scores)"}
     legend_handles = [
         Line2D(
             [],
             [],
-            marker=markers[origin],
+            marker=CATEGORY_MARKERS[category],
             linestyle="none",
             markerfacecolor=color,
             markeredgecolor="#374151",
             markeredgewidth=0.65,
             markersize=10.5,
-            label=origin_labels.get(origin, origin),
+            label=CATEGORY_LABELS[category],
         )
-        for origin, color in ORIGIN_PALETTE.items()
+        for category, color in CATEGORY_PALETTE.items()
     ]
     legend_handles.append(
         Line2D(
@@ -495,7 +651,22 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Combined frontier",
+            label="Frontier, Gleipnir on-demand",
+        )
+    )
+    legend_handles.append(
+        Line2D(
+            [],
+            [],
+            color="#374151",
+            linestyle=(0, (5, 3)),
+            marker="D",
+            markerfacecolor="white",
+            markeredgecolor=ORIGIN_PALETTE["Gleipnir"],
+            markeredgewidth=2.0,
+            linewidth=2.2,
+            markersize=10.5,
+            label="Frontier, Gleipnir* committed GPUs",
         )
     )
     legend_handles.append(
@@ -537,18 +708,26 @@ def parse_args() -> argparse.Namespace:
             "PNG and SVG."
         ),
     )
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Plot every registry point (the appendix figure)",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     frame = load_frontier_registry(args.source)
-    plotted = select_plot_points(frame)
+    plotted = select_plot_points(frame, full=args.full)
     omitted_count = len(frame) - len(plotted)
-    outputs = args.output or [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
+    default_outputs = (
+        FULL_OUTPUTS if args.full else [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
+    )
+    outputs = args.output or default_outputs
     frontier_count = int(plotted["computed_frontier"].sum())
     for output_path in outputs:
-        output = save_figure(plot_frontier(frame), output_path)
+        output = save_figure(plot_frontier(frame, full=args.full), output_path)
         print(
             f"Wrote {output} from {len(plotted)} plotted points "
             f"({frontier_count} frontier; {omitted_count} omitted)."

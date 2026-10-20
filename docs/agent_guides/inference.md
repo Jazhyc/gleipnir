@@ -8,6 +8,11 @@ Also read [compute.md](compute.md) before launching or operating a run.
 
 ## Serving and adapter parity
 
+Importing `gleipnir` puts the running interpreter's `bin/` first on `PATH`
+(`src/gleipnir/_environment.py`), so JIT builders find the venv's `ninja`
+without activating it. Launch runners through a project entrypoint that
+imports `gleipnir`; scripts that don't import it must set `PATH` themselves.
+
 Standing user preference, updated 2026-10-13: use BF16 vLLM for ordinary adapter
 iteration and training-recipe comparisons. Use optimized precision serving only
 for QAD-adapted deployment candidates. Monitor scoring
@@ -44,6 +49,41 @@ If a training repeat reproduces the exact master/export weight hashes and
 equivalent adapter/base identities, reuse the existing merged checkpoint,
 parity and evaluation receipts. Record identity and score reuse explicitly;
 repeat scoring only when measuring serving variability or changing its recipe.
+
+## Released optimized serving image
+
+`ghcr.io/jazhyc/gleipnir-serve:0.1` (digest `15673c65…`) serves the released
+Gleipnir 4B v0.4 and 27B v0.2 through their validated optimized stacks on one
+B200. It is a frozen snapshot of the recorded runs' command, environment,
+receipts and runtimes. Use it to score released models on a B200 without
+restoring the volume stack:
+
+- **Launching on Runpod.**
+  - Create the Pod from the image with no volume mounted at `/workspace` or
+    `/tmp`; the image keeps its repository at `/workspace/gleipnir` and its
+    runtimes under `/tmp`.
+  - For SSH, set the start command to `/start.sh` (entrypoint
+    `/opt/nvidia/nvidia_entrypoint.sh`).
+  - Then run `/opt/nvidia/nvidia_entrypoint.sh /opt/gleipnir-release/entrypoint.sh {4b|27b} --port 8000`.
+    It fetches `Jazhyc/Gleipnir-*-BF16@<version>`, verifies the hashes in
+    `experiments/release_serving/targets.py`, and replays the recorded
+    server command (`experiments/release_serving/serve.py`).
+- **Scoring.** Send rendered prompts to `POST /v1/monitor/score` with
+  `{"model": "monitor", "prompt": ...}`.
+  `experiments/release_serving/validate.py` scores the frozen ID/OOD
+  workloads in the recorded campaign's batching and compares them with the
+  recorded rows.
+- **Scope.** It covers the released checkpoints only. New adapters, recipes
+  or stack changes still go through the volume stack, merged parity and the
+  serving decision above.
+- **Rebuilding.** Follow the procedure in
+  `experiments/release_serving/README.md`:
+  - restore on an EU-RO-1 Pod with the volume;
+  - remerge with byte identity;
+  - trace, build with `crane`;
+  - validate on a fresh Pod against repeat-relative gates.
+
+  Never ship partially traced compile caches.
 
 ## Persistent serving process
 

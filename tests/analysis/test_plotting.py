@@ -61,7 +61,7 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-27B base") == "Qwen3.5-27B"
     assert _display_label("Qwen3.5-4B SFT+RL") == "Qwen3.5-4B SFT+RL"
     assert _display_label("Qwen3.5-27B SFT+RL") == "Qwen3.5-27B SFT+RL"
-    assert _display_label("Qwen3.5-4B Kimi-soft mixed") == "Gleipnir 4B"
+    assert _display_label("Qwen3.5-4B Kimi-soft strict seed average") == "Gleipnir 4B"
     assert _display_label("Qwen3.5-9B Kimi-soft mixed") == "Gleipnir 9B"
 
 
@@ -96,8 +96,8 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "va": "top",
     }
     assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
-        "xytext": (0, 18),
-        "ha": "center",
+        "xytext": (-12, 4),
+        "ha": "right",
         "va": "bottom",
     }
 
@@ -109,8 +109,7 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
     assert [
         (str(base["monitor"]), str(method["monitor"])) for base, method in pairs
     ] == [
-        ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft mixed"),
-        ("Qwen3.5-9B base", "Qwen3.5-9B Kimi-soft mixed"),
+        ("Qwen3.5-4B base", "Qwen3.5-4B Kimi-soft strict seed average"),
         ("Qwen3.8-27B base", "Qwen3.8-27B Kimi-soft strict"),
     ]
     assert all(
@@ -144,9 +143,44 @@ def test_registry_loader_rejects_a_stale_frontier_column(tmp_path: Path) -> None
     registry = tmp_path / "frontier.md"
     source = DEFAULT_SOURCE.read_text(encoding="utf-8")
     registry.write_text(
-        source.replace("| **0.9352** | **yes** |", "| **0.9352** | **no** |", 1),
+        source.replace("| **0.9508** | **yes** |", "| **0.9508** | **no** |", 1),
         encoding="utf-8",
     )
 
     with pytest.raises(ValueError, match="Qwen3.8-27B Kimi-soft strict"):
         load_frontier_registry(registry)
+
+
+def test_pricing_regimes_have_separate_frontiers() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE).set_index("monitor")
+    committed = [
+        "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)",
+        "Qwen3.8-27B Kimi-soft strict (committed GPUs)",
+    ]
+    on_demand = [
+        "Qwen3.5-4B Kimi-soft strict seed average",
+        "Qwen3.8-27B Kimi-soft strict",
+    ]
+    decider = "pplx-decider v1.2 native readout"
+
+    assert (frame.loc[committed, "pricing"] == "committed").all()
+    assert (frame.loc[on_demand, "pricing"] == "on_demand").all()
+    assert frame.loc[committed, "committed_frontier"].all()
+    assert not frame.loc[committed, "on_demand_frontier"].any()
+    assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
+    assert not frame.loc[[decider], "committed_frontier"].any()
+
+
+def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:
+    frame = load_frontier_registry(DEFAULT_SOURCE)
+    main = select_plot_points(frame).set_index("monitor")
+    full = select_plot_points(frame, full=True).set_index("monitor")
+
+    assert "d1 native probabilities" in full.index
+    assert "d1 native probabilities" not in main.index
+    assert "Kimi K2.6 binary logits" not in main.index
+    assert {"Kimi K3 binary logits", "GPT-6 Luna binary logprobs"} <= set(main.index)
+    assert main.loc["Qwen3.8-27B Kimi-soft strict", "category"] == "Gleipnir"
+    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Third-party"
+    paper = main.loc[main["origin"].eq("Paper")]
+    assert len(paper) < int(full["origin"].eq("Paper").sum())

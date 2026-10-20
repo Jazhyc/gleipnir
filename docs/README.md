@@ -80,6 +80,9 @@
 - [pplx-decider v1.2 OOD benchmark](findings/pplx_decider_ood_benchmark.md): local
   native-readout evaluation of the 27B and Flash on the Jev requests; the 27B is the
   lowest-cost frontier point.
+- [Decision models OOD benchmark](findings/decision_models_ood_benchmark.md):
+  Microsoft-Decision-1, Mercury Decide, d1-ultra and d1 on the Jev requests; none
+  reaches the frontier.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

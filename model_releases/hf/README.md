@@ -50,3 +50,56 @@ Versioning: the repos are research previews. Each was tagged `v0.1` on
 `e5c4a7a6`). Retrained adapters on the same base go to the same repo with a
 card changelog and the next `v0.x` tag; a public launch rewrites the cards and
 tags `v1.0`; a different base model gets a new repo name.
+
+Gleipnir 4B v0.2 (2026-10-20): the exact three-seed weight average of the
+strict-filtered tool-trajectory-only recipe shared with the 27B
+([seed average](../../experiments/seed_average/README.md)). It is a rank-384
+adapter, so its config sets `lora_rank: 384`. It was staged with
+`--output-dir results/huggingface_release_v0.2` and uploaded with
+`--allow-existing` as commit `7776a3e3`. All 10 manifest files were verified
+on the Hub, and the commit is tagged `v0.2`; `v0.1` still pins the mixed-data
+adapter. The 9B and 27B cards still list the v0.1 4B numbers in their
+comparison tables.
+
+Card update (2026-10-20, user request), with no new tags because the weights
+are unchanged:
+- **Gleipnir 27B** recommends and reports the full teacher prompt (0.9352
+  Mean-OOD, 0.9420 CoT-removed ID pAUROC@20; [decision](../../docs/decisions.md)).
+  Its config sets `evaluation_prompt: teacher`, so `teacher_prompt.txt` and the
+  teacher template hash are staged with it. Commit `694b5239`; 11 files
+  verified.
+- **Gleipnir 4B**'s comparison row for the 27B now shows those numbers.
+  Commit `c20114a1`; 10 files verified. `v0.2` still points to the release
+  commit.
+- **Gleipnir 9B** is marked superseded by Gleipnir 4B v0.2 (user request):
+  similar OOD quality (0.8212 against 0.8108 pAUROC@20, within seed noise) at
+  about 3.3 times the hosted cost. It is kept as a research artifact, and its
+  comparison table is refreshed. Commit `9c4c246e`; 10 files verified.
+
+Gleipnir 4B v0.3 (2026-10-20, user request): the v0.2 average plus same-model
+QAD for optimized serving ([QAD](../../experiments/qad_v02/README.md)).
+- **Source.** The release adapter is the QAD master (`0716efc1…`) in the
+  campaign-layout copy `results/qad-v02-01/4b/monitor`. Its
+  `training_metadata.json` was added there to record the base, the QAD
+  receipt and the starting adapter.
+- **Results.** The card reports BF16 serving (0.8039 OOD, 0.9332 ID
+  pAUROC@20) and optimized serving (0.7703 OOD, 0.9117 ID, 1.89 times BF16
+  throughput).
+- **Publication.** Staged at `results/huggingface_release_v0.3` and uploaded
+  as commit `e36aa2bb`. All 10 files were verified on the Hub, with no stale
+  files, and the commit is tagged `v0.3`; `v0.1` and `v0.2` remain pinnable.
+
+## Merged BF16 repositories and the serving image
+
+From Gleipnir 4B v0.4 and 27B v0.2, each model also has a merged BF16
+repository: `Jazhyc/Gleipnir-4B-BF16` and `Jazhyc/Gleipnir-27B-BF16`. Their
+cards are `gleipnir-{4b,27b}-bf16/README.md`. A model's adapter and BF16
+repositories carry the same version tag.
+
+- **Building them.** The checkpoints are byte-identical remerges of the
+  evaluated merges. They are built and uploaded on the B200 build Pod (never
+  staged on the cluster), using
+  [`experiments/release_serving`](../../experiments/release_serving/README.md).
+- **Release record.** `experiments/release_serving/release_manifest.json`
+  records the file hashes, HF commits and the optimized serving image
+  `ghcr.io/jazhyc/gleipnir-serve:0.1`.

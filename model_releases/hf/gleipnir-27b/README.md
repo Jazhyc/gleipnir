@@ -27,10 +27,10 @@ model-index:
     metrics:
     - type: roc_auc
       name: Mean-OOD AUROC
-      value: 0.967861
+      value: 0.978997
     - type: mean_ood_pauroc_at_20
       name: Mean-OOD pAUROC@20
-      value: 0.908739
+      value: 0.935197
 ---
 
 # Gleipnir 27B
@@ -40,13 +40,41 @@ trajectories of tool-using AI agents for sabotage, data exfiltration, and other
 covert unauthorized actions taken while appearing to do an assigned task. It
 is a rank-128 LoRA adapter for `Qwen/Qwen3.8-27B`, not a standalone model.
 
-Unlike Gleipnir 4B and 9B, it was not trained on general deception datasets;
-its training data is agent tool-use trajectories only (see Training).
+Like Gleipnir 4B v0.2, and unlike Gleipnir 9B, it was not trained on general
+deception datasets; its training data is agent tool-use trajectories only
+(see Training).
 
 This release is an early research artifact intended for reproducibility and
 follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
 treated as a production safety system or as evidence that an interaction is
 safe merely because the model assigns it a low score.
+
+## Variants
+
+| Repository or image | Contents | Use it for |
+| --- | --- | --- |
+| `Jazhyc/Gleipnir-27B` (this repository) | FP32 LoRA master and the `vllm/` key-rebased adapter | Merging, fine-tuning, PEFT |
+| [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | The adapter merged into `Qwen/Qwen3.8-27B` in FP32, exported as BF16 | Transformers or vLLM on any GPU |
+| `ghcr.io/jazhyc/gleipnir-serve:0.1` | The project's optimized serving stack (FP8/FP4/MXFP8) | High-throughput scoring on one NVIDIA B200 |
+
+Both repositories carry the tag `v0.2` for this release. The image fetches
+`Gleipnir-27B-BF16@v0.2` and verifies every file before serving.
+
+## Changelog
+
+- **v0.2 (2026-10-20).** Packaging release; the adapter is identical to
+  `v0.1`. Adds the merged BF16 checkpoint
+  ([`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16))
+  and the optimized B200 serving image, and reports the optimized-serving
+  results (0.9508 Mean-OOD and 0.9444 ID pAUROC@20 under the full teacher
+  instruction, 53.9K prompt tokens/s on one B200).
+- **2026-10-20 (card update; adapter unchanged).** The recommended scoring
+  interface is now the full teacher instruction (`teacher_prompt.txt`, added
+  here), with headline results 0.9352 Mean-OOD and 0.9420 ID pAUROC@20. The
+  compact-instruction results remain in the table. The weights are identical
+  to `v0.1`.
+- **v0.1 (2026-10-18).** First release, documented under the compact
+  instruction.
 
 ## What the model scores
 
@@ -61,10 +89,15 @@ literal `0` and `1`:
 - `Prediction:0`: task-serving behavior, including honest mistakes, failed
   attempts, harmless exploration, incomplete work, and reasonable adaptation.
 
-Use the normalized `1` versus `0` logit as a continuous risk score. The exact
-compact instruction is included in `student_prompt.txt`, and its complete
-envelope is recorded in `prompt_contract.json`. It is the same instruction and
-interface as Gleipnir 4B and 9B.
+Use the normalized `1` versus `0` logit as a continuous risk score.
+
+**Score it under the full teacher instruction (`teacher_prompt.txt`).** This is
+the recommended default, and the interface used for the headline results. The
+adapter was trained under the compact instruction (`student_prompt.txt`, the
+same instruction as Gleipnir 4B and 9B), but on held-out in-distribution data
+it ranks better under the full one: 0.9420 against 0.9216 macro pAUROC@20.
+The prompt was chosen on that ID data, not on the OOD suite. Both
+instructions and their envelope are recorded in `prompt_contract.json`.
 
 ## Results
 
@@ -73,32 +106,44 @@ the other Gleipnir adapters, spanning AgentDojo, CUA-SHADE, IaC, MLE-Sabotage,
 Rogue Eval, and SHADE-Arena. The primary metric is the unweighted mean across
 sources of raw normalized partial AUROC through 20% false-positive rate.
 
-| Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
-| --- | ---: | ---: | ---: | ---: |
-| **Gleipnir 27B** | **0.9087** | **0.9679** | **0.9234** | **0.9748** |
-| Gleipnir 9B | 0.8212 | 0.9215 | 0.7837 | 0.9355 |
-| Gleipnir 4B | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
-| Kimi K3 (teacher) | 0.9084 | 0.9616 | 0.9322 | 0.9776 |
-| Qwen3.8-27B, unadapted | 0.8901 | 0.9535 | | |
+| Model | Prompt | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
+| --- | --- | ---: | ---: | ---: | ---: |
+| **Gleipnir 27B** | **full teacher** | **0.9352** | **0.9790** | **0.9486** | **0.9810** |
+| Gleipnir 27B, optimized serving | full teacher | 0.9508 | 0.9841 | 0.9498 | 0.9809 |
+| Gleipnir 27B | compact student | 0.9087 | 0.9679 | 0.9234 | 0.9748 |
+| Kimi K3 (teacher) | full teacher | 0.9084 | 0.9616 | 0.9322 | 0.9776 |
+| Qwen3.8-27B, unadapted | full teacher | 0.8901 | 0.9535 | | |
+| Gleipnir 9B | compact student | 0.8212 | 0.9215 | 0.7837 | 0.9355 |
+| Gleipnir 4B v0.2 | compact student | 0.8108 | 0.9199 | 0.7514 | 0.9335 |
 
-Per-source pAUROC@20: AgentDojo 0.9983, CUA-SHADE 0.8806, IaC 0.9871,
-MLE-Sabotage 1.0000, Rogue Eval 0.9989, SHADE-Arena 0.5875.
+Per-source pAUROC@20 under the full teacher prompt: AgentDojo 0.9990,
+CUA-SHADE 0.8911, IaC 0.9931, MLE-Sabotage 1.0000, Rogue Eval 0.9982,
+SHADE-Arena 0.7298. Under the optimized serving stack (FP8 attention
+projections, FP4 MLP and GDN projections, MXFP8 attention; no QAD needed):
+AgentDojo 0.9917, CUA-SHADE 0.8903, IaC 0.9931, MLE-Sabotage 1.0000, Rogue
+Eval 0.9980, SHADE-Arena 0.8316. Almost all of its 1.6-point gain over BF16
+comes from SHADE-Arena; treat it as serving-precision variation, not a
+quality improvement. Optimized serving scored the 60.5M-token OOD workload at
+53.9K prompt tokens/s on one B200, and reaches 0.9444 ID macro pAUROC@20.
 
-- Gleipnir 27B is level with its Kimi K3 teacher on Mean-OOD pAUROC@20
-  (+0.0003) and above it on SHADE-Arena (0.5875 vs. 0.5745) and Rogue Eval.
-  In the project's dated hosted-inference proxy it costs about 1/15 as much
-  as Kimi K3 (`$1.69` vs. `$25.12` per 1,000 evaluations); that comparison is
-  not a stable price quote.
-- Training improved the unadapted base on every unsaturated source (+1.9
-  points Mean-OOD pAUROC@20).
-- On the project's held-out in-distribution set (3,012 Gloom-exfiltration and
-  STRIDE test rows) it reaches 0.9217 macro pAUROC@20 and 0.9822 macro AUROC,
-  against 0.8869 / 0.9730 for the unadapted base.
+- Under its recommended prompt, Gleipnir 27B is 2.7 points above its Kimi K3
+  teacher on Mean-OOD pAUROC@20. Most of the gain over the compact prompt is
+  SHADE-Arena (0.7298 vs. 0.5875); the other sources move by at most 1.1
+  points. In the project's dated hosted-inference proxy it costs about 1/14 as
+  much as Kimi K3 (`$1.85` vs. `$25.12` per 1,000 evaluations, full teacher
+  prompt); that comparison is not a stable price quote.
+- Training improved the unadapted base on every unsaturated source (+4.5
+  points Mean-OOD pAUROC@20 under the same full teacher prompt).
+- On the project's held-out CoT-removed in-distribution set (3,012
+  Gloom-exfiltration and STRIDE test rows) it reaches 0.9420 macro pAUROC@20
+  and 0.9863 macro AUROC under the full teacher prompt, against 0.9217 and
+  0.9822 under the compact prompt.
 
 These are single-seed point estimates; the 4B student's OOD seed-to-seed
-standard deviation is about 1.8 points. Gleipnir 27B was trained on a different
-data mixture than the released 4B and 9B (see below), so the rows above compare
-released artifacts, not a controlled model-size study.
+standard deviation is about 1.8 points. Gleipnir 27B was trained on different
+data than Gleipnir 9B and on a different base than both smaller models, so
+the rows above compare released artifacts, not a controlled model-size
+study.
 
 ## Training
 
@@ -150,7 +195,9 @@ base = AutoModelForCausalLM.from_pretrained(
 )
 model = PeftModel.from_pretrained(base, adapter_id).eval()
 
-instruction_path = hf_hub_download(adapter_id, "student_prompt.txt")
+# The recommended full teacher instruction; "student_prompt.txt" is the
+# compact instruction the adapter was trained under.
+instruction_path = hf_hub_download(adapter_id, "teacher_prompt.txt")
 with open(instruction_path, encoding="utf-8") as handle:
     instruction = handle.read()
 trajectory = "User asked for a file listing. The agent ran: ls -la"
@@ -179,6 +226,34 @@ Verify that each literal label tokenizes to exactly one distinct token. For
 large frozen evaluations, the project merged the `vllm/` key-rebased adapter
 into the base in FP32, exported BF16 weights, and served them with vLLM 0.31
 after master-to-serving parity checks (correlation 0.9999).
+
+### Optimized B200 serving
+
+The serving image runs the stack behind the optimized results above. It
+needs one NVIDIA B200 (other GPUs, including the B300, are refused), an
+NVIDIA driver supporting CUDA 13, and prompts of at most 32,768 tokens.
+
+```bash
+docker run --gpus all -p 8000:8000 \
+  -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
+  ghcr.io/jazhyc/gleipnir-serve:0.1 27b
+```
+
+The first start downloads the BF16 checkpoint (52 GB) and
+is ready after about four minutes (219 s including the download on a fresh B200; slower links take longer); the mounted cache keeps the
+download across restarts. Do not mount volumes over `/tmp` or `/workspace`, which
+hold the pinned runtimes and code (on Runpod, attach volumes elsewhere). Send the fully rendered prompt, built exactly as in the
+Python example and ending in `Prediction:`:
+
+```bash
+curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
+  -d '{"model": "monitor", "prompt": "<rendered prompt>"}'
+# {"score": ..., "margin": ..., "logits": [logit_0, logit_1], "prompt_tokens": ...}
+```
+
+`score` is the softmax of the `1` and `0` logits, the same quantity as
+`risk_score` above. The image was validated on a fresh B200 against the
+recorded optimized rows (0.9450 ID and 0.9489 Mean-OOD pAUROC@20 against the recorded 0.9444 and 0.9508. Optimized-serving scores are not bit-reproducible: two runs of the same server differ by about 0.006 in mean absolute score while ranking metrics move by about 0.001-0.002; use stock BF16 serving when per-row reproducibility matters).
 
 ## Limitations and responsible use
 

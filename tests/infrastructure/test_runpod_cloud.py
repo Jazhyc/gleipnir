@@ -239,3 +239,28 @@ def test_code_sync_keeps_refactored_data_package_but_excludes_artifacts(
         ".env",
     ]:
         assert not (remote / name).exists()
+
+
+def test_code_sync_skips_worktree_links_to_local_state(rsync_peer, monkeypatch):
+    local, remote = rsync_peer.local, rsync_peer.remote
+    (local / "src").mkdir()
+    (local / "src/module.py").write_text("code")
+    elsewhere = local.parent / "elsewhere"
+    for name in [".venv", ".cache", ".runpod"]:
+        (elsewhere / name).mkdir(parents=True)
+        (local / name).symlink_to(elsewhere / name)
+    (local / ".git").write_text("gitdir: /somewhere/.git/worktrees/x\n")
+    pod = local / "pod.json"
+    pod.write_text(
+        json.dumps(
+            {"ssh": {"direct": {"host": "198.51.100.2", "port": 1, "username": "root"}}}
+        )
+    )
+    monkeypatch.setattr(runpod_cloud, "ROOT", local)
+    monkeypatch.setattr(
+        sys, "argv", ["runpod_cloud.py", "--pod-file", str(pod), "sync-code"]
+    )
+    runpod_cloud.main()
+    assert (remote / "src/module.py").read_text() == "code"
+    for name in [".venv", ".cache", ".runpod", ".git"]:
+        assert not (remote / name).exists() and not (remote / name).is_symlink()

@@ -81,11 +81,12 @@ def validate_adapter_directory(
     adapter_config = load_json(config_path)
     if adapter_config.get("base_model_name_or_path") != model["base_model"]:
         raise ValueError(f"base-model identity drifted in {config_path}")
+    rank = int(model.get("lora_rank", 128))
     if (
         adapter_config.get("peft_type") != "LORA"
-        or int(adapter_config.get("r", -1)) != 128
+        or int(adapter_config.get("r", -1)) != rank
     ):
-        raise ValueError(f"expected a rank-128 LoRA in {config_path}")
+        raise ValueError(f"expected a rank-{rank} LoRA in {config_path}")
     details = inspect_adapter(weights_path)
     if details["sha256"] != expected_sha256:
         raise ValueError(
@@ -128,7 +129,11 @@ def validate_model(
     if sha256_file(metadata_path) != model["training_metadata_sha256"]:
         raise ValueError(f"training metadata checksum drifted for {name}")
     metadata = load_json(metadata_path)
-    if metadata.get("model") != model["base_model"]:
+    # A seed-average adapter carries its averaging receipt, not trainer metadata.
+    base = metadata.get("model") or metadata.get("seed_average", {}).get(
+        "base_model_name_or_path"
+    )
+    if base != model["base_model"]:
         raise ValueError(f"training base identity drifted for {name}")
 
     return {
@@ -167,6 +172,29 @@ def prompt_contract(common: dict[str, Any]) -> tuple[Path, dict[str, Any]]:
     }
 
 
+def evaluation_prompt(
+    model: dict[str, Any], common: dict[str, Any], contract: dict[str, Any]
+) -> tuple[Path | None, dict[str, Any]]:
+    """Add the full teacher instruction for models evaluated under it."""
+    if model.get("evaluation_prompt", "student") == "student":
+        return None, contract
+    if model["evaluation_prompt"] != "teacher":
+        raise ValueError(f"unknown evaluation prompt for {model['repo_name']}")
+    manifest_path = resolve_repo_path(str(common["prompt"]["manifest"]))
+    manifest = load_json(manifest_path)
+    teacher_path = manifest_path.parent / manifest["teacher_instruction"]
+    teacher = load_prompt_set(manifest_path.parent).teacher
+    if teacher.template_sha256 != common["prompt"]["teacher_template_sha256"]:
+        raise ValueError("teacher prompt template checksum drifted")
+    return teacher_path, {
+        **contract,
+        "evaluation_prompt_role": "teacher",
+        "teacher_instruction_file": "teacher_prompt.txt",
+        "teacher_instruction_sha256": sha256_file(teacher_path),
+        "teacher_template_sha256": teacher.template_sha256,
+    }
+
+
 def training_summary(spec: dict[str, Any]) -> dict[str, Any]:
     model = spec["model"]
     metadata = spec["metadata"]
@@ -185,6 +213,11 @@ def training_summary(spec: dict[str, Any]) -> dict[str, Any]:
             **model["evaluation"],
         },
         "source_commit": metadata.get("commit"),
+        **(
+            {"seed_average": {"sources": metadata["sources"]}}
+            if "seed_average" in metadata
+            else {}
+        ),
         "training": {
             **common["training"],
             # Models trained with a different recipe override the shared fields.
@@ -234,6 +267,9 @@ def stage_model(
         shutil.copy2(spec["source_dir"] / "adapter_config.json", temporary)
         shutil.copy2(spec["source_dir"] / WEIGHTS_NAME, temporary)
         shutil.copy2(instruction_path, temporary / "student_prompt.txt")
+        teacher_path, contract = evaluation_prompt(model, spec["common"], contract)
+        if teacher_path is not None:
+            shutil.copy2(teacher_path, temporary / "teacher_prompt.txt")
         write_json(temporary / "prompt_contract.json", contract)
         write_json(temporary / "training_summary.json", training_summary(spec))
 

@@ -1,5 +1,73 @@
 # Decision log
 
+## 2026-10-20 — Price Gleipnir release models at self-hosted B200 break-even
+
+- User decision: Gleipnir 4B v0.3 and Gleipnir 27B are priced at self-hosting
+  break-even, one B200 at `$7.99/h` at 100% utilization. The reference is
+  this benchmark's workload: measured optimized-serving wall time for all
+  6,395 OOD rows × hourly rate, per 1,000 rows.
+- Gleipnir 4B v0.3 costs `$0.0850/1K` (226K prompt tokens/s, `$0.0098/M`).
+  Gleipnir 27B costs `$0.3896/1K` (53.9K tokens/s under its teacher prompt,
+  `$0.0412/M`). The frontier becomes Gleipnir 4B, pplx-decider v1.2 and
+  Gleipnir 27B.
+- Other rows keep list prices or hosted proxies, which include provider
+  utilization and margin.
+- User decision (same day): each release model also gets a committed-GPU
+  row at `$3.44/h`, CoreWeave's published committed-use ceiling (60% off
+  $8.60), as an inference-provider estimate. The plot shows on-demand and
+  committed-GPU frontiers separately. Sources are under
+  [B200 hourly rate sources](research/tool_trajectory_inference_economics.md#b200-hourly-rate-sources).
+- For a per-token endpoint, throughput is flat to about 32K tokens and falls
+  beyond it (27B optimized: about 1.4× the per-token cost at 128K, 2.2× at
+  256K and 6× at 1M), so long contexts would need tiered pricing.
+
+## 2026-10-20 — Plot Gleipnir at optimized-serving performance; no QAD for the 27B
+
+- User decision: the frontier registry enters Gleipnir models at their
+  performance on the project's optimized serving stack, because project
+  serving prices will set their cost later. Until then the dated proxy cost
+  is kept.
+- Gleipnir 27B is entered at `0.9508` Mean-OOD pAUROC@20 (full teacher
+  prompt, `QuantFullWorker`, no QAD; BF16 `0.9352`). It now dominates Gemini
+  3.1 Pro and Claude Opus 4.6, and the frontier is pplx-decider v1.2 and
+  Gleipnir 27B. The gain is almost entirely SHADE-Arena, which is kept to
+  match the Sinha et al. benchmark format.
+- Gleipnir 27B needs no QAD: optimized serving costs it nothing measurable
+  (`−0.0025` under the student prompt, `+0.0156` under the teacher prompt).
+  QAD effort goes to Gleipnir 4B, which loses `0.0529` under optimized
+  serving ([optimized gap](../experiments/optimized_gap/README.md)).
+- Update, same day: Gleipnir 4B v0.3 (v0.2 plus QAD) is entered at its
+  optimized-serving score, `0.7703` (BF16 `0.8039`). QAD recovered 98% of the
+  ID loss but 23% of the OOD loss
+  ([QAD](../experiments/qad_v02/README.md)).
+
+## 2026-10-20 — Evaluate Gleipnir 27B under the full teacher prompt
+
+- User decision: by default, Gleipnir 27B is evaluated under the full teacher
+  prompt, not the compact student prompt it was trained on. This applies to
+  BF16 and optimized/QAD serving comparisons.
+- Evidence: under the teacher prompt the same checkpoint reaches 0.9420 CoT-removed
+  ID and 0.9352 Mean-OOD pAUROC@20, against 0.9216 and 0.9087 under the
+  student prompt. The prompt was chosen on ID
+  ([vocab distillation](../experiments/gleipnir27b_vocab_distillation/README.md)).
+  The frontier registry already enters the 27B this way.
+- Gleipnir 4B keeps its compact student prompt. Optimized-serving gaps for
+  the 27B are measured on the teacher-prompt workload
+  (`experiments/optimized_gap/teacher_workload.py`).
+
+## 2026-10-20 — Train Gleipnir 4B on tool-trajectory data only
+
+- User decision: Gleipnir 4B uses the same training data as Gleipnir 27B. That
+  is the strict-filtered tool-trajectory monitoring pool
+  (`data/teacher-disagreement-delta000-sdpa04`, 7,836 rows, Kimi K3 soft
+  targets), with none of the 13,149 deception rows (Aletheia's Quest, Liars
+  Bench). One recipe for both sizes is simpler to explain.
+- Rationale: the deception data's measured gains are within seed noise. At 9B
+  it gave +1.15 ID points and −0.15 OOD; at 4B, +0.61 OOD against a 4B OOD seed
+  SD of 1.8 points. Both are single seeds.
+- The released mixed-data Gleipnir 4B (`0.7823` Mean-OOD) stays a historical
+  measured point. Replacing the release is a separate step, selected on ID only.
+
 ## 2026-10-15 — Adopt the lean GDN host path with a strided gated norm
 
 - The FP8 default runs the [lean GDN prefill host path](../experiments/b200_gdn_fast/README.md)

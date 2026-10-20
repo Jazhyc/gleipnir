@@ -210,6 +210,85 @@ restores the runtime with the 2026-10-18 container caches and downloads the
 27B base to `/root/hf-27b` after `.venv` exists (about 3 minutes);
 `experiments/qwen38_27b_serving/remerge.py` rebuilds the merged checkpoint.
 
+On 2026-10-19 the user provided EU-RO-1 B200 Pod `hhja1i6l6de288`
+($7.99/hour, snapshot `.runpod/pplx-decider.json`) on machine
+`2mj1yzztlz17` (`GPU-58276fb0…`), same volume. At the user's request:
+- the container disk was resized from 50 to 300 GB (SSH port 24334);
+- it ran the [pplx-decider benchmark](findings/pplx_decider_ood_benchmark.md)
+  and the [auxiliary-target](../experiments/aux_supervision/README.md)
+  extraction.
+
+The template leaves `sshd` stopped after every restart, so the key and
+`sshd` are reinstalled through the proxy each time.
+
+At about 20:10 UTC the host restarted the container on its own. It came back
+with driver 595.91.07 (previously 580.126.20), and the GPU fabric stayed
+"In Progress". CUDA then failed with error 802, "system not yet
+initialized", and Runpod's UI flagged the GPU. At the user's request the Pod
+was terminated at about 20:40 UTC (delete 204, lookup 404). Before that, the
+failed training receipts were preserved on the volume and the logs pulled.
+No B200 was available in EU-RO-1 for an immediate replacement.
+
+Later on 2026-10-19 the user provided US-CA-2 B200 Pod `4kdptgfodt6yz2`
+($7.99/hour, snapshot `.runpod/aux-ca2.json`, machine `o66sz0zhpcp0`,
+`GPU-84d18db5…`, driver 595.91.07, fabric Completed). It has no network volume
+(a mount cannot be added after creation), so the EU volume was copied to its
+300 GB container disk at `/workspace`. That copy is lost on termination: pull
+results locally as they land. At the user's request the EU volume was read
+through a CPU Pod, `01yzkkdopzkfv1` (cpu3c, $0.24/hour, `.runpod/eu-transfer.json`),
+because EU-RO-1 had no GPU stock. At the user's request it was terminated after the copy was verified (delete 204, lookup 404), with its temporary transfer key revoked on both Pods; volume `cb7bxu71ug` is retained. Three duplicate CPU Pods created by a launch
+loop error were terminated within a minute (delete 204, lookup 404). The copy
+streams tar or rsync over SSH from Pod to Pod. Each EU-to-US stream is capped
+at roughly 12 MB/s, so total rate scales with the number of streams: 6 tar streams
+gave about 75 MB/s, and 12 rsync workers (one per directory) about 140 MB/s. It skipped the old
+`gleipnir-eu-20261004` checkout and `.cache/{uv,pplx_decider,qwen27b_generations_ood}`.
+
+At about 01:40 UTC on 2026-10-20 the container became unreachable: Runpod
+reported the Pod RUNNING with no runtime or ports, SSH timed out, and the UI
+flagged a host problem. The one-line auxiliary arm had just finished training
+(about step 232 of 245); its outputs were on the container disk only. The
+queued seed average had not started. At the user's request the Pod was then
+terminated (delete 204, lookup 404; no Pods remain). The one-line arm's
+trained adapter was lost with the container disk and must be retrained. Both
+volumes are retained (EU `cb7bxu71ug`, NC2 `ixbh81vf9c`).
+
+Later on 2026-10-20 the user provided an EU-NL-1 B300 Pod, `c2e3gj1pmm1jo2`
+($8.99/hour, snapshot `.runpod/seed-average-b300.json`, `GPU-02557ba6…`,
+sm_103, 275 GB, driver 595.91.07). It has no network volume. A 2-vCPU
+`ubuntu:24.04` CPU Pod on volume `cb7bxu71ug` copied a 45 GB working set to
+its container disk in about 3 minutes of transfer, at about 410 MB/s:
+- Files over 512 MB went as 256 MB byte ranges over 16 parallel SSH streams.
+- The vLLM environment's small files went through 16 parallel tar streams.
+- Sizes matched for all 79,588 entries, and SHA-256 for the 7 large files.
+
+The default PyTorch image never started on a 2-vCPU CPU Pod. Both CPU Pods
+were terminated afterwards, one by the user. The training and serving stack
+ran on sm_103 unchanged (FP32 reference, merge, vLLM 0.31 scoring).
+The optimized serving stacks did not: their workers reject kernel receipts
+validated on another GPU model (`last-query kernel receipt hardware changed`;
+see [optimized gap](../experiments/optimized_gap/README.md)). At the user's
+request the B300 was terminated at about 03:50 UTC (delete 204, lookup 404; no
+Pods remain). All artifacts were pulled first, with file sizes verified.
+
+Later on 2026-10-20 the user provided EU-RO-1 B200 Pod `lpjt8h7c2ccygh` on
+machine `2mj1yzztlz17` (`GPU-3d8d6bde…`, driver 595.91.07, AMD EPYC 9555;
+snapshot `.runpod/optimized-gap-eu.json`), on volume `cb7bxu71ug`. It ran:
+- the optimized-serving gap runs for both release candidates;
+- the Gleipnir 4B v0.2 QAD;
+- the 27B teacher-prompt ID and OOD runs.
+
+Two volume issues:
+- **Quota.** The volume hit its 200 GB quota during QAD packaging. The
+  campaign-layout copy moved to container disk, leaving about 4 GB free
+  ([QAD](../experiments/qad_v02/README.md)).
+- **Bound sources.** The volume checkout still has the bound pre-PATH-fix
+  `src/gleipnir/__init__.py` (`b6acfaad…`) that optimized serving requires;
+  the next code sync restores the repository version.
+
+At the user's request the Pod was terminated (delete 204, lookup 404; no
+Pods remain). Key artifacts were first verified locally by SHA-256. The
+volume is retained.
+
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;
 the [shutdown handoff](findings/qat_shutdown.md) records verified runtime/cache
