@@ -62,9 +62,10 @@ CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Other": "#B279A2"}
 CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
     "Paper": "Sinha et al.",
-    "Gleipnir": "Gleipnir",
+    "Gleipnir": "Gleipnir (ours)",
     "Other": "Decision monitors",
 }
+LEGEND_ORDER = ("Gleipnir", "Paper", "Other")
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
@@ -695,17 +696,25 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         loc="left",
         fontsize=20.5,
         fontweight="bold",
-        pad=23,
+        pad=46,
+    )
+    axis.text(
+        0.0,
+        1.052,
+        "Strict six-source OOD suite · lower cost and higher performance are better",
+        transform=axis.transAxes,
+        fontsize=12.5,
+        fontweight="bold",
+        color="#4B5563",
     )
     axis.text(
         0.0,
         1.015,
-        "Strict six-source OOD suite · lower cost and higher performance are better"
-        " · * committed-use GPU pricing (dashed frontier)",
+        "* Committed-use GPU pricing; the dashed line is its frontier",
         transform=axis.transAxes,
-        fontsize=11.5,
+        fontsize=12.5,
         fontweight="bold",
-        color="#4B5563",
+        color="#374151",
     )
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
@@ -725,7 +734,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markersize=10.5,
             label=CATEGORY_LABELS[category],
         )
-        for category, color in CATEGORY_PALETTE.items()
+        for category in LEGEND_ORDER
+        for color in [CATEGORY_PALETTE[category]]
     ]
     legend_handles.append(
         Line2D(
