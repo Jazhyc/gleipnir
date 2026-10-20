@@ -100,9 +100,8 @@ absolute score change 0.0255 (maximum 0.41), 108 threshold flips;
 **Reading.** The same FP8/FP4/MXFP8 recipe costs the 27B a quarter of a
 point and the 4B over five points. Most of the QAD headroom is in the 4B.
 The 27B's optimized stack already almost matches BF16 without QAD. The 4B's
-ID loss for this recipe was much smaller (−0.29 ID points was the 27B
-figure; the 4B ID gap was not rerun here). The 4B's OOD drift is
-concentrated in AgentDojo and SHADE-Arena.
+drift is concentrated in AgentDojo and SHADE-Arena. Its ID gap was not
+measured here.
 
 ### Findings while getting there
 
