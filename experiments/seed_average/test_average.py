@@ -37,6 +37,13 @@ def test_config_keeps_the_scaling() -> None:
         averaged_config([{"r": 128, "lora_alpha": 256, "use_dora": True}] * 3)
     with pytest.raises(ValueError):
         averaged_config([{"r": 128, "lora_alpha": 256}, {"r": 64, "lora_alpha": 256}])
+    reordered = [
+        {"r": 128, "lora_alpha": 256, "target_modules": ["q_proj", "k_proj"]},
+        {"r": 128, "lora_alpha": 256, "target_modules": ["k_proj", "q_proj"]},
+    ]
+    assert averaged_config(reordered)["r"] == 256
+    with pytest.raises(ValueError):
+        averaged_config([{"r": 128, "lora_alpha": 256, "rank_pattern": {"q": 8}}] * 2)
 
 
 def test_non_lora_tensors_are_rejected() -> None:

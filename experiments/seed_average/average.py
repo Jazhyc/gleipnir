@@ -39,11 +39,18 @@ def stack(tensors: list[dict[str, torch.Tensor]]) -> dict[str, torch.Tensor]:
 def averaged_config(configs: list[dict]) -> dict:
     base = configs[0]
     for config in configs[1:]:
-        for field in ("r", "lora_alpha", "target_modules", "use_rslora", "use_dora"):
+        for field in ("r", "lora_alpha", "use_rslora", "use_dora"):
             if config.get(field) != base.get(field):
                 raise ValueError(f"adapter config field differs: {field}")
+        # PEFT serializes the module set in arbitrary order.
+        if set(config.get("target_modules") or []) != set(
+            base.get("target_modules") or []
+        ):
+            raise ValueError("adapter config field differs: target_modules")
     if base.get("use_rslora") or base.get("use_dora"):
         raise ValueError("only plain LoRA scaling averages exactly")
+    if any(c.get("rank_pattern") or c.get("alpha_pattern") for c in configs):
+        raise ValueError("per-module rank/alpha overrides do not average exactly")
     count = len(configs)
     return {**base, "r": base["r"] * count, "lora_alpha": base["lora_alpha"] * count}
 
