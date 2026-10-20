@@ -743,15 +743,12 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
-    # The Sinha et al. entry shows its points and frontier together.
     legend_handles = [
         Line2D(
             [],
             [],
             marker=CATEGORY_MARKERS[category],
-            linestyle=(0, (1.5, 2.4)) if category == "Paper" else "none",
-            color=color,
-            linewidth=2.0,
+            linestyle="none",
             markerfacecolor=color,
             markeredgecolor="#374151",
             markeredgewidth=0.65,
@@ -762,8 +759,16 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         for color in [CATEGORY_PALETTE[category]]
     ]
     # The frontier entries form their own titled legend under the main one,
-    # so the legend explains the dashed line and the asterisks.
+    # ordered from the prior frontier to the new ones.
     frontier_handles = [
+        Line2D(
+            [],
+            [],
+            color=ORIGIN_PALETTE["Paper"],
+            linestyle=(0, (1.5, 2.4)),
+            linewidth=2.0,
+            label="Prior frontier (Sinha et al.)",
+        ),
         Line2D(
             [],
             [],
