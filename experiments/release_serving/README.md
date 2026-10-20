@@ -181,3 +181,19 @@ metrics move by about 0.001.
     warm caches; the 27B shows no warm-up effect.
   - **Decision:** a persistent compile-cache mount is optional, not
     needed.
+
+## Deferred image features (next B200 session)
+
+- **Opt-in prefix caching for synchronous monitoring** (user, 2026-10-20:
+  important for that use case, no imminent need).
+  - Expose the existing align-mode opt-in
+    ([decision](../../docs/decisions/prefix_cached_serving.md)) as an image
+    switch, with its looser startup canary (MAE ≤ 0.02, correlation ≥ 0.99).
+  - Evaluations stay uncached. The shared instruction prefix is only 2.8%
+    (4B) and 15.7% (27B) of an evaluation prompt, and cached scores drift
+    by 0.03–0.15.
+- **Optional persistent compile-cache mount**, mirroring
+  `GLEIPNIR_MODEL_CACHE`. It saves about a minute per start; throughput is
+  unaffected.
+
+Both change the image and need a short fresh-B200 check before release.
