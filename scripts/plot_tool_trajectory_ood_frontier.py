@@ -44,11 +44,14 @@ EXCLUDED_MONITORS = {
     "Qwen3.5-9B Kimi-soft mixed",
 }
 # Omitted from the main figure only (user, 2026-10-20); the full appendix
-# figure keeps them. Weaker siblings of decision models, early base-model
-# references without an improvement arrow, and Kimi K2.6 (the teacher is K3).
+# figure keeps them. Less prominent decision models (reported in the final
+# report's table instead), early base-model references without an improvement
+# arrow, and Kimi K2.6 (the teacher is K3).
 MAIN_FIGURE_OMISSIONS = {
     "Microsoft-Decision-1 native probabilities",
     "d1 native probabilities",
+    "Mercury Decide native probabilities",
+    "d1-ultra native probabilities",
     "Qwen3.5-9B base",
     "Qwen3.5-27B base",
     "Qwen3.5-35B-A3B base (mixed providers)",

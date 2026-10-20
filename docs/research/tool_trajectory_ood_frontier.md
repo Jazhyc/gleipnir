@@ -16,7 +16,8 @@ regenerated directly from the table below with
 
 The main figure is simplified (user decision, 2026-10-20). It drops:
 
-- weaker siblings of decision models (Microsoft-Decision-1, d1);
+- less prominent decision models (Mercury Decide, d1-ultra,
+  Microsoft-Decision-1, d1), which the final report covers in a table;
 - base models without an improvement arrow (Qwen3.5-9B, Qwen3.5-27B,
   Qwen3.5-35B-A3B);
 - Kimi K2.6 (the teacher is Kimi K3);
