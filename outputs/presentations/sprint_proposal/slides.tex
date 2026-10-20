@@ -1,20 +1,4 @@
-% Short sprint pitch: problem, approach, frontier, cost, sprint avenues, feedback.
-
-\begin{frame}{The problem: monitoring imposes a safety tax}
-    \begin{itemize}
-        \item Agent harnesses now score each action with a monitor \emph{before} it executes.
-        \item This puts the monitor on the critical path: its latency adds to every action
-              and its compute scales with the deployment.
-        \item Frontier models monitor well, but they are too slow and expensive to run on
-              every action.
-    \end{itemize}
-    \bigskip
-
-    \begin{block}{Goal}
-        Small, open-weight monitors with frontier-level quality that are cheap enough
-        to run on every action and open enough for anyone to study and modify.
-    \end{block}
-\end{frame}
+% Short sprint pitch: approach, frontier, cost, sprint avenues, feedback.
 
 \begin{frame}{Core idea: ask for one decision and distill its logits}
     \begin{columns}[T,onlytextwidth]
