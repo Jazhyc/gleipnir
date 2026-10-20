@@ -1,6 +1,6 @@
 # Gleipnir Sprint Proposal
 
-Author: Jeremias Ferrao.
+Authors: Jeremias Ferrao and Abhinav Kumar.
 
 Short, self-contained Beamer pitch (eight slides) for the two-week sprint. It updates the
 [written proposal](../../reports/sprint_proposal/): both monitors are now
