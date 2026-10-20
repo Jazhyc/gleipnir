@@ -196,3 +196,22 @@ The arm **does not advance**: it is worse than the seed-matched control
 - **Attribution.** The prompt and the loss changed together, so this seed
   cannot say which hurt. Earlier failed attempts are preserved under
   `*_failed_adaptive_canary01` and `*_failed_gpu_fabric02`.
+
+### Auxiliary fit (`diagnose_aux_kl.py`)
+
+Scored on 256 training rows (128 per label, seed 0) with the exact training
+tokenization and `topk_tail_kl`. The rows were seen once in training, so
+this measures fit, not generalization. Hybrid layers ran on the torch
+fallback, not FLA. Receipt: `results/aux_supervision/kl_diagnostic.json`.
+
+| | Initial adapter | Trained |
+|---|---:|---:|
+| Auxiliary KL (row mean; minimum 0) | 1.143 | 0.206 |
+| As a loss term (×0.1) | 0.114 | 0.021 |
+| Position: KL / top-1 agreement | 0.533 / 85.8% | 0.066 / 94.8% |
+| Reason: KL / top-1 agreement | 1.263 / 60.7% | 0.274 / 82.3% |
+| Teacher entropy, Position / Reason (cross-entropy floor) | 0.213 / 0.785 | same |
+
+The student fits the targets well: the KL falls 82%, and the Position copy
+is close to the teacher's. The run's mean combined training loss was 0.2176,
+against 0.1884 for the control's decision loss alone.
