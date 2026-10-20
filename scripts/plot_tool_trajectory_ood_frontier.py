@@ -507,7 +507,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="Combined frontier",
+            label="Current frontier",
         )
     )
     legend_handles.append(
