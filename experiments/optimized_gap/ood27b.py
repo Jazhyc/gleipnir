@@ -36,7 +36,14 @@ PROMPTS = {
         None,
         "results/optimized_gap/bf16_teacher_ood.jsonl",
     ),
+    # CoT-removed ID under the teacher prompt, for offline cascade tuning.
+    "teacher_id": (
+        ROOT / "data/optimized_gap/teacher_id_workload.jsonl",
+        None,
+        "results/optimized_gap/bf16_teacher_id.jsonl",
+    ),
 }
+SPLIT = {"student": "ood", "teacher": "ood", "teacher_id": "id"}
 
 
 def sources() -> dict[str, str]:
@@ -85,9 +92,12 @@ def main() -> None:
         bf16_launch.stop(process)
     if sorted(r["id"] for r in rows) != sorted(r["id"] for r in workload):
         raise ValueError("incomplete OOD coverage")
-    write_rows(out / "ood.jsonl", [{"id": r["id"], "score": r["score"]} for r in rows])
-    path = str((out / "ood.jsonl").relative_to(ROOT))
-    condition, reference = load(path, "ood"), load(bf16, "ood")
+    split = SPLIT[args.prompt]
+    write_rows(
+        out / f"{split}.jsonl", [{"id": r["id"], "score": r["score"]} for r in rows]
+    )
+    path = str((out / f"{split}.jsonl").relative_to(ROOT))
+    condition, reference = load(path, split), load(bf16, split)
     by_id = {r["id"]: r for r in condition}
     condition = [by_id[r["id"]] for r in reference]
     report = {
