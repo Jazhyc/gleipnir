@@ -274,8 +274,8 @@ docker run --gpus all -p 8000:8000 \
 
 The first start downloads the BF16 checkpoint (8.8 GB) and
 is ready after about two and a half minutes (139 s including the download on a fresh B200); the mounted cache keeps the
-download across restarts. Do not mount a volume over `/tmp`, which holds the
-pinned runtimes. Send the fully rendered prompt, built exactly as in the
+download across restarts. Do not mount volumes over `/tmp` or `/workspace`, which
+hold the pinned runtimes and code (on Runpod, attach volumes elsewhere). Send the fully rendered prompt, built exactly as in the
 Python example and ending in `Prediction:`:
 
 ```bash
