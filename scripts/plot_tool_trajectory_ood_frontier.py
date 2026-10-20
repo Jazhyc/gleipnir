@@ -773,7 +773,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgecolor="#111827",
             linewidth=2.5,
             markersize=10.5,
-            label="On-demand GPUs",
+            label="Self-hosted at on-demand GPU rates",
         ),
         Line2D(
             [],
@@ -786,7 +786,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markeredgewidth=2.0,
             linewidth=2.2,
             markersize=10.5,
-            label="Committed GPUs*",
+            label="Self-hosted at committed GPU rates*",
         ),
     ]
     legend_style = {
