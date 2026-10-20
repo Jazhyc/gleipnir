@@ -85,14 +85,18 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 | --- | --- | --- | ---: | ---: | :---: |
 | **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0366** | **0.7703** | **yes** |
 | **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0850** | **0.7703** | **yes** |
+| **Gleipnir** | **d1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1653** | **0.6742** | **no** |
 | **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1677** | **0.9508** | **yes** |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
+| **Gleipnir** | **Mercury Decide native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1811** | **0.8828** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
+| **Gleipnir** | **d1-ultra native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3472** | **0.8929** | **no** |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
+| **Gleipnir** | **Microsoft-Decision-1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.7506** | **no** |
 | **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.3896** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
@@ -140,6 +144,7 @@ and
 and [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
 and [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
 and [`pplx_decider_ood_benchmark.md`](../findings/pplx_decider_ood_benchmark.md)
+and [`decision_models_ood_benchmark.md`](../findings/decision_models_ood_benchmark.md)
 audits, the completed
 [`tool_trajectory_distillation_ood_scaling.md`](tool_trajectory_distillation_ood_scaling.md)
 record, and the exact accounting in
@@ -580,6 +585,21 @@ Qwen3.5-4B (`0.6175`). See the
 [finding](../findings/pplx_decider_ood_benchmark.md) for identities,
 fast-path qualifications and the Flash teacher-specification arm.
 
+## Hosted decision models (no frontier movement)
+
+Four more Decisions API models were scored on the Jev requests (2026-10-20),
+each pinned to its provider, at list price:
+
+| Model | Mean-OOD pAUROC@20 | $/1K | Dominated by |
+|---|---:|---:|---|
+| d1-ultra | 0.8929 | 0.3472 | pplx-decider v1.2 |
+| Mercury Decide | 0.8828 | 0.1811 | pplx-decider v1.2 |
+| Microsoft-Decision-1 | 0.7506 | 0.3887 | Jev 1.13 |
+| d1 | 0.6742 | 0.1653 | Gleipnir 4B v0.3 |
+
+None reaches either frontier. All are weakest on SHADE-Arena (0.43–0.56).
+See the [finding](../findings/decision_models_ood_benchmark.md).
+
 ## Kimi K2.6 Inceptron frontier movement
 
 The full-specification Kimi K2.6 binary-logit monitor reaches `0.9194`
@@ -700,6 +720,7 @@ historical models, rather than the required three-paired-seed aggregate.
 - [`openai_luna_ood_benchmark.md`](../findings/openai_luna_ood_benchmark.md)
 - [`tool_trajectory_jev_ood_benchmark.md`](../findings/tool_trajectory_jev_ood_benchmark.md)
 - [`pplx_decider_ood_benchmark.md`](../findings/pplx_decider_ood_benchmark.md)
+- [`decision_models_ood_benchmark.md`](../findings/decision_models_ood_benchmark.md)
 - [pplx-decider-v1.2 model card](https://huggingface.co/perplexity-ai/pplx-decider-v1.2)
 - [OpenRouter pplx-decider-v1.2 listing](https://openrouter.ai/perplexity/pplx-decider-v1.2)
 - [`tool_trajectory_qwen_ood_benchmark.md`](../findings/tool_trajectory_qwen_ood_benchmark.md)

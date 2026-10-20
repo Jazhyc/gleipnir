@@ -62,9 +62,9 @@ PAPER_COMPARISON_MONITORS = {
 }
 MANUAL_COMPARISON_LABELS = {
     "Jev 1.13 native probabilities": {
-        "xytext": (0, 18),
+        "xytext": (0, -14),
         "ha": "center",
-        "va": "bottom",
+        "va": "top",
     },
     "GPT-6 Luna binary logprobs": {
         "xytext": (-5, 8),
@@ -82,6 +82,29 @@ MANUAL_COMPARISON_LABELS = {
         "xytext": (-8, 12),
         "ha": "right",
         "va": "bottom",
+    },
+    # Decider and Mercury Decide sit close together: Decider above-left,
+    # inside the committed frontier; Mercury Decide below-right.
+    "pplx-decider v1.2 native readout": {
+        "xytext": (-8, 8),
+        "ha": "right",
+        "va": "bottom",
+    },
+    "Mercury Decide native probabilities": {
+        "xytext": (4, -14),
+        "ha": "left",
+        "va": "top",
+    },
+    "d1-ultra native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    # Left of its point, clear of the improvement arrow from the base 4B.
+    "d1 native probabilities": {
+        "xytext": (-10, 0),
+        "ha": "right",
+        "va": "center",
     },
     # Above its point, clear of the improvement arrow from the base 4B.
     "Qwen3.5-4B Kimi-soft strict seed average": {
@@ -246,6 +269,10 @@ def _display_label(monitor: str) -> str:
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
         "pplx-decider v1.2 native readout": "Decider v1.2",
+        "Mercury Decide native probabilities": "Mercury Decide",
+        "d1-ultra native probabilities": "d1-ultra",
+        "d1 native probabilities": "d1",
+        "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
         "Claude Opus 4.6 prompted": "Claude Opus 4.6",

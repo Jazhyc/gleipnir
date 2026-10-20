@@ -57,3 +57,10 @@ python -m experiments.decision_models_ood.run run <model> full
 
 Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`.
 Outputs go to `results/decision_models_ood/<model>/<phase>/`.
+
+## Result
+
+All four runs completed with no rejections. None reaches the frontier:
+d1-ultra 0.8929 ($0.3472/1K), Mercury Decide 0.8828 ($0.1811/1K),
+Microsoft-Decision-1 0.7506 ($0.3887/1K), d1 0.6742 ($0.1653/1K). See
+[the finding](../../docs/findings/decision_models_ood_benchmark.md).
