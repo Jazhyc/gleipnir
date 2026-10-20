@@ -198,6 +198,8 @@ MANUAL_COMPARISON_LABELS = {
 # Cost-saving callout: an arrow from the strongest paper monitor to the
 # on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
 COST_CALLOUT = ("Gemini 3.1 Pro prompted", "Qwen3.8-27B Kimi-soft strict")
+# Fraction along each base-to-Gleipnir arrow where its label sits.
+DISTILLATION_LABEL_POSITION = 0.6
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -509,6 +511,39 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             },
             zorder=2,
         )
+        # Inline label along the arrow, past its midpoint so it clears d1 in
+        # the full figure. The tangent of a straight segment on log-x axes, in
+        # data units at x, is (x * ln(x1 / x0), y1 - y0); the transform
+        # rotates it to display.
+        x0, x1 = base["cost_per_1k"], method["cost_per_1k"]
+        y0, y1 = base["mean_ood_pauroc_at_20"], method["mean_ood_pauroc_at_20"]
+        x_mid = x0 * (x1 / x0) ** DISTILLATION_LABEL_POSITION
+        y_mid = y0 + DISTILLATION_LABEL_POSITION * (y1 - y0)
+        angle = np.degrees(np.arctan2(y1 - y0, x_mid * np.log(x1 / x0)))
+        if angle > 90:
+            angle -= 180
+        elif angle < -90:
+            angle += 180
+        axis.text(
+            x_mid,
+            y_mid,
+            "soft distillation",
+            rotation=angle,
+            transform_rotates_text=True,
+            rotation_mode="anchor",
+            fontsize=10.5,
+            fontweight="bold",
+            color=ORIGIN_PALETTE["Gleipnir"],
+            ha="center",
+            va="center",
+            bbox={
+                "boxstyle": "round,pad=0.15",
+                "facecolor": "white",
+                "edgecolor": "none",
+                "alpha": 0.9,
+            },
+            zorder=2.5,
+        )
 
     _draw_cost_callout(axis, frame)
 
@@ -714,16 +749,6 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             linewidth=2.2,
             markersize=10.5,
             label="Frontier, Gleipnir* committed GPUs",
-        )
-    )
-    legend_handles.append(
-        Line2D(
-            [],
-            [],
-            color=ORIGIN_PALETTE["Gleipnir"],
-            linestyle=(0, (3, 2)),
-            linewidth=2.0,
-            label="Soft distillation, base → Gleipnir",
         )
     )
     legend_handles.append(
