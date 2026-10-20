@@ -38,6 +38,16 @@ Gleipnir 9B is a research monitor for detecting deception, scheming, and other
 control-relevant problematic behavior in visible AI-agent trajectories. It is
 a rank-128 LoRA adapter for `Qwen/Qwen3.5-9B`, not a standalone model.
 
+> **Superseded by [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B)
+> (v0.2).** Gleipnir 9B is kept as a research artifact. Gleipnir 4B v0.2
+> performs similarly on the same OOD suite (Mean-OOD pAUROC@20 0.8108 against
+> 0.8212, AUROC 0.9199 against 0.9215) at under a third of the inference
+> cost ($0.26 against $0.87 per 1,000 evaluations in the project's dated
+> hosted-inference proxy). The 1-point pAUROC difference is within the
+> project's 1.8-point seed-to-seed spread. Use Gleipnir 4B for a low-cost
+> monitor, or [Gleipnir 27B](https://huggingface.co/Jazhyc/Gleipnir-27B) for
+> the highest quality.
+
 This release is an early research artifact intended for reproducibility and
 follow-up work. There is not yet a Gleipnir paper or blog post. It should not be
 treated as a production safety system or as evidence that an interaction is
@@ -62,21 +72,23 @@ envelope is recorded in `prompt_contract.json`.
 
 ## Results
 
-Both released Gleipnir adapters were evaluated once on the same frozen 6,395-row
+The released Gleipnir adapters were evaluated once on the same frozen 6,395-row
 strict-OOD suite spanning AgentDojo, CUA-SHADE, IaC, MLE-Sabotage, Rogue Eval,
 and SHADE-Arena. The primary metric is the unweighted mean across sources of raw
 normalized partial AUROC through 20% false-positive rate.
 
 | Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Pooled pAUROC@20 | Pooled AUROC |
 | --- | ---: | ---: | ---: | ---: |
-| Gleipnir 4B | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
+| Gleipnir 4B v0.2 | 0.8108 | 0.9199 | 0.7514 | 0.9335 |
+| Gleipnir 4B v0.1 | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
 | **Gleipnir 9B** | **0.8212** | **0.9215** | **0.7837** | **0.9355** |
+| Gleipnir 27B (full teacher prompt) | 0.9352 | 0.9790 | 0.9486 | 0.9810 |
 
-Gleipnir 9B leads Gleipnir 4B by 0.0388 Mean-OOD pAUROC@20 and 0.0130
-Mean-OOD AUROC. In the project's dated hosted-inference proxy it costs about
-three times as much, so the 4B release remains a strong lower-cost point. These
-are single-seed point estimates, and the hosted-cost comparison is not a stable
-price quote.
+Gleipnir 9B led the original Gleipnir 4B (v0.1) by 0.0388 Mean-OOD pAUROC@20.
+Against Gleipnir 4B v0.2 (the exact average of three seeds trained on tool
+trajectories only), its lead is 0.0104 pAUROC@20 and 0.0016 AUROC, within
+seed noise, at about 3.3 times the hosted-inference cost. The 9B is a single
+seed. The hosted-cost comparison is not a stable price quote.
 
 Adding 13,149 prior deception examples to the 8,688 matched tool-trajectory
 examples was macro-neutral relative to the matched-only 9B adapter: Mean-OOD

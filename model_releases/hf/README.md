@@ -71,3 +71,7 @@ are unchanged:
 - **Gleipnir 4B**'s comparison row for the 27B now shows those numbers.
   Commit `c20114a1`; 10 files verified. `v0.2` still points to the release
   commit.
+- **Gleipnir 9B** is marked superseded by Gleipnir 4B v0.2 (user request):
+  similar OOD quality (0.8212 against 0.8108 pAUROC@20, within seed noise) at
+  about 3.3 times the hosted cost. It is kept as a research artifact, and its
+  comparison table is refreshed. Commit `9c4c246e`; 10 files verified.
