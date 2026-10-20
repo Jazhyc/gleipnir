@@ -6,7 +6,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). The phase-1 r
 
 ## Running
 
-Nothing. Both GPUs are paused (A100 `541258`, H100 VM `541259`).
+Nothing. The H100 VM is paused (`541309`); the A100 was deleted on 20 October.
 
 ## Next, in order
 
@@ -29,6 +29,7 @@ Nothing. Both GPUs are paused (A100 `541258`, H100 VM `541259`).
 
 ## Done
 
+- **Lab v0.3 follow-up** (20 October): placement, rewordings, benign notes, and one-machine thresholds. A monitor-directed misconduct claim flags 43–78% of innocent readers across wordings and both placements, while a benign note flags none. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **Lab v0.3, Runs 0–2 plus the drift check** (20 October). There are almost no false alarms on natural lab behaviour, and 0 of 10 liars are flagged, though they rank well. One monitor-directed peer post gets 69% of honest readers flagged at 1%. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **4B v0.1 baseline.** It reproduces the card, and injected text backfires: [baseline](../../experiments/adversarial_baseline_4b/README.md).
 - **Phase-1 attacks on v0.1:** A1 discrimination, A2 cover comments (low and high effort), A3 random search, A4 score feedback, A6 transfer.
