@@ -720,6 +720,16 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         Line2D(
             [],
             [],
+            color=ORIGIN_PALETTE["Gleipnir"],
+            linestyle=(0, (3, 2)),
+            linewidth=2.0,
+            label="Soft distillation, base → Gleipnir",
+        )
+    )
+    legend_handles.append(
+        Line2D(
+            [],
+            [],
             color=ORIGIN_PALETTE["Paper"],
             linestyle=(0, (1.5, 2.4)),
             linewidth=2.0,
