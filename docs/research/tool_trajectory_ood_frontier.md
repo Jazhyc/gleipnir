@@ -57,20 +57,29 @@ the full benchmark; see the
 
 ## Reference table
 
+Gleipnir release models (Gleipnir 4B v0.3 and Gleipnir 27B) are priced at
+self-hosted break-even (user decision, 2026-10-20): one B200 at `$7.99/h`,
+100% utilized, on this benchmark's workload. The cost is the measured
+optimized-serving wall time for all 6,395 rows, times the hourly rate, per
+1,000 rows. Other rows keep their list prices or hosted proxies, so the
+comparison mixes self-hosted cost with provider prices that include
+utilization and margin.
+
 Rows are ordered by cost. `Frontier` is point-estimate nondominance after adding
 all Gleipnir rows currently in this file: no other row is both no more expensive
 and at least as accurate, with one strict improvement.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted B200 break-even** | **0.0850** | **0.7703** | **yes** |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving** | **0.2598** | **0.7703** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, low analysis then `0\|1` logits** | **0.3442** | **0.5578** | **no** |
 | Paper | GPT-OSS-20B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.347 | 0.656 | no |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted B200 break-even** | **0.3896** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
@@ -85,7 +94,6 @@ and at least as accurate, with one strict improvement.
 | Paper | Nemotron-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 1.251 | 0.780 | no |
 | **Gleipnir** | **Qwen3.5-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8395** | **no** |
 | **Gleipnir** | **Qwen3.8-27B base** | **Full binary specification, immediate `0\|1` logits** | **1.8476** | **0.8901** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving** | **1.8476** | **0.9508** | **yes** |
 | Paper | Qwen3.5-27B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 2.775 | 0.831 | no |
 | Paper | GPT-5.4 nano prompted | Full specification, generated rationale + 0--10 score | 3.387 | 0.752 | no |
 | Paper | Gemini 3.1 Flash-Lite prompted | Full specification, generated rationale + 0--10 score | 4.157 | 0.815 | no |
@@ -145,13 +153,15 @@ plotted at its optimized-serving score (user decision, 2026-10-20):
   on the B200 (226K against 120K prompt tokens/s on this workload).
 - **Selection.** The seed average was selected by a frozen ID-only rule, and
   OOD was never used for selection.
-- **Cost.** The compact student prompt is unchanged at 8,654.7113 mean input
-  tokens over the same frozen rows. At the paper's `$0.03/M` input and
-  `$0.15/M` output 4B proxy it costs `$0.2598/1K`, kept until project
-  serving prices are set.
-- **Frontier.** pplx-decider v1.2 (below) dominates it. It dominates the
-  unadapted 4B full-prompt baseline: it is 8.6% cheaper and improves
-  pAUROC@20 by `0.1528`.
+- **Cost.** It is priced at self-hosted break-even: one B200 at `$7.99/h`,
+  fully utilized, scored the full benchmark workload (55,346,879 prompt
+  tokens) through optimized serving in 244.9 s, which is `$0.0850/1K`
+  (`$0.0098/M` tokens). The earlier hosted proxy, the paper's `$0.03/M` input
+  and `$0.15/M` output 4B rate, gave `$0.2598/1K`.
+- **Frontier.** It is the lowest-cost frontier point. pplx-decider v1.2 is
+  above it at about twice the cost. It dominates the unadapted 4B
+  full-prompt baseline: about 30% of the cost, and pAUROC@20 higher by
+  `0.1528`.
 
 It replaced the v0.1 point, the full-mixed adapter trained with 13,149
 deception rows (`0.7823` Mean-OOD pAUROC@20, `0.9086` AUROC, same cost). The
@@ -241,7 +251,7 @@ At the 2026-08-31 OpenRouter headline `$0.03/$0.17` route it costs
 | Higher-priced route (`$0.15/$0.60`) | 1.256425 | 0.058593 | **1.315018** | no |
 
 At every listed rate the Gleipnir 4B student strictly dominates this
-point: it costs `$0.2598/1K` and reaches `0.7703` (optimized serving). The GPT-OSS result remains
+point: it costs `$0.0850/1K` and reaches `0.7703` (optimized serving). The GPT-OSS result remains
 useful evidence that reasoning helps that model family, not an operational
 efficiency win.
 
@@ -266,7 +276,7 @@ Mean-OOD AUROC using the full teacher prompt and terminal binary logprobs.
 Darkbloom FP4 served 4,545 rows before a throughput-driven handoff to Parasail
 FP8 for the remaining 1,850. The uncached list-price cost is `$0.9896/1K`
 using the actual token totals and each provider's frozen rate. This point is
-dominated by the lower-cost Gleipnir 4B student (`0.7703` at `$0.2598/1K`), and
+dominated by the lower-cost Gleipnir 4B student (`0.7703` at `$0.0850/1K`), and
 falls below the dense Qwen3.5-27B base (`0.8395` at `$1.8476/1K`).
 
 The handoff follows source order: Parasail scored all 850 SHADE-Arena rows and
@@ -350,9 +360,11 @@ dated proxy until project serving prices are set.
 The prompt was chosen on CoT-removed ID (0.9420 vs. 0.9216 under the compact student
 prompt it was trained on), not on OOD. The workload renders byte-identically
 to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
-output token), so at the shared 27B proxy (`$0.195/M` input, `$1.56/M`
-output) it costs `$1.8476/1K`. Training cost is excluded under the registry
-contract.
+output token). It is priced at self-hosted break-even: one B200 at `$7.99/h`,
+fully utilized, scored this workload through optimized serving in 1,122.6 s,
+which is `$0.3896/1K` (`$0.0412/M` tokens). The shared 27B hosted proxy
+(`$0.195/M` input, `$1.56/M` output) gave `$1.8476/1K`. Training cost is
+excluded under the registry contract.
 
 This row replaces the campaign's compact-student-prompt entry (`0.9087`
 Mean-OOD pAUROC@20, `0.9679` AUROC, `$1.6892/1K`;
@@ -360,13 +372,13 @@ Mean-OOD pAUROC@20, `0.9679` AUROC, `$1.6892/1K`;
 SHADE-Arena (`0.7298` vs. `0.5875`); the other five sources move by at most
 `0.011`.
 
-At equal cost it dominates the unadapted Qwen3.8-27B (`0.8901`) by `0.0607`
-(`0.0451` for the BF16 score).
+It dominates the unadapted Qwen3.8-27B, which is still at the hosted proxy
+(`0.8901` at `$1.8476/1K`): `0.0607` higher (`0.0451` for the BF16 score).
 It also dominates Kimi K2.6 (`0.9194` at `$7.9110/1K`) and Claude Sonnet 4.6
 (`0.929` at `$58.850/1K`), which leave the frontier, and Kimi K3 (`0.9084`).
 At its optimized-serving score it is the highest-scoring row and also
 dominates Gemini 3.1 Pro (`0.940` at `$73.218/1K`) and Claude Opus 4.6
-(`0.942` at `$94.794/1K`), which leave the frontier. They cost about 40–51
+(`0.942` at `$94.794/1K`), which leave the frontier. They cost about 190–240
 times as much. At the BF16 score (`0.9352`) both would remain above it. One seed; the 4B students' OOD seed SD is 1.8 points, and
 SHADE-Arena is dominated by one task
 ([length audit](../findings/shade_length_audit.md)).
@@ -508,10 +520,12 @@ price of the `-20261016` endpoint (`$0.02/M` input, no output charge, no
 caching) give **`$0.176261/1K`**. The hosted endpoint's serving and billing
 are not observed.
 
-It becomes the lowest-cost frontier point. It dominates Gleipnir 4B
-(`0.7703` at `$0.2598/1K` for v0.3 under optimized serving; v0.1 scored `0.7823`) and Jev 1.13 (`0.8495` at `$0.3887/1K`), and it
-beats Jev on all six sources on identical requests. The next frontier point
-is Gleipnir 27B (`0.9508` at `$1.8476/1K`, optimized serving; `0.9352` BF16). SHADE-Arena stays weakest at
+It is a frontier point between the two self-hosted Gleipnir models: above
+Gleipnir 4B v0.3 (`0.7703` at `$0.0850/1K`) at about twice its cost, and below
+Gleipnir 27B (`0.9508` at `$0.3896/1K`). It dominates Jev 1.13 (`0.8495` at
+`$0.3887/1K`) and beats it on all six sources on identical requests. Its cost
+is a hosted list price, while the Gleipnir rows are self-hosted break-even
+at full utilization. SHADE-Arena stays weakest at
 `0.6054`.
 
 The 4B sibling `pplx-decider-flash-v1.2` scores `0.5350` at `$0.0881/1K`.

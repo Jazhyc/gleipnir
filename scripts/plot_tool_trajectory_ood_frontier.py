@@ -281,7 +281,7 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
-    axis.set_xticks([0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
+    axis.set_xticks([0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
