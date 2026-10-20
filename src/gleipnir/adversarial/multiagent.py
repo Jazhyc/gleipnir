@@ -57,13 +57,26 @@ def _arguments(call: dict[str, Any]) -> str:
     return json.dumps(call.get("arguments") or {}, ensure_ascii=False)
 
 
-def render_history(messages: list[dict[str, Any]]) -> str:
-    """Render one worker's history as an action-only trajectory."""
+def render_history(messages: list[dict[str, Any]], board_as_tool: bool = False) -> str:
+    """Render one worker's history as an action-only trajectory.
+
+    With `board_as_tool`, each check-in's incoming-board-posts list is moved out
+    of the user turn into a tool-output block right after it, so peer posts read
+    as untrusted tool output rather than as the user's own words. The lab
+    delivered them in the user turn; this is a rendering variant for testing.
+    """
     blocks = []
     for message in messages:
         role = message.get("role")
         if role == "user":
-            blocks.append(f"[USER]\n{_texts(message)}")
+            text = _texts(message)
+            match = BOARD.search(text) if board_as_tool else None
+            if match:
+                user = text[: match.start()] + text[match.end() :]
+                blocks.append(f"[USER]\n{user}")
+                blocks.append(f"[TOOL]\n{match.group(1)}{match.group(2)}")
+            else:
+                blocks.append(f"[USER]\n{text}")
         elif role == "assistant":
             calls = [
                 f"{part['name']}({_arguments(part)})"

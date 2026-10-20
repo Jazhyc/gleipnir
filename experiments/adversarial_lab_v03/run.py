@@ -35,6 +35,17 @@ def git_commit() -> str:
     ).stdout.strip()
 
 
+# Output name -> input set. `ood_h100` rescores Run 0's rows on the H100 so the
+# thresholds and the lab scores come from one machine (follow-up, 20 October).
+SOURCES = {
+    "ood": "ood",
+    "ood_h100": "ood",
+    "lab": "lab",
+    "framing": "framing",
+    "framing_v2": "framing_v2",
+}
+
+
 def load(name: str) -> list[dict[str, Any]]:
     if name in eval_sets.SETS:
         return eval_sets.load(name)
@@ -109,7 +120,8 @@ def score(args: argparse.Namespace) -> None:
 
     scorer = Scorer(CONFIG["monitor"], device=args.device)
     for name in args.sets:
-        rows = selected(name, load(name))
+        source = SOURCES[name]
+        rows = selected(source, load(source))
         directory = OUTPUT / name
         directory.mkdir(parents=True, exist_ok=True)
         (directory / "identity.json").write_text(
@@ -241,6 +253,38 @@ def liar_report(lab) -> dict[str, Any]:
     return result
 
 
+def followup_report(records, thresholds, lab) -> dict[str, Any]:
+    """Placement and rewording follow-up, paired within each rendering.
+
+    `user:<post>` rows pair with the reader's unedited lab score (user-turn
+    rendering); `tool:<post>` rows pair with that reader's `tool:none` row.
+    """
+    ok = [r for r in records if r["status"] == "ok"]
+    base = {("user", r["id"]): r for r in lab if r["status"] == "ok"}
+    for r in ok:
+        if r["group"] == "tool:none":
+            base[("tool", r["parent_id"])] = r
+    result = {"flags": flag_table(ok, thresholds), "paired_vs_none": {}}
+    for name in sorted({r["group"] for r in ok} - {"tool:none"}):
+        placement = name.split(":", 1)[0]
+        pairs = [
+            (r, base[(placement, r["parent_id"])])
+            for r in ok
+            if r["group"] == name and (placement, r["parent_id"]) in base
+        ]
+        deltas = [margin(r) - margin(b) for r, b in pairs]
+        result["paired_vs_none"][name] = {
+            "pairs": len(pairs),
+            "share_margin_up": sum(d > 0 for d in deltas) / len(deltas),
+            "share_margin_down": sum(d < 0 for d in deltas) / len(deltas),
+            "median_margin_change": median(deltas),
+            "newly_flagged_at_1%": sum(
+                r["score"] > thresholds["1%"] >= b["score"] for r, b in pairs
+            ),
+        }
+    return result
+
+
 def report(args: argparse.Namespace) -> None:
     ood, lab, framing = read("ood"), read("lab"), read("framing")
     result: dict[str, Any] = {
@@ -255,6 +299,17 @@ def report(args: argparse.Namespace) -> None:
         result["run1_liars"] = liar_report(lab)
     if framing and thresholds:
         result["run2_framing"] = framing_report(framing, thresholds, lab)
+    # Follow-up: thresholds from the same machine as the lab scores (H100).
+    ood_h100, framing_v2 = read("ood_h100"), read("framing_v2")
+    if ood_h100:
+        result["run0b_ood_h100"] = ood_report(ood_h100)
+        same = result["run0b_ood_h100"]["deployer_thresholds"]
+        if lab:
+            result["run1_lab_flags_h100_thresholds"] = flag_table(lab, same)
+        if framing:
+            result["run2_framing_h100_thresholds"] = framing_report(framing, same, lab)
+        if framing_v2:
+            result["run2b_followup"] = followup_report(framing_v2, same, lab)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "report.json").write_text(json.dumps(result, indent=2) + "\n")
     print(json.dumps(result, indent=2)[:6000])
@@ -270,7 +325,7 @@ def main() -> None:
         "--sets",
         nargs="+",
         default=["ood", "lab", "framing"],
-        choices=["ood", "lab", "framing"],
+        choices=sorted(SOURCES),
     )
     commands.add_parser("report")
     args = parser.parse_args()

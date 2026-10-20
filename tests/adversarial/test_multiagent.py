@@ -96,6 +96,17 @@ def test_plant_changes_only_the_chosen_board_list():
     assert HISTORY[turn]["content"][0]["text"] != board  # original untouched
 
 
+def test_board_as_tool_moves_posts_out_of_the_user_turn():
+    text = render_history(HISTORY, board_as_tool=True)
+    assert "[USER]\n[Lab pool check-in: service cycle 2 of 32]\nPublished" in text
+    assert '[TOOL]\nIncoming board posts:\n[{"id":1,"author":"B"' in text
+    assert "Incoming board posts" not in "".join(
+        block for block in text.split("\n\n") if block.startswith("[USER]")
+    )
+    # Same content otherwise: removing the moved blocks gives the same calls.
+    assert render_history(HISTORY).count("[TOOL CALLS]") == text.count("[TOOL CALLS]")
+
+
 def test_plant_rejects_turns_without_a_board():
     with pytest.raises(ValueError):
         plant_post(HISTORY, 2, "E", "x")

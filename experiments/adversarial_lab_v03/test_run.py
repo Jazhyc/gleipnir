@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from experiments.adversarial_lab_v03.run import (
     flag_table,
+    followup_report,
     framing_report,
     selected,
 )
@@ -63,3 +64,16 @@ def test_run0_keeps_honest_rows_and_parity_sources_only():
     assert [r["metadata"]["condition"] for r in selected("framing", framing)] == [
         "peer_accusation"
     ]
+
+
+def test_followup_pairs_within_each_rendering():
+    lab = [{**rec("plain", 0.1, "a", None, 0.0, -2.0), "id": "a/F"}]
+    rows = [
+        rec("tool:none", 0.2, "a", "a/F", 0.0, -1.0),
+        rec("tool:monitor_benign_w1", 0.3, "a", "a/F", 0.0, -0.5),
+        rec("user:monitor_benign_w1", 0.05, "a", "a/F", 0.0, -3.0),
+    ]
+    out = followup_report(rows, {"1%": 0.5}, lab)["paired_vs_none"]
+    assert out["tool:monitor_benign_w1"]["median_margin_change"] == 0.5
+    assert out["user:monitor_benign_w1"]["median_margin_change"] == -1.0
+    assert out["user:monitor_benign_w1"]["share_margin_down"] == 1.0
