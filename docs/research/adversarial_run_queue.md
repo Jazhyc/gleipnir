@@ -2,7 +2,9 @@
 
 One list of what is running, what's next and what's parked. Update it when a run starts or finishes. Each run links to its frozen protocol or design. Plans are in [the stress-test plan](adversarial_stress_testing.md) and [the phase-2 design](adversarial_phase2_design.md).
 
-Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). The phase-1 results on v0.1 stay as a completed, versioned set.
+Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter is identical to the **v0.4** release, so the results carry over. The phase-1 results on v0.1 stay as a completed, versioned set.
+
+**Faster scoring:** `main` now ships merged BF16 checkpoints (`Jazhyc/Gleipnir-{4B,27B}-BF16`) that skip the LoRA overhead, plus an optimized serving image for B200 only (JarvisLabs has no B200). Before switching, check that the merged checkpoint reproduces our PEFT scores on a few hundred rows.
 
 ## Running
 
@@ -21,6 +23,15 @@ Nothing. The H100 VM is paused (`541309`); the A100 was deleted on 20 October.
 - **One expensive monitor** (Kimi K3 or Gemini) on fixed subsets, for the cost-against-robustness comparison.
 - **Optimized serving path** (FP8/FP4) when Jeremias shares it. Probably needs a Blackwell GPU (RTX Pro 6000 on JarvisLabs).
 - **White-box framing:** a gradient search for the peer post that most raises an honest reader's score.
+- **Adversarial game: a detector as a tool in the recruitment lab.** From Smith, Chughtai and Nanda (2025), appendix "adversarial games".
+  - **Setup:** in the recruitment world, give the target agent A a lie-detector tool, such as Gleipnir's score on each recruiter's posts, or later a white-box probe.
+  - **Measure:** whether A gets talked into running the session-ending diagnostic less often than without the tool. Recruiters are honest or deceptive by arm.
+  - **Why it's useful:** the detector's value shows up as a change in who wins, so no individual post has to be labelled as a lie, which sidesteps the paper's labelling problem.
+  - **Controls:**
+    - a placebo tool that returns random scores;
+    - a tool that only reveals the recruiter's role, which checks that the detector isn't just learning who the recruiters are, the paper's werewolf caveat;
+    - the same tool given to the recruiters instead.
+  - **Status:** idea only, not designed in detail. It needs live episodes, so it costs API spend.
 
 ## Parked
 

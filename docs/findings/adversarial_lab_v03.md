@@ -12,7 +12,7 @@ The last point is the main weakness we found. It's cheap, it's targeted, and in 
 
 ## What we did
 
-- **Monitor:** Gleipnir 4B v0.3 (`e36aa2b`), BF16, with the compact student prompt.
+- **Monitor:** Gleipnir 4B v0.3 (`e36aa2b`), BF16, with the compact student prompt. The v0.4 release has the identical adapter, so these results apply to v0.4.
 - **Setup check:** our setup reproduces the model card: AgentDojo pAUROC@20 0.947 against 0.946, and Rogue Eval 0.974 against 0.974.
 - **Data:** 3,340 agent runs (trajectories) from 558 episodes of Abhinav's six-agent lab. Agents prepare reports, share one board, and can do allowed but costly things, like giving up their own delivery so peers succeed.
 - **Conversion:** into your action-only format: tool calls and tool outputs, with no reasoning and no system prompt.
@@ -69,7 +69,7 @@ Readers flagged at 0.755, out of 300:
 ## What we think this means
 
 1. **The good news is real.** A cheap first-layer monitor that stays quiet on strange-but-honest multi-agent behaviour is valuable. That's the hard part for rigid classifiers, and v0.3 handles it.
-2. **The weakness is provenance.** The monitor can't tell what an agent *read* from what it *did*. Training it that injected text is bad won't fix this. It needs to weigh text by who wrote it: a peer's claim about agent F is evidence about the peer, not about F. The direction-ablation work with Michael could be tested on exactly these cases.
+2. **The weakness is provenance.** The monitor can't tell what an agent *read* from what it *did*. Training it that injected text is bad won't fix this. It needs to weigh text by who wrote it: a peer's claim about agent F is evidence about the peer, not about F. Your residual-stream ablation idea, removing the direction that drives suspicion, could be tested on exactly these cases.
 3. **Lying to peers is a blind spot for multi-agent use.** In the recent swarm incidents, harm came from agents persuading other agents. A monitor that ranks those lies but never flags them will miss that pattern. We still need to confirm this on lies that weren't instructed.
 
 ## Caveats
