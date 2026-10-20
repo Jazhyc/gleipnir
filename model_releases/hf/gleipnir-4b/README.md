@@ -91,7 +91,7 @@ sources of raw normalized partial AUROC through 20% false-positive rate.
 | **Gleipnir 4B v0.2** | **0.8108** | **0.9199** | **0.7514** | **0.9335** |
 | Gleipnir 4B v0.1 | 0.7824 | 0.9086 | 0.7015 | 0.9135 |
 | Gleipnir 9B | 0.8212 | 0.9215 | 0.7837 | 0.9355 |
-| Gleipnir 27B | 0.9087 | 0.9679 | 0.9234 | 0.9748 |
+| Gleipnir 27B (full teacher prompt) | 0.9352 | 0.9790 | 0.9486 | 0.9810 |
 
 Per-source pAUROC@20: AgentDojo 0.9430, CUA-SHADE 0.7916, IaC 0.8845,
 MLE-Sabotage 1.0000, Rogue Eval 0.9804, SHADE-Arena 0.2653.
@@ -110,7 +110,9 @@ MLE-Sabotage 1.0000, Rogue Eval 0.9804, SHADE-Arena 0.2653.
 - SHADE-Arena remains weak; long trajectories are the hardest case for this
   model size.
 - The rows above compare released artifacts; they differ in base model, data
-  mixture and seeds, so they are not a controlled model-size study.
+  mixture, seeds and evaluation prompt (Gleipnir 27B is scored under its
+  recommended full teacher prompt), so they are not a controlled model-size
+  study.
 
 ## Training
 

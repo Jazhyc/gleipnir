@@ -60,3 +60,14 @@ adapter, so its config sets `lora_rank: 384`. It was staged with
 on the Hub, and the commit is tagged `v0.2`; `v0.1` still pins the mixed-data
 adapter. The 9B and 27B cards still list the v0.1 4B numbers in their
 comparison tables.
+
+Card update (2026-10-20, user request), with no new tags because the weights
+are unchanged:
+- **Gleipnir 27B** recommends and reports the full teacher prompt (0.9352
+  Mean-OOD, 0.9420 CoT-removed ID pAUROC@20; [decision](../../docs/decisions.md)).
+  Its config sets `evaluation_prompt: teacher`, so `teacher_prompt.txt` and the
+  teacher template hash are staged with it. Commit `694b5239`; 11 files
+  verified.
+- **Gleipnir 4B**'s comparison row for the 27B now shows those numbers.
+  Commit `c20114a1`; 10 files verified. `v0.2` still points to the release
+  commit.

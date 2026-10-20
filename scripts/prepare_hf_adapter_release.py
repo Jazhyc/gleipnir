@@ -172,6 +172,29 @@ def prompt_contract(common: dict[str, Any]) -> tuple[Path, dict[str, Any]]:
     }
 
 
+def evaluation_prompt(
+    model: dict[str, Any], common: dict[str, Any], contract: dict[str, Any]
+) -> tuple[Path | None, dict[str, Any]]:
+    """Add the full teacher instruction for models evaluated under it."""
+    if model.get("evaluation_prompt", "student") == "student":
+        return None, contract
+    if model["evaluation_prompt"] != "teacher":
+        raise ValueError(f"unknown evaluation prompt for {model['repo_name']}")
+    manifest_path = resolve_repo_path(str(common["prompt"]["manifest"]))
+    manifest = load_json(manifest_path)
+    teacher_path = manifest_path.parent / manifest["teacher_instruction"]
+    teacher = load_prompt_set(manifest_path.parent).teacher
+    if teacher.template_sha256 != common["prompt"]["teacher_template_sha256"]:
+        raise ValueError("teacher prompt template checksum drifted")
+    return teacher_path, {
+        **contract,
+        "evaluation_prompt_role": "teacher",
+        "teacher_instruction_file": "teacher_prompt.txt",
+        "teacher_instruction_sha256": sha256_file(teacher_path),
+        "teacher_template_sha256": teacher.template_sha256,
+    }
+
+
 def training_summary(spec: dict[str, Any]) -> dict[str, Any]:
     model = spec["model"]
     metadata = spec["metadata"]
@@ -244,6 +267,9 @@ def stage_model(
         shutil.copy2(spec["source_dir"] / "adapter_config.json", temporary)
         shutil.copy2(spec["source_dir"] / WEIGHTS_NAME, temporary)
         shutil.copy2(instruction_path, temporary / "student_prompt.txt")
+        teacher_path, contract = evaluation_prompt(model, spec["common"], contract)
+        if teacher_path is not None:
+            shutil.copy2(teacher_path, temporary / "teacher_prompt.txt")
         write_json(temporary / "prompt_contract.json", contract)
         write_json(temporary / "training_summary.json", training_summary(spec))
 
