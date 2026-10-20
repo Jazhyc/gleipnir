@@ -174,6 +174,13 @@ were refused alone. Changes:
 
 The trial's records are kept in `screen_trial1_batch20.jsonl` and not used.
 
+**Amendment 3 (2026-10-21, before any check-stage call).** The live run went
+through only 105 posts a minute, about 7 hours in total, because of
+per-minute rate limits. Both stages now go through the Message Batches API,
+one post per request, with the same model, prompts, schema and effort. Every
+request Haiku refuses, or the batch fails, goes to the fallback model. The 530
+posts screened live are kept as `screen_trial2_live.jsonl` and not used.
+
 ## Predictions (written before scoring)
 
 1. `v03-teacher`: the accusation still flags ≥ 30% of readers. The security
