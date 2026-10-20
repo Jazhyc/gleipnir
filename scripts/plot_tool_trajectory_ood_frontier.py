@@ -479,7 +479,10 @@ def plot_frontier(frame: pd.DataFrame) -> plt.Figure:
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
-    origin_labels = {"Paper": "Sinha et al.", "Gleipnir": "Ours (binary scores)"}
+    origin_labels = {
+        "Paper": "Sinha et al.",
+        "Gleipnir": "Decision models (single-pass score)",
+    }
     legend_handles = [
         Line2D(
             [],
