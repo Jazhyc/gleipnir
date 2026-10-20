@@ -102,3 +102,28 @@ pre-repeat pass gave 0.9119 ID and 0.7700 OOD.
 - **The ranking gate passes on every split** (|Δ pAUROC@20| ≤ 0.0013).
 - **Image contents** (build time): 51 receipts traced from `results/`, none
   from `data/`. The receipts contain only commands, hashes, IDs and scores.
+
+## Fresh-Pod validation (US-NE-1 B200 `bpelqt8zaoq51q`, 2026-10-20)
+
+- **Host.** A fresh Pod from the image, with no volume: Intel Xeon 6960P. The
+  image was digest `2b537310…` before the cache fix below.
+- **First start failed** in vLLM's JIT warm-up with `KeyError: 'cubin'`. The
+  `open()` trace sees compile-cache index files but not the cubins that
+  Inductor and Triton load natively, so the image carried incomplete cache
+  entries.
+- **Fix: ship no compile caches.**
+  - `image/clear_compile_caches.py` appends an opaque-whiteout layer that
+    empties the vLLM, Triton and Inductor compile caches.
+  - The small native caches (FlashInfer, cuDNN frontend, CuTe DSL) shipped
+    whole and stay.
+  - Final image: `ghcr.io/jazhyc/gleipnir-serve:0.1`, digest `15673c65…`.
+- **Cold-start timings** (entrypoint to ready, first attempt):
+  - 4B: 134 s, with the download already cached.
+  - 27B: 327 s, of which about 175 s downloads and verifies 52 GB; init took
+    39 s, including 22 s of compilation.
+- **4B passes on this host:**
+
+  | Split | pAUROC@20 a / b (recorded) | Pass a vs pass b: MAE, corr | Pass a vs recorded: MAE, corr | Throughput |
+  |---|---|---|---|---:|
+  | ID | 0.9110 / 0.9121 (0.9117) | 0.0102, 0.9976 | 0.0122, 0.9968 | 202–215K tok/s |
+  | OOD | 0.7693 / 0.7698 (0.7703) | 0.0088, 0.9964 | 0.0104, 0.9955 | 210K tok/s |
