@@ -24,16 +24,18 @@ The main figure is simplified (user decision, 2026-10-20). It drops:
 - paper points that are neither on the paper frontier nor labelled
   comparisons.
 
-It labels Gemini 3.1 Pro, the top of the paper frontier. It leaves the
-Kimi-K2.6 SFT frontier point unlabelled, because its logit-based counterpart
+It labels Claude Opus 4.6, the top of the paper frontier, and leaves Gemini
+3.1 Pro (just below it) unlabelled. It leaves the Kimi-K2.6 SFT frontier point
+unlabelled, because its logit-based counterpart
 is not shown, and the Qwen3.5 SFT+RL frontier points too, so the figure
 emphasizes decision models over the interface comparison. It separates
 Gleipnir from the other decision monitors: every non-paper row, read directly
 from 0/1 logits or native probabilities (decision models, general LLMs and
 base models). Paper rows appear as reasoning monitors (generated rationale,
 then a 0–10 score).
-Both figures draw an arrow from Gemini 3.1 Pro to the on-demand Gleipnir 27B,
-labelled with the cost ratio and score gain (188× cheaper, +1.1 pp pAUROC); the title rounds it to ~200×. The appendix
+Both figures draw an arrow from Claude Opus 4.6 to the on-demand Gleipnir 27B,
+labelled with the cost ratio and score gain (243× cheaper, +0.9 pp pAUROC); the
+title rounds it to ~200×. The x-axis ends at $100. The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
 eligible row. Shared plotting helpers
 live in `src/gleipnir/analysis/plotting.py`; see

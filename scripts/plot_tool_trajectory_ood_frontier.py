@@ -37,8 +37,6 @@ FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
 ]
 EXCLUDED_MONITORS = {
-    # Ties Gemini 3.1 Pro (0.942 vs 0.940) but would stretch the x-axis past $80.
-    "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
     # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
     # the registry keeps its row.
@@ -82,13 +80,20 @@ BASE_TO_METHOD = {
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
-# Labelled paper points. Gemini 3.1 Pro marks the top of the paper frontier.
+# Labelled paper points. Claude Opus 4.6 marks the top of the paper frontier.
 # The main figure keeps these points on the paper frontier but drops their
 # labels: Kimi-K2.6 SFT's logit-based counterpart is not shown there, and the
 # SFT+RL labels served the interface-bottleneck comparison, which the figure no
-# longer emphasizes over decision models (user, 2026-10-20).
-MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT", "Qwen3.5-4B SFT+RL", "Qwen3.5-27B SFT+RL"}
+# longer emphasizes over decision models (user, 2026-10-20). Gemini 3.1 Pro's
+# label would crowd Opus 4.6, which now tops the paper frontier.
+MAIN_FIGURE_UNLABELLED = {
+    "Kimi-K2.6 SFT",
+    "Qwen3.5-4B SFT+RL",
+    "Qwen3.5-27B SFT+RL",
+    "Gemini 3.1 Pro prompted",
+}
 PAPER_COMPARISON_MONITORS = {
+    "Claude Opus 4.6 prompted",
     "Gemini 3.1 Pro prompted",
     "Kimi-K2.6 SFT",
     "Qwen3.5-4B SFT+RL",
@@ -190,15 +195,22 @@ MANUAL_COMPARISON_LABELS = {
     },
     # Above its point, clear of the cost callout arrow; it sits at the right
     # edge of the axes.
-    "Gemini 3.1 Pro prompted": {
+    "Claude Opus 4.6 prompted": {
         "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     },
+    # Full figure only: left of its point, between Opus 4.6's label above
+    # and Claude Sonnet 4.6's point below.
+    "Gemini 3.1 Pro prompted": {
+        "xytext": (-12, 0),
+        "ha": "right",
+        "va": "center",
+    },
 }
 # Cost-saving callout: an arrow from the strongest paper monitor to the
 # on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
-COST_CALLOUT = ("Gemini 3.1 Pro prompted", "Qwen3.8-27B Kimi-soft strict")
+COST_CALLOUT = ("Claude Opus 4.6 prompted", "Qwen3.8-27B Kimi-soft strict")
 # Fraction along each base-to-Gleipnir arrow where its label sits.
 DISTILLATION_LABEL_POSITION = 0.6
 MIN_PLOTTED_PERFORMANCE = 0.60
@@ -461,12 +473,12 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
-    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
+    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
         frame["cost_per_1k"].min() / 1.35,
-        max(80.0, frame["cost_per_1k"].max() * 1.06),
+        max(100.0, frame["cost_per_1k"].max() * 1.03),
     )
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 

@@ -97,11 +97,12 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "ha": "center",
         "va": "top",
     }
-    assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
+    assert MANUAL_COMPARISON_LABELS["Claude Opus 4.6 prompted"] == {
         "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     }
+    assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"]["ha"] == "right"
 
 
 def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
@@ -120,15 +121,15 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
     )
 
 
-def test_cost_callout_reports_gemini_to_gleipnir_27b_ratio() -> None:
+def test_cost_callout_reports_opus_to_gleipnir_27b_ratio() -> None:
     import matplotlib.pyplot as plt
 
     frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
     figure, axis = plt.subplots()
     axis.set_xscale("log")
-    assert round(_draw_cost_callout(axis, frame)) == 188
+    assert round(_draw_cost_callout(axis, frame)) == 243
     labels = [text.get_text() for text in axis.texts if text.get_text()]
-    assert labels == ["188× cheaper, +1.1 pp pAUROC"]
+    assert labels == ["243× cheaper, +0.9 pp pAUROC"]
     plt.close(figure)
 
 
