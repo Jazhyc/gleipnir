@@ -733,8 +733,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.text(
         0.0,
         1.015,
-        "Monitoring cost and performance on agent tool trajectories · mean over"
-        " six held-out out-of-distribution (OOD) sources",
+        "Monitoring agent tool trajectories for sabotage · mean over six held-out"
+        " (OOD) AI control benchmarks, e.g. SHADE-Arena and AgentDojo",
         transform=axis.transAxes,
         fontsize=11.5,
         fontweight="bold",
