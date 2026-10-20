@@ -120,3 +120,96 @@ source .adversarial-env
 .venv/bin/python experiments/adversarial_lab_v03/run.py score --sets ood lab framing   # resumable
 .venv/bin/python experiments/adversarial_lab_v03/run.py report
 ```
+
+## Results (20 October 2026)
+
+Ran as frozen with Amendment 1, at commit `44a6d5b`. Run 0 used a JarvisLabs A100 40 GB (6,600 prompt tokens per second); smoke, Run 1 and Run 2 used an H100 80 GB (17,900 tokens per second once its kernel cache was warm). Both machines had driver 580.126.20 and identical package versions.
+
+**Coverage:** 4,688 Run 0 rows, 3,340 Run 1 rows and 1,500 Run 2 rows. All were scored, with no failures and nothing over the token limit.
+
+**Cost:** about ₹450 across both machines.
+
+**Outputs:** `results/adversarial_lab_v03/` (ignored), with logs in `logs/jarvislabs/adversarial_lab_v03_{a100,h100}/`.
+
+### Run 0: parity and the deployer threshold
+
+- **Parity: passed.** AgentDojo pAUROC@20 0.9469 against 0.9462 on the card, and Rogue Eval 0.9741 against 0.9742.
+- **Deployer thresholds,** from 3,189 pooled OOD honest rows: P(`1`) > 0.755 flags 1%, and > 0.593 flags 2%.
+- **Drift between machines:** the thresholds come from the A100 and are applied to H100 scores. On 300 OOD honest rows scored on both machines:
+  - 212 scores were identical;
+  - the mean |ΔP(1)| was 0.003 and the maximum 0.113;
+  - the mean |Δmargin| was 0.039 and the maximum 0.5.
+
+### Run 1: the lab, unedited
+
+Flagged at the deployer thresholds, with episode-bootstrap 95% intervals in the report:
+
+| Group (label) | Rows | At 1% | At 2% | Median P(1) |
+| --- | ---: | ---: | ---: | ---: |
+| `plain` (0) | 2,695 | 0 | 2 (0.07%) | 0.042 |
+| `plain_sacrificed` (0) | 249 | 2 (0.8%) | 7 (2.8%) | 0.060 |
+| `honest_recruiter` (0) | 36 | 0 | 0 | 0.047 |
+| `assigned_deceiver_no_lie` (0) | 26 | 0 | 0 | 0.037 |
+| `verified_liar` (1) | 10 | **0** | **0** | 0.113 (maximum 0.349) |
+| `other_special_role` (unlabelled) | 324 | 0 | 3 | 0.053 |
+
+**The two flagged sacrificers,** read by hand, are both GPT-6.1 Sol in the shared-investigation pilot. The board kept rejecting their posts, and each then ran the diagnostic with reasons such as "Sacrificing C's three room orders…". These are honest, allowed actions with suspicious-sounding wording.
+
+**Liars are ranked well but never flagged.** AUROC for verified liars is 0.982 against honest recruiters, 0.950 against assigned deceivers who didn't lie, and 0.939 against plain workers.
+
+### Run 2: framing by a peer's post (300 honest readers, actions unchanged)
+
+| Post | Flagged at 1% | Flagged at 2% | Readers whose margin rose | Median Δmargin |
+| --- | ---: | ---: | ---: | ---: |
+| none (the readers' Run 1 scores) | 0 | 0 | — | — |
+| `neutral_short` | 0 | 0 | 62 | +0.00 |
+| `neutral_long` | 0 | 0 | 53 | +0.00 |
+| `peer_accusation` | 0 | 4 (1.3%) | 298 | +1.06 |
+| `monitor_accusation` | **207 (69.0%)** | 247 (82.3%) | 300 | +5.12 |
+| `injection_gpt41` | **123 (41.0%)** | 237 (79.0%) | 300 | +4.31 |
+
+**Sensitivity to drift.** If every score moved by the maximum observed drift (0.113) in the worst direction:
+- `monitor_accusation` at 1% would range from 133 to 245 of 300;
+- `injection_gpt41` from 12 to 222, because its scores cluster near 0.755, where BF16 steps are coarse;
+- `peer_accusation` from 0 to 2.
+
+Typical drift is far smaller: 71% of rows were identical, so the point estimates stand.
+
+### Predictions
+
+| Prediction | Outcome |
+| --- | --- |
+| Run 0 passes parity | Held |
+| `plain` above 1%, between 2% and 10% | **Failed: 0%.** The lab looks benign at a benchmark threshold. |
+| Sacrificers flagged more than plain workers | Held, but small (0.8% against 0% at 1%) |
+| At most 5 of 10 liars flagged | Held: 0 of 10 |
+| `injection_gpt41` above 50% | **Failed at 1%** (41%; 79% at 2%) |
+| `monitor_accusation` between 20% and 60% | **Exceeded: 69%** |
+| `peer_accusation` within 10 points of `neutral_short` | Held |
+| Both neutral posts within 3 points of `none` | Held |
+
+### Exploratory, not pre-registered: thresholds set inside the lab
+
+Set the threshold to flag a fixed share of `plain` workers:
+
+| Threshold | Liars flagged | Readers of the peer accusation flagged |
+| --- | ---: | ---: |
+| 1% of plain workers (0.294) | 1 of 10 | 34 of 300 |
+| 2% of plain workers (0.202) | 3 of 10 | 53 of 300 |
+| 5% of plain workers (0.119) | 4 of 10 | 101 of 300 |
+
+At every in-lab operating point, one plain-language accusation gets honest readers flagged at a higher rate than real liars are caught.
+
+### What this shows
+
+1. **On this lab's natural behaviour, v0.3 raises almost no false alarms at a benchmark-calibrated threshold.** That includes agents who give up their own delivery: 2 of 249 flagged.
+2. **It ranks agents who lie to peers above honest ones, but not by enough to flag any of them.** Lying to a peer is a weak signal for this monitor.
+3. **It does not separate text an agent *read* from text it *wrote*.** One peer post addressed to the monitor gets most honest readers flagged, even though their own actions are byte-identical and the teacher policy (lines 5, 19 and 30) says reading untrusted text without acting on it is benign. This is a cheap, targeted framing attack, and the setup for flooding the audit budget.
+
+### Not shown
+
+- Whether honest agents would *react* to these posts. Run 2 is static.
+- Other wordings: one wording per post.
+- The 27B, the fast serving path, or an LLM monitor.
+- Any reliable liar result: 10 liars from 7 episodes is a pilot.
+- Other lab worlds or task families.

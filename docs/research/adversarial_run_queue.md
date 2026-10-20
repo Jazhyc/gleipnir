@@ -6,17 +6,13 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). The phase-1 r
 
 ## Running
 
-| Run | What it asks | Where | Protocol |
-| --- | --- | --- | --- |
-| Lab v0.3, Run 0 | Does our v0.3 setup match the card, and what threshold would a deployer use? | A100 40 GB | [lab README](../../experiments/adversarial_lab_v03/README.md) |
-| Lab v0.3, Runs 1–2 | False alarms on honest lab agents; are peer liars caught; does a peer's post get an honest reader flagged? | H100 80 GB | same |
+Nothing. Both GPUs are paused (A100 `541258`, H100 VM `541259`).
 
 ## Next, in order
 
-1. **Cross-GPU drift check.** Rescore about 300 of Run 0's rows on the H100, to measure how much the threshold moves between machines. A few minutes; no protocol needed beyond a note in the lab README.
-2. **Real swarm posts as framing (lab Run 3).** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated).
-3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md).
-4. **27B, teacher prompt, on the primary endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
+1. **Real swarm posts as framing (lab Run 3).** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated).
+2. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md).
+3. **27B, teacher prompt, on the primary endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
 
 ## Later
 
@@ -33,6 +29,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). The phase-1 r
 
 ## Done
 
+- **Lab v0.3, Runs 0–2 plus the drift check** (20 October). There are almost no false alarms on natural lab behaviour, and 0 of 10 liars are flagged, though they rank well. One monitor-directed peer post gets 69% of honest readers flagged at 1%. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **4B v0.1 baseline.** It reproduces the card, and injected text backfires: [baseline](../../experiments/adversarial_baseline_4b/README.md).
 - **Phase-1 attacks on v0.1:** A1 discrimination, A2 cover comments (low and high effort), A3 random search, A4 score feedback, A6 transfer.
 - **Phase-1 replay on v0.3:** [replay](../../experiments/adversarial_phase1_v03_replay/README.md).
