@@ -22,9 +22,21 @@ from gleipnir.data.monitoring import file_hash, read_rows, write_json, write_row
 from gleipnir.serving import bf16_launch
 from gleipnir.serving.benchmark import measurement_summary
 
-WORKLOAD = ROOT / "data/teacher-disagreement-strict-ood01/workload.jsonl"
-WORKLOAD_SHA256 = "9319514878c9ee468b117c4a622847baf025070f6b5abacee4d90af456cf9f4a"
-BF16 = "results/qwen38-27b-s0-ood01/evaluation/ood.jsonl"
+# Prompt: (workload, expected SHA-256 or None, BF16 reference predictions).
+PROMPTS = {
+    "student": (
+        ROOT / "data/teacher-disagreement-strict-ood01/workload.jsonl",
+        "9319514878c9ee468b117c4a622847baf025070f6b5abacee4d90af456cf9f4a",
+        "results/qwen38-27b-s0-ood01/evaluation/ood.jsonl",
+    ),
+    # The default for Gleipnir 27B (user decision, 2026-10-20); built and
+    # hash-checked against the BF16 extraction by teacher_workload.py.
+    "teacher": (
+        ROOT / "data/optimized_gap/teacher_ood_workload.jsonl",
+        None,
+        "results/optimized_gap/bf16_teacher_ood.jsonl",
+    ),
+}
 
 
 def sources() -> dict[str, str]:
@@ -42,8 +54,10 @@ def main() -> None:
     parser.add_argument("--additional", default="{}")
     parser.add_argument("--quantization")
     parser.add_argument("--compilation", default="{}", help="vLLM compilation config")
+    parser.add_argument("--prompt", choices=PROMPTS, default="teacher")
     args = parser.parse_args()
-    if file_hash(WORKLOAD) != WORKLOAD_SHA256:
+    workload_path, expected, bf16 = PROMPTS[args.prompt]
+    if expected is not None and file_hash(workload_path) != expected:
         raise ValueError("frozen OOD workload drift")
     out = OUT / args.name
     out.mkdir(parents=True, exist_ok=False)
@@ -65,7 +79,7 @@ def main() -> None:
     )
     try:
         bf16_launch.wait_ready(process, SETTINGS["port"])
-        workload = read_rows(WORKLOAD)
+        workload = read_rows(workload_path)
         rows, seconds = asyncio.run(trial(workload, 128, SETTINGS))
     finally:
         bf16_launch.stop(process)
@@ -73,7 +87,7 @@ def main() -> None:
         raise ValueError("incomplete OOD coverage")
     write_rows(out / "ood.jsonl", [{"id": r["id"], "score": r["score"]} for r in rows])
     path = str((out / "ood.jsonl").relative_to(ROOT))
-    condition, reference = load(path, "ood"), load(BF16, "ood")
+    condition, reference = load(path, "ood"), load(bf16, "ood")
     by_id = {r["id"]: r for r in condition}
     condition = [by_id[r["id"]] for r in reference]
     report = {
@@ -81,6 +95,8 @@ def main() -> None:
         "bf16": summary(reference),
         "scores_vs_bf16": score_difference(condition, reference),
         "timing": measurement_summary(rows, seconds),
+        "prompt": args.prompt,
+        "workload_sha256": file_hash(workload_path),
         "command": {
             "worker": args.worker,
             "quantization": args.quantization,

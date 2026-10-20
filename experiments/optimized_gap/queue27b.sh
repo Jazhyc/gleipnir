@@ -17,5 +17,5 @@ W=gleipnir.serving.quant_stack.QuantFullWorker
 SIZES=$(python3 -c "import json; s=[1,2,4]+list(range(8,257,8))+[320,384,448,512,640,768,896,1024,1280,1536,1792,2048]; print(json.dumps({'cudagraph_capture_sizes': s}))")
 echo "start $(date -Is)"
 $PY -m experiments.optimized_gap.ood27b ${1:-opt27b01} --quantization $Q --worker $W \
-  --additional "$FULL" --compilation "$SIZES"
+  --additional "$FULL" --compilation "$SIZES" --prompt ${2:-teacher}
 echo "QUEUE_DONE $(date -Is)"
