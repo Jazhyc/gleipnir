@@ -157,6 +157,14 @@ agent's own action.
   means more seeds, never promotion. OOD is not used.
 - **Attribution limit.** The arm changes both the prompt and the loss. If it
   advances, a prompt-only control (new prompt, weight 0) separates the two.
+- **One-line arm** (`aux-oneline-position-reason-s1-01`, added after the
+  three-line result). It uses the same rows, targets, weight and seed, but the
+  control's unchanged one-line student prompt. `prepare.py` asserts that its
+  training and ID prompts are byte-identical to the control's, so only the loss
+  differs. It is judged by the same rule. Its receipts go under
+  `results/aux_supervision/aux-oneline-position-reason-s1-01/`, and every
+  entrypoint takes `--arm`. A prompt-only control was rejected as purely
+  diagnostic: neither outcome would give a better recipe.
 
 ```bash
 PYTHONPATH=src:. .venv-vllm031/bin/python -m experiments.aux_supervision.extract --model gleipnir --name full01
@@ -164,6 +172,7 @@ PYTHONPATH=src:. python -m experiments.aux_supervision.prepare --gpu-uuid UUID
 PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.monitoring prepare --config data/aux-position-reason-s1-01/config.yaml
 PYTHONPATH=src:. <training-python> -m experiments.aux_supervision.run
 python -m experiments.aux_supervision.compare
+# one-line arm: add --arm aux-oneline-position-reason-s1-01 to prepare.py, run and compare
 ```
 
 ## Result (seed 1, 2026-10-20)

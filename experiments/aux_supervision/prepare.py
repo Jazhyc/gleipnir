@@ -1,11 +1,15 @@
 """Freeze the seed-1 4B arm with Position/Reason auxiliary distillation.
 
 Rows, order, Kimi K3 soft targets, LR, schedule and initialization are the
-seed-1 control's (`teacher-seed-sdpa-s1-01`). Two things change:
+seed-1 control's (`teacher-seed-sdpa-s1-01`). Two arms exist:
 
-- the compact student prompt gains the three-line output interface
-  (`targets.student_aux_template`), in training and in ID scoring;
-- every row carries an auxiliary continuation from the Gleipnir 27B
+- ``aux-position-reason-s1-01``: the compact student prompt gains the
+  three-line output interface (`targets.student_aux_template`), in training
+  and in ID scoring;
+- ``aux-oneline-position-reason-s1-01``: the control's one-line student
+  prompt, unchanged, so only the loss differs from the control.
+
+In both arms every row carries an auxiliary continuation from the Gleipnir 27B
   extraction (`extract.py --name full01`), distilled with a top-64-plus-tail
   KL at weight ``AUX_LOSS_WEIGHT`` alongside the unchanged soft BCE.
 
@@ -46,13 +50,16 @@ HERE = Path(__file__).resolve().parent
 OUT = ROOT / "results/aux_supervision"
 CONTROL = "teacher-seed-sdpa-s1-01"
 ARM = "aux-position-reason-s1-01"
+ONE_LINE_ARM = "aux-oneline-position-reason-s1-01"
+ARMS = (ARM, ONE_LINE_ARM)
 EXTRACT = OUT / "full01/gleipnir"
 SELECTION = "experiments/b200_inference_benchmark/serving_default.json"
 AUX_LOSS_WEIGHT = 0.1
 TOP = 64
 # Unsupervised placeholder rows: all mass on one id, the rest below float range.
 PAD_LOGPROB = -1.0e4
-FIELDS = {
+FIELDS = {}
+FIELDS[ARM] = {
     "hypothesis": (
         "Distilling Gleipnir 27B's Position quote and Reason sentence after the "
         "decision improves the 4B's decision representation: higher held-out ID "
@@ -76,6 +83,33 @@ FIELDS = {
         "master/merge/serving parity, incomplete scoring or completion."
     ),
 }
+FIELDS[ONE_LINE_ARM] = {
+    **FIELDS[ARM],
+    "hypothesis": (
+        "The same auxiliary distillation under the control's unchanged one-line "
+        "student prompt improves held-out ID macro pAUROC@20 over the "
+        "seed-matched control; it also separates the three-line arm's loss "
+        "(2026-10-20: -3.7 points) into prompt and loss effects."
+    ),
+    "intervention": (
+        "Seed-1 BF16/SDPA campaign on the control's rows, Kimi K3 soft targets "
+        "and one-line student prompt (training and ID byte-identical to the "
+        "control); a top-64-plus-tail KL toward Gleipnir 27B's continuation "
+        "distributions is added at weight 0.1; LR, schedule, initialization "
+        "and decision loss unchanged."
+    ),
+}
+
+
+def receipt(arm: str, name: str) -> Path:
+    """Arm receipts; the first arm keeps its original top-level paths."""
+    return OUT / name if arm == ARM else OUT / arm / name
+
+
+def student_template(arm: str):
+    from experiments.tool_trajectory_monitoring.prompting import load_prompt_set
+
+    return student_aux_template() if arm == ARM else load_prompt_set().student
 
 
 def position_grounded(label: int, check: dict) -> bool:
@@ -136,7 +170,7 @@ def bound(path: Path) -> dict:
     return {"path": str(path.relative_to(ROOT)), "sha256": file_hash(path)}
 
 
-def prepare(gpu_uuid: str) -> dict:
+def prepare(gpu_uuid: str, arm: str = ARM) -> dict:
     from transformers import AutoTokenizer
 
     from experiments.gleipnir27b_teacher_4b.prepare import id_workload, token_lengths
@@ -156,9 +190,11 @@ def prepare(gpu_uuid: str) -> dict:
             and file_hash(ROOT / spec["path"]) != spec["sha256"]
         ):
             raise ValueError(f"control input drift: {name}")
-    data = ROOT / "data" / ARM
+    if arm not in ARMS:
+        raise ValueError(f"unknown arm: {arm}")
+    data = ROOT / "data" / arm
     if data.exists():
-        raise ValueError(f"refuse to overwrite data/{ARM}")
+        raise ValueError(f"refuse to overwrite data/{arm}")
     cap = Campaign.load(ROOT, control_path).job()["max_length"]
     tokenizer = AutoTokenizer.from_pretrained(
         ROOT / control["base_model"], local_files_only=True
@@ -178,7 +214,7 @@ def prepare(gpu_uuid: str) -> dict:
     extracted = {r["id"]: r for r in read_rows(EXTRACT / "rows.jsonl")}
     if len(extracted) != len(rows) or set(extracted) != {r["index"] for r in rows}:
         raise ValueError("extraction does not cover the control rows exactly")
-    template = student_aux_template()
+    template = student_template(arm)
     teacher_template = aux_template()
     for row in rows:
         row["trajectory"] = trajectory_from_prompt(
@@ -188,6 +224,11 @@ def prepare(gpu_uuid: str) -> dict:
     arm_rows = rerender_training(
         [{k: v for k, v in r.items() if k != "trajectory"} for r in rows], template
     )
+    if arm == ONE_LINE_ARM and any(
+        a["student_prompt"] != r["student_prompt"]
+        for a, r in zip(arm_rows, rows, strict=True)
+    ):
+        raise ValueError("one-line arm prompts differ from the control's")
     for row, source in zip(arm_rows, rows, strict=True):
         teacher_row = extracted[row["index"]]
         if teacher_row["label"] != row["label"]:
@@ -214,6 +255,10 @@ def prepare(gpu_uuid: str) -> dict:
     )
     canonical_id = read_rows(ROOT / control["inputs"]["id"]["path"])
     id_rows = rerender_evaluation(canonical_id, template)
+    if arm == ONE_LINE_ARM and [r["prompt"] for r in id_rows] != [
+        r["prompt"] for r in canonical_id
+    ]:
+        raise ValueError("one-line arm ID prompts differ from the control's")
     write_rows(data / "id_prompts.jsonl", id_rows)
     (data / "id_workload.json").write_text(
         json.dumps(id_workload(tokenizer, render, id_rows)) + "\n"
@@ -230,9 +275,9 @@ def prepare(gpu_uuid: str) -> dict:
     }
     config = copy.deepcopy(control)
     config.update(
-        campaign_id=ARM,
+        campaign_id=arm,
         gpu_uuid=gpu_uuid,
-        merged_model=f"/tmp/gleipnir-merged/{ARM}",
+        merged_model=f"/tmp/gleipnir-merged/{arm}",
         extra_sources=sorted(
             str(p.relative_to(ROOT)) for p in HERE.iterdir() if p.suffix == ".py"
         ),
@@ -240,7 +285,7 @@ def prepare(gpu_uuid: str) -> dict:
         # A new objective family: rerun every startup gate (training guide).
         full_startup_validation=True,
         expected_training_tokens=sum(totals),
-        **FIELDS,
+        **FIELDS[arm],
     )
     config["inputs"].pop("filter", None)
     config["inputs"].pop("startup_reference", None)
@@ -250,7 +295,7 @@ def prepare(gpu_uuid: str) -> dict:
     supervised = [m for r in arm_rows for m in r["aux_mask"]]
     report = {
         "status": "prepared",
-        "campaign_id": ARM,
+        "campaign_id": arm,
         "gpu_uuid": gpu_uuid,
         "control_config_sha256": file_hash(control_path),
         "extraction_rows_sha256": file_hash(EXTRACT / "rows.jsonl"),
@@ -267,7 +312,7 @@ def prepare(gpu_uuid: str) -> dict:
         "context_cap": cap,
         "expected_steps": config["expected_steps"],
     }
-    write_json(OUT / "preparation.json", report)
+    write_json(receipt(arm, "preparation.json"), report)
     print("aux_supervision_prepared", json.dumps(report), flush=True)
     return report
 
@@ -275,4 +320,6 @@ def prepare(gpu_uuid: str) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu-uuid", required=True)
-    prepare(parser.parse_args().gpu_uuid)
+    parser.add_argument("--arm", choices=ARMS, default=ARM)
+    args = parser.parse_args()
+    prepare(args.gpu_uuid, args.arm)

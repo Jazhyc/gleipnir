@@ -22,14 +22,11 @@ import random
 import torch
 import yaml
 
-from experiments.aux_supervision.prepare import ARM, OUT, ROOT
+from experiments.aux_supervision.prepare import ARM, ARMS, ROOT, receipt
 from gleipnir.data.monitoring import read_rows, write_json
 from gleipnir.training.aux_distillation import topk_tail_kl
 
-ADAPTERS = {
-    "initial": "results/fp4_row_aot_training/initial_adapter",
-    "trained": f"results/{ARM}/4b/monitor/causal_adapter",
-}
+INITIAL_ADAPTER = "results/fp4_row_aot_training/initial_adapter"
 MARKER = "\nReason:"
 
 
@@ -56,23 +53,32 @@ def per_position_kl(logits, top_ids, top_lp) -> torch.Tensor:
     ones = torch.ones(len(top_ids), dtype=torch.bool, device=logits.device)
     return torch.stack(
         [
-            topk_tail_kl(logits[i : i + 1], top_ids[i : i + 1], top_lp[i : i + 1],
-                         ones[i : i + 1], (1,))[0]
+            topk_tail_kl(
+                logits[i : i + 1],
+                top_ids[i : i + 1],
+                top_lp[i : i + 1],
+                ones[i : i + 1],
+                (1,),
+            )[0]
             for i in range(len(top_ids))
         ]
     )
 
 
-def main(count: int, seed: int) -> None:
+def main(count: int, seed: int, arm: str = ARM) -> None:
     from peft import PeftModel
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
     from experiments.deception_distillation.train_student_sft import tokenize_record
 
-    config = yaml.safe_load((ROOT / "data" / ARM / "config.yaml").read_text())
+    adapters = {
+        "initial": INITIAL_ADAPTER,
+        "trained": f"results/{arm}/4b/monitor/causal_adapter",
+    }
+    config = yaml.safe_load((ROOT / "data" / arm / "config.yaml").read_text())
     base = ROOT / config["base_model"]
     tokenizer = AutoTokenizer.from_pretrained(base, local_files_only=True)
-    rows = read_rows(ROOT / "data" / ARM / "training.jsonl")
+    rows = read_rows(ROOT / "data" / arm / "training.jsonl")
     rng = random.Random(seed)
     sample = []
     for label in (0, 1):
@@ -81,15 +87,21 @@ def main(count: int, seed: int) -> None:
     features = []
     for record in sample:
         feature = tokenize_record(
-            record, tokenizer, 10**6,
-            include_direct_target=True, include_completion_target=False,
-            include_aux_target=True, dataset_id=0,
+            record,
+            tokenizer,
+            10**6,
+            include_direct_target=True,
+            include_completion_target=False,
+            include_aux_target=True,
+            dataset_id=0,
         )
         features.append((record, feature, sections(tokenizer, record)))
-    report = {"rows": len(sample), "seed": seed, "adapters": ADAPTERS, "results": {}}
-    for name, path in ADAPTERS.items():
+    report = {"rows": len(sample), "seed": seed, "adapters": adapters, "results": {}}
+    for name, path in adapters.items():
         model = AutoModelForCausalLM.from_pretrained(
-            base, dtype=torch.bfloat16, attn_implementation="sdpa",
+            base,
+            dtype=torch.bfloat16,
+            attn_implementation="sdpa",
             local_files_only=True,
         ).cuda()
         model = PeftModel.from_pretrained(model, ROOT / path).eval()
@@ -138,12 +150,13 @@ def main(count: int, seed: int) -> None:
         print(name, result, flush=True)
         del model
         torch.cuda.empty_cache()
-    write_json(OUT / "kl_diagnostic.json", report)
+    write_json(receipt(arm, "kl_diagnostic.json"), report)
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--rows", type=int, default=256)
     parser.add_argument("--seed", type=int, default=0)
+    parser.add_argument("--arm", choices=ARMS, default=ARM)
     args = parser.parse_args()
-    main(args.rows, args.seed)
+    main(args.rows, args.seed, args.arm)
