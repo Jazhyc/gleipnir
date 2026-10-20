@@ -36,6 +36,7 @@ V02 = "results/teacher-seed-sdpa-avg012-01"
 TEMPLATE = "data/gleipnir4b-v02-ood-optimized01/config.yaml"
 BASELINE_ID = "gleipnir4b-v02-id-optimized01"
 QAD_EVAL = "qad-v02-optimized01"
+QAD_BF16 = "qad-v02-bf16-01"
 # The QAD stages were validated with the NC2 runtime's FA4 overlay, which
 # bundles quack 0.6.5 for CUTLASS DSL 4.8; the EU serving overlay behind
 # .cache/kernels/fa4 lacks it, so the venv's older quack fails to import.
@@ -54,7 +55,9 @@ def training_stage_environment(environment: dict[str, str]) -> dict[str, str]:
     return {**environment, "PYTHONPATH": ":".join(paths)}
 
 
-def scoring_context(name: str, parent: str, splits: list[str]) -> None:
+def scoring_context(
+    name: str, parent: str, splits: list[str], precision: str = "optimized"
+) -> None:
     """An optimized scoring context like the v0.2 OOD one, for new splits."""
     data = ROOT / "data" / name
     if data.exists():
@@ -72,6 +75,7 @@ def scoring_context(name: str, parent: str, splits: list[str]) -> None:
             }
         ),
     )
+    config["evaluation"]["serving_precision"] = precision
     config["evaluations"] = [s for s in ("id",) if s in splits]
     config["evaluation"]["populations"] = {
         s: {"id": 3012, "ood": 6395}[s] for s in splits
@@ -287,7 +291,25 @@ def main():
         raise
 
 
+def evaluate_bf16() -> None:
+    """Score the QAD master under stock BF16 serving on ID and OOD."""
+    config = load_config(ROOT)
+    complete = json.loads(
+        (
+            ROOT / "results" / config["experiment"] / "4b/monitor/complete.json"
+        ).read_text()
+    )
+    if complete["status"] != "qad":
+        raise ValueError("QAD package is incomplete")
+    scoring_context(QAD_BF16, f"results/{config['experiment']}", ["id", "ood"], "bf16")
+    score(QAD_BF16)
+
+
 if __name__ == "__main__":
     import sys
+
+    if sys.argv[1:] == ["--bf16-eval"]:
+        evaluate_bf16()
+        sys.exit()
 
     resume_from_package() if sys.argv[1:] == ["--resume-package"] else main()

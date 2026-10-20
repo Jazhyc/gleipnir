@@ -122,3 +122,36 @@ OOD pAUROC@20 by source (BF16 → optimized → QAD optimized):
   the distillation data is; the OOD drift lies outside it. That fits the
   original QAD's ID-only recovery and points at the distillation data
   distribution, not at the arithmetic.
+
+## The QAD checkpoint under BF16 serving
+
+`run.py --bf16-eval` scored the same QAD master through stock BF16 serving
+(context `qad-v02-bf16-01`). It used the same fresh merge as the optimized
+evaluation (merged parity: mean difference 0.0030, correlation 0.99992); the
+BF16 canary gate was 0.0019 and 0.99996.
+
+| Macro pAUROC@20 | v0.2 BF16 | QAD BF16 | QAD optimized |
+|---|---:|---:|---:|
+| ID | 0.9124 | **0.9332** | 0.9117 |
+| OOD | 0.8108 | **0.8039** | 0.7703 |
+
+| | v0.2 BF16 | QAD BF16 |
+|---|---:|---:|
+| ID AUROC / Brier | 0.9702 / 0.0622 | 0.9782 / 0.0552 |
+| OOD AUROC / Brier | 0.9199 / 0.1339 | 0.9211 / 0.1405 |
+| OOD pooled pAUROC@20 | 0.7514 | 0.7671 |
+| ID Gloom / STRIDE | 0.8517 / 0.9732 | 0.8945 / 0.9719 |
+
+OOD pAUROC@20 by source, v0.2 BF16 → QAD BF16: AgentDojo 0.9430 → 0.9462,
+SHADE-Arena 0.2653 → 0.2993, MLE-Sabotage 1.0 → 1.0, Rogue Eval
+0.9804 → 0.9742, IaC 0.8845 → 0.8618, CUA-SHADE 0.7916 → 0.7418.
+
+- **In BF16, QAD did not cost quality on the ranking metrics.** ID rises 2.1
+  points, mostly Gloom. OOD macro pAUROC@20 moves −0.7, within the 1.8-point
+  seed SD, while OOD AUROC and pooled pAUROC@20 rise slightly. Mean score
+  change against v0.2 is 0.038 (ID) and 0.035 (OOD).
+- **Not uniform by source.** CUA-SHADE drops 5.0 points and IaC 2.3, while
+  SHADE-Arena gains 3.4. OOD Brier is slightly worse.
+- **One checkpoint for both paths.** The QAD master is at least as good as
+  v0.2 under BF16 on ID and roughly level on OOD. Under optimized serving it
+  is much better (ID 0.9117 against 0.8807, OOD 0.7703 against 0.7579).
