@@ -15,6 +15,11 @@ A deployment-risk slide connects false alarms to review overload; the remaining
 results narrative now begins with a training-data filtering diagnosis.
 The compiled deck is [presentation.pdf](monitor_injection_results/presentation.pdf).
 
+[`sprint_proposal/`](sprint_proposal/) is a short pitch for the two-week sprint:
+the approach, the OOD frontier and cost reduction, and the stress-testing
+avenues for the monitors' model card
+([presentation.pdf](sprint_proposal/presentation.pdf)).
+
 ```text
 outputs/presentations/
 ├── README.md
