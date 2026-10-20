@@ -247,7 +247,10 @@ At about 01:40 UTC on 2026-10-20 the container became unreachable: Runpod
 reported the Pod RUNNING with no runtime or ports, SSH timed out, and the UI
 flagged a host problem. The one-line auxiliary arm had just finished training
 (about step 232 of 245); its outputs were on the container disk only. The
-queued seed average had not started. No lifecycle action was taken.
+queued seed average had not started. At the user's request the Pod was then
+terminated (delete 204, lookup 404; no Pods remain). The one-line arm's
+trained adapter was lost with the container disk and must be retrained. Both
+volumes are retained (EU `cb7bxu71ug`, NC2 `ixbh81vf9c`).
 
 The latest user-provisioned NC2 B200 `fs334v0u4zysvn` was terminated at the
 user's request on 2026-10-13. Network volume `ixbh81vf9c` remains retained;

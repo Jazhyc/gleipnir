@@ -224,3 +224,8 @@ fallback, not FLA. Receipt: `results/aux_supervision/kl_diagnostic.json`.
 The student fits the targets well: the KL falls 82%, and the Position copy
 is close to the teacher's. The run's mean combined training loss was 0.2176,
 against 0.1884 for the control's decision loss alone.
+- **One-line arm, attempt 1** (2026-10-20). Every startup gate passed and
+  training reached about step 232 of 245. Then the US-CA-2 host lost the
+  container, and the Pod was terminated. The adapter was on the container disk
+  only and was lost; no result exists. Rerun from `prepare.py --arm` on new
+  capacity.
