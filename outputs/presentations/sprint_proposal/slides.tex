@@ -1,36 +1,20 @@
-% Short sprint pitch: approach, frontier, sprint avenues, feedback, logistics.
+% Short sprint pitch: motivation and approach, frontier, sprint avenues, feedback, logistics.
 
-\begin{frame}{Core idea: ask for one decision and distill its logits}
-    \begin{columns}[T,onlytextwidth]
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Prior work: distill rationales}
-                Teacher writes a rationale and a 0--10 score.
-                \medskip
-
-                Student learns to reproduce the text (SFT), then RL.
-                \medskip
-
-                Every evaluation \textbf{generates hundreds of tokens}.
-            \end{block}
-        \end{column}
-        \begin{column}{0.48\textwidth}
-            \begin{block}{Gleipnir: distill the decision}
-                Ask the teacher (Kimi K3) for a single token: \texttt{0} or \texttt{1}.
-                \medskip
-
-                The student matches the teacher's \textbf{probability} on that token
-                (soft logit targets, LoRA).
-                \medskip
-
-                Every evaluation is \textbf{one prefill}; the score is a calibrated probability.
-            \end{block}
-        \end{column}
-    \end{columns}
+\begin{frame}{Motivation and core idea}
+    \begin{block}{Motivation}
+        Make monitoring cheap enough to run on every agent action everywhere.
+        Global deployment makes misalignment much easier to detect.
+    \end{block}
     \bigskip
 
-    {\small No rationale targets and no RL. The teacher's uncertainty carries the
-    information that rationales would otherwise have to carry.}
-    \medskip
+    \begin{itemize}
+        \item \textbf{Prior work} distills a teacher's written rationale and score,
+              so each evaluation generates hundreds of tokens.
+        \item \textbf{Gleipnir} asks the teacher (Kimi K3) for a single decision,
+              \texttt{0} or \texttt{1}, and distills its \textbf{probability} on that token.
+              Each evaluation is one forward pass over the trajectory.
+    \end{itemize}
+    \vfill
 
     {\scriptsize \href{https://arxiv.org/abs/2605.29601}{Sinha et al. (2026),
     \emph{Training Deliberative Monitors for Black-Box Scheming Detection}.}}
