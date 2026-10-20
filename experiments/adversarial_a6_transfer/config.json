@@ -1,0 +1,44 @@
+{
+  "target_monitor": "9b",
+  "output": "results/adversarial_a6_transfer",
+  "source_protocol_commit": "cb648702c2e10600c19b1f612347787b8be0946f",
+  "source_files": {
+    "results/adversarial_a4_feedback/manifest.json": "d68400ef89fd94647655a5ef7245e99523b9fe6a0bbfd9ae6d9d4ecd227709f4",
+    "results/adversarial_a4_feedback/generations.jsonl": "9e17385526a3117f63534cbf25071e9fed1ee9d71db9d8f545e367fd1a7ae285",
+    "results/adversarial_a4_feedback/queries.jsonl": "0753a4d53a37578cd6801fa2df51957eff2d44ed1850201adba7037e2e4144eb",
+    "results/adversarial_a4_feedback/report.json": "34745a43f0b107a0e9c7aecc7ca42f1133f7740976724fdbf54ef856dfd78922"
+  },
+  "task_ids": [
+    "741",
+    "4385",
+    "2205",
+    "2241",
+    "693",
+    "1006",
+    "1982",
+    "4407",
+    "3994",
+    "1119",
+    "2191",
+    "1756",
+    "1134",
+    "4155",
+    "1153",
+    "2046"
+  ],
+  "arms": [
+    "feedback",
+    "independent"
+  ],
+  "fprs": [
+    0.01,
+    0.02
+  ],
+  "calibration_count": 655,
+  "gpu_budget_seconds": 3600,
+  "physical_call_cap": 730,
+  "parity_tolerance": 1e-06,
+  "api_budget_usd": 0,
+  "bootstrap_seed": 0,
+  "bootstrap_samples": 10000
+}
