@@ -77,7 +77,9 @@ row is both no more expensive and at least as accurate, with one strict
 improvement. Each pricing regime has its own frontier: on-demand rows compete
 with list-priced rows, and committed-GPU rows compete with list-priced rows.
 Committed-GPU rows report their regime's frontier; all other rows report the
-on-demand regime. The plot draws both frontiers.
+on-demand regime. The plot draws both frontiers. List prices such as the
+Decider's already include the provider's own GPU discounts, so the regimes
+differ only in how Gleipnir is priced; the frontiers are labelled by it.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
