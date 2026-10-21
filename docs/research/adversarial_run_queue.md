@@ -8,14 +8,14 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- Nothing. Stage 1b of the cheating pilot is being written up for review before it is frozen.
+- Nothing. Waiting on the GCP admin about GPUs (allowed? H100 quota?) for the self-hosted check and Gleipnir scoring.
 
 ## Next, in order
 
-1. **Natural-cheating pilot, stage 1b.** Rerun the two Tinker prompt-B arms with Qwen's `top_k = 20`, the one sampling setting Tinker wasn't applying, with its own gate frozen first. About 1.5 hours on the CPU VM plus Tinker credits.
-   - **Stage 2** follows only if 1b passes: build the cheating and honest dataset, score it with Gleipnir 4B and 27B at 1–20% lines, and record Qwen3.8-27B activations for probes. Needs a split agreed with Jeremias and a GPU.
+1. **Natural-cheating pilot, self-hosted check.** Serve Qwen3.8-27B in BF16 with Qwen's generation settings on one GPU and run the contradicting arm, to see which provider behaves like the model. Needs a GPU.
+   - **Stage 2** follows only if that check gives a setting that passes a gate frozen beforehand: build the cheating and honest dataset, score it with Gleipnir 4B and 27B at 1–20% lines, and record Qwen3.8-27B activations for probes. Needs a split agreed with Jeremias.
 2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half. Can ride along when the GPU is up for stage 2.
-3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md). The fallback if stage 1b fails too; it can reuse the pilot's natural cheats, which nearly all carry explicit comments.
+3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md). The fallback if the self-hosted check fails too; it can reuse the pilot's natural cheats, which nearly all carry explicit comments.
 4. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
 
 ## Later
@@ -42,6 +42,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Done
 
+- **Natural-cheating pilot, stage 1b (21–22 October): `top_k` ruled out, no-go.** Adding Qwen's `top_k = 20` on Tinker changed almost nothing: 17 decisions against 19, and 70% of runs were message-for-message identical to stage 1, because Tinker follows the seed and top_p 0.8 already trims the tail. See [stage 1b](../../experiments/adversarial_cheating_pilot/stage_1b.md).
 - **Natural-cheating pilot, stage 1 (21–22 October): no-go on Tinker as served.** Qwen3.8-27B with thinking off cheats on its own, mostly by giving in right after the setup says "failed, fix it" (28 of 37 successes). The compared Tinker arms gave 18 cheating runs on 16 tasks and 87 audited honest runs, short of the 20 and 100 the gate needs; OpenRouter alone had 31 on 31 tasks. Most runs never reach the choice before the 50-message limit. See the [protocol and results](../../experiments/adversarial_cheating_pilot/README.md).
 - **Is the framing effect a 4B thing? (steps 0–3, 21 October).** It is a small-model effect. The accusation to the monitor flags 54–82% of readers for 4B v0.3 (either prompt), but 0% for the 27B with its teacher prompt and 0% for Kimi K3, and neither flags any reader the 4B flags. The untrained base already leans toward the accusation; InjectionAugmented40 stays under its line, at lower recall. Kimi catches 5 of 10 liars at 1%; swapping lies for truth lowers every monitor's liar scores; uninstructed workers made only a few natural false claims (3 confirmed in 140 flagged posts read, all confabulation-like). See the [protocol and results](../../experiments/adversarial_is_it_4b/README.md).
 - **Lab v0.3 follow-up** (20 October): placement, rewordings, benign notes, and one-machine thresholds. A monitor-directed misconduct claim flags 43–78% of innocent readers across wordings and both placements, while a benign note flags none. See the [lab README](../../experiments/adversarial_lab_v03/README.md).

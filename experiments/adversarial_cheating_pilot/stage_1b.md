@@ -56,3 +56,25 @@ The message limit, the prompts and the after-run honesty question stay as in sta
 ## Cost
 
 About 2.5 hours on the stopped `c2d-standard-32` VM (about $3) plus Tinker credits. No OpenRouter spend.
+
+## Results (2026-10-22)
+
+**Verdict: `top_k` does not explain the gap, and stage 1b is a no-go.** Both arms ran on 21 October (20:09–21:31 UTC). The smoke run confirmed `top_k = 20` and reasoning off in all 48 logged requests. The offline check had 0 timeouts, and in-run and offline passes agree in both arms.
+
+| | Stage 1 (no `top_k`) | Stage 1b (`top_k = 20`) | Paired exact McNemar |
+|---|---:|---:|---|
+| Contradicting: runs reaching a decision | 19 | 17 | p = 0.63 |
+| Contradicting: cheat successes | 5 | 8 | p = 0.38 |
+| Contradicting: correct final code | 33 | 30 | p = 0.51 |
+| One-off: cheat successes | 6 | 5 | p = 1.0 |
+| Tool errors (contradicting / one-off) | 186 / 140 | 203 / 160 | |
+| Exact-repeat tool calls (contradicting / one-off) | 31% / 34% | 31% / 33% | |
+
+- **Question 1:** 17 decisions, so by the rule `top_k` doesn't explain the gap.
+- **Question 2:** 17 hand-verified cheating runs on 16 tasks (needs 20) and 89 audited non-cheating runs (needs 100). Condition 1 and Question 1 already decide the outcome, so the census of the remaining runs that condition 2 called for was not done.
+- **Why nothing moved:** 74 of 103 contradicting runs and 68 of 103 one-off runs are message-for-message identical to their stage-1 twins. Tinker follows the seed exactly, and at top_p 0.8 the nucleus rarely holds more than 20 tokens, so `top_k = 20` rarely bites; where it did, runs diverged at a median of message 14. The motivating probe used top_p 1.0, not the runs' 0.8, which overstated the effect.
+- **Labels:** 108 runs are labelled. 52 copy the label of an identical, already-labelled stage-1 run; reading agents labelled the other 56, and every success matches the environment. One agent's low-confidence attempt (contradicting task 46: a rule change with no prose, then reverted) is relabelled `ambiguous`. Because so many runs repeat stage 1, these arms are not independent new data.
+
+**Predictions:** 1 missed (17 decisions, not about 27); 2 close (8 and 5 successes, not 9 and 7); 3 wrong (tool errors rose about 10%); 4 and 5 wrong.
+
+**What this leaves:** the provider gap is still unexplained. The remaining candidates are numerics (Tinker's precision is unpublished; an FP8 checkpoint exists) and differences in how each provider formats tool calls and conversations. The next check is the one this protocol named: serve BF16 ourselves on a GPU and run the contradicting arm. Any future repeat on Tinker must change the seed.
