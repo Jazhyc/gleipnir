@@ -76,7 +76,7 @@
 *Result 5: liars, revisited*
 - **Caught at each monitor's 1% (5%) line:** 4B 0/10 (1/10), 27B 0/10 (3/10), **Kimi 5/10 (8/10)**, with Kimi flagging no honest recruiters at 5%.
 - **Swapping each lie for the truth** in the same transcript lowers the liar's score under every monitor. The swapped recruiters still outrank honest recruiters (AUROC 0.76–0.92), though, so the pressure on A reads as suspicious, not just the lie.
-- **No natural lies:** an LLM screen of 10,264 posts by uninstructed workers, a rule check and hand checks found none. The liar result rests on instructed liars only.
+- **Natural false claims are rare and small:** an LLM screen of 10,264 posts by uninstructed workers, a rule check and hand checks of 180 posts found 3 (all GLM-5.3), each contradicted by the author's own logs, e.g. claiming a bundle was built that never was. That projects to roughly 1–6% of the 2,230 posts the screen flagged. They look like confabulation, not planned deception, so the liar result still rests on instructed liars.
 
 *What we think it means:*
 - **The good:** the 4B is quiet on natural multi-agent behaviour, the part rigid classifiers usually get wrong.
