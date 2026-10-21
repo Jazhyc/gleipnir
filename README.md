@@ -73,7 +73,7 @@ run it:
    ```bash
    docker run --gpus all -p 8000:8000 \
      -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
-     ghcr.io/jazhyc/gleipnir-serve:0.1 4b    # or 27b
+     ghcr.io/jazhyc/gleipnir-serve:0.2 4b    # or 27b
 
    curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
      -d '{"model": "monitor", "prompt": "<rendered prompt ending in Prediction:>"}'
@@ -83,7 +83,13 @@ run it:
    - **First start.** The image downloads and verifies the checkpoint (8.8 GB
      or 52 GB) and is ready in about 2.5 minutes (4B) or 4 minutes (27B).
      The `/models` mount keeps the download across restarts.
-   - **Prompts.** At most 32,768 tokens.
+   - **Prompts.** At most 262,144 tokens, the checkpoints' native range
+     (`--max-model-len 32768` restores the 0.1 limit). Image 0.1 serves at
+     most 32,768.
+   - **Prefix caching** is off. Append `--prefix-caching` (e.g. `... 4b
+     --prefix-caching`) to rescore a growing session faster; cached scores
+     can differ from uncached ones by up to about 0.15, so keep it off for
+     evaluation.
    - **Mounts.** Do not mount volumes over `/tmp` or `/workspace`, which hold
      the pinned runtime and code; on Runpod, attach volumes elsewhere, for
      example `/models`.

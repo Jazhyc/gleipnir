@@ -7,7 +7,7 @@ part of the compiler-cache key), and is validated against that run's rows.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -51,6 +51,9 @@ class Target:
     validation: dict[str, tuple[str, str, float]]
     # How the target raises the MXFP8 length bound beyond the recorded 32K.
     long_context: LongContext
+    # Opt-in prefix caching: served worker -> its prefix-cached twin, whose
+    # mixin masks the flag during the production audit. Empty: flags only.
+    prefix_workers: dict[str, str] = field(default_factory=dict)
 
     @property
     def merged_path(self) -> Path:
@@ -97,6 +100,14 @@ TARGETS = {
             ),
             receipt_env="GLEIPNIR_LONG_CONTEXT_VALIDATION",
         ),
+        prefix_workers={
+            "experiments.b200_gdn_fast.worker.FastGdnWorker": (
+                "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
+            ),
+            "experiments.b200_gdn_fast.worker.FastGatedTrimWorker": (
+                "experiments.b200_prefix_replay.worker.PrefixReplayWorker"
+            ),
+        },
     ),
     "27b": Target(
         key="27b",
@@ -126,6 +137,11 @@ TARGETS = {
         ),
     ),
 }
+
+# Align-mode prefix caching (docs/decisions/prefix_cached_serving.md): opt-in
+# only; cached scores drift from uncached by up to about 0.15.
+PREFIX_CACHE_FLAGS = ["--enable-prefix-caching", "--mamba-cache-mode", "align"]
+PREFIX_WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"
 
 # Diagnostic sources whose bytes differ between the two recorded stacks. The
 # 4B restores its archived bytes at launch (``restore_diagnostic_sources``);

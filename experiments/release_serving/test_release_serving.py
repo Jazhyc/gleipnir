@@ -119,3 +119,22 @@ def test_repeat_relative_gate() -> None:
     assert result["mae_ratio"] == pytest.approx(0.5) and result["passed"]
     assert not gate(pass_a, pass_a, recorded, 0.910, 0.912)["passed"]
     assert not gate(pass_a, pass_b, recorded, 0.900, 0.912)["passed"]
+
+
+@pytest.mark.parametrize("key", sorted(TARGETS))
+@pytest.mark.parametrize("limit", [32768, 262144])
+def test_prefix_caching_is_opt_in_flags_and_twin_worker(
+    key: str, limit: int, tmp_path: Path
+) -> None:
+    from experiments.release_serving.serve import enable_prefix_caching
+
+    extend_context, target, command = _long_context_case(tmp_path, key)
+    extend_context(command, {}, target, limit)
+    assert "--no-enable-prefix-caching" in command
+    worker = command[command.index("--worker-cls") + 1]
+    enable_prefix_caching(command, target)
+    assert "--no-enable-prefix-caching" not in command
+    index = command.index("--enable-prefix-caching")
+    assert command[index + 1 : index + 3] == ["--mamba-cache-mode", "align"]
+    served = command[command.index("--worker-cls") + 1]
+    assert served == target.prefix_workers.get(worker, worker)
