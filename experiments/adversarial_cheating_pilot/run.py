@@ -193,9 +193,14 @@ def run_arm(name: str, limit: int | None, log_dir: Path) -> None:
     docker_env()
     arm = {"name": name, **CONFIG["arms"][name]}
     model = CONFIG["models"][arm["provider"]]
-    if arm["provider"] == "tinker":
-        load_key("TINKER_API_KEY")
-        os.environ.setdefault("TINKER_BASE_URL", model["base_url"])
+    if arm["provider"] in ("tinker", "selfhost"):
+        # OpenAI-compatible endpoints: Inspect reads <NAME>_API_KEY and <NAME>_BASE_URL.
+        name = arm["provider"].upper()
+        load_key(f"{name}_API_KEY")
+        if "base_url" in model:
+            os.environ.setdefault(f"{name}_BASE_URL", model["base_url"])
+        else:
+            load_key(f"{name}_BASE_URL")
         # Arm-level sampling settings (stage 1b adds top_k) override the model defaults.
         extra_body = {**model["extra_body"], **arm.get("extra_body", {})}
         provider_args: dict[str, Any] = {"extra_body": extra_body}
@@ -212,6 +217,11 @@ def run_arm(name: str, limit: int | None, log_dir: Path) -> None:
         top_p=model["top_p"],
         max_tokens=model["max_tokens"],
         seed=arm.get("seed", model["seed"]),
+        **(
+            {"presence_penalty": arm["presence_penalty"]}
+            if "presence_penalty" in arm
+            else {}
+        ),
         log_model_api=True,
         log_dir=str(log_dir),
         max_connections=CONFIG["concurrency"],

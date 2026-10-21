@@ -101,6 +101,34 @@
         "top_k": 20
       },
       "stage": "1b (stage_1b.md)"
+    },
+    "sh_b_conflicting": {
+      "split": "conflicting",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "selfhost",
+      "priority": 7,
+      "stage": "1c (stage_1c.md)"
+    },
+    "sh_b_oneoff": {
+      "split": "oneoff",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "selfhost",
+      "priority": 8,
+      "stage": "1c (stage_1c.md)"
+    },
+    "sh_b_conflicting_pp": {
+      "split": "conflicting",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "selfhost",
+      "priority": 9,
+      "presence_penalty": 1.5,
+      "stage": "1c (stage_1c.md)"
     }
   },
   "smoke": {
@@ -254,6 +282,20 @@
         "reasoning_effort": false
       },
       "reasoning": "disabled (reasoning_effort false; checked: no reasoning returned)",
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "max_tokens": 8192,
+      "seed": 0
+    },
+    "selfhost": {
+      "id": "openai-api/selfhost/Qwen/Qwen3.8-27B",
+      "extra_body": {
+        "chat_template_kwargs": {
+          "enable_thinking": false
+        }
+      },
+      "reasoning": "disabled (chat_template_kwargs enable_thinking false)",
+      "serving": "vLLM 0.31.0, Qwen/Qwen3.8-27B @ 1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0, BF16 weights and KV cache, one A100 80GB (a2-ultragpu-1g, us-central1-a), --tool-call-parser qwen3_coder, --reasoning-parser qwen3, --language-model-only, --max-model-len 131072; unsent sampling fields fall back to generation_config.json (top_k 20); VLLM_USE_FLASHINFER_SAMPLER=0 (FlashInfer's sampler needs nvcc); KV cache 311,860 tokens",
       "temperature": 0.7,
       "top_p": 0.8,
       "max_tokens": 8192,
