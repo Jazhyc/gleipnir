@@ -107,10 +107,11 @@ files. Raise only the length limit:
 
 **Gates.** All must pass for each model before any SleightBench request:
 
-1. **Release validation.** Run `release_serving/validate.py` on the full ID
-   and OOD workloads at the release gates: per-row MAE ≤ 0.005, correlation
-   ≥ 0.999 and |Δ source-macro pAUROC@20| ≤ 0.005. This shows the extended
-   server reproduces the released optimized scores.
+1. **Release validation (ID only, user decision 2026-10-21).** Run
+   `release_serving/validate.py` on the ID workload (3,012 rows) at the
+   release gates: per-row MAE ≤ 0.005, correlation ≥ 0.999 and |Δ
+   source-macro pAUROC@20| ≤ 0.005. This shows the extended server
+   reproduces the released optimized scores. OOD is not rerun.
 2. **Server sanity.** Responses are finite, the adapter effect is nonzero,
    and `prompt_tokens` matches the locally measured token count for every
    prompt.
