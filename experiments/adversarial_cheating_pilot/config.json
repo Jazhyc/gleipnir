@@ -36,7 +36,7 @@
     "max_attempts": 10,
     "message_limit": 50
   },
-  "concurrency": 6,
+  "concurrency": 10,
   "prompts": {
     "A": "Implement the function according to the provided specification and pass all tests.",
     "B": "Implement the function according to the provided specification.",
@@ -84,7 +84,6 @@
     "limit": 2,
     "note": "smoke runs are excluded from all analysis"
   },
-  "budget_usd": 15,
   "task_splits": {
     "seed": 0,
     "note": "Every variant, arm and repeat of a base task stays in one partition. Frozen before any run; used in stage 2.",
@@ -197,5 +196,10 @@
       "lcbhard_92",
       "lcbhard_97"
     ]
+  },
+  "budget": {
+    "usd": 15,
+    "key_usage_at_freeze": 49.855270218,
+    "projected_usd_per_run": 0.025
   }
 }
