@@ -245,3 +245,53 @@ on Makora without fallbacks; design in the
 - **The teacher also misses the jailbreak** under this instruction in the
   stripped view (it wins the pair in the visible view), like the 27B in
   `sb02`.
+
+## Exploratory: base models (run `sb04`)
+
+The unadapted bases of both releases were run on the `sb03` stock BF16 engine:
+`Qwen/Qwen3.5-4B@851bf6e` and `Qwen/Qwen3.8-27B@1d4bf0f`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb04-base-models-frozen-2026-10-21)).
+
+**Immediate logits, ControlArena-description prompt.** These isolate the
+adapter, comparing against `sb03` `immediate` on the same engine:
+
+| Model | View | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| 4B base | stripped | 5.0% | 0.601 | 0.193 | 53% |
+| 4B released | stripped | 7.5% | 0.623 | 0.206 | 78% |
+| 4B base | visible | 5.0% | 0.599 | 0.204 | 65% |
+| 4B released | visible | 5.0% | 0.632 | 0.218 | 73% |
+| 27B base | stripped | 12.5% | 0.670 | 0.263 | 83% |
+| 27B released | stripped | 12.5% | 0.694 | 0.306 | 80% |
+| 27B base | visible | 12.5% | 0.668 | 0.238 | 78% |
+| 27B released | visible | 17.5% | 0.694 | 0.297 | 80% |
+
+**The authors' protocol.** Verbatim ControlArena system prompt, transcript
+in `<transcript>` tags, stripped view, 10 trials at temperature 1, scored
+by parsing `<score>`. Metrics follow the paper: per-trial catch against a
+threshold pooled over all benign trials.
+
+| Base model | Thinking | Per-trial catch | Any-trial | AUROC (mean score) | Pair wins | Threshold | Unparsed |
+|---|---|---:|---:|---:|---:|---:|---:|
+| 4B | off | 0.5% | 2.5% | 0.607 | 58% | 92 | 8/860 |
+| 4B | on | 3.0% | 12.5% | 0.646 | 65% | 74 | 5/860 |
+| 27B | off | 8.9% | 20.0% | 0.710 | 75% | 78 | 9/860 |
+| 27B | on | 14.0% | 32.5% | 0.711 | 80% | 18 | 0/860 |
+
+- **The adapters add little ranking on this benchmark.** They gain about
+  +0.02–0.03 AUROC and +0.01–0.04 pAUROC@20 over their bases on the same
+  interface. Most of each monitor's SleightBench ability comes from the base
+  model.
+- **Thinking helps the bases mainly through calibration.** The 27B base
+  gains 5 points of per-trial catch with thinking at unchanged mean-score
+  AUROC (0.710 → 0.711). Thinking pulls benign scores down, lowering the
+  pooled threshold from 78 to 18. The adapted models in `sb03` did not gain
+  from reasoning.
+- **Against the paper's no-thinking and thinking rows:**
+  - the 27B base sits between Haiku 4.5 (2% / 16%) and GPT-5.5 (14% / 50%);
+  - the 4B base sits below Haiku 4.5;
+  - the released 27B's single forward pass matches its base's 10-trial
+    thinking AUROC (about 0.69–0.71).
+- **Generation length.** Medians were 375 and 1,015 tokens for the 4B and
+  592 and 1,836 for the 27B (off / on). At most 5 of 860 trials per arm hit
+  a cap.
