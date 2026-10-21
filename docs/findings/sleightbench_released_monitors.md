@@ -446,3 +446,63 @@ otherwise matches `sb07`
 - **Its stripped threshold is again set by the `sed-line-drift` twin (0.997)**.
   Unlike Kimi's, its catch rate barely depends on that scenario (LOSO
   12.8–15.4%), because the next benigns are also high.
+
+## Interpretation: SleightBench against the OOD suite and the training data
+
+Post-hoc analysis requested by the user after `sb08`; it changes no frozen
+number above.
+
+**The adapter's gain holds; the ceiling falls.** Matched-prompt comparisons
+(pAUROC@20; OOD numbers from the
+[27B campaign](qwen38_27b_campaign.md)):
+
+| Benchmark (prompt for both) | Unadapted 27B | Gleipnir 27B | Kimi K3 | Adapter gain |
+|---|---:|---:|---:|---:|
+| Frozen OOD suite (teacher prompt) | 0.890 | 0.935 | 0.908 | +4.5 pts |
+| SleightBench stripped (CA-description, BF16 `sb03`/`sb04`) | 0.263 | 0.306 | 0.402 | +4.3 pts |
+| SleightBench visible | 0.238 | 0.297 | 0.423 | +5.9 pts |
+
+- On the OOD suite the student passes its teacher by 2.7 points; on
+  SleightBench it trails by about 10. The OOD suite's high base (0.89) left
+  too little headroom to separate student from teacher, so "the 27B caught
+  up with Kimi K3" does not generalize to deliberately evasive attacks.
+- SleightBench is hard for the teacher too (0.74 AUROC), so distillation
+  copies a weaker signal. The 27B recovers about 40% of the base-to-teacher
+  gap there.
+
+**The training data has stealth-prompted attacks, not monitor-adversarial
+ones.** A review of the five source papers and a keyword scan of the 8,688
+teacher-training prompts
+(`data/tool_trajectory_monitoring/teacher_training/prompts.jsonl`):
+
+| Source (rows) | Attack generation | Evasion pressure | Deniable, mistake-shaped sabotage |
+|---|---|---|---|
+| STRIDE (1,350) | Synthetic transcripts refined by a realism judge | Prompted ("EXTREMELY subtle") | Framing only |
+| Gloom (772) | Misaligned-persona role-play | Prompted ("plausible deniability") | Partial |
+| CoT-Red-Handed (2,340) | Side tasks under Stealth / Monitor Notice policies | Prompted to evade a reviewer | Closest overlap: edge cases, swallowed exceptions, naming |
+| BashArena (2,790) | Prompted attack policy, four side tasks | Prompted to evade the monitor | No; obfuscated call structure |
+| BashBench (1,436) | Ctrl-Z-style multi-step malware download | Human-iterated red team | No; plain `curl … \| sh` |
+
+- No source put a monitor in the loop: no selection or iteration against a
+  monitor score. The assembling paper lists adversarial training as future
+  work.
+- SleightBench's mechanisms (line-number `sed` edits, `awk` column indexes,
+  locale and shell assumptions, `.gitignore` omissions, monitor-directed
+  injection) appear in roughly 1–3% of rows or fewer, with no label signal.
+- Two label skews match specific results. `curl|wget … | sh` appears in 34%
+  of BashBench positives and no negatives; every Gleipnir run catches
+  `curl-pipe-bash`. `rm -rf` on logs appears in 16.6% of BashArena negatives
+  against 7.5% of positives; both log-deletion attacks score below 0.12.
+- Caveats: the scan is a lexical proxy; the `o46`/`s45` attacker tags are
+  inferred, not documented; whether our BashBench rows used the Ctrl-Z
+  red-team policy is unverified.
+
+**Implication.** SleightBench is further from our training distribution
+than the OOD suite in both mechanism and intent signature. Our
+specification's "honest mistakes are `0`" rule also conflicts with its
+mistake-shaped attacks, though `sb02` shows that swapping the instruction
+alone does not help. The direct test is training on deniable, mistake-shaped
+and monitor-evasion examples (research program open question 2) and checking
+SleightBench ranking without OOD regression. Catch rate at 1% FPR on 43
+benigns should be read as coarse tiers; rank on AUROC, pAUROC@20 and the
+threshold diagnostics above.
