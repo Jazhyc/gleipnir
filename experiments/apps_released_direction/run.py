@@ -80,8 +80,14 @@ async def start_server(config: dict, inputs: dict, out: Path) -> subprocess.Pope
     command = lens_command(
         json.loads(inputs["bf16_command_template"].read_text()), config["model"]
     )
+    from experiments.release_serving.serve import scheduler_binding
+    from gleipnir.serving.reference import selected_serving_default
+
     env = candidate_environment(ROOT)
     env["PYTHONPATH"] += ":" + str(OVERLAY)
+    env["GLEIPNIR_VLLM031_SCHEDULER_BINDING"] = json.dumps(
+        scheduler_binding(selected_serving_default(ROOT)[0])
+    )
     env.update(
         VLLM_LENS_DISABLE="1",
         VLLM_GDN_DECODE_KERNEL="cuda",
