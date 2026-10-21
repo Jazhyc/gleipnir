@@ -196,7 +196,9 @@ def run_arm(name: str, limit: int | None, log_dir: Path) -> None:
     if arm["provider"] == "tinker":
         load_key("TINKER_API_KEY")
         os.environ.setdefault("TINKER_BASE_URL", model["base_url"])
-        provider_args: dict[str, Any] = {"extra_body": model["extra_body"]}
+        # Arm-level sampling settings (stage 1b adds top_k) override the model defaults.
+        extra_body = {**model["extra_body"], **arm.get("extra_body", {})}
+        provider_args: dict[str, Any] = {"extra_body": extra_body}
         model_args: dict[str, Any] = {}
     else:
         load_key()
@@ -303,6 +305,7 @@ def main() -> None:
     run = sub.add_parser("run")
     run.add_argument("--arm", required=True, choices=list(CONFIG["arms"]))
     run.add_argument("--limit", type=int)
+    run.add_argument("--out", help="output folder name (default: the arm name)")
     sub.add_parser("report")
     sub.add_parser("spend")
     args = parser.parse_args()
@@ -313,7 +316,7 @@ def main() -> None:
             OUT / CONFIG["smoke"].get("dir", "smoke"),
         )
     elif args.command == "run":
-        run_arm(args.arm, args.limit, OUT / args.arm)
+        run_arm(args.arm, args.limit, OUT / (args.out or args.arm))
     elif args.command == "report":
         report()
     elif args.command == "spend":

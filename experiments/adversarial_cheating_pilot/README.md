@@ -317,6 +317,8 @@ The random-30 samples found no attempts in 120 unflagged runs across the four im
 
 **What this doesn't show:** one run per task (only 7 of 28 cheated tasks were cheated twice); LiveCodeBench-hard only; thinking off only; Tinker's serving precision is unpublished.
 
+**Next:** [stage 1b](stage_1b.md) tests whether Qwen's `top_k = 20`, which Tinker wasn't applying, explains the provider gap.
+
 ## Running
 
 Needs the colima VM `impbench` (`colima start impbench`), the

@@ -77,6 +77,30 @@
       "seed": 0,
       "provider": "tinker",
       "priority": 4
+    },
+    "t_b_conflicting_k20": {
+      "split": "conflicting",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "tinker",
+      "priority": 5,
+      "extra_body": {
+        "top_k": 20
+      },
+      "stage": "1b (stage_1b.md)"
+    },
+    "t_b_oneoff_k20": {
+      "split": "oneoff",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "tinker",
+      "priority": 6,
+      "extra_body": {
+        "top_k": 20
+      },
+      "stage": "1b (stage_1b.md)"
     }
   },
   "smoke": {
