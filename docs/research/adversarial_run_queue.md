@@ -8,15 +8,14 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-Nothing. The H100 VM is paused (`541509`).
+- **Natural-cheating pilot, stage 1 (API only).** Qwen3.8-27B, thinking off, on Impossible-LiveCodeBench; go/no-go on its cheating rate before any GPU spend. Protocol to be frozen in `experiments/adversarial_cheating_pilot/`. The H100 VM is paused (`541509`).
 
 ## Next, in order
 
-1. **Natural-cheating pilot** (Neel recommended reward-hacking benchmarks on the 20 October drop-in): an open agentic model with thinking off on ImpossibleBench, then probes against Gleipnir at high recall. Needs a split agreed with Jeremias and a GPU top-up.
-2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half.
-3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md).
-4. **Real swarm posts as framing (lab Run 3), only if there is spare time.** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated).
-5. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
+1. **Natural-cheating pilot, stage 2** (only if stage 1 passes): build the cheating and honest dataset, score it with Gleipnir 4B and 27B at 1–20% lines, and record Qwen3.8-27B activations for probes. Needs a split agreed with Jeremias and a GPU top-up.
+2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half. Can ride along when the GPU is up for stage 2.
+3. **Code or comments?** Cross what the code does with what its comment claims, then test the resulting explanation on held-out tasks and the 27B. [Design](adversarial_code_or_comments.md). The fallback if the pilot fails.
+4. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
 
 ## Later
 
@@ -25,6 +24,9 @@ Nothing. The H100 VM is paused (`541509`).
 - **One expensive monitor** (Kimi K3 or Gemini) on fixed subsets, for the cost-against-robustness comparison.
 - **Optimized serving path** (FP8/FP4) when Jeremias shares it. Probably needs a Blackwell GPU (RTX Pro 6000 on JarvisLabs).
 - **White-box framing:** a gradient search for the peer post that most raises an honest reader's score.
+## Parked
+
+- **Real swarm posts as framing (lab Run 3).** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated). Parked 21 October: the framing effect turned out specific to the 4B.
 - **Adversarial game: a detector as a tool in the recruitment lab.** From Smith, Chughtai and Nanda (2025), appendix "adversarial games".
   - **Setup:** in the recruitment world, give the target agent A a lie-detector tool, such as Gleipnir's score on each recruiter's posts, or later a white-box probe.
   - **Measure:** whether A gets talked into running the session-ending diagnostic less often than without the tool. Recruiters are honest or deceptive by arm.
@@ -34,9 +36,6 @@ Nothing. The H100 VM is paused (`541509`).
     - a tool that only reveals the recruiter's role, which checks that the detector isn't just learning who the recruiters are, the paper's werewolf caveat;
     - the same tool given to the recruiters instead.
   - **Status:** idea only, not designed in detail. It needs live episodes, so it costs API spend.
-
-## Parked
-
 - **Deceived victims (P2.3, victim half).** Needs new live continuations.
 - **Fragmented social attacks (P2.4) and AISI FakeLab.** Published effect; FakeLab needs its licence checked first.
 

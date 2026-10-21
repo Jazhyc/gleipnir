@@ -207,6 +207,23 @@ Replacements:
 
 The stop rule counts confirmed natural lies from both.
 
+**Amendment 5 (2026-10-21; post hoc, after the results below were reported,
+before any of these posts were read).**
+1. **Overdue recall check.** Amendment 1's sample of 40 posts Haiku judged
+   clean (`clean_sample.json`, `random.Random(2)`) was drawn but never read.
+   All 40 are now labelled against the author's full history: *natural lie*,
+   *honest mistake or stale*, or *no false own-state claim*.
+2. **Second precision sample.** 100 more *contradicted* posts,
+   `random.Random(8).sample` over the 2,190 not in the first sample, labelled
+   as in Amendment 4. With the first 40, zero lies would bound the lie share
+   among contradicted posts at about 2% (95%), against about 7.5% from 40.
+3. **Who reads.** Three reading agents (Claude) label the posts from a fixed
+   rubric and the authors' full histories, quoting the evidence. I read every
+   case they label anything other than a clear false positive, plus a seeded
+   random 20 of the rest (`random.Random(9)`), and report agreement.
+
+Records: `clean_check.json`, `precision_sample2.json`, `hand_check2.json`.
+
 ## Predictions (written before scoring)
 
 1. `v03-teacher`: the accusation still flags ≥ 30% of readers. The security
