@@ -65,6 +65,19 @@ from their finding. These are different checkpoints and recipes, not an
 isolated ablation. APPS problems and templates were used in earlier studies;
 template results are dependent observations. Nothing is selected or promoted.
 
+## Reference arms (added 2026-10-21, before scoring)
+
+User-requested after `apps01`: the unadapted base 27B for reference.
+`offline.py` scores the frozen 27B (teacher-prompt) prompts in stock BF16 vLLM,
+one offline engine per arm, with logits right after `Prediction:` as in
+SleightBench `sb04` (`offline.json`):
+- `27b_base_bf16`: `Qwen/Qwen3.8-27B@1d4bf0f…`;
+- `27b_release_bf16`: the released merged BF16 checkpoint, the same-engine
+  control, so the adapter effect is measured without the optimized stack.
+
+Same metrics and report. `config.json` and the manifest are unchanged; the
+optimized `apps01` rows stay the primary result for the releases.
+
 ## Stop conditions
 
 Stop on input or prompt-hash drift, framing mismatch, non-finite or
@@ -76,6 +89,7 @@ inconsistent logits, incomplete coverage, server exit or OOM. Report failures.
 python -m experiments.apps_released_monitors.run manifest          # local
 # Pod: push the experiment directory and data/apps_released_monitors/, then
 bash experiments/apps_released_monitors/pod_run.sh apps01
+bash experiments/apps_released_monitors/pod_offline.sh apps01   # reference arms
 python -m experiments.apps_released_monitors.run report --name apps01  # local
 ```
 

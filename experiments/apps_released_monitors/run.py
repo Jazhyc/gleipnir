@@ -245,7 +245,11 @@ def report(name: str) -> None:
     from gleipnir.evaluation.apps import summarize_apps
 
     result = {}
-    for model in CONFIG["models"]:
+    arms = [
+        *CONFIG["models"],
+        *json.loads((EXPERIMENT / "offline.json").read_text())["arms"],
+    ]
+    for model in [m for m in arms if (RESULTS / name / m / "complete.json").exists()]:
         out = RESULTS / name / model
         complete = json.loads((out / "complete.json").read_text())
         for split, digest in complete["files_sha256"].items():
