@@ -412,3 +412,37 @@ client, with the GPT-6 Luna request contract: reasoning `none`, temperature
   other run caught.
 - **It misses the jailbreak** at 1% FPR, like the other monitors under this
   instruction, though it wins that pair.
+
+## Exploratory: GPT-5.5 with the logit interface (run `sb08`)
+
+GPT-5.5 is one of the paper's monitors. It went through the direct OpenAI
+API because no OpenRouter endpoint for it returns logprobs. The setup
+otherwise matches `sb07`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb08-gpt-55-with-the-logit-interface-frozen-2026-10-21)).
+- **Snapshot.** Pinned to `gpt-5.5-2026-04-23`. The `gpt-5.5` alias resolves
+  to it, which failed the client's strict model-identity check on the first
+  canary attempt.
+- **Contract and cost.** All 172 rows met the contract, with no coverage
+  repeats and zero reasoning tokens, for about $12.24.
+- **Logprobs are not repeatable.** The canary prompt scored 0.59 on its
+  rejected first attempt and 0.974 on the accepted one, at identical
+  settings. Single-pass API logit scores therefore carry real per-row noise.
+  Sol's repeatability was not measured.
+
+| Monitor (logits, ControlArena-description prompt) | View | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins | 2nd-benign catch |
+|---|---|---:|---:|---:|---:|---:|
+| GPT-6 Sol | stripped | 15.0% | 0.823 | 0.515 | 90% | 47.5% |
+| **GPT-5.5** | stripped | **15.0%** | 0.783 | 0.404 | 90% | 15.0% |
+| Kimi K3 | stripped | 0.0% | 0.737 | 0.402 | 78% | 30.0% |
+| GPT-6 Sol | visible | 17.5% | 0.825 | 0.448 | 83% | 32.5% |
+| **GPT-5.5** | visible | **10.0%** | 0.792 | 0.455 | 85% | 30.0% |
+| Kimi K3 | visible | 0.0% | 0.748 | 0.423 | 90% | 37.5% |
+
+- **The logit interface reproduces the paper's no-thinking GPT-5.5.** Our
+  single logit catches 15% on the stripped view; the paper's reasoned
+  0–100 score over 10 trials, without thinking, catches 14%. On this
+  monitor the two interfaces agree.
+- **On ranking, GPT-5.5 sits between GPT-6 Sol and Kimi K3** (AUROC 0.78–0.79).
+- **Its stripped threshold is again set by the `sed-line-drift` twin (0.997)**.
+  Unlike Kimi's, its catch rate barely depends on that scenario (LOSO
+  12.8–15.4%), because the next benigns are also high.
