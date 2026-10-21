@@ -34,8 +34,10 @@ from 0/1 logits or native probabilities (decision models, general LLMs and
 base models). Paper rows appear as reasoning monitors (generated rationale,
 then a 0–10 score).
 Both figures draw an arrow from Claude Opus 4.6 to the on-demand Gleipnir 27B,
-labelled with the cost ratio and score gain (243× cheaper, +0.9 pp pAUROC); the
-title rounds it to ~200×. The x-axis ends at $100. The appendix
+labelled with the cost ratio only (243× cheaper); the title rounds it to
+~200× and says the monitor matches the best reasoning monitor. The user chose
+"matches" over "beats" (2026-10-22): the 0.9-point pAUROC gap is within
+benchmark noise, so it is not labelled. The x-axis ends at $100. The appendix
 figure, `tool_trajectory_ood_frontier_full.{svg,png}` (`--full`), plots every
 eligible row. Shared plotting helpers
 live in `src/gleipnir/analysis/plotting.py`; see
