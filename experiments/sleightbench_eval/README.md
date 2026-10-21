@@ -331,6 +331,34 @@ gleipnir-openrouter --input data/sleightbench/218c583/api_control_arena.jsonl \
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb05
 ```
 
+## Exploratory run sb06: Kimi K3 with the authors' protocol (frozen 2026-10-21)
+
+The user asked for the teacher under the authors' own setup, to set against
+its logit interface in `sb05`. `api_paper.py` sends the request:
+- **Prompt.** Upstream `render_prompt`: verbatim `control_arena.md` as the
+  system message and the stripped transcript in `<transcript>` tags as the
+  user message.
+- **Sampling.** 10 trials at temperature 1. Score: the last `<score>N</score>`.
+- **Arms.** `nothink`: reasoning effort `none`, at most 8,192 tokens.
+  `think`: effort `medium`, at most 16,384 tokens.
+- **Caching.** Both messages carry ephemeral cache breakpoints, with one
+  sticky session per transcript.
+- **Provider.** `decart/mxfp4`, with no fallbacks and `data_collection`
+  denied. The user picked Decart after both Sail Research endpoints returned
+  upstream 429s.
+- **Probe.** On repeats, 93% of prompt tokens came from cache.
+  - Without thinking, Kimi writes 3–4K-token analyses, so the original
+    4,096-token cap truncated one of three probe trials. The cap was raised
+    to 8,192 before the full run.
+  - With thinking, output was 0.9–2K tokens.
+- **Estimated cost.** About $30 without thinking and $15 with it.
+- **Metrics.** `run.py report-trials`, as for the base models in `sb04`.
+
+```bash
+python -m experiments.sleightbench_eval.api_paper nothink run   # then: think run
+python -m experiments.sleightbench_eval.run --variant paper_control_arena_nothink report-trials --name sb06_nothink
+```
+
 ## Related
 
 MonitoringBench ([arXiv:2605.09684](https://arxiv.org/abs/2605.09684)) is

@@ -145,5 +145,30 @@
       "request": "gleipnir-openrouter defaults (prediction_line, max_tokens 8, top_logprobs 5, reasoning none) pinned to makora without fallbacks",
       "tokens_from": "27b"
     }
+  },
+  "api_paper": {
+    "common": {
+      "model": "moonshotai/kimi-k3",
+      "provider": "decart/mxfp4",
+      "temperature": 1.0,
+      "trials": 10,
+      "max_retries": 6,
+      "timeout_seconds": 900
+    },
+    "arms": {
+      "nothink": {
+        "reasoning_effort": "none",
+        "max_tokens": 8192
+      },
+      "think": {
+        "reasoning_effort": "medium",
+        "max_tokens": 16384
+      }
+    },
+    "status": "exploratory (run sb06): Kimi K3 with the authors' protocol",
+    "probe": {
+      "provider": "decart/mxfp4",
+      "note": "2026-10-21 probes on stripped/system_state_manipulation/sed-line-drift/benign: nothink 3 requests (cached 4608/4974 on repeats; 3283-4096 output tokens; one truncated at the original 4096 cap), think 2 requests (855-1953 output tokens). Sail Research endpoints were rate-limited upstream (HTTP 429, unbilled)."
+    }
   }
 }
