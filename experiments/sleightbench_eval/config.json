@@ -153,7 +153,7 @@
       "tokens_from": "27b"
     },
     "gpt55": {
-      "model": "gpt-5.5",
+      "model": "gpt-5.5-2026-04-23",
       "provider": "openai",
       "variant": "control_arena",
       "status": "exploratory (run sb08)",
@@ -223,7 +223,7 @@
     "gpt55": {
       "run": "sb08",
       "request": {
-        "model": "gpt-5.5",
+        "model": "gpt-5.5-2026-04-23",
         "reasoning": {
           "effort": "none"
         },

@@ -384,8 +384,10 @@ python -m experiments.sleightbench_eval.run --variant control_arena report --nam
 
 ## Exploratory run sb08: GPT-5.5 with the logit interface (frozen 2026-10-21)
 
-This uses the same client, prompts and request contract as `sb07`, with only
-`model: gpt-5.5` changed. GPT-5.5 is one of the paper's monitors (no
+This uses the same client, prompts and request contract as `sb07`, with only the
+model changed. It is pinned to the snapshot `gpt-5.5-2026-04-23`: the
+`gpt-5.5` alias resolves to that snapshot, which failed the client's strict
+model-identity check on the first canary attempt. GPT-5.5 is one of the paper's monitors (no
 thinking 14%, thinking 50%). It goes through the direct OpenAI API, because
 no OpenRouter endpoint for it returns logprobs.
 - **Price.** $5.00/M input, $0.50/M cached, $30.00/M output, checked
