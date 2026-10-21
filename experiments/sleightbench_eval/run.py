@@ -17,6 +17,7 @@ from __future__ import annotations
 
 import argparse
 import asyncio
+import dataclasses
 import json
 import subprocess
 from collections import defaultdict
@@ -33,7 +34,7 @@ from gleipnir.evaluation.http_score import score_batch
 EXPERIMENT = Path(__file__).parent
 ROOT = EXPERIMENT.parents[1]
 CONFIG = json.loads((EXPERIMENT / "config.json").read_text())
-MANIFEST = EXPERIMENT / "manifest.json"
+RELEASE = "release"
 DATA = ROOT / CONFIG["upstream"]["data_root"]
 RESULTS = ROOT / "results/sleightbench_eval"
 OPEN, CLOSE = "<agent_trajectory>\n", "</agent_trajectory>"
@@ -65,19 +66,37 @@ def render(tokenizer: Any, template: Any, trajectory: str) -> str:
     )
 
 
-def check_framing(model: str, prompt: str) -> None:
-    """Our prefix and suffix must equal those of the model's validated ID prompts."""
+def manifest_path(variant: str) -> Path:
+    suffix = "" if variant == RELEASE else f"_{variant}"
+    return EXPERIMENT / f"manifest{suffix}.json"
+
+
+def prompts_path(model: str, variant: str) -> Path:
+    suffix = "" if variant == RELEASE else f"_{variant}"
+    return DATA / f"prompts_{model}{suffix}.json"
+
+
+def check_framing(model: str, prompt: str, instruction_replaced: bool) -> None:
+    """Our prefix and suffix must equal those of the model's validated ID prompts.
+
+    A prompt variant replaces the instruction, so only the decision suffix and
+    the chat-template opening are compared.
+    """
     reference = workload_rows(TARGETS[model].validation["id"][0])[0]["prompt"]
     for text in (prompt, reference):
         if text.count(OPEN) != 1 or text.count(CLOSE) != 1:
             raise ValueError("prompt must contain one trajectory envelope")
-    if prompt.split(OPEN)[0] != reference.split(OPEN)[0]:
+    opening = reference.split("\n", 1)[0]
+    if instruction_replaced:
+        if not prompt.startswith(opening + "\n"):
+            raise ValueError(f"{model} chat opening differs from validated prompts")
+    elif prompt.split(OPEN)[0] != reference.split(OPEN)[0]:
         raise ValueError(f"{model} instruction prefix differs from validated prompts")
     if prompt.split(CLOSE)[1] != reference.split(CLOSE)[1]:
         raise ValueError(f"{model} decision suffix differs from validated prompts")
 
 
-def build_prompts() -> tuple[dict, dict[str, list[dict]]]:
+def build_prompts(variant: str) -> tuple[dict, dict[str, list[dict]]]:
     from transformers import AutoTokenizer
 
     hashes = json.loads((DATA / "decrypted_sha256.json").read_text())
@@ -101,16 +120,24 @@ def build_prompts() -> tuple[dict, dict[str, list[dict]]]:
         ],
         "models": {},
     }
+    if variant != RELEASE:
+        manifest["variant"] = variant
+    instruction = None
+    if variant != RELEASE:
+        spec = CONFIG["variants"][variant]
+        instruction = (EXPERIMENT / spec["instruction"]).read_text()
     prompts: dict[str, list[dict]] = {}
     for model, spec in CONFIG["models"].items():
         tokenizer = AutoTokenizer.from_pretrained(spec["tokenizer"])
         template = prompt_set.for_role(spec["prompt_role"])
+        if instruction is not None:
+            template = dataclasses.replace(template, instruction=instruction)
         rows = []
         for view in CONFIG["views"]:
             for t in items:
                 messages = benchmark.VIEWS[view](benchmark.read_messages(t.path))
                 prompt = render(tokenizer, template, benchmark.body(messages))
-                check_framing(model, prompt)
+                check_framing(model, prompt, instruction is not None)
                 tokens = len(tokenizer.encode(prompt, add_special_tokens=False))
                 if tokens > CONFIG["context_limit"]:
                     raise ValueError(f"{t.id} exceeds the context limit")
@@ -133,23 +160,24 @@ def build_prompts() -> tuple[dict, dict[str, list[dict]]]:
     return manifest, prompts
 
 
-def freeze() -> None:
-    manifest, prompts = build_prompts()
-    if MANIFEST.exists():
-        if json.loads(MANIFEST.read_text()) != json.loads(json.dumps(manifest)):
+def freeze(variant: str) -> None:
+    manifest, prompts = build_prompts(variant)
+    path = manifest_path(variant)
+    if path.exists():
+        if json.loads(path.read_text()) != json.loads(json.dumps(manifest)):
             raise ValueError("rendered prompts differ from the frozen manifest")
         print("manifest unchanged")
     else:
-        write_json(MANIFEST, manifest)
+        write_json(path, manifest)
         print(f"froze {sum(len(p) for p in prompts.values())} prompts")
     for model, rows in prompts.items():
-        write_json(DATA / f"prompts_{model}.json", rows)
+        write_json(prompts_path(model, variant), rows)
 
 
-def frozen_prompts(model: str) -> list[dict]:
-    manifest = json.loads(MANIFEST.read_text())
+def frozen_prompts(model: str, variant: str) -> list[dict]:
+    manifest = json.loads(manifest_path(variant).read_text())
     expected = manifest["models"][model]["prompts"]
-    rows = json.loads((DATA / f"prompts_{model}.json").read_text())
+    rows = json.loads(prompts_path(model, variant).read_text())
     for row, frozen in zip(rows, expected, strict=True):
         if (
             benchmark.sha256(row["prompt"].encode()) != frozen["prompt_sha256"]
@@ -159,7 +187,7 @@ def frozen_prompts(model: str) -> list[dict]:
     return rows
 
 
-def score(model: str, name: str, validation: Path, port: int) -> None:
+def score(model: str, name: str, validation: Path, port: int, variant: str) -> None:
     report = json.loads(validation.read_text())
     if (
         report.get("model") != model
@@ -172,7 +200,7 @@ def score(model: str, name: str, validation: Path, port: int) -> None:
     if complete.exists():
         raise ValueError(f"{model} was already scored in {name}; no reruns")
     out.parent.mkdir(parents=True, exist_ok=True)
-    rows = frozen_prompts(model)
+    rows = frozen_prompts(model, variant)
     done = {r["id"] for r in read_rows(out)} if out.exists() else set()
     settings = {"port": port, **CONFIG["scoring"]}
     with out.open("a") as handle:
@@ -188,7 +216,12 @@ def score(model: str, name: str, validation: Path, port: int) -> None:
         raise ValueError("scored rows do not match the frozen order")
     write_json(
         complete,
-        {"model": model, "rows": len(scored), "validation": report},
+        {
+            "model": model,
+            "variant": variant,
+            "rows": len(scored),
+            "validation": report,
+        },
     )
 
 
@@ -267,9 +300,9 @@ def view_report(
     return result
 
 
-def report(name: str) -> None:
-    manifest = json.loads(MANIFEST.read_text())
-    output: dict[str, Any] = {"config": CONFIG, "models": {}}
+def report(name: str, variant: str) -> None:
+    manifest = json.loads(manifest_path(variant).read_text())
+    output: dict[str, Any] = {"config": CONFIG, "variant": variant, "models": {}}
     for model in CONFIG["models"]:
         path = RESULTS / name / f"{model}.jsonl"
         if not path.with_suffix(".complete.json").exists():
@@ -296,6 +329,12 @@ def report(name: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
+    parser.add_argument(
+        "--variant",
+        default=RELEASE,
+        choices=[RELEASE, *CONFIG["variants"]],
+        help="prompt variant; 'release' is each model's validated instruction",
+    )
     command = commands.add_parser("decrypt")
     command.add_argument("--checkout", type=Path, required=True)
     commands.add_parser("manifest")
@@ -310,11 +349,11 @@ def main() -> None:
     if args.command == "decrypt":
         decrypt(args.checkout)
     elif args.command == "manifest":
-        freeze()
+        freeze(args.variant)
     elif args.command == "score":
-        score(args.model, args.name, args.validation, args.port)
+        score(args.model, args.name, args.validation, args.port, args.variant)
     else:
-        report(args.name)
+        report(args.name, args.variant)
 
 
 if __name__ == "__main__":
