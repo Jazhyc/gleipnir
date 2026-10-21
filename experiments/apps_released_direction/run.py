@@ -190,7 +190,7 @@ async def run() -> None:
         len(fitting) != 896
         or len(testing) != 8218
         or fit_tasks & {str(r["metadata"]["task_id"]) for r in testing}
-        or len(fit_tasks) != partition["fit_tasks"]
+        or fit_tasks != {str(t) for t in partition["fit_tasks"]}
     ):
         raise ValueError("fit/test population drift or leakage")
     shutil.copyfile(inputs["partition"], out / "partition.json")
