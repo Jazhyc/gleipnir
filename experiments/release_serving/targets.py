@@ -121,7 +121,7 @@ TARGETS = {
         # QuantFullWorker raises the bound itself when this receipt is bound.
         long_context=LongContext(
             receipt="results/qwen38_27b_serving/mxfp8_envelope01.json",
-            receipt_sha256="PENDING",
+            receipt_sha256="4a6bc4b2eea3d13308d7f03faf995f009ef281e2dde8e63ee1e068d0dbf1c2c9",
             additional_key="mxfp8_long_context",
         ),
     ),

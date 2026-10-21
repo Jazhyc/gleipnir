@@ -60,8 +60,7 @@ defaults to 262,144, the checkpoints' native RoPE range (no YaRN). Pass
   - 27B: `qwen38_27b_serving/mxfp8_envelope01.json`, carried in
     `--additional-config`.
 
-Status: not yet validated on a B200, and the 27B receipt hash is still
-pending. The image (0.1) remains at 32K until a 0.2 build passes the ID
+Status: not yet validated on a B200. The image (0.1) remains at 32K until a 0.2 build passes the ID
 gates plus a long-input finite check.
 
 ## Validation (frozen before the build, 2026-10-20)
