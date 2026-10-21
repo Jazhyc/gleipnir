@@ -836,7 +836,9 @@ snapshot `.runpod/sleightbench.json`, machine `klzaw5yqymgh`,
 
 The fresh-Pod check of `0.2-rc1` then ran on a user-approved US B200 Pod,
 `n35vsu8v8assiz` (`.runpod/image02-check.json`, created through the REST API
-from the image, with `PUBLIC_KEY` set and no volume).
+from the image, with `PUBLIC_KEY` set and no volume). It also ran SleightBench
+`sb02`–`sb04`. At the user's request it was terminated on 2026-10-21 (delete
+204, lookup 404) after every result and log was pulled (dry-run: none missing).
 
 ## OpenRouter
 
