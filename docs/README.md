@@ -93,6 +93,8 @@
   project narrative before export to Google Docs.
 - `writeups/gleipnir_lesswrong_writeup.md`: faithful copy of the submitted MATS
   project narrative for small clarity edits before web publication.
+- [SleightBench writeup](writeups/sleightbench_monitor_evaluation.md): short
+  public-facing summary of the SleightBench finding.
 - [Mechanistic injection writeup](writeups/mechanistic_injection_writeup.md):
   curated summary of activation-based data filtering and CAFT, with
   supporting steering, transfer and precision controls.
