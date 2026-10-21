@@ -302,6 +302,35 @@ python -m experiments.sleightbench_eval.run --variant control_arena report --nam
 python -m experiments.sleightbench_eval.run --variant paper_control_arena_think report-trials --name sb04_paper_think
 ```
 
+## Exploratory run sb05: the Kimi K3 teacher with the logit interface (frozen 2026-10-21)
+
+The user asked for the teacher on the same footing as our monitors in
+`sb02`. The setup:
+- **Prompt.** The `control_arena` instruction (ControlArena description, our
+  binary output lines) and trajectory envelope, sent as the user turn.
+  `run.py --variant control_arena export-api` writes these rows. Their hashes
+  are frozen in `manifest_api_control_arena.json`, and each matches the user
+  content of the `sb02` prompts.
+- **Request.** `gleipnir-openrouter` defaults: `prediction_line`, 8 output
+  tokens, top-5 logprobs, reasoning `none`. These are the teacher-annotation
+  settings the students were distilled from.
+- **Provider.** `moonshotai/kimi-k3` pinned to Makora, the provider of the
+  training targets, with no fallbacks.
+- **Score.** The normalized `0`/`1` logprobs at the terminal label.
+- **Spend.** A 6-row paid canary comes first. The full 172 rows are about
+  3.1M input tokens, roughly $2 at Makora's $0.65/M input rate.
+- **Reporting.** Format failures are retried unchanged in a separate
+  64-token cache, as in the teacher canary. The long-context split uses Qwen
+  token counts, as an approximation.
+- **Deferred.** The authors' reasoning-and-score protocol for the teacher.
+
+```bash
+gleipnir-openrouter --input data/sleightbench/218c583/api_control_arena.jsonl \
+  --output results/sleightbench_eval/sb05/kimi_k3.jsonl --model moonshotai/kimi-k3 \
+  --provider-only makora --no-allow-fallbacks --limit 6      # canary; rerun without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb05
+```
+
 ## Related
 
 MonitoringBench ([arXiv:2605.09684](https://arxiv.org/abs/2605.09684)) is

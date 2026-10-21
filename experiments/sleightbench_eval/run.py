@@ -379,16 +379,49 @@ def view_report(
     return result
 
 
+def export_api(variant: str) -> None:
+    """Write user-message prompts (no chat template) for an API teacher.
+
+    The rows are what ``gleipnir-openrouter`` sends as the user turn: the
+    instruction plus the trajectory envelope, as in teacher annotation. Their
+    hashes are frozen in ``manifest_api_<variant>.json``.
+    """
+    spec = CONFIG["variants"][variant]
+    if spec.get("format") == "paper" or spec["enable_thinking"]:
+        raise ValueError("the API export covers the binary logit variants only")
+    instruction = (EXPERIMENT / spec["instruction"]).read_text()
+    template = dataclasses.replace(
+        load_prompt_set().for_role("teacher"), instruction=instruction
+    )
+    excluded = set(CONFIG["excluded_attacks"])
+    rows = []
+    for view in CONFIG["views"]:
+        for t in benchmark.transcripts(DATA, excluded):
+            messages = benchmark.VIEWS[view](benchmark.read_messages(t.path))
+            prompt = template.render(benchmark.body(messages))
+            rows.append({"id": f"{view}/{t.id}", "prompt": prompt, "metadata": {}})
+    frozen = {r["id"]: benchmark.sha256(r["prompt"].encode()) for r in rows}
+    path = EXPERIMENT / f"manifest_api_{variant}.json"
+    if path.exists() and json.loads(path.read_text()) != frozen:
+        raise ValueError("API prompts differ from the frozen manifest")
+    write_json(path, frozen)
+    out = DATA / f"api_{variant}.jsonl"
+    out.write_text("".join(json.dumps(r) + "\n" for r in rows))
+    print(f"wrote {len(rows)} API prompts to {out}")
+
+
 def report(name: str, variant: str) -> None:
     manifest = json.loads(manifest_path(variant).read_text())
     output: dict[str, Any] = {"config": CONFIG, "variant": variant, "models": {}}
-    for model in CONFIG["models"]:
+    api = CONFIG.get("api_models", {})
+    for model in [*CONFIG["models"], *api]:
         path = RESULTS / name / f"{model}.jsonl"
         if not path.with_suffix(".complete.json").exists():
             continue
         scored = {r["id"]: float(r["score"]) for r in read_rows(path)}
+        source = api[model]["tokens_from"] if model in api else model
         tokens = {
-            r["id"]: r["prompt_tokens"] for r in manifest["models"][model]["prompts"]
+            r["id"]: r["prompt_tokens"] for r in manifest["models"][source]["prompts"]
         }
         output["models"][model] = {
             view: view_report(view, scored, tokens, manifest["transcripts"])
@@ -457,6 +490,7 @@ def main() -> None:
     command = commands.add_parser("decrypt")
     command.add_argument("--checkout", type=Path, required=True)
     commands.add_parser("manifest")
+    commands.add_parser("export-api")
     command = commands.add_parser("score")
     command.add_argument("model", choices=sorted(CONFIG["models"]))
     command.add_argument("--name", required=True)
@@ -471,6 +505,8 @@ def main() -> None:
         decrypt(args.checkout)
     elif args.command == "manifest":
         freeze(args.variant)
+    elif args.command == "export-api":
+        export_api(args.variant)
     elif args.command == "score":
         score(args.model, args.name, args.validation, args.port, args.variant)
     elif args.command == "report-trials":

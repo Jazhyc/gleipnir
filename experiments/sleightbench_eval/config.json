@@ -135,5 +135,15 @@
       0,
       100
     ]
+  },
+  "api_models": {
+    "kimi_k3": {
+      "model": "moonshotai/kimi-k3",
+      "provider": "makora",
+      "variant": "control_arena",
+      "status": "exploratory (run sb05): teacher with the logit interface",
+      "request": "gleipnir-openrouter defaults (prediction_line, max_tokens 8, top_logprobs 5, reasoning none) pinned to makora without fallbacks",
+      "tokens_from": "27b"
+    }
   }
 }
