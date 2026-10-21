@@ -12,6 +12,28 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
 
+# Served context: the checkpoints' native RoPE range. The recorded runs used
+# 32,768; passing that limit replays them unchanged.
+RECORDED_CONTEXT = 32768
+CONTEXT_LIMIT = 262144
+
+
+@dataclass(frozen=True)
+class LongContext:
+    """The hash-bound MXFP8 envelope receipt that permits contexts beyond 32K.
+
+    ``receipt_env`` names the worker environment variable that carries the
+    receipt (4B ``LongContextWorker`` lineage); otherwise the receipt is bound
+    under ``additional_key`` in ``--additional-config`` (27B ``QuantFullWorker``).
+    """
+
+    receipt: str
+    receipt_sha256: str
+    worker: tuple[str, str] | None = None
+    sources: tuple[str, ...] = ()
+    receipt_env: str | None = None
+    additional_key: str | None = None
+
 
 @dataclass(frozen=True)
 class Target:
@@ -27,6 +49,8 @@ class Target:
     launch: str
     # (workload, recorded optimized rows, recorded macro pAUROC@20) per split.
     validation: dict[str, tuple[str, str, float]]
+    # How the target raises the MXFP8 length bound beyond the recorded 32K.
+    long_context: LongContext
 
     @property
     def merged_path(self) -> Path:
@@ -58,6 +82,21 @@ TARGETS = {
                 0.7703,
             ),
         },
+        # FastGatedTrimWorker is FastGdnWorker with LongContextWorker, which
+        # raises the bound after validating the 1M envelope receipt.
+        long_context=LongContext(
+            receipt="results/b200_context_million/million01/native.json",
+            receipt_sha256="c4f77178894708d3050ad4f70b3d225d47b96a936914725a2c4d8fc94ba2573b",
+            worker=(
+                "experiments.b200_gdn_fast.worker.FastGdnWorker",
+                "experiments.b200_gdn_fast.worker.FastGatedTrimWorker",
+            ),
+            sources=(
+                "experiments/b200_context_million/worker.py",
+                "experiments/b200_context_million/envelope.py",
+            ),
+            receipt_env="GLEIPNIR_LONG_CONTEXT_VALIDATION",
+        ),
     ),
     "27b": Target(
         key="27b",
@@ -79,6 +118,12 @@ TARGETS = {
                 0.9508,
             ),
         },
+        # QuantFullWorker raises the bound itself when this receipt is bound.
+        long_context=LongContext(
+            receipt="results/qwen38_27b_serving/mxfp8_envelope01.json",
+            receipt_sha256="PENDING",
+            additional_key="mxfp8_long_context",
+        ),
     ),
 }
 

@@ -24,6 +24,8 @@ from pathlib import Path
 import httpx
 
 from experiments.release_serving.targets import (
+    CONTEXT_LIMIT,
+    RECORDED_CONTEXT,
     ROOT,
     SHARED_DIAGNOSTIC_SOURCES,
     TARGETS,
@@ -49,7 +51,45 @@ def scheduler_binding(selection: dict) -> dict:
     return binding
 
 
-def prepare(target: Target, host: str, port: int) -> tuple[list[str], dict]:
+def extend_context(command: list[str], env: dict, target: Target, limit: int) -> None:
+    """Change only the context limit and bind the target's MXFP8 envelope receipt."""
+    from gleipnir.data.monitoring import file_hash
+
+    for flag in ("--max-model-len", "--max-num-batched-tokens"):
+        if command[command.index(flag) + 1] != str(RECORDED_CONTEXT):
+            raise ValueError("recorded context/chunk recipe changed")
+    if limit == RECORDED_CONTEXT:
+        return
+    if not RECORDED_CONTEXT < limit <= CONTEXT_LIMIT:
+        raise ValueError(
+            f"context limit must be in ({RECORDED_CONTEXT}, {CONTEXT_LIMIT}]"
+        )
+    spec = target.long_context
+    if file_hash(ROOT / spec.receipt) != spec.receipt_sha256:
+        raise ValueError(f"long-context receipt changed: {spec.receipt}")
+    command[command.index("--max-model-len") + 1] = str(limit)
+    index = command.index("--additional-config") + 1
+    additional = json.loads(command[index])
+    if spec.worker is not None:
+        worker = command.index("--worker-cls") + 1
+        if command[worker] != spec.worker[0]:
+            raise ValueError("recorded worker changed")
+        command[worker] = spec.worker[1]
+    for path in spec.sources:
+        additional["gleipnir_frost_fp4"][path] = file_hash(ROOT / path)
+    if spec.additional_key is not None:
+        additional[spec.additional_key] = {
+            "validation": spec.receipt,
+            "validation_sha256": spec.receipt_sha256,
+        }
+    command[index] = json.dumps(additional, sort_keys=True)
+    if spec.receipt_env is not None:
+        env[spec.receipt_env] = spec.receipt
+
+
+def prepare(
+    target: Target, host: str, port: int, limit: int = CONTEXT_LIMIT
+) -> tuple[list[str], dict]:
     from experiments.b200_vllm031.runtime import candidate_environment
     from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from gleipnir.serving.reference import selected_serving_default
@@ -90,6 +130,7 @@ def prepare(target: Target, host: str, port: int) -> tuple[list[str], dict]:
     else:
         env.pop("GLEIPNIR_FROST_WRAPPER_VALIDATION", None)
         env["GLEIPNIR_BF16_AUDIT"] = str(state / "bf16_audit.json")
+    extend_context(command, env, target, limit)
     return command, env
 
 
@@ -124,9 +165,15 @@ def main() -> None:
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--attempts", type=int, default=3)
     parser.add_argument("--startup-timeout", type=float, default=2400)
+    parser.add_argument(
+        "--max-model-len",
+        type=int,
+        default=CONTEXT_LIMIT,
+        help=f"{RECORDED_CONTEXT} replays the recorded command unchanged",
+    )
     args = parser.parse_args()
     target = TARGETS[args.model]
-    command, env = prepare(target, args.host, args.port)
+    command, env = prepare(target, args.host, args.port, args.max_model_len)
     for attempt in range(1, args.attempts + 1):
         log_path = STATE / target.key / f"server.{attempt}.log"
         print(

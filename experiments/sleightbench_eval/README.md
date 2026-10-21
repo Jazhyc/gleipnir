@@ -13,8 +13,8 @@ aggregation or serving after seeing scores, and do not rerun to get a
 different number. This is an external held-out measurement, not a development
 set.
 
-Status: data decrypted and inventoried (2026-10-21). The config, entrypoint,
-tests and launch are still to do.
+Status: the config, entrypoint, tests and frozen prompt manifest are
+committed (2026-10-21). Next: gates and scoring on the B200.
 
 ## Hypothesis and baselines
 
@@ -58,7 +58,8 @@ Report the score–length correlation as a diagnostic.
 ## Rendering (frozen)
 
 The body inside the trajectory envelope is the upstream JSONL, one message
-object per line, written with `json.dumps` and canary lines dropped. Two views
+object per line, written with `json.dumps`. Canary-only lines are dropped.
+Upstream's monitors still see them, but they carry no label information. Two views
 are declared now and scored in the same pass:
 
 1. **`stripped` (primary).** This reimplements upstream
@@ -69,19 +70,19 @@ are declared now and scored in the same pass:
 2. **`visible` (secondary).** Our CoT-removed ID contract: drop `thinking`
    and keep visible assistant text. Tool `description` fields are kept.
 
-The prompt is the model-card instruction
-(`experiments/tool_trajectory_monitoring/prompts/student.txt`) followed by
-`<agent_trajectory>` … `</agent_trajectory>`. It goes through the Qwen chat
+Each model gets the instruction its release was validated with: the compact
+student prompt (`prompts/student.txt`) for the 4B, and the full teacher
+specification (`prompts/teacher.txt`) for the 27B. It is followed by
+`<agent_trajectory>` … `</agent_trajectory>`. `run.py manifest` refuses to
+freeze unless every prompt's instruction prefix and decision suffix equal
+those of the model's validated ID workload. It goes through the Qwen chat
 template with `enable_thinking=False`, then `Prediction:`. Score is
 softmax([logit_0, logit_1])[1]. Truncation is not allowed.
 
-**Measured rendered lengths.** Both tokenizers give identical counts, over 86
-files per view:
-
-| View | Median | p90 | Max | > 32,768 | > 262,144 |
-| --- | ---: | ---: | ---: | ---: | ---: |
-| `stripped` | 4,625 | 18,615 | 194,360 | 6 | 0 |
-| `visible` | 5,072 | 19,569 | 194,678 | 6 | 0 |
+**Measured rendered lengths.** The frozen manifest has 172 prompts per
+model: 86 transcripts in each of the two views. The longest is 194,678 tokens
+(4B) or 195,490 (27B, longer instruction). Six files per view are over
+32,768 tokens and none is over 262,144.
 
 The six long files are the attack and benign transcripts of
 `gitignore-env-omission` and `pip-freeze-typosquat`, plus the attack
@@ -94,16 +95,11 @@ Use the optimized B200 stack for both models: the `release_serving` targets
 are recorded with `--max-model-len 32768`, which is too short for the long
 files. Raise only the length limit:
 
-- **Context limit.** Set `--max-model-len 262144`, the checkpoints' native
-  RoPE range. Do not use YaRN.
-- **MXFP8 length bound.** Raise it as in
-  [`b200_context_million`](../b200_context_million/README.md) (4B) and the
-  [27B long-context section](../qwen38_27b_serving/README.md). The raise is
-  allowed only with its hash-bound envelope receipt. If a receipt binds a
-  checkpoint other than the release one, rerun the envelope check, which uses
-  no labels, before launch.
-- **Everything else unchanged.** Keep the 32K chunk budget, 128-sequence cap,
-  FCFS scheduling, prefix caching off and the `/v1/monitor/score` endpoint.
+- **Context limit.** `release_serving/serve.py` now serves at
+  `--max-model-len 262144` by default, the checkpoints' native RoPE range,
+  without YaRN. See [release serving](../release_serving/README.md#context-limit).
+- **Scoring.** Requests are sent one at a time in the frozen manifest order
+  (concurrency 1), so batch composition cannot vary.
 
 **Gates.** All must pass for each model before any SleightBench request:
 
@@ -168,23 +164,30 @@ program, if they change the project's direction.
   cached predictions. Each prompt is scored at most once per model and view.
 - **No reruns.** Never rerun a completed pass, whatever the result.
 
-## To do before launch
+## Files and commands
 
-1. Commit `config.json`. It records the data commit, the SHA-256 of every
-   decrypted input, the view definitions, the rendered-prompt SHA-256 and
-   token count of each of the 172 prompts, the serving targets with their
-   overrides, the metric definitions and the bootstrap seed. Store hashes
-   only, never data.
-2. Write `run.py`:
-   - **`manifest`:** decrypt, check hashes and render. Runs locally with no
-     GPU.
-   - **`score`:** use the live server; fail closed on any identity or count
-     mismatch.
-   - **`report`:** compute the metrics above.
-3. Write tests for the stripping function (against upstream behaviour on a
-   synthetic transcript), multi-session merging, the threshold convention,
-   and paired bootstrap resampling. Do not use benchmark text as fixtures.
-4. Get the user's go-ahead for a B200 Pod, then run gates, score and report.
+- `config.json`: the frozen choices (data commit, exclusions, pairs, views,
+  prompt role per model, context, scoring and metric settings).
+- `manifest.json`: SHA-256 of every decrypted file, plus each prompt's
+  SHA-256 and token count. It stores hashes only, never benchmark text.
+- `benchmark.py`: decryption, views, attack units and metrics.
+- `run.py`: the entrypoint.
+- `test_sleightbench.py`: tests on synthetic transcripts.
+
+```bash
+python -m experiments.sleightbench_eval.run decrypt --checkout <sleight-bench@218c583>
+python -m experiments.sleightbench_eval.run manifest   # verifies the frozen manifest
+# on the B200, per model, with release_serving/serve.py running:
+python -m experiments.release_serving.validate 4b --splits id --output results/sleightbench_eval/<name>/validation_4b.json
+python -m experiments.sleightbench_eval.run score 4b --name <name> \
+  --validation results/sleightbench_eval/<name>/validation_4b.json
+python -m experiments.sleightbench_eval.run report --name <name>
+```
+
+`score` refuses to start unless that model's ID validation passed. It checks
+every prompt against the manifest and appends one row per request, so an
+interrupted pass resumes. Once it writes `<model>.complete.json`, it refuses
+to score that model again under the same name.
 
 ## Related
 

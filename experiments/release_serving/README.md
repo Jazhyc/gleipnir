@@ -44,6 +44,26 @@ These are packaging releases: the weights are unchanged.
   documented stock `vllm serve` recipe for the `-BF16` repositories, and a
   check against the recorded BF16 rows.
 
+## Context limit
+
+The recorded runs served at 32,768 tokens. Since 2026-10-21, `serve.py`
+defaults to 262,144, the checkpoints' native RoPE range (no YaRN). Pass
+`--max-model-len 32768` to replay the recorded command unchanged.
+`extend_context` changes nothing else, and keeps the 32K chunk budget:
+
+- the context limit;
+- the 4B worker, `FastGdnWorker` → `FastGatedTrimWorker`. That is the same
+  stack plus `LongContextWorker`, which raises the MXFP8 length bound;
+- the hash-bound MXFP8 envelope receipt that permits the raise:
+  - 4B: `b200_context_million/million01/native.json`, carried in an
+    environment variable;
+  - 27B: `qwen38_27b_serving/mxfp8_envelope01.json`, carried in
+    `--additional-config`.
+
+Status: not yet validated on a B200, and the 27B receipt hash is still
+pending. The image (0.1) remains at 32K until a 0.2 build passes the ID
+gates plus a long-input finite check.
+
 ## Validation (frozen before the build, 2026-10-20)
 
 A fresh Pod is launched from the pushed image, with no network volume. For
