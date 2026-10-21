@@ -60,8 +60,13 @@ defaults to 262,144, the checkpoints' native RoPE range (no YaRN). Pass
   - 27B: `qwen38_27b_serving/mxfp8_envelope01.json`, carried in
     `--additional-config`.
 
-Status: not yet validated on a B200. The image (0.1) remains at 32K until a
-0.2 build passes the ID gates plus a long-input finite check.
+Status: validated on a B200 on 2026-10-21 (SleightBench run `sb01`). Both
+models passed the repeat-relative ID gates at 262K (`gate.py`; MAE ratio 1.05
+for the 4B and 1.06 for the 27B), and inputs up to 195K tokens scored finite.
+See the [finding](../../docs/findings/sleightbench_released_monitors.md#serving-and-gates).
+User decision: later evaluations of these checkpoints on this unchanged stack
+skip the ID passes. New adapters, checkpoints or stack changes still need
+parity. The image (0.1) remains at 32K until a 0.2 build.
 
 ## Validation (frozen before the build, 2026-10-20)
 

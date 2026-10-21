@@ -13,8 +13,9 @@ aggregation or serving after seeing scores, and do not rerun to get a
 different number. This is an external held-out measurement, not a development
 set.
 
-Status: the config, entrypoint, tests and frozen prompt manifest are
-committed (2026-10-21). Next: gates and scoring on the B200.
+Status: complete (run `sb01`, 2026-10-21). Both models passed their gates
+and were scored once. Results are in
+[the finding](../../docs/findings/sleightbench_released_monitors.md).
 
 ## Hypothesis and baselines
 
