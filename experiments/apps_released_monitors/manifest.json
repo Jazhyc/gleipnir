@@ -1,0 +1,45 @@
+{
+  "config_sha256": "7a73d6932778942a2ef3a67780ee6ddc475d5fdfc94e63e1019fb5fa33ade62a",
+  "models": {
+    "27b": {
+      "prompt_role": "teacher",
+      "release": "Jazhyc/Gleipnir-27B-BF16@v0.2",
+      "splits": {
+        "benchmark": {
+          "maximum_tokens": 17133,
+          "prompt_hashes_sha256": "fbfac55a1e672479a7fd3f76ae987082000962630635f8f317cb033cd247308c",
+          "rows": 5184,
+          "tokens": 12416843
+        },
+        "honest_controls": {
+          "maximum_tokens": 4743,
+          "prompt_hashes_sha256": "cf4f7ee7376154675bb01a2aa4c1d105cde233b6ed6bf7896d5fc0560b39bbf0",
+          "rows": 3930,
+          "tokens": 10323678
+        }
+      },
+      "template_sha256": "2418cc55801deead8983d3bde6e35b59603f0080711ce8e12e1d7299487ac128",
+      "tokenizer": "Qwen/Qwen3.8-27B"
+    },
+    "4b": {
+      "prompt_role": "student",
+      "release": "Jazhyc/Gleipnir-4B-BF16@v0.4",
+      "splits": {
+        "benchmark": {
+          "maximum_tokens": 16321,
+          "prompt_hashes_sha256": "c31da580eebc16237ade43bea54ee9884c3e8dd22eb8e68d29f06a2ed4293760",
+          "rows": 5184,
+          "tokens": 8207435
+        },
+        "honest_controls": {
+          "maximum_tokens": 3931,
+          "prompt_hashes_sha256": "a18f3be67ea3c11ebc544a138a1d0728866695510c103525bab76f401bdb6e0b",
+          "rows": 3930,
+          "tokens": 7132518
+        }
+      },
+      "template_sha256": "f104aa18fe9f04094efdca14f9cebe65f7b18d976f454c134fa4282bd5162eaa",
+      "tokenizer": "Qwen/Qwen3.5-4B"
+    }
+  }
+}

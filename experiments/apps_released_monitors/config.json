@@ -1,0 +1,40 @@
+{
+  "populations": {
+    "benchmark": {
+      "input": "data/monitoring_injection_disentanglement/benchmark/neutral.jsonl",
+      "sha256": "e3a8148355506e25f0fa77149f50c2d2a2351b33375585c120a983c7d806f866",
+      "reference": "results/judge_injection_continuation/evaluation_regular/continued/benchmark_neutral.jsonl",
+      "reference_sha256": "bf494b8667325f47afb075f8cefa7361dae544903c6255f0307b833cec3a1749",
+      "rows": 5184
+    },
+    "honest_controls": {
+      "input": "data/monitoring_injection_disentanglement/honest_controls/neutral.jsonl",
+      "sha256": "5c1487faa3e88291911faca61eaea3afeec8cb2efe3c3aac846d5863ff6ab25b",
+      "reference": "results/judge_injection_continuation/evaluation_regular/continued/honest_controls_neutral.jsonl",
+      "reference_sha256": "10a9b7ea42132f68fbdd642d9c7f7a7670297ff91baefb0520c09b2335e97dd9",
+      "rows": 3930
+    }
+  },
+  "models": {
+    "4b": {
+      "release": "Jazhyc/Gleipnir-4B-BF16@v0.4",
+      "tokenizer": "Qwen/Qwen3.5-4B",
+      "prompt_role": "student"
+    },
+    "27b": {
+      "release": "Jazhyc/Gleipnir-27B-BF16@v0.2",
+      "tokenizer": "Qwen/Qwen3.8-27B",
+      "prompt_role": "teacher"
+    }
+  },
+  "image": "ghcr.io/jazhyc/gleipnir-serve:0.2",
+  "scoring": {
+    "port": 8000,
+    "batch_rows": 128,
+    "concurrency": 128,
+    "timeout_seconds": 600
+  },
+  "historical": {
+    "4b_regular_fp4_optimized": "results/b200_apps/apps02/summary.json"
+  }
+}
