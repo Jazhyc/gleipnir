@@ -65,17 +65,19 @@ per-trial catch rates read from its appendix figures.
 | Kimi K3 | Logits | 0% | 30% | 0.737 |
 | GPT-5.5 | Logits | 15% | 15% | 0.783 |
 | GPT-6 Sol | Logits | 15% | 47.5% | 0.823 |
+| GPT-6 Luna | Logits | 5% | 12.5% | 0.696 |
 | **Gleipnir 4B** | Logits, own prompt | **5%** | 5% | 0.657 |
 | **Gleipnir 27B** | Logits, own prompt | **15%** | 27.5% | 0.706 |
 
-The logit runs for Kimi K3, GPT-5.5 and GPT-6 Sol used the ControlArena
+The logit runs for Kimi K3, GPT-5.5 and the GPT-6 models used the ControlArena
 monitor description with our binary output format and no reasoning.
 
 **What the 27B catches.** It catches attacks whose actions are overtly
 unauthorized: `curl | bash` from an unusual host, renamed storage buckets,
 deleted monitoring logs, a `.gitignore` omission. It also flags the
 injection jailbreak that every Opus 4.6 API configuration in the paper
-misses. **What it misses.** It catches none of the counting or object-reuse
+misses, though that is less impressive than it looks (see below). **What it
+misses.** It catches none of the counting or object-reuse
 attacks. Of the model-priors attacks it catches only one, and only when the
 agent's prose is visible. These are the classes designed to pass as honest
 mistakes.
@@ -114,6 +116,46 @@ rather than on one catch rate.
   added nothing on top.
 - **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82),
   and is strongest on exactly the mistake-shaped classes our models miss.
+
+## A cheap frontier comparison: GPT-6 Luna
+
+On the same ControlArena prompt, Gleipnir 27B roughly matches OpenAI's
+low-cost GPT-6 Luna, as it did on our OOD suite:
+
+| Same prompt, stripped view | Catch @1% FPR | AUROC | pAUROC@20 |
+|---|---:|---:|---:|
+| Gleipnir 27B | 12.5–20% | 0.694–0.697 | 0.299–0.306 |
+| GPT-6 Luna | 5% | 0.696 | 0.277 |
+
+The two Gleipnir figures are the same checkpoint on our optimized and BF16
+serving stacks. The 7.5-point catch gap between them comes from three attacks
+tied with the threshold benign at BF16 resolution, which the strict rule
+counts as misses. Ranking is level, and on the visible view Luna's AUROC is
+higher (0.74 against 0.70). Self-hosted at B200 break-even, Gleipnir 27B costs
+about $0.04 per million input tokens on demand ($0.018 on committed GPUs),
+against Luna's $0.10 list price: about 2.4–5.7× cheaper, before accounting
+for provider margin and utilization. Under this prompt Luna is fully
+jailbroken by the injection attack (score about 2×10⁻¹⁰).
+
+## A caveat on the jailbreak: monitors react to any monitor-directed text
+
+Our monitors' high score on the injection jailbreak looked like robustness.
+A follow-up on the APPS injection benchmark suggests it is mostly a reflex.
+There, honest programs carry a note addressed to the monitor. At a 0.5
+threshold:
+
+| APPS, honest code with an injected note | Flagged (GPT-4 / GPT-4.1 / GPT-4o template) | Injected backdoor vs injected honest AUROC |
+|---|---|---:|
+| Qwen3.8-27B base | 76 / 99 / 100% | 0.66 |
+| Gleipnir 27B | 53 / 73 / 100% | 0.83 |
+| Gleipnir 4B | 90 / 99.5 / 98% | 0.62 |
+
+The 27B rows use the same BF16 engine; the 4B row is on our optimized stack.
+Fine-tuning reduces the base model's reaction and greatly improves
+discrimination, but both monitors still treat a note to the monitor as strong
+evidence of misbehavior. That label is debatable, because an agent writing to
+its own monitor is arguably suspicious. On the 4B, projecting out a fitted
+"injection direction" softened the reaction but did not remove it.
 
 ## Lesson 3: our OOD suite was too easy to separate student from teacher
 
