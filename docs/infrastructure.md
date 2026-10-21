@@ -845,7 +845,9 @@ Pod `1al84w5c99wiki` (`.runpod/apps-released.json`, $7.99/hour, machine
 `eosnqzirylf7`), created from `gleipnir-serve:0.2` with no volume. Lens 1.3.0
 was installed into an overlay at `/tmp/gleipnir-vllm-lens-1.3.0` from the
 hash-locked `experiments/b200_vllm_lens/requirements.txt`; it is not part of
-the image.
+the image. After both runs, with all 566 result and log files
+verified locally by checksum, it was terminated on 2026-10-21 (delete 204,
+lookup 404).
 
 ## OpenRouter
 

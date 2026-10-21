@@ -117,4 +117,5 @@ Results: `results/apps_released_direction/released_direction01/`; logs:
 US B200 Pod `1al84w5c99wiki` (`.runpod/apps-released.json`, GPU
 `GPU-e0504b68…`, driver 595.91.07), created from `gleipnir-serve:0.2` with no
 volume on 2026-10-21 at the user's request. All 566 result and log files were
-pulled and verified by checksum.
+pulled and verified by checksum before the Pod was terminated (delete 204,
+lookup 404).
