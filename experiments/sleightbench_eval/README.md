@@ -403,6 +403,21 @@ python -m experiments.sleightbench_eval.api_openai gpt55 --limit 1   # canary; t
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb08
 ```
 
+## Exploratory run sb09: GPT-6 Luna with the logit interface (frozen 2026-10-22)
+
+User-requested: the same client, prompts and request contract as `sb07`, with
+only the model changed to `gpt-6-luna`, the project's earlier OOD teacher
+candidate.
+- **Price.** $0.10/M input, $0.01/M cached, $0.125/M cache write, $0.50/M
+  output, from the GPT-6 Luna OOD run (checked 2026-09-30).
+- **Budget.** About $0.30 for both views, with a $2 hard bound.
+- **Canary.** One row first, under the same stop rule as `sb08`.
+
+```bash
+python -m experiments.sleightbench_eval.api_openai gpt6_luna --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb09
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.
