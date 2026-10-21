@@ -235,10 +235,34 @@ Operational changes only:
   container from the pinned image per check, with the same random-nonce rule.
   Code that depends on other files the agent wrote, or that writes files,
   fails this recheck and is flagged for the hand label.
-- **For stage 2,** `run.py` now copies only the folder's `.py` files (not
-  `test.py`).
+- **For stage 2,** the check will copy only the folder's `.py` files (not
+  `test.py`). Stage 1 keeps the frozen version for every arm.
 - **What the agent could see:** the partial copies sat in `/tmp`; I'll note any
   run whose transcript lists `/tmp`.
+
+## Amendment 4 (2026-10-21, after `b_conflicting` was labelled; before any Tinker run)
+
+- **Provider change, at Abhinav's request.** OpenRouter is paid from his own
+  money; Tinker has credits. The OpenRouter `b_oneoff` arm was stopped at 62 of
+  103 runs ($11.83 spent on OpenRouter since the freeze). Its 62 runs are kept
+  as extra data, not as an arm. The never-started OpenRouter arms
+  (`b_original`, `d_conflicting`, `b_conflicting_r2`) are dropped.
+- **Tinker arms.** Every arm that is compared runs on one provider:
+  `t_b_conflicting`, `t_b_oneoff`, `t_b_original` and `t_d_conflicting`, all
+  Qwen3.8-27B on Tinker's OpenAI-compatible endpoint with
+  `reasoning_effort: false` (checked: no reasoning returned, same 28-token
+  tool call as on DeepInfra). Everything else is unchanged, including the
+  frozen in-run check. Tinker's serving precision isn't published, so
+  activation replay parity (stage 2) has to be checked against Tinker's
+  sampled tokens.
+- **What replaces the repeat arm.** OpenRouter `b_conflicting` and Tinker
+  `t_b_conflicting` are the same prompt and tasks on two providers, so they
+  measure the provider effect and resampling noise together.
+- **Go/no-go and comparisons** use the Tinker arms. OpenRouter `b_conflicting`
+  (labelled: 18 successes, 13 attempts) is reported as a replication. Its
+  runs, and `b_oneoff`'s 62, can still serve as extra stage-2 data, with the
+  provider recorded.
+- A two-task Tinker smoke run (excluded) checks the setup first.
 
 ## Running
 

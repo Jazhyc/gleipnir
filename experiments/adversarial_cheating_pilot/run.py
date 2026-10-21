@@ -48,15 +48,15 @@ def docker_env() -> None:
     os.environ.setdefault("DOCKER_HOST", f"unix://{sock}")
 
 
-def load_key() -> None:
-    """Put OPENROUTER_API_KEY into the environment without printing it."""
-    if os.environ.get("OPENROUTER_API_KEY"):
+def load_key(name: str = "OPENROUTER_API_KEY") -> None:
+    """Put one API key from the wrapper's .env into the environment, unprinted."""
+    if os.environ.get(name):
         return
     for line in ENV_FILE.read_text().splitlines():
-        if line.startswith("OPENROUTER_API_KEY="):
-            os.environ["OPENROUTER_API_KEY"] = line.split("=", 1)[1].strip()
+        if line.startswith(name + "="):
+            os.environ[name] = line.split("=", 1)[1].strip()
             return
-    raise SystemExit("OPENROUTER_API_KEY missing from the wrapper .env")
+    raise SystemExit(f"{name} missing from the wrapper .env")
 
 
 def render_test(test: str, entry_point: str) -> str:
@@ -72,13 +72,13 @@ if __name__ == "__main__":
 """
 
 
-# Run a check in a throwaway copy of the work folder's Python files (not
-# test.py), so it cannot change state the agent's code keeps on disk, and leave
-# nothing behind. The working folder is `/`, so copying all of it (as the
-# frozen version did) timed out; see Amendment 3.
+# The frozen stage-1 check: copy the working folder and run the check there.
+# The working folder is `/`, so this copies the whole sandbox and times out;
+# stage 1 keeps it so every arm shares one environment, and recheck.py
+# recomputes both fields offline (Amendment 3). Stage 2 copies only `.py` files.
 ISOLATED = (
-    'd=$(mktemp -d) && for f in ./*.py; do [ "$f" = ./test.py ] || cp "$f" "$d"/; done'
-    ' && cd "$d" && python -c "$CHECK"; s=$?; cd / && rm -rf "$d"; exit $s'
+    'd=$(mktemp -d) && cp -r ./. "$d"/ && cd "$d" && python -c "$CHECK"; '
+    's=$?; cd / && rm -rf "$d"; exit $s'
 )
 
 
@@ -190,14 +190,22 @@ def build_task(arm: dict[str, Any], limit: int | None):
 def run_arm(name: str, limit: int | None, log_dir: Path) -> None:
     from inspect_ai import eval as inspect_eval
 
-    load_key()
     docker_env()
     arm = {"name": name, **CONFIG["arms"][name]}
-    model = CONFIG["model"]
+    model = CONFIG["models"][arm["provider"]]
+    if arm["provider"] == "tinker":
+        load_key("TINKER_API_KEY")
+        os.environ.setdefault("TINKER_BASE_URL", model["base_url"])
+        provider_args: dict[str, Any] = {"extra_body": model["extra_body"]}
+        model_args: dict[str, Any] = {}
+    else:
+        load_key()
+        provider_args = {}
+        model_args = {"provider": model["provider"], "reasoning_enabled": False}
     inspect_eval(
         build_task(arm, limit),
         model=model["id"],
-        model_args={"provider": model["provider"], "reasoning_enabled": False},
+        model_args=model_args,
         temperature=model["temperature"],
         top_p=model["top_p"],
         max_tokens=model["max_tokens"],
@@ -208,6 +216,7 @@ def run_arm(name: str, limit: int | None, log_dir: Path) -> None:
         max_sandboxes=CONFIG["concurrency"],
         fail_on_error=False,
         display="plain",
+        **provider_args,
     )
 
 
@@ -298,7 +307,11 @@ def main() -> None:
     sub.add_parser("spend")
     args = parser.parse_args()
     if args.command == "smoke":
-        run_arm(CONFIG["smoke"]["arm"], CONFIG["smoke"]["limit"], OUT / "smoke")
+        run_arm(
+            CONFIG["smoke"]["arm"],
+            CONFIG["smoke"]["limit"],
+            OUT / CONFIG["smoke"].get("dir", "smoke"),
+        )
     elif args.command == "run":
         run_arm(args.arm, args.limit, OUT / args.arm)
     elif args.command == "report":

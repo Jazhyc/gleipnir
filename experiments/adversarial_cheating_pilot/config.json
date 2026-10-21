@@ -17,21 +17,6 @@
     "config_dir": "cache/docker-config"
   },
   "sandbox_image": "aisiuk/inspect-tool-support@sha256:bbaecf7a093cfe24703c97d562bb059899e272cd5d57f16d9916fe05e6614419",
-  "model": {
-    "id": "openrouter/qwen/qwen3.8-27b",
-    "provider": {
-      "order": [
-        "DeepInfra"
-      ],
-      "allow_fallbacks": false,
-      "require_parameters": true
-    },
-    "reasoning": "disabled",
-    "temperature": 0.7,
-    "top_p": 0.8,
-    "max_tokens": 8192,
-    "seed": 0
-  },
   "scaffold": {
     "max_attempts": 10,
     "message_limit": 50
@@ -48,40 +33,56 @@
       "prompt": "B",
       "think_tool": false,
       "seed": 0,
-      "priority": 1
+      "provider": "deepinfra",
+      "priority": 0,
+      "status": "done (OpenRouter/DeepInfra)"
     },
     "b_oneoff": {
       "split": "oneoff",
       "prompt": "B",
       "think_tool": false,
       "seed": 0,
+      "provider": "deepinfra",
+      "priority": 0,
+      "status": "stopped at 62 of 103 (Amendment 4)"
+    },
+    "t_b_conflicting": {
+      "split": "conflicting",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "tinker",
+      "priority": 1
+    },
+    "t_b_oneoff": {
+      "split": "oneoff",
+      "prompt": "B",
+      "think_tool": false,
+      "seed": 0,
+      "provider": "tinker",
       "priority": 2
     },
-    "b_original": {
+    "t_b_original": {
       "split": "original",
       "prompt": "B",
       "think_tool": false,
       "seed": 0,
+      "provider": "tinker",
       "priority": 3
     },
-    "d_conflicting": {
+    "t_d_conflicting": {
       "split": "conflicting",
       "prompt": "D",
       "think_tool": false,
       "seed": 0,
+      "provider": "tinker",
       "priority": 4
-    },
-    "b_conflicting_r2": {
-      "split": "conflicting",
-      "prompt": "B",
-      "think_tool": false,
-      "seed": 1,
-      "priority": 5
     }
   },
   "smoke": {
-    "arm": "b_conflicting",
+    "arm": "t_b_conflicting",
     "limit": 2,
+    "dir": "smoke_tinker",
     "note": "smoke runs are excluded from all analysis"
   },
   "task_splits": {
@@ -205,5 +206,34 @@
   "infrastructure": {
     "host": "GCP c2d-standard-32, threads-per-core=1 (16 cores), asia-south1-a, Ubuntu 24.04, 200 GB pd-balanced",
     "labels": "username=abhinav_kumar,project=swarm-scaling"
+  },
+  "models": {
+    "deepinfra": {
+      "id": "openrouter/qwen/qwen3.8-27b",
+      "provider": {
+        "order": [
+          "DeepInfra"
+        ],
+        "allow_fallbacks": false,
+        "require_parameters": true
+      },
+      "reasoning": "disabled",
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "max_tokens": 8192,
+      "seed": 0
+    },
+    "tinker": {
+      "id": "openai-api/tinker/Qwen/Qwen3.8-27B",
+      "base_url": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1",
+      "extra_body": {
+        "reasoning_effort": false
+      },
+      "reasoning": "disabled (reasoning_effort false; checked: no reasoning returned)",
+      "temperature": 0.7,
+      "top_p": 0.8,
+      "max_tokens": 8192,
+      "seed": 0
+    }
   }
 }
