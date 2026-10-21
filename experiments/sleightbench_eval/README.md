@@ -382,6 +382,18 @@ python -m experiments.sleightbench_eval.api_openai gpt6_sol --limit 4   # canary
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb07
 ```
 
+## Deferred: GPT-6 Sol under the authors' protocol
+
+The user deferred this on 2026-10-21 for budget reasons.
+- **Estimate.** Both arms (10 trials, stripped) would cost about $35–60,
+  with a worst case near $115:
+  - input is about 13.6M tokens, roughly $6 with prompt caching or $27
+    without;
+  - output at $10/M dominates and depends on how long Sol's analyses run.
+- **Before any full run.** Add a direct OpenAI Responses backend to
+  `api_paper.py` with a per-transcript `prompt_cache_key`, and run a canary
+  of 2 transcripts × 3 trials per arm (about $0.10–0.30).
+
 ## Related
 
 MonitoringBench ([arXiv:2605.09684](https://arxiv.org/abs/2605.09684)) is
