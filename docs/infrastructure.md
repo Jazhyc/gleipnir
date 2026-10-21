@@ -848,6 +848,9 @@ hash-locked `experiments/b200_vllm_lens/requirements.txt`; it is not part of
 the image. After both runs, with all 566 result and log files
 verified locally by checksum, it was terminated on 2026-10-21 (delete 204,
 lookup 404).
+A second user-authorized Pod from the same image, `skhiibc8fu2130`
+(`.runpod/apps-base27b.json`), ran the base-27B reference arms and was
+terminated after checksum-verified collection (delete 204, lookup 404).
 
 ## OpenRouter
 

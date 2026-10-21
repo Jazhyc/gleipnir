@@ -87,7 +87,8 @@
   training data lacks monitor-adversarial, mistake-shaped attacks.
 - [Released monitors on APPS injections](findings/apps_released_monitors.md):
   both releases flag every injected honest program at the APPS operating point;
-  projecting out an injection direction only softens the 4B's response.
+  the adapter improves on the base 27B; projecting out an injection direction
+  only softens the 4B's response.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

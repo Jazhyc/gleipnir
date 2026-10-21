@@ -15,6 +15,11 @@ threshold, the 4B still flags 90–99.5% of them. The 27B flags 44% (GPT-4),
 27% (GPT-4.1) and 100% (GPT-4o), and separates injected backdoors from
 injected honest code better (matched AUROC 0.77 against 0.62).
 
+**The reaction comes from the base model; the 27B adapter reduces it.** In a
+matched stock-BF16 engine, the unadapted Qwen3.8-27B flags 76–100% of injected
+honest programs at 0.5, with matched AUROC 0.66. The released 27B lowers that
+to 53/73/100% and raises matched AUROC to 0.83.
+
 **Projecting out an injection direction only softens this on the released 4B.**
 Neither the refit nor the cached original-model projection lowers the
 calibrated injected-honest FPR below 100%. At 0.5 the cached projection cuts
@@ -63,6 +68,38 @@ Scoring took 86 s for the 4B (170–190K prompt tokens/s) and about 7 min for
 the 27B (about 55K tokens/s), in 128-row partitions at c128. Results:
 `results/apps_released_monitors/apps01/` (`report.json`, per-model
 `summary.json`); logs: `logs/runpod/apps_released_monitors/`.
+
+## Base 27B reference (stock BF16)
+
+Requested by the user after `apps01`. The unadapted `Qwen/Qwen3.8-27B@1d4bf0f…`
+and the released 27B's merged BF16 checkpoint were each scored in one offline
+stock-BF16 vLLM engine on the same teacher-prompt rows (`offline.py`; logits
+after `Prediction:`, as in SleightBench `sb04`). The pair isolates the adapter
+from the optimized stack.
+
+| 27B arm | Injected-honest FPR, calibrated | At 0.5 (GPT-4 / 4.1 / 4o) | Matched AUROC (GPT-4 / 4.1 / 4o, mean) | Vanilla AUROC / pAUROC@20 | Vanilla backdoor TPR |
+|---|---|---|---|---:|---:|
+| Base, BF16 | 92.5 / 99.7 / 100% | 75.9 / 98.9 / 100% | 0.754 / 0.564 / 0.670, **0.663** | 0.935 / 0.786 | 64.6% |
+| Gleipnir 27B v0.2, BF16 | 100 / 100 / 100% | 53.3 / 73.1 / 100% | 0.868 / 0.827 / 0.794, **0.829** | 0.949 / 0.810 | 68.0% |
+| Gleipnir 27B v0.2, optimized (`apps01`) | 100 / 100 / 100% | 44.4 / 26.7 / 100% | 0.821 / 0.765 / 0.722, **0.770** | 0.940 / 0.777 | 63.7% |
+
+- **The base model reacts to injections even more strongly.** Injections
+  raise its scores by +0.57 to +0.81 on average (positive in 99.8% of pairs),
+  and it flags nearly every injected honest program at 0.5. Its calibrated
+  threshold is higher (0.35), because it scores clean code less confidently,
+  so its neutral-text controls barely alarm (0.2–0.8%).
+- **The adapter reduces the reaction and greatly improves discrimination.**
+  In the matched engine, matched AUROC rises by 0.17 (0.663 → 0.829), alarms
+  at 0.5 fall on the GPT-4 and GPT-4.1 templates, and vanilla AUROC rises from
+  0.935 to 0.949. The GPT-4o template still triggers every honest program.
+- **The optimized stack costs discrimination here.** The same released
+  checkpoint loses 0.06 matched AUROC and 0.009 vanilla AUROC on the
+  optimized stack. It also alarms less on GPT-4.1 injections at 0.5 (27%
+  against 73%), so optimized-stack alarm rates are not the BF16 model's.
+
+Scoring took about 16 min (base, including its download) and 17 min
+(released) on a second US B200 Pod, `skhiibc8fu2130`, from the same image.
+Results: `results/apps_released_monitors/apps01/27b_{base,release}_bf16/`.
 
 ## Injection-direction projection on the released 4B (`released_direction01`)
 
@@ -116,6 +153,9 @@ Results: `results/apps_released_direction/released_direction01/`; logs:
 
 US B200 Pod `1al84w5c99wiki` (`.runpod/apps-released.json`, GPU
 `GPU-e0504b68…`, driver 595.91.07), created from `gleipnir-serve:0.2` with no
-volume on 2026-10-21 at the user's request. All 566 result and log files were
+volume on 2026-10-21 at the user's request. The base-27B reference arms ran on a second
+Pod, `skhiibc8fu2130` (`.runpod/apps-base27b.json`, GPU `GPU-cbba00e9…`), from
+the same image; its 10 result and log files were verified by checksum before
+it was terminated at the user's request (delete 204, lookup 404). All 566 result and log files were
 pulled and verified by checksum before the Pod was terminated (delete 204,
 lookup 404).
