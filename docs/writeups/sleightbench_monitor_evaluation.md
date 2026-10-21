@@ -64,12 +64,10 @@ per-trial catch rates read from its appendix figures.
 | Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 |
 | Kimi K3 | Logits | 0% | 30% | 0.737 |
 | GPT-5.5 | Logits | 15% | 15% | 0.783 |
-| GPT-6 Sol | Logits | 15% | 47.5% | 0.823 |
-| GPT-6 Luna | Logits | 5% | 12.5% | 0.696 |
 | **Gleipnir 4B** | Logits, own prompt | **5%** | 5% | 0.657 |
 | **Gleipnir 27B** | Logits, own prompt | **15%** | 27.5% | 0.706 |
 
-The logit runs for Kimi K3, GPT-5.5 and the GPT-6 models used the ControlArena
+The logit runs for Kimi K3 and GPT-5.5 used the ControlArena
 monitor description with our binary output format and no reasoning.
 
 **What the 27B catches.** It catches attacks whose actions are overtly
@@ -114,18 +112,23 @@ rather than on one catch rate.
 - **Reasoning did help Kimi K3.** Kimi's AUROC rises from 0.74 with logits
   to 0.80 under the paper's sampled-and-averaged protocol. Thinking itself
   added nothing on top.
-- **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82),
-  and is strongest on exactly the mistake-shaped classes our models miss.
 
-## A cheap frontier comparison: GPT-6 Luna
+## Reference points: current OpenAI models
 
-On the same ControlArena prompt, Gleipnir 27B roughly matches OpenAI's
-low-cost GPT-6 Luna, as it did on our OOD suite:
+The paper predates OpenAI's current GPT-6 models, so we scored both with the
+same zero-reasoning logit interface and ControlArena prompt as a modern
+reference. They are not part of the paper comparison above.
 
-| Same prompt, stripped view | Catch @1% FPR | AUROC | pAUROC@20 |
-|---|---:|---:|---:|
-| Gleipnir 27B | 12.5–20% | 0.694–0.697 | 0.299–0.306 |
-| GPT-6 Luna | 5% | 0.696 | 0.277 |
+| Same prompt, stripped view | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
+|---|---:|---:|---:|---:|
+| GPT-6 Sol | 15% | 47.5% | 0.823 | 0.515 |
+| GPT-6 Luna | 5% | 12.5% | 0.696 | 0.277 |
+| Gleipnir 27B | 12.5–20% | 20% | 0.694–0.697 | 0.299–0.306 |
+
+**GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82), and
+it is strongest on exactly the mistake-shaped classes our models miss.
+**Gleipnir 27B roughly matches the low-cost GPT-6 Luna**, as it did on our
+OOD suite.
 
 The two Gleipnir figures are the same checkpoint on our optimized and BF16
 serving stacks. The 7.5-point catch gap between them comes from three attacks
