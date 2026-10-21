@@ -12,7 +12,8 @@ These are packaging releases: the weights are unchanged.
 - **No pre-quantized repo.** The optimized stack quantizes the BF16
   checkpoint online at load: NVFP4 MLP/GDN, FP8 attention projections and
   MXFP8 attention.
-- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 0.1). It
+- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 0.2;
+  0.1 is the earlier 32K build). It
   is a frozen snapshot of the validated stack, not a redesign. It contains:
   - both serving runtimes and the native FA4, MXFP8 and Triton trees;
   - the receipts the integrity checks bind;
@@ -208,6 +209,36 @@ metrics move by about 0.001.
     warm caches; the 27B shows no warm-up effect.
   - **Decision:** a persistent compile-cache mount is optional, not
     needed.
+
+## Image 0.2: 262K context and opt-in prefix caching (2026-10-21)
+
+- **Changes.**
+  - `serve.py` defaults to 262,144 tokens (see [Context limit](#context-limit)).
+  - `--prefix-caching` switches on align-mode caching through the targets'
+    prefix-cached worker twins (the 4B's `b200_prefix_replay` workers; the
+    27B needs only the flags). It is off by default. Cached scores can drift
+    from uncached ones by up to about 0.15
+    ([decision](../../docs/decisions/prefix_cached_serving.md)); that drift
+    was not re-measured, at the user's request.
+- **Build.** On EU-RO-1 B200 Pod `2r9xvvvsx9m60v`:
+  - `image/pod_trace.sh` traced a default and a prefix launch per model. Each
+    passed `image/smoke.py`: finite short and 200K-token scores, plus prefix
+    cache hits in the prefix launch.
+  - ID passes were not repeated: the same 262K servers passed the
+    repeat-relative gates in SleightBench run `sb01`.
+  - The traced receipts are 0.1's 42 plus the two MXFP8 envelope receipts;
+    there are no `data/` files.
+  - Pushed as `0.2-rc1`, then the compile-cache whiteout layer was appended.
+  - Records: `results/release_serving/image02/`.
+- **Fresh-Pod check.** A US B200 Pod `n35vsu8v8assiz` (Intel Xeon 6960P, no
+  volume) ran `0.2-rc1` with `image/pod_fresh_check.sh`.
+  - The pull took about 8 minutes (17 GB compressed).
+  - Cold entrypoint to ready: 4B 135 s and 27B 301 s, downloads included.
+    Prefix restarts took 70 s and 120 s.
+  - All four smoke tests passed, with scores identical to the build Pod's.
+  - Logs: `logs/runpod/release_serving/image02_fresh/`.
+- **Release.** `0.2` was tagged from `0.2-rc1`, digest `ba602599…`; `0.1`
+  is unchanged at `15673c65…`.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

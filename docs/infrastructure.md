@@ -820,6 +820,24 @@ Preservation and termination receipts are collected locally under
 `results/b200_shutdown/20261011_injection/`; model/runtime backups and both
 experiment result sets remain on the volume. No replacement capacity launched.
 
+On 2026-10-21 the user provided EU-RO-1 B200 Pod `2r9xvvvsx9m60v` ($7.99/hour,
+snapshot `.runpod/sleightbench.json`, machine `klzaw5yqymgh`,
+`GPU-c70b532c…`, driver 595.91.07) on volume `cb7bxu71ug`.
+- **Disk.** At the user's request its container disk was resized from 50 to
+  300 GB; the resize moved SSH to port 32814.
+- **Restore.** `logs/runpod/sleightbench_eval/restore.sh` restored the
+  stack. Volume-only code sync must keep the pinned `src/gleipnir/__init__.py`.
+- **Work.** It ran SleightBench `sb01` and built image `0.2-rc1`.
+- **Termination.** At the user's request it was terminated the same day
+  (delete 204, lookup 404). Beforehand, all artifacts were pulled (dry-run:
+  none missing), the GHCR login was removed and the container caches were
+  archived to `results/b200_shutdown/20261021_eu/container_caches.tar.zst`
+  (SHA-256 `0313da09…`).
+
+The fresh-Pod check of `0.2-rc1` then ran on a user-approved US B200 Pod,
+`n35vsu8v8assiz` (`.runpod/image02-check.json`, created through the REST API
+from the image, with `PUBLIC_KEY` set and no volume).
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
