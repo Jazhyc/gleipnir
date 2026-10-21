@@ -131,7 +131,12 @@ def extract_terminal_binary_top_logprobs(
     if not isinstance(text, str) or not isinstance(rows, list):
         raise OpenRouterError("response text or token logprobs had the wrong type")
 
-    match = re.search(r"(?i)Prediction\s*:\s*<?([01])>?\s*$", text)
+    # Some endpoints leak the end-of-message control token as text after the
+    # label (``Prediction:1<|close|>message``, Kimi K3 on Makora, 2026-10-21).
+    # Ignore only such trailing ``<|...|>`` markers and their role word; any
+    # other text after the label still fails.
+    label_text = re.sub(r"(?:<\|[A-Za-z_]+\|>[A-Za-z_]*\s*)+$", "", text)
+    match = re.search(r"(?i)Prediction\s*:\s*<?([01])>?\s*$", label_text)
     if match is None:
         raise OpenRouterError(
             f"completion lacked a terminal binary prediction: {text!r}"

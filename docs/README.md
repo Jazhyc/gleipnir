@@ -81,6 +81,10 @@
 - [Decision models OOD benchmark](findings/decision_models_ood_benchmark.md):
   Microsoft-Decision-1, Mercury Decide, d1-ultra and d1 on the Jev requests; none
   reaches the frontier.
+- [SleightBench released monitors](findings/sleightbench_released_monitors.md):
+  single-pass 4B/27B scores on hand-built evasion attacks at 262K context;
+  15% (27B) and 5% (4B) catch at 1% FPR against 32% for Opus 4.6 with thinking;
+  training data lacks monitor-adversarial, mistake-shaped attacks.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS

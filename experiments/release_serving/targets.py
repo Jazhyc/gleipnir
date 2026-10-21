@@ -7,10 +7,32 @@ part of the compiler-cache key), and is validated against that run's rows.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[2]
+
+# Served context: the checkpoints' native RoPE range. The recorded runs used
+# 32,768; passing that limit replays them unchanged.
+RECORDED_CONTEXT = 32768
+CONTEXT_LIMIT = 262144
+
+
+@dataclass(frozen=True)
+class LongContext:
+    """The hash-bound MXFP8 envelope receipt that permits contexts beyond 32K.
+
+    ``receipt_env`` names the worker environment variable that carries the
+    receipt (4B ``LongContextWorker`` lineage); otherwise the receipt is bound
+    under ``additional_key`` in ``--additional-config`` (27B ``QuantFullWorker``).
+    """
+
+    receipt: str
+    receipt_sha256: str
+    worker: tuple[str, str] | None = None
+    sources: tuple[str, ...] = ()
+    receipt_env: str | None = None
+    additional_key: str | None = None
 
 
 @dataclass(frozen=True)
@@ -27,6 +49,11 @@ class Target:
     launch: str
     # (workload, recorded optimized rows, recorded macro pAUROC@20) per split.
     validation: dict[str, tuple[str, str, float]]
+    # How the target raises the MXFP8 length bound beyond the recorded 32K.
+    long_context: LongContext
+    # Opt-in prefix caching: served worker -> its prefix-cached twin, whose
+    # mixin masks the flag during the production audit. Empty: flags only.
+    prefix_workers: dict[str, str] = field(default_factory=dict)
 
     @property
     def merged_path(self) -> Path:
@@ -58,6 +85,29 @@ TARGETS = {
                 0.7703,
             ),
         },
+        # FastGatedTrimWorker is FastGdnWorker with LongContextWorker, which
+        # raises the bound after validating the 1M envelope receipt.
+        long_context=LongContext(
+            receipt="results/b200_context_million/million01/native.json",
+            receipt_sha256="c4f77178894708d3050ad4f70b3d225d47b96a936914725a2c4d8fc94ba2573b",
+            worker=(
+                "experiments.b200_gdn_fast.worker.FastGdnWorker",
+                "experiments.b200_gdn_fast.worker.FastGatedTrimWorker",
+            ),
+            sources=(
+                "experiments/b200_context_million/worker.py",
+                "experiments/b200_context_million/envelope.py",
+            ),
+            receipt_env="GLEIPNIR_LONG_CONTEXT_VALIDATION",
+        ),
+        prefix_workers={
+            "experiments.b200_gdn_fast.worker.FastGdnWorker": (
+                "experiments.b200_prefix_replay.worker.PrefixCachedFastGdnWorker"
+            ),
+            "experiments.b200_gdn_fast.worker.FastGatedTrimWorker": (
+                "experiments.b200_prefix_replay.worker.PrefixReplayWorker"
+            ),
+        },
     ),
     "27b": Target(
         key="27b",
@@ -79,8 +129,19 @@ TARGETS = {
                 0.9508,
             ),
         },
+        # QuantFullWorker raises the bound itself when this receipt is bound.
+        long_context=LongContext(
+            receipt="results/qwen38_27b_serving/mxfp8_envelope01.json",
+            receipt_sha256="4a6bc4b2eea3d13308d7f03faf995f009ef281e2dde8e63ee1e068d0dbf1c2c9",
+            additional_key="mxfp8_long_context",
+        ),
     ),
 }
+
+# Align-mode prefix caching (docs/decisions/prefix_cached_serving.md): opt-in
+# only; cached scores drift from uncached by up to about 0.15.
+PREFIX_CACHE_FLAGS = ["--enable-prefix-caching", "--mamba-cache-mode", "align"]
+PREFIX_WORKER_SOURCE = "experiments/b200_prefix_replay/worker.py"
 
 # Diagnostic sources whose bytes differ between the two recorded stacks. The
 # 4B restores its archived bytes at launch (``restore_diagnostic_sources``);

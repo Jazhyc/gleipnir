@@ -52,9 +52,10 @@ repeat scoring only when measuring serving variability or changing its recipe.
 
 ## Released optimized serving image
 
-`ghcr.io/jazhyc/gleipnir-serve:0.1` (digest `15673c65…`) serves the released
+`ghcr.io/jazhyc/gleipnir-serve:0.2` (digest `ba602599…`) serves the released
 Gleipnir 4B v0.4 and 27B v0.2 through their validated optimized stacks on one
-B200. It is a frozen snapshot of the recorded runs' command, environment,
+B200, at up to 262,144 tokens, with opt-in `--prefix-caching`. `0.1`
+(`15673c65…`) is the earlier 32K image. It is a frozen snapshot of the recorded runs' command, environment,
 receipts and runtimes. Use it to score released models on a B200 without
 restoring the volume stack:
 
