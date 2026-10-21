@@ -445,13 +445,15 @@ def report_trials(name: str, variant: str) -> None:
     pairs = CONFIG["multi_session_pairs"]
     merged = {b: a for a, b in pairs}
     output: dict[str, Any] = {"config": CONFIG, "variant": variant, "models": {}}
-    for model in CONFIG["models"]:
+    api = CONFIG.get("api_models", {})
+    for model in [*CONFIG["models"], *api]:
         path = RESULTS / name / f"{model}.jsonl"
         if not path.with_suffix(".complete.json").exists():
             continue
         rows = {r["id"]: r["trials"] for r in read_rows(path)}
         output["models"][model] = {}
-        for view in sorted({r["view"] for r in manifest["models"][model]["prompts"]}):
+        source = api[model]["tokens_from"] if model in api else model
+        for view in sorted({r["view"] for r in manifest["models"][source]["prompts"]}):
             attack, benign = {}, {}
             for t in manifest["transcripts"]:
                 (attack if t["label"] else benign)[t["attack"]] = rows[
