@@ -7,8 +7,9 @@ Subcommands, in order:
 - ``manifest``: render every prompt for both models and views, check the
   framing against each model's validated ID workload, and freeze hashes and
   token counts in ``manifest.json`` (no benchmark text).
-- ``score MODEL --name NAME --validation REPORT``: score once against a live
-  release server whose ID validation passed; resumable, never repeated.
+- ``score MODEL --name NAME --validation GATE``: score once against a live
+  release server whose repeat-relative ID gate (``release_serving/gate.py``)
+  passed; resumable, never repeated.
 - ``report --name NAME``: frozen metrics for every scored model.
 """
 
@@ -162,10 +163,10 @@ def score(model: str, name: str, validation: Path, port: int) -> None:
     report = json.loads(validation.read_text())
     if (
         report.get("model") != model
+        or report.get("split") != "id"
         or not report.get("passed")
-        or not report["splits"].get("id", {}).get("passed")
     ):
-        raise ValueError("the release server's ID validation did not pass")
+        raise ValueError("the release server's repeat-relative ID gate did not pass")
     out = RESULTS / name / f"{model}.jsonl"
     complete = out.with_suffix(".complete.json")
     if complete.exists():
@@ -187,7 +188,7 @@ def score(model: str, name: str, validation: Path, port: int) -> None:
         raise ValueError("scored rows do not match the frozen order")
     write_json(
         complete,
-        {"model": model, "rows": len(scored), "validation": report["splits"]["id"]},
+        {"model": model, "rows": len(scored), "validation": report},
     )
 
 

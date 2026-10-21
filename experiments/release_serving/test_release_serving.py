@@ -107,3 +107,15 @@ def test_long_context_rejects_a_changed_receipt(tmp_path: Path) -> None:
         )
     with pytest.raises(ValueError, match="context limit"):
         extend_context(command, {}, target, 2 * 262144)
+
+
+def test_repeat_relative_gate() -> None:
+    from experiments.release_serving.gate import gate
+
+    recorded = {str(i): i / 10 for i in range(10)}
+    pass_a = {k: v + (0.01 if int(k) % 2 else -0.01) for k, v in recorded.items()}
+    pass_b = {k: v + (-0.01 if int(k) % 2 else 0.01) for k, v in recorded.items()}
+    result = gate(pass_a, pass_b, recorded, 0.910, 0.912)
+    assert result["mae_ratio"] == pytest.approx(0.5) and result["passed"]
+    assert not gate(pass_a, pass_a, recorded, 0.910, 0.912)["passed"]
+    assert not gate(pass_a, pass_b, recorded, 0.900, 0.912)["passed"]

@@ -104,10 +104,17 @@ files. Raise only the length limit:
 **Gates.** All must pass for each model before any SleightBench request:
 
 1. **Release validation (ID only, user decision 2026-10-21).** Run
-   `release_serving/validate.py` on the ID workload (3,012 rows) at the
-   release gates: per-row MAE ≤ 0.005, correlation ≥ 0.999 and |Δ
-   source-macro pAUROC@20| ≤ 0.005. This shows the extended server
-   reproduces the released optimized scores. OOD is not rerun.
+   `release_serving/validate.py` on the ID workload (3,012 rows) twice on
+   the same server (passes a and b). `release_serving/gate.py` then applies
+   the release's repeat-relative gates (user decision, 2026-10-20):
+   - MAE(a, recorded) ≤ 1.25 × MAE(a, b);
+   - corr(a, recorded) ≥ corr(a, b) − 0.001;
+   - |Δ source-macro pAUROC@20| ≤ 0.005.
+
+   The original per-row gates (MAE ≤ 0.005, correlation ≥ 0.999) fail even
+   on same-server reruns, so they are not used. This shows the extended
+   server reproduces the released optimized scores as well as the stack
+   reproduces itself. OOD is not rerun.
 2. **Server sanity.** Responses are finite, the adapter effect is nonzero,
    and `prompt_tokens` matches the locally measured token count for every
    prompt.
@@ -178,13 +185,15 @@ program, if they change the project's direction.
 python -m experiments.sleightbench_eval.run decrypt --checkout <sleight-bench@218c583>
 python -m experiments.sleightbench_eval.run manifest   # verifies the frozen manifest
 # on the B200, per model, with release_serving/serve.py running:
-python -m experiments.release_serving.validate 4b --splits id --output results/sleightbench_eval/<name>/validation_4b.json
-python -m experiments.sleightbench_eval.run score 4b --name <name> \
-  --validation results/sleightbench_eval/<name>/validation_4b.json
+V=results/sleightbench_eval/<name>/validation_4b
+for p in a b; do python -m experiments.release_serving.validate 4b --splits id \
+  --output $V/$p.json --rows-output $V/$p; done
+python -m experiments.release_serving.gate 4b --pass-a $V/a.json --pass-b $V/b.json --output $V/gate.json
+python -m experiments.sleightbench_eval.run score 4b --name <name> --validation $V/gate.json
 python -m experiments.sleightbench_eval.run report --name <name>
 ```
 
-`score` refuses to start unless that model's ID validation passed. It checks
+`score` refuses to start unless that model's ID gate passed. It checks
 every prompt against the manifest and appends one row per request, so an
 interrupted pass resumes. Once it writes `<model>.complete.json`, it refuses
 to score that model again under the same name.
