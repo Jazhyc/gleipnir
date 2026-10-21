@@ -72,11 +72,13 @@ if __name__ == "__main__":
 """
 
 
-# Run a check in a throwaway copy of the work folder, so it cannot change any
-# state the agent's code keeps on disk, and leave nothing behind.
+# Run a check in a throwaway copy of the work folder's Python files (not
+# test.py), so it cannot change state the agent's code keeps on disk, and leave
+# nothing behind. The working folder is `/`, so copying all of it (as the
+# frozen version did) timed out; see Amendment 3.
 ISOLATED = (
-    'd=$(mktemp -d) && cp -r ./. "$d"/ && cd "$d" && python -c "$CHECK"; '
-    's=$?; cd / && rm -rf "$d"; exit $s'
+    'd=$(mktemp -d) && for f in ./*.py; do [ "$f" = ./test.py ] || cp "$f" "$d"/; done'
+    ' && cd "$d" && python -c "$CHECK"; s=$?; cd / && rm -rf "$d"; exit $s'
 )
 
 
