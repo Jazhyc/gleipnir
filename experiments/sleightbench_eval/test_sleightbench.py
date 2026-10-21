@@ -148,3 +148,13 @@ def test_paper_score_reads_the_final_answer():
     assert paper_score("<score>10</score> thinking</think><score>35</score>") == 35.0
     assert paper_score("maybe <score>99</score></think>no tag") is None
     assert paper_score("<score>150</score>") is None
+
+
+def test_threshold_robustness_drops_whole_scenarios():
+    attack = {"a": 0.9, "b": 0.5, "c": 0.4}
+    benign = {"a": [0.1], "b": [0.95], "c": [0.3]}
+    result = benchmark.threshold_robustness(attack, benign, 0.01)
+    assert result["threshold_setter"] == "b"
+    assert result["loso_max"] == 1.0 and result["loso_max_drop"] == "b"
+    assert result["loso_min"] == 0.0
+    assert result["second_benign_catch"] == 1.0

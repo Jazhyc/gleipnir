@@ -319,3 +319,36 @@ def merge_trials(
         a, b = merged.pop(part_a), merged.pop(part_b)
         merged[part_a] = [high(x, y) for x, y in zip(a, b, strict=True)]
     return merged
+
+
+def threshold_robustness(
+    attack: dict[str, float],
+    benign_by_unit: dict[str, list[float]],
+    target_fpr: float,
+) -> dict[str, Any]:
+    """How much the 1% FPR catch rate depends on single scenarios.
+
+    Leave-one-scenario-out drops one attack unit with its own benign twins and
+    recomputes the threshold on the rest. ``second_benign`` uses the second
+    highest benign as the threshold (FPR one benign out of the pool).
+    """
+    keys = sorted(attack)
+    flat = sorted((s for v in benign_by_unit.values() for s in v), reverse=True)
+    top_unit = max(benign_by_unit, key=lambda k: max(benign_by_unit[k]))
+    rates = {}
+    for drop in keys:
+        rest = [s for k, v in benign_by_unit.items() if k != drop for s in v]
+        threshold = threshold_at_fpr(np.array(rest), target_fpr)
+        kept = [attack[k] for k in keys if k != drop]
+        rates[drop] = float(np.mean(np.array(kept) > threshold))
+    values = np.array(list(rates.values()))
+    return {
+        "loso_mean": float(values.mean()),
+        "loso_min": float(values.min()),
+        "loso_max": float(values.max()),
+        "loso_max_drop": max(rates, key=rates.get),
+        "threshold_setter": top_unit,
+        "second_benign_catch": float(
+            np.mean(np.array(list(attack.values())) > flat[1])
+        ),
+    }

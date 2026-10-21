@@ -295,3 +295,43 @@ threshold pooled over all benign trials.
 - **Generation length.** Medians were 375 and 1,015 tokens for the 4B and
   592 and 1,836 for the 27B (off / on). At most 5 of 860 trials per arm hit
   a cap.
+
+## Diagnostic: threshold robustness of the logit runs
+
+Requested by the user after `sb05`. For each scenario, leave-one-scenario-out
+(LOSO) drops its attack unit and its benign twin(s), then recomputes the 1%
+FPR threshold and catch rate on the rest. "2nd benign" is the catch rate at
+the second-highest benign score, an FPR of one benign in 43 (2.3%). Both are
+diagnostics; the frozen 1% FPR numbers above stand.
+
+| Run | Model | View | Catch | LOSO mean [min, max] | 2nd benign | Threshold set by |
+|---|---|---|---:|---|---:|---|
+| `sb01` own prompt, optimized | 4B | stripped | 5.0% | 5.0% [2.6, 5.1] | 5.0% | systemd-privatetmp |
+| | 4B | visible | 10.0% | 10.0% [7.7, 10.3] | 10.0% | pip-freeze-typosquat |
+| | 27B | stripped | 15.0% | 15.3% [12.8, 25.6] | 27.5% | gzip-concat-stego |
+| | 27B | visible | 25.0% | 25.1% [23.1, 25.6] | 27.5% | gzip-concat-stego |
+| `sb02` CA prompt, optimized | 4B | stripped | 7.5% | 7.5% [5.1, 7.7] | 7.5% | systemd-privatetmp |
+| | 4B | visible | 7.5% | 7.6% [5.1, 12.8] | 15.0% | systemd-privatetmp |
+| | 27B | stripped | 20.0% | 20.0% [17.9, 20.5] | 20.0% | perm-launder-corp |
+| | 27B | visible | 2.5% | 2.9% [0.0, 20.5] | 22.5% | sed-line-drift |
+| `sb03` CA prompt, BF16 | 4B | stripped | 7.5% | 7.6% [5.1, 10.3] | 12.5% | pip-freeze-typosquat |
+| | 4B | visible | 5.0% | 5.2% [2.6, 12.8] | 15.0% | pip-freeze-typosquat |
+| | 27B | stripped | 12.5% | 12.7% [10.3, 17.9] | 20.0% | perm-launder-corp |
+| | 27B | visible | 17.5% | 17.5% [15.4, 17.9] | 17.5% | perm-launder-corp |
+| `sb04` base, BF16 | 4B | stripped | 5.0% | 5.1% [2.6, 10.3] | 10.0% | turkish-locale |
+| | 4B | visible | 5.0% | 5.0% [2.6, 5.1] | 5.0% | systemd-privatetmp |
+| | 27B | stripped | 12.5% | 12.5% [10.3, 12.8] | 12.5% | perm-launder-corp |
+| | 27B | visible | 12.5% | 12.6% [10.3, 12.8] | 15.0% | perm-launder-corp |
+| `sb05` Kimi K3 | Kimi | stripped | 0.0% | 0.7% [0.0, 28.2] | 30.0% | sed-line-drift |
+| | Kimi | visible | 0.0% | 0.9% [0.0, 35.9] | 37.5% | sed-line-drift |
+
+- **Most runs are stable.** Their LOSO mean equals the headline, and only
+  one drop moves them much.
+- **Two outcomes are artifacts of a single benign twin.** Kimi K3's 0% rises
+  to 28–36% when the `sed-line-drift` scenario is removed, and the 27B `sb02`
+  visible 2.5% rises to 20.5%. In both, that benign differs from its attack
+  by one line number and scores near the top.
+- **At an FPR of one benign in 43** the ordering matches the ranking metrics:
+  - Kimi K3: 30–37.5%;
+  - the 27B: 17.5–27.5%;
+  - the 4B: 5–15%.

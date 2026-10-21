@@ -372,6 +372,9 @@ def view_report(
             }
             for g, keys in sorted(members.items())
         }
+    result["robustness"] = benchmark.threshold_robustness(
+        attack, dict(benign_by_unit), metrics["target_fpr"]
+    )
     result["per_unit"] = {
         k: {"attack": attack[k], "paired_benign": paired[k], "category": category[k]}
         for k in sorted(attack)
