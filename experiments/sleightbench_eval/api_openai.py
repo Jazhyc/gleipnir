@@ -12,6 +12,7 @@ logprobs, logs every attempt and stops at a conservative budget bound.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 import os
 from concurrent.futures import ThreadPoolExecutor
@@ -37,7 +38,9 @@ def main() -> None:
     for row in read_rows(DATA / "api_control_arena.jsonl"):
         row["metadata"] = {"kimi_raw_prompt_tokens": kimi[row["id"]]}
         rows.append(row)
-    if [r["id"] for r in rows] != list(frozen):
+    if {
+        r["id"]: hashlib.sha256(r["prompt"].encode()).hexdigest() for r in rows
+    } != frozen:
         raise ValueError("API prompts differ from the frozen manifest")
     out = RESULTS / spec["run"] / f"{args.model}.jsonl"
     root = out.parent / f"{args.model}_attempts"
