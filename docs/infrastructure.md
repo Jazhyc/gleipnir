@@ -840,6 +840,13 @@ from the image, with `PUBLIC_KEY` set and no volume). It also ran SleightBench
 `sb02`–`sb04`. At the user's request it was terminated on 2026-10-21 (delete
 204, lookup 404) after every result and log was pulled (dry-run: none missing).
 
+For the APPS evaluation of the released monitors, the user authorized US B200
+Pod `1al84w5c99wiki` (`.runpod/apps-released.json`, $7.99/hour, machine
+`eosnqzirylf7`), created from `gleipnir-serve:0.2` with no volume. Lens 1.3.0
+was installed into an overlay at `/tmp/gleipnir-vllm-lens-1.3.0` from the
+hash-locked `experiments/b200_vllm_lens/requirements.txt`; it is not part of
+the image.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
