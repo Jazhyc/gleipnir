@@ -382,6 +382,25 @@ python -m experiments.sleightbench_eval.api_openai gpt6_sol --limit 4   # canary
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb07
 ```
 
+## Exploratory run sb08: GPT-5.5 with the logit interface (frozen 2026-10-21)
+
+This uses the same client, prompts and request contract as `sb07`, with only
+`model: gpt-5.5` changed. GPT-5.5 is one of the paper's monitors (no
+thinking 14%, thinking 50%). It goes through the direct OpenAI API, because
+no OpenRouter endpoint for it returns logprobs.
+- **Price.** $5.00/M input, $0.50/M cached, $30.00/M output, checked
+  2026-10-21; no cache-write tier is listed, so cache writes are bounded at
+  the input rate.
+- **Budget.** About $14 for both views, with a $20 hard bound.
+- **Canary.** One row first. If GPT-5.5 rejects reasoning `none` or omits a
+  literal logprob, the run stops: the interface cannot be matched, and
+  nothing is changed to force it.
+
+```bash
+python -m experiments.sleightbench_eval.api_openai gpt55 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb08
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

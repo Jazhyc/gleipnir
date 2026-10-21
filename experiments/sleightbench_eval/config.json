@@ -151,6 +151,13 @@
       "variant": "control_arena",
       "status": "exploratory (run sb07)",
       "tokens_from": "27b"
+    },
+    "gpt55": {
+      "model": "gpt-5.5",
+      "provider": "openai",
+      "variant": "control_arena",
+      "status": "exploratory (run sb08)",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -212,6 +219,41 @@
         "coverage_repeats": 3
       },
       "status": "exploratory (run sb07): GPT-6 Sol with the logit interface, request contract of the GPT-6 Luna OOD run"
+    },
+    "gpt55": {
+      "run": "sb08",
+      "request": {
+        "model": "gpt-5.5",
+        "reasoning": {
+          "effort": "none"
+        },
+        "temperature": 1,
+        "top_p": 1,
+        "max_output_tokens": 16,
+        "include": [
+          "message.output_text.logprobs"
+        ],
+        "top_logprobs": 20,
+        "service_tier": "default",
+        "store": false
+      },
+      "pricing": {
+        "source": "https://developers.openai.com/api/docs/pricing",
+        "checked_date": "2026-10-21",
+        "input_usd_per_million": 5.0,
+        "cached_input_usd_per_million": 0.5,
+        "cache_write_usd_per_million": 5.0,
+        "output_usd_per_million": 30.0,
+        "note": "no cache-write tier listed; bounded at the input rate"
+      },
+      "execution": {
+        "budget_usd": 20,
+        "max_attempts": 7,
+        "timeout_seconds": 300,
+        "tokens_per_minute": 800000,
+        "coverage_repeats": 3
+      },
+      "status": "exploratory (run sb08): GPT-5.5 with the logit interface, the sb07 request contract"
     }
   }
 }
