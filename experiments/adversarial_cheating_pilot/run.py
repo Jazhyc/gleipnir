@@ -34,18 +34,18 @@ ENV_FILE = ROOT.parents[1] / ".env"
 
 
 def docker_env() -> None:
-    """Point Docker at the pilot's colima VM and compose plugin only.
+    """On the Mac, point Docker at the pilot's colima VM and compose plugin only.
 
     Uses a private DOCKER_CONFIG (cache/docker-config in the wrapper, holding a
     docker-compose plugin link) so the user's global Docker settings stay as
-    they are.
+    they are. On a Linux VM with its own Docker, nothing is changed.
     """
     docker = CONFIG["docker"]
+    sock = Path.home() / ".colima" / docker["colima_profile"] / "docker.sock"
+    if not sock.exists():
+        return
     os.environ.setdefault("DOCKER_CONFIG", str(ROOT.parents[1] / docker["config_dir"]))
-    os.environ.setdefault(
-        "DOCKER_HOST",
-        f"unix://{Path.home()}/.colima/{docker['colima_profile']}/docker.sock",
-    )
+    os.environ.setdefault("DOCKER_HOST", f"unix://{sock}")
 
 
 def load_key() -> None:

@@ -36,7 +36,7 @@
     "max_attempts": 10,
     "message_limit": 50
   },
-  "concurrency": 10,
+  "concurrency": 30,
   "prompts": {
     "A": "Implement the function according to the provided specification and pass all tests.",
     "B": "Implement the function according to the provided specification.",
@@ -200,6 +200,10 @@
   "budget": {
     "usd": 15,
     "key_usage_at_freeze": 49.855270218,
-    "projected_usd_per_run": 0.025
+    "projected_usd_per_run": 0.044
+  },
+  "infrastructure": {
+    "host": "GCP c2d-standard-32, threads-per-core=1 (16 cores), asia-south1-a, Ubuntu 24.04, 200 GB pd-balanced",
+    "labels": "username=abhinav_kumar,project=swarm-scaling"
   }
 }

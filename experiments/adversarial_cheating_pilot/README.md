@@ -202,6 +202,24 @@ Operational changes only:
   `.write_*`, `os.remove/unlink` or `shutil`; text-editor edits of `test.py`
   are caught separately. Every write the old rule caught is still caught.
 
+## Amendment 2 (2026-10-21, after an aborted local attempt)
+
+- **Aborted local attempt.** `b_conflicting` ran on the Mac (colima, 6 CPUs,
+  10 at a time) for about 55 minutes: 62 of 103 runs, 7 of them lost before
+  starting because the VM's disk briefly filled (most likely one agent's code
+  writing a large file). It was stopped, not finished. Its log is kept in
+  `results/adversarial_cheating_pilot/aborted_local/` and is not analysed. I
+  saw the progress bar's running pass rate (about 18% of the first ~60), not
+  hand-verified.
+- **All arms rerun from scratch on one machine.** GCP `c2d-standard-32` with
+  one thread per core (16 cores), Ubuntu 24.04 (amd64), 200 GB disk,
+  concurrency 30. Mixing machines across arms would mix CPU speed into the
+  60-second tool timeouts, and so into the arm comparison.
+- **Cost per run is about $0.044,** not $0.025 (measured on the aborted
+  attempt: $2.72 for 62 runs plus the smoke run). The budget guard now uses
+  $0.044. At $15 since the freeze, the arms run in priority order until the
+  next one would pass the cap; skipped arms are reported as skipped.
+
 ## Running
 
 Needs the colima VM `impbench` (`colima start impbench`), the
