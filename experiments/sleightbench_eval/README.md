@@ -359,6 +359,29 @@ python -m experiments.sleightbench_eval.api_paper nothink run   # then: think ru
 python -m experiments.sleightbench_eval.run --variant paper_control_arena_nothink report-trials --name sb06_nothink
 ```
 
+## Exploratory run sb07: GPT-6 Sol with the logit interface (frozen 2026-10-21)
+
+The user asked for GPT-6 Sol on the logit interface only, without the
+authors' protocol.
+- **Prompts.** The frozen `sb05` rows (`api_control_arena.jsonl`).
+- **Client.** `gleipnir.teachers.openai.AuditedClient`, driven by
+  `api_openai.py`.
+- **Request.** The GPT-6 Luna OOD contract: Responses API, reasoning `none`,
+  temperature 1, `top_p=1` (avoids the logprob cutoff the Luna canary found),
+  top-20 logprobs, 16 output tokens, `store=false`. Only the model changes.
+- **Contract.** An exact `Prediction:0|1` completion with both literal
+  logprobs and zero reasoning tokens. Up to three identical repeats are
+  allowed when a label is missing from the top-20; scores are never imputed.
+- **Price.** $2.00/M input, $0.20/M cached and $10.00/M output, checked
+  2026-10-21; every prompt is within the 272K short-context tier.
+- **Budget.** An estimated $5–7, with a hard conservative bound of $10. A
+  4-row canary runs first.
+
+```bash
+python -m experiments.sleightbench_eval.api_openai gpt6_sol --limit 4   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb07
+```
+
 ## Related
 
 MonitoringBench ([arXiv:2605.09684](https://arxiv.org/abs/2605.09684)) is

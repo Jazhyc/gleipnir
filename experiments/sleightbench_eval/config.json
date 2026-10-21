@@ -144,6 +144,13 @@
       "status": "exploratory (run sb05): teacher with the logit interface",
       "request": "gleipnir-openrouter defaults (prediction_line, max_tokens 8, top_logprobs 5, reasoning none) pinned to makora without fallbacks",
       "tokens_from": "27b"
+    },
+    "gpt6_sol": {
+      "model": "gpt-6-sol",
+      "provider": "openai",
+      "variant": "control_arena",
+      "status": "exploratory (run sb07)",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -169,6 +176,42 @@
     "probe": {
       "provider": "decart/mxfp4",
       "note": "2026-10-21 probes on stripped/system_state_manipulation/sed-line-drift/benign: nothink 3 requests (cached 4608/4974 on repeats; 3283-4096 output tokens; one truncated at the original 4096 cap), think 2 requests (855-1953 output tokens). Sail Research endpoints were rate-limited upstream (HTTP 429, unbilled)."
+    }
+  },
+  "openai_models": {
+    "gpt6_sol": {
+      "run": "sb07",
+      "request": {
+        "model": "gpt-6-sol",
+        "reasoning": {
+          "effort": "none"
+        },
+        "temperature": 1,
+        "top_p": 1,
+        "max_output_tokens": 16,
+        "include": [
+          "message.output_text.logprobs"
+        ],
+        "top_logprobs": 20,
+        "service_tier": "default",
+        "store": false
+      },
+      "pricing": {
+        "source": "https://developers.openai.com/api/docs/pricing",
+        "checked_date": "2026-10-21",
+        "input_usd_per_million": 2.0,
+        "cached_input_usd_per_million": 0.2,
+        "cache_write_usd_per_million": 2.5,
+        "output_usd_per_million": 10.0
+      },
+      "execution": {
+        "budget_usd": 10,
+        "max_attempts": 7,
+        "timeout_seconds": 300,
+        "tokens_per_minute": 800000,
+        "coverage_repeats": 3
+      },
+      "status": "exploratory (run sb07): GPT-6 Sol with the logit interface, request contract of the GPT-6 Luna OOD run"
     }
   }
 }
