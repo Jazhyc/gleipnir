@@ -54,16 +54,30 @@ def decrypt(checkout: Path) -> None:
     print(f"decrypted {len(hashes)} files into {DATA}")
 
 
-def render(tokenizer: Any, template: Any, trajectory: str) -> str:
-    return (
-        tokenizer.apply_chat_template(
-            [{"role": "user", "content": template.render(trajectory)}],
-            tokenize=False,
-            add_generation_prompt=True,
-            enable_thinking=False,
-        )
-        + template.decision_prefix
+def render(
+    tokenizer: Any,
+    template: Any,
+    trajectory: str,
+    *,
+    enable_thinking: bool = False,
+    decision_prefix: bool = True,
+    reasoning_effort: str | None = None,
+) -> str:
+    """Render one prompt; reasoning variants end at the assistant opening.
+
+    ``reasoning_effort`` is passed only when set: Qwen3.8's template adds a
+    system message for its default ``xhigh`` effort but none for ``medium``,
+    and Qwen3.5's template ignores the argument.
+    """
+    extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+    rendered = tokenizer.apply_chat_template(
+        [{"role": "user", "content": template.render(trajectory)}],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=enable_thinking,
+        **extra,
     )
+    return rendered + (template.decision_prefix if decision_prefix else "")
 
 
 def manifest_path(variant: str) -> Path:
@@ -76,11 +90,15 @@ def prompts_path(model: str, variant: str) -> Path:
     return DATA / f"prompts_{model}{suffix}.json"
 
 
-def check_framing(model: str, prompt: str, instruction_replaced: bool) -> None:
+def check_framing(
+    model: str, prompt: str, instruction_replaced: bool, decision_prefix: bool = True
+) -> None:
     """Our prefix and suffix must equal those of the model's validated ID prompts.
 
     A prompt variant replaces the instruction, so only the decision suffix and
-    the chat-template opening are compared.
+    the chat-template opening are compared. Reasoning variants end before the
+    decision, so their suffix must be the validated suffix without the
+    non-thinking block and ``Prediction:``.
     """
     reference = workload_rows(TARGETS[model].validation["id"][0])[0]["prompt"]
     for text in (prompt, reference):
@@ -92,7 +110,14 @@ def check_framing(model: str, prompt: str, instruction_replaced: bool) -> None:
             raise ValueError(f"{model} chat opening differs from validated prompts")
     elif prompt.split(OPEN)[0] != reference.split(OPEN)[0]:
         raise ValueError(f"{model} instruction prefix differs from validated prompts")
-    if prompt.split(CLOSE)[1] != reference.split(CLOSE)[1]:
+    suffix = reference.split(CLOSE)[1]
+    if not decision_prefix:
+        suffix = suffix.split("<think>")[0]
+        if not prompt.split(CLOSE)[1].startswith(suffix):
+            raise ValueError(
+                f"{model} assistant opening differs from validated prompts"
+            )
+    elif prompt.split(CLOSE)[1] != suffix:
         raise ValueError(f"{model} decision suffix differs from validated prompts")
 
 
@@ -123,9 +148,13 @@ def build_prompts(variant: str) -> tuple[dict, dict[str, list[dict]]]:
     if variant != RELEASE:
         manifest["variant"] = variant
     instruction = None
+    options = {"enable_thinking": False, "decision_prefix": True}
     if variant != RELEASE:
         spec = CONFIG["variants"][variant]
         instruction = (EXPERIMENT / spec["instruction"]).read_text()
+        options = {k: spec[k] for k in options}
+        if "reasoning_effort" in spec:
+            options["reasoning_effort"] = spec["reasoning_effort"]
     prompts: dict[str, list[dict]] = {}
     for model, spec in CONFIG["models"].items():
         tokenizer = AutoTokenizer.from_pretrained(spec["tokenizer"])
@@ -136,8 +165,12 @@ def build_prompts(variant: str) -> tuple[dict, dict[str, list[dict]]]:
         for view in CONFIG["views"]:
             for t in items:
                 messages = benchmark.VIEWS[view](benchmark.read_messages(t.path))
-                prompt = render(tokenizer, template, benchmark.body(messages))
-                check_framing(model, prompt, instruction is not None)
+                prompt = render(
+                    tokenizer, template, benchmark.body(messages), **options
+                )
+                check_framing(
+                    model, prompt, instruction is not None, options["decision_prefix"]
+                )
                 tokens = len(tokenizer.encode(prompt, add_special_tokens=False))
                 if tokens > CONFIG["context_limit"]:
                     raise ValueError(f"{t.id} exceeds the context limit")

@@ -52,7 +52,44 @@
     "control_arena": {
       "instruction": "prompts/control_arena_binary.txt",
       "source": "sleight-bench@218c583 prompts/control_arena.md (sha256 409dda797289ccfb33bff49ca1f6a63a5a995f26b6086c6f2b114e00c24f1a39), text before its scoring section plus its closing reminder, with our binary output lines",
-      "status": "exploratory (run sb02); does not replace sb01"
+      "status": "exploratory (run sb02); does not replace sb01",
+      "enable_thinking": false,
+      "decision_prefix": true
+    },
+    "control_arena_visible": {
+      "instruction": "prompts/control_arena_visible.txt",
+      "enable_thinking": false,
+      "decision_prefix": false,
+      "status": "exploratory (run sb03, visible arm)",
+      "source": "control_arena_binary.txt with its output section asking for a concise analysis before the final Prediction line"
+    },
+    "control_arena_thinking": {
+      "instruction": "prompts/control_arena_binary.txt",
+      "enable_thinking": true,
+      "decision_prefix": false,
+      "status": "exploratory (run sb03, thinking arm)",
+      "source": "the sb02 instruction with native Qwen thinking enabled",
+      "reasoning_effort": "medium"
+    }
+  },
+  "reasoning": {
+    "temperature": 0.0,
+    "seed": 0,
+    "visible": {
+      "max_tokens": 4096,
+      "stop": "\nPrediction:"
+    },
+    "thinking": {
+      "max_tokens": 8192,
+      "stop": "</think>"
+    },
+    "engine": {
+      "dtype": "bfloat16",
+      "max_model_len": 262144,
+      "max_num_seqs": 32,
+      "max_num_batched_tokens": 32768,
+      "enable_prefix_caching": false,
+      "gpu_memory_utilization": 0.9
     }
   }
 }

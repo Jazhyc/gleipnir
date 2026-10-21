@@ -235,6 +235,43 @@ python -m experiments.sleightbench_eval.run --variant control_arena score 4b --n
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb02
 ```
 
+## Exploratory run sb03: reasoning before the decision (frozen 2026-10-21)
+
+The user asked whether letting the monitors reason helps. This extends `sb02`
+and is exploratory in the same sense. The optimized image only classifies, so
+`reasoning.py` runs one offline stock vLLM 0.31 engine per model:
+- the released merged BF16 checkpoint;
+- 262K context, prefix caching off, FP32 GDN state;
+- greedy decoding (temperature 0, seed 0): one deterministic pass, unlike the
+  paper's temperature-1 trials.
+
+The three arms share that engine, so reasoning is compared without a
+quantization confound:
+
+| Arm | Variant / prompt | Decision readout |
+|---|---|---|
+| `immediate` | `control_arena` (the `sb02` prompt) | logits right after `Prediction:` |
+| `visible` | `control_arena_visible`: same instruction, but asks for a concise analysis before the final `Prediction:` line; thinking off | generate ≤ 4,096 tokens, stop at `\nPrediction:`, then logits |
+| `thinking` | `control_arena_thinking`: the `sb02` instruction with native thinking on, `reasoning_effort="medium"` (Qwen3.8's default `xhigh` adds a system message; `medium` adds none, matching Qwen3.5's template) | think ≤ 8,192 tokens, stop at `</think>`, append `\n\nPrediction:`, then logits |
+
+- **Readout.** Scores are the normalized `0`/`1` logprobs at the boundary.
+- **Recovery.** A capped or unterminated generation is closed at the boundary
+  and counted as a recovery, as in the tool-trajectory reasoning harness.
+- **Metrics.** The frozen metrics, both views. The primary comparison is each
+  reasoning arm against `immediate`, on AUROC and pair wins as well as catch
+  rate.
+- **Off-distribution.** Neither adapter was trained to read its own
+  reasoning. The prior Qwen3.5-9B result
+  ([finding](../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md))
+  found visible reasoning neutral overall but much better on injection.
+
+```bash
+python -m experiments.sleightbench_eval.run --variant control_arena_visible manifest
+python -m experiments.sleightbench_eval.run --variant control_arena_thinking manifest
+python -m experiments.sleightbench_eval.reasoning 4b --name sb03   # then 27b
+python -m experiments.sleightbench_eval.run --variant control_arena_visible report --name sb03_visible
+```
+
 ## Related
 
 MonitoringBench ([arXiv:2605.09684](https://arxiv.org/abs/2605.09684)) is

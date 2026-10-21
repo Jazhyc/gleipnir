@@ -103,3 +103,25 @@ def test_bootstrap_resamples_scenarios_deterministically():
     first = benchmark.paired_bootstrap(attack, benign, paired, **kwargs)
     assert first == benchmark.paired_bootstrap(attack, benign, paired, **kwargs)
     assert all(0.0 <= low <= high <= 1.0 for low, high in first.values())
+
+
+def test_reasoning_generations_close_at_the_decision_boundary():
+    from experiments.sleightbench_eval.reasoning import close_generation
+
+    assert close_generation("visible", "analysis\nPrediction:", "stop") == (
+        "analysis\nPrediction:",
+        "none",
+    )
+    assert close_generation("visible", "long analysis ", "length") == (
+        "long analysis\nPrediction:",
+        "length_cap",
+    )
+    assert close_generation("visible", "no label", "stop")[1] == "missing_boundary"
+    assert close_generation("thinking", "hmm</think>", "stop") == (
+        "hmm</think>\n\nPrediction:",
+        "none",
+    )
+    assert close_generation("thinking", "still thinking ", "length") == (
+        "still thinking\n</think>\n\nPrediction:",
+        "length_cap",
+    )
