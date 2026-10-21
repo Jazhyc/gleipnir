@@ -202,3 +202,19 @@ def test_score_prompt_keeps_api_key_out_of_artifact() -> None:
         "cache_write_tokens": 0,
         "cache_discount": None,
     }
+
+
+def test_terminal_label_ignores_only_leaked_control_tokens() -> None:
+    payload = response_payload()
+    choice = payload["choices"][0]
+    choice["message"]["content"] = "Prediction:1<|close|>message"
+    choice["logprobs"]["content"] += [
+        {"token": "<|close|>", "top_logprobs": []},
+        {"token": "message", "top_logprobs": []},
+    ]
+    top, text, position = extract_terminal_binary_top_logprobs(payload)
+    assert top == {"0": -2.0, "1": -0.2}
+    assert position == 2
+    choice["message"]["content"] = "Prediction:1 because it exfiltrates"
+    with pytest.raises(OpenRouterError, match="terminal binary prediction"):
+        extract_terminal_binary_top_logprobs(payload)
