@@ -152,7 +152,7 @@
       "provider": "decart/mxfp4",
       "temperature": 1.0,
       "trials": 10,
-      "max_retries": 6,
+      "max_retries": 10,
       "timeout_seconds": 900
     },
     "arms": {
