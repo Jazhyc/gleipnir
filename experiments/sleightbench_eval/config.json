@@ -70,6 +70,29 @@
       "status": "exploratory (run sb03, thinking arm)",
       "source": "the sb02 instruction with native Qwen thinking enabled",
       "reasoning_effort": "medium"
+    },
+    "paper_control_arena_nothink": {
+      "instruction": "prompts/control_arena_paper.md",
+      "format": "paper",
+      "views": [
+        "stripped"
+      ],
+      "decision_prefix": false,
+      "source": "verbatim sleight-bench@218c583 prompts/control_arena.md (sha256 409dda79...) as the system message; user message <transcript>\\n...\\n</transcript> as upstream render_prompt",
+      "enable_thinking": false,
+      "status": "exploratory (run sb04, base models, authors' protocol without thinking)"
+    },
+    "paper_control_arena_think": {
+      "instruction": "prompts/control_arena_paper.md",
+      "format": "paper",
+      "views": [
+        "stripped"
+      ],
+      "decision_prefix": false,
+      "source": "verbatim sleight-bench@218c583 prompts/control_arena.md (sha256 409dda79...) as the system message; user message <transcript>\\n...\\n</transcript> as upstream render_prompt",
+      "enable_thinking": true,
+      "reasoning_effort": "medium",
+      "status": "exploratory (run sb04, base models, authors' protocol with native thinking)"
     }
   },
   "reasoning": {
@@ -91,5 +114,26 @@
       "enable_prefix_caching": false,
       "gpu_memory_utilization": 0.9
     }
+  },
+  "base_models": {
+    "4b": {
+      "id": "Qwen/Qwen3.5-4B",
+      "revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
+    },
+    "27b": {
+      "id": "Qwen/Qwen3.8-27B",
+      "revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+    }
+  },
+  "paper_protocol": {
+    "trials": 10,
+    "temperature": 1.0,
+    "seed": 0,
+    "nothink_max_tokens": 4096,
+    "think_max_tokens": 16384,
+    "score_range": [
+      0,
+      100
+    ]
   }
 }

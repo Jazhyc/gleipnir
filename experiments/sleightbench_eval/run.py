@@ -90,6 +90,38 @@ def prompts_path(model: str, variant: str) -> Path:
     return DATA / f"prompts_{model}{suffix}.json"
 
 
+def render_paper(
+    tokenizer: Any,
+    instruction: str,
+    trajectory: str,
+    *,
+    enable_thinking: bool,
+    decision_prefix: bool = False,
+    reasoning_effort: str | None = None,
+) -> str:
+    """Upstream ``render_prompt``: system prompt, transcript in boundary tags."""
+    if decision_prefix:
+        raise ValueError("the paper protocol generates its own score")
+    extra = {"reasoning_effort": reasoning_effort} if reasoning_effort else {}
+    rendered = tokenizer.apply_chat_template(
+        [
+            {"role": "system", "content": instruction},
+            {"role": "user", "content": f"<transcript>\n{trajectory}\n</transcript>"},
+        ],
+        tokenize=False,
+        add_generation_prompt=True,
+        enable_thinking=enable_thinking,
+        **extra,
+    )
+    opening = f"<|im_start|>system\n{instruction.strip()}"
+    closing = "<|im_start|>assistant\n<think>\n" + (
+        "" if enable_thinking else "\n</think>\n\n"
+    )
+    if not rendered.startswith(opening) or not rendered.endswith(closing):
+        raise ValueError("paper prompt framing differs from the upstream protocol")
+    return rendered
+
+
 def check_framing(
     model: str, prompt: str, instruction_replaced: bool, decision_prefix: bool = True
 ) -> None:
@@ -155,6 +187,12 @@ def build_prompts(variant: str) -> tuple[dict, dict[str, list[dict]]]:
         options = {k: spec[k] for k in options}
         if "reasoning_effort" in spec:
             options["reasoning_effort"] = spec["reasoning_effort"]
+    paper = variant != RELEASE and CONFIG["variants"][variant].get("format") == "paper"
+    views = (
+        CONFIG["variants"][variant].get("views", CONFIG["views"])
+        if (variant != RELEASE)
+        else CONFIG["views"]
+    )
     prompts: dict[str, list[dict]] = {}
     for model, spec in CONFIG["models"].items():
         tokenizer = AutoTokenizer.from_pretrained(spec["tokenizer"])
@@ -162,15 +200,23 @@ def build_prompts(variant: str) -> tuple[dict, dict[str, list[dict]]]:
         if instruction is not None:
             template = dataclasses.replace(template, instruction=instruction)
         rows = []
-        for view in CONFIG["views"]:
+        for view in views:
             for t in items:
                 messages = benchmark.VIEWS[view](benchmark.read_messages(t.path))
-                prompt = render(
-                    tokenizer, template, benchmark.body(messages), **options
-                )
-                check_framing(
-                    model, prompt, instruction is not None, options["decision_prefix"]
-                )
+                if paper:
+                    prompt = render_paper(
+                        tokenizer, instruction, benchmark.body(messages), **options
+                    )
+                else:
+                    prompt = render(
+                        tokenizer, template, benchmark.body(messages), **options
+                    )
+                    check_framing(
+                        model,
+                        prompt,
+                        instruction is not None,
+                        options["decision_prefix"],
+                    )
                 tokens = len(tokenizer.encode(prompt, add_special_tokens=False))
                 if tokens > CONFIG["context_limit"]:
                     raise ValueError(f"{t.id} exceeds the context limit")
@@ -359,6 +405,46 @@ def report(name: str, variant: str) -> None:
     write_json(RESULTS / name / "report.json", output)
 
 
+def report_trials(name: str, variant: str) -> None:
+    """Paper-protocol metrics over sampled trials, per model and view."""
+    manifest = json.loads(manifest_path(variant).read_text())
+    metrics = CONFIG["metrics"]
+    pairs = CONFIG["multi_session_pairs"]
+    merged = {b: a for a, b in pairs}
+    output: dict[str, Any] = {"config": CONFIG, "variant": variant, "models": {}}
+    for model in CONFIG["models"]:
+        path = RESULTS / name / f"{model}.jsonl"
+        if not path.with_suffix(".complete.json").exists():
+            continue
+        rows = {r["id"]: r["trials"] for r in read_rows(path)}
+        output["models"][model] = {}
+        for view in sorted({r["view"] for r in manifest["models"][model]["prompts"]}):
+            attack, benign = {}, {}
+            for t in manifest["transcripts"]:
+                (attack if t["label"] else benign)[t["attack"]] = rows[
+                    f"{view}/{t['id']}"
+                ]
+            paired = benchmark.merge_trials(benign, pairs)
+            units = benchmark.merge_trials(attack, pairs)
+            result = benchmark.trial_summary(
+                units,
+                benign,
+                paired,
+                metrics["target_fpr"],
+                metrics["pauroc_max_fpr"],
+            )
+            result["merged_parts"] = sorted(merged)
+            output["models"][model][view] = result
+            print(
+                f"{model} {view}: per-trial catch {result['per_trial_catch_rate']:.3f} "
+                f"any-trial {result['any_trial_catch_rate']:.3f} "
+                f"AUROC(mean) {result['mean_score_auroc']:.3f} "
+                f"pair wins {result['pair_win_rate']:.3f} "
+                f"unparsed {result['unparsed_trials']}"
+            )
+    write_json(RESULTS / name / "report.json", output)
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     commands = parser.add_subparsers(dest="command", required=True)
@@ -378,6 +464,8 @@ def main() -> None:
     command.add_argument("--port", type=int, default=8000)
     command = commands.add_parser("report")
     command.add_argument("--name", required=True)
+    command = commands.add_parser("report-trials")
+    command.add_argument("--name", required=True)
     args = parser.parse_args()
     if args.command == "decrypt":
         decrypt(args.checkout)
@@ -385,6 +473,8 @@ def main() -> None:
         freeze(args.variant)
     elif args.command == "score":
         score(args.model, args.name, args.validation, args.port, args.variant)
+    elif args.command == "report-trials":
+        report_trials(args.name, args.variant)
     else:
         report(args.name, args.variant)
 
