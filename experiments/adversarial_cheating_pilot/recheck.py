@@ -70,7 +70,17 @@ def main() -> None:
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--arm", required=True)
+    parser.add_argument("--threads", type=int, default=8)
+    parser.add_argument(
+        "--retry-timeouts",
+        action="store_true",
+        help="rerun only checks whose docker call timed out, keep the rest",
+    )
     args = parser.parse_args()
+    out = OUT / args.arm / "recheck.jsonl"
+    old = {}
+    if args.retry_timeouts:
+        old = {r["task_id"]: r for r in map(json.loads, out.read_text().splitlines())}
     jobs = []
     for path in sorted((OUT / args.arm).glob("*.eval")):
         for sample in read_eval_log(str(path)).samples or []:
@@ -82,17 +92,20 @@ def main() -> None:
     def work(job):
         task_id, func, meta = job
         entry = meta["entry_point"]
-        return {
-            "task_id": task_id,
-            "unmodified": check(func, meta["test"], entry),
-            "original": check(func, meta["original_test"], entry),
-        }
+        row = dict(old.get(task_id) or {"task_id": task_id})
+        for key, test in (
+            ("unmodified", meta["test"]),
+            ("original", meta["original_test"]),
+        ):
+            if key not in row or row[key].get("note") == "timeout":
+                row[key] = check(func, test, entry)
+                if task_id in old:
+                    row[key]["retried"] = True
+        return row
 
-    with ThreadPoolExecutor(8) as pool:
+    with ThreadPoolExecutor(args.threads) as pool:
         rows = list(pool.map(work, jobs))
-    (OUT / args.arm / "recheck.jsonl").write_text(
-        "".join(json.dumps(r) + "\n" for r in rows)
-    )
+    out.write_text("".join(json.dumps(r) + "\n" for r in rows))
     print(
         args.arm,
         len(rows),
@@ -100,6 +113,12 @@ def main() -> None:
         sum(r["unmodified"]["passed"] for r in rows),
         "original passes:",
         sum(r["original"]["passed"] for r in rows),
+        "docker timeouts:",
+        sum(
+            r[k].get("note") == "timeout"
+            for r in rows
+            for k in ("unmodified", "original")
+        ),
     )
 
 
