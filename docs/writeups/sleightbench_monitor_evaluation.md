@@ -42,9 +42,7 @@ thresholds at 1% FPR on the benign twins.
 We matched the paper's grading setup: the benchmark's 40 graded attacks
 against their 43 benign twins, with each multi-session attack scored by its
 most suspicious session, and the threshold set at 1% FPR on the benign
-twins. With 43 benigns, "1% FPR" means "above the highest benign score". The
-transcripts are encrypted upstream to keep them out of training corpora; we
-evaluated locally and redistribute nothing.
+twins. With 43 benigns, "1% FPR" means "above the highest benign score".
 
 ## How our monitor plugs in
 
