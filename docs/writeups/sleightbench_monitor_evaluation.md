@@ -120,7 +120,7 @@ headline by tens of points.
   logits catch nothing. One benign transcript, which differs from its
   attack only by the line number in an edit, scores 0.98, above every
   attack. Ignore that one benign and Kimi catches 30%.
-- **Ten trials don't fix it.** Under the paper's protocol, the same benign
+- **Ten trials do not fix it.** Under the paper's protocol, the same benign
   scores 62–85 out of 100 in all ten of Kimi's trials and still sets the
   threshold.
 - **Score resolution matters too.** Gleipnir 27B's threshold is a benign
@@ -132,17 +132,19 @@ headline by tens of points.
   95% interval of 10–32.5%.
 
 The paper's own numbers likely share this fragility, since they also
-threshold on these 43 benigns. The paper notes that outside benign pools
-lower frontier catch rates by 10–20 points. We would compare monitors on
-AUROC, pAUROC@20 and catch rate at the first few benign thresholds together,
-rather than on one catch rate.
+threshold on these 43 benigns; the paper notes that larger outside benign
+pools lower frontier catch rates by 10–20 points. Ranking metrics such as
+AUROC and pAUROC@20 use every benign rather than the single most suspicious
+one, so they are steadier. Catch rate at a higher FPR would rest on a few
+more benigns but remain unstable at this size. The real remedy is more
+data.
 
 ## Lesson 2: the interface matters less than the model here
 
 - **Logits reproduce the paper for GPT-5.5.** Our single zero-reasoning
   logit gives 15% catch; the paper's 10-trial reasoned score without
   thinking gives 14%.
-- **Reasoning didn't help our adapted monitors.** Native thinking or written
+- **Reasoning did not help our adapted monitors.** Native thinking or written
   reasoning before the decision left the 27B's ranking within noise and
   lowered the 4B on every metric. It also made the 4B fall for the injection
   jailbreak: answering immediately, it flags the attack; after reasoning,
