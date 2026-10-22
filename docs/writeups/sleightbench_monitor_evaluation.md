@@ -46,11 +46,17 @@ twins. With 43 benigns, "1% FPR" means "above the highest benign score".
 
 ## How our monitor plugs in
 
-Gleipnir monitors read a trajectory and are scored by a single forward pass:
-the score is the softmax over the logits of `0` and `1` after a
-`Prediction:` prefix. There is no sampled reasoning and no ordinal score.
-The paper's monitors instead reason and output a 0–100 score, averaged over
-10 trials at temperature 1.
+The paper's monitors write their reasoning and then a 0–100 suspicion
+score, averaged over 10 trials at temperature 1. Gleipnir monitors are scored
+by a single forward pass: the score is the softmax over the logits of `0`
+and `1` after a `Prediction:` prefix.
+
+We score each transcript once rather than averaging 10 trials, for two
+reasons. Sampling helps the paper's monitors because each trial can reason
+differently, but our monitors emit only the decision token, with no
+reasoning to vary. And repeated sampling estimates how likely a monitor is to
+flag a transcript, which our monitors already return exactly as the
+probability on the `1` token.
 
 We followed the paper's setting everywhere else: stripped transcripts and the
 paper's ControlArena monitor description, with only the output format
