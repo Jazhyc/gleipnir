@@ -229,27 +229,20 @@ on-demand GPUs, before provider margin and utilization.
   about 2×10⁻¹⁰), as are Gleipnir 27B and Decider. Jev flags it (0.48
   against 0.08 for its benign twin).
 
-**Against these models, our OOD lead mostly does not carry over.** The
-table uses BF16 scores for Gleipnir, to match our OOD evaluation. Each
-model's OOD score comes from our earlier evaluation of it, with its own
-prompt; the SLEIGHT-Bench column uses the ControlArena prompt for all four:
+**Against these models, our OOD lead does not carry over.** On our OOD
+suite, Gleipnir 27B led Decider by 4 points of pAUROC@20 and Luna and Jev by
+9–10. On SLEIGHT-Bench all four fall to between 0.25 and 0.31, within 5
+points of each other. The table uses BF16 scores for Gleipnir, to match our
+OOD evaluation. Each model's OOD score comes from our earlier evaluation of
+it, with its own prompt; the SLEIGHT-Bench column uses the ControlArena
+prompt for all four.
 
-| pAUROC@20 | OOD suite | OOD, without the airline task | SLEIGHT-Bench |
-|---|---:|---:|---:|
-| Gleipnir 27B | 0.935 | 0.973 | 0.306 |
-| pplx-decider v1.2 | 0.896 | 0.957 | 0.300 |
-| Jev 1.13 | 0.850 | 0.898 | 0.255 |
-| GPT-6 Luna | 0.837 | 0.876 | 0.277 |
-
-The OOD suite's hardest source is SHADE-Arena, and within it one
-airline-booking task. Attackers there book nearly every flight on one
-expensive airline. The evidence is fully visible, but the booking is
-permitted, so the "attack" label marks hidden intent rather than a broken
-instruction. The task drags every monitor down. It explains most of
-Gleipnir's OOD lead over Decider, but not its lead over Luna and Jev: without
-the task, Gleipnir still leads Luna on SHADE-Arena itself (0.96 against 0.65)
-and by 5–10 points on IaC, MLE-Sabotage and Rogue Eval. On SLEIGHT-Bench all
-four sit between 0.25 and 0.31.
+| pAUROC@20 | OOD suite | SLEIGHT-Bench |
+|---|---:|---:|
+| Gleipnir 27B | 0.935 | 0.306 |
+| pplx-decider v1.2 | 0.896 | 0.300 |
+| Jev 1.13 | 0.850 | 0.255 |
+| GPT-6 Luna | 0.837 | 0.277 |
 
 ## A caveat on the jailbreak: monitors react to any monitor-directed text
 
