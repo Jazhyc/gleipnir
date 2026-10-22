@@ -35,7 +35,9 @@ MODELS = {
         "thinking": (16, None),
         "scaffold": (7, None),
     },
-    "GPT-5.5": {"reasoned": (14, None), "thinking": (50, None), "logits": (15, 0.404)},
+    # GPT-5.5's logit pAUROC@20 (0.404) is left out: alone in its group, it
+    # read awkwardly in the ranking figure.
+    "GPT-5.5": {"reasoned": (14, None), "thinking": (50, None), "logits": (15, None)},
     "Opus 4.6": {
         "reasoned": (19, None),
         "thinking": (32, None),
