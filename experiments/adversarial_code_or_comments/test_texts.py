@@ -113,7 +113,7 @@ def test_retry_with_length_feedback_then_accept():
 
 
 def test_attempts_are_capped_and_kept():
-    script = Script(["x"] * 10)
+    script = Script(["x"] * (CFG["texts"]["max_attempts"] + 5))
     records = write_text(
         client(script), "1", "honest_truthful", CTX, (500, 700), 600, CFG, True
     )
