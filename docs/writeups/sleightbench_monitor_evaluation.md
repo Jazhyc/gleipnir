@@ -127,7 +127,8 @@ headline by tens of points.
   scoring exactly 0.5. Near that score its BF16 logits move in coarse steps
   (0.500, 0.531, 0.562, …). On an unquantized engine, three attacks land
   exactly on the threshold and count as misses, so the same checkpoint
-  catches 12.5% instead of 20% at the same AUROC.
+  catches 12.5% instead of 20% at about the same pAUROC@20 (0.31 against
+  0.30).
 - **Intervals are wide.** Resampling scenarios, Gleipnir 27B's 20% has a
   95% interval of 10–32.5%.
 
@@ -155,7 +156,7 @@ so that a 1% FPR threshold does not rest on a single example.
   without thinking (pAUROC@20 = 0.28 against 0.26) and slightly better with
   thinking (0.32), at the cost of generating a full analysis.
 - **Reasoning helped Kimi K3, narrowly.** A reasoned trial lifts Kimi's
-  AUROC from 0.74 with logits to 0.76, and pAUROC@20 from 0.40 to 0.47.
+  pAUROC@20 from 0.40 with logits to 0.47 (AUROC from 0.74 to 0.76).
   Thinking did not help further. The gain is concentrated in the
   model-priors attacks (11 of 40), which rely on the monitor assuming a
   standard environment, such as English, Linux and Bash, when the system is
@@ -197,8 +198,8 @@ compare all these models mainly on pAUROC@20.
 
 Gleipnir's price is our self-hosted B200 break-even on committed and
 on-demand GPUs, before provider margin and utilization.
-- **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82).
-  It is strongest on exactly the mistake-shaped classes our models miss.
+- **GPT-6 Sol with one logit is the best ranker we measured** (pAUROC@20 =
+  0.52). It is strongest on exactly the mistake-shaped classes our models miss.
 - **The low-cost models are level.** On pAUROC@20 the order is Decider
   (0.300), Gleipnir 27B (0.299), Luna (0.277), then Jev (0.255), but 40
   attacks cannot resolve it. A paired bootstrap over scenarios puts every
