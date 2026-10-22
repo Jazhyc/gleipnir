@@ -126,7 +126,7 @@ These are estimates from measured prompt sizes (`select_tasks.py --dry-run`), as
   - the 27B held-out check is about 1,900 rows under the longer teacher instruction, roughly 30 minutes on an 80 GB GPU.
 - **Trigger VM:** 647–1,300 jobs × 2 containers at about 1–2 s each, under an hour of a small Linux VM.
 
-## Commands (from the repository root; none has been run except as dry runs)
+## Commands (from the repository root)
 
 `P=experiments.adversarial_code_or_comments`. Python with `PYTHONPATH=src`. Add `--dry-run --out /tmp/coc` to any stage to exercise it with mocks: no network, no keys, nothing under `results/`.
 

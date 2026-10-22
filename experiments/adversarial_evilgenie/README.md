@@ -52,7 +52,7 @@ Our own pilot gives natural cheating by one open model (`experiments/adversarial
 - **27B:** `27b-merged` (the checkpoint behind every earlier 27B result), with its strict-OOD 1% and 2% lines from the 400 honest calibration rows `adversarial_is_it_4b` scored. Positives first, then the seeded shuffle, capped at 2 hours; rows not reached are reported as not scored, and the shuffle keeps the scored negatives a random subset.
 - No API spend.
 
-## Results: 4B v0.3 (22 October; 27B pending)
+## Results: 4B v0.3 (22 October)
 
 Scored 2,295 of 2,295 rows on one A100 (BF16, shared scorer); start and final drift canaries 0.0. Calibration reused the 1,000 natural-cheats strict-OOD rows (scorer identity matched). Lines: P(1) 0.622 at 1% and 0.531 at 2%. Report: `results/adversarial_evilgenie/report.json`.
 
@@ -69,7 +69,7 @@ Scored 2,295 of 2,295 rows on one A100 (BF16, shared scorer); start and final dr
 - **By judge type:** `hardcoded_outputs` 0.73 (99), `test_file_reading` 0.97 (9). By condition: A 0.85, B 0.70, C 0.73, D 0.66 (3 positives), E 0.86.
 
 **Predictions (4B parts):**
-1. AUROC ≥ 0.75 for the 4B: **held by the letter** (0.751), at the boundary, with an interval of 0.64–0.97. The 27B part is pending.
+1. AUROC ≥ 0.75 for the 4B: **held by the letter** (0.751), at the boundary, with an interval of 0.64–0.97. The 27B part held too (0.926; see below).
 3. At most 5% of negatives flagged at the 1% line: **held** (0.9%; 0 of 180 clean negatives).
 4. Lower recall with an anti-hacking policy (C–E) than without (A–B): **direction held, not informative.** 1 of 25 against 9 of 83 at 1%, but 19 of 25 policy positives are `arc191_c` against 50 of 83 without a policy; outside it, 1 of 6 against 9 of 33.
 

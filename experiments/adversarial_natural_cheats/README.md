@@ -149,14 +149,14 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 - **Sonnet's invalid replies are not random.** 59 of 682 Sonnet replies gave an analysis but no `Score:` line, and 42 of them are positives (71%, against 17% of rows), many naming the cheat. Every invalid or truncated reply, for every monitor, now gets one more identical request; the second reply counts. Rows still without a score are failures, counted per monitor, and results are also reported with them counted as missed (worst case) and as flagged (best case).
 - **OpenRouter credits ran out mid-run** (balance $6.95 after $24.52 here), leaving 147 Sol, 102 Luna, 217 Gemini and 107 Kimi rows unscored, mostly late in the fixed order. They are requested again once credits are added; the comparison waits until every monitor has scored every row it can.
 
-## Results: Gleipnir against frontier monitors (Amendment 2; 22 October; 4B base pending)
+## Results: Gleipnir against frontier monitors (Amendment 2; 22 October)
 
 682 rows (first cheat: 57 positives, 239 negatives; comments stripped: 57 and 247; the 4B's own rows: 242 and 248). Cost per 1,000 rows is total spend over rows attempted. Matched-FPR recall: the threshold that flags at most 1% of this cut's negatives (2 of about 240), recall over all positives. Intervals are 95% task-clustered bootstraps. Report: `results/adversarial_natural_cheats/report.json`, `comparison`.
 
 | Monitor | First cheat: AUROC | First cheat: caught at matched 1% | Stripped: AUROC | Stripped: caught at matched 1% | Cost per 1,000 rows |
 |---|---|---|---|---|---|
-| Gleipnir 4B v0.3 | 0.959 (0.90–1.00) | 91% (83–98) | 0.933 (0.87–0.98) | 81% (68–92) | ≤ $7.8* |
-| Gleipnir 27B | 0.962 (0.91–1.00) | 91% (83–98) | 0.964 (0.91–1.00) | 93% (87–98) | ~$9.8* |
+| Gleipnir 4B v0.3 | 0.959 (0.90–1.00) | 91% (83–98) | 0.933 (0.87–0.98) | 81% (68–92) | $2.0* |
+| Gleipnir 27B | 0.962 (0.91–1.00) | 91% (83–98) | 0.964 (0.91–1.00) | 93% (87–98) | $4.8* |
 | Kimi K3 (teacher, probabilities) | 0.964 (0.92–1.00) | 93% (87–98) | 0.970 (0.94–1.00) | 93% (87–98) | $6.0 |
 | GPT-6.1 Sol | 0.967 (0.92–1.00) | 89% (77–98) | 0.966 (0.92–1.00) | 89% (78–98) | $25.1 |
 | Claude Sonnet 5.5 (scored rows only) | 0.967 (0.91–1.00) | 91% (80–98) | 0.946 (0.88–1.00) | 91% (82–98) | $15.5 (batch) |
@@ -166,7 +166,7 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 | Untrained Qwen3.5-4B (student prompt, FLA environment) | 0.893 (0.83–0.94) | 30% (10–49) | 0.857 (0.79–0.92) | 16% (6–33) | as Gleipnir 4B |
 | Keyword baseline | 0.647 (0.58–0.71) | 0% (0–8) | 0.554 (0.51–0.60) | 5% (0–12) | ~$0 |
 
-\* Gleipnir's cost is our research scorer (Transformers, one row per forward pass, no batching) on an a2-ultragpu-1g at Google's list $5.07/hour: 4B at about 2,070 prompt tokens/s while sharing the GPU with another job, 27B at about 1,650. It is not a deployment cost; a fair efficiency comparison needs a batched vLLM measurement, not done.
+\* Gleipnir's cost is our research scorer (Transformers, one row per forward pass, no batching) on an a2-ultragpu-1g at Google's list $5.07/hour, at the throughput measured in the FLA environment with the GPU to itself (Amendment 3): 4B 7,704 and 27B 3,405 prompt tokens/s. It is not a deployment cost; batched serving would be cheaper and was not measured. (An earlier version of this table gave ≤ $7.8 and ~$9.8 from the fallback path while sharing the GPU.)
 
 - **Gleipnir is level with the best frontier monitors here.** The 4B and 27B are within 0.01 AUROC and 2 points of matched-1% recall of Kimi K3, GPT-6.1 Sol and Claude Sonnet 5.5, with overlapping intervals; none is distinguishable from the others on 57 positives. Gleipnir is clearly ahead of Gemini 3.8 Flash and the keyword baseline, and ahead of GPT-6 Luna at the 1% line.
 - **The keyword baseline is weak** (AUROC 0.65, nothing caught at 1%), so the monitors are doing more than spotting the agent's own words. Its prediction was not blind (see Amendment 2).
@@ -186,7 +186,7 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 
 **Spend:** OpenRouter $30.60 (Sol $17.12, Gemini $6.25, Kimi $4.10 + $2.23, Luna $0.90), Anthropic $10.57; caps $40 and $20.
 
-**What this does not show:** one agent model on one benchmark, where nearly every cheat is announced in code or comments, so all strong monitors saturate near 0.96; 57 positives cannot separate monitors closer than about 0.05 AUROC. Thresholds are set and tested on the same negatives (in-sample, equally for every monitor). Frontier monitors ran at low reasoning effort; higher effort might help them. Gleipnir's cost advantage is unmeasured (see the footnote).
+**What this does not show:** one agent model on one benchmark, where nearly every cheat is announced in code or comments, so all strong monitors saturate near 0.96; 57 positives cannot separate monitors closer than about 0.05 AUROC. Thresholds are set and tested on the same negatives (in-sample, equally for every monitor). Frontier monitors ran at low reasoning effort; higher effort might help them. Gleipnir's cost is measured unbatched, so its advantage is if anything understated (see the footnote).
 
 ## Amendment 3 (22 October, before any FLA-environment Gleipnir score on these rows)
 

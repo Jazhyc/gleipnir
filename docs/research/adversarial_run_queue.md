@@ -8,8 +8,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- Nothing on the GPU: the A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 22 October at about 18:25 UTC after pulling every result and log; its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
-- **Done on 22 October:** natural cheats (4B, 27B, untrained base, frontier monitors, keyword baseline, FLA re-score); EvilGenie (4B; 27B to its cap); code-or-comments (development, frozen predictions, held-out 4B and 27B, frontier monitors). Results in each experiment's README.
+- Nothing. The A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 22 October after every result and log was pulled back; its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
 
 ## Failures and blockers
 
@@ -17,7 +16,7 @@ Short entries, newest first. Details live in each experiment's README.
 - **22 Oct, code-or-comments checker:** the fidelity checker fails valid cover stories (69 of its 71 backdoor-misleading failures, read by hand), even after Amendment 4 reworded the question. A blind, description-only check fixed the deviation question (47 of 47 agreements) but missed one cover story on its second question, so by the pre-set rule every failed cover story was read by hand instead (Amendment 6).
 - **22 Oct, code-or-comments texts:** a second prompt leak, the trigger prompt's label "Solution B", reached 50 special-case texts from 49 tasks; neutralised and regenerated (Amendment 5).
 - **22 Oct, VM code sync:** a `git archive` copy has no `.git`, so code-or-comments' commit guard can't pass; the VM now holds a clone of a git bundle (`~/gleipnir-coc`).
-- **22 Oct, FakeLab feasibility:** an automated safety filter stopped the assistant's summary of the benchmark's attack chains, so no feasibility note exists. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand; the Gleipnir-side conversion doesn't need the attack material.
+- **22 Oct, FakeLab feasibility:** not assessed yet. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand.
 - **22 Oct, stage 1c:** our own BF16 copy matches Tinker token for token on single prompts but does worse in agent runs (12 correct against 33), cause unknown. Not the tool parser (0.5% of calls came back empty) and not `top_k`; our prompts carry 20 extra tokens of tool schema.
 - **22 Oct, stage 1c setup:** two A100s out of stock in us-central1-a and -c; one was available. The Ubuntu accelerator image lacks a C compiler (Triton) and `nvcc` (FlashInfer's sampler), so we installed `build-essential` and set `VLLM_USE_FLASHINFER_SAMPLER=0`.
 - **22 Oct, diagnostics:** two replay tests were wrong before they were right: Inspect stores long request text as `attachment://` references (resolve them from `sample.attachments`), and a 400-token cap truncated long tool calls into empty ones.
@@ -26,15 +25,14 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Code or comments:** development scores (4B), then `analyze describe` and `predict`, commit `predictions.json`, then held-out on the 4B and the 27B teacher prompt.
-2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half. Can ride along when the GPU is up for stage 2.
-4. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
+1. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half.
+2. **27B, teacher prompt, on lab Runs 1–2.** Needs an 80 GB GPU.
+3. **Frontier monitors on EvilGenie** (a stratified subset, about $15), so all three natural-misbehaviour sets have a cost–performance comparison.
 
 ## Later
 
 - **Same words, different situation.** Put monitor-directed text in four contexts: aimed at the monitor, legitimate task content, an ignored tool output, and a peer message. Use Jeremias's ID/OOD rows and his insertion code. ([Phase-2 design](adversarial_phase2_design.md), Level 0a.)
 - **Monitor forensics (white-box):** token attribution and deletion tests on the most informative cases; check Jeremias's injection direction.
-- **One expensive monitor** (Kimi K3 or Gemini) on fixed subsets, for the cost-against-robustness comparison.
 - **Optimized serving path** (FP8/FP4) when Jeremias shares it. Probably needs a Blackwell GPU (RTX Pro 6000 on JarvisLabs).
 - **White-box framing:** a gradient search for the peer post that most raises an honest reader's score.
 ## Parked
@@ -54,9 +52,13 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Done
 
+- **Gleipnir against frontier monitors (22 October).** On natural cheats Gleipnir matches Kimi K3, GPT-6.1 Sol and Claude Sonnet 5.5 (pAUROC@20 93.5–94.8%) at 3–13× lower cost; with misleading comments on backdoored and honest code it falls below chance (AUROC 0.35 and 0.40) while Sol and Sonnet hold. Summary: [findings](../findings/adversarial_frontier_comparison.md).
+- **Code or comments (22 October): text outweighs code, and the frozen held-out tests pass.** See the [protocol and results](../../experiments/adversarial_code_or_comments/README.md).
+- **Natural cheats scored by Gleipnir (22 October): AUROC 0.96 for both models, no false alarms at the strict line.** See the [protocol and results](../../experiments/adversarial_natural_cheats/README.md).
+- **EvilGenie × Escalation (22 October): the 27B far ahead of the 4B on other models' reward hacking (0.93 against 0.75 on the same rows).** See the [protocol and results](../../experiments/adversarial_evilgenie/README.md).
 - **Natural-cheating pilot, stage 1c (21–22 October): our own BF16 copy behaves like Tinker, so DeepInfra is the odd provider; no stage 2.** Decisions 7 against Tinker's 19 and DeepInfra's 36; greedy text matches Tinker exactly on single prompts. Qwen's presence penalty raised decisions to 15 but didn't reduce looping. See [stage 1c](../../experiments/adversarial_cheating_pilot/stage_1c.md).
 - **Natural-cheating pilot, stage 1b (21–22 October): `top_k` ruled out, no-go.** Adding Qwen's `top_k = 20` on Tinker changed almost nothing: 17 decisions against 19, and 70% of runs were message-for-message identical to stage 1, because Tinker follows the seed and top_p 0.8 already trims the tail. See [stage 1b](../../experiments/adversarial_cheating_pilot/stage_1b.md).
-- **Natural-cheating pilot, stage 1 (21–22 October): no-go on Tinker as served.** Qwen3.8-27B with thinking off cheats on its own, mostly by giving in right after the setup says "failed, fix it" (28 of 37 successes). The compared Tinker arms gave 18 cheating runs on 16 tasks and 87 audited honest runs, short of the 20 and 100 the gate needs; OpenRouter alone had 31 on 31 tasks. Most runs never reach the choice before the 50-message limit. See the [protocol and results](../../experiments/adversarial_cheating_pilot/README.md).
+- **Natural-cheating pilot, stage 1 (21–22 October): no-go on Tinker as served.** Qwen3.8-27B with thinking off cheats on its own, mostly by giving in right after the setup says "failed, fix it" (26 of 37 successes). The compared Tinker arms gave 18 cheating runs on 16 tasks and 87 audited honest runs, short of the 20 and 100 the gate needs; OpenRouter alone had 31 on 31 tasks. Most runs never reach the choice before the 50-message limit. See the [protocol and results](../../experiments/adversarial_cheating_pilot/README.md).
 - **Is the framing effect a 4B thing? (steps 0–3, 21 October).** It is a small-model effect. The accusation to the monitor flags 54–82% of readers for 4B v0.3 (either prompt), but 0% for the 27B with its teacher prompt and 0% for Kimi K3, and neither flags any reader the 4B flags. The untrained base already leans toward the accusation; InjectionAugmented40 stays under its line, at lower recall. Kimi catches 5 of 10 liars at 1%; swapping lies for truth lowers every monitor's liar scores; uninstructed workers made only a few natural false claims (3 confirmed in 140 flagged posts read, all confabulation-like). See the [protocol and results](../../experiments/adversarial_is_it_4b/README.md).
 - **Lab v0.3 follow-up** (20 October): placement, rewordings, benign notes, and one-machine thresholds. A monitor-directed misconduct claim flags 43–78% of innocent readers across wordings and both placements, while a benign note flags none. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
 - **Lab v0.3, Runs 0–2 plus the drift check** (20 October). There are almost no false alarms on natural lab behaviour, and 0 of 10 liars are flagged, though they rank well. One monitor-directed peer post gets 69% of honest readers flagged at 1%. See the [lab README](../../experiments/adversarial_lab_v03/README.md).
