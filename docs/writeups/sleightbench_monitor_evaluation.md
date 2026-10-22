@@ -136,8 +136,9 @@ threshold on these 43 benigns; the paper notes that outside benign
 pools lower frontier catch rates by 10–20 points. Ranking metrics such as
 AUROC and pAUROC@20 use every benign rather than the single most suspicious
 one, so they are steadier. Catch rate at a higher FPR would rest on a few
-more benigns but remain unstable at this size. The real remedy is more
-data.
+more benigns but remain unstable at this size. We call on the community to
+build larger monitor-evasion benchmarks, with many more benign transcripts,
+so that a 1% FPR threshold does not rest on a single example.
 
 ## Lesson 2: the interface matters less than the model here
 
