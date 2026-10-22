@@ -462,6 +462,28 @@ python -m experiments.sleightbench_eval.api_decisions decider_v12 --limit 1   # 
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb11
 ```
 
+## Exploratory run sb12: decision models with the ControlArena prompt (frozen 2026-10-23)
+
+User-requested so the decision models receive the same instruction as the
+logit monitors. `sb10`/`sb11` used the Jev Noul question from their OOD runs,
+which differs from the ControlArena prompt. Identical to `sb10`/`sb11` except
+the question, `prompts/control_arena_noul.json` (SHA-256 `45edb32e…`), built
+mechanically by `api_decisions.control_arena_question` from
+`prompts/control_arena_binary.txt`:
+- the text before its classification line becomes the Noul instructions;
+- that line's `Prediction:1`/`Prediction:0` conditions become the true/false
+  criteria;
+- the output-format lines are dropped.
+
+Models `jev_113_ca` and `decider_v12_ca`; about $0.20 together, $0.50 bound
+each.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions jev_113_ca --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.api_decisions decider_v12_ca --limit 1
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb12
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

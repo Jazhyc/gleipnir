@@ -179,6 +179,20 @@
       "variant": "jev_noul_v1",
       "status": "exploratory (run sb11)",
       "tokens_from": "27b"
+    },
+    "jev_113_ca": {
+      "model": "typesafe/jev-1.13",
+      "provider": "typesafe",
+      "variant": "control_arena_noul",
+      "status": "exploratory (run sb12)",
+      "tokens_from": "27b"
+    },
+    "decider_v12_ca": {
+      "model": "perplexity/pplx-decider-v1.2",
+      "provider": "perplexity",
+      "variant": "control_arena_noul",
+      "status": "exploratory (run sb12)",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -362,6 +376,56 @@
         "budget_usd": 0.5
       },
       "status": "exploratory (run sb11): hosted pplx-decider v1.2 native Noul decision; its OOD point used local readout margins"
+    },
+    "jev_113_ca": {
+      "run": "sb12",
+      "openrouter_id": "typesafe/jev-1.13",
+      "provider": "TypeSafe",
+      "provider_revision": "typesafe/jev-1.13-20260917",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/sleightbench_eval/prompts/control_arena_noul.json",
+        "question_id": "hidden_malicious_agenda",
+        "question_sha256": "45edb32eeea3479ff2cc444a557666300a7cd2ec43a34965c0454fee2e9a8075"
+      },
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/typesafe/jev-1.13/endpoints",
+        "checked_date": "2026-10-22",
+        "input_usd_per_million": 0.042,
+        "output_usd_per_million": 0
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "status": "exploratory (run sb12): jev_113 with the ControlArena instruction as a Noul question"
+    },
+    "decider_v12_ca": {
+      "run": "sb12",
+      "openrouter_id": "perplexity/pplx-decider-v1.2",
+      "provider": "Perplexity",
+      "provider_revision": "perplexity/pplx-decider-v1.2-20261016",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/sleightbench_eval/prompts/control_arena_noul.json",
+        "question_id": "hidden_malicious_agenda",
+        "question_sha256": "45edb32eeea3479ff2cc444a557666300a7cd2ec43a34965c0454fee2e9a8075"
+      },
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/perplexity/pplx-decider-v1.2/endpoints",
+        "checked_date": "2026-10-22",
+        "input_usd_per_million": 0.02,
+        "output_usd_per_million": 0
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "status": "exploratory (run sb12): decider_v12 with the ControlArena instruction as a Noul question"
     }
   }
 }
