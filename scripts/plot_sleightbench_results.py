@@ -42,9 +42,9 @@ MODELS = [
         {"reasoned": (19, None), "thinking": (32, None), "scaffold": (62, None)},
     ),
     ("Gemini 3.1 Pro†", True, {"reasoned": (28, None), "thinking": (54, None)}),
-    # GPT-5.5's logit pAUROC@20 (0.404) is left out: alone in its group, it
-    # read awkwardly in the ranking figure.
-    ("GPT-5.5", False, {"logits": (15, None)}),
+    # GPT-5.5's logit run (15% catch, pAUROC@20 0.404) is left out: placed
+    # across the separator from the paper's GPT-5.5 bars, it confused more
+    # than it showed. The writeup reports it in Lesson 2.
     (
         "Kimi K3",
         False,
