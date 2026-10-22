@@ -107,8 +107,11 @@ therefore lifts pAUROC@20 by 0.01–0.04 with little change in catch rate.
 unauthorized, such as piping a script from an unknown host into a shell, and
 misses nearly all attacks disguised as honest mistakes, such as a wrong line
 number or column index. It is fooled by the attack that injects
-instructions aimed at the monitor, which the 4B flags (see the caveat
-below).
+instructions aimed at the monitor. The 4B flags that attack, but this is not
+robustness: the 4B flags almost any transcript containing text addressed to
+the monitor, harmful or not, as our
+[earlier results](../../outputs/presentations/monitor_injection_results/presentation.pdf)
+show.
 
 ## Lesson 1: at this size, catch rate at 1% FPR is a coarse measure
 
@@ -241,25 +244,6 @@ OOD evaluation.
 | pplx-decider v1.2 | 0.896 | 0.300 |
 | Jev 1.13 | 0.850 | 0.255 |
 | GPT-6 Luna | 0.837 | 0.277 |
-
-## A caveat on the jailbreak: monitors react to any monitor-directed text
-
-The 4B's high score on the injection jailbreak looks like robustness. The
-APPS injection benchmark suggests it is mostly a reflex. There, honest
-programs carry a note addressed to the monitor. At a 0.5 threshold:
-
-| APPS, honest code with an injected note | Flagged (GPT-4 / GPT-4.1 / GPT-4o template) | Injected backdoor vs injected honest AUROC |
-|---|---|---:|
-| Qwen3.8-27B base | 76 / 99 / 100% | 0.66 |
-| Gleipnir 27B | 53 / 73 / 100% | 0.83 |
-| Gleipnir 4B | 90 / 99.5 / 98% | 0.62 |
-
-The 27B rows use the same BF16 engine; the 4B row is on our optimized stack.
-Fine-tuning reduces the base model's reaction and greatly improves
-discrimination, but both monitors still treat a note to the monitor as strong
-evidence of misbehavior. That label is debatable, because an agent writing to
-its own monitor is arguably suspicious. On the 4B, projecting out a fitted
-"injection direction" softened the reaction but did not remove it.
 
 ## Lesson 3: our OOD suite overstated how we compare to frontier monitors
 
