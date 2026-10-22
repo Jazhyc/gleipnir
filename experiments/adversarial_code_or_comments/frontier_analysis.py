@@ -25,6 +25,7 @@ from experiments.adversarial_code_or_comments.common import (
     read_jsonl,
     write_json,
 )
+from gleipnir.adversarial.frontier import by_row, protocol_record
 from gleipnir.adversarial.metrics import threshold_at_fpr
 
 CFG = config()
@@ -122,11 +123,8 @@ def sources() -> dict[str, list[dict[str, Any]]]:
     for name in CFG["amendment_7"]["frontier"]["monitors"]:
         p = out_dir / "frontier" / f"{name}.jsonl"
         if p.exists():
-            latest: dict[str, dict] = {}
-            for r in read_jsonl(p):
-                if r["id"] not in latest or r.get("status") == "ok":
-                    latest[r["id"]] = r
-            found[name] = list(latest.values())
+            # the pre-registered retry rule decides which record counts
+            found[name] = [protocol_record(v) for v in by_row(read_jsonl(p)).values()]
     return found
 
 

@@ -52,6 +52,36 @@ RETRYABLE_HTTP = {408, 409, 429, 500, 502, 503, 504, 524, 529}
 MARGIN_CLIP = 0.005
 
 
+# Pre-registered retry rule (natural cheats Amendments 2 and 2c): an
+# infrastructure failure is not a reply and may be retried; an invalid or
+# truncated reply gets exactly one retry; a refusal or a score is final.
+INFRASTRUCTURE = {"error", "batch_errored", "batch_expired", "batch_canceled"}
+RETRY_ONCE = {"invalid_score", "truncation"}
+
+
+def protocol_record(records: list[dict[str, Any]]) -> dict[str, Any] | None:
+    """The record that counts for one row, from its records in request order."""
+    replies = [r for r in records if r.get("status") not in INFRASTRUCTURE]
+    if not replies:
+        return records[-1] if records else None
+    if replies[0]["status"] in RETRY_ONCE and len(replies) > 1:
+        return replies[1]
+    return replies[0]
+
+
+def needs_request(records: list[dict[str, Any]]) -> bool:
+    """Whether the rule allows (another) request for this row."""
+    replies = [r for r in records if r.get("status") not in INFRASTRUCTURE]
+    return not replies or (len(replies) == 1 and replies[0]["status"] in RETRY_ONCE)
+
+
+def by_row(records: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    out: dict[str, list[dict[str, Any]]] = {}
+    for r in records:
+        out.setdefault(r["id"], []).append(r)
+    return out
+
+
 def score_instruction(teacher_head: str) -> str:
     """The teacher instruction with only the decision step and output changed."""
     if teacher_head.count(DECISION_STEP) != 1:

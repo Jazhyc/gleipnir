@@ -524,5 +524,16 @@
       "cap $9.40, keeping total Sonnet spend on Abhinav's key within the agreed $20 even in the worst case",
       "submitted in batches of at most 520 rows so each worst case fits the cap after earlier batches' actual spend"
     ]
+  },
+  "amendment_7b": {
+    "date": "2026-10-22",
+    "before": "the frontier held-out results are analysed (only statuses were read)",
+    "why": "the batch runner chose 'every row not yet scored ok', so Sonnet batches 2 and 3 re-sent batch 1's failures: 34 rows were never sent, 4 refusals were re-requested (all then scored), and 2 invalid replies got a second retry",
+    "changes": [
+      "the pre-registered retry rule is enforced in code for both runners and both analyses (gleipnir.adversarial.frontier.protocol_record / needs_request): an infrastructure failure is not a reply; an invalid or truncated reply gets exactly one retry; a refusal or a score is final",
+      "the 4 re-requested refusals count as refusals; their retry scores are reported only as a sensitivity check",
+      "the 34 unsent rows get their first request",
+      "natural-cheats records were checked under the rule: no row changes"
+    ]
   }
 }

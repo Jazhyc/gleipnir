@@ -572,7 +572,13 @@ def comparison(samples: int, seed: int) -> dict[str, Any]:
         if not path.exists():
             continue
         rows = load_rows("rows", monitor) if monitor in GLEIPNIR else teacher_rows
-        records = join(read_predictions(path), rows)
+        if monitor in GLEIPNIR:
+            records = join(read_predictions(path), rows)
+        else:  # the pre-registered retry rule decides which record counts
+            from gleipnir.adversarial.frontier import by_row, protocol_record
+
+            raw = [json.loads(x) for x in path.open() if x.strip()]
+            records = join([protocol_record(v) for v in by_row(raw).values()], rows)
         out[monitor] = comparison_report(records, samples, seed)
         if monitor not in GLEIPNIR:
             out[monitor]["failure_bounds"] = failure_bounds(records)

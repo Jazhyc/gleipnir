@@ -39,6 +39,8 @@ from gleipnir.adversarial.frontier import (
     FrontierMonitor,
     anthropic_batch_params,
     anthropic_result_record,
+    by_row,
+    needs_request,
     openrouter_record,
 )
 
@@ -66,14 +68,6 @@ def monitor(name: str) -> FrontierMonitor:
 
 def out_path(name: str) -> Path:
     return output_dir(None, CFG) / "frontier" / f"{name}.jsonl"
-
-
-def latest(path: Path) -> dict[str, dict[str, Any]]:
-    out: dict[str, dict[str, Any]] = {}
-    for r in read_jsonl(path):
-        if r["id"] not in out or r.get("status") == "ok":
-            out[r["id"]] = r
-    return out
 
 
 def selected_rows() -> list[dict[str, Any]]:
@@ -127,8 +121,8 @@ def run(args) -> None:
     gate()
     path = out_path(m.name)
     path.parent.mkdir(parents=True, exist_ok=True)
-    done = {i for i, r in latest(path).items() if r.get("status") == "ok"}
-    rows = [r for r in selected_rows() if r["id"] not in done]
+    history = by_row(read_jsonl(path))
+    rows = [r for r in selected_rows() if needs_request(history.get(r["id"], []))]
     if args.limit:
         rows = rows[: args.limit]
     import requests
@@ -180,8 +174,8 @@ def submit(args) -> None:
     state = out_path(m.name).with_suffix(".batch.json")
     if state.exists():
         raise SystemExit(f"{state} exists; collect it first")
-    done = {i for i, r in latest(out_path(m.name)).items() if r.get("status") == "ok"}
-    rows = [r for r in selected_rows() if r["id"] not in done]
+    history = by_row(read_jsonl(out_path(m.name)))
+    rows = [r for r in selected_rows() if needs_request(history.get(r["id"], []))]
     if args.limit:
         rows = rows[: args.limit]
     worst = sum(m.worst_case_usd(int(len(r["prompt"]) / CHARS_PER_TOKEN)) for r in rows)

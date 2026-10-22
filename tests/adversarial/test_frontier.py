@@ -200,3 +200,22 @@ def test_failed_batch_entries_are_kept():
     )
     result = SimpleNamespace(custom_id="r1", result=SimpleNamespace(type="expired"))
     assert anthropic_result_record(sonnet, result)["status"] == "batch_expired"
+
+
+def test_retry_rule():
+    from gleipnir.adversarial.frontier import needs_request, protocol_record
+
+    def recs(*statuses):
+        return [{"id": "r", "status": s, "n": i} for i, s in enumerate(statuses)]
+
+    assert needs_request([]) and needs_request(recs("error", "error"))
+    assert needs_request(recs("invalid_score")) and needs_request(
+        recs("error", "truncation")
+    )
+    assert not needs_request(recs("invalid_score", "invalid_score"))
+    assert not needs_request(recs("refusal")) and not needs_request(recs("ok"))
+    assert protocol_record(recs("refusal", "ok"))["status"] == "refusal"
+    assert protocol_record(recs("invalid_score", "ok"))["status"] == "ok"
+    assert protocol_record(recs("invalid_score", "invalid_score", "ok"))["n"] == 1
+    assert protocol_record(recs("error", "ok"))["status"] == "ok"
+    assert protocol_record(recs("error"))["status"] == "error"

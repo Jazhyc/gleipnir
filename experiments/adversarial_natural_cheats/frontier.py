@@ -29,6 +29,8 @@ from gleipnir.adversarial.frontier import (
     FrontierMonitor,
     anthropic_batch_params,
     anthropic_result_record,
+    by_row,
+    needs_request,
     openrouter_record,
 )
 
@@ -77,6 +79,11 @@ def selected_rows(cuts: list[str] | None = None) -> list[dict[str, Any]]:
     return sorted(
         rows, key=lambda r: (order[r["metadata"]["detection_point"]], r["id"])
     )
+
+
+def read_jsonl_any(path: Path) -> list[dict[str, Any]]:
+    """Every record in request order (missing file: none)."""
+    return [json.loads(x) for x in path.open() if x.strip()] if path.exists() else []
 
 
 def spent(records: list[dict[str, Any]]) -> float:
@@ -191,9 +198,9 @@ def run(args) -> None:
         else Path(args.out) / "predictions.jsonl"
     )
     path.parent.mkdir(parents=True, exist_ok=True)
-    done = {r["id"] for r in read_predictions(path) if r.get("status") == "ok"}
+    history = by_row(read_jsonl_any(path))
     cuts = SPEC["monitors"][m.name].get("cuts")  # Amendment 2a
-    rows = [r for r in selected_rows(cuts) if r["id"] not in done]
+    rows = [r for r in selected_rows(cuts) if needs_request(history.get(r["id"], []))]
     if args.limit:
         rows = rows[: args.limit]
     key = "dry-run" if args.dry_run else load_key("OPENROUTER_API_KEY")
@@ -250,12 +257,8 @@ def submit(args) -> None:
     state = predictions_path(m.name).parent / "batch.json"
     if state.exists() and not args.force:
         raise SystemExit(f"{state} exists; collect it first or pass --force")
-    done = {
-        r["id"]
-        for r in read_predictions(predictions_path(m.name))
-        if r.get("status") == "ok"
-    }
-    rows = [r for r in selected_rows() if r["id"] not in done]
+    history = by_row(read_jsonl_any(predictions_path(m.name)))
+    rows = [r for r in selected_rows() if needs_request(history.get(r["id"], []))]
     if args.limit:
         rows = rows[: args.limit]
     worst = sum(m.worst_case_usd(int(len(r["prompt"]) / CHARS_PER_TOKEN)) for r in rows)
