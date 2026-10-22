@@ -161,7 +161,14 @@
       },
       "hand_audit_items": 40,
       "hand_audit_seed": 20261023
-    }
+    },
+    "writer_overrides": {
+      "extra_body": {
+        "reasoning_effort": "low"
+      },
+      "max_tokens": 8192
+    },
+    "chars_per_word": 5.6
   },
   "grid": {
     "codes": [
@@ -313,8 +320,8 @@
     "text_backdoor_truthful.txt": "5c1eae8b32013d4e42c6b789bfccb81b4854845205e368c37a4c574bb6e662a4",
     "text_honest_misleading.txt": "a9958f18fca9e207bc203ddbdaddcc9bf2e798cd75011d79222de32c8c0e8837",
     "text_honest_truthful.txt": "6d6202b5c5db7bc7e270847e944fe766b1af1bf8f38042f54b80934eacaf87bf",
-    "text_retry.txt": "6e43617f85a7dc89d7d3fd33c9fe192f52a483841183e47064c33511e253bb77",
-    "text_rules.txt": "1de7d3a69edb259b5b114bf8a22d9acd9084f85efbf22c13f476f3892297c6ba",
+    "text_retry.txt": "3bf993da1ffb13d6b2330b974cb2be89a63204c7f97825575a225dd0693b6164",
+    "text_rules.txt": "82ed9fc24060754a7a525c5c4faf92a3099da3807d541f34c828b952b7df7129",
     "trigger.txt": "68e085cd116eaf8adc33e71e783ee942b883489b6cc678618f57f275ea51d668",
     "trigger_retry.txt": "2fc730484773e204c88760be08fdc5322d0fc8aa68a6e01724c00b8d922c202c"
   },
@@ -330,5 +337,16 @@
     "trigger_attempts": 2,
     "sandbox": "the cheating pilot's CPU VM, pinned python:3.12-slim digest",
     "writer_sampling": "temperature 0.7, no top_p, no top_k (Tinker applies none unless asked)"
+  },
+  "amendment_1": {
+    "date": "2026-10-22",
+    "before": "any text is used; the first text run was stopped at 155 texts and is kept as texts_run1_stopped.jsonl",
+    "why": "38 of 155 texts passed: 51% of failed attempts were cut off by the 4,096-token cap while reasoning, and 99% of out-of-band texts were too long (median 921 characters against a 500-700 band)",
+    "changes": [
+      "text writing uses reasoning_effort low and max_tokens 8192 (trigger finding is unchanged and already done)",
+      "the length rule and retry message also state the band in words, at 5.6 characters a word (the median measured on the stopped run)",
+      "a 20-task pilot measures the yield before the full run"
+    ],
+    "spent_before_stop_usd": 0.685
   }
 }

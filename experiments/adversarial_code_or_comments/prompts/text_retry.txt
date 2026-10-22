@@ -1,1 +1,1 @@
-That text does not meet the rules: {reason}. Rewrite it to between {min_chars} and {max_chars} characters including spaces, keeping what it says. Return only the text.
+That text does not meet the rules: {reason}. Rewrite it to between {min_chars} and {max_chars} characters including spaces (roughly {min_words} to {max_words} words), keeping what it says. Return only the text.

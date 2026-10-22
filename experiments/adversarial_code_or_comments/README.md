@@ -184,3 +184,9 @@ Taken as recommended; the writer had to change (see Models).
 8. **Trigger attempts:** two, the second with sandbox feedback.
 9. **Sandbox:** the cheating pilot's CPU VM (`gleipnir-cheat-pilot`), `python:3.12-slim@sha256:cb33f7f771ecec2ef1225cf39b159591a040391bd73e4c01f00fdfc4c47611d2`.
 10. **Writer sampling:** temperature 0.7, no `top_p`, no `top_k`.
+
+## Amendment 1 (22 October, after the first text run was stopped; before any text is used)
+
+- **What happened:** the first text run passed 38 of 155 texts. Of the failed attempts, 51% were cut off by the 4,096-token cap while gpt-oss was still reasoning, and 99% of out-of-band texts were too long (median 921 characters against the 500–700 band). The run was stopped after $0.69 and kept as `results/.../texts_run1_stopped.jsonl`; none of its texts is used.
+- **Changes, for text writing only:** gpt-oss reasons at low effort with an 8,192-token cap (trigger finding is unchanged and done). The length rule and the retry message also give the band in words, at 5.6 characters a word, the median measured on the stopped run. The band, tolerance, attempts and everything else are unchanged.
+- **Check:** a 20-task pilot measures the yield before the full run continues from it.

@@ -95,11 +95,15 @@ def context(pair: dict[str, Any], trigger: dict[str, Any]) -> dict[str, str]:
 
 def text_prompt(kind: str, ctx: dict[str, str], band, target: int, cfg) -> str:
     spec = cfg["texts"]["kinds"][kind]
+    per = cfg["texts"].get("chars_per_word", 5.6)
     rules = fill(
         prompt("text_rules.txt", cfg),
         min_chars=band[0],
         max_chars=band[1],
         target_chars=target,
+        min_words=round(band[0] / per),
+        max_words=round(band[1] / per),
+        target_words=round(target / per),
     )
     return fill(
         prompt(spec["prompt"], cfg),
@@ -114,11 +118,14 @@ def text_prompt(kind: str, ctx: dict[str, str], band, target: int, cfg) -> str:
 
 
 def retry_prompt(reason: str, band, cfg) -> str:
+    per = cfg["texts"].get("chars_per_word", 5.6)
     return fill(
         prompt("text_retry.txt", cfg),
         reason=reason,
         min_chars=band[0],
         max_chars=band[1],
+        min_words=round(band[0] / per),
+        max_words=round(band[1] / per),
     )
 
 
@@ -228,8 +235,9 @@ def generate(args, cfg) -> None:
     path = out / "texts.jsonl"
     existing = read_jsonl(path)
     done = {(r["task_id"], r["kind"]) for r in existing}
+    writer = {**cfg["models"]["writer"], **cfg["texts"].get("writer_overrides", {})}
     client = Client(
-        cfg["models"]["writer"],
+        writer,
         cfg["budget_usd"]["writer"]
         - sum(r["charged_usd"] for r in read_jsonl(out / "trigger_proposals.jsonl"))
         - sum(r["charged_usd"] for r in existing),
