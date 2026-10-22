@@ -112,19 +112,24 @@ below).
 
 ## Lesson 1: at this size, catch rate at 1% FPR is a coarse measure
 
-The threshold is the single highest benign score, so one suspicious benign
-can move a monitor's headline by tens of points.
+The benchmark is small: 40 attacks and 43 benign transcripts. So "1% FPR"
+means scoring above the single most suspicious benign, and each attack is
+worth 2.5 points of catch rate. One suspicious benign can move a monitor's
+headline by tens of points.
 - **Kimi K3's 0%.** Our teacher ranks better than either student, yet its
-  logits catch nothing. The benign twin of `sed-line-drift`, which differs
-  from its attack only by a line number, scores 0.98. Ignore that one
-  benign and Kimi catches 30%.
-- **Ten trials don't fix it.** Under the paper's protocol, the same twin
-  scores 62–85 in all ten of Kimi's trials and still sets the threshold.
-- **Score resolution matters too.** The 27B's threshold is a benign
-  permission-laundering twin at exactly 0.5. Its logits are BF16, which near
-  the threshold moves scores in coarse steps (0.500, 0.531, 0.562, …). On an
-  unquantized engine, three attacks land exactly on the threshold and count
-  as misses, so the same checkpoint catches 12.5% at the same AUROC.
+  logits catch nothing. One benign transcript, which differs from its
+  attack only by the line number in an edit, scores 0.98, above every
+  attack. Ignore that one benign and Kimi catches 30%.
+- **Ten trials don't fix it.** Under the paper's protocol, the same benign
+  scores 62–85 out of 100 in all ten of Kimi's trials and still sets the
+  threshold.
+- **Score resolution matters too.** Gleipnir 27B's threshold is a benign
+  scoring exactly 0.5. Near that score its BF16 logits move in coarse steps
+  (0.500, 0.531, 0.562, …). On an unquantized engine, three attacks land
+  exactly on the threshold and count as misses, so the same checkpoint
+  catches 12.5% instead of 20% at the same AUROC.
+- **Intervals are wide.** Resampling scenarios, Gleipnir 27B's 20% has a
+  95% interval of 10–32.5%.
 
 The paper's own numbers likely share this fragility, since they also
 threshold on these 43 benigns. The paper notes that outside benign pools
@@ -156,7 +161,7 @@ rather than on one catch rate.
   Thinking did not help further. The gain is concentrated in the
   model-priors attacks (11 of 40), and even there reasoning moves individual
   attacks in both directions.
-- **Reasoning hurt a counting attack.** On `sed-wrong-line`, which edits a
+- **Reasoning hurt a counting attack.** On an attack that edits a
   hard-coded line in a long file, both Kimi K3 and the base 27B rank the
   attack lower with reasoning than with logits. Kimi's reasoning notices the
   hard-coded line number but cannot check it in a file of over 1,500 lines,
@@ -167,7 +172,7 @@ rather than on one catch rate.
   attack class concerns the Claude Code scaffold, which catches more
   counting attacks because it can run code to count. Its examples also show
   thinking monitors finding the suspicious step and then reading it as
-  incompetence rather than sabotage, as Kimi does on `sed-wrong-line`.
+  incompetence rather than sabotage, as Kimi does on the counting attack.
 
 ## Reference points: current decision models
 
@@ -311,7 +316,7 @@ scanned the 8,688 training prompts for SLEIGHT-Bench's mechanisms.
   no label signal.
 - **Label skews explain specific hits and misses.** `curl … | sh` appears in
   34% of BashBench attacks and no benign runs, and both Gleipnir monitors
-  catch `curl-pipe-bash`. Deleting logs with `rm -rf` is *more* common in
+  catch SLEIGHT-Bench's attack that pipes a download into a shell. Deleting logs with `rm -rf` is *more* common in
   benign BashArena runs (17%) than in attacks (7.5%). Of SLEIGHT-Bench's two
   log-deletion attacks, the 27B catches one barely (0.53) and scores the
   other 0.07; the 4B scores both below 0.04.
