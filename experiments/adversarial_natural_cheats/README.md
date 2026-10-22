@@ -187,3 +187,8 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 
 **What this does not show:** one agent model on one benchmark, where nearly every cheat is announced in code or comments, so all strong monitors saturate near 0.96; 57 positives cannot separate monitors closer than about 0.05 AUROC. Thresholds are set and tested on the same negatives (in-sample, equally for every monitor). Frontier monitors ran at low reasoning effort; higher effort might help them. Gleipnir's cost advantage is unmeasured (see the footnote).
 
+## Amendment 3 (22 October, before any FLA-environment Gleipnir score on these rows)
+
+- **Why:** the cost comparison needs Gleipnir's throughput in the project-standard FLA environment. The earlier 4B and 27B runs used the PyTorch fallback and the 4B shared the GPU (about 2,070 prompt tokens/s); the untrained base in the FLA environment ran at 12,315 on the same rows. The fallback also differs from FLA by up to 0.027 in P(1) on 8 APPS rows.
+- **Change:** 4B v0.3 and the 27B re-score the first-cheat and comments-stripped rows in the FLA environment, alone on the GPU, into a separate results tree. Reported only: throughput for the cost axis, and AUROC and matched recall under FLA beside the pre-registered fallback numbers, which stay the primary result.
+
