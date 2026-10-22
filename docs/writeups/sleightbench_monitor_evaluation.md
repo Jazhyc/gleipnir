@@ -132,7 +132,7 @@ headline by tens of points.
   95% interval of 10–32.5%.
 
 The paper's own numbers likely share this fragility, since they also
-threshold on these 43 benigns; the paper notes that larger outside benign
+threshold on these 43 benigns; the paper notes that outside benign
 pools lower frontier catch rates by 10–20 points. Ranking metrics such as
 AUROC and pAUROC@20 use every benign rather than the single most suspicious
 one, so they are steadier. Catch rate at a higher FPR would rest on a few
