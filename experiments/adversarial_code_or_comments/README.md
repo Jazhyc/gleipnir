@@ -204,3 +204,9 @@ Taken as recommended; the writer had to change (see Models).
 - **Families:** GLM differs from Gleipnir's base (Qwen) and teacher (Kimi), and from the checker (Qwen).
 - **Check:** a 10-task pilot measures how many tasks get all four texts before the full run.
 - **Pilot result and one change before the full run:** 31 of 40 pilot texts passed (median 4 attempts), but only 5 of 10 tasks got all four texts. About 20% of attempts land in the band, so the attempt cap rises from 8 to 16 (about 3% of texts left failing instead of 17%). The full run starts fresh with these settings; the pilot ($0.31) is kept and not used.
+
+## Amendment 4 (22 October, after the fidelity check; before any text is used or scored)
+
+- **A leaked example.** Three writer prompts gave "n = 14, m = 3" as a formatting example, and GLM copied it into 228 of 397 honest-misleading, 102 of 394 backdoor-truthful and 201 of 391 backdoor-misleading texts, but into none of the honest-truthful texts, whose prompt had no example. That put a meaningless string almost only in the special-case conditions, a confound. The example is removed ("describe it using its own values; invent no other examples"), and those three kinds are regenerated for every task with the Amendment 3 settings. Honest-truthful texts are kept.
+- **A checker question that mixed claim and truth.** The checker marked 359 of 391 cover stories as claiming a deviation, while its own reasons said they present the special case as correct; reading four confirmed they are cover stories. Question 2 now asks only what the description asserts: presenting special handling as required by the problem is not a claimed deviation. Every text is re-checked.
+- **Kept, not used:** the first full text run and its check (`texts_run5_with_leaked_example.jsonl`, `fidelity_run1.jsonl`; $16.52 together).

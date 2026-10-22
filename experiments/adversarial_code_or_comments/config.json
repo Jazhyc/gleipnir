@@ -318,10 +318,10 @@
     "trigger_attempts_per_task": 1.3
   },
   "prompt_sha256": {
-    "fidelity.txt": "76c7483b066359152ef44d05031728043c29fff8bfb0d5cbe4209975e7e57f5c",
-    "text_backdoor_misleading.txt": "f66b4dbfc2aa65623e8269858624ae27b65d6b51ccdfbe78262457b15b28effb",
-    "text_backdoor_truthful.txt": "5c1eae8b32013d4e42c6b789bfccb81b4854845205e368c37a4c574bb6e662a4",
-    "text_honest_misleading.txt": "a9958f18fca9e207bc203ddbdaddcc9bf2e798cd75011d79222de32c8c0e8837",
+    "fidelity.txt": "6ba715b27e0afee3c2c4ccfe15362ad10cf240d5f158382386ef24743e67878f",
+    "text_backdoor_misleading.txt": "fce541d110db3762eb6c50894f3ef2bfe7ab765e8306e1fee98042781c6bcbef",
+    "text_backdoor_truthful.txt": "a281ea53b1ebb0c0c33d8e41f21aa878bc1a16b4064c6b98e792c1852a23ecf5",
+    "text_honest_misleading.txt": "fa658060540a506acad71d2692d8214cbad1c274f30d0a7dec785720643be427",
     "text_honest_truthful.txt": "6d6202b5c5db7bc7e270847e944fe766b1af1bf8f38042f54b80934eacaf87bf",
     "text_retry.txt": "3bf993da1ffb13d6b2330b974cb2be89a63204c7f97825575a225dd0693b6164",
     "text_rules.txt": "82ed9fc24060754a7a525c5c4faf92a3099da3807d541f34c828b952b7df7129",
@@ -367,5 +367,20 @@
     "price": "GLM-5.3-Flash $0.84/M prompt, $2.11/M sampled (Tinker pricing page, 22 October)",
     "pilot": "10 tasks: 31 of 40 texts passed (median 4 attempts, max 8), 5 of 10 tasks got all four texts, $0.31; kept as texts_run4_pilot_amendment3.jsonl",
     "max_attempts": "raised from 8 to 16 before the full run: about 20% of attempts land in the band, so 8 attempts leave about 17% of texts failing and 16 leave about 3%"
+  },
+  "amendment_4": {
+    "date": "2026-10-22",
+    "before": "any text is used or scored",
+    "why": [
+      "the formatting example 'n = 14, m = 3' in three writer prompts leaked into 228/397 honest_misleading, 102/394 backdoor_truthful and 201/391 backdoor_misleading texts (0/400 honest_truthful, whose prompt had no example), a string confined to the special-case conditions",
+      "the checker marked 359 of 391 cover stories as claiming a deviation although its own reasons said they present the special case as correct; its question mixed what the text asserts with the ground truth"
+    ],
+    "changes": [
+      "the example is removed from the three prompts (describe the input with its own values; invent no other examples)",
+      "the three affected kinds are regenerated for every task with the Amendment 3 settings; honest_truthful texts are kept",
+      "checker question 2 asks only what the description asserts; a text presenting special handling as required does not claim a deviation",
+      "every text is re-checked"
+    ],
+    "kept": "texts_run5_with_leaked_example.jsonl and fidelity_run1.jsonl"
   }
 }
