@@ -520,6 +520,48 @@ def comparison_report(records: list[dict], samples: int, seed: int) -> dict[str,
     return out
 
 
+def failure_bounds(records: list[dict]) -> dict[str, Any] | None:
+    """Amendment 2c: point estimates with unscored rows at the cuts counted as
+    missed or false alarms (worst) and as flagged or quiet (best)."""
+    cuts = CONFIG["amendment_2"]["frontier"]["cuts"]
+    at_cuts = [
+        r
+        for r in records
+        if r["meta"]["detection_point"] in cuts
+        and r["meta"]["label_class"] in ("positive", "negative")
+    ]
+    failed = [r for r in at_cuts if r.get("status") != "ok"]
+    if not failed:
+        return None
+    counts = Counter(
+        (r["meta"]["detection_point"], r["meta"]["label_class"]) for r in failed
+    )
+    out: dict[str, Any] = {"failed": {f"{p}:{c}": n for (p, c), n in counts.items()}}
+    for case, pos_value, neg_value in (("worst", -1.0, 2.0), ("best", 2.0, -1.0)):
+        filled = []
+        for r in at_cuts:
+            if r.get("status") == "ok":
+                filled.append(r)
+                continue
+            v = pos_value if r["meta"]["label_class"] == "positive" else neg_value
+            filled.append(
+                {**r, "status": "ok", "score": v, "logit_0": 0.0, "logit_1": v}
+            )
+        frame = Frame.of(filled)
+        allrows = np.arange(len(frame.score))
+        entry = {}
+        for point in cuts:
+            pos = frame.score[mask(frame, allrows, point, "positive")]
+            neg = frame.score[mask(frame, allrows, point, "negative")]
+            t = threshold_at_fpr(neg, 0.01) if len(neg) else float("nan")
+            entry[point] = {
+                "auroc": auroc(pos, neg),
+                "matched_1%": share_above(pos, t),
+            }
+        out[case] = entry
+    return out
+
+
 def comparison(samples: int, seed: int) -> dict[str, Any]:
     """Every monitor with scores, plus the keyword baseline (Amendment 2)."""
     frontier = CONFIG["amendment_2"]["frontier"]
@@ -530,9 +572,10 @@ def comparison(samples: int, seed: int) -> dict[str, Any]:
         if not path.exists():
             continue
         rows = load_rows("rows", monitor) if monitor in GLEIPNIR else teacher_rows
-        out[monitor] = comparison_report(
-            join(read_predictions(path), rows), samples, seed
-        )
+        records = join(read_predictions(path), rows)
+        out[monitor] = comparison_report(records, samples, seed)
+        if monitor not in GLEIPNIR:
+            out[monitor]["failure_bounds"] = failure_bounds(records)
     scored = {
         r["id"]
         for r in read_predictions(
