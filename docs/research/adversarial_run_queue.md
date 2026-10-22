@@ -8,12 +8,16 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- **Natural cheats scored by Gleipnir** ([protocol](../../experiments/adversarial_natural_cheats/README.md)), frozen; 4B v0.3 then 27B on the A100 80GB VM, started 22 October 08:43 UTC. The VM is paused afterwards.
-- **Preparation, no spend:** code-or-comments is built (draft protocol, decisions pending); live-lab environment designs and the natural reward-hacking source scan are in Abhinav's private notes.
+- **GPU chain on the A100 80GB VM** (`chain2.sh`, from 12:08 UTC 22 October): natural-cheats 27B (to about 14:15 UTC, 3-hour cap), then code-or-comments development on the 4B, then EvilGenie 27B (2-hour cap). The VM is paused afterwards unless held-out scoring follows at once.
+- **Done today on the 4B:** natural cheats (README, results) and EvilGenie (README, results: AUROC 0.75, at chance on the problem holding 64% of positives).
+- **Code or comments:** texts, checks, hand audit and variants are done (Amendments 5–6); predictions are frozen from the development scores before any held-out row is scored.
 
 ## Failures and blockers
 
 Short entries, newest first. Details live in each experiment's README.
+- **22 Oct, code-or-comments checker:** the fidelity checker fails valid cover stories (69 of its 71 backdoor-misleading failures, read by hand), even after Amendment 4 reworded the question. A blind, description-only check fixed the deviation question (47 of 47 agreements) but missed one cover story on its second question, so by the pre-set rule every failed cover story was read by hand instead (Amendment 6).
+- **22 Oct, code-or-comments texts:** a second prompt leak, the trigger prompt's label "Solution B", reached 50 special-case texts from 49 tasks; neutralised and regenerated (Amendment 5).
+- **22 Oct, VM code sync:** a `git archive` copy has no `.git`, so code-or-comments' commit guard can't pass; the VM now holds a clone of a git bundle (`~/gleipnir-coc`).
 - **22 Oct, FakeLab feasibility:** an automated safety filter stopped the assistant's summary of the benchmark's attack chains, so no feasibility note exists. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand; the Gleipnir-side conversion doesn't need the attack material.
 - **22 Oct, stage 1c:** our own BF16 copy matches Tinker token for token on single prompts but does worse in agent runs (12 correct against 33), cause unknown. Not the tool parser (0.5% of calls came back empty) and not `top_k`; our prompts carry 20 extra tokens of tool schema.
 - **22 Oct, stage 1c setup:** two A100s out of stock in us-central1-a and -c; one was available. The Ubuntu accelerator image lacks a C compiler (Triton) and `nvcc` (FlashInfer's sampler), so we installed `build-essential` and set `VLLM_USE_FLASHINFER_SAMPLER=0`.
@@ -23,7 +27,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Code or comments** (moved up): the environment is built; freeze its protocol after Abhinav's decisions, then trigger finding and comment writing on Tinker, then scoring.
+1. **Code or comments:** development scores (4B), then `analyze describe` and `predict`, commit `predictions.json`, then held-out on the 4B and the 27B teacher prompt.
 2. **Prompt variant for Jeremias:** the teacher prompt plus a multi-agent note, chosen on half the readers and reported on the other half. Can ride along when the GPU is up for stage 2.
 4. **27B, teacher prompt, on the remaining endpoints.** Lab Runs 1–2 and the code-or-comments held-out set. Needs an 80 GB GPU and teacher-prompt support in the scorer.
 
