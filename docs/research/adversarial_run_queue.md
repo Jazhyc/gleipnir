@@ -8,7 +8,18 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- Nothing. Waiting on the GCP admin about GPUs (allowed? H100 quota?) for the self-hosted check and Gleipnir scoring.
+- **Cheating pilot, stage 1c, arm 3** (presence penalty 1.5 on our own BF16 copy), started 22 October 04:58 UTC on one A100 80GB in us-central1-a. Arm 1 is done; see [stage 1c](../../experiments/adversarial_cheating_pilot/stage_1c.md).
+- **Preparation only, nothing paid:** the code-or-comments environment, a scan of public natural reward-hacking datasets, a FakeLab feasibility note (private, licence-bound) and new live-lab environment designs.
+
+## Failures and blockers
+
+Short entries, newest first. Details live in each experiment's README.
+- **22 Oct, FakeLab feasibility:** an automated safety filter stopped the assistant's summary of the benchmark's attack chains, so no feasibility note exists. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand; the Gleipnir-side conversion doesn't need the attack material.
+- **22 Oct, stage 1c:** our own BF16 copy matches Tinker token for token on single prompts but does worse in agent runs (12 correct against 33), cause unknown. Not the tool parser (0.5% of calls came back empty) and not `top_k`; our prompts carry 20 extra tokens of tool schema.
+- **22 Oct, stage 1c setup:** two A100s out of stock in us-central1-a and -c; one was available. The Ubuntu accelerator image lacks a C compiler (Triton) and `nvcc` (FlashInfer's sampler), so we installed `build-essential` and set `VLLM_USE_FLASHINFER_SAMPLER=0`.
+- **22 Oct, diagnostics:** two replay tests were wrong before they were right: Inspect stores long request text as `attachment://` references (resolve them from `sample.attachments`), and a 400-token cap truncated long tool calls into empty ones.
+- **21–22 Oct, monitoring:** GCP's federated login expires after several hours and silently stops VM checks; watchers now report an expired login.
+- **21 Oct, cheating pilot:** offline nonce checks timed out under load and recorded failures; `recheck.py --retry-timeouts` reruns only those. The in-run nonce check copied `/` and never worked (Amendment 3).
 
 ## Next, in order
 
