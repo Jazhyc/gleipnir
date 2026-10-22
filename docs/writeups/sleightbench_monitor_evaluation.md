@@ -24,9 +24,9 @@
 > - **Distillation needs support in the training data.** A student learns
 >   its teacher's judgment only on the kinds of cases it is trained on. Our
 >   training data has stealth-prompted attacks but none built against a
->   monitor or disguised as honest mistakes. Here the 27B recovers only about
->   40% of the gap between its base model and Kimi K3; on the OOD suite it
->   closed the gap entirely.
+>   monitor or disguised as honest mistakes. On SLEIGHT-Bench the 27B
+>   recovers only about 40% of the gap between its base model and Kimi K3;
+>   on the OOD suite it closed the gap entirely.
 
 ## The benchmark
 
