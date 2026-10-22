@@ -25,6 +25,7 @@ from experiments.adversarial_code_or_comments.texts import (
     spent,
     text_prompt,
     validate,
+    with_cover_story_reads,
     write_text,
 )
 
@@ -280,3 +281,28 @@ def test_dry_run_checker_answers_blind_prompts():
         for key, value in need.items():
             if key.startswith("blind_"):
                 assert verdict[key.removeprefix("blind_")] == value
+
+
+def test_failed_cover_stories_take_the_hand_verdict():
+    fidelity = [
+        full("bm_valid", "backdoor_misleading", False, status="fail"),
+        full("bm_bad", "backdoor_misleading", False, status="fail"),
+        full("bm_ok", "backdoor_misleading", False),
+        full("ht", "honest_truthful", False, status="fail"),
+    ]
+    reads = [
+        {"text_id": "bm_valid", "verdict": "pass"},
+        {"text_id": "bm_bad", "verdict": "fail"},
+        {"text_id": "ht", "verdict": "pass"},
+    ]
+    status = {
+        r["text_id"]: r["status"] for r in with_cover_story_reads(fidelity, reads)
+    }
+    assert status == {
+        "bm_valid": "pass",
+        "bm_bad": "fail",
+        "bm_ok": "pass",
+        "ht": "fail",
+    }
+    with pytest.raises(ValueError, match="unread"):
+        with_cover_story_reads(fidelity, reads[1:])

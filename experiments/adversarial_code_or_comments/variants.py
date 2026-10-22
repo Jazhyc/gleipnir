@@ -34,10 +34,10 @@ from experiments.adversarial_code_or_comments.common import (
 )
 from experiments.adversarial_code_or_comments.texts import (
     REFERENCE,
-    combined_verdicts,
     final_texts,
     length_band,
     pick_donor,
+    with_cover_story_reads,
 )
 from gleipnir.adversarial import apps
 from gleipnir.adversarial.contract import join_prompt, split_prompt
@@ -299,10 +299,9 @@ def main() -> None:
         selection,
         pairs,
         read_jsonl(out / "texts.jsonl"),
-        combined_verdicts(
+        with_cover_story_reads(
             read_jsonl(out / "fidelity.jsonl"),
-            read_jsonl(out / "fidelity_blind.jsonl"),
-            cfg,
+            read_jsonl(out / "cover_story_reads.jsonl"),
         ),
         audit,
         cfg,

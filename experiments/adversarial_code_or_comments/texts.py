@@ -428,6 +428,23 @@ def combined_verdicts(
     return out
 
 
+def with_cover_story_reads(
+    fidelity: list[dict[str, Any]], reads: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """Amendment 6 as run: the blind check failed its acceptance test, so every
+    backdoor-misleading text the checker failed is read by hand, and the hand
+    verdict decides. Raises if any such text is unread."""
+    verdicts = {r["text_id"]: r["verdict"] for r in reads}
+    out = []
+    for r in fidelity:
+        if r["kind"] == "backdoor_misleading" and r["status"] == "fail":
+            if verdicts.get(r["text_id"]) not in ("pass", "fail"):
+                raise ValueError(f"{r['text_id']} failed the checker and is unread")
+            r = {**r, "checker_status": "fail", "status": verdicts[r["text_id"]]}
+        out.append(r)
+    return out
+
+
 def mock_checker(messages: list[dict[str, str]]) -> str:
     """Dry run: the expected verdict for the kind tagged in the dry-run text."""
     cfg = config()
