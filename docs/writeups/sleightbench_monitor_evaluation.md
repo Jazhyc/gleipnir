@@ -230,8 +230,8 @@ on-demand GPUs, before provider margin and utilization.
   against 0.08 for its benign twin).
 
 **Against these models, our OOD lead does not carry over.** On our OOD
-suite, Gleipnir 27B led Decider by 4 points of pAUROC@20 and Luna and Jev by
-9–10. On SLEIGHT-Bench all four fall to between 0.25 and 0.31, within 5
+suite, Gleipnir 27B led Decider by 4 points of pAUROC@20 and Jev and Luna by
+8–10. On SLEIGHT-Bench all four fall to between 0.25 and 0.31, within about 5
 points of each other. The table uses BF16 scores for Gleipnir, to match our
 OOD evaluation. Each model's OOD score comes from our earlier evaluation of
 it, with its own prompt; the SLEIGHT-Bench column uses the ControlArena
