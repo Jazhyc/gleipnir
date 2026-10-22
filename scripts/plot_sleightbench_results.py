@@ -4,8 +4,8 @@
 Grouped vertical bars, one group per model and one bar per way of running it,
 as in the paper's figures. Values are the stripped-view, ControlArena-prompt
 numbers recorded in ``docs/findings/sleightbench_released_monitors.md``.
-Reasoned-score bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro are
-the paper's per-trial catch rates read from its appendix figures; our
+Non-logit bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro are the
+paper's per-trial catch rates read from its appendix figures; our
 paper-protocol runs average 10 sampled trials; logit bars are single passes.
 The paper reports no ranking metric, so its bars appear only in the
 catch-rate figure.
@@ -22,8 +22,8 @@ from matplotlib.patches import Patch
 from gleipnir.analysis.plotting import ORIGIN_PALETTE, save_figure, set_plot_style
 
 SETTINGS = {
-    "reasoned": ("Reasoned score", "#9ECAE9"),
-    "thinking": ("Reasoned score, thinking", ORIGIN_PALETTE["Paper"]),
+    "reasoned": ("No native thinking", "#9ECAE9"),
+    "thinking": ("Native thinking", ORIGIN_PALETTE["Paper"]),
     "scaffold": ("Claude Code scaffold", "#54A24B"),
     "logits": ("Logit decision", "#B279A2"),
     "gleipnir": ("Logit decision, Gleipnir (ours)", ORIGIN_PALETTE["Gleipnir"]),
@@ -62,10 +62,14 @@ MODELS = {
     },
     "Gleipnir 27B": {"gleipnir": (20, 0.299)},
 }
+PROTOCOL = (
+    "Native and no native thinking: the paper's protocol, written reasoning "
+    "then a 0–100 score, over 10 sampled trials.\n"
+)
 FOOTNOTE = (
-    "Reasoned-score bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro "
-    "are the paper's runs; all other bars are ours.\n"
-    "† Gemini 3.1 Pro at low and high thinking.\n"
+    PROTOCOL + "Non-logit bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro are "
+    "the paper's runs; all other bars are ours.\n"
+    "† Gemini 3.1 Pro's bars are low and high thinking.\n"
 )
 KIMI_FOOTNOTE = (
     "* One benign twin, which differs from its attack by a single line number, "
@@ -161,7 +165,8 @@ def pauroc_figure() -> plt.Figure:
         title="At low FPR, our teacher Kimi K3 still separates attacks best",
         ylabel="pAUROC@20",
         fmt="{:.2f}",
-        footnote="pAUROC@20: normalized ROC area up to 20% FPR. The paper reports "
+        footnote=PROTOCOL
+        + "pAUROC@20: normalized ROC area up to 20% FPR. The paper reports "
         "no ranking metric for its runs.",
     )
 
