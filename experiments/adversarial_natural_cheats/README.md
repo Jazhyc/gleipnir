@@ -79,6 +79,34 @@ One model and one benchmark; most positives come right after scaffold pressure; 
 - **27B rows are scored in priority order** (`--points first_cheat pressure stripped full`) with a 3-hour cap; rows not reached are reported as not scored.
 - **The 4B is unchanged:** all calibration rows and all detection points.
 
+## Results (22 October; 4B v0.3 and 27B merged)
+
+Every row was scored: 4B 1,174 rows plus 1,000 calibration rows; 27B 1,174 rows (all four cut points fit inside the 3-hour cap). Start and final canaries passed for both (4B reference drift 0.0 on 2 rows; 27B 0.002 against the H100 calibration scores). Flag lines: 4B P(1) 0.622 at 1% and 0.531 at 2% from its 1,000 honest rows; 27B 0.731 and 0.706 from the reused 400 honest rows. Report: `results/adversarial_natural_cheats/report.json`. Intervals are 95% bootstraps clustered by task.
+
+| Cut point | 4B AUROC | 4B flagged at 1% | 27B AUROC | 27B flagged at 1% |
+|---|---|---|---|---|
+| First cheat (primary; 57 positives, about 240 negatives) | 0.96 (0.90–1.00) | 75% (64–87) | 0.96 (0.91–1.00) | 84% (74–93) |
+| Under pressure (46 against 48) | 1.00 | 83% | 1.00 | 93% |
+| Comments stripped | 0.93 (0.87–0.98) | 50% (38–61) | 0.96 (0.91–1.00) | 89% (80–98) |
+| Full run | 0.98 (0.95–1.00) | 66% | 0.99 (0.98–1.00) | 64% |
+
+- **No false alarms** at either line, on matched negatives or clean passes, for either monitor at any cut point.
+- **Stripping comments hurts the 4B, not the 27B.** 4B: median positive margin 1.375 → 0.75, AUROC −0.026 (−0.053 to −0.002), recall at 1% 75% → 50%. 27B: margin 2.125 → 2.875 (up for 79% of positives), AUROC +0.002, recall 84% → 89%. So the 4B leans partly on the agent's own comments announcing the cheat; the 27B reads the code.
+- **What both miss:** the 3 cheats disguised as an invented rule (median P(1) 0.13 on the 4B, 0.25 on the 27B; 0 of 3 flagged; one of them is rationalized rather than stated) and the one special case that is not visible in the actions Gleipnir sees (0.08 and 0.15). Hard-coded special cases are caught at 74% and 87%, state-based cheats at 88% and 92%.
+- **One-wrong-test arm on DeepInfra (`b_oneoff`, 6 positives, 3 of them self-started):** 1 of 6 flagged by the 4B, 3 of 6 by the 27B.
+- **Full runs flag less than first-cheat cuts** (66% and 64% at 1%) though AUROC is higher; why is not checked.
+- **Intent without a cheat (7 rows) and ambiguous rows (3):** the 4B scores them low (one at 0.53); the 27B flags 1 of 7 at 1% (0.82) and scores another at 0.68.
+- **Against own-negatives lines** (threshold from this experiment's negatives, reported only): 91% recall at 1% for both at the first cheat.
+
+**Predictions:**
+1. First-cheat AUROC ≥ 0.9 for both: **held** (0.96 and 0.96).
+2. Stripping comments lowers the median margin and cuts AUROC by ≥ 0.1: **failed.** The 4B's margin fell but AUROC dropped only 0.026; the 27B's margin rose.
+3. The under-pressure contrast has a lower AUROC than the primary: **failed, opposite direction** (1.00 against 0.96 for both; difference −0.041, −0.098 to −0.003, for the 4B; −0.038 for the 27B).
+4. The 4B flags ≤ 5% of clean passes at 1%: **held** (0 of 31).
+5. Disguised cheats score below hard-coded special cases: **held** for both.
+
+**What this does not show:** one agent model (Qwen3.8-27B, thinking off) on one benchmark, 60 first-cheat positives (57 scored) from 38 tasks, 31 of them from one arm (`b_conflicting`). The 27B's 1% line rests on 400 honest rows (4 above it), so its recall at 1% is noisier than the 4B's. Nearly every cheat is announced in the agent's own code or comments; the 4 that are not (3 invented rules, 1 invisible special case), where a monitor matters most, are all missed by both.
+
 ## Execution note (22 October, found after scoring)
 
 Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast kernel for the Qwen3.5/3.8 linear-attention layers that `docs/decisions.md` makes standard); Transformers fell back to its PyTorch implementation (`fla_available: false` in every `identity.json`). The 4B's calibration rows were scored in the same run; its gated canary matched an FLA reference (A100 40GB, `adversarial_lab_v03`) exactly on 2 rows. The 27B's calibration is reused from H100 runs (`adversarial_is_it_4b`); its gated canary matched them within 0.0023 on 2 rows. So thresholds and scored rows agree to within these drifts, but they are small samples: on 8 APPS rows the 4B differed from an FLA reference by up to 0.027 in P(1) (4 rows exactly equal) (see `experiments/adversarial_code_or_comments/README.md`, "Environment fix before scoring"). Found by code-or-comments' drift canary.

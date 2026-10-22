@@ -387,10 +387,24 @@ def monitor_report(
 
 
 def load_rows(name: str, monitor: str) -> list[dict]:
-    path = DATA / f"{name}_{monitor}.jsonl"
+    # Amendment 1: 27b-merged scores the rows built for 27b.
+    source = CONFIG["monitors"][monitor].get("rows_from", monitor)
+    path = DATA / f"{name}_{source}.jsonl"
     if eval_sets.file_sha256(path) != CONFIG["sha256"].get(path.name):
         raise ValueError(f"{path} does not match its SHA256 in config.json")
     return [json.loads(line) for line in path.open()]
+
+
+def calibration_predictions(monitor: str) -> tuple[list[dict], str | None]:
+    """The monitor's own calibration scores or, for the Amendment 1 27B, the
+    reused `adversarial_is_it_4b` teacher-prompt scores (400 honest rows)."""
+    own = OUTPUT / monitor / "calibration" / "predictions.jsonl"
+    if own.exists():
+        return read_predictions(own), str(own.relative_to(ROOT))
+    if monitor == CONFIG["amendment_1"]["27b_monitor"]:
+        path = CONFIG["canary"]["reference"][monitor]["path"]
+        return read_predictions(ROOT / path), path
+    return [], None
 
 
 def headline(report: dict) -> dict[str, Any]:
@@ -426,11 +440,12 @@ def main() -> None:
             read_predictions(directory / "rows" / "predictions.jsonl"),
             load_rows("rows", monitor),
         )
-        calibration = read_predictions(directory / "calibration" / "predictions.jsonl")
+        calibration, source = calibration_predictions(monitor)
         if not rows or not calibration:
             result[monitor] = {"status": "no predictions"}
             continue
         result[monitor] = monitor_report(rows, calibration, args.samples, seed)
+        result[monitor]["calibration_source"] = source
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "report.json").write_text(json.dumps(result, indent=2) + "\n")
     summary = {m: headline(r) if "points" in r else r for m, r in result.items()}
