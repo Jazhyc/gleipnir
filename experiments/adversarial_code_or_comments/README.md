@@ -190,3 +190,9 @@ Taken as recommended; the writer had to change (see Models).
 - **What happened:** the first text run passed 38 of 155 texts. Of the failed attempts, 51% were cut off by the 4,096-token cap while gpt-oss was still reasoning, and 99% of out-of-band texts were too long (median 921 characters against the 500–700 band). The run was stopped after $0.69 and kept as `results/.../texts_run1_stopped.jsonl`; none of its texts is used.
 - **Changes, for text writing only:** gpt-oss reasons at low effort with an 8,192-token cap (trigger finding is unchanged and done). The length rule and the retry message also give the band in words, at 5.6 characters a word, the median measured on the stopped run. The band, tolerance, attempts and everything else are unchanged.
 - **Check:** a 20-task pilot measures the yield before the full run continues from it.
+
+## Amendment 2 (22 October, after the Amendment 1 pilot; before any text is used)
+
+- **What happened:** with low reasoning and word counts, nothing was cut off, but only 3 of 80 pilot texts passed. gpt-oss writes the reference explanation at about 850–920 characters and shortens slowly when asked (median 923, 874 and 841 characters over three attempts), so the 500–700 band rejected nearly every reference, and every text that depends on it.
+- **Change:** the reference band becomes 600–1,100 characters with a target of 850. The design only needs each task's texts matched to each other (±10% of the reference), which is unchanged. The pilot is kept as `texts_run2_pilot_amendment1.jsonl` ($0.05); none of its texts is used.
+- **Side effect:** longer texts make the 8× repetition rows longer, so a few may exceed 29,696 tokens; they are excluded and counted, and repetition stays exploratory.

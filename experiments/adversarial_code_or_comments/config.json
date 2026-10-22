@@ -101,10 +101,10 @@
   "texts": {
     "length_unit": "characters of the text before wrapping",
     "reference": "honest_truthful",
-    "reference_target_chars": 600,
+    "reference_target_chars": 850,
     "reference_band_chars": [
-      500,
-      700
+      600,
+      1100
     ],
     "tolerance": 0.1,
     "max_attempts": 3,
@@ -348,5 +348,12 @@
       "a 20-task pilot measures the yield before the full run"
     ],
     "spent_before_stop_usd": 0.685
+  },
+  "amendment_2": {
+    "date": "2026-10-22",
+    "before": "any text is used; the Amendment 1 pilot (20 tasks, 3 of 80 texts passed) is kept as texts_run2_pilot_amendment1.jsonl",
+    "why": "gpt-oss writes the reference explanation at about 850-920 characters and shortens only slowly when asked (median 923, 874, 841 over three attempts), so the 500-700 band rejected almost every reference and, with it, every dependent text",
+    "change": "reference band [500, 700] -> [600, 1100], target 600 -> 850; the +/-10% matching of every other text to its task's reference is unchanged",
+    "spent_on_pilot_usd": 0.05
   }
 }
