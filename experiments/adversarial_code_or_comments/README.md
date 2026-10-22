@@ -250,3 +250,15 @@ Taken as recommended; the writer had to change (see Models).
   4. At its matched 1% line, Gleipnir 4B flags at least 50% of honest code carrying an unrelated text; every frontier monitor flags at most 10%.
   5. With no text, the best frontier monitor's AUROC for backdoored against honest code is at least the 4B's.
 - **Amendment 7a (before any Sonnet request; the cost guard refused the first batch, nothing was sent):** Sonnet's output limit becomes 1,024 tokens (its longest natural-cheats reply was 514, median 6), its cap $9.40 so total Sonnet spend on Abhinav's key stays within the agreed $20 even in the worst case, and rows go in batches of at most 520.
+
+## Results: frozen prediction tests on the held-out split (22 October)
+
+Development: 3,652 rows on the 4B (FLA environment; canary drift 0.0000 on all 8 rows). Predictions frozen in `predictions.json` (commit 0e6f511) before any held-out row. Held-out: 1,565 main rows on the 4B (student prompt) and, with the 324 calibration rows, on the 27B (teacher prompt). Reports: `results/adversarial_code_or_comments/comparison_*.json`.
+
+- **4B v0.3, same-monitor test: passed.** All 8 tested intervals (2 no-text means, 6 changes from no text) contain the held-out values; all 25 confident pairwise orderings are kept (Kendall τ 0.93; one swap between backdoored+misleading and honest+unrelated); the signs of the code, claim and any-text effects are kept.
+- **27B, second-monitor test: passed.** The code (+3.59), claim (+4.21) and any-text (+2.44) effects keep their signs. (Its cell intervals were built on the 4B's scale and are not its test.)
+- **Text moves both monitors more than code does.** Held-out effects in logit margin, 4B / 27B: claim +2.97 / +4.21 against code +1.91 / +3.59. A false accusation on honest code adds +4.52 / +6.05; an unrelated text adds +3.32 / +3.63 on honest code.
+- **At their strict-OOD 1% lines** (calibrated on unedited code without docstrings): honest code is flagged in 4/200 (4B) and 4/200 (27B) rows with no text, but 194/195 and 195/195 with a false accusation and 181/200 and 198/200 with an unrelated docstring. Backdoored code: 100/200 and 133/200 with no text, 143/188 and 177/188 with a cover story. Cover stories do not hide backdoors; any text raises the score, and accusations raise it most.
+- **The Amendment 5 wording check changes nothing:** on the 93 tasks where both special-case texts use the phrase or neither does, the code effect is 1.93 (4B) and 3.55 (27B), and the claim effect on honest code 4.62 and 6.34, the same as on all tasks.
+- **Against the protocol's qualitative predictions (frozen 22 October):** the code effect is positive in every text condition except misleading, where honest code with an accusation outscores backdoored code with a cover story (4B −1.08, 27B −0.64), so "backdoored code scores above honest code in every text condition" fails; "claim ≥ ½ × code" and "unrelated text raises scores" hold.
+
