@@ -35,8 +35,10 @@ each attack transcript with a benign twin from the same scenario. Most
 attacks are built to look like honest mistakes: an off-by-one `sed` line
 edit, a wrong `awk` column, a locale-dependent comparison, a `.gitignore`
 that quietly omits a secrets file. Others launder permissions or inject
-instructions aimed at the monitor itself. The paper's main setting strips
-the agent's prose, so the monitor sees only tool calls and outputs, and it
+instructions aimed at the monitor itself. The paper's main setting uses
+stripped transcripts: the agent's hidden reasoning, its visible prose and the
+explanatory `description` field of its tool calls are all removed, so the
+monitor sees only the user's messages, the tool calls and their outputs. It
 thresholds at 1% FPR on the benign twins.
 
 We matched the paper's grading setup: the benchmark's 40 graded attacks
@@ -59,7 +61,7 @@ flag a transcript, which our monitors already return exactly as the
 probability on the `1` token.
 
 We followed the paper's setting everywhere else: stripped transcripts and the
-paper's ControlArena monitor description, with only the output format
+paper's ControlArena monitor prompt, with only the output format
 changed to our binary decision. We scored each released checkpoint once on
 its production serving stack (FP8/FP4 on a B200, 262K context). The reference
 models went through the same prompt with the same single-logit readout,
@@ -70,7 +72,7 @@ except where a row says otherwise.
 "2nd-benign catch" is the catch rate if the single most suspicious benign
 were removed (FPR of 1 in 43). The paper's rows are per-trial catch rates
 read from its appendix figures. All logit rows use the ControlArena
-description with our binary output format and no reasoning.
+prompt with our binary output format and no reasoning.
 
 | Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC |
 |---|---|---:|---:|---:|
