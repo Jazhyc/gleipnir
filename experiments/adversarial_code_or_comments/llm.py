@@ -83,6 +83,8 @@ def http_post(config: EndpointConfig) -> Callable[..., dict[str, Any]]:
             headers={
                 "Authorization": f"Bearer {key}",
                 "Content-Type": "application/json",
+                # Tinker's Cloudflare front returns 403 to urllib's default agent.
+                "User-Agent": "gleipnir-adversarial/1.0 (+python-urllib)",
             },
         )
         with urllib.request.urlopen(request, timeout=timeout) as response:
