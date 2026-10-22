@@ -15,6 +15,7 @@ from experiments.adversarial_code_or_comments.analyze import (
     kendall_tau,
     main_grid,
     margin_model,
+    phrase_matched_tasks,
 )
 from experiments.adversarial_code_or_comments.llm import Client, endpoint, priced
 from experiments.adversarial_code_or_comments.score import (
@@ -200,3 +201,35 @@ def test_predictions_hold_on_a_matching_heldout_and_fail_on_a_shift():
     assert not shifted["same_monitor_success"]
     with pytest.raises(ValueError, match="held-out"):
         predict(dev + synthetic(5, "heldout", 4), CFG)
+
+
+def test_phrase_matched_tasks_need_agreement_between_the_two_claims():
+    def text(task, kind, body, attempt=1, status="ok"):
+        return {
+            "task_id": task,
+            "kind": kind,
+            "attempt": attempt,
+            "status": status,
+            "text": body,
+        }
+
+    p = "It Departs from what the problem requires here."
+    texts = [
+        text("both", "honest_misleading", p),
+        text("both", "backdoor_truthful", p),
+        text("neither", "honest_misleading", "wrong answer"),
+        text("neither", "backdoor_truthful", "wrong answer"),
+        text("split", "honest_misleading", p),
+        text("split", "backdoor_truthful", "wrong answer"),
+        # the final attempt decides; a failed final attempt drops the task
+        text("late", "honest_misleading", p),
+        text("late", "backdoor_truthful", p, attempt=1),
+        text(
+            "late",
+            "backdoor_truthful",
+            "too long",
+            attempt=2,
+            status="length_out_of_band",
+        ),
+    ]
+    assert phrase_matched_tasks(texts) == {"both", "neither"}

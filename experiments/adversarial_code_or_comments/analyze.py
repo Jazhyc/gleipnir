@@ -35,6 +35,10 @@ from experiments.adversarial_code_or_comments.common import (
 TEXTS = ("none", "truthful", "misleading", "unrelated")
 CELLS = [f"{code}|{text}" for code in CODES for text in TEXTS]
 SPECIAL = {"honest|misleading", "backdoored|truthful"}
+# Amendment 5 sensitivity check: the phrase both special-case prompts ask for,
+# used far more often in honest-misleading than in backdoor-truthful texts.
+PHRASE = "departs from what the problem requires"
+PHRASE_EFFECTS = ("code", "claim_on_honest", "claim_on_backdoored")
 MODEL_TERMS = (
     "backdoored",
     "any_text",
@@ -200,6 +204,40 @@ def effect_stats(grid, cfg) -> dict[str, Any]:
     return out
 
 
+def phrase_matched_tasks(texts: list[dict[str, Any]]) -> set[str]:
+    """Tasks whose honest-misleading and backdoor-truthful texts both use
+    `PHRASE` or both do not (final, accepted texts only)."""
+    from experiments.adversarial_code_or_comments.texts import final_texts
+
+    uses = {
+        key: PHRASE in r["text"].lower()
+        for key, r in final_texts(texts).items()
+        if r["status"] == "ok"
+    }
+    return {
+        task
+        for task, kind in uses
+        if kind == "honest_misleading"
+        and (task, "backdoor_truthful") in uses
+        and uses[(task, kind)] == uses[(task, "backdoor_truthful")]
+    }
+
+
+def phrase_sensitivity(grid, texts, cfg) -> dict[str, Any]:
+    """The code contrast and per-code claim effects on phrase-matched tasks."""
+    keep = phrase_matched_tasks(texts)
+    sub = {
+        c: {t: r for t, r in tasks.items() if t in keep} for c, tasks in grid.items()
+    }
+    effects = effect_stats(sub, cfg)
+    return {
+        "phrase": PHRASE,
+        "matched_tasks": len(keep & set(grid["honest|misleading"])),
+        "effects": {name: effects[name] for name in PHRASE_EFFECTS},
+        "note": "Amendment 5 sensitivity check; reported only, no prediction test",
+    }
+
+
 def fe_ols(x: np.ndarray, y: np.ndarray, groups: list[str]):
     """OLS with group fixed effects (within transform) and CR1 errors by group."""
     labels = np.array(groups)
@@ -310,7 +348,7 @@ def repetition(rows, lines, cfg) -> dict[str, Any]:
     return out
 
 
-def describe(rows, split: str, cfg) -> dict[str, Any]:
+def describe(rows, split: str, cfg, texts=None) -> dict[str, Any]:
     lines = thresholds(rows, cfg["scoring"]["fprs"])
     grid = main_grid(rows, split)
     report = {
@@ -324,6 +362,8 @@ def describe(rows, split: str, cfg) -> dict[str, Any]:
         "effects": effect_stats(grid, cfg),
         "margin_model": margin_model(grid, cfg),
     }
+    if texts is not None:
+        report["phrase_sensitivity"] = phrase_sensitivity(grid, texts, cfg)
     if split == "development":
         report["repetition"] = repetition(rows, lines, cfg)
     return report
@@ -444,9 +484,9 @@ def kendall_tau(a: list[str], b: list[str]) -> float:
     return s / n if n else float("nan")
 
 
-def compare(predictions: dict[str, Any], rows, cfg) -> dict[str, Any]:
+def compare(predictions: dict[str, Any], rows, cfg, texts=None) -> dict[str, Any]:
     """Held-out results against frozen predictions, with the pass rules."""
-    report = describe(rows, "heldout", cfg)
+    report = describe(rows, "heldout", cfg, texts)
     cells = report["cells"]
 
     def inside(value, interval):
@@ -533,8 +573,9 @@ def main() -> None:
     rows = read_jsonl(Path(args.scores))
     out = output_dir(args.out, cfg)
     stem = Path(args.scores).stem
+    texts = read_jsonl(out / "texts.jsonl")
     if args.command == "describe":
-        result = describe(rows, args.split, cfg)
+        result = describe(rows, args.split, cfg, texts)
         path = out / f"report_{stem}_{args.split}.json"
     elif args.command == "predict":
         result = predict(rows, cfg)
@@ -553,7 +594,7 @@ def main() -> None:
             if args.predictions
             else ROOT / cfg["analysis"]["predictions_file"]
         )
-        result = compare(json.loads(source.read_text()), rows, cfg)
+        result = compare(json.loads(source.read_text()), rows, cfg, texts)
         path = out / f"comparison_{stem}.json"
     write_json(path, result)
     summary = {
