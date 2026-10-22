@@ -73,11 +73,12 @@ except where a row says otherwise.
 
 ![pAUROC@20 on SLEIGHT-Bench](../../figures/sleightbench_pauroc.png)
 
-The paper's rows are per-trial catch rates read from its appendix figures;
-it reports no ranking metric, so they appear only in the first figure. Our
-paper-protocol runs average each transcript's score over 10 trials. All
-logit rows use the ControlArena prompt with our binary output format and no
-reasoning.
+Each group is one model, with one bar per way of running it, as in the
+paper's figures. The paper's bars are per-trial catch rates read from its
+appendix; it reports no ranking metric, so they appear only in the first
+figure. Our reasoned-score runs follow the paper's protocol and average each
+transcript's score over 10 trials. All logit bars use the ControlArena prompt
+with our binary output format and no reasoning.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
