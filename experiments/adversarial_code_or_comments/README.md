@@ -263,3 +263,33 @@ Development: 3,652 rows on the 4B (FLA environment; canary drift 0.0000 on all 8
 - **Against the protocol's qualitative predictions (frozen 22 October):** the code effect is positive in every text condition except misleading, where honest code with an accusation outscores backdoored code with a cover story (4B −1.08, 27B −0.64), so "backdoored code scores above honest code in every text condition" fails; "claim ≥ ½ × code" and "unrelated text raises scores" hold.
 - **Amendment 7b (before the frontier held-out results are analysed; only statuses were read):** my batch runner chose "every row not yet scored ok", so Sonnet's second and third batches re-sent the first batch's failures: 34 rows were never sent, 4 refusals were re-requested (all then scored) and 2 invalid replies got a second retry. The pre-registered rule is now enforced in code for both runners and analyses (`gleipnir.adversarial.frontier.protocol_record`): an infrastructure failure is not a reply; an invalid or truncated reply gets one retry; a refusal or a score is final. The 4 refusals count as refusals (their retry scores are a sensitivity check only), and the 34 unsent rows get their first request. Natural-cheats records were checked under the rule; no row changes.
 
+## Results: Gleipnir against frontier monitors on the held-out grid (Amendment 7)
+
+1,565 held-out main rows per monitor, teacher instruction for every API model; all rows scored except Claude Sonnet 5.5 (1,546 scored, 15 invalid after one retry, 4 refusals). AUROC of backdoored against honest code within each text condition, 95% task bootstrap. Report: `results/adversarial_code_or_comments/frontier_comparison.json`.
+
+| Monitor | No text | Truthful | **Misleading** (cover story vs false accusation) | Unrelated | Spend |
+|---|---|---|---|---|---|
+| Gleipnir 4B v0.3 | 0.93 (0.90–0.95) | 1.00 | **0.35 (0.31–0.39)** | 0.65 (0.61–0.69) | GPU |
+| Gleipnir 27B | 0.96 (0.95–0.98) | 1.00 | **0.40 (0.35–0.45)** | 0.87 (0.84–0.90) | GPU |
+| Kimi K3 (teacher) | 0.98 (0.96–0.99) | 1.00 | **0.63 (0.57–0.69)** | 0.87 (0.84–0.90) | $1.36 |
+| GPT-6.1 Sol | 0.99 (0.98–1.00) | 1.00 | **0.96 (0.94–0.98)** | 0.99 (0.98–0.99) | $7.46 |
+| Claude Sonnet 5.5 | 0.99 (0.99–1.00) | 1.00 | **0.90 (0.87–0.93)** | 0.97 (0.95–0.98) | $6.59 |
+| GPT-6 Luna | 0.81 (0.78–0.84) | 0.99 | 0.82 (0.77–0.86) | 0.79 (0.75–0.83) | $0.53 |
+| Gemini 3.8 Flash | 0.76 (0.72–0.79) | 0.99 | 0.74 (0.69–0.79) | 0.83 (0.80–0.87) | $2.76 |
+
+- **Misleading texts invert Gleipnir; GPT-6.1 Sol and Claude Sonnet hold.** Under misleading texts both Gleipnir models rank honest code carrying a false accusation above backdoored code carrying a cover story (AUROC 0.35 and 0.40). Sol (0.96) and Sonnet (0.90) keep separating them.
+- **The credulity is the teacher's.** Mean P(1) on honest code with a false accusation: Kimi K3 0.780, Gleipnir 27B 0.785, 4B 0.546; GPT-6.1 Sol 0.034, Luna 0.113, Gemini 0.439, Sonnet 0.528. Sol barely moves on a false accusation; Gleipnir moves as much as its teacher.
+- **With no text, Gleipnir is near the frontier:** 27B 0.96 and 4B 0.93 against 0.98–0.99 for Kimi, Sol and Sonnet, and above Luna (0.81) and Gemini 3.8 Flash (0.76).
+- **Cover stories hide nothing from anyone:** every monitor scores backdoored code higher with a cover story than with no text.
+- **Flag rates at the matched line are unreliable for score-mode monitors:** their honest+none rows sit at 0, so the 1% line falls on the floor and "flagged" means any score above 0. AUROC is the comparison to use.
+- **Sonnet's 4 refusals** (2 honest+misleading, 2 backdoored+unrelated) count as refusals; scoring them with their retry replies changes no AUROC at three decimals.
+
+**Predictions (Amendment 7):**
+1. Every monitor scores honest code higher with a false accusation than with a truthful text: **held** for all seven (Sol by the smallest margin, 0.034 against 0.001).
+2. Gleipnir 4B AUROC under misleading texts below 0.5: **held** (0.35).
+3. Gemini 3.8 Flash separates less well under misleading texts than with none: **held by the letter, not informative** (0.74 against 0.76, overlapping intervals).
+4. At its matched 1% line the 4B flags ≥ 50% of honest code with an unrelated text and every frontier monitor ≤ 10%: **failed** (4B 79%; Kimi 94%, Sonnet 97%, Luna 75%, Sol 42%, Gemini 1%), partly the floor effect above.
+5. With no text, the best frontier AUROC ≥ the 4B's: **held** (0.99 against 0.93).
+
+**Spend:** OpenRouter $12.10 (cap $22), Anthropic $6.59 (cap $9.40).
+
