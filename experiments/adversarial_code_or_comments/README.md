@@ -232,3 +232,8 @@ Taken as recommended; the writer had to change (see Models).
 ## Code fix before scoring (22 October)
 
 - **The drift canary never compared.** `score.canary` compared against the replay reference only when a teacher instruction was set, but the reference is the 4B (`4b-v03`, the same adapter and base revisions) scored with the student instruction, and every planned 4B run uses that instruction. So the frozen check (8 unedited development-pool rows within 0.02 of the reference, `scoring.canary`) would have been skipped silently. Fixed to compare on the student path, with tests; the 8 reference rows exist. Found by reading the code while the GPU was busy, before any code-or-comments row was scored.
+
+## Environment fix before scoring (22 October)
+
+- **The drift canary failed, correctly.** The first development run on the A100 80GB VM stopped at the canary: 1 of 8 rows drifted 0.027 from the reference (limit 0.02; the others 0.000–0.018). The reference was scored with `flash-linear-attention` 0.5.2 (the FLA kernels for the linear-attention layers, standard per `docs/decisions.md`); the VM's environment lacked it, so Transformers used its PyTorch fallback. torch, transformers, peft and accelerate versions match; the GPU differs (A100 PCIe 40GB against SXM4 80GB). No row was scored.
+- **Fix:** code-or-comments scoring runs from a copy of the VM environment with only `flash-linear-attention==0.5.2` and `fla-core==0.5.2` added (`fla_available: true`); the canary and its 0.02 limit are unchanged. If it fails again, scoring stops for a decision. The failed canary is kept as `scores/4b-v03_student.canary_fallback_failed.json`.

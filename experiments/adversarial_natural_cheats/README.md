@@ -78,3 +78,7 @@ One model and one benchmark; most positives come right after scaffold pressure; 
 - **27B calibration is reused, not rescored:** the strict-OOD rows `adversarial_is_it_4b` scored with this checkpoint and prompt. Correction (22 October, before any 27B score): that file holds 400 honest rows plus 100 harmful ones, not 500 honest rows, so the 27B's 1% line rests on 400 honest rows (4 above the line) and is noisier.
 - **27B rows are scored in priority order** (`--points first_cheat pressure stripped full`) with a 3-hour cap; rows not reached are reported as not scored.
 - **The 4B is unchanged:** all calibration rows and all detection points.
+
+## Execution note (22 October, found after scoring)
+
+Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast kernel for the Qwen3.5/3.8 linear-attention layers that `docs/decisions.md` makes standard); Transformers fell back to its PyTorch implementation (`fla_available: false` in every `identity.json`). Calibration rows were scored in the same environment, so the thresholds and every comparison here are internally consistent. Absolute scores can differ slightly from FLA-path numbers: on 8 APPS rows the 4B differed from an FLA reference by at most 0.027 in P(1) (see `experiments/adversarial_code_or_comments/README.md`, "Environment fix before scoring"). Found by code-or-comments' drift canary.
