@@ -239,7 +239,7 @@
       "workers": 8,
       "caps_usd": {
         "openrouter": 40.0,
-        "anthropic-batch": 15.0
+        "anthropic-batch": 20.0
       },
       "deferred": [
         "gemini-4-argon"
@@ -325,7 +325,7 @@
           "max_tokens": 2048,
           "usd_per_m_prompt": 2.0,
           "usd_per_m_completion": 10.0,
-          "cap_usd": 15.0,
+          "cap_usd": 20.0,
           "reasoning_effort": "low",
           "discount": 0.5,
           "note": "Anthropic Message Batches on Abhinav's key: adaptive thinking at effort low, no sampling parameters, no server-side fallbacks (they would answer with another model); refusals are their own status"
@@ -402,7 +402,8 @@
     "changes": [
       "a reply is scored from its last non-empty line, which must be Score:N; earlier text is allowed and counted as extra_lines",
       "stored reply text up to 2,000 characters",
-      "rows rejected under the old rule are requested again"
+      "rows rejected under the old rule are requested again",
+      "Anthropic cap $20 (the figure given to Abhinav), because the worst-case reservation for 681 rows at 2,048 output tokens is about $16.7; expected spend about $9"
     ]
   }
 }

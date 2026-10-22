@@ -142,4 +142,4 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 
 - 1 of 2 Sonnet smoke replies wrote reasoning before its `Score:` line and was rejected by the one-line rule. At that point no other monitor had an invalid reply (about 1,130 replies, all one line).
 - A reply is now scored from its last non-empty line, which must be `Score:N`; earlier text is allowed and counted (`extra_lines`, reported per monitor). Reply text is stored up to 2,000 characters. Rows rejected under the old rule are requested again.
-
+- The Anthropic cap becomes $20, the figure agreed with Abhinav: the worst-case reservation for the 681 remaining rows at 2,048 output tokens is about $16.7. Expected spend is about $9.
