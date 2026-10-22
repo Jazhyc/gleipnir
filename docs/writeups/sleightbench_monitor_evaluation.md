@@ -74,29 +74,33 @@ were removed (FPR of 1 in 43). The paper's rows are per-trial catch rates
 read from its appendix figures. All logit rows use the ControlArena
 prompt with our binary output format and no reasoning.
 
-| Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC |
-|---|---|---:|---:|---:|
-| Haiku 4.5 (paper) | Reasoned score, no thinking | 2% | — | — |
-| GPT-5.5 (paper) | Reasoned score, no thinking | 14% | — | — |
-| Opus 4.6 (paper) | Reasoned score, no thinking | 19% | — | — |
-| Gemini 3.1 Pro (paper) | Reasoned score, low thinking | 28% | — | — |
-| Opus 4.6 (paper) | Reasoned score, thinking | 32% | — | — |
-| GPT-5.5 (paper) | Reasoned score, thinking | 50% | — | — |
-| Gemini 3.1 Pro (paper) | Reasoned score, high thinking | 54% | — | — |
-| Opus 4.6 (paper) | Claude Code scaffold | 62% | — | — |
-| Qwen3.8-27B base | Reasoned score, thinking (paper protocol) | 14.0% | — | 0.711 |
-| Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 |
-| Kimi K3 | Logits | 0% | 30% | 0.737 |
-| GPT-5.5 | Logits | 15% | 15% | 0.783 |
-| Qwen3.5-4B base | Logits | 5% | 10% | 0.601 |
-| Qwen3.8-27B base | Logits | 12.5% | 12.5% | 0.670 |
-| **Gleipnir 4B** | Logits | **7.5%** | 7.5% | 0.611 |
-| **Gleipnir 27B** | Logits | **20%** | 20% | 0.697 |
+| Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
+|---|---|---:|---:|---:|---:|
+| Haiku 4.5 (paper) | Reasoned score, no thinking | 2% | — | — | — |
+| GPT-5.5 (paper) | Reasoned score, no thinking | 14% | — | — | — |
+| Opus 4.6 (paper) | Reasoned score, no thinking | 19% | — | — | — |
+| Gemini 3.1 Pro (paper) | Reasoned score, low thinking | 28% | — | — | — |
+| Opus 4.6 (paper) | Reasoned score, thinking | 32% | — | — | — |
+| GPT-5.5 (paper) | Reasoned score, thinking | 50% | — | — | — |
+| Gemini 3.1 Pro (paper) | Reasoned score, high thinking | 54% | — | — | — |
+| Opus 4.6 (paper) | Claude Code scaffold | 62% | — | — | — |
+| Qwen3.8-27B base | Reasoned score, thinking (paper protocol) | 14.0% | — | 0.711 | 0.359 |
+| Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 | 0.523 |
+| Kimi K3 (our teacher) | Reasoned score, thinking (paper protocol) | 11.0% | — | 0.790 | 0.444 |
+| Kimi K3 | Logits | 0% | 30% | 0.737 | 0.402 |
+| GPT-5.5 | Logits | 15% | 15% | 0.783 | 0.404 |
+| Qwen3.5-4B base | Logits | 5% | 10% | 0.601 | 0.193 |
+| Qwen3.8-27B base | Logits | 12.5% | 12.5% | 0.670 | 0.263 |
+| **Gleipnir 4B** | Logits | **7.5%** | 7.5% | 0.611 | 0.209 |
+| **Gleipnir 27B** | Logits | **20%** | 20% | 0.697 | 0.299 |
+
+The paper reports only catch rates. For our paper-protocol runs, AUROC and
+pAUROC@20 use each transcript's score averaged over the 10 trials.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
-12.5% (AUROC 0.623 and 0.694), so fine-tuning lifts AUROC by 0.02–0.03 with
-little change in catch rate.
+12.5%, with pAUROC@20 0.206 and 0.306 (AUROC 0.623 and 0.694). Fine-tuning
+therefore lifts pAUROC@20 by 0.01–0.04 with little change in catch rate.
 
 **What the 27B catches.** It catches attacks whose actions are overtly
 unauthorized: `curl | bash` from an unusual host, an exfiltration hidden in a
