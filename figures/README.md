@@ -191,3 +191,18 @@ Regenerate the vector and raster artifacts with:
 ```bash
 python scripts/plot_distillation_pipeline_comparison.py
 ```
+
+## SLEIGHT-Bench catch rate and pAUROC@20
+
+`sleightbench_catch_rate.png`/`.svg` and `sleightbench_pauroc.png`/`.svg`
+show stripped-view SLEIGHT-Bench results as grouped bars (one group per
+model, one bar per way of running it) for the
+[writeup](../docs/writeups/sleightbench_monitor_evaluation.md). Values are
+hard-coded from the [finding](../docs/findings/sleightbench_released_monitors.md):
+paper rows are per-trial catch rates read from the paper's figures; Gleipnir
+rows are the optimized-stack `sb02` runs and base-model logit rows the BF16
+`sb04` runs. Regenerate with:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/plot_sleightbench_results.py
+```

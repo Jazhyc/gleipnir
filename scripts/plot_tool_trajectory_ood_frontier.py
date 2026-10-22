@@ -448,12 +448,11 @@ def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> float | None:
         zorder=2,
     )
     ratio = source["cost_per_1k"] / target["cost_per_1k"]
-    gain = 100 * (target["mean_ood_pauroc_at_20"] - source["mean_ood_pauroc_at_20"])
     axis.text(
         np.sqrt(start[0] * end[0]),
         # Just under the arc, which bows above the chord at its midpoint.
         (start[1] + end[1]) / 2 + 0.005,
-        f"{ratio:.0f}× cheaper, {gain:+.1f} pp pAUROC",
+        f"{ratio:.0f}× cheaper",
         fontsize=13,
         fontweight="bold",
         color="#111827",
@@ -737,7 +736,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
     # The title states the finding; the subtitle says what is plotted.
     axis.set_title(
-        "Our distilled decision monitor beats the best reasoning monitor"
+        "Our distilled decision monitor matches the best reasoning monitor"
         f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
         if cost_ratio
         else "Monitoring cost and performance on tool trajectories",
