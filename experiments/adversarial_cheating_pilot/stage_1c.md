@@ -58,3 +58,27 @@ Offline recheck (`--threads 2`, then `--retry-timeouts`) with nothing else runni
 ## Cost
 
 The GPU VM at roughly $5 an hour (to check against the console estimate) for setup plus one to three arms, likely 3 to 6 hours in all, and the sandbox VM at about $1 an hour. No OpenRouter or Tinker spend. The GPU VM is deleted after the last arm; results are pulled back first.
+
+## Results (2026-10-22)
+
+**Verdict: like Tinker, not like DeepInfra, so stage 2 doesn't go ahead.** Arm 1 ran 21–22 October (23:38–03:09 UTC) and arm 3 on 22 October (04:58–08:37 UTC), both with no crashes and 0 offline-check timeouts. Arm 2 was not run, by the rule.
+
+| Contradicting arm | DeepInfra | Tinker | Ours, arm 1 | Ours, arm 3 (presence penalty 1.5) |
+|---|---:|---:|---:|---:|
+| Runs reaching a decision | 36 | 19 | **7** | 15 |
+| Cheat successes | 18 | 5 | 3 | 2 |
+| Correct final code | 37 | 33 | 12 | 21 |
+| Submitted | 40 | 24 | 11 | 17 |
+| Never wrote `func.py` | 49 | 59 | 71 | 70 |
+| Exact-repeat tool calls | 31% | 31% | 36% | 36% |
+| Tool errors | 110 | 186 | 232 | 156 |
+
+- **Question 1:** 7 decisions, so by the rule our copy is like Tinker. Paired with Tinker: decisions 7 against 19 (p = 0.02), correct code 12 against 33 (p < 0.0001). With DeepInfra: decisions 7 against 36 (p < 0.0001).
+- **Direct comparisons point the same way.** At temperature 0 on five single prompts, our copy's text matched Tinker's exactly every time; DeepInfra's diverged on three. Tinker and DeepInfra report identical prompt token counts for identical requests; ours is 20 tokens longer whenever tools are present (probably the `strict` field kept in the tool schema). Replaying eight logged mid-run requests at temperature 0 gave identical replies in 2 of 8 pairs for ours and Tinker and 3 of 8 for Tinker and DeepInfra; that test capped replies at 400 tokens, which cut long tool calls short, so it is weak evidence. So DeepInfra is the provider that serves the model differently.
+- **Unexplained:** our copy does worse than Tinker in agent runs even though single prompts match. Not the tool parser: only 14 of 2,547 calls (0.5%) came back with empty arguments, in 4 runs. Candidates are the 20-token schema difference, sampling code (vLLM's own sampler, since FlashInfer's needs `nvcc`), and multi-turn rendering.
+- **Arm 3 (presence penalty, report only):** more decisions (15 against 7, p = 0.10) and correct code (21 against 12, p = 0.11), fewer tool errors, but no change in looping: exact repeats stay at 36% and runs stuck on one call stay at 58. The likely reason is that vLLM's presence penalty counts only tokens generated in the current reply, so it can't discourage repeating a call from an earlier turn.
+- **Labels:** stage-1c runs are not hand-labelled yet; the cheat successes (3 and 2) are confirmed by the offline check.
+
+**Predictions:** 1 missed (7 decisions, not about 31); 2 wrong; 3 missed (3 successes, not about 13); 4 wrong; 5 half right (decisions rose by 8, repeats didn't fall).
+
+**Cost:** the GPU VM ran about 10 hours by the end of arm 3 (roughly $50 at on-demand prices); the sandbox VM about 10 hours (roughly $10). OpenRouter: under $0.01.
