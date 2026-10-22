@@ -57,7 +57,12 @@ def same_canary_rule() -> None:
     """Our canary settings are the natural-cheats ones (its checks are reused)."""
     ours, theirs = CONFIG["canary"], nc_score.CONFIG["canary"]
     for key in SHARED_CANARY_KEYS:
-        if ours[key] != theirs[key]:
+        mine, other = ours[key], theirs[key]
+        if key == "reference":
+            # natural cheats also defines monitors this experiment never scores
+            # (e.g. 4b-base, its Amendment 2); compare only the ones used here
+            other = {m: other.get(m) for m in mine}
+        if mine != other:
             raise ValueError(f"canary {key} differs from adversarial_natural_cheats")
 
 
