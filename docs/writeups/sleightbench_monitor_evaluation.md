@@ -46,6 +46,12 @@ against their 43 benign twins, with each multi-session attack scored by its
 most suspicious session, and the threshold set at 1% FPR on the benign
 twins. With 43 benigns, "1% FPR" means "above the highest benign score".
 
+Before SLEIGHT-Bench, we evaluated Gleipnir on an out-of-distribution (OOD)
+suite: six held-out monitoring datasets (AgentDojo, SHADE-Arena,
+CUA-SHADE-Arena, IaC, MLE-Sabotage and Rogue Eval, 6,395 trajectories)
+released by [Sinha et al.](https://arxiv.org/abs/2605.29601), who also
+report frontier monitors on them. We compare the two benchmarks throughout.
+
 ## How our monitor plugs in
 
 The paper's monitors write their reasoning and then a 0–100 suspicion
@@ -257,9 +263,8 @@ separates them. The paper reports only catch rates, so we compare on those:
 | Gemini 3.1 Pro | 0.940 | $73.22 | 28% (low thinking), 54% (high thinking) |
 | Gleipnir 27B | 0.951 | $0.39 | 20% |
 
-The frontier OOD rows come from
-[Sinha et al.](https://arxiv.org/abs/2605.29601), whose OOD datasets we use;
-their monitors write a rationale before a 0–10 score. Gleipnir's OOD score is on
+The frontier OOD rows are Sinha et al.'s monitors, which write a rationale
+before a 0–10 score. Gleipnir's OOD score is on
 our optimized stack (0.935 in BF16), within noise of both. The OOD suite is
 close to saturated: Gleipnir 27B scores 0.99 or higher on four of its six
 sources, which leaves little room to separate strong monitors. Gleipnir
