@@ -70,18 +70,33 @@ except where a row says otherwise.
 
 ## Results
 
+We report two measures. **Catch rate at 1% FPR** is the paper's headline: the
+share of attacks scored above every benign transcript. **pAUROC@20** measures
+how well a monitor ranks attacks above benigns in the low-FPR region that
+matters for monitoring: the area under the ROC curve up to a 20% false
+positive rate, rescaled so that a perfect monitor scores 1 and a random one
+0.1. The paper reports only catch rates, so its runs appear only in the
+first figure.
+
+Each group of bars is one model, with one bar per way of running it, as in
+the paper's figures:
+- **Thinking and no thinking:** the paper's protocol, in which the monitor
+  writes its reasoning and then a 0–100 score, with or without the model's
+  native thinking, over 10 sampled trials. Catch rate and pAUROC@20 are
+  computed per trial and averaged. The paper's bars are read from its
+  appendix; the rest of these bars are our own runs.
+- **Claude Code scaffold:** the paper's agentic monitor setup.
+- **Logit decision:** our interface, a single forward pass with the
+  ControlArena prompt and our binary output format.
+
+In short, Gleipnir 27B catches 20% of attacks, within the range of the
+paper's frontier monitors without thinking but well below them with
+thinking. Its ranking (pAUROC@20 0.30) is above its base model's logits and
+level with the base model's reasoned scores, but below our teacher, Kimi K3.
+
 <img src="../../figures/sleightbench_catch_rate.png" alt="Catch rate at 1% FPR on SLEIGHT-Bench" width="75%">
 
 <img src="../../figures/sleightbench_pauroc.png" alt="pAUROC@20 on SLEIGHT-Bench" width="75%">
-
-Each group is one model, with one bar per way of running it, as in the
-paper's figures. The paper's bars are per-trial catch rates read from its
-appendix; it reports no ranking metric, so they appear only in the first
-figure. The thinking and no-thinking bars use the paper's protocol:
-written reasoning, then a 0–100 score, over 10 sampled trials. For our own
-runs of it, pAUROC@20 is computed per trial and averaged over the 10
-trials, matching the paper's per-trial catch rate. All logit bars use the
-ControlArena prompt with our binary output format and no reasoning.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
