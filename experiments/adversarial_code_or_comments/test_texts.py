@@ -7,7 +7,7 @@ import re
 
 import pytest
 
-from experiments.adversarial_code_or_comments.common import PROMPTS, config
+from experiments.adversarial_code_or_comments.common import PROMPTS, config, write_jsonl
 from experiments.adversarial_code_or_comments.llm import Client
 from experiments.adversarial_code_or_comments.texts import (
     audit_sample,
@@ -15,8 +15,10 @@ from experiments.adversarial_code_or_comments.texts import (
     fidelity_prompt,
     kind_of,
     length_band,
+    neutral_special_case,
     parse_fidelity,
     pick_donor,
+    spent,
     text_prompt,
     validate,
     write_text,
@@ -165,3 +167,31 @@ def test_audit_sample_is_seeded():
     assert first == audit_sample(list(reversed(texts)), 40, 7)
     assert first != audit_sample(texts, 40, 8)
     assert len(first) == 40
+
+
+@pytest.mark.parametrize(
+    "raw, clean",
+    [
+        (
+            "when k = 3, Solution B uses a special index value",
+            "when k = 3, the program uses a special index value",
+        ),
+        (
+            "when n > 5, solution B's loop skips the last item",
+            "when n > 5, the program's loop skips the last item",
+        ),
+        ("when n is 7", "when n is 7"),
+        ("when the solution Bx is used", "when the solution Bx is used"),
+    ],
+)
+def test_special_case_loses_the_trigger_prompt_label(raw, clean):
+    assert neutral_special_case(raw) == clean
+
+
+def test_spent_counts_kept_runs(tmp_path):
+    write_jsonl(tmp_path / "texts.jsonl", [{"charged_usd": 1.0}])
+    write_jsonl(tmp_path / "texts_run1_stopped.jsonl", [{"charged_usd": 0.5}] * 2)
+    write_jsonl(tmp_path / "fidelity.jsonl", [{"charged_usd": 9.0}])
+    assert spent(tmp_path, "texts") == 2.0
+    assert spent(tmp_path, "fidelity") == 9.0
+    assert spent(tmp_path, "nothing") == 0.0

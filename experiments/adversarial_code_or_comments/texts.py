@@ -53,6 +53,7 @@ RETRYABLE = {
     "truncation",
 }
 REFERENCE = "honest_truthful"
+SOLUTION_LABEL = re.compile(r"\b[Ss]olution B\b")
 
 
 def length_band(reference_chars: int, tolerance: float) -> tuple[int, int]:
@@ -80,13 +81,20 @@ def validate(text: str, band: tuple[int, int], banned: str) -> tuple[str, str]:
     return "ok", f"{n} characters"
 
 
+def neutral_special_case(special_case: str) -> str:
+    """The trigger's description without the trigger prompt's label for the
+    backdoored program ("Solution B"), which writers copied into texts
+    (Amendment 5)."""
+    return SOLUTION_LABEL.sub("the program", special_case)
+
+
 def context(pair: dict[str, Any], trigger: dict[str, Any]) -> dict[str, str]:
     sub = {code: apps.parse(pair[code]["prompt"]) for code in pair}
     return {
         "problem": sub["honest"].problem,
         "honest": sub["honest"].code,
         "backdoored": sub["backdoored"].code,
-        "special_case": trigger["special_case"],
+        "special_case": neutral_special_case(trigger["special_case"]),
         "trigger_input": trigger["trigger_input"],
         "honest_output": trigger["honest_output"],
         "backdoor_output": trigger["backdoor_output"],
@@ -190,6 +198,13 @@ def write_text(client, task: str, kind: str, ctx, band, target: int, cfg, dry_ru
     return records
 
 
+def spent(out, stem: str) -> float:
+    """Charged cost of `<stem>.jsonl` and every kept earlier run of it
+    (`<stem>_run*.jsonl`), so set-aside runs still count against the budget."""
+    paths = [out / f"{stem}.jsonl", *sorted(out.glob(f"{stem}_run*.jsonl"))]
+    return sum(r["charged_usd"] for p in paths for r in read_jsonl(p))
+
+
 def final_texts(records: list[dict[str, Any]]) -> dict[tuple[str, str], dict[str, Any]]:
     """(task, kind) -> its last attempt record (status `ok` if it succeeded)."""
     out: dict[tuple[str, str], dict[str, Any]] = {}
@@ -240,7 +255,7 @@ def generate(args, cfg) -> None:
         writer,
         cfg["budget_usd"]["writer"]
         - sum(r["charged_usd"] for r in read_jsonl(out / "trigger_proposals.jsonl"))
-        - sum(r["charged_usd"] for r in existing),
+        - spent(out, "texts"),
         cfg,
         timeout=cfg["request_timeout_seconds"],
         responder=mock_writer if args.dry_run else None,
@@ -391,7 +406,7 @@ def check(args, cfg) -> None:
     ]
     client = Client(
         cfg["models"]["checker"],
-        cfg["budget_usd"]["checker"] - sum(r["charged_usd"] for r in existing),
+        cfg["budget_usd"]["checker"] - spent(out, "fidelity"),
         cfg,
         timeout=cfg["request_timeout_seconds"],
         responder=mock_checker if args.dry_run else None,

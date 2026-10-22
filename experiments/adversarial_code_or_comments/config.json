@@ -382,5 +382,20 @@
       "every text is re-checked"
     ],
     "kept": "texts_run5_with_leaked_example.jsonl and fidelity_run1.jsonl"
+  },
+  "amendment_5": {
+    "date": "2026-10-22",
+    "before": "any text is used or scored",
+    "why": [
+      "49 of 400 tasks' special-case descriptions name the backdoored program 'Solution B' (the trigger prompt's label); the writer copied it into 41/394 honest_misleading, 3/394 backdoor_truthful and 6/387 backdoor_misleading texts, all from those tasks, and 0/400 honest_truthful",
+      "'departs from what the problem requires' appears in 264/394 honest_misleading and 58/394 backdoor_truthful texts although both prompts ask for it"
+    ],
+    "changes": [
+      "writer and checker receive the special case with 'Solution B' replaced by 'the program' (texts.neutral_special_case); triggers.jsonl is unchanged",
+      "the three special-case kinds of the 49 tasks (147 texts) are regenerated with the Amendment 3 settings, leaked or not, and re-checked; other texts are kept",
+      "sensitivity check, reported only: the code contrast (backdoor_truthful - honest_misleading) and the per-code claim effects, on tasks where both texts use the phrase or neither does",
+      "writer and checker budgets subtract the spend of kept runs (texts.spent)"
+    ],
+    "kept": "texts_run6_with_solution_label.jsonl and fidelity_run2_with_solution_label.jsonl"
   }
 }
