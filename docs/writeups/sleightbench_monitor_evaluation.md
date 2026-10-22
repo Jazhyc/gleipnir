@@ -228,16 +228,11 @@ on-demand GPUs, before provider margin and utilization.
 - **The jailbreak.** Luna is fully fooled by the injection attack (score
   about 2×10⁻¹⁰), as are Gleipnir 27B and Decider. Jev flags it (0.48
   against 0.08 for its benign twin).
-- **The prompt matters for these models.** With the question we used on our
-  OOD suite, which condenses our own monitoring rules, Decider reached
-  pAUROC@20 = 0.32 and flagged the jailbreak, because that question tells it
-  to treat trajectory text as untrusted evidence; Jev fell to 0.19.
 
 **Against these models, our OOD lead mostly does not carry over.** The
-table uses BF16 scores for Gleipnir, to match our OOD evaluation. On the
-OOD suite, Jev and Decider used our condensed question and Decider its
-local readout; the SLEIGHT-Bench column uses the ControlArena prompt for
-all four:
+table uses BF16 scores for Gleipnir, to match our OOD evaluation. Each
+model's OOD score comes from our earlier evaluation of it, with its own
+prompt; the SLEIGHT-Bench column uses the ControlArena prompt for all four:
 
 | pAUROC@20 | OOD suite | OOD, without the airline task | SLEIGHT-Bench |
 |---|---:|---:|---:|
