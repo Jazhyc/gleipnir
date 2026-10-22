@@ -19,8 +19,7 @@
 >   Gemini 3.1 Pro at about 200× lower cost. Here it catches 20%, against
 >   19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against monitors in
 >   its own cost tier it holds up: it ranks above GPT-6 Luna and Jev 1.13 at
->   the same or lower cost, and level with pplx-decider v1.2, which costs
->   half as much.
+>   the same or lower cost.
 > - **Distillation needs support in the training data.** A student learns
 >   its teacher's judgment only on the kinds of cases it is trained on. Our
 >   training data has stealth-prompted attacks but none built against a
@@ -150,10 +149,19 @@ on-demand GPUs, before provider margin and utilization.
 - **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82).
   It is strongest on exactly the mistake-shaped classes our models miss.
 - **Among the low-cost monitors, Gleipnir 27B and pplx-decider are level.**
-  Decider catches 5 points more and leads pAUROC@20 by 2 points, at about
-  half the price; AUROC is level and the intervals overlap. Both rank above
-  Luna (which costs 2.4–5.7× more than Gleipnir) and Jev (the same price).
-  Decider is built on the same Qwen3.8-27B backbone as Gleipnir 27B.
+  Decider catches 5 points more and leads pAUROC@20 by 2 points; AUROC is
+  level and the intervals overlap. Both rank above Luna (which costs
+  2.4–5.7× more than Gleipnir) and Jev (the same price).
+- **Decider's price advantage disappears at scale, and its architecture
+  costs more in live monitoring.** Decider is built on the same Qwen3.8-27B
+  backbone as Gleipnir 27B. Its $0.02/M list price is half our on-demand
+  cost but matches our cost on committed GPUs ($0.018/M). It also reads the
+  trajectory with non-causal attention, so it cannot reuse a KV cache. A
+  synchronous monitor re-scores the trajectory after every agent action;
+  Gleipnir, a causal decoder, can keep the cached prefix and process only
+  the new step, while Decider must re-encode the whole trajectory each time.
+  The per-trajectory prices above therefore understate Decider's cost in
+  that setting.
 - **Jev's scores are coarse:** 41 distinct values here, none above 0.53.
 - **The jailbreak.** Luna is fully fooled by the injection attack (score
   about 2×10⁻¹⁰), as is Gleipnir 27B. Both decision models flag it: Decider
