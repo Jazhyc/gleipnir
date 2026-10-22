@@ -91,7 +91,7 @@ the paper's figures:
 
 In short, Gleipnir 27B catches 20% of attacks, within the range of the
 paper's frontier monitors without thinking but well below them with
-thinking. Its ranking (pAUROC@20 0.30) is above its base model's logits and
+thinking. Its ranking (pAUROC@20 = 0.30) is above its base model's logits and
 level with the base model's reasoned scores, but below our teacher, Kimi K3.
 
 <img src="../../figures/sleightbench_catch_rate.png" alt="Catch rate at 1% FPR on SLEIGHT-Bench" width="75%">
@@ -100,7 +100,7 @@ level with the base model's reasoned scores, but below our teacher, Kimi K3.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
-12.5%, with pAUROC@20 0.206 and 0.306 (AUROC 0.623 and 0.694). Fine-tuning
+12.5%, with pAUROC@20 of 0.206 and 0.306 (AUROC of 0.623 and 0.694). Fine-tuning
 therefore lifts pAUROC@20 by 0.01–0.04 with little change in catch rate.
 
 **What the 27B catches.** It catches attacks whose actions are overtly
@@ -147,10 +147,10 @@ rather than on one catch rate.
 - **A single-token readout is more dependable for small models.** Under
   the paper's protocol the base 4B catches 0.5% without thinking and 3% with
   it, against 5% from its logits, although its ranking is similar
-  (pAUROC@20 0.19–0.21 against 0.19). Each sampled trial is noisy, and the
+  (pAUROC@20 = 0.19–0.21 against 0.19). Each sampled trial is noisy, and the
   threshold is set over 430 benign trials. The logit readout returns the
   score in one token, with no sampling noise. For the 27B a reasoned trial
-  ranks about the same as its logits without thinking (pAUROC@20 0.28
+  ranks about the same as its logits without thinking (pAUROC@20 = 0.28
   against 0.26) and slightly better with thinking (0.32), at the cost of
   generating a full analysis.
 - **Reasoning helped Kimi K3, narrowly.** A reasoned trial lifts Kimi's
