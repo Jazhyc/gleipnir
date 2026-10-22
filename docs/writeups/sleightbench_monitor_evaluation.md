@@ -69,36 +69,15 @@ except where a row says otherwise.
 
 ## Results
 
-"2nd-benign catch" is the catch rate if the single most suspicious benign
-were removed (FPR of 1 in 43). The paper's rows are per-trial catch rates
-read from its appendix figures. All logit rows use the ControlArena
-prompt with our binary output format and no reasoning.
+![Catch rate at 1% FPR on SLEIGHT-Bench](../../figures/sleightbench_catch_rate.png)
 
-| Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
-|---|---|---:|---:|---:|---:|
-| Haiku 4.5 (paper) | Reasoned score, no thinking | 2% | — | — | — |
-| GPT-5.5 (paper) | Reasoned score, no thinking | 14% | — | — | — |
-| Opus 4.6 (paper) | Reasoned score, no thinking | 19% | — | — | — |
-| Gemini 3.1 Pro (paper) | Reasoned score, low thinking | 28% | — | — | — |
-| Opus 4.6 (paper) | Reasoned score, thinking | 32% | — | — | — |
-| GPT-5.5 (paper) | Reasoned score, thinking | 50% | — | — | — |
-| Gemini 3.1 Pro (paper) | Reasoned score, high thinking | 54% | — | — | — |
-| Opus 4.6 (paper) | Claude Code scaffold | 62% | — | — | — |
-| Qwen3.5-4B base | Reasoned score, no thinking (paper protocol) | 0.5% | — | 0.607 | 0.213 |
-| Qwen3.5-4B base | Reasoned score, thinking (paper protocol) | 3.0% | — | 0.646 | 0.237 |
-| Qwen3.8-27B base | Reasoned score, no thinking (paper protocol) | 8.9% | — | 0.710 | 0.318 |
-| Qwen3.8-27B base | Reasoned score, thinking (paper protocol) | 14.0% | — | 0.711 | 0.359 |
-| Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 | 0.523 |
-| Kimi K3 (our teacher) | Reasoned score, thinking (paper protocol) | 11.0% | — | 0.790 | 0.444 |
-| Kimi K3 | Logits | 0% | 30% | 0.737 | 0.402 |
-| GPT-5.5 | Logits | 15% | 15% | 0.783 | 0.404 |
-| Qwen3.5-4B base | Logits | 5% | 10% | 0.601 | 0.193 |
-| Qwen3.8-27B base | Logits | 12.5% | 12.5% | 0.670 | 0.263 |
-| **Gleipnir 4B** | Logits | **7.5%** | 7.5% | 0.611 | 0.209 |
-| **Gleipnir 27B** | Logits | **20%** | 20% | 0.697 | 0.299 |
+![pAUROC@20 on SLEIGHT-Bench](../../figures/sleightbench_pauroc.png)
 
-The paper reports only catch rates. For our paper-protocol runs, AUROC and
-pAUROC@20 use each transcript's score averaged over the 10 trials.
+The paper's rows are per-trial catch rates read from its appendix figures;
+it reports no ranking metric, so they appear only in the first figure. Our
+paper-protocol runs average each transcript's score over 10 trials. All
+logit rows use the ControlArena prompt with our binary output format and no
+reasoning.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
