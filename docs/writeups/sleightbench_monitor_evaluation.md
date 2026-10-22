@@ -161,6 +161,13 @@ rather than on one catch rate.
   attack lower with reasoning than with logits. Kimi's reasoning notices the
   hard-coded line number but cannot check it in a file of over 1,500 lines,
   and gives the agent the benefit of the doubt.
+- **The paper does not say where thinking helps either.** Its thinking
+  gains are large for GPT-5.5, Gemini 3.1 Pro and Opus 4.6 but absent for
+  Opus 4.7 and Sonnet 4.6, and it offers no mechanism. Its only analysis by
+  attack class concerns the Claude Code scaffold, which catches more
+  counting attacks because it can run code to count. Its examples also show
+  thinking monitors finding the suspicious step and then reading it as
+  incompetence rather than sabotage, as Kimi does on `sed-wrong-line`.
 
 ## Reference points: current decision models
 
