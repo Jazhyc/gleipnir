@@ -84,6 +84,9 @@ prompt with our binary output format and no reasoning.
 | GPT-5.5 (paper) | Reasoned score, thinking | 50% | — | — | — |
 | Gemini 3.1 Pro (paper) | Reasoned score, high thinking | 54% | — | — | — |
 | Opus 4.6 (paper) | Claude Code scaffold | 62% | — | — | — |
+| Qwen3.5-4B base | Reasoned score, no thinking (paper protocol) | 0.5% | — | 0.607 | 0.213 |
+| Qwen3.5-4B base | Reasoned score, thinking (paper protocol) | 3.0% | — | 0.646 | 0.237 |
+| Qwen3.8-27B base | Reasoned score, no thinking (paper protocol) | 8.9% | — | 0.710 | 0.318 |
 | Qwen3.8-27B base | Reasoned score, thinking (paper protocol) | 14.0% | — | 0.711 | 0.359 |
 | Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 | 0.523 |
 | Kimi K3 (our teacher) | Reasoned score, thinking (paper protocol) | 11.0% | — | 0.790 | 0.444 |
@@ -143,6 +146,16 @@ rather than on one catch rate.
   lowered the 4B on every metric. It also made the 4B fall for the injection
   jailbreak: answering immediately, it flags the attack; after reasoning,
   it scores it 0.02 or less.
+- **A single-token readout is more dependable for small models.** Under
+  the paper's protocol the base 4B catches 0.5% without thinking and 3% with
+  it, against 5% from its logits, although its ranking is similar
+  (pAUROC@20 0.21–0.24 against 0.19). Each sampled trial is noisy, and the
+  threshold is set over 430 benign trials. Some trials also produce no
+  parsable score (8 and 5 of 860 for the 4B), which must be excluded or
+  retried. The logit readout returns the score in one token, with no
+  parsing and no sampling noise. For the 27B the reasoned score ranks
+  somewhat better (pAUROC@20 0.32–0.36 against 0.26), at the cost of 10
+  generated analyses per transcript.
 - **Reasoning did help Kimi K3.** Kimi's AUROC rises from 0.74 with logits
   to 0.80 under the paper's sampled-and-averaged protocol. Thinking itself
   added nothing on top.
