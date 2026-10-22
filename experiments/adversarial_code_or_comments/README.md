@@ -196,3 +196,10 @@ Taken as recommended; the writer had to change (see Models).
 - **What happened:** with low reasoning and word counts, nothing was cut off, but only 3 of 80 pilot texts passed. gpt-oss writes the reference explanation at about 850–920 characters and shortens slowly when asked (median 923, 874 and 841 characters over three attempts), so the 500–700 band rejected nearly every reference, and every text that depends on it.
 - **Change:** the reference band becomes 600–1,100 characters with a target of 850. The design only needs each task's texts matched to each other (±10% of the reference), which is unchanged. The pilot is kept as `texts_run2_pilot_amendment1.jsonl` ($0.05); none of its texts is used.
 - **Side effect:** longer texts make the 8× repetition rows longer, so a few may exceed 29,696 tokens; they are excluded and counted, and repetition stays exploratory.
+
+## Amendment 3 (22 October, after the Amendment 2 pilot; before any text is used)
+
+- **What happened:** 27 of 80 pilot texts passed; gpt-oss overshoots every target and shortens only about 5% per retry. A bake-off of five Tinker models on real prompts (DeepSeek-V4.1-Flash, Nemotron-3-Super, Inkling, GLM-5.3-Flash, gpt-oss) found GLM-5.3-Flash the most accurate. With reasoning it hits the length closely but is slow and sometimes reasons past 24,576 tokens; without reasoning it overshoots but varies, so repeated attempts land in the band. Tinker accepts only `reasoning_effort: low` for it.
+- **Change:** text writing uses `zai-org/GLM-5.3-Flash:peft:262144` without reasoning, up to 8 attempts with the existing length feedback. The reference band returns to the frozen 500–700 characters (target 600), undoing Amendment 2, so the 8× repetition rows fit the token limit again. Trigger finding, already done with gpt-oss, is unchanged; triggers are confirmed by running the programs, so the model that proposed them doesn't matter.
+- **Families:** GLM differs from Gleipnir's base (Qwen) and teacher (Kimi), and from the checker (Qwen).
+- **Check:** a 10-task pilot measures how many tasks get all four texts before the full run.

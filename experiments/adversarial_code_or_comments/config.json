@@ -101,13 +101,13 @@
   "texts": {
     "length_unit": "characters of the text before wrapping",
     "reference": "honest_truthful",
-    "reference_target_chars": 850,
+    "reference_target_chars": 600,
     "reference_band_chars": [
-      600,
-      1100
+      500,
+      700
     ],
     "tolerance": 0.1,
-    "max_attempts": 3,
+    "max_attempts": 8,
     "retry_rule": "retry with feedback only for length, wording, empty or truncated outputs; never after an infrastructure failure",
     "kinds": {
       "honest_truthful": {
@@ -163,10 +163,13 @@
       "hand_audit_seed": 20261023
     },
     "writer_overrides": {
+      "model": "zai-org/GLM-5.3-Flash:peft:262144",
       "extra_body": {
         "reasoning_effort": "low"
       },
-      "max_tokens": 8192
+      "max_tokens": 2048,
+      "usd_per_m_prompt": 0.84,
+      "usd_per_m_completion": 2.11
     },
     "chars_per_word": 5.6
   },
@@ -355,5 +358,12 @@
     "why": "gpt-oss writes the reference explanation at about 850-920 characters and shortens only slowly when asked (median 923, 874, 841 over three attempts), so the 500-700 band rejected almost every reference and, with it, every dependent text",
     "change": "reference band [500, 700] -> [600, 1100], target 600 -> 850; the +/-10% matching of every other text to its task's reference is unchanged",
     "spent_on_pilot_usd": 0.05
+  },
+  "amendment_3": {
+    "date": "2026-10-22",
+    "before": "any text is used; the Amendment 2 pilot (27 of 80 texts passed) is kept as texts_run3_pilot_amendment2.jsonl",
+    "why": "gpt-oss overshoots every length target, and retries shorten it only about 5% each. In a bake-off of five Tinker models on real prompts, GLM-5.3-Flash was most accurate; with reasoning it is accurate but slow and sometimes reasons past 24,576 tokens, without reasoning it overshoots but varies, so repeated attempts land in the band",
+    "change": "text writing uses zai-org/GLM-5.3-Flash:peft:262144 with reasoning_effort low (no reasoning), up to 8 attempts with the existing length feedback; the reference band returns to the frozen 500-700 characters (target 600), undoing Amendment 2, so repetition rows fit again. Trigger finding (gpt-oss) is unchanged and done. GLM is a different family from Gleipnir (Qwen base, Kimi teacher) and the checker (Qwen)",
+    "price": "GLM-5.3-Flash $0.84/M prompt, $2.11/M sampled (Tinker pricing page, 22 October)"
   }
 }
