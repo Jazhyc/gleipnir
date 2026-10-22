@@ -150,9 +150,9 @@ def test_dry_run_client_needs_no_key_and_spends_nothing(monkeypatch):
 
 
 def test_paid_stages_refuse_a_draft_protocol():
-    assert CFG["protocol_status"] == "draft"
     with pytest.raises(SystemExit, match="frozen"):
-        common.require_frozen(CFG)
+        common.require_frozen({**CFG, "protocol_status": "draft"})
+    common.require_frozen({**CFG, "protocol_status": "frozen"})
 
 
 def test_fixed_effects_regression_recovers_effects():

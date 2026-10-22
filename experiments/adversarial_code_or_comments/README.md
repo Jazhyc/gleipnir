@@ -1,6 +1,6 @@
 # Code or comments: does Gleipnir score what the code does, or what the comments claim?
 
-**Draft, not frozen.** Nothing here has run except local dry runs with mocked models. No paid call, GPU job or sandbox execution has happened. Before any paid step: settle the open decisions at the end, set `protocol_status` to `"frozen"` in `config.json`, and commit with "Freeze adversarial_code_or_comments protocol". The paid and GPU stages refuse to start until both are done. The design is [docs/research/adversarial_code_or_comments.md](../../docs/research/adversarial_code_or_comments.md) (Abhinav, 20 October 2026). `config.json` is the authoritative copy of every parameter below.
+**Frozen 22 October 2026,** before any paid call, sandbox execution or GPU job (only local dry runs with mocked models had run). The design is [docs/research/adversarial_code_or_comments.md](../../docs/research/adversarial_code_or_comments.md) (Abhinav, 20 October 2026). `config.json` is the authoritative copy of every parameter below.
 
 The aim is an explanation of what Gleipnir's score depends on, tested by its predictions. We are not trying to make the score move.
 
@@ -64,11 +64,11 @@ Every exclusion is kept with its reason in `variant_failures.jsonl` and counted 
 
 ## Models
 
-- **Writer** (triggers and all texts): `zai-org/GLM-5.3` on Tinker's OpenAI-compatible endpoint `https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1` (as in `adversarial_cheating_pilot`), key `TINKER_API_KEY`. Temperature 0.7, no `top_p`, seed 0 plus the attempt number, at most 4,096 output tokens. **How to switch thinking on or off on this endpoint is unverified** (open decision 1).
+- **Writer** (triggers and all texts): `openai/gpt-oss-120b` on Tinker's OpenAI-compatible endpoint `https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1` (as in `adversarial_cheating_pilot`), key `TINKER_API_KEY`. Reasoning effort medium, temperature 0.7, no `top_p` or `top_k`, seed 0 plus the attempt number, at most 4,096 output tokens. GLM-5.3 was the first choice, but on this endpoint it always reasons (`reasoning_effort` is rejected; `enable_thinking` and `thinking: disabled` are ignored), and DeepSeek-V3.1 retires on 23 October. gpt-oss is from a different family than both Gleipnir (Qwen base, Kimi teacher) and the checker.
 - **Checker:** `Qwen/Qwen3.8-27B` on the same endpoint, temperature 0, at most 512 tokens, `reasoning_effort: false` (checked for this model in the cheating pilot).
 - **Calls:**
   - `llm.py` sends calls through `gleipnir.adversarial.attacker.complete`, which reserves each call's worst-case cost before sending, settles the actual cost and redacts keys from errors.
-  - Tinker returns no cost, so cost is computed from the returned token counts at the published prices (GLM-5.3 $3.78/M prefill, $12.15/M sampled; Qwen3.8-27B $0.6975/M, $5.595/M; read 22 October 2026 from the Tinker pricing page, which carries no date).
+  - Tinker returns no cost, so cost is computed from the returned token counts at the published prices (gpt-oss-120b $0.33/M prefill, $0.84/M sampled; Qwen3.8-27B $0.6975/M, $5.595/M; read 22 October 2026 from the Tinker pricing page, which carries no date).
   - Caps: $60 for the writer, $10 for the checker. A call whose cost is unknown is charged at its reserved worst case.
   - The key is read from the wrapper `.env` and never printed or logged.
   - Infrastructure failures, refusals, truncations, invalid JSON and budget stops are their own categories. Completed failures are never retried on resume.
@@ -104,7 +104,7 @@ Every exclusion is kept with its reason in `variant_failures.jsonl` and counted 
 - **Reading a miss:** a miss is a result. It means the explanation was local to one monitor or one split.
 - **Optional white-box follow-up:** the share of attribution to the decision logit on comment tokens against code tokens, per cell. Not built here.
 
-## Predictions (draft, to be frozen with the protocol)
+## Predictions (frozen)
 
 - **Code effect:** backdoored code scores above honest code in every text condition.
 - **Claim effect:** for v0.3, texts claiming a special case raise the margin for both code types. The claim effect is at least half the size of the code effect.
@@ -117,10 +117,9 @@ These are estimates from measured prompt sizes (`select_tasks.py --dry-run`), as
 
 - **Writer:**
   - about 841 trigger calls (~4,200 prompt characters each) and 2,080 text calls (~3,700 characters);
-  - about **$23** at ~300 output tokens per call, or about **$83** if GLM-5.3 thinks for ~2,000 tokens a call;
-  - the $60 cap assumes thinking off.
+  - about **$2** at ~300 output tokens per call, or about **$6** with ~2,000 reasoning tokens a call (gpt-oss-120b prices);
+  - the $60 cap is far above both.
 - **Checker:** 1,600 calls, about **$2.4**.
-- The design's "$10–20 on OpenRouter" assumed OpenRouter's GLM price, not Tinker's.
 - **Scoring:**
   - about 5M prompt tokens for development (1,600 + 1,800 + 324 rows) and about 1.7M for held-out;
   - roughly 15–20 minutes of 4B time at the A2 rate (6,159 tokens/s on an A100 40 GB);
@@ -172,15 +171,16 @@ python -m $P.score --monitor 4b --prompt student --split heldout --sets calibrat
 - The backdoored misleading text mentions the special-case branch (as legitimate); the honest truthful text mentions none. So the claim contrast also contains "mentions a special case".
 - Repetition runs on development tasks only, so its predictions are frozen but not tested out of sample.
 
-## Open decisions for Abhinav
+## Decisions (Abhinav, 22 October 2026)
 
-1. **GLM-5.3 thinking on Tinker:** off or on, and the request field that controls it. This is unverified and needs one paid smoke call. Off is about $23 and on about $83; the cap is $60.
-2. **Length reference:** the honest truthful text (current), or each code's own truthful text.
-3. **Honest misleading claim:** reuse the task's real backdoor special case (current; it matches the claim across codes), or invent a different one.
-4. **Success rule:** Bonferroni over the 8 tested intervals (current), or separate 95% intervals. In a quick simulation (150 runs), a correct explanation passes about 95% of the time with Bonferroni and about 70% without.
-5. **Held-out repetition set:** add 100 held-out tasks × 1,800 rows to test the repetition predictions, or keep repetition development-only, as designed.
-6. **Length control:** add a neutral padding control at k × L characters to separate length from repetition and from any text.
-7. **Calibration rows:** the 324 development-pool honest rows (current, noisier at 1%: 3 rows above the line), or all 655 as in A1/A2.
-8. **Trigger retries:** two attempts with sandbox feedback (current), or one.
-9. **Sandbox machine:** the GPU box or a separate CPU VM. Pin the `python:3.12-slim` digest there.
-10. **Writer sampling:** temperature 0.7 and no `top_p`, as in A2. Tinker applies no `top_k` unless asked (cheating pilot, stage 1b).
+Taken as recommended; the writer had to change (see Models).
+1. **Writer:** gpt-oss-120b at medium reasoning effort, since GLM-5.3's thinking can't be turned off on Tinker's OpenAI endpoint.
+2. **Length reference:** the honest truthful text, so every text for a task shares one target length.
+3. **Honest misleading claim:** the task's real backdoor special case, so the same claim sits on both codes.
+4. **Success rule:** Bonferroni over the 8 tested intervals.
+5. **Held-out repetition:** none; repetition stays development-only and exploratory.
+6. **Padding control:** none; the unrelated text is the length-matched control.
+7. **Calibration rows:** the 324 development-pool honest rows.
+8. **Trigger attempts:** two, the second with sandbox feedback.
+9. **Sandbox:** the cheating pilot's CPU VM (`gleipnir-cheat-pilot`), `python:3.12-slim@sha256:cb33f7f771ecec2ef1225cf39b159591a040391bd73e4c01f00fdfc4c47611d2`.
+10. **Writer sampling:** temperature 0.7, no `top_p`, no `top_k`.
