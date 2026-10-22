@@ -324,13 +324,6 @@ ControlArena prompt does not state it.
 - The training-data scan is lexical; it shows mechanisms are rare, not how
   they are used.
 
-## What we would try next
-
-Train on deniable, mistake-shaped and monitor-evasion examples, ideally
-generated against a monitor in the loop. Then check whether SLEIGHT-Bench
-ranking improves without regressing on the OOD suite, with SLEIGHT-Bench
-held out for evaluation only.
-
 *Details and per-run receipts:
 [finding](../findings/sleightbench_released_monitors.md) and
 [experiment](../../experiments/sleightbench_eval/README.md). Models:
