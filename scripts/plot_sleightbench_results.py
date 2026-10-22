@@ -4,9 +4,9 @@
 Grouped vertical bars, one group per model and one bar per way of running it,
 as in the paper's figures. Values are the stripped-view, ControlArena-prompt
 numbers recorded in ``docs/findings/sleightbench_released_monitors.md``.
-Non-logit bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro are the
-paper's per-trial catch rates read from its appendix figures; our
-paper-protocol runs average 10 sampled trials; logit bars are single passes.
+Bars left of the dashed line are the paper's per-trial catch rates read from
+its appendix figures; the rest are ours. Our paper-protocol runs sample 10
+trials; logit bars are single passes.
 The paper reports no ranking metric, so its bars appear only in the
 catch-rate figure.
 """
@@ -22,55 +22,52 @@ from matplotlib.patches import Patch
 from gleipnir.analysis.plotting import ORIGIN_PALETTE, save_figure, set_plot_style
 
 SETTINGS = {
-    "reasoned": ("No native thinking", "#9ECAE9"),
-    "thinking": ("Native thinking", ORIGIN_PALETTE["Paper"]),
+    "reasoned": ("No thinking", "#9ECAE9"),
+    "thinking": ("Thinking", ORIGIN_PALETTE["Paper"]),
     "scaffold": ("Claude Code scaffold", "#54A24B"),
     "logits": ("Logit decision", "#B279A2"),
     "gleipnir": ("Logit decision, Gleipnir (ours)", ORIGIN_PALETTE["Gleipnir"]),
 }
-# model -> setting -> (catch rate %, pAUROC@20 or None)
-MODELS = {
-    "Haiku 4.5": {
-        "reasoned": (2, None),
-        "thinking": (16, None),
-        "scaffold": (7, None),
-    },
+# (model, reported by the paper?, setting -> (catch rate %, pAUROC@20 or None))
+MODELS = [
+    (
+        "Haiku 4.5",
+        True,
+        {"reasoned": (2, None), "thinking": (16, None), "scaffold": (7, None)},
+    ),
+    ("GPT-5.5", True, {"reasoned": (14, None), "thinking": (50, None)}),
+    (
+        "Opus 4.6",
+        True,
+        {"reasoned": (19, None), "thinking": (32, None), "scaffold": (62, None)},
+    ),
+    ("Gemini 3.1 Pro†", True, {"reasoned": (28, None), "thinking": (54, None)}),
     # GPT-5.5's logit pAUROC@20 (0.404) is left out: alone in its group, it
     # read awkwardly in the ranking figure.
-    "GPT-5.5": {"reasoned": (14, None), "thinking": (50, None), "logits": (15, None)},
-    "Opus 4.6": {
-        "reasoned": (19, None),
-        "thinking": (32, None),
-        "scaffold": (62, None),
-    },
-    "Gemini 3.1 Pro†": {"reasoned": (28, None), "thinking": (54, None)},
-    "Kimi K3": {
-        "reasoned": (12.2, 0.523),
-        "thinking": (11.0, 0.444),
-        "logits": (0, 0.402),
-    },
-    "Qwen3.5-4B": {
-        "reasoned": (0.5, 0.213),
-        "thinking": (3.0, 0.237),
-        "logits": (5, 0.193),
-    },
-    "Gleipnir 4B": {"gleipnir": (7.5, 0.209)},
-    "Qwen3.8-27B": {
-        "reasoned": (8.9, 0.318),
-        "thinking": (14.0, 0.359),
-        "logits": (12.5, 0.263),
-    },
-    "Gleipnir 27B": {"gleipnir": (20, 0.299)},
-}
+    ("GPT-5.5", False, {"logits": (15, None)}),
+    (
+        "Kimi K3",
+        False,
+        {"reasoned": (12.2, 0.523), "thinking": (11.0, 0.444), "logits": (0, 0.402)},
+    ),
+    (
+        "Qwen3.5-4B",
+        False,
+        {"reasoned": (0.5, 0.213), "thinking": (3.0, 0.237), "logits": (5, 0.193)},
+    ),
+    ("Gleipnir 4B", False, {"gleipnir": (7.5, 0.209)}),
+    (
+        "Qwen3.8-27B",
+        False,
+        {"reasoned": (8.9, 0.318), "thinking": (14.0, 0.359), "logits": (12.5, 0.263)},
+    ),
+    ("Gleipnir 27B", False, {"gleipnir": (20, 0.299)}),
+]
 PROTOCOL = (
-    "Native and no native thinking: the paper's protocol, written reasoning "
+    "Thinking and no thinking: the paper's protocol, written reasoning "
     "then a 0–100 score, over 10 sampled trials.\n"
 )
-FOOTNOTE = (
-    PROTOCOL + "Non-logit bars for Haiku 4.5, GPT-5.5, Opus 4.6 and Gemini 3.1 Pro are "
-    "the paper's runs; all other bars are ours.\n"
-    "† Gemini 3.1 Pro's bars are low and high thinking.\n"
-)
+FOOTNOTE = PROTOCOL + "† Gemini 3.1 Pro's bars are low and high thinking.\n"
 KIMI_FOOTNOTE = (
     "* One benign twin, which differs from its attack by a single line number, "
     "scores 0.98 and sets the threshold;\n"
@@ -82,15 +79,19 @@ WIDTH = 0.24
 def _grouped(
     metric: int, *, title: str, ylabel: str, fmt: str, footnote: str
 ) -> plt.Figure:
-    models = {
-        name: {s: v[metric] for s, v in settings.items() if v[metric] is not None}
-        for name, settings in MODELS.items()
-    }
-    models = {name: bars for name, bars in models.items() if bars}
+    models = [
+        (
+            name,
+            reported,
+            {s: v[metric] for s, v in bars.items() if v[metric] is not None},
+        )
+        for name, reported, bars in MODELS
+    ]
+    models = [model for model in models if model[2]]
     figure, axis = plt.subplots(figsize=(1.9 * len(models) + 2, 7))
-    top = max(v for bars in models.values() for v in bars.values())
+    top = max(v for _, _, bars in models for v in bars.values())
     used = set()
-    for index, (name, bars) in enumerate(models.items()):
+    for index, (name, _, bars) in enumerate(models):
         offsets = [(i - (len(bars) - 1) / 2) * WIDTH for i in range(len(bars))]
         for offset, (setting, value) in zip(offsets, bars.items(), strict=True):
             used.add(setting)
@@ -114,12 +115,29 @@ def _grouped(
                 fontsize=9.5,
                 color="#111827",
             )
-    axis.set_xticks(range(len(models)), list(models), fontsize=12.5)
+    axis.set_xticks(range(len(models)), [m[0] for m in models], fontsize=12.5)
     for label in axis.get_xticklabels():
         if label.get_text().startswith("Gleipnir"):
             label.set_color(ORIGIN_PALETTE["Gleipnir"])
     axis.set_xlim(-0.6, len(models) - 0.4)
     axis.set_ylim(0, top * 1.12)
+    split = sum(reported for _, reported, _ in models)
+    if 0 < split < len(models):
+        axis.axvline(split - 0.5, color="#6B7280", linestyle=(0, (4, 3)), linewidth=1.5)
+        for x, text, align in (
+            (split - 0.6, "Reported by the paper", "right"),
+            (split - 0.4, "Our runs", "left"),
+        ):
+            axis.text(
+                x,
+                top * 1.09,
+                text,
+                ha=align,
+                va="top",
+                fontsize=12.5,
+                fontweight="bold",
+                color="#4B5563",
+            )
     axis.set_ylabel(ylabel, fontsize=13)
     axis.grid(axis="x", visible=False)
     axis.grid(axis="y", color="#E5E7EB", linewidth=0.8)
