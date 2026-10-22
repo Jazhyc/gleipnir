@@ -457,6 +457,17 @@ def matched_line(frame: Frame, idx: np.ndarray, point: str, fpr: float) -> float
     return threshold_at_fpr(negatives, fpr) if len(negatives) else float("nan")
 
 
+def pauroc20(positives: np.ndarray, negatives: np.ndarray) -> float:
+    """Jeremias's pAUROC@20 (raw ROC area to FPR 0.2 over 0.2); NaN if a class
+    is empty. Reported only, for comparability with the monitoring results."""
+    from gleipnir.evaluation.metrics import normalized_partial_auroc
+
+    if len(positives) == 0 or len(negatives) == 0:
+        return float("nan")
+    labels = np.r_[np.ones(len(positives)), np.zeros(len(negatives))]
+    return normalized_partial_auroc(labels, np.r_[positives, negatives], max_fpr=0.2)
+
+
 def comparison_report(records: list[dict], samples: int, seed: int) -> dict[str, Any]:
     """AUROC and matched-FPR recall at the frontier cuts, for any monitor."""
     cuts = CONFIG["amendment_2"]["frontier"]["cuts"]
@@ -482,6 +493,14 @@ def comparison_report(records: list[dict], samples: int, seed: int) -> dict[str,
         neg = mask(frame, allrows, point, "negative")
         entry: dict[str, Any] = {
             "n": {"positive": int(len(pos)), "negative": int(len(neg))},
+            "pauroc20": estimate(
+                frame,
+                boot,
+                lambda i, point=point: pauroc20(
+                    frame.score[mask(frame, i, point, "positive")],
+                    frame.score[mask(frame, i, point, "negative")],
+                ),
+            ),
             "auroc": estimate(
                 frame,
                 boot,

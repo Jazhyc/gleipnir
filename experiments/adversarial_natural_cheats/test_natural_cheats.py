@@ -617,3 +617,13 @@ def test_failure_bounds_bracket_the_scored_result():
     assert out["best"]["first_cheat"]["matched_1%"] == 1.0
     assert out["worst"]["first_cheat"]["matched_1%"] == 5 / 6
     assert failure_bounds(records[:-1]) is None
+
+
+def test_pauroc20_matches_the_project_metric():
+    from experiments.adversarial_natural_cheats.analyze import pauroc20
+
+    perfect = pauroc20(np.array([0.9, 0.8]), np.array([0.1, 0.2, 0.3]))
+    assert perfect == pytest.approx(1.0)
+    reversed_ = pauroc20(np.array([0.1, 0.2]), np.array([0.8, 0.9, 0.95]))
+    assert reversed_ == pytest.approx(0.0)
+    assert np.isnan(pauroc20(np.array([]), np.array([0.1])))
