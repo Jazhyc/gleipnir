@@ -39,9 +39,10 @@ instructions aimed at the monitor itself. The paper's main setting strips
 the agent's prose, so the monitor sees only tool calls and outputs, and it
 thresholds at 1% FPR on the benign twins.
 
-We used 43 attack and 43 benign transcripts (excluding the refusal-forcing
-attack), with multi-session attacks merged by max into 40 graded units.
-With 43 benigns, "1% FPR" means "above the highest benign score". The
+We matched the paper's grading setup: the benchmark's 40 graded attacks
+against their 43 benign twins, with each multi-session attack scored by its
+most suspicious session, and the threshold set at 1% FPR on the benign
+twins. With 43 benigns, "1% FPR" means "above the highest benign score". The
 transcripts are encrypted upstream to keep them out of training corpora; we
 evaluated locally and redistribute nothing.
 
