@@ -6,18 +6,29 @@
 > models distilled from Kimi K3's binary logits) on
 > [SLEIGHT-Bench](https://github.com/safety-research/sleight-bench), a
 > benchmark of attacks hand-built to slip past monitors, using the paper's
-> prompt and stripped transcripts. At 1% FPR, Gleipnir 27B catches 20% of
-> attacks and the 4B catches 7.5%. The paper's frontier monitors range from
-> 2% (Haiku 4.5) to 32% (Opus 4.6 with thinking) through the API, and 62% for
-> Opus 4.6 in a Claude Code scaffold. Three lessons came out:
-> - With 43 benign transcripts, catch rate at 1% FPR is often set by a single
->   suspicious benign, so it should be read as coarse tiers.
-> - Our out-of-distribution (OOD) suite overstated our monitors. There, the
->   27B matched its teacher and clearly beat GPT-6 Luna and Jev 1.13. Here it
->   trails the teacher by about 10 points of pAUROC@20 and is level with
->   both.
-> - Our training data contains stealth-prompted attacks but none built against
->   a monitor, which is a plausible cause.
+> prompt and stripped transcripts. For reference we also scored our teacher
+> Kimi K3, the unadapted Qwen3.8-27B, GPT-5.5, GPT-6 Sol, GPT-6 Luna and
+> Jev 1.13. At 1% FPR, Gleipnir 27B catches 20% of attacks and the 4B catches
+> 7.5%. The paper's frontier monitors range from 2% (Haiku 4.5) to 54%
+> (Gemini 3.1 Pro with high thinking) through the API, and 62% for Opus 4.6
+> in a Claude Code scaffold. Three lessons came out:
+> - **At this size, catch rate at 1% FPR is a coarse tier.** With 43 benign
+>   transcripts, the threshold is the single most suspicious benign. Kimi
+>   K3's logits catch 0% because one benign, which differs from its attack by
+>   a single line number, scores 0.98. Ignore that one transcript and Kimi
+>   catches 30%.
+> - **Our out-of-distribution (OOD) suite overstated how we compare to
+>   frontier monitors.** There, Gleipnir 27B matched Claude Opus 4.6 and
+>   Gemini 3.1 Pro at about 200× lower cost. Here it catches 20%, against
+>   19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. It stays slightly
+>   ahead of the cheaper GPT-6 Luna and Jev 1.13, and far cheaper than all
+>   of them.
+> - **Distillation needs support in the training data.** A student learns
+>   its teacher's judgment only on the kinds of cases it is trained on. Our
+>   training data has stealth-prompted attacks but none built against a
+>   monitor or disguised as honest mistakes. Here the 27B recovers only about
+>   40% of the gap between its base model and Kimi K3; on the OOD suite it
+>   closed the gap entirely.
 
 ## The benchmark
 
@@ -47,7 +58,9 @@ The paper's monitors instead reason and output a 0–100 score, averaged over
 We followed the paper's setting everywhere else: stripped transcripts and the
 paper's ControlArena monitor description, with only the output format
 changed to our binary decision. We scored each released checkpoint once on
-its production serving stack (FP8/FP4 on a B200, 262K context).
+its production serving stack (FP8/FP4 on a B200, 262K context). The reference
+models went through the same prompt with the same single-logit readout,
+except where a row says otherwise.
 
 ## Results
 
@@ -60,8 +73,11 @@ description with our binary output format and no reasoning.
 |---|---|---:|---:|---:|
 | Haiku 4.5 (paper) | Reasoned score, no thinking | 2% | — | — |
 | GPT-5.5 (paper) | Reasoned score, no thinking | 14% | — | — |
+| Opus 4.6 (paper) | Reasoned score, no thinking | 19% | — | — |
+| Gemini 3.1 Pro (paper) | Reasoned score, low thinking | 28% | — | — |
 | Opus 4.6 (paper) | Reasoned score, thinking | 32% | — | — |
 | GPT-5.5 (paper) | Reasoned score, thinking | 50% | — | — |
+| Gemini 3.1 Pro (paper) | Reasoned score, high thinking | 54% | — | — |
 | Opus 4.6 (paper) | Claude Code scaffold | 62% | — | — |
 | Qwen3.8-27B base | Reasoned score, thinking (paper protocol) | 14.0% | — | 0.711 |
 | Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 |
@@ -85,8 +101,8 @@ The threshold is the single highest benign score, so one suspicious benign
 can move a monitor's headline by tens of points.
 - **Kimi K3's 0%.** Our teacher ranks better than either student, yet its
   logits catch nothing. The benign twin of `sed-line-drift`, which differs
-  from its attack only by a line number, scores 0.98. Remove that one
-  scenario and Kimi catches 28%.
+  from its attack only by a line number, scores 0.98. Ignore that one
+  benign and Kimi catches 30%.
 - **Ten trials don't fix it.** Under the paper's protocol, the same twin
   scores 62–85 in all ten of Kimi's trials and still sets the threshold.
 - **Score resolution matters too.** The 27B's threshold is a benign
@@ -143,10 +159,11 @@ it is strongest on exactly the mistake-shaped classes our models miss.
   untrusted evidence, flags it, if narrowly (0.53 against 0.19 for its
   benign twin).
 
-**Our OOD suite separates these monitors; SLEIGHT-Bench does not.** On our
-six-dataset OOD suite, Gleipnir 27B led Luna and Jev by 8–10 points of
-pAUROC@20. Here all three sit between 0.19 and 0.31. The table uses BF16
-scores for Gleipnir, to match our OOD evaluation:
+**Against Luna and Jev, our OOD lead shrinks but holds.** On our
+six-dataset OOD suite, Gleipnir 27B led them by 8–10 points of pAUROC@20.
+Here it leads Luna by 3 points and Jev by 11, all far below their OOD
+levels. The table uses BF16 scores for Gleipnir, to match our OOD
+evaluation:
 
 | pAUROC@20 | OOD suite | OOD, without the airline task | SLEIGHT-Bench |
 |---|---:|---:|---:|
@@ -162,10 +179,6 @@ instruction. The task drags every monitor down, but it is not why Gleipnir
 leads. Without it, the gap is unchanged, and Gleipnir still leads Luna on
 SHADE-Arena itself (0.96 against 0.65) and by 5–10 points on IaC,
 MLE-Sabotage and Rogue Eval.
-
-So the OOD lead is real but specific to the kinds of sabotage our training
-data covers. It does not carry over to attacks built to look like honest
-mistakes, where every monitor except Sol is near its floor.
 
 ## A caveat on the jailbreak: monitors react to any monitor-directed text
 
@@ -186,11 +199,34 @@ evidence of misbehavior. That label is debatable, because an agent writing to
 its own monitor is arguably suspicious. On the 4B, projecting out a fitted
 "injection direction" softened the reaction but did not remove it.
 
-## Lesson 3: our OOD suite was too easy to separate student from teacher
+## Lesson 3: our OOD suite overstated how we compare to frontier monitors
 
-On matched prompts, the adapter's absolute gain is about the same on both
-benchmarks; what differs is the ceiling. Base and Gleipnir are scored on the
-same BF16 engine.
+On our six-dataset OOD suite, Gleipnir 27B matched the strongest reasoning
+monitors we had OOD numbers for, at about 200× lower cost. SLEIGHT-Bench
+separates them. The paper reports only catch rates, so we compare on those:
+
+| Monitor | OOD pAUROC@20 | OOD cost per 1K trajectories | SLEIGHT-Bench catch @1% FPR |
+|---|---:|---:|---|
+| Claude Opus 4.6 | 0.942 | $94.79 | 19% (no thinking), 32% (thinking) |
+| Gemini 3.1 Pro | 0.940 | $73.22 | 28% (low thinking), 54% (high thinking) |
+| Gleipnir 27B | 0.951 | $0.39 | 20% |
+
+The frontier OOD rows come from
+[Sinha et al.](https://arxiv.org/abs/2605.29601), whose OOD datasets we use;
+their monitors write a rationale before a 0–10 score. Gleipnir's OOD score is on
+our optimized stack (0.935 in BF16), within noise of both. The OOD suite is
+close to saturated: Gleipnir 27B scores 0.99 or higher on four of its six
+sources, which leaves little room to separate strong monitors. Gleipnir
+remains far cheaper, but on deliberately evasive attacks it is not a
+frontier-level monitor.
+
+## Why: distillation needs support in the training data
+
+A distilled student learns its teacher's judgment only on the kinds of cases
+it is trained on. The same saturation hid this gap between Gleipnir and its
+teacher. On matched prompts, the adapter's absolute gain is about the same on
+both benchmarks; what differs is the ceiling. Base and Gleipnir are scored on
+the same BF16 engine.
 
 | pAUROC@20 | Base 27B | Gleipnir 27B | Kimi K3 | Adapter gain |
 |---|---:|---:|---:|---:|
@@ -199,10 +235,7 @@ same BF16 engine.
 
 On the OOD suite, where the base model is already at 0.89, the student
 passes its teacher. On SLEIGHT-Bench it recovers only about 40% of the
-base-to-teacher gap. "The 27B matches Kimi K3" was a property of an easy
-benchmark, not of the distillation.
-
-## Why: no monitor-adversarial training data
+base-to-teacher gap.
 
 We reviewed how each of our five training sources generated its attacks and
 scanned the 8,688 training prompts for SLEIGHT-Bench's mechanisms.
