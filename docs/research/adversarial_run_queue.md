@@ -8,9 +8,8 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- **GPU chain on the A100 80GB VM** (`chain2.sh`, from 12:08 UTC 22 October): natural-cheats 27B (to about 14:15 UTC, 3-hour cap), then code-or-comments development on the 4B, then EvilGenie 27B (2-hour cap). The VM is paused afterwards unless held-out scoring follows at once.
-- **Done today on the 4B:** natural cheats (README, results) and EvilGenie (README, results: AUROC 0.75, at chance on the problem holding 64% of positives).
-- **Code or comments:** texts, checks, hand audit and variants are done (Amendments 5–6); predictions are frozen from the development scores before any held-out row is scored.
+- Nothing on the GPU: the A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 22 October at about 18:25 UTC after pulling every result and log; its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
+- **Done on 22 October:** natural cheats (4B, 27B, untrained base, frontier monitors, keyword baseline, FLA re-score); EvilGenie (4B; 27B to its cap); code-or-comments (development, frozen predictions, held-out 4B and 27B, frontier monitors). Results in each experiment's README.
 
 ## Failures and blockers
 
