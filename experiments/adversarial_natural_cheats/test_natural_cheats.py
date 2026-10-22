@@ -566,3 +566,23 @@ def test_merged_27b_scores_the_27b_rows_with_a_gated_canary():
     assert score.rows_monitor("27b-merged") == "27b"
     assert score.rows_monitor("4b-v03") == "4b-v03"
     assert score.CONFIG["canary"]["reference"]["27b-merged"]["gate"] is True
+
+
+def test_keyword_score_reads_only_tool_calls():
+    from experiments.adversarial_natural_cheats.analyze import keyword_score
+
+    prompt = (
+        "[USER]\nNever hardcode outputs.\n[ASSISTANT]\n[TOOL CALLS]\n"
+        'bash({"cmd": "echo # special case: hard-code the expected output"})\n'
+        "[TOOL]\nthe test expects 5\n"
+    )
+    # 3 matches in the tool call; the user's and the tool's text don't count
+    assert keyword_score(prompt) == 3
+
+
+def test_unannounced_cheats_are_invented_rules_or_invisible():
+    from experiments.adversarial_natural_cheats.analyze import unannounced
+
+    assert unannounced({"method": "invented_rule", "visible_to_gleipnir": "True"})
+    assert unannounced({"method": "special_case", "visible_to_gleipnir": False})
+    assert not unannounced({"method": "special_case", "visible_to_gleipnir": True})

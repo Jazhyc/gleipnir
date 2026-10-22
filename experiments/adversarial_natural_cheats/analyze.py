@@ -20,6 +20,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 from collections import Counter, defaultdict
 from collections.abc import Callable
 from dataclasses import dataclass
@@ -401,10 +402,147 @@ def calibration_predictions(monitor: str) -> tuple[list[dict], str | None]:
     own = OUTPUT / monitor / "calibration" / "predictions.jsonl"
     if own.exists():
         return read_predictions(own), str(own.relative_to(ROOT))
+    reused = CONFIG["monitors"][monitor].get("calibration_from")  # Amendment 2
+    if reused:
+        return read_predictions(ROOT / reused), reused
     if monitor == CONFIG["amendment_1"]["27b_monitor"]:
         path = CONFIG["canary"]["reference"][monitor]["path"]
         return read_predictions(ROOT / path), path
     return [], None
+
+
+# ---------------------------------------------------------------- Amendment 2
+
+GLEIPNIR = ("4b-v03", "27b-merged", "4b-base")
+TOOL_CALLS = re.compile(
+    r"\[TOOL CALLS\]\n(.*?)(?=\n\[TOOL\]|\n\[USER\]|\n\[ASSISTANT\]|\Z)", re.S
+)
+
+
+def keyword_score(prompt: str) -> int:
+    """Pattern matches in the agent's own tool-call arguments (Amendment 2)."""
+    text = " ".join(TOOL_CALLS.findall(prompt)).lower()
+    patterns = CONFIG["amendment_2"]["keyword_baseline"]["patterns"]
+    return sum(len(re.findall(p, text)) for p in patterns)
+
+
+def keyword_records(rows: list[dict]) -> list[dict[str, Any]]:
+    out = []
+    for r in rows:
+        k = keyword_score(r["prompt"])
+        # margin: monotone in the count, for the shared Frame
+        out.append(
+            {
+                "id": r["id"],
+                "status": "ok",
+                "score": float(k),
+                "logit_0": 0.0,
+                "logit_1": float(k),
+                "meta": r["metadata"],
+            }
+        )
+    return out
+
+
+def unannounced(meta: dict[str, Any]) -> bool:
+    """The 4 cheats not stated in actions: invented rules, or invisible."""
+    return (
+        meta.get("method") == "invented_rule"
+        or str(meta.get("visible_to_gleipnir")) == "False"
+    )
+
+
+def matched_line(frame: Frame, idx: np.ndarray, point: str, fpr: float) -> float:
+    negatives = frame.score[mask(frame, idx, point, "negative")]
+    return threshold_at_fpr(negatives, fpr) if len(negatives) else float("nan")
+
+
+def comparison_report(records: list[dict], samples: int, seed: int) -> dict[str, Any]:
+    """AUROC and matched-FPR recall at the frontier cuts, for any monitor."""
+    cuts = CONFIG["amendment_2"]["frontier"]["cuts"]
+    ok = [
+        r
+        for r in records
+        if r.get("status") == "ok" and r["meta"]["detection_point"] in cuts
+    ]
+    frame = Frame.of(ok)
+    own = CONFIG["metrics"]["own_threshold"]
+    strata = {p: "calibrate" for p in own["calibrate_on"]}
+    strata.update({p: "evaluate" for p in own["evaluate_on"]})
+    boot = Resampler(frame, samples, seed, strata)
+    allrows = np.arange(len(frame.score))
+    hidden = np.array([unannounced(r["meta"]) for r in ok], dtype=bool)
+    out: dict[str, Any] = {
+        "status": dict(Counter(r.get("status") for r in records)),
+        "rows_ok": len(ok),
+        "cost_usd": sum(r.get("cost") or 0.0 for r in records),
+    }
+    for point in cuts:
+        pos = mask(frame, allrows, point, "positive")
+        neg = mask(frame, allrows, point, "negative")
+        entry: dict[str, Any] = {
+            "n": {"positive": int(len(pos)), "negative": int(len(neg))},
+            "auroc": estimate(
+                frame,
+                boot,
+                lambda i, point=point: auroc(
+                    frame.score[mask(frame, i, point, "positive")],
+                    frame.score[mask(frame, i, point, "negative")],
+                ),
+            ),
+            "tied_share": float(
+                1
+                - len(np.unique(frame.score[np.r_[pos, neg]]))
+                / max(1, len(pos) + len(neg))
+            ),
+        }
+        for fpr in CONFIG["metrics"]["fprs"]:
+
+            def recall(i, point=point, fpr=fpr):
+                t = matched_line(frame, i, point, fpr)
+                return share_above(frame.score[mask(frame, i, point, "positive")], t)
+
+            t = matched_line(frame, allrows, point, fpr)
+            entry[f"matched_{fpr:.0%}"] = {
+                "threshold": t,
+                "recall": estimate(frame, boot, recall),
+                "negatives_flagged": f"{int((frame.score[neg] > t).sum())}/{len(neg)}",
+                "unannounced_flagged": (
+                    f"{int((frame.score[pos][hidden[pos]] > t).sum())}"
+                    f"/{int(hidden[pos].sum())}"
+                ),
+            }
+        out[point] = entry
+    if all(p in out for p in ("first_cheat", "stripped")):
+        out["stripping_auroc_change"] = auroc_difference(
+            frame, boot, "first_cheat", "stripped"
+        )
+    return out
+
+
+def comparison(samples: int, seed: int) -> dict[str, Any]:
+    """Every monitor with scores, plus the keyword baseline (Amendment 2)."""
+    frontier = CONFIG["amendment_2"]["frontier"]
+    teacher_rows = load_rows("rows", frontier["row_set_from"])
+    out: dict[str, Any] = {}
+    for monitor in (*GLEIPNIR, *frontier["monitors"]):
+        path = OUTPUT / monitor / "rows" / "predictions.jsonl"
+        if not path.exists():
+            continue
+        rows = load_rows("rows", monitor) if monitor in GLEIPNIR else teacher_rows
+        out[monitor] = comparison_report(
+            join(read_predictions(path), rows), samples, seed
+        )
+    scored = {
+        r["id"]
+        for r in read_predictions(
+            OUTPUT / frontier["row_set_scored_by"] / "rows" / "predictions.jsonl"
+        )
+        if r.get("status") == "ok"
+    }
+    keyword_rows = [r for r in teacher_rows if r["id"] in scored]
+    out["keyword"] = comparison_report(keyword_records(keyword_rows), samples, seed)
+    return out
 
 
 def headline(report: dict) -> dict[str, Any]:
@@ -446,9 +584,25 @@ def main() -> None:
             continue
         result[monitor] = monitor_report(rows, calibration, args.samples, seed)
         result[monitor]["calibration_source"] = source
+    result["comparison"] = comparison(args.samples, seed)
     OUTPUT.mkdir(parents=True, exist_ok=True)
     (OUTPUT / "report.json").write_text(json.dumps(result, indent=2) + "\n")
-    summary = {m: headline(r) if "points" in r else r for m, r in result.items()}
+    summary = {
+        m: headline(r) if "points" in r else r
+        for m, r in result.items()
+        if m != "comparison"
+    }
+    summary["comparison"] = {
+        m: {
+            p: {
+                "auroc": r[p]["auroc"]["value"],
+                "matched_1%": r[p]["matched_1%"]["recall"]["value"],
+            }
+            for p in CONFIG["amendment_2"]["frontier"]["cuts"]
+            if p in r
+        }
+        for m, r in result["comparison"].items()
+    }
     print(json.dumps(summary, indent=2))
 
 
