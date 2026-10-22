@@ -238,7 +238,7 @@
       "env_file": "../../.env",
       "workers": 8,
       "caps_usd": {
-        "openrouter": 35.0,
+        "openrouter": 40.0,
         "anthropic-batch": 15.0
       },
       "deferred": [
@@ -251,27 +251,32 @@
           "model": "moonshotai/kimi-k3",
           "mode": "probability",
           "max_tokens": 64,
-          "usd_per_m_prompt": 0.24,
-          "usd_per_m_completion": 11.94,
-          "cap_usd": 4.0,
+          "usd_per_m_prompt": 0.65,
+          "usd_per_m_completion": 15.0,
+          "cap_usd": 7.0,
           "provider_only": "makora",
           "extra": {
             "max_prompt_price": 1.0,
             "max_completion_price": 16.0
           },
-          "note": "Jeremias's teacher request as in adversarial_is_it_4b: temperature 0, reasoning none, top-5 logprobs, Makora only"
+          "note": "Jeremias's teacher request as in adversarial_is_it_4b: temperature 0, reasoning none, top-5 logprobs, Makora only",
+          "workers": 2
         },
         "kimi-k3-score": {
           "api": "openrouter",
           "model": "moonshotai/kimi-k3",
           "mode": "score",
           "max_tokens": 64,
-          "usd_per_m_prompt": 0.24,
-          "usd_per_m_completion": 11.94,
-          "cap_usd": 4.0,
+          "usd_per_m_prompt": 0.65,
+          "usd_per_m_completion": 15.0,
+          "cap_usd": 7.0,
           "provider_only": "makora",
           "reasoning_effort": "none",
-          "note": "the score-mode bridge: same model, provider and reasoning as kimi-k3, only the output format differs"
+          "note": "the score-mode bridge: same model, provider and reasoning as kimi-k3, only the output format differs",
+          "workers": 2,
+          "cuts": [
+            "first_cheat"
+          ]
         },
         "gpt-6.1-sol": {
           "api": "openrouter",
@@ -374,6 +379,20 @@
       "5. Keyword baseline: first-cheat AUROC >= 0.85 and at least 0.1 lower on the stripped cut.",
       "6. Untrained 4B base: first-cheat AUROC <= 0.85.",
       "7. Kimi K3 score-mode AUROC is within 0.03 of its probability-mode AUROC."
+    ]
+  },
+  "amendment_2a": {
+    "date": "2026-10-22",
+    "before": "any Kimi K3 score (both smoke attempts returned HTTP 429)",
+    "why": [
+      "Makora, the pre-registered Kimi K3 provider, charges $0.65/M input and $15/M output (OpenRouter endpoints list), not the $0.24 list price used for the caps, so one Kimi pass costs about $5",
+      "Makora rate-limits upstream (HTTP 429 on all smoke attempts)"
+    ],
+    "changes": [
+      "Kimi prices corrected; Kimi caps $7 each",
+      "Kimi runs with 2 parallel requests, provider unchanged (Makora only, as in Jeremias's teacher settings)",
+      "the score-mode bridge (kimi-k3-score) runs on the first-cheat cut only; prediction 7 is tested there",
+      "OpenRouter cap for this experiment $40 (estimated total about $35)"
     ]
   }
 }

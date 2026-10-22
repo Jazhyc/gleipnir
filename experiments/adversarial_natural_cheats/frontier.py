@@ -61,14 +61,14 @@ def predictions_path(name: str) -> Path:
     return OUTPUT / name / "rows" / "predictions.jsonl"
 
 
-def selected_rows() -> list[dict[str, Any]]:
+def selected_rows(cuts: list[str] | None = None) -> list[dict[str, Any]]:
     """Teacher rows at the frontier cuts that the 27B scored, in fixed order."""
     scored = {
         r["id"]
         for r in read_predictions(predictions_path(SPEC["row_set_scored_by"]))
         if r.get("status") == "ok"
     }
-    order = {cut: i for i, cut in enumerate(SPEC["cuts"])}
+    order = {cut: i for i, cut in enumerate(cuts or SPEC["cuts"])}
     rows = [
         r
         for r in load_rows("rows", SPEC["row_set_from"])
@@ -192,7 +192,8 @@ def run(args) -> None:
     )
     path.parent.mkdir(parents=True, exist_ok=True)
     done = {r["id"] for r in read_predictions(path) if r.get("status") == "ok"}
-    rows = [r for r in selected_rows() if r["id"] not in done]
+    cuts = SPEC["monitors"][m.name].get("cuts")  # Amendment 2a
+    rows = [r for r in selected_rows(cuts) if r["id"] not in done]
     if args.limit:
         rows = rows[: args.limit]
     key = "dry-run" if args.dry_run else load_key("OPENROUTER_API_KEY")
@@ -225,7 +226,8 @@ def run(args) -> None:
         return record
 
     statuses: dict[str, int] = {}
-    with ThreadPoolExecutor(SPEC["workers"]) as pool:
+    workers = SPEC["monitors"][m.name].get("workers", SPEC["workers"])
+    with ThreadPoolExecutor(workers) as pool:
         for n, record in enumerate(pool.map(work, rows), 1):
             if record:
                 statuses[record["status"]] = statuses.get(record["status"], 0) + 1

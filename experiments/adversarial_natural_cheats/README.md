@@ -133,3 +133,7 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
   7. Kimi K3 score-mode AUROC is within 0.03 of its probability-mode AUROC.
 - **Disclosure:** the keyword baseline costs nothing and is computed inside `analyze.py`, so a dry run of the analysis code computed it (first-cheat AUROC 0.65) before this amendment was committed. Its patterns and prediction 5 were already written and are unchanged; treat prediction 5 as not blind.
 
+## Amendment 2a (22 October, before any Kimi K3 score; both smoke attempts returned HTTP 429)
+
+- Makora, the pre-registered Kimi K3 provider, charges $0.65/M input and $15/M output, not the $0.24 list price the caps assumed, so one Kimi pass costs about $5; it also rate-limits upstream.
+- Kimi caps become $7 each and Kimi runs with 2 parallel requests; the provider stays Makora only, as in Jeremias's teacher settings. The score-mode bridge runs on the first-cheat cut only, where prediction 7 is tested. The OpenRouter cap for this experiment becomes $40 (estimated total about $35).
