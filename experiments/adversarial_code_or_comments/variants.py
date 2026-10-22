@@ -34,6 +34,7 @@ from experiments.adversarial_code_or_comments.common import (
 )
 from experiments.adversarial_code_or_comments.texts import (
     REFERENCE,
+    combined_verdicts,
     final_texts,
     length_band,
     pick_donor,
@@ -298,7 +299,11 @@ def main() -> None:
         selection,
         pairs,
         read_jsonl(out / "texts.jsonl"),
-        read_jsonl(out / "fidelity.jsonl"),
+        combined_verdicts(
+            read_jsonl(out / "fidelity.jsonl"),
+            read_jsonl(out / "fidelity_blind.jsonl"),
+            cfg,
+        ),
         audit,
         cfg,
     )

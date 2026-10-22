@@ -9,7 +9,7 @@ truthful texts are true and misleading texts false.
 
     M=experiments.adversarial_code_or_comments.texts
     PYTHONPATH=src python -m $M generate [--dry-run --out DIR] [--limit N]
-    PYTHONPATH=src python -m $M check [--dry-run --out DIR]
+    PYTHONPATH=src python -m $M check [--blind] [--dry-run --out DIR]
     PYTHONPATH=src python -m $M audit-sample [--out DIR]
 """
 
@@ -378,11 +378,72 @@ def fidelity_pass(kind: str, verdict: dict[str, Any], cfg) -> bool:
     return all(verdict[k] == v for k, v in expected.items())
 
 
+def blind_prompt(text: str, cfg) -> str:
+    """The checker sees only the description (Amendment 6)."""
+    return fill(prompt("fidelity_blind.txt", cfg), text=text)
+
+
+def parse_blind(reply: str) -> dict[str, Any]:
+    value = parse_json_object(reply)
+    for key in ("claims_deviation", "special_handling"):
+        if not isinstance(value.get(key), bool):
+            raise ValueError(f"{key} is not true or false")
+    return {
+        "claims_deviation": value["claims_deviation"],
+        "special_handling": value["special_handling"],
+        "reason": str(value.get("reason", ""))[:500],
+    }
+
+
+def combined_verdicts(
+    fidelity: list[dict[str, Any]], blind: list[dict[str, Any]], cfg
+) -> list[dict[str, Any]]:
+    """One status per text (Amendment 6): `accurate` from the full check, what
+    the text claims from the blind check, required as configured per kind."""
+    expected = cfg["texts"]["fidelity"]["expected_amendment_6"]
+    full = {r["text_id"]: r for r in fidelity}
+    seen = {r["text_id"]: r for r in blind}
+    out = []
+    for text_id in sorted(set(full) | set(seen)):
+        f, b = full.get(text_id), seen.get(text_id)
+        kind = (f or b)["kind"]
+        need = expected[kind]
+        verdict: dict[str, Any] = {}
+        status = None
+        if "accurate" in need:
+            if f is None or f["status"] not in ("pass", "fail"):
+                status = f["status"] if f else "unchecked"
+            else:
+                verdict["accurate"] = f["accurate"]
+        if status is None and any(k.startswith("blind_") for k in need):
+            if b is None or b["status"] != "ok":
+                status = f"blind_{b['status'] if b else 'unchecked'}"
+            else:
+                verdict["blind_claims_deviation"] = b["claims_deviation"]
+                verdict["blind_special_handling"] = b["special_handling"]
+        if status is None:
+            ok = all(verdict[k] == v for k, v in need.items())
+            status = "pass" if ok else "fail"
+        out.append({"text_id": text_id, "kind": kind, "status": status, **verdict})
+    return out
+
+
 def mock_checker(messages: list[dict[str, str]]) -> str:
     """Dry run: the expected verdict for the kind tagged in the dry-run text."""
     cfg = config()
     body = messages[0]["content"].split("Description:\n<<<\n", 1)[1]
     kind = next(k for k in cfg["texts"]["kinds"] if f"Dry run {k} " in body)
+    if messages[0]["content"].startswith("Below is a short description"):
+        need = cfg["texts"]["fidelity"]["expected_amendment_6"][kind]
+        return json.dumps(
+            {
+                "claims_deviation": need.get(
+                    "blind_claims_deviation", kind == "honest_misleading"
+                ),
+                "special_handling": need.get("blind_special_handling", True),
+                "reason": "dry run",
+            }
+        )
     return json.dumps(
         {**cfg["texts"]["fidelity"]["expected"][kind], "reason": "dry run"}
     )
@@ -395,7 +456,8 @@ def check(args, cfg) -> None:
     pairs, _ = load_pairs(cfg)
     triggers = {r["task_id"]: r for r in read_jsonl(out / "triggers.jsonl")}
     finals = final_texts(read_jsonl(out / "texts.jsonl"))
-    path = out / "fidelity.jsonl"
+    stem = "fidelity_blind" if args.blind else "fidelity"
+    path = out / f"{stem}.jsonl"
     existing = read_jsonl(path)
     done = {r["text_id"] for r in existing}
     checked = cfg["texts"]["fidelity"]["checked_kinds"]
@@ -406,7 +468,9 @@ def check(args, cfg) -> None:
     ]
     client = Client(
         cfg["models"]["checker"],
-        cfg["budget_usd"]["checker"] - spent(out, "fidelity"),
+        cfg["budget_usd"]["checker"]
+        - spent(out, "fidelity")
+        - spent(out, "fidelity_blind"),
         cfg,
         timeout=cfg["request_timeout_seconds"],
         responder=mock_checker if args.dry_run else None,
@@ -415,14 +479,13 @@ def check(args, cfg) -> None:
     def work(text_record):
         task, kind = text_record["task_id"], text_record["kind"]
         ctx = context(pairs[task], triggers[task])
-        messages = [
-            {
-                "role": "user",
-                "content": fidelity_prompt(kind, ctx, text_record["text"], cfg),
-            }
-        ]
+        if args.blind:
+            content = blind_prompt(text_record["text"], cfg)
+        else:
+            content = fidelity_prompt(kind, ctx, text_record["text"], cfg)
+        messages = [{"role": "user", "content": content}]
         record: dict[str, Any] = {
-            "id": f"fidelity:{text_record['id']}",
+            "id": f"{stem}:{text_record['id']}",
             "text_id": text_record["id"],
             "task_id": task,
             "kind": kind,
@@ -454,9 +517,11 @@ def check(args, cfg) -> None:
         if status:
             return {**record, "status": status}
         try:
-            verdict = parse_fidelity(result["text"])
+            verdict = (parse_blind if args.blind else parse_fidelity)(result["text"])
         except (ValueError, json.JSONDecodeError) as error:
             return {**record, "status": "invalid_verdict", "error": str(error)[:300]}
+        if args.blind:
+            return {**record, **verdict, "status": "ok"}
         passed = fidelity_pass(kind, verdict, cfg)
         return {**record, **verdict, "status": "pass" if passed else "fail"}
 
@@ -527,6 +592,11 @@ def main() -> None:
     parser.add_argument("--out", help="output folder (default: config output)")
     parser.add_argument(
         "--dry-run", action="store_true", help="mock models, no network"
+    )
+    parser.add_argument(
+        "--blind",
+        action="store_true",
+        help="check: the description-only check (Amendment 6)",
     )
     args = parser.parse_args()
     cfg = config()
