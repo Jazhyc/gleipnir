@@ -274,19 +274,20 @@ frontier-level monitor.
 ## Why: distillation needs support in the training data
 
 A distilled student learns its teacher's judgment only on the kinds of cases
-it is trained on. The same saturation hid this gap between Gleipnir and its
-teacher. On matched prompts, the adapter's absolute gain is about the same on
-both benchmarks; what differs is the ceiling. Base and Gleipnir are scored on
-the same BF16 engine.
+it is trained on. The OOD suite's saturation hid this gap between Gleipnir
+and its teacher. All three models below read the same prompt through the
+same logit interface; base and Gleipnir are scored on the same BF16 engine.
 
-| pAUROC@20 | Base 27B | Gleipnir 27B | Kimi K3 | Adapter gain |
-|---|---:|---:|---:|---:|
-| Our OOD suite (6 datasets) | 0.890 | 0.935 | 0.908 | +4.5 pts |
-| SLEIGHT-Bench | 0.263 | 0.306 | 0.402 | +4.3 pts |
+| pAUROC@20 | Base 27B | Gleipnir 27B | Kimi K3 | Gleipnir vs Kimi K3 | Gain from fine-tuning |
+|---|---:|---:|---:|---:|---:|
+| Our OOD suite (6 datasets) | 0.890 | 0.935 | 0.908 | +2.7 pts | +4.5 pts |
+| SLEIGHT-Bench | 0.263 | 0.306 | 0.402 | −9.6 pts | +4.3 pts |
 
-On the OOD suite, where the base model is already at 0.89, the student
-passes its teacher. On SLEIGHT-Bench it recovers only about 40% of the
-base-to-teacher gap.
+On the OOD suite the student passes its teacher by 2.7 points; on
+SLEIGHT-Bench it trails by 9.6. Fine-tuning adds about the same 4–5 points
+on both benchmarks. What differs is where that leaves the student relative
+to the teacher: on the OOD suite the base model already starts close to Kimi
+K3, while on SLEIGHT-Bench fine-tuning closes only about 40% of the gap.
 
 We reviewed how each of our five training sources generated its attacks and
 scanned the 8,688 training prompts for SLEIGHT-Bench's mechanisms.
