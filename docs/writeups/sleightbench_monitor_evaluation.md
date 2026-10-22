@@ -69,9 +69,9 @@ except where a row says otherwise.
 
 ## Results
 
-![Catch rate at 1% FPR on SLEIGHT-Bench](../../figures/sleightbench_catch_rate.png)
+<img src="../../figures/sleightbench_catch_rate.png" alt="Catch rate at 1% FPR on SLEIGHT-Bench" width="50%">
 
-![pAUROC@20 on SLEIGHT-Bench](../../figures/sleightbench_pauroc.png)
+<img src="../../figures/sleightbench_pauroc.png" alt="pAUROC@20 on SLEIGHT-Bench" width="50%">
 
 Each group is one model, with one bar per way of running it, as in the
 paper's figures. The paper's bars are per-trial catch rates read from its
