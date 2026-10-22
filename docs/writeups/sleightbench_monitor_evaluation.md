@@ -17,8 +17,8 @@
 >   above every attack; ignore it and Kimi catches 30%.
 > - **Our out-of-distribution (OOD) suite overstated how we compare to
 >   frontier monitors.** There, Gleipnir 27B matched Claude Opus 4.6 and
->   Gemini 3.1 Pro at about 200× lower cost. Here it catches 20%, against
->   19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against monitors in
+>   Gemini 3.1 Pro at about 200× lower cost. On SLEIGHT-Bench it catches
+>   20%, against 19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against monitors in
 >   its own cost tier it holds up: it ranks above GPT-6 Luna and Jev 1.13 at
 >   the same or lower cost.
 > - **Distillation needs support in the training data.** A student learns
