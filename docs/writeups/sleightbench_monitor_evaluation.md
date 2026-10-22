@@ -113,22 +113,28 @@ rather than on one catch rate.
   to 0.80 under the paper's sampled-and-averaged protocol. Thinking itself
   added nothing on top.
 
-## Reference points: current OpenAI models
+## Reference points: current hosted models
 
 The paper predates OpenAI's current GPT-6 models, so we scored both with the
 same zero-reasoning logit interface and ControlArena prompt as a modern
-reference. They are not part of the paper comparison above.
+reference. We also scored TypeSafe's Jev 1.13, a hosted decision model,
+through its native interface: the trajectory as state, our standard
+monitoring question, and its returned probability. None of these is part of
+the paper comparison above.
 
-| Same prompt, stripped view | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
-|---|---:|---:|---:|---:|
-| GPT-6 Sol | 15% | 47.5% | 0.823 | 0.515 |
-| GPT-6 Luna | 5% | 12.5% | 0.696 | 0.277 |
-| Gleipnir 27B | 12.5–20% | 20% | 0.694–0.697 | 0.299–0.306 |
+| Stripped view | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
+|---|---|---:|---:|---:|---:|
+| GPT-6 Sol | Logits, ControlArena prompt | 15% | 47.5% | 0.823 | 0.515 |
+| GPT-6 Luna | Logits, ControlArena prompt | 5% | 12.5% | 0.696 | 0.277 |
+| Jev 1.13 | Native decision | 7.5% | 10% | 0.644 | 0.192 |
+| Gleipnir 27B | Logits, ControlArena prompt | 12.5–20% | 20% | 0.694–0.697 | 0.299–0.306 |
 
 **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82), and
 it is strongest on exactly the mistake-shaped classes our models miss.
-**Gleipnir 27B roughly matches the low-cost GPT-6 Luna**, as it did on our
-OOD suite.
+**Gleipnir 27B roughly matches the low-cost GPT-6 Luna and ranks above
+Jev 1.13**, which costs the same per input token as our self-hosted 27B
+($0.042/M). Jev returns coarse probabilities (41 distinct values here, none
+above 0.53).
 
 The two Gleipnir figures are the same checkpoint on our optimized and BF16
 serving stacks. The 7.5-point catch gap between them comes from three attacks
@@ -138,7 +144,32 @@ higher (0.74 against 0.70). Self-hosted at B200 break-even, Gleipnir 27B costs
 about $0.04 per million input tokens on demand ($0.018 on committed GPUs),
 against Luna's $0.10 list price: about 2.4–5.7× cheaper, before accounting
 for provider margin and utilization. Under this prompt Luna is fully
-jailbroken by the injection attack (score about 2×10⁻¹⁰).
+jailbroken by the injection attack (score about 2×10⁻¹⁰). Jev, whose question
+tells it to treat trajectory text as untrusted evidence, flags it, if
+narrowly (0.53, against 0.19 for its benign twin).
+
+**Our OOD suite separates these monitors; SLEIGHT-Bench does not.** On our
+six-dataset OOD suite, Gleipnir 27B led Luna and Jev by 8–10 points of
+pAUROC@20. Here all three sit between 0.19 and 0.31:
+
+| pAUROC@20 | OOD suite | OOD, without the airline task | SLEIGHT-Bench, stripped |
+|---|---:|---:|---:|
+| Gleipnir 27B | 0.935 | 0.973 | 0.306 |
+| Jev 1.13 | 0.850 | 0.898 | 0.192 |
+| GPT-6 Luna | 0.837 | 0.876 | 0.277 |
+
+The OOD suite's hardest source is SHADE-Arena, and within it one
+airline-booking task. Attackers there book nearly every flight on one
+expensive airline: the evidence is fully visible, but the booking is
+permitted, so the "attack" label marks hidden intent rather than a broken
+instruction. The task drags every monitor down, but it is not why Gleipnir
+leads. Without it, the gap is unchanged, and Gleipnir still leads Luna on
+SHADE-Arena itself (0.96 against 0.65) and by 5–10 points on IaC,
+MLE-Sabotage and Rogue Eval.
+
+So the OOD lead is real but specific to the kinds of sabotage our training
+data covers. It does not carry over to attacks built to look like honest
+mistakes, where every monitor except Sol is near its floor.
 
 ## A caveat on the jailbreak: monitors react to any monitor-directed text
 

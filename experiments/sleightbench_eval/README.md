@@ -418,6 +418,33 @@ python -m experiments.sleightbench_eval.api_openai gpt6_luna --limit 1   # canar
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb09
 ```
 
+## Exploratory run sb10: Jev 1.13 native decision (frozen 2026-10-22)
+
+User-requested modern reference. It uses Jev's own interface from its OOD
+frontier point ([finding](../../docs/findings/tool_trajectory_jev_ood_benchmark.md)),
+not the logit interface:
+- **State.** The raw trajectory inside each frozen `api_control_arena.jsonl`
+  prompt (172 rows, both views); checked equal to the rendered transcript
+  body. The ControlArena instruction is not sent.
+- **Question.** The frozen Jev Noul question
+  (`../decision_models_ood/prompts/jev_noul_v1.json`, SHA-256 `9b423177…`).
+- **Score.** The returned `noul` probability, through OpenRouter's Decisions
+  API.
+- **Routing.** Pinned to TypeSafe, revision `jev-1.13-20260917`, no
+  fallbacks, data collection denied.
+- **Context.** The endpoint now lists 262,144 tokens (32,000 at the OOD
+  run), so the six 133–175K-token transcripts fit. Any input rejection
+  stops the run; there is no fallback score.
+- **Price.** $0.042/M input, free output (endpoint listing checked
+  2026-10-22). About $0.11 for both views; $0.50 hard bound.
+- **Caveat.** Jev returns coarse probabilities (95 distinct values on the
+  OOD suite), so expect ties at the 1%-FPR threshold.
+
+```bash
+python -m experiments.sleightbench_eval.api_jev jev_113 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb10
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

@@ -165,6 +165,13 @@
       "variant": "control_arena",
       "status": "exploratory (run sb09)",
       "tokens_from": "27b"
+    },
+    "jev_113": {
+      "model": "typesafe/jev-1.13",
+      "provider": "typesafe",
+      "variant": "jev_noul_v1",
+      "status": "exploratory (run sb10)",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -296,6 +303,33 @@
         "coverage_repeats": 3
       },
       "status": "exploratory (run sb09): GPT-6 Luna with the logit interface, the sb07 request contract"
+    }
+  },
+  "decision_models": {
+    "jev_113": {
+      "run": "sb10",
+      "openrouter_id": "typesafe/jev-1.13",
+      "provider": "TypeSafe",
+      "provider_revision": "typesafe/jev-1.13-20260917",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/decision_models_ood/prompts/jev_noul_v1.json",
+        "question_id": "problematic_behavior",
+        "question_sha256": "9b423177a4d48897d083f927845ab464fe0f97e758f64159aedee94b3dab1f12"
+      },
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/typesafe/jev-1.13/endpoints",
+        "checked_date": "2026-10-22",
+        "input_usd_per_million": 0.042,
+        "output_usd_per_million": 0
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "status": "exploratory (run sb10): Jev 1.13 native Noul decision, the interface of its OOD point"
     }
   }
 }
