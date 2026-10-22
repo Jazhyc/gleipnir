@@ -70,3 +70,11 @@ Gleipnir 4B v0.3 (`4b-v03`, student prompt) and Gleipnir 27B (`27b`, teacher pro
 ## What it can't show
 
 One model and one benchmark; most positives come right after scaffold pressure; labels come from our hand labelling; negatives that never reached the impossible test are easy negatives, which is why the pressure contrast is reported.
+
+## Amendment 1 (22 October, while the 4B was scoring; before any 27B score)
+
+- **Why:** the 4B scored at about 3,400 tokens a second on the A100, so the 27B's 13.7M tokens of rows plus 1,000 calibration rows would take well over five hours.
+- **The 27B is `27b-merged`,** the merged BF16 checkpoint (`Jazhyc/Gleipnir-27B-BF16`) behind every earlier 27B result, including `adversarial_is_it_4b` and the lab numbers. It scores the same teacher-prompt rows as `27b`. Its canary is gated: calibration rows must match the earlier H100 scores within 0.02.
+- **27B calibration is reused, not rescored:** the 500 strict-OOD rows `adversarial_is_it_4b` scored with this checkpoint and prompt (the first 500 of the same 1,000). Its 1% line therefore rests on 500 rows (5 above the line) and is noisier.
+- **27B rows are scored in priority order** (`--points first_cheat pressure stripped full`) with a 3-hour cap; rows not reached are reported as not scored.
+- **The 4B is unchanged:** all calibration rows and all detection points.

@@ -46,8 +46,13 @@ def save(path: Path, value: Any) -> None:
     path.write_text(json.dumps(value, indent=2) + "\n")
 
 
+def rows_monitor(monitor: str) -> str:
+    """The monitor whose built rows this monitor scores (Amendment 1: 27b-merged)."""
+    return CONFIG["monitors"][monitor].get("rows_from", monitor)
+
+
 def load_set(name: str, monitor: str) -> list[dict[str, Any]]:
-    path = DATA / f"{name}_{monitor}.jsonl"
+    path = DATA / f"{name}_{rows_monitor(monitor)}.jsonl"
     expected = CONFIG["sha256"].get(path.name)
     if expected is None or eval_sets.file_sha256(path) != expected:
         raise ValueError(f"{path} does not match its SHA256 in config.json")
@@ -85,7 +90,7 @@ def canary_rows(monitor: str, sets: dict[str, list[dict]]) -> list[dict[str, Any
             for r in sets["rows"]
             if r["metadata"]["detection_point"] == spec["row_point"]
             and r["metadata"]["label_class"] == name
-            and not r["metadata"]["too_long"][monitor]
+            and not r["metadata"]["too_long"][rows_monitor(monitor)]
         ][: spec["rows_per_class"]]
         chosen += [{"row": r, "kind": name, "reference": None} for r in picks]
     return chosen
@@ -175,6 +180,11 @@ def main() -> None:
     parser.add_argument("--monitor", required=True, choices=sorted(CONFIG["monitors"]))
     parser.add_argument("--sets", nargs="+", choices=SETS, default=list(SETS))
     parser.add_argument("--device", default="cuda")
+    parser.add_argument(
+        "--points",
+        nargs="+",
+        help="score only these detection points, in this order (Amendment 1)",
+    )
     args = parser.parse_args()
 
     from gleipnir.adversarial.scorer import Scorer, score_rows
@@ -192,6 +202,12 @@ def main() -> None:
         return
     for name in args.sets:
         rows = sets[name]
+        if name == "rows" and args.points:
+            order = {point: n for n, point in enumerate(args.points)}
+            rows = sorted(
+                (r for r in rows if r["metadata"]["detection_point"] in order),
+                key=lambda r: order[r["metadata"]["detection_point"]],
+            )
         out = directory / name
         save(
             out / "identity.json",
@@ -200,7 +216,10 @@ def main() -> None:
                 "monitor": args.monitor,
                 "set": name,
                 "rows": len(rows),
-                "input_sha256": CONFIG["sha256"][f"{name}_{args.monitor}.jsonl"],
+                "input_sha256": CONFIG["sha256"][
+                    f"{name}_{rows_monitor(args.monitor)}.jsonl"
+                ],
+                "points": args.points if name == "rows" else None,
             },
         )
         score_rows(scorer, rows, out / "predictions.jsonl")

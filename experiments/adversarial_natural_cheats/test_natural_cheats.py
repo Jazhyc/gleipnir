@@ -558,3 +558,11 @@ def test_tool_errors_render_as_the_agent_saw_them():
     out = render(messages)
     assert "[TOOL]\nError: Command timed out before completing." in out
     assert out.endswith("[TOOL]\nok")
+
+
+def test_merged_27b_scores_the_27b_rows_with_a_gated_canary():
+    from experiments.adversarial_natural_cheats import score
+
+    assert score.rows_monitor("27b-merged") == "27b"
+    assert score.rows_monitor("4b-v03") == "4b-v03"
+    assert score.CONFIG["canary"]["reference"]["27b-merged"]["gate"] is True

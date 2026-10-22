@@ -108,6 +108,11 @@
     "27b": {
       "prompt": "teacher",
       "note": "Gleipnir 27B PEFT adapter; tokenizer Qwen/Qwen3.8-27B at the base revision in src/gleipnir/adversarial/monitors.py"
+    },
+    "27b-merged": {
+      "prompt": "teacher",
+      "rows_from": "27b",
+      "note": "Gleipnir 27B v0.2 merged BF16 (Jazhyc/Gleipnir-27B-BF16), the checkpoint behind every earlier 27B result (adversarial_is_it_4b); same tokenizer and teacher-prompt rows as 27b. Amendment 1."
     }
   },
   "max_tokens": 29696,
@@ -179,6 +184,11 @@
         "path": "results/adversarial_is_it_4b/27b-teacher/calibration/predictions.jsonl",
         "what": "27b-merged BF16, teacher prompt, H100 (adversarial_is_it_4b); a different checkpoint form and GPU, so recorded but not gated",
         "gate": false
+      },
+      "27b-merged": {
+        "path": "results/adversarial_is_it_4b/27b-teacher/calibration/predictions.jsonl",
+        "what": "27b-merged BF16, teacher prompt, H100 (adversarial_is_it_4b): the same checkpoint form, a different GPU",
+        "gate": true
       }
     }
   },
@@ -188,5 +198,18 @@
     "rows_27b.jsonl": "7013d93a82eb2ad2242a758b5c2a519d0bcca7b8e3dc93b968869d7f178cc7be",
     "calibration_4b-v03.jsonl": "6025cf280f7e39035169f8877058f9e616b161820d363744959be78d7d276657",
     "calibration_27b.jsonl": "56a9fab73c107db897184cc8e2e6aab33072e458b4ed812ccaad607f67707488"
+  },
+  "amendment_1": {
+    "date": "2026-10-22",
+    "before": "any 27B score",
+    "27b_monitor": "27b-merged",
+    "27b_calibration": "reuse the 500 adversarial_is_it_4b 27b-teacher calibration scores",
+    "27b_point_order": [
+      "first_cheat",
+      "pressure",
+      "stripped",
+      "full"
+    ],
+    "27b_time_cap_hours": 3
   }
 }
