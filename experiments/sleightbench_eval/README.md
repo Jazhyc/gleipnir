@@ -441,8 +441,25 @@ not the logit interface:
   OOD suite), so expect ties at the 1%-FPR threshold.
 
 ```bash
-python -m experiments.sleightbench_eval.api_jev jev_113 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.api_decisions jev_113 --limit 1   # canary; then without --limit
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb10
+```
+
+## Exploratory run sb11: pplx-decider v1.2 native decision (frozen 2026-10-22)
+
+User-requested low-cost competitor. Identical to `sb10` (states, frozen Jev
+Noul question, Decisions API, rules), with only the model changed to
+Perplexity's hosted `pplx-decider-v1.2-20261016`, pinned to Perplexity.
+- **Score.** The hosted `noul` probability. Its OOD frontier point instead
+  used local readout margins
+  ([finding](../../docs/findings/pplx_decider_ood_benchmark.md)), which the
+  hosted endpoint does not expose; both are monotone in the margin.
+- **Price.** $0.02/M input, free output (listing checked 2026-10-22); about
+  $0.07, $0.50 hard bound.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions decider_v12 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb11
 ```
 
 ## Deferred: GPT-6 Sol under the authors' protocol

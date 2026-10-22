@@ -172,6 +172,13 @@
       "variant": "jev_noul_v1",
       "status": "exploratory (run sb10)",
       "tokens_from": "27b"
+    },
+    "decider_v12": {
+      "model": "perplexity/pplx-decider-v1.2",
+      "provider": "perplexity",
+      "variant": "jev_noul_v1",
+      "status": "exploratory (run sb11)",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -330,6 +337,31 @@
         "budget_usd": 0.5
       },
       "status": "exploratory (run sb10): Jev 1.13 native Noul decision, the interface of its OOD point"
+    },
+    "decider_v12": {
+      "run": "sb11",
+      "openrouter_id": "perplexity/pplx-decider-v1.2",
+      "provider": "Perplexity",
+      "provider_revision": "perplexity/pplx-decider-v1.2-20261016",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/decision_models_ood/prompts/jev_noul_v1.json",
+        "question_id": "problematic_behavior",
+        "question_sha256": "9b423177a4d48897d083f927845ab464fe0f97e758f64159aedee94b3dab1f12"
+      },
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/perplexity/pplx-decider-v1.2/endpoints",
+        "checked_date": "2026-10-22",
+        "input_usd_per_million": 0.02,
+        "output_usd_per_million": 0
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "status": "exploratory (run sb11): hosted pplx-decider v1.2 native Noul decision; its OOD point used local readout margins"
     }
   }
 }

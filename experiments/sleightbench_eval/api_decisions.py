@@ -1,10 +1,10 @@
-"""Native decision-model SleightBench run (exploratory run sb10: Jev 1.13).
+"""Native decision-model SleightBench runs (sb10: Jev 1.13; sb11: pplx-decider v1.2).
 
-Uses the interface of Jev's OOD frontier point: the raw trajectory as
+Uses the interface of the decision models' OOD points: the raw trajectory as
 Decisions state, the frozen Jev Noul question, and the returned probability
 as the score (``gleipnir.evaluation.openrouter_decisions``). Each state is the
 trajectory inside the frozen ``api_control_arena.jsonl`` prompt for the same
-row, so Jev sees exactly what the logit-interface API monitors saw, without
+row, so the model sees exactly what the logit-interface API monitors saw, without
 their instruction. Requests are pinned to the provider without fallbacks,
 with data collection denied. Any failure or input rejection stops the run;
 ``--limit`` runs a canary on the first rows.

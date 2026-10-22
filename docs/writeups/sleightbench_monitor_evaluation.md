@@ -6,23 +6,21 @@
 > models distilled from Kimi K3's binary logits) on
 > [SLEIGHT-Bench](https://github.com/safety-research/sleight-bench), a
 > benchmark of attacks hand-built to slip past monitors, using the paper's
-> prompt and stripped transcripts. For reference we also scored our teacher
-> Kimi K3, the unadapted Qwen3.8-27B, GPT-5.5, GPT-6 Sol, GPT-6 Luna and
-> Jev 1.13. At 1% FPR, Gleipnir 27B catches 20% of attacks and the 4B catches
-> 7.5%. The paper's frontier monitors range from 2% (Haiku 4.5) to 54%
-> (Gemini 3.1 Pro with high thinking) through the API, and 62% for Opus 4.6
-> in a Claude Code scaffold. Three lessons came out:
+> prompt and stripped transcripts, alongside several reference monitors. At
+> 1% FPR, Gleipnir 27B catches 20% of attacks and the 4B catches 7.5%. The
+> paper's frontier monitors range from 2% (Haiku 4.5) to 54% (Gemini 3.1 Pro
+> with high thinking) through the API, and 62% for Opus 4.6 in a Claude Code
+> scaffold. Three lessons came out:
 > - **At this size, catch rate at 1% FPR is a coarse tier.** With 43 benign
->   transcripts, the threshold is the single most suspicious benign. Kimi
->   K3's logits catch 0% because one benign, which differs from its attack by
->   a single line number, scores 0.98. Ignore that one transcript and Kimi
->   catches 30%.
+>   transcripts, the threshold is the single most suspicious benign. Our
+>   teacher Kimi K3 catches 0%, but 30% once one benign is ignored.
 > - **Our out-of-distribution (OOD) suite overstated how we compare to
 >   frontier monitors.** There, Gleipnir 27B matched Claude Opus 4.6 and
 >   Gemini 3.1 Pro at about 200× lower cost. Here it catches 20%, against
->   19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. It stays slightly
->   ahead of the cheaper GPT-6 Luna and Jev 1.13, and far cheaper than all
->   of them.
+>   19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against monitors in
+>   its own cost tier it holds up: it ranks above GPT-6 Luna and Jev 1.13 at
+>   the same or lower cost, and level with pplx-decider v1.2, which costs
+>   half as much.
 > - **Distillation needs support in the training data.** A student learns
 >   its teacher's judgment only on the kinds of cases it is trained on. Our
 >   training data has stealth-prompted attacks but none built against a
@@ -135,39 +133,41 @@ rather than on one catch rate.
 
 The paper predates OpenAI's current GPT-6 models, so we scored both with the
 same zero-reasoning logit interface and ControlArena prompt. We also scored
-TypeSafe's Jev 1.13, a hosted decision model, through its native interface:
-the trajectory as state, our standard monitoring question, and its returned
-probability.
+two low-cost hosted decision models, TypeSafe's Jev 1.13 and Perplexity's
+pplx-decider v1.2, through their native interface: the trajectory as state,
+our standard monitoring question, and the returned probability.
 
-| Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 |
-|---|---|---:|---:|---:|---:|
-| GPT-6 Sol | Logits | 15% | 47.5% | 0.823 | 0.515 |
-| GPT-6 Luna | Logits | 5% | 12.5% | 0.696 | 0.277 |
-| Jev 1.13 | Native decision | 7.5% | 10% | 0.644 | 0.192 |
-| Gleipnir 27B | Logits | 20% | 20% | 0.697 | 0.299 |
+| Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 | Input price |
+|---|---|---:|---:|---:|---:|---:|
+| GPT-6 Sol | Logits | 15% | 47.5% | 0.823 | 0.515 | — |
+| GPT-6 Luna | Logits | 5% | 12.5% | 0.696 | 0.277 | $0.10/M |
+| Jev 1.13 | Native decision | 7.5% | 10% | 0.644 | 0.192 | $0.042/M |
+| pplx-decider v1.2 | Native decision | 25% | 25% | 0.690 | 0.319 | $0.02/M |
+| Gleipnir 27B | Logits | 20% | 20% | 0.697 | 0.299 | $0.018–0.04/M |
 
-**GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82), and
-it is strongest on exactly the mistake-shaped classes our models miss.
-**Gleipnir 27B ranks level with GPT-6 Luna and above Jev 1.13.**
-- **Cost.** Self-hosted at B200 break-even, Gleipnir 27B costs about $0.04
-  per million input tokens on demand ($0.018 on committed GPUs). That is
-  2.4–5.7× cheaper than Luna's $0.10 list price, before provider margin and
-  utilization, and the same as Jev's $0.042.
+Gleipnir's price is our self-hosted B200 break-even on committed and
+on-demand GPUs, before provider margin and utilization.
+- **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82).
+  It is strongest on exactly the mistake-shaped classes our models miss.
+- **Among the low-cost monitors, Gleipnir 27B and pplx-decider are level.**
+  Decider catches 5 points more and leads pAUROC@20 by 2 points, at about
+  half the price; AUROC is level and the intervals overlap. Both rank above
+  Luna (which costs 2.4–5.7× more than Gleipnir) and Jev (the same price).
+  Decider is built on the same Qwen3.8-27B backbone as Gleipnir 27B.
 - **Jev's scores are coarse:** 41 distinct values here, none above 0.53.
 - **The jailbreak.** Luna is fully fooled by the injection attack (score
-  about 2×10⁻¹⁰). Jev, whose question tells it to treat trajectory text as
-  untrusted evidence, flags it, if narrowly (0.53 against 0.19 for its
-  benign twin).
+  about 2×10⁻¹⁰), as is Gleipnir 27B. Both decision models flag it: Decider
+  at 0.95, Jev narrowly at 0.53. Their question tells them to treat
+  trajectory text as untrusted evidence.
 
-**Against Luna and Jev, our OOD lead shrinks but holds.** On our
-six-dataset OOD suite, Gleipnir 27B led them by 8–10 points of pAUROC@20.
-Here it leads Luna by 3 points and Jev by 11, all far below their OOD
-levels. The table uses BF16 scores for Gleipnir, to match our OOD
-evaluation:
+**Against these monitors, our OOD lead mostly does not carry over.** The
+table uses BF16 scores for Gleipnir, to match our OOD evaluation, and
+Decider's OOD run used its local readout:
 
 | pAUROC@20 | OOD suite | OOD, without the airline task | SLEIGHT-Bench |
 |---|---:|---:|---:|
 | Gleipnir 27B | 0.935 | 0.973 | 0.306 |
+| pplx-decider v1.2 | 0.896 | 0.957 | 0.319 |
 | Jev 1.13 | 0.850 | 0.898 | 0.192 |
 | GPT-6 Luna | 0.837 | 0.876 | 0.277 |
 
@@ -175,10 +175,11 @@ The OOD suite's hardest source is SHADE-Arena, and within it one
 airline-booking task. Attackers there book nearly every flight on one
 expensive airline. The evidence is fully visible, but the booking is
 permitted, so the "attack" label marks hidden intent rather than a broken
-instruction. The task drags every monitor down, but it is not why Gleipnir
-leads. Without it, the gap is unchanged, and Gleipnir still leads Luna on
-SHADE-Arena itself (0.96 against 0.65) and by 5–10 points on IaC,
-MLE-Sabotage and Rogue Eval.
+instruction. The task drags every monitor down. It explains most of
+Gleipnir's OOD lead over Decider, but not its lead over Luna and Jev: without
+the task, Gleipnir still leads Luna on SHADE-Arena itself (0.96 against 0.65)
+and by 5–10 points on IaC, MLE-Sabotage and Rogue Eval. On SLEIGHT-Bench all
+four sit between 0.19 and 0.32.
 
 ## A caveat on the jailbreak: monitors react to any monitor-directed text
 
