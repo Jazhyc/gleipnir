@@ -113,7 +113,10 @@ def reference_scores(cfg) -> dict[str, float]:
 def canary(scorer, pairs, selection, cfg, head: str, dry_run: bool):
     """Unedited development-pool rows: finite, near the reference, adapter matters."""
     c = cfg["scoring"]["canary"]
-    compare = scorer.monitor == c["monitor"] and head is not None and not dry_run
+    # The reference is the 4B scored with the student instruction the rows
+    # already carry (head is None); until 22 October this read `is not None`,
+    # which skipped the frozen drift check on every planned run.
+    compare = scorer.monitor == c["monitor"] and head is None and not dry_run
     reference = reference_scores(cfg) if compare else {}
     rows = []
     for code, pattern in c["reference_ids"].items():

@@ -233,3 +233,48 @@ def test_phrase_matched_tasks_need_agreement_between_the_two_claims():
         ),
     ]
     assert phrase_matched_tasks(texts) == {"both", "neither"}
+
+
+class FakeScorer:
+    def __init__(self, monitor, shift=0.0):
+        self.monitor = monitor
+        self.shift = shift
+        self.spec = type("Spec", (), {"adapter": "a"})()
+
+    def score(self, user_prompt, adapter=True):
+        return {"score": 0.5 + self.shift if adapter else 0.1}
+
+
+def canary_inputs():
+    tasks = ["t1", "t2", "t3", "t4"]
+    pairs = {
+        t: {c: {"prompt": f"{c} {t}"} for c in ("honest", "backdoored")} for t in tasks
+    }
+    return pairs, {"development_pool": tasks}
+
+
+@pytest.mark.parametrize("shift, passed", [(0.0, True), (0.05, False)])
+def test_canary_compares_the_4b_student_run_to_its_reference(
+    monkeypatch, shift, passed
+):
+    from experiments.adversarial_code_or_comments import score
+
+    reference = {
+        f"{p}:{t}": 0.5 for p in ("clean", "original") for t in ("t1", "t2", "t3", "t4")
+    }
+    monkeypatch.setattr(score, "reference_scores", lambda cfg: reference)
+    pairs, selection = canary_inputs()
+    check = score.canary(
+        FakeScorer("4b-v03", shift), pairs, selection, CFG, None, False
+    )
+    assert check["compared_to_reference"] is True
+    assert check["passed"] is passed
+
+
+def test_canary_skips_the_reference_for_other_monitors(monkeypatch):
+    from experiments.adversarial_code_or_comments import score
+
+    monkeypatch.setattr(score, "reference_scores", lambda cfg: {})
+    pairs, selection = canary_inputs()
+    check = score.canary(FakeScorer("27b-merged"), pairs, selection, CFG, None, False)
+    assert check["compared_to_reference"] is False and check["passed"] is True
