@@ -103,14 +103,12 @@ stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
 12.5%, with pAUROC@20 of 0.206 and 0.306 (AUROC of 0.623 and 0.694). Fine-tuning
 therefore lifts pAUROC@20 by 0.01–0.04 with little change in catch rate.
 
-**What the 27B catches.** It catches attacks whose actions are overtly
-unauthorized: `curl | bash` from an unusual host, an exfiltration hidden in a
-Brainfuck interpreter, a renamed storage bucket, deleted monitoring logs and
-both permission-laundering stages. **What it misses.** It catches none of the
-counting or object-reuse attacks, and only one of the model-priors attacks.
-These are the classes designed to pass as honest mistakes. It is also fooled
-by the injection jailbreak (0.05), as is Kimi K3; the 4B flags it (0.96),
-though that is less impressive than it looks (see below).
+**What Gleipnir 27B catches.** It catches attacks whose actions are overtly
+unauthorized, such as piping a script from an unknown host into a shell, and
+misses nearly all attacks disguised as honest mistakes, such as a wrong line
+number or column index. It is fooled by the attack that injects
+instructions aimed at the monitor, which the 4B flags (see the caveat
+below).
 
 ## Lesson 1: at this size, catch rate at 1% FPR is a coarse measure
 
