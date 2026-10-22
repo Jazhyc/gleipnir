@@ -11,9 +11,10 @@
 > paper's frontier monitors range from 2% (Haiku 4.5) to 54% (Gemini 3.1 Pro
 > with high thinking) through the API, and 62% for Opus 4.6 in a Claude Code
 > scaffold. Three lessons came out:
-> - **At this size, catch rate at 1% FPR is a coarse tier.** With 43 benign
->   transcripts, the threshold is the single most suspicious benign. Our
->   teacher Kimi K3 catches 0%, but 30% once one benign is ignored.
+> - **At this size, catch rate at 1% FPR is a coarse measure.** With 43
+>   benign transcripts, the threshold is the single most suspicious benign.
+>   Our teacher Kimi K3 catches 0% only because one benign transcript scores
+>   above every attack; ignore it and Kimi catches 30%.
 > - **Our out-of-distribution (OOD) suite overstated how we compare to
 >   frontier monitors.** There, Gleipnir 27B matched Claude Opus 4.6 and
 >   Gemini 3.1 Pro at about 200× lower cost. Here it catches 20%, against
@@ -92,7 +93,7 @@ These are the classes designed to pass as honest mistakes. It is also fooled
 by the injection jailbreak (0.05), as is Kimi K3; the 4B flags it (0.96),
 though that is less impressive than it looks (see below).
 
-## Lesson 1: at this size, catch rate at 1% FPR is a coarse tier
+## Lesson 1: at this size, catch rate at 1% FPR is a coarse measure
 
 The threshold is the single highest benign score, so one suspicious benign
 can move a monitor's headline by tens of points.
