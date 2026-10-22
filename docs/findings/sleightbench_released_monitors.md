@@ -567,6 +567,34 @@ models, seed 0, strict threshold at the highest sampled benign):
 
 Every interval except the 4B's AUROC includes zero.
 
+## Diagnostic: single-trial ranking for the authors' protocol
+
+Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each
+transcript's 10-trial mean score, which describes a 10-sample monitor; the
+catch rate is per trial. The writeup instead reports the mean of per-trial
+AUROC and pAUROC@20, matching the per-trial catch rate. Pooling all trials
+into one ROC gives the same values within 0.013.
+
+| Run | 10-trial-mean AUROC / pAUROC@20 | Single-trial AUROC / pAUROC@20 |
+|---|---|---|
+| Kimi K3, no thinking (`sb06`) | 0.802 / 0.523 | 0.761 / 0.465 |
+| Kimi K3, thinking | 0.790 / 0.444 | 0.751 / 0.396 |
+| Qwen3.8-27B, no thinking (`sb04`) | 0.710 / 0.318 | 0.647 / 0.281 |
+| Qwen3.8-27B, thinking | 0.711 / 0.358 | 0.679 / 0.319 |
+| Qwen3.5-4B, no thinking | 0.607 / 0.213 | 0.555 / 0.187 |
+| Qwen3.5-4B, thinking | 0.646 / 0.237 | 0.593 / 0.213 |
+
+- Averaging 10 samples adds about 0.03–0.06 pAUROC@20 on top of one trial.
+- Per trial, Kimi K3 still beats its logits (0.465 against 0.402); the
+  Qwen bases are about level with theirs (27B 0.28–0.32 against 0.263, 4B
+  0.19–0.21 against 0.193).
+- By category (mean share of benigns each attack outranks, 10-trial means),
+  reasoning helps system state, authorization confusion, plausible naming
+  and needle-in-haystack attacks for both Kimi K3 and the 27B, and model
+  priors for Kimi; it hurts counting (Kimi 0.70 → 0.51, 27B 0.72 → 0.46) and
+  the jailbreak. Categories hold 1–11 attacks, so single-category swings are
+  noisy.
+
 ## Interpretation: SleightBench against the OOD suite and the training data
 
 Post-hoc analysis requested by the user after `sb08`; it changes no frozen

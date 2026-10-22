@@ -6,7 +6,8 @@ as in the paper's figures. Values are the stripped-view, ControlArena-prompt
 numbers recorded in ``docs/findings/sleightbench_released_monitors.md``.
 Bars left of the dashed line are the paper's per-trial catch rates read from
 its appendix figures; the rest are ours. Our paper-protocol runs sample 10
-trials; logit bars are single passes.
+trials, and their pAUROC@20 is the mean of per-trial values, matching the
+paper's per-trial catch rate; logit bars are single passes.
 The paper reports no ranking metric, so its bars appear only in the
 catch-rate figure.
 """
@@ -48,18 +49,18 @@ MODELS = [
     (
         "Kimi K3",
         False,
-        {"reasoned": (12.2, 0.523), "thinking": (11.0, 0.444), "logits": (0, 0.402)},
+        {"reasoned": (12.2, 0.465), "thinking": (11.0, 0.396), "logits": (0, 0.402)},
     ),
     (
         "Qwen3.5-4B",
         False,
-        {"reasoned": (0.5, 0.213), "thinking": (3.0, 0.237), "logits": (5, 0.193)},
+        {"reasoned": (0.5, 0.187), "thinking": (3.0, 0.213), "logits": (5, 0.193)},
     ),
     ("Gleipnir 4B", False, {"gleipnir": (7.5, 0.209)}),
     (
         "Qwen3.8-27B",
         False,
-        {"reasoned": (8.9, 0.318), "thinking": (14.0, 0.359), "logits": (12.5, 0.263)},
+        {"reasoned": (8.9, 0.281), "thinking": (14.0, 0.319), "logits": (12.5, 0.263)},
     ),
     ("Gleipnir 27B", False, {"gleipnir": (20, 0.299)}),
 ]

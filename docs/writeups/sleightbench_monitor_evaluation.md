@@ -49,11 +49,12 @@ twins. With 43 benigns, "1% FPR" means "above the highest benign score".
 ## How our monitor plugs in
 
 The paper's monitors write their reasoning and then a 0–100 suspicion
-score, averaged over 10 trials at temperature 1. Gleipnir monitors are scored
+score, sampled 10 times at temperature 1, with catch rate reported per
+trial. Gleipnir monitors are scored
 by a single forward pass: the score is the softmax over the logits of `0`
 and `1` after a `Prediction:` prefix.
 
-We score each transcript once rather than averaging 10 trials, for two
+We score each transcript once rather than sampling 10 trials, for two
 reasons. Sampling helps the paper's monitors because each trial can reason
 differently, but our monitors emit only the decision token, with no
 reasoning to vary. And repeated sampling estimates how likely a monitor is to
@@ -78,8 +79,9 @@ paper's figures. The paper's bars are per-trial catch rates read from its
 appendix; it reports no ranking metric, so they appear only in the first
 figure. The thinking and no-thinking bars use the paper's protocol:
 written reasoning, then a 0–100 score, over 10 sampled trials. For our own
-runs of it, pAUROC@20 uses each transcript's score averaged over the trials. All logit bars use the ControlArena prompt
-with our binary output format and no reasoning.
+runs of it, pAUROC@20 is computed per trial and averaged over the 10
+trials, matching the paper's per-trial catch rate. All logit bars use the
+ControlArena prompt with our binary output format and no reasoning.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
 stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
@@ -130,14 +132,15 @@ rather than on one catch rate.
 - **A single-token readout is more dependable for small models.** Under
   the paper's protocol the base 4B catches 0.5% without thinking and 3% with
   it, against 5% from its logits, although its ranking is similar
-  (pAUROC@20 0.21–0.24 against 0.19). Each sampled trial is noisy, and the
+  (pAUROC@20 0.19–0.21 against 0.19). Each sampled trial is noisy, and the
   threshold is set over 430 benign trials. The logit readout returns the
-  score in one token, with no sampling noise. For the 27B the reasoned score ranks
-  somewhat better (pAUROC@20 0.32–0.36 against 0.26), at the cost of 10
-  generated analyses per transcript.
-- **Reasoning did help Kimi K3.** Kimi's AUROC rises from 0.74 with logits
-  to 0.80 under the paper's sampled-and-averaged protocol. Thinking itself
-  added nothing on top.
+  score in one token, with no sampling noise. For the 27B a reasoned trial
+  ranks about the same as its logits without thinking (pAUROC@20 0.28
+  against 0.26) and slightly better with thinking (0.32), at the cost of
+  generating a full analysis.
+- **Reasoning did help Kimi K3.** A reasoned trial lifts Kimi's AUROC from
+  0.74 with logits to 0.76, and pAUROC@20 from 0.40 to 0.47. Thinking did
+  not help further.
 
 ## Reference points: current decision models
 
@@ -296,7 +299,7 @@ ControlArena prompt does not state it.
 
 - 40 attacks and 43 benigns: every bootstrap interval on catch rate overlaps
   (the 27B's is 10–32.5%).
-- Our runs are single passes; the paper averages 10 trials. GPT-5.5's
+- Our logit runs are single passes; the paper samples 10 trials. GPT-5.5's
   logprobs were not repeatable (the same prompt scored 0.59, then 0.97).
 - The paper's frontier numbers were read off figures and use their full
   protocol; we did not rerun them.
