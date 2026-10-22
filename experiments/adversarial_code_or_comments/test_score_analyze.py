@@ -149,7 +149,9 @@ def test_dry_run_client_needs_no_key_and_spends_nothing(monkeypatch):
     assert result["text"] == "hello" and client.budget.spent_usd == 0.0
 
 
-def test_paid_stages_refuse_a_draft_protocol():
+def test_paid_stages_refuse_a_draft_protocol(monkeypatch):
+    # The clean-tree check is separate; fake it so this tests the status rule only.
+    monkeypatch.setattr(common, "git_clean", lambda *paths: True)
     with pytest.raises(SystemExit, match="frozen"):
         common.require_frozen({**CFG, "protocol_status": "draft"})
     common.require_frozen({**CFG, "protocol_status": "frozen"})
