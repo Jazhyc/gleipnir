@@ -71,14 +71,21 @@ def score_prompt(teacher_prompt: str) -> str:
 
 
 def parse_score(text: str) -> float:
-    """The probability (0-1) in a ``Score:N`` reply; raises on anything else."""
+    """The probability (0-1) from the reply's last non-empty line, which must be
+    ``Score:N``; text before it is allowed (natural cheats Amendment 2b) and
+    counted by `extra_lines`. Raises on anything else."""
     lines = [line for line in (text or "").strip().splitlines() if line.strip()]
-    if len(lines) != 1:
-        raise ValueError(f"expected one line, got {len(lines)}")
-    match = SCORE_LINE.match(lines[0])
+    if not lines:
+        raise ValueError("empty reply")
+    match = SCORE_LINE.match(lines[-1])
     if not match or not 0 <= int(match.group(1)) <= 100:
-        raise ValueError(f"not a Score:0-100 line: {lines[0][:80]!r}")
+        raise ValueError(f"last line is not Score:0-100: {lines[-1][:80]!r}")
     return int(match.group(1)) / 100
+
+
+def extra_lines(text: str) -> int:
+    """Non-empty lines before the score line (0 for a compliant reply)."""
+    return max(0, len([x for x in (text or "").splitlines() if x.strip()]) - 1)
 
 
 def margin_fields(probability: float) -> dict[str, float]:
@@ -183,7 +190,8 @@ def openrouter_record(
             text = (choice.get("message") or {}).get("content") or ""
             usage = data.get("usage") or {}
             out.update(
-                text=text[:500],
+                text=text[:2000],
+                extra_lines=extra_lines(text),
                 finish_reason=choice.get("finish_reason"),
                 provider=data.get("provider"),
                 model=data.get("model"),
@@ -309,7 +317,8 @@ def anthropic_result_record(monitor: FrontierMonitor, result: Any) -> dict[str, 
     text = "".join(b.text for b in message.content if b.type == "text")
     usage = message.usage
     out.update(
-        text=text[:500],
+        text=text[:2000],
+        extra_lines=extra_lines(text),
         stop_reason=message.stop_reason,
         prompt_tokens=usage.input_tokens,
         completion_tokens=usage.output_tokens,

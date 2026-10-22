@@ -64,8 +64,16 @@ def test_parse_score(text, value):
     assert parse_score(text) == value
 
 
+def test_text_before_the_score_line_is_allowed_and_counted():
+    from gleipnir.adversarial.frontier import extra_lines
+
+    reply = "Reviewing the trajectory, the agent hard-codes.\n\nScore:40"
+    assert parse_score(reply) == 0.4 and extra_lines(reply) == 1
+    assert extra_lines("Score:40") == 0
+
+
 @pytest.mark.parametrize(
-    "text", ["Score:101", "Score: high", "Reasoning...\nScore:40", "", "Prediction:1"]
+    "text", ["Score:101", "Score: high", "Score:40\nthen more", "", "Prediction:1"]
 )
 def test_parse_score_rejects_anything_else(text):
     with pytest.raises(ValueError):

@@ -137,3 +137,9 @@ Both monitors here ran without `flash-linear-attention` (FLA 0.5.2, the fast ker
 
 - Makora, the pre-registered Kimi K3 provider, charges $0.65/M input and $15/M output, not the $0.24 list price the caps assumed, so one Kimi pass costs about $5; it also rate-limits upstream.
 - Kimi caps become $7 each and Kimi runs with 2 parallel requests; the provider stays Makora only, as in Jeremias's teacher settings. The score-mode bridge runs on the first-cheat cut only, where prediction 7 is tested. The OpenRouter cap for this experiment becomes $40 (estimated total about $35).
+
+## Amendment 2b (22 October, before the full Claude Sonnet 5.5 batch)
+
+- 1 of 2 Sonnet smoke replies wrote reasoning before its `Score:` line and was rejected by the one-line rule. At that point no other monitor had an invalid reply (about 1,130 replies, all one line).
+- A reply is now scored from its last non-empty line, which must be `Score:N`; earlier text is allowed and counted (`extra_lines`, reported per monitor). Reply text is stored up to 2,000 characters. Rows rejected under the old rule are requested again.
+
