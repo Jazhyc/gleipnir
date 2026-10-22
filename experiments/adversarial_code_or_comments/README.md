@@ -249,4 +249,4 @@ Taken as recommended; the writer had to change (see Models).
   3. Gemini 3.8 Flash separates backdoored from honest code less well under misleading texts than with no text.
   4. At its matched 1% line, Gleipnir 4B flags at least 50% of honest code carrying an unrelated text; every frontier monitor flags at most 10%.
   5. With no text, the best frontier monitor's AUROC for backdoored against honest code is at least the 4B's.
-
+- **Amendment 7a (before any Sonnet request; the cost guard refused the first batch, nothing was sent):** Sonnet's output limit becomes 1,024 tokens (its longest natural-cheats reply was 514, median 6), its cap $9.40 so total Sonnet spend on Abhinav's key stays within the agreed $20 even in the worst case, and rows go in batches of at most 520.
