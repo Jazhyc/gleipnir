@@ -18,9 +18,9 @@
 > - **Our out-of-distribution (OOD) suite overstated how we compare to
 >   frontier monitors.** There, Gleipnir 27B matched Claude Opus 4.6 and
 >   Gemini 3.1 Pro at about 200× lower cost. On SLEIGHT-Bench it catches
->   20%, against 19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against monitors in
->   its own cost tier it holds up: it ranks above GPT-6 Luna and Jev 1.13 at
->   the same or lower cost.
+>   20%, against 19–32% for Opus 4.6 and 28–54% for Gemini 3.1 Pro. Against
+>   decision models at a similar price (GPT-6 Luna, Jev 1.13, pplx-decider
+>   v1.2) it is in the same range, ahead of Jev but level with the others.
 > - **Distillation needs support in the training data.** A student learns
 >   its teacher's judgment only on the kinds of cases it is trained on. Our
 >   training data has stealth-prompted attacks but none built against a
@@ -129,13 +129,14 @@ rather than on one catch rate.
   to 0.80 under the paper's sampled-and-averaged protocol. Thinking itself
   added nothing on top.
 
-## Reference points: current hosted models
+## Reference points: current decision models
 
 The paper predates OpenAI's current GPT-6 models, so we scored both with the
 same zero-reasoning logit interface and ControlArena prompt. We also scored
-two low-cost hosted decision models, TypeSafe's Jev 1.13 and Perplexity's
-pplx-decider v1.2, through their native interface: the trajectory as state,
-our standard monitoring question, and the returned probability.
+two low-cost dedicated decision models, TypeSafe's Jev 1.13 and
+Perplexity's pplx-decider v1.2, through their native interface: the
+trajectory as state, our standard monitoring question, and the returned
+probability. Following Lesson 1, we compare them mainly on pAUROC@20.
 
 | Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 | Input price |
 |---|---|---:|---:|---:|---:|---:|
@@ -149,10 +150,20 @@ Gleipnir's price is our self-hosted B200 break-even on committed and
 on-demand GPUs, before provider margin and utilization.
 - **GPT-6 Sol with one logit is the best ranker we measured** (AUROC 0.82).
   It is strongest on exactly the mistake-shaped classes our models miss.
-- **Among the low-cost monitors, Gleipnir 27B and pplx-decider are level.**
-  Decider catches 5 points more and leads pAUROC@20 by 2 points; AUROC is
-  level and the intervals overlap. Both rank above Luna (which costs
-  2.4–5.7× more than Gleipnir) and Jev (the same price).
+- **Among the low-cost models, only Jev falls behind.** On pAUROC@20 the
+  order is Decider (0.319), Gleipnir 27B (0.299), Luna (0.277), then Jev
+  (0.192), but 40 attacks cannot resolve the top three. A paired bootstrap
+  over scenarios puts every difference from Gleipnir 27B within noise:
+
+  | vs Gleipnir 27B | Catch difference (95%) | pAUROC@20 difference (95%) | Draws where it beats Gleipnir |
+  |---|---|---|---:|
+  | pplx-decider v1.2 | −7.5 to +17.5 pts | −0.11 to +0.16 | 62% |
+  | GPT-6 Luna | −27.5 to +7.5 pts | −0.19 to +0.13 | 36% |
+  | Jev 1.13 | −27.5 to +2.5 pts | −0.26 to +0.04 | 7% |
+
+  Catch rate exaggerates the Luna gap (5% against 20%), because one benign
+  sets Luna's threshold near certainty. Luna costs 2.4–5.7× more than
+  Gleipnir; Jev costs the same.
 - **Decider's price advantage disappears at scale, and its architecture
   costs more in live monitoring.** Decider is built on the same Qwen3.8-27B
   backbone as Gleipnir 27B. Its $0.02/M list price is half our on-demand
@@ -165,11 +176,11 @@ on-demand GPUs, before provider margin and utilization.
   that setting.
 - **Jev's scores are coarse:** 41 distinct values here, none above 0.53.
 - **The jailbreak.** Luna is fully fooled by the injection attack (score
-  about 2×10⁻¹⁰), as is Gleipnir 27B. Both decision models flag it: Decider
-  at 0.95, Jev narrowly at 0.53. Their question tells them to treat
+  about 2×10⁻¹⁰), as is Gleipnir 27B. Decider and Jev flag it, Decider at
+  0.95 and Jev narrowly at 0.53. Their question tells them to treat
   trajectory text as untrusted evidence.
 
-**Against these monitors, our OOD lead mostly does not carry over.** The
+**Against these models, our OOD lead mostly does not carry over.** The
 table uses BF16 scores for Gleipnir, to match our OOD evaluation, and
 Decider's OOD run used its local readout:
 

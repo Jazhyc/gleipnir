@@ -554,6 +554,19 @@ probability.
 
 Results: `results/sleightbench_eval/sb11/`.
 
+**Paired bootstrap against Gleipnir 27B** (post-hoc, 2026-10-22; stripped,
+`sb02` optimized Gleipnir; 10,000 draws resampling scenarios jointly across
+models, seed 0, strict threshold at the highest sampled benign):
+
+| vs Gleipnir 27B | Catch difference | AUROC difference | pAUROC@20 difference | P(pAUROC diff > 0) |
+|---|---|---|---|---:|
+| pplx-decider v1.2 | [−0.075, +0.175] | [−0.079, +0.070] | [−0.113, +0.156] | 0.62 |
+| GPT-6 Luna | [−0.275, +0.075] | [−0.103, +0.095] | [−0.190, +0.134] | 0.36 |
+| Jev 1.13 | [−0.275, +0.025] | [−0.129, +0.028] | [−0.264, +0.039] | 0.07 |
+| Gleipnir 4B | [−0.250, +0.025] | [−0.184, −0.001] | [−0.248, +0.048] | 0.11 |
+
+Every interval except the 4B's AUROC includes zero.
+
 ## Interpretation: SleightBench against the OOD suite and the training data
 
 Post-hoc analysis requested by the user after `sb08`; it changes no frozen
