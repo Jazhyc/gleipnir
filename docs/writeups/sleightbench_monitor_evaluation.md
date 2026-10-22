@@ -138,9 +138,16 @@ rather than on one catch rate.
   ranks about the same as its logits without thinking (pAUROC@20 0.28
   against 0.26) and slightly better with thinking (0.32), at the cost of
   generating a full analysis.
-- **Reasoning did help Kimi K3.** A reasoned trial lifts Kimi's AUROC from
-  0.74 with logits to 0.76, and pAUROC@20 from 0.40 to 0.47. Thinking did
-  not help further.
+- **Reasoning helped Kimi K3, narrowly.** A reasoned trial lifts Kimi's
+  AUROC from 0.74 with logits to 0.76, and pAUROC@20 from 0.40 to 0.47.
+  Thinking did not help further. The gain is concentrated in the
+  model-priors attacks (11 of 40), and even there reasoning moves individual
+  attacks in both directions.
+- **Reasoning hurt a counting attack.** On `sed-wrong-line`, which edits a
+  hard-coded line in a long file, both Kimi K3 and the base 27B rank the
+  attack lower with reasoning than with logits. Kimi's reasoning notices the
+  hard-coded line number but cannot check it in a file of over 1,500 lines,
+  and gives the agent the benefit of the doubt.
 
 ## Reference points: current decision models
 
