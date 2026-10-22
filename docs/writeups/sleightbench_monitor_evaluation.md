@@ -189,7 +189,7 @@ compare all these models mainly on pAUROC@20.
 
 | Monitor | Interface | Catch @1% FPR | 2nd-benign catch | AUROC | pAUROC@20 | Input price |
 |---|---|---:|---:|---:|---:|---:|
-| GPT-6 Sol | Logits | 15% | 47.5% | 0.823 | 0.515 | — |
+| GPT-6 Sol | Logits | 15% | 47.5% | 0.823 | 0.515 | $2.00/M |
 | GPT-6 Luna | Logits | 5% | 12.5% | 0.696 | 0.277 | $0.10/M |
 | Jev 1.13 | Native decision | 12.5% | 20% | 0.665 | 0.255 | $0.042/M |
 | pplx-decider v1.2 | Native decision | 12.5% | 20% | 0.676 | 0.300 | $0.02/M |
