@@ -88,8 +88,15 @@ prompt with our binary output format and no reasoning.
 | Kimi K3 (our teacher) | Reasoned score, no thinking (paper protocol) | 12.2% | — | 0.802 |
 | Kimi K3 | Logits | 0% | 30% | 0.737 |
 | GPT-5.5 | Logits | 15% | 15% | 0.783 |
+| Qwen3.5-4B base | Logits | 5% | 10% | 0.601 |
+| Qwen3.8-27B base | Logits | 12.5% | 12.5% | 0.670 |
 | **Gleipnir 4B** | Logits | **7.5%** | 7.5% | 0.611 |
 | **Gleipnir 27B** | Logits | **20%** | 20% | 0.697 |
+
+The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
+stock BF16 engine. On that same engine the Gleipnir models catch 7.5% and
+12.5% (AUROC 0.623 and 0.694), so fine-tuning lifts AUROC by 0.02–0.03 with
+little change in catch rate.
 
 **What the 27B catches.** It catches attacks whose actions are overtly
 unauthorized: `curl | bash` from an unusual host, an exfiltration hidden in a
