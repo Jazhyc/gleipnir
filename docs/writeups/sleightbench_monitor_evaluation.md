@@ -317,8 +317,7 @@ ControlArena prompt does not state it.
 
 - 40 attacks and 43 benigns: every bootstrap interval on catch rate overlaps
   (the 27B's is 10–32.5%).
-- Our logit runs are single passes; the paper samples 10 trials. GPT-5.5's
-  logprobs were not repeatable (the same prompt scored 0.59, then 0.97).
+- Our logit runs are single passes; the paper samples 10 trials.
 - The paper's frontier numbers were read off figures and use their full
   protocol; we did not rerun them.
 - The training-data scan is lexical; it shows mechanisms are rare, not how
