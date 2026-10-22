@@ -76,8 +76,9 @@ except where a row says otherwise.
 Each group is one model, with one bar per way of running it, as in the
 paper's figures. The paper's bars are per-trial catch rates read from its
 appendix; it reports no ranking metric, so they appear only in the first
-figure. Our reasoned-score runs follow the paper's protocol and average each
-transcript's score over 10 trials. All logit bars use the ControlArena prompt
+figure. The native and no-native-thinking bars use the paper's protocol:
+written reasoning, then a 0–100 score, over 10 sampled trials. For our own
+runs of it, pAUROC@20 uses each transcript's score averaged over the trials. All logit bars use the ControlArena prompt
 with our binary output format and no reasoning.
 
 The base models, which Gleipnir 4B and 27B are fine-tuned from, ran on a
