@@ -52,9 +52,10 @@ repeat scoring only when measuring serving variability or changing its recipe.
 
 ## Released optimized serving image
 
-`ghcr.io/jazhyc/gleipnir-serve:0.1` (digest `15673c65…`) serves the released
+`ghcr.io/jazhyc/gleipnir-serve:0.2` (digest `ba602599…`) serves the released
 Gleipnir 4B v0.4 and 27B v0.2 through their validated optimized stacks on one
-B200. It is a frozen snapshot of the recorded runs' command, environment,
+B200, at up to 262,144 tokens, with opt-in `--prefix-caching`. `0.1`
+(`15673c65…`) is the earlier 32K image. It is a frozen snapshot of the recorded runs' command, environment,
 receipts and runtimes. Use it to score released models on a B200 without
 restoring the volume stack:
 
@@ -84,6 +85,13 @@ restoring the volume stack:
   - validate on a fresh Pod against repeat-relative gates.
 
   Never ship partially traced compile caches.
+
+Stock `vllm serve` of the released `-BF16` repositories is documented in the
+root README and validated with `cluster/slurm/release_stock_vllm.sh`. It
+needs the locked vLLM 0.31 environment `.venv-vllm031`
+(`UV_PROJECT_ENVIRONMENT=.venv-vllm031 uv sync --locked`); the cluster's
+default `.venv` keeps vLLM 0.24 for frozen controls, and that version
+returned NaN logits there.
 
 ## Persistent serving process
 

@@ -37,8 +37,6 @@ FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
 ]
 EXCLUDED_MONITORS = {
-    # Ties Gemini 3.1 Pro (0.942 vs 0.940) but would stretch the x-axis past $80.
-    "Claude Opus 4.6 prompted",
     "Qwen3.5-9B base (reasoned binary)",
     # Superseded by Gleipnir 4B v0.3 and no longer optimized (user, 2026-10-20);
     # the registry keeps its row.
@@ -58,13 +56,14 @@ MAIN_FIGURE_OMISSIONS = {
     "Qwen3.5-35B-A3B base (mixed providers)",
     "Kimi K2.6 binary logits",
 }
-CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Third-party": "#B279A2"}
-CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Third-party": "s"}
+CATEGORY_PALETTE = {**ORIGIN_PALETTE, "Other": "#B279A2"}
+CATEGORY_MARKERS = {"Paper": "o", "Gleipnir": "D", "Other": "s"}
 CATEGORY_LABELS = {
-    "Paper": "Sinha et al.",
-    "Gleipnir": "Gleipnir",
-    "Third-party": "Third-party decision models",
+    "Paper": "Reasoning (Sinha et al.)",
+    "Gleipnir": "Gleipnir (ours)",
+    "Other": "Decision",
 }
+LEGEND_ORDER = ("Paper", "Other", "Gleipnir")
 GLEIPNIR_METHODS = {
     "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
     "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B",
@@ -81,11 +80,20 @@ BASE_TO_METHOD = {
     "Qwen3.5-9B base": "Qwen3.5-9B Kimi-soft mixed",
     "Qwen3.8-27B base": "Qwen3.8-27B Kimi-soft strict",
 }
-# Labelled paper points. Gemini 3.1 Pro marks the top of the paper frontier.
-# The main figure drops the Kimi-K2.6 SFT label: its logit-based counterpart is
-# not shown there, though the point stays on the paper frontier.
-MAIN_FIGURE_UNLABELLED = {"Kimi-K2.6 SFT"}
+# Labelled paper points. Claude Opus 4.6 marks the top of the paper frontier.
+# The main figure keeps these points on the paper frontier but drops their
+# labels: Kimi-K2.6 SFT's logit-based counterpart is not shown there, and the
+# SFT+RL labels served the interface-bottleneck comparison, which the figure no
+# longer emphasizes over decision models (user, 2026-10-20). Gemini 3.1 Pro's
+# label would crowd Opus 4.6, which now tops the paper frontier.
+MAIN_FIGURE_UNLABELLED = {
+    "Kimi-K2.6 SFT",
+    "Qwen3.5-4B SFT+RL",
+    "Qwen3.5-27B SFT+RL",
+    "Gemini 3.1 Pro prompted",
+}
 PAPER_COMPARISON_MONITORS = {
+    "Claude Opus 4.6 prompted",
     "Gemini 3.1 Pro prompted",
     "Kimi-K2.6 SFT",
     "Qwen3.5-4B SFT+RL",
@@ -154,10 +162,11 @@ MANUAL_COMPARISON_LABELS = {
         "va": "top",
     },
     "Qwen3.5-9B base": {"xytext": (12, -3), "ha": "left", "va": "top"},
+    # Above its point, clear of the prior frontier passing below it.
     "Kimi K3 binary logits": {
-        "xytext": (0, -18),
+        "xytext": (0, 12),
         "ha": "center",
-        "va": "top",
+        "va": "bottom",
     },
     # Below its point: the frontier now passes just above K2.6 logits.
     "Kimi K2.6 binary logits": {
@@ -185,13 +194,26 @@ MANUAL_COMPARISON_LABELS = {
         "ha": "center",
         "va": "top",
     },
-    # Left of its point: it sits at the right edge of the axes.
-    "Gemini 3.1 Pro prompted": {
-        "xytext": (-12, 4),
+    # Above its point, clear of the cost callout arrow; it sits at the right
+    # edge of the axes.
+    "Claude Opus 4.6 prompted": {
+        "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     },
+    # Full figure only: left of its point, between Opus 4.6's label above
+    # and Claude Sonnet 4.6's point below.
+    "Gemini 3.1 Pro prompted": {
+        "xytext": (-12, 0),
+        "ha": "right",
+        "va": "center",
+    },
 }
+# Cost-saving callout: an arrow from the strongest paper monitor to the
+# on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
+COST_CALLOUT = ("Claude Opus 4.6 prompted", "Qwen3.8-27B Kimi-soft strict")
+# Fraction along each base-to-Gleipnir arrow where its label sits.
+DISTILLATION_LABEL_POSITION = 0.6
 MIN_PLOTTED_PERFORMANCE = 0.60
 EXPECTED_COLUMNS = [
     "Origin",
@@ -297,7 +319,7 @@ def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
 def _display_label(monitor: str) -> str:
     replacements = {
         "Kimi K2.6 binary logits": "Kimi K2.6",
-        "Kimi K3 binary logits": "Kimi K3",
+        "Kimi K3 binary logits": "Kimi K3 (teacher)",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
         "pplx-decider v1.2 native readout": "Decider v1.2",
@@ -350,7 +372,7 @@ def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFra
             selected["monitor"].isin(GLEIPNIR_METHODS),
         ],
         ["Paper", "Gleipnir"],
-        default="Third-party",
+        default="Other",
     )
     return selected
 
@@ -401,18 +423,64 @@ def _paper_frontier(frame: pd.DataFrame) -> pd.DataFrame:
     return paper.loc[paper["paper_frontier"]].sort_values("cost_per_1k")
 
 
+def _draw_cost_callout(axis: plt.Axes, frame: pd.DataFrame) -> float | None:
+    """Arrow from the reference monitor to Gleipnir 27B; returns the cost ratio."""
+    source = frame.loc[frame["monitor"].eq(COST_CALLOUT[0])]
+    target = frame.loc[frame["monitor"].eq(COST_CALLOUT[1])]
+    if len(source) != 1 or len(target) != 1:
+        return None
+    source, target = source.iloc[0], target.iloc[0]
+    start = (source["cost_per_1k"], source["mean_ood_pauroc_at_20"])
+    end = (target["cost_per_1k"], target["mean_ood_pauroc_at_20"])
+    axis.annotate(
+        "",
+        xy=end,
+        xytext=start,
+        arrowprops={
+            "arrowstyle": "-|>",
+            "color": "#374151",
+            "linewidth": 1.8,
+            "mutation_scale": 16,
+            "shrinkA": 9,
+            "shrinkB": 11,
+            "connectionstyle": "arc3,rad=0.04",
+        },
+        zorder=2,
+    )
+    ratio = source["cost_per_1k"] / target["cost_per_1k"]
+    gain = 100 * (target["mean_ood_pauroc_at_20"] - source["mean_ood_pauroc_at_20"])
+    axis.text(
+        np.sqrt(start[0] * end[0]),
+        # Just under the arc, which bows above the chord at its midpoint.
+        (start[1] + end[1]) / 2 + 0.005,
+        f"{ratio:.0f}× cheaper, {gain:+.1f} pp pAUROC",
+        fontsize=13,
+        fontweight="bold",
+        color="#111827",
+        ha="center",
+        va="top",
+        zorder=4,
+    )
+    return ratio
+
+
+def _one_significant_figure(value: float) -> float:
+    """Round to one significant figure for headline text (188 -> 200)."""
+    return round(value, -int(np.floor(np.log10(abs(value)))))
+
+
 def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame, full=full)
     set_plot_style()
     figure, axis = plt.subplots(figsize=(14.2, 8.5))
     axis.set_xscale("log")
-    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 80.0])
+    axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
         frame["cost_per_1k"].min() / 1.35,
-        max(80.0, frame["cost_per_1k"].max() * 1.06),
+        max(100.0, frame["cost_per_1k"].max() * 1.03),
     )
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
@@ -464,6 +532,63 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             },
             zorder=2,
         )
+        # Inline label along the arrow, past its midpoint so it clears d1 in
+        # the full figure. The tangent of a straight segment on log-x axes, in
+        # data units at x, is (x * ln(x1 / x0), y1 - y0); the transform
+        # rotates it to display.
+        x0, x1 = base["cost_per_1k"], method["cost_per_1k"]
+        y0, y1 = base["mean_ood_pauroc_at_20"], method["mean_ood_pauroc_at_20"]
+        x_mid = x0 * (x1 / x0) ** DISTILLATION_LABEL_POSITION
+        y_mid = y0 + DISTILLATION_LABEL_POSITION * (y1 - y0)
+        angle = np.degrees(np.arctan2(y1 - y0, x_mid * np.log(x1 / x0)))
+        if angle > 90:
+            angle -= 180
+        elif angle < -90:
+            angle += 180
+        axis.text(
+            x_mid,
+            y_mid,
+            "soft distillation",
+            rotation=angle,
+            transform_rotates_text=True,
+            rotation_mode="anchor",
+            fontsize=10.5,
+            fontweight="bold",
+            color=ORIGIN_PALETTE["Gleipnir"],
+            ha="center",
+            va="center",
+            bbox={
+                "boxstyle": "round,pad=0.15",
+                "facecolor": "white",
+                "edgecolor": "none",
+                "alpha": 0.9,
+            },
+            zorder=2.5,
+        )
+
+    cost_ratio = _draw_cost_callout(axis, frame)
+    # Direction cue in the empty upper-left corner.
+    axis.annotate(
+        "Better",
+        xy=(0.015, 0.975),
+        xytext=(0.085, 0.86),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        fontsize=13,
+        fontweight="bold",
+        color="#6B7280",
+        ha="center",
+        va="center",
+        arrowprops={
+            "arrowstyle": "-|>",
+            "color": "#6B7280",
+            "linewidth": 1.8,
+            "mutation_scale": 16,
+            "shrinkA": 12,
+            "shrinkB": 0,
+        },
+        zorder=2,
+    )
 
     committed = frame["pricing"].eq("committed")
     for category, group in frame.loc[~committed].groupby("category", sort=False):
@@ -501,9 +626,11 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             row["mean_ood_pauroc_at_20"],
             marker="D",
             s=165 if row["computed_frontier"] else 92,
-            facecolor="white",
-            edgecolor=ORIGIN_PALETTE["Gleipnir"],
-            linewidth=2.2,
+            # Same style as the on-demand Gleipnir points; the asterisk in the
+            # label marks the committed-rate pricing.
+            facecolor=ORIGIN_PALETTE["Gleipnir"],
+            edgecolor="#111827" if row["computed_frontier"] else "#374151",
+            linewidth=1.5 if row["computed_frontier"] else 0.65,
             zorder=3,
         )
 
@@ -607,9 +734,13 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     finally:
         np.random.set_state(random_state)
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
-    axis.set_ylabel("Mean-OOD pAUROC@20")
+    axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
+    # The title states the finding; the subtitle says what is plotted.
     axis.set_title(
-        "Monitoring cost and performance on tool trajectories",
+        "Our distilled decision monitor beats the best reasoning monitor"
+        f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
+        if cost_ratio
+        else "Monitoring cost and performance on tool trajectories",
         loc="left",
         fontsize=20.5,
         fontweight="bold",
@@ -618,7 +749,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
     axis.text(
         0.0,
         1.015,
-        "Strict six-source OOD suite · lower cost and higher performance are better",
+        "Monitoring agent tool trajectories for sabotage · mean over six held-out"
+        " (OOD) AI control benchmarks, e.g. SHADE-Arena and AgentDojo",
         transform=axis.transAxes,
         fontsize=11.5,
         fontweight="bold",
@@ -639,55 +771,79 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             markersize=10.5,
             label=CATEGORY_LABELS[category],
         )
-        for category, color in CATEGORY_PALETTE.items()
+        for category in LEGEND_ORDER
+        for color in [CATEGORY_PALETTE[category]]
     ]
-    legend_handles.append(
-        Line2D(
-            [],
-            [],
-            color="#374151",
-            marker="o",
-            markerfacecolor="white",
-            markeredgecolor="#111827",
-            linewidth=2.5,
-            markersize=10.5,
-            label="Frontier, Gleipnir on-demand",
-        )
-    )
-    legend_handles.append(
-        Line2D(
-            [],
-            [],
-            color="#374151",
-            linestyle=(0, (5, 3)),
-            marker="D",
-            markerfacecolor="white",
-            markeredgecolor=ORIGIN_PALETTE["Gleipnir"],
-            markeredgewidth=2.0,
-            linewidth=2.2,
-            markersize=10.5,
-            label="Frontier, Gleipnir* committed GPUs",
-        )
-    )
-    legend_handles.append(
+    # The frontier entries form their own titled legend under the main one,
+    # ordered from the prior frontier to the new ones.
+    frontier_handles = [
         Line2D(
             [],
             [],
             color=ORIGIN_PALETTE["Paper"],
             linestyle=(0, (1.5, 2.4)),
             linewidth=2.0,
-            label="Sinha et al. frontier",
-        )
+            label="Prior frontier (Sinha et al.)",
+        ),
+        Line2D(
+            [],
+            [],
+            color="#374151",
+            linewidth=2.5,
+            label="Available now / on-demand GPUs",
+        ),
+        Line2D(
+            [],
+            [],
+            color="#374151",
+            linestyle=(0, (5, 3)),
+            linewidth=2.2,
+            label="At scale / reserved GPUs*",
+        ),
+    ]
+    legend_style = {
+        "frameon": True,
+        "prop": {"size": 13.5, "weight": "bold"},
+        "handlelength": 2.2,
+        "labelspacing": 0.65,
+        "title_fontproperties": {"size": 13.5, "weight": "bold"},
+        "alignment": "left",
+    }
+    figure.tight_layout()
+    # Stack the category legend above the frontier legend, both right-aligned
+    # and as wide as the wider of the two.
+    renderer = figure.canvas.get_renderer()
+
+    def axes_box(legend):
+        return legend.get_window_extent(renderer).transformed(axis.transAxes.inverted())
+
+    frontier_legend = axis.legend(
+        handles=frontier_handles, loc="lower right", title="Frontier", **legend_style
     )
+    category_legend = axis.legend(
+        handles=legend_handles, loc="lower right", title="Monitor type", **legend_style
+    )
+    frontier_box, category_box = axes_box(frontier_legend), axes_box(category_legend)
+    width = max(frontier_box.width, category_box.width)
+    frontier_legend = axis.legend(
+        handles=frontier_handles,
+        title="Frontier",
+        loc="lower left",
+        bbox_to_anchor=(frontier_box.x1 - width, frontier_box.y0, width, 0),
+        mode="expand",
+        borderaxespad=0,
+        **legend_style,
+    )
+    axis.add_artist(frontier_legend)
     axis.legend(
         handles=legend_handles,
-        loc="lower right",
-        frameon=True,
-        prop={"size": 13.5, "weight": "bold"},
-        handlelength=2.2,
-        labelspacing=0.65,
+        title="Monitor type",
+        loc="lower left",
+        bbox_to_anchor=(frontier_box.x1 - width, frontier_box.y1 + 0.012, width, 0),
+        mode="expand",
+        borderaxespad=0,
+        **legend_style,
     )
-    figure.tight_layout()
     return figure
 
 

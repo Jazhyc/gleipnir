@@ -8,9 +8,11 @@ from scripts.plot_tool_trajectory_ood_frontier import (
     DEFAULT_SOURCE,
     MANUAL_COMPARISON_LABELS,
     _display_label,
+    _draw_cost_callout,
     _improvement_pairs,
     _label_obstacles,
     _markdown_cells,
+    _one_significant_figure,
     _paper_frontier,
     load_frontier_registry,
     select_plot_points,
@@ -54,7 +56,7 @@ def test_markdown_cells_preserve_escaped_decision_pipe() -> None:
 def test_display_labels_drop_redundant_base_suffix() -> None:
     assert _display_label("Qwen3.5-4B base") == "Qwen3.5-4B"
     assert _display_label("Qwen3.5-9B base (ordinal)") == "Qwen3.5-9B (ordinal)"
-    assert _display_label("Kimi K3 binary logits") == "Kimi K3"
+    assert _display_label("Kimi K3 binary logits") == "Kimi K3 (teacher)"
     assert _display_label("Kimi K2.6 binary logits") == "Kimi K2.6"
     assert _display_label("Kimi-K2.6 SFT") == "Kimi-K2.6 SFT"
     assert _display_label("GPT-OSS-20B SFT") == "GPT-OSS-20B SFT"
@@ -67,9 +69,9 @@ def test_display_labels_drop_redundant_base_suffix() -> None:
 
 def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
     assert MANUAL_COMPARISON_LABELS["Kimi K3 binary logits"] == {
-        "xytext": (0, -18),
+        "xytext": (0, 12),
         "ha": "center",
-        "va": "top",
+        "va": "bottom",
     }
     assert MANUAL_COMPARISON_LABELS["Kimi-K2.6 SFT"] == {
         "xytext": (0, -18),
@@ -95,11 +97,12 @@ def test_manual_comparison_labels_use_requested_sides_of_points() -> None:
         "ha": "center",
         "va": "top",
     }
-    assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"] == {
-        "xytext": (-12, 4),
+    assert MANUAL_COMPARISON_LABELS["Claude Opus 4.6 prompted"] == {
+        "xytext": (4, 12),
         "ha": "right",
         "va": "bottom",
     }
+    assert MANUAL_COMPARISON_LABELS["Gemini 3.1 Pro prompted"]["ha"] == "right"
 
 
 def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
@@ -116,6 +119,24 @@ def test_improvement_arrows_pair_each_gleipnir_method_with_its_base() -> None:
         float(method["mean_ood_pauroc_at_20"]) > float(base["mean_ood_pauroc_at_20"])
         for base, method in pairs
     )
+
+
+def test_cost_callout_reports_opus_to_gleipnir_27b_ratio() -> None:
+    import matplotlib.pyplot as plt
+
+    frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
+    figure, axis = plt.subplots()
+    axis.set_xscale("log")
+    assert round(_draw_cost_callout(axis, frame)) == 243
+    labels = [text.get_text() for text in axis.texts if text.get_text()]
+    assert labels == ["243× cheaper, +0.9 pp pAUROC"]
+    plt.close(figure)
+
+
+def test_headline_ratio_rounds_to_one_significant_figure() -> None:
+    assert _one_significant_figure(187.9) == 200
+    assert _one_significant_figure(437.0) == 400
+    assert _one_significant_figure(14.6) == 10
 
 
 def test_paper_frontier_reconstructs_the_pre_gleipnir_low_cost_curve() -> None:
@@ -181,6 +202,6 @@ def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:
     assert "Kimi K2.6 binary logits" not in main.index
     assert {"Kimi K3 binary logits", "GPT-6 Luna binary logprobs"} <= set(main.index)
     assert main.loc["Qwen3.8-27B Kimi-soft strict", "category"] == "Gleipnir"
-    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Third-party"
+    assert main.loc["pplx-decider v1.2 native readout", "category"] == "Other"
     paper = main.loc[main["origin"].eq("Paper")]
     assert len(paper) < int(full["origin"].eq("Paper").sum())
