@@ -150,10 +150,8 @@ rather than on one catch rate.
   the paper's protocol the base 4B catches 0.5% without thinking and 3% with
   it, against 5% from its logits, although its ranking is similar
   (pAUROC@20 0.21–0.24 against 0.19). Each sampled trial is noisy, and the
-  threshold is set over 430 benign trials. Some trials also produce no
-  parsable score (8 and 5 of 860 for the 4B), which must be excluded or
-  retried. The logit readout returns the score in one token, with no
-  parsing and no sampling noise. For the 27B the reasoned score ranks
+  threshold is set over 430 benign trials. The logit readout returns the
+  score in one token, with no sampling noise. For the 27B the reasoned score ranks
   somewhat better (pAUROC@20 0.32–0.36 against 0.26), at the cost of 10
   generated analyses per transcript.
 - **Reasoning did help Kimi K3.** Kimi's AUROC rises from 0.74 with logits
