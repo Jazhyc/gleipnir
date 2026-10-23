@@ -133,6 +133,8 @@ prediction boundary, and insufficient scored pairs in other conditions.
 
 ## Amendment 3, 23 October 2026
 
+Results are recorded in [AMENDMENT3_RESULTS.md](AMENDMENT3_RESULTS.md).
+
 Frozen before any Amendment 3 text is generated, used or scored. No monitor
 scores exist. [Amendment 2](AMENDMENT2_RESULTS.md) produced zero usable cover
 stories. Full GLM always reasons on Tinker; 288 responses exhausted 4,096
