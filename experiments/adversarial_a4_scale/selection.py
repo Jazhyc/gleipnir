@@ -133,7 +133,8 @@ def select(dependency: dict, pairs: dict, cfg: dict) -> dict:
     monitor = dependency["monitor_identity"]
     if (
         monitor.get("monitor") != cfg["monitor_contracts"]["search"]["monitor"]
-        or monitor.get("instruction") != cfg["monitor_contracts"]["search"]["instruction"]
+        or monitor.get("instruction")
+        != cfg["monitor_contracts"]["search"]["instruction"]
     ):
         raise ValueError("wrong search monitor identity")
     if not monitor.get("runtime_receipt_sha256"):

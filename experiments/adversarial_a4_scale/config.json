@@ -1,15 +1,14 @@
 {
-  "protocol_status": "draft",
-  "execution_enabled": false,
+  "protocol_status": "frozen",
+  "execution_enabled": true,
   "output": "results/adversarial_a4_scale_20261023",
   "env_file": "../../.env",
   "selection_dependency": "Step 1 Amendment 3 heldout no-text pairs and all 221 calibration rows, per search monitor",
-  "attempts": 10,
+  "attempts": 4,
   "curve_attempts": [
     1,
     2,
-    5,
-    10
+    4
   ],
   "fprs": [
     0.01,
@@ -35,7 +34,7 @@
     "openrouter": 2.0,
     "sonnet": 1.5
   },
-  "budget_note": "A4 Tinker scope cap $140 within campaign $158. Approximately $7 is Sonnet across both studies; OpenRouter has a separate shared $9.50 cap. Frontier allocations remain subject to the final cohort estimate.",
+  "budget_note": "A4 Tinker scope $140 within campaign $158. Four attempts per task in both arms: 508 calls; expected generation $57.12224, worst-case $111.14467, smoke $0.56207. Frozen cost receipt binds both dependencies and requests. No frontier calls in this round.",
   "campaign": {
     "output": "results/adversarial_campaign_20261023",
     "caps_usd": {
@@ -91,7 +90,7 @@
     "sha256": "339327a476f6834d8998500e2726263dfe3ce55bcc0a12648928abe9e99abfc0"
   },
   "step1": "results/adversarial_crossed_text_amendment3_20261023",
-  "smoke_enabled": true,
+  "smoke_enabled": false,
   "instructions": {
     "student": {
       "path": "experiments/tool_trajectory_monitoring/prompts/student.txt",
@@ -156,5 +155,27 @@
         "prices_checked_date": "2026-10-23"
       }
     ]
+  },
+  "smoke_registration_commit": "61920c76c2e5d16204ca257ec46645848ee50566",
+  "dual_arm_barrier": true,
+  "generation_workers": 8,
+  "sampling_design": "paired_seeds_separate_dispatch_on_overlapping_tasks",
+  "smoke_gate": {
+    "path": "results/adversarial_a4_scale_smoke_20261023/gate.json",
+    "sha256": "19ab05e2bc62e4b20151e58ad22075913d95193644a5b90e11faf6d441d7ed8e"
+  },
+  "cost_check": {
+    "path": "results/adversarial_a4_scale_cost_bound_20261023.json",
+    "sha256": "7516aeac13034951c0d1f74cdfbc19a9211968e8d3385e6a01db85ac1e368392"
+  },
+  "dependencies": {
+    "4b-v03": {
+      "path": "results/adversarial_a4_scale_dependencies_20261023/4b-v03.json",
+      "sha256": "17f21f139f915509581d72f0084ee38819684479ceae3db56edc7f829695bd60"
+    },
+    "27b-merged": {
+      "path": "results/adversarial_a4_scale_dependencies_20261023/27b-merged.json",
+      "sha256": "17c2ce864a1a12aa715f833ff33672b7fcaa2934afe377ba2fa9a89b876bd117"
+    }
   }
 }

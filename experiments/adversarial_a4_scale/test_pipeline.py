@@ -16,6 +16,12 @@ from .selection import select
 @pytest.fixture
 def setup(tmp_path):
     cfg = config()
+    cfg["protocol_status"] = "draft"
+    cfg["execution_enabled"] = False
+    cfg["attempts"] = 10
+    cfg["curve_attempts"] = [1, 2, 5, 10]
+    cfg["dual_arm_barrier"] = False
+    cfg["generation_workers"] = 1
     # Even tests that exercise the live branch must never touch campaign results.
     cfg["campaign"]["output"] = str(tmp_path / "isolated-campaign")
     cfg["monitor_contracts"]["transfer"] = ["27b-merged"]
@@ -403,8 +409,7 @@ def test_structured_refusal_survives_transport(setup, monkeypatch):
 
     data = {
         "choices": [
-            {"message": {"content": "", "refusal": "declined"},
-             "finish_reason": "stop"}
+            {"message": {"content": "", "refusal": "declined"}, "finish_reason": "stop"}
         ],
         "usage": {"cost": 0.0},
     }

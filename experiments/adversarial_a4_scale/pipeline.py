@@ -60,7 +60,13 @@ def prepare(out: Path, dependency: dict, pairs: dict, cfg: dict) -> dict:
     gates = {}
     if cfg["protocol_status"] == "frozen" and cfg["execution_enabled"]:
         from .cost import check_gate
+
         gates = check_gate(cfg)
+        from .cost import verify_population
+
+        verify_population(
+            gates, cfg["monitor_contracts"]["search"]["monitor"], selected, pairs, cfg
+        )
     manifest = {
         "config": cfg,
         "launch_gates": gates,
@@ -90,15 +96,23 @@ def require_live(manifest: dict) -> None:
     cfg = manifest["config"]
     smoke = manifest.get("stage") == "smoke"
     if smoke:
-        if not cfg.get("smoke_enabled") or cfg["writer"] not in cfg["smoke"]["candidates"] or cfg["attempts"] != 1:
+        if (
+            not cfg.get("smoke_enabled")
+            or cfg["writer"] not in cfg["smoke"]["candidates"]
+            or cfg["attempts"] != 1
+        ):
             raise RuntimeError("unregistered smoke settings")
         from .smoke import development_tasks
+
         if manifest["selection"]["task_ids"] != development_tasks(cfg):
             raise RuntimeError("smoke tasks changed")
-    if not smoke and (cfg["protocol_status"] != "frozen" or not cfg["execution_enabled"]):
+    if not smoke and (
+        cfg["protocol_status"] != "frozen" or not cfg["execution_enabled"]
+    ):
         raise RuntimeError("draft/offline-only protocol: paid execution is disabled")
     if not smoke:
         from .cost import check_gate
+
         if manifest.get("launch_gates") != check_gate(cfg):
             raise RuntimeError("launch gates changed")
     paths = list(manifest["sources"]) + [str(HERE.relative_to(ROOT) / "README.md")]
@@ -141,7 +155,10 @@ def generation_estimate(tasks: list[str], pairs: dict, cfg: dict) -> dict:
     return {
         "planned_calls": calls,
         "max_tokens": writer.max_tokens,
-        "output_limit_usd": calls * writer.max_tokens * writer.usd_per_m_completion / 1e6,
+        "output_limit_usd": calls
+        * writer.max_tokens
+        * writer.usd_per_m_completion
+        / 1e6,
         "worst_case_usd": worst,
         "scope_cap_usd": min(140.0, cfg["budgets_usd"]["tinker"]),
         "method": "UTF-8 prompt bytes plus 2048 framing tokens; full output allowance",
@@ -195,9 +212,22 @@ def generation_records(out: Path) -> dict:
 
 
 def generate(
-    out: Path, manifest: dict, pairs: dict, *, responder: Callable | None = None
+    out: Path,
+    manifest: dict,
+    pairs: dict,
+    *,
+    responder: Callable | None = None,
+    _coordinated: bool = False,
 ) -> dict:
-    """At most one request per slot. No history, feedback, repairs or retries."""
+    """Bounded waves, with durable reservations before each independent dispatch."""
+    from concurrent.futures import ThreadPoolExecutor, as_completed
+
+    if (
+        manifest["config"].get("dual_arm_barrier")
+        and manifest.get("stage") != "smoke"
+        and not _coordinated
+    ):
+        raise RuntimeError("dual-arm full generation requires the study coordinator")
     check_manifest(manifest, pairs)
     cfg = manifest["config"]
     if responder is None:
@@ -219,60 +249,29 @@ def generate(
         planned = {cid for cid, _, _ in slots(manifest)}
         if not records.keys() <= planned:
             raise ValueError("unexpected generation slots")
-        # Construct after the guard; no key read or HTTP client in offline mode.
         cap = min(140.0, cfg["budgets_usd"]["tinker"])
         campaign = Campaign(cfg, out, mock=responder is not None)
-        client = Client(cfg["writer"], cap, cfg, responder=responder)
-        client.budget.spent_usd = sum(r["charged_usd"] for r in records.values())
-        for cid, task, attempt in slots(manifest):
-            request = messages(pairs[task]["backdoored"])
-            request_hash = digest(
-                {"messages": request, "writer": cfg["writer"], "attempt": attempt}
-            )
-            if cid in records:
-                if records[cid]["request_sha256"] != request_hash:
-                    raise ValueError("cached request changed")
-                continue
-            reserve = endpoint(cfg["writer"]).worst_case_usd(
-                sum(len(m["content"].encode()) for m in request)
-            )
-            if client.budget.spent_usd + reserve > client.budget.cap_usd:
-                # No intent and no call. The unattempted slots remain explicit.
-                return {
-                    "status": "budget_exhausted",
-                    "completed": len(records),
-                    "planned": len(planned),
-                    "charged_usd": client.budget.spent_usd,
-                }
-            # Reserve in the persistent campaign before the local intent or dispatch.
-            # A crash in either journal leaves a charged, non-replayable reservation.
-            reservation = campaign.reserve(
-                campaign.request_id(out, cid), "tinker", "a4-writer", reserve, cap
-            )
-            append(
-                out / "generation_intents.jsonl",
-                {
-                    "id": cid,
-                    "request_sha256": request_hash,
-                    "reserved_usd": reserve,
-                    "campaign_reservation": reservation,
-                    "timestamp": time.time(),
-                },
-            )
-            record = {
-                "id": cid,
-                "task_id": task,
-                "attempt": attempt,
-                "request_sha256": request_hash,
-                "reserved_usd": reserve,
-                "campaign_reservation": reservation,
-                "timestamp": time.time(),
-            }
-            charge, cost_status = reserve, "unknown_reserved"
+        ledger = campaign.latest()
+        if any(
+            campaign.request_id(out, cid) in ledger for cid in planned - records.keys()
+        ):
+            raise RuntimeError("orphan campaign reservation requires reconciliation")
+        # Read/check the private credential before reserving a paid request.
+        Client(cfg["writer"], cap, cfg, responder=responder)
+        workers = (
+            1 if manifest.get("stage") == "smoke" else cfg.get("generation_workers", 1)
+        )
+        if not isinstance(workers, int) or not 1 <= workers <= 8:
+            raise ValueError("generation workers must be in [1,8]")
+
+        def complete_one(record, request, task, attempt):
+            charge, cost_status = record["reserved_usd"], "unknown_reserved"
             try:
+                # Each request has its own adapter and local budget. The shared
+                # persistent ledger accounts for all concurrent outstanding calls.
+                client = Client(cfg["writer"], cap, cfg, responder=responder)
                 response = client.chat(request, attempt)
-                charge = response["cost_usd"]
-                cost_status = response["cost_status"]
+                charge, cost_status = response["cost_usd"], response["cost_status"]
                 record.update(
                     response=response, **validate(response, pairs[task]["backdoored"])
                 )
@@ -280,38 +279,130 @@ def generate(
                     response.get("model") != cfg["writer"]["model"]
                     or response.get("provider") not in (None, "tinker")
                 ):
-                    record["status"] = "identity_failure"
-                    record["expected_model"] = cfg["writer"]["model"]
-                    record["returned_model"] = response.get("model")
+                    record.update(
+                        status="identity_failure",
+                        expected_model=cfg["writer"]["model"],
+                        returned_model=response.get("model"),
+                    )
             except Exception as error:
-                # Never persist exception bodies, request headers or secrets.
                 record.update(
                     status="infrastructure_failure", error_type=type(error).__name__
                 )
                 details = getattr(error, "details", {})
-                http_status = details.get("http_status", details.get("provider_code"))
-                if str(http_status) in ("401", "403"):
-                    record.update(status="authentication_failure", http_status=int(http_status))
-            record.update(charged_usd=charge, cost_status=cost_status)
-            append(out / "generations.jsonl", record)
-            campaign.settle(reservation, charge if cost_status == "actual" else None)
-            records[cid] = record
-            client.budget.spent_usd = sum(r["charged_usd"] for r in records.values())
-            if (
-                record["status"] in ("identity_failure", "authentication_failure")
-                or client.budget.spent_usd > client.budget.cap_usd
-            ):
-                raise RuntimeError(
-                    "provider identity/authentication or cost cap failed; stop and reconcile; "
-                    f"requested_model={cfg['writer']['model']!r}, "
-                    f"returned_model={record.get('response', {}).get('model')!r}"
-                )
+                status = details.get("http_status", details.get("provider_code"))
+                if str(status) in ("401", "403"):
+                    record.update(
+                        status="authentication_failure", http_status=int(status)
+                    )
+            return {**record, "charged_usd": charge, "cost_status": cost_status}
+
+        budget_stop, fatal = False, False
+        with ThreadPoolExecutor(max_workers=workers) as executor:
+            for attempt in range(1, cfg["attempts"] + 1):
+                pending = []
+                for cid, task, number in slots(manifest):
+                    if number != attempt:
+                        continue
+                    request = messages(pairs[task]["backdoored"])
+                    request_hash = digest(
+                        {
+                            "messages": request,
+                            "writer": cfg["writer"],
+                            "attempt": attempt,
+                        }
+                    )
+                    if cid in records:
+                        if records[cid]["request_sha256"] != request_hash:
+                            raise ValueError("cached request changed")
+                        continue
+                    pending.append((cid, task, request, request_hash))
+                for start in range(0, len(pending), workers):
+                    futures = []
+                    for cid, task, request, request_hash in pending[
+                        start : start + workers
+                    ]:
+                        reserve = endpoint(cfg["writer"]).worst_case_usd(
+                            sum(len(m["content"].encode()) for m in request)
+                        )
+                        try:
+                            reservation = campaign.reserve(
+                                campaign.request_id(out, cid),
+                                "tinker",
+                                "a4-writer",
+                                reserve,
+                                cap,
+                            )
+                        except SystemExit as error:
+                            if "cap reached" not in str(error):
+                                raise
+                            budget_stop = True
+                            break
+                        intent = {
+                            "id": cid,
+                            "request_sha256": request_hash,
+                            "reserved_usd": reserve,
+                            "campaign_reservation": reservation,
+                            "timestamp": time.time(),
+                        }
+                        append(out / "generation_intents.jsonl", intent)
+                        record = {**intent, "task_id": task, "attempt": attempt}
+                        futures.append(
+                            executor.submit(
+                                complete_one, record, request, task, attempt
+                            )
+                        )
+                    # Only the main thread writes receipts and settles reservations.
+                    for future in as_completed(futures):
+                        record = future.result()
+                        append(out / "generations.jsonl", record)
+                        campaign.settle(
+                            record["campaign_reservation"],
+                            record["charged_usd"]
+                            if record["cost_status"] == "actual"
+                            else None,
+                        )
+                        records[record["id"]] = record
+                        if record["status"] in (
+                            "identity_failure",
+                            "authentication_failure",
+                        ):
+                            fatal = True
+                    print(
+                        json.dumps(
+                            {
+                                "stage": manifest.get("stage", "generation"),
+                                "completed": len(records),
+                                "planned": len(planned),
+                                "charged_usd": sum(
+                                    r["charged_usd"] for r in records.values()
+                                ),
+                            }
+                        ),
+                        flush=True,
+                    )
+                    if fatal or budget_stop:
+                        break
+                if fatal or budget_stop:
+                    break
+        charged = sum(r["charged_usd"] for r in records.values())
+        if fatal or charged > cap:
+            raise RuntimeError(
+                "provider identity/authentication or cost cap failed; "
+                "stop and reconcile"
+            )
+        if budget_stop:
+            return {
+                "status": "budget_exhausted",
+                "completed": len(records),
+                "planned": len(planned),
+                "charged_usd": charged,
+            }
         seal = {
             "manifest": digest(manifest),
             "mode": mode,
             "records_sha256": digest(records),
             "attempts": len(planned),
-            "charged_usd": client.budget.spent_usd,
+            "charged_usd": charged,
         }
         fixed(out / "generation_complete.json", seal)
         return {"status": "complete", **seal}
@@ -345,7 +436,15 @@ def job(cid: str, task: str, kind: str, prompt: str, **metadata) -> dict:
     }
 
 
+def require_dual_seal(out: Path, manifest: dict) -> None:
+    if manifest["config"].get("dual_arm_barrier"):
+        from .study import validate_dual_seal
+
+        validate_dual_seal(out.parent)
+
+
 def search_batch(out: Path, manifest: dict, pairs: dict) -> dict:
+    require_dual_seal(out, manifest)
     check_manifest(manifest, pairs)
     records = sealed(out, manifest)
     jobs = []
@@ -445,6 +544,7 @@ def transfer_batch(
     monitor_identity: dict,
     instruction: str | None = None,
 ) -> dict:
+    require_dual_seal(out, manifest)
     check_manifest(manifest, pairs)
     records = sealed(out, manifest)
     ranked = json.loads((out / "winners.json").read_text())

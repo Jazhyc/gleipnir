@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from .common import ROOT, config, fixed, lock, read
+from .dependency import arm_config, instructed_pairs
 from .pipeline import (
     generate,
     prepare,
@@ -17,7 +18,6 @@ from .pipeline import (
     validate_scores,
 )
 from .selection import benchmark_pairs, recount
-from .dependency import arm_config, instructed_pairs
 
 
 def main() -> None:
@@ -66,7 +66,10 @@ def main() -> None:
                 "--dependency is required; fresh selection has no historical fallback"
             )
         result = prepare(
-            out, json.loads(args.dependency.read_text()), instructed_pairs(benchmark_pairs(cfg), cfg), cfg
+            out,
+            json.loads(args.dependency.read_text()),
+            instructed_pairs(benchmark_pairs(cfg), cfg),
+            cfg,
         )
         print(
             json.dumps(
@@ -81,6 +84,11 @@ def main() -> None:
     manifest = json.loads((out / "manifest.json").read_text())
     pairs = instructed_pairs(benchmark_pairs(cfg), cfg)
     if args.command == "generate":
+        if cfg.get("dual_arm_barrier"):
+            parser.error(
+                "full generation requires "
+                "python -m experiments.adversarial_a4_scale.study generate"
+            )
         responder = (
             (
                 lambda _: json.dumps(
