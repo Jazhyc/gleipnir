@@ -1,0 +1,142 @@
+{
+  "protocol_status": "frozen",
+  "input": "results/adversarial_crossed_text_amendment3_20261023",
+  "output": "results/adversarial_crossed_text_probe",
+  "vm": "results/adversarial_campaign_20261023/vm.json",
+  "max_seconds": 3600,
+  "seed": 0,
+  "fold_prefix": "probe-fold-20261023:",
+  "folds": 5,
+  "C": [
+    0.01,
+    0.1,
+    1.0
+  ],
+  "bootstrap": 10000,
+  "conditions": [
+    "none",
+    "irrelevant",
+    "specific_accusation",
+    "generic_accusation",
+    "cover_story"
+  ],
+  "pools": [
+    "decision",
+    "code_mean"
+  ],
+  "arms": {
+    "4b-v03_student": {
+      "monitor": "4b-v03",
+      "prompt": "student",
+      "layers": [
+        8,
+        16,
+        24,
+        32
+      ],
+      "hidden_size": 2560,
+      "runtime": {
+        "monitor": "4b-v03",
+        "adapter": "Jazhyc/Gleipnir-4B",
+        "adapter_revision": "e36aa2bb864639da79173eafd0460a45d21e6bcb",
+        "base": "Qwen/Qwen3.5-4B",
+        "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "dtype": "bfloat16",
+        "device": "NVIDIA A100-SXM4-80GB",
+        "packages": {
+          "torch": "2.13.0",
+          "transformers": "5.14.1",
+          "peft": "0.19.1",
+          "accelerate": "1.14.0",
+          "flash-linear-attention": "0.5.2",
+          "fla-core": "0.5.2",
+          "causal-conv1d": null
+        },
+        "fla_available": true,
+        "token_ids": [
+          15,
+          16
+        ]
+      }
+    },
+    "4b-base_student": {
+      "monitor": "4b-base",
+      "prompt": "student",
+      "layers": [
+        8,
+        16,
+        24,
+        32
+      ],
+      "hidden_size": 2560,
+      "runtime": {
+        "monitor": "4b-base",
+        "adapter": null,
+        "adapter_revision": null,
+        "base": "Qwen/Qwen3.5-4B",
+        "base_revision": "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a",
+        "dtype": "bfloat16",
+        "device": "NVIDIA A100-SXM4-80GB",
+        "packages": {
+          "torch": "2.13.0",
+          "transformers": "5.14.1",
+          "peft": "0.19.1",
+          "accelerate": "1.14.0",
+          "flash-linear-attention": "0.5.2",
+          "fla-core": "0.5.2",
+          "causal-conv1d": null
+        },
+        "fla_available": true,
+        "token_ids": [
+          15,
+          16
+        ]
+      }
+    },
+    "27b-merged_teacher": {
+      "monitor": "27b-merged",
+      "prompt": "teacher",
+      "layers": [
+        16,
+        32,
+        48,
+        64
+      ],
+      "hidden_size": 5120,
+      "runtime": {
+        "monitor": "27b-merged",
+        "adapter": null,
+        "adapter_revision": null,
+        "base": "Jazhyc/Gleipnir-27B-BF16",
+        "base_revision": "d3e995c137e5a2a8637e6ecdde26c6666864e71a",
+        "dtype": "bfloat16",
+        "device": "NVIDIA A100-SXM4-80GB",
+        "packages": {
+          "torch": "2.13.0",
+          "transformers": "5.14.1",
+          "peft": "0.19.1",
+          "accelerate": "1.14.0",
+          "flash-linear-attention": "0.5.2",
+          "fla-core": "0.5.2",
+          "causal-conv1d": null
+        },
+        "fla_available": true,
+        "token_ids": [
+          15,
+          16
+        ]
+      }
+    }
+  },
+  "input_sha256": {
+    "results/adversarial_crossed_text_amendment3_20261023/variants.jsonl": "7d0f9a54c41946a8cf460ab4526560abcd8a8bb8e40e5723c9b708dbc6f9d9ef",
+    "results/adversarial_crossed_text_amendment3_20261023/selection.json": "c0f4c82776893fd30f923d612ce685f4025eb755e739b291c3c97827d804e904",
+    "results/adversarial_crossed_text_amendment3_20261023/variants.manifest.json": "cac511fdcf62c76f3f6e5e21e66daa19775e1145b1a169cf4299779e98d707b0",
+    "experiments/adversarial_crossed_text/config.json": "9900e68d7f34482e48894523ec5890334c24a2bb54b6f84255b1fdb65a56beac",
+    "results/adversarial_crossed_text_amendment3_20261023/scores/4b-v03_student.heldout.runtime.json": "316feaee3a323c2ed96b30d6e16b37d9f10fa9313a21f7b4003c4bc71d8304ae",
+    "results/adversarial_crossed_text_amendment3_20261023/scores/4b-base_student.heldout.runtime.json": "81de3f63989c89cdb4e3817481fb8b5714de492bae51706d50ee4a644c5afe7e",
+    "results/adversarial_crossed_text_amendment3_20261023/scores/27b-merged_teacher.heldout.runtime.json": "811ef2e1b4b5128a6b1a1259659205652ad8e7778a031cfc6fe239d79dd8d362",
+    "src/gleipnir/evaluation/binary.py": "aaf67f66e7d747111206071ac2b3b086732e8bc45d4145ee3b583d1a375724ac",
+    "src/gleipnir/evaluation/probabilities.py": "11f0d1863b47b91699b5812caa85e70ed2db8dd9559c7bebce9845e9153e09da"
+  }
+}
