@@ -40,6 +40,7 @@ from experiments.adversarial_crossed_text.common import (
     read_jsonl,
     seal_variants,
     sha,
+    validate_import,
     validate_pipeline,
     write_json,
     write_jsonl,
@@ -83,6 +84,117 @@ def prepare(out, cfg):
         raise ValueError("selected task missing code pair")
     write_json(out / "selection.json", selection)
     print({k: len(selection[k]) for k in ("development", "heldout", "calibration")})
+
+
+def import_completed(out, cfg, *, dry_run=False):
+    """Import pinned completed work, never rewrite bindings or ledger reservations."""
+    from experiments.adversarial_crossed_text.common import ROOT
+
+    spec = cfg["amendment_1"]["import"]
+    source = ROOT / spec["source"]
+    if source.resolve() == out.resolve():
+        raise ValueError("import requires a new output directory")
+    if (out / "import.manifest.json").exists():
+        validate_import(out, cfg, dry_run)
+        return
+    for name, expected in spec["files"].items():
+        if digest(source / name) != expected:
+            raise ValueError(f"import source artifact changed: {name}")
+    identity = json.loads((source / "pipeline.identity.json").read_text())
+    if (
+        identity["config_sha256"] != spec["config_sha256"]
+        or identity["dry_run"] != dry_run
+    ):
+        raise ValueError("import source configuration or mock/live mode mismatch")
+    if digest(out / "selection.json") != spec["files"]["selection.json"]:
+        raise ValueError("import selection changed")
+    # Only these frozen prompts are reused. Revised conditions have no imported cache.
+    for name in ("trigger_audit", "task_restatement", "text_rules", "text_check"):
+        path = f"experiments/adversarial_crossed_text/prompts/{name}.txt"
+        if identity["sources"][path] != cfg["prompts_sha256"][name]:
+            raise ValueError(f"imported prompt changed: {name}")
+    names = (
+        "trigger_audit.jsonl",
+        "trigger_hand_reads.jsonl",
+        "texts.jsonl",
+        "text_checks.jsonl",
+        "hand_audit.jsonl",
+        "calls.jsonl",
+        "inherited_calls.jsonl",
+    )
+    if any((out / n).exists() for n in names):
+        raise SystemExit("import destination already contains work; use a fresh folder")
+    texts = [
+        r
+        for r in read_jsonl(source / "texts.jsonl")
+        if r["condition"] == "task_restatement"
+    ]
+    checks = [
+        r
+        for r in read_jsonl(source / "text_checks.jsonl")
+        if r["condition"] == "task_restatement"
+    ]
+    calls = read_jsonl(source / "calls.jsonl")
+    imported_ids = {
+        r["request_id"]
+        for r in calls
+        if r["request_id"].startswith("trigger:")
+        or ":task_restatement:" in r["request_id"]
+    }
+    latest = {r["request_id"]: r for r in calls if r["request_id"] in imported_ids}
+    if any(r["status"] != "settled" or "result" not in r for r in latest.values()):
+        raise ValueError("only completed calls may be imported")
+    if any(r.get("dry_run") != dry_run for r in calls):
+        raise ValueError("mixed imported call provenance")
+    for name in ("trigger_audit.jsonl", "trigger_hand_reads.jsonl"):
+        (out / name).write_bytes((source / name).read_bytes())
+    write_jsonl(out / "texts.jsonl", texts)
+    write_jsonl(out / "text_checks.jsonl", checks)
+    write_jsonl(
+        out / "calls.jsonl", [r for r in calls if r["request_id"] in imported_ids]
+    )
+    (out / "inherited_calls.jsonl").write_bytes((source / "calls.jsonl").read_bytes())
+    selection = json.loads((out / "selection.json").read_text())
+    pairs, _ = load_pairs(cfg)
+    _, triggers = prior(cfg)
+    eligible(
+        out, pairs, triggers, required=selection["development"] + selection["heldout"]
+    )
+    cells = text_cells(selection, final_texts(out), {}, cfg)
+    reads = []
+    for r in read_jsonl(source / "hand_audit.jsonl"):
+        cell = cells.get((r["task_id"], r["condition"]))
+        if (
+            cell
+            and cell["record"]
+            and all(
+                r.get(k) == v
+                for k, v in cell_identity(
+                    cell, pairs[r["task_id"]], triggers[r["task_id"]]
+                ).items()
+            )
+        ):
+            hand_verdict(
+                r, cell_identity(cell, pairs[r["task_id"]], triggers[r["task_id"]])
+            )
+            reads.append(r)
+    write_jsonl(out / "hand_audit.jsonl", reads)
+    manifest = {
+        "source": spec,
+        "dry_run": dry_run,
+        "prefixes": {
+            n: {"bytes": (out / n).stat().st_size, "sha256": digest(out / n)}
+            for n in names
+        },
+    }
+    write_json(out / "import.manifest.json", manifest)
+    validate_import(out, cfg, dry_run)
+    print(
+        {
+            "imported_restatements": len(final_texts(out)),
+            "reused_hand_verdicts": len(reads),
+        }
+    )
 
 
 def fill(template, values):
@@ -457,7 +569,6 @@ def text_cells(selection, texts, checks, cfg):
                             and t != task
                             and k == "task_restatement"
                             and v["status"] == "ok"
-                            and check_passed(v, checks)
                             and band[0] <= len(v["text"]) <= band[1]
                         ]
                         donors.sort(
@@ -527,7 +638,8 @@ def audit_sample(out, cfg):
     print(
         f"Read {len(records)} tasks. In trigger_hand_reads.jsonl record task_id, "
         "trigger_sha256, problem_sha256, code_pair_sha256, boolean valid, reason. "
-        "In hand_audit.jsonl record those fields plus condition, text_sha256, "
+        "Hand-read EVERY current text cell. In hand_audit.jsonl record those "
+        "fields plus condition, text_sha256, "
         "text_status, donor_task_id. Use null text_sha256 for missing text and "
         "valid=false for missing/failed text. Read all five text conditions, "
         "including irrelevant against the RECIPIENT problem, not its donor."
@@ -578,14 +690,9 @@ def build(out, cfg, *, dry_run=False):
             if valid and cell["text_status"] != "ok":
                 raise ValueError("missing/failed text requires valid=false disposition")
             dispositions[key] = valid
-        failed = r is None or r["status"] != "ok" or not check_passed(r, checks)
-        if (
-            not dry_run
-            and read is None
-            and (task in selected or (failed and (task in allowed or r is not None)))
-        ):
+        if not dry_run and read is None:
             raise SystemExit(
-                "read every sampled condition and failed text before building"
+                "read every text cell: sampled condition and failed text included"
             )
 
     rows, failures = [], []
@@ -615,10 +722,8 @@ def build(out, cfg, *, dry_run=False):
                         donor and dispositions.get((donor, "task_restatement")) is False
                     ):
                         failure = "donor_hand_read_invalid"
-                    elif not check_passed(r, checks) and not dispositions.get(
-                        (task, kind)
-                    ):
-                        failure = "checker_failed"
+                    elif not dry_run and dispositions.get((task, kind)) is not True:
+                        failure = "hand_read_unverified"
                     elif kind != "task_restatement" and (
                         not ref
                         or ref["status"] != "ok"
@@ -747,6 +852,7 @@ def main():
         "stage",
         choices=[
             "prepare",
+            "import-completed",
             "audit-triggers",
             "generate",
             "check",
@@ -776,6 +882,10 @@ def main():
                 "selection_sha256": digest(out / "selection.json"),
             },
         )
+        if args.stage == "import-completed":
+            import_completed(out, cfg, dry_run=args.dry_run)
+            return
+        validate_import(out, cfg, args.dry_run)
         if args.stage == "audit-triggers":
             run_audit(args, out, cfg)
         elif args.stage == "generate":

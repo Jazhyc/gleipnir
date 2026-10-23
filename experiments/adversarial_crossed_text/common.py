@@ -170,6 +170,32 @@ def validate_pipeline(out, cfg, mock):
     }
     if json.loads(path.read_text()) != expected:
         raise SystemExit("pipeline provenance/settings/source/mock identity mismatch")
+    validate_import(out, cfg, mock)
+
+
+def validate_import(out, cfg, mock):
+    """A regeneration folder retains a tamper-evident prefix of inherited work."""
+    import hashlib
+
+    path = out / "import.manifest.json"
+    if not cfg.get("amendment_1") or mock and not path.exists():
+        return
+    if not path.exists():
+        raise SystemExit("import completed work before regeneration")
+    manifest = json.loads(path.read_text())
+    if (
+        manifest["source"] != cfg["amendment_1"]["import"]
+        or manifest["dry_run"] != mock
+    ):
+        raise ValueError("import provenance changed")
+    for name, prefix in manifest["prefixes"].items():
+        with (out / name).open("rb") as handle:
+            data = handle.read(prefix["bytes"])
+        if (
+            len(data) != prefix["bytes"]
+            or hashlib.sha256(data).hexdigest() != prefix["sha256"]
+        ):
+            raise ValueError(f"imported artifact prefix changed: {name}")
 
 
 def seal_variants(out, cfg, mock):
@@ -178,6 +204,8 @@ def seal_variants(out, cfg, mock):
         raise SystemExit("API call provenance disagrees with pipeline mode")
     files = (
         "selection.json",
+        "import.manifest.json",
+        "inherited_calls.jsonl",
         "calls.jsonl",
         "trigger_audit.jsonl",
         "trigger_hand_reads.jsonl",
@@ -226,9 +254,11 @@ def prompt(name, cfg):
 
 def spent(out, role):
     latest = {}
-    for r in read_jsonl(out / "calls.jsonl"):
-        if r["role"] == role:
-            latest[r["request_id"]] = r
+    for name in ("inherited_calls.jsonl", "calls.jsonl"):
+        for r in read_jsonl(out / name):
+            if r["role"] == role:
+                key = r.get("campaign_reservation", {}).get("id", r["request_id"])
+                latest[key] = r
     return sum(r["charged_usd"] for r in latest.values())
 
 

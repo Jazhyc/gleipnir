@@ -25,6 +25,7 @@ def submission(task, code):
 @pytest.fixture
 def study(tmp_path, monkeypatch):
     cfg = c.config()
+    cfg.pop("amendment_1", None)
     cfg["texts"]["hand_audit_tasks"] = 2
     selection = {
         "development": ["a", "b", "c"],
@@ -574,3 +575,153 @@ def test_rejected_trigger_does_not_hide_an_existing_failed_text(study):
     bind(study)
     with pytest.raises(SystemExit, match="failed text"):
         p.build(study.out, study.cfg)
+
+
+@pytest.mark.parametrize(
+    "kind",
+    [
+        "task_restatement",
+        "irrelevant",
+        "specific_accusation",
+        "cover_story",
+        "generic_accusation",
+    ],
+)
+def test_passing_checker_never_replaces_unsampled_hand_verdict(study, kind):
+    task = next(
+        t for t in study.tasks if t not in p.sample_tasks(study.selection, study.cfg)
+    )
+    rewrite(
+        study,
+        "hand_audit.jsonl",
+        lambda rows: rows.__setitem__(
+            slice(None),
+            [r for r in rows if (r["task_id"], r["condition"]) != (task, kind)],
+        ),
+    )
+    bind(study)
+    with pytest.raises(SystemExit, match="read every text cell"):
+        p.build(study.out, study.cfg)
+
+
+def test_checker_is_advisory_for_cells_and_donors(study):
+    before = p.text_cells(study.selection, p.final_texts(study.out), {}, study.cfg)
+    rewrite(
+        study, "text_checks.jsonl", lambda rows: [r.update(passed=False) for r in rows]
+    )
+    after = p.text_cells(study.selection, p.final_texts(study.out), {}, study.cfg)
+    assert before == after
+    rows = run_build(study)
+    assert len(rows) == 61
+
+
+def make_import(study, monkeypatch):
+    import json
+
+    dest = study.out / "regenerated"
+    dest.mkdir()
+    (dest / "selection.json").write_bytes((study.out / "selection.json").read_bytes())
+    bind(study)
+    c.write_jsonl(
+        study.out / "calls.jsonl",
+        [
+            {
+                "request_id": "text:a:task_restatement:1",
+                "status": "settled",
+                "result": {"status": "ok"},
+                "role": "writer",
+                "charged_usd": 1.0,
+                "campaign_reservation": {"id": "old-restatement"},
+                "dry_run": False,
+            },
+            {
+                "request_id": "text:a:cover_story:1",
+                "status": "settled",
+                "result": {"status": "ok"},
+                "role": "writer",
+                "charged_usd": 2.0,
+                "campaign_reservation": {"id": "old-cover"},
+                "dry_run": False,
+            },
+        ],
+    )
+    names = [
+        "pipeline.identity.json",
+        "selection.json",
+        "trigger_audit.jsonl",
+        "trigger_hand_reads.jsonl",
+        "texts.jsonl",
+        "text_checks.jsonl",
+        "hand_audit.jsonl",
+        "calls.jsonl",
+    ]
+    study.cfg["amendment_1"] = {
+        "import": {
+            "source": str(study.out),
+            "config_sha256": json.loads(
+                (study.out / "pipeline.identity.json").read_text()
+            )["config_sha256"],
+            "files": {n: c.digest(study.out / n) for n in names},
+        }
+    }
+    return dest
+
+
+def test_import_preserves_receipts_and_never_imports_replaced_text(study, monkeypatch):
+    dest = make_import(study, monkeypatch)
+    p.import_completed(dest, study.cfg)
+    assert len(p.final_texts(dest)) == 5
+    assert {k for _, k in p.final_texts(dest)} == {"task_restatement"}
+    assert c.spent(dest, "writer") == 3.0
+    assert [r["request_id"] for r in c.read_jsonl(dest / "calls.jsonl")] == [
+        "text:a:task_restatement:1"
+    ]
+    assert all(
+        r["condition"] in {"task_restatement", "irrelevant"}
+        for r in c.read_jsonl(dest / "hand_audit.jsonl")
+    )
+    c.append(
+        dest / "calls.jsonl",
+        {
+            "request_id": "text:a:cover_story:1",
+            "role": "writer",
+            "charged_usd": 0.5,
+            "campaign_reservation": {"id": "new-cover"},
+        },
+    )
+    assert c.spent(dest, "writer") == 3.5
+    c.validate_import(dest, study.cfg, False)
+    p.import_completed(dest, study.cfg)  # Idempotent and does not discard new work.
+    assert c.spent(dest, "writer") == 3.5
+
+
+@pytest.mark.parametrize(
+    "name",
+    [
+        "texts.jsonl",
+        "calls.jsonl",
+        "hand_audit.jsonl",
+        "trigger_hand_reads.jsonl",
+        "inherited_calls.jsonl",
+    ],
+)
+def test_import_prefix_cannot_be_mutated(study, monkeypatch, name):
+    dest = make_import(study, monkeypatch)
+    p.import_completed(dest, study.cfg)
+    with (dest / name).open("r+b") as handle:
+        handle.write(b" ")
+    with pytest.raises(ValueError, match="prefix changed"):
+        c.validate_import(dest, study.cfg, False)
+
+
+@pytest.mark.parametrize("change", ["source", "mode", "selection", "prompt"])
+def test_import_rejects_changed_identity(study, monkeypatch, change):
+    dest = make_import(study, monkeypatch)
+    if change == "source":
+        c.append(study.out / "texts.jsonl", {"changed": True})
+    elif change == "selection":
+        (dest / "selection.json").write_text("{}")
+    elif change == "prompt":
+        study.cfg["prompts_sha256"]["task_restatement"] = "changed"
+    with pytest.raises(ValueError):
+        p.import_completed(dest, study.cfg, dry_run=change == "mode")
