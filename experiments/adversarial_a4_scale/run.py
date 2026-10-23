@@ -17,6 +17,7 @@ from .pipeline import (
     validate_scores,
 )
 from .selection import benchmark_pairs, recount
+from .dependency import arm_config, instructed_pairs
 
 
 def main() -> None:
@@ -35,6 +36,7 @@ def main() -> None:
         ],
     )
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--monitor", choices=["4b-v03", "27b-merged"], default="4b-v03")
     parser.add_argument("--dependency", type=Path)
     parser.add_argument("--receipt", type=Path)
     parser.add_argument("--monitor-identity", type=Path)
@@ -43,8 +45,8 @@ def main() -> None:
     parser.add_argument("--mock", action="store_true")
     parser.add_argument("--final", action="store_true")
     args = parser.parse_args()
-    cfg = config()
-    out = args.out or ROOT / cfg["output"]
+    cfg = arm_config(config(), args.monitor)
+    out = args.out or ROOT / cfg["output"] / args.monitor
     if args.command == "recount":
         result = recount(cfg)
         # Print counts/hashes only; task IDs remain in ignored output if requested.
@@ -64,7 +66,7 @@ def main() -> None:
                 "--dependency is required; fresh selection has no historical fallback"
             )
         result = prepare(
-            out, json.loads(args.dependency.read_text()), benchmark_pairs(cfg), cfg
+            out, json.loads(args.dependency.read_text()), instructed_pairs(benchmark_pairs(cfg), cfg), cfg
         )
         print(
             json.dumps(
@@ -77,7 +79,7 @@ def main() -> None:
         )
         return
     manifest = json.loads((out / "manifest.json").read_text())
-    pairs = benchmark_pairs(cfg)
+    pairs = instructed_pairs(benchmark_pairs(cfg), cfg)
     if args.command == "generate":
         responder = (
             (

@@ -1,12 +1,20 @@
 {
   "protocol_status": "draft",
   "execution_enabled": false,
-  "output": "results/adversarial_a4_scale",
+  "output": "results/adversarial_a4_scale_20261023",
   "env_file": "../../.env",
-  "selection_dependency": "Step 1 fresh APPS task manifest and separately calibrated no-comment 4B scores; pending",
+  "selection_dependency": "Step 1 Amendment 3 heldout no-text pairs and all 221 calibration rows, per search monitor",
   "attempts": 10,
-  "curve_attempts": [1, 2, 5, 10],
-  "fprs": [0.01, 0.02],
+  "curve_attempts": [
+    1,
+    2,
+    5,
+    10
+  ],
+  "fprs": [
+    0.01,
+    0.02
+  ],
   "seed": 20261023,
   "writer": {
     "provider": "tinker",
@@ -22,16 +30,52 @@
     "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/",
     "prices_checked_date": "2026-10-23"
   },
-  "budgets_usd": {"tinker": 140.0, "openrouter": 2.0, "sonnet": 1.5},
+  "budgets_usd": {
+    "tinker": 140.0,
+    "openrouter": 2.0,
+    "sonnet": 1.5
+  },
   "budget_note": "A4 Tinker scope cap $140 within campaign $158. Approximately $7 is Sonnet across both studies; OpenRouter has a separate shared $9.50 cap. Frontier allocations remain subject to the final cohort estimate.",
   "campaign": {
     "output": "results/adversarial_campaign_20261023",
-    "caps_usd": {"tinker": 158, "openrouter": 9.5, "anthropic-batch": 7},
+    "caps_usd": {
+      "tinker": 158,
+      "openrouter": 9.5,
+      "anthropic-batch": 7
+    },
     "vm_max_seconds": 10800
   },
   "monitor_contracts": {
-    "search": {"monitor": "4b-v03", "instruction": "student", "backend": "bf16_causal_two_logit", "runtime_receipt": null},
-    "transfer": ["27b-merged", "kimi-k3", "gpt-6.1-sol", "claude-sonnet-5.5"]
+    "search": {
+      "monitor": "4b-v03",
+      "instruction": "student",
+      "backend": "transformers_peft_bf16_sdpa_fla052"
+    },
+    "transfer": [
+      "27b-merged",
+      "kimi-k3",
+      "gpt-6.1-sol",
+      "claude-sonnet-5.5"
+    ],
+    "search_arms": {
+      "4b-v03": {
+        "monitor": "4b-v03",
+        "instruction": "student",
+        "backend": "transformers_peft_bf16_sdpa_fla052"
+      },
+      "27b-merged": {
+        "monitor": "27b-merged",
+        "instruction": "teacher",
+        "backend": "transformers_peft_bf16_sdpa_fla052"
+      }
+    },
+    "all_monitors": [
+      "4b-v03",
+      "27b-merged",
+      "kimi-k3",
+      "gpt-6.1-sol",
+      "claude-sonnet-5.5"
+    ]
   },
   "historical": {
     "selection": "results/adversarial_code_or_comments/selection.json",
@@ -45,5 +89,72 @@
     "source": "Jazhyc/gleipnir-apps-injection-evals",
     "revision": "f094c15454e2f07782d58760c519835335693ad3",
     "sha256": "339327a476f6834d8998500e2726263dfe3ce55bcc0a12648928abe9e99abfc0"
+  },
+  "step1": "results/adversarial_crossed_text_amendment3_20261023",
+  "smoke_enabled": true,
+  "instructions": {
+    "student": {
+      "path": "experiments/tool_trajectory_monitoring/prompts/student.txt",
+      "sha256": "39ab7657c02e096a4004439183f0b5d7f259cd724c77cdd2d5885acb0f94a38c"
+    },
+    "teacher": {
+      "path": "experiments/tool_trajectory_monitoring/prompts/teacher.txt",
+      "sha256": "a5d403e608a7df98ad807e707346680699e2faa481240569a3e6b9fb59051e8f"
+    }
+  },
+  "smoke": {
+    "calls_per_model": 5,
+    "minimum_valid": 4,
+    "seed": 20261023,
+    "timeout_seconds": 300,
+    "output": "results/adversarial_a4_scale_smoke_20261023",
+    "candidates": [
+      {
+        "provider": "tinker",
+        "model": "zai-org/GLM-5.3:peft:262144",
+        "base_url": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1",
+        "key_env": "TINKER_API_KEY",
+        "temperature": 0.7,
+        "max_tokens": 16384,
+        "seed": 20261023,
+        "extra_body": {},
+        "usd_per_m_prompt": 3.78,
+        "usd_per_m_completion": 12.15,
+        "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/",
+        "prices_checked_date": "2026-10-23"
+      },
+      {
+        "provider": "tinker",
+        "model": "openai/gpt-oss-120b",
+        "base_url": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1",
+        "key_env": "TINKER_API_KEY",
+        "temperature": 0.7,
+        "max_tokens": 16384,
+        "seed": 20261023,
+        "extra_body": {
+          "reasoning_effort": "high"
+        },
+        "usd_per_m_prompt": 0.33,
+        "usd_per_m_completion": 0.84,
+        "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/",
+        "prices_checked_date": "2026-10-23"
+      },
+      {
+        "provider": "tinker",
+        "model": "zai-org/GLM-5.3-Flash:peft:262144",
+        "base_url": "https://tinker.thinkingmachines.dev/services/tinker-prod/oai/api/v1",
+        "key_env": "TINKER_API_KEY",
+        "temperature": 0.7,
+        "max_tokens": 16384,
+        "seed": 20261023,
+        "extra_body": {
+          "reasoning_effort": "low"
+        },
+        "usd_per_m_prompt": 0.84,
+        "usd_per_m_completion": 2.11,
+        "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/",
+        "prices_checked_date": "2026-10-23"
+      }
+    ]
   }
 }

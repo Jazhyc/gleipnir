@@ -104,8 +104,11 @@ def source_identity() -> dict:
             "src/gleipnir/_environment.py",
             "src/gleipnir/evaluation/__init__.py",
             "src/gleipnir/evaluation/metrics.py",
+            "src/gleipnir/evaluation/binary.py",
+            "src/gleipnir/evaluation/probabilities.py",
             "pyproject.toml",
             "uv.lock",
         )
     ]
+    paths += [ROOT / spec["path"] for spec in config().get("instructions", {}).values()]
     return {str(p.relative_to(ROOT)): eval_sets.file_sha256(p) for p in paths}

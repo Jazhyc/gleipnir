@@ -57,8 +57,13 @@ REFUSAL = re.compile(
 
 def prepare(out: Path, dependency: dict, pairs: dict, cfg: dict) -> dict:
     selected = select(dependency, pairs, cfg)
+    gates = {}
+    if cfg["protocol_status"] == "frozen" and cfg["execution_enabled"]:
+        from .cost import check_gate
+        gates = check_gate(cfg)
     manifest = {
         "config": cfg,
+        "launch_gates": gates,
         "sources": source_identity(),
         "selection": selected,
         "generation_estimate": generation_estimate(selected["task_ids"], pairs, cfg),
@@ -83,8 +88,19 @@ def check_manifest(manifest: dict, pairs: dict) -> None:
 
 def require_live(manifest: dict) -> None:
     cfg = manifest["config"]
-    if cfg["protocol_status"] != "frozen" or not cfg["execution_enabled"]:
+    smoke = manifest.get("stage") == "smoke"
+    if smoke:
+        if not cfg.get("smoke_enabled") or cfg["writer"] not in cfg["smoke"]["candidates"] or cfg["attempts"] != 1:
+            raise RuntimeError("unregistered smoke settings")
+        from .smoke import development_tasks
+        if manifest["selection"]["task_ids"] != development_tasks(cfg):
+            raise RuntimeError("smoke tasks changed")
+    if not smoke and (cfg["protocol_status"] != "frozen" or not cfg["execution_enabled"]):
         raise RuntimeError("draft/offline-only protocol: paid execution is disabled")
+    if not smoke:
+        from .cost import check_gate
+        if manifest.get("launch_gates") != check_gate(cfg):
+            raise RuntimeError("launch gates changed")
     paths = list(manifest["sources"]) + [str(HERE.relative_to(ROOT) / "README.md")]
     for path in paths:
         tracked = subprocess.run(
