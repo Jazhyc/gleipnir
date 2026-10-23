@@ -124,6 +124,13 @@ stories if at least 20 hand-valid development pairs exist. Missing monitor
 scores cannot activate this fallback. Do not regenerate again based on the
 result or any monitor score.
 
+Astra reviewed commit `64d53cb` before generation and found no live-run
+blocker for the pinned inputs. The two offline issues it found are fixed:
+mock preflight uses an isolated campaign ledger, and fresh mocks receive
+synthetic imported baselines. Regressions cover exhausted campaign caps,
+cover-only dispatch, interrupted retry reconstruction, the 19/20-pair
+prediction boundary, and insufficient scored pairs in other conditions.
+
 ## Data and selection
 
 Use the same APPS release, revision, input SHA256, instructions, license and
@@ -304,6 +311,11 @@ python -m experiments.adversarial_crossed_text.pipeline build
 
 `--dry-run --out /tmp/crossed-mock` uses mock APIs and costs nothing. Run
 `prepare` first, then all stages with the same output path and dry-run flag.
+For Amendment 2, a fresh dry-run generation creates deterministic synthetic
+non-cover import fixtures. Its budget preflight uses only `.mock-campaign`;
+no live replies, receipts or ledger state enter that fixture. The offline
+end-to-end test covers generation, checking, auditing and building.
+
 Use `evaluate score --arm 4b-v03_student --split development` for the pilot,
 then `evaluate predict` and commit `predictions.json`. The same scoring command
 with `--split heldout` unlocks only after that commit. `--arm` lists the fixed

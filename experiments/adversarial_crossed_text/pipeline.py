@@ -352,7 +352,7 @@ def final_texts(out):
     return rows
 
 
-def cover_round_bound(out, cfg, tasks, pairs, triggers, texts):
+def cover_round_bound(out, cfg, tasks, pairs, triggers, texts, *, dry_run=False):
     """Bound all remaining requests before the round, with byte-based pricing."""
     from experiments.adversarial_code_or_comments.llm import endpoint
     from experiments.adversarial_crossed_text.common import spent
@@ -392,7 +392,7 @@ def cover_round_bound(out, cfg, tasks, pairs, triggers, texts):
         remaining = max(0, amendment["max_attempts"] - histories[task])
         # Feedback is limited to 512 bytes; the prior reply is never resent.
         worst += remaining * model.worst_case_usd(len(text.encode()) + 512)
-    campaign = Campaign(cfg, out)
+    campaign = Campaign(cfg, out, mock=dry_run)
     ledger = campaign.latest().values()
     campaign_used = sum(r["charge"] for r in ledger if r["api"] == "tinker")
     if (
@@ -420,8 +420,35 @@ def generate(args, out, cfg):
     allowed = eligible(out, pairs, triggers)
     tasks = [t for t in selection["development"] + selection["heldout"] if t in allowed]
 
+    if amendment and args.dry_run and not (out / "import.manifest.json").exists():
+        # Fresh offline runs need synthetic stand-ins for the frozen imports.
+        # They contain no paid replies and can never unlock live scoring.
+        for task in tasks:
+            for kind in (
+                "task_restatement",
+                "specific_accusation",
+                "generic_accusation",
+            ):
+                if (task, kind) in texts:
+                    continue
+                reply = mock_reply(
+                    [{"content": f"TARGET_CHARS={cfg['texts']['target']}"}]
+                )
+                record = {
+                    "task_id": task,
+                    "condition": kind,
+                    "status": "ok",
+                    "text": reply,
+                    "text_sha256": sha(reply),
+                    "dry_run": True,
+                    "mock_import_fixture": True,
+                }
+                append(out / "texts.jsonl", record)
+                texts[(task, kind)] = record
     if amendment:
-        bound = cover_round_bound(out, cfg, tasks, pairs, triggers, texts)
+        bound = cover_round_bound(
+            out, cfg, tasks, pairs, triggers, texts, dry_run=args.dry_run
+        )
         print({"remaining_cover_round_worst_case_usd": bound}, flush=True)
 
     def work(task):

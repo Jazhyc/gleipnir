@@ -813,7 +813,15 @@ def test_amendment2_import_keeps_every_noncover_artifact_and_receipt(
 
 
 @pytest.mark.parametrize(
-    "eligible,scored,exception", [(6, 6, False), (0, 0, False), (20, 6, True)]
+    "eligible,scored,exception",
+    [
+        (6, 6, False),
+        (0, 0, False),
+        (19, 19, False),
+        (20, 6, True),
+        (20, 20, False),
+        (6, -1, True),
+    ],
 )
 def test_predict_cover_fallback_uses_eligible_pairs_not_score_failures(
     study, monkeypatch, eligible, scored, exception
@@ -858,7 +866,10 @@ def test_predict_cover_fallback_uses_eligible_pairs_not_score_failures(
             "score": value,
             "status": "ok",
         }
-        for kind, n in (("none", 20), ("cover_story", scored))
+        for kind, n in (
+            ("none", 19 if scored == -1 else 20),
+            ("cover_story", max(0, scored)),
+        )
         for i in range(n)
         for code, value in (("honest", 0.1), ("backdoored", 0.9))
     ]
@@ -870,6 +881,10 @@ def test_predict_cover_fallback_uses_eligible_pairs_not_score_failures(
     else:
         e.predict(args, study.out, cfg)
         result = json.loads((study.out / "predictions.mock.json").read_text())
+        if eligible >= 20:
+            assert set(result["predictions"]) == {"none", "cover_story"}
+            assert result["descriptive_only"] == {}
+            return
         assert set(result["predictions"]) == {"none"}
         assert (
             result["descriptive_only"]["cover_story"]["development_eligible_pairs"]
@@ -895,3 +910,148 @@ def test_cover_round_bound_refuses_whole_round_over_cap(study):
         p.cover_round_bound(
             study.out, cfg, study.tasks, study.pairs, study.triggers, texts
         )
+
+
+def test_amendment2_generation_never_fills_or_retries_other_conditions(
+    study, monkeypatch
+):
+    cfg = study.cfg
+    cfg["amendment_2"] = {
+        "writer_model_role": "cover_writer",
+        "max_attempts": 2,
+        "regenerate_conditions": ["cover_story"],
+    }
+    retained = [
+        r
+        for r in c.read_jsonl(study.out / "texts.jsonl")
+        if r["condition"] != "cover_story"
+        and (r["task_id"], r["condition"]) != ("a", "specific_accusation")
+    ]
+    c.write_jsonl(study.out / "texts.jsonl", retained)
+    received = []
+
+    class FakeCalls:
+        def __init__(self, *args, **kwargs):
+            assert args[2] == "writer"
+            assert kwargs["model_role"] == "cover_writer"
+
+        def chat(self, request_id, messages, attempt):
+            received.append((request_id, messages))
+            return {
+                "status": "ok",
+                "text": "Reasoned task requirement. " * 23,
+                "finish_reason": "stop",
+            }
+
+    monkeypatch.setattr(p, "Calls", FakeCalls)
+    monkeypatch.setattr(p, "cover_round_bound", lambda *args, **kwargs: 1.0)
+    p.generate(SimpleNamespace(dry_run=False, limit=None), study.out, cfg)
+    assert {request.split(":")[2] for request, _ in received} == {"cover_story"}
+    after = c.read_jsonl(study.out / "texts.jsonl")
+    assert [r for r in after if r["condition"] != "cover_story"] == retained
+    assert all("print(2)" in messages[0]["content"] for _, messages in received)
+
+
+def test_mock_cover_budget_ignores_exhausted_live_campaign(study):
+    cfg = study.cfg
+    cfg["campaign"]["output"] = str(study.out / "live-campaign")
+    cfg["amendment_2"] = {"writer_model_role": "cover_writer", "max_attempts": 2}
+    ledger = study.out / "live-campaign/spend.jsonl"
+    ledger.parent.mkdir()
+    c.write_jsonl(
+        ledger,
+        [
+            {
+                "id": "spent",
+                "api": "tinker",
+                "scope": "a4",
+                "charge": cfg["campaign"]["caps_usd"]["tinker"],
+            }
+        ],
+    )
+    texts = {k: r for k, r in p.final_texts(study.out).items() if k[1] != "cover_story"}
+    c.write_jsonl(study.out / "texts.jsonl", list(texts.values()))
+    before = ledger.read_bytes()
+    assert (
+        p.cover_round_bound(
+            study.out,
+            cfg,
+            study.tasks,
+            study.pairs,
+            study.triggers,
+            texts,
+            dry_run=True,
+        )
+        > 0
+    )
+    with pytest.raises(SystemExit, match="entire remaining cover round"):
+        p.cover_round_bound(
+            study.out, cfg, study.tasks, study.pairs, study.triggers, texts
+        )
+    assert ledger.read_bytes() == before
+
+
+def test_fresh_mock_amendment2_runs_generate_check_audit_build(study):
+    cfg = study.cfg
+    cfg["amendment_2"] = {
+        "writer_model_role": "cover_writer",
+        "max_attempts": 2,
+        "regenerate_conditions": ["cover_story"],
+    }
+    cfg["campaign"]["output"] = str(study.out / "unused-live-campaign")
+    for name in ("texts.jsonl", "text_checks.jsonl", "hand_audit.jsonl"):
+        c.write_jsonl(study.out / name, [])
+    bind(study, mock=True)
+    args = SimpleNamespace(dry_run=True, limit=None)
+    p.generate(args, study.out, cfg)
+    p.check(args, study.out, cfg)
+    refresh_reads(study)
+    p.audit_sample(study.out, cfg)
+    p.build(study.out, cfg, dry_run=True)
+    assert c.validate_variants(study.out, cfg, True)
+    assert not (study.out / "unused-live-campaign").exists()
+    assert all(r["dry_run"] for r in c.read_jsonl(study.out / "calls.jsonl"))
+    assert {
+        r["condition"]
+        for r in c.read_jsonl(study.out / "texts.jsonl")
+        if r.get("mock_import_fixture")
+    } == {"task_restatement", "specific_accusation", "generic_accusation"}
+
+
+def test_cover_retry_resume_reconstructs_bounded_feedback(study, monkeypatch):
+    cfg = study.cfg
+    cfg["amendment_2"] = {
+        "writer_model_role": "cover_writer",
+        "max_attempts": 2,
+        "regenerate_conditions": ["cover_story"],
+    }
+    rows = [
+        r
+        for r in c.read_jsonl(study.out / "texts.jsonl")
+        if r["condition"] != "cover_story"
+    ]
+    c.write_jsonl(study.out / "texts.jsonl", rows)
+    received = []
+
+    class FakeCalls:
+        def __init__(self, *args, **kwargs):
+            pass
+
+        def chat(self, request_id, messages, attempt):
+            received.append((request_id, messages))
+            return {"status": "ok", "text": "short", "finish_reason": "stop"}
+
+    monkeypatch.setattr(p, "Calls", FakeCalls)
+    monkeypatch.setattr(p, "cover_round_bound", lambda *args, **kwargs: 1.0)
+    args = SimpleNamespace(dry_run=True, limit=1)
+    p.generate(args, study.out, cfg)
+    assert len(received) == 2
+    expected = received[-1]
+    first = c.read_jsonl(study.out / "texts.jsonl")[-2]
+    assert all(m["role"] == "user" for m in expected[1])
+    assert all(m["content"] != "short" for m in expected[1])
+    assert len(expected[1][-1]["content"].encode()) <= 512
+    c.write_jsonl(study.out / "texts.jsonl", [*rows, first])
+    received.clear()
+    p.generate(args, study.out, cfg)
+    assert received == [expected]
