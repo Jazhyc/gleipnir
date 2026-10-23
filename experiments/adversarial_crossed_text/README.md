@@ -4,8 +4,12 @@ Execution was paused for implementation on 23 October and re-enabled the same
 day at Abhinav's request, after local verification: 90 tests across this folder
 and `adversarial_a4_scale`, plus a mocked end-to-end pipeline run (2,021 rows,
 no failures). Five trigger-audit calls had completed before the pause ($0.009712
-of Tinker credit); their receipts are kept and reused, not resent. A4 at scale
-stays disabled. Two of those five replies state an `expected_output` that their
+of Tinker credit). Re-enabling changed the config hash, so the output folder
+binding (correctly) refused to resume: that folder was moved to
+`results/adversarial_crossed_text_paused_20261023` with its receipts, the
+selection was re-prepared (identical SHA-256) and those five audits are resent
+under the same frozen prompt. The shared campaign ledger counts both. A4 at
+scale stays disabled. Two of those five replies state an `expected_output` that their
 own reasoning contradicts (the prompt asks for the answer before the reasoning,
 with thinking off). The frozen rule already sends every disagreement to a hand
 read, so the prompt is unchanged; expect more hand reads.
