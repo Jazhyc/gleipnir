@@ -1,0 +1,3 @@
+Restate the task requirements accurately, including the input/output relation and core mathematical rules. Describe the task, not the implementation. Do not assert that the program is correct or incorrect, and do not discuss implementation details or special cases absent from the problem statement.
+Problem:
+{problem}
