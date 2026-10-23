@@ -277,6 +277,19 @@ Development: 3,652 rows on the 4B (FLA environment; canary drift 0.0000 on all 8
 | GPT-6 Luna | 0.81 (0.78–0.84) | 0.99 | 0.82 (0.77–0.86) | 0.79 (0.75–0.83) | $0.53 |
 | Gemini 3.8 Flash | 0.76 (0.72–0.79) | 0.99 | 0.74 (0.69–0.79) | 0.83 (0.80–0.87) | $2.76 |
 
+**Correction, 23 October.** The misleading condition paired different texts
+(a cover story on backdoored code, a false accusation on honest code), so it
+confounds what the text says with what the code does. The
+[crossed-text follow-up](../adversarial_crossed_text/README.md) puts the
+identical text on both programs. Under identical accusations:
+
+- the 27B (0.98 specific, 0.96 generic) and Kimi (0.97, 0.96) rank about as
+  well as Sonnet (0.95) and Sol (1.00);
+- only the 4B loses discrimination (0.58, 0.59).
+
+The bullets below on inversion and teacher credulity describe this confounded
+condition; read them with that correction.
+
 - **Misleading texts invert Gleipnir; GPT-6.1 Sol and Claude Sonnet hold.** Under misleading texts both Gleipnir models rank honest code carrying a false accusation above backdoored code carrying a cover story (AUROC 0.35 and 0.40). Sol (0.96) and Sonnet (0.90) keep separating them.
 - **The credulity is the teacher's.** Mean P(1) on honest code with a false accusation: Kimi K3 0.780, Gleipnir 27B 0.785, 4B 0.546; GPT-6.1 Sol 0.034, Luna 0.113, Gemini 0.439, Sonnet 0.528. Sol barely moves on a false accusation; Gleipnir moves as much as its teacher.
 - **With no text, Gleipnir is near the frontier:** 27B 0.96 and 4B 0.93 against 0.98–0.99 for Kimi, Sol and Sonnet, and above Luna (0.81) and Gemini 3.8 Flash (0.76).

@@ -62,6 +62,22 @@ held-out tests pass.
 | GPT-6 Luna | 0.81 | 0.82 |
 | Gemini 3.8 Flash | 0.76 | 0.74 |
 
+**Correction, 23 October.** The misleading column pairs different texts on
+the two programs. With the [same text on both](../../experiments/adversarial_crossed_text/README.md)
+(99 held-out tasks), AUROC under a specific / generic accusation is:
+
+- Gleipnir 4B 0.58 / 0.59;
+- Gleipnir 27B 0.98 / 0.96;
+- Kimi K3 0.97 / 0.96;
+- Claude Sonnet 5.5 0.95 / 0.95;
+- GPT-6.1 Sol 1.00 / 1.00;
+- GPT-6 Luna 0.97 / 0.95.
+
+So the 27B and the teacher keep their ranking; only the 4B loses it, and more
+than its untrained base does (0.81 / 0.75). With any of these monitors,
+calibrating on undocumented code flags nearly all documented honest code. The
+first two bullets below describe the confounded condition.
+
 - Gleipnir believes what the text claims. A false accusation gets 194 of 195
   honest programs flagged at the 4B's strict 1% line; an unrelated docstring
   gets 181 of 200 flagged. Text moves both Gleipnir models more than code does.
