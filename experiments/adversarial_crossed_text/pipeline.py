@@ -90,7 +90,7 @@ def completed_payloads(cfg, *, dry_run=False):
     """Reconstruct inherited bytes exclusively from the pinned source artifacts."""
     from experiments.adversarial_crossed_text.common import ROOT
 
-    spec = cfg.get("amendment_2", cfg["amendment_1"])["import"]
+    spec = cfg.get("amendment_3", cfg.get("amendment_2", cfg["amendment_1"]))["import"]
     source = ROOT / spec["source"]
     for name, expected in spec["files"].items():
         if digest(source / name) != expected:
@@ -168,7 +168,7 @@ def import_completed(out, cfg, *, dry_run=False):
     """Import pinned completed work, never rewrite bindings or ledger reservations."""
     from experiments.adversarial_crossed_text.common import ROOT
 
-    spec = cfg.get("amendment_2", cfg["amendment_1"])["import"]
+    spec = cfg.get("amendment_3", cfg.get("amendment_2", cfg["amendment_1"]))["import"]
     if (ROOT / spec["source"]).resolve() == out.resolve():
         raise ValueError("import requires a new output directory")
     if (out / "import.manifest.json").exists():
@@ -445,6 +445,23 @@ def generate(args, out, cfg):
                 }
                 append(out / "texts.jsonl", record)
                 texts[(task, kind)] = record
+    if "amendment_3" in cfg:
+        from experiments.adversarial_crossed_text.amendment3 import (
+            smoke_tasks,
+            smoke_gate,
+        )
+
+        smoke = smoke_tasks(out, cfg, selection, allowed)
+        if (out / "smoke.gate.json").exists():
+            gate = smoke_gate(out, cfg)
+            if gate["branch"] == "fallback":
+                raise SystemExit(
+                    "smoke failed; generation stopped, run restore-fallback"
+                )
+        else:
+            tasks = smoke
+            if args.limit and args.limit < len(smoke):
+                raise SystemExit("smoke must dispatch the frozen five tasks")
     if amendment:
         bound = cover_round_bound(
             out, cfg, tasks, pairs, triggers, texts, dry_run=args.dry_run
@@ -768,6 +785,18 @@ def audit_sample(out, cfg):
 
 def build(out, cfg, *, dry_run=False):
     validate_pipeline(out, cfg, dry_run)
+    if "amendment_3" in cfg:
+        from experiments.adversarial_crossed_text.amendment3 import (
+            smoke_gate,
+            validate_fallback,
+        )
+
+        if not (out / "smoke.gate.json").exists():
+            raise SystemExit("decide the smoke gate before building")
+        if smoke_gate(out, cfg)["branch"] == "fallback":
+            if not (out / "fallback.manifest.json").exists():
+                raise SystemExit("restore fallback before building")
+            validate_fallback(out, cfg)
     selection = json.loads((out / "selection.json").read_text())
     pairs, _ = load_pairs(cfg)
     _, triggers = prior(cfg)
@@ -974,6 +1003,8 @@ def main():
             "prepare",
             "import-completed",
             "audit-triggers",
+            "smoke-gate",
+            "restore-fallback",
             "generate",
             "check",
             "audit-sample",
@@ -1005,8 +1036,26 @@ def main():
         if args.stage == "import-completed":
             import_completed(out, cfg, dry_run=args.dry_run)
             return
-        validate_import(out, cfg, args.dry_run)
-        if args.stage == "audit-triggers":
+        validate_import(
+            out,
+            cfg,
+            args.dry_run,
+            allow_partial_fallback=args.stage == "restore-fallback",
+        )
+        if args.stage in {"smoke-gate", "restore-fallback"}:
+            from experiments.adversarial_crossed_text.amendment3 import (
+                smoke_gate,
+                restore_fallback,
+            )
+
+            if args.stage == "restore-fallback":
+                restore_fallback(out, cfg)
+            else:
+                pairs, _ = load_pairs(cfg)
+                _, triggers = prior(cfg)
+                gate = smoke_gate(out, cfg, pairs, triggers)
+                print({k: v for k, v in gate.items() if k != "evidence"})
+        elif args.stage == "audit-triggers":
             run_audit(args, out, cfg)
         elif args.stage == "generate":
             generate(args, out, cfg)

@@ -27,6 +27,7 @@ def study(tmp_path, monkeypatch):
     cfg = c.config()
     cfg.pop("amendment_1", None)
     cfg.pop("amendment_2", None)
+    cfg.pop("amendment_3", None)
     cfg["texts"]["hand_audit_tasks"] = 2
     selection = {
         "development": ["a", "b", "c"],

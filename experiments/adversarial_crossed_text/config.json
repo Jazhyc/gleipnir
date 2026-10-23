@@ -2,7 +2,7 @@
   "experiment": "adversarial_crossed_text",
   "protocol_status": "frozen",
   "execution_enabled": true,
-  "output": "results/adversarial_crossed_text_amendment2_20261023",
+  "output": "results/adversarial_crossed_text_amendment3_20261023",
   "env_file": "../../.env",
   "data": {
     "set": "apps-neutral",
@@ -90,16 +90,17 @@
       "temperature": 0.7,
       "top_p": null,
       "seed": 0,
-      "max_tokens": 4096,
+      "max_tokens": 16384,
       "extra_body": {},
       "reasoning": "Always reasons on Tinker OpenAI endpoint. No reasoning_effort or thinking-disable fields, per prior endpoint checks.",
       "usd_per_m_prompt": 3.78,
       "usd_per_m_completion": 12.15,
-      "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/ (verified 2026-10-23)"
+      "prices_source": "https://tinker-docs.thinkingmachines.ai/tinker/models/models_and_pricing/ (verified 2026-10-23)",
+      "timeout_seconds": 1800
     }
   },
   "budget_usd": {
-    "writer": 35,
+    "writer": 80,
     "checker": 6
   },
   "texts": {
@@ -252,7 +253,7 @@
   "campaign": {
     "output": "results/adversarial_campaign_20261023",
     "caps_usd": {
-      "tinker": 185,
+      "tinker": 230,
       "openrouter": 9.5,
       "anthropic-batch": 7
     },
@@ -509,6 +510,83 @@
       "maximum_writer_total_usd": 26.7747134,
       "feedback_max_bytes": 512,
       "pricing": "Conservative UTF-8 input byte count plus 2048 framing tokens at undiscounted input rate, full output-token ceiling, both attempts for every task."
+    }
+  },
+  "amendment_3": {
+    "date": "2026-10-23",
+    "timing": "Before any Amendment 3 text is generated, used or scored; no monitor scores exist.",
+    "evidence": {
+      "amendment2_final_valid": 0,
+      "length_finishes": 288,
+      "timeouts": 6,
+      "cause": "Full GLM always reasons on Tinker; 4096 tokens exhausted before final prose. This was a configuration failure, not a completed-text semantic test."
+    },
+    "unchanged": "Amendment 2 writer, inputs, prompts, temperature, seed, two-attempt limit and retry rule. All non-cover conditions, hand verdicts, receipts and donors preserved.",
+    "timeout_justification": "1800 seconds allows 16384 output tokens at 10 tokens/second plus 161.6 seconds overhead. Six 300-second timeouts at 4096 tokens motivate more than a fourfold increase. Transport failures remain terminal.",
+    "import": {
+      "source": "results/adversarial_crossed_text_amendment2_20261023",
+      "config_sha256": "771a6a531234feeaa803e23d6996bef9b908a0430f00ce036b400d2ba3094a7d",
+      "files": {
+        "pipeline.identity.json": "6cccaddf271a8096ef4700d7c496c394a31a3a8158ff322e8cb7ec997a24efc0",
+        "selection.json": "c0f4c82776893fd30f923d612ce685f4025eb755e739b291c3c97827d804e904",
+        "trigger_audit.jsonl": "c9f74498b728a21648ffeeeaec7ef4e031b83cdaa058fca7483f140a80951bd2",
+        "trigger_hand_reads.jsonl": "446a6e135356e50deaccc4b5d7431baf44daaa72f7b5e70a412c7f8851f8da05",
+        "texts.jsonl": "6da82402c4e7d3c7411b3b9f41e1376e1195ceed0c9d5f596b474ee521f35840",
+        "text_checks.jsonl": "efe938cb6ac4a8d88bc3f4d0508ebff68e87d4d4fbb6cff0742653b013fd022e",
+        "hand_audit.jsonl": "318b660a44cbc5fc1dc18068314157751f962c165d859e866e9e936c7b1e3a97",
+        "calls.jsonl": "802e19ae9b31d174ce1e0893cced0eb542e0f2cf16ae42e360db60b9c9a30104",
+        "inherited_calls.jsonl": "f6492c1c2903d5b29127138f91b106173b7b057d80a685a24ce68b46a51b088a"
+      }
+    },
+    "fallback_import": {
+      "source": "results/adversarial_crossed_text_amendment1_20261023",
+      "config_sha256": "51c30183395ebb257a77a6164034c851295cbc12bad8e08205eb65461fd3572a",
+      "files": {
+        "pipeline.identity.json": "282f7b2742c38ccba3ba89121855ca9fae6c4845feefd3485a4ebb1c06d29860",
+        "selection.json": "c0f4c82776893fd30f923d612ce685f4025eb755e739b291c3c97827d804e904",
+        "trigger_audit.jsonl": "c9f74498b728a21648ffeeeaec7ef4e031b83cdaa058fca7483f140a80951bd2",
+        "trigger_hand_reads.jsonl": "446a6e135356e50deaccc4b5d7431baf44daaa72f7b5e70a412c7f8851f8da05",
+        "texts.jsonl": "00f4fbed0bd2a34ffa05498bf18a0f1192ac25a282f2592a0f126686e68849f8",
+        "text_checks.jsonl": "825ec32d2a6262366feaea04bca7c64c049d59dab55fb6a76535baeb2eff34c2",
+        "hand_audit.jsonl": "93f3c328102367e7d3293bfc8b328b7774c196e7e9dbc47767aab8b96265b8f8",
+        "calls.jsonl": "f2cf2a718782a0e88ea73007e5bc5e23d289c6418f4eddc4a0e536fc5d08ec4c",
+        "inherited_calls.jsonl": "e4b981c0e69ea50a1279eb368567c82ae8366c0227bd71b832c9adb768bee5d2"
+      }
+    },
+    "smoke": {
+      "tasks": 5,
+      "hash_seed": "amendment3-smoke-20261023",
+      "rule": "Among trigger-eligible development tasks, take the first five by sha256(seed + colon + task_id), with task_id tie-break. Freeze selection before calls.",
+      "minimum_finished": 4,
+      "minimum_hand_valid": 2,
+      "finished": "Final task text has nonempty prose and last receipt status ok with finish_reason stop; length/truncated, refusal and transport failures do not count. Format-invalid completed prose can count finished, but cannot count hand-valid.",
+      "pass": "Continue remaining accepted tasks only after hand-reading all five; smoke texts count in final generation. The existing whole-remaining-round budget guard stays binding.",
+      "fail": "Stop all cover generation. Restore Amendment 1 cover texts and existing hand verdicts, including its 34 valid pairs, 6 development and 28 held-out. Keep smoke history and receipts. Cover stories held-out descriptive only under Amendment 2.",
+      "selected_tasks": [
+        "1494",
+        "1226",
+        "4384",
+        "4310",
+        "2026"
+      ]
+    },
+    "budget_change": {
+      "step1_writer_old": 35,
+      "step1_writer_new": 80,
+      "campaign_tinker_old": 185,
+      "campaign_tinker_new": 230,
+      "checker_unchanged": 6,
+      "a4_tinker_scope_unchanged": 140
+    },
+    "budget_bound": {
+      "prior_writer_usd": 20.22006164,
+      "prior_checker_usd": 1.367554965,
+      "maximum_requests": 298,
+      "round_worst_case_usd": 66.94571808,
+      "maximum_writer_total_usd": 87.16577972,
+      "policy": "Preflight smoke independently at both attempts, then preflight the whole remaining round after a passing gate. No weakening of per-request, role or campaign guards. If the continuation bound exceeds $80, stop for budget; do not classify it as a text-validity fallback. Full unconditional worst case exceeds the authorized cap; no over-cap dispatch is allowed.",
+      "pricing": "Conservative UTF-8 input byte count plus 2048 framing tokens at undiscounted input rate, full output-token ceiling, both attempts for every task.",
+      "smoke_worst_case_usd": 2.22810804
     }
   }
 }

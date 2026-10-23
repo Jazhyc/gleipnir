@@ -173,7 +173,7 @@ def validate_pipeline(out, cfg, mock):
     validate_import(out, cfg, mock)
 
 
-def validate_import(out, cfg, mock):
+def validate_import(out, cfg, mock, *, allow_partial_fallback=False):
     """A regeneration folder retains a tamper-evident prefix of inherited work."""
     import hashlib
 
@@ -184,7 +184,8 @@ def validate_import(out, cfg, mock):
         raise SystemExit("import completed work before regeneration")
     manifest = json.loads(path.read_text())
     if (
-        manifest["source"] != cfg.get("amendment_2", cfg["amendment_1"])["import"]
+        manifest["source"]
+        != cfg.get("amendment_3", cfg.get("amendment_2", cfg["amendment_1"]))["import"]
         or manifest["dry_run"] != mock
     ):
         raise ValueError("import provenance changed")
@@ -197,6 +198,10 @@ def validate_import(out, cfg, mock):
     }
     if manifest.get("prefixes") != prefixes:
         raise ValueError("import manifest does not match pinned artifact prefixes")
+    if "amendment_3" in cfg and not allow_partial_fallback:
+        from experiments.adversarial_crossed_text.amendment3 import validate_fallback
+
+        validate_fallback(out, cfg)
     for name, data in expected.items():
         with (out / name).open("rb") as handle:
             actual = handle.read(len(data))
@@ -221,6 +226,9 @@ def seal_variants(out, cfg, mock):
         "hand_audit.jsonl",
         "variant_failures.jsonl",
         "variants.jsonl",
+        "smoke.tasks.json",
+        "smoke.gate.json",
+        "fallback.manifest.json",
     )
     manifest = {
         "dry_run": mock,
@@ -288,6 +296,7 @@ class Calls:
             self.model_spec,
             cfg["budget_usd"][role],
             cfg,
+            timeout=self.model_spec.get("timeout_seconds", 300.0),
             responder=responder if dry_run else None,
         )
         self.client.budget.spent_usd = spent(out, role)
