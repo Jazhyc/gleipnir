@@ -88,6 +88,8 @@ def frozen(cfg, *, heldout=False, out=None):
         "src/gleipnir/adversarial",
         "experiments/adversarial_code_or_comments",
     ]
+    if not cfg.get("execution_enabled", False):
+        raise SystemExit("execution disabled by user; implementation-only scope")
     if cfg["protocol_status"] != "frozen" or not clean(paths):
         raise SystemExit(
             "commit the frozen protocol and implementation before paid/GPU work"
@@ -234,6 +236,8 @@ class Calls:
     """Reserve on disk BEFORE dispatch. Interrupted requests are not replayed."""
 
     def __init__(self, out, cfg, role, dry_run=False, responder=None):
+        if not dry_run:
+            frozen(cfg)
         self.out, self.cfg, self.role = out, cfg, role
         self.dry_run = dry_run
         self.lock = threading.Lock()

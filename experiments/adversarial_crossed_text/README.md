@@ -1,5 +1,10 @@
 # Identical text on honest and backdoored code
 
+Execution is disabled at the user's request. This is implementation-only work.
+Five trigger-audit calls completed before that instruction, using $0.009712 of
+Tinker credit. Their ignored receipts are retained. No GPU scoring, text writing,
+OpenRouter or Sonnet requests ran for this study. The VM stayed stopped.
+
 Frozen 23 October 2026, after three Astra review rounds and offline tests,
 before any paid call or GPU execution in this experiment. `config.json` holds the parameters. The previous study is
 [`adversarial_code_or_comments`](../adversarial_code_or_comments/README.md).
