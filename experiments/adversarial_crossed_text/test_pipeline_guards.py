@@ -725,3 +725,39 @@ def test_import_rejects_changed_identity(study, monkeypatch, change):
         study.cfg["prompts_sha256"]["task_restatement"] = "changed"
     with pytest.raises(ValueError):
         p.import_completed(dest, study.cfg, dry_run=change == "mode")
+
+
+@pytest.mark.parametrize('change', ['empty', 'omit', 'length', 'hash'])
+def test_import_manifest_cannot_remove_or_redefine_prefixes(study, monkeypatch, change):
+    import json
+
+    dest = make_import(study, monkeypatch)
+    p.import_completed(dest, study.cfg)
+    path = dest / 'import.manifest.json'
+    manifest = json.loads(path.read_text())
+    if change == 'empty':
+        manifest['prefixes'] = {}
+    elif change == 'omit':
+        del manifest['prefixes']['calls.jsonl']
+    elif change == 'length':
+        manifest['prefixes']['calls.jsonl']['bytes'] = 0
+    else:
+        manifest['prefixes']['calls.jsonl']['sha256'] = 'changed'
+    path.write_text(json.dumps(manifest))
+    with pytest.raises(ValueError, match='pinned artifact prefixes'):
+        c.validate_import(dest, study.cfg, False)
+    with pytest.raises(ValueError, match='pinned artifact prefixes'):
+        p.import_completed(dest, study.cfg)
+
+
+def test_frozen_donor_never_changes_with_current_checker_or_hand_verdict(study):
+    cells = p.text_cells(study.selection, p.final_texts(study.out), {}, study.cfg)
+    donors = {t: cells[t, 'irrelevant']['donor_task_id'] for t in study.tasks}
+    task = next(t for t in study.tasks if t in study.selection['development'])
+    donor = next(t for t in study.selection['development'] if t != task and t != donors[task])
+    donors[task] = donor
+    study.cfg['amendment_1'] = {'frozen_donors': donors}
+    frozen = p.text_cells(study.selection, p.final_texts(study.out), {}, study.cfg)
+    assert frozen[task, 'irrelevant']['donor_task_id'] == donor
+    assert frozen[task, 'irrelevant']['record'] == p.final_texts(study.out)[donor, 'task_restatement']
+    assert frozen == p.text_cells(study.selection, p.final_texts(study.out), {'changed': False}, study.cfg)

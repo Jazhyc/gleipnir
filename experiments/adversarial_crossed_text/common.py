@@ -188,13 +188,19 @@ def validate_import(out, cfg, mock):
         or manifest["dry_run"] != mock
     ):
         raise ValueError("import provenance changed")
-    for name, prefix in manifest["prefixes"].items():
+    from experiments.adversarial_crossed_text.pipeline import completed_payloads
+
+    expected = completed_payloads(cfg, dry_run=mock)
+    prefixes = {
+        n: {"bytes": len(data), "sha256": hashlib.sha256(data).hexdigest()}
+        for n, data in expected.items()
+    }
+    if manifest.get("prefixes") != prefixes:
+        raise ValueError("import manifest does not match pinned artifact prefixes")
+    for name, data in expected.items():
         with (out / name).open("rb") as handle:
-            data = handle.read(prefix["bytes"])
-        if (
-            len(data) != prefix["bytes"]
-            or hashlib.sha256(data).hexdigest() != prefix["sha256"]
-        ):
+            actual = handle.read(len(data))
+        if actual != data:
             raise ValueError(f"imported artifact prefix changed: {name}")
 
 

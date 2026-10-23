@@ -40,7 +40,9 @@ the 109 unsampled accepted tasks.
 Every text cell used for scoring now requires a current, SHA-bound
 `valid=true` verdict in `hand_audit.jsonl`. Every cell has a disposition,
 including irrelevant text, failed or missing texts, and trigger exclusions.
-The automatic checker is advisory only, including for donor selection.
+The automatic checker is advisory only for acceptance. The irrelevant donor
+assignments from the original frozen rule are pinned in config; current checker
+or hand verdicts cannot select replacement donors.
 The six condition definitions below remain unchanged.
 
 Regenerate specific accusations, cover stories and generic accusations for all
@@ -60,7 +62,8 @@ matches. Old non-restatement text and checker results remain in the original
 folder. All old call receipts are retained as inherited receipts for accounting;
 only imported completed requests enter the new resume cache. Campaign request
 IDs and role caps remain unchanged. No old folder binding or ledger entry is
-edited. Imported artifact prefixes are sealed against mutation.
+edited. Imported artifact prefixes are reconstructed from pinned source bytes
+at validation, so changing the manifest cannot bypass their integrity checks.
 
 Run the advisory checker, hand-read all five text conditions for all 149 accepted
 tasks, run `audit-sample`, then `build`. Reuse a verdict only when its text hash

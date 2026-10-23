@@ -86,17 +86,12 @@ def prepare(out, cfg):
     print({k: len(selection[k]) for k in ("development", "heldout", "calibration")})
 
 
-def import_completed(out, cfg, *, dry_run=False):
-    """Import pinned completed work, never rewrite bindings or ledger reservations."""
+def completed_payloads(cfg, *, dry_run=False):
+    """Reconstruct inherited bytes exclusively from the pinned source artifacts."""
     from experiments.adversarial_crossed_text.common import ROOT
 
     spec = cfg["amendment_1"]["import"]
     source = ROOT / spec["source"]
-    if source.resolve() == out.resolve():
-        raise ValueError("import requires a new output directory")
-    if (out / "import.manifest.json").exists():
-        validate_import(out, cfg, dry_run)
-        return
     for name, expected in spec["files"].items():
         if digest(source / name) != expected:
             raise ValueError(f"import source artifact changed: {name}")
@@ -106,38 +101,21 @@ def import_completed(out, cfg, *, dry_run=False):
         or identity["dry_run"] != dry_run
     ):
         raise ValueError("import source configuration or mock/live mode mismatch")
-    if digest(out / "selection.json") != spec["files"]["selection.json"]:
-        raise ValueError("import selection changed")
-    # Only these frozen prompts are reused. Revised conditions have no imported cache.
     for name in ("trigger_audit", "task_restatement", "text_rules", "text_check"):
         path = f"experiments/adversarial_crossed_text/prompts/{name}.txt"
         if identity["sources"][path] != cfg["prompts_sha256"][name]:
             raise ValueError(f"imported prompt changed: {name}")
-    names = (
-        "trigger_audit.jsonl",
-        "trigger_hand_reads.jsonl",
-        "texts.jsonl",
-        "text_checks.jsonl",
-        "hand_audit.jsonl",
-        "calls.jsonl",
-        "inherited_calls.jsonl",
-    )
-    if any((out / n).exists() for n in names):
-        raise SystemExit("import destination already contains work; use a fresh folder")
     texts = [
-        r
-        for r in read_jsonl(source / "texts.jsonl")
+        r for r in read_jsonl(source / "texts.jsonl")
         if r["condition"] == "task_restatement"
     ]
     checks = [
-        r
-        for r in read_jsonl(source / "text_checks.jsonl")
+        r for r in read_jsonl(source / "text_checks.jsonl")
         if r["condition"] == "task_restatement"
     ]
     calls = read_jsonl(source / "calls.jsonl")
     imported_ids = {
-        r["request_id"]
-        for r in calls
+        r["request_id"] for r in calls
         if r["request_id"].startswith("trigger:")
         or ":task_restatement:" in r["request_id"]
     }
@@ -146,55 +124,65 @@ def import_completed(out, cfg, *, dry_run=False):
         raise ValueError("only completed calls may be imported")
     if any(r.get("dry_run") != dry_run for r in calls):
         raise ValueError("mixed imported call provenance")
-    for name in ("trigger_audit.jsonl", "trigger_hand_reads.jsonl"):
-        (out / name).write_bytes((source / name).read_bytes())
-    write_jsonl(out / "texts.jsonl", texts)
-    write_jsonl(out / "text_checks.jsonl", checks)
-    write_jsonl(
-        out / "calls.jsonl", [r for r in calls if r["request_id"] in imported_ids]
-    )
-    (out / "inherited_calls.jsonl").write_bytes((source / "calls.jsonl").read_bytes())
-    selection = json.loads((out / "selection.json").read_text())
+    selection = json.loads((source / "selection.json").read_text())
     pairs, _ = load_pairs(cfg)
     _, triggers = prior(cfg)
-    eligible(
-        out, pairs, triggers, required=selection["development"] + selection["heldout"]
-    )
-    cells = text_cells(selection, final_texts(out), {}, cfg)
+    eligible(source, pairs, triggers,
+             required=selection["development"] + selection["heldout"])
+    imported_texts = {(r["task_id"], r["condition"]): r for r in texts}
+    cells = text_cells(selection, imported_texts, {}, cfg)
     reads = []
     for r in read_jsonl(source / "hand_audit.jsonl"):
         cell = cells.get((r["task_id"], r["condition"]))
-        if (
-            cell
-            and cell["record"]
-            and all(
-                r.get(k) == v
-                for k, v in cell_identity(
-                    cell, pairs[r["task_id"]], triggers[r["task_id"]]
-                ).items()
-            )
-        ):
-            hand_verdict(
-                r, cell_identity(cell, pairs[r["task_id"]], triggers[r["task_id"]])
-            )
-            reads.append(r)
-    write_jsonl(out / "hand_audit.jsonl", reads)
+        if cell and cell["record"]:
+            expected = cell_identity(cell, pairs[r["task_id"]], triggers[r["task_id"]])
+            if all(r.get(k) == v for k, v in expected.items()):
+                hand_verdict(r, expected)
+                reads.append(r)
+
+    def encoded(rows):
+        return "".join(json.dumps(r) + "\n" for r in rows).encode()
+
+    return {
+        "trigger_audit.jsonl": (source / "trigger_audit.jsonl").read_bytes(),
+        "trigger_hand_reads.jsonl": (source / "trigger_hand_reads.jsonl").read_bytes(),
+        "texts.jsonl": encoded(texts),
+        "text_checks.jsonl": encoded(checks),
+        "hand_audit.jsonl": encoded(reads),
+        "calls.jsonl": encoded([r for r in calls if r["request_id"] in imported_ids]),
+        "inherited_calls.jsonl": (source / "calls.jsonl").read_bytes(),
+    }
+
+
+def import_completed(out, cfg, *, dry_run=False):
+    """Import pinned completed work, never rewrite bindings or ledger reservations."""
+    from experiments.adversarial_crossed_text.common import ROOT
+
+    spec = cfg["amendment_1"]["import"]
+    if (ROOT / spec["source"]).resolve() == out.resolve():
+        raise ValueError("import requires a new output directory")
+    if (out / "import.manifest.json").exists():
+        validate_import(out, cfg, dry_run)
+        return
+    if digest(out / "selection.json") != spec["files"]["selection.json"]:
+        raise ValueError("import selection changed")
+    payloads = completed_payloads(cfg, dry_run=dry_run)
+    if any((out / n).exists() for n in payloads):
+        raise SystemExit("import destination already contains work; use a fresh folder")
+    for name, data in payloads.items():
+        (out / name).write_bytes(data)
     manifest = {
         "source": spec,
         "dry_run": dry_run,
         "prefixes": {
-            n: {"bytes": (out / n).stat().st_size, "sha256": digest(out / n)}
-            for n in names
+            n: {"bytes": len(data), "sha256": digest(out / n)}
+            for n, data in payloads.items()
         },
     }
     write_json(out / "import.manifest.json", manifest)
     validate_import(out, cfg, dry_run)
-    print(
-        {
-            "imported_restatements": len(final_texts(out)),
-            "reused_hand_verdicts": len(reads),
-        }
-    )
+    print({"imported_restatements": len(final_texts(out)),
+           "reused_hand_verdicts": len(read_jsonl(out / "hand_audit.jsonl"))})
 
 
 def fill(template, values):
@@ -558,7 +546,12 @@ def text_cells(selection, texts, checks, cfg):
                 if kind == "none":
                     continue
                 r, donor = texts.get((task, kind)), None
-                if kind == "irrelevant":
+                if kind == "irrelevant" and "frozen_donors" in cfg.get("amendment_1", {}):
+                    donor = cfg["amendment_1"]["frozen_donors"][task]
+                    if donor is not None and (donor == task or donor not in selection[split]):
+                        raise ValueError("frozen donor must be another task in the same split")
+                    r = texts.get((donor, "task_restatement")) if donor else None
+                elif kind == "irrelevant":
                     r = None
                     if ref and ref["status"] == "ok":
                         band = length_band(len(ref["text"]), cfg["texts"]["tolerance"])
