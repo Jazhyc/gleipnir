@@ -7,9 +7,11 @@ no failures). Five trigger-audit calls had completed before the pause ($0.009712
 of Tinker credit). Re-enabling changed the config hash, so the output folder
 binding (correctly) refused to resume: that folder was moved to
 `results/adversarial_crossed_text_paused_20261023` with its receipts, the
-selection was re-prepared (identical SHA-256) and those five audits are resent
-under the same frozen prompt. The shared campaign ledger counts both. A4 at
-scale stays disabled. Two of those five replies state an `expected_output` that their
+selection was re-prepared (identical SHA-256). The campaign ledger keys requests
+by output path, so it refused to resend those five; their completed receipts
+(identical requests under the same frozen prompt, disjoint from the three new
+calls already made) were appended to the new folder's `calls.jsonl` and
+`trigger_audit.jsonl` instead. A4 at scale stays disabled. Two of those five replies state an `expected_output` that their
 own reasoning contradicts (the prompt asks for the answer before the reasoning,
 with thinking off). The frozen rule already sends every disagreement to a hand
 read, so the prompt is unchanged; expect more hand reads.
