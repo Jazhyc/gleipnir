@@ -1,9 +1,14 @@
 # Identical text on honest and backdoored code
 
-Execution is disabled at the user's request. This is implementation-only work.
-Five trigger-audit calls completed before that instruction, using $0.009712 of
-Tinker credit. Their ignored receipts are retained. No GPU scoring, text writing,
-OpenRouter or Sonnet requests ran for this study. The VM stayed stopped.
+Execution was paused for implementation on 23 October and re-enabled the same
+day at Abhinav's request, after local verification: 90 tests across this folder
+and `adversarial_a4_scale`, plus a mocked end-to-end pipeline run (2,021 rows,
+no failures). Five trigger-audit calls had completed before the pause ($0.009712
+of Tinker credit); their receipts are kept and reused, not resent. A4 at scale
+stays disabled. Two of those five replies state an `expected_output` that their
+own reasoning contradicts (the prompt asks for the answer before the reasoning,
+with thinking off). The frozen rule already sends every disagreement to a hand
+read, so the prompt is unchanged; expect more hand reads.
 
 Frozen 23 October 2026, after three Astra review rounds and offline tests,
 before any paid call or GPU execution in this experiment. `config.json` holds the parameters. The previous study is

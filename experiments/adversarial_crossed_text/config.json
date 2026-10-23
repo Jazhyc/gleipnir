@@ -1,7 +1,7 @@
 {
   "experiment": "adversarial_crossed_text",
   "protocol_status": "frozen",
-  "execution_enabled": false,
+  "execution_enabled": true,
   "output": "results/adversarial_crossed_text",
   "env_file": "../../.env",
   "data": {
