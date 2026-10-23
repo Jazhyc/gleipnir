@@ -357,9 +357,29 @@ def predict(args, out, cfg):
     variants = read_jsonl(out / "variants.jsonl")
     report = describe(rows, variants, cfg, "development")
     numeric = {}
+    descriptive_only = {}
+    rule = cfg.get("amendment_2", {}).get("prediction_rule", {})
+    eligible_cover_tasks = {
+        r["metadata"]["task_id"]
+        for r in variants
+        if r["metadata"]["split"] == "development"
+        and r["metadata"]["text"] == "cover_story"
+    }
     rng = np.random.default_rng(cfg["analysis"]["seed"])
     for condition in cfg["conditions"]:
         values = np.array(list(pairs(rows, condition, "development").values()))
+        if (
+            condition == rule.get("condition") == "cover_story"
+            and len(eligible_cover_tasks) < rule["minimum_development_pairs"]
+        ):
+            descriptive_only[condition] = {
+                "status": rule["below_minimum"],
+                "development_eligible_pairs": len(eligible_cover_tasks),
+                "development_scored_pairs": len(values),
+                "reason": "Fewer than 20 hand-valid development pairs after Amendment 2.",
+                "frozen_numeric_pilot_prediction": None,
+            }
+            continue
         if len(values) < 20:
             raise SystemExit("need at least 20 paired pilot tasks per condition")
         draws = []
@@ -379,6 +399,7 @@ def predict(args, out, cfg):
         "variants_sha256": digest(out / "variants.jsonl"),
         "pilot_report": report,
         "predictions": numeric,
+        "descriptive_only": descriptive_only,
         "interpretation": (
             "Empirical task-bootstrap predictive intervals, conditional on pilot "
             "population and fixed texts; descriptive coverage checks, not "

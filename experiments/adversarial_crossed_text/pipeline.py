@@ -90,7 +90,7 @@ def completed_payloads(cfg, *, dry_run=False):
     """Reconstruct inherited bytes exclusively from the pinned source artifacts."""
     from experiments.adversarial_crossed_text.common import ROOT
 
-    spec = cfg["amendment_1"]["import"]
+    spec = cfg.get("amendment_2", cfg["amendment_1"])["import"]
     source = ROOT / spec["source"]
     for name, expected in spec["files"].items():
         if digest(source / name) != expected:
@@ -105,19 +105,22 @@ def completed_payloads(cfg, *, dry_run=False):
         path = f"experiments/adversarial_crossed_text/prompts/{name}.txt"
         if identity["sources"][path] != cfg["prompts_sha256"][name]:
             raise ValueError(f"imported prompt changed: {name}")
-    texts = [
-        r for r in read_jsonl(source / "texts.jsonl")
-        if r["condition"] == "task_restatement"
-    ]
+    amendment2 = "amendment_2" in cfg
+    keep = lambda kind: (
+        kind != "cover_story" if amendment2 else kind == "task_restatement"
+    )
+    texts = [r for r in read_jsonl(source / "texts.jsonl") if keep(r["condition"])]
     checks = [
-        r for r in read_jsonl(source / "text_checks.jsonl")
-        if r["condition"] == "task_restatement"
+        r for r in read_jsonl(source / "text_checks.jsonl") if keep(r["condition"])
     ]
     calls = read_jsonl(source / "calls.jsonl")
     imported_ids = {
-        r["request_id"] for r in calls
+        r["request_id"]
+        for r in calls
         if r["request_id"].startswith("trigger:")
-        or ":task_restatement:" in r["request_id"]
+        or any(
+            f":{kind}:" in r["request_id"] for kind in cfg["conditions"] if keep(kind)
+        )
     }
     latest = {r["request_id"]: r for r in calls if r["request_id"] in imported_ids}
     if any(r["status"] != "settled" or "result" not in r for r in latest.values()):
@@ -127,14 +130,18 @@ def completed_payloads(cfg, *, dry_run=False):
     selection = json.loads((source / "selection.json").read_text())
     pairs, _ = load_pairs(cfg)
     _, triggers = prior(cfg)
-    eligible(source, pairs, triggers,
-             required=selection["development"] + selection["heldout"])
+    eligible(
+        source,
+        pairs,
+        triggers,
+        required=selection["development"] + selection["heldout"],
+    )
     imported_texts = {(r["task_id"], r["condition"]): r for r in texts}
     cells = text_cells(selection, imported_texts, {}, cfg)
     reads = []
     for r in read_jsonl(source / "hand_audit.jsonl"):
         cell = cells.get((r["task_id"], r["condition"]))
-        if cell and cell["record"]:
+        if cell and keep(r["condition"]) and (amendment2 or cell["record"]):
             expected = cell_identity(cell, pairs[r["task_id"]], triggers[r["task_id"]])
             if all(r.get(k) == v for k, v in expected.items()):
                 hand_verdict(r, expected)
@@ -150,7 +157,10 @@ def completed_payloads(cfg, *, dry_run=False):
         "text_checks.jsonl": encoded(checks),
         "hand_audit.jsonl": encoded(reads),
         "calls.jsonl": encoded([r for r in calls if r["request_id"] in imported_ids]),
-        "inherited_calls.jsonl": (source / "calls.jsonl").read_bytes(),
+        "inherited_calls.jsonl": (
+            (source / "inherited_calls.jsonl").read_bytes() if amendment2 else b""
+        )
+        + (source / "calls.jsonl").read_bytes(),
     }
 
 
@@ -158,7 +168,7 @@ def import_completed(out, cfg, *, dry_run=False):
     """Import pinned completed work, never rewrite bindings or ledger reservations."""
     from experiments.adversarial_crossed_text.common import ROOT
 
-    spec = cfg["amendment_1"]["import"]
+    spec = cfg.get("amendment_2", cfg["amendment_1"])["import"]
     if (ROOT / spec["source"]).resolve() == out.resolve():
         raise ValueError("import requires a new output directory")
     if (out / "import.manifest.json").exists():
@@ -181,8 +191,12 @@ def import_completed(out, cfg, *, dry_run=False):
     }
     write_json(out / "import.manifest.json", manifest)
     validate_import(out, cfg, dry_run)
-    print({"imported_restatements": len(final_texts(out)),
-           "reused_hand_verdicts": len(read_jsonl(out / "hand_audit.jsonl"))})
+    print(
+        {
+            "imported_restatements": len(final_texts(out)),
+            "reused_hand_verdicts": len(read_jsonl(out / "hand_audit.jsonl")),
+        }
+    )
 
 
 def fill(template, values):
@@ -338,14 +352,77 @@ def final_texts(out):
     return rows
 
 
+def cover_round_bound(out, cfg, tasks, pairs, triggers, texts):
+    """Bound all remaining requests before the round, with byte-based pricing."""
+    from experiments.adversarial_code_or_comments.llm import endpoint
+    from experiments.adversarial_crossed_text.common import spent
+    from experiments.adversarial_crossed_text.campaign import Campaign
+
+    amendment = cfg["amendment_2"]
+    model = endpoint(cfg["models"][amendment["writer_model_role"]])
+    histories = Counter(
+        r["task_id"]
+        for r in read_jsonl(out / "texts.jsonl")
+        if r["condition"] == "cover_story"
+    )
+    worst = 0.0
+    for task in tasks:
+        previous = texts.get((task, "cover_story"))
+        if previous and previous["status"] not in {
+            "length_out_of_band",
+            "banned_wording",
+            "empty",
+            "code_block",
+            "truncation",
+        }:
+            continue
+        reference = texts[(task, "task_restatement")]
+        band = length_band(len(reference["text"]), cfg["texts"]["tolerance"])
+        values = {
+            **task_context(pairs[task], triggers[task]),
+            "target_chars": len(reference["text"]),
+            "min_chars": band[0],
+            "max_chars": band[1],
+        }
+        text = (
+            fill(prompt("cover_story", cfg), values)
+            + "\n"
+            + fill(prompt("text_rules", cfg), values)
+        )
+        remaining = max(0, amendment["max_attempts"] - histories[task])
+        # Feedback is limited to 512 bytes; the prior reply is never resent.
+        worst += remaining * model.worst_case_usd(len(text.encode()) + 512)
+    campaign = Campaign(cfg, out)
+    ledger = campaign.latest().values()
+    campaign_used = sum(r["charge"] for r in ledger if r["api"] == "tinker")
+    if (
+        spent(out, "writer") + worst > cfg["budget_usd"]["writer"]
+        or campaign_used + worst > cfg["campaign"]["caps_usd"]["tinker"]
+    ):
+        raise SystemExit("entire remaining cover round cannot fit worst-case caps")
+    return worst
+
+
 def generate(args, out, cfg):
     selection = json.loads((out / "selection.json").read_text())
     pairs, _ = load_pairs(cfg)
     _, triggers = prior(cfg)
     texts = final_texts(out)
-    calls = Calls(out, cfg, "writer", args.dry_run, mock_reply)
+    amendment = cfg.get("amendment_2")
+    calls = Calls(
+        out,
+        cfg,
+        "writer",
+        args.dry_run,
+        mock_reply,
+        model_role=amendment["writer_model_role"] if amendment else None,
+    )
     allowed = eligible(out, pairs, triggers)
     tasks = [t for t in selection["development"] + selection["heldout"] if t in allowed]
+
+    if amendment:
+        bound = cover_round_bound(out, cfg, tasks, pairs, triggers, texts)
+        print({"remaining_cover_round_worst_case_usd": bound}, flush=True)
 
     def work(task):
         ctx = task_context(pairs[task], triggers[task])
@@ -355,6 +432,8 @@ def generate(args, out, cfg):
             "cover_story",
             "generic_accusation",
         ):
+            if amendment and kind not in amendment["regenerate_conditions"]:
+                continue
             key = task, kind
             previous = texts.get(key)
             if previous and (
@@ -399,14 +478,19 @@ def generate(args, out, cfg):
                 for r in read_jsonl(out / "texts.jsonl")
                 if (r["task_id"], r["condition"]) == key
             ]
-            for r in prior_rows:
+            for r in [] if amendment else prior_rows:
                 messages.extend(
                     [
                         {"role": "assistant", "content": r.get("text", "")},
                         {"role": "user", "content": r["feedback"]},
                     ]
                 )
-            for attempt in range(len(prior_rows) + 1, cfg["texts"]["max_attempts"] + 1):
+            if amendment and prior_rows:
+                messages.append({"role": "user", "content": prior_rows[-1]["feedback"]})
+            attempts = (
+                amendment["max_attempts"] if amendment else cfg["texts"]["max_attempts"]
+            )
+            for attempt in range(len(prior_rows) + 1, attempts + 1):
                 result = calls.chat(f"text:{task}:{kind}:{attempt}", messages, attempt)
                 reply = result.get("text", "").strip()
                 status = (
@@ -425,6 +509,10 @@ def generate(args, out, cfg):
                     f"Return {band[0]} to {band[1]} characters. "
                     f"TARGET_CHARS={target}. Return only prose."
                 )
+                if amendment and len(feedback.encode()) > 512:
+                    raise ValueError(
+                        "format feedback exceeds pre-registered byte bound"
+                    )
                 record = {
                     "task_id": task,
                     "condition": kind,
@@ -446,6 +534,12 @@ def generate(args, out, cfg):
                     "truncation",
                 }:
                     break
+                if amendment:
+                    messages = [
+                        {"role": "user", "content": text},
+                        {"role": "user", "content": feedback},
+                    ]
+                    continue
                 messages.extend(
                     [
                         {"role": "assistant", "content": reply},
@@ -546,10 +640,16 @@ def text_cells(selection, texts, checks, cfg):
                 if kind == "none":
                     continue
                 r, donor = texts.get((task, kind)), None
-                if kind == "irrelevant" and "frozen_donors" in cfg.get("amendment_1", {}):
+                if kind == "irrelevant" and "frozen_donors" in cfg.get(
+                    "amendment_1", {}
+                ):
                     donor = cfg["amendment_1"]["frozen_donors"][task]
-                    if donor is not None and (donor == task or donor not in selection[split]):
-                        raise ValueError("frozen donor must be another task in the same split")
+                    if donor is not None and (
+                        donor == task or donor not in selection[split]
+                    ):
+                        raise ValueError(
+                            "frozen donor must be another task in the same split"
+                        )
                     r = texts.get((donor, "task_restatement")) if donor else None
                 elif kind == "irrelevant":
                     r = None

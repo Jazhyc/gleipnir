@@ -184,7 +184,7 @@ def validate_import(out, cfg, mock):
         raise SystemExit("import completed work before regeneration")
     manifest = json.loads(path.read_text())
     if (
-        manifest["source"] != cfg["amendment_1"]["import"]
+        manifest["source"] != cfg.get("amendment_2", cfg["amendment_1"])["import"]
         or manifest["dry_run"] != mock
     ):
         raise ValueError("import provenance changed")
@@ -271,7 +271,9 @@ def spent(out, role):
 class Calls:
     """Reserve on disk BEFORE dispatch. Interrupted requests are not replayed."""
 
-    def __init__(self, out, cfg, role, dry_run=False, responder=None):
+    def __init__(
+        self, out, cfg, role, dry_run=False, responder=None, *, model_role=None
+    ):
         if not dry_run:
             frozen(cfg)
         self.out, self.cfg, self.role = out, cfg, role
@@ -281,8 +283,9 @@ class Calls:
         from experiments.adversarial_crossed_text.campaign import Campaign
 
         self.campaign = Campaign(cfg, out, dry_run)
+        self.model_spec = cfg["models"][model_role or role]
         self.client = Client(
-            cfg["models"][role],
+            self.model_spec,
             cfg["budget_usd"][role],
             cfg,
             responder=responder if dry_run else None,
@@ -309,7 +312,7 @@ class Calls:
             if old["prompt_sha256"] != identity:
                 raise ValueError("request id reused for another prompt")
             return old, True
-        worst = endpoint(self.cfg["models"][self.role]).worst_case_usd(
+        worst = endpoint(self.model_spec).worst_case_usd(
             sum(len(m["content"].encode()) for m in messages)
         )
         if spent(self.out, self.role) + worst > self.cfg["budget_usd"][self.role]:
