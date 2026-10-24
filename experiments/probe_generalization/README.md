@@ -106,6 +106,16 @@ first look at how the architectures differ.
 - **Budget.** Sweep step counts on the pilot ID rows and freeze the full-run
   budget from that sweep. Pilot architecture results are descriptive; they
   may drop an architecture only if it is clearly dominated on every pilot cell.
+- **Settings.** Every sweep probe trains at batch 16 rows with 3 seeds; seeds
+  change only initialization, and hard/soft probes of one seed start from the
+  same weights. Checkpoints at epochs 2, 4, 8 and 16 (about 1,000 updates at
+  16 epochs, matching the paper). Last-token probes sweep all 32 layers and
+  C ∈ {0.001, 0.01, 0.1, 1}. MultiMax takes each head's maximum value
+  (Eq. 9, no query vector), both in training and in scoring.
+
+Code: `prepare.py` (rows), `extract.py` (activations), `train.py` (pooled
+sweep), `lasttoken.py`, `pilot.py` (gates) and `run_pilot.sh` (remote order);
+reusable parts live in `src/gleipnir/probes/`, tests in `tests/probes/`.
 
 ## Storage and compute
 
