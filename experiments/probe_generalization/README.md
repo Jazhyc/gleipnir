@@ -85,12 +85,24 @@ the baseline to beat.
 
 ## Selection and stop rules (frozen)
 
-- In each of the four cells, select architecture, window, step budget and
-  seed on ID source-macro raw normalized pAUROC@20. Break ties by AUROC, then
-  by lower macro Brier.
-- Read OOD once per cell for the selected probe, and once for each
-  architecture's ID-best configuration (descriptive). Report every candidate's
-  ID result, plus per-source ranking, calibration, thresholds and ties.
+- In each of the four cells, a candidate is an (architecture, checkpoint
+  epoch) pair trained with 5 seeds; architectures include each rolling window
+  and each AlphaEvolve penalty setting. Its ID score is the seed-median
+  source-macro raw normalized pAUROC@20 on the full canonical CoT-removed ID
+  set, ties broken by seed-median AUROC, then lower seed-median macro Brier.
+  The best candidate is the cell's selection.
+- Read OOD once per cell for the selected candidate (all 5 seeds; report the
+  seed median and the best-ID seed), and once for each architecture family's
+  ID-best candidate (descriptive; the AlphaEvolve grid is one family). OOD
+  logits of every other probe are discarded unread. Last-token probes select
+  (layer, C) per objective on ID. Report every candidate's ID result, plus
+  per-source ranking, calibration, thresholds and ties.
+- Full-run settings (frozen 2026-10-24, before any full extraction): FP8
+  storage only; 7,836 training rows, batch 16 rows, AdamW at LR 1e-4 and
+  weight decay 3e-3; checkpoints at epochs 1, 2, 4 and 8 (about 490 to 3,920
+  updates, spanning the pilot's best 1,008); a 65,536-token cap per forward with
+  gradient accumulation (same updates). Implementation: `run_full.sh`,
+  `evaluate_ood.py` (selection, then OOD).
 - Hypothesis 1 holds per backbone if soft beats hard on Mean-OOD pAUROC@20 by at
   least 0.01, using the median of 5 seeds at the selected configuration.
   Hypothesis 2 is measured the same way across backbones.
