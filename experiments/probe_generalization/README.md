@@ -233,6 +233,33 @@ while soft rolling_w256 (fourth on ID) is the best OOD family at 0.783,
 against Gleipnir 4B's 0.804. SHADE-Arena stays near 0.23–0.25 for every probe;
 OOD Brier is 0.23–0.30. Results: `results/probe_generalization/full01/`.
 
+## Full-run result: NTP backbone (2026-10-24, `full01`)
+
+The 16-epoch extension triggered again (both cells at epoch 8) and resumed
+exactly from saved AdamW state; with prefetched reads, epochs took about 8–9
+minutes. OOD was read once; the run finished at 23:00 UTC.
+
+| cell | ID selection | ID | OOD (5-seed median) |
+|---|---|---:|---:|
+| hard | attention, epoch 8 | 0.8530 | 0.7092 |
+| soft | rolling_w256, epoch 8 | 0.9036 | **0.7643** |
+
+Soft − hard = +0.0551 OOD: **hypothesis 1 is met on the NTP backbone.** Soft
+also leads in every family: attention 0.709 → 0.792, rolling_w64 0.676 →
+0.765, rolling_w256 0.707 → 0.764, AlphaEvolve 0.684 → 0.746, rolling_w10
+0.636 → 0.689, multimax 0.599 → 0.684, mean_mlp 0.406 → 0.458. NTP last-token
+probes reach only about 0.20 OOD, so pooling carries the signal.
+
+**Hypothesis 2 (prompted beats NTP) is not supported.** With soft targets the
+selected NTP probe beats the prompted one on OOD (0.764 vs 0.713) and on ID
+(0.904 vs 0.856); with hard labels the backbones tie (0.709 vs 0.706).
+
+Context: soft-only Gleipnir 4B LoRA seeds score 0.896–0.914 ID and 0.777–0.813
+OOD; the selected NTP soft probe matches their ID mean (0.903) and its best
+OOD family (attention, 0.792) lies inside their OOD range. The matched
+hard-label LoRA seeds (`experiments/hard_label_seeds/`) lose far more without
+soft targets than probes do.
+
 ## Storage and compute
 
 Trajectory text totals about 517M characters across train, ID and OOD,
