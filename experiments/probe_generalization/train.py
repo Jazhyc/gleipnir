@@ -60,7 +60,12 @@ def main() -> None:
     parser.add_argument("--population", default="pilot")
     parser.add_argument("--backbone", choices=("prompted", "ntp"), required=True)
     parser.add_argument("--train-format", choices=("bf16", "fp8"), required=True)
-    parser.add_argument("--eval-formats", nargs="+", default=["bf16", "fp8"])
+    parser.add_argument(
+        "--eval-formats",
+        nargs="+",
+        help="default: BF16-trained probes score both formats (FP8 gate a); "
+        "FP8-trained probes score FP8 only (gate b)",
+    )
     parser.add_argument("--eval-split", default="id")
     parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES))
     parser.add_argument("--objectives", nargs="+", default=["hard", "soft"])
@@ -89,9 +94,15 @@ def main() -> None:
         loaded = time.time()
         train = ResidentStore(train, "cuda" if args.resident == "gpu" else "cpu")
         print(f"resident {args.resident} {time.time() - loaded:.0f}s", flush=True)
+    if args.eval_formats is None:
+        args.eval_formats = ["bf16", "fp8"] if args.train_format == "bf16" else ["fp8"]
+    # Evaluation rows are read at every checkpoint: hold them in pinned CPU memory.
+    loaded = time.time()
     evals = {
-        fmt: Store(root / args.eval_split, fmt, skip=skip) for fmt in args.eval_formats
+        fmt: ResidentStore(Store(root / args.eval_split, fmt, skip=skip), "cpu")
+        for fmt in args.eval_formats
     }
+    print(f"eval resident cpu {time.time() - loaded:.0f}s", flush=True)
     out = (
         ROOT
         / "results/probe_generalization"
