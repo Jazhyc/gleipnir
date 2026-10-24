@@ -156,6 +156,75 @@ class RollingAttentionProbe(HeadProbe):
         return rolling_pool(logits, values, mask, self.window).sum(-1) + self.bias
 
 
+class AlphaEvolveProbe(nn.Module):
+    """The best AlphaEvolve-discovered probe (Kramár et al. 2026, Algorithm 1).
+
+    ``H = MLP(LayerNorm(X))``, ``V = (W_proj H) * Softplus(W_gate H)``, bipolar
+    pooling ``concat(max_t V, -min_t V)`` and a linear readout. Training adds
+    ``l1 * sum |W|`` over all parameters and ``ortho * ||W_proj^T W_proj - I||^2``
+    (orthonormal projection columns), see :meth:`regularization`. The paper does
+    not state the channel count or the two weights; we use its 10-head default
+    and record ``l1``/``ortho`` in the probe name.
+    """
+
+    def __init__(self, hidden: int, *, l1: float, ortho: float, channels: int = HEADS):
+        super().__init__()
+        self.norm = nn.LayerNorm(hidden)
+        self.body = token_mlp(hidden)
+        self.project = nn.Linear(WIDTH, channels, bias=False)
+        self.gate = nn.Linear(WIDTH, channels, bias=False)
+        self.out = nn.Linear(2 * channels, 1)
+        self.l1, self.ortho = l1, ortho
+
+    def gated(self, h: torch.Tensor) -> torch.Tensor:
+        """``[..., WIDTH]`` -> ``[..., channels]`` gated projections."""
+        return self.project(h) * F.softplus(self.gate(h))
+
+    def forward(self, x: torch.Tensor, mask: torch.Tensor) -> torch.Tensor:
+        values = self.gated(self.body(self.norm(x))).float().transpose(1, 2)
+        return bipolar_readout(values, mask, self.out.weight[0], self.out.bias[0])
+
+    def regularization(self) -> torch.Tensor:
+        return alphaevolve_penalty(
+            list(self.parameters()), self.project.weight, self.l1, self.ortho
+        )
+
+
+def bipolar_readout(
+    values: torch.Tensor, mask: torch.Tensor, weight: torch.Tensor, bias: torch.Tensor
+) -> torch.Tensor:
+    """``concat(max_t V, -min_t V) @ weight + bias`` for ``V`` in ``[B, C, T]``."""
+    pooled = torch.cat([max_pool(values, mask), max_pool(-values, mask)], -1)
+    return pooled @ weight + bias
+
+
+def alphaevolve_penalty(
+    parameters: list[torch.Tensor], project: torch.Tensor, l1: float, ortho: float
+) -> torch.Tensor:
+    """L1 over every parameter plus orthonormality of the projection columns.
+
+    ``project`` is ``[channels, WIDTH]`` (PyTorch layout); the paper's
+    ``W_proj^T W_proj`` over output columns is ``project @ project.T`` here.
+    """
+    l1_term = sum(p.abs().sum() for p in parameters)
+    gram = project @ project.T
+    eye = torch.eye(gram.shape[0], device=gram.device, dtype=gram.dtype)
+    return l1 * l1_term + ortho * (gram - eye).pow(2).sum()
+
+
+ALPHAEVOLVE_DEFAULTS = {"l1": 1e-6, "ortho": 1e-3}
+
+
+def parse_alphaevolve(name: str) -> dict[str, float]:
+    """``alphaevolve`` or ``alphaevolve_l1e-06_o0.001`` -> penalty weights."""
+    if name == "alphaevolve":
+        return dict(ALPHAEVOLVE_DEFAULTS)
+    _, l1, ortho = name.split("_")
+    if not (l1.startswith("l") and ortho.startswith("o")):
+        raise ValueError(f"malformed AlphaEvolve probe name {name!r}")
+    return {"l1": float(l1[1:]), "ortho": float(ortho[1:])}
+
+
 def build(name: str, hidden: int) -> nn.Module:
     """Construct a probe from its sweep name, e.g. ``rolling_w64``."""
     if name == "mean_linear":
@@ -166,6 +235,8 @@ def build(name: str, hidden: int) -> nn.Module:
         return AttentionProbe(hidden)
     if name == "multimax":
         return MultiMaxProbe(hidden)
+    if name.startswith("alphaevolve"):
+        return AlphaEvolveProbe(hidden, **parse_alphaevolve(name))
     if name.startswith("rolling_w"):
         return RollingAttentionProbe(hidden, int(name.removeprefix("rolling_w")))
     raise ValueError(f"unknown probe architecture {name!r}")

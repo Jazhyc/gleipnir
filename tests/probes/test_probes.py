@@ -20,6 +20,7 @@ ARCHITECTURES = (
     "multimax",
     "rolling_w4",
     "rolling_w64",
+    "alphaevolve",
 )
 
 
@@ -96,6 +97,17 @@ def test_gradients_are_finite_with_padding(name):
     assert all(torch.isfinite(p.grad).all() for p in probe.parameters())
 
 
+def test_alphaevolve_penalty_and_names():
+    torch.manual_seed(0)
+    probe = architectures.build("alphaevolve_l1e-05_o0.01", HIDDEN)
+    assert (probe.l1, probe.ortho) == (1e-05, 0.01)
+    assert architectures.build("alphaevolve", HIDDEN).l1 == 1e-6
+    with torch.no_grad():
+        probe.project.weight.copy_(torch.eye(10, 100))
+    l1 = sum(p.abs().sum() for p in probe.parameters())
+    assert torch.allclose(probe.regularization(), 1e-05 * l1)
+
+
 def test_rolling_window_wider_than_row_equals_attention():
     torch.manual_seed(0)
     attention = architectures.build("attention", HIDDEN).eval()
@@ -122,7 +134,14 @@ def test_length_batches_cover_every_row_once():
     assert flat == list(range(100)) and max(len(b) for b in batches) == 8
 
 
-BANK_ARCHITECTURES = ("mean_linear", "mean_mlp", "attention", "multimax", "rolling_w4")
+BANK_ARCHITECTURES = (
+    "mean_linear",
+    "mean_mlp",
+    "attention",
+    "multimax",
+    "rolling_w4",
+    "alphaevolve_l1e-05_o0.01",
+)
 
 
 def padded_batch():
@@ -154,15 +173,17 @@ def test_bank_step_matches_individual_steps():
     target = torch.tensor([1.0, 0.0, 0.3])
     loss = torch.nn.functional.binary_cross_entropy_with_logits
     fused = torch.optim.AdamW(bank.parameters(), lr=1e-2, weight_decay=3e-3)
-    loss(bank(x, mask), target[:, None].expand(3, len(names)), reduction="none").mean(
-        0
-    ).sum().backward()
+    fused_loss = loss(
+        bank(x, mask), target[:, None].expand(3, len(names)), reduction="none"
+    ).mean(0)
+    (fused_loss + bank.regularization()).sum().backward()
     fused.step()
     singles = [
         torch.optim.AdamW(p.parameters(), lr=1e-2, weight_decay=3e-3) for p in probes
     ]
     for probe, optimizer in zip(probes, singles, strict=True):
-        loss(probe(x, mask), target).backward()
+        penalty = getattr(probe, "regularization", lambda: 0.0)()
+        (loss(probe(x, mask), target) + penalty).backward()
         optimizer.step()
     with torch.no_grad():
         refreshed = ProbeBank(names, probes)(x, mask)

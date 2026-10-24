@@ -111,8 +111,9 @@ def train_epoch(
     for indices, x, mask in stream(store, batches, device):
         with autocast(device):
             logits = sweep.bank(x, mask)
-        # Mean over rows per probe, summed over probes: parameters are disjoint,
-        # so each probe's gradient equals its own single-probe gradient.
+        # Mean over rows per probe (plus its own penalty), summed over probes:
+        # parameters are disjoint, so each probe's gradient equals its
+        # single-probe gradient. Logged losses are BCE only.
         losses = F.binary_cross_entropy_with_logits(
             logits.float(), labels[indices], reduction="none"
         ).mean(0)
@@ -124,7 +125,7 @@ def train_epoch(
             ]
             raise FloatingPointError(f"nonfinite loss in {bad}")
         sweep.optimizer.zero_grad(set_to_none=True)
-        losses.sum().backward()
+        (losses + sweep.bank.regularization()).sum().backward()
         sweep.optimizer.step()
         for spec, value in zip(sweep.specs, losses.tolist(), strict=True):
             spec.losses.append(value)

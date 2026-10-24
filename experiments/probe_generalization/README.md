@@ -57,7 +57,14 @@ A 2×2 grid, crossed with a probe-architecture sweep.
   - mean pooling, with a linear readout and with the per-token MLP;
   - softmax attention probe with 10 heads;
   - MultiMax: a hard max per head, summed over heads;
-  - max of rolling attention means, w ∈ {10, 64, 256}.
+  - max of rolling attention means, w ∈ {10, 64, 256};
+  - the best AlphaEvolve-discovered probe (the paper's Algorithm 1 and Table 3
+    "AlphaEvolve" row): LayerNorm, the same MLP, Softplus-gated projections,
+    bipolar max/−min pooling and a linear readout, trained with an L1 penalty
+    on all weights and an orthogonality penalty on the projection. The paper
+    omits its channel count and penalty weights; we use 10 channels (its
+    default head count) and record the weights in the probe name. Added after
+    the pilot, so it enters at the full run.
 
   Optimizer defaults are AdamW at LR 1e-4 and weight decay 3e-3. Minibatches
   replace full-batch training at a fixed step budget, which the pilot freezes.
