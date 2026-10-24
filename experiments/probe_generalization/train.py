@@ -96,6 +96,12 @@ def main() -> None:
         default="gpu",
         help="hold the training rows in GPU or pinned CPU memory, or stream them",
     )
+    parser.add_argument(
+        "--resume-from",
+        type=int,
+        help="continue an existing sweep from this saved checkpoint epoch "
+        "(probe weights, AdamW state and per-epoch data order are restored)",
+    )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
     if args.architectures is None:
@@ -127,8 +133,13 @@ def main() -> None:
         / args.name
         / (f"{args.backbone}-{args.train_format}")
     )
-    out.mkdir(parents=True, exist_ok=False)
-    (out / "config.json").write_text(json.dumps(vars(args), indent=2) + "\n")
+    out.mkdir(parents=True, exist_ok=args.resume_from is not None)
+    config_name = (
+        "config.json"
+        if args.resume_from is None
+        else f"config_resume_e{args.resume_from}.json"
+    )
+    (out / config_name).write_text(json.dumps(vars(args), indent=2) + "\n")
     sweep = make_sweep(
         args.architectures,
         args.objectives,
@@ -139,8 +150,21 @@ def main() -> None:
         device=device,
     )
     lengths = [r["length"] for r in train.rows]
-    summary, started = {"checkpoints": {}}, time.time()
-    for epoch in range(1, max(args.checkpoints) + 1):
+    summary, started, first = {"checkpoints": {}}, time.time(), 1
+    if args.resume_from is not None:
+        state = torch.load(out / f"probes_e{args.resume_from}.pt", map_location=device)
+        if [tuple(x) for x in state["specs"]] != [
+            (s.name, s.architecture) for s in sweep.specs
+        ]:
+            raise ValueError("resumed sweep has a different probe order")
+        sweep.bank.load_state_dict(state["bank"])
+        sweep.optimizer.load_state_dict(
+            torch.load(out / f"optimizer_e{args.resume_from}.pt", map_location=device)
+        )
+        summary = json.loads((out / "summary.json").read_text())
+        summary["resumed_from"] = args.resume_from
+        first = args.resume_from + 1
+    for epoch in range(first, max(args.checkpoints) + 1):
         batches = length_batches(
             lengths, args.batch, seed=args.data_seed * 1000 + epoch
         )
@@ -148,7 +172,7 @@ def main() -> None:
         print(f"epoch {epoch} {time.time() - started:.0f}s", flush=True)
         if epoch not in args.checkpoints:
             continue
-        checkpoint = {"epoch": epoch, "steps": len(sweep.specs[0].losses), "probes": {}}
+        checkpoint = {"epoch": epoch, "steps": epoch * len(batches), "probes": {}}
         for fmt, store in evals.items():
             logits = score(sweep, store, args.batch, device, args.token_budget)
             ids = [r["id"] for r in store.rows]
@@ -176,6 +200,7 @@ def main() -> None:
             },
             out / f"probes_e{epoch}.pt",
         )
+        torch.save(sweep.optimizer.state_dict(), out / f"optimizer_e{epoch}.pt")
         summary["checkpoints"][str(epoch)] = checkpoint
         summary["seconds"] = time.time() - started
         (out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")

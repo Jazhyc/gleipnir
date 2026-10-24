@@ -334,3 +334,39 @@ def test_selection_rule_uses_seed_median_and_families():
         chosen["families"]["alphaevolve"]["architecture"] == "alphaevolve_l1e-05_o0.01"
     )
     assert len(chosen["selected"]["probes"]) == 3
+
+
+def test_resumed_training_matches_uninterrupted(tmp_path):
+    torch.manual_seed(0)
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("bf16",))
+    for i in range(12):
+        writer.append(torch.randn(4 + i, HIDDEN), {"id": str(i), "label": i % 2})
+    writer.close({})
+    store = Store(tmp_path / "s", "bf16")
+    lengths = [r["length"] for r in store.rows]
+
+    def sweep():
+        return make_sweep(
+            ["rolling_w4"],
+            ["hard"],
+            [0],
+            HIDDEN,
+            lr=1e-2,
+            weight_decay=3e-3,
+            device="cpu",
+        )
+
+    straight, resumed = sweep(), sweep()
+    for epoch in (1, 2):
+        train_epoch(straight, store, length_batches(lengths, 4, seed=epoch), "cpu")
+    train_epoch(resumed, store, length_batches(lengths, 4, seed=1), "cpu")
+    torch.save(resumed.bank.state_dict(), tmp_path / "bank.pt")
+    torch.save(resumed.optimizer.state_dict(), tmp_path / "optimizer.pt")
+    restored = sweep()
+    restored.bank.load_state_dict(torch.load(tmp_path / "bank.pt"))
+    restored.optimizer.load_state_dict(torch.load(tmp_path / "optimizer.pt"))
+    train_epoch(restored, store, length_batches(lengths, 4, seed=2), "cpu")
+    for a, b in zip(
+        straight.bank.parameters(), restored.bank.parameters(), strict=True
+    ):
+        assert torch.equal(a, b)
