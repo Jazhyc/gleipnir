@@ -69,7 +69,12 @@ A 2×2 grid, crossed with a probe-architecture sweep.
   falls out of the prompted extraction for free.
 
 Out of scope, by user decision: probes on Gleipnir activations, Gleipnir in NTP
-mode, and suffix-only prompting.
+mode, and suffix-only prompting. Architecture search is also deferred (user
+decision, 2026-10-24): this study keeps the Kramár et al. family fixed and
+varies the objective (hard labels versus Kimi soft targets), which no prior
+probe work tests. A later headline study may search architectures at matched
+probe compute budgets, with the paper's AlphaEvolve probe (Appendix F.2) as
+the baseline to beat.
 
 ## Selection and stop rules (frozen)
 
