@@ -181,3 +181,17 @@ $PY experiments/adversarial_lab_liars/run.py score --monitor 27b   # resumable
 | Loads, canaries, copying results back | | | 10 min |
 
 Activations take about 41 MB for the 4B and 82 MB for the 27B.
+
+## Run record
+
+**Kimi K3, 25 October 2026,** at the freeze commit `19d75e8`:
+- **Rows scored:** 479 `ok`, with no errors and no bounded rows, all on Makora. By tier of the frozen order:
+  - all 100 pre-assigned recruiters in the primary cells;
+  - all 9 swaps;
+  - all 122 other recruiters;
+  - 248 of the 448 targets and bystanders (a seeded random subset);
+  - 0 of the 224 `last16` rows.
+- **Cap:** the run stopped at the $4 cap. It spent $4.10, including a 2-row request check, because requests already in flight finished after the cap was reached.
+- **Balance:** OpenRouter $8.01 before and $4.22 after.
+
+`analyze.py --monitors kimi` ran as a smoke test. No score has been read; all monitors are read together once the GPU scores exist.
