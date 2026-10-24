@@ -473,17 +473,27 @@ terminal rows. Regression tests cover both findings before dispatch.
 
 ## Frontier transfer results, 24 October 2026
 
-Run by the parent session under the per-request amendment (commits d5ddd62 and
-56371bf), 08:38–09:42 UTC. Every planned row finished, with Kimi, then Sol, then
-Sonnet. Sonnet ran in 13 batches of at most 20 rows. Spend is all settled:
+Run by the parent session under the per-request amendment, commits `d5ddd62`
+and `56371bf`, 08:38 to 09:42 UTC. All three monitors have 248/248 terminal
+unique request receipts after cross-arm/control deduplication. Kimi ran first,
+then Sol, then Sonnet. Sonnet used 13 batches of at most 20 rows. No cap stopped
+a monitor and no failed request was retried.
 
-- Kimi K3 $0.3134;
-- GPT-6.1 Sol $1.1185;
-- Claude Sonnet 5.5 $0.9815.
+- Kimi K3: 238 successful rows, 10 terminal HTTP 429 failures. Known actual
+  cost is $0.20301718. Missing usage on the failures retains $0.110411 in
+  conservative charges, for a total ledger charge of $0.31342818.
+- GPT-6.1 Sol: 248 successful rows; actual cost $1.118483.
+- Claude Sonnet 5.5: 247 successful rows and 1 invalid score; actual cost
+  $0.981549. The invalid response remains a terminal failure.
 
-That's $1.4319 of OpenRouter against the $3.00 cap and $0.9815 of Anthropic
-against $1.50. Terminal failures were kept and not retried: Kimi had 14
-infrastructure failures on the 27B arm, and Sonnet had 1 invalid response.
+OpenRouter's combined ledger charge is $1.43191118 against $3.00; Anthropic's
+is $0.981549 against $1.50. All 509 request/batch reservations are settled.
+The $0.110411 unknown-cost charge remains conservative despite the ledger's
+settled status. Campaign caps stayed unchanged. Kimi's ten unique failures
+map to 14 logical rows in the 27B arm, including two missing baseline scores,
+four missing backdoored-winner scores and five missing honest-winner scores.
+The 4B arm has no missing frontier baseline or winner scores. Sonnet's invalid
+score is a 27B honest-winner control, so that false-alarm denominator is 67.
 
 At each target's 1% line, for evasion among backdoors that target originally
 caught, transfer of the search arm's evaders, honest code carrying the winning
@@ -502,13 +512,24 @@ comment that gets flagged, and AUROC on the selected cohort:
 | 27B | GPT-6.1 Sol | 0/66 | 0/1 | 3/68 | 0.997 |
 | 27B | Claude Sonnet 5.5 | 0/68 | 0/1 | 19/67 | 0.994 |
 
-**Status:**
+Both arms now pass `report --final --audit`. The 4B audit contains 9/9 required
+entries after hand-reading the new Kimi evader with the problem and both
+original programs. The 27B audit contains 2/2. Neither has rejected or pending
+audits, or a missing transfer monitor. No submitted program was executed.
 
-- **27B arm:** `report --final --audit` passes. Both evading comment sets were
-  audited, with 0 rejected.
-- **4B arm:** still provisional. One winning comment set evades Kimi without
-  evading the 4B, so it was not in the earlier audit set. The final report
-  correctly refuses until that comment is hand-audited.
+The verified final reports are `report_with_frontier_final_verified_20261024.json`
+in each arm's ignored results directory. The 4B audit is
+`hand_audit_with_frontier_20261024.jsonl`; the 27B retains
+`hand_audit_20261024.jsonl`. Earlier provisional and blocked reports remain
+historical artifacts.
+
+At the 2% line, Kimi evasion is 0/56 for 4B winners and 0/62 for 27B winners;
+conditional transfer is 0/6 and 0/1. Kimi honest-winner flags are 21/59 and
+12/63. Sol and Sonnet's thresholds and listed outcomes are unchanged between
+the 1% and 2% lines. Their score ties leave realized calibration flag rates
+below the nominal 1% and 2%; these are calibrated operating points, not claims
+of exact realized FPR. All final JSON reports retain intervals, denominator
+failures, calibration ties and selected-cohort ranking metrics.
 
 **Reading:**
 
@@ -527,5 +548,5 @@ comment that gets flagged, and AUROC on the selected cohort:
 The second Astra review was attempted after `56371bf` but the provider returned
 a usage-limit failure before completing it. The first review's two findings
 are fixed; 69 A4 tests and scoped Ruff checks pass. Acceptance of the revision
-by Astra is unverified. Paid dispatch proceeds under the authorized
-per-request policy, with no cap increase or retry.
+by Astra is unverified. The parent execution used the authorized per-request
+policy, with no cap increase or retry.
