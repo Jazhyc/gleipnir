@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Pilot on one Lambda GPU: extraction for both backbones (BF16 + FP8 stores on
-# the persistent filesystem), parity, the BF16/FP8 probe sweeps, last-token
-# probes, then the frozen gates. Re-running skips stages whose outputs exist.
+# Pilot on one Lambda GPU: extraction for both backbones (BF16 + FP8 stores),
+# parity, the BF16/FP8 probe sweeps, last-token probes, then the frozen gates.
+# STORES may point at a local-disk copy of the persistent stores. Re-running skips stages whose outputs exist.
 set -euo pipefail
 cd "$HOME/gleipnir"
 source "$HOME/.config/gleipnir/runtime.env"
@@ -32,22 +32,29 @@ extract() {  # backbone split...
 extract prompted parity train id
 extract ntp train id
 
+# Last-token probes are CPU-only; run them alongside the GPU sweeps.
+lasttoken_pids=()
 for backbone in prompted ntp; do
-  pids=()
-  for fmt in bf16 fp8; do
+  $PY -m experiments.probe_generalization.lasttoken --store-root "$STORES" \
+    --backbone "$backbone" --name "$NAME" > "$LOGS/lasttoken_$backbone.log" 2>&1 &
+  lasttoken_pids+=($!)
+done
+
+# One fused sweep at a time: FP8 rows resident on the GPU, BF16 rows (twice
+# the bytes) in pinned CPU memory.
+for backbone in prompted ntp; do
+  for fmt in fp8 bf16; do
     if [ ! -f "results/probe_generalization/$NAME/$backbone-$fmt/probes_e16.pt" ]; then
       rm -rf "results/probe_generalization/$NAME/$backbone-$fmt"
-      echo "train_start $backbone $fmt $(date -Is)"
+      resident=$([ "$fmt" = fp8 ] && echo gpu || echo cpu)
+      echo "train_start $backbone $fmt resident=$resident $(date -Is)"
       $PY -m experiments.probe_generalization.train --store-root "$STORES" \
-        --backbone "$backbone" --train-format "$fmt" --name "$NAME" \
-        > "$LOGS/train_${backbone}_$fmt.log" 2>&1 &
-      pids+=($!)
+        --backbone "$backbone" --train-format "$fmt" --resident "$resident" \
+        --name "$NAME" > "$LOGS/train_${backbone}_$fmt.log" 2>&1
     fi
   done
-  for pid in "${pids[@]}"; do wait "$pid"; done
-  $PY -m experiments.probe_generalization.lasttoken --store-root "$STORES" \
-    --backbone "$backbone" --name "$NAME" > "$LOGS/lasttoken_$backbone.log" 2>&1
 done
+for pid in "${lasttoken_pids[@]}"; do wait "$pid"; done
 
 $PY -m experiments.probe_generalization.pilot --store-root "$STORES" --name "$NAME" \
   | tee "$LOGS/pilot.log"
