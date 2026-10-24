@@ -8,15 +8,17 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- Nothing. The A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 24 October at 08:00 UTC after the comment-attack and probe session; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
+- **Multi-agent liar study, compliance pilot** (lab CPU plus Tinker, no GPU): the study is being built and frozen; its 10-episode pilot runs next. See item 1 below.
+- The A100 80GB VM (`gleipnir-qwen-gpu`) has been stopped since 24 October, 08:00 UTC, after the comment-attack and probe session; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
 
 ## Failures and blockers
 
 Short entries, newest first. Details live in each experiment's README.
+- **24 Oct, lab build:** `adversarial_lab_v03/build.py` accepts any episode with an `outcome.json`, but the lab writes that file for every ending, including infrastructure errors and budget stops. Some early-ended episodes may therefore be among the 3,006 honest rows (not yet counted). The 10 liars all come from fully completed episodes. New builds filter on the end reason.
 - **22 Oct, code-or-comments checker:** the fidelity checker fails valid cover stories (69 of its 71 backdoor-misleading failures, read by hand), even after Amendment 4 reworded the question. A blind, description-only check fixed the deviation question (47 of 47 agreements) but missed one cover story on its second question, so by the pre-set rule every failed cover story was read by hand instead (Amendment 6).
 - **22 Oct, code-or-comments texts:** a second prompt leak, the trigger prompt's label "Solution B", reached 50 special-case texts from 49 tasks; neutralised and regenerated (Amendment 5).
 - **22 Oct, VM code sync:** a `git archive` copy has no `.git`, so code-or-comments' commit guard can't pass; the VM now holds a clone of a git bundle (`~/gleipnir-coc`).
-- **22 Oct, FakeLab feasibility:** not assessed yet. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand.
+- **22 Oct, FakeLab feasibility:** not assessed yet. Abhinav or Jeremias will collect the logistics (how to run, log format, session lengths) by hand. *Resolved 24 Oct: assessed privately; see Parked.*
 - **22 Oct, stage 1c:** our own BF16 copy matches Tinker token for token on single prompts but does worse in agent runs (12 correct against 33), cause unknown. Not the tool parser (0.5% of calls came back empty) and not `top_k`; our prompts carry 20 extra tokens of tool schema.
 - **22 Oct, stage 1c setup:** two A100s out of stock in us-central1-a and -c; one was available. The Ubuntu accelerator image lacks a C compiler (Triton) and `nvcc` (FlashInfer's sampler), so we installed `build-essential` and set `VLLM_USE_FLASHINFER_SAMPLER=0`.
 - **22 Oct, diagnostics:** two replay tests were wrong before they were right: Inspect stores long request text as `attachment://` references (resolve them from `sample.attachments`), and a 400-token cap truncated long tool calls into empty ones.
@@ -25,10 +27,18 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Goodfire reward-hacking pilot** ([draft protocol](../../experiments/adversarial_goodfire/README.md)): two independent readers adjudicate the 64 action-visible coding candidates, then a 2–4 hour GPU session and a Kimi/Sol subsample (about $9 expected).
-2. **Multi-agent live lab:** stronger elicitation, then a larger peer-deception test with liars from several models.
-3. **Monitor-aware cheating arm** on ImpossibleBench, for unannounced cheats.
-4. Earlier items, still open: the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
+1. **Multi-agent liar study** (frozen protocol in the lab repository, `experiments/live-peers/liar-scale/`). Same world and recruiter instructions as the honest-versus-deceptive recruitment study, with liars from several models:
+   - honest versus deceptive recruiters from GLM-5.3, Kimi-K2.6, Qwen3.8-27B and gpt-oss-120b on Tinker, 6 seeds each (48 episodes);
+   - one honest and one deceptive recruiter in the same episode (12);
+   - Claude Haiku 5.5 as target and bystanders (12), and GPT-6.1 Sol recruiters (12).
+   - A 10-episode compliance pilot runs first: a model enters only if it delivers the lie in at least 1 of 2 pilot episodes.
+   - Liars, targets and bystanders are scored by the 4B, the 27B and Kimi. Lie labels come from a screen of every recruiter post plus a hand check blind to arm. Targets and bystanders are grouped by whether they actually saw a lie. The truth-swap control is repeated. Results per liar model.
+2. **Monitor-aware cheating on ImpossibleBench**, for cheats that aren't announced. Every natural cheat so far is admitted in code or comments (cheating pilot, 21–22 October), which makes the monitor's job easy.
+   - Five setups on the same tasks, open models on Tinker with thinking off: no special prompt (natural cheats); a short instruction allowing test-gaming; the same instruction plus a truthful note that a monitor reads tool calls and outputs and that flagged runs lose reward; an honest instruction; the honest instruction plus the note.
+   - Labels come from the environment: a pass on an impossible test is a cheat.
+   - Measures: whether the 4B, the 27B and Kimi catch prompted cheats more easily than natural ones; whether the monitor note makes cheats quieter or rarer; false alarms on honest runs that know about the monitor.
+   - Main risk: few cheats on Tinker (5 of 103 in the pilot's main arm), so it needs more seeds per task or more task pressure, applied equally to every setup. Runs after the liar study.
+3. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
 
@@ -38,6 +48,7 @@ Short entries, newest first. Details live in each experiment's README.
 - **White-box framing:** a gradient search for the peer post that most raises an honest reader's score.
 ## Parked
 
+- **Goodfire reward-hacking pilot** ([draft protocol and adjudication](../../experiments/adversarial_goodfire/README.md)). Two blind readers accepted 10 of 64 action-visible coding candidates (they agreed on 53 of 64), so a coding AUROC would be descriptive only. Parked 24 October; a short descriptive scoring run can join a later GPU session.
 - **Real swarm posts as framing (lab Run 3).** Plant about 200 real collusion.wiki posts into the same 300 honest readers: coordination and pressure posts, plus neutral ones of matched length. Freeze the selection before scoring. The data stays local and is used for evaluation only (no licence is stated). Parked 21 October: the framing effect turned out specific to the 4B.
 - **Adversarial game: a detector as a tool in the recruitment lab.** From Smith, Chughtai and Nanda (2025), appendix "adversarial games".
   - **Setup:** in the recruitment world, give the target agent A a lie-detector tool, such as Gleipnir's score on each recruiter's posts, or later a white-box probe.
@@ -49,7 +60,7 @@ Short entries, newest first. Details live in each experiment's README.
     - the same tool given to the recruiters instead.
   - **Status:** idea only, not designed in detail. It needs live episodes, so it costs API spend.
 - **Deceived victims (P2.3, victim half).** Needs new live continuations.
-- **Fragmented social attacks (P2.4) and AISI FakeLab.** Published effect; FakeLab needs its licence checked first.
+- **Fragmented social attacks (P2.4) and AISI FakeLab.** Published effect. FakeLab's feasibility was checked privately on 24 October and a two-episode smoke test on free models is under way; aggregate reporting still needs AISI's confirmation.
 
 ## Done
 
