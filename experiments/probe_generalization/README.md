@@ -116,7 +116,10 @@ the baseline to beat.
   started before optimizer checkpoints existed, so it resumes from its
   epoch-8 weights after rebuilding AdamW moments by replaying epoch 8's
   batches at learning rate 0 (weights verified unchanged), which avoids the
-  sign-step kick of fresh moments; a recorded deviation.
+  sign-step kick of fresh moments; a recorded deviation. Epoch 12 is also a
+  checkpoint in every extension, so candidates span {1, 2, 4, 8, 12, 16}
+  (user decision after the prompted epoch-8 ID read, before any OOD read;
+  the prompted extension restarted from its epoch-8 state to include it).
 
 ## Pilot (before the full extraction)
 

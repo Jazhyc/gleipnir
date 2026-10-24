@@ -424,6 +424,7 @@ def test_budget_extension_triggers_only_at_last_checkpoint(tmp_path, monkeypatch
         "2",
         "4",
         "8",
+        "12",
         "16",
     ]
     assert "--fresh-optimizer" in argv and "65536" in argv

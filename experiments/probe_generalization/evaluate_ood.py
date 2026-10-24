@@ -29,9 +29,11 @@ from gleipnir.probes.store import Store
 from gleipnir.probes.training import make_sweep, score
 
 ROOT = Path(__file__).resolve().parents[2]
-# Frozen budget-extension rule: a cell selected at the last checkpoint extends
-# its backbone's sweep to this epoch before any OOD read.
+# Budget-extension rule: a cell selected at the last checkpoint extends its
+# backbone's sweep to EXTENDED_EPOCH, adding the EXTRA_CHECKPOINTS, before any
+# OOD read (epoch 12 added by user decision after the prompted epoch-8 ID read).
 EXTENDED_EPOCH = 16
+EXTRA_CHECKPOINTS = (12, 16)
 
 
 def family(architecture: str) -> str:
@@ -106,7 +108,7 @@ def extend_if_boundary(args, chosen: dict, summary: dict) -> dict | None:
     run = ROOT / "results/probe_generalization" / args.name / f"{args.backbone}-fp8"
     config = json.loads((run / "config.json").read_text())
     fresh = not (run / f"optimizer_e{last}.pt").exists()
-    checkpoints = sorted(set(config["checkpoints"]) | {EXTENDED_EPOCH})
+    checkpoints = sorted(set(config["checkpoints"]) | set(EXTRA_CHECKPOINTS))
     argv = [
         sys.executable, "-m", "experiments.probe_generalization.train",
         "--store-root", config["store_root"],
