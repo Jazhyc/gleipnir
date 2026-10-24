@@ -370,3 +370,67 @@ def test_resumed_training_matches_uninterrupted(tmp_path):
         straight.bank.parameters(), restored.bank.parameters(), strict=True
     ):
         assert torch.equal(a, b)
+
+
+def test_budget_extension_triggers_only_at_last_checkpoint(tmp_path, monkeypatch):
+    import json as _json
+    from types import SimpleNamespace
+
+    from experiments.probe_generalization import evaluate_ood
+
+    run = tmp_path / "results/probe_generalization/x/prompted-fp8"
+    run.mkdir(parents=True)
+    config = {
+        "store_root": "/s",
+        "population": "full",
+        "backbone": "prompted",
+        "train_format": "fp8",
+        "eval_formats": ["fp8"],
+        "eval_split": "id",
+        "architectures": ["rolling_w64"],
+        "objectives": ["hard", "soft"],
+        "seeds": [0],
+        "checkpoints": [1, 2, 4, 8],
+        "batch": 16,
+        "lr": 1e-4,
+        "weight_decay": 3e-3,
+        "data_seed": 0,
+        "resident": "none",
+        "name": "x",
+        "token_budget": 65536,
+    }
+    (run / "config.json").write_text(_json.dumps(config))
+    monkeypatch.setattr(evaluate_ood, "ROOT", tmp_path)
+    calls = []
+    monkeypatch.setattr(
+        evaluate_ood.subprocess, "run", lambda argv, **_: calls.append(argv)
+    )
+    args = SimpleNamespace(name="x", backbone="prompted")
+    summary = {"checkpoints": {"1": {}, "8": {}}}
+    early = {"hard": {"selected": {"epoch": 2}}, "soft": {"selected": {"epoch": 4}}}
+    assert evaluate_ood.extend_if_boundary(args, early, summary) is None
+    late = {"hard": {"selected": {"epoch": 2}}, "soft": {"selected": {"epoch": 8}}}
+    record = evaluate_ood.extend_if_boundary(args, late, summary)
+    assert record == {
+        "boundary_cells": ["soft"],
+        "from_epoch": 8,
+        "to_epoch": 16,
+        "fresh_optimizer": True,
+    }
+    argv = calls[0]
+    assert argv[argv.index("--resume-from") + 1] == "8"
+    assert argv[argv.index("--checkpoints") + 1 : argv.index("--batch")] == [
+        "1",
+        "2",
+        "4",
+        "8",
+        "16",
+    ]
+    assert "--fresh-optimizer" in argv and "65536" in argv
+    done = {"checkpoints": {"16": {}}}
+    assert (
+        evaluate_ood.extend_if_boundary(
+            args, {"soft": {"selected": {"epoch": 16}}}, done
+        )
+        is None
+    )

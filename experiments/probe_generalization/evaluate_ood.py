@@ -15,6 +15,8 @@ from __future__ import annotations
 import argparse
 import json
 import statistics
+import subprocess
+import sys
 from collections import defaultdict
 from pathlib import Path
 
@@ -27,6 +29,9 @@ from gleipnir.probes.store import Store
 from gleipnir.probes.training import make_sweep, score
 
 ROOT = Path(__file__).resolve().parents[2]
+# Frozen budget-extension rule: a cell selected at the last checkpoint extends
+# its backbone's sweep to this epoch before any OOD read.
+EXTENDED_EPOCH = 16
 
 
 def family(architecture: str) -> str:
@@ -90,6 +95,50 @@ def select(summary: dict, fmt: str) -> dict:
             "families": families,
         }
     return chosen
+
+
+def extend_if_boundary(args, chosen: dict, summary: dict) -> dict | None:
+    """Apply the frozen extension rule; return its record, or ``None``."""
+    last = max(int(e) for e in summary["checkpoints"])
+    boundary = sorted(o for o, c in chosen.items() if c["selected"]["epoch"] == last)
+    if not boundary or last >= EXTENDED_EPOCH:
+        return None
+    run = ROOT / "results/probe_generalization" / args.name / f"{args.backbone}-fp8"
+    config = json.loads((run / "config.json").read_text())
+    fresh = not (run / f"optimizer_e{last}.pt").exists()
+    checkpoints = sorted(set(config["checkpoints"]) | {EXTENDED_EPOCH})
+    argv = [
+        sys.executable, "-m", "experiments.probe_generalization.train",
+        "--store-root", config["store_root"],
+        "--population", config["population"],
+        "--backbone", config["backbone"],
+        "--train-format", config["train_format"],
+        "--eval-formats", *config["eval_formats"],
+        "--eval-split", config["eval_split"],
+        "--architectures", *config["architectures"],
+        "--objectives", *config["objectives"],
+        "--seeds", *map(str, config["seeds"]),
+        "--checkpoints", *map(str, checkpoints),
+        "--batch", str(config["batch"]),
+        "--lr", str(config["lr"]),
+        "--weight-decay", str(config["weight_decay"]),
+        "--data-seed", str(config["data_seed"]),
+        "--resident", config["resident"],
+        "--name", config["name"],
+        "--resume-from", str(last),
+    ]  # fmt: skip
+    if config.get("token_budget"):
+        argv += ["--token-budget", str(config["token_budget"])]
+    if fresh:
+        argv.append("--fresh-optimizer")
+    print(f"extension: {boundary} selected at epoch {last}; resuming", flush=True)
+    subprocess.run(argv, check=True, cwd=ROOT)
+    return {
+        "boundary_cells": boundary,
+        "from_epoch": last,
+        "to_epoch": EXTENDED_EPOCH,
+        "fresh_optimizer": fresh,
+    }
 
 
 def score_pooled(args, backbone: str, chosen: dict, ood_rows) -> dict:
@@ -197,8 +246,13 @@ def main() -> None:
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
     results = ROOT / "results/probe_generalization" / args.name
-    summary = json.loads((results / f"{args.backbone}-fp8/summary.json").read_text())
+    summary_path = results / f"{args.backbone}-fp8/summary.json"
+    summary = json.loads(summary_path.read_text())
     chosen = select(summary, "fp8")
+    extension = extend_if_boundary(args, chosen, summary)
+    if extension is not None:
+        summary = json.loads(summary_path.read_text())
+        chosen = select(summary, "fp8")
     (results / f"selection_{args.backbone}.json").write_text(
         json.dumps(chosen, indent=2) + "\n"
     )
@@ -209,6 +263,7 @@ def main() -> None:
     output = {
         "backbone": args.backbone,
         "selection_rule": "ID seed-median pAUROC@20, then AUROC, then lower Brier",
+        "budget_extension": extension,
         "pooled": score_pooled(args, args.backbone, chosen, ood_rows),
         "last_token": last_token(args, args.backbone),
     }

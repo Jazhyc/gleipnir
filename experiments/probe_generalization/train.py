@@ -102,6 +102,12 @@ def main() -> None:
         help="continue an existing sweep from this saved checkpoint epoch "
         "(probe weights, AdamW state and per-epoch data order are restored)",
     )
+    parser.add_argument(
+        "--fresh-optimizer",
+        action="store_true",
+        help="with --resume-from: restart AdamW moments (for sweeps saved "
+        "before optimizer checkpoints existed)",
+    )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
     if args.architectures is None:
@@ -158,11 +164,15 @@ def main() -> None:
         ]:
             raise ValueError("resumed sweep has a different probe order")
         sweep.bank.load_state_dict(state["bank"])
-        sweep.optimizer.load_state_dict(
-            torch.load(out / f"optimizer_e{args.resume_from}.pt", map_location=device)
-        )
+        if not args.fresh_optimizer:
+            sweep.optimizer.load_state_dict(
+                torch.load(
+                    out / f"optimizer_e{args.resume_from}.pt", map_location=device
+                )
+            )
         summary = json.loads((out / "summary.json").read_text())
         summary["resumed_from"] = args.resume_from
+        summary["resumed_fresh_optimizer"] = args.fresh_optimizer
         first = args.resume_from + 1
     for epoch in range(first, max(args.checkpoints) + 1):
         batches = length_batches(
