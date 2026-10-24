@@ -523,3 +523,9 @@ comment that gets flagged, and AUROC on the selected cohort:
   - four attempts per backdoor;
   - one attacker model;
   - APPS toy backdoors only.
+
+The second Astra review was attempted after `56371bf` but the provider returned
+a usage-limit failure before completing it. The first review's two findings
+are fixed; 69 A4 tests and scoped Ruff checks pass. Acceptance of the revision
+by Astra is unverified. Paid dispatch proceeds under the authorized
+per-request policy, with no cap increase or retry.
