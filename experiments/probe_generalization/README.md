@@ -156,6 +156,47 @@ formats, so each sweep also reports cross-precision transfer. The
 pilot restarted on this trainer (2026-10-24 11:04); its first prompted FP8
 sweep started before the evaluation change.
 
+## Pilot result (2026-10-24, `pilot01`)
+
+Completed 12:06 UTC on one Lambda H100 PCIe. Artifacts:
+`results/probe_generalization/pilot01/` (summaries, logits, probe weights,
+`pilot_summary.json`), logs under `logs/lambda/probe_generalization/pilot01/`,
+stores on the `gleipnir-probes` filesystem. Descriptive only: 1,000 ID rows,
+which also choose the budget.
+
+- **Parity:** failed strictly, user-accepted (see above).
+- **FP8 gate (a): passed** on both backbones (worst logit correlation 0.9999 /
+  0.99976, worst |Δ pAUROC| 0.0015 / 0.0031).
+- **FP8 gate (b): failed** on both (4 / 8 of 56 cells; worst |Δ| 0.0126 /
+  0.0199). All failures are MultiMax or rolling_w10. Signed Δ averages −0.0003
+  (prompted) and +0.0009 (NTP), per-seed differences change sign, and these
+  probes' BF16 seed range reaches 0.11–0.19, so the failures read as training
+  divergence of argmax-routed probes rather than storage error. Mean |Δ| is at
+  most 0.0017 for rolling w64/w256 and attention. The contract stops here for
+  a user decision on FP8 storage before the full extraction.
+
+Seed-median ID pAUROC@20 at epoch 16 (FP8-trained, FP8-scored), hard / soft:
+
+| probe | prompted | NTP |
+|---|---|---|
+| mean_linear | 0.508 / 0.502 | 0.490 / 0.492 |
+| mean_mlp | 0.568 / 0.573 | 0.550 / 0.561 |
+| attention | 0.800 / 0.802 | 0.830 / 0.823 |
+| multimax | 0.733 / 0.773 | 0.727 / 0.768 |
+| rolling_w10 | 0.755 / 0.741 | 0.749 / 0.771 |
+| rolling_w64 | 0.799 / **0.848** | 0.831 / 0.825 |
+| rolling_w256 | 0.804 / **0.848** | **0.857** / 0.851 |
+| last token (best layer) | 0.747 / 0.755 (layer 17) | 0.406 / 0.403 (layers 24 / 22) |
+| zero-shot margin | 0.6725 | — |
+
+Most pooled probes still improve from epoch 8 to 16 (≈500 → 1,000 updates).
+Soft targets lead by about 0.04–0.05 on prompted rolling w64/w256 and
+MultiMax, mostly on Gloom, while hard-label training loss falls to about 0.005
+(memorization); on NTP the objectives tie except MultiMax. Pooled probes on
+NTP activations match the prompted ones although the NTP last token carries
+little signal, so pooling recovers what the prompt would surface. FP8-trained
+probes score BF16 activations within 0.001.
+
 ## Storage and compute
 
 Trajectory text totals about 517M characters across train, ID and OOD,
