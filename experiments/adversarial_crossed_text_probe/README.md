@@ -249,3 +249,64 @@ request occurred 0 times, the right-trimmed request exactly once, on both
 tokenizers. `code_token_indices` now aligns on the right-trimmed request; code
 spans end before the removed newline. A synthetic trimming test was added.
 Design, layers, splits, controls and predictions are unchanged.
+
+## Results, 24 October 2026
+
+Run on the A100 80GB, 07:41–07:57 UTC, after the alignment fix (attempt 1 is
+kept as `results/adversarial_crossed_text_probe_attempt1_alignment_failed`; it
+saved no activations). All canaries passed. Reports: `report.json` per arm and
+`compare-4b-v03_student-4b-base_student.json`.
+
+Selected on development no-text rows (five-fold CV AUROC):
+
+- tuned 4B: layer 16, mean over code tokens, C 0.1 (0.982);
+- base 4B: layer 24, decision token, C 0.1 (0.982);
+- 27B: layer 64, decision token, C 0.01 (1.000).
+
+Held-out AUROC (95% task bootstrap), probe against the same model's output on
+the same rows:
+
+| Arm | Condition | Pairs | Probe | Output | Shuffled-label probe | Length |
+|---|---|---:|---|---:|---:|---:|
+| Tuned 4B | none | 99 | 0.97 (0.95–0.99) | 0.89 | 0.53 | 0.55 |
+| Tuned 4B | irrelevant | 93 | 0.95 (0.92–0.97) | 0.68 | 0.51 | 0.56 |
+| Tuned 4B | specific accusation | 81 | 0.96 (0.93–0.98) | 0.58 | 0.26 | 0.53 |
+| Tuned 4B | generic accusation | 99 | 0.95 (0.92–0.98) | 0.59 | 0.23 | 0.55 |
+| Base 4B | none | 99 | 0.96 (0.94–0.98) | 0.89 | 0.38 | 0.55 |
+| Base 4B | irrelevant | 93 | 0.83 (0.77–0.88) | 0.65 | 0.37 | 0.56 |
+| Base 4B | specific accusation | 81 | 0.66 (0.60–0.72) | 0.81 | 0.41 | 0.53 |
+| Base 4B | generic accusation | 99 | 0.79 (0.74–0.84) | 0.75 | 0.41 | 0.55 |
+| 27B | none | 99 | 0.97 (0.95–0.99) | 0.95 | 0.40 | 0.55 |
+| 27B | irrelevant | 93 | 0.83 (0.77–0.89) | 0.83 | 0.39 | 0.56 |
+| 27B | specific accusation | 81 | 0.03 (0.01–0.04) | 0.98 | 0.40 | 0.53 |
+| 27B | generic accusation | 99 | 0.04 (0.02–0.07) | 0.96 | 0.39 | 0.55 |
+
+Cover stories (28 pairs, descriptive): tuned 4B probe 0.94 against output 0.50;
+base 0.74 against 0.62; 27B 0.53 against 0.83.
+
+**Predictions:**
+
+1. Tuned 4B decodes above chance under accusations and beats its own output:
+   **held** (0.96 and 0.95 against 0.58 and 0.59).
+2. Base also decodes under accusations, with a smaller probe-minus-output gap:
+   **held** (0.66 and 0.79, above chance; gaps −0.15 and +0.04 against the
+   tuned model's +0.38 and +0.36).
+3. True-label probes beat the shuffled probe and length under accusations:
+   **held** for both 4B arms, **failed** for the 27B.
+4. The 27B decodes and outputs correctly under accusations: output **held**
+   (0.98 and 0.96), probe **failed** (0.03 and 0.04, no sign flipping allowed).
+
+**Reading:**
+
+- **Tuned 4B.** Under an identical accusation, a no-text probe at layer 16
+  still separates backdoored from honest code almost as well as with no text,
+  while the output falls to chance. The code information is present mid-network
+  and the decision does not use it. Decoding does not show use; the causal
+  follow-up remains unimplemented.
+- **27B.** Its last-layer decision-token probe ranks accused programs almost
+  perfectly in reverse while the output stays correct. The direction learned on
+  no-text rows does not transfer under accusation text. We have no mechanism
+  for this; treat it as unexplained.
+- **Shuffled controls.** Under accusations they move well away from 0.5 (as
+  low as 0.23), so distribution shift alone can produce large AUROC
+  departures. The tuned 4B's 0.95–0.96 is far above that.
