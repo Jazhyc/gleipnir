@@ -108,6 +108,13 @@ the baseline to beat.
   Hypothesis 2 is measured the same way across backbones.
 - Stop and report if extraction parity, the FP8 gate or the storage audit
   fails. Never select on OOD.
+- Budget extension (user decision, frozen 2026-10-24 before any epoch-8
+  result existed): if a cell's selected candidate is at the last checkpoint
+  (epoch 8), that backbone's sweep continues to epoch 16 with a checkpoint
+  there, and selection reruns over epochs {1, 2, 4, 8, 16} before any OOD
+  read. Sweeps that saved AdamW state resume exactly; the prompted sweep
+  started before optimizer checkpoints existed, so it resumes from its
+  epoch-8 weights with fresh AdamW moments (a recorded deviation).
 
 ## Pilot (before the full extraction)
 
