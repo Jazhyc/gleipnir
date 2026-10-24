@@ -3,10 +3,11 @@ import torch
 
 from experiments.probe_generalization.prepare import stratified
 from gleipnir.probes import architectures, fp8
-from gleipnir.probes.store import Store, StoreWriter
+from gleipnir.probes.bank import ProbeBank
+from gleipnir.probes.store import ResidentStore, Store, StoreWriter
 from gleipnir.probes.training import (
     length_batches,
-    make_runs,
+    make_sweep,
     score,
     train_epoch,
 )
@@ -121,8 +122,55 @@ def test_length_batches_cover_every_row_once():
     assert flat == list(range(100)) and max(len(b) for b in batches) == 8
 
 
+BANK_ARCHITECTURES = ("mean_linear", "mean_mlp", "attention", "multimax", "rolling_w4")
+
+
+def padded_batch():
+    torch.manual_seed(1)
+    x = torch.randn(3, 30, HIDDEN)
+    mask = torch.zeros(3, 30, dtype=torch.bool)
+    mask[0], mask[1, :2], mask[2, :17] = True, True, True
+    return x, mask
+
+
+def test_bank_matches_individual_probes():
+    torch.manual_seed(0)
+    names = [a for a in BANK_ARCHITECTURES for _ in range(2)]
+    probes = [architectures.build(a, HIDDEN) for a in names]
+    bank = ProbeBank(names, probes)
+    x, mask = padded_batch()
+    with torch.no_grad():
+        fused = bank(x, mask)
+        alone = torch.stack([p(x, mask) for p in probes], 1)
+    assert torch.allclose(fused, alone, atol=1e-4)
+
+
+def test_bank_step_matches_individual_steps():
+    torch.manual_seed(0)
+    names = list(BANK_ARCHITECTURES)
+    probes = [architectures.build(a, HIDDEN) for a in names]
+    bank = ProbeBank(names, probes)
+    x, mask = padded_batch()
+    target = torch.tensor([1.0, 0.0, 0.3])
+    loss = torch.nn.functional.binary_cross_entropy_with_logits
+    fused = torch.optim.AdamW(bank.parameters(), lr=1e-2, weight_decay=3e-3)
+    loss(bank(x, mask), target[:, None].expand(3, len(names)), reduction="none").mean(
+        0
+    ).sum().backward()
+    fused.step()
+    singles = [
+        torch.optim.AdamW(p.parameters(), lr=1e-2, weight_decay=3e-3) for p in probes
+    ]
+    for probe, optimizer in zip(probes, singles, strict=True):
+        loss(probe(x, mask), target).backward()
+        optimizer.step()
+    with torch.no_grad():
+        refreshed = ProbeBank(names, probes)(x, mask)
+        assert torch.allclose(bank(x, mask), refreshed, atol=1e-4)
+
+
 def test_matched_initialization_across_objectives():
-    runs = make_runs(
+    sweep = make_sweep(
         ["attention"],
         ["hard", "soft"],
         [0],
@@ -131,8 +179,24 @@ def test_matched_initialization_across_objectives():
         weight_decay=0,
         device="cpu",
     )
-    hard, soft = (r.probe.state_dict() for r in runs)
-    assert all(torch.equal(hard[k], soft[k]) for k in hard)
+    x, mask = padded_batch()
+    with torch.no_grad():
+        logits = sweep.bank(x, mask)
+    assert torch.equal(logits[:, 0], logits[:, 1])
+
+
+def test_resident_store_matches_disk(tmp_path):
+    torch.manual_seed(0)
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("bf16", "fp8"))
+    for i, n in enumerate((4, 9, 2)):
+        writer.append(torch.randn(n, HIDDEN), {"id": str(i)})
+    writer.close({})
+    for fmt in ("bf16", "fp8"):
+        disk = Store(tmp_path / "s", fmt, skip=1)
+        resident = ResidentStore(disk, "cpu")
+        assert [r["length"] for r in resident.rows] == [3, 8, 1]
+        for i in range(3):
+            assert torch.equal(resident.load(i), disk.load(i))
 
 
 def test_training_separates_synthetic_rows(tmp_path):
@@ -146,8 +210,8 @@ def test_training_separates_synthetic_rows(tmp_path):
             values, {"id": str(i), "label": label, "soft_target": 0.8 * label}
         )
     writer.close({})
-    store = Store(tmp_path / "s", "bf16")
-    runs = make_runs(
+    store = ResidentStore(Store(tmp_path / "s", "bf16"), "cpu")
+    sweep = make_sweep(
         ["multimax", "rolling_w4"],
         ["hard", "soft"],
         [0],
@@ -158,13 +222,13 @@ def test_training_separates_synthetic_rows(tmp_path):
     )
     lengths = [r["length"] for r in store.rows]
     for epoch in range(15):
-        train_epoch(runs, store, length_batches(lengths, 8, seed=epoch), "cpu")
-    logits = score(runs, store, 8, "cpu")
+        train_epoch(sweep, store, length_batches(lengths, 8, seed=epoch), "cpu")
+    logits = score(sweep, store, 8, "cpu")
     labels = torch.tensor([r["label"] for r in store.rows])
-    for run in runs:
-        values = torch.tensor(logits[run.name])
+    for spec in sweep.specs:
+        values = torch.tensor(logits[spec.name])
         assert values[labels == 1].mean() > values[labels == 0].mean() + 1.0
-        assert run.losses[-1] < run.losses[0]
+        assert spec.losses[-1] < spec.losses[0]
 
 
 def test_stratified_sample_is_proportional_and_seeded():

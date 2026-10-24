@@ -124,6 +124,10 @@ first look at how the architectures differ.
 Code: `prepare.py` (rows), `extract.py` (activations), `train.py` (pooled
 sweep), `lasttoken.py`, `pilot.py` (gates) and `run_pilot.sh` (remote order);
 reusable parts live in `src/gleipnir/probes/`, tests in `tests/probes/`.
+After the pilot, a sweep trains as one fused `ProbeBank` (all first layers in
+one matmul, one elementwise AdamW over disjoint parameters, so each probe
+trains as if alone), with the training rows resident in GPU or pinned CPU
+memory. The pilot itself ran the earlier per-probe loop.
 
 ## Storage and compute
 

@@ -1,8 +1,8 @@
-"""Train many sequence probes from one shared stream of activation batches.
+"""Train a sweep of sequence probes from one shared stream of activation batches.
 
 Every probe sees the same minibatches in the same order; probe seeds change
-only initialization. Reading and dequantizing a batch once serves all probes,
-which keeps the I/O-bound activation store pass shared across the sweep.
+only initialization. The whole sweep runs as one fused :class:`ProbeBank`, so
+reading a batch once serves all probes and their first layers share one matmul.
 """
 
 from __future__ import annotations
@@ -13,21 +13,26 @@ from dataclasses import dataclass, field
 
 import torch
 import torch.nn.functional as F
-from torch import nn
 
 from .architectures import build
+from .bank import ProbeBank
 from .store import Store
 
 
 @dataclass
-class ProbeRun:
+class ProbeSpec:
     name: str
     architecture: str
     objective: str
     seed: int
-    probe: nn.Module
-    optimizer: torch.optim.Optimizer
     losses: list[float] = field(default_factory=list)
+
+
+@dataclass
+class Sweep:
+    specs: list[ProbeSpec]
+    bank: ProbeBank
+    optimizer: torch.optim.Optimizer
 
 
 def length_batches(
@@ -64,7 +69,7 @@ def stream(
         yield indices, (x if device.startswith("cuda") else x.float()), mask
 
 
-def make_runs(
+def make_sweep(
     architectures: Sequence[str],
     objectives: Sequence[str],
     seeds: Sequence[int],
@@ -73,67 +78,69 @@ def make_runs(
     lr: float,
     weight_decay: float,
     device: str,
-) -> list[ProbeRun]:
+) -> Sweep:
     """Matched initialization: one seed gives the same weights for every objective."""
-    runs = []
+    specs, probes = [], []
     for architecture in architectures:
         for seed in seeds:
             for objective in objectives:
                 torch.manual_seed(seed)
-                probe = build(architecture, hidden).to(device)
-                optimizer = torch.optim.AdamW(
-                    probe.parameters(), lr=lr, weight_decay=weight_decay
-                )
+                probes.append(build(architecture, hidden))
                 name = f"{architecture}-{objective}-s{seed}"
-                runs.append(
-                    ProbeRun(name, architecture, objective, seed, probe, optimizer)
-                )
-    return runs
+                specs.append(ProbeSpec(name, architecture, objective, seed))
+    bank = ProbeBank([s.architecture for s in specs], probes).to(device)
+    optimizer = torch.optim.AdamW(bank.parameters(), lr=lr, weight_decay=weight_decay)
+    return Sweep(specs, bank, optimizer)
 
 
-def targets(store: Store, objective: str) -> torch.Tensor:
-    key = {"hard": "label", "soft": "soft_target"}[objective]
-    return torch.tensor([float(r[key]) for r in store.rows])
+def targets(store: Store, specs: Sequence[ProbeSpec]) -> torch.Tensor:
+    """``[rows, probes]`` training targets: source labels or Kimi soft targets."""
+    keys = [{"hard": "label", "soft": "soft_target"}[s.objective] for s in specs]
+    return torch.tensor([[float(r[k]) for k in keys] for r in store.rows])
+
+
+def autocast(device: str):
+    return torch.autocast("cuda", torch.bfloat16, enabled=device.startswith("cuda"))
 
 
 def train_epoch(
-    runs: list[ProbeRun], store: Store, batches: list[list[int]], device: str
+    sweep: Sweep, store: Store, batches: list[list[int]], device: str
 ) -> None:
-    labels = {o: targets(store, o).to(device) for o in {r.objective for r in runs}}
+    labels = targets(store, sweep.specs).to(device)
+    sweep.bank.train()
     for indices, x, mask in stream(store, batches, device):
-        for run in runs:
-            run.probe.train()
-            with torch.autocast(
-                "cuda", torch.bfloat16, enabled=device.startswith("cuda")
-            ):
-                logits = run.probe(x, mask)
-            loss = F.binary_cross_entropy_with_logits(
-                logits.float(), labels[run.objective][indices]
-            )
-            if not torch.isfinite(loss):
-                raise FloatingPointError(f"nonfinite loss in {run.name}")
-            run.optimizer.zero_grad(set_to_none=True)
-            loss.backward()
-            run.optimizer.step()
-            run.losses.append(loss.item())
+        with autocast(device):
+            logits = sweep.bank(x, mask)
+        # Mean over rows per probe, summed over probes: parameters are disjoint,
+        # so each probe's gradient equals its own single-probe gradient.
+        losses = F.binary_cross_entropy_with_logits(
+            logits.float(), labels[indices], reduction="none"
+        ).mean(0)
+        if not bool(torch.isfinite(losses).all()):
+            bad = [
+                s.name
+                for s, v in zip(sweep.specs, losses, strict=True)
+                if not torch.isfinite(v)
+            ]
+            raise FloatingPointError(f"nonfinite loss in {bad}")
+        sweep.optimizer.zero_grad(set_to_none=True)
+        losses.sum().backward()
+        sweep.optimizer.step()
+        for spec, value in zip(sweep.specs, losses.tolist(), strict=True):
+            spec.losses.append(value)
 
 
 @torch.no_grad()
 def score(
-    runs: list[ProbeRun], store: Store, batch: int, device: str
+    sweep: Sweep, store: Store, batch: int, device: str
 ) -> dict[str, list[float]]:
     """Return each probe's logit for every store row, in store order."""
     lengths = [r["length"] for r in store.rows]
     order = sorted(range(len(store)), key=lambda i: lengths[i])
     batches = [order[i : i + batch] for i in range(0, len(order), batch)]
-    logits = {run.name: [0.0] * len(store) for run in runs}
+    logits = torch.zeros((len(store), len(sweep.specs)))
+    sweep.bank.eval()
     for indices, x, mask in stream(store, batches, device):
-        for run in runs:
-            run.probe.eval()
-            with torch.autocast(
-                "cuda", torch.bfloat16, enabled=device.startswith("cuda")
-            ):
-                values = run.probe(x, mask).float().tolist()
-            for i, value in zip(indices, values, strict=True):
-                logits[run.name][i] = value
-    return logits
+        with autocast(device):
+            logits[indices] = sweep.bank(x, mask).float().cpu()
+    return {s.name: logits[:, i].tolist() for i, s in enumerate(sweep.specs)}

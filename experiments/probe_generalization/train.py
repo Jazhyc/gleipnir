@@ -18,8 +18,8 @@ import pandas as pd
 import torch
 
 from gleipnir.evaluation.metrics import evaluate_binary_monitor
-from gleipnir.probes.store import Store
-from gleipnir.probes.training import length_batches, make_runs, score, train_epoch
+from gleipnir.probes.store import ResidentStore, Store
+from gleipnir.probes.training import length_batches, make_sweep, score, train_epoch
 
 ROOT = Path(__file__).resolve().parents[2]
 ARCHITECTURES = (
@@ -60,6 +60,12 @@ def main() -> None:
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=3e-3)
     parser.add_argument("--data-seed", type=int, default=0)
+    parser.add_argument(
+        "--resident",
+        choices=("gpu", "cpu", "none"),
+        default="gpu",
+        help="hold the training rows in GPU or pinned CPU memory, or stream them",
+    )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
 
@@ -69,6 +75,10 @@ def main() -> None:
     # BOS); the prompted span starts after the instruction prefix.
     skip = 1 if args.backbone == "ntp" else 0
     train = Store(root / "train", args.train_format, skip=skip)
+    if args.resident != "none":
+        loaded = time.time()
+        train = ResidentStore(train, "cuda" if args.resident == "gpu" else "cpu")
+        print(f"resident {args.resident} {time.time() - loaded:.0f}s", flush=True)
     evals = {
         fmt: Store(root / args.eval_split, fmt, skip=skip) for fmt in args.eval_formats
     }
@@ -80,7 +90,7 @@ def main() -> None:
     )
     out.mkdir(parents=True, exist_ok=False)
     (out / "config.json").write_text(json.dumps(vars(args), indent=2) + "\n")
-    runs = make_runs(
+    sweep = make_sweep(
         args.architectures,
         args.objectives,
         args.seeds,
@@ -95,18 +105,18 @@ def main() -> None:
         batches = length_batches(
             lengths, args.batch, seed=args.data_seed * 1000 + epoch
         )
-        train_epoch(runs, train, batches, device)
+        train_epoch(sweep, train, batches, device)
         print(f"epoch {epoch} {time.time() - started:.0f}s", flush=True)
         if epoch not in args.checkpoints:
             continue
-        checkpoint = {"epoch": epoch, "steps": len(runs[0].losses), "probes": {}}
+        checkpoint = {"epoch": epoch, "steps": len(sweep.specs[0].losses), "probes": {}}
         for fmt, store in evals.items():
-            logits = score(runs, store, args.batch, device)
+            logits = score(sweep, store, args.batch, device)
             ids = [r["id"] for r in store.rows]
             (out / f"logits_e{epoch}_{fmt}.json").write_text(
                 json.dumps({"ids": ids, "logits": logits}) + "\n"
             )
-            for run in runs:
+            for run in sweep.specs:
                 result = metrics(store, logits[run.name])
                 entry = checkpoint["probes"].setdefault(
                     run.name,
@@ -121,7 +131,10 @@ def main() -> None:
                 )
                 entry[fmt] = {"macro": result["macro"], "groups": result["groups"]}
         torch.save(
-            {run.name: run.probe.state_dict() for run in runs},
+            {
+                "specs": [(s.name, s.architecture) for s in sweep.specs],
+                "bank": sweep.bank.state_dict(),
+            },
             out / f"probes_e{epoch}.pt",
         )
         summary["checkpoints"][str(epoch)] = checkpoint

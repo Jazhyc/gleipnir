@@ -130,3 +130,55 @@ class Store:
         return fp8.dequantize(
             torch.from_numpy(codes).to(device), torch.from_numpy(scales).to(device)
         )
+
+
+class ResidentStore:
+    """A store's rows held in memory (GPU, or pinned CPU) in their stored format.
+
+    Rows are copied once from disk; each :meth:`load` then slices the resident
+    buffer, so training epochs after the first do no disk or page-cache I/O.
+    FP8 rows stay as codes plus scales and are dequantized per load.
+    """
+
+    def __init__(self, store: Store, device: torch.device | str):
+        self.fmt, self.meta, self.hidden = store.fmt, store.meta, store.hidden
+        device = torch.device(device)
+        pin = device.type == "cpu" and torch.cuda.is_available()
+        total = sum(r["length"] for r in store.rows)
+        dtype = torch.int16 if self.fmt == "bf16" else torch.uint8
+        self.values = torch.empty((total, self.hidden), dtype=dtype, pin_memory=pin)
+        self.scales = (
+            torch.empty((total, self.hidden // fp8.BLOCK), pin_memory=pin)
+            if self.fmt == "fp8"
+            else None
+        )
+        self.rows, offset = [], 0
+        for row in store.rows:
+            span = slice(offset, offset + row["length"])
+            if self.fmt == "bf16":
+                bits = store._read("bf16.bin", row, self.hidden, np.int16)
+                self.values[span] = torch.from_numpy(bits)
+            else:
+                codes = store._read("fp8.bin", row, self.hidden, np.uint8)
+                scales = store._read(
+                    "fp8_scales.bin", row, self.hidden // fp8.BLOCK, np.float32
+                )
+                self.values[span] = torch.from_numpy(codes)
+                self.scales[span] = torch.from_numpy(scales)
+            self.rows.append({**row, "offset": offset})
+            offset += row["length"]
+        if device.type != "cpu":
+            self.values = self.values.to(device)
+            self.scales = self.scales.to(device) if self.scales is not None else None
+
+    def __len__(self) -> int:
+        return len(self.rows)
+
+    def load(self, index: int, device: torch.device | str = "cpu") -> torch.Tensor:
+        row = self.rows[index]
+        span = slice(row["offset"], row["offset"] + row["length"])
+        values = self.values[span].to(device, non_blocking=True)
+        if self.fmt == "bf16":
+            return values.view(torch.bfloat16)
+        scales = self.scales[span].to(device, non_blocking=True)
+        return fp8.dequantize(values, scales)
