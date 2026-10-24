@@ -7,13 +7,14 @@ A store directory holds flat token-major files and ``index.jsonl``:
 - ``index.jsonl``: one row per sequence with ``offset`` and ``length`` in tokens.
 
 Writes run on one background thread (in order, with a bounded backlog), so
-file I/O overlaps the next forward pass. Rows are read back as memory maps, so a
-store larger than RAM streams from disk.
+file I/O overlaps the next forward pass. Rows are read back with one positional
+read each, so a store larger than RAM streams from disk.
 """
 
 from __future__ import annotations
 
 import json
+import os
 from collections import deque
 from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
@@ -100,21 +101,20 @@ class Store:
             {**r, "offset": r["offset"] + skip, "length": r["length"] - skip}
             for r in rows
         ]
-        hidden, tokens = self.meta["hidden"], self.meta["tokens"]
-        if fmt == "bf16":
-            self.values = np.memmap(
-                root / "bf16.bin", np.int16, "r", shape=(tokens, hidden)
-            )
-        else:
-            self.values = np.memmap(
-                root / "fp8.bin", np.uint8, "r", shape=(tokens, hidden)
-            )
-            self.scales = np.memmap(
-                root / "fp8_scales.bin",
-                np.float32,
-                "r",
-                shape=(tokens, hidden // fp8.BLOCK),
-            )
+        self.hidden = self.meta["hidden"]
+        # One large positional read per row: memory-mapped page faults over
+        # NFS were orders of magnitude slower than sequential reads.
+        names = ("bf16.bin",) if fmt == "bf16" else ("fp8.bin", "fp8_scales.bin")
+        self.fds = {name: os.open(root / name, os.O_RDONLY) for name in names}
+
+    def _read(self, name: str, row: dict, width: int, dtype) -> np.ndarray:
+        """Read ``row``'s ``[length, width]`` slice of one flat token-major file."""
+        itemsize = np.dtype(dtype).itemsize
+        size = row["length"] * width * itemsize
+        data = os.pread(self.fds[name], size, row["offset"] * width * itemsize)
+        if len(data) != size:
+            raise OSError(f"short read from {self.root / name}")
+        return np.frombuffer(bytearray(data), dtype).reshape(row["length"], width)
 
     def __len__(self) -> int:
         return len(self.rows)
@@ -122,9 +122,11 @@ class Store:
     def load(self, index: int, device: torch.device | str = "cpu") -> torch.Tensor:
         """Return row ``index`` as BF16 ``[tokens, hidden]`` on ``device``."""
         row = self.rows[index]
-        span = slice(row["offset"], row["offset"] + row["length"])
-        values = torch.from_numpy(np.array(self.values[span])).to(device)
         if self.fmt == "bf16":
-            return values.view(torch.bfloat16)
-        scales = torch.from_numpy(np.array(self.scales[span])).to(device)
-        return fp8.dequantize(values, scales)
+            bits = self._read("bf16.bin", row, self.hidden, np.int16)
+            return torch.from_numpy(bits).to(device).view(torch.bfloat16)
+        codes = self._read("fp8.bin", row, self.hidden, np.uint8)
+        scales = self._read("fp8_scales.bin", row, self.hidden // fp8.BLOCK, np.float32)
+        return fp8.dequantize(
+            torch.from_numpy(codes).to(device), torch.from_numpy(scales).to(device)
+        )
