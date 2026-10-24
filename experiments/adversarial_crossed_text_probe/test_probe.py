@@ -59,6 +59,22 @@ def test_code_offsets_exclude_docstring_and_keep_original(prefix):
         common.code_token_indices(tokenizer, text, code + "oops", len(header), ids)
 
 
+def test_alignment_survives_template_trimming():
+    class TrimmingTokenizer(CharacterTokenizer):
+        def apply_chat_template(self, messages, **kwargs):
+            content = messages[0]["content"].strip()
+            return "user:" + content + QWEN_NON_THINKING_ASSISTANT_SUFFIX
+
+    tokenizer = TrimmingTokenizer()
+    text = request("print(1)\n")
+    rendered = render(tokenizer, text)
+    assert rendered.count(text) == 0
+    indices = common.code_token_indices(
+        tokenizer, text, "print(1)\n", 0, list(map(ord, rendered))
+    )
+    assert "".join(rendered[i] for i in indices) == "print(1)\n"
+
+
 def test_boundary_straddling_tokens_are_excluded():
     class CrossingTokenizer(CharacterTokenizer):
         def __call__(self, text, **kwargs):

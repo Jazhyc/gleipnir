@@ -182,9 +182,13 @@ def code_token_indices(
     tokenizer: Any, request: str, original: str, added: int, ids: list[int]
 ) -> list[int]:
     rendered = render(tokenizer, request)
-    if rendered.count(request) != 1 or not request.endswith(CLOSE):
+    # The Qwen chat templates trim the user message, dropping CLOSE's final
+    # newline, so align on the right-trimmed request (checked on both
+    # tokenizers, 24 October). Code spans end well before that newline.
+    body = request.rstrip()
+    if rendered.count(body) != 1 or not request.endswith(CLOSE):
         raise ValueError("ambiguous rendered prompt alignment")
-    offset = rendered.index(request)
+    offset = rendered.index(body)
     spans = [(a + offset, b + offset) for a, b in code_spans(request, original, added)]
     encoded = tokenizer(rendered, add_special_tokens=False, return_offsets_mapping=True)
     if list(encoded["input_ids"]) != ids:

@@ -238,3 +238,14 @@ Actual Qwen hooks, tokenizer offsets, GPU memory and timings remain untested.
 The isolated local test environment used Python 3.12, NumPy 2.5.4,
 scikit-learn 1.9.1, pytest 9.1.1 and Ruff 0.17.2. This does not replace the
 frozen Step 1 GPU environment. Fit artifacts record the analysis package versions.
+
+## Code fix before any activation was extracted (24 October)
+
+The first GPU attempt stopped at the canary on every arm with "ambiguous
+rendered prompt alignment", before any activation was saved. The Qwen 3.5 and
+3.8 chat templates trim the user message, so the request's final newline (the
+end of the trajectory close tag) is absent from the rendered prompt: the full
+request occurred 0 times, the right-trimmed request exactly once, on both
+tokenizers. `code_token_indices` now aligns on the right-trimmed request; code
+spans end before the removed newline. A synthetic trimming test was added.
+Design, layers, splits, controls and predictions are unchanged.
