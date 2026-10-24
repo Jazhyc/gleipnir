@@ -105,8 +105,9 @@ def main() -> None:
     parser.add_argument(
         "--fresh-optimizer",
         action="store_true",
-        help="with --resume-from: restart AdamW moments (for sweeps saved "
-        "before optimizer checkpoints existed)",
+        help="with --resume-from: no saved AdamW state (sweeps saved before "
+        "optimizer checkpoints existed); moments are rebuilt by replaying the "
+        "resume epoch's batches at learning rate 0, so weights do not move",
     )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
@@ -173,6 +174,29 @@ def main() -> None:
         summary = json.loads((out / "summary.json").read_text())
         summary["resumed_from"] = args.resume_from
         summary["resumed_fresh_optimizer"] = args.fresh_optimizer
+        if args.fresh_optimizer:
+            # AdamW at lr 0 leaves every weight (and weight decay) unchanged but
+            # accumulates moments and the step count, avoiding the sign-step kick
+            # of freshly initialized moments.
+            rates = [group["lr"] for group in sweep.optimizer.param_groups]
+            for group in sweep.optimizer.param_groups:
+                group["lr"] = 0.0
+            replay = length_batches(
+                lengths, args.batch, seed=args.data_seed * 1000 + args.resume_from
+            )
+            before = [p.detach().clone() for p in sweep.bank.parameters()]
+            train_epoch(sweep, train, replay, device, args.token_budget)
+            if not all(
+                torch.equal(a, b)
+                for a, b in zip(before, sweep.bank.parameters(), strict=True)
+            ):
+                raise RuntimeError("moment rebuild changed probe weights")
+            for group, rate in zip(sweep.optimizer.param_groups, rates, strict=True):
+                group["lr"] = rate
+            for spec in sweep.specs:
+                spec.losses.clear()
+            summary["moment_rebuild_steps"] = len(replay)
+            print(f"rebuilt AdamW moments over {len(replay)} batches", flush=True)
         first = args.resume_from + 1
     for epoch in range(first, max(args.checkpoints) + 1):
         batches = length_batches(

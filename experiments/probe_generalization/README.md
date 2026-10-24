@@ -114,7 +114,9 @@ the baseline to beat.
   there, and selection reruns over epochs {1, 2, 4, 8, 16} before any OOD
   read. Sweeps that saved AdamW state resume exactly; the prompted sweep
   started before optimizer checkpoints existed, so it resumes from its
-  epoch-8 weights with fresh AdamW moments (a recorded deviation).
+  epoch-8 weights after rebuilding AdamW moments by replaying epoch 8's
+  batches at learning rate 0 (weights verified unchanged), which avoids the
+  sign-step kick of fresh moments; a recorded deviation.
 
 ## Pilot (before the full extraction)
 

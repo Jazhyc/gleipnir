@@ -434,3 +434,31 @@ def test_budget_extension_triggers_only_at_last_checkpoint(tmp_path, monkeypatch
         )
         is None
     )
+
+
+def test_zero_lr_replay_rebuilds_moments_without_moving_weights(tmp_path):
+    torch.manual_seed(0)
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("bf16",))
+    for i in range(8):
+        writer.append(torch.randn(5 + i, HIDDEN), {"id": str(i), "label": i % 2})
+    writer.close({})
+    store = Store(tmp_path / "s", "bf16")
+    lengths = [r["length"] for r in store.rows]
+    sweep = make_sweep(
+        ["rolling_w4", "alphaevolve"],
+        ["hard"],
+        [0],
+        HIDDEN,
+        lr=1e-2,
+        weight_decay=3e-3,
+        device="cpu",
+    )
+    for group in sweep.optimizer.param_groups:
+        group["lr"] = 0.0
+    before = [p.detach().clone() for p in sweep.bank.parameters()]
+    train_epoch(sweep, store, length_batches(lengths, 4, seed=0), "cpu")
+    assert all(
+        torch.equal(a, b) for a, b in zip(before, sweep.bank.parameters(), strict=True)
+    )
+    states = [sweep.optimizer.state[p] for p in sweep.bank.parameters()]
+    assert all(int(s["step"]) == 2 and s["exp_avg_sq"].abs().sum() > 0 for s in states)
