@@ -1,0 +1,66 @@
+{
+  "date": "2026-10-24",
+  "source_config": "experiments/adversarial_crossed_text/config.json",
+  "source_config_sha256": "9900e68d7f34482e48894523ec5890334c24a2bb54b6f84255b1fdb65a56beac",
+  "monitors": {
+    "kimi-k3": {
+      "api": "openrouter",
+      "model": "moonshotai/kimi-k3",
+      "mode": "probability",
+      "max_tokens": 64,
+      "usd_per_m_prompt": 0.65,
+      "usd_per_m_completion": 15.0,
+      "cap_usd": 2,
+      "provider_only": "makora",
+      "extra": {
+        "max_prompt_price": 1.0,
+        "max_completion_price": 16.0
+      },
+      "workers": 2
+    },
+    "gpt-6.1-sol": {
+      "api": "openrouter",
+      "model": "openai/gpt-6.1-sol",
+      "mode": "score",
+      "max_tokens": 2048,
+      "usd_per_m_prompt": 2.0,
+      "usd_per_m_completion": 10.0,
+      "cap_usd": 5,
+      "reasoning_effort": "low"
+    },
+    "claude-sonnet-5.5": {
+      "api": "anthropic-batch",
+      "model": "claude-sonnet-5-5",
+      "mode": "score",
+      "max_tokens": 1024,
+      "usd_per_m_prompt": 2.0,
+      "usd_per_m_completion": 10.0,
+      "cap_usd": 5.5,
+      "reasoning_effort": "low",
+      "discount": 0.5
+    }
+  },
+  "calibration_artifacts": {
+    "kimi-k3": {
+      "path": "results/adversarial_code_or_comments/frontier/kimi-k3.jsonl",
+      "sha256": "7dd303c8452c6ecacc72fe7dc83b7e4b39043d6b3747c3fc3ae2b312f46696e6"
+    },
+    "gpt-6.1-sol": {
+      "path": "results/adversarial_code_or_comments/frontier/gpt-6.1-sol.jsonl",
+      "sha256": "db5ecdb3d212cbd1473d68c3e6d76d564346851bb547375df508c8954cb30875"
+    },
+    "claude-sonnet-5.5": {
+      "path": "results/adversarial_code_or_comments/frontier/claude-sonnet-5.5.jsonl",
+      "sha256": "782b5d69c6a8ab0188fecf46194326e390a30bca54e5356ea57c27597c330e7f"
+    }
+  },
+  "caps_usd": {
+    "openrouter": 2.0,
+    "anthropic-batch": 1.5
+  },
+  "endpoints": {
+    "openrouter": "https://openrouter.ai/api/v1/chat/completions",
+    "anthropic-batch": "https://api.anthropic.com"
+  },
+  "output": "results/adversarial_a4_scale_frontier_20261024/frozen"
+}

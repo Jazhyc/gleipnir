@@ -474,7 +474,11 @@ def validate_scores(batch: dict, receipt: dict) -> dict:
         or receipt["monitor_identity"] != batch["monitor_identity"]
     ):
         raise ValueError("score batch or monitor identity mismatch")
-    if not receipt.get("canary_passed"):
+    if batch["monitor_identity"].get("backend") == "frontier_api":
+        from .frontier import validate_contract_receipt
+
+        validate_contract_receipt(batch, receipt)
+    elif not receipt.get("canary_passed"):
         raise ValueError("missing runtime/parity canary")
     rows = unique(receipt["rows"])
     expected = unique(batch["jobs"])
