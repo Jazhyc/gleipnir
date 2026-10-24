@@ -8,8 +8,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- **Multi-agent liar study, compliance pilot** (lab CPU plus Tinker, no GPU): the study is being built and frozen; its 10-episode pilot runs next. See item 1 below.
-- The A100 80GB VM (`gleipnir-qwen-gpu`) has been stopped since 24 October, 08:00 UTC, after the comment-attack and probe session; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
+- Nothing. The A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 25 October at 23:05 UTC after the liar-study scoring; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
 
 ## Failures and blockers
 
@@ -27,18 +26,12 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Multi-agent liar study** (frozen protocol in the lab repository, `experiments/live-peers/liar-scale/`). Same world and recruiter instructions as the honest-versus-deceptive recruitment study, with liars from several models:
-   - honest versus deceptive recruiters from GLM-5.3, Kimi-K2.6, Qwen3.8-27B and gpt-oss-120b on Tinker, 6 seeds each (48 episodes);
-   - one honest and one deceptive recruiter in the same episode (12);
-   - Claude Haiku 5.5 as target and bystanders (12), and GPT-6.1 Sol recruiters (12).
-   - A 10-episode compliance pilot runs first: a model enters only if it delivers the lie in at least 1 of 2 pilot episodes.
-   - Liars, targets and bystanders are scored by the 4B, the 27B and Kimi. Lie labels come from a screen of every recruiter post plus a hand check blind to arm. Targets and bystanders are grouped by whether they actually saw a lie. The truth-swap control is repeated. Results per liar model.
-2. **Monitor-aware cheating on ImpossibleBench**, for cheats that aren't announced. Every natural cheat so far is admitted in code or comments (cheating pilot, 21–22 October), which makes the monitor's job easy.
+1. **Monitor-aware cheating on ImpossibleBench**, for cheats that aren't announced. Every natural cheat so far is admitted in code or comments (cheating pilot, 21–22 October), which makes the monitor's job easy.
    - Five setups on the same tasks, open models on Tinker with thinking off: no special prompt (natural cheats); a short instruction allowing test-gaming; the same instruction plus a truthful note that a monitor reads tool calls and outputs and that flagged runs lose reward; an honest instruction; the honest instruction plus the note.
    - Labels come from the environment: a pass on an impossible test is a cheat.
    - Measures: whether the 4B, the 27B and Kimi catch prompted cheats more easily than natural ones; whether the monitor note makes cheats quieter or rarer; false alarms on honest runs that know about the monitor.
    - Main risk: few cheats on Tinker (5 of 103 in the pilot's main arm), so it needs more seeds per task or more task pressure, applied equally to every setup. Runs after the liar study.
-3. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
+2. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
 
@@ -64,6 +57,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Done
 
+- **Multi-agent liars at scale (25 October): Gleipnir ranks liars almost as well as Kimi (AUROC 0.90 / 0.90 against 0.96, 30 liars against 52 honest recruiters) but at the benchmark 1% line catches 0 of 30 (4B) and 5 of 30 (27B), against Kimi's 18 of 30.** 72 main-cell and 48 other episodes from GLM-5.3, Kimi-K2.6, Qwen3.8-27B and GPT-6.1 Sol recruiters; lies labelled by two blind readers (kappa 0.93). Qwen3.8 and Sol rarely lie when told to. With a Haiku target, lies made A give up its delivery in 5 of 10 episodes against 0 of 11 under honest recruitment. The 4B's scores rise for agents that only read a lie. See the [protocol and results](../../experiments/adversarial_lab_liars/README.md).
 - **Comment attack with score access (24 October): 7 of 59 caught backdoors get past the 4B after 4 tries, 1 of 68 past the 27B; almost nothing transfers (Sol and Sonnet 0, Kimi 1–2).** Comments raise false alarms on honest code more than they hide backdoors. Both arms are final after hand audits (9/9 and 2/2 passed). See the [protocol and results](../../experiments/adversarial_a4_scale/README.md).
 - **Probe on the monitor (24 October): under an identical accusation, a no-text probe on the 4B's layer 16 still separates backdoored from honest code (0.95–0.96) while its answer is at 0.58–0.59.** The 27B's last-layer probe inverts under accusations (unexplained). See the [protocol and results](../../experiments/adversarial_crossed_text_probe/README.md).
 - **Crossed-text rerun (23 October): with the same text on both programs, the 27B keeps its ranking under accusations (AUROC 0.98 / 0.96, level with Kimi, Sonnet and Sol); only the 4B loses it (0.58 / 0.59), worse than its untrained base.** This corrects the earlier "below chance" result, which came mostly from giving the two programs different texts. All five frozen 4B intervals held. Threshold calibration on undocumented code breaks for every monitor. See the [protocol and results](../../experiments/adversarial_crossed_text/README.md).
