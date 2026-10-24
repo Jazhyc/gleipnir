@@ -120,7 +120,7 @@ def run(args: argparse.Namespace) -> None:
     hidden = model.config.hidden_size
     if not 0 <= args.layer < len(layers):
         raise ValueError(f"layer {args.layer} outside 0..{len(layers) - 1}")
-    head = model.lm_head.weight[15:17].float()
+    head = model.lm_head.weight[15:17].detach().float()
     capture: dict = {}
 
     def hook(index: int):

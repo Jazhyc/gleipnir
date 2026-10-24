@@ -6,12 +6,16 @@ A store directory holds flat token-major files and ``index.jsonl``:
 - ``fp8.bin`` / ``fp8_scales.bin``: blockwise E4M3 codes and FP32 scales;
 - ``index.jsonl``: one row per sequence with ``offset`` and ``length`` in tokens.
 
-Rows are read back as memory maps, so a store larger than RAM streams from disk.
+Writes run on one background thread (in order, with a bounded backlog), so
+file I/O overlaps the next forward pass. Rows are read back as memory maps, so a
+store larger than RAM streams from disk.
 """
 
 from __future__ import annotations
 
 import json
+from collections import deque
+from concurrent.futures import Future, ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
 
@@ -21,6 +25,7 @@ import torch
 from . import fp8
 
 FORMATS = ("bf16", "fp8")
+MAX_PENDING_WRITES = 8
 
 
 class StoreWriter:
@@ -38,25 +43,39 @@ class StoreWriter:
             )
         }
         self.index = (root / "index.jsonl").open("w")
+        self.executor = ThreadPoolExecutor(max_workers=1)
+        self.pending: deque[Future] = deque()
+
+    def _write(self, chunks: list[tuple[str, np.ndarray]], entry: str) -> None:
+        for name, array in chunks:
+            self.files[name].write(memoryview(array).cast("B"))
+        self.index.write(entry)
 
     def append(self, values: torch.Tensor, record: dict[str, Any]) -> None:
-        """Write one sequence's ``[tokens, hidden]`` activations."""
+        """Queue one sequence's ``[tokens, hidden]`` activations for writing."""
         if values.ndim != 2 or values.shape[1] != self.hidden or not len(values):
             raise ValueError(f"expected nonempty [tokens, {self.hidden}] activations")
         if not bool(torch.isfinite(values).all()):
             raise ValueError(f"nonfinite activations in row {record.get('id')}")
+        chunks = []
         if "bf16" in self.formats:
-            bits = values.to(torch.bfloat16).view(torch.int16).cpu().numpy()
-            self.files["bf16.bin"].write(bits.tobytes())
+            bits = values.to(torch.bfloat16).view(torch.int16)
+            chunks.append(("bf16.bin", bits.cpu().numpy()))
         if "fp8" in self.formats:
             codes, scales = fp8.quantize(values)
-            self.files["fp8.bin"].write(codes.cpu().numpy().tobytes())
-            self.files["fp8_scales.bin"].write(scales.cpu().numpy().tobytes())
+            chunks.append(("fp8.bin", codes.cpu().numpy()))
+            chunks.append(("fp8_scales.bin", scales.cpu().numpy()))
         entry = {**record, "offset": self.offset, "length": int(values.shape[0])}
-        self.index.write(json.dumps(entry, sort_keys=True) + "\n")
         self.offset += int(values.shape[0])
+        while len(self.pending) >= MAX_PENDING_WRITES:
+            self.pending.popleft().result()
+        line = json.dumps(entry, sort_keys=True) + "\n"
+        self.pending.append(self.executor.submit(self._write, chunks, line))
 
     def close(self, meta: dict[str, Any]) -> None:
+        while self.pending:
+            self.pending.popleft().result()
+        self.executor.shutdown()
         for handle in self.files.values():
             handle.close()
         self.index.close()
