@@ -65,8 +65,13 @@ def main() -> None:
 
     device = "cuda"
     root = Path(args.store_root) / args.population / args.backbone
-    train = Store(root / "train", args.train_format)
-    evals = {fmt: Store(root / args.eval_split, fmt) for fmt in args.eval_formats}
+    # NTP rows start at sequence position 0, the attention sink (Qwen has no
+    # BOS); the prompted span starts after the instruction prefix.
+    skip = 1 if args.backbone == "ntp" else 0
+    train = Store(root / "train", args.train_format, skip=skip)
+    evals = {
+        fmt: Store(root / args.eval_split, fmt, skip=skip) for fmt in args.eval_formats
+    }
     out = (
         ROOT
         / "results/probe_generalization"

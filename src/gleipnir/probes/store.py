@@ -87,12 +87,19 @@ class StoreWriter:
 class Store:
     """Read-only view of one store in one format."""
 
-    def __init__(self, root: Path, fmt: str):
+    def __init__(self, root: Path, fmt: str, *, skip: int = 0):
+        """``skip`` drops each row's first tokens (e.g. the NTP attention sink)."""
         self.root, self.fmt = root, fmt
         self.meta = json.loads((root / "meta.json").read_text())
         if fmt not in self.meta["formats"]:
             raise ValueError(f"{root} has no {fmt} copy")
-        self.rows = [json.loads(line) for line in (root / "index.jsonl").open()]
+        rows = [json.loads(line) for line in (root / "index.jsonl").open()]
+        if any(r["length"] <= skip for r in rows):
+            raise ValueError(f"a row in {root} has no tokens left after skip={skip}")
+        self.rows = [
+            {**r, "offset": r["offset"] + skip, "length": r["length"] - skip}
+            for r in rows
+        ]
         hidden, tokens = self.meta["hidden"], self.meta["tokens"]
         if fmt == "bf16":
             self.values = np.memmap(

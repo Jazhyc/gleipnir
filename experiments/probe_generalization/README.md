@@ -33,7 +33,10 @@ A 2×2 grid, crossed with a probe-architecture sweep.
     canonical CoT-removed trajectories under the teacher template
     (`teacher:id_cot_removed` in the vocabulary diagnostic).
   - *NTP*: the bare trajectory text from `trajectory_from_prompt`, with no
-    instructions, chat template or suffix.
+    instructions, chat template or suffix. Qwen has no BOS token, so an NTP
+    row's first token is the attention sink at sequence position 0. Pooled
+    probes drop it (user decision, 2026-10-24); the prompted span never
+    contains it.
 - **Objective.** BCE with a bias term against (a) the source hard label or
   (b) Kimi K3's `soft_target` from `data/qwen38-27b-s0-01/strict_filter/teacher.jsonl`.
 - **Rows.** The 7,836 strict-filtered training rows (the Gleipnir 4B/27B
@@ -94,6 +97,11 @@ first look at how the architectures differ.
   (final norm, then LM head) must match the archived stock-vLLM base-4B
   predictions with correlation ≥ 0.999. Record the MAE. These are score
   checks against an existing result, not probe evaluation.
+  *Result:* correlation 0.99890, MAE 0.070, max 0.27 logit (reference SD
+  1.84), so the strict gate **failed**. A BF16 head does not close it (0.99874),
+  so the gap is Transformers/FLA/SDPA versus vLLM 0.31 kernels in the forward
+  pass, not head precision. The user accepted it as unnoticeable
+  (`user_accepted_failed_parity`, 2026-10-24).
 - **FP8 gate.** Store BF16, then derive E4M3 FP8 offline with one FP32 scale per
   token per 128-channel block. Per-block scales keep residual-stream outlier
   channels from crushing the rest. For each architecture:

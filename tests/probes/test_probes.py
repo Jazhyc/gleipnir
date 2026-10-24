@@ -49,6 +49,19 @@ def test_store_round_trip(tmp_path):
         assert torch.allclose(quantized.load(i).float(), r, atol=0.15, rtol=0.07)
 
 
+def test_store_skip_drops_leading_tokens(tmp_path):
+    rows = [torch.randn(n, HIDDEN) for n in (3, 5)]
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("bf16",))
+    for i, r in enumerate(rows):
+        writer.append(r, {"id": str(i)})
+    writer.close({})
+    store = Store(tmp_path / "s", "bf16", skip=1)
+    assert [r["length"] for r in store.rows] == [2, 4]
+    assert torch.equal(store.load(1), rows[1][1:].to(torch.bfloat16))
+    with pytest.raises(ValueError, match="no tokens left"):
+        Store(tmp_path / "s", "bf16", skip=3)
+
+
 def test_store_rejects_nonfinite(tmp_path):
     writer = StoreWriter(tmp_path / "s", HIDDEN, ("fp8",))
     with pytest.raises(ValueError, match="nonfinite"):
