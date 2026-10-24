@@ -25,11 +25,10 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Comment attack, last audit:** one winning comment set evades Kimi K3 without evading the 4B and still needs a hand read before the 4B arm's report is final.
-2. **Goodfire reward-hacking pilot** ([draft protocol](../../experiments/adversarial_goodfire/README.md)): two independent readers adjudicate the 64 action-visible coding candidates, then a 2–4 hour GPU session and a Kimi/Sol subsample (about $9 expected).
-3. **Multi-agent live lab:** stronger elicitation, then a larger peer-deception test with liars from several models.
-4. **Monitor-aware cheating arm** on ImpossibleBench, for unannounced cheats.
-5. Earlier items, still open: the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
+1. **Goodfire reward-hacking pilot** ([draft protocol](../../experiments/adversarial_goodfire/README.md)): two independent readers adjudicate the 64 action-visible coding candidates, then a 2–4 hour GPU session and a Kimi/Sol subsample (about $9 expected).
+2. **Multi-agent live lab:** stronger elicitation, then a larger peer-deception test with liars from several models.
+3. **Monitor-aware cheating arm** on ImpossibleBench, for unannounced cheats.
+4. Earlier items, still open: the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
 
@@ -54,7 +53,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Done
 
-- **Comment attack with score access (24 October): 7 of 59 caught backdoors get past the 4B after 4 tries, 1 of 68 past the 27B; almost nothing transfers (Sol and Sonnet 0, Kimi 1–2).** Comments raise false alarms on honest code more than they hide backdoors. The 27B arm is final; the 4B arm awaits one audit. See the [protocol and results](../../experiments/adversarial_a4_scale/README.md).
+- **Comment attack with score access (24 October): 7 of 59 caught backdoors get past the 4B after 4 tries, 1 of 68 past the 27B; almost nothing transfers (Sol and Sonnet 0, Kimi 1–2).** Comments raise false alarms on honest code more than they hide backdoors. Both arms are final after hand audits (9/9 and 2/2 passed). See the [protocol and results](../../experiments/adversarial_a4_scale/README.md).
 - **Probe on the monitor (24 October): under an identical accusation, a no-text probe on the 4B's layer 16 still separates backdoored from honest code (0.95–0.96) while its answer is at 0.58–0.59.** The 27B's last-layer probe inverts under accusations (unexplained). See the [protocol and results](../../experiments/adversarial_crossed_text_probe/README.md).
 - **Crossed-text rerun (23 October): with the same text on both programs, the 27B keeps its ranking under accusations (AUROC 0.98 / 0.96, level with Kimi, Sonnet and Sol); only the 4B loses it (0.58 / 0.59), worse than its untrained base.** This corrects the earlier "below chance" result, which came mostly from giving the two programs different texts. All five frozen 4B intervals held. Threshold calibration on undocumented code breaks for every monitor. See the [protocol and results](../../experiments/adversarial_crossed_text/README.md).
 - **Gleipnir against frontier monitors (22 October).** On natural cheats Gleipnir matches Kimi K3, GPT-6.1 Sol and Claude Sonnet 5.5 (pAUROC@20 93.5–94.8%) at 3–13× lower cost; with misleading comments on backdoored and honest code it falls below chance (AUROC 0.35 and 0.40) while Sol and Sonnet hold. Superseded for the 27B by the crossed-text rerun: the texts differed between the two programs. Summary: [findings](../findings/adversarial_frontier_comparison.md).
