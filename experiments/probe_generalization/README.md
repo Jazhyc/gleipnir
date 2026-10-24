@@ -124,12 +124,13 @@ first look at how the architectures differ.
 Code: `prepare.py` (rows), `extract.py` (activations), `train.py` (pooled
 sweep), `lasttoken.py`, `pilot.py` (gates) and `run_pilot.sh` (remote order);
 reusable parts live in `src/gleipnir/probes/`, tests in `tests/probes/`.
-After the pilot, a sweep trains as one fused `ProbeBank` (all first layers in
+Each sweep trains as one fused `ProbeBank` (all first layers in
 one matmul, one elementwise AdamW over disjoint parameters, so each probe
 trains as if alone), with the training rows resident in GPU or pinned CPU
 memory and evaluation rows in pinned CPU memory. BF16-trained probes score
 both formats (gate a); FP8-trained probes score FP8 only (gate b). The
-pilot's first prompted FP8 sweep started before the evaluation change.
+pilot restarted on this trainer (2026-10-24 11:04); its first prompted FP8
+sweep started before the evaluation change.
 
 ## Storage and compute
 
