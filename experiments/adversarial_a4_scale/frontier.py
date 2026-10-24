@@ -1,4 +1,4 @@
-"""Fixed-winner frontier transfer, with a whole-study gate before any dispatch.
+"""Fixed-winner frontier transfer, with per-request budget reservations.
 
 No search, GPU imports, generation, retries or calibration calls. The historical
 generation manifest remains unchanged; this amendment owns a separate identity.
@@ -54,7 +54,7 @@ def settings() -> tuple[dict, dict]:
     if spec["endpoints"] != {
         "openrouter": "https://openrouter.ai/api/v1/chat/completions",
         "anthropic-batch": "https://api.anthropic.com",
-    } or spec["caps_usd"] != {"openrouter": 2.0, "anthropic-batch": 1.5}:
+    } or spec["caps_usd"] != {"openrouter": 3.0, "anthropic-batch": 1.5}:
         raise ValueError("A4 endpoints or caps changed")
     for name, m in spec["monitors"].items():
         if m != cfg["frontier"]["monitors"][name]:
@@ -249,37 +249,34 @@ def build(study: Path, spec: dict, crossed_cfg: dict) -> dict:
     }
 
 
-def preflight(plan: dict, campaign: Campaign) -> dict:
-    """The entire remaining campaign must fit before even loading a key."""
-    spec = plan["settings"]
+def request_bound(m, row: dict) -> float:
+    prompt = score_prompt(row["prompt"]) if m.mode == "score" else row["prompt"]
+    return reservation_monitor(m).worst_case_usd(len(prompt.encode()) + 2048)
+
+
+def budget_reasons(plan: dict, campaign: Campaign, api: str, worst: float) -> list[str]:
     latest = list(campaign.latest().values())
-    totals = {
-        api: sum(
-            r["worst_case_usd"]
-            for r in plan["monitors"].values()
-            if r["identity"]["settings"]["api"] == api
-        )
-        for api in spec["caps_usd"]
-    }
+    own = sum(r["charge"] for r in latest if r.get("group") == "a4-frontier-" + api)
+    total = sum(r["charge"] for r in latest if r["api"] == api)
     reasons = []
-    for api, worst in totals.items():
-        own = sum(r["charge"] for r in latest if r.get("group") == "a4-frontier-" + api)
-        total = sum(r["charge"] for r in latest if r["api"] == api)
-        if own + worst > spec["caps_usd"][api]:
-            reasons.append(f"{api} A4 cap exceeded")
-        if total + worst > campaign.cfg["campaign"]["caps_usd"][api]:
-            reasons.append(f"{api} shared campaign cap exceeded")
+    if own + worst > plan["settings"]["caps_usd"][api]:
+        reasons.append(f"{api} A4 cap exceeded")
+    if total + worst > campaign.cfg["campaign"]["caps_usd"][api]:
+        reasons.append(f"{api} shared campaign cap exceeded")
+    return reasons
+
+
+def preflight(plan: dict, campaign: Campaign) -> dict:
+    """Full bounds are diagnostic; dispatch gates each next request/batch."""
     return {
         "plan_sha256": digest(plan),
-        "status": "blocked_budget" if reasons else "ready",
-        "worst_case_usd": totals,
-        "caps_usd": spec["caps_usd"],
+        "status": "per_request_reservations",
+        "caps_usd": plan["settings"]["caps_usd"],
         "monitor_bounds": {
             n: {"requests": len(r["requests"]), "worst_case_usd": r["worst_case_usd"]}
             for n, r in plan["monitors"].items()
         },
-        "campaign_latest_sha256": digest(latest),
-        "reasons": reasons,
+        "campaign_latest_sha256": digest(list(campaign.latest().values())),
     }
 
 
@@ -342,98 +339,172 @@ def request_record(m, row: dict, key: str, post, identity: dict) -> dict:
     return {**record, **observed}
 
 
-def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
-    """Reserve every monitor before dispatch. A saved intent is never resent."""
-    import requests
-
-    campaign = Campaign(cfg, out)
-    gate = preflight(plan, campaign)
-    fixed(out / "budget_gate.json", gate)
-    if gate["status"] != "ready":
-        raise SystemExit("whole-study worst-case bound exceeds caps; nothing sent")
-    committed(plan)
-    if (out / "dispatch_intent.json").exists():
-        raise SystemExit("dispatch intent exists; collect/reconcile, never redispatch")
-    reservations = {}
-    try:
-        for name, item in plan["monitors"].items():
-            api = item["identity"]["settings"]["api"]
-            reservations[name] = campaign.reserve(
-                campaign.request_id(out, digest(plan) + ":" + name),
-                api,
-                "a4-frontier-" + name,
-                item["worst_case_usd"],
-                plan["settings"]["caps_usd"][api],
-                group="a4-frontier-" + api,
-                group_cap=plan["settings"]["caps_usd"][api],
-            )
-    except BaseException:
-        # No dispatch has occurred, so these reservations are certainly unspent.
-        for reservation in reservations.values():
-            campaign.settle(reservation, 0)
-        raise
-    fixed(
-        out / "dispatch_intent.json",
-        {"plan_sha256": digest(plan), "reservations": reservations},
-    )
-    for name, item in plan["monitors"].items():
-        m = crossed.monitor(name, crossed_cfg)
-        rows = item["requests"]
-        if m.api == "openrouter":
-            key = load_key("OPENROUTER_API_KEY", cfg)
-            for row in rows:
-                # This per-row intent survives a transport crash without retry.
-                append(out / "intents.jsonl", {"monitor": name, "id": row["id"]})
-                record = request_record(m, row, key, requests.post, item["identity"])
-                append(out / f"{name}.jsonl", record)
-                check_returned_identity(record, item["identity"])
-                if record["status"] == "infrastructure_failure":
-                    if record.get("error", {}).get("http_status") in (401, 403):
-                        raise SystemExit("API authentication failure; stop dispatch")
-            settle_monitor(out, name, campaign, reservations[name])
-        else:
-            import anthropic
-
-            client = anthropic.Anthropic(
-                api_key=load_key("ANTHROPIC_API_KEY", cfg),
-                base_url=item["identity"]["endpoint"],
-                max_retries=0,
-            )
-            ids = {f"r{i}": row["id"] for i, row in enumerate(rows)}
-            fixed(out / f"{name}.submission_intent.json", {"ids": ids})
-            batch = client.messages.batches.create(
-                requests=[
-                    {
-                        "custom_id": cid,
-                        "params": anthropic_batch_params(m, row["prompt"]),
-                    }
-                    for cid, row in zip(ids, rows, strict=True)
-                ]
-            )
-            fixed(
-                out / f"{name}.pending.json",
-                {"batch_id": batch.id, "ids": ids, "reservation": reservations[name]},
-            )
-
-
-def settle_monitor(out: Path, name: str, campaign: Campaign, reservation: dict) -> None:
-    rows = read(out / f"{name}.jsonl")
-    known = all(
-        isinstance(r.get("cost"), (int, float))
+def known_cost(rows: list[dict]) -> float | None:
+    if all(
+        not isinstance(r.get("cost"), bool)
+        and isinstance(r.get("cost"), (int, float))
         and math.isfinite(r["cost"])
         and r["cost"] >= 0
         for r in rows
-    )
-    campaign.settle(reservation, sum(r["cost"] for r in rows) if known else None)
+    ):
+        return sum(r["cost"] for r in rows)
+    return None
+
+
+def stop_budget(plan, out, name, rows, worst, reasons):
+    result = {
+        "plan_sha256": digest(plan),
+        "monitor": name,
+        "status": "blocked_budget",
+        "completed": len(rows),
+        "planned": len(plan["monitors"][name]["requests"]),
+        "next_reservation_usd": worst,
+        "reasons": reasons,
+    }
+    fixed(out / f"{name}.budget_stop.json", result)
+    print(json.dumps(result), flush=True)
+
+
+def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict, monitor=None) -> None:
+    """Settle one request or small batch before reserving more. Never retry."""
+    import requests
+
+    committed(plan)
+    campaign = Campaign(cfg, out)
+    for name in (
+        (monitor,) if monitor else ("kimi-k3", "gpt-6.1-sol", "claude-sonnet-5.5")
+    ):
+        item = plan["monitors"][name]
+        m = crossed.monitor(name, crossed_cfg)
+        units = out / "units" / name
+        done = unique(read(out / f"{name}.jsonl"))
+        for record in done.values():
+            check_returned_identity(record, item["identity"])
+            if record.get("error", {}).get("http_status") in (401, 403):
+                raise SystemExit("API authentication failure; stop dispatch")
+        # A receipt saved just before a crash can be settled without a new call.
+        for path in sorted(units.glob("*.intent.json")):
+            state = json.loads(path.read_text())
+            if state["plan_sha256"] != digest(plan):
+                raise ValueError("dispatch intent plan changed")
+            marker = path.with_suffix(".settled")
+            if marker.exists():
+                continue
+            if m.api != "openrouter":
+                raise SystemExit("unsettled Anthropic batch; collect first")
+            if not set(state["ids"].values()) <= done.keys():
+                raise SystemExit("ambiguous request; reconcile, never redispatch")
+            campaign.settle(
+                state["reservation"],
+                known_cost([done[r] for r in state["ids"].values()]),
+            )
+            fixed(marker, {"settled": True})
+        remaining = [r for r in item["requests"] if r["id"] not in done]
+        if not remaining:
+            print(f"{name} complete {len(done)}/{len(item['requests'])}", flush=True)
+            continue
+        if (out / f"{name}.budget_stop.json").exists():
+            print(f"{name} previously stopped at cap", flush=True)
+            continue
+        key = None
+        while remaining:
+            rows, worst = [], 0.0
+            reasons = []
+            # Shrink the next batch to fit, stopping at the first row that cannot.
+            for row in remaining[: 20 if m.api == "anthropic-batch" else 1]:
+                bound = request_bound(m, row)
+                reasons = budget_reasons(plan, campaign, m.api, worst + bound)
+                if reasons:
+                    break
+                rows.append(row)
+                worst += bound
+            if not rows:
+                stop_budget(
+                    plan, out, name, done, request_bound(m, remaining[0]), reasons
+                )
+                break
+            if key is None:
+                key = load_key(
+                    "OPENROUTER_API_KEY"
+                    if m.api == "openrouter"
+                    else "ANTHROPIC_API_KEY",
+                    cfg,
+                )
+            ids = {f"r{i}": row["id"] for i, row in enumerate(rows)}
+            unit_id = digest(ids)
+            path = units / f"{unit_id}.intent.json"
+            if path.exists():
+                raise SystemExit("dispatch intent exists; never redispatch")
+            reservation = campaign.reserve(
+                campaign.request_id(out, digest(plan) + ":" + name + ":" + unit_id),
+                m.api,
+                "a4-frontier-" + name,
+                worst,
+                plan["settings"]["caps_usd"][m.api],
+                group="a4-frontier-" + m.api,
+                group_cap=plan["settings"]["caps_usd"][m.api],
+            )
+            state = {
+                "plan_sha256": digest(plan),
+                "ids": ids,
+                "reservation": reservation,
+            }
+            fixed(path, state)
+            if m.api == "anthropic-batch":
+                import anthropic
+
+                client = anthropic.Anthropic(
+                    api_key=key, base_url=item["identity"]["endpoint"], max_retries=0
+                )
+                batch = client.messages.batches.create(
+                    requests=[
+                        {
+                            "custom_id": cid,
+                            "params": anthropic_batch_params(m, row["prompt"]),
+                        }
+                        for cid, row in zip(ids, rows, strict=True)
+                    ]
+                )
+                fixed(path.with_suffix(".pending"), {**state, "batch_id": batch.id})
+                print(
+                    f"{name} submitted {len(rows)} rows; collect before next batch",
+                    flush=True,
+                )
+                return
+            record = request_record(m, rows[0], key, requests.post, item["identity"])
+            append(out / f"{name}.jsonl", record)
+            campaign.settle(reservation, known_cost([record]))
+            fixed(path.with_suffix(".settled"), {"settled": True})
+            done[record["id"]] = record
+            check_returned_identity(record, item["identity"])
+            if record.get("error", {}).get("http_status") in (401, 403):
+                raise SystemExit("API authentication failure; stop dispatch")
+            remaining = remaining[len(rows) :]
+            if len(done) % 20 == 0 or not remaining:
+                print(f"{name} {len(done)}/{len(item['requests'])}", flush=True)
 
 
 def collect(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
     import anthropic
 
+    committed(plan)
     name = "claude-sonnet-5.5"
     item = plan["monitors"][name]
     m = crossed.monitor(name, crossed_cfg)
-    state = json.loads((out / f"{name}.pending.json").read_text())
+    intents = [
+        p
+        for p in (out / "units" / name).glob("*.intent.json")
+        if not p.with_suffix(".settled").exists()
+    ]
+    if len(intents) != 1:
+        raise SystemExit("need exactly one unsettled batch")
+    path = intents[0]
+    pending = path.with_suffix(".pending")
+    if not pending.exists():
+        raise SystemExit("ambiguous submission; reconcile, never redispatch")
+    state = json.loads(pending.read_text())
+    if state["plan_sha256"] != digest(plan):
+        raise ValueError("batch plan changed")
     client = anthropic.Anthropic(
         api_key=load_key("ANTHROPIC_API_KEY", cfg),
         base_url=item["identity"]["endpoint"],
@@ -441,7 +512,7 @@ def collect(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
     )
     batch = client.messages.batches.retrieve(state["batch_id"])
     if batch.processing_status != "ended":
-        print(batch.processing_status)
+        print(batch.processing_status, flush=True)
         return
     done = unique(read(out / f"{name}.jsonl"))
     for result in client.messages.batches.results(state["batch_id"]):
@@ -451,13 +522,25 @@ def collect(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
         record = anthropic_result_record(m, result)
         if result.result.type == "succeeded":
             record["model"] = result.result.message.model
-        record["id"] = rid
+        record.update(id=rid, batch_id=state["batch_id"])
         append(out / f"{name}.jsonl", record)
         done[rid] = record
-        check_returned_identity(record, item["identity"])
-    if set(done) != set(state["ids"].values()):
+    ids = set(state["ids"].values())
+    if not ids <= done.keys():
         raise ValueError("incomplete batch results; retain full reservation")
-    settle_monitor(out, name, Campaign(cfg, out), state["reservation"])
+    batch_rows = [done[r] for r in ids]
+    Campaign(cfg, out).settle(state["reservation"], known_cost(batch_rows))
+    # Check every stored row, including partial results from a previous collect.
+    for record in batch_rows:
+        check_returned_identity(record, item["identity"])
+        if record.get("error", {}).get("http_status") in (401, 403):
+            raise SystemExit("API authentication failure; stop dispatch")
+    fixed(path.with_suffix(".settled"), {"settled": True})
+    print(
+        f"{name} collected {len(batch_rows)}; "
+        f"total {len(done)}/{len(item['requests'])}",
+        flush=True,
+    )
 
 
 def validate_contract_receipt(batch: dict, receipt: dict) -> None:
@@ -531,6 +614,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("stage", choices=("prepare", "run", "collect", "import"))
     parser.add_argument("--out", type=Path)
+    parser.add_argument("--monitor", choices=sorted(TARGETS))
     args = parser.parse_args()
     spec, crossed_cfg = settings()
     cfg = config()
@@ -547,7 +631,7 @@ def main() -> None:
         if plan != build(ROOT / cfg["output"], spec, crossed_cfg):
             raise ValueError("frontier plan inputs changed")
         if args.stage == "run":
-            run(plan, out, cfg, crossed_cfg)
+            run(plan, out, cfg, crossed_cfg, args.monitor)
         elif args.stage == "collect":
             collect(plan, out, cfg, crossed_cfg)
         else:

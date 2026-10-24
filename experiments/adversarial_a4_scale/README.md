@@ -428,3 +428,39 @@ Audited reports remain explicitly provisional in each arm's
 `report_audited_provisional_20261024.json`, alongside
 `final_report_blocked_20261024.json`. Frontier transfer rates are unmeasured;
 this budget stop is not evidence of frontier robustness or zero evasion.
+
+## Per-request reservation amendment, 24 October 2026
+
+Abhinav authorized replacing the aggregate frontier budget gate with incremental
+reservations. This amendment supersedes the earlier whole-study-fit rule and
+raises the combined A4 OpenRouter cap from $2.00 to $3.00 for Kimi K3 and
+GPT-6.1 Sol. The Anthropic cap stays $1.50; campaign caps stay unchanged.
+No GPU or VM action is authorized. Prompts, winners, cohorts, calibration,
+request settings, routing ceilings and output limits stay frozen.
+
+Reserve one OpenRouter request's worst case before dispatch, save its durable
+intent, and settle its returned actual cost before reserving the next. Missing
+costs and ambiguous dispatches retain the full reservation. Run Kimi, then Sol.
+For Sonnet, reserve at most 20 rows whose combined worst case fits the remaining
+A4 and campaign budgets, submit once, then collect and settle that batch before
+submitting another. Shrink a batch to fit when needed. Stop if the next single
+row cannot fit; record completed rows and never increase a cap. No retries.
+A saved response can be settled after a crash; an intent or reservation without
+a response never permits resubmission. Authentication or identity drift stops
+new dispatch. New frontier evaders still require hand audit before final reports.
+
+Commit this amendment, implementation and tests before calls. Prepare the new
+plan in `results/adversarial_a4_scale_frontier_20261024/per_request_r1/`.
+The historical `frozen_r3/` budget stop remains intact.
+
+```sh
+P=experiments.adversarial_a4_scale
+PYTHONPATH=src:. python -m $P.frontier prepare
+PYTHONPATH=src:. python -m $P.frontier run --monitor kimi-k3
+PYTHONPATH=src:. python -m $P.frontier run --monitor gpt-6.1-sol
+PYTHONPATH=src:. python -m $P.frontier run --monitor claude-sonnet-5.5
+# Repeat collect until ended; run submits the next batch only after settlement.
+PYTHONPATH=src:. python -m $P.frontier collect
+PYTHONPATH=src:. python -m $P.frontier run --monitor claude-sonnet-5.5
+PYTHONPATH=src:. python -m $P.frontier import
+```

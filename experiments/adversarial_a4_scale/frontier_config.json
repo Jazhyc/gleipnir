@@ -55,12 +55,12 @@
     }
   },
   "caps_usd": {
-    "openrouter": 2.0,
+    "openrouter": 3.0,
     "anthropic-batch": 1.5
   },
   "endpoints": {
     "openrouter": "https://openrouter.ai/api/v1/chat/completions",
     "anthropic-batch": "https://api.anthropic.com"
   },
-  "output": "results/adversarial_a4_scale_frontier_20261024/frozen_r3"
+  "output": "results/adversarial_a4_scale_frontier_20261024/per_request_r1"
 }

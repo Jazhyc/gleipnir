@@ -15,7 +15,7 @@ def plan():
         "settings": spec,
         "monitors": {
             n: {
-                "identity": {"settings": s},
+                "identity": {"settings": s, "endpoint": spec["endpoints"][s["api"]]},
                 "requests": [{"id": n}],
                 "worst_case_usd": 0.5,
             }
@@ -34,14 +34,10 @@ class Ledger:
         return self.records
 
 
-def test_combined_openrouter_cap_and_campaign_unknown_reservations():
+def test_full_bound_is_diagnostic_and_campaign_unknown_reservations_count():
     p = plan()
-    assert f.preflight(p, Ledger())["status"] == "ready"
-    p["monitors"]["gpt-6.1-sol"]["worst_case_usd"] = 1.6
-    gate = f.preflight(p, Ledger())
-    assert gate["status"] == "blocked_budget"
-    assert "openrouter A4 cap exceeded" in gate["reasons"]
-    p = plan()
+    p["monitors"]["gpt-6.1-sol"]["worst_case_usd"] = 10
+    assert f.preflight(p, Ledger())["status"] == "per_request_reservations"
     ledger = Ledger(
         {
             "unknown": {
@@ -52,22 +48,169 @@ def test_combined_openrouter_cap_and_campaign_unknown_reservations():
             }
         }
     )
-    assert (
-        "openrouter shared campaign cap exceeded" in f.preflight(p, ledger)["reasons"]
+    assert "openrouter shared campaign cap exceeded" in f.budget_reasons(
+        p, ledger, "openrouter", 0.6
+    )
+    assert "openrouter A4 cap exceeded" in f.budget_reasons(
+        p, Ledger(), "openrouter", 3.01
     )
 
 
-def test_over_cap_run_stops_before_keys_reservations_or_transport(
+def setup_run(tmp_path, monkeypatch, n=3, name="kimi-k3"):
+    p = plan()
+    p["monitors"][name]["requests"] = [
+        {
+            "id": str(i),
+            "prompt": f.join_prompt(f.instruction(config(), "teacher"), str(i)),
+            "metadata": {},
+        }
+        for i in range(n)
+    ]
+    cfg = copy.deepcopy(config())
+    cfg["campaign"]["output"] = str(tmp_path / "campaign")
+    monkeypatch.setattr(f, "committed", lambda *a: None)
+    return p, cfg, f.settings()[1]
+
+
+def test_next_request_over_cap_stops_before_key_or_reservation(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(f, "request_bound", lambda *a: 3.01)
+    monkeypatch.setattr(f, "load_key", lambda *a: pytest.fail("key loaded"))
+    f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    assert not list((tmp_path / "units").rglob("*.intent.json"))
+    assert not f.Campaign(cfg, tmp_path).latest()
+    assert (tmp_path / "kimi-k3.budget_stop.json").exists()
+
+
+def test_each_request_settles_before_next_reservation_and_resumes_without_retry(
     tmp_path, monkeypatch
 ):
-    p = plan()
-    p["monitors"]["claude-sonnet-5.5"]["worst_case_usd"] = 1.51
-    monkeypatch.setattr(f, "Campaign", lambda *a: Ledger())
-    monkeypatch.setattr(f, "load_key", lambda *a: pytest.fail("key loaded"))
-    monkeypatch.setattr(f, "committed", lambda *a: pytest.fail("dispatch gate crossed"))
-    with pytest.raises(SystemExit, match="nothing sent"):
-        f.run(p, tmp_path, config(), {})
-    assert not (tmp_path / "dispatch_intent.json").exists()
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(f, "request_bound", lambda *a: 2.0)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock")
+    calls = []
+
+    def respond(m, row, *args):
+        calls.append(row["id"])
+        return {
+            "id": row["id"],
+            "status": "ok",
+            "score": 0.2,
+            "cost": 0.1,
+            "model": m.model,
+            "provider": "makora",
+        }
+
+    monkeypatch.setattr(f, "request_record", respond)
+    f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    assert calls == ["0", "1", "2"]
+    assert sum(
+        r["charge"] for r in f.Campaign(cfg, tmp_path).latest().values()
+    ) == pytest.approx(0.3)
+
+
+def test_unknown_cost_keeps_reservation_and_stops_next_row(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(f, "request_bound", lambda *a: 2.0)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock")
+    monkeypatch.setattr(
+        f,
+        "request_record",
+        lambda m, row, *a: {"id": row["id"], "status": "infrastructure_failure"},
+    )
+    f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    assert len(f.read(tmp_path / "kimi-k3.jsonl")) == 1
+    assert sum(r["charge"] for r in f.Campaign(cfg, tmp_path).latest().values()) == 2
+
+
+def test_ambiguous_transport_is_never_redispatched(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock")
+
+    def crash(*a):
+        raise RuntimeError("crash")
+
+    monkeypatch.setattr(f, "request_record", crash)
+    with pytest.raises(RuntimeError, match="crash"):
+        f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    with pytest.raises(SystemExit, match="ambiguous"):
+        f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    assert len(f.Campaign(cfg, tmp_path).latest()) == 1
+
+
+def test_saved_response_is_settled_on_resume(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch, n=1)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock")
+
+    def save_and_crash(m, row, *a):
+        f.append(
+            tmp_path / "kimi-k3.jsonl",
+            {
+                "id": row["id"],
+                "status": "ok",
+                "model": m.model,
+                "provider": "makora",
+                "cost": 0.001,
+            },
+        )
+        raise RuntimeError("crash after saving")
+
+    monkeypatch.setattr(f, "request_record", save_and_crash)
+    with pytest.raises(RuntimeError):
+        f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    f.run(p, tmp_path, cfg, cc, "kimi-k3")
+    assert (
+        sum(r["charge"] for r in f.Campaign(cfg, tmp_path).latest().values()) == 0.001
+    )
+
+
+def test_small_batches_collect_and_settle_only_their_own_rows(tmp_path, monkeypatch):
+    import sys
+    from types import SimpleNamespace as NS
+
+    name = "claude-sonnet-5.5"
+    p, cfg, cc = setup_run(tmp_path, monkeypatch, n=41, name=name)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock")
+    monkeypatch.setattr(f, "request_bound", lambda *a: 0.08)
+    batches = []
+
+    class Batches:
+        def create(self, requests):
+            batches.append(requests)
+            return NS(id=str(len(batches)))
+
+        def retrieve(self, bid):
+            return NS(processing_status="ended")
+
+        def results(self, bid):
+            return [
+                NS(
+                    custom_id=r["custom_id"],
+                    result=NS(type="succeeded", message=NS(model="claude-sonnet-5-5")),
+                )
+                for r in batches[int(bid) - 1]
+            ]
+
+    monkeypatch.setitem(
+        sys.modules,
+        "anthropic",
+        NS(Anthropic=lambda **k: NS(messages=NS(batches=Batches()))),
+    )
+    monkeypatch.setattr(
+        f,
+        "anthropic_result_record",
+        lambda *a: {"status": "ok", "cost": 0.01, "score": 0.2},
+    )
+    while len(f.read(tmp_path / f"{name}.jsonl")) < 41:
+        f.run(p, tmp_path, cfg, cc, name)
+        with pytest.raises(SystemExit, match="collect first"):
+            f.run(p, tmp_path, cfg, cc, name)
+        f.collect(p, tmp_path, cfg, cc)
+    assert [len(b) for b in batches] == [18, 16, 7]
+    assert sum(
+        r["charge"] for r in f.Campaign(cfg, tmp_path).latest().values()
+    ) == pytest.approx(0.41)
 
 
 def test_frontier_receipt_requires_request_contract_instead_of_gpu_canary():
@@ -205,6 +348,9 @@ def test_parse_failure_with_returned_drift_stops_before_second_dispatch(
         def reserve(self, *a, **kw):
             return {"id": "test", "charge": 0.5}
 
+        def settle(self, *a):
+            pass
+
     def drift(*a):
         calls.append(1)
         return {
@@ -241,6 +387,9 @@ def test_real_parser_preserves_drift_before_choices(tmp_path, monkeypatch, choic
 
         def reserve(self, *a, **kw):
             return {"id": "test", "charge": 0.5}
+
+        def settle(self, *a):
+            pass
 
     class Response:
         def raise_for_status(self):
