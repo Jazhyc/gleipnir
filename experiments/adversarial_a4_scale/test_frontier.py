@@ -58,6 +58,8 @@ def test_full_bound_is_diagnostic_and_campaign_unknown_reservations_count():
 
 def setup_run(tmp_path, monkeypatch, n=3, name="kimi-k3"):
     p = plan()
+    for target in p["monitors"].values():
+        target["requests"] = []
     p["monitors"][name]["requests"] = [
         {
             "id": str(i),
@@ -165,7 +167,10 @@ def test_saved_response_is_settled_on_resume(tmp_path, monkeypatch):
     )
 
 
-def test_small_batches_collect_and_settle_only_their_own_rows(tmp_path, monkeypatch):
+@pytest.mark.parametrize("status", ["ok", "refusal", "invalid_score", "batch_errored"])
+def test_small_batches_collect_and_settle_only_their_own_rows(
+    tmp_path, monkeypatch, status
+):
     import sys
     from types import SimpleNamespace as NS
 
@@ -200,7 +205,7 @@ def test_small_batches_collect_and_settle_only_their_own_rows(tmp_path, monkeypa
     monkeypatch.setattr(
         f,
         "anthropic_result_record",
-        lambda *a: {"status": "ok", "cost": 0.01, "score": 0.2},
+        lambda *a: {"status": status, "cost": 0.01, "score": 0.2, "error": "example"},
     )
     while len(f.read(tmp_path / f"{name}.jsonl")) < 41:
         f.run(p, tmp_path, cfg, cc, name)
@@ -415,3 +420,40 @@ def test_real_parser_preserves_drift_before_choices(tmp_path, monkeypatch, choic
     saved = f.read(tmp_path / "kimi-k3.jsonl")
     assert saved[0]["model"] == "wrong-model"
     assert saved[0]["provider"] == "makora"
+
+
+def test_string_batch_errors_are_terminal_without_attribute_error():
+    f.check_terminal(
+        {"status": "refusal", "error": "refused"},
+        {"settings": {"api": "anthropic-batch"}},
+    )
+
+
+def test_prior_target_authentication_failure_blocks_later_target(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    f.append(
+        tmp_path / "kimi-k3.jsonl",
+        {"id": "0", "status": "infrastructure_failure", "error": {"http_status": 401}},
+    )
+    monkeypatch.setattr(f, "load_key", lambda *a: pytest.fail("key loaded"))
+    with pytest.raises(SystemExit, match="authentication"):
+        f.run(p, tmp_path, cfg, cc, "gpt-6.1-sol")
+
+
+@pytest.mark.parametrize("target", ["gpt-6.1-sol", "claude-sonnet-5.5"])
+def test_predecessor_must_finish_before_later_target(tmp_path, monkeypatch, target):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    monkeypatch.setattr(f, "load_key", lambda *a: pytest.fail("key loaded"))
+    with pytest.raises(SystemExit, match="finish kimi-k3"):
+        f.run(p, tmp_path, cfg, cc, target)
+
+
+def test_prior_target_drift_blocks_later_target(tmp_path, monkeypatch):
+    p, cfg, cc = setup_run(tmp_path, monkeypatch)
+    f.append(
+        tmp_path / "kimi-k3.jsonl",
+        {"id": "0", "status": "ok", "model": "wrong-model", "provider": "makora"},
+    )
+    monkeypatch.setattr(f, "load_key", lambda *a: pytest.fail("key loaded"))
+    with pytest.raises(ValueError, match="drift"):
+        f.run(p, tmp_path, cfg, cc, "gpt-6.1-sol")

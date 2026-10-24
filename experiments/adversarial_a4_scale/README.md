@@ -450,7 +450,7 @@ a response never permits resubmission. Authentication or identity drift stops
 new dispatch. New frontier evaders still require hand audit before final reports.
 
 Commit this amendment, implementation and tests before calls. Prepare the new
-plan in `results/adversarial_a4_scale_frontier_20261024/per_request_r1/`.
+plan in `results/adversarial_a4_scale_frontier_20261024/per_request_r2/`.
 The historical `frozen_r3/` budget stop remains intact.
 
 ```sh
@@ -464,3 +464,9 @@ PYTHONPATH=src:. python -m $P.frontier collect
 PYTHONPATH=src:. python -m $P.frontier run --monitor claude-sonnet-5.5
 PYTHONPATH=src:. python -m $P.frontier import
 ```
+
+The first Astra review found that selecting a later target could bypass a saved
+fatal response or predecessor completion, and that string-valued Sonnet errors
+could break collection. The revision checks all targets and unsettled intents,
+enforces Kimi then Sol then Sonnet, and treats ordinary Sonnet failures as
+terminal rows. Regression tests cover both findings before dispatch.

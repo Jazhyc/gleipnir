@@ -37,7 +37,8 @@ from .pipeline import (
 from .selection import benchmark_pairs
 
 ARMS = ("4b-v03", "27b-merged")
-TARGETS = {"kimi-k3", "gpt-6.1-sol", "claude-sonnet-5.5"}
+ORDER = ("kimi-k3", "gpt-6.1-sol", "claude-sonnet-5.5")
+TARGETS = set(ORDER)
 
 
 def settings() -> tuple[dict, dict]:
@@ -339,6 +340,13 @@ def request_record(m, row: dict, key: str, post, identity: dict) -> dict:
     return {**record, **observed}
 
 
+def check_terminal(record: dict, identity: dict) -> None:
+    check_returned_identity(record, identity)
+    error = record.get("error")
+    if isinstance(error, dict) and error.get("http_status") in (401, 403):
+        raise SystemExit("API authentication failure; stop dispatch")
+
+
 def known_cost(rows: list[dict]) -> float | None:
     if all(
         not isinstance(r.get("cost"), bool)
@@ -371,34 +379,40 @@ def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict, monitor=None) -> No
 
     committed(plan)
     campaign = Campaign(cfg, out)
-    for name in (
-        (monitor,) if monitor else ("kimi-k3", "gpt-6.1-sol", "claude-sonnet-5.5")
-    ):
-        item = plan["monitors"][name]
-        m = crossed.monitor(name, crossed_cfg)
-        units = out / "units" / name
-        done = unique(read(out / f"{name}.jsonl"))
-        for record in done.values():
-            check_returned_identity(record, item["identity"])
-            if record.get("error", {}).get("http_status") in (401, 403):
-                raise SystemExit("API authentication failure; stop dispatch")
-        # A receipt saved just before a crash can be settled without a new call.
-        for path in sorted(units.glob("*.intent.json")):
+    # Reconcile every target before permitting any new dispatch.
+    for target, item in plan["monitors"].items():
+        saved = unique(read(out / f"{target}.jsonl"))
+        for record in saved.values():
+            check_terminal(record, item["identity"])
+        for path in sorted((out / "units" / target).glob("*.intent.json")):
             state = json.loads(path.read_text())
             if state["plan_sha256"] != digest(plan):
                 raise ValueError("dispatch intent plan changed")
             marker = path.with_suffix(".settled")
             if marker.exists():
                 continue
-            if m.api != "openrouter":
+            if item["identity"]["settings"]["api"] != "openrouter":
                 raise SystemExit("unsettled Anthropic batch; collect first")
-            if not set(state["ids"].values()) <= done.keys():
+            if not set(state["ids"].values()) <= saved.keys():
                 raise SystemExit("ambiguous request; reconcile, never redispatch")
             campaign.settle(
                 state["reservation"],
-                known_cost([done[r] for r in state["ids"].values()]),
+                known_cost([saved[r] for r in state["ids"].values()]),
             )
             fixed(marker, {"settled": True})
+    for name in (monitor,) if monitor else ORDER:
+        for prior in ORDER[: ORDER.index(name)]:
+            completed = unique(read(out / f"{prior}.jsonl"))
+            expected = {r["id"] for r in plan["monitors"][prior]["requests"]}
+            if (
+                completed.keys() != expected
+                and not (out / f"{prior}.budget_stop.json").exists()
+            ):
+                raise SystemExit(f"finish {prior} before {name}")
+        item = plan["monitors"][name]
+        m = crossed.monitor(name, crossed_cfg)
+        units = out / "units" / name
+        done = unique(read(out / f"{name}.jsonl"))
         remaining = [r for r in item["requests"] if r["id"] not in done]
         if not remaining:
             print(f"{name} complete {len(done)}/{len(item['requests'])}", flush=True)
@@ -476,9 +490,7 @@ def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict, monitor=None) -> No
             campaign.settle(reservation, known_cost([record]))
             fixed(path.with_suffix(".settled"), {"settled": True})
             done[record["id"]] = record
-            check_returned_identity(record, item["identity"])
-            if record.get("error", {}).get("http_status") in (401, 403):
-                raise SystemExit("API authentication failure; stop dispatch")
+            check_terminal(record, item["identity"])
             remaining = remaining[len(rows) :]
             if len(done) % 20 == 0 or not remaining:
                 print(f"{name} {len(done)}/{len(item['requests'])}", flush=True)
@@ -532,9 +544,7 @@ def collect(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
     Campaign(cfg, out).settle(state["reservation"], known_cost(batch_rows))
     # Check every stored row, including partial results from a previous collect.
     for record in batch_rows:
-        check_returned_identity(record, item["identity"])
-        if record.get("error", {}).get("http_status") in (401, 403):
-            raise SystemExit("API authentication failure; stop dispatch")
+        check_terminal(record, item["identity"])
     fixed(path.with_suffix(".settled"), {"settled": True})
     print(
         f"{name} collected {len(batch_rows)}; "
