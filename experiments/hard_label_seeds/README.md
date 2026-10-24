@@ -35,3 +35,12 @@ for s in 0 1 2; do PYTHONPATH=src:. <training-python> -m gleipnir.campaigns.moni
   prepare --config data/teacher-hard-sdpa-s$s-01/config.yaml; done
 PYTHONPATH=src:. <training-python> -m experiments.hard_label_seeds.run
 ```
+
+**Run log.** Seed 0 completed training, ID and OOD scoring. Seed 1 trained all
+245 updates but its final checkpoint save failed: the 200 GB network volume
+hit its quota ("Disk quota exceeded"). Existing volume data was left
+untouched; the failed seed-1 partial output was removed, the `4b/` training
+output directories of seeds 1 and 2 were redirected to the Pod's container
+disk, and the queue resumed with `run.py --resume` (seed 0 stages skipped).
+Everything is pulled before the Pod is terminated.
+
