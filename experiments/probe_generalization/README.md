@@ -172,8 +172,9 @@ which also choose the budget.
   (prompted) and +0.0009 (NTP), per-seed differences change sign, and these
   probes' BF16 seed range reaches 0.11–0.19, so the failures read as training
   divergence of argmax-routed probes rather than storage error. Mean |Δ| is at
-  most 0.0017 for rolling w64/w256 and attention. The contract stops here for
-  a user decision on FP8 storage before the full extraction.
+  most 0.0017 for rolling w64/w256 and attention. The user accepted FP8
+  storage for the full run (`user_accepted_failed_fp8_gate_b`, 2026-10-24),
+  judging the shift minimal.
 
 Seed-median ID pAUROC@20 at epoch 16 (FP8-trained, FP8-scored), hard / soft:
 
