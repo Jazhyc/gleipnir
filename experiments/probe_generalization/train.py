@@ -63,8 +63,8 @@ def main() -> None:
     parser.add_argument(
         "--eval-formats",
         nargs="+",
-        help="default: BF16-trained probes score both formats (FP8 gate a); "
-        "FP8-trained probes score FP8 only (gate b)",
+        help="default both: every probe also scores the precision it was not "
+        "trained on (FP8 gate a and the cross-precision transfer grid)",
     )
     parser.add_argument("--eval-split", default="id")
     parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES))
@@ -95,7 +95,7 @@ def main() -> None:
         train = ResidentStore(train, "cuda" if args.resident == "gpu" else "cpu")
         print(f"resident {args.resident} {time.time() - loaded:.0f}s", flush=True)
     if args.eval_formats is None:
-        args.eval_formats = ["bf16", "fp8"] if args.train_format == "bf16" else ["fp8"]
+        args.eval_formats = ["bf16", "fp8"]
     # Evaluation rows are read at every checkpoint: hold them in pinned CPU memory.
     loaded = time.time()
     evals = {

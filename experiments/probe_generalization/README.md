@@ -127,8 +127,8 @@ reusable parts live in `src/gleipnir/probes/`, tests in `tests/probes/`.
 Each sweep trains as one fused `ProbeBank` (all first layers in
 one matmul, one elementwise AdamW over disjoint parameters, so each probe
 trains as if alone), with the training rows resident in GPU or pinned CPU
-memory and evaluation rows in pinned CPU memory. BF16-trained probes score
-both formats (gate a); FP8-trained probes score FP8 only (gate b). The
+memory and evaluation rows in pinned CPU memory. Every probe scores both
+formats, so each sweep also reports cross-precision transfer. The
 pilot restarted on this trainer (2026-10-24 11:04); its first prompted FP8
 sweep started before the evaluation change.
 
