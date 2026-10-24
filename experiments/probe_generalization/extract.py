@@ -51,9 +51,15 @@ def render(tokenizer, row: dict, backbone: str) -> tuple[str, int]:
         assistant_suffix=SUFFIX,
         decision_prefix=DECISION_PREFIX,
     )
-    if text.count(row["prompt"]) != 1:
-        raise ValueError(f"prompt not uniquely embedded in row {row['id']}")
-    return text, text.index(row["prompt"]) + row["trajectory_start"]
+    # The chat template trims the message, so anchor on the instruction prefix
+    # and verify the trajectory follows it byte for byte.
+    prefix = row["prompt"][: row["trajectory_start"]]
+    if text.count(prefix) != 1:
+        raise ValueError(f"instruction prefix not unique in row {row['id']}")
+    start = text.index(prefix) + len(prefix)
+    if not text.startswith(row["trajectory"].rstrip(), start):
+        raise ValueError(f"trajectory not embedded after prefix in row {row['id']}")
+    return text, start
 
 
 def tokenize(tokenizer, text: str, keep_from_char: int) -> tuple[list[int], int]:
