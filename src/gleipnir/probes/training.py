@@ -103,20 +103,50 @@ def autocast(device: str):
     return torch.autocast("cuda", torch.bfloat16, enabled=device.startswith("cuda"))
 
 
+def micro_batches(
+    indices: list[int], lengths: Sequence[int], token_budget: int | None
+) -> list[list[int]]:
+    """Split a batch into consecutive chunks whose padded size fits the budget."""
+    if token_budget is None:
+        return [indices]
+    chunks, current = [], []
+    for i in indices:
+        longest = max([lengths[j] for j in current] + [lengths[i]])
+        if current and longest * (len(current) + 1) > token_budget:
+            chunks.append(current)
+            current = []
+        current.append(i)
+    return chunks + [current]
+
+
 def train_epoch(
-    sweep: Sweep, store: Store, batches: list[list[int]], device: str
+    sweep: Sweep,
+    store: Store,
+    batches: list[list[int]],
+    device: str,
+    token_budget: int | None = None,
 ) -> None:
+    """One pass; ``token_budget`` caps padded tokens per forward (gradient
+    accumulation within a batch, same update as the unsplit batch)."""
     labels = targets(store, sweep.specs).to(device)
+    lengths = [r["length"] for r in store.rows]
     sweep.bank.train()
-    for indices, x, mask in stream(store, batches, device):
-        with autocast(device):
-            logits = sweep.bank(x, mask)
-        # Mean over rows per probe (plus its own penalty), summed over probes:
-        # parameters are disjoint, so each probe's gradient equals its
-        # single-probe gradient. Logged losses are BCE only.
-        losses = F.binary_cross_entropy_with_logits(
-            logits.float(), labels[indices], reduction="none"
-        ).mean(0)
+    for batch in batches:
+        sweep.optimizer.zero_grad(set_to_none=True)
+        losses = torch.zeros(len(sweep.specs), device=device)
+        for indices, x, mask in stream(
+            store, micro_batches(batch, lengths, token_budget), device
+        ):
+            with autocast(device):
+                logits = sweep.bank(x, mask)
+            # Mean over the batch's rows per probe, summed over probes:
+            # parameters are disjoint, so each probe's gradient equals its
+            # single-probe gradient. Logged losses are BCE only.
+            part = F.binary_cross_entropy_with_logits(
+                logits.float(), labels[indices], reduction="none"
+            ).sum(0) / len(batch)
+            part.sum().backward()
+            losses += part.detach()
         if not bool(torch.isfinite(losses).all()):
             bad = [
                 s.name
@@ -124,8 +154,9 @@ def train_epoch(
                 if not torch.isfinite(v)
             ]
             raise FloatingPointError(f"nonfinite loss in {bad}")
-        sweep.optimizer.zero_grad(set_to_none=True)
-        (losses + sweep.bank.regularization()).sum().backward()
+        penalty = sweep.bank.regularization().sum()
+        if penalty.requires_grad:
+            penalty.backward()
         sweep.optimizer.step()
         for spec, value in zip(sweep.specs, losses.tolist(), strict=True):
             spec.losses.append(value)
@@ -133,12 +164,20 @@ def train_epoch(
 
 @torch.no_grad()
 def score(
-    sweep: Sweep, store: Store, batch: int, device: str
+    sweep: Sweep,
+    store: Store,
+    batch: int,
+    device: str,
+    token_budget: int | None = None,
 ) -> dict[str, list[float]]:
     """Return each probe's logit for every store row, in store order."""
     lengths = [r["length"] for r in store.rows]
     order = sorted(range(len(store)), key=lambda i: lengths[i])
-    batches = [order[i : i + batch] for i in range(0, len(order), batch)]
+    batches = [
+        chunk
+        for begin in range(0, len(order), batch)
+        for chunk in micro_batches(order[begin : begin + batch], lengths, token_budget)
+    ]
     logits = torch.zeros((len(store), len(sweep.specs)))
     sweep.bank.eval()
     for indices, x, mask in stream(store, batches, device):

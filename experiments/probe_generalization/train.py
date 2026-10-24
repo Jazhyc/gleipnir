@@ -41,6 +41,16 @@ ARCHITECTURES = (
     "rolling_w64",
     "rolling_w256",
 )
+# Full run: the pilot family plus the AlphaEvolve probe over its unreported
+# penalty weights (l1 x ortho), selected on ID like the window widths.
+FULL_ARCHITECTURES = (
+    *ARCHITECTURES,
+    *(
+        f"alphaevolve_l{l1}_o{ortho}"
+        for l1 in ("1e-06", "1e-05")
+        for ortho in ("0.001", "0.01")
+    ),
+)
 
 
 def metrics(store: Store, logits: list[float]) -> dict:
@@ -67,11 +77,16 @@ def main() -> None:
         "trained on (FP8 gate a and the cross-precision transfer grid)",
     )
     parser.add_argument("--eval-split", default="id")
-    parser.add_argument("--architectures", nargs="+", default=list(ARCHITECTURES))
+    parser.add_argument("--architectures", nargs="+")
     parser.add_argument("--objectives", nargs="+", default=["hard", "soft"])
     parser.add_argument("--seeds", nargs="+", type=int, default=[0, 1, 2])
     parser.add_argument("--checkpoints", nargs="+", type=int, default=[2, 4, 8, 16])
     parser.add_argument("--batch", type=int, default=16)
+    parser.add_argument(
+        "--token-budget",
+        type=int,
+        help="cap padded tokens per forward (gradient accumulation within batches)",
+    )
     parser.add_argument("--lr", type=float, default=1e-4)
     parser.add_argument("--weight-decay", type=float, default=3e-3)
     parser.add_argument("--data-seed", type=int, default=0)
@@ -83,6 +98,9 @@ def main() -> None:
     )
     parser.add_argument("--name", required=True)
     args = parser.parse_args()
+    if args.architectures is None:
+        pilot = args.population == "pilot"
+        args.architectures = list(ARCHITECTURES if pilot else FULL_ARCHITECTURES)
 
     device = "cuda"
     root = Path(args.store_root) / args.population / args.backbone
@@ -126,13 +144,13 @@ def main() -> None:
         batches = length_batches(
             lengths, args.batch, seed=args.data_seed * 1000 + epoch
         )
-        train_epoch(sweep, train, batches, device)
+        train_epoch(sweep, train, batches, device, args.token_budget)
         print(f"epoch {epoch} {time.time() - started:.0f}s", flush=True)
         if epoch not in args.checkpoints:
             continue
         checkpoint = {"epoch": epoch, "steps": len(sweep.specs[0].losses), "probes": {}}
         for fmt, store in evals.items():
-            logits = score(sweep, store, args.batch, device)
+            logits = score(sweep, store, args.batch, device, args.token_budget)
             ids = [r["id"] for r in store.rows]
             (out / f"logits_e{epoch}_{fmt}.json").write_text(
                 json.dumps({"ids": ids, "logits": logits}) + "\n"

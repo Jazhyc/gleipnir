@@ -8,6 +8,7 @@ from gleipnir.probes.store import ResidentStore, Store, StoreWriter
 from gleipnir.probes.training import (
     length_batches,
     make_sweep,
+    micro_batches,
     score,
     train_epoch,
 )
@@ -190,6 +191,43 @@ def test_bank_step_matches_individual_steps():
         assert torch.allclose(bank(x, mask), refreshed, atol=1e-4)
 
 
+def test_micro_batches_respect_budget():
+    lengths = [5, 30, 10, 10, 2]
+    chunks = micro_batches([0, 1, 2, 3, 4], lengths, token_budget=40)
+    assert sum(chunks, []) == [0, 1, 2, 3, 4]
+    assert all(max(lengths[i] for i in c) * len(c) <= 40 or len(c) == 1 for c in chunks)
+    assert micro_batches([0, 1], lengths, None) == [[0, 1]]
+
+
+def test_micro_batched_step_matches_full_batch(tmp_path):
+    torch.manual_seed(0)
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("bf16",))
+    for i in range(8):
+        writer.append(torch.randn(3 + 4 * i, HIDDEN), {"id": str(i), "label": i % 2})
+    writer.close({})
+    store = Store(tmp_path / "s", "bf16")
+    sweeps = [
+        make_sweep(
+            ["rolling_w4", "alphaevolve"],
+            ["hard"],
+            [0],
+            HIDDEN,
+            lr=1e-2,
+            weight_decay=3e-3,
+            device="cpu",
+        )
+        for _ in range(2)
+    ]
+    batch = [list(range(8))]
+    train_epoch(sweeps[0], store, batch, "cpu")
+    train_epoch(sweeps[1], store, batch, "cpu", token_budget=40)
+    assert sweeps[0].specs[0].losses == pytest.approx(sweeps[1].specs[0].losses)
+    for a, b in zip(
+        sweeps[0].bank.parameters(), sweeps[1].bank.parameters(), strict=True
+    ):
+        assert torch.allclose(a, b, atol=1e-5)
+
+
 def test_matched_initialization_across_objectives():
     sweep = make_sweep(
         ["attention"],
@@ -260,3 +298,39 @@ def test_stratified_sample_is_proportional_and_seeded():
     first = stratified(rows, 30, ("source", "label"))
     assert first == stratified(rows, 30, ("source", "label"))
     assert len(first) == 30 and sum(r["source"] == "a" for r in first) == 15
+
+
+def test_selection_rule_uses_seed_median_and_families():
+    from experiments.probe_generalization.evaluate_ood import select
+
+    def entry(arch, objective, seed, pauroc, auroc=0.9, brier=0.1):
+        macro = {"pauroc_at_20": pauroc, "auroc": auroc, "brier": brier}
+        return f"{arch}-{objective}-s{seed}", {
+            "architecture": arch,
+            "objective": objective,
+            "seed": seed,
+            "fp8": {"macro": macro},
+        }
+
+    probes = dict(
+        [
+            # rolling: one lucky seed, low median
+            entry("rolling_w64", "soft", 0, 0.99),
+            entry("rolling_w64", "soft", 1, 0.50),
+            entry("rolling_w64", "soft", 2, 0.50),
+            # alphaevolve variants: second has the higher median
+            entry("alphaevolve_l1e-06_o0.001", "soft", 0, 0.70),
+            entry("alphaevolve_l1e-06_o0.001", "soft", 1, 0.70),
+            entry("alphaevolve_l1e-06_o0.001", "soft", 2, 0.70),
+            entry("alphaevolve_l1e-05_o0.01", "soft", 0, 0.80),
+            entry("alphaevolve_l1e-05_o0.01", "soft", 1, 0.80),
+            entry("alphaevolve_l1e-05_o0.01", "soft", 2, 0.60),
+        ]
+    )
+    chosen = select({"checkpoints": {"2": {"probes": probes}}}, "fp8")["soft"]
+    assert chosen["selected"]["architecture"] == "alphaevolve_l1e-05_o0.01"
+    assert set(chosen["families"]) == {"rolling_w64", "alphaevolve"}
+    assert (
+        chosen["families"]["alphaevolve"]["architecture"] == "alphaevolve_l1e-05_o0.01"
+    )
+    assert len(chosen["selected"]["probes"]) == 3
