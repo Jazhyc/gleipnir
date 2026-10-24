@@ -10,16 +10,26 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import time
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
-import torch
+# Variable-length batches next to a large resident store fragment the CUDA
+# cache; expandable segments avoid near-OOM flush-and-retry allocations.
+os.environ.setdefault("PYTORCH_CUDA_ALLOC_CONF", "expandable_segments:True")
 
-from gleipnir.evaluation.metrics import evaluate_binary_monitor
-from gleipnir.probes.store import ResidentStore, Store
-from gleipnir.probes.training import length_batches, make_sweep, score, train_epoch
+import numpy as np  # noqa: E402
+import pandas as pd  # noqa: E402
+import torch  # noqa: E402
+
+from gleipnir.evaluation.metrics import evaluate_binary_monitor  # noqa: E402
+from gleipnir.probes.store import ResidentStore, Store  # noqa: E402
+from gleipnir.probes.training import (  # noqa: E402
+    length_batches,
+    make_sweep,
+    score,
+    train_epoch,
+)
 
 ROOT = Path(__file__).resolve().parents[2]
 ARCHITECTURES = (
