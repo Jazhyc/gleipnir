@@ -88,6 +88,27 @@ first two bullets below describe the confounded condition.
 - Limits: the comments are LLM-written to a specification, the programs are
   short contest solutions, and API monitors ran at low reasoning effort.
 
+## Comment attack with score access ([experiment](../../experiments/adversarial_a4_scale/README.md))
+
+An attacker adds only comments, leaving the code byte-identical, to APPS
+backdoors that each Gleipnir model catches. It tries 4 times per backdoor and
+keeps the version the searched model scores lowest. Each target uses its own
+1% false-alarm line.
+
+| Searched against | Gets past that model | Gleipnir 27B / 4B | Kimi K3 | GPT-6.1 Sol | Claude Sonnet 5.5 |
+|---|---|---|---|---|---|
+| Gleipnir 4B | 7/59 | 27B: 1/54 | 2/54 | 0/59 | 0/59 |
+| Gleipnir 27B | 1/68 | 4B: 2/54 | 1/59 | 0/66 | 0/68 |
+
+- **The 27B resists this attack; the 4B leaks about 12%.** The comments barely
+  transfer to frontier monitors.
+- **The same comments on honest code raise false alarms.** Sonnet flags 34 of
+  59, Gleipnir 12–26 of 59, Sol 3–12.
+- **A probe on the 4B** ([experiment](../../experiments/adversarial_crossed_text_probe/README.md))
+  separates backdoored from honest code at 0.95–0.96 under an identical
+  accusation, while its answer is at 0.58–0.59. The weakness is in the 4B's
+  decision, not in what it represents.
+
 ## EvilGenie × Escalation ([experiment](../../experiments/adversarial_evilgenie/README.md))
 
 Public reward-hacking runs by 15 models. On the same 105 hacks and 999
