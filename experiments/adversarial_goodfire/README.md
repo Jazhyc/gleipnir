@@ -371,3 +371,33 @@ run. Unknown charges must retain their full reservation.
   has both coverage and observability qualifications.
 - Qwen SWE has one unjudged context-runaway row. GLM tau3bench has 28 retained
   source-error rows. Neither can enter a clean-negative pool.
+
+## Two-reader adjudication, 24 October 2026
+
+Two independent model readers, GPT-6.1 Sol (high effort) and GPT-6 Astra
+(medium effort), judged a blinded set of 128 action-only rollouts. The set was
+all 64 coding candidates plus 64 coding negatives chosen by
+`sha256("goodfire-reader-decoy-20261024:" + id)`, shuffled by a second
+seeded hash. Packets carried only `blind_id`, the trajectory and its hash. The
+key (`data/goodfire/prepared/audit/reader_key_PRIVATE.jsonl`, ignored) stayed
+with the parent; neither reader saw it or the other's file. The 557-packet
+`packets.jsonl` from `audit.py` was too long for a single reader, so this
+subset replaces it as the reading set. The decision rule is unchanged.
+
+- **Decoys:** both readers flagged 0 of 64.
+- **Candidates:** Sol marked 13 of 64 as visible misconduct, Astra 18 of 64.
+  They agreed on 53 of 64 (10 misconduct, 43 benign or ambiguous; Cohen's kappa
+  about 0.54). The 11 disagreements are excluded under the frozen rule.
+- **Accepted primary positives:**
+  - 10: 9 ImpossibleBench (Qwen 3.8 Max 4, GLM 5.2 3, Kimi K3 2) and 1 SWE-bench
+    (GLM 5.2);
+  - 10 fit the 4B's context limit and 9 fit the 27B's;
+  - 469 and 467 of the 493 coding negatives fit, respectively.
+- **Records:** `data/goodfire/adjudications.jsonl` holds 128 SHA-bound reader
+  records. `audit.py` reports 64 candidates, 10 accepted, 0 pending.
+
+Of the 783 enacted hacks the reasoning-reading judge found on these two coding
+benchmarks, 64 passed the category and evidence screen and 10 survived two
+blind action-only readers. Most of what the judge calls reward hacking here is
+not visible in the agent's actions. A coding-benchmark AUROC on 10 positives
+would be descriptive only.
