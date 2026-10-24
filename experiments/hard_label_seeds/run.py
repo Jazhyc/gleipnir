@@ -44,10 +44,15 @@ def run(resume: bool = False) -> None:
     try:
         for seed_number in SEEDS:
             name = campaign(seed_number)
+            stages = (name, ood_context(seed_number))
+            if all(
+                state["stages"].get(s, {}).get("status") == "complete" for s in stages
+            ):
+                continue  # finished seeds keep their original frozen contract
             seed = Campaign.load(ROOT, ROOT / "data" / name / "config.yaml")
             if gpu != seed.config["gpu_uuid"]:
                 raise ValueError("authorized GPU identity changed")
-            for stage in (name, ood_context(seed_number)):
+            for stage in stages:
                 if state["stages"].get(stage, {}).get("status") == "complete":
                     continue
                 state["stages"][stage] = {"status": "running", "started": time.time()}

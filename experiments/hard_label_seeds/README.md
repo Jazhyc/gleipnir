@@ -41,6 +41,9 @@ PYTHONPATH=src:. <training-python> -m experiments.hard_label_seeds.run
 hit its quota ("Disk quota exceeded"). Existing volume data was left
 untouched; the failed seed-1 partial output was removed, the `4b/` training
 output directories of seeds 1 and 2 were redirected to the Pod's container
-disk, and the queue resumed with `run.py --resume` (seed 0 stages skipped).
+disk, and the queue resumed with `run.py --resume` (seed 0 skipped). Editing
+this experiment's sources tripped the campaign source-drift check, so seeds 1
+and 2 were re-frozen (`prepare.py --seeds 1 2`) against the current sources;
+seed 0 keeps its original contract. Stale prepared state was moved aside.
 Everything is pulled before the Pod is terminated.
 

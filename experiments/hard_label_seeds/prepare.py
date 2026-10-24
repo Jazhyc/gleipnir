@@ -96,7 +96,7 @@ def scoring_config(seed: dict) -> dict:
     return config
 
 
-def prepare(gpu_uuid: str) -> dict:
+def prepare(gpu_uuid: str, seeds: tuple[int, ...] = SEEDS) -> dict:
     if not gpu_uuid.startswith("GPU-"):
         raise ValueError("a verified live GPU UUID is required")
     parent = yaml.safe_load((ROOT / "data" / PARENT / "config.yaml").read_text())
@@ -114,7 +114,7 @@ def prepare(gpu_uuid: str) -> dict:
         raise ValueError("frozen OOD workload drift")
     selection_sha = file_hash(ROOT / SELECTION)
     written = {}
-    for seed_number in SEEDS:
+    for seed_number in seeds:
         seed = seed_config(parent, gpu_uuid, selection_sha, seed_number)
         for name, config in ((campaign(seed_number), seed), (None, None)):
             if name is None:
@@ -150,7 +150,8 @@ def prepare(gpu_uuid: str) -> dict:
         "serving_selection_sha256": selection_sha,
         "configs": written,
     }
-    write_json(ROOT / "results/hard_label_seeds/preparation.json", report)
+    suffix = "" if tuple(seeds) == SEEDS else "_s" + "".join(map(str, seeds))
+    write_json(ROOT / f"results/hard_label_seeds/preparation{suffix}.json", report)
     print("hard_label_seeds_prepared", json.dumps(written), flush=True)
     return report
 
@@ -158,4 +159,6 @@ def prepare(gpu_uuid: str) -> dict:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--gpu-uuid", required=True)
-    prepare(parser.parse_args().gpu_uuid)
+    parser.add_argument("--seeds", nargs="+", type=int, default=list(SEEDS))
+    args = parser.parse_args()
+    prepare(args.gpu_uuid, tuple(args.seeds))
