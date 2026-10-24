@@ -210,6 +210,29 @@ NTP activations match the prompted ones although the NTP last token carries
 little signal, so pooling recovers what the prompt would surface. FP8-trained
 probes score BF16 activations within 0.001.
 
+## Full-run result: prompted backbone (2026-10-24, `full01`)
+
+Extraction, FP8 storage and the 16-epoch extension (triggered: both cells
+selected epoch 8; moments rebuilt at lr 0) completed; OOD was read once, at
+18:31 UTC. The zero-shot margin reproduces the archived benchmark on OOD
+(0.6162 vs 0.6175).
+
+| cell | ID selection | ID | OOD (5-seed median) |
+|---|---|---:|---:|
+| hard | attention, epoch 12 | 0.8434 | 0.7057 |
+| soft | rolling_w10, epoch 8 | 0.8564 | 0.7126 |
+
+Soft − hard = +0.0069 OOD, below the frozen 0.01 bar: **hypothesis 1 is not
+met on the prompted backbone.** Per family (each family's ID-best candidate,
+descriptive), soft is ahead in 7 of 9 including the last-token probe
+(rolling_w256 0.763 → 0.783, multimax 0.721 → 0.755, attention 0.706 → 0.723,
+AlphaEvolve 0.696 → 0.706, mean_mlp 0.548 → 0.600, last token 0.716 → 0.727)
+and behind for rolling_w64 (0.755 → 0.748) and rolling_w10 (0.740 → 0.713).
+ID ranking transfers poorly: the ID winners are among the weaker OOD probes,
+while soft rolling_w256 (fourth on ID) is the best OOD family at 0.783,
+against Gleipnir 4B's 0.804. SHADE-Arena stays near 0.23–0.25 for every probe;
+OOD Brier is 0.23–0.30. Results: `results/probe_generalization/full01/`.
+
 ## Storage and compute
 
 Trajectory text totals about 517M characters across train, ID and OOD,
