@@ -18,6 +18,14 @@ LOGS=logs/lambda/probe_generalization/$NAME
 RESULTS=results/probe_generalization/$NAME
 mkdir -p "$LOGS" "$RESULTS"
 PY=.venv/bin/python
+# One runner per campaign: a second launch exits instead of racing the first.
+LOCK=$LOGS/.lock
+if ! mkdir "$LOCK" 2>/dev/null; then
+  echo "another run_full.sh holds $LOCK (pid $(cat "$LOCK/pid" 2>/dev/null))" >&2
+  exit 75
+fi
+echo $$ > "$LOCK/pid"
+trap 'rm -rf "$LOCK"' EXIT
 
 same_files() {  # dir_a dir_b: identical relative paths and sizes
   diff <(cd "$1" && find . -type f -printf "%P %s\n" | sort) \
