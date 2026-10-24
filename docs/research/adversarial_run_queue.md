@@ -8,7 +8,7 @@ Monitor of record: Gleipnir 4B **v0.3** (`e36aa2b`, key `4b-v03`). Its adapter i
 
 ## Running
 
-- Nothing. The A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 25 October at 23:05 UTC after the liar-study scoring; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
+- Nothing. The A100 80GB VM (`gleipnir-qwen-gpu`) was stopped on 24 October at about 23:05 UTC after the liar-study scoring; results and logs are pulled back. Its boot disk keeps the environments (`~/gleipnir`, `~/gleipnir-coc`, `~/venv-fla`).
 
 ## Failures and blockers
 

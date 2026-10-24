@@ -196,7 +196,7 @@ Activations take about 41 MB for the 4B and 82 MB for the 27B.
 
 `analyze.py --monitors kimi` ran as a smoke test. No score has been read; all monitors are read together once the GPU scores exist.
 
-**Gleipnir 4B and 27B, 25 October 2026,** at `13c978f` on one A100 80 GB (GCP, 21:35–23:01 UTC). Canaries passed for both models before and after scoring. 670 main, 9 swap and 224 `last16` rows per model, all `ok`.
+**Gleipnir 4B and 27B, 25 October 2026,** at `13c978f` on one A100 80 GB (GCP, 24 October 21:35–23:01 UTC). Canaries passed for both models before and after scoring. 670 main, 9 swap and 224 `last16` rows per model, all `ok`.
 
 ## Results, 25 October 2026
 
