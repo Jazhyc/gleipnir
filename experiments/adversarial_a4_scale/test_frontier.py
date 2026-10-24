@@ -221,3 +221,48 @@ def test_parse_failure_with_returned_drift_stops_before_second_dispatch(
     with pytest.raises(ValueError, match="drift"):
         f.run(p, tmp_path, config(), cfg)
     assert len(calls) == 1
+
+
+@pytest.mark.parametrize("choices", [[], None])
+def test_real_parser_preserves_drift_before_choices(tmp_path, monkeypatch, choices):
+    import requests
+
+    p = plan()
+    p["monitors"]["kimi-k3"]["requests"] = [
+        {"id": "first", "prompt": "one", "metadata": {}},
+        {"id": "second", "prompt": "two", "metadata": {}},
+    ]
+    _, cfg = f.settings()
+    calls = []
+
+    class MockCampaign(Ledger):
+        def request_id(self, *a):
+            return "test"
+
+        def reserve(self, *a, **kw):
+            return {"id": "test", "charge": 0.5}
+
+    class Response:
+        def raise_for_status(self):
+            pass
+
+        def json(self):
+            data = {"model": "wrong-model", "provider": "makora"}
+            if choices is not None:
+                data["choices"] = choices
+            return data
+
+    def post(*a, **kw):
+        calls.append(1)
+        return Response()
+
+    monkeypatch.setattr(f, "Campaign", lambda *a: MockCampaign())
+    monkeypatch.setattr(f, "committed", lambda *a: None)
+    monkeypatch.setattr(f, "load_key", lambda *a: "mock-key")
+    monkeypatch.setattr(requests, "post", post)
+    with pytest.raises(ValueError, match="drift"):
+        f.run(p, tmp_path, config(), cfg)
+    assert len(calls) == 1
+    saved = f.read(tmp_path / "kimi-k3.jsonl")
+    assert saved[0]["model"] == "wrong-model"
+    assert saved[0]["provider"] == "makora"

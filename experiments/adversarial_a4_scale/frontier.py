@@ -319,6 +319,29 @@ def check_returned_identity(record: dict, identity: dict) -> None:
         check_identity(record, identity)
 
 
+def request_record(m, row: dict, key: str, post, identity: dict) -> dict:
+    """Capture identity before the inherited parser touches choices/logprobs.
+
+    The shared adapter catches parser exceptions. Keep the observed identity
+    outside that adapter so even an empty choices array cannot erase drift.
+    """
+    observed = {}
+
+    def checked_post(*args, **kwargs):
+        response = post(*args, **kwargs)
+        response.raise_for_status()
+        data = response.json()
+        if isinstance(data, dict):
+            observed.update(model=data.get("model"), provider=data.get("provider"))
+            check_returned_identity(
+                {**observed, "status": "infrastructure_failure"}, identity
+            )
+        return response
+
+    record = crossed.request_record(m, row, key, checked_post)
+    return {**record, **observed}
+
+
 def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
     """Reserve every monitor before dispatch. A saved intent is never resent."""
     import requests
@@ -361,7 +384,7 @@ def run(plan: dict, out: Path, cfg: dict, crossed_cfg: dict) -> None:
             for row in rows:
                 # This per-row intent survives a transport crash without retry.
                 append(out / "intents.jsonl", {"monitor": name, "id": row["id"]})
-                record = crossed.request_record(m, row, key, requests.post)
+                record = request_record(m, row, key, requests.post, item["identity"])
                 append(out / f"{name}.jsonl", record)
                 check_returned_identity(record, item["identity"])
                 if record["status"] == "infrastructure_failure":

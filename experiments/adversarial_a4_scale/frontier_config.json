@@ -62,5 +62,5 @@
     "openrouter": "https://openrouter.ai/api/v1/chat/completions",
     "anthropic-batch": "https://api.anthropic.com"
   },
-  "output": "results/adversarial_a4_scale_frontier_20261024/frozen"
+  "output": "results/adversarial_a4_scale_frontier_20261024/frozen_r3"
 }
