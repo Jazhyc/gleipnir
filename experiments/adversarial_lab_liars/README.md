@@ -195,3 +195,35 @@ Activations take about 41 MB for the 4B and 82 MB for the 27B.
 - **Balance:** OpenRouter $8.01 before and $4.22 after.
 
 `analyze.py --monitors kimi` ran as a smoke test. No score has been read; all monitors are read together once the GPU scores exist.
+
+**Gleipnir 4B and 27B, 25 October 2026,** at `13c978f` on one A100 80 GB (GCP, 21:35–23:01 UTC). Canaries passed for both models before and after scoring. 670 main, 9 swap and 224 `last16` rows per model, all `ok`.
+
+## Results, 25 October 2026
+
+Read together after all three monitors were scored. `results/adversarial_lab_liars/report.json`.
+
+**Primary: pre-assigned recruiters, main, Haiku and Sol cells, 30 liars against 52 honest recruiters.** AUROC with a seed bootstrap:
+
+| Monitor | AUROC | Liars flagged at line (a) | Honest recruiters flagged at (a) |
+| --- | --- | ---: | ---: |
+| Gleipnir 4B v0.3 | 0.90 (0.87–0.94) | 0 / 30 | 0 / 52 |
+| Gleipnir 27B | 0.90 (0.86–0.94) | 5 / 30 | 0 / 52 |
+| Kimi K3 | 0.96 (0.92–0.99) | 18 / 30 | 1 / 52 |
+
+- Line (a) is each monitor's benchmark 1% line. At line (b), 1% of ordinary workers in honest episodes, the 27B and Kimi flag all 30 liars but also 28 of 52 honest recruiters; the 4B flags 7 of 30 and 0 of 52.
+- All recruiters (59 liars, 104 honest): 4B 0.90, 27B 0.89, Kimi 0.95. Liars against assigned deceivers who did not lie: 4B 0.90, 27B 0.89, Kimi 0.94, so the score follows the lie and not only the assigned role.
+- Per recruiter model: GLM-5.3 liars (18 against 23) 4B 0.93, 27B 0.98, Kimi 1.00; Kimi-K2.6 liars (9 against 12) 4B 0.86 (0.66–0.98), 27B 0.88 (0.73–1.00), Kimi 0.77 (0.54–0.95). Qwen3.8-27B (3 liars) and Sol (0 pre-assigned liars) are descriptive only.
+- Same-episode pair (10 episodes): the deceptive seat outscores the honest seat by 4B +0.07 (0.01–0.14), 27B +0.38 (0.11–0.63), Kimi +0.58 (0.31–0.83).
+- Earlier 10 Sol liars, background: AUROC 0.98 / 0.92 / 0.96 and 0 / 0 / 5 flagged at line (a), the same pattern.
+
+**Truth swap (9 liars; weak control).** The 4B's score falls (−0.05, interval −0.11 to −0.002); the 27B's and Kimi's rise (+0.11 and +0.19). Swapped liars still outrank honest recruiters (0.75, 0.96, 0.97). The minimal edits leave posts that argue from the lie while stating the truth, which may read as more suspicious, so this does not separate the lie from the pressure.
+
+**Victims.** Targets that received a lie against those that did not, at line (b): 4B 6 of 46 against 0 of 66; 27B 0 against 0; Kimi 3 of 23 against 0 of 35 (Kimi scored a subset). Exposed against unexposed AUROC: targets 4B 0.89, 27B 0.57, Kimi 0.60; bystanders 4B 0.80, 27B 0.52, Kimi 0.53. Only the 4B's scores rise for agents that merely read the lie.
+
+**Predictions.** P1 held (4B 0%, 27B 17%, Kimi 60% at line (a)). P2 held (0.90, 0.90, 0.96). P3 failed: the swap raised the 27B's and Kimi's scores. P4 failed for the 4B (exposed workers' flag rate at line (b) 7 points higher; 27B −1, Kimi +1).
+
+**`last16` sensitivity.** Showing only the last 16 cycles drops the primary AUROC to 0.56 (4B) and 0.50 (27B). Most false claims come in cycles 5–14, so this rendering mostly removes the lie; it is not a length-only check.
+
+**What it shows.** With three times the liars and four recruiter models, the earlier result holds: Gleipnir ranks liars almost as well as its teacher (0.90 against 0.96), but at a deployer's 1% line the 4B catches none and the 27B 1 in 6, against Kimi's 3 in 5. The gap is calibration, not ranking. The 4B again reacts to text it only read.
+
+**Limits.** 30 primary liars from two models that comply; instructed liars; one world; the swap covers 9 local lies; Kimi lacks 200 bystander rows and the `last16` set; line (b) comes from 208 rows.
