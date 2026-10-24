@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 # Pilot on one Lambda GPU: extraction for both backbones (BF16 + FP8 stores),
 # parity, the BF16/FP8 probe sweeps, last-token probes, then the frozen gates.
-# STORES may point at a local-disk copy of the persistent stores. Re-running skips stages whose outputs exist.
+# STORES may point at a local-disk copy of the persistent stores. Re-running
+# skips stages whose outputs exist.
 set -euo pipefail
 cd "$HOME/gleipnir"
 source "$HOME/.config/gleipnir/runtime.env"
