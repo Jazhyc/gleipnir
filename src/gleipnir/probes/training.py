@@ -8,7 +8,9 @@ reading a batch once serves all probes and their first layers share one matmul.
 from __future__ import annotations
 
 import random
+from collections import deque
 from collections.abc import Iterator, Sequence
+from concurrent.futures import ThreadPoolExecutor
 from dataclasses import dataclass, field
 
 import torch
@@ -60,13 +62,44 @@ def pad(rows: list[torch.Tensor]) -> tuple[torch.Tensor, torch.Tensor]:
     return x, mask
 
 
+PREFETCH_BATCHES = 4
+PREFETCH_WORKERS = 8
+
+
 def stream(
     store: Store, batches: list[list[int]], device: str
 ) -> Iterator[tuple[list[int], torch.Tensor, torch.Tensor]]:
-    """Yield padded BF16 batches; on CPU (tests), upcast since autocast is off."""
-    for indices in batches:
-        x, mask = pad([store.load(i, device) for i in indices])
-        yield indices, (x if device.startswith("cuda") else x.float()), mask
+    """Yield padded BF16 batches; on CPU (tests), upcast since autocast is off.
+
+    Disk-backed stores read upcoming batches' raw rows on background threads
+    while the current batch computes; transfer and dequantization stay on the
+    caller's device.
+    """
+    upcast = not device.startswith("cuda")
+    if not isinstance(store, Store):
+        for indices in batches:
+            x, mask = pad([store.load(i, device) for i in indices])
+            yield indices, (x.float() if upcast else x), mask
+        return
+    with ThreadPoolExecutor(PREFETCH_WORKERS) as pool:
+        pending: deque = deque()
+        upcoming = iter(batches)
+
+        def submit() -> None:
+            indices = next(upcoming, None)
+            if indices is not None:
+                pending.append(
+                    (indices, [pool.submit(store.read_raw, i) for i in indices])
+                )
+
+        for _ in range(PREFETCH_BATCHES):
+            submit()
+        while pending:
+            indices, futures = pending.popleft()
+            submit()
+            rows = [store.from_raw(f.result(), device) for f in futures]
+            x, mask = pad(rows)
+            yield indices, (x.float() if upcast else x), mask
 
 
 def make_sweep(

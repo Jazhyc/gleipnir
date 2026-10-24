@@ -108,28 +108,51 @@ class Store:
         self.fds = {name: os.open(root / name, os.O_RDONLY) for name in names}
 
     def _read(self, name: str, row: dict, width: int, dtype) -> np.ndarray:
-        """Read ``row``'s ``[length, width]`` slice of one flat token-major file."""
+        """Read ``row``'s ``[length, width]`` slice of one flat token-major file.
+
+        Reads straight into a fresh buffer (no intermediate bytes copy); the
+        syscall releases the GIL, so prefetch threads overlap with compute. The
+        buffer is a ``bytearray``, not ``np.empty``: NumPy requests transparent
+        huge pages for large arrays, and under memory pressure the kernel then
+        stalled reads for seconds compacting memory.
+        """
         itemsize = np.dtype(dtype).itemsize
-        size = row["length"] * width * itemsize
-        data = os.pread(self.fds[name], size, row["offset"] * width * itemsize)
-        if len(data) != size:
-            raise OSError(f"short read from {self.root / name}")
-        return np.frombuffer(bytearray(data), dtype).reshape(row["length"], width)
+        buffer = bytearray(row["length"] * width * itemsize)
+        view = memoryview(buffer)
+        offset = row["offset"] * width * itemsize
+        done = 0
+        while done < len(view):
+            count = os.preadv(self.fds[name], [view[done:]], offset + done)
+            if count == 0:
+                raise OSError(f"short read from {self.root / name}")
+            done += count
+        return np.frombuffer(buffer, dtype).reshape(row["length"], width)
 
     def __len__(self) -> int:
         return len(self.rows)
 
-    def load(self, index: int, device: torch.device | str = "cpu") -> torch.Tensor:
-        """Return row ``index`` as BF16 ``[tokens, hidden]`` on ``device``."""
+    def read_raw(self, index: int) -> tuple[np.ndarray, ...]:
+        """Row ``index`` in its stored format (thread-safe; no device work)."""
         row = self.rows[index]
         if self.fmt == "bf16":
-            bits = self._read("bf16.bin", row, self.hidden, np.int16)
-            return torch.from_numpy(bits).to(device).view(torch.bfloat16)
-        codes = self._read("fp8.bin", row, self.hidden, np.uint8)
-        scales = self._read("fp8_scales.bin", row, self.hidden // fp8.BLOCK, np.float32)
-        return fp8.dequantize(
-            torch.from_numpy(codes).to(device), torch.from_numpy(scales).to(device)
+            return (self._read("bf16.bin", row, self.hidden, np.int16),)
+        return (
+            self._read("fp8.bin", row, self.hidden, np.uint8),
+            self._read("fp8_scales.bin", row, self.hidden // fp8.BLOCK, np.float32),
         )
+
+    def from_raw(
+        self, raw: tuple[np.ndarray, ...], device: torch.device | str = "cpu"
+    ) -> torch.Tensor:
+        """Turn :meth:`read_raw` output into BF16 ``[tokens, hidden]``."""
+        if self.fmt == "bf16":
+            return torch.from_numpy(raw[0]).to(device).view(torch.bfloat16)
+        codes, scales = (torch.from_numpy(a).to(device) for a in raw)
+        return fp8.dequantize(codes, scales)
+
+    def load(self, index: int, device: torch.device | str = "cpu") -> torch.Tensor:
+        """Return row ``index`` as BF16 ``[tokens, hidden]`` on ``device``."""
+        return self.from_raw(self.read_raw(index), device)
 
 
 class ResidentStore:

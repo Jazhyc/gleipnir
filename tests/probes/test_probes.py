@@ -463,3 +463,23 @@ def test_zero_lr_replay_rebuilds_moments_without_moving_weights(tmp_path):
     )
     states = [sweep.optimizer.state[p] for p in sweep.bank.parameters()]
     assert all(int(s["step"]) == 2 and s["exp_avg_sq"].abs().sum() > 0 for s in states)
+
+
+def test_prefetched_stream_matches_direct_loads(tmp_path):
+    from gleipnir.probes.training import stream
+
+    torch.manual_seed(0)
+    writer = StoreWriter(tmp_path / "s", HIDDEN, ("fp8",))
+    for i in range(23):
+        writer.append(torch.randn(2 + i % 7, HIDDEN), {"id": str(i)})
+    writer.close({})
+    store = Store(tmp_path / "s", "fp8", skip=1)
+    batches = length_batches([r["length"] for r in store.rows], 5, seed=3)
+    seen = []
+    for indices, x, mask in stream(store, batches, "cpu"):
+        seen.append(indices)
+        for row, i in enumerate(indices):
+            n = store.rows[i]["length"]
+            assert torch.equal(x[row, :n], store.load(i).float())
+            assert int(mask[row].sum()) == n
+    assert seen == batches
