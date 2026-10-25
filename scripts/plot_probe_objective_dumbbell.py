@@ -51,7 +51,17 @@ SEED_COLOR = "#9A9A9A"
 INK_MUTED = "#5A5A5A"
 HEADER_HEIGHT = 1.6
 SECTION_GAP = 0.45
+# Right-hand columns, in axes fractions.
+DELTA_COLUMN = (1.03, 1.19)
+WINS_CENTER = 1.27
 CARD_COLOR = "#F2F3F5"
+CARD_PAD = 10.0  # pixels beyond the labels and the wins column
+FOOTNOTE = (
+    "Wins: seeds where the soft run beats the hard run started from the same "
+    "initialization. Each objective uses its own validation-best training "
+    "length (and, for AlphaEvolve, penalty strength). Selected rows compare "
+    "different probe types, so seeds do not pair."
+)
 TITLE = (
     "Kimi soft targets help probes most when they read the raw transcript, "
     "and help the fine-tuned monitor about as much"
@@ -207,34 +217,57 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             linewidth=1.5,
             zorder=5,
         )
-        axis.text(
-            1.015,
-            y,
-            f"{row.delta:+.3f}".replace("-", "\u2212")
-            + (f" \u00b7 {row.wins}" if row.wins else ""),
-            transform=delta_transform,
-            va="center",
-            ha="left",
-            fontsize=13,
-            color="#222222",
-            fontweight="bold" if row.emphasis else "normal",
-            bbox=dict(
-                boxstyle="round,pad=0.3",
+        # Fixed-width badges with right-aligned values line up the decimals.
+        axis.add_patch(
+            FancyBboxPatch(
+                (DELTA_COLUMN[0], y - 0.32),
+                DELTA_COLUMN[1] - DELTA_COLUMN[0],
+                0.64,
+                boxstyle="round,pad=0,rounding_size=0.006",
+                transform=delta_transform,
                 facecolor=GAIN_TINT if row.delta >= 0 else LOSS_TINT,
                 edgecolor="none",
-            ),
+                clip_on=False,
+            )
+        )
+        weight = "bold" if row.emphasis else "normal"
+        axis.text(
+            DELTA_COLUMN[1] - 0.012,
+            y,
+            f"{row.delta:+.3f}".replace("-", "\u2212"),
+            transform=delta_transform,
+            va="center",
+            ha="right",
+            fontsize=13,
+            color="#222222",
+            fontweight=weight,
+        )
+        axis.text(
+            WINS_CENTER,
+            y,
+            row.wins or "\u2013",
+            transform=delta_transform,
+            va="center",
+            ha="center",
+            fontsize=13,
+            color="#222222" if row.wins else INK_MUTED,
+            fontweight=weight,
         )
 
-    axis.text(
-        1.015,
-        positions[0],
-        "Δ soft − hard · wins",
-        transform=delta_transform,
-        va="center",
-        ha="left",
-        fontsize=12,
-        color=INK_MUTED,
-    )
+    for x, header, align in (
+        (DELTA_COLUMN[1] - 0.012, "\u0394 soft \u2212 hard", "right"),
+        (WINS_CENTER, "Wins", "center"),
+    ):
+        axis.text(
+            x,
+            positions[0],
+            header,
+            transform=delta_transform,
+            va="center",
+            ha=align,
+            fontsize=12,
+            color=INK_MUTED,
+        )
 
     axis.set_yticks(positions)
     axis.set_yticklabels([row.label for row in rows])
@@ -317,14 +350,19 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         borderpad=0.6,
         handletextpad=0.5,
         columnspacing=1.2,
+        borderaxespad=0,
     )
     figure.tight_layout()
     left, right = _content_span(figure, axis)
     _add_section_cards(figure, axis, rows, positions, left, right)
     _add_title(figure, axis, TITLE, left, right)
+    # Legends and footnote share the cards' outer edges.
+    card_left, card_right = figure.transFigure.inverted().transform(
+        [(left - CARD_PAD, 0), (right + CARD_PAD, 0)]
+    )[:, 0]
     for handles, title, anchor, loc, ncol in (
-        (target_handles, "Training target", (0.02, 0.0), "upper left", 3),
-        (change_handles, "Change", (0.98, 0.0), "upper right", 2),
+        (target_handles, "Training target", (card_left, 0.0), "upper left", 3),
+        (change_handles, "Change", (card_right, 0.0), "upper right", 2),
     ):
         legend = figure.legend(
             handles=handles,
@@ -335,19 +373,17 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             **legend_style,
         )
         legend.get_title().set_fontweight("bold")
-    figure.text(
-        0.02,
+    footnote = figure.text(
+        card_left,
         -0.105,
-        "Wins: seeds where the soft run beats the hard run started from the "
-        "same initialization. Each objective uses its own\nvalidation-best "
-        "training length (and, for AlphaEvolve, penalty strength). Selected "
-        "rows compare different probe types, so seeds do not pair.",
+        "",
         ha="left",
         va="top",
         fontsize=11,
         color=INK_MUTED,
         fontweight="normal",
     )
+    _wrap_to_width(footnote, FOOTNOTE, right - left + 2 * CARD_PAD)
     return figure
 
 
@@ -372,9 +408,8 @@ def _add_section_cards(
     right: float,
 ) -> None:
     """Shade each section from its header to its last row, labels included."""
-    pad = 10.0
     x0, x1 = figure.transFigure.inverted().transform(
-        [(left - pad, 0), (right + pad, 0)]
+        [(left - CARD_PAD, 0), (right + CARD_PAD, 0)]
     )[:, 0]
     transform = blended_transform_factory(figure.transFigure, axis.transData)
     starts = [index for index, row in enumerate(rows) if row.header]
@@ -400,7 +435,6 @@ def _add_title(
     figure: plt.Figure, axis: plt.Axes, title: str, left: float, right: float
 ) -> None:
     """Place the title across the row labels and the Δ badge column."""
-    renderer = figure.canvas.get_renderer()
     to_axes = axis.transAxes.inverted()
     artist = axis.text(
         to_axes.transform((left, 0))[0],
@@ -412,12 +446,17 @@ def _add_title(
         fontsize=17,
         fontweight="bold",
     )
-    # Greedy word wrap to the measured width of the labels-to-badges span.
+    _wrap_to_width(artist, title, right - left)
+
+
+def _wrap_to_width(artist: plt.Text, text: str, width: float) -> None:
+    """Greedily word-wrap ``text`` so each rendered line fits ``width`` pixels."""
+    renderer = artist.figure.canvas.get_renderer()
     lines: list[str] = []
-    for word in title.split():
+    for word in text.split():
         candidate = f"{lines[-1]} {word}" if lines else word
         artist.set_text(candidate)
-        if lines and artist.get_window_extent(renderer).width > right - left:
+        if lines and artist.get_window_extent(renderer).width > width:
             lines.append(word)
         elif lines:
             lines[-1] = candidate
