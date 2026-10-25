@@ -47,3 +47,33 @@ and 2 were re-frozen (`prepare.py --seeds 1 2`) against the current sources;
 seed 0 keeps its original contract. Stale prepared state was moved aside.
 Everything is pulled before the Pod is terminated.
 
+## Result (2026-10-24/25, EU-RO-1 B200 `GPU-338d6756…`)
+
+All three seeds trained 245 updates (about 11.7 s per update), passed
+master-to-merge parity (MAE ≤ 7.2e-5) and were scored on ID and the frozen OOD
+suite with BF16 vLLM 0.31. Soft-only values are the existing seeds (seed 0
+rescored in the seed-variation session).
+
+| seed | hard ID | soft ID | hard OOD | soft OOD |
+|---|---:|---:|---:|---:|
+| 0 | 0.8100 | 0.8959 | 0.7458 | 0.7869 |
+| 1 | 0.8669 | 0.8978 | 0.7131 | 0.8125 |
+| 2 | 0.8231 | 0.9142 | 0.6902 | 0.7768 |
+| mean | 0.8333 | 0.9026 | 0.7164 | 0.7921 |
+
+Removing Kimi soft targets costs −0.069 ID and −0.076 OOD (macro pAUROC@20);
+every hard seed is below every soft seed on both. ID losses are on Gloom
+(0.63–0.76 versus 0.82–0.86); STRIDE is slightly higher with hard labels. OOD
+losses are largest on IaC (0.55–0.70 versus 0.81–0.90) and CUA-SHADE. Hard
+labels also calibrate far worse (OOD Brier 0.21–0.30 versus 0.14) and saturate
+scores (seed 0 has 197 distinct Gloom scores). Hard seeds vary more on ID
+(range 0.057 versus 0.018), and ID rank does not predict OOD rank. For
+comparison, soft targets help activation probes by +0.007 (prompted) and
++0.055 (NTP) OOD at the selected cells (`experiments/probe_generalization/`).
+Artifacts: `results/teacher-hard-sdpa-s{0,1,2}-01`, `…-ood01`,
+`results/hard_label_seeds/` (status, stale prepared state) and the failed
+seed-1 receipt `results/teacher-hard-sdpa-s1-01_failed_quota01`; FP32 masters
+are also on volume `cb7bxu71ug`. The Pod was terminated at the user's
+instruction after all files were verified locally (2,991 files by size; 9
+safetensors by SHA-256).
+
