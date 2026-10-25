@@ -206,3 +206,20 @@ rows are the optimized-stack `sb02` runs and base-model logit rows the BF16
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plot_sleightbench_results.py
 ```
+
+## Probe objective: hard labels versus Kimi soft targets (OOD)
+
+`probe_objective_ood_dumbbell.png`/`.svg` compare hard-label and Kimi
+soft-target training on the frozen OOD suite (source-macro pAUROC@20, seed
+median, individual seeds as small dots). Rows are the frozen ID-rule selection
+and each probe family's ID-best candidate on the prompted and NTP backbones
+(`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the fine-tuned
+reference. Mean-pooled and last-token probes sit near the floor and are left
+out; the [probe study](../experiments/probe_generalization/README.md) reports
+them, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
+supply the hard-coded LoRA values. The probe inputs are ignored artifacts.
+Regenerate with:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/plot_probe_objective_dumbbell.py
+```
