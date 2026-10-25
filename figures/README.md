@@ -211,12 +211,12 @@ PYTHONPATH=src .venv/bin/python scripts/plot_sleightbench_results.py
 
 `probe_objective_ood_dumbbell.png`/`.svg` compare hard-label and Kimi
 soft-target training on the frozen OOD suite (source-macro pAUROC@20, seed
-median, individual seeds as small dots). Each Δ badge is shaded by sign and
-counts same-seed pairs where soft wins; validation-set selections pair different
-architectures and carry no count. Rows are the frozen ID-rule selection
-and each probe family's ID-best candidate on the prompted and NTP backbones
-(`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the fine-tuned
-reference. Mean-pooled and last-token probes sit near the floor and are left
+median, individual seeds as small dots). Rows are each probe family's ID-best
+candidate on the prompted ("monitor prompt") and NTP ("raw transcript")
+backbones (`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the
+fine-tuned reference. Stars mark each objective's frozen ID-rule selection,
+which is always one of the family rows. Each Δ badge is shaded by sign, next to
+the count of same-seed pairs where soft wins. Mean-pooled and last-token probes sit near the floor and are left
 out; the [probe study](../experiments/probe_generalization/README.md) reports
 them, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
 supply the hard-coded LoRA values. The probe inputs are ignored artifacts.

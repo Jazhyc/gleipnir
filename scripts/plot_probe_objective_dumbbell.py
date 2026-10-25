@@ -55,12 +55,14 @@ SECTION_GAP = 0.45
 DELTA_COLUMN = (1.03, 1.19)
 WINS_CENTER = 1.27
 CARD_COLOR = "#F2F3F5"
+STAR_SIZE = 420
 CARD_PAD = 10.0  # pixels beyond the labels and the wins column
 FOOTNOTE = (
     "Wins: seeds where the soft run beats the hard run started from the same "
     "initialization. Each objective uses its own validation-best training "
-    "length (and, for AlphaEvolve, penalty strength). Selected rows compare "
-    "different probe types, so seeds do not pair."
+    "length (and, for AlphaEvolve, penalty strength). Stars mark the probe each "
+    "target would pick across all families and epochs by validation-set "
+    "pAUROC@20."
 )
 TITLE = (
     "Kimi soft targets help probes most when they read the raw transcript, "
@@ -77,9 +79,11 @@ class Row:
     soft_seeds: tuple[float, ...] = ()
     header: bool = False
     emphasis: bool = False
-    # Soft-over-hard wins among same-seed pairs; empty when the cells differ
-    # in architecture, so seed indices do not pair.
+    # Soft-over-hard wins among same-seed pairs.
     wins: str = ""
+    # Whether this row holds the objective's validation-set selection.
+    hard_selected: bool = False
+    soft_selected: bool = False
 
     @property
     def delta(self) -> float:
@@ -98,21 +102,26 @@ def _paired_wins(hard: tuple[float, ...], soft: tuple[float, ...]) -> str:
     return f"{wins}/{len(hard)}"
 
 
-def _row(
-    label: str, hard: dict, soft: dict, *, paired: bool = True, emphasis: bool = False
-) -> Row:
+def _is_selection(cell: dict, selected: dict) -> bool:
+    return (cell["architecture"], cell["epoch"]) == (
+        selected["architecture"],
+        selected["epoch"],
+    )
+
+
+def _row(label: str, hard: dict, soft: dict, hard_pick: dict, soft_pick: dict) -> Row:
     hard_seeds, soft_seeds = _seed_scores(hard), _seed_scores(soft)
-    # Family rows pair seeds even where each objective picked its own epoch or
-    # AlphaEvolve penalty; the selected cells are different architectures.
-    wins = _paired_wins(hard_seeds, soft_seeds) if paired else ""
     return Row(
         label=label,
         hard=hard["ood_seed_median_pauroc_at_20"],
         soft=soft["ood_seed_median_pauroc_at_20"],
         hard_seeds=hard_seeds,
         soft_seeds=soft_seeds,
-        emphasis=emphasis,
-        wins=wins,
+        # Seeds pair even where each objective picked its own epoch or
+        # AlphaEvolve penalty: same-seed probes share initialization.
+        wins=_paired_wins(hard_seeds, soft_seeds),
+        hard_selected=_is_selection(hard, hard_pick),
+        soft_selected=_is_selection(soft, soft_pick),
     )
 
 
@@ -124,19 +133,20 @@ def load_rows(results_dir: Path) -> list[Row]:
         ]
         hard, soft = pooled["hard"], pooled["soft"]
         rows.append(Row(title, header=True))
-        rows.append(
+        family_rows = [
             _row(
-                "Selected using validation set",
+                label,
+                hard["families"][family],
+                soft["families"][family],
                 hard["selected"],
                 soft["selected"],
-                paired=False,
-                emphasis=True,
             )
-        )
-        rows.extend(
-            _row(label, hard["families"][family], soft["families"][family])
             for family, label in FAMILIES.items()
-        )
+        ]
+        # Each validation-set selection must be one of the plotted families.
+        assert sum(row.hard_selected for row in family_rows) == 1
+        assert sum(row.soft_selected for row in family_rows) == 1
+        rows.extend(family_rows)
     rows.append(Row("Fine-tuned 4B monitor\n(LoRA, 3 seeds)", header=True))
     rows.append(
         Row(
@@ -202,7 +212,8 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         axis.scatter(
             [row.hard],
             [y],
-            s=120,
+            s=STAR_SIZE if row.hard_selected else 120,
+            marker="*" if row.hard_selected else "o",
             facecolor="white",
             edgecolor=HARD_EDGE,
             linewidth=2,
@@ -211,7 +222,8 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         axis.scatter(
             [row.soft],
             [y],
-            s=130,
+            s=STAR_SIZE if row.soft_selected else 130,
+            marker="*" if row.soft_selected else "o",
             color=color,
             edgecolor="white",
             linewidth=1.5,
@@ -338,6 +350,17 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             markeredgecolor=SEED_COLOR,
             label="Individual seeds",
         ),
+        Line2D(
+            [],
+            [],
+            marker="*",
+            linestyle="",
+            markersize=15,
+            markerfacecolor="white",
+            markeredgecolor=HARD_EDGE,
+            markeredgewidth=1.5,
+            label="Chosen on validation set",
+        ),
     ]
     change_handles = [
         Line2D([], [], color=GAIN_COLOR, linewidth=3, label="Soft better"),
@@ -361,7 +384,7 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         [(left - CARD_PAD, 0), (right + CARD_PAD, 0)]
     )[:, 0]
     for handles, title, anchor, loc, ncol in (
-        (target_handles, "Training target", (card_left, 0.0), "upper left", 3),
+        (target_handles, "Training target", (card_left, 0.0), "upper left", 2),
         (change_handles, "Change", (card_right, 0.0), "upper right", 2),
     ):
         legend = figure.legend(
@@ -373,9 +396,14 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             **legend_style,
         )
         legend.get_title().set_fontweight("bold")
+    # Start the footnote a little below the taller legend.
+    renderer = figure.canvas.get_renderer()
+    legend_bottom = min(
+        legend.get_window_extent(renderer).y0 for legend in figure.legends
+    )
     footnote = figure.text(
         card_left,
-        -0.105,
+        figure.transFigure.inverted().transform((0, legend_bottom - 22))[1],
         "",
         ha="left",
         va="top",
@@ -456,7 +484,9 @@ def _wrap_to_width(artist: plt.Text, text: str, width: float) -> None:
     for word in text.split():
         candidate = f"{lines[-1]} {word}" if lines else word
         artist.set_text(candidate)
-        if lines and artist.get_window_extent(renderer).width > width:
+        # Glyph hinting makes text slightly wider at the 300-dpi save than at
+        # the screen dpi measured here, so keep a small margin.
+        if lines and artist.get_window_extent(renderer).width > 0.96 * width:
             lines.append(word)
         elif lines:
             lines[-1] = candidate
