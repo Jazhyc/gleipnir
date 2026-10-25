@@ -385,7 +385,7 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     )[:, 0]
     for handles, title, anchor, loc, ncol in (
         (target_handles, "Training target", (card_left, 0.0), "upper left", 2),
-        (change_handles, "Change", (card_right, 0.0), "upper right", 2),
+        (change_handles, "Change", (card_right, 0.0), "upper right", 1),
     ):
         legend = figure.legend(
             handles=handles,

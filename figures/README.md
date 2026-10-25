@@ -225,3 +225,16 @@ Regenerate with:
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plot_probe_objective_dumbbell.py
 ```
+
+Draft caption (carries the pre-registered result the figure leaves to the
+stars):
+
+> Hard labels versus Kimi K3 soft targets on the out-of-distribution suite.
+> Probes are small classifiers trained on frozen Qwen3.5-4B activations
+> (layer-15 residual stream), computed either with the transcript inside the
+> monitor prompt or on the raw transcript alone; the fine-tuned monitor is the
+> Gleipnir 4B LoRA recipe. Choosing each target's probe on the validation set
+> (stars), soft targets add +0.007 OOD pAUROC@20 with the monitor prompt and
+> +0.055 on the raw transcript, against +0.074 for the fine-tuned monitor.
+> pAUROC@20 is the normalized area under the ROC curve up to a 20%
+> false-positive rate.
