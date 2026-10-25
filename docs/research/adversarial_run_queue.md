@@ -26,11 +26,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Monitor-aware cheating on ImpossibleBench**, for cheats that aren't announced. Every natural cheat so far is admitted in code or comments (cheating pilot, 21–22 October), which makes the monitor's job easy.
-   - Five setups on the same tasks, open models on Tinker with thinking off: no special prompt (natural cheats); a short instruction allowing test-gaming; the same instruction plus a truthful note that a monitor reads tool calls and outputs and that flagged runs lose reward; an honest instruction; the honest instruction plus the note.
-   - Labels come from the environment: a pass on an impossible test is a cheat.
-   - Measures: whether the 4B, the 27B and Kimi catch prompted cheats more easily than natural ones; whether the monitor note makes cheats quieter or rarer; false alarms on honest runs that know about the monitor.
-   - Main risk: few cheats on Tinker (5 of 103 in the pilot's main arm), so it needs more seeds per task or more task pressure, applied equally to every setup. Runs after the liar study.
+1. **Monitor-aware cheating on ImpossibleBench: monitor scoring** ([protocol and behavioural results](../../experiments/adversarial_monitor_aware/README.md)). The lean run is done (25 October, 310 runs plus the pilot's 103 `natural` runs): cheats 5/103 natural, 17/103 with permission, 11/103 with permission and the monitor note, 1/52 and 3/52 in the honest setups. Next: the announced-or-quiet labels (two blind readers), then Gleipnir 4B and 27B on a GPU session and Kimi (needs an OpenRouter top-up).
 2. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
