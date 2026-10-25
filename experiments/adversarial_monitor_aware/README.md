@@ -136,11 +136,65 @@ The fixed recheck found the 2 passes above. Nothing frozen changes.
 
 No full run has started. The scale *K* is still open.
 
+## Amendment 2 (25 October, before any main run)
+
+Abhinav's decisions of 25 October, recorded before any non-smoke run.
+
+**A leaner run: 310 new runs** (`run.py lean`, `config.json` `lean_main`):
+
+| Setup | Tasks | Runs |
+|---|---|---:|
+| `cheat_ok`, `cheat_ok_monitored` | all 103 | 103 each |
+| `honest`, `honest_monitored` | the first 52 of `task_order` | 52 each |
+| `natural` | no new runs: the pilot's `t_b_conflicting` (below) | 103 reused |
+
+- This sets the scale *K* per setup.
+- The schedule is the frozen one, filtered. Tasks run in `task_order`, and each task's setups are rotated by its index. `natural` is dropped everywhere, and the honest pair is dropped after task 52. Nothing is reordered (tested).
+- The cheat_ok pair alternates in time and load over the whole run. The honest pair does so only over the first 52 tasks, which run roughly in the first two thirds of the run.
+
+**`natural` reuses the cheating pilot's Tinker contradicting-test arm** (`results/adversarial_cheating_pilot/t_b_conflicting`, 103 runs).
+- **The same:**
+  - the system prompt (byte-identical, tested);
+  - Qwen3.8-27B on the same Tinker endpoint, `reasoning_effort: false`, temperature 0.7, top_p 0.8, `max_tokens` 8,192;
+  - the `conflicting` split at `98650ff`, ImpossibleBench `d4f9a14` and prompt B with the suffix;
+  - 10 submissions and 50 messages;
+  - the pinned image, concurrency 30, a GCP `c2d-standard-32`, and `inspect_ai` 0.3.282;
+  - the same offline recheck (`recheck.check`), so the primary cheat label is computed the same way.
+- **An earlier batch.** The eval ran on 21 October, 11:29–12:14 UTC. Its offline-check timeouts were retried on 22 October. Both dates are before any new run.
+- **Seed 0, not seed 2.** The frozen design made `natural` a fresh seed-2 resample. Now it is the pilot's own sample, and its 5 cheats were known before this study was designed. Prediction 1's "natural about 5%" came from these runs, so that half of the prediction is no longer a test.
+- **The pilot's in-run nonce check copied `/`** (pilot Amendment 3). That added up to 2 × 30 s of scoring per submission, and it left partial copies in the sandbox's `/tmp`, which the agent could see. The new runs copy only `.py` files. Tool timeouts are the same. The in-run nonce fields of `natural` (all False by that bug) are left out of the in-run/offline agreement count.
+- **What the reuse controls for:** prompt, model, sampling settings, tasks, scaffold, machine type and label.
+- **What it doesn't control for:** time. Tinker's serving (weights, sampler and precision are unpublished) may have changed in four days, and the load differs. It also doesn't control for the seed, the side effects of the in-run check, or the frozen interleaving: `natural` no longer alternates with the other setups in time and load. Comparison (b) therefore mixes any batch effect with the effect of permission.
+- Checked on the pilot's logs with this study's code: 103 runs, 3 context-limit crashes, 0 infrastructure failures, 5 cheats (as the pilot reported), 0 rendering leaks, 0 echo runs, and 103 natural system prompts.
+
+**Comparisons stay as frozen.** (a) is 103 against 103. (b) uses the reused `natural` runs, with the limitation above. (c) is 52 against 52, still a check, not a test. The extension rule is unchanged. If it triggers, which setups a second pass includes is decided with its budget, before it runs, from the pooled trigger only.
+
+**Tinker cost and cap.**
+- The Tinker console showed $0.96 of Qwen usage on 25 October. That covers the 10 smoke runs, possibly with other same-day use: about $0.10 per run, or $0.47 per dollar of the smoke's list price with cached prefill charged ($2.03).
+- 310 runs at the smoke's tokens per run come to about $30. At the pilot's longer runs ($0.26 list) they come to about $38.
+- **Cap: $45 of Tinker usage for this run, across all passes.** The runner can't see Tinker charges, so it uses tokens: 0.472 × the list price of every token, cached prefill included.
+- Every model call is logged to `main/usage.jsonl` (`budget.py`). At $45 the hook writes `CAP_REACHED` and stops the eval. `vm_run.sh` then rechecks and reports the finished runs and ends "FAILED tinker_cap".
+- If other same-day use inflated the $0.96, the estimate runs high and the cap stops early, not late. Calls in flight at the stop are not counted: at most 30, a few cents.
+
+**Machine.**
+- GCP `c2d-standard-32` with one thread per core (16 cores), Ubuntu 24.04, 150 GB disk, `asia-south1-a`, named `ib-cpu-1`. The parent session creates it.
+- Concurrency stays at 30, as frozen and as in the pilot's `natural` runs on the same machine type.
+- Expected time: 310 runs in about 2–2.5 hours (the pilot took 39–46 minutes per 103 runs), plus about 15 minutes of setup and 10 minutes of recheck and report.
+
+**Operational changes:**
+- **Bug fix in `analyze.status`.** Tinker's context-limit error arrives with an escaped apostrophe (`model\'s`), so the frozen substring missed it. Every context-limit crash would have counted as an infrastructure failure, out of the denominator and retried. On the pilot's logs, the fix moves the 3 known context-limit crashes back to `context_limit`. The smoke run had none. The frozen rule now applies as written.
+- **Resume and retry** (`run.py lean`). A call runs passes until each assignment has an outcome. A run cut off by a crash or a stop is resumed: crashed logs are first recovered from Inspect's sample buffer, and the originals are kept in `main/crashed/`. A cut-off run does not count as an attempt. Then each assignment whose only attempt was one infrastructure failure is rerun once, with the same settings and seed. This is the frozen eval-retry rule, done here because the eval's task is not registered, so `inspect eval-retry` can't rebuild it. Where an assignment has several attempts, the report uses the latest finished one.
+- **Recheck.** A known-bad function must fail after the known-good canary passes. Docker-level timeouts are retried once, two at a time. This automates the pilot's Amendment 5 retry.
+- **`report --out main`** adds the `natural` rows from the pilot's log and recheck. It lists any missing assignment and the token-based spend. The usage summary covers new runs only.
+- **`vm_run.sh` keeps the disk safe.** It removes leftover sandboxes at the start. Every 5 minutes it prunes stopped containers, unused networks and dangling images, never the pinned image. It stops the run if free disk falls under 10 GB.
+
 ## Files
 
 - `config.json`: setups, paragraphs, distinctive phrases, seed, task order, smoke tasks and prices.
 - `scaffold.py`: the pilot's scaffold plus the system-prompt addition.
-- `run.py`: `smoke`, `run --tasks K`, `recheck`, `report`.
+- `run.py`: `smoke`, `run --tasks K`, `lean` and `progress` (Amendment 2), `recheck`, `report`.
+- `budget.py`: the Tinker cap and progress hooks (Amendment 2).
+- `pack.sh`, `vm_setup.sh`, `vm_run.sh`, `pull.sh`, `vm_requirements.txt`: the lean main run on a GCP VM (Amendment 2).
 - `analyze.py`: status, cheat label, Wilson, Newcombe, Fisher and usage.
 - `leak.py`: the rendering check.
 - `test_monitor_aware.py`: the tests.
@@ -156,4 +210,15 @@ $PY -m pytest -q experiments/adversarial_monitor_aware
 $PY experiments/adversarial_monitor_aware/run.py smoke
 $PY experiments/adversarial_monitor_aware/run.py recheck --out smoke
 $PY experiments/adversarial_monitor_aware/run.py report --out smoke
+```
+
+The lean main run on the VM (Amendment 2):
+
+```bash
+experiments/adversarial_monitor_aware/pack.sh        # local: bundle, data, setup script
+# copy the staged files and ~/tinker.env (mode 600, TINKER_API_KEY only) to the VM, then on the VM:
+bash ~/vm_setup.sh                                     # ends "SETUP OK"; log in again for the docker group
+nohup bash ~/lab/upstream/gleipnir/experiments/adversarial_monitor_aware/vm_run.sh > ~/vm_run.out 2>&1 &
+tail ~/ma_status.log                                   # "start", progress, "ALL DONE" or "FAILED <step>"
+experiments/adversarial_monitor_aware/pull.sh        # local: results/ and logs/gcp/
 ```

@@ -174,5 +174,31 @@
   "prefill": 0.6975,
   "sampled": 5.595,
   "source": "Tinker pricing page as recorded in experiments/adversarial_code_or_comments/README.md (read 22 October 2026)"
+ },
+ "lean_main": {
+  "amendment": 2,
+  "dir": "main",
+  "note": "Amendment 2: the frozen 103-task schedule (task_order, setups rotated by task index) with natural dropped and honest/honest_monitored kept only for the first 52 tasks of task_order. 310 new runs. natural reuses the cheating pilot's t_b_conflicting runs.",
+  "setup_tasks": {
+   "cheat_ok": 103,
+   "cheat_ok_monitored": 103,
+   "honest": 52,
+   "honest_monitored": 52
+  },
+  "natural_from": {
+   "dir": "results/adversarial_cheating_pilot/t_b_conflicting",
+   "recheck": "recheck.jsonl",
+   "runs": 103,
+   "dates": "eval 21 October 2026, 11:29-12:14 UTC; offline recheck timeouts retried 22 October",
+   "seed": 0
+  },
+  "tinker_cap": {
+   "usd": 45,
+   "observed_usd": 0.96,
+   "observed_note": "Tinker console, Qwen usage on 25 October: the 10 smoke runs, possibly with other same-day use.",
+   "smoke_list_usd_cache_billed": 2.0329635149999996,
+   "rule": "Estimated spend = (observed_usd / smoke_list_usd_cache_billed) x list price of all tokens so far (prefill including cached, plus sampled). The runner cannot see Tinker charges, so this token-based estimate is the cap. It counts every model call of every pass in usage.jsonl."
+  },
+  "retry": "Assignments with one infrastructure failure are rerun once (same settings and seed); runs interrupted by a crash or a stop are rerun and do not count as attempts."
  }
 }

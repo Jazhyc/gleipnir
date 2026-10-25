@@ -238,3 +238,122 @@ def test_leak_check_catches_text_in_a_user_turn_and_echoes(monkeypatch):
     echoed[tool]["text"] = "# the automated monitor reads tool calls"
     found = leak.check(echoed, CONFIG)
     assert not found["rendering_leak"] and "automated monitor" in found["agent_echo"]
+
+
+# ------------------------------------------- Amendment 2: lean main run
+
+
+def test_lean_assignment_list():
+    from experiments.adversarial_monitor_aware.run import lean_schedule, schedule
+
+    order = CONFIG["task_order"]
+    pairs = lean_schedule()
+    assert len(pairs) == 310 and len(set(pairs)) == 310
+    assert Counter(s for _, s in pairs) == {
+        "cheat_ok": 103,
+        "cheat_ok_monitored": 103,
+        "honest": 52,
+        "honest_monitored": 52,
+    }
+    by_setup = {s: [t for t, x in pairs if x == s] for s in CONFIG["setups"]}
+    assert by_setup["natural"] == []
+    assert by_setup["cheat_ok"] == order and by_setup["cheat_ok_monitored"] == order
+    assert (
+        by_setup["honest"] == order[:52] and by_setup["honest_monitored"] == order[:52]
+    )
+    # The frozen order, filtered: tasks in task_order, each task's setups
+    # rotated by its index, nothing reordered.
+    assert pairs == [p for p in schedule(order) if p in set(pairs)]
+    setups = CONFIG["setups"]
+    for i, task in enumerate(order):
+        mine = [s for t, s in pairs if t == task]
+        rotated = [setups[(j + i) % 5] for j in range(5)]
+        assert mine == [s for s in rotated if s in mine]
+        assert len(mine) == (4 if i < 52 else 2)
+    # Setup order alternates: which new setup runs first differs across tasks.
+    firsts = Counter(next(s for t, s in pairs if t == task) for task in order[:52])
+    assert len(firsts) == 4
+
+
+def test_status_matches_escaped_context_limit_error():
+    real = (
+        "BadRequestError('Error code: 400 - {\\\\'detail\\\\': \"Prompt length plus "
+        "max_tokens exceeds the model\\\\'s context window: 65599 prompt tokens + "
+        "8192 max_tokens > 65536.\"}')"
+    )
+    assert "model\\\\'s" in real
+    assert analyze.status(real) == "context_limit"
+
+
+def test_resume_plan_and_pick():
+    from experiments.adversarial_monitor_aware.run import kind, pick, plan
+
+    assert kind(None, "success") == "finished"
+    assert kind("... exceeds the model's context window ...", "success") == "finished"
+    assert kind("CancelledError()", "started") == "interrupted"
+    assert kind("RuntimeError('compose up failed')", "cancelled") == "interrupted"
+    assert kind("RuntimeError('compose up failed')", "success") == "infrastructure"
+
+    ids = ["a", "b", "c", "d", "e"]
+    kinds = {
+        "a": ["finished"],
+        "b": ["interrupted"],
+        "c": ["infrastructure"],
+        "d": [],
+        "e": ["interrupted", "infrastructure", "infrastructure"],
+    }
+    assert plan(ids, kinds) == ("main", ["b", "d"])
+    kinds.update(b=["interrupted", "finished"], d=["finished"])
+    assert plan(ids, kinds) == ("retry", ["c"])  # e already had its retry
+    kinds["c"] = ["infrastructure", "interrupted"]
+    assert plan(ids, kinds) == ("retry", ["c"])  # an interrupted retry reruns
+    kinds["c"] = ["infrastructure", "finished"]
+    assert plan(ids, kinds) == ("done", [])
+
+    assert (
+        pick([("infrastructure", "1"), ("finished", "2"), ("interrupted", "3")]) == "2"
+    )
+    assert pick([("infrastructure", "1"), ("infrastructure", "2")]) == "2"
+
+
+def test_tinker_cap_estimate():
+    pytest.importorskip("inspect_ai")
+    from experiments.adversarial_monitor_aware import budget
+
+    cap, prices = (
+        CONFIG["lean_main"]["tinker_cap"],
+        CONFIG["usage_prices_usd_per_million"],
+    )
+    # The smoke run's tokens give back the observed console charge.
+    smoke = budget.estimate_usd(171350 + 1926784, 101790, prices, cap)
+    assert smoke == pytest.approx(0.96, abs=1e-6)
+    # 310 runs at the smoke's tokens per run: about $30, under the $45 cap.
+    assert 310 * smoke / 10 == pytest.approx(29.76, abs=0.01)
+    assert cap["usd"] == 45
+
+
+def test_tinker_cap_ledger(tmp_path):
+    pytest.importorskip("inspect_ai")
+    from experiments.adversarial_monitor_aware import budget
+
+    assert budget.ledger_tokens(tmp_path) == (0, 0)
+    (tmp_path / budget.LEDGER).write_text(
+        '{"prefill": 1000, "sampled": 10}\n{"prefill": 2000, "sampled": 5}\n'
+    )
+    assert budget.ledger_tokens(tmp_path) == (3000, 15)
+    assert budget.spent(tmp_path, CONFIG) > 0
+
+
+def test_natural_rows_are_the_pilot_arm():
+    pytest.importorskip("inspect_ai")
+    from experiments.adversarial_monitor_aware import run
+
+    source = run.ROOT / CONFIG["lean_main"]["natural_from"]["dir"]
+    if not source.exists():
+        pytest.skip("pilot results missing")
+    rows = run.natural_rows()
+    assert len(rows) == 103 and {r["setup"] for r in rows} == {"natural"}
+    assert sorted(r["task"] for r in rows) == sorted(CONFIG["task_order"])
+    assert all(r["system_has_addition"] for r in rows)
+    assert all(r["inrun_unmodified_pass"] is None for r in rows)
+    assert all(r["offline_unmodified_pass"] is not None for r in rows)

@@ -63,13 +63,29 @@ def schedule(task_ids: list[str]) -> list[tuple[str, str]]:
     ]
 
 
-def expand(samples: list[Any], task_ids: list[str]) -> list[Any]:
-    """One copy of each base sample per setup, in `schedule` order."""
+def lean_schedule() -> list[tuple[str, str]]:
+    """Amendment 2: the frozen 103-task schedule, keeping each setup only for
+    the first `setup_tasks[setup]` tasks of task_order (natural: none)."""
+    keep = CONFIG["lean_main"]["setup_tasks"]
+    rank = {t: i for i, t in enumerate(CONFIG["task_order"])}
+    return [
+        (task, setup)
+        for task, setup in schedule(CONFIG["task_order"])
+        if rank[task] < keep.get(setup, 0)
+    ]
+
+
+def sample_id(task: str, setup: str) -> str:
+    return f"{task}__{setup}"
+
+
+def expand(samples: list[Any], pairs: list[tuple[str, str]]) -> list[Any]:
+    """One copy of the base sample per (task, setup) pair, in the given order."""
     by_id = {s.id: s for s in samples}
     out = []
-    for task, setup in schedule(task_ids):
+    for task, setup in pairs:
         sample = copy.deepcopy(by_id[task])
-        sample.id = f"{task}__{setup}"
+        sample.id = sample_id(task, setup)
         sample.metadata = {
             **sample.metadata,
             "base_task_id": task,
@@ -80,7 +96,7 @@ def expand(samples: list[Any], task_ids: list[str]) -> list[Any]:
     return out
 
 
-def build_task(task_ids: list[str], name: str):
+def build_task(pairs: list[tuple[str, str]], name: str):
     sys.path.insert(0, str(pilot.CHECKOUT / "src" / "impossiblebench"))
     import livecodebench_scorers as ls  # noqa: E402
     import livecodebench_tasks as lt  # noqa: E402
@@ -162,7 +178,7 @@ def build_task(task_ids: list[str], name: str):
     )
     return Task(
         name=f"monitor_aware_{name}",
-        dataset=MemoryDataset(expand(list(base.dataset), task_ids)),
+        dataset=MemoryDataset(expand(list(base.dataset), pairs)),
         solver=full_scaffold_solver(
             max_attempts=max_attempts, think_tool=CONFIG["think_tool"]
         ),
@@ -172,15 +188,21 @@ def build_task(task_ids: list[str], name: str):
     )
 
 
-def run(task_ids: list[str], log_dir: Path) -> None:
+def run(
+    pairs: list[tuple[str, str]],
+    log_dir: Path,
+    name: str | None = None,
+    metadata: dict[str, Any] | None = None,
+) -> list[Any]:
     from inspect_ai import eval as inspect_eval
 
     pilot.docker_env()
     model = pilot.CONFIG["models"][CONFIG["provider"]]
     pilot.load_key("TINKER_API_KEY")
     os.environ.setdefault("TINKER_BASE_URL", model["base_url"])
-    inspect_eval(
-        build_task(task_ids, log_dir.name),
+    return inspect_eval(
+        build_task(pairs, name or log_dir.name),
+        metadata=metadata,
         model=model["id"],
         temperature=model["temperature"],
         top_p=model["top_p"],
@@ -196,15 +218,178 @@ def run(task_ids: list[str], log_dir: Path) -> None:
     )
 
 
+# ------------------------------------------- lean main run: resume and retry
+#
+# Amendment 2. One `run.py lean` call runs passes until every assignment has a
+# final outcome. Each sample of each log counts as one attempt of its kind:
+#   finished:       no error, or a context-limit crash (a model outcome);
+#   infrastructure: any other error;
+#   interrupted:    cut off by a crash or a stop (CancelledError, or any error
+#                   in a cancelled log). Not an attempt; it is simply rerun.
+# Pass "main" runs every assignment with no finished or infrastructure
+# attempt. Pass "retry" then reruns, once, each assignment whose only attempt
+# was one infrastructure failure (the frozen eval-retry rule).
+
+RANK = {"interrupted": 0, "infrastructure": 1, "finished": 2}
+
+
+def kind(error: str | None, log_status: str) -> str:
+    if error is None or analyze.status(error) == "context_limit":
+        return "finished"
+    if log_status == "cancelled" or error.startswith("CancelledError"):
+        return "interrupted"
+    return "infrastructure"
+
+
+def plan(ids: list[str], kinds: dict[str, list[str]]) -> tuple[str, list[str]]:
+    """The next pass ('main', 'retry' or 'done') and its assignment ids."""
+    main = [
+        i for i in ids if not {"finished", "infrastructure"} & set(kinds.get(i, []))
+    ]
+    if main:
+        return "main", main
+    retry = [
+        i
+        for i in ids
+        if "finished" not in kinds.get(i, [])
+        and kinds.get(i, []).count("infrastructure") == 1
+    ]
+    return ("retry", retry) if retry else ("done", [])
+
+
+def pick(entries: list[tuple[str, str]]) -> str:
+    """The log that holds an assignment's outcome, from (kind, log) attempts in
+    log order: the latest finished attempt, else the latest failure."""
+    best = max(RANK[k] for k, _ in entries)
+    return [log for k, log in entries if RANK[k] == best][-1]
+
+
+def eval_logs(log_dir: Path) -> list[Path]:
+    return sorted(log_dir.glob("*.eval"))
+
+
+def recover_crashed(log_dir: Path) -> None:
+    """Recover logs left 'started' by a crash (Inspect's sample buffer), and
+    move the crashed originals to crashed/ (kept, not analysed)."""
+    from inspect_ai.log import RecoveryNotAvailable, read_eval_log, recover_eval_log
+
+    for path in eval_logs(log_dir):
+        if path.stem.endswith("-recovered"):
+            continue
+        try:
+            status = read_eval_log(str(path), header_only=True).status
+        except Exception:
+            status = "unreadable"
+        if status == "started":
+            try:
+                recover_eval_log(str(path))
+            except RecoveryNotAvailable:
+                continue  # keep it in place: its flushed samples still count
+            except Exception as error:
+                print("recovery failed", path.name, str(error)[:200])
+                continue
+        elif status != "unreadable":
+            continue
+        (log_dir / "crashed").mkdir(exist_ok=True)
+        path.rename(log_dir / "crashed" / path.name)
+        print("moved crashed log", path.name, status)
+
+
+def attempts(log_dir: Path) -> dict[str, list[tuple[str, str]]]:
+    """Sample id -> [(kind, log name)] over every readable log, in log order."""
+    from inspect_ai.log import read_eval_log, read_eval_log_sample_summaries
+
+    out: dict[str, list[tuple[str, str]]] = {}
+    for path in eval_logs(log_dir):
+        try:
+            status = read_eval_log(str(path), header_only=True).status
+            summaries = read_eval_log_sample_summaries(str(path))
+        except Exception as error:
+            print("unreadable log", path.name, str(error)[:200])
+            continue
+        for s in summaries:
+            out.setdefault(str(s.id), []).append((kind(s.error, status), path.name))
+    return out
+
+
+def lean() -> None:
+    from experiments.adversarial_monitor_aware import budget
+
+    lean_cfg = CONFIG["lean_main"]
+    out = OUT / lean_cfg["dir"]
+    out.mkdir(parents=True, exist_ok=True)
+    os.environ[budget.RUN_DIR_ENV] = str(out)
+    pairs = lean_schedule()
+    ids = [sample_id(*p) for p in pairs]
+    for _ in range(4):
+        usd, cap = budget.spent(out, CONFIG), lean_cfg["tinker_cap"]["usd"]
+        print(f"tinker estimate ${usd:.2f} of ${cap}", flush=True)
+        if (out / budget.CAP_FILE).exists() or usd >= cap:
+            raise SystemExit(3)
+        recover_crashed(out)
+        phase, todo = plan(
+            ids, {i: [k for k, _ in a] for i, a in attempts(out).items()}
+        )
+        print("pass", phase, len(todo), "of", len(ids), flush=True)
+        if phase == "done":
+            return
+        wanted = set(todo)
+        logs = run(
+            [p for p in pairs if sample_id(*p) in wanted],
+            out,
+            name=f"lean_{phase}",
+            metadata={"amendment": 2, "pass": phase},
+        )
+        if (out / budget.CAP_FILE).exists():
+            raise SystemExit(3)
+        if not logs or logs[0].status != "success":
+            # Interrupted (a stop or a signal): the next call resumes.
+            print("pass", phase, "ended", logs[0].status if logs else "cancelled")
+            raise SystemExit(4)
+    raise SystemExit("lean: not done after 4 passes")
+
+
+def progress() -> None:
+    """One status line for vm_run.sh: assignments ended so far and spend."""
+    from experiments.adversarial_monitor_aware import budget
+
+    lean_cfg = CONFIG["lean_main"]
+    out = OUT / lean_cfg["dir"]
+    path = out / budget.PROGRESS
+    ended: dict[str, str | None] = {}
+    if path.exists():
+        for line in path.read_text().splitlines():
+            r = json.loads(line)
+            ended[str(r["id"])] = r["error"]
+    errors = sum(
+        e is not None and kind(e, "success") != "finished" for e in ended.values()
+    )
+    total = len(lean_schedule())
+    usd = budget.spent(out, CONFIG)
+    print(
+        f"progress {len(ended)} of {total} ended ({errors} with errors), "
+        f"tinker estimate ${usd:.2f} of ${lean_cfg['tinker_cap']['usd']}"
+    )
+
+
 # ---------------------------------------------------------------- after a run
 
 
 def samples(log_dir: Path):
+    """One sample per id: every sample of a plain run folder, or, where an id
+    was attempted more than once (resume or retry), the one `pick` chooses."""
     from inspect_ai.log import read_eval_log
 
-    for path in sorted(log_dir.glob("*.eval")):
+    chosen = {i: pick(a) for i, a in attempts(log_dir).items()}
+    for path in eval_logs(log_dir):
+        if path.name not in chosen.values():
+            continue
+        seen = set()
         for sample in read_eval_log(str(path)).samples or []:
-            yield path.name, sample
+            sid = str(sample.id)
+            if chosen.get(sid) == path.name and sid not in seen:
+                seen.add(sid)
+                yield path.name, sample
 
 
 def recheck(log_dir: Path, threads: int) -> None:
@@ -225,6 +410,14 @@ def recheck(log_dir: Path, threads: int) -> None:
     )
     if not canary["passed"]:
         raise SystemExit(f"recheck canary failed: {canary}")
+    # Amendment 2: and a known-bad function must fail.
+    bad = check(
+        "def f(x):\n    return x + 1\n",
+        "def check(candidate):\n    assert candidate(1) == 1\n",
+        "f",
+    )
+    if bad["passed"]:
+        raise SystemExit(f"recheck known-bad canary passed: {bad}")
 
     jobs = []
     for _, sample in samples(log_dir):
@@ -243,6 +436,25 @@ def recheck(log_dir: Path, threads: int) -> None:
 
     with ThreadPoolExecutor(threads) as pool:
         rows = list(pool.map(work, jobs))
+    # Amendment 2: rerun Docker-level timeouts once, two at a time (the pilot's
+    # Amendment 5 retry, done here automatically).
+    by_id = {job[0]: job for job in jobs}
+
+    def retry(row):
+        sample_id, func, meta = by_id[row["id"]]
+        tests = {"unmodified": meta["test"], "original": meta["original_test"]}
+        for key, test in tests.items():
+            if row[key].get("note") == "timeout":
+                row[key] = {**check(func, test, meta["entry_point"]), "retried": True}
+        return row
+
+    timed_out = [
+        r
+        for r in rows
+        if any(r[k].get("note") == "timeout" for k in ("unmodified", "original"))
+    ]
+    with ThreadPoolExecutor(2) as pool:
+        list(pool.map(retry, timed_out))
     (log_dir / "recheck.jsonl").write_text("".join(json.dumps(r) + "\n" for r in rows))
     print(
         "rechecked",
@@ -266,76 +478,119 @@ def usage(sample) -> dict[str, int]:
     return tokens
 
 
-def rows(log_dir: Path) -> list[dict[str, Any]]:
+def row(log, sample, check, task, setup, addition, inrun=True) -> dict[str, Any]:
     from experiments.adversarial_natural_cheats.trajectories import normalize
 
+    score = next(iter((sample.scores or {}).values()), None)
+    meta = (score.metadata if score else None) or {}
+    system = next((m.text for m in sample.messages if m.role == "system"), "")
+    messages = [normalize(m) for m in sample.messages]
+    return {
+        "log": log,
+        "id": sample_id(task, setup),
+        "task": task,
+        "setup": setup,
+        "status": analyze.status(sample.error.message if sample.error else None),
+        "limit": str(sample.limit.type) if sample.limit else None,
+        "paper_pass": bool(meta.get("paper_pass")),
+        "test_modified": meta.get("test_modified"),
+        "inrun_unmodified_pass": meta.get("passes_unmodified_test") if inrun else None,
+        "inrun_original_pass": meta.get("passes_original_test") if inrun else None,
+        "offline_unmodified_pass": check["unmodified"]["passed"] if check else None,
+        "offline_original_pass": check["original"]["passed"] if check else None,
+        "offline_timeouts": sum(
+            check[k].get("note") == "timeout" for k in ("unmodified", "original")
+        )
+        if check
+        else None,
+        "offline_func_missing": sum(
+            MISSING_FUNC in check[k].get("stderr", "")
+            for k in ("unmodified", "original")
+        )
+        if check
+        else None,
+        "submits": sum(
+            c["function"] == "submit"
+            for m in messages
+            if m["role"] == "assistant"
+            for c in m["tool_calls"]
+        ),
+        "messages": len(sample.messages),
+        "system_has_addition": analyze.addition_in(system, addition),
+        "leak": leak.check(messages, CONFIG),
+        **usage(sample),
+    }
+
+
+def rows(log_dir: Path) -> list[dict[str, Any]]:
     path = log_dir / "recheck.jsonl"
     rechecked = (
         {r["id"]: r for r in map(json.loads, path.read_text().splitlines())}
         if path.exists()
         else {}
     )
-    out = []
-    for log, sample in samples(log_dir):
-        score = next(iter((sample.scores or {}).values()), None)
-        meta = (score.metadata if score else None) or {}
-        system = next((m.text for m in sample.messages if m.role == "system"), "")
-        messages = [normalize(m) for m in sample.messages]
-        check = rechecked.get(sample.id)
-        out.append(
-            {
-                "log": log,
-                "id": sample.id,
-                "task": sample.metadata["base_task_id"],
-                "setup": sample.metadata["setup"],
-                "status": analyze.status(
-                    sample.error.message if sample.error else None
-                ),
-                "limit": str(sample.limit.type) if sample.limit else None,
-                "paper_pass": bool(meta.get("paper_pass")),
-                "test_modified": meta.get("test_modified"),
-                "inrun_unmodified_pass": meta.get("passes_unmodified_test"),
-                "inrun_original_pass": meta.get("passes_original_test"),
-                "offline_unmodified_pass": check["unmodified"]["passed"]
-                if check
-                else None,
-                "offline_original_pass": check["original"]["passed"] if check else None,
-                "offline_timeouts": sum(
-                    check[k].get("note") == "timeout"
-                    for k in ("unmodified", "original")
-                )
-                if check
-                else None,
-                "offline_func_missing": sum(
-                    MISSING_FUNC in check[k].get("stderr", "")
-                    for k in ("unmodified", "original")
-                )
-                if check
-                else None,
-                "submits": sum(
-                    c["function"] == "submit"
-                    for m in messages
-                    if m["role"] == "assistant"
-                    for c in m["tool_calls"]
-                ),
-                "messages": len(sample.messages),
-                "system_has_addition": analyze.addition_in(
-                    system, sample.metadata["system_addition"]
-                ),
-                "leak": leak.check(messages, CONFIG),
-                **usage(sample),
-            }
+    return [
+        row(
+            log,
+            sample,
+            rechecked.get(sample.id),
+            sample.metadata["base_task_id"],
+            sample.metadata["setup"],
+            sample.metadata["system_addition"],
         )
-    return out
+        for log, sample in samples(log_dir)
+    ]
+
+
+def natural_rows() -> list[dict[str, Any]]:
+    """Amendment 2: `natural` is the cheating pilot's t_b_conflicting arm (seed
+    0, 21 October). Its in-run nonce fields are False by a known bug (pilot
+    Amendment 3), so they are left out; the pilot's offline recheck is used."""
+    from inspect_ai.log import read_eval_log
+
+    source = CONFIG["lean_main"]["natural_from"]
+    folder = ROOT / source["dir"]
+    rechecked = {
+        r["task_id"]: r
+        for r in map(json.loads, (folder / source["recheck"]).read_text().splitlines())
+    }
+    logs = sorted(folder.glob("*.eval"))
+    if len(logs) != 1:
+        raise SystemExit(f"expected one pilot log in {folder}, found {len(logs)}")
+    return [
+        row(
+            logs[0].name,
+            sample,
+            rechecked.get(sample.id),
+            str(sample.id),
+            "natural",
+            "",
+            inrun=False,
+        )
+        for sample in read_eval_log(str(logs[0])).samples or []
+    ]
 
 
 def report(log_dir: Path) -> None:
+    from experiments.adversarial_monitor_aware import budget
+
     table = rows(log_dir)
+    lean_run = log_dir.name == CONFIG["lean_main"]["dir"]
+    if lean_run:
+        table += natural_rows()
     (log_dir / "runs.jsonl").write_text("".join(json.dumps(r) + "\n" for r in table))
     summary = analyze.summarize(table, CONFIG)
+    new = [r for r in table if r["log"] in {p.name for p in eval_logs(log_dir)}]
     summary["usage"] = analyze.usage_summary(
-        table, CONFIG["usage_prices_usd_per_million"]
+        new, CONFIG["usage_prices_usd_per_million"]
     )
+    if lean_run:
+        summary["natural_source"] = CONFIG["lean_main"]["natural_from"]
+        summary["tinker_estimate_usd_all_passes"] = budget.spent(log_dir, CONFIG)
+        expected = {sample_id(*p) for p in lean_schedule()}
+        summary["assignments_missing"] = sorted(
+            expected - {r["id"] for r in table if r["setup"] != "natural"}
+        )
     (log_dir / "summary.json").write_text(json.dumps(summary, indent=2) + "\n")
     print(json.dumps(summary, indent=2))
 
@@ -347,15 +602,21 @@ def main() -> None:
     full = sub.add_parser("run")
     full.add_argument("--tasks", type=int, required=True, help="prefix of task_order")
     full.add_argument("--out", default="main")
+    sub.add_parser("lean", help="Amendment 2: the 310-run main run, resumable")
+    sub.add_parser("progress", help="one status line for the lean run")
     for name in ("recheck", "report"):
         p = sub.add_parser(name)
         p.add_argument("--out", default="main")
         p.add_argument("--threads", type=int, default=2)
     args = parser.parse_args()
     if args.command == "smoke":
-        run(CONFIG["smoke"]["tasks"], OUT / CONFIG["smoke"]["dir"])
+        run(schedule(CONFIG["smoke"]["tasks"]), OUT / CONFIG["smoke"]["dir"])
     elif args.command == "run":
-        run(CONFIG["task_order"][: args.tasks], OUT / args.out)
+        run(schedule(CONFIG["task_order"][: args.tasks]), OUT / args.out)
+    elif args.command == "lean":
+        lean()
+    elif args.command == "progress":
+        progress()
     elif args.command == "recheck":
         recheck(OUT / args.out, args.threads)
     elif args.command == "report":
