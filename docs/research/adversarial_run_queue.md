@@ -26,7 +26,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Monitor-aware cheating on ImpossibleBench: monitor scoring** ([protocol and behavioural results](../../experiments/adversarial_monitor_aware/README.md)). The lean run is done (25 October, 310 runs plus the pilot's 103 `natural` runs): cheats 5/103 natural, 17/103 with permission, 11/103 with permission and the monitor note, 1/52 and 3/52 in the honest setups. Next: the announced-or-quiet labels (two blind readers), then Gleipnir 4B and 27B on a GPU session and Kimi (needs an OpenRouter top-up).
+1. **Monitor-aware cheating: Kimi K3 scoring** (runner ready and capped; waits for an OpenRouter top-up). Labels and Gleipnir scores are done: every cheat is announced, including with the monitor note, and both Gleipnir models flag 82–100% of cheats at the 1% line. See the [results](../../experiments/adversarial_monitor_aware/README.md).
 2. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
