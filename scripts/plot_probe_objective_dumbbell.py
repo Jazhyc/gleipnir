@@ -10,7 +10,7 @@ from statistics import median
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
-from matplotlib.transforms import blended_transform_factory
+from matplotlib.transforms import blended_transform_factory, offset_copy
 
 from gleipnir.analysis.plotting import save_figure, set_plot_style
 
@@ -261,15 +261,6 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             color=INK_MUTED,
         )
     axis.set_xlabel("OOD pAUROC@20, seed median (higher is better)", fontsize=14)
-    axis.set_title(
-        "Kimi soft targets help probes most when they read the raw\n"
-        "transcript, and help the fine-tuned monitor about as much",
-        fontsize=17,
-        fontweight="bold",
-        loc="left",
-        pad=34,
-    )
-
     target_handles = [
         Line2D(
             [],
@@ -316,6 +307,22 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         columnspacing=1.2,
     )
     figure.tight_layout()
+    # Start the title at the row labels' left edge, not the plot area's.
+    renderer = figure.canvas.get_renderer()
+    label_left = min(
+        label.get_window_extent(renderer).x0 for label in axis.get_yticklabels()
+    )
+    axis.text(
+        axis.transAxes.inverted().transform((label_left, 0))[0],
+        1.0,
+        "Kimi soft targets help probes most when they read the raw\n"
+        "transcript, and help the fine-tuned monitor about as much",
+        transform=offset_copy(axis.transAxes, figure, y=34, units="points"),
+        ha="left",
+        va="bottom",
+        fontsize=17,
+        fontweight="bold",
+    )
     for handles, title, anchor, loc, ncol in (
         (target_handles, "Training target", (0.02, 0.0), "upper left", 3),
         (change_handles, "Change", (0.98, 0.0), "upper right", 2),
