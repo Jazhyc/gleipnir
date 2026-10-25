@@ -337,8 +337,9 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             marker="o",
             linestyle="",
             markersize=10,
-            markerfacecolor=GAIN_COLOR,
-            markeredgecolor="white",
+            # Neutral fill: the plotted soft marker takes the change color.
+            markerfacecolor=HARD_EDGE,
+            markeredgecolor=HARD_EDGE,
             label="Kimi soft targets",
         ),
         Line2D(
