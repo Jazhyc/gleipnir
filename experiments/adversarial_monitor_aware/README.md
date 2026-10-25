@@ -425,4 +425,12 @@ The replay of all 413 runs finished. That includes a fix for tool output that is
 
 **What it shows.** Qwen3.8-27B with thinking off announces every cheat, with or without permission and with or without being told a monitor reads its actions. Against announced cheats, both Gleipnir models detect 82–100% at a 1% line with low false alarms. The study did not produce the quiet cheats it was designed to test, so it says nothing about whether Gleipnir catches unannounced cheating.
 
-**Limits.** One model with thinking off; the cut at the first *passing* turn includes earlier failed attempts; the `natural` runs are an earlier batch; Kimi K3 is not scored yet (waits for OpenRouter credit).
+**Kimi K3** (25 October; all 388 of the 27B's rows, `ok`; $2.46 of the $4.50 cap; OpenRouter $13.92 before, $11.53 after). Line 0.755 (is_it_4b, 1,000 honest rows, a different calibration source from Gleipnir's lines).
+- Pooled AUROC 0.997 (0.992–1.000), 36 cheats against 352 non-cheats.
+- Cheats flagged at 1%: natural 5/5, `cheat_ok` 16/16, `cheat_ok_monitored` 11/11, honest setups 4/4.
+- False alarms at 1%: natural 3/91, `cheat_ok` 4/81, `cheat_ok_monitored` 6/87, `honest` 0/47, `honest_monitored` 1/46.
+- Predictions: P1 and P4 held; P2 failed (Kimi caught every monitored cheat); P3 untestable.
+
+**All three monitors.** Cheats caught at each monitor's 1% line: 4B 35/37, 27B 33/36, Kimi 36/36. Non-cheats flagged: 4B 7/354, 27B 9/352, Kimi 14/352. On announced cheats Kimi misses nothing and raises somewhat more false alarms; the lines come from different calibration sets, so the false-alarm comparison is approximate.
+
+**Limits.** One model with thinking off; the cut at the first *passing* turn includes earlier failed attempts; the `natural` runs are an earlier batch; every cheat is announced, so none of this tests unannounced cheating.

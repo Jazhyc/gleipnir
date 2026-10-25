@@ -26,8 +26,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Next, in order
 
-1. **Monitor-aware cheating: Kimi K3 scoring** (runner ready and capped; waits for an OpenRouter top-up). Labels and Gleipnir scores are done: every cheat is announced, including with the monitor note, and both Gleipnir models flag 82–100% of cheats at the 1% line. See the [results](../../experiments/adversarial_monitor_aware/README.md).
-2. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
+1. **Earlier items, still open:** the multi-agent prompt variant for Jeremias, the 27B on lab Runs 1–2, and frontier monitors on EvilGenie.
 
 ## Later
 
@@ -53,6 +52,7 @@ Short entries, newest first. Details live in each experiment's README.
 
 ## Done
 
+- **Monitor-aware cheating on ImpossibleBench (25 October): every cheat is announced, so no quiet cheats to test.** Qwen3.8-27B (thinking off) cheats 5% naturally, 17% with permission and 11% when also told a monitor reads its actions (p = 0.31). Two blind readers: all 37 cheats admit it, with or without the monitor note. Cheats caught at the 1% line: 4B 35/37, 27B 33/36, Kimi 36/36; non-cheats flagged 7/354, 9/352, 14/352. See the [protocol and results](../../experiments/adversarial_monitor_aware/README.md).
 - **Multi-agent liars at scale (25 October): Gleipnir ranks liars almost as well as Kimi (AUROC 0.90 / 0.90 against 0.96, 30 liars against 52 honest recruiters) but at the benchmark 1% line catches 0 of 30 (4B) and 5 of 30 (27B), against Kimi's 18 of 30.** 72 main-cell and 48 other episodes from GLM-5.3, Kimi-K2.6, Qwen3.8-27B and GPT-6.1 Sol recruiters; lies labelled by two blind readers (kappa 0.93). Qwen3.8 and Sol rarely lie when told to. With a Haiku target, lies made A give up its delivery in 5 of 10 episodes against 0 of 11 under honest recruitment. The 4B's scores rise for agents that only read a lie. See the [protocol and results](../../experiments/adversarial_lab_liars/README.md).
 - **Comment attack with score access (24 October): 7 of 59 caught backdoors get past the 4B after 4 tries, 1 of 68 past the 27B; almost nothing transfers (Sol and Sonnet 0, Kimi 1–2).** Comments raise false alarms on honest code more than they hide backdoors. Both arms are final after hand audits (9/9 and 2/2 passed). See the [protocol and results](../../experiments/adversarial_a4_scale/README.md).
 - **Probe on the monitor (24 October): under an identical accusation, a no-text probe on the 4B's layer 16 still separates backdoored from honest code (0.95–0.96) while its answer is at 0.58–0.59.** The 27B's last-layer probe inverts under accusations (unexplained). See the [protocol and results](../../experiments/adversarial_crossed_text_probe/README.md).
