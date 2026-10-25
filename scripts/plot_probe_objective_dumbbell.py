@@ -10,6 +10,7 @@ from statistics import median
 
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
+from matplotlib.patches import FancyBboxPatch
 from matplotlib.transforms import blended_transform_factory, offset_copy
 
 from gleipnir.analysis.plotting import save_figure, set_plot_style
@@ -49,6 +50,8 @@ HARD_EDGE = "#4A4A4A"
 SEED_COLOR = "#9A9A9A"
 INK_MUTED = "#5A5A5A"
 HEADER_HEIGHT = 1.6
+SECTION_GAP = 0.45
+CARD_COLOR = "#F2F3F5"
 TITLE = (
     "Kimi soft targets help probes most when they read the raw transcript, "
     "and help the fine-tuned monitor about as much"
@@ -143,9 +146,17 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(11.5, 9.6))
     # Two-line section headers get a taller band than data rows.
-    heights = [HEADER_HEIGHT if row.header else 1.0 for row in rows]
-    top = sum(heights)
-    positions = [top - sum(heights[:i]) - h / 2 for i, h in enumerate(heights)]
+    # Sections are separated by a gap so each can sit on its own card.
+    positions = []
+    cursor = 0.0
+    for index, row in enumerate(rows):
+        height = HEADER_HEIGHT if row.header else 1.0
+        if row.header and index:
+            cursor -= SECTION_GAP
+        positions.append(cursor - height / 2)
+        cursor -= height
+    top = -cursor
+    positions = [y + top for y in positions]
     delta_transform = blended_transform_factory(axis.transAxes, axis.transData)
 
     for y, row in zip(positions, rows, strict=True):
@@ -240,12 +251,9 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     for label in axis.get_xticklabels():
         label.set_fontweight("normal")
     axis.grid(axis="y", visible=False)
-    axis.grid(axis="x", color="#ECECEC", linewidth=1)
+    axis.grid(axis="x", color="#DCDCDC", linewidth=1)
     axis.spines["left"].set_visible(False)
     axis.spines["bottom"].set_color("#BBBBBB")
-    for y, row in zip(positions, rows, strict=True):
-        if row.header and y != positions[0]:
-            axis.axhline(y + HEADER_HEIGHT / 2, color="#D0D0D0", linewidth=1)
 
     axis.set_xlim(0.575, 0.84)
     axis.set_ylim(-0.2, top + 0.2)
@@ -311,7 +319,9 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         columnspacing=1.2,
     )
     figure.tight_layout()
-    _add_title(figure, axis, TITLE)
+    left, right = _content_span(figure, axis)
+    _add_section_cards(figure, axis, rows, positions, left, right)
+    _add_title(figure, axis, TITLE, left, right)
     for handles, title, anchor, loc, ncol in (
         (target_handles, "Training target", (0.02, 0.0), "upper left", 3),
         (change_handles, "Change", (0.98, 0.0), "upper right", 2),
@@ -341,8 +351,8 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     return figure
 
 
-def _add_title(figure: plt.Figure, axis: plt.Axes, title: str) -> None:
-    """Place the title across the row labels and the Δ badge column."""
+def _content_span(figure: plt.Figure, axis: plt.Axes) -> tuple[float, float]:
+    """Return the pixel span from the row labels to the Δ badge column."""
     figure.canvas.draw()
     renderer = figure.canvas.get_renderer()
     left = min(label.get_window_extent(renderer).x0 for label in axis.get_yticklabels())
@@ -350,6 +360,47 @@ def _add_title(figure: plt.Figure, axis: plt.Axes, title: str) -> None:
         (text.get_bbox_patch() or text).get_window_extent(renderer).x1
         for text in axis.texts
     )
+    return left, right
+
+
+def _add_section_cards(
+    figure: plt.Figure,
+    axis: plt.Axes,
+    rows: list[Row],
+    positions: list[float],
+    left: float,
+    right: float,
+) -> None:
+    """Shade each section from its header to its last row, labels included."""
+    pad = 10.0
+    x0, x1 = figure.transFigure.inverted().transform(
+        [(left - pad, 0), (right + pad, 0)]
+    )[:, 0]
+    transform = blended_transform_factory(figure.transFigure, axis.transData)
+    starts = [index for index, row in enumerate(rows) if row.header]
+    for start, end in zip(starts, starts[1:] + [len(rows)], strict=True):
+        card_top = positions[start] + HEADER_HEIGHT / 2
+        card_bottom = positions[end - 1] - 0.5
+        axis.add_patch(
+            FancyBboxPatch(
+                (x0, card_bottom),
+                x1 - x0,
+                card_top - card_bottom,
+                boxstyle="round,pad=0,rounding_size=0.004",
+                transform=transform,
+                facecolor=CARD_COLOR,
+                edgecolor="none",
+                clip_on=False,
+                zorder=0,
+            )
+        )
+
+
+def _add_title(
+    figure: plt.Figure, axis: plt.Axes, title: str, left: float, right: float
+) -> None:
+    """Place the title across the row labels and the Δ badge column."""
+    renderer = figure.canvas.get_renderer()
     to_axes = axis.transAxes.inverted()
     artist = axis.text(
         to_axes.transform((left, 0))[0],
