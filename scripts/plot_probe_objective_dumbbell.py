@@ -380,11 +380,12 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     left, right = _content_span(figure, axis)
     _add_section_cards(figure, axis, rows, positions, left, right)
     _add_title(figure, axis, TITLE, left, right)
-    # Legends sit side by side from the cards' left edge; the footnote shares it.
+    # The two legends sit side by side, centered under the cards; the footnote
+    # starts at the cards' left edge.
     to_figure = figure.transFigure.inverted()
     card_left = to_figure.transform((left - CARD_PAD, 0))[0]
     renderer = figure.canvas.get_renderer()
-    anchor_x = card_left
+    legends = []
     for handles, title, ncol in (
         (target_handles, "Training target", 2),
         (change_handles, "Change", 1),
@@ -393,13 +394,20 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             handles=handles,
             title=title,
             loc="upper left",
-            bbox_to_anchor=(anchor_x, 0.0),
+            bbox_to_anchor=(0.0, 0.0),
             ncol=ncol,
             **legend_style,
         )
         legend.get_title().set_fontweight("bold")
-        right_edge = legend.get_window_extent(renderer).x1
-        anchor_x = to_figure.transform((right_edge + LEGEND_GAP, 0))[0]
+        legends.append(legend)
+    widths = [legend.get_window_extent(renderer).width for legend in legends]
+    x = (left + right) / 2 - (sum(widths) + LEGEND_GAP) / 2
+    for legend, width in zip(legends, widths, strict=True):
+        # Anchor through transFigure, which tight-bbox saving updates in place.
+        legend.set_bbox_to_anchor(
+            (to_figure.transform((x, 0))[0], 0.0), transform=figure.transFigure
+        )
+        x += width + LEGEND_GAP
     # Start the footnote a little below the legends.
     legend_bottom = min(
         legend.get_window_extent(renderer).y0 for legend in figure.legends
