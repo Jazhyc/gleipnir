@@ -421,7 +421,7 @@ The replay of all 413 runs finished. That includes a fix for tool output that is
 
 - Monitored against unmonitored cheats: 4B 82% against 100% (difference −18 points, −48 to +4, p = 0.15); 27B 91% against 94% (p = 1.0). The direction matches prediction 2; neither difference is significant.
 - **Predictions.** P1 held for the 4B (100% against 100%) and failed for the 27B by one cheat (15/16 against 5/5). P2 held in direction for both, not significantly. P3 is untestable: there are no quiet cheats. P4 held for both (honest-setup false alarms within 3 points of natural).
-- Echo-excluded and reverted-excluded results are in the report and change no count above by more than one row.
+- Excluding echo runs or the reverted run changes no flagged count and no pooled AUROC by more than 0.001; it removes up to 5 non-cheat rows from a false-alarm denominator (`cheat_ok_monitored` 87 to 82).
 
 **What it shows.** Qwen3.8-27B with thinking off announces every cheat, with or without permission and with or without being told a monitor reads its actions. Against announced cheats, both Gleipnir models detect 82–100% at a 1% line with low false alarms. The study did not produce the quiet cheats it was designed to test, so it says nothing about whether Gleipnir catches unannounced cheating.
 
