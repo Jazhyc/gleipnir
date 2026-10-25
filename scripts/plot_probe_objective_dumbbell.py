@@ -20,7 +20,10 @@ DEFAULT_OUTPUTS = [
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.png",
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.svg",
 ]
-BACKBONES = {"prompted": "Probes, prompted backbone", "ntp": "Probes, NTP backbone"}
+BACKBONES = {
+    "prompted": "Probes, prompted backbone (5 seeds)",
+    "ntp": "Probes, NTP backbone (5 seeds)",
+}
 # Mean pooling and last-token probes sit near the floor on OOD (NTP mean_linear
 # 0.20, last token 0.21) and would stretch the axis; the README reports them.
 FAMILIES = {
@@ -37,8 +40,11 @@ LORA_SEEDS = {"hard": [0.7458, 0.7131, 0.6902], "soft": [0.7869, 0.8125, 0.7768]
 GLEIPNIR_4B_OOD = 0.804
 ZERO_SHOT_OOD = 0.6175
 
-GAIN_COLOR = "#0072B2"
-LOSS_COLOR = "#D55E00"
+# Green/red separated in lightness so the pair stays distinct under CVD.
+GAIN_COLOR = "#176D35"
+LOSS_COLOR = "#EE6A50"
+GAIN_TINT = "#DCEFE2"
+LOSS_TINT = "#FCE1DA"
 HARD_EDGE = "#4A4A4A"
 SEED_COLOR = "#9A9A9A"
 INK_MUTED = "#5A5A5A"
@@ -53,6 +59,9 @@ class Row:
     soft_seeds: tuple[float, ...] = ()
     header: bool = False
     emphasis: bool = False
+    # Soft-over-hard wins among same-seed pairs; empty when the cells differ
+    # in architecture, so seed indices do not pair.
+    wins: str = ""
 
     @property
     def delta(self) -> float:
@@ -66,14 +75,26 @@ def _seed_scores(cell: dict) -> tuple[float, ...]:
     )
 
 
+def _paired_wins(hard: tuple[float, ...], soft: tuple[float, ...]) -> str:
+    wins = sum(s > h for h, s in zip(hard, soft, strict=True))
+    return f"{wins}/{len(hard)}"
+
+
 def _row(label: str, hard: dict, soft: dict, *, emphasis: bool = False) -> Row:
+    hard_seeds, soft_seeds = _seed_scores(hard), _seed_scores(soft)
+    wins = ""
+    if hard["architecture"].split("_l1")[0] == soft["architecture"].split("_l1")[0]:
+        wins = _paired_wins(hard_seeds, soft_seeds)
+        if hard["architecture"] != soft["architecture"]:
+            wins += "\u2020"  # AlphaEvolve cells with different L1 penalties
     return Row(
         label=label,
         hard=hard["ood_seed_median_pauroc_at_20"],
         soft=soft["ood_seed_median_pauroc_at_20"],
-        hard_seeds=_seed_scores(hard),
-        soft_seeds=_seed_scores(soft),
+        hard_seeds=hard_seeds,
+        soft_seeds=soft_seeds,
         emphasis=emphasis,
+        wins=wins,
     )
 
 
@@ -106,6 +127,7 @@ def load_rows(results_dir: Path) -> list[Row]:
             hard_seeds=tuple(LORA_SEEDS["hard"]),
             soft_seeds=tuple(LORA_SEEDS["soft"]),
             emphasis=True,
+            wins=_paired_wins(tuple(LORA_SEEDS["hard"]), tuple(LORA_SEEDS["soft"])),
         )
     )
     return rows
@@ -168,19 +190,25 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         axis.text(
             1.015,
             y,
-            f"{row.delta:+.3f}".replace("-", "\u2212"),
+            f"{row.delta:+.3f}".replace("-", "\u2212")
+            + (f" \u00b7 {row.wins}" if row.wins else ""),
             transform=delta_transform,
             va="center",
             ha="left",
             fontsize=13,
             color="#222222",
             fontweight="bold" if row.emphasis else "normal",
+            bbox=dict(
+                boxstyle="round,pad=0.3",
+                facecolor=GAIN_TINT if row.delta >= 0 else LOSS_TINT,
+                edgecolor="none",
+            ),
         )
 
     axis.text(
         1.015,
         positions[0],
-        "Δ soft − hard",
+        "Δ soft − hard · wins",
         transform=delta_transform,
         va="center",
         ha="left",
@@ -296,6 +324,19 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             **legend_style,
         )
         legend.get_title().set_fontweight("bold")
+    figure.text(
+        0.02,
+        -0.105,
+        "Wins: seeds where the soft run beats the hard run started from the "
+        "same initialization. Selected rows pair\ndifferent architectures, so "
+        "seeds do not pair. \u2020 Hard and soft AlphaEvolve candidates use "
+        "different L1 penalties.",
+        ha="left",
+        va="top",
+        fontsize=11,
+        color=INK_MUTED,
+        fontweight="normal",
+    )
     return figure
 
 
