@@ -448,7 +448,8 @@ def main() -> None:
     args = parse_args()
     rows = load_rows(args.results_dir)
     for output_path in args.output or DEFAULT_OUTPUTS:
-        output = save_figure(plot_dumbbell(rows), output_path)
+        # Extra padding keeps a white margin beside the full-width cards.
+        output = save_figure(plot_dumbbell(rows), output_path, pad_inches=0.4)
         print(f"Wrote {output}")
 
 
