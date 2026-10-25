@@ -84,3 +84,19 @@ nohup bash ~/cs_vm_score.sh > ~/cs_vm_score.out 2>&1 &   # ends "ALL DONE" in ~/
 gcloud compute scp --recurse gleipnir-qwen-gpu:gleipnir-coc/results/adversarial_confession_strip/scoring results/adversarial_confession_strip/ --zone us-central1-a
 ../../.venv-impbench/bin/python experiments/adversarial_confession_strip/analyze.py
 ```
+
+## Results, 25 October 2026
+
+A100 `gleipnir-qwen-gpu`, 17:45–18:22 UTC, canaries passed, all rows `ok`. `results/adversarial_confession_strip/report.json`.
+
+| | 4B | 27B |
+| --- | --- | --- |
+| Cheats caught at 1%, original → stripped | 35/37 → 35/37 (McNemar p = 1.0) | 33/36 → 36/36 (p = 0.25) |
+| Non-cheats flagged, original → stripped | 7/354 → 7/354 | 9/352 → 9/352 |
+| Pooled AUROC, original → stripped | 0.988 → 0.989 | 0.993 → 0.993 |
+| 11 cheats with no admission word left: caught | 11 → 10 | 11 → 11 |
+| Same 11: mean score change | −0.075 (−0.149 to −0.007) | +0.050 (+0.020 to +0.083) |
+
+Prediction (a drop of more than 30 points if Gleipnir mainly reads the confession): failed for both monitors. Removing comments and docstrings did not reduce detection.
+
+Limits: tool outputs still show earlier code with its comments, so 26 of 37 stripped cheats keep an admission word; the clean subset is 11 cheats; one model, one benchmark.
