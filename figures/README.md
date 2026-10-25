@@ -212,7 +212,7 @@ PYTHONPATH=src .venv/bin/python scripts/plot_sleightbench_results.py
 `probe_objective_ood_dumbbell.png`/`.svg` compare hard-label and Kimi
 soft-target training on the frozen OOD suite (source-macro pAUROC@20, seed
 median, individual seeds as small dots). Each Δ badge is shaded by sign and
-counts same-seed pairs where soft wins; ID-rule selections pair different
+counts same-seed pairs where soft wins; validation-set selections pair different
 architectures and carry no count. Rows are the frozen ID-rule selection
 and each probe family's ID-best candidate on the prompted and NTP backbones
 (`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the fine-tuned

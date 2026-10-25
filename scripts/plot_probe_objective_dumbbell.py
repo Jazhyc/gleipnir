@@ -21,18 +21,18 @@ DEFAULT_OUTPUTS = [
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.svg",
 ]
 BACKBONES = {
-    "prompted": "Probes, prompted backbone (5 seeds)",
-    "ntp": "Probes, NTP backbone (5 seeds)",
+    "prompted": "Probe on frozen 4B, monitor prompt (5 seeds)",
+    "ntp": "Probe on frozen 4B, raw transcript (5 seeds)",
 }
 # Mean pooling and last-token probes sit near the floor on OOD (NTP mean_linear
 # 0.20, last token 0.21) and would stretch the axis; the README reports them.
 FAMILIES = {
     "attention": "Attention",
-    "rolling_w256": "Rolling attention, w=256",
-    "rolling_w64": "Rolling attention, w=64",
-    "rolling_w10": "Rolling attention, w=10",
+    "rolling_w256": "Rolling attention (window 256)",
+    "rolling_w64": "Rolling attention (window 64)",
+    "rolling_w10": "Rolling attention (window 10)",
     "multimax": "MultiMax",
-    "alphaevolve": "AlphaEvolve",
+    "alphaevolve": "AlphaEvolve-discovered probe",
 }
 # Matched 4B LoRA seeds 0-2, OOD macro pAUROC@20, from the result table in
 # experiments/hard_label_seeds/README.md (artifacts span several run dirs).
@@ -80,13 +80,13 @@ def _paired_wins(hard: tuple[float, ...], soft: tuple[float, ...]) -> str:
     return f"{wins}/{len(hard)}"
 
 
-def _row(label: str, hard: dict, soft: dict, *, emphasis: bool = False) -> Row:
+def _row(
+    label: str, hard: dict, soft: dict, *, paired: bool = True, emphasis: bool = False
+) -> Row:
     hard_seeds, soft_seeds = _seed_scores(hard), _seed_scores(soft)
-    wins = ""
-    if hard["architecture"].split("_l1")[0] == soft["architecture"].split("_l1")[0]:
-        wins = _paired_wins(hard_seeds, soft_seeds)
-        if hard["architecture"] != soft["architecture"]:
-            wins += "\u2020"  # AlphaEvolve cells with different L1 penalties
+    # Family rows pair seeds even where each objective picked its own epoch or
+    # AlphaEvolve penalty; the selected cells are different architectures.
+    wins = _paired_wins(hard_seeds, soft_seeds) if paired else ""
     return Row(
         label=label,
         hard=hard["ood_seed_median_pauroc_at_20"],
@@ -108,9 +108,10 @@ def load_rows(results_dir: Path) -> list[Row]:
         rows.append(Row(title, header=True))
         rows.append(
             _row(
-                "Selected by ID rule",
+                "Selected using validation set",
                 hard["selected"],
                 soft["selected"],
+                paired=False,
                 emphasis=True,
             )
         )
@@ -118,10 +119,10 @@ def load_rows(results_dir: Path) -> list[Row]:
             _row(label, hard["families"][family], soft["families"][family])
             for family, label in FAMILIES.items()
         )
-    rows.append(Row("LoRA fine-tune (4B)", header=True))
+    rows.append(Row("Fine-tuned 4B monitor (LoRA, 3 seeds)", header=True))
     rows.append(
         Row(
-            "Gleipnir 4B recipe, 3 seeds",
+            "Gleipnir 4B recipe",
             hard=median(LORA_SEEDS["hard"]),
             soft=median(LORA_SEEDS["soft"]),
             hard_seeds=tuple(LORA_SEEDS["hard"]),
@@ -255,10 +256,10 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
             fontsize=11.5,
             color=INK_MUTED,
         )
-    axis.set_xlabel("OOD pAUROC@20 (source macro, seed median)", fontsize=14)
+    axis.set_xlabel("OOD pAUROC@20, seed median (higher is better)", fontsize=14)
     axis.set_title(
-        "Kimi soft targets lift every NTP probe and the LoRA monitor;\n"
-        "prompted probes barely move",
+        "Kimi soft targets help probes most when they read the raw\n"
+        "transcript, and help the fine-tuned monitor about as much",
         fontsize=17,
         fontweight="bold",
         loc="left",
@@ -328,9 +329,9 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         0.02,
         -0.105,
         "Wins: seeds where the soft run beats the hard run started from the "
-        "same initialization. Selected rows pair\ndifferent architectures, so "
-        "seeds do not pair. \u2020 Hard and soft AlphaEvolve candidates use "
-        "different L1 penalties.",
+        "same initialization. Each objective uses its own\nvalidation-best "
+        "training length (and, for AlphaEvolve, penalty strength). Selected "
+        "rows compare different probe types, so seeds do not pair.",
         ha="left",
         va="top",
         fontsize=11,
