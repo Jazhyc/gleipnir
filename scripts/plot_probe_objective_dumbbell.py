@@ -49,6 +49,10 @@ HARD_EDGE = "#4A4A4A"
 SEED_COLOR = "#9A9A9A"
 INK_MUTED = "#5A5A5A"
 HEADER_HEIGHT = 1.6
+TITLE = (
+    "Kimi soft targets help probes most when they read the raw transcript, "
+    "and help the fine-tuned monitor about as much"
+)
 
 
 @dataclass(frozen=True)
@@ -307,22 +311,7 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         columnspacing=1.2,
     )
     figure.tight_layout()
-    # Start the title at the row labels' left edge, not the plot area's.
-    renderer = figure.canvas.get_renderer()
-    label_left = min(
-        label.get_window_extent(renderer).x0 for label in axis.get_yticklabels()
-    )
-    axis.text(
-        axis.transAxes.inverted().transform((label_left, 0))[0],
-        1.0,
-        "Kimi soft targets help probes most when they read the raw\n"
-        "transcript, and help the fine-tuned monitor about as much",
-        transform=offset_copy(axis.transAxes, figure, y=34, units="points"),
-        ha="left",
-        va="bottom",
-        fontsize=17,
-        fontweight="bold",
-    )
+    _add_title(figure, axis, TITLE)
     for handles, title, anchor, loc, ncol in (
         (target_handles, "Training target", (0.02, 0.0), "upper left", 3),
         (change_handles, "Change", (0.98, 0.0), "upper right", 2),
@@ -350,6 +339,40 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         fontweight="normal",
     )
     return figure
+
+
+def _add_title(figure: plt.Figure, axis: plt.Axes, title: str) -> None:
+    """Place the title across the row labels and the Δ badge column."""
+    figure.canvas.draw()
+    renderer = figure.canvas.get_renderer()
+    left = min(label.get_window_extent(renderer).x0 for label in axis.get_yticklabels())
+    right = max(
+        (text.get_bbox_patch() or text).get_window_extent(renderer).x1
+        for text in axis.texts
+    )
+    to_axes = axis.transAxes.inverted()
+    artist = axis.text(
+        to_axes.transform((left, 0))[0],
+        1.0,
+        "",
+        transform=offset_copy(axis.transAxes, figure, y=34, units="points"),
+        ha="left",
+        va="bottom",
+        fontsize=17,
+        fontweight="bold",
+    )
+    # Greedy word wrap to the measured width of the labels-to-badges span.
+    lines: list[str] = []
+    for word in title.split():
+        candidate = f"{lines[-1]} {word}" if lines else word
+        artist.set_text(candidate)
+        if lines and artist.get_window_extent(renderer).width > right - left:
+            lines.append(word)
+        elif lines:
+            lines[-1] = candidate
+        else:
+            lines.append(word)
+    artist.set_text("\n".join(lines))
 
 
 def parse_args() -> argparse.Namespace:
