@@ -233,6 +233,8 @@ class Box:
                 input=stdin if stdin is not None else "",
                 capture_output=True,
                 text=True,
+                encoding="utf-8",
+                errors="replace",  # tool output can be any bytes
                 timeout=timeout,
             )
         except subprocess.TimeoutExpired:
