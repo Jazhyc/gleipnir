@@ -8,6 +8,15 @@ the decision-token residual saved for every row at monitor-aware's layers:
     $PY experiments/adversarial_quiet_cheats/score.py score --monitor 4b
     $PY experiments/adversarial_quiet_cheats/score.py score --monitor 27b
 
+Amendment 2 adds, for the 4B only, a raw-transcript capture pass (`raw`): the
+rendered trajectory alone, with no monitor prompt and no chat template, one
+forward pass per row with no generation, once with the v0.3 adapter and once
+with it disabled (the frozen base). It saves the last-token residual and the
+mean over all tokens at the 4B's layers in FP32. The prompted pass is
+unchanged:
+
+    $PY experiments/adversarial_quiet_cheats/score.py raw --monitor 4b
+
 Kimi K3 through OpenRouter (on the Mac), frozen order, capped at $1.00 and
 started only with a balance of at least $2.00. The 5 drift originals run
 first; if any differs from monitor-aware's Kimi score by more than 0.05, it
@@ -22,6 +31,7 @@ freeze); nothing scores before that.
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import threading
 import time
@@ -38,10 +48,12 @@ from experiments.adversarial_quiet_cheats.common import (
     read_jsonl,
     sha,
 )
+from gleipnir.adversarial.contract import MAX_TOKENS, split_prompt
 
 SCORING = OUT / "scoring"
 GPU = MA_CONFIG["scoring"]["gpu_monitors"]
 KIMI = ARM1["kimi"]
+RAW = ARM1["raw_capture"]
 
 
 def frozen(name: str) -> str:
@@ -133,6 +145,7 @@ def score(args: argparse.Namespace) -> None:
                 "input_sha256": ARM1["rows_sha256"][f"rows_{spec['prompt']}"],
                 "commit": git_commit(),
                 "layers": spec["layers"],
+                "capture": "prompted",
                 "activation": "decision-token residual, block output, float32",
                 "scorer": scorer.identity(),
             },
@@ -146,7 +159,7 @@ def score(args: argparse.Namespace) -> None:
     started, tokens = time.time(), 0
     with path.open("a") as handle:
         for n, row in enumerate(todo, 1):
-            record = record_for(row)
+            record = {**record_for(row), "capture": "prompted"}
             try:
                 with Capture(
                     scorer.model, spec["layers"], spec["hidden_size"]
@@ -165,6 +178,192 @@ def score(args: argparse.Namespace) -> None:
                 print(f"{args.monitor}: {n}/{len(todo)}, {rate:,.0f} tok/s", flush=True)
     final = run_canaries(scorer, spec, args.monitor)
     gpu_receipt(final["passed"], "after", args.monitor, final)
+    print(f"closing canary passed={final['passed']}")
+    if not final["passed"]:
+        raise SystemExit(1)
+
+
+# ---------------------------------------------------------------- raw capture
+
+
+def raw_text(prompt: str) -> str:
+    """The raw-capture input: the rendered trajectory alone (Amendment 2).
+
+    The row's prompt is `instruction + OPEN + trajectory + CLOSE`; this returns
+    the trajectory bytes between the tags, without the tags, the instruction,
+    the chat template or `Prediction:`.
+    """
+    return split_prompt(prompt).trajectory
+
+
+def raw_format_sha256() -> str:
+    """SHA256 of `raw_text`'s source, frozen in config (`raw_capture`)."""
+    return sha(inspect.getsource(raw_text))
+
+
+def raw_ids(tokenizer: Any, prompt: str) -> list[int]:
+    """Token ids of `raw_text(prompt)`. Qwen3.5's tokenizer adds no BOS or other
+    special token to plain text; this is checked, so the ids are the text's."""
+    text = raw_text(prompt)
+    ids = tokenizer.encode(text, add_special_tokens=False)
+    if tokenizer.encode(text, add_special_tokens=True) != ids:
+        raise ValueError("tokenizer adds special tokens to raw text")
+    if set(ids) & set(tokenizer.all_special_ids):
+        raise ValueError("raw text tokenizes to a special token")
+    if len(ids) > MAX_TOKENS:
+        raise ValueError(f"raw input {len(ids)} tokens, limit {MAX_TOKENS}")
+    return ids
+
+
+class RawCapture:
+    """Forward hooks keeping the last-token residual and the mean over all
+    tokens at each layer (block output, FP32). They change no output."""
+
+    def __init__(self, model: Any, layers: list[int], hidden: int):
+        from experiments.adversarial_lab_liars.run import decoder_blocks
+
+        self.layers, self.hidden = layers, hidden
+        self.blocks = decoder_blocks(model, max(layers))
+        self.values: dict[str, dict[int, Any]] = {"last": {}, "mean": {}}
+        self.handles: list = []
+
+    def hook(self, layer: int):
+        def save(_module, _inputs, output):
+            state = output[0] if isinstance(output, tuple) else output
+            if (
+                state.dim() != 3
+                or state.shape[0] != 1
+                or state.shape[-1] != self.hidden
+            ):
+                raise ValueError("unexpected residual shape")
+            if layer in self.values["last"]:
+                raise ValueError("decoder block called twice")
+            hidden = state[0].float()
+            self.values["last"][layer] = hidden[-1].cpu().numpy().copy()
+            self.values["mean"][layer] = hidden.mean(dim=0).cpu().numpy().copy()
+
+        return save
+
+    def __enter__(self):
+        self.values = {"last": {}, "mean": {}}
+        for layer in self.layers:
+            self.handles.append(
+                self.blocks[layer - 1].register_forward_hook(self.hook(layer))
+            )
+        return self
+
+    def __exit__(self, *_):
+        for handle in self.handles:
+            handle.remove()
+        self.handles = []
+
+    def arrays(self) -> dict[str, Any]:
+        """{"last": (layers, hidden), "mean": (layers, hidden)}, float32; the
+        same shape as the prompted pass's decision-token array."""
+        import numpy as np
+
+        out = {}
+        for pool, values in self.values.items():
+            if sorted(values) != sorted(self.layers):
+                raise ValueError("missing residual capture")
+            out[pool] = np.stack([values[layer] for layer in self.layers])
+            if not np.isfinite(out[pool]).all():
+                raise ValueError("nonfinite activation")
+        return out
+
+
+def raw_forward(scorer: Any, ids: list[int], adapter: bool) -> None:
+    """One forward pass on raw ids, no generation (logits are not used)."""
+    torch = scorer.torch
+    with torch.inference_mode():
+        inputs = torch.tensor([ids], device=scorer.device)
+        if adapter or scorer.spec.adapter is None:
+            scorer.model(input_ids=inputs, logits_to_keep=1)
+        else:
+            with scorer.model.disable_adapter():
+                scorer.model(input_ids=inputs, logits_to_keep=1)
+
+
+def raw(args: argparse.Namespace) -> None:
+    import numpy as np
+
+    from experiments.adversarial_monitor_aware.score import (
+        git_commit,
+        load_scorer,
+        run_canaries,
+    )
+
+    if args.monitor not in RAW["monitors"]:
+        raise SystemExit(f"raw capture is for {RAW['monitors']} only")
+    if raw_format_sha256() != RAW["format_sha256"]:
+        raise SystemExit("raw_text differs from its frozen SHA256")
+    scorer, spec = load_scorer(args.monitor, args.device)
+    check = run_canaries(scorer, spec, args.monitor)
+    gpu_receipt(check["passed"], "raw_before", args.monitor, check)
+    if not check["passed"]:
+        raise SystemExit("canaries failed: not capturing")
+    rows = scorable(load_rows(spec["prompt"]), args.monitor)
+    directory = SCORING / args.monitor / "raw"
+    acts = directory / "activations"
+    acts.mkdir(parents=True, exist_ok=True)
+    (directory / "identity.json").write_text(
+        json.dumps(
+            {
+                "monitor": args.monitor,
+                "capture": "raw",
+                "rows": len(rows),
+                "weights": RAW["weights"],
+                "input": RAW["input"],
+                "format_function": "score.raw_text",
+                "format_sha256": raw_format_sha256(),
+                "input_sha256": ARM1["rows_sha256"][f"rows_{spec['prompt']}"],
+                "commit": git_commit(),
+                "layers": spec["layers"],
+                "activation": RAW["activation"],
+                "scorer": scorer.identity(),
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    path = directory / "captures.jsonl"
+    done = {(r["id"], r["weights"]) for r in read_jsonl(path)}
+    started, tokens = time.time(), 0
+    with path.open("a") as handle:
+        for weights in RAW["weights"]:
+            todo = [r for r in rows if (r["id"], weights) not in done]
+            for n, row in enumerate(todo, 1):
+                ids = raw_ids(scorer.tokenizer, row["prompt"])
+                with RawCapture(
+                    scorer.model, spec["layers"], spec["hidden_size"]
+                ) as capture:
+                    raw_forward(scorer, ids, adapter=weights == "adapter")
+                arrays = capture.arrays()
+                file = acts / f"{sha(row['id'])[:24]}.{weights}.npz"
+                np.savez(file, **arrays)
+                record = {
+                    **record_for(row),
+                    "capture": "raw",
+                    "weights": weights,
+                    "status": "ok",
+                    "tokens": len(ids),
+                    "input_sha256": sha(raw_text(row["prompt"])),
+                    "token_ids_sha256": sha(json.dumps(ids)),
+                    "activation_file": file.name,
+                    "activation_sha256": file_sha256(file),
+                    "shape": list(arrays["last"].shape),
+                }
+                tokens += len(ids)
+                handle.write(json.dumps(record) + "\n")
+                handle.flush()
+                if n % 25 == 0 or n == len(todo):
+                    rate = tokens / max(time.time() - started, 1e-9)
+                    print(
+                        f"raw {weights}: {n}/{len(todo)}, {rate:,.0f} tok/s",
+                        flush=True,
+                    )
+    final = run_canaries(scorer, spec, args.monitor)
+    gpu_receipt(final["passed"], "raw_after", args.monitor, final)
     print(f"closing canary passed={final['passed']}")
     if not final["passed"]:
         raise SystemExit(1)
@@ -297,12 +496,12 @@ def main() -> None:
     commands = parser.add_subparsers(dest="command", required=True)
     k = commands.add_parser("kimi")
     k.add_argument("--limit", type=int)
-    for name in ("canary", "score"):
+    for name in ("canary", "score", "raw"):
         c = commands.add_parser(name)
         c.add_argument("--monitor", required=True, choices=sorted(GPU))
         c.add_argument("--device", default="cuda")
     args = parser.parse_args()
-    {"kimi": kimi, "canary": canary, "score": score}[args.command](args)
+    {"kimi": kimi, "canary": canary, "score": score, "raw": raw}[args.command](args)
 
 
 if __name__ == "__main__":

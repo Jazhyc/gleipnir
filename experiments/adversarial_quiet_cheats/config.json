@@ -197,9 +197,9 @@
         "27b"
       ],
       "rows": "quiet, original, strip, strip_original",
-      "activations": "decision-token residual at monitor-aware's layers for every row",
+      "activations": "decision-token residual at monitor-aware's layers for every row (capture prompted); 4B also raw (Amendment 2, raw_capture)",
       "vm": "gleipnir-qwen-gpu, ~/gleipnir-coc",
-      "stop_hours": 1.0
+      "stop_hours": 1.25
     },
     "lines_expected": {
       "4b": {
@@ -220,6 +220,22 @@
       "bootstrap_seed": 0,
       "bootstrap_unit": "task",
       "script": "analyze.py"
+    },
+    "raw_capture": {
+      "amendment": 2,
+      "monitors": [
+        "4b"
+      ],
+      "input": "the row's rendered trajectory alone (score.raw_text: the text between '\\n<agent_trajectory>\\n' and '\\n</agent_trajectory>\\n' of the student-prompt row, tags excluded); no monitor instruction, no chat template, no 'Prediction:'; tokenized with add_special_tokens=False (Qwen3.5-4B adds no BOS; checked equal to add_special_tokens=True and free of special ids)",
+      "format_sha256": "99cfd0d64954e35aa807addc026ac0f5a7f9944f61c7bb4ea3d20650f81ba20a",
+      "weights": [
+        "adapter",
+        "base"
+      ],
+      "weights_note": "adapter: Gleipnir 4B v0.3 (same weights as the prompted pass, primary); base: adapter disabled, the frozen Qwen3.5-4B (Jeremias's setting, secondary)",
+      "activation": "block output after blocks 8/16/24/32: last-token residual and mean over all tokens, float32 (.npz keys last, mean; each layers x 2560)",
+      "rows": "every 4B-scorable arm-1 row (quiet, original, strip, strip_original)",
+      "order": "after the prompted 4B pass in vm_score.sh, before the 27B"
     },
     "rows_sha256": null
   },
@@ -329,13 +345,13 @@
     "min_balance_rule": "arm cap + 1.00 USD before the first call",
     "luna_openrouter_usd": 0,
     "gpu_a100_minutes_estimate": {
-      "arm1": 35,
+      "arm1": 48,
       "arm2_full": 85,
       "arm2_reduced": 45,
       "arm3": 90
     },
     "gpu_stop_hours": {
-      "arm1": 1.0,
+      "arm1": 1.25,
       "arm2_full": 2.0,
       "arm2_reduced": 1.25,
       "arm3": 2.25

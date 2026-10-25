@@ -3,13 +3,15 @@
 # staged bundle, unpack arm 1's rows, check FLA and the frozen inputs, run this
 # study's tests, then score with Gleipnir 4B v0.3 and 27B (monitor-aware's
 # canaries before and after each; decision-token activations saved for every
-# row; resumable). Needs no secrets. Copy the staged files to ~ first:
+# row; resumable). Right after the prompted 4B pass, the raw-transcript capture
+# (Amendment 2: no monitor prompt, adapter and base, one forward pass per row).
+# Needs no secrets. Copy the staged files to ~ first:
 #
 #   bash ~/vm_score.sh            # 4b then 27b
 #   bash ~/vm_score.sh 27b        # one monitor
 #
 # Status: ~/qc_score_status.log ("ALL DONE" or "FAILED <step>"); full output
-# in ~/gleipnir-coc/logs/gcp/adversarial_quiet_cheats/. Stop at 1 hour.
+# in ~/gleipnir-coc/logs/gcp/adversarial_quiet_cheats/. Stop at 1.25 hours.
 set -euo pipefail
 status=~/qc_score_status.log
 fail() { echo "$(date -u +%FT%TZ) FAILED $1" >> "$status"; exit 1; }
@@ -76,6 +78,11 @@ PYEOF
     step="score_$m"
     $PY experiments/adversarial_quiet_cheats/score.py score --monitor "$m" 2>&1 | tee "$logs/score_$m.log"
     note "scored $m"
+    if [[ $m == 4b ]]; then
+        step=raw_4b
+        $PY experiments/adversarial_quiet_cheats/score.py raw --monitor 4b 2>&1 | tee "$logs/raw_4b.log"
+        note "raw capture 4b"
+    fi
 done
 step=done
 note "ALL DONE"
