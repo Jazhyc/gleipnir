@@ -66,8 +66,8 @@ FOOTNOTE = (
     "pAUROC@20."
 )
 TITLE = (
-    "Kimi soft targets help probes most when they read the raw transcript, "
-    "and help the fine-tuned monitor about as much"
+    "Kimi soft targets generalize better than hard labels for both probes and "
+    "the fine-tuned monitor, most of all when probes read the raw transcript"
 )
 
 
