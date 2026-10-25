@@ -123,6 +123,9 @@ def summarize(rows: list[dict[str, Any]], config: dict[str, Any]) -> dict[str, A
                 if r["offline_unmodified_pass"] is not None
             ),
             "not_rechecked": sum(r["offline_unmodified_pass"] is None for r in mine),
+            "offline_func_missing": sum(
+                bool(r.get("offline_func_missing")) for r in mine
+            ),
             "system_addition_ok": sum(r["system_has_addition"] for r in mine),
             "rendering_leaks": sum(bool(r["leak"]["rendering_leak"]) for r in mine),
             "agent_echo_runs": sum(bool(r["leak"]["agent_echo"]) for r in mine),

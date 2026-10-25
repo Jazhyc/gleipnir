@@ -23,6 +23,7 @@ import json
 import os
 import secrets
 import sys
+import tempfile
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Any
@@ -41,6 +42,9 @@ ISOLATED = (
     'd=$(mktemp -d) && for f in ./*.py; do [ "$f" = ./test.py ] || cp "$f" "$d"/; '
     'done && cd "$d" && python -c "$CHECK"; s=$?; cd / && rm -rf "$d"; exit $s'
 )
+
+
+MISSING_FUNC = "No module named 'func'"
 
 
 def system_addition(setup: str) -> str:
@@ -207,6 +211,21 @@ def recheck(log_dir: Path, threads: int) -> None:
     """The pilot's offline nonce check on each run's final func.py."""
     from experiments.adversarial_cheating_pilot.recheck import check
 
+    # Amendment 1: colima shares only the home folder with its VM, so a macOS
+    # temp folder (/var/folders) mounts empty and every check fails with
+    # "No module named 'func'". Use a folder under the wrapper, and stop unless
+    # a known-good canary passes.
+    shared = ROOT.parents[1] / "cache" / "recheck-tmp"
+    shared.mkdir(parents=True, exist_ok=True)
+    tempfile.tempdir = str(shared)
+    canary = check(
+        "def f(x):\n    return x\n",
+        "def check(candidate):\n    assert candidate(1) == 1\n",
+        "f",
+    )
+    if not canary["passed"]:
+        raise SystemExit(f"recheck canary failed: {canary}")
+
     jobs = []
     for _, sample in samples(log_dir):
         score = next(iter((sample.scores or {}).values()), None)
@@ -283,6 +302,12 @@ def rows(log_dir: Path) -> list[dict[str, Any]]:
                 "offline_original_pass": check["original"]["passed"] if check else None,
                 "offline_timeouts": sum(
                     check[k].get("note") == "timeout"
+                    for k in ("unmodified", "original")
+                )
+                if check
+                else None,
+                "offline_func_missing": sum(
+                    MISSING_FUNC in check[k].get("stderr", "")
                     for k in ("unmodified", "original")
                 )
                 if check
