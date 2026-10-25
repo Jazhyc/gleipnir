@@ -216,9 +216,11 @@ candidate on the prompted ("monitor prompt") and NTP ("raw transcript")
 backbones (`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the
 fine-tuned reference. Stars mark each objective's frozen ID-rule selection,
 which is always one of the family rows. Each Δ badge is shaded by sign, next to
-the count of same-seed pairs where soft wins. Mean-pooled and last-token probes sit near the floor and are left
-out; the [probe study](../experiments/probe_generalization/README.md) reports
-them, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
+the count of same-seed pairs where soft wins. Mean-pooled probes (near the
+floor) and the single-fit last-token probes (no seeds to pair) are left off the
+plot; the footnote gives their scores, the
+[probe study](../experiments/probe_generalization/README.md) reports them in
+full, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
 supply the hard-coded LoRA values. The probe inputs are ignored artifacts.
 Regenerate with:
 

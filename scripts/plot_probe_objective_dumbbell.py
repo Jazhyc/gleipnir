@@ -25,8 +25,9 @@ BACKBONES = {
     "prompted": "Probe on frozen 4B,\nmonitor prompt (5 seeds)",
     "ntp": "Probe on frozen 4B,\nraw transcript (5 seeds)",
 }
-# Mean pooling and last-token probes sit near the floor on OOD (NTP mean_linear
-# 0.20, last token 0.21) and would stretch the axis; the README reports them.
+# Mean-pooled probes sit near the floor on OOD and would stretch the axis;
+# last-token probes are single deterministic fits without seeds. The footnote
+# reports both (see omitted_probes_note).
 FAMILIES = {
     "attention": "Attention",
     "rolling_w256": "Rolling attention (window 256)",
@@ -63,7 +64,8 @@ FOOTNOTE = (
     "initialization. Each objective uses its own validation-best training "
     "length (and, for AlphaEvolve, penalty strength). Stars mark the probe each "
     "target would pick across all families and epochs by validation-set "
-    "pAUROC@20."
+    "pAUROC@20. Reference lines: the released Gleipnir 4B v0.4 checkpoint, and "
+    "the unadapted Qwen3.5-4B scoring zero-shot with the monitor prompt."
 )
 TITLE = (
     "Kimi soft targets generalize better than hard labels for both probes and "
@@ -163,7 +165,31 @@ def load_rows(results_dir: Path) -> list[Row]:
     return rows
 
 
-def plot_dumbbell(rows: list[Row]) -> plt.Figure:
+def omitted_probes_note(results_dir: Path) -> str:
+    """Describe the probe families left off the plot, with their OOD scores."""
+    mean_pooled: list[float] = []
+    last_token: list[str] = []
+    for backbone in BACKBONES:
+        result = json.loads((results_dir / f"ood_{backbone}.json").read_text())
+        for objective in ("hard", "soft"):
+            families = result["pooled"][objective]["families"]
+            mean_pooled.extend(
+                families[family]["ood_seed_median_pauroc_at_20"]
+                for family in ("mean_mlp", "mean_linear")
+            )
+        hard, soft = (
+            result["last_token"][objective]["ood"]["pauroc_at_20"]
+            for objective in ("hard", "soft")
+        )
+        context = "monitor prompt" if backbone == "prompted" else "raw transcript"
+        last_token.append(f"{context} {hard:.3f} \u2192 {soft:.3f}")
+    return (
+        f"Not shown: mean-pooled probes (OOD at most {max(mean_pooled):.2f}) and "
+        f"single-fit last-token logistic probes ({'; '.join(last_token)})."
+    )
+
+
+def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(11.5, 9.6))
     # Two-line section headers get a taller band than data rows.
@@ -423,7 +449,7 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         color=INK_MUTED,
         fontweight="normal",
     )
-    _wrap_to_width(footnote, FOOTNOTE, right - left + 2 * CARD_PAD)
+    _wrap_to_width(footnote, footnote_text, right - left + 2 * CARD_PAD)
     return figure
 
 
@@ -528,9 +554,12 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     rows = load_rows(args.results_dir)
+    note = omitted_probes_note(args.results_dir)
     for output_path in args.output or DEFAULT_OUTPUTS:
         # Extra padding keeps a white margin beside the full-width cards.
-        output = save_figure(plot_dumbbell(rows), output_path, pad_inches=0.4)
+        output = save_figure(
+            plot_dumbbell(rows, f"{FOOTNOTE} {note}"), output_path, pad_inches=0.4
+        )
         print(f"Wrote {output}")
 
 
