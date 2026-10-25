@@ -21,8 +21,8 @@ DEFAULT_OUTPUTS = [
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.svg",
 ]
 BACKBONES = {
-    "prompted": "Probe on frozen 4B, monitor prompt (5 seeds)",
-    "ntp": "Probe on frozen 4B, raw transcript (5 seeds)",
+    "prompted": "Probe on frozen 4B,\nmonitor prompt (5 seeds)",
+    "ntp": "Probe on frozen 4B,\nraw transcript (5 seeds)",
 }
 # Mean pooling and last-token probes sit near the floor on OOD (NTP mean_linear
 # 0.20, last token 0.21) and would stretch the axis; the README reports them.
@@ -32,7 +32,7 @@ FAMILIES = {
     "rolling_w64": "Rolling attention (window 64)",
     "rolling_w10": "Rolling attention (window 10)",
     "multimax": "MultiMax",
-    "alphaevolve": "AlphaEvolve-discovered probe",
+    "alphaevolve": "AlphaEvolve",
 }
 # Matched 4B LoRA seeds 0-2, OOD macro pAUROC@20, from the result table in
 # experiments/hard_label_seeds/README.md (artifacts span several run dirs).
@@ -48,6 +48,7 @@ LOSS_TINT = "#FCE1DA"
 HARD_EDGE = "#4A4A4A"
 SEED_COLOR = "#9A9A9A"
 INK_MUTED = "#5A5A5A"
+HEADER_HEIGHT = 1.6
 
 
 @dataclass(frozen=True)
@@ -119,7 +120,7 @@ def load_rows(results_dir: Path) -> list[Row]:
             _row(label, hard["families"][family], soft["families"][family])
             for family, label in FAMILIES.items()
         )
-    rows.append(Row("Fine-tuned 4B monitor (LoRA, 3 seeds)", header=True))
+    rows.append(Row("Fine-tuned 4B monitor\n(LoRA, 3 seeds)", header=True))
     rows.append(
         Row(
             "Gleipnir 4B recipe",
@@ -137,7 +138,10 @@ def load_rows(results_dir: Path) -> list[Row]:
 def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     set_plot_style()
     figure, axis = plt.subplots(figsize=(11.5, 9.6))
-    positions = list(range(len(rows)))[::-1]
+    # Two-line section headers get a taller band than data rows.
+    heights = [HEADER_HEIGHT if row.header else 1.0 for row in rows]
+    top = sum(heights)
+    positions = [top - sum(heights[:i]) - h / 2 for i, h in enumerate(heights)]
     delta_transform = blended_transform_factory(axis.transAxes, axis.transData)
 
     for y, row in zip(positions, rows, strict=True):
@@ -237,10 +241,10 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     axis.spines["bottom"].set_color("#BBBBBB")
     for y, row in zip(positions, rows, strict=True):
         if row.header and y != positions[0]:
-            axis.axhline(y + 0.5, color="#D0D0D0", linewidth=1)
+            axis.axhline(y + HEADER_HEIGHT / 2, color="#D0D0D0", linewidth=1)
 
     axis.set_xlim(0.575, 0.84)
-    axis.set_ylim(-0.7, len(rows) - 0.3)
+    axis.set_ylim(-0.2, top + 0.2)
     for x, label, style in (
         (ZERO_SHOT_OOD, "Base 4B zero-shot", ":"),
         (GLEIPNIR_4B_OOD, "Gleipnir 4B v0.4", "--"),
@@ -248,7 +252,7 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
         axis.axvline(x, color=INK_MUTED, linestyle=style, linewidth=1.5, zorder=1)
         axis.text(
             x,
-            len(rows) - 0.3,
+            top + 0.2,
             f"{label} {x:.3f}",
             rotation=0,
             ha="center",
