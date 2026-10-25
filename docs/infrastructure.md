@@ -35,7 +35,13 @@ dependencies) with `CUDA_HOME=/usr/local/cuda-13.0` to build causal-conv1d.
 NFS sequential reads reach about 800 MB/s but memory-mapped page faults stall;
 stage hot data to the 1 TB local disk. At the user's instruction the instance
 was terminated on 2026-10-25 after all results (44 files, SHA-256 verified) and
-logs were collected. The filesystem is retained and bills while it exists; it
+logs were collected. A second, user-authorized `gpu_1x_h100_pcie`
+(`gleipnir-probe-ensembles`) ran the post-hoc OOD ensemble scoring on
+2026-10-25 (22:15–23:05 UTC, light Torch 2.13 cu129 venv instead of the full
+bootstrap) and was terminated after its 8 artifacts were SHA-256 verified.
+The pull helper refuses `logs/` paths that resolve outside the repository
+(symlinks into the Storage Box mirror); copy such logs over SSH. The
+filesystem is retained and bills while it exists; it
 holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
 full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB).
 

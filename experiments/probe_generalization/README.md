@@ -260,6 +260,37 @@ OOD family (attention, 0.792) lies inside their OOD range. The matched
 hard-label LoRA seeds (`experiments/hard_label_seeds/`) lose far more without
 soft targets than probes do.
 
+## Post-hoc seed ensembles (2026-10-25)
+
+Added after both frozen OOD reads, by user decision, to compare with the
+seed-averaged Gleipnir 4B (ID 0.912, OOD 0.811; +1.0 ID and +1.9 OOD over its
+seed mean). Descriptive only; nothing here changes the frozen selections.
+Probe seeds differ in initialization, so their weights cannot be averaged
+meaningfully; an ensemble is the mean logit of a candidate's 5 seeds instead
+(about 5 × 250K parameters, negligible beside the backbone).
+`ensemble_ood.py` scored every pooled probe at every checkpoint on OOD in one
+pass per backbone (Lambda H100 PCIe, 22:15–23:05 UTC); every probe of the frozen
+read reproduced exactly (`parity_*.json`, drift 0). `ensemble_report.py`
+builds ensembles under three epoch rules, none chosen on OOD: one epoch for
+all seeds at the ensemble's ID peak, each seed's own ID-best epoch, and the
+final epoch (as the Gleipnir average). Logits and `report.json`:
+`results/probe_generalization/full01/ensemble_ood/`.
+
+- **Typical gain is small.** Across the 44 (backbone, objective,
+  architecture) ensembles, the median OOD gain over the seed median is +0.011
+  to +0.013 depending on the rule (positive in 35–39 of 44), with a matching
+  ID gain; OOD Brier barely moves. The epoch rule matters little.
+- **Gains follow seed disagreement.** AlphaEvolve probes gain +0.03 to +0.10
+  and MultiMax +0.01 to +0.04; attention and rolling probes gain about 0 to
+  +0.01; mean-pooled probes gain nothing (exactly so for the linear readout).
+- **Best ensembles reach the Gleipnir average on OOD, not on ID.** NTP soft
+  AlphaEvolve ensembles reach 0.795–0.802 OOD at only about 0.84 ID, but
+  picking them uses OOD. Applying the frozen ID rule to the ensembles keeps
+  each cell's original pick, with OOD 0.704 / 0.721 (prompted hard / soft)
+  and 0.713 / 0.767 (NTP), so the poor ID→OOD transfer remains.
+- **Soft targets keep their lead.** Best ensemble per cell (descriptive),
+  hard / soft: prompted 0.764 / 0.784, NTP 0.738 / 0.802.
+
 ## Storage and compute
 
 Trajectory text totals about 517M characters across train, ID and OOD,
