@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Post-hoc OOD read of the ID-selected seed ensembles on one Lambda GPU attached
+# Post-hoc OOD scores of every pooled probe and checkpoint on one Lambda GPU attached
 # to the gleipnir-probes filesystem. Scoring needs only Torch, NumPy, pandas
 # and scikit-learn, so a light venv with the locked versions replaces the full
 # bootstrap (the driver-570 image lacks the locked CUDA-13 runtime). Each

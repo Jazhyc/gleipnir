@@ -1,17 +1,16 @@
-"""Post-hoc OOD read of the ID-selected seed ensembles (``ensemble.py``).
+"""Post-hoc OOD scores of every pooled probe at every checkpoint.
 
-Each cell's ensemble pick is the candidate the frozen rule already selected,
-so this reads OOD only for probes whose OOD was read before; every other
-column of a scored bank is dropped unread. Per-row logits of the picked seeds
-are written next to the metrics, and each seed's metrics must reproduce the
-frozen OOD read.
+Added after the frozen OOD read (user decision 2026-10-25) so seed ensembles
+of every architecture can be compared with the seed-averaged Gleipnir 4B
+under any epoch rule (``ensemble.py``). One pass over the OOD store runs all
+checkpoints' probe banks; per-row logits are saved locally. Every probe the
+frozen read scored must reproduce its OOD pAUROC@20.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
-import statistics
 from pathlib import Path
 
 import numpy as np
@@ -19,10 +18,21 @@ import torch
 
 from experiments.probe_generalization.evaluate_ood import ROOT, report
 from gleipnir.probes.store import Store
-from gleipnir.probes.training import make_sweep, score
+from gleipnir.probes.training import autocast, make_sweep, micro_batches, stream
 
 # Same probes and activations; allows GPU/library rounding in near-tied rows.
 TOLERANCE = 2e-3
+
+
+def frozen_reads(path: Path) -> dict[tuple[int, str], float]:
+    """``{(epoch, probe): OOD pAUROC@20}`` from the frozen read."""
+    pooled = json.loads(path.read_text())["pooled"]
+    out = {}
+    for cell in pooled.values():
+        for pick in [cell["selected"], *cell["families"].values()]:
+            for name, result in pick["ood_per_probe"].items():
+                out[(pick["epoch"], name)] = result["macro"]["pauroc_at_20"]
+    return out
 
 
 def main() -> None:
@@ -31,14 +41,12 @@ def main() -> None:
     parser.add_argument("--population", default="full")
     parser.add_argument("--backbone", choices=("prompted", "ntp"), required=True)
     parser.add_argument("--name", default="full01")
+    parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
     results = ROOT / "results/probe_generalization" / args.name
     run = results / f"{args.backbone}-fp8"
     config = json.loads((run / "config.json").read_text())
-    picks = json.loads((results / "ensemble_id.json").read_text())[args.backbone][
-        "selection_ensemble"
-    ]
-    frozen = json.loads((results / f"ood_{args.backbone}.json").read_text())["pooled"]
+    epochs = sorted(int(p.stem.split("_e")[1]) for p in run.glob("probes_e*.pt"))
 
     skip = 1 if args.backbone == "ntp" else 0
     store = Store(
@@ -46,18 +54,8 @@ def main() -> None:
         "fp8",
         skip=skip,
     )
-    output = {"backbone": args.backbone, "ids": [r["id"] for r in store.rows]}
-    for objective, cell in sorted(picks.items()):
-        pick = cell["selected"]
-        names = [
-            f"{pick['architecture']}-{objective}-s{seed}" for seed in pick["seeds"]
-        ]
-        reference = frozen[objective]["selected"]
-        if (reference["architecture"], reference["epoch"]) != (
-            pick["architecture"],
-            pick["epoch"],
-        ):
-            raise ValueError(f"{objective}: ensemble pick is not the frozen pick")
+    sweeps = {}
+    for epoch in epochs:
         sweep = make_sweep(
             config["architectures"],
             config["objectives"],
@@ -65,57 +63,61 @@ def main() -> None:
             store.meta["hidden"],
             lr=config["lr"],
             weight_decay=config["weight_decay"],
-            device="cuda",
+            device=args.device,
         )
-        state = torch.load(run / f"probes_e{pick['epoch']}.pt", map_location="cuda")
+        state = torch.load(run / f"probes_e{epoch}.pt", map_location=args.device)
         if [tuple(s) for s in state["specs"]] != [
             (s.name, s.architecture) for s in sweep.specs
         ]:
-            raise ValueError(f"probe order differs in {run}")
+            raise ValueError(f"probe order differs in {run}/probes_e{epoch}.pt")
         sweep.bank.load_state_dict(state["bank"])
-        scored = score(
-            sweep, store, config["batch"], "cuda", config.get("token_budget")
-        )
-        logits = {n: scored[n] for n in names}  # every other column is dropped
-        del scored
+        sweep.bank.eval()
+        sweeps[epoch] = sweep
+    names = [s.name for s in sweeps[epochs[0]].specs]
 
-        per_seed = {n: report(store.rows, v) for n, v in logits.items()}
-        drift = max(
-            abs(
-                r["macro"]["pauroc_at_20"]
-                - reference["ood_per_probe"][n]["macro"]["pauroc_at_20"]
-            )
-            for n, r in per_seed.items()
+    lengths = [r["length"] for r in store.rows]
+    order = sorted(range(len(store)), key=lambda i: lengths[i])
+    batches = [
+        chunk
+        for begin in range(0, len(order), config["batch"])
+        for chunk in micro_batches(
+            order[begin : begin + config["batch"]], lengths, config["token_budget"]
         )
-        if drift > TOLERANCE:
-            raise ValueError(
-                f"{objective}: per-seed OOD differs from frozen by {drift}"
-            )
-        mean = np.mean([np.asarray(v, dtype=float) for v in logits.values()], 0)
-        output[objective] = {
-            "architecture": pick["architecture"],
-            "epoch": pick["epoch"],
-            "id_ensemble": pick["ensemble"],
-            "id_seed_median": pick["seed_median"],
-            "ood_seed_median": {
-                k: statistics.median(r["macro"][k] for r in per_seed.values())
-                for k in ("pauroc_at_20", "auroc", "brier")
-            },
-            "ood_ensemble": report(store.rows, mean),
-            "ood_per_seed": per_seed,
-            "max_seed_drift_from_frozen": drift,
-            "logits": logits,
-        }
-        e = output[objective]
-        print(
-            f"{args.backbone} {objective}: {pick['architecture']} e{pick['epoch']} "
-            f"OOD seed median {e['ood_seed_median']['pauroc_at_20']:.4f} "
-            f"ensemble {e['ood_ensemble']['macro']['pauroc_at_20']:.4f}",
-            flush=True,
-        )
-    (results / f"ensemble_ood_{args.backbone}.json").write_text(
-        json.dumps(output) + "\n"
+    ]
+    logits = torch.zeros((len(epochs), len(store), len(names)))
+    done = 0
+    with torch.no_grad():
+        for indices, x, mask in stream(store, batches, args.device):
+            with autocast(args.device):
+                for k, epoch in enumerate(epochs):
+                    logits[k, indices] = sweeps[epoch].bank(x, mask).float().cpu()
+            done += len(indices)
+            if done % 1000 < len(indices):
+                print(f"{args.backbone}: {done}/{len(store)} rows", flush=True)
+
+    drift = {}
+    for (epoch, name), expected in frozen_reads(
+        results / f"ood_{args.backbone}.json"
+    ).items():
+        column = logits[epochs.index(epoch), :, names.index(name)].numpy()
+        got = report(store.rows, column)["macro"]["pauroc_at_20"]
+        drift[f"e{epoch}/{name}"] = got - expected
+    worst = max(abs(v) for v in drift.values())
+    out = results / "ensemble_ood"
+    out.mkdir(exist_ok=True)
+    np.savez_compressed(
+        out / f"logits_{args.backbone}.npz",
+        logits=logits.numpy().astype(np.float32),
+        epochs=np.array(epochs),
+        names=np.array(names),
+        ids=np.array([r["id"] for r in store.rows]),
     )
+    (out / f"parity_{args.backbone}.json").write_text(
+        json.dumps({"max_abs_drift": worst, "drift": drift}, indent=2) + "\n"
+    )
+    print(f"{args.backbone}: frozen-read parity, worst |drift| {worst:.2e}")
+    if worst > TOLERANCE:
+        raise SystemExit(f"parity failed: {worst} > {TOLERANCE}")
 
 
 if __name__ == "__main__":
