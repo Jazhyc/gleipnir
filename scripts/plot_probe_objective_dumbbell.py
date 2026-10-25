@@ -56,6 +56,7 @@ DELTA_COLUMN = (1.03, 1.19)
 WINS_CENTER = 1.27
 CARD_COLOR = "#F2F3F5"
 STAR_SIZE = 420
+LEGEND_GAP = 24.0  # pixels between the two legend boxes
 CARD_PAD = 10.0  # pixels beyond the labels and the wins column
 FOOTNOTE = (
     "Wins: seeds where the soft run beats the hard run started from the same "
@@ -379,25 +380,27 @@ def plot_dumbbell(rows: list[Row]) -> plt.Figure:
     left, right = _content_span(figure, axis)
     _add_section_cards(figure, axis, rows, positions, left, right)
     _add_title(figure, axis, TITLE, left, right)
-    # Legends and footnote share the cards' outer edges.
-    card_left, card_right = figure.transFigure.inverted().transform(
-        [(left - CARD_PAD, 0), (right + CARD_PAD, 0)]
-    )[:, 0]
-    for handles, title, anchor, loc, ncol in (
-        (target_handles, "Training target", (card_left, 0.0), "upper left", 2),
-        (change_handles, "Change", (card_right, 0.0), "upper right", 1),
+    # Legends sit side by side from the cards' left edge; the footnote shares it.
+    to_figure = figure.transFigure.inverted()
+    card_left = to_figure.transform((left - CARD_PAD, 0))[0]
+    renderer = figure.canvas.get_renderer()
+    anchor_x = card_left
+    for handles, title, ncol in (
+        (target_handles, "Training target", 2),
+        (change_handles, "Change", 1),
     ):
         legend = figure.legend(
             handles=handles,
             title=title,
-            loc=loc,
-            bbox_to_anchor=anchor,
+            loc="upper left",
+            bbox_to_anchor=(anchor_x, 0.0),
             ncol=ncol,
             **legend_style,
         )
         legend.get_title().set_fontweight("bold")
-    # Start the footnote a little below the taller legend.
-    renderer = figure.canvas.get_renderer()
+        right_edge = legend.get_window_extent(renderer).x1
+        anchor_x = to_figure.transform((right_edge + LEGEND_GAP, 0))[0]
+    # Start the footnote a little below the legends.
     legend_bottom = min(
         legend.get_window_extent(renderer).y0 for legend in figure.legends
     )
