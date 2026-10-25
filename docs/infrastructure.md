@@ -22,7 +22,30 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 
 ## Lambda Cloud
 
-No Lambda Cloud training target is currently reserved. The two-H100
+No Lambda Cloud instance is currently running. On 2026-10-24 the user
+authorized one `gpu_1x_h100_pcie` instance (`gleipnir-probe-generalization`,
+us-west-3, $3.29/hour, Ubuntu 22.04, driver 570 / CUDA 12.8) for the
+[probe study](../experiments/probe_generalization/README.md) with persistent
+filesystem `gleipnir-probes` (`/lambda/nfs/gleipnir-probes`). The locked CUDA-13
+Torch needs NVIDIA's `cuda-compat-13-0` package (`/usr/local/cuda-13.0/compat`,
+picked up by the bootstrap's runtime file) and the CUDA 13.0 compiler packages
+(`cuda-nvcc-13-0`, `cuda-cudart-dev-13-0`, `cuda-cccl-13-0` and the cuBLAS,
+cuSPARSE, cuSOLVER and NVRTC dev packages; the full toolkit has unmet GUI
+dependencies) with `CUDA_HOME=/usr/local/cuda-13.0` to build causal-conv1d.
+NFS sequential reads reach about 800 MB/s but memory-mapped page faults stall;
+stage hot data to the 1 TB local disk. At the user's instruction the instance
+was terminated on 2026-10-25 after all results (44 files, SHA-256 verified) and
+logs were collected. A second, user-authorized `gpu_1x_h100_pcie`
+(`gleipnir-probe-ensembles`) ran the post-hoc OOD ensemble scoring on
+2026-10-25 (22:15–23:05 UTC, light Torch 2.13 cu129 venv instead of the full
+bootstrap) and was terminated after its 8 artifacts were SHA-256 verified.
+The pull helper refuses `logs/` paths that resolve outside the repository
+(symlinks into the Storage Box mirror); copy such logs over SSH. The
+filesystem is retained and bills while it exists; it
+holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
+full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB).
+
+The two-H100
 `gleipnir-improvement` instance was terminated on 2026-09-08 following explicit
 user authorization and verified artifact collection. See the
 [shutdown inventory](findings/gleipnir_improvement_shutdown_inventory.md).
@@ -851,6 +874,24 @@ lookup 404).
 A second user-authorized Pod from the same image, `skhiibc8fu2130`
 (`.runpod/apps-base27b.json`), ran the base-27B reference arms and was
 terminated after checksum-verified collection (delete 204, lookup 404).
+
+### EU-RO-1 B200 for the hard-label seeds, 2026-10-24
+
+At the user's instruction, Pod `qhvmtrkgjl8rnt` (B200 `GPU-338d6756…`, machine
+`2mj1yzztlz17`, $7.99/hour) was created through the REST API on volume
+`cb7bxu71ug` with image `runpod/pytorch:1.0.7-cu1300-torch291-ubuntu2404-cluster`,
+a 150 GB container disk and the project key `~/.ssh/id_ed25519_runpod` in
+`PUBLIC_KEY` (SSH worked without the proxy). The first attempts found no
+capacity; a retry succeeded after about 12 minutes. The runtime was restored by
+`logs/runpod/hard_label_seeds/restore.sh` (the aux_supervision steps with the
+`20261021_eu` caches, about 2 minutes). The volume had reached its 200 GB quota
+(about 216 GB of blocks), which failed one checkpoint save. At the user's request
+the uv caches (`gleipnir/.cache/uv`, `gleipnir-eu-20261004/.cache/uv`) and the
+Qwen3.5-9B Hugging Face snapshot were deleted, leaving about 178 GB;
+`results/systems_training_scratch/fp32_master.pt` (2.4 GB, an overwritable
+systems-screen slot) remains. After the three seeds were scored and every file
+was verified locally, the Pod was deleted at the user's instruction (HTTP 204,
+lookup 404). Volume `cb7bxu71ug` is retained.
 
 ## OpenRouter
 

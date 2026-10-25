@@ -68,13 +68,17 @@ def pareto_frontier_mask(
     return frontier
 
 
-def save_figure(figure: Figure, output_path: str | Path) -> Path:
+def save_figure(
+    figure: Figure, output_path: str | Path, *, pad_inches: float = 0.1
+) -> Path:
     """Save a tightly cropped figure, creating its parent directory."""
     output = Path(output_path)
     if not output.suffix:
         raise ValueError("output_path must include a file extension")
     output.parent.mkdir(parents=True, exist_ok=True)
-    figure.savefig(output, bbox_inches="tight", facecolor="white")
+    figure.savefig(
+        output, bbox_inches="tight", pad_inches=pad_inches, facecolor="white"
+    )
     plt.close(figure)
     if output.suffix.lower() == ".svg":
         svg = output.read_text(encoding="utf-8")
