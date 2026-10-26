@@ -21,6 +21,7 @@ same row, and the frozen post-hoc OOD logits.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import json
 from pathlib import Path
 
@@ -131,8 +132,7 @@ def main() -> None:
     parser.add_argument("--name", default="maps01")
     parser.add_argument("--device", default="cuda")
     args = parser.parse_args()
-    from huggingface_hub import hf_hub_download
-    from tokenizers import Tokenizer
+    from transformers import AutoTokenizer
 
     out = ROOT / "results/probe_attention_maps" / args.name
     selection = np.load(out / "selection.npz")
@@ -146,9 +146,9 @@ def main() -> None:
         ROOT / "results/probe_generalization/full01/ntp-fp8", store.hidden, args.device
     )
     columns = [names.index(w) for w in wanted]
-    tokenizer = Tokenizer.from_file(
-        hf_hub_download(MODEL_ID, "tokenizer.json", revision=MODEL_REVISION)
-    )
+    # The extraction's tokenizer: raw ``tokenizers`` splits literal special-token
+    # strings (e.g. ``<|endoftext|>`` in rogue_eval) differently.
+    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
     data = ROOT / "data/probe_generalization/full/ood.jsonl"
     text = {r["id"]: r["trajectory"] for r in map(json.loads, data.open())}
     examples = {e["index"] for e in meta["examples"]}
@@ -168,10 +168,18 @@ def main() -> None:
         ):
             i = indices[0]
             row = store.rows[i]
-            encoded = tokenizer.encode(text[row["id"]], add_special_tokens=False)
-            if len(encoded.ids) != row["input_tokens"] or row["kept_from"] != 0:
+            trajectory = text[row["id"]]
+            encoded = tokenizer(
+                trajectory, add_special_tokens=False, return_offsets_mapping=True
+            )
+            digest = hashlib.sha256(trajectory.encode()).hexdigest()
+            if (
+                len(encoded["input_ids"]) != row["input_tokens"]
+                or row["kept_from"] != 0
+                or digest != row["rendered_sha256"]
+            ):
                 raise ValueError(f"tokenization differs from the store in {row['id']}")
-            offsets = encoded.offsets[SKIP:]
+            offsets = [tuple(o) for o in encoded["offset_mapping"][SKIP:]]
             classes = torch.tensor(
                 token_classes(text[row["id"]], offsets), device=args.device
             )

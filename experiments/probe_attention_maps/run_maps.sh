@@ -11,16 +11,19 @@ NAME=${NAME:-maps01}
 LOGS=logs/lambda/probe_attention_maps/$NAME
 mkdir -p "$LOGS"
 PY=$HOME/venv-maps/bin/python
+export PATH=$HOME/.local/bin:$PATH
 
 if [ ! -x "$PY" ]; then
   command -v uv > /dev/null || curl -LsSf https://astral.sh/uv/install.sh | sh
-  export PATH=$HOME/.local/bin:$PATH
   uv venv --python 3.12 "$HOME/venv-maps"
   uv pip install --python "$PY" torch==2.13.0 \
     --index-url https://download.pytorch.org/whl/cu129
   uv pip install --python "$PY" numpy==2.3.5 tokenizers==0.22.2 \
     huggingface-hub==1.33.0
 fi
+# The extraction's tokenizer class (added after the first launch).
+$PY -c "import transformers" 2> /dev/null ||
+  uv pip install --python "$PY" transformers==5.14.1
 $PY -c "import torch; assert torch.cuda.is_available(); print(torch.__version__, torch.cuda.get_device_name())"
 
 store=$LOCAL/full/ntp/ood
