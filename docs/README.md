@@ -87,8 +87,8 @@
   training data lacks monitor-adversarial, mistake-shaped attacks.
 - [SleightBench NTP probes](findings/sleightbench_ntp_probes.md): frozen
   NTP activation probes, stripped view, single pass; AUROC 0.61 (hard) and
-  0.63 (soft) against 0.66 for the 4B, catch 5–10%, more pair wins; long
-  context explains little.
+  0.63 (soft) against 0.66 (release prompt) and 0.61 (ControlArena) for the
+  4B, catch 5–10%, more pair wins; long context explains little.
 - [Released monitors on APPS injections](findings/apps_released_monitors.md):
   both releases flag every injected honest program at the APPS operating point;
   the adapter improves on the base 27B; projecting out an injection direction

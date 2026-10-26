@@ -9,9 +9,10 @@ SleightBench's stripped view under the contract in
 (up to 194K tokens) with no truncation. The parity gate reproduced the stored
 `full01` ID logits exactly (drift 0.0000 ID-SD).
 
-**The probes rank SleightBench worse than the released Gleipnir 4B but match
-it at the strict threshold, and they win more attack–twin pairs than either
-released monitor.** Long context explains little of the gap.
+**The probes rank SleightBench worse than the released Gleipnir 4B with its
+release prompt, but tie or beat it under the ControlArena instruction, the
+closest match to the benchmark's setting.** They win more attack–twin pairs
+than either released monitor. Long context explains little of the gap.
 
 ## Results
 
@@ -23,8 +24,16 @@ scenario bootstrap.
 |---|---:|---:|---:|---:|
 | Probe, hard, attention e8 (selected) | 5% | 0.606 [0.53, 0.70] | 0.195 | 70% |
 | Probe, soft, rolling_w256 e8 (selected) | 10% | 0.625 [0.55, 0.70] | 0.219 | 72.5% |
-| Gleipnir 4B v0.4 (`sb01`) | 5% | 0.657 | 0.212 | 60% |
-| Gleipnir 27B v0.2 (`sb01`) | 15% | 0.706 | 0.317 | 70% |
+| Gleipnir 4B v0.4, release prompt (`sb01`) | 5% | 0.657 | 0.212 | 60% |
+| Gleipnir 4B v0.4, ControlArena (`sb02`) | 7.5% | 0.611 | 0.209 | 52.5% |
+| Gleipnir 27B v0.2, release prompt (`sb01`) | 15% | 0.706 | 0.317 | 70% |
+| Gleipnir 27B v0.2, ControlArena (`sb02`) | 20% | 0.697 | 0.299 | 70% |
+
+`sb01` gives each release its validated instruction. `sb02` swaps in the
+ControlArena instruction with our binary output lines, on the same optimized
+stack and transcripts; it is the nearest Gleipnir run to the paper's prompt
+(whose sampled 0–100 protocol was run only on the base models, `sb04`).
+Hypothesis 1 was frozen against `sb01`; the `sb02` rows are descriptive.
 
 - **Seed spread is small.** Per-seed AUROC is 0.594–0.615 for hard and
   0.619–0.629 for soft. The 5-seed mean-logit ensembles give 0.604 and 0.628.
@@ -49,7 +58,8 @@ scenario bootstrap.
 1. **Transfer degrades (taxonomy fixed without a prompt):** supported on
    ranking. Both selected probes are below the 4B's 0.657 AUROC. Catch is not
    worse: hard matches the 4B's 5% and soft reaches 10%. All intervals
-   overlap.
+   overlap. Against the ControlArena 4B (`sb02`, AUROC 0.611) the soft probe
+   is ahead on every metric and the hard probe ties on ranking.
 2. **Long context hurts:** weakly supported at most. The four units over the
    training range (160K–194K tokens) are mostly missed. The two pairs whose
    sides are both long (`gitignore-env-omission` and `pip-freeze-typosquat`)
