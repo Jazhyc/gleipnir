@@ -38,8 +38,9 @@ ROOT = Path(__file__).resolve().parents[2]
 MODEL_ID = "Qwen/Qwen3.5-4B"
 MODEL_REVISION = "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
 SKIP = 1  # NTP attention sink, dropped as in the probe study
-# Same row and weights as the bank forward; allows reduction-order rounding.
-BANK_TOLERANCE = 1e-2
+# FP32 code check against the bank forward on the same row. (In BF16 the full
+# bank and the 10-probe subset use different GEMM shapes and differ by ~0.03.)
+BANK_TOLERANCE = 1e-3
 # Frozen logits came from padded batches; allows BF16 rounding of padded rows.
 SAVED_TOLERANCE = 5e-2
 BANK_CHECK_ROWS = 64
@@ -176,13 +177,12 @@ def main() -> None:
             )
             with autocast(args.device):
                 a, v, b = attention_terms(bank, names, wanted, x[0])
-                if done < BANK_CHECK_ROWS or i in examples:
-                    reference = bank(x, mask)[0, columns].float()
             row_logits = (a * v).sum((-1, -2)) + b
             if done < BANK_CHECK_ROWS or i in examples:
-                bank_drift = max(
-                    bank_drift, float((row_logits - reference).abs().max())
-                )
+                a32, v32, b32 = attention_terms(bank, names, wanted, x[0].float())
+                reference = bank(x.float(), mask)[0, columns]
+                check = (a32 * v32).sum((-1, -2)) + b32
+                bank_drift = max(bank_drift, float((check - reference).abs().max()))
             saved_drift = max(
                 saved_drift, float(np.abs(row_logits.cpu().numpy() - saved[:, i]).max())
             )

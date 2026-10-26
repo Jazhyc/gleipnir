@@ -48,9 +48,14 @@ tested directly.
   Per seed pair and head: attention overlap Σ_t min(a_hard, a_soft), and the
   cross terms Σ_t a_hard v_soft and Σ_t a_soft v_hard. These split the logit
   change into a part from moving attention and a part from changing values.
-- **Gates.** The decomposition must match the bank's own forward (≤ 1e-2) on the
-  first 64 rows and every example, and the frozen post-hoc OOD logits (≤ 5e-2)
-  on every row. Tokenization must reproduce each stored row's token count.
+- **Gates.** The decomposition must match the bank's own forward on the first
+  64 rows and every example, and the frozen post-hoc OOD logits (≤ 5e-2) on
+  every row. Tokenization must reproduce each stored row's token count.
+  Amended after the first launch stopped on row 1: the bank check had compared
+  BF16 outputs (≤ 1e-2), but the full 110-probe bank and the 10-probe subset run
+  different GEMM shapes and differed by 0.027. In FP32 they agreed to every
+  printed digit, and the BF16 decomposition matched the frozen logits to 4e-6,
+  so the bank check now runs in FP32 (≤ 1e-3) while the analysis stays BF16.
 
 This is descriptive interpretability on frozen probes: no selection or
 promotion follows from it.
