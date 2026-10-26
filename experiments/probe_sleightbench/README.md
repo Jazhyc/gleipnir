@@ -11,8 +11,8 @@ and the code are frozen and committed before any probe scores a SleightBench
 row. Each probe is scored once and reported whatever the result. Nothing is
 retrained, reselected, recalibrated or rerun after a score exists.
 SleightBench is evaluation-only: it never enters training, tuning or
-selection, and the decrypted rows are deleted from the remote host after the
-run.
+selection. The decrypted text rows are deleted from the remote host after the
+run; the FP8 activation store (no text) is kept on the persistent filesystem.
 
 ## Hypotheses (user, 2026-10-26)
 
@@ -81,9 +81,11 @@ run.
 
 ## Compute and run
 
-One Lambda H100 with the full project bootstrap (fast kernels as in
-[infrastructure](../../docs/infrastructure.md#lambda-cloud)), in any region.
-The persistent filesystem is not needed. Push the commit, the two row files,
+One Lambda H100 in us-west-3 with the full project bootstrap (fast kernels as
+in [infrastructure](../../docs/infrastructure.md#lambda-cloud)) and the
+`gleipnir-probes` filesystem attached. At the user's request (2026-10-26),
+`run_remote.sh` copies the activation store to
+`stores/sleightbench/ntp` there for later reuse. Push the commit, the two row files,
 `selection_ntp.json`, and from `ntp-fp8/` the `config.json`, `summary.json`
 and `probes_e{2,4,8,16}.pt` and `logits_e{2,4,8,16}_fp8.json`. Then:
 
@@ -93,7 +95,7 @@ python -m experiments.probe_sleightbench.score report --name sbprobe01  # local 
 ```
 
 Pull `results/probe_sleightbench/sbprobe01/{parity,logits}.json` and
-`logs/lambda/probe_sleightbench/sbprobe01/`, then delete the rows and stores
-from the host.
+`logs/lambda/probe_sleightbench/sbprobe01/`, then delete the text rows from
+the host.
 
 Status: frozen, not run.
