@@ -1,0 +1,37 @@
+{
+  "protocol_status": "frozen",
+  "source_experiment": "experiments/adversarial_lab_liars",
+  "input": "results/adversarial_lab_liars",
+  "data": "data/adversarial_lab_liars",
+  "output": "results/adversarial_lab_liars_probe",
+  "monitors": {
+    "4b": {
+      "metadata": "main_student.jsonl",
+      "layers": [8, 16, 24, 32],
+      "hidden_size": 2560,
+      "token_field": "tokens_4b_student"
+    },
+    "27b": {
+      "metadata": "main_teacher.jsonl",
+      "layers": [16, 32, 48, 64],
+      "hidden_size": 5120,
+      "token_field": "tokens_27b_teacher"
+    }
+  },
+  "train_groups": {
+    "positive": ["liar"],
+    "negative": ["honest_recruiter"]
+  },
+  "held_out_groups": ["self_retracting_liar", "assigned_deceiver_no_lie"],
+  "C": [0.001, 0.01, 0.1, 1.0],
+  "solver": {"name": "liblinear", "tol": 1e-6, "max_iter": 5000, "random_state": 0},
+  "primary_cells": ["main", "haiku", "sol"],
+  "line_fpr": 0.01,
+  "shuffle_permutations": 20,
+  "shuffle_seed": 0,
+  "leave_model_out": ["glm", "kimi"],
+  "own_model_min_liars": 5,
+  "bootstrap_samples": 2000,
+  "bootstrap_seed": 0,
+  "workers": 10
+}
