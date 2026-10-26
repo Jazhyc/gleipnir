@@ -98,4 +98,7 @@ Pull `results/probe_sleightbench/sbprobe01/{parity,logits}.json` and
 `logs/lambda/probe_sleightbench/sbprobe01/`, then delete the text rows from
 the host.
 
-Status: frozen, not run.
+Status: complete (run `sbprobe01`, 2026-10-26; one Lambda H100 PCIe,
+about an hour, terminated around 15:12 UTC after its 8 artifacts were SHA-256 verified).
+The parity gate passed with drift 0.0000 ID-SD. Results are in
+[the finding](../../docs/findings/sleightbench_ntp_probes.md).

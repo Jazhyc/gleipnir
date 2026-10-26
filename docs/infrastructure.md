@@ -46,11 +46,18 @@ SSH unreachable and was terminated at the user's instruction. The replacement
 (`gleipnir-probe-maps2`, 11:45–12:40 UTC) ran the study and was terminated after
 its 30 artifacts and logs were SHA-256 verified. us-west-3 capacity was scarce:
 none was free for about an hour on each attempt.
+A user-authorized `gpu_1x_h100_pcie` (`gleipnir-probe-sleightbench`,
+2026-10-26, about an hour, terminated around 15:12 UTC) ran the
+[SleightBench probe pass](../experiments/probe_sleightbench/README.md) and was
+terminated after its artifacts were SHA-256 verified. Its image lacked
+NVIDIA's apt repository: install `cuda-keyring` (ubuntu2204) before the CUDA
+13.0 packages, and set `CUDA_HOME=/usr/local/cuda-13.0` in the runtime file.
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
 filesystem is retained and bills while it exists; it
 holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
-full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB).
+full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB) and the
+SleightBench NTP store (`stores/sleightbench/ntp`, 4.5 GB, no text).
 
 The two-H100
 `gleipnir-improvement` instance was terminated on 2026-09-08 following explicit
