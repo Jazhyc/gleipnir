@@ -37,6 +37,8 @@ def main():
             r['metadata'] = metadata[r['id']]
     primary_ids = sorted(i for i in common if metadata[i]['analysis_recruiter'] and metadata[i]['cell'] in ['main','haiku','sol'] and metadata[i]['condition'] in ['liar','honest_recruiter'])
     report = {'common_main': len(common), 'common_calibration': len(c_common),
+              'excluded_main_ids_by_arm': {a: sorted(set(metadata)-set(maps[a])) for a in arms},
+              'calibration_coverage': {a: dict(Counter(r['status'] for r in calibration[a])) for a in calibration},
               'coverage': {a: dict(Counter(r['status'] for r in arms[a])) for a in arms},
               'primary_groups': dict(Counter(metadata[i]['condition'] for i in primary_ids)), 'arms': {}}
     for a in active:
