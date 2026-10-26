@@ -71,7 +71,8 @@ def score():
     scorer = Scorer(config['monitor'])
     identity = {**scorer.identity(), 'config_sha256': sha(EXP / 'config.json'),
                 'manifest_sha256': sha(DATA / 'manifest.json'),
-                'commit': subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True).strip()}
+                'commit': subprocess.run(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True, capture_output=True).stdout.strip() or (ROOT / '.peer_prompt_synced_commit').read_text().strip(),
+                'runner_sha256': sha(EXP / 'run.py')}
     identity_path = OUT / 'identity.json'
     if identity_path.exists():
         assert json.loads(identity_path.read_text()) == identity, 'Resume identity drift'
