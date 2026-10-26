@@ -138,3 +138,27 @@ Run at the freeze commit `49fcb94`, on a Mac CPU (10 workers; 18 min for the 4B,
 - That the direction means "lying" in general. It also partly separates assigned deceivers who did not lie (0.73).
 - A deployable threshold. The line uses 208 in-lab rows and 12 fold models.
 - Anything about Kimi K3's activations; it has none here.
+
+## Results, 26 October 2026
+
+Out-of-fold scores, leave-seed-out folds, `results/adversarial_lab_liars_probe/report.json`. Primary rows: 30 liars against 52 honest recruiters (pre-assigned recruiter per episode, main/Haiku/Sol cells).
+
+| | 4B | 27B |
+| --- | --- | --- |
+| Probe AUROC (seed bootstrap) | 0.988 (0.966-1.000) | 0.998 (0.993-1.000) |
+| Monitor score AUROC | 0.904 (0.868-0.938) | 0.897 (0.864-0.938) |
+| Probe minus monitor | +0.085 (+0.057 to +0.113) | +0.101 (+0.062 to +0.131) |
+| At the in-lab 1% line: liars caught, probe | 12/30 | 29/30 |
+| At the in-lab 1% line: liars caught, monitor | 7/30 | 30/30 |
+| Honest recruiters flagged, probe | 0/52 | 1/52 |
+| Honest recruiters flagged, monitor | 0/52 | 28/52 |
+| Probe layer chosen most often | 16 | 48 |
+
+- Controls: shuffled labels give a mean AUROC of 0.55 (4B) and 0.56 (27B), never reaching the real value in 20 permutations. The length/post-count baseline gives 0.63. Leaving Kimi-K2.6 recruiters out of training, the probe still scores 0.95 (4B) and 0.99 (27B) on them.
+- Predictions: P1, P3 and P4 held for both models. P2 held for the 4B and failed for the 27B by one liar (29/30 against the monitor's 30/30), while the probe flags 1 honest recruiter against the monitor's 28.
+
+**Post-hoc check, not pre-registered (`bow_baseline_posthoc.py`).** A TF-IDF bag-of-words logistic regression on the same rendered trajectories, with the same leave-seed-out folds and C = 1, reaches AUROC 0.994 on the primary rows (4B probe on the same rows: 0.988). So once a classifier is trained on this lab's labels, the lie is easy to separate from the text alone. The probe result shows the signal is linearly present in Gleipnir's activations; it does not show Gleipnir encodes more than the surface text does.
+
+**What it means.** Gleipnir's weakness on peer liars is its output calibration, not missing information: a probe on its own activations, or even a word-count classifier, separates liars almost perfectly when trained on in-lab labels. That fix needs labelled examples from the deployment setting, which the zero-shot monitor does not have.
+
+**Limits.** One lab world; instructed liars; probes and the text baseline are trained and tested within the same lab (leave-seed-out), not transferred; 30 primary liars.
