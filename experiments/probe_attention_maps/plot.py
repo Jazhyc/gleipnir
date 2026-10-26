@@ -7,6 +7,10 @@ Per seed pair (hard-sK, soft-sK), the change in decision margin
   v = v_soft (the two orderings of a two-factor change);
 - value change: Σ_h Σ_t a (v_soft - v_hard), averaged over a = a_hard, a_soft;
 - offset: bias and threshold change, constant across rows.
+
+Hard-label probes have about 4x the logit scale of soft ones (ID logit SD
+~10.5 vs ~2.8), so every logit quantity is first divided by its probe's ID
+logit SD (:func:`standardize`): numbers and figures are in ID-SD units.
 """
 
 from __future__ import annotations
@@ -20,6 +24,24 @@ import numpy as np
 ROOT = Path(__file__).resolve().parents[2]
 SETS = ("soft_fixes", "both_right_pos", "both_missed_pos", "hard_fixes")
 SHOWN = ("marker", "system", "user", "tool_call", "tool_output")
+
+
+def standardize(
+    summary: dict, thresholds: np.ndarray, sd: np.ndarray
+) -> tuple[dict, np.ndarray]:
+    """Divide each probe's logit terms by its ID logit SD ``sd`` ``[10]``."""
+    out = dict(summary)
+    out["logits"] = summary["logits"] / sd
+    out["bias"] = summary["bias"] / sd
+    out["contrib"] = summary["contrib"] / sd[None, :, None, None]
+    # Cross terms carry the values of the named objective.
+    out["cross_hard_attn_soft_value"] = (
+        summary["cross_hard_attn_soft_value"] / sd[None, 5:, None]
+    )
+    out["cross_soft_attn_hard_value"] = (
+        summary["cross_soft_attn_hard_value"] / sd[None, :5, None]
+    )
+    return out, thresholds / sd
 
 
 def decompose(summary: dict, thresholds: np.ndarray) -> dict[str, np.ndarray]:
@@ -121,6 +143,40 @@ def plot_segments(summary: dict, selection: dict, path: Path) -> None:
     plt.close(fig)
 
 
+def plot_contributions(summary: dict, selection: dict, path: Path) -> None:
+    import matplotlib.pyplot as plt
+
+    names = (*SETS[:3], "negatives")
+    fig, axes = plt.subplots(1, len(names), figsize=(15, 3.8), sharey=True)
+    width = 0.38
+    x = np.arange(len(SHOWN))
+    for ax, name in zip(axes, names, strict=True):
+        mask = (
+            selection["labels"] == 0
+            if name == "negatives"
+            else (selection[f"set_{name}"])
+        )
+        rows = np.flatnonzero(mask)
+        table = segment_table(summary, rows, "contrib")
+        for k, (label, color) in enumerate((("hard", "#4c72b0"), ("soft", "#dd8452"))):
+            ax.bar(
+                x + (k - 0.5) * width,
+                [table[label][c] for c in SHOWN],
+                width,
+                label=label,
+                color=color,
+            )
+        ax.axhline(0, color="black", lw=0.6)
+        ax.set_xticks(x, [c.replace("_", " ") for c in SHOWN], rotation=20)
+        ax.set_title(f"{name.replace('_', ' ')} (n={len(rows)})", fontsize=10)
+    axes[0].set_ylabel("logit contribution (ID SD)")
+    axes[0].legend(title="Objective", fontsize=8, title_fontsize=8)
+    fig.suptitle("Soft probes read tool calls more strongly on attacks")
+    fig.tight_layout()
+    fig.savefig(path)
+    plt.close(fig)
+
+
 def plot_decomposition(summary: dict, selection: dict, thresholds, path: Path):
     import matplotlib.pyplot as plt
 
@@ -138,21 +194,25 @@ def plot_decomposition(summary: dict, selection: dict, thresholds, path: Path):
     ax.set_xticks(range(1, len(labels) + 1), labels, fontsize=7)
     ax.axhline(0, color="black", lw=0.6)
     offset = float(parts["offset"][0].mean())
-    ax.set_ylabel("margin change, soft − hard")
+    ax.set_ylabel("margin change, soft − hard (ID SD)")
     ax.set_title(f"Attention move vs value change (constant offset {offset:+.2f})")
     fig.tight_layout()
     fig.savefig(path)
     plt.close(fig)
 
 
-def plot_example(path: Path, text: str, meta: dict, out: Path) -> list[str]:
-    """Token map for one example; returns lines of top-token context."""
+def plot_example(
+    path: Path, text: str, meta: dict, sd: np.ndarray, out: Path
+) -> list[str]:
+    """Token map for one example (contributions in ID-SD units); returns lines
+    of top-token context."""
     import matplotlib.pyplot as plt
 
     from experiments.probe_attention_maps.segments import CLASSES
 
     e = np.load(path)
-    a, v = e["attention"].astype(float), e["values"].astype(float)
+    a = e["attention"].astype(float)
+    v = e["values"].astype(float) / sd[:, None, None]
     classes, offsets = e["classes"], e["offsets"]
     attn = {"hard": a[:5].mean((0, 1)), "soft": a[5:].mean((0, 1))}
     contrib = {
@@ -161,7 +221,11 @@ def plot_example(path: Path, text: str, meta: dict, out: Path) -> list[str]:
     }
     t = np.arange(len(classes))
     fig, axes = plt.subplots(
-        3, 1, figsize=(12, 5), sharex=True, gridspec_kw={"height_ratios": [0.3, 1, 1]}
+        4,
+        1,
+        figsize=(12, 6.5),
+        sharex=True,
+        gridspec_kw={"height_ratios": [0.3, 1, 1, 1]},
     )
     cmap = plt.get_cmap("tab10")
     axes[0].scatter(
@@ -182,18 +246,23 @@ def plot_example(path: Path, text: str, meta: dict, out: Path) -> list[str]:
         title="Segment",
         title_fontsize=7,
     )
-    for name, color in (("hard", "#4c72b0"), ("soft", "#dd8452")):
-        axes[1].plot(t, attn[name], color=color, lw=0.8, label=name)
-        axes[2].plot(t, contrib[name], color=color, lw=0.8, label=name)
+    # Soft first, so the hard line stays visible where they coincide.
+    for name, color, lw in (("soft", "#dd8452", 1.2), ("hard", "#4c72b0", 0.7)):
+        axes[1].plot(t, attn[name], color=color, lw=lw, label=name)
+        axes[2].plot(t, contrib[name], color=color, lw=lw, label=name)
+        axes[3].plot(t, np.cumsum(contrib[name]), color=color, lw=lw, label=name)
+    axes[3].axhline(0, color="black", lw=0.5)
     axes[1].set_ylabel("attention\n(seed, head mean)")
-    axes[2].set_ylabel("logit contribution\n(seed mean)")
-    axes[2].set_xlabel("token")
+    axes[2].set_ylabel("contribution\n(ID SD)")
+    axes[3].set_ylabel("cumulative\ncontribution (ID SD)")
+    axes[3].set_xlabel("token")
     axes[1].legend(fontsize=7, title="Objective", title_fontsize=7)
-    hard, soft = np.mean(meta["hard_logits"]), np.mean(meta["soft_logits"])
+    hard = np.mean(np.asarray(meta["hard_logits"]) / sd[:5])
+    soft = np.mean(np.asarray(meta["soft_logits"]) / sd[5:])
     fig.suptitle(
         f"{meta['kind'].replace('_', ' ')} · {meta['source']} · "
         f"label {meta['label']} · "
-        f"mean logit hard {hard:+.2f}, soft {soft:+.2f}",
+        f"mean logit (ID SD) hard {hard:+.2f}, soft {soft:+.2f}",
         fontsize=10,
     )
     fig.tight_layout()
@@ -215,6 +284,13 @@ def plot_example(path: Path, text: str, meta: dict, out: Path) -> list[str]:
     return lines
 
 
+def id_logit_sd(probes: list[str]) -> np.ndarray:
+    from experiments.probe_attention_maps.select import EPOCH, SOURCE
+
+    saved = json.loads((SOURCE / f"ntp-fp8/logits_e{EPOCH}_fp8.json").read_text())
+    return np.array([np.std(saved["logits"][p]) for p in probes])
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--name", default="maps01")
@@ -229,19 +305,22 @@ def main() -> None:
     if ids != [str(i) for i in summary["ids"]]:
         raise ValueError("summary and selection rows differ")
     selection["sources"] = np.array([rows[i]["source"] for i in ids])
-    thresholds = selection["thresholds"]
+    selection["labels"] = np.array([rows[i]["label"] for i in ids])
+    sd = id_logit_sd([str(p) for p in summary["probes"]])
+    summary, thresholds = standardize(summary, selection["thresholds"], sd)
 
     figures = out / "figures"
     figures.mkdir(exist_ok=True)
     result = report(summary, selection, thresholds)
     (out / "report.json").write_text(json.dumps(result, indent=2) + "\n")
     plot_segments(summary, selection, figures / "segments.svg")
+    plot_contributions(summary, selection, figures / "contributions.svg")
     plot_decomposition(summary, selection, thresholds, figures / "decomposition.svg")
     lines = ["# Example token maps", ""]
     for k, e in enumerate(meta["examples"]):
         path = out / "examples" / f"{e['id']}.npz"
         name = f"example_{k:02d}_{e['kind']}_{e['source']}.png"
-        lines += plot_example(path, rows[e["id"]]["trajectory"], e, figures / name)
+        lines += plot_example(path, rows[e["id"]]["trajectory"], e, sd, figures / name)
     (out / "examples.md").write_text("\n".join(lines) + "\n")
     print(json.dumps(result, indent=1))
 

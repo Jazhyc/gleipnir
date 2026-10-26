@@ -67,3 +67,41 @@ One Lambda GPU in us-west-3 attached to the `gleipnir-probes` filesystem
 backbone forward is needed. `run_maps.sh` builds a light venv, stages the store
 to local disk and runs `analyze.py`. Plots (`plot.py`) run locally from the
 pulled `summary.npz` and example files.
+
+## Result (`maps01`, 2026-10-26)
+
+Gates passed on all 6,395 rows: FP32 bank parity 3.8e-6, frozen-logit parity
+2.0e-3. Run artifacts are in `results/probe_attention_maps/maps01/` (`report.json`,
+`examples.md`, `figures/`), and logs in `logs/lambda/probe_attention_maps/maps01/`.
+Hard probes have about 4x the logit scale of soft ones (ID logit SD 10.1–11.0 vs
+2.7–2.8), so all logit quantities below are in units of each probe's ID logit SD.
+
+**Soft targets change what the probe reads, not where it looks.** On the 711
+attacks only soft catches, both objectives spread attention the same way
+across segments (tool output 0.57 vs 0.58, tool call 0.31 vs 0.30). Per-head
+attention overlap is 0.77, and moving attention accounts for −0.20 of the +0.86
+margin gain (values +0.77, offset +0.29). Most of the gain is in tool-call
+tokens (contribution +0.01 → +0.40) and, less, in tool output (−0.34 → −0.24).
+Across all positives soft reads tool calls more strongly (+0.30 → +0.45), while
+on negatives the tool-call read stays the same (−0.29 vs −0.30).
+
+**Token level.** Both probes attend to the same few tokens: those just after a
+harmful action completes, such as the `})` closing a `send_money` to an
+attacker's IBAN, a policy edit from `Deny` to `Allow`, or code that truncates
+`oversight_log`. The soft probe assigns large values there (0.5–0.7 SD per
+token), while the hard probe's value there is small (≈0.1). Both accumulate a
+slow negative drift over the long, mostly benign background, and the hard
+probe's peaks do not overcome it (`figures/example_07_soft_fix_iac.png`).
+
+**Other sets.** For the 1,324 attacks both miss, attention sits on tool output
+(0.70 of mass), which reads negative for both (−0.64 / −0.61), and no
+action-completion peak stands out. On the 848 attacks both catch (68% rogue_eval),
+attention does move: soft shifts mass from tool calls to the system prompt
+(0.68 → 0.57, 0.09 → 0.19; overlap 0.61) without changing verdicts. The 22
+hard fixes (21 benign) show the cost side of the same change. On long benign
+trajectories, many routine tool calls each read slightly positive under soft,
+and these add up past the threshold.
+
+Caveat: segment labels are coarse, and the token readings are descriptive.
+They show which tokens the probes weight, not why the backbone encodes the
+action-completion positions that way.

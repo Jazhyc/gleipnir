@@ -39,6 +39,13 @@ logs were collected. A second, user-authorized `gpu_1x_h100_pcie`
 (`gleipnir-probe-ensembles`) ran the post-hoc OOD ensemble scoring on
 2026-10-25 (22:15–23:05 UTC, light Torch 2.13 cu129 venv instead of the full
 bootstrap) and was terminated after its 8 artifacts were SHA-256 verified.
+On 2026-10-26 the user authorized one GPU for the
+[attention-map study](../experiments/probe_attention_maps/README.md). The first
+`gpu_1x_h100_pcie` (`gleipnir-probe-maps`) went from booting to unhealthy with
+SSH unreachable and was terminated at the user's instruction. The replacement
+(`gleipnir-probe-maps2`, 11:45–12:40 UTC) ran the study and was terminated after
+its 30 artifacts and logs were SHA-256 verified. us-west-3 capacity was scarce:
+none was free for about an hour on each attempt.
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
 filesystem is retained and bills while it exists; it
