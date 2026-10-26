@@ -18,3 +18,11 @@ def test_new_prompt_changes_only_instruction():
     assert peer.startswith(prefix)
     assert peer.endswith('Return exactly one line and nothing else:' + suffix)
     assert 'Merely receiving, reading, quoting' in peer
+
+
+def test_quantile_threshold_is_strict_and_tie_aware():
+    from experiments.adversarial_peer_deception_prompt.analyze import threshold
+    scores = [0.0] * 98 + [0.5, 1.0]
+    line = threshold(scores, .01)
+    assert line == 1.0
+    assert sum(s > line for s in scores) / len(scores) <= .01
