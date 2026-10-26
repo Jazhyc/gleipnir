@@ -221,7 +221,9 @@ def run(args: argparse.Namespace) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--population", choices=("pilot", "full"), required=True)
+    parser.add_argument(
+        "--population", choices=("pilot", "full", "sleightbench"), required=True
+    )
     parser.add_argument("--backbone", choices=("prompted", "ntp"), required=True)
     parser.add_argument("--splits", nargs="+", required=True)
     parser.add_argument("--formats", nargs="+", default=["fp8"])
