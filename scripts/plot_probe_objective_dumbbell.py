@@ -66,7 +66,8 @@ FOOTNOTE = (
     "initialization. Each objective uses its own validation-best training "
     "length (and, for AlphaEvolve, penalty strength). Stars mark the probe each "
     "target would pick across all families and epochs by validation-set "
-    "pAUROC@20. Reference lines: the released Gleipnir 4B v0.4 checkpoint, and "
+    "pAUROC@20. Reference lines: the three-seed LoRA weight average with QAD "
+    "(released as Gleipnir 4B v0.4), and "
     "the unadapted Qwen3.5-4B scoring zero-shot with the monitor prompt."
 )
 TITLE = (
@@ -343,7 +344,7 @@ def _draw_panel(
     axis.set_ylim(-0.2, top + 0.2)
     for x, label, style in (
         (ZERO_SHOT_OOD, "Base 4B zero-shot", ":"),
-        (GLEIPNIR_4B_OOD, "Gleipnir 4B v0.4", "--"),
+        (GLEIPNIR_4B_OOD, "LoRA seed average + QAD", "--"),
     ):
         axis.axvline(x, color=INK_MUTED, linestyle=style, linewidth=1.5, zorder=1)
         axis.text(
