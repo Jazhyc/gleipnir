@@ -371,3 +371,8 @@ readers each). About $1.60, cap $3. The line is applied to the lab-liar scores
 (`adversarial_lab_liars/qwen_base.py`) for the liars-caught panel. Prediction: untrained Qwen
 catches fewer lab liars at its line than Gleipnir 27B (5 of 30), because its scores on liars are
 low (median 0.055), and flags few framed readers (under 10 of 100), as the 27B does (0 of 100).
+
+**Amendment (27 October, after the run, before reading any score):** Alibaba's content filter refused
+21 of the 400 honest calibration rows (HTTP 400 `data_inspection_failed`, twice). Those 21 are scored
+once on OpenRouter provider `parasail` (same model, FP8), same settings otherwise. The line is reported
+on all 400 rows and, as a check, on the 379 Alibaba rows alone.
