@@ -29,6 +29,7 @@ EXCLUDES = (
     ".env",
     ".env.*",
     ".venv",
+    ".venv-*",
     ".cache",
     ".cache-runtime.env",
     ".uv-cache",

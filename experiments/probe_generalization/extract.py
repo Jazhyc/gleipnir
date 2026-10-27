@@ -235,7 +235,7 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
         "--population",
-        choices=("pilot", "full", "sleightbench"),
+        choices=("pilot", "full", "sleightbench", "optimized_diag"),
         required=True,
     )
     parser.add_argument("--model", choices=tuple(MODELS), default="qwen35_4b")
