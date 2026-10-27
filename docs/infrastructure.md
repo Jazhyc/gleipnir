@@ -907,6 +907,23 @@ systems-screen slot) remains. After the three seeds were scored and every file
 was verified locally, the Pod was deleted at the user's instruction (HTTP 204,
 lookup 404). Volume `cb7bxu71ug` is retained.
 
+### EU-RO-1 B200 for the optimized-stack probe benchmark, 2026-10-27
+
+At the user's instruction, Pod `8dkyopaxdp4dk0` (B200, machine `2mj1yzztlz17`,
+$7.99/hour) was created through the REST API on volume `cb7bxu71ug`, with the
+same image, 150 GB container disk and project key as the 2026-10-24 Pod;
+capacity was immediate. `logs/runpod/optimized_gap/restore.sh` restored the
+serving stack in a few minutes, and the bound `src/gleipnir/__init__.py` was
+put back after each code sync. `sync-code` had been copying the local
+`.venv-cpu` onto the volume; it now excludes `.venv-*`, and the stray 2.9 GB
+copy was deleted. It ran the
+[optimized-stack probe benchmark](../experiments/probe_optimized_serving/README.md).
+After all 19 result files were verified locally by SHA-256 and the logs were
+pulled, the Pod was deleted at the user's instruction (HTTP 204, lookup 404).
+Volume `cb7bxu71ug` is retained, with the vLLM compile cache (11 GB) and the
+uncollected 64-row diagnostic activations
+(`results/probe_optimized_serving/diag01/full_depth/activations`, 2.6 GB).
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
