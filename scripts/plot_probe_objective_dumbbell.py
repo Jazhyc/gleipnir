@@ -363,12 +363,14 @@ def plot_dumbbell(
     rows: list[Row], footnote_text: str = FOOTNOTE, landscape: bool = False
 ) -> plt.Figure:
     """Portrait: all sections in one panel, with the title. Landscape (slides):
-    the monitor-prompt section beside the raw-transcript and LoRA sections, and
-    no title, since the slide carries it."""
+    the monitor-prompt and raw-transcript sections side by side, each closed by
+    the LoRA monitor for reference, and no title, since the slide carries it."""
     set_plot_style()
     if landscape:
-        second = [i for i, row in enumerate(rows) if row.header][1]
-        sections = [rows[:second], rows[second:]]
+        headers = [i for i, row in enumerate(rows) if row.header]
+        second, lora = headers[1], headers[-1]
+        # The LoRA monitor closes both panels as the shared reference.
+        sections = [rows[:second] + rows[lora:], rows[second:]]
         figure, axes = plt.subplots(1, 2, figsize=(23, 6.6))
         axes = list(axes)
     else:
