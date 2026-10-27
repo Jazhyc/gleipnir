@@ -361,3 +361,13 @@ Catching 9 of 10 liars needs the 18% benchmark-FPR line. At that line 11% of pla
 - The framing is static and in-context. All arms use BF16 Transformers scoring, not the optimized serving path.
 - InjectionAugmented40 differs from v0.3 in more than injection training.
 - The liars are instructed, n = 10, and all GPT-6.1 Sol.
+
+## Post-hoc: untrained Qwen3.8-27B line and framing (frozen 27 October 2026, before any score)
+
+`qwen_base.py` scores, with untrained Qwen3.8-27B (Gleipnir 27B's base model) and the Kimi request
+code pinned to Alibaba on OpenRouter: the first 400 honest calibration rows (the 27B arm's size;
+1% line = `threshold_at_fpr` at 0.01) and the framing subset's `none` and `accuse_w1` rows (100
+readers each). About $1.60, cap $3. The line is applied to the lab-liar scores
+(`adversarial_lab_liars/qwen_base.py`) for the liars-caught panel. Prediction: untrained Qwen
+catches fewer lab liars at its line than Gleipnir 27B (5 of 30), because its scores on liars are
+low (median 0.055), and flags few framed readers (under 10 of 100), as the 27B does (0 of 100).
