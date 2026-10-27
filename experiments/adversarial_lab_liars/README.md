@@ -227,3 +227,21 @@ Read together after all three monitors were scored. `results/adversarial_lab_lia
 **What it shows.** With three times the liars and four recruiter models, the earlier result holds: Gleipnir ranks liars almost as well as its teacher (0.90 against 0.96), but at a deployer's 1% line the 4B catches none and the 27B 1 in 6, against Kimi's 3 in 5. The gap is calibration, not ranking. The 4B again reacts to text it only read.
 
 **Limits.** 30 primary liars from two models that comply; instructed liars; one world; the swap covers 9 local lies; Kimi lacks 200 bystander rows and the `last16` set; line (b) comes from 208 rows.
+
+## Post-hoc: untrained Qwen3.8-27B (frozen 27 October 2026, before any Qwen score)
+
+**Why:** on the AISI multi-agent control pilots, untrained Qwen3.8-27B with Gleipnir's teacher prompt
+ranked attacks as well as Gleipnir 27B (its fine-tune). This checks whether that also holds for the lab
+liars, where Gleipnir is weakest.
+
+**Setup:** `qwen_base.py`. The teacher-prompt rows and the Kimi request code (`kimi_record`): decision-token
+log-probabilities (top 5), `max_tokens` 64, reasoning off, OpenRouter `qwen/qwen3.8-27b` pinned to
+Alibaba, no fallbacks, data collection denied. Tiers 0–2 of the frozen `kimi_order.json` (all 100
+pre-assigned recruiters in the primary cells, 9 swaps, 122 other recruiters; about 3.7M tokens, about
+$1.60). Cap $3. There is no honest calibration set for this model, so no 1% line or catch rate.
+
+**Metrics:** primary AUROC and pAUROC@20 (liars vs honest recruiters, seed bootstrap), via
+`pauroc_posthoc.py`, next to Gleipnir 4B, 27B and Kimi.
+
+**Prediction:** untrained Qwen's pAUROC@20 lies within 0.10 of Gleipnir 27B's (0.62); that is, the
+training neither helps nor hurts peer-deception ranking by much.

@@ -34,7 +34,9 @@ def pauroc(rows: list[dict], pos_ids: set[str]) -> float | None:
 def main() -> None:
     cells = set(CONFIG["analysis"]["primary_cells"])
     out = {}
-    for monitor in MONITORS:
+    for monitor in (*MONITORS, "qwen_base"):
+        if not (OUTPUT / monitor / "main" / "predictions.jsonl").exists():
+            continue
         main_rows = scored(monitor)["main"]
         pre = [
             r
