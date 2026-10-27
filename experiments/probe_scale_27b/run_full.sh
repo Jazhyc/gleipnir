@@ -55,7 +55,7 @@ if [ ! -f "$RESULTS/ntp-fp8/probes_e8.pt" ]; then
   echo "train_start $(date -Is)"
   $PY -m experiments.probe_generalization.train --store-root "$LOCAL" \
     --population full --backbone ntp --train-format fp8 \
-    --eval-formats fp8 --resident none --seeds 0 1 2 3 4 \
+    --eval-formats fp8 --resident none --eval-resident none --seeds 0 1 2 3 4 \
     --checkpoints 1 2 4 8 --token-budget 65536 --name "$NAME" \
     > "$LOGS/train_ntp.log" 2>&1
 fi

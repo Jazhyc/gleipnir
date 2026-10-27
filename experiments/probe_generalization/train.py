@@ -97,6 +97,13 @@ def main() -> None:
         help="hold the training rows in GPU or pinned CPU memory, or stream them",
     )
     parser.add_argument(
+        "--eval-resident",
+        choices=("cpu", "none"),
+        default="cpu",
+        help="hold the evaluation rows in pinned CPU memory, or stream them "
+        "(the 27B ID store is too large to pin)",
+    )
+    parser.add_argument(
         "--resume-from",
         type=int,
         help="continue an existing sweep from this saved checkpoint epoch "
@@ -127,13 +134,15 @@ def main() -> None:
         print(f"resident {args.resident} {time.time() - loaded:.0f}s", flush=True)
     if args.eval_formats is None:
         args.eval_formats = ["bf16", "fp8"]
-    # Evaluation rows are read at every checkpoint: hold them in pinned CPU memory.
+    # Evaluation rows are read at every checkpoint: by default hold them in
+    # pinned CPU memory.
     loaded = time.time()
     evals = {
-        fmt: ResidentStore(Store(root / args.eval_split, fmt, skip=skip), "cpu")
-        for fmt in args.eval_formats
+        fmt: Store(root / args.eval_split, fmt, skip=skip) for fmt in args.eval_formats
     }
-    print(f"eval resident cpu {time.time() - loaded:.0f}s", flush=True)
+    if args.eval_resident == "cpu":
+        evals = {fmt: ResidentStore(store, "cpu") for fmt, store in evals.items()}
+    print(f"eval resident {args.eval_resident} {time.time() - loaded:.0f}s", flush=True)
     out = (
         ROOT
         / "results/probe_generalization"
