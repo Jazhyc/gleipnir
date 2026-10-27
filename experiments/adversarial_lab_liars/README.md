@@ -245,3 +245,9 @@ $1.60). Cap $3. There is no honest calibration set for this model, so no 1% line
 
 **Prediction:** untrained Qwen's pAUROC@20 lies within 0.10 of Gleipnir 27B's (0.62); that is, the
 training neither helps nor hurts peer-deception ranking by much.
+
+**Result (27 October 2026, at `d8e2258`):** 229 of 229 rows `ok` on Alibaba, $1.56. Primary comparison
+(30 liars vs 52 honest recruiters): untrained Qwen pAUROC@20 0.655 (seed bootstrap 0.54–0.80) vs Gleipnir
+27B 0.619 (0.53–0.74), 4B 0.631 and Kimi 0.818; AUROC 0.898 vs 0.897. The prediction held. Median score
+on liars 0.055 (untrained) vs 0.562 (Gleipnir 27B): training shifted the scores up but did not improve the
+ranking.
