@@ -1,77 +1,76 @@
-# Probe versus LoRA at 27B: scale pilot
+# Probe versus LoRA at 27B
 
 User direction, 2026-10-27: test whether activation probes stay competitive
-with LoRA-trained monitors beyond the 4B, starting with a pilot on Qwen3.8-27B.
-NTP backbone only; one Lambda GPU with the `gleipnir-probes` filesystem was
-authorized. The 4B results this builds on are in
-[the probe study](../probe_generalization/README.md).
+with LoRA-trained monitors beyond the 4B. This uses the NTP backbone only, on
+one authorized Lambda GPU with the `gleipnir-probes` filesystem. The 4B
+results this builds on are in [the probe study](../probe_generalization/README.md).
+
+A 1,000-row pilot was frozen first (`a0e3b72`) and dropped before any
+extraction, by user decision. At the 4B, soft targets pulled ahead only with
+full training data, and that regime is where probes approach LoRA. A pilot
+would have measured the regime where probes don't compete.
 
 ## Question
 
 At the 4B, the selected NTP soft probe matches the LoRA seeds on ID (0.904 vs
-a 0.903 seed mean) and trails them a little on OOD (0.764, against seeds at
+a 0.903 seed mean) and trails them on OOD (0.764, against seeds at
 0.777–0.813). Does the probe–LoRA gap shrink, hold or grow at 27B, where
-Gleipnir 27B reaches 0.9217 ID and 0.9087 OOD? The pilot is descriptive. It
-measures the backbone effect at a fixed probe protocol, and it costs the full
-27B extraction before anyone commits to it. The user decides on the full run
-afterwards.
+Gleipnir 27B (seed 0, `qwen38-27b-s0-01`) reaches 0.9217 ID and 0.9087 OOD
+pAUROC@20?
 
 ## Design (frozen 2026-10-27, before any 27B extraction)
+
+The 4B `full01` NTP protocol, with only the backbone changed:
 
 - **Backbone.** Unadapted `Qwen/Qwen3.8-27B@1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
   (64 blocks, hidden 5,120), BF16 Transformers forward, NTP rendering (bare
   trajectory, first token dropped as the attention sink). Residual stream
-  after block **31** (zero-based), the same relative depth as the 4B's block 15
-  of 32 (user choice). Extraction checks the block count and hidden size at load.
-- **Rows** (`prepare.py`, `data/probe_generalization/scale_pilot/`). `train`
-  and `id` are byte-identical copies of the probe-study pilot (1,000 rows each,
-  hashes checked). `ood` is 1,000 of the 6,395 frozen OOD rows, stratified by
-  source and label (seed 0, largest remainder); MLE-Sabotage gets 23 rows.
-- **Probes.** The 4B `pilot01` NTP protocol unchanged: the seven pilot
-  architectures, hard and Kimi-soft objectives, seeds 0–2, batch 16, AdamW at
-  1e-4 / 3e-3, checkpoints at epochs 2, 4, 8 and 16, FP8 storage (accepted for
-  the study). Training rows stay in pinned CPU memory and forwards are capped
-  at 65,536 tokens with gradient accumulation. That changes memory use only,
-  not the updates. No AlphaEvolve probe, matching `pilot01`.
-- **4B counterpart.** The existing `pilot01` NTP FP8 probes, unchanged. Only
-  the 4B block-15 activations of the OOD sample are newly extracted.
-- **Selection and OOD read.** For each backbone and objective, the probe
-  study's frozen rule (`evaluate_ood.select`) runs on the 1,000 ID rows. OOD is
-  read once (`score.py`) for the selected candidate and for each family's
-  ID-best candidate. Per-row logits are kept. Nothing is selected on OOD.
+  after block **31** (zero-based), the same relative depth as the 4B's block
+  15 of 32 (user choice). Extraction checks the block count and hidden size
+  at load.
+- **Rows.** `data/probe_generalization/full/`, unchanged: the 7,836
+  strict-filtered training rows with Kimi K3 soft targets, the 3,012 canonical
+  CoT-removed ID rows and the frozen 6,395-row OOD suite.
+- **Probes and training.** As in `full01`: the eleven architectures
+  (including the AlphaEvolve penalty grid), hard and soft objectives, seeds
+  0–4, batch 16, AdamW at 1e-4 / 3e-3, a 65,536-token forward cap,
+  checkpoints at epochs 1, 2, 4 and 8, and FP8 storage. Last-token probes
+  sweep all 64 layers.
+- **Selection and OOD read.** The frozen rule and budget extension of
+  `evaluate_ood.py`, unchanged. Selection uses the seed-median ID pAUROC@20,
+  then AUROC, then lower Brier. A cell selected at epoch 8 extends the sweep
+  to epoch 16 (checkpoints 12 and 16) before OOD is read. OOD is read once,
+  for each cell's selection and each family's ID-best candidate. Nothing is
+  selected on OOD.
 
-## Comparisons (computed locally, no GPU)
+## Comparisons (descriptive, computed locally afterwards)
 
-All comparisons use the same 1,000 ID and 1,000 OOD rows, with seed-median
-source-macro pAUROC@20:
+1. **Probe–LoRA gap at each scale.** Compare the 27B probe with Gleipnir 27B
+   on Mean-OOD and per source, and set it beside the 4B probe–LoRA gap.
+2. **Backbone effect.** Compare the 27B probe with the 4B `full01` probe, per
+   objective and family.
+3. **Soft versus hard at 27B,** measured the way hypothesis 1 was measured at
+   the 4B (≥ 0.01 Mean-OOD at the seed median).
 
-1. **Backbone effect:** 27B probe minus 4B probe, per objective.
-2. **Probe–LoRA gap at each scale:** probe minus Gleipnir 27B (seed 0,
-   `qwen38-27b-s0-01`, student prompt) and probe minus the 4B LoRA seeds,
-   with a paired bootstrap stratified by source.
-3. **Training-data penalty:** the pilot probes train on 1,000 rows, while the
-   LoRA monitors use 7,836. At the 4B, `full01` selected probes are scored on
-   the same OOD rows (a subset of their already-read logits), which measures
-   how much of the pilot gap is data scale.
-
-The non-inferiority margin for a full 27B run (proposed: probe OOD at least
-LoRA minus 0.02, with a bootstrap CI) is frozen with that run's contract, not
-here.
+Gleipnir 27B is a single seed. The 4B LoRA OOD seed SD is about 1.8 points.
 
 ## Stop rules
 
-Stop and report if extraction fails the block/hidden check or produces
-nonfinite activations, if the 27B forward runs out of memory at the longest
-rows (about 38K tokens), or if the persistent copy does not match the local
-stores.
+Stop and report in any of these cases:
+
+- extraction fails the block/hidden check or produces nonfinite activations;
+- the 27B forward runs out of memory at the longest rows (about 42K tokens);
+- local disk runs out (the FP8 store is estimated at 0.87 TB, against 968 GB
+  free);
+- the persistent copy does not match the local store.
 
 ## Operations
 
-`run_remote.sh` runs every stage in order and skips finished ones. Stores go
-to `~/stores_scale/{qwen38_27b,qwen35_4b}/scale_pilot/ntp/` on local disk and
-are copied to `/lambda/nfs/gleipnir-probes/stores/scale_pilot/` (about 155 GB
-FP8 for the 27B). Sweep outputs go to
-`results/probe_generalization/scale27b_pilot01/ntp-fp8/`, selections and OOD
-logits to `results/probe_scale_27b/scale27b_pilot01/`, and logs to
-`logs/lambda/probe_scale_27b/scale27b_pilot01/`. Instance:
-`gleipnir-probe-scale27b`, one `gpu_1x_h100_pcie` in us-west-3.
+`run_full.sh` runs every stage and skips finished ones. The store goes to
+`~/stores_27b/full/ntp/` on local disk and is copied to
+`/lambda/nfs/gleipnir-probes/stores/qwen38_27b_l31/full/ntp/`. Sweep outputs,
+selections and OOD results go to `results/probe_generalization/scale27b_full01/`,
+and logs to `logs/lambda/probe_scale_27b/scale27b_full01/`. The instance is
+`gleipnir-probe-scale27b`, one `gpu_1x_h100_pcie` in us-west-3. The user
+authorized terminating it once the run completes and its artifacts are
+collected.
