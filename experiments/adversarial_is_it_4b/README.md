@@ -376,3 +376,8 @@ low (median 0.055), and flags few framed readers (under 10 of 100), as the 27B d
 21 of the 400 honest calibration rows (HTTP 400 `data_inspection_failed`, twice). Those 21 are scored
 once on OpenRouter provider `parasail` (same model, FP8), same settings otherwise. The line is reported
 on all 400 rows and, as a check, on the 379 Alibaba rows alone.
+
+**Result (27 October):** 395 of 400 honest calibration rows scored (379 Alibaba, 16 Parasail; 5 returned
+prose without a prediction line), $2.17 in total. 1% line 0.953 (Alibaba-only rows: 0.933). At that line
+untrained Qwen flags 0 of 30 lab liars, 0 of 52 honest recruiters, and 0 of 100 readers of the
+accusing post (0 of 100 untouched originals); the same with the Alibaba-only line. Both predictions held.
