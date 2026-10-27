@@ -90,6 +90,14 @@
   single-pass 4B/27B scores on hand-built evasion attacks at 262K context;
   15% (27B) and 5% (4B) catch at 1% FPR against 32% for Opus 4.6 with thinking;
   training data lacks monitor-adversarial, mistake-shaped attacks.
+- [SleightBench NTP probes](findings/sleightbench_ntp_probes.md): frozen
+  NTP activation probes, stripped view, single pass; AUROC 0.61 (hard) and
+  0.63 (soft) against 0.66 (release prompt) and 0.61 (ControlArena) for the
+  4B, catch 5–10%, more pair wins; long context explains little.
+- [Released monitors on APPS injections](findings/apps_released_monitors.md):
+  both releases flag every injected honest program at the APPS operating point;
+  the adapter improves on the base 27B; projecting out an injection direction
+  only softens the 4B's response.
 - `infrastructure.md`: cluster, Lambda, secrets, caches, and operational commands.
 - `decisions.md`: lightweight chronological decision log.
 - `mats_project_log.md`: append-only session log for the 20-hour MATS
@@ -98,6 +106,8 @@
   project narrative before export to Google Docs.
 - `writeups/gleipnir_lesswrong_writeup.md`: faithful copy of the submitted MATS
   project narrative for small clarity edits before web publication.
+- [SleightBench writeup](writeups/sleightbench_monitor_evaluation.md): short
+  public-facing summary of the SleightBench finding.
 - [Mechanistic injection writeup](writeups/mechanistic_injection_writeup.md):
   curated summary of activation-based data filtering and CAFT, with
   supporting steering, transfer and precision controls.

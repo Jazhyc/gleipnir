@@ -1,0 +1,74 @@
+{
+  "campaign_id": "released_direction01",
+  "model": "/tmp/gleipnir-merged/qad-v02-optimized01",
+  "batch_rows": 128,
+  "concurrency": 64,
+  "capture_batch_rows": 32,
+  "capture_concurrency": 8,
+  "direction_layer": 20,
+  "clamp_beta": 0.25,
+  "random_seed": 0,
+  "parity": {
+    "max_mean_absolute_difference": 0.02,
+    "min_correlation": 0.99
+  },
+  "inputs": {
+    "fitting": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/fit_workload.jsonl",
+      "sha256": "329347f26de03ac4a2e4babbcb50b0e144ab8ba54b373f0ad91f012e539ccc49"
+    },
+    "testing": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/apps_workload.jsonl",
+      "sha256": "d3aa35d21a38b272c3344a2fdbd2fa23cf42d46cac838d8b03dc676f1911c454"
+    },
+    "partition": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/partition.json",
+      "sha256": "61ce9d15f698cdeb1e5fb5fee22343a6c033989bf269783ab2057db6bfe3f31c"
+    },
+    "original_directions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/directions.npz",
+      "sha256": "8c3c6e50ee1d3880d854754f9899f5684ae2e2c686479c3ceaaf3677d9eecfa7"
+    },
+    "original_interventions": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/interventions.json",
+      "sha256": "e3f5a409dfe1f3854206b603d546f6a76a6983d35e138f4bb8bae1a81257f0e8"
+    },
+    "original_summary": {
+      "path": "results/b200_injection_direction/sdpa_injection_direction01/summary.json",
+      "sha256": "e13952f55ad5ee16949de48c5a10858daab1e025b04c42346127302e597f53d7"
+    },
+    "id_workload": {
+      "path": "results/b200_optimized_id/id02/workload.json",
+      "sha256": "d51b371abb3ab1ad7336f15ac48d85fc8a829b28a921cdfa380349e2d5c93f60"
+    },
+    "bf16_id_reference": {
+      "path": "results/qad-v02-bf16-01/evaluation/id.jsonl",
+      "sha256": "ce89ed9fa7b2561583e6ceaf46a7633e9377d411bcfe31cebf8d40ffd99283f6"
+    },
+    "merged_artifact": {
+      "path": "results/qad-v02-optimized01/merged_artifact.json",
+      "sha256": "d557c62f96d57d3d05187af4f639adbbf5688ee8b6ab2d52ad732a8fa6fd5bb5"
+    },
+    "bf16_command_template": {
+      "path": "results/caft-regular-sdpa02/server.json",
+      "sha256": "19fd69333f008747661393edb065aea351cc84d19fd83a8bcad9b2688d4af3f5"
+    },
+    "operator_canary": {
+      "path": "data/b200_inference_benchmark/canary.json",
+      "sha256": "00283e9c93bd21de1b8ddab05b14c10164c133a7682e29a86326e7bf880e511f"
+    },
+    "lens_requirements": {
+      "path": "experiments/b200_vllm_lens/requirements.txt",
+      "sha256": "c5da4bf58159407ca1b6fc1d0929a5c5cea5090ac7f3f7c20c7a07f91810955c"
+    },
+    "optimized_benchmark": {
+      "path": "results/apps_released_monitors/apps01/4b/benchmark.jsonl",
+      "sha256": null
+    },
+    "optimized_controls": {
+      "path": "results/apps_released_monitors/apps01/4b/honest_controls.jsonl",
+      "sha256": null
+    }
+  },
+  "promote": false
+}

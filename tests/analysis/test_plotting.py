@@ -129,7 +129,7 @@ def test_cost_callout_reports_opus_to_gleipnir_27b_ratio() -> None:
     axis.set_xscale("log")
     assert round(_draw_cost_callout(axis, frame)) == 243
     labels = [text.get_text() for text in axis.texts if text.get_text()]
-    assert labels == ["243× cheaper, +0.9 pp pAUROC"]
+    assert labels == ["243× cheaper"]
     plt.close(figure)
 
 

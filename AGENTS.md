@@ -99,7 +99,12 @@ parity checks.
 ## Compute boundaries
 
 Never launch billable capacity or terminate an instance without the user's
-explicit instruction. Collect important artifacts before termination. Preserve
+explicit instruction. One exception: when the user has asked for an experiment
+to run autonomously, terminate an instance launched for it that has failed and
+cannot be recovered (for example stuck unhealthy, unreachable over SSH, or a
+hardware fault), then launch a replacement within the same authorization. Try
+recovery first, record the failure and report it. Collect important artifacts
+before any termination. Preserve
 persistent compiler/kernel caches, frozen campaign contracts, failed receipts
 and quality artifacts. Verify live capacity before acting; historical
 running-status notes are not a live inventory. Existing user authorization

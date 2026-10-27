@@ -191,3 +191,52 @@ Regenerate the vector and raster artifacts with:
 ```bash
 python scripts/plot_distillation_pipeline_comparison.py
 ```
+
+## SLEIGHT-Bench catch rate and pAUROC@20
+
+`sleightbench_catch_rate.png`/`.svg` and `sleightbench_pauroc.png`/`.svg`
+show stripped-view SLEIGHT-Bench results as grouped bars (one group per
+model, one bar per way of running it) for the
+[writeup](../docs/writeups/sleightbench_monitor_evaluation.md). Values are
+hard-coded from the [finding](../docs/findings/sleightbench_released_monitors.md):
+paper rows are per-trial catch rates read from the paper's figures; Gleipnir
+rows are the optimized-stack `sb02` runs and base-model logit rows the BF16
+`sb04` runs. Regenerate with:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/plot_sleightbench_results.py
+```
+
+## Probe objective: hard labels versus Kimi soft targets (OOD)
+
+`probe_objective_ood_dumbbell.png`/`.svg` compare hard-label and Kimi
+soft-target training on the frozen OOD suite (source-macro pAUROC@20, seed
+median, individual seeds as small dots). Rows are each probe family's ID-best
+candidate on the prompted ("monitor prompt") and NTP ("raw transcript")
+backbones (`full01`, 5 seeds), plus the matched 4B LoRA seeds 0–2 as the
+fine-tuned reference. Stars mark each objective's frozen ID-rule selection,
+which is always one of the family rows. Each Δ badge is shaded by sign, next to
+the count of same-seed pairs where soft wins. Mean-pooled probes (near the
+floor) and the single-fit last-token probes (no seeds to pair) are left off the
+plot; the footnote gives their scores, the
+[probe study](../experiments/probe_generalization/README.md) reports them in
+full, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
+supply the hard-coded LoRA values. The probe inputs are ignored artifacts.
+Regenerate with:
+
+```bash
+PYTHONPATH=src .venv/bin/python scripts/plot_probe_objective_dumbbell.py
+```
+
+Draft caption (carries the pre-registered result the figure leaves to the
+stars):
+
+> Hard labels versus Kimi K3 soft targets on the out-of-distribution suite.
+> Probes are small classifiers trained on frozen Qwen3.5-4B activations
+> (layer-15 residual stream), computed either with the transcript inside the
+> monitor prompt or on the raw transcript alone; the fine-tuned monitor is the
+> Gleipnir 4B LoRA recipe. Choosing each target's probe on the validation set
+> (stars), soft targets add +0.007 OOD pAUROC@20 with the monitor prompt and
+> +0.055 on the raw transcript, against +0.074 for the fine-tuned monitor.
+> pAUROC@20 is the normalized area under the ROC curve up to a 20%
+> false-positive rate.

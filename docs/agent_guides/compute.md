@@ -4,8 +4,8 @@ These instructions are required for the tasks routed here by the root
 [AGENTS.md](../../AGENTS.md). Standing preferences were moved from that
 file on 2026-10-07; their scope and historical acceptance remain intact.
 
-Never terminate an instance or launch billable capacity without the user's
-explicit instruction. Collect important artifacts before termination.
+Launch and termination rules, including the exception for failed instances in
+autonomous experiments, live in the root [AGENTS.md](../../AGENTS.md#compute-boundaries).
 Verify live runtime, hardware and connection metadata before using a target;
 historical status in documentation is not a live inventory.
 
@@ -60,9 +60,8 @@ No Lambda Cloud training target is currently reserved. The former
 authorization and verified artifact collection.
 Use `scripts/lambda_cloud.py` for SSH, sync, bootstrap, secret transfer, and
 artifact collection on any separately authorized future target. Probe and record
-its hardware before freezing a recipe. Never terminate an instance or launch
-billable capacity without the user's explicit instruction. Pull important
-artifacts before any termination.
+its hardware before freezing a recipe. Pull important artifacts before any
+termination.
 
 Read the relevant platform section of [infrastructure.md](../infrastructure.md)
 before remote setup, access, transfers or lifecycle operations. Use

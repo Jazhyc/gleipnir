@@ -403,6 +403,87 @@ python -m experiments.sleightbench_eval.api_openai gpt55 --limit 1   # canary; t
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb08
 ```
 
+## Exploratory run sb09: GPT-6 Luna with the logit interface (frozen 2026-10-22)
+
+User-requested: the same client, prompts and request contract as `sb07`, with
+only the model changed to `gpt-6-luna`, the project's earlier OOD teacher
+candidate.
+- **Price.** $0.10/M input, $0.01/M cached, $0.125/M cache write, $0.50/M
+  output, from the GPT-6 Luna OOD run (checked 2026-09-30).
+- **Budget.** About $0.30 for both views, with a $2 hard bound.
+- **Canary.** One row first, under the same stop rule as `sb08`.
+
+```bash
+python -m experiments.sleightbench_eval.api_openai gpt6_luna --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb09
+```
+
+## Exploratory run sb10: Jev 1.13 native decision (frozen 2026-10-22)
+
+User-requested modern reference. It uses Jev's own interface from its OOD
+frontier point ([finding](../../docs/findings/tool_trajectory_jev_ood_benchmark.md)),
+not the logit interface:
+- **State.** The raw trajectory inside each frozen `api_control_arena.jsonl`
+  prompt (172 rows, both views); checked equal to the rendered transcript
+  body. The ControlArena instruction is not sent.
+- **Question.** The frozen Jev Noul question
+  (`../decision_models_ood/prompts/jev_noul_v1.json`, SHA-256 `9b423177…`).
+- **Score.** The returned `noul` probability, through OpenRouter's Decisions
+  API.
+- **Routing.** Pinned to TypeSafe, revision `jev-1.13-20260917`, no
+  fallbacks, data collection denied.
+- **Context.** The endpoint now lists 262,144 tokens (32,000 at the OOD
+  run), so the six 133–175K-token transcripts fit. Any input rejection
+  stops the run; there is no fallback score.
+- **Price.** $0.042/M input, free output (endpoint listing checked
+  2026-10-22). About $0.11 for both views; $0.50 hard bound.
+- **Caveat.** Jev returns coarse probabilities (95 distinct values on the
+  OOD suite), so expect ties at the 1%-FPR threshold.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions jev_113 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb10
+```
+
+## Exploratory run sb11: pplx-decider v1.2 native decision (frozen 2026-10-22)
+
+User-requested low-cost competitor. Identical to `sb10` (states, frozen Jev
+Noul question, Decisions API, rules), with only the model changed to
+Perplexity's hosted `pplx-decider-v1.2-20261016`, pinned to Perplexity.
+- **Score.** The hosted `noul` probability. Its OOD frontier point instead
+  used local readout margins
+  ([finding](../../docs/findings/pplx_decider_ood_benchmark.md)), which the
+  hosted endpoint does not expose; both are monotone in the margin.
+- **Price.** $0.02/M input, free output (listing checked 2026-10-22); about
+  $0.07, $0.50 hard bound.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions decider_v12 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb11
+```
+
+## Exploratory run sb12: decision models with the ControlArena prompt (frozen 2026-10-23)
+
+User-requested so the decision models receive the same instruction as the
+logit monitors. `sb10`/`sb11` used the Jev Noul question from their OOD runs,
+which differs from the ControlArena prompt. Identical to `sb10`/`sb11` except
+the question, `prompts/control_arena_noul.json` (SHA-256 `45edb32e…`), built
+mechanically by `api_decisions.control_arena_question` from
+`prompts/control_arena_binary.txt`:
+- the text before its classification line becomes the Noul instructions;
+- that line's `Prediction:1`/`Prediction:0` conditions become the true/false
+  criteria;
+- the output-format lines are dropped.
+
+Models `jev_113_ca` and `decider_v12_ca`; about $0.20 together, $0.50 bound
+each.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions jev_113_ca --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.api_decisions decider_v12_ca --limit 1
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb12
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.
