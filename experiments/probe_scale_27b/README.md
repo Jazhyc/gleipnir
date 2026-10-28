@@ -141,6 +141,63 @@ At the 4B the prompted backbone did not help (selected soft 0.713 vs NTP
   `stores/qwen38_27b_l31/full/prompted`, about 0.8 TB. The run therefore waits
   for capacity in us-west-3, where the filesystem lives.
 
+### Prompted result (2026-10-28)
+
+The run finished at 20:49 UTC. **Parity holds:** the unadapted 27B's zero-shot
+margin reproduces the archived teacher-prompt OOD (0.8903 vs 0.8901) and ID
+(0.8797 vs 0.8869). The soft cell selected epoch 8, so the budget extension ran
+to epoch 16; the hard cell selected epoch 4. OOD was read once. Seed-median
+source-macro pAUROC@20; per-source values are each selection's best-ID seed:
+
+| Monitor | ID | OOD | SHADE-Arena | CUA-SHADE | IaC |
+|---|---:|---:|---:|---:|---:|
+| 27B probe, prompted, soft (rolling w64, e8) | 0.9325 | **0.8610** | 0.468 | 0.837 | 0.929 |
+| 27B probe, prompted, hard (rolling w10, e4) | 0.9241 | 0.8406 | 0.408 | 0.886 | 0.808 |
+| 27B probe, NTP, soft (rolling w256, e1) | 0.9357 | 0.8481 | 0.362 | 0.820 | 0.936 |
+| 27B probe, NTP, hard (rolling w256, e1) | 0.9099 | 0.8142 | 0.320 | 0.799 | 0.861 |
+| 27B last-token probe, prompted, soft (layer 50) | 0.9219 | 0.8957 | — | — | — |
+| 27B last-token probe, prompted, hard (layer 47) | 0.9209 | 0.8867 | — | — | — |
+| Unadapted 27B, teacher prompt, zero-shot | 0.8797 | 0.8903 | 0.556 | 0.865 | 0.968 |
+| Gleipnir 27B, teacher prompt | 0.9420 | 0.9352 | 0.730 | 0.891 | 0.993 |
+
+AgentDojo, MLE-Sabotage and Rogue Eval are within 0.05 of Gleipnir 27B for
+every probe.
+
+1. **The prompt helps pooled probes at 27B, unlike at the 4B.** Selected OOD
+   rises by 0.013 (soft) and 0.026 (hard). Every family gains except hard
+   attention (−0.003), by up to 0.19, the mean-pooled families most. SHADE-Arena rises by 0.09–0.11. At the 4B
+   the prompted backbone lost to NTP (soft 0.713 vs 0.764).
+2. **The gap to LoRA stays.** The prompted soft probe is 0.074 below
+   Gleipnir 27B under the same prompt and 0.029 below the unadapted model's
+   own zero-shot judgment. SHADE-Arena (0.47 vs 0.73) still holds most of it.
+3. **Reading the verdict position beats pooling.** The last-token probe at the
+   `Prediction:` token, its layer chosen on ID, reaches 0.896 OOD (soft) and
+   0.887 (hard): above every pooled probe and the zero-shot margin, within
+   0.013 of Gleipnir 27B under the student prompt and 0.040 below it under the
+   teacher prompt. Under NTP the same sweep peaked at 0.82 ID and 0.56 OOD.
+   The prompted 27B forms a usable verdict in its later layers that a
+   block-31 pooled probe does not see.
+4. **Soft versus hard.** Soft leads by 0.020 OOD at the selection and in all
+   eight pooled families (0.011–0.081), and by 0.009 for the last-token probe.
+
+| Family, OOD (epoch) | prompted hard | prompted soft | NTP hard | NTP soft |
+|---|---:|---:|---:|---:|
+| Rolling attention w256 | 0.853 (4) | **0.864** (16) | 0.814 (1) | 0.848 (1) |
+| Rolling attention w64 | 0.831 (4) | 0.861 (8) | 0.797 (1) | 0.842 (1) |
+| Attention | 0.802 (1) | 0.860 (12) | 0.805 (2) | 0.850 (2) |
+| Rolling attention w10 | 0.841 (4) | 0.857 (2) | 0.773 (1) | 0.820 (1) |
+| MultiMax | 0.801 (8) | 0.854 (16) | 0.793 (4) | 0.842 (8) |
+| AlphaEvolve | 0.820 (8) | 0.848 (2) | 0.799 (8) | 0.847 (8) |
+| Mean MLP | 0.638 (8) | 0.719 (16) | 0.566 (8) | 0.621 (8) |
+| Mean linear | 0.571 (16) | 0.596 (16) | 0.387 (8) | 0.406 (8) |
+
+Operations: one unthrottled H100 PCIe (`gleipnir-probe-scale27b-p`, 75 °C,
+about 6.2K tokens/s). Extraction took 8.4 hours, training 2.0 hours, the
+extension to epoch 16 1.8 hours and the OOD read 40 minutes. The streamed eval
+split (`--eval-resident none`) also carried through the extension. Logs are in
+`logs/lambda/probe_scale_27b/scale27b_prompted01/` and results in
+`results/probe_generalization/scale27b_prompted01/`.
+
 ## Stop rules
 
 Stop and report in any of these cases:

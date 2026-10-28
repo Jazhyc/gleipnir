@@ -62,13 +62,22 @@ the user's instruction, after its logs were saved. The replacement
 4.2K tokens/s of 27B extraction) but finished. It was terminated after its 17
 result files and 9 logs were SHA-256 verified. The 221 GB host cannot pin the
 27B's 166 GB ID store; the sweep streams it (`--eval-resident none`).
+On 2026-10-28 the user authorized a third `gpu_1x_h100_pcie` for the
+teacher-prompted 27B run, and chose to wait for us-west-3 capacity so the store
+could be kept (no H100 PCIe was free at first; an SXM5 was free only in
+us-southeast-1). `gleipnir-probe-scale27b-p` (209.20.156.136) launched on the
+first poll at 07:40 UTC, held 76 °C under a 3-minute matmul load
+(434 TFLOPS at the 350 W cap, no thermal slowdown) and ran at about 6.2K
+tokens/s. It was terminated after its 24 result files and 8 logs were SHA-256
+verified (about 21:05 UTC).
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
 filesystem is retained and bills while it exists; it
 holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
 full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB), the
 SleightBench NTP store (`stores/sleightbench/ntp`, 4.5 GB, no text) and the
-27B block-31 NTP FP8 store (`stores/qwen38_27b_l31/full/ntp`, 809 GB).
+27B block-31 FP8 stores (`stores/qwen38_27b_l31/full/{ntp,prompted}`, 809 and
+810 GB), about 2.7 TB in all.
 
 The two-H100
 `gleipnir-improvement` instance was terminated on 2026-09-08 following explicit
