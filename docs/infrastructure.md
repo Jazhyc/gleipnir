@@ -69,7 +69,12 @@ us-southeast-1). `gleipnir-probe-scale27b-p` (209.20.156.136) launched on the
 first poll at 07:40 UTC, held 76 °C under a 3-minute matmul load
 (434 TFLOPS at the 350 W cap, no thermal slowdown) and ran at about 6.2K
 tokens/s. It was terminated after its 24 result files and 8 logs were SHA-256
-verified (about 21:05 UTC).
+verified (about 21:05 UTC). A fourth user-authorized instance
+(`gleipnir-probe-depth`, the only single-GPU type free in us-west-3: an H100
+PCIe, 21:22–21:38 UTC) ran the CPU-only last-token depth follow-up in a light
+venv (numpy, pandas, scikit-learn, CPU torch) reading the stores from the
+filesystem, and was terminated after its 2 results and log were SHA-256
+verified.
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
 filesystem is retained and bills while it exists; it

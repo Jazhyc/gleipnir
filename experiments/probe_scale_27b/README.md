@@ -202,6 +202,24 @@ descriptive depth curve: the selected last-token probes stay as reported. It
 runs on a small us-west-3 instance with the filesystem (user authorized
 2026-10-28), terminated after verified collection.
 
+**Depth result.** OOD keeps rising well past the ID plateau, so mid-depth is not
+enough even at the verdict position. Source-macro pAUROC@20 (the selected
+layers come from the main runs):
+
+| Last-token probe, OOD (ID) | 24 | 28 | 32 | 36 | 40 | 44 | selected |
+|---|---:|---:|---:|---:|---:|---:|---:|
+| prompted, soft | 0.30 (0.52) | 0.56 (0.75) | 0.79 (0.89) | 0.85 (0.90) | 0.86 (0.91) | 0.87 (0.90) | 0.90 (0.92), layer 50 |
+| prompted, hard | 0.30 (0.51) | 0.59 (0.74) | 0.78 (0.88) | 0.84 (0.90) | 0.85 (0.91) | 0.87 (0.90) | 0.89 (0.92), layer 47 |
+| NTP, soft | 0.18 (0.43) | 0.24 (0.52) | 0.34 (0.61) | 0.46 (0.74) | 0.45 (0.74) | 0.48 (0.77) | 0.56 (0.82), layer 49 |
+| NTP, hard | 0.17 (0.43) | 0.26 (0.53) | 0.33 (0.60) | 0.44 (0.73) | 0.43 (0.73) | 0.45 (0.76) | 0.52 (0.81), layer 49 |
+
+Between layers 32 and 50 the prompted soft probe gains 0.10 OOD for 0.04 ID: what
+generalizes forms after the midpoint. The 4B's prompted last-token probe
+peaked at layer 17 of 32 (0.727 OOD), so the 27B's later layers add something
+the 4B does not have. Without the prompt the final token stays weak at every
+depth. The run took about 16 minutes on `gleipnir-probe-depth` (log in
+`logs/lambda/probe_scale_27b/depth01/`).
+
 Operations: one unthrottled H100 PCIe (`gleipnir-probe-scale27b-p`, 75 °C,
 about 6.2K tokens/s). Extraction took 8.4 hours, training 2.0 hours, the
 extension to epoch 16 1.8 hours and the OOD read 40 minutes. The streamed eval
