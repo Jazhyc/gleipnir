@@ -137,8 +137,9 @@ At the 4B the prompted backbone did not help (selected soft 0.713 vs NTP
 - **Comparisons.** Prompted vs NTP 27B probes per objective, family and source
   (SHADE-Arena first); prompted 27B vs Gleipnir 27B under the teacher prompt;
   and the 4B prompted-vs-NTP contrast.
-- **Store.** `stores/qwen38_27b_l31/full/prompted` on the filesystem (about
-  0.8 TB); whether to keep it is decided after the run.
+- **Store.** Kept on the filesystem for reuse (user decision):
+  `stores/qwen38_27b_l31/full/prompted`, about 0.8 TB. The run therefore waits
+  for capacity in us-west-3, where the filesystem lives.
 
 ## Stop rules
 
