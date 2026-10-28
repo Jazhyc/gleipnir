@@ -113,6 +113,33 @@ budget extension). Training then took 2.0 hours and the OOD read 29 minutes.
 Logs, including the failed attempt (`train_ntp_pinned_oom.log`), are in
 `logs/lambda/probe_scale_27b/scale27b_full01/`.
 
+## Prompted follow-up (frozen 2026-10-28, before extraction)
+
+User direction, 2026-10-28: rerun with the full teacher prompt. Almost all of
+the NTP probe's OOD gap to Gleipnir 27B is SHADE-Arena, where the probe stays
+at 0.36 at both scales. Teacher-prompted Gleipnir 27B gains 14 points there
+(0.588 to 0.730), and the unadapted 27B already reaches 0.556 zero-shot. The
+question is whether a probe reading the prompted forward taps that judgment.
+At the 4B the prompted backbone did not help (selected soft 0.713 vs NTP
+0.764, SHADE-Arena about 0.25), but the 4B's zero-shot was weak (0.618).
+
+- **Design.** The NTP run above with only the backbone changed to `prompted`,
+  exactly as the 4B `full01` prompted condition: the rows' full teacher
+  prompt, chat template, thinking off, ending in `Prediction:`. Probes read the
+  trajectory and the suffix at block 31, not the instruction prefix. Same rows,
+  probes, seeds, checkpoints, frozen selection rule, budget extension and one
+  OOD read. Run `scale27b_prompted01` (`BACKBONE=prompted
+  NAME=scale27b_prompted01 run_full.sh`).
+- **Parity.** The extraction's zero-shot decision margin should reproduce the
+  unadapted 27B's archived teacher-prompt OOD (0.8901, vLLM) within 0.01; a
+  larger gap is reported before interpreting the probes. The `parity` split is
+  not run: its reference margins are the 4B's.
+- **Comparisons.** Prompted vs NTP 27B probes per objective, family and source
+  (SHADE-Arena first); prompted 27B vs Gleipnir 27B under the teacher prompt;
+  and the 4B prompted-vs-NTP contrast.
+- **Store.** `stores/qwen38_27b_l31/full/prompted` on the filesystem (about
+  0.8 TB); whether to keep it is decided after the run.
+
 ## Stop rules
 
 Stop and report in any of these cases:
