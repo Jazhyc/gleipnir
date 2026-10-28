@@ -191,6 +191,17 @@ every probe.
 | Mean MLP | 0.638 (8) | 0.719 (16) | 0.566 (8) | 0.621 (8) |
 | Mean linear | 0.571 (16) | 0.596 (16) | 0.387 (8) | 0.406 (8) |
 
+**Depth follow-up (frozen 2026-10-28, before any further OOD read).** The
+prompted last-token ID curve rises steeply just before the midpoint and then
+plateaus (0.89 at layer 32, 0.90–0.92 from 36 on), as the 4B's does around its
+layer 16. The selected layer 50 won the plateau by under 0.02. To see whether a
+mid-depth verdict-position probe holds up OOD, `lasttoken_depth.py` refits and
+scores OOD once at fixed layers 24, 28, 32, 36, 40 and 44, for both backbones,
+with each layer's objective and C chosen on ID by the frozen rule. This is a
+descriptive depth curve: the selected last-token probes stay as reported. It
+runs on a small us-west-3 instance with the filesystem (user authorized
+2026-10-28), terminated after verified collection.
+
 Operations: one unthrottled H100 PCIe (`gleipnir-probe-scale27b-p`, 75 °C,
 about 6.2K tokens/s). Extraction took 8.4 hours, training 2.0 hours, the
 extension to epoch 16 1.8 hours and the OOD read 40 minutes. The streamed eval
