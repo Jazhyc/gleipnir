@@ -54,6 +54,65 @@ The 4B `full01` NTP protocol, with only the backbone changed:
 
 Gleipnir 27B is a single seed. The 4B LoRA OOD seed SD is about 1.8 points.
 
+## Results (2026-10-28)
+
+The run finished at 01:10 UTC (`FULL_DONE`). Both objectives selected rolling
+attention w256 at epoch 1, so the budget extension did not run. OOD was read
+once. Seed-median source-macro pAUROC@20:
+
+| Monitor | ID | OOD |
+|---|---:|---:|
+| 27B probe, soft targets (selected) | 0.9357 | **0.8481** |
+| 27B probe, hard labels (selected) | 0.9099 | 0.8142 |
+| Gleipnir 27B, student prompt (frozen reference) | 0.9217 | 0.9087 |
+| Gleipnir 27B, teacher prompt (default since 2026-10-20) | 0.9420 | 0.9352 |
+| Unadapted Qwen3.8-27B, teacher prompt, zero-shot | — | 0.8901 |
+| 4B probe, soft / hard (`full01`) | 0.9036 / 0.8530 | 0.7643 / 0.7092 |
+
+1. **Probe–LoRA gap.** The 27B probe beats Gleipnir 27B on ID but trails it on
+   OOD by 0.061 under the frozen student-prompt reference (0.087 under the
+   teacher prompt). At the 4B the soft probe sat 0.013–0.049 below the three
+   LoRA seeds, so the gap holds or grows with scale. It also stays 0.042 below
+   the unadapted 27B judging zero-shot, which the 4B probe beat by far (the 4B
+   zero-shot is 0.618). Per source (the best-ID seed, `rolling_w256-soft-s4`,
+   against the student-prompt Gleipnir 27B), almost all of the gap is
+   SHADE-Arena (0.362 vs 0.588); IaC (0.936 vs 0.987) and CUA-SHADE-Arena
+   (0.820 vs 0.881) add a little, and AgentDojo, MLE-Sabotage and Rogue Eval are
+   within 0.04 of it.
+2. **Backbone effect.** Every family gains 0.06–0.19 OOD over the 4B (the
+   selections: soft +0.084, hard +0.105). The useful families also fit faster: ID
+   peaked at epochs 1–2 and declined by epoch 8, where the 4B kept improving to
+   epochs 8–16.
+3. **Soft versus hard.** Soft beats hard by 0.034 Mean-OOD at the selection,
+   clearing the 0.01 bar, and in all eight families (0.019–0.055). The gain is
+   smaller than at the 4B (+0.055).
+
+| Family, OOD (epoch) | 27B hard | 27B soft | 4B hard | 4B soft |
+|---|---:|---:|---:|---:|
+| Rolling attention w256 | 0.814 (1) | **0.848** (1) | 0.707 (4) | 0.764 (8) |
+| Attention | 0.805 (2) | 0.850 (2) | 0.709 (8) | 0.792 (8) |
+| AlphaEvolve | 0.799 (8) | 0.847 (8) | 0.684 (16) | 0.746 (16) |
+| Rolling attention w64 | 0.797 (1) | 0.842 (1) | 0.676 (8) | 0.765 (8) |
+| MultiMax | 0.793 (4) | 0.842 (8) | 0.599 (8) | 0.684 (16) |
+| Rolling attention w10 | 0.773 (1) | 0.820 (1) | 0.636 (2) | 0.689 (8) |
+| Mean MLP | 0.566 (8) | 0.621 (8) | 0.406 (16) | 0.458 (16) |
+| Mean linear | 0.387 (8) | 0.406 (8) | 0.197 (16) | 0.214 (16) |
+
+Last-token probes behave differently at the 27B. At the 4B they were flat at
+about 0.40–0.46 ID across layers. At the 27B, ID climbs from 0.56 at block 31
+to a peak of 0.82 at layer 49, then falls back to about 0.78. The selected
+layer-49 probes reach 0.517 (hard) and 0.562 (soft) OOD, against 0.21 and 0.20
+at the 4B. Block 31 may therefore not be the best layer for the pooled 27B
+probes either; this run did not test other layers.
+
+Operations: the first H100 throttled thermally and was replaced (see
+[infrastructure](../../docs/infrastructure.md#lambda-cloud)). Extraction on the
+replacement took 11.2 hours. The first training attempt failed to pin the
+166 GB ID store; the sweep now streams it (`ccca192`, and `e45fc3f` for the
+budget extension). Training then took 2.0 hours and the OOD read 29 minutes.
+Logs, including the failed attempt (`train_ntp_pinned_oom.log`), are in
+`logs/lambda/probe_scale_27b/scale27b_full01/`.
+
 ## Stop rules
 
 Stop and report in any of these cases:
@@ -70,7 +129,7 @@ Stop and report in any of these cases:
 `~/stores_27b/full/ntp/` on local disk and is copied to
 `/lambda/nfs/gleipnir-probes/stores/qwen38_27b_l31/full/ntp/`. Sweep outputs,
 selections and OOD results go to `results/probe_generalization/scale27b_full01/`,
-and logs to `logs/lambda/probe_scale_27b/scale27b_full01/`. The instance is
-`gleipnir-probe-scale27b`, one `gpu_1x_h100_pcie` in us-west-3. The user
-authorized terminating it once the run completes and its artifacts are
-collected.
+and logs to `logs/lambda/probe_scale_27b/scale27b_full01/`. The run used one
+`gpu_1x_h100_pcie` in us-west-3 (`gleipnir-probe-scale27b`, replaced by
+`gleipnir-probe-scale27b-2`). Both are terminated; the store stays on the
+persistent filesystem.

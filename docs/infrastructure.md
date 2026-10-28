@@ -52,12 +52,23 @@ A user-authorized `gpu_1x_h100_pcie` (`gleipnir-probe-sleightbench`,
 terminated after its artifacts were SHA-256 verified. Its image lacked
 NVIDIA's apt repository: install `cuda-keyring` (ubuntu2204) before the CUDA
 13.0 packages, and set `CUDA_HOME=/usr/local/cuda-13.0` in the runtime file.
+On 2026-10-27 the user authorized one `gpu_1x_h100_pcie` for the
+[27B probe run](../experiments/probe_scale_27b/README.md). The first instance
+(`gleipnir-probe-scale27b`) sat at 89–92 °C with its clocks thermally throttled
+to about 450 MHz (`SW Thermal Slowdown`) and was terminated around 11:46 UTC at
+the user's instruction, after its logs were saved. The replacement
+(`gleipnir-probe-scale27b-2`, 209.20.156.225, about 11:05 UTC on 2026-10-27 to
+01:20 UTC on 2026-10-28) also throttled mildly (85–87 °C, 550–750 MHz, about
+4.2K tokens/s of 27B extraction) but finished. It was terminated after its 17
+result files and 9 logs were SHA-256 verified. The 221 GB host cannot pin the
+27B's 166 GB ID store; the sweep streams it (`--eval-resident none`).
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
 filesystem is retained and bills while it exists; it
 holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
-full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB) and the
-SleightBench NTP store (`stores/sleightbench/ntp`, 4.5 GB, no text).
+full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB), the
+SleightBench NTP store (`stores/sleightbench/ntp`, 4.5 GB, no text) and the
+27B block-31 NTP FP8 store (`stores/qwen38_27b_l31/full/ntp`, 809 GB).
 
 The two-H100
 `gleipnir-improvement` instance was terminated on 2026-09-08 following explicit
