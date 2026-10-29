@@ -227,6 +227,13 @@ split (`--eval-resident none`) also carried through the extension. Logs are in
 `logs/lambda/probe_scale_27b/scale27b_prompted01/` and results in
 `results/probe_generalization/scale27b_prompted01/`.
 
+On the optimized B200 serving stack, the attention picks lose 0.1–1.4 OOD
+points (NTP soft 0.850 → 0.849), and a scorer truncated after block 31 runs
+1.95× the full-depth rows per second
+([optimized-stack follow-up](../probe_optimized_serving/README.md#27b-result-2026-10-29-opt27b01-thr27b01)).
+Per-row OOD logits for every probe and checkpoint are in each run's
+`ensemble_ood/`.
+
 ## Stop rules
 
 Stop and report in any of these cases:

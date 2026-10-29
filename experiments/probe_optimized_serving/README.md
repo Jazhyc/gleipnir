@@ -65,7 +65,7 @@ the user authorized.
   prompted rows.
 
 Out of scope: training probes on quantized activations (a natural follow-up
-if quality drops), the prompted backbone, and the 27B.
+if quality drops) and the prompted backbone. The 27B follow-up is below.
 
 ## Stop rules
 
@@ -189,3 +189,53 @@ Stop and report if token counts differ, any activation or logit is nonfinite,
 the Lambda rescoring misses a frozen read, the extraction disagrees with the
 reference logits (mean correlation below 0.99), or the truncated server does
 not run blocks 0–31 exactly once per step.
+
+## 27B result (2026-10-29, `opt27b01`, `thr27b01`)
+
+**Validation.** The Lambda rescoring (`ensemble_ood`) reproduced every frozen
+OOD read with zero drift, for both backbones. The Pod's BF16 extraction of the
+64 diagnostic rows matches those references at correlation 0.99997 (NTP) and
+0.99996 (prompted), and the BF16 column below reproduces the frozen ID and OOD
+reads. Every prompted row's kept start was found in the keep table, and token
+counts matched row for row. On the diagnostic rows, block-31 states from the
+optimized stack have mean relative L2 error 0.18 and mean cosine 0.98 against
+BF16, for both backbones (4B block 15: 0.47 / 0.86). The FP8 storage round
+trip is 0.012 / 0.9999.
+
+**Quality** (all ID and OOD rows, attention picks, seed-median pAUROC@20, FP8
+round trip, paired source-stratified bootstrap):
+
+| pick | ID BF16 → opt (change, 95% CI) | OOD BF16 → opt (change, 95% CI) | logit corr. (OOD) |
+|---|---|---|---:|
+| NTP soft e2 | 0.914 → 0.904 (−0.010 [−0.014, −0.006]) | 0.850 → 0.849 (−0.001 [−0.004, +0.001]) | 0.991 |
+| NTP hard e2 | 0.892 → 0.878 (−0.013 [−0.020, −0.007]) | 0.805 → 0.794 (−0.012 [−0.015, −0.008]) | 0.985 |
+| prompted soft e12 | 0.917 → 0.912 (−0.005 [−0.009, −0.001]) | 0.860 → 0.849 (−0.011 [−0.014, −0.008]) | 0.993 |
+| prompted hard e1 | 0.900 → 0.898 (−0.002 [−0.009, +0.003]) | 0.802 → 0.789 (−0.014 [−0.017, −0.010]) | 0.988 |
+
+Raw inputs differ from the FP8 round trip by at most 0.0004. The 27B probes
+lose 0.1–1.4 OOD points, against 3.4 (soft) and 5.0 (hard) for the 4B
+attention picks, matching Gleipnir 27B's own small optimized-stack loss. The prompted soft probe's
+one-point OOD lead over NTP on BF16 disappears: both score 0.849 optimized.
+Details: `opt27b01/{ntp,prompted}/comparison_{fp8,raw}.json`, `diag.json`.
+
+**Throughput** (one B200 on machine `ods55hcq87v4`, 6,395 OOD rows, 128-row
+batches at concurrency 128; NTP rows 54.3M tokens, prompted rows 60.5M):
+
+| configuration | NTP tok/s | NTP rows/s | prompted tok/s | prompted rows/s |
+|---|---:|---:|---:|---:|
+| full depth, stock head | 53.6K | 6.31 | 53.8K | 5.68 |
+| truncated after block 31, no probe | 105.5K | 12.42 | 105.9K | 11.19 |
+| truncated + deployed probe (raw) | 104.5K | 12.30 | 104.8K | 11.07 |
+
+The deployed probe costs about 1% over the truncated backbone, giving 1.95×
+the rows per second of the full-depth stack for both backbones (4B: 1.84×).
+The full-depth prompted row is the per-token cost of Gleipnir 27B scoring its
+own prompt. The deployed probes' OOD pAUROC@20 is 0.849 (NTP `attention-soft-s1`)
+and 0.849 (prompted `attention-soft-s3`), with logits matching the quality pass
+at correlation 0.999.
+
+The first single-probe launch failed its startup self-check: the BF16 check
+that a probe sliced from the fused bank scores like the bank differed by about
+1e-3 at the 27B's width (`server_single_ntp.failed_slice_tolerance01.log`). The
+check now runs in FP32; serving is unchanged. The quality servers' engine
+tracebacks at shutdown are the runner stopping the server.

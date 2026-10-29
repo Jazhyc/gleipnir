@@ -949,6 +949,26 @@ Volume `cb7bxu71ug` is retained, with the vLLM compile cache (11 GB) and the
 uncollected 64-row diagnostic activations
 (`results/probe_optimized_serving/diag01/full_depth/activations`, 2.6 GB).
 
+### EU-RO-1 B200 and a Lambda H100 for the 27B optimized-stack probes, 2026-10-29
+
+At the user's instruction, Pod `paom6wximf7dw7` (B200, machine
+`ods55hcq87v4`, $7.99/hour) was created through the REST API on volume
+`cb7bxu71ug`, with the same image and project key as the 2026-10-27 Pod and a
+250 GB container disk. EU-RO-1 had no B200 for about 50 minutes; a poller
+created it at 11:31 UTC. `logs/runpod/optimized_gap/restore.sh` restored the
+stack, the 27B base went to `/root/hf-27b`, and the bound
+`src/gleipnir/__init__.py` was put back after each code sync. It ran the
+[27B follow-up](../experiments/probe_optimized_serving/README.md). After 74
+result and log files were verified locally by SHA-256, the Pod was deleted at
+the user's instruction around 14:58 UTC (HTTP 204, lookup 404). Volume
+`cb7bxu71ug` is retained, with the uncollected diagnostic state dumps
+(`results/probe_optimized_serving/opt27b01/*/dump`, 10 GB).
+
+The BF16 OOD references ran on a user-authorized Lambda `gpu_1x_h100_pcie`
+(`gleipnir-probe-ref27b`, us-west-3, $3.29/hour, 10:52–12:40 UTC) attached to
+`gleipnir-probes`, using a light scoring venv. It was terminated at the user's
+instruction after its 4 result files and 3 logs were SHA-256 verified.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
