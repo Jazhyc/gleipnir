@@ -1,4 +1,8 @@
-"""Compare the frozen full01 NTP probe picks: BF16 pipeline vs optimized stack.
+"""Compare frozen probe picks: BF16 pipeline vs optimized stack.
+
+Defaults reproduce the 4B run (``full01`` NTP). For the 27B, ``--sweep`` names
+the study run, ``--backbone`` its backbone and ``--families`` the families
+compared; each named family then gets the bootstrap as well.
 
 For each objective's selected cell and each family's ID-best candidate
 (``full01/selection_ntp.json``), report the seed-median source-macro
@@ -33,11 +37,14 @@ def rows_of(split: str) -> dict[str, dict]:
     }
 
 
-def reference(split: str, epoch: int) -> tuple[list[str], dict[str, np.ndarray]]:
+def reference(
+    split: str, epoch: int, sweep: Path = FULL01, backbone: str = "ntp"
+) -> tuple[list[str], dict[str, np.ndarray]]:
     if split == "id":
-        data = json.loads((FULL01 / f"ntp-fp8/logits_e{epoch}_fp8.json").read_text())
+        path = sweep / f"{backbone}-fp8/logits_e{epoch}_fp8.json"
+        data = json.loads(path.read_text())
         return data["ids"], {k: np.array(v) for k, v in data["logits"].items()}
-    data = np.load(FULL01 / "ensemble_ood/logits_ntp.npz")
+    data = np.load(sweep / f"ensemble_ood/logits_{backbone}.npz")
     k = list(data["epochs"]).index(epoch)
     return list(data["ids"]), {
         str(n): data["logits"][k][:, j] for j, n in enumerate(data["names"])
@@ -68,14 +75,28 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run", required=True, help="results dir with id/, ood/")
     parser.add_argument("--variant", default="fp8")
+    parser.add_argument("--sweep", default=str(FULL01), help="probe study run dir")
+    parser.add_argument("--backbone", default="ntp")
+    parser.add_argument("--families", nargs="+", help="only these family picks")
     args = parser.parse_args()
     run = Path(args.run)
-    selection = json.loads((FULL01 / "selection_ntp.json").read_text())
+    sweep = ROOT / args.sweep
+    selection = json.loads((sweep / f"selection_{args.backbone}.json").read_text())
     picks = []
     for objective, cell in selection.items():
-        picks.append((objective, "selected", cell["selected"]))
-        picks.extend((objective, f, c) for f, c in cell["families"].items())
-    result = {"variant": args.variant, "picks": []}
+        if args.families is None:
+            picks.append((objective, "selected", cell["selected"]))
+        picks.extend(
+            (objective, f, c)
+            for f, c in cell["families"].items()
+            if args.families is None or f in args.families
+        )
+    result = {
+        "variant": args.variant,
+        "sweep": args.sweep,
+        "backbone": args.backbone,
+        "picks": [],
+    }
     rng = np.random.default_rng(0)
     for split in ("id", "ood"):
         meta = rows_of(split)
@@ -83,7 +104,7 @@ def main() -> None:
         for objective, name, pick in picks:
             epoch = pick["epoch"]
             if epoch not in cache:
-                ref_ids, ref = reference(split, epoch)
+                ref_ids, ref = reference(split, epoch, sweep, args.backbone)
                 opt_ids, opt = optimized(run, split, epoch, args.variant)
                 order = {i: k for k, i in enumerate(opt_ids)}
                 missing = set(ref_ids) - set(order)
@@ -108,7 +129,7 @@ def main() -> None:
                 ),
             }
             entry["delta"] = entry["optimized"] - entry["bf16"]
-            if name == "selected":
+            if name == "selected" or args.families is not None:
                 by_source = {}
                 for k, r in enumerate(rows):
                     by_source.setdefault(r["source"], []).append(k)

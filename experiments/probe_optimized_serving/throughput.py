@@ -5,12 +5,15 @@ concurrency 128, with throughput taken as tokens over summed batch wall time.
 One excluded warmup batch runs first. ``--rendering ntp`` sends the bare
 trajectories, with token counts taken from the Transformers tokenizer;
 ``prompted`` sends the frozen Gleipnir student-prompt workload unchanged.
+``--rows`` instead sends rows prepared by ``prepare_27b.py`` (rendered input
+and token count).
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
+import hashlib
 import json
 from pathlib import Path
 
@@ -23,7 +26,17 @@ CONFIG = {"port": 8010, "timeout_seconds": 1800, "concurrency": 128}
 BATCH = 128
 
 
-def workload(rendering: str, snapshot: str) -> list[dict]:
+def workload(rendering: str, snapshot: str, prepared: str | None) -> list[dict]:
+    if prepared:
+        return [
+            {
+                "id": row["id"],
+                "prompt": row["input"],
+                "prompt_sha256": hashlib.sha256(row["input"].encode()).hexdigest(),
+                "prompt_tokens": row["tokens"],
+            }
+            for row in map(json.loads, open(prepared))
+        ]
     if rendering == "prompted":
         return [json.loads(line) for line in PROMPTED.open()]
     from transformers import AutoTokenizer
@@ -70,9 +83,11 @@ def main() -> None:
     parser.add_argument("--label", required=True)
     parser.add_argument("--out", required=True)
     parser.add_argument("--port", type=int, default=8010)
+    parser.add_argument("--rows", help="prepared rows (prepare_27b.py)")
     args = parser.parse_args()
-    result = asyncio.run(run(workload(args.rendering, args.snapshot), args.port))
-    result.update(label=args.label, rendering=args.rendering)
+    rows = workload(args.rendering, args.snapshot, args.rows)
+    result = asyncio.run(run(rows, args.port))
+    result.update(label=args.label, rendering=args.rendering, rows_file=args.rows)
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(json.dumps(result, indent=2) + "\n")
