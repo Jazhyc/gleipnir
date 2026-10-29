@@ -1,4 +1,4 @@
-"""Extract frozen Qwen3.5-4B activations for the probe study (one GPU).
+"""Extract frozen Qwen3.5 activations for the probe studies (one GPU).
 
 For every row of the requested splits, one BF16 Transformers forward captures:
 
@@ -29,8 +29,15 @@ from pathlib import Path
 import numpy as np
 
 ROOT = Path(__file__).resolve().parents[2]
-MODEL_ID = "Qwen/Qwen3.5-4B"
-MODEL_REVISION = "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a"
+# Backbones: (model id, revision, decoder blocks, hidden size), checked at load.
+MODELS = {
+    "qwen35_4b": (
+        "Qwen/Qwen3.5-4B", "851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a", 32, 2560
+    ),
+    "qwen38_27b": (
+        "Qwen/Qwen3.8-27B", "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0", 64, 5120
+    ),
+}  # fmt: skip
 SUFFIX = "<|im_start|>assistant\n<think>\n\n</think>\n\n"
 DECISION_PREFIX = "Prediction:"
 KERNEL_FLAG = "GLEIPNIR_PROBE_KERNELS"
@@ -69,7 +76,7 @@ def tokenize(tokenizer, text: str, keep_from_char: int) -> tuple[list[int], int]
     return encoded["input_ids"], keep_from
 
 
-def load_model():
+def load_model(model_id: str, revision: str):
     import importlib.metadata
 
     import torch
@@ -90,8 +97,8 @@ def load_model():
     if getattr(modeling_qwen3_5, "is_fast_path_available", True) is not True:
         raise RuntimeError("Transformers did not bind the Qwen3.5 fast path")
     model = Qwen3_5ForCausalLM.from_pretrained(
-        MODEL_ID,
-        revision=MODEL_REVISION,
+        model_id,
+        revision=revision,
         dtype=torch.bfloat16,
         attn_implementation="sdpa",
         device_map="cuda",
@@ -112,12 +119,17 @@ def run(args: argparse.Namespace) -> None:
     from gleipnir.probes.store import StoreWriter
 
     data = ROOT / "data/probe_generalization" / args.population
-    tokenizer = AutoTokenizer.from_pretrained(MODEL_ID, revision=MODEL_REVISION)
+    model_id, revision, depth, width = MODELS[args.model]
+    tokenizer = AutoTokenizer.from_pretrained(model_id, revision=revision)
     if tokenizer.convert_tokens_to_ids(["0", "1"]) != [15, 16]:
         raise ValueError("decision tokens are not ids 15/16")
-    model, runtime = load_model()
+    model, runtime = load_model(model_id, revision)
     layers = model.model.layers
     hidden = model.config.hidden_size
+    if (len(layers), hidden) != (depth, width):
+        raise ValueError(
+            f"{model_id}: {len(layers)} blocks x {hidden}, expected {depth} x {width}"
+        )
     if not 0 <= args.layer < len(layers):
         raise ValueError(f"layer {args.layer} outside 0..{len(layers) - 1}")
     head = model.lm_head.weight[15:17].detach().float()
@@ -196,8 +208,8 @@ def run(args: argparse.Namespace) -> None:
             "".join(json.dumps(r, sort_keys=True) + "\n" for r in records)
         )
         meta = {
-            "model": MODEL_ID,
-            "revision": MODEL_REVISION,
+            "model": model_id,
+            "revision": revision,
             "backbone": args.backbone,
             "split": split,
             "layer": args.layer,
@@ -222,8 +234,11 @@ def run(args: argparse.Namespace) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--population", choices=("pilot", "full", "sleightbench"), required=True
+        "--population",
+        choices=("pilot", "full", "sleightbench", "optimized_diag"),
+        required=True,
     )
+    parser.add_argument("--model", choices=tuple(MODELS), default="qwen35_4b")
     parser.add_argument("--backbone", choices=("prompted", "ntp"), required=True)
     parser.add_argument("--splits", nargs="+", required=True)
     parser.add_argument("--formats", nargs="+", default=["fp8"])

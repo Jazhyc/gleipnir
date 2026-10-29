@@ -126,6 +126,7 @@ def extend_if_boundary(args, chosen: dict, summary: dict) -> dict | None:
         "--weight-decay", str(config["weight_decay"]),
         "--data-seed", str(config["data_seed"]),
         "--resident", config["resident"],
+        "--eval-resident", config.get("eval_resident", "cpu"),
         "--name", config["name"],
         "--resume-from", str(last),
     ]  # fmt: skip

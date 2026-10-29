@@ -55,6 +55,8 @@ SECTION_GAP = 0.45
 # Right-hand columns, in axes fractions.
 DELTA_COLUMN = (1.03, 1.19)
 WINS_CENTER = 1.27
+# Landscape panels are narrower, so the columns sit further out in axes units.
+LANDSCAPE_COLUMNS = (DELTA_COLUMN, WINS_CENTER)
 CARD_COLOR = "#F2F3F5"
 STAR_SIZE = 420
 LEGEND_GAP = 24.0  # pixels between the two legend boxes
@@ -64,7 +66,8 @@ FOOTNOTE = (
     "initialization. Each objective uses its own validation-best training "
     "length (and, for AlphaEvolve, penalty strength). Stars mark the probe each "
     "target would pick across all families and epochs by validation-set "
-    "pAUROC@20. Reference lines: the released Gleipnir 4B v0.4 checkpoint, and "
+    "pAUROC@20. Reference lines: the three-seed LoRA weight average with QAD "
+    "(released as Gleipnir 4B v0.4), and "
     "the unadapted Qwen3.5-4B scoring zero-shot with the monitor prompt."
 )
 TITLE = (
@@ -189,9 +192,8 @@ def omitted_probes_note(results_dir: Path) -> str:
     )
 
 
-def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
-    set_plot_style()
-    figure, axis = plt.subplots(figsize=(11.5, 9.6))
+def _layout(rows: list[Row]) -> tuple[list[float], float]:
+    """Row centers (top row highest) and the panel's total height."""
     # Two-line section headers get a taller band than data rows.
     # Sections are separated by a gap so each can sit on its own card.
     positions = []
@@ -203,7 +205,18 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
         positions.append(cursor - height / 2)
         cursor -= height
     top = -cursor
-    positions = [y + top for y in positions]
+    return [y + top for y in positions], top
+
+
+def _draw_panel(
+    axis: plt.Axes,
+    rows: list[Row],
+    positions: list[float],
+    top: float,
+    columns: tuple[tuple[float, float], float] = (DELTA_COLUMN, WINS_CENTER),
+) -> None:
+    """Draw one panel's rows, Δ and wins columns, reference lines and axis."""
+    delta_column, wins_center = columns
     delta_transform = blended_transform_factory(axis.transAxes, axis.transData)
 
     for y, row in zip(positions, rows, strict=True):
@@ -259,8 +272,8 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
         # Fixed-width badges with right-aligned values line up the decimals.
         axis.add_patch(
             FancyBboxPatch(
-                (DELTA_COLUMN[0], y - 0.32),
-                DELTA_COLUMN[1] - DELTA_COLUMN[0],
+                (delta_column[0], y - 0.32),
+                delta_column[1] - delta_column[0],
                 0.64,
                 boxstyle="round,pad=0,rounding_size=0.006",
                 transform=delta_transform,
@@ -271,7 +284,7 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
         )
         weight = "bold" if row.emphasis else "normal"
         axis.text(
-            DELTA_COLUMN[1] - 0.012,
+            delta_column[1] - 0.012,
             y,
             f"{row.delta:+.3f}".replace("-", "\u2212"),
             transform=delta_transform,
@@ -282,7 +295,7 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
             fontweight=weight,
         )
         axis.text(
-            WINS_CENTER,
+            wins_center,
             y,
             row.wins or "\u2013",
             transform=delta_transform,
@@ -294,8 +307,8 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
         )
 
     for x, header, align in (
-        (DELTA_COLUMN[1] - 0.012, "\u0394 soft \u2212 hard", "right"),
-        (WINS_CENTER, "Wins", "center"),
+        (delta_column[1] - 0.012, "\u0394 soft \u2212 hard", "right"),
+        (wins_center, "Wins", "center"),
     ):
         axis.text(
             x,
@@ -331,7 +344,7 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
     axis.set_ylim(-0.2, top + 0.2)
     for x, label, style in (
         (ZERO_SHOT_OOD, "Base 4B zero-shot", ":"),
-        (GLEIPNIR_4B_OOD, "Gleipnir 4B v0.4", "--"),
+        (GLEIPNIR_4B_OOD, "LoRA seed average + QAD", "--"),
     ):
         axis.axvline(x, color=INK_MUTED, linestyle=style, linewidth=1.5, zorder=1)
         axis.text(
@@ -345,6 +358,37 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
             color=INK_MUTED,
         )
     axis.set_xlabel("OOD pAUROC@20, seed median (higher is better)", fontsize=14)
+
+
+def plot_dumbbell(
+    rows: list[Row], footnote_text: str = FOOTNOTE, landscape: bool = False
+) -> plt.Figure:
+    """Portrait: all sections in one panel, with the title. Landscape (slides):
+    the monitor-prompt and raw-transcript sections side by side, each closed by
+    the LoRA monitor for reference, and no title, since the slide carries it."""
+    set_plot_style()
+    if landscape:
+        headers = [i for i, row in enumerate(rows) if row.header]
+        second, lora = headers[1], headers[-1]
+        # The LoRA monitor closes both panels as the shared reference.
+        sections = [rows[:second] + rows[lora:], rows[second:]]
+        figure, axes = plt.subplots(1, 2, figsize=(23, 6.6))
+        axes = list(axes)
+    else:
+        sections = [rows]
+        figure, axis = plt.subplots(figsize=(11.5, 9.6))
+        axes = [axis]
+    layouts = [_layout(section) for section in sections]
+    # Panels share one height so their tops and x axes line up.
+    top = max(height for _, height in layouts)
+    for axis, section, (positions, height) in zip(axes, sections, layouts, strict=True):
+        _draw_panel(
+            axis,
+            section,
+            [y + top - height for y in positions],
+            top,
+            LANDSCAPE_COLUMNS if landscape else (DELTA_COLUMN, WINS_CENTER),
+        )
     target_handles = [
         Line2D(
             [],
@@ -403,10 +447,16 @@ def plot_dumbbell(rows: list[Row], footnote_text: str = FOOTNOTE) -> plt.Figure:
         columnspacing=1.2,
         borderaxespad=0,
     )
-    figure.tight_layout()
-    left, right = _content_span(figure, axis)
-    _add_section_cards(figure, axis, rows, positions, left, right)
-    _add_title(figure, axis, TITLE, left, right)
+    figure.tight_layout(w_pad=4.0)
+    spans = []
+    for axis, section, (positions, height) in zip(axes, sections, layouts, strict=True):
+        span = _content_span(figure, axis)
+        shifted = [y + top - height for y in positions]
+        _add_section_cards(figure, axis, section, shifted, *span)
+        spans.append(span)
+    left, right = spans[0][0], spans[-1][1]
+    if not landscape:
+        _add_title(figure, axes[0], TITLE, left, right)
     # The two legends sit side by side, centered under the cards; the footnote
     # starts at the cards' left edge.
     to_figure = figure.transFigure.inverted()
@@ -548,6 +598,11 @@ def parse_args() -> argparse.Namespace:
         help="Output image path; repeat for multiple formats. "
         "Defaults to both PNG and SVG.",
     )
+    parser.add_argument(
+        "--landscape",
+        action="store_true",
+        help="Two panels side by side and no title, for slides",
+    )
     return parser.parse_args()
 
 
@@ -558,7 +613,9 @@ def main() -> None:
     for output_path in args.output or DEFAULT_OUTPUTS:
         # Extra padding keeps a white margin beside the full-width cards.
         output = save_figure(
-            plot_dumbbell(rows, f"{FOOTNOTE} {note}"), output_path, pad_inches=0.4
+            plot_dumbbell(rows, f"{FOOTNOTE} {note}", args.landscape),
+            output_path,
+            pad_inches=0.4,
         )
         print(f"Wrote {output}")
 
