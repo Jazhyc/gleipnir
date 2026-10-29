@@ -133,3 +133,59 @@ the truncated backbone, giving 1.84× the rows per second of the full stack.
 Its logits match the same probe in the quality pass at correlation 0.996, not
 exactly, because the stack's FP4 arithmetic depends on how many rows share a
 step; its OOD pAUROC@20 here is 0.750.
+
+## 27B follow-up (frozen 2026-10-29, before any 27B capture)
+
+User direction, 2026-10-29: run the same measurement for the 27B attention
+probes, for both backbones, on an EU-RO-1 Runpod B200 so throughput is
+comparable with the 4B run. The user authorized the B200 (volume
+`cb7bxu71ug`) and one Lambda H100 in us-west-3 for the BF16 OOD references.
+
+- **Backbone.** Unadapted `Qwen/Qwen3.8-27B@1d4bf0f2…` served by the recorded
+  Gleipnir 27B v0.2 optimized command (`QuantFullWorker`, FP8/FP4 geometry,
+  MXFP8 attention, graphs to 2,048 tokens; `release_serving` target `27b`, 32K
+  context), with `--model` swapped to the base snapshot. Truncation stops
+  after block 31 of 64 (`end_layer` 32), the probes' training layer; the final
+  norm becomes the identity, as at the 4B.
+- **Rendering and kept tokens.** As in the probe study's `extract.py`: NTP
+  rows are the bare trajectory with the first token dropped; prompted rows are
+  the full teacher prompt (chat template, thinking off, ending in
+  `Prediction:`), and probes read from the trajectory's first token to the end.
+  The pooler looks up each prompted row's start in a table keyed by the
+  SHA-256 of its token ids, built with the Transformers tokenizer; a row
+  missing from the table is an error. Token counts must match row for row.
+- **Probes.** The attention family's frozen picks for both objectives and
+  both backbones, all five seeds, at their selected checkpoints: NTP soft and
+  hard e2 (`scale27b_full01`), prompted soft e12 and hard e1
+  (`scale27b_prompted01`). Inputs are scored after the study's FP8 round trip
+  (primary, matching the training store) and raw. Rows: all 3,012 ID and
+  6,395 OOD rows. Nothing is selected here.
+- **References.** ID: the sweeps' per-row `logits_e*_fp8.json`. OOD: per-row
+  logits are not stored locally, so `probe_generalization/ensemble_ood.py`
+  rescores the stored FP8 OOD activations on the Lambda GPU
+  (`results/probe_generalization/scale27b_*/ensemble_ood/`). It must reproduce
+  every frozen OOD read within its 2e-3 tolerance.
+- **Quality report.** Per pick and split: seed-median source-macro pAUROC@20,
+  BF16 versus optimized, mean logit correlation, and the paired
+  source-stratified bootstrap of the difference (200 resamples), as in
+  `compare.py`.
+- **Activation diagnostic.** For the 64 diagnostic OOD rows
+  (`data/probe_generalization/optimized_diag`), the Pod runs the BF16
+  Transformers extraction at block 31 for both backbones, and the optimized
+  server dumps the same rows' kept states. Reported: per-token relative L2
+  error and cosine, and the extraction's agreement with the Lambda reference
+  logits (the plumbing check).
+- **Throughput.** Compiled, one fresh server per configuration, the 6,395 OOD
+  rows in sequential 128-row batches at concurrency 128, one excluded warmup
+  batch, prompt tokens per second and rows per second over summed batch time:
+  full depth (NTP, prompted); truncated after block 31 without a probe (NTP,
+  prompted); truncated with the deployed probe, raw input (NTP
+  `attention-soft-s1` e2; prompted `attention-soft-s3` e12; each the soft
+  attention pick's best-ID seed, the 4B's deployment rule). Speedups are
+  within this Pod; the 4B run's machine was `2mj1yzztlz17`, and this Pod's
+  machine is recorded.
+
+Stop and report if token counts differ, any activation or logit is nonfinite,
+the Lambda rescoring misses a frozen read, the extraction disagrees with the
+reference logits (mean correlation below 0.99), or the truncated server does
+not run blocks 0–31 exactly once per step.
