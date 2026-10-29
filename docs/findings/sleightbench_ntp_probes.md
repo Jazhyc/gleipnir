@@ -84,5 +84,6 @@ Hypothesis 1 was frozen against `sb01`; the `sb02` rows are descriptive.
 
 Artifacts: `results/probe_sleightbench/sbprobe01/` (`parity.json`,
 `logits.json`, `report.json`) and `logs/lambda/probe_sleightbench/sbprobe01/`.
-The FP8 activation store (no text) is kept at
-`stores/sleightbench/ntp` on the `gleipnir-probes` filesystem.
+The FP8 activation store (no text) was kept at
+`stores/sleightbench/ntp` on the `gleipnir-probes` filesystem, deleted on
+2026-10-29.

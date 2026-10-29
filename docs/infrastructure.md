@@ -77,12 +77,15 @@ filesystem, and was terminated after its 2 results and log were SHA-256
 verified.
 The pull helper refuses `logs/` paths that resolve outside the repository
 (symlinks into the Storage Box mirror); copy such logs over SSH. The
-filesystem is retained and bills while it exists; it
-holds the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB) and the
-full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB), the
+filesystem held the pilot stores (`stores/pilot`, BF16 and FP8, about 303 GB),
+the full FP8 stores (`stores/full/{prompted,ntp}`, about 805 GB), the
 SleightBench NTP store (`stores/sleightbench/ntp`, 4.5 GB, no text) and the
 27B block-31 FP8 stores (`stores/qwen38_27b_l31/full/{ntp,prompted}`, 809 and
-810 GB), about 2.7 TB in all.
+810 GB), 2.93 TB in all. At the user's instruction it was deleted through the
+API on 2026-10-29 (no instance attached; no Lambda filesystems or instances
+remain). The stores are gone; rebuilding one means re-extracting it. Probe
+results, banks and per-row logits are kept locally under
+`results/probe_generalization/`.
 
 The two-H100
 `gleipnir-improvement` instance was terminated on 2026-09-08 following explicit

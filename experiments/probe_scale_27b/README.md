@@ -139,7 +139,8 @@ At the 4B the prompted backbone did not help (selected soft 0.713 vs NTP
   and the 4B prompted-vs-NTP contrast.
 - **Store.** Kept on the filesystem for reuse (user decision):
   `stores/qwen38_27b_l31/full/prompted`, about 0.8 TB. The run therefore waits
-  for capacity in us-west-3, where the filesystem lives.
+  for capacity in us-west-3, where the filesystem lived. Both 27B stores were
+  deleted with the filesystem on 2026-10-29 (user decision).
 
 ### Prompted result (2026-10-28)
 

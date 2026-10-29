@@ -85,7 +85,8 @@ One Lambda H100 in us-west-3 with the full project bootstrap (fast kernels as
 in [infrastructure](../../docs/infrastructure.md#lambda-cloud)) and the
 `gleipnir-probes` filesystem attached. At the user's request (2026-10-26),
 `run_remote.sh` copies the activation store to
-`stores/sleightbench/ntp` there for later reuse. Push the commit, the two row files,
+`stores/sleightbench/ntp` there for later reuse (the filesystem was deleted on
+2026-10-29). Push the commit, the two row files,
 `selection_ntp.json`, and from `ntp-fp8/` the `config.json`, `summary.json`
 and `probes_e{2,4,8,16}.pt` and `logits_e{2,4,8,16}_fp8.json`. Then:
 
