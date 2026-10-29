@@ -1,11 +1,13 @@
 """Score rows against the compiled probe server and time the pass.
 
-Rows (bare trajectories, NTP rendering) go to vLLM's ``/classify`` route in
+Rows go to vLLM's ``/classify`` route in
 sequential 128-row batches at concurrency 128, as in the v0.3 benchmark. One
 excluded warmup batch runs first. Each response carries the probe pooler's
 flat logit vector (variant x epoch x probe, layout in the server's probe
 receipt) and the prompt token count, which must match the Transformers
-tokenizer. Logits go to ``logits.npz`` and timing to ``timing.json``.
+tokenizer. Rows are bare trajectories (NTP rendering) or, with ``input`` and
+``tokens`` fields, rows prepared by ``prepare_27b.py``. Logits go to
+``logits.npz`` and timing to ``timing.json``.
 """
 
 from __future__ import annotations
@@ -38,7 +40,7 @@ async def score_batch(port: int, rows: list[dict]) -> tuple:
             "/classify",
             json={
                 "model": "monitor",
-                "input": row["trajectory"],
+                "input": row["input"],
                 "add_special_tokens": False,
                 "use_activation": False,
             },
@@ -96,8 +98,10 @@ def main() -> None:
     rows = [json.loads(line) for line in open(args.rows)]
     rows = rows[: args.limit] if args.limit else rows
     for row in rows:
-        ids = tokenizer(row["trajectory"], add_special_tokens=False)["input_ids"]
-        row["tokens"] = len(ids)
+        if "input" not in row:
+            row["input"] = row["trajectory"]
+            ids = tokenizer(row["input"], add_special_tokens=False)["input_ids"]
+            row["tokens"] = len(ids)
     receipt = json.loads(Path(args.receipt).read_text())
     logits, timing = asyncio.run(run(rows, args.port))
     shape = (
