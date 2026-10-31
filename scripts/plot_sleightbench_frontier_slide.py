@@ -1,5 +1,6 @@
 """Slide figures: SleightBench cost frontiers for decision monitors.
 
+Styled like the OOD frontier (scripts/plot_tool_trajectory_ood_frontier.py).
 Stripped view, single pass, no reasoning (findings:
 docs/findings/sleightbench_released_monitors.md, runs sb05-sb13). Price is
 uncached input $/M: API list prices (Kimi K3 via OpenRouter), Gleipnir at
@@ -14,98 +15,102 @@ import argparse
 from pathlib import Path
 
 import matplotlib.pyplot as plt
+import numpy as np
+from matplotlib.lines import Line2D
+from matplotlib.ticker import FuncFormatter, PercentFormatter
+
+from gleipnir.analysis.plotting import (
+    ORIGIN_PALETTE,
+    pareto_frontier_mask,
+    set_plot_style,
+)
 
 ROOT = Path(__file__).resolve().parents[1]
-INK = "#1F2937"
-MUTED = "#6B7280"
-OURS = "#E45756"
-OTHER = "#4C78A8"
+DECISION = "#B279A2"
+LABEL = "#4B5563"
+LINE = "#374151"
 
-# name: (input $/M, catch @1% FPR %, pAUROC@20, ours)
+# name: (input $/M, catch @1% FPR, pAUROC@20, ours)
 MONITORS = {
-    "GPT-6.1 Terra": (1.00, 55.0, 0.734, False),
-    "GPT-6 Sol": (2.00, 15.0, 0.515, False),
-    "Kimi K3": (2.55, 0.0, 0.402, False),
-    "pplx-decider v1.2": (0.02, 12.5, 0.300, False),
-    "Gleipnir 27B": (0.0177, 20.0, 0.299, True),
-    "GPT-6 Luna": (0.10, 5.0, 0.277, False),
-    "Jev 1.13": (0.042, 12.5, 0.255, False),
-    "Gleipnir 4B": (0.0042, 7.5, 0.209, True),
+    "GPT-6.1 Terra": (1.00, 0.55, 0.734, False),
+    "GPT-6 Sol": (2.00, 0.15, 0.515, False),
+    "Kimi K3 (teacher)": (2.55, 0.0, 0.402, False),
+    "Decider v1.2": (0.02, 0.125, 0.300, False),
+    "Gleipnir 27B": (0.0177, 0.20, 0.299, True),
+    "GPT-6 Luna": (0.10, 0.05, 0.277, False),
+    "Jev 1.13": (0.042, 0.125, 0.255, False),
+    "Gleipnir 4B": (0.0042, 0.075, 0.209, True),
 }
-# label offsets in points, per metric
+# label offsets in points (dx, dy, ha), per metric
 OFFSETS = {
-    "catch": {"GPT-6.1 Terra": (-10, 0, "right"), "GPT-6 Sol": (8, 4, "left"),
-              "Kimi K3": (-8, 6, "right"), "pplx-decider v1.2": (6, -14, "left"),
-              "Gleipnir 27B": (-8, 6, "right"), "GPT-6 Luna": (8, -4, "left"),
-              "Jev 1.13": (8, 4, "left"), "Gleipnir 4B": (8, -12, "left")},
-    "pauroc": {"GPT-6.1 Terra": (-10, 0, "right"), "GPT-6 Sol": (0, 14, "center"),
-               "Kimi K3": (0, -16, "center"), "pplx-decider v1.2": (6, 7, "left"),
-               "Gleipnir 27B": (-8, 6, "right"), "GPT-6 Luna": (8, 2, "left"),
-               "Jev 1.13": (6, -14, "left"), "Gleipnir 4B": (8, -12, "left")},
+    "catch": {"GPT-6.1 Terra": (-12, 0, "right"), "GPT-6 Sol": (0, 15, "center"),
+              "Kimi K3 (teacher)": (-12, 4, "right"), "Decider v1.2": (8, -15, "left"),
+              "Gleipnir 27B": (-12, 8, "right"), "GPT-6 Luna": (10, -6, "left"),
+              "Jev 1.13": (10, 5, "left"), "Gleipnir 4B": (0, -18, "center")},
+    "pauroc": {"GPT-6.1 Terra": (-12, 0, "right"), "GPT-6 Sol": (0, 15, "center"),
+               "Kimi K3 (teacher)": (0, -17, "center"), "Decider v1.2": (8, 10, "left"),
+               "Gleipnir 27B": (-12, 8, "right"), "GPT-6 Luna": (10, 5, "left"),
+               "Jev 1.13": (8, -15, "left"), "Gleipnir 4B": (0, -18, "center")},
 }
-
-
-def style() -> None:
-    plt.rcParams.update(
-        {
-            "font.family": "sans-serif",
-            "font.sans-serif": ["Lato", "Cantarell", "DejaVu Sans"],
-            "font.size": 13,
-            "axes.labelcolor": INK,
-            "axes.edgecolor": "#C7CBD1",
-            "axes.spines.top": False,
-            "axes.spines.right": False,
-            "xtick.color": INK,
-            "ytick.color": INK,
-            "savefig.dpi": 300,
-            "svg.fonttype": "path",
-        }
-    )
-
-
-def frontier(points: list[tuple[float, float]]) -> list[tuple[float, float]]:
-    best, out = float("-inf"), []
-    for cost, score in sorted(points):
-        if score > best:
-            out.append((cost, score))
-            best = score
-    return out
 
 
 def plot_metric(metric: str, output_dir: Path) -> None:
     col = 1 if metric == "catch" else 2
-    fig, ax = plt.subplots(figsize=(7.0, 4.2))
-    pts = [(v[0], v[col]) for v in MONITORS.values()]
-    front = frontier(pts)
-    fx = [p[0] for p in front] + [4.0]
-    fy = [p[1] for p in front] + [front[-1][1]]
-    ax.step(fx, fy, where="post", color=MUTED, lw=1.4, ls="--", zorder=1)
-    for name, vals in MONITORS.items():
-        cost, score, ours = vals[0], vals[col], vals[3]
-        color = OURS if ours else OTHER
-        ax.scatter([cost], [score], s=90 if ours else 60, color=color, zorder=3,
-                   edgecolor="white", lw=1.2)
-        dx, dy, ha = OFFSETS[metric][name]
-        label = name + ("*" if metric == "catch" and name == "Kimi K3" else "")
-        ax.annotate(label, (cost, score), xytext=(dx, dy), textcoords="offset points",
-                    ha=ha, va="center", fontsize=11.5, color=color,
-                    fontweight="bold" if ours else "normal")
+    names = list(MONITORS)
+    cost = np.array([MONITORS[n][0] for n in names])
+    score = np.array([MONITORS[n][col] for n in names])
+    ours = np.array([MONITORS[n][3] for n in names])
+    on_front = pareto_frontier_mask(cost, score)
+
+    set_plot_style()
+    fig, ax = plt.subplots(figsize=(10.0, 6.4))
     ax.set_xscale("log")
-    ax.set_xlim(0.002, 4.0)
-    ax.set_xticks([0.003, 0.01, 0.03, 0.1, 0.3, 1, 3])
-    ax.set_xticklabels(["$0.003", "$0.01", "$0.03", "$0.10", "$0.30", "$1", "$3"])
-    ax.minorticks_off()
-    ax.set_xlabel("Input price, $ per million tokens (log)")
+    ax.set_xticks([0.003, 0.01, 0.03, 0.1, 0.3, 1.0, 3.0])
+    ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v:g}"))
+    ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
+    ax.set_xlim(0.0028, 3.6)
+
+    order = np.argsort(cost[on_front])
+    ax.plot(cost[on_front][order], score[on_front][order], color=LINE, lw=2.3,
+            alpha=0.82, zorder=1)
+    for i, name in enumerate(names):
+        color = ORIGIN_PALETTE["Gleipnir"] if ours[i] else DECISION
+        marker = "D" if ours[i] else "s"
+        big = on_front[i]
+        ax.scatter(cost[i], score[i], s=165 if big else 92, marker=marker,
+                   color=color, alpha=1.0 if big else 0.78,
+                   edgecolor="#111827" if big else LINE,
+                   linewidth=1.5 if big else 0.65, zorder=3 if big else 2)
+        dx, dy, ha = OFFSETS[metric][name]
+        label = name + ("*" if metric == "catch" and name.startswith("Kimi") else "")
+        ax.annotate(label, (cost[i], score[i]), xytext=(dx, dy),
+                    textcoords="offset points", ha=ha, va="center", fontsize=13,
+                    fontweight="bold", color="#111827" if big else LABEL)
+
+    ax.annotate("Better", xy=(0.015, 0.975), xytext=(0.085, 0.86),
+                xycoords="axes fraction", textcoords="axes fraction",
+                fontsize=13, fontweight="bold", color="#6B7280",
+                ha="center", va="center",
+                arrowprops={"arrowstyle": "-|>", "color": "#6B7280",
+                            "linewidth": 1.8, "mutation_scale": 16,
+                            "shrinkA": 12, "shrinkB": 0})
     if metric == "catch":
-        ax.set_ylim(-3, 62)
-        ax.set_yticks([0, 20, 40, 60])
-        ax.set_yticklabels(["0%", "20%", "40%", "60%"])
-        ax.set_ylabel("Catch @1% FPR")
+        ax.set_ylim(-0.04, 0.66)
+        ax.set_ylabel("Catch rate at 1% FPR")
     else:
-        ax.set_ylim(0.1, 0.8)
-        ax.set_ylabel("pAUROC@20 (chance = 0.1)")
-    ax.text(3.6, fy[-1], "frontier", color=MUTED, fontsize=10, ha="right",
-            va="bottom")
+        ax.set_ylim(0.15, 0.8)
+        ax.set_ylabel("Detection performance\n(pAUROC@20)")
+    ax.set_xlabel("Input price (USD per million tokens; log scale)")
+
+    handles = [
+        Line2D([], [], marker="s", ls="", color=DECISION, markeredgecolor=LINE,
+               markersize=10, label="Decision"),
+        Line2D([], [], marker="D", ls="", color=ORIGIN_PALETTE["Gleipnir"],
+               markeredgecolor=LINE, markersize=10, label="Gleipnir (ours)"),
+        Line2D([], [], color=LINE, lw=2.3, label="Frontier"),
+    ]
+    ax.legend(handles=handles, loc="upper left", fontsize=13, title="Monitor type",
+              title_fontsize=13, frameon=True, bbox_to_anchor=(0.14, 0.99))
     fig.tight_layout()
     output_dir.mkdir(parents=True, exist_ok=True)
     for ext in ("svg", "png"):
@@ -118,7 +123,6 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output-dir", type=Path, default=ROOT / "figures" / "slides")
     args = parser.parse_args()
-    style()
     for metric in ("catch", "pauroc"):
         plot_metric(metric, args.output_dir)
 
