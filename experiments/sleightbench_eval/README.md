@@ -484,6 +484,11 @@ python -m experiments.sleightbench_eval.api_decisions decider_v12_ca --limit 1
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb12
 ```
 
+New logit-interface runs after `sb13` score only the stripped view (user
+decision, 2026-10-31): it halves the cost and is the view the authors'
+baselines use. `api_openai.py` still scores both views and needs a view
+filter before the next run.
+
 ## Exploratory run sb13: GPT-6.1 Terra with the logit interface (frozen 2026-10-31)
 
 User-requested: the same client, prompts and request contract as `sb07`, with
