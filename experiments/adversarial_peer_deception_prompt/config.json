@@ -1,0 +1,15 @@
+{
+  "monitor": "4b-v03",
+  "max_seconds": 2700,
+  "sha256": {
+    "data/adversarial_lab_liars/main_student.jsonl": "c28b33f35ae306b7c5efa9687b54bb163f49c3fa97e93653eb94115c2e579afe",
+    "data/adversarial_lab_liars/canaries.jsonl": "bc1b2be077b52f215c308f42745a158b13e67e55c11ad0adc0eebd268bb128d9",
+    "data/adversarial_is_it_4b/calibration_student.jsonl": "5861144616acff9e838f0a7902f0e7bdff0b5e7946269ba42bdfd25f4296ed73",
+    "results/adversarial_lab_liars/4b/main/predictions.jsonl": "f5855286e306ec22e17fa87cdcf746b0cc6fa686d4079fb85de74fa4625ab899",
+    "results/adversarial_is_it_4b/v03-teacher/calibration/predictions.jsonl": "d55bf933ea01d71560fd3998e4c3da24c4b28f444be1bfff98b3c9f214972bd0",
+    "results/adversarial_is_it_4b/v03-merged/calibration/predictions.jsonl": "092f4680b262a5fcde3afc9330c53952ae8b2588cd36165a45413f60a7613656",
+    "experiments/tool_trajectory_monitoring/prompts/student.txt": "39ab7657c02e096a4004439183f0b5d7f259cd724c77cdd2d5885acb0f94a38c",
+    "experiments/tool_trajectory_monitoring/prompts/teacher.txt": "a5d403e608a7df98ad807e707346680699e2faa481240569a3e6b9fb59051e8f",
+    "experiments/adversarial_peer_deception_prompt/peer.txt": "5c431670f8735b19e3afbf7c25dea7c9479eb38b7cbdc9befc8834f6ece385a5"
+  }
+}

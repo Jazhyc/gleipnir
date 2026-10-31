@@ -1,0 +1,1251 @@
+{
+  "adjudication": {
+    "accepted": 0,
+    "coding_candidates": 64,
+    "pending": 64,
+    "ready_for_scoring": false,
+    "rule": "Two independent readers; either ambiguous/disagreeing excludes; no relabel to negative."
+  },
+  "artifacts_sha256": {
+    "prepared/audit/dispositions.jsonl": "77f39754d16b9a0ae8f782254bb5f4d7c9a900f77931869b2b8905df75958bbd",
+    "prepared/audit/gate.json": "1c6f6eff5ef61725b59d95a7fab931fc691a79923f99a5a281faeeea35cd44e4",
+    "prepared/audit/packets.jsonl": "9dfb7ac620c66ab4a0be8de0d6ca9b8488d7c68745cb5a9c153e0fd79d24c256",
+    "prepared/calibration/receipt.json": "9347cc5d3a615b32cf50483d899a95ebcf57237a7e09c563d0f90595402e1a43",
+    "prepared/calibration/sol_replay.jsonl": "e5b27da56fb7bbca55b9f27554668fb31e14e12cbe5e834a4252f187a9ea753a",
+    "prepared/frontier/plans.jsonl": "076285cff085d50d4196102f88ba8127d2c427940b694fce45ecf87f69f3b290",
+    "prepared/frontier_selection.jsonl": "df795d40b0ab484d825988b18659a9949a1c39a1812ff3144389f4ec567da27d",
+    "prepared/manifest.json": "9c8e3a5bea15f4cf1fbf96aa7f9fb95d9e19216b0b7f6fd5ef94f8d38445c052",
+    "prepared/planning/receipt.json": "4d51a429799ec99a67ae1501375623245ff9ea316cfd961f9d8eae75dd774c69",
+    "prepared/preflight.jsonl": "071687c82fde1ca4d111efbd36093a616d385a5f2a3cb7851bd3729f55419fb2",
+    "prepared/selection.jsonl": "df6cdaf064dab811d4ba9679475fb65d42129deef577eb3cfb96edf6e7c3d7b0"
+  },
+  "config_sha256": "904510c6aa0dde2cb513e15a1388081ae616b0d6d0e62b43853cb4be97f040d2",
+  "planning": {
+    "api": {
+      "gpt-6.1-sol": {
+        "basis": "Historical crossed-text prices; provider token counts for Goodfire unknown; no cache discounts.",
+        "calibration_byte_bound_max_output_usd": 7.95625,
+        "calibration_input_tokens": 327549,
+        "calibration_replay_rows": 200,
+        "cap_usd": 35,
+        "dispositions": {
+          "pending_authorization": 200,
+          "too_long": 60
+        },
+        "expected_output_tokens_per_request": 128,
+        "planning_point_usd": 7.028506,
+        "proposed_requests": 200,
+        "qwen_input_token_proxy": 2930704,
+        "selected_rows": 260,
+        "study_byte_bound_max_output_usd": 23.540844,
+        "token_proxy_range_usd": [
+          4.097802,
+          9.95921
+        ],
+        "total_byte_bound_max_output_usd": 31.497094
+      },
+      "kimi-k3": {
+        "basis": "Historical crossed-text prices; provider token counts for Goodfire unknown; no cache discounts.",
+        "calibration_byte_bound_max_output_usd": 0,
+        "calibration_input_tokens": 0,
+        "calibration_replay_rows": 0,
+        "cap_usd": 8,
+        "dispositions": {
+          "pending_authorization": 200,
+          "too_long": 60
+        },
+        "expected_output_tokens_per_request": 10,
+        "planning_point_usd": 1.9349576000000002,
+        "proposed_requests": 200,
+        "qwen_input_token_proxy": 2930704,
+        "selected_rows": 260,
+        "study_byte_bound_max_output_usd": 6.5019543,
+        "token_proxy_range_usd": [
+          0.9824788000000001,
+          2.8874364
+        ],
+        "total_byte_bound_max_output_usd": 6.5019543
+      }
+    },
+    "counts": {
+      "impossiblebench:glm-5.2": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 100,
+          "positive": 10
+        },
+        "matched_negatives": 11,
+        "negative_tasks": 73,
+        "positive_tasks": 6,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 19,
+            "negative": 93,
+            "positive": 8
+          },
+          "4b-v03": {
+            "considered_only": 19,
+            "negative": 94,
+            "positive": 8
+          }
+        }
+      },
+      "impossiblebench:kimi-k3": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 100,
+          "positive": 6
+        },
+        "matched_negatives": 8,
+        "negative_tasks": 91,
+        "positive_tasks": 6,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 20,
+            "negative": 96,
+            "positive": 6
+          },
+          "4b-v03": {
+            "considered_only": 20,
+            "negative": 97,
+            "positive": 6
+          }
+        }
+      },
+      "impossiblebench:qwen3.8-max": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 100,
+          "positive": 9
+        },
+        "matched_negatives": 9,
+        "negative_tasks": 89,
+        "positive_tasks": 9,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 18,
+            "negative": 96,
+            "positive": 8
+          },
+          "4b-v03": {
+            "considered_only": 18,
+            "negative": 96,
+            "positive": 9
+          }
+        }
+      },
+      "shoppingbench:glm-5.2": {
+        "labels": {
+          "negative": 100,
+          "positive": 33
+        },
+        "matched_negatives": 6,
+        "negative_tasks": 100,
+        "positive_tasks": 33,
+        "usable_labels": {
+          "27b-merged": {
+            "negative": 98,
+            "positive": 20
+          },
+          "4b-v03": {
+            "negative": 98,
+            "positive": 21
+          }
+        }
+      },
+      "shoppingbench:kimi-k3": {
+        "labels": {
+          "negative": 100,
+          "positive": 24
+        },
+        "matched_negatives": 9,
+        "negative_tasks": 100,
+        "positive_tasks": 24,
+        "usable_labels": {
+          "27b-merged": {
+            "negative": 97,
+            "positive": 19
+          },
+          "4b-v03": {
+            "negative": 97,
+            "positive": 19
+          }
+        }
+      },
+      "swebench:glm-5.2": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 100,
+          "positive": 11
+        },
+        "matched_negatives": 2,
+        "negative_tasks": 100,
+        "positive_tasks": 11,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 14,
+            "negative": 91,
+            "positive": 6
+          },
+          "4b-v03": {
+            "considered_only": 16,
+            "negative": 91,
+            "positive": 6
+          }
+        }
+      },
+      "swebench:kimi-k3": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 64,
+          "positive": 11
+        },
+        "matched_negatives": 3,
+        "negative_tasks": 64,
+        "positive_tasks": 11,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 15,
+            "negative": 64,
+            "positive": 2
+          },
+          "4b-v03": {
+            "considered_only": 16,
+            "negative": 64,
+            "positive": 2
+          }
+        }
+      },
+      "swebench:qwen3.8-max": {
+        "labels": {
+          "considered_only": 20,
+          "negative": 29,
+          "positive": 17
+        },
+        "matched_negatives": 1,
+        "negative_tasks": 29,
+        "positive_tasks": 17,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 16,
+            "negative": 27,
+            "positive": 9
+          },
+          "4b-v03": {
+            "considered_only": 16,
+            "negative": 27,
+            "positive": 9
+          }
+        }
+      },
+      "tau3bench:glm-5.2": {
+        "labels": {
+          "considered_only": 2,
+          "negative": 100,
+          "positive": 24
+        },
+        "matched_negatives": 16,
+        "negative_tasks": 91,
+        "positive_tasks": 22,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 1,
+            "negative": 89,
+            "positive": 10
+          },
+          "4b-v03": {
+            "considered_only": 1,
+            "negative": 89,
+            "positive": 10
+          }
+        }
+      },
+      "tau3bench:kimi-k3": {
+        "labels": {
+          "considered_only": 3,
+          "negative": 100,
+          "positive": 29
+        },
+        "matched_negatives": 40,
+        "negative_tasks": 84,
+        "positive_tasks": 24,
+        "usable_labels": {
+          "27b-merged": {
+            "considered_only": 1,
+            "negative": 62,
+            "positive": 4
+          },
+          "4b-v03": {
+            "considered_only": 1,
+            "negative": 62,
+            "positive": 4
+          }
+        }
+      }
+    },
+    "gpu": {
+      "27b-merged": {
+        "all_prompt_tokens": 22769159,
+        "basis": "Linear token scaling of Step 1 rates; excludes load/canaries/setup and pending adjudication exclusions.",
+        "counterfactual_all_lengths_seconds": 8253.593205711248,
+        "estimated_scoring_seconds": 4191.562878362815,
+        "reference_prompt_tokens_per_row": 1793.152749490835,
+        "reference_seconds_per_row": 0.65,
+        "too_long": 183,
+        "usable_prompt_tokens": 11563250,
+        "usable_rows": 1009
+      },
+      "4b-v03": {
+        "all_prompt_tokens": 21801255,
+        "basis": "Linear token scaling of Step 1 rates; excludes load/canaries/setup and pending adjudication exclusions.",
+        "counterfactual_all_lengths_seconds": 3333.0062538142506,
+        "estimated_scoring_seconds": 1673.9124472232254,
+        "reference_prompt_tokens_per_row": 981.152749490835,
+        "reference_seconds_per_row": 0.15,
+        "too_long": 176,
+        "usable_prompt_tokens": 10949092,
+        "usable_rows": 1016
+      }
+    },
+    "gpu_setup_allowance_minutes": [
+      20,
+      40
+    ],
+    "scoring_performed": false,
+    "timing_uncertainty_multiplier": [
+      1,
+      2
+    ]
+  },
+  "scoring_performed": false,
+  "source_files_sha256": {
+    "__init__.py": "480e74a33bcd3b196585885a681e7dcd92d5141be497b1ef85a42b18aef66862",
+    "audit.py": "618b52742084325d207a516bcbc0639c06dfe5d554db98d055fa00ee77275e21",
+    "build.py": "9bee0379d5609a35999d140bf34c4fc6a0a86284d9d60a33065a25c2e026a3dd",
+    "calibration.py": "c9bb04fbfcffaede95d9d2279f27d61c0604e6412225c6f6b47aad65c981b854",
+    "common.py": "54bed1ac5f4968134ef2246b53c60b1bc64706efbcdfbb09a685da9fe8be9b0d",
+    "download.py": "83d639b6b68f542021fde5ff9abf9ad4c83f5eb66e5f87eb6ed463b7a936531f",
+    "frontier.py": "8572fa133fa927353478a9a56f028b308a1a9d53550607fe65471f3c9111b618",
+    "planning.py": "922a5bd0ecc41881992efc6a4642cc77d1f8977e45ad73b1b45a595bb946d408",
+    "render.py": "54aa45a2ab01e598c61780bea70f017ddc4198d5a49b8dccb6c541c42fd9f55d",
+    "test_goodfire.py": "5b2d990c69df38612bb36f39b9f07b7f484923e24ec8da87d557ca277df52f92"
+  },
+  "source_manifest_sha256": "7f63ee531cc0b5d7bd68ca9142be5fe419f53205727c30d0e8f9584e5e222815",
+  "source_revision": "bd8fb473568b8ef1d12fc2325a5c8af939c15ad9",
+  "status": "draft_reviewed_not_approved_for_scoring",
+  "summary": {
+    "catalogue_n": 5424,
+    "frontier_n": 260,
+    "hand_check_n": 120,
+    "population_counts": {
+      "impossiblebench:glm-5.2:considered_only": 102,
+      "impossiblebench:glm-5.2:negative": 127,
+      "impossiblebench:glm-5.2:nonvisible_or_excluded_category": 8,
+      "impossiblebench:glm-5.2:positive": 10,
+      "impossiblebench:glm-5.2:split": 60,
+      "impossiblebench:kimi-k3:considered_only": 150,
+      "impossiblebench:kimi-k3:negative": 100,
+      "impossiblebench:kimi-k3:nonvisible_or_excluded_category": 10,
+      "impossiblebench:kimi-k3:positive": 6,
+      "impossiblebench:kimi-k3:split": 43,
+      "impossiblebench:qwen3.8-max:considered_only": 162,
+      "impossiblebench:qwen3.8-max:negative": 102,
+      "impossiblebench:qwen3.8-max:nonvisible_or_excluded_category": 3,
+      "impossiblebench:qwen3.8-max:positive": 9,
+      "impossiblebench:qwen3.8-max:split": 33,
+      "shoppingbench:glm-5.2:negative": 517,
+      "shoppingbench:glm-5.2:nonvisible_or_excluded_category": 7,
+      "shoppingbench:glm-5.2:positive": 33,
+      "shoppingbench:glm-5.2:unclear": 193,
+      "shoppingbench:kimi-k3:negative": 597,
+      "shoppingbench:kimi-k3:nonvisible_or_excluded_category": 5,
+      "shoppingbench:kimi-k3:positive": 24,
+      "shoppingbench:kimi-k3:unclear": 124,
+      "swebench:glm-5.2:considered_only": 63,
+      "swebench:glm-5.2:negative": 130,
+      "swebench:glm-5.2:nonvisible_or_excluded_category": 223,
+      "swebench:glm-5.2:positive": 11,
+      "swebench:glm-5.2:split": 73,
+      "swebench:kimi-k3:considered_only": 106,
+      "swebench:kimi-k3:negative": 64,
+      "swebench:kimi-k3:nonvisible_or_excluded_category": 233,
+      "swebench:kimi-k3:positive": 11,
+      "swebench:kimi-k3:split": 86,
+      "swebench:qwen3.8-max:considered_only": 100,
+      "swebench:qwen3.8-max:negative": 29,
+      "swebench:qwen3.8-max:nonvisible_or_excluded_category": 242,
+      "swebench:qwen3.8-max:positive": 17,
+      "swebench:qwen3.8-max:split": 111,
+      "swebench:qwen3.8-max:unjudged": 1,
+      "tau3bench:glm-5.2:considered_only": 2,
+      "tau3bench:glm-5.2:negative": 491,
+      "tau3bench:glm-5.2:nonvisible_or_excluded_category": 35,
+      "tau3bench:glm-5.2:positive": 24,
+      "tau3bench:glm-5.2:source_error": 28,
+      "tau3bench:glm-5.2:unclear": 169,
+      "tau3bench:kimi-k3:considered_only": 3,
+      "tau3bench:kimi-k3:negative": 631,
+      "tau3bench:kimi-k3:nonvisible_or_excluded_category": 12,
+      "tau3bench:kimi-k3:positive": 29,
+      "tau3bench:kimi-k3:unclear": 75
+    },
+    "protocol_status": "draft",
+    "render_status": {
+      "ok": 1192
+    },
+    "revision": "bd8fb473568b8ef1d12fc2325a5c8af939c15ad9",
+    "selected_n": 1192,
+    "selection_counts": {
+      "impossiblebench:glm-5.2:considered_only": 20,
+      "impossiblebench:glm-5.2:negative": 100,
+      "impossiblebench:glm-5.2:positive": 10,
+      "impossiblebench:kimi-k3:considered_only": 20,
+      "impossiblebench:kimi-k3:negative": 100,
+      "impossiblebench:kimi-k3:positive": 6,
+      "impossiblebench:qwen3.8-max:considered_only": 20,
+      "impossiblebench:qwen3.8-max:negative": 100,
+      "impossiblebench:qwen3.8-max:positive": 9,
+      "shoppingbench:glm-5.2:negative": 100,
+      "shoppingbench:glm-5.2:positive": 33,
+      "shoppingbench:kimi-k3:negative": 100,
+      "shoppingbench:kimi-k3:positive": 24,
+      "swebench:glm-5.2:considered_only": 20,
+      "swebench:glm-5.2:negative": 100,
+      "swebench:glm-5.2:positive": 11,
+      "swebench:kimi-k3:considered_only": 20,
+      "swebench:kimi-k3:negative": 64,
+      "swebench:kimi-k3:positive": 11,
+      "swebench:qwen3.8-max:considered_only": 20,
+      "swebench:qwen3.8-max:negative": 29,
+      "swebench:qwen3.8-max:positive": 17,
+      "tau3bench:glm-5.2:considered_only": 2,
+      "tau3bench:glm-5.2:negative": 100,
+      "tau3bench:glm-5.2:positive": 24,
+      "tau3bench:kimi-k3:considered_only": 3,
+      "tau3bench:kimi-k3:negative": 100,
+      "tau3bench:kimi-k3:positive": 29
+    },
+    "token_lengths": {
+      "27b-merged": {
+        "max": 191736.0,
+        "mean": 19101.643456375838,
+        "min": 1489.0,
+        "n": 1192,
+        "p25": 5985.5,
+        "p50": 12057.0,
+        "p75": 21902.0,
+        "p90": 41661.30000000004,
+        "p95": 65408.95000000001,
+        "p99": 114302.66999999984,
+        "total": 22769159
+      },
+      "4b-v03": {
+        "max": 190924.0,
+        "mean": 18289.643456375838,
+        "min": 677.0,
+        "n": 1192,
+        "p25": 5173.5,
+        "p50": 11245.0,
+        "p75": 21090.0,
+        "p90": 40849.30000000004,
+        "p95": 64596.95000000001,
+        "p99": 113490.66999999984,
+        "total": 21801255
+      }
+    },
+    "token_lengths_by_stratum_label": {
+      "27b-merged": {
+        "impossiblebench:glm-5.2:considered_only": {
+          "max": 41831.0,
+          "mean": 21872.1,
+          "min": 15436.0,
+          "n": 20,
+          "p25": 17673.5,
+          "p50": 21444.0,
+          "p75": 23603.75,
+          "p90": 25923.500000000004,
+          "p95": 28997.450000000008,
+          "p99": 39264.28999999998,
+          "total": 437442
+        },
+        "impossiblebench:glm-5.2:negative": {
+          "max": 58352.0,
+          "mean": 15389.62,
+          "min": 3303.0,
+          "n": 100,
+          "p25": 7196.75,
+          "p50": 13599.5,
+          "p75": 20109.25,
+          "p90": 27066.00000000001,
+          "p95": 30997.399999999998,
+          "p99": 37712.480000000105,
+          "total": 1538962
+        },
+        "impossiblebench:glm-5.2:positive": {
+          "max": 36125.0,
+          "mean": 18963.3,
+          "min": 7505.0,
+          "n": 10,
+          "p25": 10820.0,
+          "p50": 16478.0,
+          "p75": 24592.75,
+          "p90": 32866.1,
+          "p95": 34495.549999999996,
+          "p99": 35799.11,
+          "total": 189633
+        },
+        "impossiblebench:kimi-k3:considered_only": {
+          "max": 26735.0,
+          "mean": 20680.95,
+          "min": 13393.0,
+          "n": 20,
+          "p25": 17945.0,
+          "p50": 20553.0,
+          "p75": 24301.75,
+          "p90": 25946.9,
+          "p95": 26489.9,
+          "p99": 26685.98,
+          "total": 413619
+        },
+        "impossiblebench:kimi-k3:negative": {
+          "max": 40152.0,
+          "mean": 10691.42,
+          "min": 2753.0,
+          "n": 100,
+          "p25": 5825.5,
+          "p50": 8300.5,
+          "p75": 13148.25,
+          "p90": 21382.300000000007,
+          "p95": 24130.199999999993,
+          "p99": 36741.45000000002,
+          "total": 1069142
+        },
+        "impossiblebench:kimi-k3:positive": {
+          "max": 17280.0,
+          "mean": 13152.5,
+          "min": 8010.0,
+          "n": 6,
+          "p25": 10412.25,
+          "p50": 13585.5,
+          "p75": 16221.0,
+          "p90": 16764.5,
+          "p95": 17022.25,
+          "p99": 17228.45,
+          "total": 78915
+        },
+        "impossiblebench:qwen3.8-max:considered_only": {
+          "max": 56436.0,
+          "mean": 24718.3,
+          "min": 6639.0,
+          "n": 20,
+          "p25": 18428.25,
+          "p50": 22473.5,
+          "p75": 26130.5,
+          "p90": 31411.20000000003,
+          "p95": 51200.55,
+          "p99": 55388.909999999996,
+          "total": 494366
+        },
+        "impossiblebench:qwen3.8-max:negative": {
+          "max": 43854.0,
+          "mean": 13266.26,
+          "min": 3214.0,
+          "n": 100,
+          "p25": 8207.25,
+          "p50": 10914.0,
+          "p75": 15962.5,
+          "p90": 23964.700000000008,
+          "p95": 28171.949999999997,
+          "p99": 36460.68000000004,
+          "total": 1326626
+        },
+        "impossiblebench:qwen3.8-max:positive": {
+          "max": 30217.0,
+          "mean": 16707.11111111111,
+          "min": 8130.0,
+          "n": 9,
+          "p25": 11401.0,
+          "p50": 15939.0,
+          "p75": 17857.0,
+          "p90": 26217.8,
+          "p95": 28217.399999999998,
+          "p99": 29817.079999999998,
+          "total": 150364
+        },
+        "shoppingbench:glm-5.2:negative": {
+          "max": 50071.0,
+          "mean": 8137.17,
+          "min": 1903.0,
+          "n": 100,
+          "p25": 3874.5,
+          "p50": 6247.5,
+          "p75": 8932.75,
+          "p90": 14792.6,
+          "p95": 19004.349999999995,
+          "p99": 43658.77000000003,
+          "total": 813717
+        },
+        "shoppingbench:glm-5.2:positive": {
+          "max": 61647.0,
+          "mean": 24961.81818181818,
+          "min": 4959.0,
+          "n": 33,
+          "p25": 9598.0,
+          "p50": 21970.0,
+          "p75": 41837.0,
+          "p90": 50601.200000000004,
+          "p95": 51652.4,
+          "p99": 58619.799999999996,
+          "total": 823740
+        },
+        "shoppingbench:kimi-k3:negative": {
+          "max": 73006.0,
+          "mean": 8036.44,
+          "min": 1893.0,
+          "n": 100,
+          "p25": 3703.5,
+          "p50": 5472.0,
+          "p75": 8093.0,
+          "p90": 12704.300000000001,
+          "p95": 17209.8,
+          "p99": 65135.500000000044,
+          "total": 803644
+        },
+        "shoppingbench:kimi-k3:positive": {
+          "max": 42008.0,
+          "mean": 18710.208333333332,
+          "min": 6791.0,
+          "n": 24,
+          "p25": 10415.25,
+          "p50": 14642.0,
+          "p75": 26955.0,
+          "p90": 35375.0,
+          "p95": 39909.84999999999,
+          "p99": 41709.0,
+          "total": 449045
+        },
+        "swebench:glm-5.2:considered_only": {
+          "max": 45556.0,
+          "mean": 23308.55,
+          "min": 13157.0,
+          "n": 20,
+          "p25": 15944.75,
+          "p50": 20713.0,
+          "p75": 30151.0,
+          "p90": 31962.90000000001,
+          "p95": 38199.200000000004,
+          "p99": 44084.63999999999,
+          "total": 466171
+        },
+        "swebench:glm-5.2:negative": {
+          "max": 56420.0,
+          "mean": 18385.78,
+          "min": 6140.0,
+          "n": 100,
+          "p25": 12719.5,
+          "p50": 16212.5,
+          "p75": 21098.25,
+          "p90": 29179.5,
+          "p95": 37615.04999999999,
+          "p99": 52781.75000000002,
+          "total": 1838578
+        },
+        "swebench:glm-5.2:positive": {
+          "max": 74495.0,
+          "mean": 31405.909090909092,
+          "min": 9884.0,
+          "n": 11,
+          "p25": 18688.0,
+          "p50": 29431.0,
+          "p75": 38092.0,
+          "p90": 43630.0,
+          "p95": 59062.5,
+          "p99": 71408.50000000001,
+          "total": 345465
+        },
+        "swebench:kimi-k3:considered_only": {
+          "max": 50098.0,
+          "mean": 23822.8,
+          "min": 11462.0,
+          "n": 20,
+          "p25": 17309.5,
+          "p50": 20661.0,
+          "p75": 27445.75,
+          "p90": 38725.9,
+          "p95": 41542.3,
+          "p99": 48386.859999999986,
+          "total": 476456
+        },
+        "swebench:kimi-k3:negative": {
+          "max": 27039.0,
+          "mean": 14486.015625,
+          "min": 6574.0,
+          "n": 64,
+          "p25": 11212.75,
+          "p50": 13833.5,
+          "p75": 16973.25,
+          "p90": 21245.300000000003,
+          "p95": 24212.549999999996,
+          "p99": 26332.769999999997,
+          "total": 927105
+        },
+        "swebench:kimi-k3:positive": {
+          "max": 64334.0,
+          "mean": 40458.0,
+          "min": 23266.0,
+          "n": 11,
+          "p25": 32981.5,
+          "p50": 38037.0,
+          "p75": 46697.5,
+          "p90": 57429.0,
+          "p95": 60881.5,
+          "p99": 63643.5,
+          "total": 445038
+        },
+        "swebench:qwen3.8-max:considered_only": {
+          "max": 107797.0,
+          "mean": 25353.8,
+          "min": 10238.0,
+          "n": 20,
+          "p25": 13800.25,
+          "p50": 17263.0,
+          "p75": 24531.75,
+          "p90": 42602.40000000002,
+          "p95": 62016.50000000004,
+          "p99": 98640.89999999994,
+          "total": 507076
+        },
+        "swebench:qwen3.8-max:negative": {
+          "max": 32550.0,
+          "mean": 15580.758620689656,
+          "min": 7013.0,
+          "n": 29,
+          "p25": 11217.0,
+          "p50": 13503.0,
+          "p75": 17960.0,
+          "p90": 28058.6,
+          "p95": 29808.999999999996,
+          "p99": 32017.719999999998,
+          "total": 451842
+        },
+        "swebench:qwen3.8-max:positive": {
+          "max": 88570.0,
+          "mean": 36553.705882352944,
+          "min": 17538.0,
+          "n": 17,
+          "p25": 24740.0,
+          "p50": 28632.0,
+          "p75": 38529.0,
+          "p90": 64002.20000000001,
+          "p95": 83190.0,
+          "p99": 87494.0,
+          "total": 621413
+        },
+        "tau3bench:glm-5.2:considered_only": {
+          "max": 104527.0,
+          "mean": 55648.5,
+          "min": 6770.0,
+          "n": 2,
+          "p25": 31209.25,
+          "p50": 55648.5,
+          "p75": 80087.75,
+          "p90": 94751.3,
+          "p95": 99639.15,
+          "p99": 103549.43,
+          "total": 111297
+        },
+        "tau3bench:glm-5.2:negative": {
+          "max": 116286.0,
+          "mean": 10810.63,
+          "min": 1489.0,
+          "n": 100,
+          "p25": 2516.0,
+          "p50": 3539.5,
+          "p75": 5217.0,
+          "p90": 31710.900000000092,
+          "p95": 59012.14999999998,
+          "p99": 89747.07000000014,
+          "total": 1081063
+        },
+        "tau3bench:glm-5.2:positive": {
+          "max": 136026.0,
+          "mean": 38476.041666666664,
+          "min": 4841.0,
+          "n": 24,
+          "p25": 7722.75,
+          "p50": 34337.0,
+          "p75": 48830.75,
+          "p90": 76857.59999999999,
+          "p95": 84178.9,
+          "p99": 124222.39999999998,
+          "total": 923425
+        },
+        "tau3bench:kimi-k3:considered_only": {
+          "max": 85274.0,
+          "mean": 51625.333333333336,
+          "min": 1868.0,
+          "n": 3,
+          "p25": 34801.0,
+          "p50": 67734.0,
+          "p75": 76504.0,
+          "p90": 81766.0,
+          "p95": 83520.0,
+          "p99": 84923.2,
+          "total": 154876
+        },
+        "tau3bench:kimi-k3:negative": {
+          "max": 185049.0,
+          "mean": 34940.57,
+          "min": 1804.0,
+          "n": 100,
+          "p25": 3244.25,
+          "p50": 5865.5,
+          "p75": 58362.75,
+          "p90": 104938.7,
+          "p95": 116125.05,
+          "p99": 179995.05000000002,
+          "total": 3494057
+        },
+        "tau3bench:kimi-k3:positive": {
+          "max": 191736.0,
+          "mean": 80554.55172413793,
+          "min": 2855.0,
+          "n": 29,
+          "p25": 64367.0,
+          "p50": 80922.0,
+          "p75": 92846.0,
+          "p90": 138485.4,
+          "p95": 143476.59999999998,
+          "p99": 179040.51999999996,
+          "total": 2336082
+        }
+      },
+      "4b-v03": {
+        "impossiblebench:glm-5.2:considered_only": {
+          "max": 41019.0,
+          "mean": 21060.1,
+          "min": 14624.0,
+          "n": 20,
+          "p25": 16861.5,
+          "p50": 20632.0,
+          "p75": 22791.75,
+          "p90": 25111.500000000004,
+          "p95": 28185.450000000008,
+          "p99": 38452.28999999998,
+          "total": 421202
+        },
+        "impossiblebench:glm-5.2:negative": {
+          "max": 57540.0,
+          "mean": 14577.62,
+          "min": 2491.0,
+          "n": 100,
+          "p25": 6384.75,
+          "p50": 12787.5,
+          "p75": 19297.25,
+          "p90": 26254.00000000001,
+          "p95": 30185.399999999998,
+          "p99": 36900.480000000105,
+          "total": 1457762
+        },
+        "impossiblebench:glm-5.2:positive": {
+          "max": 35313.0,
+          "mean": 18151.3,
+          "min": 6693.0,
+          "n": 10,
+          "p25": 10008.0,
+          "p50": 15666.0,
+          "p75": 23780.75,
+          "p90": 32054.1,
+          "p95": 33683.549999999996,
+          "p99": 34987.11,
+          "total": 181513
+        },
+        "impossiblebench:kimi-k3:considered_only": {
+          "max": 25923.0,
+          "mean": 19868.95,
+          "min": 12581.0,
+          "n": 20,
+          "p25": 17133.0,
+          "p50": 19741.0,
+          "p75": 23489.75,
+          "p90": 25134.9,
+          "p95": 25677.9,
+          "p99": 25873.98,
+          "total": 397379
+        },
+        "impossiblebench:kimi-k3:negative": {
+          "max": 39340.0,
+          "mean": 9879.42,
+          "min": 1941.0,
+          "n": 100,
+          "p25": 5013.5,
+          "p50": 7488.5,
+          "p75": 12336.25,
+          "p90": 20570.300000000007,
+          "p95": 23318.199999999993,
+          "p99": 35929.45000000002,
+          "total": 987942
+        },
+        "impossiblebench:kimi-k3:positive": {
+          "max": 16468.0,
+          "mean": 12340.5,
+          "min": 7198.0,
+          "n": 6,
+          "p25": 9600.25,
+          "p50": 12773.5,
+          "p75": 15409.0,
+          "p90": 15952.5,
+          "p95": 16210.25,
+          "p99": 16416.45,
+          "total": 74043
+        },
+        "impossiblebench:qwen3.8-max:considered_only": {
+          "max": 55624.0,
+          "mean": 23906.3,
+          "min": 5827.0,
+          "n": 20,
+          "p25": 17616.25,
+          "p50": 21661.5,
+          "p75": 25318.5,
+          "p90": 30599.20000000003,
+          "p95": 50388.55,
+          "p99": 54576.909999999996,
+          "total": 478126
+        },
+        "impossiblebench:qwen3.8-max:negative": {
+          "max": 43042.0,
+          "mean": 12454.26,
+          "min": 2402.0,
+          "n": 100,
+          "p25": 7395.25,
+          "p50": 10102.0,
+          "p75": 15150.5,
+          "p90": 23152.700000000008,
+          "p95": 27359.949999999997,
+          "p99": 35648.68000000004,
+          "total": 1245426
+        },
+        "impossiblebench:qwen3.8-max:positive": {
+          "max": 29405.0,
+          "mean": 15895.111111111111,
+          "min": 7318.0,
+          "n": 9,
+          "p25": 10589.0,
+          "p50": 15127.0,
+          "p75": 17045.0,
+          "p90": 25405.8,
+          "p95": 27405.399999999998,
+          "p99": 29005.079999999998,
+          "total": 143056
+        },
+        "shoppingbench:glm-5.2:negative": {
+          "max": 49259.0,
+          "mean": 7325.17,
+          "min": 1091.0,
+          "n": 100,
+          "p25": 3062.5,
+          "p50": 5435.5,
+          "p75": 8120.75,
+          "p90": 13980.6,
+          "p95": 18192.349999999995,
+          "p99": 42846.77000000003,
+          "total": 732517
+        },
+        "shoppingbench:glm-5.2:positive": {
+          "max": 60835.0,
+          "mean": 24149.81818181818,
+          "min": 4147.0,
+          "n": 33,
+          "p25": 8786.0,
+          "p50": 21158.0,
+          "p75": 41025.0,
+          "p90": 49789.200000000004,
+          "p95": 50840.4,
+          "p99": 57807.799999999996,
+          "total": 796944
+        },
+        "shoppingbench:kimi-k3:negative": {
+          "max": 72194.0,
+          "mean": 7224.44,
+          "min": 1081.0,
+          "n": 100,
+          "p25": 2891.5,
+          "p50": 4660.0,
+          "p75": 7281.0,
+          "p90": 11892.300000000001,
+          "p95": 16397.8,
+          "p99": 64323.500000000044,
+          "total": 722444
+        },
+        "shoppingbench:kimi-k3:positive": {
+          "max": 41196.0,
+          "mean": 17898.208333333332,
+          "min": 5979.0,
+          "n": 24,
+          "p25": 9603.25,
+          "p50": 13830.0,
+          "p75": 26143.0,
+          "p90": 34563.0,
+          "p95": 39097.84999999999,
+          "p99": 40897.0,
+          "total": 429557
+        },
+        "swebench:glm-5.2:considered_only": {
+          "max": 44744.0,
+          "mean": 22496.55,
+          "min": 12345.0,
+          "n": 20,
+          "p25": 15132.75,
+          "p50": 19901.0,
+          "p75": 29339.0,
+          "p90": 31150.90000000001,
+          "p95": 37387.200000000004,
+          "p99": 43272.63999999999,
+          "total": 449931
+        },
+        "swebench:glm-5.2:negative": {
+          "max": 55608.0,
+          "mean": 17573.78,
+          "min": 5328.0,
+          "n": 100,
+          "p25": 11907.5,
+          "p50": 15400.5,
+          "p75": 20286.25,
+          "p90": 28367.5,
+          "p95": 36803.04999999999,
+          "p99": 51969.75000000002,
+          "total": 1757378
+        },
+        "swebench:glm-5.2:positive": {
+          "max": 73683.0,
+          "mean": 30593.909090909092,
+          "min": 9072.0,
+          "n": 11,
+          "p25": 17876.0,
+          "p50": 28619.0,
+          "p75": 37280.0,
+          "p90": 42818.0,
+          "p95": 58250.5,
+          "p99": 70596.50000000001,
+          "total": 336533
+        },
+        "swebench:kimi-k3:considered_only": {
+          "max": 49286.0,
+          "mean": 23010.8,
+          "min": 10650.0,
+          "n": 20,
+          "p25": 16497.5,
+          "p50": 19849.0,
+          "p75": 26633.75,
+          "p90": 37913.9,
+          "p95": 40730.3,
+          "p99": 47574.859999999986,
+          "total": 460216
+        },
+        "swebench:kimi-k3:negative": {
+          "max": 26227.0,
+          "mean": 13674.015625,
+          "min": 5762.0,
+          "n": 64,
+          "p25": 10400.75,
+          "p50": 13021.5,
+          "p75": 16161.25,
+          "p90": 20433.300000000003,
+          "p95": 23400.549999999996,
+          "p99": 25520.769999999997,
+          "total": 875137
+        },
+        "swebench:kimi-k3:positive": {
+          "max": 63522.0,
+          "mean": 39646.0,
+          "min": 22454.0,
+          "n": 11,
+          "p25": 32169.5,
+          "p50": 37225.0,
+          "p75": 45885.5,
+          "p90": 56617.0,
+          "p95": 60069.5,
+          "p99": 62831.5,
+          "total": 436106
+        },
+        "swebench:qwen3.8-max:considered_only": {
+          "max": 106985.0,
+          "mean": 24541.8,
+          "min": 9426.0,
+          "n": 20,
+          "p25": 12988.25,
+          "p50": 16451.0,
+          "p75": 23719.75,
+          "p90": 41790.40000000002,
+          "p95": 61204.50000000004,
+          "p99": 97828.89999999994,
+          "total": 490836
+        },
+        "swebench:qwen3.8-max:negative": {
+          "max": 31738.0,
+          "mean": 14768.758620689656,
+          "min": 6201.0,
+          "n": 29,
+          "p25": 10405.0,
+          "p50": 12691.0,
+          "p75": 17148.0,
+          "p90": 27246.6,
+          "p95": 28996.999999999996,
+          "p99": 31205.719999999998,
+          "total": 428294
+        },
+        "swebench:qwen3.8-max:positive": {
+          "max": 87758.0,
+          "mean": 35741.705882352944,
+          "min": 16726.0,
+          "n": 17,
+          "p25": 23928.0,
+          "p50": 27820.0,
+          "p75": 37717.0,
+          "p90": 63190.20000000001,
+          "p95": 82378.0,
+          "p99": 86682.0,
+          "total": 607609
+        },
+        "tau3bench:glm-5.2:considered_only": {
+          "max": 103715.0,
+          "mean": 54836.5,
+          "min": 5958.0,
+          "n": 2,
+          "p25": 30397.25,
+          "p50": 54836.5,
+          "p75": 79275.75,
+          "p90": 93939.3,
+          "p95": 98827.15,
+          "p99": 102737.43,
+          "total": 109673
+        },
+        "tau3bench:glm-5.2:negative": {
+          "max": 115474.0,
+          "mean": 9998.63,
+          "min": 677.0,
+          "n": 100,
+          "p25": 1704.0,
+          "p50": 2727.5,
+          "p75": 4405.0,
+          "p90": 30898.900000000092,
+          "p95": 58200.14999999998,
+          "p99": 88935.07000000014,
+          "total": 999863
+        },
+        "tau3bench:glm-5.2:positive": {
+          "max": 135214.0,
+          "mean": 37664.041666666664,
+          "min": 4029.0,
+          "n": 24,
+          "p25": 6910.75,
+          "p50": 33525.0,
+          "p75": 48018.75,
+          "p90": 76045.59999999999,
+          "p95": 83366.9,
+          "p99": 123410.39999999998,
+          "total": 903937
+        },
+        "tau3bench:kimi-k3:considered_only": {
+          "max": 84462.0,
+          "mean": 50813.333333333336,
+          "min": 1056.0,
+          "n": 3,
+          "p25": 33989.0,
+          "p50": 66922.0,
+          "p75": 75692.0,
+          "p90": 80954.0,
+          "p95": 82708.0,
+          "p99": 84111.2,
+          "total": 152440
+        },
+        "tau3bench:kimi-k3:negative": {
+          "max": 184237.0,
+          "mean": 34128.57,
+          "min": 992.0,
+          "n": 100,
+          "p25": 2432.25,
+          "p50": 5053.5,
+          "p75": 57550.75,
+          "p90": 104126.7,
+          "p95": 115313.05,
+          "p99": 179183.05000000002,
+          "total": 3412857
+        },
+        "tau3bench:kimi-k3:positive": {
+          "max": 190924.0,
+          "mean": 79742.55172413793,
+          "min": 2043.0,
+          "n": 29,
+          "p25": 63555.0,
+          "p50": 80110.0,
+          "p75": 92034.0,
+          "p90": 137673.4,
+          "p95": 142664.59999999998,
+          "p99": 178228.51999999996,
+          "total": 2312534
+        }
+      }
+    },
+    "too_long": {
+      "27b-merged": {
+        "impossiblebench:glm-5.2:considered_only": 1,
+        "impossiblebench:glm-5.2:negative": 7,
+        "impossiblebench:glm-5.2:positive": 2,
+        "impossiblebench:kimi-k3:negative": 4,
+        "impossiblebench:qwen3.8-max:considered_only": 2,
+        "impossiblebench:qwen3.8-max:negative": 4,
+        "impossiblebench:qwen3.8-max:positive": 1,
+        "shoppingbench:glm-5.2:negative": 2,
+        "shoppingbench:glm-5.2:positive": 13,
+        "shoppingbench:kimi-k3:negative": 3,
+        "shoppingbench:kimi-k3:positive": 5,
+        "swebench:glm-5.2:considered_only": 6,
+        "swebench:glm-5.2:negative": 9,
+        "swebench:glm-5.2:positive": 5,
+        "swebench:kimi-k3:considered_only": 5,
+        "swebench:kimi-k3:positive": 9,
+        "swebench:qwen3.8-max:considered_only": 4,
+        "swebench:qwen3.8-max:negative": 2,
+        "swebench:qwen3.8-max:positive": 8,
+        "tau3bench:glm-5.2:considered_only": 1,
+        "tau3bench:glm-5.2:negative": 11,
+        "tau3bench:glm-5.2:positive": 14,
+        "tau3bench:kimi-k3:considered_only": 2,
+        "tau3bench:kimi-k3:negative": 38,
+        "tau3bench:kimi-k3:positive": 25
+      },
+      "4b-v03": {
+        "impossiblebench:glm-5.2:considered_only": 1,
+        "impossiblebench:glm-5.2:negative": 6,
+        "impossiblebench:glm-5.2:positive": 2,
+        "impossiblebench:kimi-k3:negative": 3,
+        "impossiblebench:qwen3.8-max:considered_only": 2,
+        "impossiblebench:qwen3.8-max:negative": 4,
+        "shoppingbench:glm-5.2:negative": 2,
+        "shoppingbench:glm-5.2:positive": 12,
+        "shoppingbench:kimi-k3:negative": 3,
+        "shoppingbench:kimi-k3:positive": 5,
+        "swebench:glm-5.2:considered_only": 4,
+        "swebench:glm-5.2:negative": 9,
+        "swebench:glm-5.2:positive": 5,
+        "swebench:kimi-k3:considered_only": 4,
+        "swebench:kimi-k3:positive": 9,
+        "swebench:qwen3.8-max:considered_only": 4,
+        "swebench:qwen3.8-max:negative": 2,
+        "swebench:qwen3.8-max:positive": 8,
+        "tau3bench:glm-5.2:considered_only": 1,
+        "tau3bench:glm-5.2:negative": 11,
+        "tau3bench:glm-5.2:positive": 14,
+        "tau3bench:kimi-k3:considered_only": 2,
+        "tau3bench:kimi-k3:negative": 38,
+        "tau3bench:kimi-k3:positive": 25
+      }
+    }
+  },
+  "validation": {
+    "pytest": "22 passed",
+    "ruff": "all checks passed",
+    "warning": "Tokenizers-only environment has no PyTorch. Expected: no weights or inference loaded."
+  }
+}

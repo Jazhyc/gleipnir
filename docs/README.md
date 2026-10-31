@@ -56,6 +56,11 @@
   the selected packed training recipe without model checkpointing.
 - [BF16 sequence packing](findings/bf16_sequence_packing.md): native sequence
   isolation, numerical drift localization, and the bounded B200 packing comparison.
+- [Adversarial stress tests](research/adversarial_stress_testing.md): threat
+  model, low-FPR metrics and the phase-1 attack plan for the released monitors.
+- [Gleipnir against frontier monitors](findings/adversarial_frontier_comparison.md):
+  level with Kimi K3, Sol and Sonnet on natural cheats at 3–13× lower cost;
+  below chance under misleading code comments, where Sol and Sonnet hold.
 - [Possible monitoring training follow-ups](research/monitoring_training_followups.md):
   fixed-backbone, existing-teacher-data proposals, their empirical and literature
   motivation, and a candidate comparison plan; research backlog rather than a
