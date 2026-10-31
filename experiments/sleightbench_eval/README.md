@@ -484,6 +484,23 @@ python -m experiments.sleightbench_eval.api_decisions decider_v12_ca --limit 1
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb12
 ```
 
+## Exploratory run sb13: GPT-6.1 Terra with the logit interface (frozen 2026-10-31)
+
+User-requested: the same client, prompts and request contract as `sb07`, with
+only the model changed to `gpt-6.1-terra`.
+- **Price.** $1.00/M input, $0.05/M cached, $1.25/M (30m) or $2.50/M (12h)
+  cache write, $5.00/M output, short-context tier, checked 2026-10-31. The
+  budget bound prices cache writes at the 12h rate.
+- **Budget.** About $3.50 for both views. The bound was set to $6, which the
+  conservative accounting exhausted with two rows left; it was raised to $8
+  to finish them. Nothing else changed.
+- **Canary.** One row first, under the same stop rule as `sb08`.
+
+```bash
+python -m experiments.sleightbench_eval.api_openai gpt61_terra --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb13
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

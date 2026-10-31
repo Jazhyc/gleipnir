@@ -598,6 +598,34 @@ answered on the first attempt; $0.134 (Jev) and $0.061 (Decider).
 
 Results: `results/sleightbench_eval/sb12/`.
 
+## Exploratory: GPT-6.1 Terra with the logit interface (run `sb13`)
+
+User-requested on 2026-10-31: the `sb07` request contract with only the model
+changed to `gpt-6.1-terra`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb13-gpt-61-terra-with-the-logit-interface-frozen-2026-10-31)).
+All 172 rows met the contract (zero reasoning tokens, both literal logprobs)
+for about $3.38 at the 30m cache-write rate ($6.75 conservative bound).
+
+| Monitor (logits, ControlArena-description prompt) | View | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **GPT-6.1 Terra** | stripped | **55.0%** [40.0, 82.5] | **0.922** | **0.734** | 93% |
+| GPT-6 Sol | stripped | 15.0% | 0.823 | 0.515 | 90% |
+| GPT-5.5 | stripped | 15.0% | 0.783 | 0.404 | 90% |
+| GPT-6 Luna | stripped | 5.0% | 0.696 | 0.277 | 78% |
+| **GPT-6.1 Terra** | visible | **37.5%** [25.0, 80.0] | **0.926** | **0.714** | 93% |
+| GPT-6 Sol | visible | 17.5% | 0.825 | 0.448 | 83% |
+| GPT-5.5 | visible | 10.0% | 0.792 | 0.455 | 85% |
+| GPT-6 Luna | visible | 7.5% | 0.738 | 0.265 | 73% |
+
+- **Terra is the strongest monitor measured on SleightBench**, about 10 AUROC
+  points above GPT-6 Sol in both views and above the paper's Opus 4.6
+  thinking row (32% catch, a 10-trial average; ours is single-pass) on the
+  stripped view, with no reasoning tokens.
+- Its thresholds sit near certainty (0.99995 stripped, 0.999999 visible) with
+  0% realized FPR, so the wide catch intervals reflect a few benigns near the top.
+
+Results: `results/sleightbench_eval/sb13/`.
+
 ## Diagnostic: single-trial ranking for the authors' protocol
 
 Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each

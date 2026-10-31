@@ -166,6 +166,13 @@
       "status": "exploratory (run sb09)",
       "tokens_from": "27b"
     },
+    "gpt61_terra": {
+      "model": "gpt-6.1-terra",
+      "provider": "openai",
+      "variant": "control_arena",
+      "status": "exploratory (run sb13)",
+      "tokens_from": "27b"
+    },
     "jev_113": {
       "model": "typesafe/jev-1.13",
       "provider": "typesafe",
@@ -324,6 +331,41 @@
         "coverage_repeats": 3
       },
       "status": "exploratory (run sb09): GPT-6 Luna with the logit interface, the sb07 request contract"
+    },
+    "gpt61_terra": {
+      "run": "sb13",
+      "request": {
+        "model": "gpt-6.1-terra",
+        "reasoning": {
+          "effort": "none"
+        },
+        "temperature": 1,
+        "top_p": 1,
+        "max_output_tokens": 16,
+        "include": [
+          "message.output_text.logprobs"
+        ],
+        "top_logprobs": 20,
+        "service_tier": "default",
+        "store": false
+      },
+      "pricing": {
+        "source": "https://developers.openai.com/api/docs/pricing",
+        "checked_date": "2026-10-31",
+        "input_usd_per_million": 1.0,
+        "cached_input_usd_per_million": 0.05,
+        "cache_write_usd_per_million": 2.5,
+        "output_usd_per_million": 5.0,
+        "note": "short-context tier (<=272K); cache write bounded at the 12h rate"
+      },
+      "execution": {
+        "budget_usd": 8,
+        "max_attempts": 7,
+        "timeout_seconds": 300,
+        "tokens_per_minute": 800000,
+        "coverage_repeats": 3
+      },
+      "status": "exploratory (run sb13): GPT-6.1 Terra with the logit interface, the sb07 request contract"
     }
   },
   "decision_models": {
