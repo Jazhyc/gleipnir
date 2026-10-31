@@ -3,7 +3,8 @@
 Prompted last-token logistic-regression probes with Kimi K3 soft targets.
 Layers 24-44 come from the fixed-layer depth follow-up (C chosen on ID per
 layer, OOD scored once); layer 50 is the ID-selected probe from the main
-run. Stars mark the ID and OOD peaks among the plotted layers.
+run. Stars mark the ID and OOD peaks among the plotted layers; rings mark
+each curve's plateau, the first plotted layer reaching 95% of its peak.
 Relative depth = (layer + 1) / n_layers.
 The slide title carries the message.
 """
@@ -21,6 +22,7 @@ RESULTS = ROOT / "results" / "probe_generalization"
 INK = "#1F2937"
 MUTED = "#6B7280"
 C27 = "#E45756"
+PLATEAU = 0.95  # fraction of the curve's peak
 
 
 def style() -> None:
@@ -71,6 +73,17 @@ def plot(output_dir: Path) -> None:
                     xy=(x[k], pts[k][col]), xytext=(-8, dy),
                     textcoords="offset points", ha="right", color=color,
                     fontsize=11.5, fontweight="bold")
+    # Plateau: the first plotted layer reaching 95% of that curve's peak.
+    for col, dx, dy, ha in ((1, -10, 14, "right"), (2, 10, -48, "left")):
+        peak = max(p[col] for p in pts)
+        k = next(i for i, p in enumerate(pts) if p[col] >= PLATEAU * peak)
+        ax.scatter([x[k]], [pts[k][col]], s=150, facecolor="none",
+                   edgecolor=INK, lw=1.8, zorder=5)
+        tag = "ID" if col == 1 else "OOD"
+        ax.annotate(f"{tag} plateau: layer {pts[k][0]} ({pts[k][col]:.2f})",
+                    xy=(x[k], pts[k][col]), xytext=(dx, dy),
+                    textcoords="offset points", ha=ha, color=INK, fontsize=11.5,
+                    fontweight="bold")
     ax.set_xlim(0.3, 0.85)
     ax.set_ylim(0.1, 1.0)
     ax.set_xticks([0.375, 0.5, 0.625, 0.75])
