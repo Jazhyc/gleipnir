@@ -1,14 +1,15 @@
 """Slide figure: OOD cost frontier with half-depth probes.
 
 Styled like the OOD frontier (scripts/plot_tool_trajectory_ood_frontier.py).
-y: mean OOD pAUROC@20 over the six OOD datasets. x: uncached input $/M.
-Gleipnir and the half-depth probes are optimized single-B200 serving at the
-committed-GPU break-even ($3.44/h, fully utilized), from measured prompt
-tokens/s (experiments/probe_optimized_serving: 4B 228.4K full, 412.5K
-probe; 27B 53.8K full, 104.8K probe). Probes are the deployed soft-target
-attention probes (OOD 0.750 and 0.849 on the optimized stack). Decision
-models use API list prices and their OOD scores from
-docs/research/tool_trajectory_ood_frontier.md.
+y: mean OOD pAUROC@20 over the six OOD datasets. x: USD per 1,000 OOD
+evaluations, as in the main frontier. Gleipnir, decision-model and base-model
+rows come from docs/research/tool_trajectory_ood_frontier.md (Gleipnir at the
+committed-GPU B200 break-even, $3.44/h; decision models at API list price;
+base models at the hosted-price proxy used there). Half-depth probe costs
+scale the full model's committed cost by the measured rows/s ratio on one
+B200 (experiments/probe_optimized_serving: 4B 26.4 -> 48.5 rows/s, 27B
+prompted 5.68 -> 11.07 rows/s). Probes are the deployed soft-target attention
+probes (OOD 0.750 and 0.849 on the optimized stack).
 """
 
 from __future__ import annotations
@@ -32,22 +33,21 @@ DECISION = "#B279A2"
 PROBE = "#8E6CC0"  # probing-section colour in the deck
 LABEL = "#4B5563"
 LINE = "#374151"
-COMMITTED_USD_PER_HOUR = 3.44
+BASE = "#9CA3AF"
+G4, G27 = 0.0366, 0.1677  # committed $/1K, frontier registry
 
 
-def usd_per_million(tokens_per_second: float) -> float:
-    return COMMITTED_USD_PER_HOUR / (tokens_per_second * 3600) * 1e6
-
-
-# name: (input $/M, OOD pAUROC@20, kind, label offset (dx, dy, ha))
+# name: ($/1K evaluations, OOD pAUROC@20, kind, label offset (dx, dy, ha))
 MONITORS = {
-    "Gleipnir 4B": (usd_per_million(228.4e3), 0.7703, "full", (10, -14, "left")),
-    "4B probe": (usd_per_million(412.5e3), 0.750, "probe", (0, -20, "center")),
-    "Gleipnir 27B": (usd_per_million(53.8e3), 0.9508, "full", (-12, 10, "right")),
-    "27B probe": (usd_per_million(104.8e3), 0.849, "probe", (-12, 8, "right")),
-    "Decider v1.2": (0.02, 0.8956, "decision", (10, -6, "left")),
-    "Jev 1.13": (0.042, 0.8495, "decision", (0, 18, "center")),
-    "GPT-6 Luna": (0.10, 0.8365, "decision", (-12, -4, "right")),
+    "Gleipnir 4B": (G4, 0.7703, "full", (10, -14, "left")),
+    "4B probe": (G4 * 26.4 / 48.5, 0.750, "probe", (0, -20, "center")),
+    "Gleipnir 27B": (G27, 0.9508, "full", (-12, 10, "right")),
+    "27B probe": (G27 * 5.68 / 11.07, 0.849, "probe", (-12, 8, "right")),
+    "Decider v1.2": (0.1763, 0.8956, "decision", (10, -6, "left")),
+    "Jev 1.13": (0.3887, 0.8495, "decision", (0, 18, "center")),
+    "GPT-6 Luna": (0.8355, 0.8365, "decision", (10, -14, "left")),
+    "Qwen3.5-4B base": (0.2842, 0.6175, "base", (-12, 0, "right")),
+    "Qwen3.8-27B base": (1.8476, 0.8901, "base", (0, 18, "center")),
 }
 
 
@@ -60,17 +60,17 @@ def plot(output_dir: Path) -> None:
     set_plot_style()
     fig, ax = plt.subplots(figsize=(10.0, 6.4))
     ax.set_xscale("log")
-    ax.set_xticks([0.002, 0.005, 0.01, 0.02, 0.05, 0.1])
+    ax.set_xticks([0.01, 0.03, 0.1, 0.3, 1.0, 3.0])
     ax.xaxis.set_major_formatter(FuncFormatter(lambda v, _: f"${v:g}"))
     ax.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
-    ax.set_xlim(0.0017, 0.15)
-    ax.set_ylim(0.72, 0.98)
+    ax.set_xlim(0.012, 3.2)
+    ax.set_ylim(0.58, 0.98)
 
     order = np.argsort(cost[on_front])
     ax.plot(cost[on_front][order], score[on_front][order], color=LINE, lw=2.3,
             alpha=0.82, zorder=1)
     style = {"full": (ORIGIN_PALETTE["Gleipnir"], "D"), "probe": (PROBE, "D"),
-             "decision": (DECISION, "s")}
+             "decision": (DECISION, "s"), "base": (BASE, "o")}
     for i, name in enumerate(names):
         c, kind = MONITORS[name][:2], MONITORS[name][2]
         color, marker = style[kind]
@@ -92,10 +92,12 @@ def plot(output_dir: Path) -> None:
                             "linewidth": 1.8, "mutation_scale": 16,
                             "shrinkA": 12, "shrinkB": 0})
     ax.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD)")
-    ax.set_xlabel("Input price (USD per million tokens; log scale)")
+    ax.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     handles = [
         Line2D([], [], marker="s", ls="", color=DECISION, markeredgecolor=LINE,
                markersize=10, label="Decision"),
+        Line2D([], [], marker="o", ls="", color=BASE, markeredgecolor=LINE,
+               markersize=10, label="Base model, zero-shot"),
         Line2D([], [], marker="D", ls="", color=ORIGIN_PALETTE["Gleipnir"],
                markeredgecolor=LINE, markersize=10, label="Gleipnir, full model"),
         Line2D([], [], marker="D", ls="", color=PROBE, markeredgecolor=LINE,
