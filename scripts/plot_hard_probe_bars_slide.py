@@ -60,7 +60,8 @@ def plot(output_dir: Path) -> None:
         for x, v in zip(xs, vals, strict=True):
             ax.text(x, v + 0.02, f"{v:.2f}", ha="center", va="bottom",
                     color=INK, fontsize=13, fontweight="bold")
-        ax.axhline(0.1, color=MUTED, lw=1, ls="--", zorder=0)
+        ax.axhline(0.1, color=INK, lw=1.8, ls=(0, (5, 3)), zorder=3)
+        ax.set_xlim(-0.5, 2.5)
         ax.set_xticks(list(xs))
         ax.set_xticklabels([row[0] for row in ROWS], fontsize=12)
         ax.set_title(title, color=INK, fontsize=13, loc="left")
@@ -68,8 +69,8 @@ def plot(output_dir: Path) -> None:
     axes[0].set_ylim(0, 1.05)
     axes[0].set_yticks([0, 0.25, 0.5, 0.75, 1.0])
     axes[0].set_ylabel("OOD pAUROC@20")
-    axes[0].text(0.5, 0.115, "chance", color=MUTED, fontsize=10,
-                 ha="center", va="bottom")
+    axes[1].text(2.58, 0.1, "chance\n(0.10)", color=INK, fontsize=12,
+                 ha="left", va="center", clip_on=False)
     fig.tight_layout(w_pad=2.0)
     output_dir.mkdir(parents=True, exist_ok=True)
     for ext in ("svg", "png"):
