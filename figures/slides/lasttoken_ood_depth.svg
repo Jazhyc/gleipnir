@@ -6,7 +6,7 @@
   <rdf:RDF xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:cc="http://creativecommons.org/ns#" xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#">
    <cc:Work>
     <dc:type rdf:resource="http://purl.org/dc/dcmitype/StillImage"/>
-    <dc:date>2026-10-31T13:40:38.185634</dc:date>
+    <dc:date>2026-10-31T13:49:11.727012</dc:date>
     <dc:format>image/svg+xml</dc:format>
     <dc:creator>
      <cc:Agent>
@@ -43,18 +43,18 @@ L 273.640516 212.405355
 L 273.640516 14.611136 
 L 204.624105 14.611136 
 z
-" clip-path="url(#paa035807b3)" style="fill: #eef1f4; stroke: #eef1f4; stroke-linejoin: miter"/>
+" clip-path="url(#p99efd9b784)" style="fill: #eef1f4; stroke: #eef1f4; stroke-linejoin: miter"/>
    </g>
    <g id="matplotlib.axis_1">
     <g id="xtick_1">
      <g id="line2d_1">
       <defs>
-       <path id="m63cd07aa02" d="M 0 0 
+       <path id="mbb38faa0a7" d="M 0 0 
 L 0 3.5 
 " style="stroke: #1f2937; stroke-width: 0.8"/>
       </defs>
       <g>
-       <use xlink:href="#m63cd07aa02" x="130.677951" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#mbb38faa0a7" x="130.677951" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_1">
@@ -221,7 +221,7 @@ z
     <g id="xtick_2">
      <g id="line2d_2">
       <g>
-       <use xlink:href="#m63cd07aa02" x="253.921541" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#mbb38faa0a7" x="253.921541" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_2">
@@ -288,7 +288,7 @@ z
     <g id="xtick_3">
      <g id="line2d_3">
       <g>
-       <use xlink:href="#m63cd07aa02" x="377.165131" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#mbb38faa0a7" x="377.165131" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_3">
@@ -377,7 +377,7 @@ z
     <g id="xtick_4">
      <g id="line2d_4">
       <g>
-       <use xlink:href="#m63cd07aa02" x="500.408722" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#mbb38faa0a7" x="500.408722" y="212.405355" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_4">
@@ -670,12 +670,12 @@ z
     <g id="ytick_1">
      <g id="line2d_5">
       <defs>
-       <path id="m863a51899b" d="M 0 0 
+       <path id="m48dd282f7e" d="M 0 0 
 L -3.5 0 
 " style="stroke: #1f2937; stroke-width: 0.8"/>
       </defs>
       <g>
-       <use xlink:href="#m863a51899b" x="56.731797" y="190.428219" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#m48dd282f7e" x="56.731797" y="190.428219" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_6">
@@ -690,7 +690,7 @@ L -3.5 0
     <g id="ytick_2">
      <g id="line2d_6">
       <g>
-       <use xlink:href="#m863a51899b" x="56.731797" y="146.473948" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#m48dd282f7e" x="56.731797" y="146.473948" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_7">
@@ -726,7 +726,7 @@ z
     <g id="ytick_3">
      <g id="line2d_7">
       <g>
-       <use xlink:href="#m863a51899b" x="56.731797" y="102.519678" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#m48dd282f7e" x="56.731797" y="102.519678" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_8">
@@ -741,7 +741,7 @@ z
     <g id="ytick_4">
      <g id="line2d_8">
       <g>
-       <use xlink:href="#m863a51899b" x="56.731797" y="58.565407" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#m48dd282f7e" x="56.731797" y="58.565407" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_9">
@@ -812,7 +812,7 @@ z
     <g id="ytick_5">
      <g id="line2d_9">
       <g>
-       <use xlink:href="#m863a51899b" x="56.731797" y="14.611136" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
+       <use xlink:href="#m48dd282f7e" x="56.731797" y="14.611136" style="fill: #1f2937; stroke: #1f2937; stroke-width: 0.8"/>
       </g>
      </g>
      <g id="text_10">
@@ -1056,9 +1056,9 @@ L 330.948785 35.879026
 L 392.57058 33.976017 
 L 454.192375 35.987672 
 L 546.625068 31.778125 
-" clip-path="url(#paa035807b3)" style="fill: none; stroke-dasharray: 7.4,3.2; stroke-dashoffset: 0; stroke: #e45756; stroke-opacity: 0.6; stroke-width: 2"/>
+" clip-path="url(#p99efd9b784)" style="fill: none; stroke-dasharray: 7.4,3.2; stroke-dashoffset: 0; stroke: #e45756; stroke-opacity: 0.6; stroke-width: 2"/>
     <defs>
-     <path id="m6fb3a0554c" d="M 0 2.5 
+     <path id="madf65444b2" d="M 0 2.5 
 C 0.663008 2.5 1.29895 2.236584 1.767767 1.767767 
 C 2.236584 1.29895 2.5 0.663008 2.5 0 
 C 2.5 -0.663008 2.236584 -1.29895 1.767767 -1.767767 
@@ -1070,14 +1070,14 @@ C -1.29895 2.236584 -0.663008 2.5 0 2.5
 z
 " style="stroke: #e45756; stroke-opacity: 0.6"/>
     </defs>
-    <g clip-path="url(#paa035807b3)">
-     <use xlink:href="#m6fb3a0554c" x="146.0834" y="121.195026" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="207.705195" y="70.471525" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="269.32699" y="39.602484" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="330.948785" y="35.879026" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="392.57058" y="33.976017" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="454.192375" y="35.987672" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
-     <use xlink:href="#m6fb3a0554c" x="546.625068" y="31.778125" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+    <g clip-path="url(#p99efd9b784)">
+     <use xlink:href="#madf65444b2" x="146.0834" y="121.195026" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="207.705195" y="70.471525" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="269.32699" y="39.602484" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="330.948785" y="35.879026" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="392.57058" y="33.976017" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="454.192375" y="35.987672" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+     <use xlink:href="#madf65444b2" x="546.625068" y="31.778125" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
     </g>
    </g>
    <g id="line2d_11">
@@ -1088,9 +1088,9 @@ L 330.948785 46.693237
 L 392.57058 44.476497 
 L 454.192375 42.683496 
 L 546.625068 37.530826 
-" clip-path="url(#paa035807b3)" style="fill: none; stroke: #e45756; stroke-width: 2.6; stroke-linecap: square"/>
+" clip-path="url(#p99efd9b784)" style="fill: none; stroke: #e45756; stroke-width: 2.6; stroke-linecap: square"/>
     <defs>
-     <path id="medf1dfc0e1" d="M 0 3 
+     <path id="m7502949aef" d="M 0 3 
 C 0.795609 3 1.55874 2.683901 2.12132 2.12132 
 C 2.683901 1.55874 3 0.795609 3 0 
 C 3 -0.795609 2.683901 -1.55874 2.12132 -2.12132 
@@ -1102,14 +1102,14 @@ C -1.55874 2.683901 -0.795609 3 0 3
 z
 " style="stroke: #e45756"/>
     </defs>
-    <g clip-path="url(#paa035807b3)">
-     <use xlink:href="#medf1dfc0e1" x="146.0834" y="167.891946" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="207.705195" y="112.216615" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="269.32699" y="60.393492" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="330.948785" y="46.693237" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="392.57058" y="44.476497" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="454.192375" y="42.683496" style="fill: #e45756; stroke: #e45756"/>
-     <use xlink:href="#medf1dfc0e1" x="546.625068" y="37.530826" style="fill: #e45756; stroke: #e45756"/>
+    <g clip-path="url(#p99efd9b784)">
+     <use xlink:href="#m7502949aef" x="146.0834" y="167.891946" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="207.705195" y="112.216615" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="269.32699" y="60.393492" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="330.948785" y="46.693237" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="392.57058" y="44.476497" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="454.192375" y="42.683496" style="fill: #e45756; stroke: #e45756"/>
+     <use xlink:href="#m7502949aef" x="546.625068" y="37.530826" style="fill: #e45756; stroke: #e45756"/>
     </g>
    </g>
    <g id="patch_4">
@@ -1804,9 +1804,95 @@ z
     </g>
    </g>
    <g id="text_15">
-    <!-- ID plateau: layer 32 (0.89) -->
-    <g style="fill: #1f2937" transform="translate(101.645818 25.602484) scale(0.115 -0.115)">
+    <!-- Most score per layer -->
+    <g style="fill: #1f2937" transform="translate(283.32699 92.109313) scale(0.115 -0.115)">
      <defs>
+      <path id="Cantarell-Bold-30" d="M 906 4441 
+L 1863 4441 
+L 3338 1891 
+L 4834 4441 
+L 5744 4441 
+L 5744 0 
+L 4956 0 
+L 4956 3322 
+L 3694 1272 
+L 2950 1272 
+L 1694 3322 
+L 1694 0 
+L 906 0 
+L 906 4441 
+z
+" transform="scale(0.015625)"/>
+      <path id="Cantarell-Bold-52" d="M 2169 3147 
+Q 2944 3147 3417 2739 
+Q 3891 2331 3891 1600 
+Q 3891 831 3408 384 
+Q 2925 -63 2109 -63 
+Q 1334 -63 870 357 
+Q 406 778 406 1513 
+Q 406 2266 879 2706 
+Q 1353 3147 2169 3147 
+z
+M 2119 2453 
+Q 1878 2453 1665 2362 
+Q 1453 2272 1308 2069 
+Q 1163 1866 1163 1591 
+Q 1163 1184 1444 907 
+Q 1725 631 2175 631 
+Q 2584 631 2859 872 
+Q 3134 1113 3134 1509 
+Q 3134 1738 3043 1923 
+Q 2953 2109 2806 2221 
+Q 2659 2334 2481 2393 
+Q 2303 2453 2119 2453 
+z
+" transform="scale(0.015625)"/>
+      <path id="Cantarell-Bold-56" d="M 2522 922 
+Q 2516 1000 2402 1059 
+Q 2288 1119 2109 1166 
+Q 1931 1213 1718 1263 
+Q 1506 1313 1295 1386 
+Q 1084 1459 909 1557 
+Q 734 1656 625 1817 
+Q 516 1978 516 2184 
+Q 516 2306 561 2429 
+Q 606 2553 725 2686 
+Q 844 2819 1025 2919 
+Q 1206 3019 1509 3083 
+Q 1813 3147 2194 3147 
+Q 2419 3147 2600 3123 
+Q 2781 3100 2856 3081 
+Q 2931 3063 3084 3016 
+L 3213 2978 
+L 3000 2347 
+L 2881 2378 
+Q 2475 2491 2091 2491 
+Q 1897 2491 1750 2464 
+Q 1603 2438 1526 2402 
+Q 1450 2366 1403 2317 
+Q 1356 2269 1343 2236 
+Q 1331 2203 1331 2175 
+Q 1331 2103 1442 2043 
+Q 1553 1984 1731 1936 
+Q 1909 1888 2123 1833 
+Q 2338 1778 2553 1700 
+Q 2769 1622 2947 1522 
+Q 3125 1422 3236 1265 
+Q 3347 1109 3347 916 
+Q 3347 781 3308 656 
+Q 3269 531 3158 397 
+Q 3047 263 2872 164 
+Q 2697 66 2400 1 
+Q 2103 -63 1719 -63 
+Q 1119 -63 522 181 
+L 406 228 
+L 638 853 
+L 756 806 
+Q 1316 597 1747 597 
+Q 2147 597 2334 676 
+Q 2522 756 2522 922 
+z
+" transform="scale(0.015625)"/>
       <path id="Cantarell-Bold-57" d="M 2619 56 
 Q 2159 -63 1850 -63 
 Q 1553 -63 1339 -3 
@@ -1835,27 +1921,112 @@ L 2738 88
 L 2619 56 
 z
 " transform="scale(0.015625)"/>
-      <path id="Cantarell-Bold-58" d="M 2859 3088 
-L 3628 3088 
-L 3628 0 
-L 3056 0 
-L 2966 209 
-Q 2338 -63 1756 -63 
-Q 1453 -63 1231 17 
-Q 1009 97 882 220 
-Q 756 344 681 528 
-Q 606 713 584 881 
-Q 563 1050 563 1263 
+      <path id="Cantarell-Bold-46" d="M 406 1478 
+Q 406 1844 506 2133 
+Q 606 2422 776 2608 
+Q 947 2794 1183 2917 
+Q 1419 3041 1676 3092 
+Q 1934 3144 2228 3144 
+Q 2756 3144 3203 2950 
+L 3313 2903 
+L 3109 2294 
+L 2988 2334 
+Q 2666 2447 2306 2447 
+Q 2072 2447 1880 2406 
+Q 1688 2366 1519 2273 
+Q 1350 2181 1254 2003 
+Q 1159 1825 1159 1575 
+Q 1159 616 2375 616 
+Q 2678 616 2950 713 
+L 3072 753 
+L 3281 163 
+L 3166 119 
+Q 2697 -63 2156 -63 
+Q 1878 -63 1636 -19 
+Q 1394 25 1162 136 
+Q 931 247 767 417 
+Q 603 588 504 859 
+Q 406 1131 406 1478 
+z
+" transform="scale(0.015625)"/>
+     </defs>
+     <use xlink:href="#Cantarell-Bold-30"/>
+     <use xlink:href="#Cantarell-Bold-52" transform="translate(100 0)"/>
+     <use xlink:href="#Cantarell-Bold-56" transform="translate(167.140625 0)"/>
+     <use xlink:href="#Cantarell-Bold-57" transform="translate(224.765625 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(270.609375 0)"/>
+     <use xlink:href="#Cantarell-Bold-56" transform="translate(297.953125 0)"/>
+     <use xlink:href="#Cantarell-Bold-46" transform="translate(355.578125 0)"/>
+     <use xlink:href="#Cantarell-Bold-52" transform="translate(412.46875 0)"/>
+     <use xlink:href="#Cantarell-Bold-55" transform="translate(479.609375 0)"/>
+     <use xlink:href="#Cantarell-Bold-48" transform="translate(525.84375 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(587.65625 0)"/>
+     <use xlink:href="#Cantarell-Bold-53" transform="translate(615 0)"/>
+     <use xlink:href="#Cantarell-Bold-48" transform="translate(680.484375 0)"/>
+     <use xlink:href="#Cantarell-Bold-55" transform="translate(742.296875 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(788.53125 0)"/>
+     <use xlink:href="#Cantarell-Bold-4f" transform="translate(815.875 0)"/>
+     <use xlink:href="#Cantarell-Bold-44" transform="translate(847.421875 0)"/>
+     <use xlink:href="#Cantarell-Bold-5c" transform="translate(907.625 0)"/>
+     <use xlink:href="#Cantarell-Bold-48" transform="translate(967.390625 0)"/>
+     <use xlink:href="#Cantarell-Bold-55" transform="translate(1029.203125 0)"/>
+    </g>
+    <!-- (ID and OOD): layer 32 -->
+    <g style="fill: #1f2937" transform="translate(283.32699 108.393492) scale(0.115 -0.115)">
+     <defs>
+      <path id="Cantarell-Bold-51" d="M 563 3088 
+L 1100 3088 
+L 1206 2875 
+Q 1850 3150 2403 3150 
+Q 2703 3150 2922 3069 
+Q 3141 2988 3266 2866 
+Q 3391 2744 3464 2558 
+Q 3538 2372 3559 2203 
+Q 3581 2034 3581 1822 
+L 3581 0 
+L 2813 0 
+L 2813 1813 
+Q 2813 1900 2805 1964 
+Q 2797 2028 2759 2123 
+Q 2722 2219 2656 2280 
+Q 2591 2341 2458 2386 
+Q 2325 2431 2144 2431 
+Q 1778 2431 1331 2259 
+L 1331 0 
+L 563 0 
 L 563 3088 
-L 1331 3088 
-L 1331 1269 
-Q 1331 1188 1339 1125 
-Q 1347 1063 1384 967 
-Q 1422 872 1490 809 
-Q 1559 747 1696 700 
-Q 1834 653 2022 653 
-Q 2397 653 2859 825 
-L 2859 3088 
+z
+" transform="scale(0.015625)"/>
+      <path id="Cantarell-Bold-47" d="M 406 1494 
+Q 406 2288 876 2719 
+Q 1347 3150 2134 3150 
+Q 2500 3150 2863 3044 
+L 2863 4722 
+L 3631 4722 
+L 3631 0 
+L 3063 0 
+L 3000 144 
+Q 2547 -63 2031 -63 
+Q 1788 -63 1563 -14 
+Q 1338 34 1123 150 
+Q 909 266 753 439 
+Q 597 613 501 884 
+Q 406 1156 406 1494 
+z
+M 2228 616 
+Q 2553 616 2863 725 
+L 2863 2397 
+Q 2531 2491 2222 2491 
+Q 2081 2491 1950 2470 
+Q 1819 2450 1670 2389 
+Q 1522 2328 1414 2231 
+Q 1306 2134 1234 1962 
+Q 1163 1791 1163 1569 
+Q 1163 1344 1233 1169 
+Q 1303 994 1412 892 
+Q 1522 791 1670 725 
+Q 1819 659 1953 637 
+Q 2088 616 2228 616 
 z
 " transform="scale(0.015625)"/>
       <path id="Cantarell-Bold-1d" d="M 434 784 
@@ -1910,162 +2081,34 @@ L 638 4109
 L 744 4163 
 z
 " transform="scale(0.015625)"/>
-      <path id="Cantarell-Bold-1b" d="M 2263 3797 
-Q 1950 3797 1742 3645 
-Q 1534 3494 1534 3300 
-Q 1534 3194 1596 3103 
-Q 1659 3013 1742 2952 
-Q 1825 2891 1962 2833 
-Q 2100 2775 2198 2744 
-Q 2297 2713 2438 2675 
-Q 2775 2866 2914 2992 
-Q 3053 3119 3053 3272 
-Q 3053 3522 2825 3659 
-Q 2597 3797 2263 3797 
-z
-M 3297 1369 
-Q 3297 1553 3211 1700 
-Q 3125 1847 2961 1951 
-Q 2797 2056 2612 2128 
-Q 2428 2200 2181 2263 
-Q 1759 2144 1515 1901 
-Q 1272 1659 1272 1394 
-Q 1272 1100 1562 881 
-Q 1853 663 2334 663 
-Q 2775 663 3036 867 
-Q 3297 1072 3297 1369 
-z
-M 2263 4500 
-Q 3063 4500 3459 4197 
-Q 3856 3894 3856 3353 
-Q 3856 3097 3726 2887 
-Q 3597 2678 3341 2481 
-Q 3728 2272 3917 1975 
-Q 4106 1678 4106 1328 
-Q 4106 1063 3990 817 
-Q 3875 572 3658 373 
-Q 3441 175 3089 56 
-Q 2738 -63 2306 -63 
-Q 1509 -63 989 310 
-Q 469 684 469 1272 
-Q 469 1619 675 1936 
-Q 881 2253 1228 2463 
-Q 944 2656 831 2900 
-Q 719 3144 719 3366 
-Q 719 3850 1131 4175 
-Q 1544 4500 2263 4500 
-z
-" transform="scale(0.015625)"/>
      </defs>
-     <use xlink:href="#Cantarell-Bold-2c"/>
-     <use xlink:href="#Cantarell-Bold-27" transform="translate(39.65625 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(126.078125 0)"/>
-     <use xlink:href="#Cantarell-Bold-53" transform="translate(153.421875 0)"/>
-     <use xlink:href="#Cantarell-Bold-4f" transform="translate(218.90625 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(250.453125 0)"/>
-     <use xlink:href="#Cantarell-Bold-57" transform="translate(310.65625 0)"/>
-     <use xlink:href="#Cantarell-Bold-48" transform="translate(356.5 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(418.3125 0)"/>
-     <use xlink:href="#Cantarell-Bold-58" transform="translate(478.515625 0)"/>
-     <use xlink:href="#Cantarell-Bold-1d" transform="translate(544 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(571.828125 0)"/>
-     <use xlink:href="#Cantarell-Bold-4f" transform="translate(599.171875 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(630.71875 0)"/>
-     <use xlink:href="#Cantarell-Bold-5c" transform="translate(690.921875 0)"/>
-     <use xlink:href="#Cantarell-Bold-48" transform="translate(750.6875 0)"/>
-     <use xlink:href="#Cantarell-Bold-55" transform="translate(812.5 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(858.734375 0)"/>
-     <use xlink:href="#Cantarell-Bold-16" transform="translate(886.078125 0)"/>
-     <use xlink:href="#Cantarell-Bold-15" transform="translate(957.5625 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(1029.046875 0)"/>
-     <use xlink:href="#Cantarell-Bold-b" transform="translate(1056.390625 0)"/>
-     <use xlink:href="#Cantarell-Bold-13" transform="translate(1092.625 0)"/>
-     <use xlink:href="#Cantarell-Bold-11" transform="translate(1164.109375 0)"/>
-     <use xlink:href="#Cantarell-Bold-1b" transform="translate(1191.9375 0)"/>
-     <use xlink:href="#Cantarell-Bold-1c" transform="translate(1263.421875 0)"/>
-     <use xlink:href="#Cantarell-Bold-c" transform="translate(1334.90625 0)"/>
-    </g>
-   </g>
-   <g id="text_16">
-    <!-- OOD plateau: layer 36 (0.85) -->
-    <g style="fill: #1f2937" transform="translate(340.948785 94.693237) scale(0.115 -0.115)">
-     <defs>
-      <path id="Cantarell-Bold-19" d="M 3209 4475 
-Q 3388 4475 3616 4453 
-L 3741 4441 
-L 3681 3722 
-L 3550 3734 
-Q 3388 3753 3225 3753 
-Q 2869 3753 2584 3700 
-Q 2300 3647 2112 3559 
-Q 1925 3472 1786 3345 
-Q 1647 3219 1570 3091 
-Q 1494 2963 1444 2806 
-Q 1863 3041 2406 3041 
-Q 3144 3041 3589 2630 
-Q 4034 2219 4034 1566 
-Q 4034 1231 3909 932 
-Q 3784 634 3557 409 
-Q 3331 184 2989 53 
-Q 2647 -78 2234 -78 
-Q 2066 -78 1909 -56 
-Q 1753 -34 1578 22 
-Q 1403 78 1256 168 
-Q 1109 259 971 409 
-Q 834 559 739 751 
-Q 644 944 586 1219 
-Q 528 1494 528 1825 
-Q 528 2428 670 2892 
-Q 813 3356 1055 3651 
-Q 1297 3947 1645 4136 
-Q 1994 4325 2375 4400 
-Q 2756 4475 3209 4475 
-z
-M 2969 2117 
-Q 2672 2347 2265 2347 
-Q 1859 2347 1582 2122 
-Q 1306 1897 1306 1547 
-Q 1306 1188 1595 902 
-Q 1884 616 2303 616 
-Q 2694 616 2980 881 
-Q 3266 1147 3266 1513 
-Q 3266 1888 2969 2117 
-z
-" transform="scale(0.015625)"/>
-     </defs>
-     <use xlink:href="#Cantarell-Bold-32"/>
-     <use xlink:href="#Cantarell-Bold-32" transform="translate(90.328125 0)"/>
-     <use xlink:href="#Cantarell-Bold-27" transform="translate(180.65625 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(267.078125 0)"/>
-     <use xlink:href="#Cantarell-Bold-53" transform="translate(294.421875 0)"/>
-     <use xlink:href="#Cantarell-Bold-4f" transform="translate(359.90625 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(391.453125 0)"/>
-     <use xlink:href="#Cantarell-Bold-57" transform="translate(451.65625 0)"/>
-     <use xlink:href="#Cantarell-Bold-48" transform="translate(497.5 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(559.3125 0)"/>
-     <use xlink:href="#Cantarell-Bold-58" transform="translate(619.515625 0)"/>
-     <use xlink:href="#Cantarell-Bold-1d" transform="translate(685 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(712.828125 0)"/>
-     <use xlink:href="#Cantarell-Bold-4f" transform="translate(740.171875 0)"/>
-     <use xlink:href="#Cantarell-Bold-44" transform="translate(771.71875 0)"/>
-     <use xlink:href="#Cantarell-Bold-5c" transform="translate(831.921875 0)"/>
-     <use xlink:href="#Cantarell-Bold-48" transform="translate(891.6875 0)"/>
-     <use xlink:href="#Cantarell-Bold-55" transform="translate(953.5 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(999.734375 0)"/>
-     <use xlink:href="#Cantarell-Bold-16" transform="translate(1027.078125 0)"/>
-     <use xlink:href="#Cantarell-Bold-19" transform="translate(1098.5625 0)"/>
-     <use xlink:href="#Cantarell-Bold-3" transform="translate(1170.046875 0)"/>
-     <use xlink:href="#Cantarell-Bold-b" transform="translate(1197.390625 0)"/>
-     <use xlink:href="#Cantarell-Bold-13" transform="translate(1233.625 0)"/>
-     <use xlink:href="#Cantarell-Bold-11" transform="translate(1305.109375 0)"/>
-     <use xlink:href="#Cantarell-Bold-1b" transform="translate(1332.9375 0)"/>
-     <use xlink:href="#Cantarell-Bold-18" transform="translate(1404.421875 0)"/>
-     <use xlink:href="#Cantarell-Bold-c" transform="translate(1475.90625 0)"/>
+     <use xlink:href="#Cantarell-Bold-b"/>
+     <use xlink:href="#Cantarell-Bold-2c" transform="translate(36.234375 0)"/>
+     <use xlink:href="#Cantarell-Bold-27" transform="translate(75.890625 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(162.3125 0)"/>
+     <use xlink:href="#Cantarell-Bold-44" transform="translate(189.65625 0)"/>
+     <use xlink:href="#Cantarell-Bold-51" transform="translate(249.859375 0)"/>
+     <use xlink:href="#Cantarell-Bold-47" transform="translate(314.609375 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(380.625 0)"/>
+     <use xlink:href="#Cantarell-Bold-32" transform="translate(407.96875 0)"/>
+     <use xlink:href="#Cantarell-Bold-32" transform="translate(498.296875 0)"/>
+     <use xlink:href="#Cantarell-Bold-27" transform="translate(588.625 0)"/>
+     <use xlink:href="#Cantarell-Bold-c" transform="translate(675.046875 0)"/>
+     <use xlink:href="#Cantarell-Bold-1d" transform="translate(711.28125 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(739.109375 0)"/>
+     <use xlink:href="#Cantarell-Bold-4f" transform="translate(766.453125 0)"/>
+     <use xlink:href="#Cantarell-Bold-44" transform="translate(798 0)"/>
+     <use xlink:href="#Cantarell-Bold-5c" transform="translate(858.203125 0)"/>
+     <use xlink:href="#Cantarell-Bold-48" transform="translate(917.96875 0)"/>
+     <use xlink:href="#Cantarell-Bold-55" transform="translate(979.78125 0)"/>
+     <use xlink:href="#Cantarell-Bold-3" transform="translate(1026.015625 0)"/>
+     <use xlink:href="#Cantarell-Bold-16" transform="translate(1053.359375 0)"/>
+     <use xlink:href="#Cantarell-Bold-15" transform="translate(1124.84375 0)"/>
     </g>
    </g>
    <g id="PathCollection_1">
     <defs>
-     <path id="m99cdf30968" d="M 0 -6.519202 
+     <path id="m1858065465" d="M 0 -6.519202 
 L -1.463652 -2.014544 
 L -6.20013 -2.014544 
 L -2.368239 0.769487 
@@ -2078,13 +2121,13 @@ L 1.463652 -2.014544
 z
 " style="stroke: #ffffff"/>
     </defs>
-    <g clip-path="url(#paa035807b3)">
-     <use xlink:href="#m99cdf30968" x="546.625068" y="31.778125" style="fill: #e45756; stroke: #ffffff"/>
+    <g clip-path="url(#p99efd9b784)">
+     <use xlink:href="#m1858065465" x="546.625068" y="31.778125" style="fill: #e45756; stroke: #ffffff"/>
     </g>
    </g>
    <g id="PathCollection_2">
-    <g clip-path="url(#paa035807b3)">
-     <use xlink:href="#m99cdf30968" x="546.625068" y="37.530826" style="fill: #e45756; stroke: #ffffff"/>
+    <g clip-path="url(#p99efd9b784)">
+     <use xlink:href="#m1858065465" x="546.625068" y="37.530826" style="fill: #e45756; stroke: #ffffff"/>
     </g>
    </g>
    <g id="PathCollection_3">
@@ -2099,21 +2142,21 @@ C 263.203266 41.226515 263.8485 42.784248 264.996863 43.932611
 C 266.145226 45.080975 267.702959 45.726209 269.32699 45.726209 
 L 269.32699 45.726209 
 z
-" clip-path="url(#paa035807b3)" style="fill: none; stroke: #1f2937; stroke-width: 1.8"/>
+" clip-path="url(#p99efd9b784)" style="fill: none; stroke: #1f2937; stroke-width: 1.8"/>
    </g>
    <g id="PathCollection_4">
-    <path d="M 330.948785 52.816961 
-C 332.572816 52.816961 334.130549 52.171727 335.278912 51.023364 
-C 336.427275 49.875001 337.072509 48.317267 337.072509 46.693237 
-C 337.072509 45.069206 336.427275 43.511473 335.278912 42.36311 
-C 334.130549 41.214747 332.572816 40.569512 330.948785 40.569512 
-C 329.324754 40.569512 327.767021 41.214747 326.618658 42.36311 
-C 325.470295 43.511473 324.825061 45.069206 324.825061 46.693237 
-C 324.825061 48.317267 325.470295 49.875001 326.618658 51.023364 
-C 327.767021 52.171727 329.324754 52.816961 330.948785 52.816961 
-L 330.948785 52.816961 
+    <path d="M 269.32699 66.517217 
+C 270.951021 66.517217 272.508754 65.871982 273.657117 64.723619 
+C 274.80548 63.575256 275.450714 62.017523 275.450714 60.393492 
+C 275.450714 58.769462 274.80548 57.211728 273.657117 56.063365 
+C 272.508754 54.915002 270.951021 54.269768 269.32699 54.269768 
+C 267.702959 54.269768 266.145226 54.915002 264.996863 56.063365 
+C 263.8485 57.211728 263.203266 58.769462 263.203266 60.393492 
+C 263.203266 62.017523 263.8485 63.575256 264.996863 64.723619 
+C 266.145226 65.871982 267.702959 66.517217 269.32699 66.517217 
+L 269.32699 66.517217 
 z
-" clip-path="url(#paa035807b3)" style="fill: none; stroke: #1f2937; stroke-width: 1.8"/>
+" clip-path="url(#p99efd9b784)" style="fill: none; stroke: #1f2937; stroke-width: 1.8"/>
    </g>
    <g id="legend_1">
     <g id="line2d_12">
@@ -2122,10 +2165,10 @@ L 448.351094 170.54598
 L 460.351094 170.54598 
 " style="fill: none; stroke-dasharray: 7.4,3.2; stroke-dashoffset: 0; stroke: #e45756; stroke-opacity: 0.6; stroke-width: 2"/>
      <g>
-      <use xlink:href="#m6fb3a0554c" x="448.351094" y="170.54598" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
+      <use xlink:href="#madf65444b2" x="448.351094" y="170.54598" style="fill: #e45756; fill-opacity: 0.6; stroke: #e45756; stroke-opacity: 0.6"/>
      </g>
     </g>
-    <g id="text_17">
+    <g id="text_16">
      <!-- Qwen3.8-27B, ID -->
      <g transform="translate(469.951094 174.74598) scale(0.12 -0.12)">
       <defs>
@@ -2335,10 +2378,10 @@ L 448.351094 193.538167
 L 460.351094 193.538167 
 " style="fill: none; stroke: #e45756; stroke-width: 2.6; stroke-linecap: square"/>
      <g>
-      <use xlink:href="#medf1dfc0e1" x="448.351094" y="193.538167" style="fill: #e45756; stroke: #e45756"/>
+      <use xlink:href="#m7502949aef" x="448.351094" y="193.538167" style="fill: #e45756; stroke: #e45756"/>
      </g>
     </g>
-    <g id="text_18">
+    <g id="text_17">
      <!-- Qwen3.8-27B, OOD -->
      <g transform="translate(469.951094 197.738167) scale(0.12 -0.12)">
       <use xlink:href="#Cantarell-Regular-34"/>
@@ -2363,7 +2406,7 @@ L 460.351094 193.538167
   </g>
  </g>
  <defs>
-  <clipPath id="paa035807b3">
+  <clipPath id="p99efd9b784">
    <rect x="56.731797" y="14.611136" width="542.271797" height="197.794219"/>
   </clipPath>
  </defs>
