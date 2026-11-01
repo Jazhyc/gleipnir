@@ -1,0 +1,9 @@
+{
+  "monitor": "4b",
+  "sets": ["apps-neutral", "apps-controls-neutral", "ood"],
+  "output": "results/adversarial_baseline_4b",
+  "budget_gpu_hours": 6,
+  "ood_fallback": {"per_cell": 100, "seed": 0, "if_projected_hours_over": 4},
+  "smoke": {"rows": 4, "min_adapter_effect": 1e-6},
+  "fprs": [0.01, 0.02]
+}

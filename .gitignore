@@ -5,6 +5,9 @@
 .lambda/
 .runpod/
 .cache-runtime.env
+# Machine-local environment files written by the adversarial setup scripts
+.adversarial-env
+.v03-env
 
 # Python and tooling
 .venv/

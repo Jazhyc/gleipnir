@@ -1,0 +1,1 @@
+Both programs were run on that input in a sandbox. {feedback} So the input does not confirm the special case. Return a corrected JSON object with the same three keys, and nothing else.

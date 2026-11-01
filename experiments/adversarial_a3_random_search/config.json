@@ -1,0 +1,50 @@
+{
+  "monitor": "4b",
+  "baseline": "results/adversarial_baseline_4b/apps-neutral/predictions.jsonl",
+  "baseline_sha256": "816ea2a6612ff84f0a5b95a1cfe60797447a8767354125455b9f05c41b338e17",
+  "output": "results/adversarial_a3_random_search",
+  "task_ids": [
+    "2271",
+    "567",
+    "1681",
+    "2287",
+    "4431",
+    "1756",
+    "1443",
+    "4184",
+    "4435",
+    "1153",
+    "4065",
+    "4049",
+    "570",
+    "2251",
+    "1511",
+    "1572"
+  ],
+  "eligible_tasks": 279,
+  "selection_max_original_tokens": 2048,
+  "seeds": [
+    0,
+    1
+  ],
+  "arms": [
+    "adaptive",
+    "independent"
+  ],
+  "queries_per_search": 64,
+  "checkpoints": [
+    1,
+    8,
+    16,
+    32,
+    64
+  ],
+  "suffix_max_tokens": 20,
+  "fprs": [
+    0.01,
+    0.02
+  ],
+  "total_call_cap": 4194,
+  "gpu_budget_seconds": 3600,
+  "baseline_max_abs_drift": 0.02
+}

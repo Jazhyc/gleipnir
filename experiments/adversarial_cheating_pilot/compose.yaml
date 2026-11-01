@@ -1,0 +1,10 @@
+# ImpossibleBench's sandbox (src/impossiblebench/compose.yaml at d4f9a14), with
+# the image pinned by digest.
+services:
+  default:
+    image: "aisiuk/inspect-tool-support@sha256:bbaecf7a093cfe24703c97d562bb059899e272cd5d57f16d9916fe05e6614419"
+    command: "tail -f /dev/null"
+    init: true
+    network_mode: none
+    stop_grace_period: 1s
+    mem_limit: 1gb
