@@ -112,6 +112,16 @@ values reproduce the recorded `0.9087` and `0.9084`.
 | | AUROC | 0.8275 | 0.9836 | 0.9616 | 0.9876 |
 | Gleipnir 4B s0 | pAUROC@20 | 0.2380 | 0.3455 | 0.7869 | 0.8048 |
 | | AUROC | 0.6872 | 0.7713 | 0.9222 | 0.9363 |
+| Gleipnir 27B, teacher prompt, BF16 | pAUROC@20 | 0.7298 | 0.9579 | 0.9352 | 0.9732 |
+| | AUROC | 0.9315 | 0.9907 | 0.9790 | 0.9889 |
+| Gleipnir 27B, teacher prompt, optimized | pAUROC@20 | 0.8316 | 0.9581 | 0.9508 | 0.9719 |
+| | AUROC | 0.9602 | 0.9907 | 0.9841 | 0.9892 |
+
+The last two rows are the trained s0 checkpoint under its default teacher
+prompt; the optimized row is its frontier entry. Without this task it leads
+Kimi K3 by only 0.3 points, against 2.7–4.2 on the full suite, and BF16 and
+optimized serving are level: both the teacher-prompt gain and the optimized
+stack's +1.6 points sit in this task.
 
 This one task accounts for almost all of SHADE-Arena's apparent difficulty for
 the 27B and Kimi K3, and about 0.06 of their Mean-OOD pAUROC@20. The two stay
@@ -141,10 +151,12 @@ small position sensitivity on ID data; this audit does not test whether the
 
 `python -m experiments.shade_length_audit.analyze` writes
 `results/shade_length_audit/summary.json` (SHA-256
-`803c79462ea49915e3fe957097cededbc9959a38ddfaf114f84d20f00baff362`) from:
+`8df1e150b3c66c606a612a33ef6519b40eb8009680a16e590cda771e5eab610d`) from:
 
 - `results/qwen38-27b-s0-ood01/evaluation/ood.jsonl`;
 - `results/tool_trajectory_monitoring/kimi_k3_ood_{canary,full_remaining}_fireworks.jsonl`;
 - `results/teacher-seed-sdpa-s0-rescore01/evaluation/ood.jsonl`;
+- `results/optimized_gap/{bf16_teacher_ood,opt27b_teacher_eu01/ood}.jsonl`
+  (exclusion diagnostic only);
 - `data/teacher-disagreement-strict-ood01/workload.jsonl` and the upstream
   `filtered_eval/ctrl_shade.parquet`.

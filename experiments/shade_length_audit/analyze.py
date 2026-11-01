@@ -34,6 +34,12 @@ KIMI = [
     for part in ("canary", "full_remaining")
 ]
 ARMS = ("Qwen3.8-27B trained s0", "Kimi K3", "Gleipnir 4B s0")
+# The same 27B checkpoint under its default teacher prompt (BF16 extraction and
+# the optimized frontier stack); used only in the exclusion diagnostic.
+EXCLUSION_ONLY = {
+    "Gleipnir 27B teacher BF16": "results/optimized_gap/bf16_teacher_ood.jsonl",
+    "Gleipnir 27B teacher opt": "results/optimized_gap/opt27b_teacher_eu01/ood.jsonl",
+}
 BINS = 4
 BOOTSTRAPS = 2000
 OUTPUT = "results/shade_length_audit/summary.json"
@@ -184,7 +190,14 @@ def exclusion(frame: pd.DataFrame, arms: dict) -> dict:
 def main() -> None:
     frame = workload()
     arms = arm_scores()
-    for name, scores in arms.items():
+    exclusion_arms = {
+        **arms,
+        **{
+            name: {r["id"]: r["score"] for r in read_rows(ROOT / path)}
+            for name, path in EXCLUSION_ONLY.items()
+        },
+    }
+    for name, scores in exclusion_arms.items():
         missing = set(frame["id"]) - set(scores)
         if missing:
             raise ValueError(f"{name} is missing {len(missing)} OOD rows")
@@ -247,7 +260,7 @@ def main() -> None:
             },
         }
     report["shade_stratified"] = stratified
-    report["exclusion"] = exclusion(frame, arms)
+    report["exclusion"] = exclusion(frame, exclusion_arms)
     write_json(ROOT / OUTPUT, report)
 
     for source, value in report["sources"].items():
