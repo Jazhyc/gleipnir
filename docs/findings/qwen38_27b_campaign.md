@@ -22,6 +22,11 @@ Scored under the full teacher prompt instead of the student prompt it was
 trained on, the same checkpoint reaches 0.9420 ID (CoT-removed) and **0.9352 Mean-OOD**
 pAUROC@20, mostly from SHADE-Arena (0.730 vs. 0.588); see
 [vocab distillation](../../experiments/gleipnir27b_vocab_distillation/README.md).
+Its optimized-serving frontier score, 0.9508, has a source-label-stratified
+row-bootstrap 95% interval of [0.941, 0.960] (SE 0.005). That excludes seed
+variation (one seed) and serving precision: BF16 scores 0.016 lower, almost
+all on SHADE-Arena, whose five task pairs make its score task-dependent. See
+the [bootstrap receipts](../../experiments/optimized_gap/README.md#bootstrap-intervals-2026-11-01).
 
 The run took 4.5 h of training on one B200, plus about 45 minutes for merge,
 parity and ID scoring and 46 minutes for OOD scoring. Training loss converges

@@ -135,6 +135,29 @@ on SHADE-Arena; 53.9K prompt tokens/s.
   separate quantization from the scoring path. Under the student prompt, the
   campaign's BF16 reference came from the server, and the gap was −0.25.
 
+#### Bootstrap intervals (2026-11-01)
+
+`ood_bootstrap.py` resamples the saved teacher-prompt OOD predictions 2,000
+times (seed 0) and writes `results/optimized_gap/ood_bootstrap.json`
+(SHA-256 `705450765e18c95c…`). It needs `PYTHONPATH=src` and pyarrow.
+
+| Mean-OOD pAUROC@20 | Point | Row SE | Row 95% | SHADE-task 95% |
+|---|---:|---:|---:|---:|
+| Optimized | 0.9508 | 0.0046 | [0.9413, 0.9596] | [0.9394, 0.9782] |
+| BF16 | 0.9352 | 0.0051 | [0.9251, 0.9452] | [0.9168, 0.9794] |
+
+- **Row** resamples within source x label. Optimized SHADE-Arena 0.832
+  [0.784, 0.877] and CUA-SHADE-Arena 0.890 [0.862, 0.917] carry it; the
+  other four sources each span under 0.01.
+- **SHADE-task** resamples SHADE-Arena's task pairs instead: 333/231/267/8/11
+  rows, so `american_airlines_2` is 39% of the source. SHADE-Arena alone
+  widens to [0.772, 0.993] (BF16 [0.635, 0.989]). Five clusters make this a
+  sensitivity check, not a reliable interval.
+- **Not covered:** seed variation (one seed) and serving precision. The
+  BF16-to-optimized change (+0.016, SHADE-Arena +0.10) is about three row SEs
+  of the mean and four of SHADE-Arena, so the numerical path moves SHADE-Arena
+  more than row sampling does.
+
 ### Gleipnir 27B teacher-prompt ID through the optimized stack (for cascades)
 
 `teacher_workload.py --split id` re-renders the 3,012 canonical CoT-removed
