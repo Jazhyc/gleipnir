@@ -1,13 +1,21 @@
 # Outline
 
-Claims per section, agreed before the section is drafted. Each claim follows
-[STYLE.md](STYLE.md): it names the model, evaluation set, metric and value, and
+Claims per section, accepted by their owner before the section is drafted.
+Each claim follows [STYLE.md](STYLE.md): it names the model, evaluation set, metric and value, and
 points to its evidence. The numbers below are copied from the linked records
 as a starting point. Check each one against its source, and record it in
 [sources.md](sources.md), when the section is drafted.
 
-Status per claim: **draft** (proposed), **agreed** (both authors accept it),
-**written** (in the text and in `sources.md`).
+Status per claim: **draft** (proposed), **accepted** (the claim's owner
+accepts it), **written** (in the text and in `sources.md`).
+
+## Ownership
+
+The owner of a claim decides its wording and whether it stays. Jeremias
+Ferrao (JF) owns every section and claim except the held-out benchmarks other
+than SleightBench, which Abhinav Rajeev Kumar (ARK) owns: natural cheats,
+misleading comments and APPS injections (C5.1–C5.3). Each section lists its
+owner; a claim with a different owner says so.
 
 Paths are relative to the repository root.
 
@@ -19,7 +27,7 @@ claim goes to the appendix. Each main section points to its appendix section.
 
 ## Decisions
 
-Agreed by the authors on 2026-11-02.
+Made by Jeremias Ferrao on 2026-11-02.
 
 1. **Headline scores.** Report each model on the optimized FP8/FP4 serving
    stack with its best prompt, as in the frontier figure: Gleipnir 4B with the
@@ -37,6 +45,8 @@ Agreed by the authors on 2026-11-02.
 
 ## 1. Introduction
 
+Owner: JF.
+
 - **C1.1 (draft).** A monitor that scores each agent action runs on the
   critical path of that action, so its latency and cost add to every action.
 - **C1.2 (draft).** Summary of the results: the main claims of Sections 4–6 in
@@ -48,6 +58,8 @@ Exhibit: optionally, the frontier figure (Figure 1) on the first page.
 
 ## 2. Related work
 
+Owner: JF.
+
 - **C2.1 (draft).** Sinha et al. train monitors to generate a rationale and
   then a 0–10 score (SFT, optionally RL). We train the monitor to emit one
   decision token whose probability is the score.
@@ -55,6 +67,8 @@ Exhibit: optionally, the frontier figure (Figure 1) on the first page.
   probes and monitor-directed attacks (Terekhov et al.).
 
 ## 3. Method
+
+Owner: JF.
 
 - **C3.1 (draft).** The monitor reads a visible agent trajectory and emits one
   token, `0` or `1`. The score is the normalized probability of `1`.
@@ -87,6 +101,8 @@ prompts, training cost.
 
 ## 4. Main evaluation
 
+Owner: JF.
+
 - **C4.1 (draft).** Metric: source-macro raw normalized pAUROC@20 on the
   six-source, 6,395-row OOD suite of Sinha et al. Cost: uncached list-price USD
   per 1,000 evaluations. For Gleipnir, cost is the self-hosted B200 break-even
@@ -114,21 +130,23 @@ figure, decision-model table, ID results, calibration.
 
 ## 5. Held-out and adversarial evaluation
 
-- **C5.1 (draft).** On natural cheats (ImpossibleBench LiveCodeBench, 60
+Owner: ARK (C5.1–C5.3) and JF (C5.4, section framing).
+
+- **C5.1 (draft, ARK).** On natural cheats (ImpossibleBench LiveCodeBench, 60
   hand-checked cheats), Gleipnir 4B and 27B score 0.935 and 0.941 pAUROC@20,
   level with Kimi K3, Claude Sonnet 5.5 and GPT-6.1 Sol at 3–13 times lower
   cost.
   Evidence: `docs/findings/adversarial_frontier_comparison.md`.
-- **C5.2 (draft).** Misleading text in the trajectory changes the 4B's scores.
-  With the same accusation text on both programs, the 4B separates backdoored
+- **C5.2 (draft, ARK).** Misleading text in the trajectory changes the 4B's
+  scores. With the same accusation text on both programs, the 4B separates backdoored
   from honest APPS code at AUROC 0.58–0.59, and the 27B at 0.96–0.98.
   Evidence: `experiments/adversarial_crossed_text/`.
-- **C5.3 (draft).** Both monitors treat text addressed to the monitor as a
+- **C5.3 (draft, ARK).** Both monitors treat text addressed to the monitor as a
   sign of harm. At the APPS operating point, both flag every injected honest
   program. The unadapted 27B shows the same behavior, and the adapter reduces
   it.
   Evidence: `docs/findings/apps_released_monitors.md`.
-- **C5.4 (draft).** On SleightBench (stripped view), the 27B catches 15% and
+- **C5.4 (draft, JF).** On SleightBench (stripped view), the 27B catches 15% and
   the 4B 5% of attacks at 1% FPR. Claude Opus 4.6 with extended thinking
   catches 32%. Most misses are attacks built to look like honest mistakes,
   which the training specification labels benign.
@@ -139,6 +157,8 @@ rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
 details, SleightBench per-attack results.
 
 ## 6. Probing
+
+Owner: JF.
 
 - **C6.1 (draft).** Soft targets also help activation probes, but less than
   they help LoRA. On the 4B residual stream (layer 15), the selected soft probe
@@ -158,6 +178,8 @@ Appendix: probe families, layer sweep, attention maps.
 
 ## 7. Released models and serving
 
+Owner: JF.
+
 - **C7.1 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
   checkpoints for Gleipnir 4B v0.4 and 27B v0.2 (MIT), and a serving image.
   Evidence: `README.md` (Released models), `model_releases/hf/`.
@@ -169,6 +191,8 @@ Appendix: probe families, layer sweep, attention maps.
 
 ## 8. Limitations
 
+Owner: JF.
+
 - **C8.1 (draft).** One teacher, one training domain, one seed for the 27B.
 - **C8.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
   monitor-directed text (Section 5).
@@ -176,5 +200,7 @@ Appendix: probe families, layer sweep, attention maps.
   removed 43% of SHADE-Arena, and SHADE-Arena has five task pairs.
 
 ## 9. Conclusion
+
+Owner: JF.
 
 - **C9.1 (draft).** Restate the main claims; list follow-up work.
