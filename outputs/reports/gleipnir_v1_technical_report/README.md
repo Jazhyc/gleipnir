@@ -65,3 +65,18 @@ Run `make check` and resolve every marker, then `make arxiv` and upload
 `arxiv.tar.gz`. The bundle ships `main.bbl`, so arXiv doesn't need to run
 BibTeX. It excludes `references.bib`, provenance files and figure sources.
 Before submitting, check the PDF that arXiv compiles against `report.pdf`.
+
+## Model release
+
+Do these steps when the report is final, just before the arXiv upload:
+
+1. Update the four 4B and 27B model cards
+   (`model_releases/hf/gleipnir-{4b,27b}*/README.md`; the superseded 9B card
+   stays unchanged) so their claims, numbers and wording match the report's
+   accepted claims and `sources.md`.
+2. Bump Gleipnir 4B and 27B to v1.0 in the cards, the release config and the
+   [root README](../../../README.md). The weights do not change (4B v0.4 and
+   27B v0.2).
+3. After arXiv assigns an identifier, add the paper link and citation to the
+   cards and the root README, then push the cards and tag all four Hugging
+   Face repos v1.0.
