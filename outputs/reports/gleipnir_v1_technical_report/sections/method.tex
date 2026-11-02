@@ -1,4 +1,4 @@
-\section{Training Gleipnir monitors}
+\section{Training and serving Gleipnir monitors}
 \label{sec:method}
 
 \todo{Task formulation: trajectory in, single decision token out.}
@@ -12,3 +12,8 @@
 \label{sec:training-setup}
 
 \todo{Data sources and grouped holdouts, LoRA configuration, model sizes, checkpoint averaging.}
+
+\subsection{Serving and cost}
+\label{sec:serving}
+
+\todo{Main serving decisions: single prefill pass, low-precision weights with QAD for the 4B, last-token final-layer attention, host-path changes. Cost per 1,000 evaluations at on-demand and committed-use B200 rates. Score change against BF16 serving. Released artifacts. Throughput per change goes in the appendix.}

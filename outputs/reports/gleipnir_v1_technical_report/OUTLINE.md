@@ -33,8 +33,8 @@ Made by Jeremias Ferrao on 2026-11-02.
    stack with its best prompt, as in the frontier figure: Gleipnir 4B with the
    student prompt (0.770 Mean-OOD pAUROC@20) and Gleipnir 27B with the teacher
    prompt (0.951). The optimized stack is the deployment path, and the OOD
-   suite measures what it costs in quality. BF16 scores go in the release
-   section and the appendix.
+   suite measures what it costs in quality. BF16 scores go in Section 3.2
+   and the appendix.
 2. **Teacher prompt for the 27B.** Present it as an ablation in the appendix.
    It tested whether the 27B benefits from more detailed instructions. It was
    adopted because it also improves ID ranking.
@@ -70,9 +70,14 @@ Owner: JF.
 - **C2.2 (draft).** Position against prompted frontier monitors, activation
   probes and monitor-directed attacks (Terekhov et al.).
 
-## 3. Method
+## 3. Training and serving
 
 Owner: JF.
+
+Serving is part of the method because it sets the cost per evaluation used in
+the frontier of Section 4.
+
+### 3.1 Interface and training
 
 - **C3.1 (draft).** The monitor reads a visible agent trajectory and emits one
   token, `0` or `1`. The score is the normalized probability of `1`.
@@ -99,9 +104,45 @@ Owner: JF.
   Evidence: `experiments/gleipnir27b_vocab_distillation/README.md`,
   `docs/findings/qwen38_27b_campaign.md`.
 
+### 3.2 Serving and cost
+
+This subsection lists the main serving decisions. The appendix gives the
+throughput gain of each important change to the serving stack; minor
+implementation details are left out.
+
+- **C3.7 (draft).** Scoring needs one prefill pass and no decoding: the
+  monitor reads the `0`/`1` logits at the last prompt token.
+- **C3.8 (draft).** The optimized stack runs on one B200 with low-precision
+  weights: FP8 attention projections, FP4 MLP and GDN projections and MXFP8
+  attention prefill. The 4B adapter is trained with quantization-aware
+  distillation (QAD) for this stack; the 27B is not.
+  Evidence: `docs/decisions/b200_monitor_score_reference.md`,
+  `experiments/b200_inference_benchmark/serving_default.json`.
+- **C3.9 (draft).** Further changes remove work the score does not need: the
+  final layer attends only from the last token, and the host path is shortened
+  (tokenization, GDN routing).
+  Evidence: `docs/findings/b200_last_layer_trim.md`,
+  `docs/findings/b200_gdn_route.md`, `docs/findings/b200_host_overhead.md`.
+- **C3.10 (draft).** Cost per 1,000 evaluations is the measured wall time to
+  score all 6,395 OOD rows on one fully used B200, times an hourly rate:
+  $7.99/h on demand (Runpod) or $3.44/h committed use (CoreWeave's published
+  ceiling).
+  Evidence: `docs/research/tool_trajectory_ood_frontier.md` (reference table),
+  `docs/research/tool_trajectory_inference_economics.md`.
+- **C3.11 (draft).** The optimized stack changes scores against BF16 serving:
+  −0.034 Mean-OOD pAUROC@20 for the 4B and +0.016 for the 27B. Runs on that
+  stack are not bit-for-bit repeatable (per-row MAE about 0.01 for the 4B).
+  Evidence: `experiments/release_serving/README.md`,
+  `experiments/optimized_gap/README.md`.
+- **C3.12 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
+  checkpoints for Gleipnir 4B v1.0 and 27B v1.0 (MIT; same weights as 4B v0.4
+  and 27B v0.2), and the serving image.
+  Evidence: `README.md` (Released models), `model_releases/hf/`.
+
 Exhibits: pipeline diagram (`figures/distillation_pipeline_comparison.svg`),
-interface ablation table. Appendix: data sources, filter, hyperparameters,
-prompts, training cost.
+interface ablation table, a short table of serving decisions. Appendix: data
+sources, filter, hyperparameters, prompts, training cost, teacher-prompt
+ablation, and throughput per serving change.
 
 ## 4. Main evaluation
 
@@ -180,32 +221,18 @@ Owner: JF.
 Exhibit: probe objective comparison (`figures/probe_objective_ood_dumbbell.svg`).
 Appendix: probe families, layer sweep, attention maps.
 
-## 7. Released models and serving
+## 7. Limitations
 
 Owner: JF.
 
-- **C7.1 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
-  checkpoints for Gleipnir 4B v1.0 and 27B v1.0 (MIT; same weights as 4B v0.4
-  and 27B v0.2), and a serving image.
-  Evidence: `README.md` (Released models), `model_releases/hf/`.
-- **C7.2 (draft).** Optimized serving changes scores: −0.034 Mean-OOD for the
-  4B and +0.016 for the 27B against BF16. Runs on that stack are not
-  bit-for-bit repeatable (per-row MAE about 0.01 for the 4B).
-  Evidence: `experiments/release_serving/README.md`,
-  `experiments/optimized_gap/README.md`.
-
-## 8. Limitations
-
-Owner: JF.
-
-- **C8.1 (draft).** One teacher, one training domain, one seed for the 27B.
-- **C8.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
+- **C7.1 (draft).** One teacher, one training domain, one seed for the 27B.
+- **C7.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
   monitor-directed text (Section 5).
-- **C8.3 (draft).** The OOD suite inherits a 28,000-token input filter that
+- **C7.3 (draft).** The OOD suite inherits a 28,000-token input filter that
   removed 43% of SHADE-Arena, and SHADE-Arena has five task pairs.
 
-## 9. Conclusion
+## 8. Conclusion
 
 Owner: JF.
 
-- **C9.1 (draft).** Restate the main claims; list follow-up work.
+- **C8.1 (draft).** Restate the main claims; list follow-up work.
