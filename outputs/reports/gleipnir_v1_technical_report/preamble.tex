@@ -1,0 +1,35 @@
+% NeurIPS 2026 style in preprint mode: "Preprint." footer, no line numbers,
+% authors shown. Keep neurips_2026.sty unmodified.
+\usepackage[preprint]{neurips_2026}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{hyperref}
+\usepackage{url}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{nicefrac}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{subcaption}
+\usepackage{multirow}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\graphicspath{{assets/}}
+
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!50!black,
+    citecolor=blue!50!black,
+    urlcolor=blue!50!black
+}
+
+% Drafting markers; remove every use before upload (`make check` lists them).
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
+
+% \endofdump marks where the precompiled preamble stops (mylatexformat).
+% Define it as a no-op so normal builds, Overleaf and arXiv ignore it.
+\ifdefined\endofdump\else\let\endofdump\relax\fi

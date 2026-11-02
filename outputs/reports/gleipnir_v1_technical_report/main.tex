@@ -1,0 +1,46 @@
+\documentclass{article}
+
+\input{preamble.tex}
+\endofdump % the precompiled preamble stops here (see Makefile); a no-op otherwise
+
+% Working title; settle before the first arXiv upload.
+\title{Gleipnir: Frontier-Quality AI Control Monitors at a Fraction of the Cost}
+
+% TODO: confirm the author list, order and affiliations.
+\author{%
+    Jeremias Ferrao \\
+    MATS \\
+    \texttt{TODO@example.com}
+}
+
+\hypersetup{
+    pdftitle={Gleipnir: Frontier-Quality AI Control Monitors at a Fraction of the Cost},
+    pdfauthor={Jeremias Ferrao}
+}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/abstract.tex}
+\input{sections/introduction.tex}
+\input{sections/related_work.tex}
+\input{sections/method.tex}
+\input{sections/evaluation.tex}
+\input{sections/held_out.tex}
+\input{sections/probing.tex}
+\input{sections/release.tex}
+\input{sections/limitations.tex}
+\input{sections/conclusion.tex}
+
+\begin{ack}
+TODO: acknowledgments and disclosure of funding.
+\end{ack}
+
+\bibliographystyle{plainnat}
+\bibliography{references}
+
+\appendix
+\input{sections/appendix.tex}
+
+\end{document}
