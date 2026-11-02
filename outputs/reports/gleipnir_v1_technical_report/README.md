@@ -16,7 +16,7 @@ Read the compiled report: [report.pdf](report.pdf).
 
 ## Files
 
-- `OUTLINE.md`: claims per section, agreed before drafting, and open decisions.
+- `OUTLINE.md`: claims per section, agreed before drafting, and the authors' decisions.
 - `STYLE.md`: writing rules for all report text; follow them when drafting.
 - `main.tex`: entrypoint, title, authors, section order and bibliography.
 - `preamble.tex`: style options, packages and the `\todo{}` macro.

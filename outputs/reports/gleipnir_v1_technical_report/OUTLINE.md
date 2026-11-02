@@ -17,27 +17,23 @@ The main text has at most nine pages, counted up to the end of the conclusion
 (`make check` reports the count). Material that does not support a main-text
 claim goes to the appendix. Each main section points to its appendix section.
 
-## Open decisions
+## Decisions
 
-Settle these before drafting the affected sections.
+Agreed by the authors on 2026-11-02.
 
-1. **Which 4B score to headline.** Gleipnir 4B v0.4 (the v0.3 weights) scores
-   0.770 Mean-OOD pAUROC@20 on the optimized serving stack and 0.804 on BF16
-   serving. The frontier registry plots the optimized score, because its cost
-   assumes that stack.
-2. **Which 27B score to headline.** Gleipnir 27B v0.2 scores 0.909 under the
-   student prompt it was trained with, 0.935 under the teacher prompt (BF16),
-   and 0.951 under the teacher prompt on optimized serving. The 0.016
-   optimized-over-BF16 gain is almost all on SHADE-Arena, which has five task
-   pairs.
-3. **How to disclose prior use of the OOD suite.** Precision and kernel
-   choices could select on the OOD suite under frozen rules
-   (`docs/decisions/precision_selection_on_ood.md`), and the teacher-prompt
-   choice for the 27B was made after OOD results existed.
-4. **Probing in the main text or the appendix.** The probe results support a
-   secondary claim and could move to the appendix if space is short.
-5. **Cost basis.** Self-hosted B200 break-even cost at on-demand or committed
-   prices. The registry reports both.
+1. **Headline scores.** Report each model on the optimized FP8/FP4 serving
+   stack with its best prompt, as in the frontier figure: Gleipnir 4B with the
+   student prompt (0.770 Mean-OOD pAUROC@20) and Gleipnir 27B with the teacher
+   prompt (0.951). The optimized stack is the deployment path, and the OOD
+   suite measures what it costs in quality. BF16 scores go in the release
+   section and the appendix.
+2. **Teacher prompt for the 27B.** Present it as an ablation in the appendix.
+   It tested whether the 27B benefits from more detailed instructions. It was
+   adopted because it also improves ID ranking.
+3. **Probing.** The main result is in the main text. Probe families,
+   hyperparameters and layer choices go in the appendix.
+4. **Cost.** Report both bases: self-hosted B200 break-even at on-demand and at
+   committed-use prices, as in the frontier figure.
 
 ## 1. Introduction
 
@@ -77,6 +73,13 @@ Exhibit: optionally, the frontier figure (Figure 1) on the first page.
   Evidence: `experiments/hard_label_seeds/`.
 - **C3.5 (draft).** The released 4B is the weight average of three seeds.
   Evidence: `experiments/seed_average/README.md`.
+- **C3.6 (draft, appendix).** Teacher-prompt ablation for the 27B. Trained with
+  the compact student prompt, Gleipnir 27B scores 0.942 ID macro pAUROC@20
+  (CoT-removed suite) when scored with the full teacher prompt, against 0.922
+  with the student prompt. Mean-OOD pAUROC@20 (BF16) is 0.935 against 0.909.
+  The teacher prompt has 9.9% more prompt tokens.
+  Evidence: `experiments/gleipnir27b_vocab_distillation/README.md`,
+  `docs/findings/qwen38_27b_campaign.md`.
 
 Exhibits: pipeline diagram (`figures/distillation_pipeline_comparison.svg`),
 interface ablation table. Appendix: data sources, filter, hyperparameters,
@@ -86,17 +89,20 @@ prompts, training cost.
 
 - **C4.1 (draft).** Metric: source-macro raw normalized pAUROC@20 on the
   six-source, 6,395-row OOD suite of Sinha et al. Cost: uncached list-price USD
-  per 1,000 evaluations.
+  per 1,000 evaluations. For Gleipnir, cost is the self-hosted B200 break-even
+  at on-demand and at committed-use GPU prices; the text explains both.
   Evidence: `docs/research/tool_trajectory_ood_frontier.md` (comparison contract).
-- **C4.2 (draft).** Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20 (95% interval
-  0.941–0.960) at $0.17–0.39 per 1,000 evaluations. Claude Opus 4.6, the best
+- **C4.2 (draft).** Gleipnir 27B (optimized serving, teacher prompt) scores
+  0.951 Mean-OOD pAUROC@20 (95% interval 0.941–0.960) at $0.17 (committed-use)
+  to $0.39 (on-demand) per 1,000 evaluations. Claude Opus 4.6, the best
   reasoning monitor of Sinha et al., scores 0.942 at $94.79. The difference is
   within the interval.
   Evidence: `docs/research/tool_trajectory_ood_frontier.md`,
   `docs/findings/qwen38_27b_campaign.md`, `experiments/optimized_gap/README.md`.
-- **C4.3 (draft).** Gleipnir 4B scores 0.770 at $0.04–0.09 per 1,000
-  evaluations. The trained Qwen3.5-4B monitor of Sinha et al. (SFT+RL) scores
-  0.684 at $0.36.
+- **C4.3 (draft).** Gleipnir 4B (optimized serving, student prompt) scores
+  0.770 at $0.04 (committed-use) to $0.09 (on-demand) per 1,000 evaluations.
+  The trained Qwen3.5-4B monitor of Sinha et al. (SFT+RL) scores 0.684 at
+  $0.36.
 - **C4.4 (draft).** Training improves on the unadapted backbone: Qwen3.8-27B
   scores 0.890 unadapted, and Qwen3.5-4B scores 0.618.
 - **C4.5 (draft).** Gleipnir 27B scores higher than its teacher, Kimi K3
