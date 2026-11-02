@@ -8,12 +8,15 @@ Effective AI Control Monitors at a Fraction of the Cost*. It reads literally on
 first pass and also alludes to the myth: Gleipnir is the thin fetter that bound
 Fenrir after iron chains failed.
 
-Status: scaffold. Every section is a `\todo{}` stub.
+Status: scaffold. Every section is a `\todo{}` stub; draft claims are in
+[OUTLINE.md](OUTLINE.md). The main text is limited to nine pages, up to the
+end of the conclusion; everything else goes to the appendix.
 
 Read the compiled report: [report.pdf](report.pdf).
 
 ## Files
 
+- `OUTLINE.md`: claims per section, agreed before drafting, and open decisions.
 - `STYLE.md`: writing rules for all report text; follow them when drafting.
 - `main.tex`: entrypoint, title, authors, section order and bibliography.
 - `preamble.tex`: style options, packages and the `\todo{}` macro.
@@ -36,7 +39,7 @@ Needs TeX Live with `latexmk`, `pdflatex`, `bibtex`, `cm-super` and the
 make          # clean standard build -> report.pdf
 make fast     # same output; reuses a precompiled preamble (about 2x faster per edit)
 make watch    # fast build on every save
-make check    # list remaining \todo{} markers, undefined references and overfull boxes
+make check    # main-text pages (limit 9), \todo{} markers, undefined references, overfull boxes
 make arxiv    # arxiv.tar.gz: TeX, style, main.bbl and figure files
 make clean    # remove build/ and the arXiv bundle; keeps report.pdf
 ```

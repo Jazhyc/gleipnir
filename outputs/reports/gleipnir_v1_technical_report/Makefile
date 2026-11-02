@@ -34,8 +34,17 @@ build/preamble.fmt: main.tex preamble.tex neurips_2026.sty
 		-jobname=preamble '&pdflatex' mylatexformat.ltx main.tex > /dev/null \
 		|| { tail -20 build/preamble.log; exit 1; }
 
-# List drafting markers, undefined references and overfull boxes.
+MAX_MAIN_PAGES := 9
+
+# Report the main-text page count, then list drafting markers, undefined
+# references and overfull boxes.
 check: pdf
+	@pages=$$(sed -n 's/^\\newlabel{main-text-end}{{[^}]*}{\([0-9]*\)}.*/\1/p' build/$(JOB).aux); \
+	if [ "$$pages" -gt $(MAX_MAIN_PAGES) ]; then \
+		echo "Main text: $$pages pages (limit $(MAX_MAIN_PAGES)): OVER"; \
+	else \
+		echo "Main text: $$pages pages (limit $(MAX_MAIN_PAGES))"; \
+	fi
 	@grep -n '\\todo{' main.tex sections/*.tex || true
 	@grep -E 'undefined|Overfull' build/$(JOB).log || true
 
