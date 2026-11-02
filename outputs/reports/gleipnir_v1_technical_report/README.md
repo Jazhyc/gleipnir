@@ -3,8 +3,10 @@
 arXiv technical report for the version 1 release of the Gleipnir monitors.
 Self-contained LaTeX source using the official NeurIPS 2026 style in
 `preprint` mode: authors shown, no line numbers, a "Preprint." footer and no
-NeurIPS checklist. Working title: *Gleipnir: Frontier-Quality AI Control
-Monitors at a Fraction of the Cost*.
+NeurIPS checklist. Title: *Lightweight Restraints for Powerful Agents:
+Effective AI Control Monitors at a Fraction of the Cost*. It reads literally on
+first pass and also alludes to the myth: Gleipnir is the thin fetter that bound
+Fenrir after iron chains failed.
 
 Status: scaffold. Every section is a `\todo{}` stub.
 
@@ -45,7 +47,9 @@ Build speed:
 - `make fast` dumps everything in `main.tex` up to `\endofdump` into
   `build/preamble.fmt` (via `mylatexformat`), so each pass skips loading
   packages. The format is rebuilt when `main.tex`, `preamble.tex` or the style changes.
-  `\endofdump` is a no-op in normal builds, Overleaf and arXiv.
+  `\endofdump` is a no-op in normal builds, Overleaf and arXiv. `make watch`
+  builds the format only at startup: restart it after editing the preamble,
+  and avoid running `make`/`make clean` alongside it, since they share `build/`.
 - Include figures as vector PDFs (export from the SVG sources) or compressed PNGs. Large rasters dominate compile time.
 
 On this 4 vCPU VPS, the scaffold takes 3.4 s to build from clean, about 1.0 s
