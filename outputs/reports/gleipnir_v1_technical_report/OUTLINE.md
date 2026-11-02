@@ -42,6 +42,10 @@ Made by Jeremias Ferrao on 2026-11-02.
    hyperparameters and layer choices go in the appendix.
 4. **Cost.** Report both bases: self-hosted B200 break-even at on-demand and at
    committed-use prices, as in the frontier figure.
+5. **Release version.** The report releases Gleipnir 4B and 27B as v1.0. The
+   weights are the same as 4B v0.4 and 27B v0.2; only the model cards change.
+   The report names the models v1.0, and `sources.md` records that results
+   measured on v0.4/v0.2 (and on the v0.3 weights) apply to v1.0 unchanged.
 
 ## 1. Introduction
 
@@ -181,7 +185,8 @@ Appendix: probe families, layer sweep, attention maps.
 Owner: JF.
 
 - **C7.1 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
-  checkpoints for Gleipnir 4B v0.4 and 27B v0.2 (MIT), and a serving image.
+  checkpoints for Gleipnir 4B v1.0 and 27B v1.0 (MIT; same weights as 4B v0.4
+  and 27B v0.2), and a serving image.
   Evidence: `README.md` (Released models), `model_releases/hf/`.
 - **C7.2 (draft).** Optimized serving changes scores: −0.034 Mean-OOD for the
   4B and +0.016 for the 27B against BF16. Runs on that stack are not
