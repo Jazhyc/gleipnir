@@ -14,6 +14,7 @@ Read the compiled report: [report.pdf](report.pdf).
 
 ## Files
 
+- `STYLE.md`: writing rules for all report text; follow them when drafting.
 - `main.tex`: entrypoint, title, authors, section order and bibliography.
 - `preamble.tex`: style options, packages and the `\todo{}` macro.
 - `sections/`: one file per section, plus `appendix.tex`.
