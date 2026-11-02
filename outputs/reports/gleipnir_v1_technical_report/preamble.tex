@@ -1,6 +1,12 @@
-% NeurIPS 2026 style in preprint mode: "Preprint." footer, no line numbers,
+% NeurIPS 2026 style in preprint mode: no line numbers,
 % authors shown. Keep neurips_2026.sty unmodified.
 \usepackage[preprint]{neurips_2026}
+
+% Label the first-page footer as a technical report, not a preprint of a
+% later paper. Overridden here so the style file stays unmodified.
+\makeatletter
+\renewcommand{\@noticestring}{Technical report.}
+\makeatother
 
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
