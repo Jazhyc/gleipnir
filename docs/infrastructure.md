@@ -972,6 +972,33 @@ The BF16 OOD references ran on a user-authorized Lambda `gpu_1x_h100_pcie`
 `gleipnir-probes`, using a light scoring venv. It was terminated at the user's
 instruction after its 4 result files and 3 logs were SHA-256 verified.
 
+### EU-RO-1 B200 for the 27B hard-label baseline; volume damage, 2026-11-03
+
+At the user's instruction, Pod `6ucjc9wunbydk8` (B200 `GPU-2ab4adcc…`,
+machine `klzaw5yqymgh`, driver 595.91.07, $7.99/hour) was created through the
+REST API on volume `cb7bxu71ug` with the usual image, project key and a 300 GB
+container disk, after about 25 minutes of polling for capacity. A user-authorized
+CPU Pod (`f2rx7i1093saug`, $0.24/hour) mounted the same volume to export
+runtimes to the Storage Box (`research/gleipnir/_runpod_eu_volume_20261103/`:
+the serving bundle, the two runtime archives and part of the venv, hash-checked)
+and was deleted at the user's instruction (HTTP 204, lookup 404).
+
+**The volume has unreadable files.** Reads of 55 files hang for minutes, then
+fail with `ENXIO` from both Pods, repeatably: 41 in `.venv-vllm031`, 6 in
+TileLang's third-party trees under `.cache/kernels/flashqla-da06429`, one in
+the FlashQLA source tree, one FLA `.pyc` and Triton/TileLang entries in
+`.cache/training/{qwen35_4b_b200_fa4,b200_training_trim}` (list:
+`logs/runpod/qwen38_27b_hard_labels/volume_scan_bad.txt`). The runtime archives
+under `results/b200_shutdown/` and the campaign inputs read cleanly and passed
+their hashes. Damaged directories were renamed `*.damaged-20261103` (the
+unscanned `.cache/{vllm,flashinfer,torchinductor}` `*.unverified-20261103`),
+and the Pod links those paths to container-disk rebuilds; see the
+[experiment run log](../experiments/qwen38_27b_hard_labels/README.md). Treat
+volume contents as unverified until rehashed; rebuild environments rather than
+reusing them.
+
+The Pod was kept running after scoring at the user's request for follow-ups.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
