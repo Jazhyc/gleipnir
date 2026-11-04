@@ -35,8 +35,9 @@ hard labels still lead ID (0.9587 vs 0.9444) with worse ID Brier (0.091 vs
 student-prompt BF16 near-tie understated the OOD value of soft targets.
 
 Qualifications: one seed per arm; the hard arm uses the untuned soft recipe;
-the unadapted 27B and Kimi were scored under the teacher prompt, the trained
-models under the compact student prompt.
+in the table the unadapted 27B and Kimi were scored under the teacher prompt
+and the trained models under the compact student prompt; the release
+comparison scores both trained models under the teacher prompt.
 
 Details: [soft campaign](../../experiments/qwen38_27b_campaign/README.md);
 [hard-label baseline](../../experiments/qwen38_27b_hard_labels/README.md);
