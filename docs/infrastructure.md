@@ -997,7 +997,13 @@ and the Pod links those paths to container-disk rebuilds; see the
 volume contents as unverified until rehashed; rebuild environments rather than
 reusing them.
 
-The Pod was kept running after scoring at the user's request for follow-ups.
+The Pod also rescored the hard checkpoint on the optimized stack. Its
+container-only caches (training, vLLM and FlashInfer caches with the warm
+cuDNN-frontend cache, the rebuilt FlashQLA target, FLA/causal-conv1d/Triton
+kernels and Inductor cache; not the venv) are archived on the Storage Box as
+`results/b200_shutdown/20261104_eu_hard27b/container_caches.tar.zst` (SHA-256
+`b0e9b6ee…`). At the user's instruction it was deleted on 2026-11-04 (HTTP
+204, lookup 404); no Pods remain. Volume `cb7bxu71ug` is retained.
 
 ## OpenRouter
 
