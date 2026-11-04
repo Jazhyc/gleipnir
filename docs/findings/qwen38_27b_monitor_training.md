@@ -1,7 +1,8 @@
 # Qwen3.8-27B monitor training (first campaign)
 
 Status: soft seed 0 ID and OOD scored 2026-10-17/18; hard-label baseline
-scored 2026-11-03. All scores use BF16 vLLM 0.31 serving.
+scored 2026-11-03/04. The table uses BF16 vLLM 0.31 and the student prompt;
+the release-configuration comparison follows it.
 
 Distilling the Kimi K3 soft targets into Qwen3.8-27B with the 4B recipe
 (strict-filtered rows, one epoch, seed 0, `qwen38_27b_b200_default`) gives
@@ -22,11 +23,16 @@ and nearly ties on OOD:
 | 4B soft − hard (3 seeds) | +0.069 | +0.076 | −0.130 |
 
 Hard labels gain 4.5 ID points (both sources), which measure agreement with
-the same source labels they train on. OOD differs by 0.4 points, within 4B
-seed noise; hard loses IaC (−4.4) and gains SHADE-Arena (+2.3). Soft targets
-keep better calibration, and hard scores saturate (79% of OOD scores within
-0.01 of 0 or 1). At 27B, Kimi's soft targets therefore mainly buy calibration,
-not OOD ranking; at 4B they buy both.
+the same source labels they train on. Under the student prompt with BF16
+serving, OOD differs by only 0.4 points; hard loses IaC (−4.4) and gains
+SHADE-Arena (+2.3). Hard scores saturate (79% of OOD scores within 0.01 of 0
+or 1) and calibrate worse.
+
+**In the release configuration** (optimized stack, full teacher prompt) soft
+targets win OOD clearly: 0.9508 vs 0.9328 (IaC −3.5, SHADE-Arena −7.6), while
+hard labels still lead ID (0.9587 vs 0.9444) with worse ID Brier (0.091 vs
+0.064). The released soft checkpoint remains the better 27B monitor; the
+student-prompt BF16 near-tie understated the OOD value of soft targets.
 
 Qualifications: one seed per arm; the hard arm uses the untuned soft recipe;
 the unadapted 27B and Kimi were scored under the teacher prompt, the trained

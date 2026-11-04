@@ -86,3 +86,49 @@ within 0.01 of 0 or 1.
   hard scores saturate (79% extreme vs 17%).
 - Qualifications: one seed per arm; hard labels trained with the untuned soft
   recipe; the unadapted 27B was scored under the teacher prompt.
+
+## Release configuration: optimized stack, teacher prompt (2026-11-03/04)
+
+User request: score the hard checkpoint as Gleipnir 27B is released, through
+the optimized stack (`QuantFullWorker`, `graphs01` flags) under the full
+teacher prompt, and compare with the soft checkpoint's optimized
+teacher-prompt scores (`opt27b_teacher_id_eu01`, `opt27b_teacher_eu01`).
+`experiments/optimized_gap/ood27b.py` gained `--model` and `--reference`; the
+campaign merge was hash-checked (29 files) and the four kernel receipts' pinned
+sources matched (with the pinned `src/gleipnir/__init__.py`). Results:
+`results/optimized_gap/hard27b_opt_teacher_{id07,ood01}`.
+
+| optimized, teacher prompt | ID pAUROC@20 | ID Brier | OOD pAUROC@20 | OOD AUROC | OOD Brier | OOD extreme |
+|---|---:|---:|---:|---:|---:|---:|
+| 27B hard, seed 0 | **0.9587** | 0.0914 | 0.9328 | 0.9764 | 0.0506 | 0.80 |
+| 27B soft, seed 0 (release) | 0.9444 | **0.0643** | **0.9508** | **0.9841** | **0.0458** | 0.20 |
+
+| OOD source | hard | soft |
+|---|---:|---:|
+| AgentDojo | 0.9990 | 0.9917 |
+| CUA-SHADE-Arena | 0.8852 | 0.8903 |
+| IaC | 0.9583 | 0.9931 |
+| MLE-Sabotage | 1.0000 | 1.0000 |
+| Rogue Eval | 0.9986 | 0.9980 |
+| SHADE-Arena | 0.7554 | 0.8316 |
+
+- **In the release configuration soft targets win OOD by 1.8 points**
+  (−3.5 IaC, −7.6 SHADE-Arena), more than the 0.4-point gap under the student
+  prompt with BF16 serving. Hard labels still lead on ID (+1.4; STRIDE +2.5)
+  but with worse ID Brier (0.091 vs 0.064).
+- The soft model's OOD row-bootstrap SE is 0.005, so the 1.8-point gap is
+  larger than row sampling, but both arms are single seeds, and SHADE-Arena
+  (five task pairs) moved by 0.10 between BF16 and optimized serving for the
+  soft model alone.
+- Mean absolute score difference between the models: 0.114 ID, 0.086 OOD.
+
+**MXFP8 compile failures.** The first six ID attempts failed. Attempts 01–02
+of the first launch read the volume's damaged shared compiler cache (`ENXIO`)
+and are under `results/optimized_gap/failed_volume_cache_20261103/`. After the
+shared cache was replaced by a cold one, attempts 01–06 all failed on the
+known MXFP8 `TYPE_UNSTABLE_JOIN` compile (receipts in
+`results/optimized_gap/failed_mxfp8_cold_cudnn_cache_20261103/`). The same
+plan compiled in isolation with three hash seeds. Restoring the old
+cuDNN-frontend compiled cache (46 files, all readable) made attempt 07 and
+OOD attempt 01 compile at once, so the in-server failure tracks a cold
+cuDNN-frontend cache.

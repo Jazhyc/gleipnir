@@ -191,7 +191,12 @@ scores on ID and OOD, the inputs for an offline 4B→27B cascade.
   cause is probably a race with concurrent DSL compilation in the server.
   Retries fix it; the robust fix is to compile the plan eagerly at worker
   load, which needs revalidation of the bound serving sources. A failed
-  compile is a hard error, not a silent one.
+  compile is a hard error, not a silent one. On 2026-11-03 (driver 595,
+  cold caches) it failed six times in a row in-server while compiling in
+  isolation; restoring the cuDNN-frontend compiled cache
+  (`.cache/training/shared/cudnn_frontend`) fixed it at once (see the
+  [hard-label 27B run](../qwen38_27b_hard_labels/README.md)). Keep that cache
+  warm for optimized runs.
 - **Two stacks bind different versions of the same files.** The 4B binding
   check restores archived copies of `fp4_gemm_tune.py` and three canaries,
   while the 27B tuning receipt expects the repo versions. Restore them
