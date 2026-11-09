@@ -98,8 +98,8 @@ No results are reported yet.
 - Splits of Sinha et al. (Table 1, Table 2, Appendix C.1): training on the
   five sources; validation on STRIDE (test) and Gloom-Exfiltration, "used for
   checkpoint selection and in-domain held-out analysis" (369/577 and
-  1,035/1,031 benign/scheming, 3,012 in total, which is the size of our ID
-  suite); the six OOD benchmarks "are not used for training or checkpoint
+  1,035/1,031 benign/scheming, 3,012 in total, which is the size of the
+  set our project records call the ID suite); the six OOD benchmarks "are not used for training or checkpoint
   selection".
 - Guan et al., *Deliberative Alignment: Reasoning Enables Safer Language
   Models*, [arXiv:2412.16339](https://arxiv.org/abs/2412.16339); abstract

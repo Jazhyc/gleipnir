@@ -37,7 +37,7 @@ Made by Jeremias Ferrao on 2026-11-02.
    and the appendix.
 2. **Teacher prompt for the 27B.** Present it as an ablation in the appendix.
    It tested whether the 27B benefits from more detailed instructions. It was
-   adopted because it also improves ID ranking.
+   adopted because it also improves ranking on the validation set.
 3. **Probing.** The main result is in the main text. Probe families,
    hyperparameters and layer choices go in the appendix.
 4. **Cost.** Report both bases: self-hosted B200 break-even at on-demand and at
@@ -115,7 +115,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   Evidence: arXiv:2605.29601, Sections 3.1–3.4, Table 2, Appendices C.1–C.2,
   D.2–D.3.
 - **C2.4 (written).** Evaluation of Sinha et al. They select checkpoints on
-  held-out STRIDE and Gloom-Exfiltration sets (our ID sets, 3,012 rows) and
+  held-out STRIDE and Gloom-Exfiltration sets (the validation set, 3,012 rows) and
   keep six OOD benchmarks out of training and selection. They score the OOD
   benchmarks, compute pAUROC@20 for each (area under the ROC curve for FPR up
   to 20%, divided by 0.2; taken from Storf et al.; chosen for low-FPR use,
@@ -218,7 +218,7 @@ the frontier of Section 4.
   one seed per objective in the release configuration (optimized serving,
   teacher prompt), the hard-label 27B scores 0.933 Mean-OOD pAUROC@20 against
   0.951 for the soft-target 27B. With the student prompt and BF16 serving the
-  scores are 0.904 and 0.909. On the ID suite the hard-label 27B scores higher
+  scores are 0.904 and 0.909. On the validation set the hard-label 27B scores higher
   (0.959 against 0.944), and 80% of its OOD scores lie within 0.01 of 0 or 1,
   against 20%. The hard-label run used the recipe tuned for soft targets.
   Interpretation, not a result: soft targets may add less when the unadapted
@@ -230,8 +230,8 @@ the frontier of Section 4.
 - **C3.6 (draft).** The released 4B is the weight average of three seeds.
   Evidence: `experiments/seed_average/README.md`.
 - **C3.7 (draft, appendix).** Teacher-prompt ablation for the 27B. Trained with
-  the compact student prompt, Gleipnir 27B scores 0.942 ID macro pAUROC@20
-  (CoT-removed suite) when scored with the full teacher prompt, against 0.922
+  the compact student prompt, Gleipnir 27B scores 0.942 validation macro pAUROC@20
+  (CoT-removed validation set) when scored with the full teacher prompt, against 0.922
   with the student prompt. Mean-OOD pAUROC@20 (BF16) is 0.935 against 0.909.
   The teacher prompt has 9.9% more prompt tokens.
   Evidence: `experiments/gleipnir27b_vocab_distillation/README.md`,
@@ -304,7 +304,7 @@ Owner: JF.
 
 Exhibits: frontier figure (`figures/tool_trajectory_ood_frontier.svg`), main
 table with bootstrap intervals. Appendix: per-source results, full frontier
-figure, decision-model table, ID results, calibration.
+figure, decision-model table, validation results, calibration.
 
 ## 5. Held-out and adversarial evaluation
 

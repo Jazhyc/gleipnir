@@ -14,6 +14,10 @@ abstract. Follow them when drafting or editing.
 - Use one term for one concept throughout. Do not vary terms for style. For
   example, write "monitor" every time, not "monitor", "classifier" and
   "detector".
+- Data splits have three names, as in Sinha et al.: training set, validation
+  set (held-out STRIDE and Gloom-Exfiltration) and OOD suite. Do not write
+  "ID" or "in-distribution"; the project records call the validation set the
+  ID suite.
 - Use established field terms when they help readers place the work, for
   example AI control, distillation, LoRA, AUROC, pAUROC@20, out-of-distribution
   (OOD). Define each term or abbreviation at first use.
