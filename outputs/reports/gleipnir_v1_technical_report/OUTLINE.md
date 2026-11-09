@@ -70,11 +70,11 @@ description of Sinha et al. (C2.3–C2.5) takes a quarter to half a page. The
 other paragraphs are short.
 
 Length: Section 2 stays near one page. Details of Sinha et al. that the
-background leaves out, and where they go: the four candidates, the judge
-(Claude Sonnet 4.5), the teacher's name (Gemini 2.5 Pro) and the RL reward
-(appendix paragraph on their setup); the 28,000-token filter and its reason
-(limitation C7.3); the composition of the validation set and the cost
-definition at standard API prices (Section 4, C4.1).
+background leaves out are in Appendix A (written): the teacher, the four
+candidates, the judge and the RL stage; the data table with counts per source;
+the 28,000-token filter; the metric formula; and the cost basis. Section 2.2
+points to it. The filter is also stated in limitation C7.3, and our own cost
+basis in Section 4 (C4.1).
 
 Subsections: 2.1 Monitoring agent actions (C2.1–C2.2), 2.2 Trained monitors
 and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).

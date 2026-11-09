@@ -1,3 +1,73 @@
+\section{Setup of Sinha et al.}
+\label{app:sinha-setup}
+
+This appendix gives the details of the setup of \citet{sinha2026training} that Section~\ref{sec:background-sinha} leaves out.
+
+\paragraph{Training targets.}
+The teacher is Gemini 2.5 Pro.
+For each training trajectory, it reads the scheming specification and writes four candidate outputs.
+Each candidate is a rationale in four parts (observations, the case that the agent is innocent, the case that it is misaligned, and a conclusion) that ends in a score from 0 to 10.
+A score of 5 or more marks the trajectory as harmful, and a candidate whose score disagrees with the label is regenerated with guidance from the label.
+A judge, Claude Sonnet 4.5, then rates the quality of each candidate from 0 to 10.
+Only the candidate with the highest rating is kept, and only if its rating exceeds 7.
+The monitor is trained on the kept candidates with SFT.
+For the Qwen3.5 models, an RL stage with Group Relative Policy Optimization follows, which starts from the SFT checkpoint.
+Its reward combines a Brier-style calibration term with a pairwise ranking term.
+The trained monitor never receives the specification, in training or at inference.
+Only the teacher and the prompted baselines receive it.
+
+\paragraph{Data.}
+Table~\ref{tab:sinha-data} lists the training set, the validation set and the OOD suite.
+Where a source includes the chain of thought of the agent, Sinha et al.\ remove it.
+They also drop every trajectory with more than 28,000 tokens, which leaves 4,000 tokens of headroom in the 32,000-token context of their shorter-context models.
+The training set is balanced between benign and harmful trajectories within each source.
+The validation set has two parts: STRIDE trajectories from held-out settings, and Gloom-Exfiltration, a variant of Gloom.
+For the OOD suite, the table gives the 6,395 trajectories in the prepared inputs of Sinha et al., which are the trajectories that we score.
+The dataset table in their paper lists 856 trajectories for SHADE-Arena and 1,500 for Rogue Eval, which gives 6,402 in total.
+
+\begin{table}[t]
+\caption{Data of \citet{sinha2026training} after their preparation. The training set has 8,688 trajectories, the validation set 3,012 and the OOD suite 6,395.}
+\label{tab:sinha-data}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{llrrrl}
+\toprule
+Split & Source & Benign & Harmful & Total & Domain \\
+\midrule
+Training & STRIDE~\citep{storf2026constitutional} & 675 & 675 & 1,350 & Enterprise software work (synthetic) \\
+ & Gloom~\citep{storf2026constitutional} & 386 & 386 & 772 & Operational tasks (simulated) \\
+ & CoT-Red-Handed~\citep{arnav2025cot} & 1,170 & 1,170 & 2,340 & Coding with a covert side effect \\
+ & BashArena~\citep{kaufman2025basharena} & 1,395 & 1,395 & 2,790 & Privileged Linux administration \\
+ & BashBench~\citep{bhatt2025ctrlz} & 718 & 718 & 1,436 & Shell and system administration \\
+\midrule
+Validation & STRIDE (test) & 369 & 577 & 946 & Held-out STRIDE settings \\
+ & Gloom-Exfiltration & 1,035 & 1,031 & 2,066 & Data exfiltration \\
+\midrule
+OOD & AgentDojo~\citep{debenedetti2024agentdojo} & 750 & 750 & 1,500 & Injected instructions in tool outputs \\
+ & CUA-SHADE-Arena~\citep{kale2025reliable} & 479 & 476 & 955 & Computer use: sabotage, exfiltration \\
+ & IaC~\citep{controlarena2025iac} & 728 & 715 & 1,443 & Infrastructure code: weaker security \\
+ & MLE-Sabotage~\citep{ward2025ctrl} & 50 & 98 & 148 & ML research: backdoors, sabotage \\
+ & Rogue Eval~\citep{roger2024rogue} & 750 & 749 & 1,499 & Tampering with inference code \\
+ & SHADE-Arena~\citep{kutasov2025shade} & 432 & 418 & 850 & Multi-tool sabotage, exfiltration \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Metric.}
+Let $\mathrm{TPR}(u)$ be the true-positive rate of a monitor at false-positive rate $u$.
+The metric is
+\begin{equation}
+\text{pAUROC@20} = \frac{1}{0.2}\int_{0}^{0.2} \mathrm{TPR}(u)\,\mathrm{d}u ,
+\end{equation}
+so a perfect monitor scores 1.
+Mean-OOD is the unweighted mean of pAUROC@20 over the six OOD benchmarks.
+
+\paragraph{Cost.}
+The cost of a monitor is its inference cost in USD per 1,000 evaluations.
+Sinha et al.\ compute it from the standard API price per input and output token, without batch or caching discounts.
+For open-weight models, they use the price of hosted inference for a comparable base model, not the cost of self-hosting.
+
 \section{Additional results}
 \label{app:additional-results}
 

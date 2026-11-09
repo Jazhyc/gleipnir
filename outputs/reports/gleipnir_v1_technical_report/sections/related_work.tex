@@ -28,14 +28,14 @@ A monitor in production thus needs a low false-positive rate, low latency and lo
 \label{sec:background-sinha}
 
 \paragraph{Trained action-only monitors.}
-\citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup.
-Their monitors are \emph{action-only}: the monitor reads the visible trajectory of the agent, which consists of the user messages, the messages of the agent and the tool outputs.
+\citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup (details in Appendix~\ref{app:sinha-setup}).
+Their monitors are \emph{action-only}: the monitor reads the visible trajectory, which consists of the user messages, the messages of the agent and the tool outputs.
 It does not read the private reasoning or the activations of the agent, and we keep this restriction because both may become unreliable in future models.
 A model that reasons in its latent space leaves no reasoning to read~\citep{korbak2025chain}, and activations can be reshaped to evade the monitors that read them~\citep{bailey2024obfuscated}.
 The training set has 8,688 such trajectories, half of them benign, from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
 The training targets are inspired by deliberative alignment~\citep{guan2024deliberative}.
 A teacher model reads each trajectory with a written specification of scheming and writes a rationale that ends in a suspicion score from 0 to 10.
-The monitor is trained to reproduce this output, so it writes a rationale before its score.
+The monitor learns to reproduce it, so it writes a rationale before its score.
 
 \paragraph{Evaluation suite and metric.}
 Sinha et al.\ select checkpoints on a validation set that is built like STRIDE and Gloom.

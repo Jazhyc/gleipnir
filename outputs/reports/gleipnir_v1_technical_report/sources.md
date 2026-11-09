@@ -123,5 +123,16 @@ No results are reported yet.
   activations through attacks, not from models that obfuscate on their own.
   Sinha et al. give a related reason in their abstract: reasoning and
   activations "can be unavailable, unreliable or expensive in deployment".
+- Appendix A. Pipeline details: Sinha et al., Sections 3.1–3.4 and Appendices
+  D.2–D.3 (read verbatim): four candidates, the boundary at a score of 5,
+  regeneration with label guidance, the judge and its threshold of 7, GRPO
+  with a Brier-style term and a pairwise ranking term, and that the trained
+  monitor is not prompted with the specification. Counts per source:
+  `docs/research/tool_transcript_monitoring.md` (dataset inventory), which
+  takes the training and validation counts from the paper's Table 2 and the
+  OOD counts (6,395) from the authors' prepared inputs
+  (`adityaasinha28/deliberative-monitor-pipeline@2f10f4e`). Domain labels are
+  shortened from the same inventory. Cost basis: Appendix E.2 and the Table 3
+  caption, read only as a machine summary.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
