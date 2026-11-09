@@ -60,15 +60,61 @@ Owner: JF.
 
 Exhibit: optionally, the frontier figure (Figure 1) on the first page.
 
-## 2. Related work
+## 2. Background and related work
 
 Owner: JF.
 
-- **C2.1 (draft).** Sinha et al. train monitors to generate a rationale and
-  then a 0–10 score (SFT, optionally RL). We train the monitor to emit one
-  decision token whose probability is the score.
-- **C2.2 (draft).** Position against prompted frontier monitors, activation
-  probes and monitor-directed attacks (Terekhov et al.).
+This section is the background for Sections 3 and 4: it describes what we
+reuse from Sinha et al., so the method states only what we change. The
+description of Sinha et al. (C2.2–C2.4) takes a quarter to half a page. The
+other paragraphs are short.
+
+- **C2.1 (draft).** Setting. In AI control (Greenblatt et al.), a trusted
+  monitor scores each agent action, and the protocol acts on scores above a
+  threshold. We study action-only monitors: the monitor reads the visible
+  trajectory, not the agent's reasoning or activations.
+- **C2.2 (draft).** Training pipeline of Sinha et al. They train on 8,688
+  action-only trajectories from five sources, balanced between benign and
+  problematic. Gemini 2.5 Pro writes candidate rationales with a 0–10 score, a
+  judge (Claude Sonnet 4.5) selects the best one, and the monitor is trained on
+  it with SFT and, for some models, RL.
+  Evidence: arXiv:2605.29601; `docs/writeups/gleipnir_project_writeup.md`.
+- **C2.3 (draft).** Evaluation of Sinha et al. They score six OOD benchmarks,
+  compute pAUROC@20 for each and report the unweighted mean. They pair it with
+  the uncached inference cost per 1,000 evaluations and report a
+  cost–performance frontier of trained and prompted monitors. The metric and
+  the suite are defined here and used in Section 4.
+- **C2.4 (draft).** What we reuse and what we change. We reuse their training
+  trajectories, monitoring specification, OOD suite, metric and cost axis.
+  We change the monitor interface and the training target (Section 3). Their
+  trained checkpoints are not public, so we compare against their reported
+  scores.
+- **C2.5 (draft).** Decision models. Several providers released models that
+  return a probability for a yes/no question about an input, without
+  generating text (Jev 1.13, pplx-decider v1.2, Mercury Decide, d1,
+  Microsoft-Decision-1). None has a technical report, so their training is not
+  documented; we cite the model cards and API documentation with the dated
+  revisions we scored. Gleipnir uses the same kind of interface. It differs in
+  that it is trained for one task, its weights are open and its training is
+  described here. Section 4 compares against them.
+  Evidence: `docs/findings/decision_models_ood_benchmark.md`,
+  `docs/findings/pplx_decider_ood_benchmark.md`,
+  `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
+- **C2.6 (draft).** Activation probes in production. Kramár et al. propose
+  probe architectures that hold up on long inputs; Section 6 uses their
+  architectures. Cunningham et al. (Constitutional Classifiers++) run linear
+  probes as the first stage of a classifier cascade on production traffic, at
+  a refusal rate of 0.05%. Both works read the activations of the monitored
+  model. Gleipnir is a separate model and reads only the trajectory.
+  Evidence: arXiv:2601.11516, arXiv:2601.04603,
+  `experiments/probe_generalization/README.md`.
+- **C2.7 (draft).** Monitor-directed attacks. Terekhov et al. show that text
+  addressed to the monitor can subvert trusted monitors. Section 5 tests the
+  Gleipnir monitors against such text.
+
+Citations to add when the section is drafted: one source per decision model
+(model card or API page, with access date), and the benchmark papers behind
+the five training sources and six OOD sources.
 
 ## 3. Training and serving
 
@@ -243,6 +289,11 @@ Owner: JF.
   monitor-directed text (Section 5).
 - **C7.3 (draft).** The OOD suite inherits a 28,000-token input filter that
   removed 43% of SHADE-Arena, and SHADE-Arena has five task pairs.
+- **C7.4 (draft).** We do not test the false-positive rates that production
+  monitoring needs. pAUROC@20 averages over false-positive rates up to 20%,
+  and the lowest operating point we report is 1% (SleightBench). Cunningham et
+  al. operate at a 0.05% refusal rate on production traffic. The benign sets
+  of the OOD suite are too small to measure such rates.
 
 ## 8. Conclusion
 
