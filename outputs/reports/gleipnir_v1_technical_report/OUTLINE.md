@@ -354,8 +354,11 @@ Owner: JF.
   and the lowest operating point we report is 1% (SleightBench). Cunningham et
   al. operate at a 0.05% refusal rate on production traffic, and Anthropic
   reports a 0.4% false-positive rate for auto mode on 10,000 real tool calls.
-  The benign sets
-  of the OOD suite are too small to measure such rates.
+  Neither Sinha et al. nor Storf et al. give a reason for the 20% cutoff.
+  Interpretation (JF): the cutoff is pragmatic, because the benchmarks have
+  few benign trajectories compared with production traffic. To support this
+  with numbers when the section is drafted: the benign count per OOD source
+  and the lowest false-positive rate each can resolve.
 
 ## 8. Conclusion
 

@@ -24,8 +24,9 @@ No results are reported yet.
   over 28K tokens are dropped to leave 4K of headroom in the 32K context of
   the shorter-context models; the tokenizer and the number of removed rows are
   not stated. Metric (Section 3.4, Appendix D.4): pAUROC@20 "following Storf
-  et al. (2026)" ([arXiv:2603.00829](https://arxiv.org/abs/2603.00829), not
-  read by us), chosen because low false-positive rates matter for deployment
+  et al. (2026)" ([arXiv:2603.00829](https://arxiv.org/abs/2603.00829); read
+  by JF on 2026-11-09, who reports that it also gives little detail on the
+  choice of cutoff), chosen because low false-positive rates matter for deployment
   and human review. The paper gives no reason for the 20% cutoff itself.
 - Kramár et al., *Building Production-Ready Probes For Gemini*,
   [arXiv:2601.11516](https://arxiv.org/abs/2601.11516). Source of the probe
