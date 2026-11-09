@@ -69,14 +69,14 @@ reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.2–C2.4) takes a quarter to half a page. The
 other paragraphs are short.
 
-- **C2.1 (written).** Two uses of monitors. In trusted monitoring (Greenblatt
-  et al.), a trusted, less capable model rates each output of the untrusted
-  model and humans audit the highest-rated outputs within a fixed budget: the
-  monitor ranks. In the auto mode of Claude Code and the auto-review of Codex,
-  a separate model decides before each reviewed action whether it may run, in
-  place of a human approver: the monitor needs a threshold, there is no audit
-  budget, and its time and cost add to each reviewed action. Both uses need a
-  low false-positive rate. The paragraph states no constants.
+- **C2.1 (written).** Two uses of monitors, presented in parallel and not as
+  a contrast. The first selects actions for human audit: in trusted
+  monitoring (Greenblatt et al.), a trusted model rates each output of the
+  untrusted model and humans audit the highest-rated outputs. The second
+  decides whether an action may run: in the auto mode of Claude Code and the
+  auto-review of Codex, a separate model approves or blocks an action before
+  it runs. Both need a low false-positive rate, and in both the monitor's cost
+  adds to each action it covers. The paragraph states no constants.
   Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2);
   Anthropic engineering post on auto mode (2026-03-25); OpenAI Codex
   auto-review documentation.

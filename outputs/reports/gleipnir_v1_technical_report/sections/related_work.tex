@@ -1,18 +1,18 @@
 \section{Background and related work}
 \label{sec:background}
 
-\paragraph{Monitors of agent actions.}
-AI control studies safety measures that hold even if the deployed model tries to subvert them.
-In the trusted monitoring protocol of \citet{greenblatt2023ai}, a less capable, trusted model rates how suspicious each output of a capable, untrusted model looks.
-Humans then audit the outputs with the highest ratings, within a small fixed budget.
-Here the monitor ranks outputs for a human.
-Coding agents now use monitors in a second way.
-In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model decides whether an agent action may run, in place of a human approver.
-The decision is made for each reviewed action before it runs, and a blocked action returns to the agent with the reason.
-There is no audit budget: the monitor needs a decision threshold, and a human is asked only after repeated blocks.
-Each false positive interrupts the agent, and the time and cost of the monitor add to each reviewed action.
+\paragraph{Two uses of monitors.}
+Monitors score the actions of an AI agent, and deployed systems use the scores in two ways.
+The first use is to select actions for human audit.
+In the trusted monitoring protocol of AI control~\citep{greenblatt2023ai}, a trusted model rates how suspicious each output of an untrusted model looks.
+Humans audit the outputs with the highest ratings, as far as their time allows.
+The second use is to decide whether an action may run.
+In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model approves or blocks an action before it runs.
+A blocked action returns to the agent with the reason, and a human is asked only after repeated blocks.
 Both uses need a monitor that separates harmful from benign actions at a low false-positive rate.
-The second use also needs the monitor to be fast and cheap.
+A false positive spends audit time in the first use and interrupts the agent in the second.
+In both uses the monitor runs on each action it covers, so its cost adds to every such action.
+In the second use the action also waits for the monitor.
 
 \todo{Sinha et al.~\citep{sinha2026training} in a quarter to half a page: training data and rationale pipeline, OOD suite, pAUROC@20, cost axis. State that these monitors are action-only: they read the visible trajectory, not the reasoning or activations of the agent. Close with what we reuse and what we change.}
 
