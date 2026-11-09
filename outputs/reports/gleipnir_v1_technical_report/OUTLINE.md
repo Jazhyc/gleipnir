@@ -94,9 +94,22 @@ the frontier of Section 4.
 - **C3.4 (draft).** Soft targets matter. Matched hard-label 4B seeds score
   0.690–0.746 Mean-OOD pAUROC@20 against 0.777–0.813 for soft-target seeds.
   Evidence: `experiments/hard_label_seeds/`.
-- **C3.5 (draft).** The released 4B is the weight average of three seeds.
+- **C3.5 (draft).** The gain from soft targets is smaller for the 27B. With
+  one seed per objective in the release configuration (optimized serving,
+  teacher prompt), the hard-label 27B scores 0.933 Mean-OOD pAUROC@20 against
+  0.951 for the soft-target 27B. With the student prompt and BF16 serving the
+  scores are 0.904 and 0.909. On the ID suite the hard-label 27B scores higher
+  (0.959 against 0.944), and 80% of its OOD scores lie within 0.01 of 0 or 1,
+  against 20%. The hard-label run used the recipe tuned for soft targets.
+  Interpretation, not a result: soft targets may add less when the unadapted
+  student is already close to the teacher (Qwen3.8-27B 0.890 and Qwen3.5-4B
+  0.618, against Kimi K3 0.908). Model size and distance to the teacher change
+  together here, so the two models cannot separate them. A test would vary
+  one of them: a stronger teacher for the 27B, or a weaker teacher for the 4B.
+  Evidence: `experiments/qwen38_27b_hard_labels/README.md`.
+- **C3.6 (draft).** The released 4B is the weight average of three seeds.
   Evidence: `experiments/seed_average/README.md`.
-- **C3.6 (draft, appendix).** Teacher-prompt ablation for the 27B. Trained with
+- **C3.7 (draft, appendix).** Teacher-prompt ablation for the 27B. Trained with
   the compact student prompt, Gleipnir 27B scores 0.942 ID macro pAUROC@20
   (CoT-removed suite) when scored with the full teacher prompt, against 0.922
   with the student prompt. Mean-OOD pAUROC@20 (BF16) is 0.935 against 0.909.
@@ -110,31 +123,31 @@ This subsection lists the main serving decisions. The appendix gives the
 throughput gain of each important change to the serving stack; minor
 implementation details are left out.
 
-- **C3.7 (draft).** Scoring needs one prefill pass and no decoding: the
+- **C3.8 (draft).** Scoring needs one prefill pass and no decoding: the
   monitor reads the `0`/`1` logits at the last prompt token.
-- **C3.8 (draft).** The optimized stack runs on one B200 with low-precision
+- **C3.9 (draft).** The optimized stack runs on one B200 with low-precision
   weights: FP8 attention projections, FP4 MLP and GDN projections and MXFP8
   attention prefill. The 4B adapter is trained with quantization-aware
   distillation (QAD) for this stack; the 27B is not.
   Evidence: `docs/decisions/b200_monitor_score_reference.md`,
   `experiments/b200_inference_benchmark/serving_default.json`.
-- **C3.9 (draft).** Further changes remove work the score does not need: the
+- **C3.10 (draft).** Further changes remove work the score does not need: the
   final layer attends only from the last token, and the host path is shortened
   (tokenization, GDN routing).
   Evidence: `docs/findings/b200_last_layer_trim.md`,
   `docs/findings/b200_gdn_route.md`, `docs/findings/b200_host_overhead.md`.
-- **C3.10 (draft).** Cost per 1,000 evaluations is the measured wall time to
+- **C3.11 (draft).** Cost per 1,000 evaluations is the measured wall time to
   score all 6,395 OOD rows on one fully used B200, times an hourly rate:
   $7.99/h on demand (Runpod) or $3.44/h committed use (CoreWeave's published
   ceiling).
   Evidence: `docs/research/tool_trajectory_ood_frontier.md` (reference table),
   `docs/research/tool_trajectory_inference_economics.md`.
-- **C3.11 (draft).** The optimized stack changes scores against BF16 serving:
+- **C3.12 (draft).** The optimized stack changes scores against BF16 serving:
   −0.034 Mean-OOD pAUROC@20 for the 4B and +0.016 for the 27B. Runs on that
   stack are not bit-for-bit repeatable (per-row MAE about 0.01 for the 4B).
   Evidence: `experiments/release_serving/README.md`,
   `experiments/optimized_gap/README.md`.
-- **C3.12 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
+- **C3.13 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
   checkpoints for Gleipnir 4B v1.0 and 27B v1.0 (MIT; same weights as 4B v0.4
   and 27B v0.2), and the serving image.
   Evidence: `README.md` (Released models), `model_releases/hf/`.
