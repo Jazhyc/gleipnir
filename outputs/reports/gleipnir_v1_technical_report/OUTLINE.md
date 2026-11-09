@@ -180,6 +180,14 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   control scenario". It does not say "six" decision models: Section
   4 scores dedicated decision models and general language models read out in
   the same way.
+- **Revision to C2.8 (JF, 2026-11-09).** The probes paragraph states two
+  advantages of a probe on the monitored model: privileged access to its
+  internal state, which may hold a stable representation of misaligned intent
+  (Goldowsky-Dill et al.), and near-zero inference cost, since the probe
+  reuses the model's own forward pass. Both need access to the monitored
+  model, which the action-only setting does not assume. For Section 6: our
+  probes read the monitor backbone on the trajectory, so they do not have
+  either advantage; say so there (C6.3).
 - **C2.7a (draft, optional; not in the text).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the

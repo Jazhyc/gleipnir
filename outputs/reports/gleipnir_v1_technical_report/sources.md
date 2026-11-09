@@ -170,5 +170,12 @@ No results are reported yet.
   SHADE-Arena, BashArena, ControlArena) found no such evaluation; they also
   found community guardrail projects that gate tool calls with Jev, without
   published evaluations.
+- Goldowsky-Dill et al., *Detecting Strategic Deception Using Linear Probes*,
+  [arXiv:2502.03407](https://arxiv.org/abs/2502.03407); abstract read
+  2026-11-09. Cited for the possibility that activations represent deceptive
+  or misaligned intent (probe AUROC 0.96 to 0.999 on Llama-3.3-70B). The
+  authors add that "current performance is insufficient as a robust defence
+  against deception", so the text says "may hold". That a probe's cost is near
+  zero because it reuses the monitored model's forward pass is our statement.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
