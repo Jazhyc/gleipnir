@@ -100,7 +100,12 @@ No results are reported yet.
   checkpoint selection and in-domain held-out analysis" (369/577 and
   1,035/1,031 benign/scheming, 3,012 in total, which is the size of the
   set our project records call the ID suite); the six OOD benchmarks "are not used for training or checkpoint
-  selection".
+  selection". That the OOD benchmarks cover environments absent from the
+  training set (computer use, infrastructure code, ML research) is our
+  reading of the dataset descriptions (training: enterprise software,
+  operational tasks, coding sabotage, Linux administration); the paper's own
+  definition of OOD is only that the sets are not used for training or
+  checkpoint selection.
 - Guan et al., *Deliberative Alignment: Reasoning Enables Safer Language
   Models*, [arXiv:2412.16339](https://arxiv.org/abs/2412.16339); abstract
   read 2026-11-09. Sinha et al. state in their abstract that their method is

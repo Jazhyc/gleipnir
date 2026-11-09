@@ -44,7 +44,8 @@ At inference, the trained monitor therefore writes a rationale before it gives i
 
 \paragraph{Evaluation suite and metric.}
 Sinha et al.\ select checkpoints on a validation set, which consists of two held-out sets that are built like STRIDE and Gloom.
-They measure generalization on six benchmarks that are out-of-distribution (OOD) for the training set and play no part in training or selection: AgentDojo~\citep{debenedetti2024agentdojo}, CUA-SHADE-Arena~\citep{kale2025reliable}, IaC~\citep{controlarena2025iac}, MLE-Sabotage~\citep{ward2025ctrl}, Rogue Eval~\citep{roger2024rogue} and SHADE-Arena~\citep{kutasov2025shade}.
+They measure generalization on six out-of-distribution (OOD) benchmarks: AgentDojo~\citep{debenedetti2024agentdojo}, CUA-SHADE-Arena~\citep{kale2025reliable}, IaC~\citep{controlarena2025iac}, MLE-Sabotage~\citep{ward2025ctrl}, Rogue Eval~\citep{roger2024rogue} and SHADE-Arena~\citep{kutasov2025shade}.
+These benchmarks play no part in training or selection, and they place agents in environments that the training set lacks, such as computer use, infrastructure code and machine-learning research.
 They drop every trajectory with more than 28,000 tokens, so that it fits the 32,000-token context of their shorter-context models.
 Their metric is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
 They compute it for each benchmark and report the unweighted mean, which they call Mean-OOD.
