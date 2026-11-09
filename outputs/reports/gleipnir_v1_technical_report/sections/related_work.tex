@@ -1,18 +1,27 @@
 \section{Background and related work}
 \label{sec:background}
 
-\paragraph{Two uses of monitors.}
-Monitors score the actions of an AI agent, and deployed systems use the scores in two ways.
-The first use is to select actions for human audit.
-In the trusted monitoring protocol of AI control~\citep{greenblatt2023ai}, a trusted model rates how suspicious each output of an untrusted model looks.
-Humans audit the outputs with the highest ratings, as far as their time allows.
-The second use is to decide whether an action may run.
+\paragraph{Monitors in AI control.}
+AI control studies how to deploy an AI agent safely even if the agent tries to cause harm~\citep{greenblatt2023ai}.
+Control evaluations describe such an agent with two tasks~\citep{kutasov2025shade}.
+The \emph{main task} is the work that the user asked for.
+The \emph{side task} is a harmful objective that the agent pursues in secret while it works on the main task.
+An honest agent has only the main task.
+A \emph{monitor} reads what the agent did and rates how suspicious it looks.
+In the trusted monitoring protocol of Greenblatt et al., the monitor is a weaker model that is trusted not to cause harm.
+Humans audit the actions with the highest ratings.
+Human time is limited, so the audit covers only a small share of the actions.
+The monitor must therefore rate an agent with a side task above almost all honest agents.
+The training data and the benchmarks in this report follow this design.
+
+\paragraph{Monitors in production.}
+Coding agents in production already use monitors.
 In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model approves or blocks an action before it runs.
+The monitor takes the place of the human who would otherwise approve the action.
 A blocked action returns to the agent with the reason, and a human is asked only after repeated blocks.
-Both uses need a monitor that separates harmful from benign actions at a low false-positive rate.
-A false positive spends audit time in the first use and interrupts the agent in the second.
-In both uses the monitor runs on each action it covers, so its cost adds to every such action.
-In the second use the action also waits for the monitor.
+A false positive interrupts the agent, as it spends human time in an audit.
+Each reviewed action also waits for the monitor and pays for it.
+A monitor in production therefore needs a low false-positive rate, a short response time and a low cost.
 
 \todo{Sinha et al.~\citep{sinha2026training} in a quarter to half a page: training data and rationale pipeline, OOD suite, pAUROC@20, cost axis. State that these monitors are action-only: they read the visible trajectory, not the reasoning or activations of the agent. Close with what we reuse and what we change.}
 

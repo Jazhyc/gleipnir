@@ -61,5 +61,8 @@ No results are reported yet.
   the page (denial handling, the limit on repeated denials) were read from a
   machine summary of the page and should be checked before they are quoted.
   The page gives no error rates.
+- Kutasov et al., *SHADE-Arena: Evaluating Sabotage and Monitoring in LLM
+  Agents*, [arXiv:2506.15740](https://arxiv.org/abs/2506.15740). Cited for
+  the terms main task and side task; only the abstract was read (2026-11-09).
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

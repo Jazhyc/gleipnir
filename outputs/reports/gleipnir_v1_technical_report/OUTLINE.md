@@ -66,38 +66,49 @@ Owner: JF.
 
 This section is the background for Sections 3 and 4: it describes what we
 reuse from Sinha et al., so the method states only what we change. The
-description of Sinha et al. (C2.2–C2.4) takes a quarter to half a page. The
+description of Sinha et al. (C2.3–C2.5) takes a quarter to half a page. The
 other paragraphs are short.
 
-- **C2.1 (written).** Two uses of monitors, presented in parallel and not as
-  a contrast. The first selects actions for human audit: in trusted
-  monitoring (Greenblatt et al.), a trusted model rates each output of the
-  untrusted model and humans audit the highest-rated outputs. The second
-  decides whether an action may run: in the auto mode of Claude Code and the
-  auto-review of Codex, a separate model approves or blocks an action before
-  it runs. Both need a low false-positive rate, and in both the monitor's cost
-  adds to each action it covers. The paragraph states no constants.
+- **C2.1 (written).** Monitors in AI control. AI control studies safe
+  deployment of an agent that may try to cause harm (Greenblatt et al.). A
+  control evaluation gives the agent a main task and, for an attacking agent,
+  a secret harmful side task (terms as in SHADE-Arena, Kutasov et al.). A
+  monitor rates how suspicious the agent's actions look; in trusted monitoring
+  it is a weaker, trusted model. Humans audit the highest-rated actions within
+  limited time, so the monitor must rank attacks above almost all honest work.
+  Our training data and benchmarks follow the main-task and side-task design.
+  The paragraph states no constants.
   Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2);
-  Anthropic engineering post on auto mode (2026-03-25); OpenAI Codex
-  auto-review documentation.
-- **C2.2 (accepted).** Training pipeline of Sinha et al. Their monitors are
+  arXiv:2506.15740 (abstract). To check when Section 3 is drafted: which of
+  the five training sources and six OOD sources have a main task and a side
+  task (AgentDojo is prompt injection).
+- **C2.2 (written).** Monitors in production. In the auto mode of Claude Code
+  and the auto-review of Codex, a separate model approves or blocks an action
+  before it runs, in place of a human approver. A blocked action returns to
+  the agent, and a human is asked only after repeated blocks. A monitor in
+  production needs a low false-positive rate, a short response time and a low
+  cost. These are examples; the text does not claim that audit and gating are
+  the only uses of monitors.
+  Evidence: Anthropic engineering post on auto mode (2026-03-25); OpenAI
+  Codex auto-review documentation.
+- **C2.3 (accepted).** Training pipeline of Sinha et al. Their monitors are
   action-only: they read the visible trajectory, not the agent's reasoning or
   activations. They train on 8,688 action-only trajectories from five sources, balanced between benign and
   problematic. Gemini 2.5 Pro writes candidate rationales with a 0–10 score, a
   judge (Claude Sonnet 4.5) selects the best one, and the monitor is trained on
   it with SFT and, for some models, RL.
   Evidence: arXiv:2605.29601; `docs/writeups/gleipnir_project_writeup.md`.
-- **C2.3 (accepted).** Evaluation of Sinha et al. They score six OOD benchmarks,
+- **C2.4 (accepted).** Evaluation of Sinha et al. They score six OOD benchmarks,
   compute pAUROC@20 for each and report the unweighted mean. They pair it with
   the uncached inference cost per 1,000 evaluations and report a
   cost–performance frontier of trained and prompted monitors. The metric and
   the suite are defined here and used in Section 4.
-- **C2.4 (accepted).** What we reuse and what we change. We reuse their training
+- **C2.5 (accepted).** What we reuse and what we change. We reuse their training
   trajectories, monitoring specification, OOD suite, metric and cost axis.
   We change the monitor interface and the training target (Section 3). Their
   trained checkpoints are not public, so we compare against their reported
   scores.
-- **C2.5 (accepted).** Decision models. A decision model returns a probability
+- **C2.6 (accepted).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,
   2026). Its announcement names a new architecture and a training method
@@ -109,7 +120,7 @@ other paragraphs are short.
   revision we scored.
   Evidence: Jev announcement (TypeSafe blog, dated 2026-09-15); Decider cards
   `perplexity-ai/pplx-decider-v1.2`, `-flash-v1.2`, `-v1.1-27b`, `-v1-27b`.
-- **C2.6 (accepted).** Published work on decision models. Geuter et al. give the
+- **C2.7 (accepted).** Published work on decision models. Geuter et al. give the
   most complete public recipe. They read the answer from the answer-letter
   logits at the last prompt token of open instruction-tuned models, and then
   train LoRA adapters and a decision head with cross-entropy on general
@@ -124,7 +135,7 @@ other paragraphs are short.
   `docs/findings/decision_models_ood_benchmark.md`,
   `docs/findings/pplx_decider_ood_benchmark.md`,
   `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
-- **C2.6a (draft, optional).** Soft targets in decision models. Geuter et al.
+- **C2.7a (draft, optional).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the
   trained 31B for Qwen3.5-4B, where it helps (65.1 against 63.0). The Decider
@@ -132,7 +143,7 @@ other paragraphs are short.
   probability distributions. This agrees with the direction of C3.4 and C3.5:
   soft targets help the small model more. Their tasks, metric and teachers
   differ from ours, so this is context, not a replication.
-- **C2.7 (accepted).** Activation probes in production. Kramár et al. propose
+- **C2.8 (accepted).** Activation probes in production. Kramár et al. propose
   probe architectures that hold up on long inputs; Section 6 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
@@ -140,7 +151,7 @@ other paragraphs are short.
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.8 (accepted).** Monitor-directed attacks. Terekhov et al. show that text
+- **C2.9 (accepted).** Monitor-directed attacks. Terekhov et al. show that text
   addressed to the monitor can subvert trusted monitors. Section 5 tests the
   Gleipnir monitors against such text.
 
