@@ -7,7 +7,7 @@ In the trusted monitoring protocol of \citet{greenblatt2023ai}, a less capable, 
 Humans then audit the outputs with the highest ratings, within a small fixed budget.
 Here the monitor ranks outputs for a human.
 Coding agents now use monitors in a second way.
-In the auto mode of Claude Code~\citep{hughes2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model decides whether an agent action may run, in place of a human approver.
+In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model decides whether an agent action may run, in place of a human approver.
 The decision is made for each reviewed action before it runs, and a blocked action returns to the agent with the reason.
 There is no audit budget: the monitor needs a decision threshold, and a human is asked only after repeated blocks.
 Each false positive interrupts the agent, and the time and cost of the monitor add to each reviewed action.

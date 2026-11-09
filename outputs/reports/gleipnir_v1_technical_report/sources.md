@@ -43,7 +43,8 @@ No results are reported yet.
   private although the pages load without a token.
 - A web search on 2026-11-09 found no survey of decision models and no
   evaluation of them as control monitors.
-- Hughes, *How we built Claude Code auto mode*, Anthropic Engineering blog,
+- Anthropic, *How we built Claude Code auto mode*, Anthropic Engineering blog
+  (no byline; the acknowledgments say "Written by John Hughes"),
   `https://www.anthropic.com/engineering/claude-code-auto-mode`, published
   2026-03-25, read in full on 2026-11-09. A classifier reviews shell commands,
   web fetches, external tools and similar actions before they run; read-only
