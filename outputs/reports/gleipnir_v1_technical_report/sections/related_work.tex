@@ -1,7 +1,16 @@
 \section{Background and related work}
 \label{sec:background}
 
-\todo{Setting: trusted, action-only monitors in AI control~\citep{greenblatt2023ai}.}
+\paragraph{Monitors in AI control.}
+AI control studies safety measures that hold even if the deployed model tries to subvert them~\citep{greenblatt2023ai}.
+\citet{greenblatt2023ai} combine a capable \emph{untrusted} model with two trusted resources: a less capable \emph{trusted} model and a small budget of human audits.
+In their trusted monitoring protocol, the trusted model rates how suspicious each output of the untrusted model looks.
+The protocol audits the outputs with the highest ratings.
+The audit budget covers 2\% of the outputs, and one harmful output that passes without an audit counts as a failure.
+A monitor is therefore useful only if it ranks harmful outputs above almost all benign outputs.
+We study this component.
+Our monitors read the visible actions of an agent and return one score.
+They do not read the reasoning or the activations of the agent.
 
 \todo{Sinha et al.~\citep{sinha2026training} in a quarter to half a page: training data and rationale pipeline, OOD suite, pAUROC@20, cost axis. Close with what we reuse and what we change.}
 

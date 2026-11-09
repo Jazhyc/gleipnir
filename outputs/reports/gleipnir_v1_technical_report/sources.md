@@ -20,7 +20,11 @@ No results are reported yet.
   [arXiv:2601.04603](https://arxiv.org/abs/2601.04603). The 0.05% figure is
   the refusal rate on production traffic stated in the abstract.
 - Greenblatt et al., *AI Control: Improving Safety Despite Intentional
-  Subversion*, [arXiv:2312.06942](https://arxiv.org/abs/2312.06942).
+  Subversion*, [arXiv:2312.06942](https://arxiv.org/abs/2312.06942), v5, read
+  2026-11-09 up to Section 3.2. Trusted monitoring and the 2% audit budget:
+  Introduction, Sections 2.2 and 3.2, Table 2. Failure on one submitted
+  backdoor: Section 2. In their setting the monitor reads the problem and the
+  code. How the audit threshold is set (Appendix G) was not read.
 - Geuter et al., *Releasing the Inner Jev*,
   [arXiv:2610.17205](https://arxiv.org/abs/2610.17205), v1, HTML version read
   in full on 2026-11-09. Soft-against-hard ablation: Table 5; Qwen3.5-4B
@@ -37,11 +41,7 @@ No results are reported yet.
   sources) and `pplx-decider-v1-27b`. The cards give no release dates, no
   paper and no citation for the models. The v1.2 cards call the repository
   private although the pages load without a token.
-- Decision models, read only as abstracts (web search of 2026-11-09): Zhu et
-  al. ([arXiv:2610.21412](https://arxiv.org/abs/2610.21412)), Rao and
-  Callison-Burch ([arXiv:2609.29769](https://arxiv.org/abs/2609.29769)) and
-  Zhuang et al. ([arXiv:2610.28522](https://arxiv.org/abs/2610.28522)). The
-  search found no survey of decision models and no evaluation of them as
-  control monitors.
+- A web search on 2026-11-09 found no survey of decision models and no
+  evaluation of them as control monitors.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

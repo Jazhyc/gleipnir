@@ -69,27 +69,30 @@ reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.2–C2.4) takes a quarter to half a page. The
 other paragraphs are short.
 
-- **C2.1 (draft).** Setting. In AI control (Greenblatt et al.), a trusted
-  monitor scores each agent action, and the protocol acts on scores above a
-  threshold. We study action-only monitors: the monitor reads the visible
-  trajectory, not the agent's reasoning or activations.
-- **C2.2 (draft).** Training pipeline of Sinha et al. They train on 8,688
+- **C2.1 (written).** Setting. In AI control (Greenblatt et al.), a trusted,
+  less capable model rates how suspicious each output of the untrusted model
+  looks, and the protocol audits the highest-rated outputs (2% budget; one
+  unaudited harmful output is a failure). We study action-only monitors: the
+  monitor reads the visible trajectory, not the agent's reasoning or
+  activations.
+  Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2, Table 2).
+- **C2.2 (accepted).** Training pipeline of Sinha et al. They train on 8,688
   action-only trajectories from five sources, balanced between benign and
   problematic. Gemini 2.5 Pro writes candidate rationales with a 0–10 score, a
   judge (Claude Sonnet 4.5) selects the best one, and the monitor is trained on
   it with SFT and, for some models, RL.
   Evidence: arXiv:2605.29601; `docs/writeups/gleipnir_project_writeup.md`.
-- **C2.3 (draft).** Evaluation of Sinha et al. They score six OOD benchmarks,
+- **C2.3 (accepted).** Evaluation of Sinha et al. They score six OOD benchmarks,
   compute pAUROC@20 for each and report the unweighted mean. They pair it with
   the uncached inference cost per 1,000 evaluations and report a
   cost–performance frontier of trained and prompted monitors. The metric and
   the suite are defined here and used in Section 4.
-- **C2.4 (draft).** What we reuse and what we change. We reuse their training
+- **C2.4 (accepted).** What we reuse and what we change. We reuse their training
   trajectories, monitoring specification, OOD suite, metric and cost axis.
   We change the monitor interface and the training target (Section 3). Their
   trained checkpoints are not public, so we compare against their reported
   scores.
-- **C2.5 (draft).** Decision models. A decision model returns a probability
+- **C2.5 (accepted).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,
   2026). Its announcement names a new architecture and a training method
@@ -101,7 +104,7 @@ other paragraphs are short.
   revision we scored.
   Evidence: Jev announcement (TypeSafe blog, dated 2026-09-15); Decider cards
   `perplexity-ai/pplx-decider-v1.2`, `-flash-v1.2`, `-v1.1-27b`, `-v1-27b`.
-- **C2.6 (draft).** Published work on decision models. Geuter et al. give the
+- **C2.6 (accepted).** Published work on decision models. Geuter et al. give the
   most complete public recipe. They read the answer from the answer-letter
   logits at the last prompt token of open instruction-tuned models, and then
   train LoRA adapters and a decision head with cross-entropy on general
@@ -123,10 +126,8 @@ other paragraphs are short.
   flash card states that the 4B model is distilled from the 27B models' full
   probability distributions. This agrees with the direction of C3.4 and C3.5:
   soft targets help the small model more. Their tasks, metric and teachers
-  differ from ours, so this is context, not a replication. Other published
-  work (Zhu et al., Rao and Callison-Burch, Zhuang et al.) can be cited in one
-  sentence or dropped for space.
-- **C2.7 (draft).** Activation probes in production. Kramár et al. propose
+  differ from ours, so this is context, not a replication.
+- **C2.7 (accepted).** Activation probes in production. Kramár et al. propose
   probe architectures that hold up on long inputs; Section 6 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
@@ -134,7 +135,7 @@ other paragraphs are short.
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.8 (draft).** Monitor-directed attacks. Terekhov et al. show that text
+- **C2.8 (accepted).** Monitor-directed attacks. Terekhov et al. show that text
   addressed to the monitor can subvert trusted monitors. Section 5 tests the
   Gleipnir monitors against such text.
 
