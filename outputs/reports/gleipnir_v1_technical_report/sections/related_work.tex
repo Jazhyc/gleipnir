@@ -1,6 +1,9 @@
 \section{Background and related work}
 \label{sec:background}
 
+\subsection{Monitoring agent actions}
+\label{sec:background-monitoring}
+
 \paragraph{Monitors in AI control.}
 AI control studies how to deploy an AI agent safely even if the agent tries to cause harm~\citep{greenblatt2023ai}.
 To test this, control evaluations give the agent a \emph{main task}, the work that a user asked for~\citep{kutasov2025shade,kaufman2025basharena}.
@@ -20,6 +23,9 @@ When it blocks an action, the agent must find another approach, and after repeat
 A false positive is therefore costly: it blocks a harmless action, and repeated false positives halt autonomous work until the user responds.
 In addition, the monitor runs before each reviewed action, so its latency delays the action and its inference cost adds to the cost of the agent.
 A monitor in production thus needs a low false-positive rate, low latency and low cost.
+
+\subsection{Trained monitors and their evaluation}
+\label{sec:background-sinha}
 
 \paragraph{Trained action-only monitors.}
 \citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup.
@@ -47,6 +53,9 @@ They pair this score with the inference cost in USD per 1,000 evaluations, at li
 On the resulting cost--performance frontier, their trained Qwen3.5-27B scores 0.831 at \$2.78, and Claude Opus 4.6 as a prompted monitor scores 0.942 at 34 times the cost.
 We reuse their training trajectories, OOD suite, metric and cost axis, and we compare against their reported scores.
 We change the output of the monitor and its training target (Section~\ref{sec:method}).
+
+\subsection{Related approaches}
+\label{sec:background-related}
 
 \todo{Decision models from industry (model cards, no technical reports).}
 

@@ -69,6 +69,9 @@ reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.3–C2.5) takes a quarter to half a page. The
 other paragraphs are short.
 
+Subsections: 2.1 Monitoring agent actions (C2.1–C2.2), 2.2 Trained monitors
+and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
+
 - **C2.1 (written).** Monitors in AI control. AI control studies safe
   deployment of an agent that may try to cause harm (Greenblatt et al.). A
   control evaluation gives the agent a main task and, for an attacking agent,
