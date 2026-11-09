@@ -134,5 +134,18 @@ No results are reported yet.
   (`adityaasinha28/deliberative-monitor-pipeline@2f10f4e`). Domain labels are
   shortened from the same inventory. Cost basis: Appendix E.2 and the Table 3
   caption, read only as a machine summary.
+- Table of all OOD results (`app:ood-results`). Every row is copied from the
+  reference table in `docs/research/tool_trajectory_ood_frontier.md` (read at
+  the merge commit of 2026-11-09), with costs and scores rounded to three
+  decimals. The 17 rows of Sinha et al. reproduce their Appendix E, Table 4,
+  as recorded in that registry; they were not rechecked against the paper on
+  2026-11-09. Rounding was checked against full-precision values where the
+  registry's fourth decimal is 5: unadapted Qwen3.5-4B 0.617500 (0.618),
+  Qwen3.5-27B 0.839474 (0.839), GPT-6 Luna 0.836544 (0.837) at $0.835498
+  (0.835), Jev 1.13 0.849513 (0.850). Gleipnir 4B and 27B are the optimized
+  serving scores (student prompt and teacher prompt), priced at $3.44/h and
+  $7.99/h for one B200. "Gleipnir 9B (earlier release)" is the registry row
+  "Qwen3.5-9B Kimi-soft mixed". Results measured on 4B v0.3/v0.4 and 27B v0.2
+  weights apply to v1.0 unchanged.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

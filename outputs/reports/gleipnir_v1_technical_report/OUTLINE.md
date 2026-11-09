@@ -311,8 +311,11 @@ Owner: JF.
   (0.908), on the OOD suite.
 
 Exhibits: frontier figure (`figures/tool_trajectory_ood_frontier.svg`), main
-table with bootstrap intervals. Appendix: per-source results, full frontier
-figure, decision-model table, validation results, calibration.
+table with bootstrap intervals. Appendix: the table of all OOD results
+(written, `app:ood-results`: the 17 rows of Sinha et al. and our 22 measured
+rows, including the decision models; move the section to match where the main
+text first cites it), per-source results, full frontier figure, validation
+results, calibration.
 
 ## 5. Held-out and adversarial evaluation
 

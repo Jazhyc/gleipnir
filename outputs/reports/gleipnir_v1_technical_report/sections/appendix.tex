@@ -67,6 +67,75 @@ Mean-OOD is the unweighted mean of pAUROC@20 over the six OOD benchmarks.
 The cost of a monitor is its inference cost in USD per 1,000 evaluations.
 Sinha et al.\ compute it from the standard API price per input and output token, without batch or caching discounts.
 For open-weight models, they use the price of hosted inference for a comparable base model, not the cost of self-hosting.
+Table~\ref{tab:ood-all} in Appendix~\ref{app:ood-results} lists the scores and costs that they report.
+
+\section{Results on the OOD suite}
+\label{app:ood-results}
+
+Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
+
+\begin{table}[p]
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. Mean-OOD is the unweighted mean of pAUROC@20 over the six benchmarks. The first two groups are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured all other rows on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200, at the committed-use rate and at the on-demand rate; the other measured rows use API prices or hosted inference prices.}
+\label{tab:ood-all}
+\centering
+\small
+\begin{tabular}{llrr}
+\toprule
+Monitor & Output & Cost & Mean-OOD \\
+\midrule
+\multicolumn{4}{l}{\emph{Reported by Sinha et al.: trained monitors}} \\
+GPT-OSS-20B (SFT) & Rationale, 0--10 score & 0.347 & 0.656 \\
+Qwen3.5-4B (SFT+RL) & Rationale, 0--10 score & 0.358 & 0.684 \\
+GPT-OSS-120B (SFT) & Rationale, 0--10 score & 0.511 & 0.718 \\
+Nemotron-30B (SFT) & Rationale, 0--10 score & 0.590 & 0.578 \\
+Qwen3-8B (SFT+RL) & Rationale, 0--10 score & 0.748 & 0.628 \\
+Qwen3-32B (SFT+RL) & Rationale, 0--10 score & 0.869 & 0.703 \\
+Nemotron-120B (SFT) & Rationale, 0--10 score & 1.251 & 0.780 \\
+Qwen3.5-27B (SFT+RL) & Rationale, 0--10 score & 2.775 & 0.831 \\
+Kimi K2.6 (SFT) & Rationale, 0--10 score & 10.175 & 0.841 \\
+\midrule
+\multicolumn{4}{l}{\emph{Reported by Sinha et al.: prompted monitors}} \\
+GPT-5.4 nano & Rationale, 0--10 score & 3.387 & 0.752 \\
+Gemini 3.1 Flash-Lite & Rationale, 0--10 score & 4.157 & 0.815 \\
+Claude Haiku 4.5 & Rationale, 0--10 score & 19.746 & 0.794 \\
+GPT-5.4 & Rationale, 0--10 score & 44.376 & 0.899 \\
+Gemini 2.5 Pro & Rationale, 0--10 score & 45.254 & 0.802 \\
+Claude Sonnet 4.6 & Rationale, 0--10 score & 58.850 & 0.929 \\
+Gemini 3.1 Pro & Rationale, 0--10 score & 73.218 & 0.940 \\
+Claude Opus 4.6 & Rationale, 0--10 score & 94.794 & 0.942 \\
+\midrule
+\multicolumn{4}{l}{\emph{This work: Gleipnir}} \\
+Gleipnir 4B & Binary logits & 0.037 / 0.085 & 0.770 \\
+Gleipnir 27B & Binary logits & 0.168 / 0.390 & 0.951 \\
+Gleipnir 9B (earlier release) & Binary logits & 0.866 & 0.821 \\
+\midrule
+\multicolumn{4}{l}{\emph{This work: decision models}} \\
+d1 & Native probability & 0.165 & 0.674 \\
+pplx-decider v1.2 & Native probability & 0.176 & 0.896 \\
+Mercury Decide & Native probability & 0.181 & 0.883 \\
+d1-ultra & Native probability & 0.347 & 0.893 \\
+Jev 1.13 & Native probability & 0.389 & 0.850 \\
+Microsoft-Decision-1 & Native probability & 0.389 & 0.751 \\
+\midrule
+\multicolumn{4}{l}{\emph{This work: unadapted models with binary logits}} \\
+Qwen3.5-4B & Binary logits & 0.284 & 0.618 \\
+GPT-OSS-120B & Binary logits & 0.327 & 0.479 \\
+GPT-6 Luna & Binary logits & 0.835 & 0.837 \\
+Qwen3.5-9B & Binary logits & 0.947 & 0.698 \\
+Qwen3.5-35B-A3B & Binary logits & 0.990 & 0.758 \\
+Qwen3.5-27B & Binary logits & 1.848 & 0.839 \\
+Qwen3.8-27B & Binary logits & 1.848 & 0.890 \\
+Kimi K2.6 & Binary logits & 7.911 & 0.919 \\
+Kimi K3 & Binary logits & 25.118 & 0.908 \\
+\midrule
+\multicolumn{4}{l}{\emph{This work: unadapted models with other outputs}} \\
+GPT-OSS-120B & Reasoning, binary logits & 0.344 & 0.558 \\
+Qwen3.5-9B & 0--10 score & 0.963 & 0.486 \\
+Qwen3.5-9B & Reasoning, binary logits & 1.005 & 0.692 \\
+Qwen3.5-9B & Reasoning, 0--10 score & 1.029 & 0.666 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Additional results}
 \label{app:additional-results}
