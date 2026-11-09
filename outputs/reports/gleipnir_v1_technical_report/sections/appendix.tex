@@ -75,7 +75,7 @@ Table~\ref{tab:ood-all} in Appendix~\ref{app:ood-results} lists the scores and c
 Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
 
 \begin{table}[t]
-\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. Mean-OOD is the unweighted mean of pAUROC@20 over the six benchmarks. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200, at the committed-use rate and at the on-demand rate; the other measured rows use API prices or hosted inference prices.}
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. Mean-OOD is the unweighted mean of pAUROC@20 over the six benchmarks. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices.}
 \label{tab:ood-all}
 \small
 \setlength{\tabcolsep}{3pt}
@@ -120,8 +120,10 @@ Reasoning, then 0--10 score & 1.029 & 0.666 \\
 Monitor & Cost & Mean-OOD \\
 \midrule
 \multicolumn{3}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
-Gleipnir 4B & 0.037 / 0.085 & 0.770 \\
-Gleipnir 27B & 0.168 / 0.390 & 0.951 \\
+Gleipnir 4B, committed-use & 0.037 & 0.770 \\
+Gleipnir 4B, on-demand & 0.085 & 0.770 \\
+Gleipnir 27B, committed-use & 0.168 & 0.951 \\
+Gleipnir 27B, on-demand & 0.390 & 0.951 \\
 Gleipnir 9B (earlier) & 0.866 & 0.821 \\
 \midrule
 \multicolumn{3}{@{}l}{\emph{This work: decision models, native probability}} \\
