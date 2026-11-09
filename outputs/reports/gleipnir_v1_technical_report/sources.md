@@ -153,5 +153,13 @@ No results are reported yet.
   `docs/findings/openai_56_luna_ood_benchmark.md` (0.839729, and $1.672442
   per 1,000 with all input at uncached standard rates), although the registry
   excludes it. The GPT-OSS rows that Sinha et al. report stay in the table.
+- Section 2.3. Read only as abstracts (2026-11-09): Kramár et al.
+  (arXiv:2601.11516; "new probe architectures that handle this long-context
+  distribution shift"), Cunningham et al. (arXiv:2601.04603; linear probes,
+  a two-stage classifier cascade, 0.05% refusal rate on production traffic)
+  and Terekhov et al. (arXiv:2510.09462; prompt injections embedded in model
+  outputs evade monitors on two AI control benchmarks). "Six" decision models
+  are the six rows of the results table; Mercury Decide, d1, d1-ultra and
+  Microsoft-Decision-1 still have no cited source.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

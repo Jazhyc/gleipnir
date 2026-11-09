@@ -144,7 +144,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   proxy prices, while we price Gleipnir at self-hosted B200 break-even; state
   this difference there. Their tables sum to 6,402 OOD rows and our frozen
   suite has 6,395 (`docs/research/tool_transcript_monitoring.md`).
-- **C2.6 (accepted).** Decision models. A decision model returns a probability
+- **C2.6 (written).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,
   2026). Its announcement names a new architecture and a training method
@@ -156,7 +156,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   revision we scored.
   Evidence: Jev announcement (TypeSafe blog, dated 2026-09-15); Decider cards
   `perplexity-ai/pplx-decider-v1.2`, `-flash-v1.2`, `-v1.1-27b`, `-v1-27b`.
-- **C2.7 (accepted).** Published work on decision models. Geuter et al. give the
+- **C2.7 (written).** Published work on decision models. Geuter et al. give the
   most complete public recipe. They read the answer from the answer-letter
   logits at the last prompt token of open instruction-tuned models, and then
   train LoRA adapters and a decision head with cross-entropy on general
@@ -171,7 +171,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   `docs/findings/decision_models_ood_benchmark.md`,
   `docs/findings/pplx_decider_ood_benchmark.md`,
   `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
-- **C2.7a (draft, optional).** Soft targets in decision models. Geuter et al.
+- **C2.7a (draft, optional; not in the text).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the
   trained 31B for Qwen3.5-4B, where it helps (65.1 against 63.0). The Decider
@@ -179,7 +179,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   probability distributions. This agrees with the direction of C3.4 and C3.5:
   soft targets help the small model more. Their tasks, metric and teachers
   differ from ours, so this is context, not a replication.
-- **C2.8 (accepted).** Activation probes in production. Kramár et al. propose
+- **C2.8 (written).** Activation probes in production. Kramár et al. propose
   probe architectures that hold up on long inputs; Section 6 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
@@ -187,7 +187,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.9 (accepted).** Monitor-directed attacks. Terekhov et al. show that text
+- **C2.9 (written).** Monitor-directed attacks. Terekhov et al. show that text
   addressed to the monitor can subvert trusted monitors. Section 5 tests the
   Gleipnir monitors against such text.
 

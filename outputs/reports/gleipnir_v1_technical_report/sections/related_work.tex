@@ -47,6 +47,22 @@ We reuse their training trajectories, OOD suite, metric and cost axis and compar
 \subsection{Related approaches}
 \label{sec:background-related}
 
-\todo{Decision models from industry (model cards, no technical reports).}
+\paragraph{Decision models.}
+A decision model returns a probability for each permitted answer to a question about an input, in one forward pass and without generating text.
+The class became prominent with Jev~\citep{almeida2026jev}, whose weights and training method are not public.
+Perplexity then released the Decider models with open weights~\citep{perplexity2026decider}, and other providers followed.
+\citet{geuter2026releasing} give the most complete public recipe: they read the answer from the answer-letter logits at the last prompt token of an open instruction-tuned model, and then fine-tune LoRA adapters on general decision tasks.
+Gleipnir uses the same kind of readout for one task.
+It reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
+We found no evaluation of decision models as monitors, so Section~\ref{sec:evaluation} scores six of them on the OOD suite.
 
-\todo{Activation probes in production~\citep{kramar2026building,cunningham2026constitutional}; monitor-directed attacks~\citep{terekhov2025adaptive}.}
+\paragraph{Activation probes.}
+A probe is a small classifier that reads the activations of a model.
+\citet{kramar2026building} propose probe architectures that handle long inputs, and Section~\ref{sec:probing} uses these architectures.
+\citet{cunningham2026constitutional} combine linear probes with a cascade of classifiers and run them on production traffic at a refusal rate of 0.05\%.
+Both works probe the model that is monitored, whereas Gleipnir is a separate model that reads only the trajectory.
+
+\paragraph{Attacks on monitors.}
+A monitor is itself a target.
+\citet{terekhov2025adaptive} show that an agent can evade monitors by embedding prompt injections in its outputs, and that this works against the control protocols that they test.
+Section~\ref{sec:held-out} tests the Gleipnir monitors against text of this kind.
