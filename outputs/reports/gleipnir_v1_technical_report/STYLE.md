@@ -18,6 +18,11 @@ abstract. Follow them when drafting or editing.
   example AI control, distillation, LoRA, AUROC, pAUROC@20, out-of-distribution
   (OOD). Define each term or abbreviation at first use.
 - Keep one idea per paragraph. Open the paragraph with that idea.
+- Connect the sentences of a paragraph. Start a sentence with what the
+  previous sentence ended on, and use a linking word ("therefore", "because",
+  "in addition") where the logic needs one. Short sentences must still read
+  as one line of argument, not as a list of facts. A sentence may pass 20
+  words when splitting it would break that line.
 
 ## Tone
 
