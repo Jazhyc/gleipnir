@@ -91,7 +91,11 @@ other paragraphs are short.
   the only uses of monitors.
   Evidence: Anthropic engineering post on auto mode (2026-03-25); OpenAI
   Codex auto-review documentation.
-- **C2.3 (written).** Training pipeline of Sinha et al. Their monitors are
+- **C2.3 (written).** Training pipeline of Sinha et al. They train
+  open-weight models from Qwen3.5-4B up to Kimi K2.6 (nine models, four
+  families), so the text does not call them small. Their targets are inspired
+  by deliberative alignment (Guan et al.), which is why a teacher writes
+  rationales over a specification. Their monitors are
   action-only: they read the visible trajectory (user messages, agent
   messages, tool outputs), not the agent's private reasoning or activations.
   They train on 8,688 trajectories from five sources, half benign. A teacher

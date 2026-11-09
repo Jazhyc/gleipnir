@@ -22,12 +22,13 @@ In addition, the monitor runs before each reviewed action, so its latency delays
 A monitor in production thus needs a low false-positive rate, low latency and low cost.
 
 \paragraph{Trained action-only monitors.}
-\citet{sinha2026training} train small open-weight models as monitors, and our work builds on their setup.
+\citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup.
 Their monitors are \emph{action-only}: the monitor reads the visible trajectory of the agent, which consists of the user messages, the messages of the agent and the tool outputs.
 It does not read the private reasoning of the agent or its activations.
 The training set has 8,688 such trajectories, half of them benign and half with harmful behavior such as sabotage or data exfiltration.
 They come from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
-To create training targets, a teacher model (Gemini 2.5 Pro) reads each trajectory together with a detailed specification of scheming behavior.
+Their training targets follow deliberative alignment~\citep{guan2024deliberative}, which trains a model to reason over a written specification before it answers.
+A teacher model (Gemini 2.5 Pro) therefore reads each trajectory together with a detailed specification of scheming behavior.
 The teacher writes four candidate rationales, each of which ends in a suspicion score from 0 to 10.
 A judge model (Claude Sonnet 4.5) then selects the best candidate, and the monitor learns to reproduce it through supervised fine-tuning (SFT).
 For some monitors, a reinforcement learning (RL) stage follows, which rewards calibrated and correctly ranked scores.

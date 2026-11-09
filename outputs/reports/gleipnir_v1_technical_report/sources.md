@@ -101,5 +101,12 @@ No results are reported yet.
   1,035/1,031 benign/scheming, 3,012 in total, which is the size of our ID
   suite); the six OOD benchmarks "are not used for training or checkpoint
   selection".
+- Guan et al., *Deliberative Alignment: Reasoning Enables Safer Language
+  Models*, [arXiv:2412.16339](https://arxiv.org/abs/2412.16339); abstract
+  read 2026-11-09. Sinha et al. state in their abstract that their method is
+  "inspired by deliberative alignment"; which reference they cite for it was
+  not checked. Model range of Sinha et al.: Section 4.4 ("nine open-weight
+  models belonging to four different model families") and the Figure 6
+  caption ("from Qwen3.5-4B to Kimi-K2.6").
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
