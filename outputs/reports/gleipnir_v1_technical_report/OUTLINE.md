@@ -118,8 +118,8 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   held-out STRIDE and Gloom-Exfiltration sets (the validation set, 3,012 rows) and
   keep six OOD benchmarks out of training and selection. They score the OOD
   benchmarks, compute pAUROC@20 for each (area under the ROC curve for FPR up
-  to 20%, divided by 0.2; taken from Storf et al.; chosen for low-FPR use,
-  with no reason given for 20%) and report the unweighted mean (Mean-OOD).
+  to 20%, divided by 0.2; chosen for low-FPR use, with no reason given for
+  20%; the text does not attribute the metric to Storf et al.) and report the unweighted mean (Mean-OOD).
   They drop trajectories over 28,000 tokens to fit a 32,000-token context.
   They pair
   it with the inference cost per 1,000 evaluations at uncached list prices.
