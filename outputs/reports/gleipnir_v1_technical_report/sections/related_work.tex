@@ -54,7 +54,7 @@ Perplexity then released the Decider models with open weights~\citep{perplexity2
 \citet{geuter2026releasing} give the most complete public recipe: they read the answer from the answer-letter logits at the last prompt token of an open instruction-tuned model, and then fine-tune LoRA adapters on general decision tasks.
 Gleipnir uses the same kind of readout for one task.
 It reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
-We found no evaluation of decision models as monitors, so Section~\ref{sec:evaluation} scores six of them on the OOD suite.
+We found no evaluation of decision models as monitors, so Section~\ref{sec:evaluation} scores six of them.
 
 \paragraph{Activation probes.}
 A probe is a small classifier that reads the activations of a model.
