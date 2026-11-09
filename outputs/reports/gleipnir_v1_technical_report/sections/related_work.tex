@@ -55,7 +55,7 @@ Perplexity then released the Decider models with open weights~\citep{perplexity2
 \citet{geuter2026releasing} show that a general instruction-tuned model works in the same way when the answer is read from the answer-letter logits at its last prompt token, and that LoRA fine-tuning on general decision tasks improves it.
 Gleipnir applies this format to one task: it reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
 \citet{liu2026evaluating} evaluates decision models on security checks of the inputs of an agent, such as the detection of prompt injections.
-We found no evaluation on the actions of an agent that has a side task.
+We found no evaluation of decision models in an AI control scenario.
 Section~\ref{sec:evaluation} therefore scores both dedicated decision models and general language models that we read out in the same way.
 
 \paragraph{Activation probes.}
