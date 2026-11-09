@@ -185,9 +185,9 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   internal state, which may hold a stable representation of misaligned intent
   (Goldowsky-Dill et al.), and near-zero inference cost, since the probe
   reuses the model's own forward pass. Both need access to the monitored
-  model, which the action-only setting does not assume. For Section 6: our
-  probes read the monitor backbone on the trajectory, so they do not have
-  either advantage; say so there (C6.3).
+  model, which the action-only setting does not assume. The paragraph does
+  not point to Section 6, so that our probing experiments are not read as
+  resting on these two advantages.
 - **C2.7a (draft, optional; not in the text).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the
@@ -366,6 +366,16 @@ details, SleightBench per-attack results.
 ## 6. Probing
 
 Owner: JF.
+
+Framing (JF, 2026-11-09): the probing experiments ask whether early exits
+could lower inference cost further. If the backbone of the monitor already
+holds a representation that supports the decision before the final layer, a
+probe at that layer could replace the remaining layers. The experiments also
+ask whether soft distillation helps such probes. They do not assume access to
+the monitored agent: the probes read the monitor backbone on the trajectory.
+Section 6 introduces Kramár et al.'s architectures itself; Section 2.3 does
+not point here. The claims below predate this framing and need a pass against
+it before they are accepted.
 
 - **C6.1 (draft).** Soft targets also help activation probes, but less than
   they help LoRA. On the 4B residual stream (layer 15), the selected soft probe

@@ -65,7 +65,7 @@ It has privileged access to the internal state of that model, which may hold a s
 Its inference cost is also close to zero, because the probe is small and reuses the forward pass that the model runs anyway.
 \citet{kramar2026building} propose probe architectures that handle long inputs, and \citet{cunningham2026constitutional} run linear probes in a cascade of classifiers on production traffic at a refusal rate of 0.05\%.
 Both advantages require access to the monitored model, which the action-only setting does not assume.
-Gleipnir is therefore a separate model that reads only the trajectory, and Section~\ref{sec:probing} applies the architectures of Kram\'ar et al.\ to the backbone of the monitor.
+Gleipnir is therefore a separate model that reads only the trajectory.
 
 \paragraph{Attacks on monitors.}
 A monitor is itself a target.
