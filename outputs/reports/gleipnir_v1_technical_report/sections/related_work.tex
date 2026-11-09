@@ -13,10 +13,10 @@ The monitor is therefore useful only if it rates agents with a side task above a
 The training data and the benchmarks in this report follow the same design.
 
 \paragraph{Monitors in production.}
-Coding agents in production already use monitors of this kind.
+Coding agents already use such monitors in production.
 In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model approves or blocks an action before it runs.
 This model takes the place of the human who would otherwise approve the action.
-When it blocks an action, the agent must find another approach, and after repeated blocks the agent stops and asks the user for permission.
+When it blocks an action, the agent must find another approach, and after repeated blocks it stops and asks the user for permission.
 A false positive is therefore costly: it blocks a harmless action, and repeated false positives halt autonomous work until the user responds.
 In addition, the monitor runs before each reviewed action, so its latency delays the action and its inference cost adds to the cost of the agent.
 A monitor in production thus needs a low false-positive rate, low latency and low cost.
