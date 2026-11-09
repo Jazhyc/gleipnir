@@ -48,13 +48,15 @@ We reuse their training trajectories, OOD suite, metric and cost axis and compar
 \label{sec:background-related}
 
 \paragraph{Decision models.}
-A decision model returns a probability for each permitted answer to a question about an input, in one forward pass and without generating text.
+A decision model uses a pretrained language model to answer a question whose permitted answers are given in the request and not fixed in the architecture.
+It returns a probability for each answer in one forward pass and generates no text.
 The class became prominent with Jev~\citep{almeida2026jev}, whose weights and training method are not public.
 Perplexity then released the Decider models with open weights~\citep{perplexity2026decider}, and other providers followed.
-\citet{geuter2026releasing} give the most complete public recipe: they read the answer from the answer-letter logits at the last prompt token of an open instruction-tuned model, and then fine-tune LoRA adapters on general decision tasks.
-Gleipnir uses the same kind of readout for one task.
-It reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
-We found no evaluation of decision models as monitors, so Section~\ref{sec:evaluation} scores six of them.
+\citet{geuter2026releasing} show that a general instruction-tuned model works in the same way when the answer is read from the answer-letter logits at its last prompt token, and that LoRA fine-tuning on general decision tasks improves it.
+Gleipnir applies this format to one task: it reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
+\citet{liu2026evaluating} evaluates decision models on security checks of the inputs of an agent, such as the detection of prompt injections.
+We found no evaluation on the actions of an agent that has a side task.
+Section~\ref{sec:evaluation} therefore scores both dedicated decision models and general language models that we read out in the same way.
 
 \paragraph{Activation probes.}
 A probe is a small classifier that reads the activations of a model.

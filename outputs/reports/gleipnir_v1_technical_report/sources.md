@@ -161,5 +161,14 @@ No results are reported yet.
   outputs evade monitors on two AI control benchmarks). "Six" decision models
   are the six rows of the results table; Mercury Decide, d1, d1-ultra and
   Microsoft-Decision-1 still have no cited source.
+- Liu, *Evaluating System One Models for Agent Security Decisions*,
+  [arXiv:2609.33401](https://arxiv.org/abs/2609.33401), v3; abstract read
+  2026-11-09. It evaluates Jev, Laya, Decider and Bespoke Nimble on
+  prompt-injection detection, interaction-risk judgment and harmful-request
+  screening, which are checks "before agents act". Three further web searches
+  on 2026-11-09 for decision models as control monitors (sabotage, scheming,
+  SHADE-Arena, BashArena, ControlArena) found no such evaluation; they also
+  found community guardrail projects that gate tool calls with Jev, without
+  published evaluations.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

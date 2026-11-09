@@ -171,6 +171,15 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   `docs/findings/decision_models_ood_benchmark.md`,
   `docs/findings/pplx_decider_ood_benchmark.md`,
   `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
+- **Revisions to C2.6–C2.7 (JF, 2026-11-09).** The text defines a decision
+  model by its use of a pretrained language model with the permitted answers
+  given in the request, not fixed in the architecture. It does not call Geuter
+  et al. the most complete recipe; it says what they show. It cites Liu
+  (arXiv:2609.33401), who evaluates decision models on security checks of an
+  agent's inputs, and limits our claim to "no evaluation on the actions of an
+  agent that has a side task". It does not say "six" decision models: Section
+  4 scores dedicated decision models and general language models read out in
+  the same way.
 - **C2.7a (draft, optional; not in the text).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the
