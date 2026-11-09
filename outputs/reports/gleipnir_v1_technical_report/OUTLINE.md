@@ -123,9 +123,10 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   They drop trajectories over 28,000 tokens to fit a 32,000-token context.
   They pair
   it with the inference cost per 1,000 evaluations at uncached list prices.
-  Their trained Qwen3.5-27B scores 0.831 at $2.78; Claude Opus 4.6 scores
-  0.942 at 34.2 times the cost. The metric and the suite are defined here and
-  used in Section 4.
+  The metric and the suite are defined here and used in Section 4. The
+  background gives no scores (their Qwen3.5-27B at 0.831 and $2.78, Opus 4.6
+  at 0.942 and 34.2 times the cost, go in Section 4) and does not repeat why
+  low false-positive rates matter (Section 2.1).
   Evidence: arXiv:2605.29601, Section 4.2, Appendix D.4.
 - **C2.5 (written).** What we reuse and what we change. We reuse their
   training trajectories, OOD suite, metric and cost axis, and we compare
