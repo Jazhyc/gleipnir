@@ -1,7 +1,8 @@
 # Documentation index
 
 - [Qwen3.8-27B monitor training](findings/qwen38_27b_monitor_training.md):
-  trained 27B reaches 0.922 ID pAUROC@20 (+3.5 over unadapted); OOD pending.
+  soft 27B 0.922 ID / 0.909 OOD; matched hard labels 0.967 ID / 0.904 OOD;
+  in the release configuration soft wins OOD 0.951 vs 0.933.
 - [First trained Qwen3.8-27B](findings/qwen38_27b_campaign.md): 0.9217 ID and
   0.9087 OOD pAUROC@20 (student prompt); 0.9352 under the teacher prompt.
 - [Qwen3.8-27B training default](decisions/qwen38_27b_b200_training_default.md):

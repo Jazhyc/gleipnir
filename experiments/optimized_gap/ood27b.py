@@ -12,6 +12,7 @@ from __future__ import annotations
 import argparse
 import asyncio
 import json
+from pathlib import Path
 
 from experiments.b200_monitor_score.run import trial
 from experiments.optimized_gap.prepare import OUT, ROOT
@@ -62,15 +63,18 @@ def main() -> None:
     parser.add_argument("--quantization")
     parser.add_argument("--compilation", default="{}", help="vLLM compilation config")
     parser.add_argument("--prompt", choices=PROMPTS, default="teacher")
+    parser.add_argument("--model", type=Path, default=MODEL, help="merged checkpoint")
+    parser.add_argument("--reference", help="predictions to compare against")
     args = parser.parse_args()
     workload_path, expected, bf16 = PROMPTS[args.prompt]
+    bf16 = args.reference or bf16
     if expected is not None and file_hash(workload_path) != expected:
         raise ValueError("frozen OOD workload drift")
     out = OUT / args.name
     out.mkdir(parents=True, exist_ok=False)
     selection, command = bf16_launch.bf16_command(
         ROOT,
-        MODEL,
+        args.model,
         sources(),
         worker=args.worker,
         additional=json.loads(args.additional),
@@ -106,6 +110,8 @@ def main() -> None:
         "scores_vs_bf16": score_difference(condition, reference),
         "timing": measurement_summary(rows, seconds),
         "prompt": args.prompt,
+        "model": str(args.model),
+        "reference": bf16,
         "workload_sha256": file_hash(workload_path),
         "command": {
             "worker": args.worker,
