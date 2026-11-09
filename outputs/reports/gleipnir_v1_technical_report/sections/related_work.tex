@@ -16,8 +16,8 @@ The training data and the benchmarks in this report follow the same design.
 Coding agents in production already use monitors of this kind.
 In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model approves or blocks an action before it runs.
 This model takes the place of the human who would otherwise approve the action.
-When it blocks an action, the action returns to the agent with the reason, and a human is asked only after repeated blocks.
-A false positive therefore interrupts the agent, just as it spends human time in an audit.
+When it blocks an action, the agent must find another approach, and after repeated blocks the agent stops and asks the user for permission.
+A false positive is therefore costly: it blocks a harmless action, and repeated false positives halt autonomous work until the user responds.
 In addition, each reviewed action waits for the monitor and pays for it.
 A monitor in production thus needs a low false-positive rate, a short response time and a low cost.
 
