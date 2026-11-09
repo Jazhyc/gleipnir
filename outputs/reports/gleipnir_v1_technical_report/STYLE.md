@@ -58,3 +58,11 @@ abstract. Follow them when drafting or editing.
   what was resampled.
 - Record the source and revision of every reported number in
   [sources.md](sources.md).
+
+## Citations
+
+- Citations are numeric. Use `\citep` for a reference in brackets and
+  `\citet` when the authors are part of the sentence ("Sinha et al. [2]
+  train ...").
+- Cite a work once per paragraph, at its first mention. After that, refer to
+  the authors by name or as "they".

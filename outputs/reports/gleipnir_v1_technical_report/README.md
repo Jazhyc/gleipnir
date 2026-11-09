@@ -21,7 +21,7 @@ Read the compiled report: [report.pdf](report.pdf).
 - `main.tex`: entrypoint, title, authors, section order and bibliography.
 - `preamble.tex`: style options, packages and the `\todo{}` macro.
 - `sections/`: one file per section, plus `appendix.tex`.
-- `references.bib`: BibTeX entries (`plainnat` style, natbib citations).
+- `references.bib`: BibTeX entries (`unsrtnat` style, numeric natbib citations).
 - `neurips_2026.sty`: unmodified official style, from
   `https://media.neurips.cc/Conferences/NeurIPS2026/Formatting_Instructions_For_NeurIPS_2026.zip`
   (revision January 2026; SHA-256 `c3fc2894…a4555a`).
