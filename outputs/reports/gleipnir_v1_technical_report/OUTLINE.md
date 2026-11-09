@@ -91,23 +91,35 @@ other paragraphs are short.
   the only uses of monitors.
   Evidence: Anthropic engineering post on auto mode (2026-03-25); OpenAI
   Codex auto-review documentation.
-- **C2.3 (accepted).** Training pipeline of Sinha et al. Their monitors are
-  action-only: they read the visible trajectory, not the agent's reasoning or
-  activations. They train on 8,688 action-only trajectories from five sources, balanced between benign and
-  problematic. Gemini 2.5 Pro writes candidate rationales with a 0–10 score, a
-  judge (Claude Sonnet 4.5) selects the best one, and the monitor is trained on
-  it with SFT and, for some models, RL.
-  Evidence: arXiv:2605.29601; `docs/writeups/gleipnir_project_writeup.md`.
-- **C2.4 (accepted).** Evaluation of Sinha et al. They score six OOD benchmarks,
-  compute pAUROC@20 for each and report the unweighted mean. They pair it with
-  the uncached inference cost per 1,000 evaluations and report a
-  cost–performance frontier of trained and prompted monitors. The metric and
-  the suite are defined here and used in Section 4.
-- **C2.5 (accepted).** What we reuse and what we change. We reuse their training
-  trajectories, monitoring specification, OOD suite, metric and cost axis.
-  We change the monitor interface and the training target (Section 3). Their
-  trained checkpoints are not public, so we compare against their reported
-  scores.
+- **C2.3 (written).** Training pipeline of Sinha et al. Their monitors are
+  action-only: they read the visible trajectory (user messages, agent
+  messages, tool outputs), not the agent's private reasoning or activations.
+  They train on 8,688 trajectories from five sources, half benign. A teacher
+  (Gemini 2.5 Pro) reads each trajectory with a scheming specification and
+  writes four candidate rationales with a 0–10 score; a judge (Claude Sonnet
+  4.5) selects the best one, and the monitor is trained on it with SFT and,
+  for some models, RL (GRPO, reward for calibration and ranking). The trained
+  monitor does not receive the specification; only the teacher and the
+  prompted baselines do.
+  Evidence: arXiv:2605.29601, Sections 3.1–3.4, Table 2, Appendices C.1–C.2,
+  D.2–D.3.
+- **C2.4 (written).** Evaluation of Sinha et al. They score six OOD
+  benchmarks, compute pAUROC@20 for each (area under the ROC curve for FPR up
+  to 20%, divided by 0.2) and report the unweighted mean (Mean-OOD). They pair
+  it with the inference cost per 1,000 evaluations at uncached list prices.
+  Their trained Qwen3.5-27B scores 0.831 at $2.78; Claude Opus 4.6 scores
+  0.942 at 34.2 times the cost. The metric and the suite are defined here and
+  used in Section 4.
+  Evidence: arXiv:2605.29601, Section 4.2, Appendix D.4.
+- **C2.5 (written).** What we reuse and what we change. We reuse their
+  training trajectories, OOD suite, metric and cost axis, and we compare
+  against their reported scores. We change the monitor output and the
+  training target (Section 3). The text does not say whether their checkpoints
+  are public: the part of the paper that was read has no release statement.
+  For Section 4 (C4.1): Sinha et al. price open-weight models at hosted API
+  proxy prices, while we price Gleipnir at self-hosted B200 break-even; state
+  this difference there. Their tables sum to 6,402 OOD rows and our frozen
+  suite has 6,395 (`docs/research/tool_transcript_monitoring.md`).
 - **C2.6 (accepted).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,

@@ -13,6 +13,14 @@ No results are reported yet.
 - Sinha et al., *Training Deliberative Monitors for Black-Box Scheming
   Detection*, [arXiv:2605.29601](https://arxiv.org/abs/2605.29601). Source of
   the training trajectories, the OOD suite, pAUROC@20 and the cost axis.
+  Read on 2026-11-09 (v1, HTML): abstract to Appendix D.4 verbatim; Appendices
+  E to K only as a machine summary or not at all. Read verbatim: monitor input
+  (Section 3.1, Appendix C.1), training counts (Table 2), teacher, judge and
+  four candidates (Appendix D.2), RL stage (D.3), pAUROC@20 and Mean-OOD
+  (D.4), and 0.831 at $2.78 with Opus 4.6 +0.111 at 34.2 times the cost
+  (Section 4.2). From the summary only: the cost definition (Appendix E.2) and
+  LoRA rank 32 (G.1). The paper states that the trained monitor is not
+  prompted with the specification.
 - Kramár et al., *Building Production-Ready Probes For Gemini*,
   [arXiv:2601.11516](https://arxiv.org/abs/2601.11516). Source of the probe
   architectures in Section 6.
