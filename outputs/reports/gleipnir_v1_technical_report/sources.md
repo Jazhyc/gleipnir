@@ -84,5 +84,22 @@ No results are reported yet.
   Kaufman et al., *BashArena*,
   [arXiv:2512.15688](https://arxiv.org/abs/2512.15688), Section 1. Neither
   attributes them to an earlier source.
+- Benchmark citations follow the dataset cards of Sinha et al. (Appendix C.3):
+  STRIDE and Gloom (Storf et al.), CoT-Red-Handed (Arnav et al.,
+  arXiv:2505.23575), BashArena (Kaufman et al.), BashBench (Bhatt et al.,
+  arXiv:2504.10374), AgentDojo (Debenedetti et al., NeurIPS 2024 Datasets and
+  Benchmarks, arXiv:2406.13352), CUA-SHADE-Arena (Kale et al.,
+  arXiv:2508.19461), IaC (ControlArena web page), MLE-Sabotage (Ward et al.,
+  arXiv:2511.09904), Rogue Eval (Roger et al., Anthropic Alignment Science
+  blog) and SHADE-Arena (Kutasov et al.). The arXiv entries were checked
+  against the arXiv API on 2026-11-09. The IaC and Rogue Eval entries are
+  copied from the reference list of Sinha et al. and were not opened; the
+  first names of the Rogue Eval authors are ours and need a check.
+- Splits of Sinha et al. (Table 1, Table 2, Appendix C.1): training on the
+  five sources; validation on STRIDE (test) and Gloom-Exfiltration, "used for
+  checkpoint selection and in-domain held-out analysis" (369/577 and
+  1,035/1,031 benign/scheming, 3,012 in total, which is the size of our ID
+  suite); the six OOD benchmarks "are not used for training or checkpoint
+  selection".
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

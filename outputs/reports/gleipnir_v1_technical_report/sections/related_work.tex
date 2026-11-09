@@ -25,7 +25,8 @@ A monitor in production thus needs a low false-positive rate, low latency and lo
 \citet{sinha2026training} train small open-weight models as monitors, and our work builds on their setup.
 Their monitors are \emph{action-only}: the monitor reads the visible trajectory of the agent, which consists of the user messages, the messages of the agent and the tool outputs.
 It does not read the private reasoning of the agent or its activations.
-The training set has 8,688 such trajectories from five sources, half of them benign and half with harmful behavior such as sabotage or data exfiltration.
+The training set has 8,688 such trajectories, half of them benign and half with harmful behavior such as sabotage or data exfiltration.
+They come from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
 To create training targets, a teacher model (Gemini 2.5 Pro) reads each trajectory together with a detailed specification of scheming behavior.
 The teacher writes four candidate rationales, each of which ends in a suspicion score from 0 to 10.
 A judge model (Claude Sonnet 4.5) then selects the best candidate, and the monitor learns to reproduce it through supervised fine-tuning (SFT).
@@ -33,9 +34,10 @@ For some monitors, a reinforcement learning (RL) stage follows, which rewards ca
 At inference, the trained monitor therefore writes a rationale before it gives its score.
 
 \paragraph{Evaluation suite and metric.}
-Sinha et al.\ evaluate their monitors on six benchmarks that are out-of-distribution (OOD) for the training set: AgentDojo, CUA-SHADE-Arena, IaC, MLE-Sabotage, Rogue Eval and SHADE-Arena.
+Sinha et al.\ select checkpoints on two held-out sets that are built like STRIDE and Gloom; we call them the in-distribution (ID) sets.
+They measure generalization on six benchmarks that are out-of-distribution (OOD) for the training set and play no part in training or selection: AgentDojo~\citep{debenedetti2024agentdojo}, CUA-SHADE-Arena~\citep{kale2025reliable}, IaC~\citep{controlarena2025iac}, MLE-Sabotage~\citep{ward2025ctrl}, Rogue Eval~\citep{roger2024rogue} and SHADE-Arena~\citep{kutasov2025shade}.
 They drop every trajectory with more than 28,000 tokens, so that it fits the 32,000-token context of their shorter-context models.
-Their metric, taken from \citet{storf2026constitutional}, is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
+Their metric, taken from Storf et al., is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
 They choose it because low false-positive rates are essential for deployment and for audits by human reviewers.
 They compute it for each benchmark and report the unweighted mean, which they call Mean-OOD.
 They pair this score with the inference cost in USD per 1,000 evaluations, at list prices without caching discounts.

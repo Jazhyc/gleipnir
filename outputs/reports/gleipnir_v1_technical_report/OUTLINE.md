@@ -103,7 +103,9 @@ other paragraphs are short.
   prompted baselines do.
   Evidence: arXiv:2605.29601, Sections 3.1–3.4, Table 2, Appendices C.1–C.2,
   D.2–D.3.
-- **C2.4 (written).** Evaluation of Sinha et al. They score six OOD
+- **C2.4 (written).** Evaluation of Sinha et al. They select checkpoints on
+  held-out STRIDE and Gloom-Exfiltration sets (our ID sets, 3,012 rows) and
+  keep six OOD benchmarks out of training and selection. They score the OOD
   benchmarks, compute pAUROC@20 for each (area under the ROC curve for FPR up
   to 20%, divided by 0.2; taken from Storf et al.; chosen for low-FPR use,
   with no reason given for 20%) and report the unweighted mean (Mean-OOD).
@@ -172,8 +174,9 @@ other paragraphs are short.
 
 Citations to add when the section is drafted: one source per remaining
 decision model without a paper (Mercury Decide, d1, Microsoft-Decision-1:
-API page with access date), and the benchmark papers behind the five training
-sources and six OOD sources. Read each cited paper beyond its abstract before
+API page with access date). The five training sources and six OOD benchmarks
+are each cited once in the background, where they are listed; an appendix
+table gives sizes and sources. Read each cited paper beyond its abstract before
 the claim is marked written.
 
 ## 3. Training and serving
