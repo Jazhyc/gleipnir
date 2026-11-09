@@ -49,8 +49,8 @@ They drop every trajectory with more than 28,000 tokens, so that it fits the 32,
 Their metric is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
 They compute it for each benchmark and report the unweighted mean, which they call Mean-OOD.
 They pair this score with the inference cost in USD per 1,000 evaluations, at list prices without caching discounts.
-We reuse their training trajectories, OOD suite, metric and cost axis, and we compare against their reported scores.
-We change the output of the monitor and its training target (Section~\ref{sec:method}).
+We reuse their training trajectories, OOD suite, metric and cost axis, and compare against their reported scores.
+We change the monitor output and the training target (Section~\ref{sec:method}).
 
 \subsection{Related approaches}
 \label{sec:background-related}
