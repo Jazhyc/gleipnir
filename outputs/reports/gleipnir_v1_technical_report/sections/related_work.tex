@@ -34,7 +34,7 @@ It does not read the private reasoning or the activations of the agent, and we k
 A model that reasons in its latent space leaves no reasoning to read~\citep{korbak2025chain}, and activations can be reshaped to evade the monitors that read them~\citep{bailey2024obfuscated}.
 The training set has 8,688 such trajectories, half of them benign, from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
 The training targets are inspired by deliberative alignment~\citep{guan2024deliberative}.
-A teacher model reads each trajectory with a written specification of scheming and writes a rationale that ends in a suspicion score from 0 to 10.
+A teacher model reads each trajectory with a written specification of scheming and writes a rationale that ends in a score from 0 to 10.
 The monitor learns to reproduce it, so it writes a rationale before its score.
 
 \paragraph{Evaluation suite and metric.}
