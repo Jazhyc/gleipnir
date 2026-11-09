@@ -48,9 +48,8 @@ They measure generalization on six benchmarks that are out-of-distribution (OOD)
 They drop every trajectory with more than 28,000 tokens, so that it fits the 32,000-token context of their shorter-context models.
 Their metric is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
 They compute it for each benchmark and report the unweighted mean, which they call Mean-OOD.
-They pair this score with the inference cost in USD per 1,000 evaluations, at list prices without caching discounts.
-We reuse their training trajectories, OOD suite, metric and cost axis, and compare against their reported scores.
-We change the monitor output and the training target (Section~\ref{sec:method}).
+They pair this score with the inference cost in USD per 1,000 evaluations, computed from the standard API price per input and output token without batch or caching discounts.
+We reuse their training trajectories, OOD suite, metric and cost axis and compare against their reported scores, but we change the monitor output and the training target (Section~\ref{sec:method}).
 
 \subsection{Related approaches}
 \label{sec:background-related}
