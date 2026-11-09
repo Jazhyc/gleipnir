@@ -66,8 +66,3 @@ Its inference cost is also close to zero, because the probe is small and reuses 
 \citet{kramar2026building} propose probe architectures that handle long inputs, and \citet{cunningham2026constitutional} run linear probes in a cascade of classifiers on production traffic at a refusal rate of 0.05\%.
 Both advantages require access to the monitored model, which the action-only setting does not assume.
 Gleipnir is therefore a separate model that reads only the trajectory.
-
-\paragraph{Attacks on monitors.}
-A monitor is itself a target.
-\citet{terekhov2025adaptive} show that an agent can evade monitors by embedding prompt injections in its outputs, and that this works against the control protocols that they test.
-Section~\ref{sec:held-out} tests the Gleipnir monitors against text of this kind.

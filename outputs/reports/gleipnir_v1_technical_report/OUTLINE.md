@@ -77,7 +77,7 @@ points to it. The filter is also stated in limitation C7.3, and our own cost
 basis in Section 4 (C4.1).
 
 Subsections: 2.1 Monitoring agent actions (C2.1–C2.2), 2.2 Trained monitors
-and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
+and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
 
 - **C2.1 (written).** Monitors in AI control. AI control studies safe
   deployment of an agent that may try to cause harm (Greenblatt et al.). A
@@ -204,9 +204,11 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.9 (written).** Monitor-directed attacks. Terekhov et al. show that text
-  addressed to the monitor can subvert trusted monitors. Section 5 tests the
-  Gleipnir monitors against such text.
+- **C2.9 (moved to Section 5).** Monitor-directed attacks. Terekhov et al.
+  show that an agent can evade monitors by embedding prompt injections in its
+  outputs. This is not an approach related to ours, so Section 2.3 does not
+  cover it. Section 5 introduces it where it tests the Gleipnir monitors
+  against such text (C5.2, C5.3).
 
 Citations to add when the section is drafted: one source per remaining
 decision model without a paper (Mercury Decide, d1, Microsoft-Decision-1:
