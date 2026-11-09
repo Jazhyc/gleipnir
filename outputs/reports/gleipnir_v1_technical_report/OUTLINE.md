@@ -312,8 +312,9 @@ Owner: JF.
 
 Exhibits: frontier figure (`figures/tool_trajectory_ood_frontier.svg`), main
 table with bootstrap intervals. Appendix: the table of all OOD results
-(written, `app:ood-results`: the 17 rows of Sinha et al. and our 22 measured
-rows, including the decision models; move the section to match where the main
+(written, `app:ood-results`: the 17 rows of Sinha et al. and our 21 measured
+rows, including the decision models and GPT-5.6 Luna, without our GPT-OSS-120B
+rows; move the section to match where the main
 text first cites it), per-source results, full frontier figure, validation
 results, calibration.
 

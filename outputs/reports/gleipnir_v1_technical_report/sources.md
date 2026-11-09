@@ -146,6 +146,12 @@ No results are reported yet.
   serving scores (student prompt and teacher prompt), priced at $3.44/h and
   $7.99/h for one B200. "Gleipnir 9B (earlier release)" is the registry row
   "Qwen3.5-9B Kimi-soft mixed". Results measured on 4B v0.3/v0.4 and 27B v0.2
-  weights apply to v1.0 unchanged.
+  weights apply to v1.0 unchanged. Changes from the registry (JF,
+  2026-11-09): our two unadapted GPT-OSS-120B rows are left out, because the
+  model needs a reasoning field and the comparison with models that do not
+  reason is unclear; GPT-5.6 Luna is added from
+  `docs/findings/openai_56_luna_ood_benchmark.md` (0.839729, and $1.672442
+  per 1,000 with all input at uncached standard rates), although the registry
+  excludes it. The GPT-OSS rows that Sinha et al. report stay in the table.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
