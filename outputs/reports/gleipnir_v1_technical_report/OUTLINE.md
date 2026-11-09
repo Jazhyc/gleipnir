@@ -69,15 +69,20 @@ reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.2–C2.4) takes a quarter to half a page. The
 other paragraphs are short.
 
-- **C2.1 (written).** Setting. In AI control (Greenblatt et al.), a trusted,
-  less capable model rates how suspicious each output of the untrusted model
-  looks, and the protocol audits the highest-rated outputs (2% budget; one
-  unaudited harmful output is a failure). We study action-only monitors: the
-  monitor reads the visible trajectory, not the agent's reasoning or
-  activations.
-  Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2, Table 2).
-- **C2.2 (accepted).** Training pipeline of Sinha et al. They train on 8,688
-  action-only trajectories from five sources, balanced between benign and
+- **C2.1 (written).** Two uses of monitors. In trusted monitoring (Greenblatt
+  et al.), a trusted, less capable model rates each output of the untrusted
+  model and humans audit the highest-rated outputs within a fixed budget: the
+  monitor ranks. In the auto mode of Claude Code and the auto-review of Codex,
+  a separate model decides before each reviewed action whether it may run, in
+  place of a human approver: the monitor needs a threshold, there is no audit
+  budget, and its time and cost add to each reviewed action. Both uses need a
+  low false-positive rate. The paragraph states no constants.
+  Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2);
+  Anthropic engineering post on auto mode (2026-03-25); OpenAI Codex
+  auto-review documentation.
+- **C2.2 (accepted).** Training pipeline of Sinha et al. Their monitors are
+  action-only: they read the visible trajectory, not the agent's reasoning or
+  activations. They train on 8,688 action-only trajectories from five sources, balanced between benign and
   problematic. Gemini 2.5 Pro writes candidate rationales with a 0–10 score, a
   judge (Claude Sonnet 4.5) selects the best one, and the monitor is trained on
   it with SFT and, for some models, RL.
@@ -321,7 +326,9 @@ Owner: JF.
 - **C7.4 (draft).** We do not test the false-positive rates that production
   monitoring needs. pAUROC@20 averages over false-positive rates up to 20%,
   and the lowest operating point we report is 1% (SleightBench). Cunningham et
-  al. operate at a 0.05% refusal rate on production traffic. The benign sets
+  al. operate at a 0.05% refusal rate on production traffic, and Anthropic
+  reports a 0.4% false-positive rate for auto mode on 10,000 real tool calls.
+  The benign sets
   of the OOD suite are too small to measure such rates.
 
 ## 8. Conclusion

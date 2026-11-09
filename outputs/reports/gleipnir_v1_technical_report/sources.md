@@ -43,5 +43,22 @@ No results are reported yet.
   private although the pages load without a token.
 - A web search on 2026-11-09 found no survey of decision models and no
   evaluation of them as control monitors.
+- Hughes, *How we built Claude Code auto mode*, Anthropic Engineering blog,
+  `https://www.anthropic.com/engineering/claude-code-auto-mode`, published
+  2026-03-25, read in full on 2026-11-09. A classifier reviews shell commands,
+  web fetches, external tools and similar actions before they run; read-only
+  tools and in-project edits skip it. It reads user messages and tool calls
+  only. A denial returns to the agent; after repeated denials the session
+  escalates to the human. Reported rates (March 2026 classifier): 0.4%
+  false-positive rate on 10,000 real internal tool calls and 17% miss rate on
+  52 real overeager actions. Its first stage is a single-token yes/no filter.
+- OpenAI, *Auto-review*, Codex documentation,
+  `https://developers.openai.com/codex/concepts/sandboxing/auto-review`
+  (redirects to `learn.chatgpt.com`), undated, read 2026-11-09. A reviewer
+  agent decides on actions that would otherwise need user approval; actions
+  the sandbox already allows are not reviewed. Details beyond the opening of
+  the page (denial handling, the limit on repeated denials) were read from a
+  machine summary of the page and should be checked before they are quoted.
+  The page gives no error rates.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
