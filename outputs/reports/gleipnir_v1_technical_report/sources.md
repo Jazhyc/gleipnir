@@ -21,5 +21,14 @@ No results are reported yet.
   the refusal rate on production traffic stated in the abstract.
 - Greenblatt et al., *AI Control: Improving Safety Despite Intentional
   Subversion*, [arXiv:2312.06942](https://arxiv.org/abs/2312.06942).
+- Decision models, found by web search on 2026-11-09 and so far read only as
+  abstracts: Geuter et al. ([arXiv:2610.17205](https://arxiv.org/abs/2610.17205)),
+  Zhu et al. ([arXiv:2610.21412](https://arxiv.org/abs/2610.21412)), Rao and
+  Callison-Burch ([arXiv:2609.29769](https://arxiv.org/abs/2609.29769)) and
+  Zhuang et al. ([arXiv:2610.28522](https://arxiv.org/abs/2610.28522)). The
+  search found no survey of decision models and no evaluation of them as
+  control monitors. Not yet read or added to the bibliography: the Jev
+  announcement (`https://typesafe.ai/blog/introducing-system-one-models-and-jev`)
+  and the Decider model card (`https://huggingface.co/perplexity-ai/pplx-decider-v1.2`).
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

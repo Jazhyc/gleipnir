@@ -89,18 +89,28 @@ other paragraphs are short.
   We change the monitor interface and the training target (Section 3). Their
   trained checkpoints are not public, so we compare against their reported
   scores.
-- **C2.5 (draft).** Decision models. Several providers released models that
-  return a probability for a yes/no question about an input, without
-  generating text (Jev 1.13, pplx-decider v1.2, Mercury Decide, d1,
-  Microsoft-Decision-1). None has a technical report, so their training is not
-  documented; we cite the model cards and API documentation with the dated
-  revisions we scored. Gleipnir uses the same kind of interface. It differs in
-  that it is trained for one task, its weights are open and its training is
-  described here. Section 4 compares against them.
-  Evidence: `docs/findings/decision_models_ood_benchmark.md`,
+- **C2.5 (draft).** Decision models. A decision model returns a probability
+  for each permitted answer to a question about an input, in one forward pass
+  and without generating text. The class became prominent with Jev (Almeida,
+  September 2026), which has no technical report. Later models include
+  Perplexity's open-weight Decider, Mercury Decide, d1 and
+  Microsoft-Decision-1. For models without a paper we cite the announcement,
+  model card or API page, with the dated revision we scored.
+- **C2.6 (draft).** Published work on decision models. Geuter et al. show that
+  open instruction-tuned models reach scores close to Jev when the answer is
+  read from the last-token logits, and that LoRA fine-tuning improves them.
+  Zhu et al. train an open 4B decision model on Jev's answers. Rao and
+  Callison-Burch and Zhuang et al. (DecisionPivot, 40 decision models) compare
+  decision models with LLMs as judges and on diagnostic tasks. These works
+  study general decision tasks. We found no evaluation of decision models as
+  control monitors (search of 2026-11-09). Gleipnir uses the same interface
+  for one task: it is trained on a teacher's probabilities for agent
+  trajectories. Section 4 compares it with decision models on the OOD suite.
+  Evidence: arXiv:2610.17205, arXiv:2610.21412, arXiv:2609.29769,
+  arXiv:2610.28522; `docs/findings/decision_models_ood_benchmark.md`,
   `docs/findings/pplx_decider_ood_benchmark.md`,
   `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
-- **C2.6 (draft).** Activation probes in production. Kramár et al. propose
+- **C2.7 (draft).** Activation probes in production. Kramár et al. propose
   probe architectures that hold up on long inputs; Section 6 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
@@ -108,13 +118,15 @@ other paragraphs are short.
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.7 (draft).** Monitor-directed attacks. Terekhov et al. show that text
+- **C2.8 (draft).** Monitor-directed attacks. Terekhov et al. show that text
   addressed to the monitor can subvert trusted monitors. Section 5 tests the
   Gleipnir monitors against such text.
 
-Citations to add when the section is drafted: one source per decision model
-(model card or API page, with access date), and the benchmark papers behind
-the five training sources and six OOD sources.
+Citations to add when the section is drafted: the Jev announcement (TypeSafe
+blog, 2026-09-15), one source per decision model without a paper (model card
+or API page, with access date), and the benchmark papers behind the five
+training sources and six OOD sources. Read each cited paper beyond its
+abstract before the claim is marked written.
 
 ## 3. Training and serving
 
