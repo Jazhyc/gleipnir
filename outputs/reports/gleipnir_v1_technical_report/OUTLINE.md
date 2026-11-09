@@ -87,8 +87,7 @@ other paragraphs are short.
   and the auto-review of Codex, a separate model approves or blocks an action
   before it runs, in place of a human approver. A blocked action returns to
   the agent, and a human is asked only after repeated blocks. A monitor in
-  production needs a low false-positive rate, a short response time and a low
-  cost. These are examples; the text does not claim that audit and gating are
+  production needs a low false-positive rate, low latency and low cost. These are examples; the text does not claim that audit and gating are
   the only uses of monitors.
   Evidence: Anthropic engineering post on auto mode (2026-03-25); OpenAI
   Codex auto-review documentation.
