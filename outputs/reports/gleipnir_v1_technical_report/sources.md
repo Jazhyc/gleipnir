@@ -108,5 +108,15 @@ No results are reported yet.
   not checked. Model range of Sinha et al.: Section 4.4 ("nine open-weight
   models belonging to four different model families") and the Figure 6
   caption ("from Qwen3.5-4B to Kimi-K2.6").
+- Rationale for action-only monitors. Korbak et al., *Chain of Thought
+  Monitorability*, [arXiv:2507.11473](https://arxiv.org/abs/2507.11473), and
+  Bailey et al., *Obfuscated Activations Bypass LLM Latent-Space Defenses*,
+  [arXiv:2412.09565](https://arxiv.org/abs/2412.09565); abstracts read
+  2026-11-09. Korbak et al.'s abstract says CoT monitorability "may be
+  fragile"; that the paper names latent reasoning as a cause is from memory
+  and needs a check in the full text. Bailey et al. obtain obfuscated
+  activations through attacks, not from models that obfuscate on their own.
+  Sinha et al. give a related reason in their abstract: reasoning and
+  activations "can be unavailable, unreliable or expensive in deployment".
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

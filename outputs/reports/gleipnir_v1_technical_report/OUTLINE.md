@@ -95,7 +95,11 @@ other paragraphs are short.
   open-weight models from Qwen3.5-4B up to Kimi K2.6 (nine models, four
   families), so the text does not call them small. Their targets are inspired
   by deliberative alignment (Guan et al.), which is why a teacher writes
-  rationales over a specification. Their monitors are
+  rationales over a specification. We keep the action-only restriction
+  because reasoning and activations may become unreliable in future models:
+  latent reasoning leaves nothing to read (Korbak et al.) and activations can
+  be obfuscated (Bailey et al.). This is our assumption, stated as such.
+  Their monitors are
   action-only: they read the visible trajectory (user messages, agent
   messages, tool outputs), not the agent's private reasoning or activations.
   They train on 8,688 trajectories from five sources, half benign. A teacher

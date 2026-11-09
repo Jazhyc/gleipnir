@@ -25,9 +25,11 @@ A monitor in production thus needs a low false-positive rate, low latency and lo
 \citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup.
 Their monitors are \emph{action-only}: the monitor reads the visible trajectory of the agent, which consists of the user messages, the messages of the agent and the tool outputs.
 It does not read the private reasoning of the agent or its activations.
+We keep this restriction because both sources may become unreliable in future models.
+A model that reasons in its latent space leaves no reasoning to read~\citep{korbak2025chain}, and activations can be reshaped to evade the monitors that read them~\citep{bailey2024obfuscated}.
 The training set has 8,688 such trajectories, half of them benign and half with harmful behavior such as sabotage or data exfiltration.
 They come from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
-Their training targets follow deliberative alignment~\citep{guan2024deliberative}, which trains a model to reason over a written specification before it answers.
+Their training targets are inspired by deliberative alignment~\citep{guan2024deliberative}, which trains a model to reason over a written specification before it answers.
 A teacher model (Gemini 2.5 Pro) therefore reads each trajectory together with a detailed specification of scheming behavior.
 The teacher writes four candidate rationales, each of which ends in a suspicion score from 0 to 10.
 A judge model (Claude Sonnet 4.5) then selects the best candidate, and the monitor learns to reproduce it through supervised fine-tuning (SFT).
