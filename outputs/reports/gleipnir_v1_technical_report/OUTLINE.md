@@ -92,24 +92,40 @@ other paragraphs are short.
 - **C2.5 (draft).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,
-  September 2026), which has no technical report. Later models include
-  Perplexity's open-weight Decider, Mercury Decide, d1 and
-  Microsoft-Decision-1. For models without a paper we cite the announcement,
-  model card or API page, with the dated revision we scored.
-- **C2.6 (draft).** Published work on decision models. Geuter et al. show that
-  open instruction-tuned models reach scores close to Jev when the answer is
-  read from the last-token logits, and that LoRA fine-tuning improves them.
-  Zhu et al. train an open 4B decision model on Jev's answers. Rao and
-  Callison-Burch and Zhuang et al. (DecisionPivot, 40 decision models) compare
-  decision models with LLMs as judges and on diagnostic tasks. These works
-  study general decision tasks. We found no evaluation of decision models as
-  control monitors (search of 2026-11-09). Gleipnir uses the same interface
-  for one task: it is trained on a teacher's probabilities for agent
-  trajectories. Section 4 compares it with decision models on the OOD suite.
-  Evidence: arXiv:2610.17205, arXiv:2610.21412, arXiv:2609.29769,
-  arXiv:2610.28522; `docs/findings/decision_models_ood_benchmark.md`,
+  2026). Its announcement names a new architecture and a training method
+  (RLCD) but gives no details, and Jev's weights are not public. Perplexity
+  released open-weight Decider models on Qwen backbones; their model cards
+  describe the readout and the training data in part. Other providers
+  followed (Mercury Decide, d1, Microsoft-Decision-1). For models without a
+  paper we cite the announcement, model card or API page, with the dated
+  revision we scored.
+  Evidence: Jev announcement (TypeSafe blog, dated 2026-09-15); Decider cards
+  `perplexity-ai/pplx-decider-v1.2`, `-flash-v1.2`, `-v1.1-27b`, `-v1-27b`.
+- **C2.6 (draft).** Published work on decision models. Geuter et al. give the
+  most complete public recipe. They read the answer from the answer-letter
+  logits at the last prompt token of open instruction-tuned models, and then
+  train LoRA adapters and a decision head with cross-entropy on general
+  decision tasks. Their models score close to or above Jev on their
+  benchmarks. Gleipnir uses the same kind of readout for one task, agent
+  trajectories, with one binary decision token and a frontier teacher's
+  probability as the only target. Geuter et al. do not evaluate monitoring or
+  agent trajectories, and we found no evaluation of decision models as
+  control monitors (search of 2026-11-09). Section 4 compares Gleipnir with
+  decision models on the OOD suite.
+  Evidence: arXiv:2610.17205 (Sections 4–5, Tables 2–5, read in full);
+  `docs/findings/decision_models_ood_benchmark.md`,
   `docs/findings/pplx_decider_ood_benchmark.md`,
   `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
+- **C2.6a (draft, optional).** Soft targets in decision models. Geuter et al.
+  report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
+  Capability points with hard labels), but they add distillation from the
+  trained 31B for Qwen3.5-4B, where it helps (65.1 against 63.0). The Decider
+  flash card states that the 4B model is distilled from the 27B models' full
+  probability distributions. This agrees with the direction of C3.4 and C3.5:
+  soft targets help the small model more. Their tasks, metric and teachers
+  differ from ours, so this is context, not a replication. Other published
+  work (Zhu et al., Rao and Callison-Burch, Zhuang et al.) can be cited in one
+  sentence or dropped for space.
 - **C2.7 (draft).** Activation probes in production. Kramár et al. propose
   probe architectures that hold up on long inputs; Section 6 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
@@ -122,11 +138,11 @@ other paragraphs are short.
   addressed to the monitor can subvert trusted monitors. Section 5 tests the
   Gleipnir monitors against such text.
 
-Citations to add when the section is drafted: the Jev announcement (TypeSafe
-blog, 2026-09-15), one source per decision model without a paper (model card
-or API page, with access date), and the benchmark papers behind the five
-training sources and six OOD sources. Read each cited paper beyond its
-abstract before the claim is marked written.
+Citations to add when the section is drafted: one source per remaining
+decision model without a paper (Mercury Decide, d1, Microsoft-Decision-1:
+API page with access date), and the benchmark papers behind the five training
+sources and six OOD sources. Read each cited paper beyond its abstract before
+the claim is marked written.
 
 ## 3. Training and serving
 
