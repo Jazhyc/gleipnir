@@ -72,14 +72,15 @@ other paragraphs are short.
 - **C2.1 (written).** Monitors in AI control. AI control studies safe
   deployment of an agent that may try to cause harm (Greenblatt et al.). A
   control evaluation gives the agent a main task and, for an attacking agent,
-  a secret harmful side task (terms as in SHADE-Arena, Kutasov et al.). A
+  a secret harmful side task (terms as defined in SHADE-Arena and BashArena;
+  Greenblatt et al. do not use them). A
   monitor rates how suspicious the agent's actions look; in trusted monitoring
   it is a weaker, trusted model. Humans audit the highest-rated actions within
   limited time, so the monitor must rank attacks above almost all honest work.
   Our training data and benchmarks follow the main-task and side-task design.
   The paragraph states no constants.
   Evidence: arXiv:2312.06942 (Introduction, Sections 2 and 3.2);
-  arXiv:2506.15740 (abstract). To check when Section 3 is drafted: which of
+  arXiv:2506.15740 (Section 2), arXiv:2512.15688 (Section 1). To check when Section 3 is drafted: which of
   the five training sources and six OOD sources have a main task and a side
   task (AgentDojo is prompt injection).
 - **C2.2 (written).** Monitors in production. In the auto mode of Claude Code

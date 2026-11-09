@@ -61,8 +61,13 @@ No results are reported yet.
   the page (denial handling, the limit on repeated denials) were read from a
   machine summary of the page and should be checked before they are quoted.
   The page gives no error rates.
-- Kutasov et al., *SHADE-Arena: Evaluating Sabotage and Monitoring in LLM
-  Agents*, [arXiv:2506.15740](https://arxiv.org/abs/2506.15740). Cited for
-  the terms main task and side task; only the abstract was read (2026-11-09).
+- Main task and side task. A full-text check on 2026-11-09 found that
+  Greenblatt et al. (arXiv:2312.06942) and Ctrl-Z (Bhatt et al.,
+  arXiv:2504.10374) use neither term; they write of solutions, backdoors and
+  attack policies. The terms are defined in Kutasov et al., *SHADE-Arena*,
+  [arXiv:2506.15740](https://arxiv.org/abs/2506.15740), Section 2, and in
+  Kaufman et al., *BashArena*,
+  [arXiv:2512.15688](https://arxiv.org/abs/2512.15688), Section 1. Neither
+  attributes them to an earlier source.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
