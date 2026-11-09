@@ -69,6 +69,13 @@ reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.3–C2.5) takes a quarter to half a page. The
 other paragraphs are short.
 
+Length: Section 2 stays near one page. Details of Sinha et al. that the
+background leaves out, and where they go: the four candidates, the judge
+(Claude Sonnet 4.5), the teacher's name (Gemini 2.5 Pro) and the RL reward
+(appendix paragraph on their setup); the 28,000-token filter and its reason
+(limitation C7.3); the composition of the validation set and the cost
+definition at standard API prices (Section 4, C4.1).
+
 Subsections: 2.1 Monitoring agent actions (C2.1–C2.2), 2.2 Trained monitors
 and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.9).
 
@@ -362,8 +369,11 @@ Owner: JF.
 - **C7.1 (draft).** One teacher, one training domain, one seed for the 27B.
 - **C7.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
   monitor-directed text (Section 5).
-- **C7.3 (draft).** The OOD suite inherits a 28,000-token input filter that
-  removed 43% of SHADE-Arena, and SHADE-Arena has five task pairs.
+- **C7.3 (draft).** Sinha et al. drop every trajectory over 28,000 tokens to
+  fit the 32,000-token context of their shorter-context models. The limitation
+  states this, since the background does not. The OOD suite inherits the
+  filter, which removed 43% of SHADE-Arena, and SHADE-Arena has five task
+  pairs.
 - **C7.4 (draft).** We do not test the false-positive rates that production
   monitoring needs. pAUROC@20 averages over false-positive rates up to 20%,
   and the lowest operating point we report is 1% (SleightBench). Cunningham et
