@@ -20,7 +20,13 @@ No results are reported yet.
   (D.4), and 0.831 at $2.78 with Opus 4.6 +0.111 at 34.2 times the cost
   (Section 4.2). From the summary only: the cost definition (Appendix E.2) and
   LoRA rank 32 (G.1). The paper states that the trained monitor is not
-  prompted with the specification.
+  prompted with the specification. Length filter (Appendix C.1): trajectories
+  over 28K tokens are dropped to leave 4K of headroom in the 32K context of
+  the shorter-context models; the tokenizer and the number of removed rows are
+  not stated. Metric (Section 3.4, Appendix D.4): pAUROC@20 "following Storf
+  et al. (2026)" ([arXiv:2603.00829](https://arxiv.org/abs/2603.00829), not
+  read by us), chosen because low false-positive rates matter for deployment
+  and human review. The paper gives no reason for the 20% cutoff itself.
 - Kramár et al., *Building Production-Ready Probes For Gemini*,
   [arXiv:2601.11516](https://arxiv.org/abs/2601.11516). Source of the probe
   architectures in Section 6.

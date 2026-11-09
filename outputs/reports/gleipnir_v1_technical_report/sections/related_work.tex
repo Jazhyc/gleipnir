@@ -34,8 +34,9 @@ At inference, the trained monitor therefore writes a rationale before it gives i
 
 \paragraph{Evaluation suite and metric.}
 Sinha et al.\ evaluate their monitors on six benchmarks that are out-of-distribution (OOD) for the training set: AgentDojo, CUA-SHADE-Arena, IaC, MLE-Sabotage, Rogue Eval and SHADE-Arena.
-Their metric is pAUROC@20, the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
-It measures how well a monitor ranks in the range of low false-positive rates that monitors operate in.
+They drop every trajectory with more than 28,000 tokens, so that it fits the 32,000-token context of their shorter-context models.
+Their metric, taken from \citet{storf2026constitutional}, is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
+They choose it because low false-positive rates are essential for deployment and for audits by human reviewers.
 They compute it for each benchmark and report the unweighted mean, which they call Mean-OOD.
 They pair this score with the inference cost in USD per 1,000 evaluations, at list prices without caching discounts.
 On the resulting cost--performance frontier, their trained Qwen3.5-27B scores 0.831 at \$2.78, and Claude Opus 4.6 as a prompted monitor scores 0.942 at 34 times the cost.

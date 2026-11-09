@@ -105,7 +105,10 @@ other paragraphs are short.
   D.2–D.3.
 - **C2.4 (written).** Evaluation of Sinha et al. They score six OOD
   benchmarks, compute pAUROC@20 for each (area under the ROC curve for FPR up
-  to 20%, divided by 0.2) and report the unweighted mean (Mean-OOD). They pair
+  to 20%, divided by 0.2; taken from Storf et al.; chosen for low-FPR use,
+  with no reason given for 20%) and report the unweighted mean (Mean-OOD).
+  They drop trajectories over 28,000 tokens to fit a 32,000-token context.
+  They pair
   it with the inference cost per 1,000 evaluations at uncached list prices.
   Their trained Qwen3.5-27B scores 0.831 at $2.78; Claude Opus 4.6 scores
   0.942 at 34.2 times the cost. The metric and the suite are defined here and
