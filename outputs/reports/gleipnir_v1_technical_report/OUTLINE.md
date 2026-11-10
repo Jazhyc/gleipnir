@@ -271,14 +271,14 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   reasoning 0.666 at higher cost.
   Evidence: `docs/writeups/gleipnir_project_writeup.md` (interface ablation),
   `docs/research/tool_trajectory_ood_frontier.md`.
-- **C3.3 (draft).** We train LoRA adapters to match the teacher's (Kimi K3)
+- **C3.3 (written).** We train LoRA adapters to match the teacher's (Kimi K3)
   probability on the decision token, after a strict teacher-agreement filter.
   Evidence: `docs/decisions/strict_teacher_filtering.md`,
   `experiments/tool_trajectory_monitoring/README.md`.
-- **C3.4 (draft).** Soft targets matter. Matched hard-label 4B seeds score
+- **C3.4 (written).** Soft targets matter. Matched hard-label 4B seeds score
   0.690–0.746 Mean-OOD pAUROC@20 against 0.777–0.813 for soft-target seeds.
   Evidence: `experiments/hard_label_seeds/`.
-- **C3.5 (draft).** The gain from soft targets is smaller for the 27B. With
+- **C3.5 (written).** The gain from soft targets is smaller for the 27B. With
   one seed per objective in the release configuration (optimized serving,
   teacher prompt), the hard-label 27B scores 0.933 Mean-OOD pAUROC@20 against
   0.951 for the soft-target 27B. With the student prompt and BF16 serving the

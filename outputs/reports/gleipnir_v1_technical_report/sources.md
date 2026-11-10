@@ -232,5 +232,23 @@ No results are reported yet.
   kept and the separate thinking field is not. The per-benchmark counts of
   empty assistant bodies are in that finding and are no longer tabulated in
   the report.
+- Section 3.2. Teacher cache (Kimi K3, full specification, temperature zero,
+  reasoning off, 8,688 rows, normalization over the `0` and `1` logprobs):
+  `docs/findings/tool_trajectory_training_teacher_cache.md`,
+  `src/gleipnir/teachers/openrouter.py`. Loss (binary cross-entropy on the
+  two-token margin, soft weight 1, hard-label weight 0, no temperature):
+  `experiments/deception_distillation/train_student_sft.py`,
+  `experiments/tool_trajectory_monitoring/distillation_config.yaml`. Filter
+  (852 of 8,688 removed): `docs/decisions/strict_teacher_filtering.md`; its
+  effect on one 4B seed (validation pAUROC@20 0.846812 to 0.895914, FPR at 0.5
+  5.28% to 21.45%, no random-removal control):
+  `docs/findings/teacher_disagreement_filtering.md`. Hard against soft, 4B
+  (OOD 0.7458/0.7131/0.6902 against 0.7869/0.8125/0.7768; validation means
+  0.8333 and 0.9026; BF16 serving): `experiments/hard_label_seeds/README.md`.
+  Hard against soft, 27B (0.9044 and 0.9087 with the compact instruction and
+  BF16; 0.9328 and 0.9508, validation 0.9587 and 0.9444, extreme scores 0.80
+  and 0.20 in the release configuration):
+  `experiments/qwen38_27b_hard_labels/README.md`. The text does not give the
+  cost of the teacher cache: the recorded $224 is a lower bound on the spend.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
