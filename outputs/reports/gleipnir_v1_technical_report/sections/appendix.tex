@@ -260,15 +260,52 @@ One explanation for the two larger models is that a score from 0 to 10 mixes the
 
 The filter of Section~\ref{sec:binary-logit-distillation} removes 852 of the 8,688 training trajectories.
 We chose it in part for a practical reason: it shortens a training pass from 272 to 245 updates.
-We also compared training with and without the filter on one run of the 4B.
-The filter raised the score on the validation set from 0.847 to 0.896.
-This comparison has no control that removes the same number of trajectories at random, so it does not separate the effect of the disagreement from the effect of a smaller training set.
+We also compared training with and without the filter on one run of the 4B (Table~\ref{tab:filter}).
+The filter raised the score on the validation set from 0.847 to 0.896 and Mean-OOD from 0.776 to 0.787.
+The gain on the OOD suite is therefore about a fifth of the gain on the validation set.
 
-An earlier experiment shows that a smaller training set does not always lower the score.
+A filter with a margin $\delta$ keeps the disagreeing trajectories on which the teacher is uncertain: it removes a harmful trajectory only when $p < 0.5 - \delta$ and a benign trajectory only when $p > 0.5 + \delta$.
+We tested three margins on the validation set.
+Each scores below the filter without a margin, and the scores do not fall steadily with the margin (0.879, 0.836 and 0.851).
+In these runs, keeping the uncertain trajectories did not help.
+
+\begin{table}[h]
+\caption{Teacher-agreement filter with a margin $\delta$, one run of the 4B for each row, BF16 serving. Scores are pAUROC@20. We scored only the first two rows on the OOD suite, and the unfiltered OOD score comes from an earlier run with a different serving path.}
+\label{tab:filter}
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Training set & Removed & Remaining & Validation & Mean-OOD \\
+\midrule
+Unfiltered & 0 & 8,688 & 0.847 & 0.776 \\
+Filter, $\delta = 0$ (ours) & 852 & 7,836 & 0.896 & 0.787 \\
+Filter, $\delta = 0.05$ & 796 & 7,892 & 0.879 & --- \\
+Filter, $\delta = 0.10$ & 723 & 7,965 & 0.836 & --- \\
+Filter, $\delta = 0.20$ & 627 & 8,061 & 0.851 & --- \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+None of these comparisons has a control that removes the same number of trajectories at random, so they do not separate the effect of the disagreement from the effect of a smaller training set.
+An earlier experiment shows that a smaller training set does not always lower the score (Table~\ref{tab:data-size}).
 We trained Qwen3.5-9B on six nested subsets of the unfiltered training set, with one run for each size.
 These runs used the configuration of Table~\ref{tab:training-config}, except that the base model was quantized to 4 bits.
-Mean-OOD was 0.699 with 204 trajectories, 0.708 with 504, 0.811 with 996, 0.791 with 2,004, 0.837 with 4,008 and 0.823 with all 8,688.
-The score therefore does not rise monotonically with the number of trajectories, and with one run for each size we cannot separate this pattern from the variation between runs.
+Mean-OOD does not rise monotonically with the number of trajectories, and with one run for each size we cannot separate this pattern from the variation between runs.
+
+\begin{table}[h]
+\caption{Mean-OOD of Qwen3.5-9B trained on nested subsets of the unfiltered training set, one run for each size.}
+\label{tab:data-size}
+\centering
+\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+Trajectories & 204 & 504 & 996 & 2,004 & 4,008 & 8,688 \\
+\midrule
+Mean-OOD & 0.699 & 0.708 & 0.811 & 0.791 & 0.837 & 0.823 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \subsection{Soft targets against hard labels}
 \label{app:ablation-targets}

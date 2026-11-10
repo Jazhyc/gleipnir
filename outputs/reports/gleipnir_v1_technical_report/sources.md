@@ -327,7 +327,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   seed; Mean-OOD 0.6988, 0.7076, 0.8111, 0.7907, 0.8365, 0.8227):
   `docs/research/tool_trajectory_distillation_ood_scaling.md`. "Quantized to 4
   bits" is NF4 QLoRA as in the project's other QLoRA runs; the scaling record
-  says only "QLoRA". Not in the text: the margin sweep (validation 0.896,
+  says only "QLoRA". In Table `tab:filter` since the same day: the margin sweep (validation 0.896,
   0.879, 0.836, 0.851 for margins 0, 0.05, 0.10, 0.20) and the OOD follow-up
   (0.787 filtered against 0.776 unfiltered, cached reference with a different
   serving path): `docs/findings/teacher_disagreement_ood.md`.
