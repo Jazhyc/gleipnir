@@ -346,8 +346,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   BF16 0.9124 / 0.8108, optimized 0.8807 / 0.7579; released 4B (QAD): BF16
   0.9332 / 0.8039, optimized 0.9117 / 0.7703: `experiments/qad_v02/README.md`.
   27B with the full specification: BF16 0.9420 / 0.9352, optimized 0.9444 /
-  0.9508, and the row-bootstrap intervals (2,000 resamples):
-  `experiments/optimized_gap/README.md`. The 27B BF16 scores use an FP32 LM
+  0.9508: `experiments/optimized_gap/README.md` (which also has row-bootstrap
+  intervals; not reported, at JF's request, 2026-11-10). The 27B BF16 scores use an FP32 LM
   head on BF16 hidden states (`gleipnir27b_vocab_distillation/extract01`).
 - Appendix C.5, 4B rows of `tab:instruction` (replaces the 27B-teacher pair).
   Compact 0.9332 / 0.8039: `results/qad-v02-bf16-01/evaluation/`. Full
