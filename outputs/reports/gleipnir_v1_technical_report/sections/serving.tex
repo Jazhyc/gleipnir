@@ -28,19 +28,12 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \label{sec:serving-selfhost}
 
 The API price in Table~\ref{tab:serving} is the price that Sinha et al.\ use for the base models: the hosted price per input token (Appendix~\ref{app:sinha-setup}).
-A hosted API is built to generate text.
-Generation has two phases.
-In the first phase, called prefill, the model reads the whole prompt in one forward pass.
-All prompt tokens go through each layer together, so the work is large matrix products and is limited by the arithmetic speed of the GPU.
-In the second phase, decoding, the model writes one token at a time.
-Each new token needs another pass that reads all the weights of the model and the stored state of every earlier token, but computes for one position only.
-Decoding is therefore limited by how fast the GPU can read memory, and most of its arithmetic capacity stays unused.
-Providers price the two phases differently: for the two base models an output token costs 5 and 8 times as much as an input token.
-
-A Gleipnir monitor needs only the prefill phase: one forward pass over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
-We therefore serve the monitor ourselves with vLLM in classification mode.
-In this mode vLLM treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass, returns the two logits, and never decodes.
-A request is complete after this pass, so the GPU spends all of its time on the phase that it runs most efficiently, and it can batch many trajectories.
+A hosted API is built to generate text, which it decodes one token at a time.
+Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
+A Gleipnir monitor does not decode.
+It needs one forward pass over the prompt, called prefill, and the two logits of Equation~\ref{eq:score} at the last position.
+We therefore serve the monitor ourselves with vLLM in classification mode, which treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass and returns the two logits.
+A request is complete after this pass, so the GPU spends all of its time on prefill and can batch many trajectories.
 
 We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
