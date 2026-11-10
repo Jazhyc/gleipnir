@@ -154,7 +154,7 @@ Kimi K3 & 25.118 & 0.908 \\
 \label{app:data-processing}
 
 We use the data that \citet{sinha2026training} published on Hugging Face (Table~\ref{tab:hf-data}), and we place each trajectory unchanged between the trajectory tags (Appendix~\ref{app:prompts}).
-Section~\ref{sec:background-sinha} describes the input of an action-only monitor as the user messages, the messages of the agent and the tool outputs, without the private reasoning of the agent.
+Section~\ref{sec:background-sinha} describes the input of an action-only monitor as the user messages, the assistant messages and the tool outputs, without the private reasoning of the agent.
 This appendix records two places where the published files differ from that description.
 Both are properties of the files and not of our processing.
 
@@ -177,7 +177,7 @@ OOD & \texttt{adityaasinha28/deliberative-monitor-pipeline} (\texttt{filtered\_e
 
 \paragraph{Agent reasoning in the STRIDE training set.}
 The training trajectories of STRIDE contain the reasoning of the agent.
-Of the 1,350 STRIDE training trajectories, 1,269 contain reasoning blocks that are flattened into the text of the agent, 1,230 contain explicit calls to a \texttt{think} tool, and 1,340 contain at least one of the two.
+Of the 1,350 STRIDE training trajectories, 1,269 contain reasoning blocks that are flattened into the assistant messages, 1,230 contain explicit calls to a \texttt{think} tool, and 1,340 contain at least one of the two.
 These are 15.4\% of the 8,688 training trajectories.
 We found no \texttt{think} calls in the other four training sources.
 We found this reasoning only after we had cached the targets of the teacher, so the teacher computed its targets on these inputs.
@@ -185,29 +185,29 @@ The Gleipnir monitors are trained on the same inputs.
 We did not remove the reasoning afterwards: removing it only for the monitor would give the teacher information that the monitor lacks, and removing it for both requires new teacher targets.
 
 \paragraph{Validation set.}
-For the validation set we removed the typed reasoning of the agent and its \texttt{think} calls, and kept its visible text, its other tool calls and the tool results.
+For the validation set we removed the typed reasoning of the agent and its \texttt{think} calls, and kept the assistant messages, the other tool calls and the tool results.
 All validation scores in this report use this version, which has 3,012 trajectories.
 
-\paragraph{No agent text in the OOD suite.}
-The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no text of the agent at all (Table~\ref{tab:ood-inputs}).
-In the four benchmarks that come from ControlArena, every message of the agent has an empty body, and only its tool calls and the tool results remain.
-In CUA-SHADE-Arena, the messages of the agent contain only the names of its tool calls.
+\paragraph{No assistant messages in the OOD suite.}
+The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no assistant messages at all (Table~\ref{tab:ood-inputs}).
+In the four benchmarks that come from ControlArena, every assistant message has an empty body, and only the tool calls and the tool results remain.
+In CUA-SHADE-Arena, the assistant messages contain only the names of the tool calls.
 Only MLE-Sabotage keeps the visible plans and the code of the agent.
-This is the input that SleightBench uses as its main setting, which removes all text of the agent and keeps the user messages, the tool calls and the tool results.
+This is the input that SleightBench uses as its main setting, which removes all assistant messages and keeps the user messages, the tool calls and the tool results.
 A monitor on the OOD suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
-The training set and the validation set do keep the text of the agent, so the monitors are trained on a wider input than the OOD suite tests.
+The training set and the validation set do keep the assistant messages, so the monitors are trained on a wider input than the OOD suite tests.
 We cannot be certain that the experiments of Sinha et al.\ used these published files, so this difference may not apply to the scores that they report.
 We keep the OOD inputs unchanged so that our scores stay as comparable as possible with theirs.
 The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
 
 \begin{table}[t]
-\caption{Text of the agent in the inputs of the OOD suite.}
+\caption{Assistant messages in the inputs of the OOD suite. An assistant message is the text in the assistant role, apart from tool calls.}
 \label{tab:ood-inputs}
 \centering
 \small
 \begin{tabular}{lrl}
 \toprule
-Benchmark & Trajectories & Messages of the agent in the monitor input \\
+Benchmark & Trajectories & Assistant messages in the monitor input \\
 \midrule
 AgentDojo & 1,500 & All 6,380 bodies empty; tool calls and results kept \\
 IaC & 1,443 & All 27,734 bodies empty; tool calls and results kept \\

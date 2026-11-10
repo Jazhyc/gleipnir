@@ -29,7 +29,7 @@ A monitor in production thus needs a low false-positive rate, low latency and lo
 
 \paragraph{Trained action-only monitors.}
 \citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup (details in Appendix~\ref{app:sinha-setup}).
-Their monitors are \emph{action-only}: the monitor reads the visible trajectory, which consists of the user messages, the messages of the agent and the tool outputs.
+Their monitors are \emph{action-only}: the monitor reads the visible trajectory, which consists of the user messages, the assistant messages and the tool outputs.
 It does not read the private reasoning or the activations of the agent, and we keep this restriction because both may become unreliable in future models.
 A model that reasons in its latent space leaves no reasoning to read~\citep{korbak2025chain}, and activations can be reshaped to evade the monitors that read them~\citep{bailey2024obfuscated}.
 The training set has 8,688 such trajectories, half of them benign, from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
