@@ -231,6 +231,12 @@ The hard-soft comparison reports only the compact instruction with BF16
 serving (JF, 2026-11-10); the release-configuration 27B pair (0.933 against
 0.951 OOD, 0.959 against 0.944 validation) is no longer in the report.
 
+Planned (JF, 2026-11-10): a follow-up appendix subsection on why SHADE-Arena
+is a problematic benchmark; the instruction table therefore has no SHADE-Arena
+column. Material: 27B 0.588 (compact) against 0.730 (full specification) in
+BF16 and 0.832 under optimized serving; released 4B 0.299 (BF16, compact); 4B
+seeds 0.221 to 0.309; five task pairs. Not drafted.
+
 Pending experiment (JF, 2026-11-10): `experiments/gleipnir4b_full_specification/`
 scores the released 4B with the full specification on the validation set and
 the OOD suite (BF16 and optimized serving). Prepared, not launched. Its result
