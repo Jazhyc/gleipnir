@@ -289,3 +289,6 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   The 9.9% token increase: `experiments/gleipnir27b_vocab_distillation/README.md`.
   Appendices D.2 to D.4 carry the text and numbers that were in Sections 3.1,
   3.2 and 4.2; their sources are unchanged.
+- Appendix D.2, unadapted models against the trained monitors of Sinha et al.
+  All six scores and costs are rows of Table `tab:ood-all`. The comparison has
+  no intervals; the Qwen3.5-27B difference is 0.008.

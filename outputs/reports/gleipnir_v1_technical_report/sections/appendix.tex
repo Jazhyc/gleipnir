@@ -247,6 +247,14 @@ Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the 
 When the model writes its reasoning before the output, the integer scores 0.666 and the binary logits score 0.692, in both cases at a higher cost (Table~\ref{tab:ood-all}).
 Binary logits without reasoning are therefore the cheapest of the four formats and score at least as high as the others.
 
+We also read binary logits from three unadapted models that \citet{sinha2026training} train as monitors (Table~\ref{tab:ood-all}).
+The unadapted Qwen3.5-27B scores 0.839 at a cost of 1.848, against 0.831 at 2.775 for their trained Qwen3.5-27B.
+The unadapted Kimi~K2.6 scores 0.919 at 7.911, against 0.841 at 10.175 for their trained Kimi~K2.6.
+For these two models the output format alone therefore gives a higher score at a lower cost than their training.
+This does not hold for Qwen3.5-4B, where the unadapted model scores 0.618 and their trained model scores 0.684.
+One explanation for the two larger models is that a score from 0 to 10 mixes the confidence of the monitor with the severity of the behavior, while the binary probability expresses only confidence.
+We did not test this explanation.
+
 \subsection{Teacher-agreement filter}
 \label{app:ablation-filter}
 
