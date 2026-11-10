@@ -292,3 +292,4 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Appendix D.2, unadapted models against the trained monitors of Sinha et al.
   All six scores and costs are rows of Table `tab:ood-all`. The comparison has
   no intervals; the Qwen3.5-27B difference is 0.008.
+- Table `tab:format` (Appendix D.2) repeats rows of Table `tab:ood-all`; no new numbers.

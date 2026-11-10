@@ -240,18 +240,47 @@ Kimi K3 & 25.118 & 0.908 \\
 \label{app:ablation-format}
 
 The output format changes the score of a monitor before any training.
-We compare four formats on the unadapted Qwen3.5-9B, with the model, the OOD suite and the monitoring specification fixed; only the wording of the output instruction differs.
-Binary logits score 0.698 Mean-OOD.
-An integer from 0 to 10 scores 0.486.
-Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the coarser scale does not explain this difference.
-When the model writes its reasoning before the output, the integer scores 0.666 and the binary logits score 0.692, in both cases at a higher cost (Table~\ref{tab:ood-all}).
-Binary logits without reasoning are therefore the cheapest of the four formats and score at least as high as the others.
+We compare four formats on the unadapted Qwen3.5-9B, with the model, the OOD suite and the monitoring specification fixed; only the wording of the output instruction differs (Table~\ref{tab:format}, left).
+Binary logits without reasoning are the cheapest of the four formats and score at least as high as the others.
+Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the coarser scale does not explain the low score of the integer.
 
-We also read binary logits from three unadapted models that \citet{sinha2026training} train as monitors (Table~\ref{tab:ood-all}).
-The unadapted Qwen3.5-27B scores 0.839 at a cost of 1.848, against 0.831 at 2.775 for their trained Qwen3.5-27B.
-The unadapted Kimi~K2.6 scores 0.919 at 7.911, against 0.841 at 10.175 for their trained Kimi~K2.6.
-For these two models the output format alone therefore gives a higher score at a lower cost than their training.
-This does not hold for Qwen3.5-4B, where the unadapted model scores 0.618 and their trained model scores 0.684.
+\begin{table}[h]
+\caption{Effect of the output format on the OOD suite. Cost is in USD per 1,000 evaluations and Score is Mean-OOD. Left: four output formats on the unadapted Qwen3.5-9B. Right: unadapted models read with binary logits, against the same models as trained by \citet{sinha2026training}.}
+\label{tab:format}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{minipage}[t]{0.40\textwidth}
+\vspace{0pt}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrr@{}}
+\toprule
+Output & Cost & Score \\
+\midrule
+Binary logits & 0.947 & 0.698 \\
+0--10 score & 0.963 & 0.486 \\
+Reasoning, binary logits & 1.005 & 0.692 \\
+Reasoning, 0--10 score & 1.029 & 0.666 \\
+\bottomrule
+\end{tabular*}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.56\textwidth}
+\vspace{0pt}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Unadapted} & \multicolumn{2}{c}{Trained} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Model & Cost & Score & Cost & Score \\
+\midrule
+Qwen3.5-4B & 0.284 & 0.618 & 0.358 & 0.684 \\
+Qwen3.5-27B & 1.848 & 0.839 & 2.775 & 0.831 \\
+Kimi K2.6 & 7.911 & 0.919 & 10.175 & 0.841 \\
+\bottomrule
+\end{tabular*}
+\end{minipage}
+\end{table}
+
+We also read binary logits from three unadapted models that \citet{sinha2026training} train as monitors (Table~\ref{tab:format}, right).
+Without any training, Qwen3.5-27B and Kimi~K2.6 score higher at a lower cost than the trained monitors of Sinha et al.\ from the same models.
+This does not hold for Qwen3.5-4B, where their trained monitor scores higher.
 One explanation for the two larger models is that a score from 0 to 10 mixes the confidence of the monitor with the severity of the behavior, while the binary probability expresses only confidence.
 We did not test this explanation.
 
