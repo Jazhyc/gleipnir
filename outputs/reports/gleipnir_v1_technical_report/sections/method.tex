@@ -54,8 +54,7 @@ Appendix~\ref{app:training-config} gives the full configuration.
 \paragraph{Gleipnir 4B.}
 The 4B is the average of three training runs that differ only in the order of the training data.
 We average the weight updates of the three adapters, which gives one monitor of the same size as a single run.
-Before we scored the average, we fixed the rule to release it only if its pAUROC@20 on the validation set is at least the mean of the three runs.
-The average scores 0.912 against a mean of 0.903, so we release it (Appendix~\ref{app:ablation-average}).
+The scores of single runs vary, and on the validation set and the OOD suite the average scores within 0.002 pAUROC@20 of the best of the three runs (Appendix~\ref{app:ablation-average}).
 The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
 We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack.
 In this pass the target is the score that the same adapter gives without quantization, a step known as quantization-aware distillation (QAD).

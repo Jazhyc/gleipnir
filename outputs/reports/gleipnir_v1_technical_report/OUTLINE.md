@@ -334,7 +334,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   one of them: a stronger teacher for the 27B, or a weaker teacher for the 4B.
   Evidence: `experiments/qwen38_27b_hard_labels/README.md`.
 - **C3.6 (written).** The released 4B is the weight average of three seeds
-  that differ in data order, released under a rule fixed before scoring
+  that differ in data order, release rule not mentioned (JF, 2026-11-10)
   (validation 0.912 against a seed mean of 0.903), then trained with QAD.
   The QAD scores go in Section 3.4.
   Evidence: `experiments/seed_average/README.md`.

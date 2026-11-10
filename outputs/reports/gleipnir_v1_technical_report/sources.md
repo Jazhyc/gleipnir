@@ -344,8 +344,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   way only on an adversarial set.
 - Appendix C.6 (weight averaging, `tab:average`). Per-run validation 0.8959,
   0.8978, 0.9142 (mean 0.9026) and Mean-OOD 0.7869, 0.8125, 0.7768 (mean
-  0.7921); average 0.9124 / 0.8108; release rule frozen before scoring, OOD
-  scored once: `experiments/seed_average/README.md`. Runs 1 to 3 are seeds 0
+  0.7921); average 0.9124 / 0.8108; release rule and seed mean not reported (JF,
+  2026-11-10: internal; C.6 says the OOD variation was seen before averaging): `experiments/seed_average/README.md`. Runs 1 to 3 are seeds 0
   to 2. The average was scored on a B300 and the runs on B200s (seed 1
   rescored on the B300: +0.0006); not stated in the report.
 - Appendix C.7 (serving precision, `tab:precision`). 4B before QAD (v0.2):
