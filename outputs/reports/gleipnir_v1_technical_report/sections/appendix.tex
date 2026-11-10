@@ -230,7 +230,48 @@ Kimi K3 & 25.118 & 0.908 \\
 \end{minipage}
 \end{table}
 
+\section{Training configuration}
+\label{app:training-config}
+
+Table~\ref{tab:training-config} gives the configuration of the training runs of Section~\ref{sec:training-setup}.
+The distillation column applies to every run of the 4B and to the run of the 27B.
+The QAD column applies to the additional pass of the 4B, and it lists only the values that differ.
+
+\begin{table}[h]
+\caption{Training configuration. A dash means that the value is the same as in the distillation column.}
+\label{tab:training-config}
+\centering
+\small
+\begin{tabular}{@{}lll@{}}
+\toprule
+Setting & Distillation & QAD (4B only) \\
+\midrule
+Training set & 7,836 filtered trajectories & --- \\
+Instruction & compact (95 words) & --- \\
+Target & Kimi~K3 probability $p$ & BF16 score of the same adapter \\
+Maximum input length & 29,696 tokens, no truncation & --- \\
+\addlinespace
+Base model weights & frozen, BF16 & frozen, serving precision \\
+LoRA rank & 128 & 384 (average of three runs) \\
+LoRA alpha & 256 & 768 \\
+LoRA dropout & 0 & --- \\
+LoRA targets & attention and MLP projections & --- \\
+Adapter precision & FP32 & --- \\
+\addlinespace
+Optimizer & AdamW, no weight decay & --- \\
+Learning rate & $5 \times 10^{-5}$ & $10^{-5}$ \\
+Schedule & 3\% linear warmup, linear decay & --- \\
+Batch size & 32 & --- \\
+Updates & 245 (one pass) & --- \\
+\addlinespace
+Runs & 4B: three, 27B: one & one \\
+Hardware & one NVIDIA B200 & --- \\
+Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Additional results}
 \label{app:additional-results}
 
-\todo{Per-source results, hyperparameters, prompts and reproducibility details.}
+\todo{Per-source results and reproducibility details.}

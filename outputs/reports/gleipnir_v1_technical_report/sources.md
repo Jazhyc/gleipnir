@@ -275,3 +275,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   (2026-10-20), `experiments/gleipnir27b_vocab_distillation/README.md`. LoRA
   citation (Hu et al., ICLR 2022, arXiv:2106.09685) entered from memory, not
   checked against the arXiv record.
+- Appendix on the training configuration (`tab:training-config`). LoRA
+  targets and dropout: `src/gleipnir/training/branch_model.py`. Warmup 3% and
+  weight decay 0: `src/gleipnir/campaigns/monitoring/training.py`. Learning
+  rate, updates, batch: campaign configs `data/teacher-seed-sdpa-s1-01/` and
+  `data/qwen38-27b-s0-01/`. Rank 384 and alpha 768 of the averaged adapter:
+  `experiments/seed_average/README.md`. QAD column: `experiments/qad_v02/README.md`.
+  Not in the table: gradient clipping (the trainer default is a maximum norm
+  of 1.0; not confirmed for these runs) and the 16,384-token packing budget.
