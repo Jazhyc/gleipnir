@@ -233,7 +233,10 @@ Table `tab:hard-soft`, so that results come after the training setup. Section
 metric of Sinha et al., and we have not measured its variation across seeds
 (JF, 2026-11-10). The report says nothing about calibration for now, and
 Table `tab:hard-soft` has no extreme-score column. How to report the
-false-positive rate is undecided; one option is a second frontier plot.
+false-positive rate is undecided; one option is a second frontier plot. The
+numbers and a first plot exist: `experiments/ood_recall_at_fpr/` (recall at 1%
+FPR for our 21 monitors; Gleipnir 27B 0.874, Gleipnir 4B 0.606) and
+`figures/ood_recall_at_1pct_fpr_frontier.svg`. They are not in the report.
 
 Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 
