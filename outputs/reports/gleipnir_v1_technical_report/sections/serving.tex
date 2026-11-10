@@ -5,7 +5,7 @@ Table~\ref{tab:serving} follows the cost of one monitor evaluation from a hosted
 The subsections below describe one row each.
 
 \begin{table}[t]
-\caption{Cost in USD per million prompt tokens after each serving step. Self-hosted rows assume one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use, and stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 7.1$\times$ for the 4B and 11.0$\times$ for the 27B. The last row is measured on the OOD suite. We derive the two rows above it from throughput gains measured on a 320-trajectory benchmark. Table~\ref{tab:ood-all} gives the cost per 1,000 evaluations, and Appendix~\ref{app:ablation-precision} gives the scores.}
+\caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a 320-trajectory benchmark, for one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 7.1$\times$ for the 4B and 10.8$\times$ for the 27B. The costs of the last row agree within 2\% with the costs measured on the OOD suite (Table~\ref{tab:ood-all}). Appendix~\ref{app:ablation-precision} gives the scores.}
 \label{tab:serving}
 \centering
 \small
@@ -17,9 +17,9 @@ The subsections below describe one row each.
 Serving step & Gain & On demand & Committed & Gain & On demand & Committed \\
 \midrule
 API price & --- & --- & 0.0300 & --- & --- & 0.1950 \\
-Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.8$\times$ & 0.0938 & 0.0404 \\
-+ Low-precision arithmetic & 1.77$\times$ & 0.0105 & 0.0045 & 2.23$\times$ & 0.0421 & 0.0181 \\
-+ Removing unneeded work & 1.07$\times$ & 0.0098 & 0.0042 & 1.02$\times$ & 0.0412 & 0.0177 \\
+Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\times$ & 0.0961 & 0.0414 \\
++ Low-precision arithmetic & 1.77$\times$ & 0.0105 & 0.0045 & 2.25$\times$ & 0.0428 & 0.0184 \\
++ Removing unneeded work & 1.07$\times$ & 0.0098 & 0.0042 & 1.02$\times$ & 0.0418 & 0.0180 \\
 \bottomrule
 \end{tabular}
 \end{table}

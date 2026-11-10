@@ -388,4 +388,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   input prices $0.03 and $0.195 (the one output token is ignored); final
   $0.0098 / $0.0042 (4B) and $0.0412 / $0.0177 (27B) are the per-1,000 costs
   divided by 8,654.7 and 9,466.7 tokens per evaluation.
+  Since later on 2026-11-10 (JF: one workload for every row) all self-hosted
+  cells are the hourly rate divided by the benchmark median throughput: 4B
+  118,933 / 210,609 / 225,964 tokens/s; 27B 23,093 (control02) / 51,881 /
+  53,064 (`graphs01`), where 51,881 is 53,064 divided by the 1.0228 measured
+  at BF16. The 27B total is 2.30× by these medians (the 27B record rounds to
+  2.28×). OOD-measured per-token costs: 4B $0.00982 (identical), 27B $0.0412
+  (benchmark $0.0418, 1.6% higher).
 
