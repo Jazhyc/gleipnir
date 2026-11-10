@@ -350,7 +350,7 @@ For the 27B, the full specification scores 0.020 higher on the validation set an
 We chose it for the 27B on the validation result.
 For the 4B, the full specification gives no gain: it scores 0.008 lower on the validation set and 0.001 lower on the OOD suite.
 The 4B therefore keeps the compact instruction, which has fewer tokens (Appendix~\ref{app:prompts}).
-On the OOD suite the full specification adds 9.9\% to the prompt tokens.
+The full specification adds 9.9\% to the prompt tokens.
 
 \begin{table}[h]
 \caption{Compact instruction against the full specification, BF16 serving. Scores are pAUROC@20. Each monitor is one adapter, trained with the compact instruction and scored with each instruction.}
