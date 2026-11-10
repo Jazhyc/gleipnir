@@ -10,8 +10,8 @@ def rows(scores):
 
 
 def test_cost_per_thousand():
-    # 9,466.7 tokens per evaluation at 226K tokens/s and $7.99/h.
-    assert compare.cost_per_thousand(226_000, 7.99) == pytest.approx(0.0930, abs=2e-4)
+    # The recorded release row: 226K tokens/s at $7.99/h is $0.0850 per 1,000.
+    assert compare.cost_per_thousand(226_000, 7.99) == pytest.approx(0.0850, abs=2e-4)
     with pytest.raises(ValueError):
         compare.cost_per_thousand(0, 7.99)
 

@@ -373,3 +373,15 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   1.77×; last-query 1.011×; route gate 1.002×; lean host path 1.059×; total
   1.90× (226.0K): `experiments/gleipnir4b_serving_ladder/README.md`. Hosted
   prices and B200 rates: `docs/research/tool_trajectory_inference_economics.md`.
+  Table `tab:serving` (drafted 2026-11-10). Hosted list price for the
+  released prompts: 4B $0.2598 (compact, 55,346,879 OOD prompt tokens), 27B
+  $1.8476 (full specification, 60,539,619 tokens), and final costs $0.0850 /
+  $0.0366 and $0.3896 / $0.1677 from measured OOD wall time (244.9 s and
+  1,122.6 s): `docs/research/tool_trajectory_ood_frontier.md`. Middle rows are
+  the final cost times the gains. 27B gains: total 2.28× (released `graphs01`),
+  unneeded work 1.0228× (measured at BF16, before quantization), low precision
+  2.28 / 1.0228 = 2.23×. The 4B benchmark projection reproduces $0.0850.
+  Open: the full specification adds 9.4% prompt tokens on the OOD suite by
+  these counts, while Section 3.3 and C.5 say 9.9%
+  (`experiments/gleipnir27b_vocab_distillation/README.md`); basis to check.
+

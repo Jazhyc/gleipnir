@@ -24,9 +24,9 @@ stock BF16 baseline on a B200.
   1, through `/v1/monitor/score`, prefix caching off. Prompt tokens/s is the
   main measure.
 - **Projection.** `compare.py` converts median tokens/s to USD per 1,000
-  evaluations at 9,466.7 prompt tokens per evaluation (the OOD mean) and
-  $7.99/h and $3.44/h, assuming full utilization. The benchmark cohort is
-  shorter than the OOD suite, so these are projections.
+  evaluations at 8,654.7 prompt tokens per evaluation (the 4B's
+  compact-instruction OOD workload) and $7.99/h and $3.44/h, assuming full
+  utilization.
 - **Scores** are saved for a sanity check only (MAE against the `fast`
   rung). Quality on held-out data is in `experiments/qad_v02/README.md`.
 - **Stop** on a failed startup, a command that differs from the release
@@ -56,11 +56,11 @@ session 1 the `quant` rung was still warming up (177K, 199K, 210K) and
 
 | Rung (cumulative) | c128 prompt tok/s, median (range) | vs BF16 | vs previous | Projected $/1K at $7.99/h | at $3.44/h |
 |---|---:|---:|---:|---:|---:|
-| `bf16` | 118,933 (115,463–119,299) | 1.00× | | 0.1767 | 0.0761 |
-| `quant` | 210,609 (200,994–211,430) | 1.77× | 1.771× | 0.0998 | 0.0430 |
-| `lastquery` | 212,889 (202,432–214,338) | 1.79× | 1.011× | 0.0987 | 0.0425 |
-| `route` | 213,398 (133,162–214,460) | 1.79× | 1.002× | 0.0985 | 0.0424 |
-| `fast` (released) | 225,964 (212,721–226,657) | 1.90× | 1.059× | 0.0930 | 0.0400 |
+| `bf16` | 118,933 (115,463–119,299) | 1.00× | | 0.1615 | 0.0695 |
+| `quant` | 210,609 (200,994–211,430) | 1.77× | 1.771× | 0.0912 | 0.0393 |
+| `lastquery` | 212,889 (202,432–214,338) | 1.79× | 1.011× | 0.0902 | 0.0388 |
+| `route` | 213,398 (133,162–214,460) | 1.79× | 1.002× | 0.0900 | 0.0388 |
+| `fast` (released) | 225,964 (212,721–226,657) | 1.90× | 1.059× | 0.0850 | 0.0366 |
 
 - Low-precision arithmetic gives most of the gain (1.77×). Last-query
   attention, the route gate and the lean host path together add 1.073×.
@@ -70,10 +70,10 @@ session 1 the `quant` rung was still warming up (177K, 199K, 210K) and
 - Last-query attention adds 1.1% here against 5.7% in the
   [adoption A/B](../../docs/findings/b200_last_layer_trim.md), which ran on
   a different host and stack state.
-- The projected $0.0930 for the released recipe is above the recorded
-  $0.0850 from the measured OOD wall time
-  ([economics](../../docs/research/tool_trajectory_inference_economics.md));
-  the cohorts differ in length mix. The report takes the factors from this
-  ladder and the final cost from the OOD measurement.
+- The projected $0.0850 for the released recipe equals the cost recorded
+  from the measured OOD wall time (244.9 s for 55,346,879 prompt tokens,
+  226K tokens/s;
+  [frontier record](../../docs/research/tool_trajectory_ood_frontier.md)),
+  so the benchmark and the OOD suite agree at the end of the ladder.
 - Score sanity: mean absolute difference from `fast` is 0.003–0.005 for the
   optimized rungs and 0.049 for `bf16` on this training-seen cohort.

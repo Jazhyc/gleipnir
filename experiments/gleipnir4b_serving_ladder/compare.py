@@ -8,7 +8,8 @@ import statistics
 
 from experiments.gleipnir4b_serving_ladder.run import OUT, RUNGS
 
-OOD_TOKENS_PER_EVALUATION = 60_539_619 / 6_395
+# The 4B's compact-instruction OOD workload: 55,346,879 prompt tokens, 6,395 rows.
+OOD_TOKENS_PER_EVALUATION = 55_346_879 / 6_395
 HOURLY_RATES = {"on_demand": 7.99, "committed": 3.44}
 
 
