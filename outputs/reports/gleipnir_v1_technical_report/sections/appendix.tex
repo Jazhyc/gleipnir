@@ -259,9 +259,16 @@ One explanation for the two larger models is that a score from 0 to 10 mixes the
 \label{app:ablation-filter}
 
 The filter of Section~\ref{sec:binary-logit-distillation} removes 852 of the 8,688 training trajectories.
-We compared training with and without the filter on one run of the 4B.
+We chose it in part for a practical reason: it shortens a training pass from 272 to 245 updates.
+We also compared training with and without the filter on one run of the 4B.
 The filter raised the score on the validation set from 0.847 to 0.896.
 This comparison has no control that removes the same number of trajectories at random, so it does not separate the effect of the disagreement from the effect of a smaller training set.
+
+An earlier experiment shows that a smaller training set does not always lower the score.
+We trained Qwen3.5-9B on six nested subsets of the unfiltered training set, with one run for each size.
+These runs used the configuration of Table~\ref{tab:training-config}, except that the base model was quantized to 4 bits.
+Mean-OOD was 0.699 with 204 trajectories, 0.708 with 504, 0.811 with 996, 0.791 with 2,004, 0.837 with 4,008 and 0.823 with all 8,688.
+The score therefore does not rise monotonically with the number of trajectories, and with one run for each size we cannot separate this pattern from the variation between runs.
 
 \subsection{Soft targets against hard labels}
 \label{app:ablation-targets}
