@@ -384,7 +384,9 @@ We average the weight updates of the three adapters, which needs no further trai
 \citet{wortsman2022soups} show that such an average of fine-tuned models from one initialization can score higher than the single models without a higher inference cost.
 The averaged adapter has rank 384, three times the rank of a single adapter, and we merge it into the base model for serving.
 The average scores 0.912 on the validation set and 0.811 on the OOD suite.
-On each set this is within 0.002 of the best single run, and no single run is the best on both.
+It scores higher than Run~1 on both sets.
+Run~2 scores 0.002 higher on the OOD suite but 0.014 lower on the validation set, and Run~3 scores 0.002 higher on the validation set but 0.034 lower on the OOD suite.
+Taken over both sets, the weight average therefore scores higher than each single run.
 These scores are from BF16 serving before QAD.
 
 \begin{table}[h]
