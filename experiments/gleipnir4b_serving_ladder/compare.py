@@ -75,8 +75,18 @@ def load(rung: str) -> list[tuple[list[dict], float]]:
 
 
 def main() -> None:
-    table = summarize({rung: load(rung) for rung in RUNGS if (OUT / rung).exists()})
-    (OUT / "comparison.json").write_text(json.dumps(table, indent=2) + "\n")
+    """Prefer the six-repeat ``_r2`` session; keep the first session alongside."""
+    sessions = {
+        "session2": {r: f"{r}_r2" for r in RUNGS if (OUT / f"{r}_r2").exists()},
+        "session1": {r: r for r in RUNGS if (OUT / r).exists()},
+    }
+    report = {
+        name: summarize({rung: load(d) for rung, d in dirs.items()})
+        for name, dirs in sessions.items()
+        if dirs
+    }
+    table = next(iter(report.values()))
+    (OUT / "comparison.json").write_text(json.dumps(report, indent=2) + "\n")
     for rung, row in table.items():
         print(
             f"{rung:10s} {row['median_prompt_tokens_per_second']:9.0f} tok/s  "

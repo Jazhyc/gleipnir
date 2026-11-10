@@ -31,8 +31,10 @@ stock BF16 baseline on a B200.
   rung). Quality on held-out data is in `experiments/qad_v02/README.md`.
 - **Stop** on a failed startup, a command that differs from the release
   command, a failed BF16 audit, a non-finite score or completion.
-- **Compute.** One EU-RO-1 B200 Pod from the release image
+- **Compute.** One B200 Pod from the release image
   `ghcr.io/jazhyc/gleipnir-serve:0.2`, authorized by the user on 2026-11-10.
+  EU-RO-1 (where the 27B ladder ran) had no capacity, so the user approved
+  another datacenter; the Pod ran in US-CA-2.
 
 ```bash
 # On the Pod (release image), per rung:
@@ -43,4 +45,35 @@ PYTHONPATH=src:. python -m experiments.gleipnir4b_serving_ladder.compare
 
 ## Result
 
-Not run yet.
+Run 2026-11-10, 18:36–18:52 UTC, Pod `x82ld1enklasda` (US-CA-2, B200
+`GPU-10074f28…`, driver 595.91.07, EPYC 9555; deleted after the artifacts
+were pulled and checksum-verified). The fully layered command equals the
+release command. Two sessions, a fresh server per rung: session 1 with three
+c128 repeats, session 2 (`*_r2`) with six. Session 2 is the reported one: in
+session 1 the `quant` rung was still warming up (177K, 199K, 210K) and
+`route` had one slow pass. Medians of session 2
+(`results/gleipnir4b_serving_ladder/comparison.json`):
+
+| Rung (cumulative) | c128 prompt tok/s, median (range) | vs BF16 | vs previous | Projected $/1K at $7.99/h | at $3.44/h |
+|---|---:|---:|---:|---:|---:|
+| `bf16` | 118,933 (115,463–119,299) | 1.00× | | 0.1767 | 0.0761 |
+| `quant` | 210,609 (200,994–211,430) | 1.77× | 1.771× | 0.0998 | 0.0430 |
+| `lastquery` | 212,889 (202,432–214,338) | 1.79× | 1.011× | 0.0987 | 0.0425 |
+| `route` | 213,398 (133,162–214,460) | 1.79× | 1.002× | 0.0985 | 0.0424 |
+| `fast` (released) | 225,964 (212,721–226,657) | 1.90× | 1.059× | 0.0930 | 0.0400 |
+
+- Low-precision arithmetic gives most of the gain (1.77×). Last-query
+  attention, the route gate and the lean host path together add 1.073×.
+- Session 1 medians agree for the stable rungs (118,790; 213,184; 226,051).
+- In every session-2 rung the fifth pass is the slowest (3–6% lower; 38%
+  lower for `route`), so the median is used and the cause is not diagnosed.
+- Last-query attention adds 1.1% here against 5.7% in the
+  [adoption A/B](../../docs/findings/b200_last_layer_trim.md), which ran on
+  a different host and stack state.
+- The projected $0.0930 for the released recipe is above the recorded
+  $0.0850 from the measured OOD wall time
+  ([economics](../../docs/research/tool_trajectory_inference_economics.md));
+  the cohorts differ in length mix. The report takes the factors from this
+  ladder and the final cost from the OOD measurement.
+- Score sanity: mean absolute difference from `fast` is 0.003–0.005 for the
+  optimized rungs and 0.049 for `bf16` on this training-seen cohort.

@@ -359,6 +359,16 @@ scores (BF16 against optimized, QAD for the 4B; numbers in Appendix C.7; one
 clause citing `ouyang2025lowbit` for why the 27B needs no QAD), and cost and
 released artifacts. Target about one page.
 
+Central table (JF, 2026-11-10): one table that the subsections refer to,
+with rows by category and columns for each model: hosted list price;
+self-hosted stock vLLM BF16, prefill only; low-precision arithmetic; work the
+score does not need (last-token final-layer attention, host path). Each
+category is reported as a gain factor because the two ladders were measured
+in different orders (4B: 1.77× then 1.073×; 27B: 1.02× then 2.24×). Speed and
+cost only; scores stay in Appendix C.7. Factors come from the 320-row
+benchmark; final costs from the measured OOD wall time. The appendix gives
+the per-model breakdown. Caption states full utilization.
+
 This section lists the main serving decisions. The appendix gives the
 throughput gain of each important change to the serving stack; minor
 implementation details are left out.

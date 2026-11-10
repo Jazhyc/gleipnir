@@ -69,7 +69,7 @@ def retarget(command: list[str], release: list[str]) -> list[str]:
     return command
 
 
-def prepare(rung: str) -> tuple[list[str], dict]:
+def prepare(rung: str, out: Path | None = None) -> tuple[list[str], dict]:
     from experiments.release_serving.serve import prepare as release_prepare
     from experiments.release_serving.targets import RECORDED_CONTEXT, TARGETS
     from gleipnir.data.monitoring import file_hash
@@ -84,7 +84,7 @@ def prepare(rung: str) -> tuple[list[str], dict]:
         selection, command = bf16_launch.bf16_command(ROOT, target.merged_path, sources)
         command[command.index("--port") + 1] = str(PORT)
         command[command.index("--host") + 1] = "127.0.0.1"
-        audit = OUT / rung / "bf16_audit.json"
+        audit = (out or OUT / rung) / "bf16_audit.json"
         return command, bf16_launch.environment(ROOT, selection, audit)
     command = retarget(layered_command(ROOT, rung), release)
     if rung == "fast" and command != release:
@@ -92,18 +92,19 @@ def prepare(rung: str) -> tuple[list[str], dict]:
     return command, env
 
 
-def run(rung: str, repeats: int) -> None:
+def run(rung: str, repeats: int, name: str | None = None) -> None:
     from experiments.qwen38_27b_serving import bench
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
 
     if bench.SETTINGS["port"] != PORT:
         raise ValueError("benchmark port changed")
-    out = OUT / rung
+    name = name or rung
+    out = OUT / name
     out.mkdir(parents=True, exist_ok=False)
-    command, env = prepare(rung)
+    command, env = prepare(rung, out)
     process = bf16_launch.start(
-        ROOT, command, env, LOGS / f"{rung}.log", out / "server.json"
+        ROOT, command, env, LOGS / f"{name}.log", out / "server.json"
     )
     try:
         startup = bf16_launch.wait_ready(process, PORT)
@@ -124,20 +125,21 @@ def run(rung: str, repeats: int) -> None:
         )
     finally:
         bf16_launch.stop(process)
-    print(f"rung_complete {rung}", flush=True)
+    print(f"rung_complete {name}", flush=True)
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--rung", required=True, choices=RUNGS)
     parser.add_argument("--repeats", type=int, default=3)
+    parser.add_argument("--name", help="output directory name; default the rung")
     parser.add_argument("--prepare-only", action="store_true")
     args = parser.parse_args()
     if args.prepare_only:
         command, _ = prepare(args.rung)
         json.dump(command, sys.stdout, indent=1)
         return
-    run(args.rung, args.repeats)
+    run(args.rung, args.repeats, args.name)
 
 
 if __name__ == "__main__":

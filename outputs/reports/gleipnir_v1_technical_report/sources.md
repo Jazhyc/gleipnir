@@ -365,3 +365,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   Compact 0.9332 / 0.8039: `results/qad-v02-bf16-01/evaluation/`. Full
   specification 0.9247 / 0.8032: `experiments/gleipnir4b_full_specification/README.md`
   (run of 2026-11-10, `results/gleipnir4b_full_specification/comparison.json`).
+- Section 4 (planned serving table). 27B ladder (full320, c128, EU-RO-1 B200,
+  2026-10-18): BF16 23.1K tokens/s; last-query and lean GDN at BF16 +2.3%;
+  FP8/FP4 projections 2.07×; MXFP8 attention 2.14×; fused producers and tuned
+  tiles 2.29×: `experiments/qwen38_27b_serving/README.md`. 4B ladder (same
+  workload and harness, US-CA-2 B200, 2026-11-10): BF16 118.9K; low precision
+  1.77×; last-query 1.011×; route gate 1.002×; lean host path 1.059×; total
+  1.90× (226.0K): `experiments/gleipnir4b_serving_ladder/README.md`. Hosted
+  prices and B200 rates: `docs/research/tool_trajectory_inference_economics.md`.

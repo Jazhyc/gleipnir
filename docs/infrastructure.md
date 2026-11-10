@@ -1017,6 +1017,18 @@ shebang, so start vLLM with `python -m vllm.entrypoints.cli.main`. Results and
 logs were pulled and checksum-verified, and the Pod was deleted the same day
 (HTTP 204, lookup 404). No Pods remain; both volumes are retained.
 
+The same day a second B200 Pod ran the
+[4B serving ladder](../experiments/gleipnir4b_serving_ladder/README.md):
+`x82ld1enklasda` (`gleipnir-4b-serving-ladder`, $7.99/hour, US-CA-2, snapshot
+`.runpod/4b-serving-ladder.json`). B200 creation failed with "no instances
+currently available" for about 40 minutes in EU-RO-1 and then in every
+datacenter (also in the web UI) before one was allocated. A Pod created
+without a network volume gets a default 20 GB volume at `/workspace`, which
+hides the release image's repository; the API cannot shrink it, so PATCH
+`volumeMountPath` to another path (the Pod restarts on the same machine), or
+set the mount path at creation. Deleted after verified collection (HTTP 204,
+lookup 404); no Pods remain.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
