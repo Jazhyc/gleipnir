@@ -395,4 +395,16 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   at BF16. The 27B total is 2.30× by these medians (the 27B record rounds to
   2.28×). OOD-measured per-token costs: 4B $0.00982 (identical), 27B $0.0412
   (benchmark $0.0418, 1.6% higher).
+- Section 4.1 (self-hosting, drafted 2026-11-10). Classification mode: vLLM
+  0.31 pooling runner with `--convert classify`, LAST pooling, raw logits of
+  the `0`/`1` tokens (`README.md`, `experiments/release_serving/stock_vllm.py`,
+  which says the recipe runs on any GPU). The benchmark's BF16 rows used the
+  project's BF16 launcher (`Bf16Worker`, score endpoint on the same pooling
+  runner), not a literal `vllm serve`; the literal recipe on the same B200
+  class gave 106K tokens/s on the validation set for the 4B
+  (`experiments/gleipnir4b_full_specification/README.md`). Benchmark: 320
+  trajectories, concurrency 128, prefix caching off
+  (`experiments/b200_inference_benchmark/README.md`). Rates $7.99 (Runpod on
+  demand) and $3.44 (CoreWeave $8.60 with "up to 60%" committed discount):
+  `docs/research/tool_trajectory_inference_economics.md`.
 

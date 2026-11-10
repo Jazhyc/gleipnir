@@ -351,7 +351,11 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 
 ## 4. Serving and cost
 
-Owner: JF. File `sections/serving.tex`, label `sec:serving`. Not drafted.
+Owner: JF. File `sections/serving.tex`, label `sec:serving`. Written: the
+central table (`tab:serving`, USD per million prompt tokens, all self-hosted
+cells from the 320-trajectory benchmark) and 4.1 Self-hosting with one
+forward pass (`sec:serving-selfhost`). Remaining: low-precision arithmetic,
+removing unneeded work, released artifacts.
 Serving has its own section because it is a separate contribution and sets
 the cost per evaluation used in the frontier of Section 5. Planned
 subsections: the serving stack (changes against stock vLLM), the effect on

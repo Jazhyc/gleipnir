@@ -24,4 +24,27 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \end{tabular}
 \end{table}
 
-\todo{Main serving decisions: single prefill pass, low-precision weights with QAD for the 4B, last-token final-layer attention, host-path changes. Cost per 1,000 evaluations at on-demand and committed-use B200 rates. Score change against BF16 serving. Released artifacts. Throughput per change goes in the appendix.}
+\subsection{Self-hosting with one forward pass}
+\label{sec:serving-selfhost}
+
+The API price in Table~\ref{tab:serving} is the price that Sinha et al.\ use for the base models: the hosted price per input token (Appendix~\ref{app:sinha-setup}).
+A hosted API is built to generate text and charges for each token.
+A Gleipnir monitor generates no text.
+It needs one forward pass over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
+We therefore serve the monitor ourselves with vLLM in classification mode.
+In this mode vLLM treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass, returns the two logits, and starts no decoding loop.
+A request is complete after this pass, so the GPU can batch many trajectories and spend all of its time on prompt tokens.
+
+We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
+On one NVIDIA B200, stock vLLM in BF16 processes 119 thousand prompt tokens per second for the 4B and 23 thousand for the 27B.
+We convert throughput to cost with two hourly rates for the B200.
+The on-demand rate of \$7.99 is what we paid at Runpod.
+The committed-use rate of \$3.44 is the published on-demand rate of CoreWeave (\$8.60) with its largest published discount for committed use (60\%).
+At the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
+At the on-demand rate it still costs less than the API price for both monitors.
+
+These costs assume that the GPU is fully used.
+A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.
+The merged BF16 checkpoints that we release run in this mode on stock vLLM, on any GPU that vLLM supports.
+
+\todo{Remaining subsections: low-precision arithmetic with QAD for the 4B (cite Ouyang et al.\ for why the 27B needs no QAD), removing unneeded work (last-token final-layer attention, host path), released artifacts. Per-model breakdown of the gains goes in the appendix.}
