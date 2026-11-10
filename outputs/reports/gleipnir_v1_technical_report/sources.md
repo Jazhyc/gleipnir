@@ -259,3 +259,19 @@ No results are reported yet.
   0.20 (release configuration), all from the 27B experiment record.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
+
+- Section 3.3 (training setup). LoRA rank, targets, optimizer, schedule, 245
+  updates: `experiments/tool_trajectory_monitoring/README.md` and the campaign
+  configs. Training time: about one hour per 4B run (QAD run: 64 minutes,
+  `experiments/qad_v02/README.md`), 4.5 hours for the 27B
+  (`docs/findings/qwen38_27b_campaign.md`). No truncation: longest training row
+  29,337 tokens against a limit of 29,696 (`experiments/qad_v02/README.md`).
+  Seed average, release rule and 0.9124 against 0.9026:
+  `experiments/seed_average/README.md` (seeds share initialization and differ
+  in data order). QAD recipe (learning rate 1e-5, 245 updates, target is the
+  averaged adapter's own BF16 score): `experiments/qad_v02/README.md`. 27B
+  instruction choice, 0.9420 against 0.9216 on the validation set (BF16), chosen
+  on the validation set, 9.9% more prompt tokens: `docs/decisions.md`
+  (2026-10-20), `experiments/gleipnir27b_vocab_distillation/README.md`. LoRA
+  citation (Hu et al., ICLR 2022, arXiv:2106.09685) entered from memory, not
+  checked against the arXiv record.

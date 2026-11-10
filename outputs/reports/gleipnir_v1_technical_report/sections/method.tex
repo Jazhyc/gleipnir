@@ -55,7 +55,30 @@ Section~\ref{sec:ablation-targets} compares these soft targets with training on 
 \subsection{Training setup}
 \label{sec:training-setup}
 
-\todo{Data, LoRA configuration, the two instructions, seed averaging for the 4B, the instruction choice for the 27B, quantization-aware distillation.}
+We train two monitors with the loss of Equation~\ref{eq:loss}: Gleipnir~4B from Qwen3.5-4B and Gleipnir~27B from Qwen3.8-27B.
+Both train on the 7,836 filtered trajectories, and no trajectory is truncated.
+The training input uses a compact instruction of 95 words in place of the full specification of 701 words that the teacher reads (Appendix~\ref{app:prompts}).
+We keep the base model frozen and train a LoRA adapter~\citep{hu2021lora} of rank 128 on the attention and MLP projections.
+The optimizer is AdamW with a learning rate of $5 \times 10^{-5}$, a linear warmup over the first 3\% of the updates and a linear decay after it.
+One pass over the training set with a batch size of 32 gives 245 updates.
+On one NVIDIA B200 GPU this pass takes about one hour for the 4B and about 4.5 hours for the 27B.
+
+\paragraph{Gleipnir 4B.}
+The 4B is the average of three training runs that differ only in the order of the training data.
+We average the weight updates of the three adapters, which gives one monitor of the same size as a single run.
+Before we scored the average, we fixed the rule to release it only if its pAUROC@20 on the validation set is at least the mean of the three runs.
+The average scores 0.912 against a mean of 0.903, so we release it.
+The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
+We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack, with a learning rate of $10^{-5}$.
+In this pass the target is the score that the same adapter gives without quantization, a step known as quantization-aware distillation (QAD).
+Section~\ref{sec:serving} reports the scores before and after this step.
+
+\paragraph{Gleipnir 27B.}
+The 27B is a single training run, without seed averaging and without QAD.
+It differs from the 4B in the instruction that it reads at scoring time.
+Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification: 0.942 pAUROC@20 against 0.922.
+We made this choice on the validation set.
+The released 27B therefore reads the full specification, with 9.9\% more prompt tokens; the 4B keeps the compact one.
 
 \subsection{Serving and cost}
 \label{sec:serving}

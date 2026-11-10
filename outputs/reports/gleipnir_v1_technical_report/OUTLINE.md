@@ -251,7 +251,8 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 - LoRA rank 128, alpha 256, no dropout, on attention and MLP projections;
   unquantized BF16 base with an FP32 adapter (not QLoRA); AdamW, learning
   rate 5e-5, 3% warmup then linear decay, batch 32, one epoch of 245 updates.
-  One B200: about one hour per 4B seed and 4.2 hours for the 27B.
+  One B200: about one hour per 4B seed and 4.5 hours for the soft-target 27B
+  (`docs/findings/qwen38_27b_campaign.md`; the hard-label 27B took 4.1).
 - 4B: three seeds that differ in data order, averaged exactly into one
   rank-384 adapter; then QAD against its own BF16 scores under the optimized
   serving quantization.
@@ -301,9 +302,13 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   together here, so the two models cannot separate them. A test would vary
   one of them: a stronger teacher for the 27B, or a weaker teacher for the 4B.
   Evidence: `experiments/qwen38_27b_hard_labels/README.md`.
-- **C3.6 (draft).** The released 4B is the weight average of three seeds.
+- **C3.6 (written).** The released 4B is the weight average of three seeds
+  that differ in data order, released under a rule fixed before scoring
+  (validation 0.912 against a seed mean of 0.903), then trained with QAD.
+  The QAD scores go in Section 3.4.
   Evidence: `experiments/seed_average/README.md`.
-- **C3.7 (draft, appendix).** Teacher-prompt ablation for the 27B. Trained with
+- **C3.7 (written in 3.3 with the validation scores only; the OOD scores
+  0.935 against 0.909 are not in the text yet).** Teacher-prompt ablation for the 27B. Trained with
   the compact student prompt, Gleipnir 27B scores 0.942 validation macro pAUROC@20
   (CoT-removed validation set) when scored with the full teacher prompt, against 0.922
   with the student prompt. Mean-OOD pAUROC@20 (BF16) is 0.935 against 0.909.
