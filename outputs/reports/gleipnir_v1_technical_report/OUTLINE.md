@@ -188,7 +188,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   model, which the action-only setting does not assume. The paragraph does
   not point to Section 6, so that our probing experiments are not read as
   resting on these two advantages.
-- **C2.7a (draft, optional; not in the text).** Soft targets in decision models. Geuter et al.
+- **C2.7a (written in Appendix C.4 as one sentence, without the numbers).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
   Capability points with hard labels), but they add distillation from the
   trained 31B for Qwen3.5-4B, where it helps (65.1 against 63.0). The Decider

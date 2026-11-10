@@ -320,6 +320,8 @@ On the validation set, the hard-label 27B scores 0.044 higher.
 Soft targets therefore help the 4B on both sets, and they do not help the 27B.
 One explanation is that soft targets add less when the unadapted model is already close to the teacher.
 We cannot separate this from the size of the model with two models, and we leave it open.
+\citet{geuter2026releasing} report a similar pattern for decision models: soft targets give no measurable change for their 31B model, while distillation from that model raises the score of Qwen3.5-4B.
+Their tasks, metric and teacher differ from ours.
 
 \begin{table}[h]
 \caption{Hard labels against soft targets, with the compact instruction and BF16 serving. Scores are pAUROC@20: Mean-OOD on the OOD suite and the source mean on the validation set. The 4B row gives means over three runs with the range in brackets; the 27B row has one run for each objective.}
@@ -342,11 +344,25 @@ Monitor & Hard & Soft & Hard & Soft \\
 \subsection{Instruction of the 27B}
 \label{app:ablation-instruction}
 
-Gleipnir~27B trains with the compact instruction, and we scored the same adapter with the compact instruction and with the full specification, both with BF16 serving.
-On the validation set it scores 0.922 with the compact instruction and 0.942 with the full specification.
-We chose the full specification on this result.
-On the OOD suite the scores are 0.909 and 0.935, and most of this difference comes from SHADE-Arena (0.588 against 0.730).
+Gleipnir~27B trains with the compact instruction, and we scored the same adapter with the compact instruction and with the full specification, both with BF16 serving (Table~\ref{tab:instruction}).
+The full specification scores 0.020 higher on the validation set, and we chose it on this result.
+On the OOD suite it scores 0.026 higher, and most of this difference comes from SHADE-Arena.
 The full specification has 9.9\% more prompt tokens.
+
+\begin{table}[h]
+\caption{Gleipnir 27B scored with each instruction, BF16 serving. Scores are pAUROC@20. SHADE-Arena is one of the six benchmarks in Mean-OOD.}
+\label{tab:instruction}
+\centering
+\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+Instruction at scoring & Validation & Mean-OOD & SHADE-Arena \\
+\midrule
+Compact (as trained) & 0.922 & 0.909 & 0.588 \\
+Full specification (released) & 0.942 & 0.935 & 0.730 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \section{Training configuration}
 \label{app:training-config}
