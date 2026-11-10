@@ -70,86 +70,6 @@ Sinha et al.\ compute it from the standard API price per input and output token,
 For open-weight models, they use the price of hosted inference for a comparable base model, not the cost of self-hosting.
 Table~\ref{tab:ood-all} in Appendix~\ref{app:ood-results} lists the scores and costs that they report.
 
-\section{Results on the OOD suite}
-\label{app:ood-results}
-
-Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
-
-\begin{table}[t]
-\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. Mean-OOD is the unweighted mean of pAUROC@20 over the six benchmarks. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices.}
-\label{tab:ood-all}
-\small
-\setlength{\tabcolsep}{3pt}
-\begin{minipage}[t]{0.47\textwidth}
-\vspace{0pt}
-\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrr@{}}
-\toprule
-Monitor & Cost & Mean-OOD \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{Sinha et al.: trained, rationale then 0--10 score}} \\
-GPT-OSS-20B (SFT) & 0.347 & 0.656 \\
-Qwen3.5-4B (SFT+RL) & 0.358 & 0.684 \\
-GPT-OSS-120B (SFT) & 0.511 & 0.718 \\
-Nemotron-30B (SFT) & 0.590 & 0.578 \\
-Qwen3-8B (SFT+RL) & 0.748 & 0.628 \\
-Qwen3-32B (SFT+RL) & 0.869 & 0.703 \\
-Nemotron-120B (SFT) & 1.251 & 0.780 \\
-Qwen3.5-27B (SFT+RL) & 2.775 & 0.831 \\
-Kimi K2.6 (SFT) & 10.175 & 0.841 \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{Sinha et al.: prompted, rationale then 0--10 score}} \\
-GPT-5.4 nano & 3.387 & 0.752 \\
-Gemini 3.1 Flash-Lite & 4.157 & 0.815 \\
-Claude Haiku 4.5 & 19.746 & 0.794 \\
-GPT-5.4 & 44.376 & 0.899 \\
-Gemini 2.5 Pro & 45.254 & 0.802 \\
-Claude Sonnet 4.6 & 58.850 & 0.929 \\
-Gemini 3.1 Pro & 73.218 & 0.940 \\
-Claude Opus 4.6 & 94.794 & 0.942 \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{This work: unadapted Qwen3.5-9B, other outputs}} \\
-0--10 score & 0.963 & 0.486 \\
-Reasoning, then binary logits & 1.005 & 0.692 \\
-Reasoning, then 0--10 score & 1.029 & 0.666 \\
-\bottomrule
-\end{tabular*}
-\end{minipage}\hfill
-\begin{minipage}[t]{0.47\textwidth}
-\vspace{0pt}
-\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrr@{}}
-\toprule
-Monitor & Cost & Mean-OOD \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
-Gleipnir 4B, committed-use & 0.037 & 0.770 \\
-Gleipnir 4B, on-demand & 0.085 & 0.770 \\
-Gleipnir 27B, committed-use & 0.168 & 0.951 \\
-Gleipnir 27B, on-demand & 0.390 & 0.951 \\
-Gleipnir 9B (earlier) & 0.866 & 0.821 \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{This work: decision models, native probability}} \\
-d1 & 0.165 & 0.674 \\
-pplx-decider v1.2 & 0.176 & 0.896 \\
-Mercury Decide & 0.181 & 0.883 \\
-d1-ultra & 0.347 & 0.893 \\
-Jev 1.13 & 0.389 & 0.850 \\
-Microsoft-Decision-1 & 0.389 & 0.751 \\
-\midrule
-\multicolumn{3}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
-Qwen3.5-4B & 0.284 & 0.618 \\
-GPT-6 Luna & 0.835 & 0.837 \\
-Qwen3.5-9B & 0.947 & 0.698 \\
-Qwen3.5-35B-A3B & 0.990 & 0.758 \\
-GPT-5.6 Luna & 1.672 & 0.840 \\
-Qwen3.5-27B & 1.848 & 0.839 \\
-Qwen3.8-27B & 1.848 & 0.890 \\
-Kimi K2.6 & 7.911 & 0.919 \\
-Kimi K3 & 25.118 & 0.908 \\
-\bottomrule
-\end{tabular*}
-\end{minipage}
-\end{table}
-
 \section{Data sources and discrepancies}
 \label{app:data-discrepancies}
 
@@ -229,6 +149,86 @@ This instruction has 299 words.
 It is the monitor prompt of ControlArena as SleightBench distributes it, with one change: we replace its score from 0 to 100 and its output format with our two labels and the \texttt{Prediction:} output.
 We use it in Section~\ref{sec:held-out} to score SleightBench with the instruction that the prompted frontier monitors receive.
 \VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/control_arena_binary.txt}
+
+\section{Results on the OOD suite}
+\label{app:ood-results}
+
+Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
+
+\begin{table}[t]
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. Mean-OOD is the unweighted mean of pAUROC@20 over the six benchmarks. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices.}
+\label{tab:ood-all}
+\small
+\setlength{\tabcolsep}{3pt}
+\begin{minipage}[t]{0.47\textwidth}
+\vspace{0pt}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrr@{}}
+\toprule
+Monitor & Cost & Mean-OOD \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{Sinha et al.: trained, rationale then 0--10 score}} \\
+GPT-OSS-20B (SFT) & 0.347 & 0.656 \\
+Qwen3.5-4B (SFT+RL) & 0.358 & 0.684 \\
+GPT-OSS-120B (SFT) & 0.511 & 0.718 \\
+Nemotron-30B (SFT) & 0.590 & 0.578 \\
+Qwen3-8B (SFT+RL) & 0.748 & 0.628 \\
+Qwen3-32B (SFT+RL) & 0.869 & 0.703 \\
+Nemotron-120B (SFT) & 1.251 & 0.780 \\
+Qwen3.5-27B (SFT+RL) & 2.775 & 0.831 \\
+Kimi K2.6 (SFT) & 10.175 & 0.841 \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{Sinha et al.: prompted, rationale then 0--10 score}} \\
+GPT-5.4 nano & 3.387 & 0.752 \\
+Gemini 3.1 Flash-Lite & 4.157 & 0.815 \\
+Claude Haiku 4.5 & 19.746 & 0.794 \\
+GPT-5.4 & 44.376 & 0.899 \\
+Gemini 2.5 Pro & 45.254 & 0.802 \\
+Claude Sonnet 4.6 & 58.850 & 0.929 \\
+Gemini 3.1 Pro & 73.218 & 0.940 \\
+Claude Opus 4.6 & 94.794 & 0.942 \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{This work: unadapted Qwen3.5-9B, other outputs}} \\
+0--10 score & 0.963 & 0.486 \\
+Reasoning, then binary logits & 1.005 & 0.692 \\
+Reasoning, then 0--10 score & 1.029 & 0.666 \\
+\bottomrule
+\end{tabular*}
+\end{minipage}\hfill
+\begin{minipage}[t]{0.47\textwidth}
+\vspace{0pt}
+\begin{tabular*}{\linewidth}{@{\extracolsep{\fill}}lrr@{}}
+\toprule
+Monitor & Cost & Mean-OOD \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
+Gleipnir 4B, committed-use & 0.037 & 0.770 \\
+Gleipnir 4B, on-demand & 0.085 & 0.770 \\
+Gleipnir 27B, committed-use & 0.168 & 0.951 \\
+Gleipnir 27B, on-demand & 0.390 & 0.951 \\
+Gleipnir 9B (earlier) & 0.866 & 0.821 \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{This work: decision models, native probability}} \\
+d1 & 0.165 & 0.674 \\
+pplx-decider v1.2 & 0.176 & 0.896 \\
+Mercury Decide & 0.181 & 0.883 \\
+d1-ultra & 0.347 & 0.893 \\
+Jev 1.13 & 0.389 & 0.850 \\
+Microsoft-Decision-1 & 0.389 & 0.751 \\
+\midrule
+\multicolumn{3}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
+Qwen3.5-4B & 0.284 & 0.618 \\
+GPT-6 Luna & 0.835 & 0.837 \\
+Qwen3.5-9B & 0.947 & 0.698 \\
+Qwen3.5-35B-A3B & 0.990 & 0.758 \\
+GPT-5.6 Luna & 1.672 & 0.840 \\
+Qwen3.5-27B & 1.848 & 0.839 \\
+Qwen3.8-27B & 1.848 & 0.890 \\
+Kimi K2.6 & 7.911 & 0.919 \\
+Kimi K3 & 25.118 & 0.908 \\
+\bottomrule
+\end{tabular*}
+\end{minipage}
+\end{table}
 
 \section{Additional results}
 \label{app:additional-results}
