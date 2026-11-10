@@ -1,17 +1,40 @@
 \section{Training and serving Gleipnir monitors}
 \label{sec:method}
 
-\todo{Task formulation: trajectory in, single decision token out.}
+\subsection{Monitor input and output}
+\label{sec:interface}
 
-\subsection{Binary-logit distillation}
+A Gleipnir monitor reads one trajectory and returns one score.
+The input is a single user message: an instruction that describes harmful behavior, followed by the trajectory between \texttt{<agent\_trajectory>} tags.
+We apply the chat template of the model with thinking disabled and start the reply of the model with the text \texttt{Prediction:}.
+The monitor then reads the logits $z_0$ and $z_1$ of the tokens \texttt{0} (benign) and \texttt{1} (harmful) at the next position.
+The score is the probability of \texttt{1} among these two tokens,
+\begin{equation}
+s = \frac{e^{z_1}}{e^{z_0} + e^{z_1}} = \sigma(z_1 - z_0) .
+\label{eq:score}
+\end{equation}
+This output has two properties that the output of Section~\ref{sec:background-sinha} lacks.
+It needs one forward pass over the prompt and no generated text, so the monitor writes no rationale.
+It is also continuous, so it ranks trajectories without the ties of an integer scale.
+
+\paragraph{Effect of the output format.}
+The output format changes the score of a monitor before any training.
+We compare four formats on the unadapted Qwen3.5-9B, with the model, the OOD suite and the monitoring specification fixed; only the wording of the output instruction differs.
+Binary logits score 0.698 Mean-OOD.
+An integer from 0 to 10 scores 0.486.
+Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the coarser scale does not explain this difference.
+When the model writes its reasoning before the output, the integer scores 0.666 and the binary logits score 0.692, in both cases at a higher cost (Table~\ref{tab:ood-all}).
+Binary logits without reasoning are therefore the cheapest of the four formats and score at least as high as the others.
+
+\subsection{Soft-target distillation}
 \label{sec:binary-logit-distillation}
 
-\todo{Teacher probability on the decision token as a soft target; contrast with severity scores and rationale SFT.}
+\todo{The teacher (Kimi K3) and its cached probability on the decision token; the strict teacher-agreement filter; the loss; hard labels against soft targets for the 4B and the 27B.}
 
-\subsection{Data and training setup}
+\subsection{Training setup}
 \label{sec:training-setup}
 
-\todo{Data sources and grouped holdouts, LoRA configuration, model sizes, checkpoint averaging.}
+\todo{Data, LoRA configuration, the two instructions, seed averaging for the 4B, the instruction choice for the 27B, quantization-aware distillation.}
 
 \subsection{Serving and cost}
 \label{sec:serving}

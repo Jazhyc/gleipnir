@@ -177,5 +177,16 @@ No results are reported yet.
   authors add that "current performance is insufficient as a robust defence
   against deception", so the text says "may hold". That a probe's cost is near
   zero because it reuses the monitored model's forward pass is our statement.
+- Section 3.1. Input format, decision tokens and score:
+  `experiments/tool_trajectory_monitoring/prompts/manifest.json` and
+  `prompting.py`, `src/gleipnir/evaluation/probabilities.py`, and the 4B model
+  card. Output-format comparison on unadapted Qwen3.5-9B (6,395 OOD rows):
+  binary logits 0.6976 (`docs/findings/tool_trajectory_qwen_ood_benchmark.md`),
+  0–10 integer 0.4858 and binary rounded to tenths 0.6835, a difference of
+  0.0141 (`tool_trajectory_qwen_ordinal_ood_benchmark.md`), reasoning then
+  integer 0.6656 and reasoning then binary 0.6923 (the two
+  `..._reasoning_ood_benchmark.md` findings). Fixed across the four: model
+  revision, rows, labels, the full specification with output wording adapted,
+  non-thinking template, temperature zero. Costs are in the results table.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

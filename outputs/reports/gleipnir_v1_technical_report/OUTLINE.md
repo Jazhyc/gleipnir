@@ -224,11 +224,42 @@ Owner: JF.
 Serving is part of the method because it sets the cost per evaluation used in
 the frontier of Section 4.
 
-### 3.1 Interface and training
+Subsections in the text: 3.1 Monitor input and output (C3.1–C3.2, written),
+3.2 Soft-target distillation (C3.3–C3.5), 3.3 Training setup (C3.6–C3.7 and
+the configuration), 3.4 Serving and cost (C3.8–C3.13).
 
-- **C3.1 (draft).** The monitor reads a visible agent trajectory and emits one
+Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
+
+- Released 4B (v0.4) and 27B (v0.2) train only on the 7,836 trajectories left
+  by the strict filter (852 of 8,688 removed). The 13,149 deception rows
+  (Aletheia's Quest, Liars' Bench) were used only for the 9B and the 4B v0.1.
+- Loss: binary cross-entropy between the monitor's score (Equation 1) and the
+  teacher's probability; no hard-label term, no temperature.
+- Teacher cache: Kimi K3 through OpenRouter, full specification, temperature
+  zero, reasoning off; probability of `1` among the `0` and `1` logprobs;
+  about $224 for the 8,688 rows (a lower bound on the spend).
+- LoRA rank 128, alpha 256, no dropout, on attention and MLP projections;
+  unquantized BF16 base with an FP32 adapter (not QLoRA); AdamW, learning
+  rate 5e-5, 3% warmup then linear decay, batch 32, one epoch of 245 updates.
+  One B200: about one hour per 4B seed and 4.2 hours for the 27B.
+- 4B: three seeds that differ in data order, averaged exactly into one
+  rank-384 adapter; then QAD against its own BF16 scores under the optimized
+  serving quantization.
+- Two instructions: a compact one (95 words) used for training and for the
+  4B, and the full specification (701 words) used for the teacher and for the
+  released 27B.
+- **Open issue.** The training inputs are not fully action-only: 1,340 of the
+  1,350 STRIDE training rows still contain the agent's reasoning, and the
+  Kimi K3 targets were computed on them. Only the validation set has it
+  removed (`docs/findings/training_input_reasoning.md`). Section 2.2 says we
+  keep the action-only restriction; state this exception in 3.3 or the
+  limitations.
+
+### 3.1 Monitor input and output
+
+- **C3.1 (written).** The monitor reads a visible agent trajectory and emits one
   token, `0` or `1`. The score is the normalized probability of `1`.
-- **C3.2 (draft).** The interface matters on its own. With Qwen3.5-9B, the
+- **C3.2 (written).** The interface matters on its own. With Qwen3.5-9B, the
   prompt and the OOD suite fixed, binary logits score 0.698 Mean-OOD
   pAUROC@20, an ordinal 0–10 score 0.486, and an ordinal score after visible
   reasoning 0.666 at higher cost.
