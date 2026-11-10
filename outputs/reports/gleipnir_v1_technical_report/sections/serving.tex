@@ -5,7 +5,7 @@ Table~\ref{tab:serving} follows the cost of one monitor evaluation from a hosted
 The subsections below describe one row each.
 
 \begin{table}[t]
-\caption{Cost in USD per 1,000 evaluations on the OOD suite after each serving step. Self-hosted rows assume one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use, and stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the hosted price. The last row is measured on the OOD suite. We derive the two rows above it from throughput gains measured on a 320-trajectory benchmark. Appendix~\ref{app:ablation-precision} gives the scores.}
+\caption{Cost in USD per 1,000 evaluations on the OOD suite after each serving step. Self-hosted rows assume one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use, and stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. The last row is measured on the OOD suite. We derive the two rows above it from throughput gains measured on a 320-trajectory benchmark. Appendix~\ref{app:ablation-precision} gives the scores.}
 \label{tab:serving}
 \centering
 \small
@@ -16,7 +16,7 @@ The subsections below describe one row each.
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
 Serving step & Gain & On demand & Committed & Gain & On demand & Committed \\
 \midrule
-Hosted API at list price & & & 0.260 & & & 1.848 \\
+API price & --- & --- & 0.260 & --- & --- & 1.848 \\
 Self-hosted vLLM, classification mode & 3.7$\times$ & 0.162 & 0.070 & 4.8$\times$ & 0.888 & 0.382 \\
 + Low-precision arithmetic & 1.77$\times$ & 0.091 & 0.039 & 2.23$\times$ & 0.398 & 0.172 \\
 + Removing unneeded work & 1.07$\times$ & 0.085 & 0.037 & 1.02$\times$ & 0.390 & 0.168 \\
