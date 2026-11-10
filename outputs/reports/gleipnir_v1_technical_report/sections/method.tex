@@ -56,8 +56,8 @@ Section~\ref{sec:ablation-targets} compares these soft targets with training on 
 \label{sec:training-setup}
 
 We train two monitors with the loss of Equation~\ref{eq:loss}: Gleipnir~4B from Qwen3.5-4B and Gleipnir~27B from Qwen3.8-27B.
-Both train on the 7,836 filtered trajectories, and no trajectory is truncated.
-The training input uses a compact instruction of 95 words in place of the full specification of 701 words that the teacher reads (Appendix~\ref{app:prompts}).
+The teacher reads the full specification, but the monitors train with a shorter compact instruction (Appendix~\ref{app:prompts}).
+In deployment a monitor reads its instruction with every trajectory, so a shorter instruction lowers the inference cost.
 We keep the base model frozen and train a LoRA adapter~\citep{hu2021lora} for one pass over the training set.
 On one NVIDIA B200 GPU this pass takes about one hour for the 4B and about 4.5 hours for the 27B.
 Appendix~\ref{app:training-config} gives the full configuration.
