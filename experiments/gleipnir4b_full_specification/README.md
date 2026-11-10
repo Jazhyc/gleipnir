@@ -43,6 +43,39 @@ PYTHONPATH=src:. $PY -m experiments.gleipnir4b_full_specification.score \
 PYTHONPATH=src:. python -m experiments.gleipnir4b_full_specification.compare
 ```
 
-## Result
+## Result (2026-11-10, US-NC-2 B200 `GPU-480a554d…`, Pod `xaqw5n348zwok3`)
 
-Not run yet.
+Only the `bf16` arm ran. The user dropped the `optimized` arm before launch:
+the report compares instructions in BF16 only, to isolate the instruction.
+
+Stock vLLM 0.31 from the release image (`ghcr.io/jazhyc/gleipnir-serve:0.2`,
+`python -m vllm.entrypoints.cli.main`; the image's `vllm` script has a stale
+shebang). Parity on this host first: the compact validation rows score 0.9333
+against the recorded 0.9332 (MAE 0.0038, correlation 0.99989, 106K prompt
+tokens/s). Inputs matched the stored SHA-256.
+
+| Released 4B, BF16 | Validation pAUROC@20 | Mean-OOD pAUROC@20 |
+|---|---:|---:|
+| Compact instruction (recorded) | 0.9332 | 0.8039 |
+| Full specification | 0.9247 | 0.8032 |
+| Difference | −0.0084 | −0.0007 |
+
+| Source | Compact | Full specification |
+|---|---:|---:|
+| Gloom exfiltration (validation) | 0.8945 | 0.8781 |
+| Test STRIDE (validation) | 0.9719 | 0.9714 |
+| AgentDojo | 0.9462 | 0.9314 |
+| CUA-SHADE-Arena | 0.7418 | 0.7460 |
+| IaC | 0.8618 | 0.8930 |
+| MLE-Sabotage | 1.0000 | 1.0000 |
+| Rogue Eval | 0.9742 | 0.9723 |
+| SHADE-Arena | 0.2993 | 0.2764 |
+
+- The 4B does not gain from the full specification: −0.8 points on
+  validation and −0.1 on OOD, against +2.0 and +2.6 for the 27B.
+- Scores move without a ranking gain: mean absolute score difference 0.029
+  (validation) and 0.040 (OOD), 77 and 285 rows crossing 0.5. IaC gains 3.1
+  points and AgentDojo and SHADE-Arena lose 1.5 and 2.3.
+- One checkpoint and one pass per instruction; no intervals.
+- Rows: `results/gleipnir4b_full_specification/bf16/`,
+  `comparison.json`; driver and logs: `logs/runpod/report_ablations/`.

@@ -346,3 +346,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   0.9508, and the row-bootstrap intervals (2,000 resamples):
   `experiments/optimized_gap/README.md`. The 27B BF16 scores use an FP32 LM
   head on BF16 hidden states (`gleipnir27b_vocab_distillation/extract01`).
+- Appendix C.5, 4B rows of `tab:instruction` (replaces the 27B-teacher pair).
+  Compact 0.9332 / 0.8039: `results/qad-v02-bf16-01/evaluation/`. Full
+  specification 0.9247 / 0.8032: `experiments/gleipnir4b_full_specification/README.md`
+  (run of 2026-11-10, `results/gleipnir4b_full_specification/comparison.json`).

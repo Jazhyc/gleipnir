@@ -344,19 +344,16 @@ Monitor & Hard & Soft & Hard & Soft \\
 \subsection{Compact instruction against the full specification}
 \label{app:ablation-instruction}
 
-Gleipnir~27B trains with the compact instruction, and we scored the same adapter with the compact instruction and with the full specification, both with BF16 serving (Table~\ref{tab:instruction}).
-The full specification scores 0.020 higher on the validation set, and we chose it on this result.
-On the OOD suite it scores 0.026 higher.
-The full specification has 9.9\% more prompt tokens.
-
-For the 4B we have a different comparison.
-We did not score the released 4B with the full specification on the validation set or the OOD suite.
-Instead, in an experiment that used Gleipnir~27B as the teacher, we trained two 4B runs: one trains and scores with the compact instruction, and the other trains and scores with the full specification.
-The two runs score within 0.001 of each other on the validation set, so the full specification gave the 4B no gain there.
-We did not score these two runs on the OOD suite.
+Both monitors train with the compact instruction.
+We scored each released adapter with the compact instruction and with the full specification, with BF16 serving so that only the instruction changes (Table~\ref{tab:instruction}).
+For the 27B, the full specification scores 0.020 higher on the validation set and 0.026 higher on the OOD suite.
+We chose it for the 27B on the validation result.
+For the 4B, the full specification gives no gain: it scores 0.008 lower on the validation set and 0.001 lower on the OOD suite.
+The 4B therefore keeps the compact instruction, which has fewer tokens (Appendix~\ref{app:prompts}).
+On the OOD suite the full specification adds 9.9\% to the prompt tokens.
 
 \begin{table}[h]
-\caption{Compact instruction against the full specification, BF16 serving. Scores are pAUROC@20. The 27B rows score one adapter, trained with the compact instruction, with each instruction. The 4B rows are two runs with Gleipnir 27B as the teacher, each trained and scored with the instruction shown.}
+\caption{Compact instruction against the full specification, BF16 serving. Scores are pAUROC@20. Each monitor is one adapter, trained with the compact instruction and scored with each instruction.}
 \label{tab:instruction}
 \centering
 \small
@@ -364,11 +361,11 @@ We did not score these two runs on the OOD suite.
 \toprule
 Monitor & Instruction & Validation & Mean-OOD \\
 \midrule
+Gleipnir 4B & Compact (released) & 0.933 & 0.804 \\
+Gleipnir 4B & Full specification & 0.925 & 0.803 \\
+\addlinespace
 Gleipnir 27B & Compact & 0.922 & 0.909 \\
 Gleipnir 27B & Full specification (released) & 0.942 & 0.935 \\
-\addlinespace
-4B, 27B teacher & Compact & 0.877 & --- \\
-4B, 27B teacher & Full specification & 0.876 & --- \\
 \bottomrule
 \end{tabular}
 \end{table}

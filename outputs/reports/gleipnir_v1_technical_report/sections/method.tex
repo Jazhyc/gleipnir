@@ -66,8 +66,8 @@ The 27B is a single training run, without seed averaging and without QAD.
 It differs from the 4B in the instruction that it reads at scoring time.
 Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification: 0.942 pAUROC@20 against 0.922.
 We made this choice on the validation set.
-The released 27B therefore reads the full specification, with 9.9\% more prompt tokens; the 4B keeps the compact one.
-Appendix~\ref{app:ablation-instruction} gives the scores on the OOD suite and a comparison for the 4B.
+The released 27B therefore reads the full specification, with 9.9\% more prompt tokens.
+The 4B does not gain from the full specification (Appendix~\ref{app:ablation-instruction}).
 
 \paragraph{Effect of the soft targets.}
 We test the soft targets by training on the dataset labels instead (hard labels), with all other settings unchanged.

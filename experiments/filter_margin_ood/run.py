@@ -9,6 +9,7 @@ import os
 import shutil
 import signal
 import subprocess
+import sys
 import time
 from pathlib import Path
 
@@ -81,6 +82,8 @@ def merge(arm: str, adapter: Path, base: Path) -> dict:
 
 def start_server(port: int, log: Path) -> subprocess.Popen:
     command = serve_command(str(MERGED), "local", port)
+    # The image's ``vllm`` script has a stale shebang; run the module instead.
+    command[0:1] = [sys.executable, "-m", "vllm.entrypoints.cli.main"]
     at = command.index("--revision")
     del command[at : at + 2]
     handle = log.open("w")
