@@ -227,6 +227,10 @@ the frontier of Section 4.
 Appendix order (JF, 2026-11-10): the prompts appendix is last (F), so results
 and ablations are Appendix C and the subsections below are C.1 to C.5.
 
+The hard-soft comparison reports only the compact instruction with BF16
+serving (JF, 2026-11-10); the release-configuration 27B pair (0.933 against
+0.951 OOD, 0.959 against 0.944 validation) is no longer in the report.
+
 Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
 "Results and ablations" with subsections D.1 all monitors on the OOD suite,
 D.2 output format, D.3 teacher-agreement filter, D.4 soft targets against hard

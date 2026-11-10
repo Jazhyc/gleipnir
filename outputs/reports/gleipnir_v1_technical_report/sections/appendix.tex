@@ -311,17 +311,18 @@ Mean-OOD & 0.699 & 0.708 & 0.811 & 0.791 & 0.837 & 0.823 \\
 \label{app:ablation-targets}
 
 We test the effect of the soft targets by training on the dataset labels instead (hard labels), with all other settings of Section~\ref{sec:training-setup} unchanged (Table~\ref{tab:hard-soft}).
-For the 4B, we compare three seeds for each objective.
-Soft targets raise the mean Mean-OOD from 0.716 to 0.792 and the mean validation score from 0.833 to 0.903, and every soft-target seed scores above every hard-label seed on the OOD suite.
-For the 27B, we have one seed for each objective, and the difference is smaller.
-On the OOD suite, the two objectives score within 0.005 of each other with the compact instruction and BF16 serving, and soft targets score 0.018 higher in the configuration that we release.
-On the validation set, the hard-label 27B scores higher in both configurations.
-Soft targets therefore help the 4B on both sets, and for the 27B they help the OOD score but not the validation score.
+All runs read the compact instruction and use BF16 serving.
+For the 4B, we compare three runs for each objective.
+Soft targets raise the mean Mean-OOD from 0.716 to 0.792 and the mean validation score from 0.833 to 0.903, and every soft-target run scores above every hard-label run on the OOD suite.
+For the 27B, we have one run for each objective, and the result differs.
+On the OOD suite, the two objectives score within 0.005 of each other.
+On the validation set, the hard-label 27B scores 0.044 higher.
+Soft targets therefore help the 4B on both sets, and they do not help the 27B.
 One explanation is that soft targets add less when the unadapted model is already close to the teacher.
 We cannot separate this from the size of the model with two models, and we leave it open.
 
 \begin{table}[h]
-\caption{Hard labels against soft targets. Scores are pAUROC@20: Mean-OOD on the OOD suite and the source mean on the validation set. The 4B rows are means over three seeds with the range in brackets; the 27B rows have one seed. The release configuration of the 27B uses the full specification and optimized serving.}
+\caption{Hard labels against soft targets, with the compact instruction and BF16 serving. Scores are pAUROC@20: Mean-OOD on the OOD suite and the source mean on the validation set. The 4B row gives means over three runs with the range in brackets; the 27B row has one run for each objective.}
 \label{tab:hard-soft}
 \centering
 \small
@@ -331,10 +332,9 @@ We cannot separate this from the size of the model with two models, and we leave
 \cmidrule(lr){2-3}\cmidrule(lr){4-5}
 Monitor & Hard & Soft & Hard & Soft \\
 \midrule
-4B, compact instruction, BF16 & 0.716 & 0.792 & 0.833 & 0.903 \\
+4B & 0.716 & 0.792 & 0.833 & 0.903 \\
  & {\scriptsize [0.690, 0.746]} & {\scriptsize [0.777, 0.813]} & {\scriptsize [0.810, 0.867]} & {\scriptsize [0.896, 0.914]} \\
-27B, compact instruction, BF16 & 0.904 & 0.909 & 0.966 & 0.922 \\
-27B, release configuration & 0.933 & 0.951 & 0.959 & 0.944 \\
+27B & 0.904 & 0.909 & 0.966 & 0.922 \\
 \bottomrule
 \end{tabular}
 \end{table}
