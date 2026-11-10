@@ -308,3 +308,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   and ablations, D training configuration, E additional results, F prompts.
   Earlier notes that say "Appendix C" for prompts or "Appendix D" for results
   refer to the old order.
+- Instruction lengths in tokens (prompts appendix and `tab:training-config`):
+  133 (compact), 945 (full specification), 380 (ControlArena). Counted on
+  2026-11-10 with `tokenizer.json` of `Qwen/Qwen3.5-4B` at revision `851bf6e`,
+  on the text of each file in `assets/prompts/` without its final newline and
+  without special tokens or the chat template (with the newline: 134, 946,
+  381). "Both Gleipnir monitors use it": the Qwen3.8-27B tokenizer gives
+  identical ids on the 3,012 validation prompts and the 7,836 training rows
+  (`experiments/qwen38_27b_campaign/README.md`, token identity); not checked on
+  these instruction files alone. Word counts (95, 701, 299) are no longer in
+  the text.

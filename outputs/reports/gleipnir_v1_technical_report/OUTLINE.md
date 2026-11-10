@@ -269,7 +269,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 - 4B: three seeds that differ in data order, averaged exactly into one
   rank-384 adapter; then QAD against its own BF16 scores under the optimized
   serving quantization.
-- Two instructions: a compact one (95 words) used for training and for the
+- Two instructions: a compact one (133 tokens) used for training and for the
   4B, and the full specification (701 words) used for the teacher and for the
   released 27B.
 - **Data properties, written in the appendix (`app:data-discrepancies`).** The
