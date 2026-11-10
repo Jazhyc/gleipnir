@@ -331,3 +331,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   0.879, 0.836, 0.851 for margins 0, 0.05, 0.10, 0.20) and the OOD follow-up
   (0.787 filtered against 0.776 unfiltered, cached reference with a different
   serving path): `docs/findings/teacher_disagreement_ood.md`.
+- Appendix C.5, 4B rows of `tab:instruction`. Validation 0.8773 (compact) and
+  0.8762 (full specification): `experiments/gleipnir27b_teacher_4b/README.md`
+  (seed 1, targets from Gleipnir 27B under the full specification, 8,239
+  training rows after its own strict filter, each arm trained and scored with
+  its instruction; one run per arm, no OOD scoring). No record was found of
+  the released 4B scored with the full specification on the validation set or
+  the OOD suite; `experiments/adversarial_is_it_4b/README.md` scores it that
+  way only on an adversarial set.

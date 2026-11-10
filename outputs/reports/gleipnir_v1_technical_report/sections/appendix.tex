@@ -341,7 +341,7 @@ Monitor & Hard & Soft & Hard & Soft \\
 \end{tabular}
 \end{table}
 
-\subsection{Instruction of the 27B}
+\subsection{Compact instruction against the full specification}
 \label{app:ablation-instruction}
 
 Gleipnir~27B trains with the compact instruction, and we scored the same adapter with the compact instruction and with the full specification, both with BF16 serving (Table~\ref{tab:instruction}).
@@ -349,17 +349,26 @@ The full specification scores 0.020 higher on the validation set, and we chose i
 On the OOD suite it scores 0.026 higher, and most of this difference comes from SHADE-Arena.
 The full specification has 9.9\% more prompt tokens.
 
+For the 4B we have a different comparison.
+We did not score the released 4B with the full specification on the validation set or the OOD suite.
+Instead, in an experiment that used Gleipnir~27B as the teacher, we trained two 4B runs: one trains and scores with the compact instruction, and the other trains and scores with the full specification.
+The two runs score within 0.001 of each other on the validation set, so the full specification gave the 4B no gain there.
+We did not score these two runs on the OOD suite.
+
 \begin{table}[h]
-\caption{Gleipnir 27B scored with each instruction, BF16 serving. Scores are pAUROC@20. SHADE-Arena is one of the six benchmarks in Mean-OOD.}
+\caption{Compact instruction against the full specification, BF16 serving. Scores are pAUROC@20. SHADE-Arena is one of the six benchmarks in Mean-OOD. The 27B rows score one adapter, trained with the compact instruction, with each instruction. The 4B rows are two runs with Gleipnir 27B as the teacher, each trained and scored with the instruction shown.}
 \label{tab:instruction}
 \centering
 \small
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}llrrr@{}}
 \toprule
-Instruction at scoring & Validation & Mean-OOD & SHADE-Arena \\
+Monitor & Instruction & Validation & Mean-OOD & SHADE-Arena \\
 \midrule
-Compact (as trained) & 0.922 & 0.909 & 0.588 \\
-Full specification (released) & 0.942 & 0.935 & 0.730 \\
+Gleipnir 27B & Compact & 0.922 & 0.909 & 0.588 \\
+Gleipnir 27B & Full specification (released) & 0.942 & 0.935 & 0.730 \\
+\addlinespace
+4B, 27B teacher & Compact & 0.877 & --- & --- \\
+4B, 27B teacher & Full specification & 0.876 & --- & --- \\
 \bottomrule
 \end{tabular}
 \end{table}
