@@ -349,6 +349,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   to 2. The average was scored on a B300 and the runs on B200s (seed 1
   rescored on the B300: +0.0006); not stated in the report.
   `wortsman2022soups` was entered from memory (unverified), like `hu2021lora`.
+- `xin2026qad` (Section 3.3, C.7) and `ouyang2025lowbit` (C.7): metadata and
+  abstract claims checked against the arXiv pages and the ACL Anthology on
+  2026-11-10 (abstract: "models with larger sizes or fewer training tokens
+  experience less quantization-induced degradation"). Ouyang et al. means
+  pretraining tokens; the report does not claim our 27B is undertrained.
 - Appendix C.7 (serving precision, `tab:precision`). 4B before QAD (v0.2):
   BF16 0.9124 / 0.8108, optimized 0.8807 / 0.7579; released 4B (QAD): BF16
   0.9332 / 0.8039, optimized 0.9117 / 0.7703: `experiments/qad_v02/README.md`.

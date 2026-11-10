@@ -413,8 +413,9 @@ Weight average & 0.912 & 0.811 \\
 The serving stack of Section~\ref{sec:serving} runs the monitors with low-precision weights.
 Table~\ref{tab:precision} compares it with BF16 serving for each released monitor, with the instruction that the monitor is released with.
 Before QAD, the 4B loses 0.032 on the validation set and 0.053 on the OOD suite under optimized serving.
-QAD restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score and 0.041 below the BF16 score before QAD.
+QAD~\citep{xin2026qad} restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score and 0.041 below the BF16 score before QAD.
 The 27B loses nothing: its scores under optimized serving are 0.002 and 0.016 higher than in BF16.
+\citet{ouyang2025lowbit} report that larger models, and models trained on fewer tokens, lose less from low-bit quantization, which agrees with the difference between our two monitors.
 
 \begin{table}[h]
 \caption{BF16 serving against optimized serving. Scores are pAUROC@20. The 4B reads the compact instruction and the 27B reads the full specification.}
