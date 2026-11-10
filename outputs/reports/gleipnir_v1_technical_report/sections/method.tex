@@ -72,7 +72,7 @@ The 4B does not gain from the full specification (Appendix~\ref{app:ablation-ins
 \paragraph{Effect of the soft targets.}
 We test the soft targets by training on the dataset labels instead (hard labels), with all other settings unchanged.
 For the 4B, soft targets raise Mean-OOD from 0.716 to 0.792, as means over three runs for each objective.
-For the 27B, with one run for each objective, the two score within 0.005 of each other (0.904 and 0.909).
+For the 27B, with one run for each objective, the two score within 0.005 of each other: 0.904 with hard labels and 0.909 with soft targets.
 Appendix~\ref{app:ablation-targets} gives the full comparison, which includes the validation set.
 
 \subsection{Serving and cost}
