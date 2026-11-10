@@ -46,4 +46,28 @@ These costs assume that the GPU is fully used.
 A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.
 The merged BF16 checkpoints that we release run in this mode on stock vLLM, on any GPU that vLLM supports.
 
-\todo{Remaining subsections: low-precision arithmetic with QAD for the 4B (cite Ouyang et al.\ for why the 27B needs no QAD), removing unneeded work (last-token final-layer attention, host path), released artifacts. Per-model breakdown of the gains goes in the appendix.}
+\subsection{Low-precision arithmetic}
+\label{sec:serving-precision}
+
+The largest gain in Table~\ref{tab:serving} comes from arithmetic at lower precision.
+Stock vLLM computes in BF16, with 16 bits for each number.
+The B200 has native support for floating-point formats with 8 and 4 bits (FP8 and FP4), and matrix products in these formats run faster.
+Almost all of the prefill time goes to the linear projections of the model and to attention.
+We run the projections around attention in FP8, the other large projections in FP4, and attention itself in an 8-bit format (MXFP8).
+For each projection we quantize both the weights and the activations.
+The state that the model stores between tokens and the two output logits keep their original precision.
+This step lowers the cost by 1.77 times for the 4B and by 2.25 times for the 27B.
+
+Lower precision changes the scores (Appendix~\ref{app:ablation-precision}).
+Without further training, the 4B loses 0.032 pAUROC@20 on the validation set and 0.053 on the OOD suite.
+This is why we train the 4B with QAD (Section~\ref{sec:training-setup}).
+QAD restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score.
+The 27B loses nothing under the same arithmetic, so we release it without QAD.
+This difference agrees with \citet{ouyang2025lowbit}, who report that larger models lose less from low-bit quantization.
+
+This step has two limits.
+The low-precision kernels are specific to the B200, so the serving stack runs only on this GPU; on other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} apply.
+The scores are also not exactly repeatable.
+Two passes of the 4B over the same trajectories differ by about 0.01 per score on average, although pAUROC@20 changes by at most 0.0013.
+
+\todo{Remaining subsections: removing unneeded work (last-token final-layer attention, host path), released artifacts. Per-model breakdown of the gains goes in the appendix.}

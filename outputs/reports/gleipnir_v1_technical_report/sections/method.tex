@@ -59,7 +59,7 @@ The scores of single runs vary, and on the validation set and the OOD suite the 
 The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
 We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack.
 In this pass the target is the score that the same adapter gives without quantization, a step known as quantization-aware distillation (QAD)~\citep{xin2026qad}.
-Section~\ref{sec:serving} reports the scores before and after this step.
+Section~\ref{sec:serving-precision} reports the scores before and after this step.
 
 \paragraph{Gleipnir 27B.}
 The 27B is a single training run, without seed averaging and without QAD.

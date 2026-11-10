@@ -413,4 +413,17 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   memory-bound; general background, no citation yet). Output-to-input price
   ratios 5 (4B: $0.15 / $0.03) and 8 (27B: $1.56 / $0.195):
   `docs/research/tool_trajectory_inference_economics.md`.
+- Section 4.2 (low-precision arithmetic, drafted 2026-11-10). Recipe: FP8
+  (E4M3, per-channel weight scales, dynamic per-token activation scales) on
+  the QKV/output projections of the full-attention blocks, FP4 on the MLP and
+  GDN projections, MXFP8 attention; BF16 cache/recurrence and two-row
+  classifier, FP32 gates/state; small linears stay BF16:
+  `docs/decisions/b200_monitor_score_reference.md`,
+  `docs/findings/b200_attention_precision.md`. The text does not name the GDN
+  layers ("the other large projections"). Score changes: Table
+  `tab:precision`. B200 only: the kernel receipts are hardware-bound and the
+  server refused a B300 on 2026-10-20 (`experiments/optimized_gap/README.md`).
+  Repeatability: two passes on one server, 4B per-row MAE 0.0110 (validation)
+  and 0.0090 (OOD), 27B 0.0065 and 0.0057; |Δ pAUROC@20| ≤ 0.0013 on every
+  split: `experiments/release_serving/README.md`.
 
