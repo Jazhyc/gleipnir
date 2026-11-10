@@ -225,8 +225,13 @@ Serving is part of the method because it sets the cost per evaluation used in
 the frontier of Section 4.
 
 Subsections in the text: 3.1 Monitor input and output (C3.1–C3.2, written),
-3.2 Soft-target distillation (C3.3–C3.5), 3.3 Training setup (C3.6–C3.7 and
-the configuration), 3.4 Serving and cost (C3.8–C3.13).
+3.2 Soft-target distillation (C3.3, written), 3.3 Training setup (C3.6–C3.7
+and the configuration), 3.4 Serving and cost (C3.8–C3.13). The comparison of
+hard labels and soft targets (C3.4–C3.5, written) is in Section 4.2 with
+Table `tab:hard-soft`, so that results come after the training setup. Section
+3.2 does not report the false-positive rate of the filter: it is not the
+metric of Sinha et al., and we have not measured its variation across seeds
+(JF, 2026-11-10).
 
 Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 

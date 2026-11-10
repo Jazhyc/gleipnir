@@ -250,5 +250,12 @@ No results are reported yet.
   and 0.20 in the release configuration):
   `experiments/qwen38_27b_hard_labels/README.md`. The text does not give the
   cost of the teacher cache: the recorded $224 is a lower bound on the spend.
+- Table `tab:hard-soft`. 4B seed ranges and means, and the 27B rows:
+  `experiments/hard_label_seeds/README.md` and
+  `experiments/qwen38_27b_hard_labels/README.md`. Validation score of the
+  hard-label 27B with the compact instruction: 0.966474
+  (`results/qwen38_27b_hard_labels/comparison.json`), so 0.966. Extreme-score
+  shares: 4B 0.82 and 0.01 (seed means), 27B 0.79 and 0.17 (BF16), 0.80 and
+  0.20 (release configuration), all from the 27B experiment record.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

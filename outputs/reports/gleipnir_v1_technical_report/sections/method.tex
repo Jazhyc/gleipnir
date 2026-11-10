@@ -47,22 +47,9 @@ In contrast to the pipeline of Section~\ref{sec:background-sinha}, the teacher w
 We use the source labels only to filter the training set.
 We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its source label, which removes 852 of the 8,688 trajectories and leaves 7,836.
 In a comparison on one seed of the 4B, the filter raised pAUROC@20 on the validation set from 0.847 to 0.896.
-It also raised the false-positive rate at a threshold of 0.5 from 5.3\% to 21.4\%, so the filter improves the ranking of the monitor but not its calibration at this threshold.
 This comparison has no control that removes the same number of trajectories at random.
 
-\paragraph{Soft targets against hard labels.}
-We test the effect of the soft targets by training on the source labels instead, with all other settings unchanged.
-For the 4B, we compare three seeds for each objective.
-With hard labels the seeds score 0.690 to 0.746 Mean-OOD, and with soft targets they score 0.777 to 0.813; the means are 0.716 and 0.792, a difference of 0.076.
-On the validation set the means are 0.833 and 0.903.
-For the 27B, we have one seed for each objective, and the difference is smaller.
-With the compact instruction and BF16 serving, hard labels score 0.904 Mean-OOD and soft targets score 0.909.
-In the configuration that we release (Sections~\ref{sec:training-setup} and~\ref{sec:serving}), they score 0.933 and 0.951.
-On the validation set, the hard-label 27B scores higher in that configuration, 0.959 against 0.944.
-Its scores are also less graded: 80\% of its OOD scores lie within 0.01 of 0 or 1, against 20\% for the soft-target 27B.
-Soft targets therefore help the 4B on both sets, and for the 27B they help the OOD score and the spread of the scores but not the validation score.
-One explanation is that soft targets add less when the unadapted model is already close to the teacher.
-We cannot separate this from the size of the model with two models, and we leave it open.
+Section~\ref{sec:ablation-targets} compares these soft targets with training on the source labels.
 
 \subsection{Training setup}
 \label{sec:training-setup}
