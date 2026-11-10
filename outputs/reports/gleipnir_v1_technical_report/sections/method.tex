@@ -6,6 +6,7 @@
 
 A Gleipnir monitor reads one trajectory and returns one score.
 The input is a single user message: an instruction that describes harmful behavior, followed by the trajectory between \texttt{<agent\_trajectory>} tags.
+Appendix~\ref{app:prompts} gives the instructions in full, and Appendix~\ref{app:data-discrepancies} describes what the trajectories contain.
 We apply the chat template of the model with thinking disabled and start the reply of the model with the text \texttt{Prediction:}.
 The monitor then reads the logits $z_0$ and $z_1$ of the tokens \texttt{0} (benign) and \texttt{1} (harmful) at the next position.
 The score is the probability of \texttt{1} among these two tokens,
