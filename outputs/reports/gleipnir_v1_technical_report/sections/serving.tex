@@ -27,7 +27,7 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \subsection{Self-hosting with one forward pass}
 \label{sec:serving-selfhost}
 
-The API price in Table~\ref{tab:serving} is the price that Sinha et al.\ use for the base models: the hosted price per input token (Appendix~\ref{app:sinha-setup}).
+The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models.
 A hosted API is built to generate text, which it decodes one token at a time.
 Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
 A Gleipnir monitor does not decode.
