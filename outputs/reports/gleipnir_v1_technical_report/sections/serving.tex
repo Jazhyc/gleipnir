@@ -28,12 +28,12 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \label{sec:serving-selfhost}
 
 The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models.
-A hosted API is built to generate text, which it decodes one token at a time.
+Standard LLM APIs generate text, which they decode one token at a time.
 Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
 A Gleipnir monitor does not decode.
-It needs one forward pass over the prompt, called prefill, and the two logits of Equation~\ref{eq:score} at the last position.
-We therefore serve the monitor ourselves with vLLM in classification mode, which treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass and returns the two logits.
-A request is complete after this pass, so the GPU spends all of its time on prefill and can batch many trajectories.
+It needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
+We therefore serve the monitor ourselves with vLLM in classification mode, which treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the prefill and returns the two logits.
+A request is complete after the prefill, so the GPU spends all of its time on it and can batch many trajectories.
 
 We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
