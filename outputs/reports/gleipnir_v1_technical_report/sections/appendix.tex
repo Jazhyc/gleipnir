@@ -254,7 +254,6 @@ We also read binary logits from three unadapted models that \citet{sinha2026trai
 Without any training, Qwen3.5-27B and Kimi~K2.6 score higher at a lower cost than the trained monitors of Sinha et al.\ from the same models.
 This does not hold for Qwen3.5-4B, where their trained monitor scores higher.
 One explanation for the two larger models is that a score from 0 to 10 mixes the confidence of the monitor with the severity of the behavior, while the binary probability expresses only confidence.
-Our own instruction for the score from 0 to 10 asks for both explicitly, so the comparison on Qwen3.5-9B agrees with this explanation but does not isolate it.
 
 \subsection{Teacher-agreement filter}
 \label{app:ablation-filter}
