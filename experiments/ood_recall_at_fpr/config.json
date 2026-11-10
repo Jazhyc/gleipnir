@@ -1,0 +1,269 @@
+{
+  "fpr": 0.01,
+  "rows": 6395,
+  "reference": {
+    "file": "results/tool_trajectory_monitoring/qwen35_4b_teacher_ood/predictions.jsonl",
+    "id": "id",
+    "label": "label",
+    "source": "source"
+  },
+  "pauroc_tolerance": 0.0006,
+  "monitors": [
+    {
+      "name": "Gleipnir 4B",
+      "group": "Gleipnir",
+      "files": [
+        "results/qad-v02-optimized01/evaluation/ood.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.7703,
+      "cost_usd_per_1k": [
+        0.0366,
+        0.085
+      ]
+    },
+    {
+      "name": "Gleipnir 27B",
+      "group": "Gleipnir",
+      "files": [
+        "results/optimized_gap/opt27b_teacher_eu01/ood.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.9508,
+      "cost_usd_per_1k": [
+        0.1677,
+        0.3896
+      ]
+    },
+    {
+      "name": "Gleipnir 9B (earlier)",
+      "group": "Gleipnir",
+      "files": [
+        "results/tool_trajectory_distillation_ood/runs/9b/adapters/soft-n21837-mixed-seed0/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8212,
+      "cost_usd_per_1k": [
+        0.8659
+      ]
+    },
+    {
+      "name": "d1",
+      "group": "Decision model",
+      "files": [
+        "results/decision_models_ood/d1/full/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.6742,
+      "cost_usd_per_1k": [
+        0.1653
+      ]
+    },
+    {
+      "name": "d1-ultra",
+      "group": "Decision model",
+      "files": [
+        "results/decision_models_ood/d1_ultra/full/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8929,
+      "cost_usd_per_1k": [
+        0.3472
+      ]
+    },
+    {
+      "name": "Mercury Decide",
+      "group": "Decision model",
+      "files": [
+        "results/decision_models_ood/mercury_decide/full/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8828,
+      "cost_usd_per_1k": [
+        0.1811
+      ]
+    },
+    {
+      "name": "Microsoft-Decision-1",
+      "group": "Decision model",
+      "files": [
+        "results/decision_models_ood/microsoft_decision_1/full/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.7506,
+      "cost_usd_per_1k": [
+        0.3887
+      ]
+    },
+    {
+      "name": "Jev 1.13",
+      "group": "Decision model",
+      "files": [
+        "results/tool_trajectory_monitoring/jev_113_ood/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8495,
+      "cost_usd_per_1k": [
+        0.3887
+      ]
+    },
+    {
+      "name": "pplx-decider v1.2",
+      "group": "Decision model",
+      "files": [
+        "results/pplx_decider_ood/decider/full_fast.jsonl"
+      ],
+      "score_field": "margin",
+      "registry_pauroc20": 0.8956,
+      "cost_usd_per_1k": [
+        0.1763
+      ]
+    },
+    {
+      "name": "Qwen3.5-4B",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_4b_teacher_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.6175,
+      "cost_usd_per_1k": [
+        0.2842
+      ]
+    },
+    {
+      "name": "Qwen3.5-9B",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_9b_teacher_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.6976,
+      "cost_usd_per_1k": [
+        0.9468
+      ]
+    },
+    {
+      "name": "Qwen3.5-35B-A3B",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_35b_a3b_parasail_teacher_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.758,
+      "cost_usd_per_1k": [
+        0.9896
+      ]
+    },
+    {
+      "name": "Qwen3.5-27B",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_27b_teacher_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8395,
+      "cost_usd_per_1k": [
+        1.8476
+      ]
+    },
+    {
+      "name": "Qwen3.8-27B",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/qwen27b_generations_ood/qwen38_27b/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8901,
+      "cost_usd_per_1k": [
+        1.8476
+      ]
+    },
+    {
+      "name": "GPT-6 Luna",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/openai_luna_ood_benchmark/run_v1/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8365,
+      "cost_usd_per_1k": [
+        0.8355
+      ]
+    },
+    {
+      "name": "GPT-5.6 Luna",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/openai_56_luna_ood_benchmark/run_v1/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8397,
+      "cost_usd_per_1k": [
+        1.6724
+      ]
+    },
+    {
+      "name": "Kimi K2.6",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/kimi_k26_inceptron_ood_canary.jsonl",
+        "results/tool_trajectory_monitoring/kimi_k26_inceptron_ood_full_remaining.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.9194,
+      "cost_usd_per_1k": [
+        7.911
+      ]
+    },
+    {
+      "name": "Kimi K3",
+      "group": "Unadapted, binary logits",
+      "files": [
+        "results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl",
+        "results/tool_trajectory_monitoring/kimi_k3_ood_full_remaining_fireworks.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.9084,
+      "cost_usd_per_1k": [
+        25.1177
+      ]
+    },
+    {
+      "name": "Qwen3.5-9B, 0-10 score",
+      "group": "Unadapted, other output",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.4858,
+      "cost_usd_per_1k": [
+        0.9628
+      ]
+    },
+    {
+      "name": "Qwen3.5-9B, reasoning + binary",
+      "group": "Unadapted, other output",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_9b_teacher_binary_reasoning_ood/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.6923,
+      "cost_usd_per_1k": [
+        1.0054
+      ]
+    },
+    {
+      "name": "Qwen3.5-9B, reasoning + 0-10",
+      "group": "Unadapted, other output",
+      "files": [
+        "results/tool_trajectory_monitoring/qwen35_9b_teacher_ordinal_reasoning_ood_v3_final/predictions.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.6656,
+      "cost_usd_per_1k": [
+        1.0293
+      ]
+    }
+  ]
+}
