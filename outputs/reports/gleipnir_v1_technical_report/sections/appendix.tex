@@ -179,23 +179,25 @@ OOD & \texttt{adityaasinha28/deliberative-monitor-pipeline} (\texttt{filtered\_e
 The training trajectories of STRIDE contain the reasoning of the agent.
 Of the 1,350 STRIDE training trajectories, 1,269 contain reasoning blocks that are flattened into the text of the agent, 1,230 contain explicit calls to a \texttt{think} tool, and 1,340 contain at least one of the two.
 These are 15.4\% of the 8,688 training trajectories.
-We found no \texttt{think} calls in the other four training sources, but we could not compare them with typed source messages, so 1,340 is a lower bound.
-The teacher computed its targets on these inputs, and the Gleipnir monitors are trained on the same inputs.
-We did not remove the reasoning: removing it only for the monitor would give the teacher information that the monitor lacks, and removing it for both requires new teacher targets.
+We found no \texttt{think} calls in the other four training sources.
+We found this reasoning only after we had cached the targets of the teacher, so the teacher computed its targets on these inputs.
+The Gleipnir monitors are trained on the same inputs.
+We did not remove the reasoning afterwards: removing it only for the monitor would give the teacher information that the monitor lacks, and removing it for both requires new teacher targets.
 
 \paragraph{Validation set.}
 For the validation set we removed the typed reasoning of the agent and its \texttt{think} calls, and kept its visible text, its other tool calls and the tool results.
 All validation scores in this report use this version, which has 3,012 trajectories.
 
 \paragraph{No agent text in the OOD suite.}
-The OOD inputs are stricter than the description: they contain no private reasoning of the agent, and most of them also contain no text of the agent at all (Table~\ref{tab:ood-inputs}).
+The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no text of the agent at all (Table~\ref{tab:ood-inputs}).
 In the four benchmarks that come from ControlArena, every message of the agent has an empty body, and only its tool calls and the tool results remain.
 In CUA-SHADE-Arena, the messages of the agent contain only the names of its tool calls.
 Only MLE-Sabotage keeps the visible plans and the code of the agent.
 This is the input that SleightBench uses as its main setting, which removes all text of the agent and keeps the user messages, the tool calls and the tool results.
 A monitor on the OOD suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
 The training set and the validation set do keep the text of the agent, so the monitors are trained on a wider input than the OOD suite tests.
-We keep the OOD inputs unchanged so that our scores stay comparable with the scores that Sinha et al.\ report.
+We cannot be certain that the experiments of Sinha et al.\ used these published files, so this difference may not apply to the scores that they report.
+We keep the OOD inputs unchanged so that our scores stay as comparable as possible with theirs.
 The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
 
 \begin{table}[t]
@@ -216,10 +218,6 @@ MLE-Sabotage & 148 & Plans and code kept; separate thinking fields excluded \\
 \bottomrule
 \end{tabular}
 \end{table}
-
-\paragraph{Length.}
-We do not truncate inputs.
-The longest training input has fewer than 29,696 tokens, which is the limit of our training configuration.
 
 \section{Prompts}
 \label{app:prompts}
