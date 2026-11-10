@@ -231,7 +231,9 @@ hard labels and soft targets (C3.4–C3.5, written) is in Section 4.2 with
 Table `tab:hard-soft`, so that results come after the training setup. Section
 3.2 does not report the false-positive rate of the filter: it is not the
 metric of Sinha et al., and we have not measured its variation across seeds
-(JF, 2026-11-10).
+(JF, 2026-11-10). The report says nothing about calibration for now, and
+Table `tab:hard-soft` has no extreme-score column. How to report the
+false-positive rate is undecided; one option is a second frontier plot.
 
 Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 
