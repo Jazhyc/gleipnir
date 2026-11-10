@@ -224,5 +224,13 @@ No results are reported yet.
   them. SleightBench's main setting removes all assistant text and thinking
   and keeps user turns, tool calls and tool results
   (`experiments/sleightbench_eval/README.md`, the `stripped` view).
+- MLE-Sabotage inputs: one input was inspected on 2026-11-10
+  (`data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl`, row 956).
+  It holds the user's task, then per step the agent's code under `Code:` and
+  its run output under `Execution info:`; the audit in
+  `docs/findings/ood_input_reasoning.md` records that visible `Plan:` text is
+  kept and the separate thinking field is not. The per-benchmark counts of
+  empty assistant bodies are in that finding and are no longer tabulated in
+  the report.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

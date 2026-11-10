@@ -189,35 +189,16 @@ For the validation set we removed the typed reasoning of the agent and its \text
 All validation scores in this report use this version, which has 3,012 trajectories.
 
 \paragraph{No assistant messages in the OOD suite.}
-The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no assistant messages at all (Table~\ref{tab:ood-inputs}).
-In the four benchmarks that come from ControlArena, every assistant message has an empty body, and only the tool calls and the tool results remain.
+The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no assistant messages at all.
+In the four benchmarks that come from ControlArena (AgentDojo, IaC, Rogue Eval and SHADE-Arena), every assistant message has an empty body, and only the tool calls and the tool results remain.
 In CUA-SHADE-Arena, the assistant messages contain only the names of the tool calls.
-Only MLE-Sabotage keeps the visible plans and the code of the agent.
+Only MLE-Sabotage keeps assistant messages: for each step, the input shows the short plan that the agent states, the code that it submits and the output of that code.
 This is the input that SleightBench uses as its main setting, which removes all assistant messages and keeps the user messages, the tool calls and the tool results.
 A monitor on the OOD suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
 The training set and the validation set do keep the assistant messages, so the monitors are trained on a wider input than the OOD suite tests.
 We cannot be certain that the experiments of Sinha et al.\ used these published files, so this difference may not apply to the scores that they report.
 We keep the OOD inputs unchanged so that our scores stay as comparable as possible with theirs.
 The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
-
-\begin{table}[t]
-\caption{Assistant messages in the inputs of the OOD suite. An assistant message is the text in the assistant role, apart from tool calls.}
-\label{tab:ood-inputs}
-\centering
-\small
-\begin{tabular}{lrl}
-\toprule
-Benchmark & Trajectories & Assistant messages in the monitor input \\
-\midrule
-AgentDojo & 1,500 & All 6,380 bodies empty; tool calls and results kept \\
-IaC & 1,443 & All 27,734 bodies empty; tool calls and results kept \\
-Rogue Eval & 1,499 & All 3,533 bodies empty; tool calls and results kept \\
-SHADE-Arena & 850 & All 50,218 bodies empty; tool calls and results kept \\
-CUA-SHADE-Arena & 955 & All 24,571 bodies contain only tool-call names \\
-MLE-Sabotage & 148 & Plans and code kept; separate thinking fields excluded \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \section{Prompts}
 \label{app:prompts}
