@@ -384,4 +384,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   Open: the full specification adds 9.4% prompt tokens on the OOD suite by
   these counts, while Section 3.3 and C.5 say 9.9%
   (`experiments/gleipnir27b_vocab_distillation/README.md`); basis to check.
+  Since 2026-11-10 (JF) the table is in USD per million prompt tokens: API
+  input prices $0.03 and $0.195 (the one output token is ignored); final
+  $0.0098 / $0.0042 (4B) and $0.0412 / $0.0177 (27B) are the per-1,000 costs
+  divided by 8,654.7 and 9,466.7 tokens per evaluation.
 
