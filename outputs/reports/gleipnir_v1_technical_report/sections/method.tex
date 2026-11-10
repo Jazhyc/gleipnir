@@ -53,7 +53,8 @@ Appendix~\ref{app:training-config} gives the full configuration.
 
 \paragraph{Gleipnir 4B.}
 The 4B is the average of three training runs that differ only in the order of the training data.
-We average the weight updates of the three adapters, which gives one monitor of the same size as a single run.
+We average the weight updates of the three adapters, as in a model soup~\citep{wortsman2022soups}.
+The averaged adapter has three times the rank of a single adapter, but we merge it into the base model for serving, so the monitor costs the same to run as a single run.
 The scores of single runs vary, and on the validation set and the OOD suite the average scores within 0.002 pAUROC@20 of the best of the three runs (Appendix~\ref{app:ablation-average}).
 The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
 We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack.

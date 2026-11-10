@@ -380,7 +380,9 @@ Gleipnir~4B is the average of three training runs that differ only in the order 
 The scores of the three runs differ by up to 0.018 on the validation set and by up to 0.036 on the OOD suite (Table~\ref{tab:average}).
 The order of the runs also changes between the two sets: the run with the best validation score has the lowest OOD score.
 We saw this variation on the OOD suite before we decided to average, so the decision is not independent of the OOD suite.
-We average the weight updates of the three adapters, which needs no further training and gives one monitor of the same size as a single run.
+We average the weight updates of the three adapters, which needs no further training.
+\citet{wortsman2022soups} show that such an average of fine-tuned models from one initialization can score higher than the single models without a higher inference cost.
+The averaged adapter has rank 384, three times the rank of a single adapter, and we merge it into the base model for serving.
 The average scores 0.912 on the validation set and 0.811 on the OOD suite.
 On each set this is within 0.002 of the best single run, and no single run is the best on both.
 These scores are from BF16 serving before QAD.
