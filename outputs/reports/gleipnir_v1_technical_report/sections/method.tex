@@ -40,16 +40,17 @@ The loss of the monitor on a trajectory is the binary cross-entropy between its 
 \mathcal{L} = -\,p \log s - (1 - p) \log (1 - s) .
 \label{eq:loss}
 \end{equation}
-The loss has no term for the source label and no temperature.
+Each training trajectory also has a label from its dataset, benign or harmful, which we call the dataset label.
+The loss has no term for this label.
 In contrast to the pipeline of Section~\ref{sec:background-sinha}, the teacher writes no rationale, and no judge model or RL stage is needed.
 
 \paragraph{Teacher-agreement filter.}
-We use the source labels only to filter the training set.
-We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its source label, which removes 852 of the 8,688 trajectories and leaves 7,836.
+We use the dataset labels only to filter the training set.
+We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its dataset label, which removes 852 of the 8,688 trajectories and leaves 7,836.
 In a comparison on one seed of the 4B, the filter raised pAUROC@20 on the validation set from 0.847 to 0.896.
 This comparison has no control that removes the same number of trajectories at random.
 
-Section~\ref{sec:ablation-targets} compares these soft targets with training on the source labels.
+Section~\ref{sec:ablation-targets} compares these soft targets with training on the dataset labels.
 
 \subsection{Training setup}
 \label{sec:training-setup}

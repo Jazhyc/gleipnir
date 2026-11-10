@@ -17,6 +17,10 @@ abstract. Follow them when drafting or editing.
 - Write "assistant messages" for the text in the assistant role of a
   trajectory, apart from tool calls. Do not write "text of the agent" or
   "messages of the agent".
+- Write "dataset label" for the benign or harmful label that a dataset gives
+  to a trajectory. Do not write "source label", "ground truth" or "hard
+  label" for the label itself; "hard labels" names the training objective
+  that uses them.
 - Data splits have three names, as in Sinha et al.: training set, validation
   set (held-out STRIDE and Gloom-Exfiltration) and OOD suite. Do not write
   "ID" or "in-distribution"; the project records call the validation set the
