@@ -373,6 +373,34 @@ Gleipnir 27B & Full specification (released) & 0.942 & 0.935 & 0.730 \\
 \end{tabular}
 \end{table}
 
+\subsection{Serving precision}
+\label{app:ablation-precision}
+
+The serving stack of Section~\ref{sec:serving} runs the monitors with low-precision weights.
+Table~\ref{tab:precision} compares it with BF16 serving for each released monitor, with the instruction that the monitor is released with.
+Before QAD, the 4B loses 0.032 on the validation set and 0.053 on the OOD suite under optimized serving.
+QAD restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score and 0.041 below the BF16 score before QAD.
+The 27B loses nothing: its scores under optimized serving are 0.002 and 0.016 higher than in BF16.
+The 95\% bootstrap intervals of the two Mean-OOD scores of the 27B, resampled over trajectories, overlap ([0.925, 0.945] in BF16 and [0.941, 0.960] under optimized serving).
+
+\begin{table}[h]
+\caption{BF16 serving against optimized serving. Scores are pAUROC@20. The 4B reads the compact instruction and the 27B reads the full specification.}
+\label{tab:precision}
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Validation} & \multicolumn{2}{c}{Mean-OOD} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Monitor & BF16 & Optimized & BF16 & Optimized \\
+\midrule
+4B before QAD & 0.912 & 0.881 & 0.811 & 0.758 \\
+Gleipnir 4B (after QAD) & 0.933 & 0.912 & 0.804 & 0.770 \\
+Gleipnir 27B & 0.942 & 0.944 & 0.935 & 0.951 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Training configuration}
 \label{app:training-config}
 
