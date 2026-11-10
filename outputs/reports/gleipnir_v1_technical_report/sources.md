@@ -407,4 +407,10 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   (`experiments/b200_inference_benchmark/README.md`). Rates $7.99 (Runpod on
   demand) and $3.44 (CoreWeave $8.60 with "up to 60%" committed discount):
   `docs/research/tool_trajectory_inference_economics.md`.
+  Revised the same day (JF): throughput numbers moved out of the text to a
+  planned appendix table (`app:serving-throughput`, stub); added the
+  prefill/decoding explanation (prefill compute-bound, decoding
+  memory-bound; general background, no citation yet). Output-to-input price
+  ratios 5 (4B: $0.15 / $0.03) and 8 (27B: $1.56 / $0.195):
+  `docs/research/tool_trajectory_inference_economics.md`.
 

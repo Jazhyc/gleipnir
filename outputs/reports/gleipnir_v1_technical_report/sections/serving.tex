@@ -28,19 +28,26 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \label{sec:serving-selfhost}
 
 The API price in Table~\ref{tab:serving} is the price that Sinha et al.\ use for the base models: the hosted price per input token (Appendix~\ref{app:sinha-setup}).
-A hosted API is built to generate text and charges for each token.
-A Gleipnir monitor generates no text.
-It needs one forward pass over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
+A hosted API is built to generate text.
+Generation has two phases.
+In the first phase, called prefill, the model reads the whole prompt in one forward pass.
+All prompt tokens go through each layer together, so the work is large matrix products and is limited by the arithmetic speed of the GPU.
+In the second phase, decoding, the model writes one token at a time.
+Each new token needs another pass that reads all the weights of the model and the stored state of every earlier token, but computes for one position only.
+Decoding is therefore limited by how fast the GPU can read memory, and most of its arithmetic capacity stays unused.
+Providers price the two phases differently: for the two base models an output token costs 5 and 8 times as much as an input token.
+
+A Gleipnir monitor needs only the prefill phase: one forward pass over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
 We therefore serve the monitor ourselves with vLLM in classification mode.
-In this mode vLLM treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass, returns the two logits, and starts no decoding loop.
-A request is complete after this pass, so the GPU can batch many trajectories and spend all of its time on prompt tokens.
+In this mode vLLM treats the model as a classifier over the tokens \texttt{0} and \texttt{1}: it runs the forward pass, returns the two logits, and never decodes.
+A request is complete after this pass, so the GPU spends all of its time on the phase that it runs most efficiently, and it can batch many trajectories.
 
 We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
-On one NVIDIA B200, stock vLLM in BF16 processes 119 thousand prompt tokens per second for the 4B and 23 thousand for the 27B.
-We convert throughput to cost with two hourly rates for the B200.
+Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
+We convert throughput to cost with two hourly rates for one NVIDIA B200.
 The on-demand rate of \$7.99 is what we paid at Runpod.
 The committed-use rate of \$3.44 is the published on-demand rate of CoreWeave (\$8.60) with its largest published discount for committed use (60\%).
-At the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
+With stock vLLM in BF16 at the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
 
 These costs assume that the GPU is fully used.
