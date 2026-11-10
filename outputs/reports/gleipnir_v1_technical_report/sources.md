@@ -30,7 +30,7 @@ No results are reported yet.
   and human review. The paper gives no reason for the 20% cutoff itself.
 - Kramár et al., *Building Production-Ready Probes For Gemini*,
   [arXiv:2601.11516](https://arxiv.org/abs/2601.11516). Source of the probe
-  architectures in Section 6.
+  architectures in Section 7.
 - Cunningham et al., *Constitutional Classifiers++*,
   [arXiv:2601.04603](https://arxiv.org/abs/2601.04603). The 0.05% figure is
   the refusal rate on production traffic stated in the abstract.
@@ -208,7 +208,7 @@ No results are reported yet.
   `experiments/sleightbench_eval/prompts/control_arena_binary.txt`). Word
   counts 95, 701 and 299 are from `wc -w`. The ControlArena instruction was
   used in the exploratory SleightBench run `sb02`
-  (`experiments/sleightbench_eval/README.md`); whether Section 5 reports that
+  (`experiments/sleightbench_eval/README.md`); whether Section 6 reports that
   run is still to be decided.
 - Hugging Face datasets named in the appendix on data sources and discrepancies, with full
   revisions: training set `adityaasinha28/deliberative-monitor-pipeline` at

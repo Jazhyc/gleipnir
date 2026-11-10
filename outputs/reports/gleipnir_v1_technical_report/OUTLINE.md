@@ -33,7 +33,7 @@ Made by Jeremias Ferrao on 2026-11-02.
    stack with its best prompt, as in the frontier figure: Gleipnir 4B with the
    student prompt (0.770 Mean-OOD pAUROC@20) and Gleipnir 27B with the teacher
    prompt (0.951). The optimized stack is the deployment path, and the OOD
-   suite measures what it costs in quality. BF16 scores go in Section 3.2
+   suite measures what it costs in quality. BF16 scores go in Section 4
    and the appendix.
 2. **Teacher prompt for the 27B.** Present it as an ablation in the appendix.
    It tested whether the 27B benefits from more detailed instructions. It was
@@ -53,7 +53,7 @@ Owner: JF.
 
 - **C1.1 (draft).** A monitor that scores each agent action runs on the
   critical path of that action, so its latency and cost add to every action.
-- **C1.2 (draft).** Summary of the results: the main claims of Sections 4–6 in
+- **C1.2 (draft).** Summary of the results: the main claims of Sections 5–7 in
   one paragraph each.
 - **C1.3 (draft).** Contributions: the training recipe, the evaluation, the
   adversarial and probing analysis, and the released models and serving stack.
@@ -64,7 +64,7 @@ Exhibit: optionally, the frontier figure (Figure 1) on the first page.
 
 Owner: JF.
 
-This section is the background for Sections 3 and 4: it describes what we
+This section is the background for Sections 3 and 5: it describes what we
 reuse from Sinha et al., so the method states only what we change. The
 description of Sinha et al. (C2.3–C2.5) takes a quarter to half a page. The
 other paragraphs are short.
@@ -74,7 +74,7 @@ background leaves out are in Appendix A (written): the teacher, the four
 candidates, the judge and the RL stage; the data table with counts per source;
 the 28,000-token filter; the metric formula; and the cost basis. Section 2.2
 points to it. The filter is also stated in limitation C7.3, and our own cost
-basis in Section 4 (C4.1).
+basis in Section 5 (C4.1).
 
 Subsections: 2.1 Monitoring agent actions (C2.1–C2.2), 2.2 Trained monitors
 and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
@@ -130,9 +130,9 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   They drop trajectories over 28,000 tokens to fit a 32,000-token context.
   They pair
   it with the inference cost per 1,000 evaluations at uncached list prices.
-  The metric and the suite are defined here and used in Section 4. The
+  The metric and the suite are defined here and used in Section 5. The
   background gives no scores (their Qwen3.5-27B at 0.831 and $2.78, Opus 4.6
-  at 0.942 and 34.2 times the cost, go in Section 4) and does not repeat why
+  at 0.942 and 34.2 times the cost, go in Section 5) and does not repeat why
   low false-positive rates matter (Section 2.1).
   Evidence: arXiv:2605.29601, Section 4.2, Appendix D.4.
 - **C2.5 (written).** What we reuse and what we change. We reuse their
@@ -140,7 +140,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   against their reported scores. We change the monitor output and the
   training target (Section 3). The text does not say whether their checkpoints
   are public: the part of the paper that was read has no release statement.
-  For Section 4 (C4.1): Sinha et al. price open-weight models at hosted API
+  For Section 5 (C4.1): Sinha et al. price open-weight models at hosted API
   proxy prices, while we price Gleipnir at self-hosted B200 break-even; state
   this difference there. Their tables sum to 6,402 OOD rows and our frozen
   suite has 6,395 (`docs/research/tool_transcript_monitoring.md`).
@@ -165,7 +165,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   trajectories, with one binary decision token and a frontier teacher's
   probability as the only target. Geuter et al. do not evaluate monitoring or
   agent trajectories, and we found no evaluation of decision models as
-  control monitors (search of 2026-11-09). Section 4 compares Gleipnir with
+  control monitors (search of 2026-11-09). Section 5 compares Gleipnir with
   decision models on the OOD suite.
   Evidence: arXiv:2610.17205 (Sections 4–5, Tables 2–5, read in full);
   `docs/findings/decision_models_ood_benchmark.md`,
@@ -186,7 +186,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   (Goldowsky-Dill et al.), and near-zero inference cost, since the probe
   reuses the model's own forward pass. Both need access to the monitored
   model, which the action-only setting does not assume. The paragraph does
-  not point to Section 6, so that our probing experiments are not read as
+  not point to Section 7, so that our probing experiments are not read as
   resting on these two advantages.
 - **C2.7a (written in Appendix C.4 as one sentence, without the numbers).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
@@ -197,17 +197,17 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   soft targets help the small model more. Their tasks, metric and teachers
   differ from ours, so this is context, not a replication.
 - **C2.8 (written).** Activation probes in production. Kramár et al. propose
-  probe architectures that hold up on long inputs; Section 6 uses their
+  probe architectures that hold up on long inputs; Section 7 uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
   a refusal rate of 0.05%. Both works read the activations of the monitored
   model. Gleipnir is a separate model and reads only the trajectory.
   Evidence: arXiv:2601.11516, arXiv:2601.04603,
   `experiments/probe_generalization/README.md`.
-- **C2.9 (moved to Section 5).** Monitor-directed attacks. Terekhov et al.
+- **C2.9 (moved to Section 6).** Monitor-directed attacks. Terekhov et al.
   show that an agent can evade monitors by embedding prompt injections in its
   outputs. This is not an approach related to ours, so Section 2.3 does not
-  cover it. Section 5 introduces it where it tests the Gleipnir monitors
+  cover it. Section 6 introduces it where it tests the Gleipnir monitors
   against such text (C5.2, C5.3).
 
 Citations to add when the section is drafted: one source per remaining
@@ -217,12 +217,15 @@ are each cited once in the background, where they are listed; an appendix
 table gives sizes and sources. Read each cited paper beyond its abstract before
 the claim is marked written.
 
-## 3. Training and serving
+## 3. Training
 
 Owner: JF.
 
-Serving is part of the method because it sets the cost per evaluation used in
-the frontier of Section 4.
+Structure (JF, 2026-11-10): serving and cost is its own Section 4, and
+Section 3 is "Training Gleipnir monitors". The later sections moved up by one
+(main evaluation 5, held-out 6, probing 7, limitations 8, conclusion 9). Claim
+IDs keep their old numbers (C3.8–C3.13 are the serving claims, C4.x the main
+evaluation, and so on).
 
 Appendix order (JF, 2026-11-10): the prompts appendix is last (F), so results
 and ablations are Appendix C and the subsections below are C.1 to C.5.
@@ -251,15 +254,14 @@ D.2 output format, D.3 teacher-agreement filter, D.4 soft targets against hard
 labels (Table `tab:hard-soft`), D.5 instruction of the 27B. The main text keeps
 one or two sentences for each, with a pointer: output format at the end of
 3.1, filter in 3.2, 27B instruction and a paragraph "Effect of the soft
-targets" at the end of 3.3. Section 4.2 no longer exists; Section 4 holds only
-the frontier. The notes below that place the hard-soft comparison in Section
-4.2 are superseded.
+targets" at the end of 3.3. The former Section 4.2 no longer exists; the main
+evaluation (now Section 5) holds only the frontier. The notes below that place
+the hard-soft comparison in a results subsection are superseded.
 
 Subsections in the text: 3.1 Monitor input and output (C3.1–C3.2, written),
 3.2 Soft-target distillation (C3.3, written), 3.3 Training setup (C3.6–C3.7
-and the configuration), 3.4 Serving and cost (C3.8–C3.13). The comparison of
-hard labels and soft targets (C3.4–C3.5, written) is in Section 4.2 with
-Table `tab:hard-soft`, so that results come after the training setup. Section
+and the configuration). The comparison of hard labels and soft targets
+(C3.4–C3.5, written) is in Appendix C.4 with Table `tab:hard-soft`. Section
 3.2 does not report the false-positive rate of the filter: it is not the
 metric of Sinha et al., and we have not measured its variation across seeds
 (JF, 2026-11-10). The report says nothing about calibration for now, and
@@ -336,7 +338,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 - **C3.6 (written).** The released 4B is the weight average of three seeds
   that differ in data order, release rule not mentioned (JF, 2026-11-10)
   (validation 0.912 against a seed mean of 0.903), then trained with QAD.
-  The QAD scores go in Section 3.4.
+  The QAD scores go in Section 4.
   Evidence: `experiments/seed_average/README.md`.
 - **C3.7 (written in 3.3 with the validation scores only; the OOD scores
   0.935 against 0.909 are not in the text yet).** Teacher-prompt ablation for the 27B. Trained with
@@ -347,9 +349,17 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   Evidence: `experiments/gleipnir27b_vocab_distillation/README.md`,
   `docs/findings/qwen38_27b_campaign.md`.
 
-### 3.2 Serving and cost
+## 4. Serving and cost
 
-This subsection lists the main serving decisions. The appendix gives the
+Owner: JF. File `sections/serving.tex`, label `sec:serving`. Not drafted.
+Serving has its own section because it is a separate contribution and sets
+the cost per evaluation used in the frontier of Section 5. Planned
+subsections: the serving stack (changes against stock vLLM), the effect on
+scores (BF16 against optimized, QAD for the 4B; numbers in Appendix C.7; one
+clause citing `ouyang2025lowbit` for why the 27B needs no QAD), and cost and
+released artifacts. Target about one page.
+
+This section lists the main serving decisions. The appendix gives the
 throughput gain of each important change to the serving stack; minor
 implementation details are left out.
 
@@ -387,7 +397,7 @@ interface ablation table, a short table of serving decisions. Appendix: data
 sources, filter, hyperparameters, prompts, training cost, teacher-prompt
 ablation, and throughput per serving change.
 
-## 4. Main evaluation
+## 5. Main evaluation
 
 Owner: JF.
 
@@ -420,7 +430,7 @@ rows; move the section to match where the main
 text first cites it), per-source results, full frontier figure, validation
 results, calibration.
 
-## 5. Held-out and adversarial evaluation
+## 6. Held-out and adversarial evaluation
 
 Owner: ARK (C5.1–C5.3) and JF (C5.4, section framing).
 
@@ -448,7 +458,7 @@ Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
 details, SleightBench per-attack results.
 
-## 6. Probing
+## 7. Probing
 
 Owner: JF.
 
@@ -458,7 +468,7 @@ holds a representation that supports the decision before the final layer, a
 probe at that layer could replace the remaining layers. The experiments also
 ask whether soft distillation helps such probes. They do not assume access to
 the monitored agent: the probes read the monitor backbone on the trajectory.
-Section 6 introduces Kramár et al.'s architectures itself; Section 2.3 does
+Section 7 introduces Kramár et al.'s architectures itself; Section 2.3 does
 not point here. The claims below predate this framing and need a pass against
 it before they are accepted.
 
@@ -478,13 +488,13 @@ it before they are accepted.
 Exhibit: probe objective comparison (`figures/probe_objective_ood_dumbbell.svg`).
 Appendix: probe families, layer sweep, attention maps.
 
-## 7. Limitations
+## 8. Limitations
 
 Owner: JF.
 
 - **C7.1 (draft).** One teacher, one training domain, one seed for the 27B.
 - **C7.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
-  monitor-directed text (Section 5).
+  monitor-directed text (Section 6).
 - **C7.3 (draft).** Sinha et al. drop every trajectory over 28,000 tokens to
   fit the 32,000-token context of their shorter-context models. The limitation
   states this, since the background does not. The OOD suite inherits the
@@ -501,7 +511,7 @@ Owner: JF.
   with numbers when the section is drafted: the benign count per OOD source
   and the lowest false-positive rate each can resolve.
 
-## 8. Conclusion
+## 9. Conclusion
 
 Owner: JF.
 

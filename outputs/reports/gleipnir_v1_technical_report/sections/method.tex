@@ -1,4 +1,4 @@
-\section{Training and serving Gleipnir monitors}
+\section{Training Gleipnir monitors}
 \label{sec:method}
 
 \subsection{Monitor input and output}
@@ -74,8 +74,3 @@ We test the soft targets by training on the dataset labels instead (hard labels)
 For the 4B, soft targets raise Mean-OOD from 0.716 to 0.792, as means over three runs for each objective.
 For the 27B, with one run for each objective, the two score within 0.005 of each other: 0.904 with hard labels and 0.909 with soft targets.
 Appendix~\ref{app:ablation-targets} gives the full comparison, which includes the validation set.
-
-\subsection{Serving and cost}
-\label{sec:serving}
-
-\todo{Main serving decisions: single prefill pass, low-precision weights with QAD for the 4B, last-token final-layer attention, host-path changes. Cost per 1,000 evaluations at on-demand and committed-use B200 rates. Score change against BF16 serving. Released artifacts. Throughput per change goes in the appendix.}
