@@ -283,3 +283,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `experiments/seed_average/README.md`. QAD column: `experiments/qad_v02/README.md`.
   Not in the table: gradient clipping (the trainer default is a maximum norm
   of 1.0; not confirmed for these runs) and the 16,384-token packing budget.
+- Appendix D.5 (instruction of the 27B). Validation 0.9216 and 0.9420, OOD
+  0.9087 and 0.9352 (BF16), SHADE-Arena 0.588 and 0.730:
+  `docs/decisions.md` (2026-10-20), `docs/findings/qwen38_27b_campaign.md`.
+  The 9.9% token increase: `experiments/gleipnir27b_vocab_distillation/README.md`.
+  Appendices D.2 to D.4 carry the text and numbers that were in Sections 3.1,
+  3.2 and 4.2; their sources are unchanged.

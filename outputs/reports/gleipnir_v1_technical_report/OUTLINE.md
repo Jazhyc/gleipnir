@@ -224,6 +224,16 @@ Owner: JF.
 Serving is part of the method because it sets the cost per evaluation used in
 the frontier of Section 4.
 
+Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
+"Results and ablations" with subsections D.1 all monitors on the OOD suite,
+D.2 output format, D.3 teacher-agreement filter, D.4 soft targets against hard
+labels (Table `tab:hard-soft`), D.5 instruction of the 27B. The main text keeps
+one or two sentences for each, with a pointer: output format at the end of
+3.1, filter in 3.2, 27B instruction and a paragraph "Effect of the soft
+targets" at the end of 3.3. Section 4.2 no longer exists; Section 4 holds only
+the frontier. The notes below that place the hard-soft comparison in Section
+4.2 are superseded.
+
 Subsections in the text: 3.1 Monitor input and output (C3.1–C3.2, written),
 3.2 Soft-target distillation (C3.3, written), 3.3 Training setup (C3.6–C3.7
 and the configuration), 3.4 Serving and cost (C3.8–C3.13). The comparison of

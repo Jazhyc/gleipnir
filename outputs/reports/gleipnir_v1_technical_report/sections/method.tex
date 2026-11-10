@@ -17,15 +17,7 @@ s = \frac{e^{z_1}}{e^{z_0} + e^{z_1}} = \sigma(z_1 - z_0) .
 This output has two properties that the output of Section~\ref{sec:background-sinha} lacks.
 It needs one forward pass over the prompt and no generated text, so the monitor writes no rationale.
 It is also continuous, so it ranks trajectories without the ties of an integer scale.
-
-\paragraph{Effect of the output format.}
-The output format changes the score of a monitor before any training.
-We compare four formats on the unadapted Qwen3.5-9B, with the model, the OOD suite and the monitoring specification fixed; only the wording of the output instruction differs.
-Binary logits score 0.698 Mean-OOD.
-An integer from 0 to 10 scores 0.486.
-Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the coarser scale does not explain this difference.
-When the model writes its reasoning before the output, the integer scores 0.666 and the binary logits score 0.692, in both cases at a higher cost (Table~\ref{tab:ood-all}).
-Binary logits without reasoning are therefore the cheapest of the four formats and score at least as high as the others.
+Binary logits also score higher than an integer from 0 to 10 before any training: on the unadapted Qwen3.5-9B they score 0.698 Mean-OOD against 0.486 (Appendix~\ref{app:ablation-format}).
 
 \subsection{Soft-target distillation}
 \label{sec:binary-logit-distillation}
@@ -47,10 +39,7 @@ In contrast to the pipeline of Section~\ref{sec:background-sinha}, the teacher w
 \paragraph{Teacher-agreement filter.}
 We use the dataset labels only to filter the training set.
 We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its dataset label, which removes 852 of the 8,688 trajectories and leaves 7,836.
-In a comparison on one seed of the 4B, the filter raised pAUROC@20 on the validation set from 0.847 to 0.896.
-This comparison has no control that removes the same number of trajectories at random.
-
-Section~\ref{sec:ablation-targets} compares these soft targets with training on the dataset labels.
+One 4B run scored higher on the validation set with the filter than without it (Appendix~\ref{app:ablation-filter}).
 
 \subsection{Training setup}
 \label{sec:training-setup}
@@ -78,6 +67,13 @@ It differs from the 4B in the instruction that it reads at scoring time.
 Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification: 0.942 pAUROC@20 against 0.922.
 We made this choice on the validation set.
 The released 27B therefore reads the full specification, with 9.9\% more prompt tokens; the 4B keeps the compact one.
+Appendix~\ref{app:ablation-instruction} gives the scores on the OOD suite.
+
+\paragraph{Effect of the soft targets.}
+We test the soft targets by training on the dataset labels instead (hard labels), with all other settings unchanged.
+For the 4B, soft targets raise Mean-OOD from 0.716 to 0.792, as means over three runs for each objective.
+For the 27B, with one run for each objective, the gain is smaller: 0.933 to 0.951 in the configuration that we release.
+Appendix~\ref{app:ablation-targets} gives the full comparison, which includes the validation set.
 
 \subsection{Serving and cost}
 \label{sec:serving}
