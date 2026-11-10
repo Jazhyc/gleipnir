@@ -231,6 +231,12 @@ The hard-soft comparison reports only the compact instruction with BF16
 serving (JF, 2026-11-10); the release-configuration 27B pair (0.933 against
 0.951 OOD, 0.959 against 0.944 validation) is no longer in the report.
 
+Pending experiment (JF, 2026-11-10): `experiments/gleipnir4b_full_specification/`
+scores the released 4B with the full specification on the validation set and
+the OOD suite (BF16 and optimized serving). Prepared, not launched. Its result
+replaces the "4B, 27B teacher" rows of Table `tab:instruction`. Appendix C.6
+(serving precision, Table `tab:precision`) is written.
+
 Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
 "Results and ablations" with subsections D.1 all monitors on the OOD suite,
 D.2 output format, D.3 teacher-agreement filter, D.4 soft targets against hard
