@@ -153,9 +153,27 @@ Kimi K3 & 25.118 & 0.908 \\
 \section{Data processing}
 \label{app:data-processing}
 
-We use the data as Sinha et al.\ prepared it, and we place each trajectory unchanged between the trajectory tags (Appendix~\ref{app:prompts}).
-This appendix records two properties of the prepared data that differ from the action-only description in Section~\ref{sec:background-sinha}.
-Both are properties of the prepared files and not of our processing.
+We use the data that \citet{sinha2026training} published on Hugging Face (Table~\ref{tab:hf-data}), and we place each trajectory unchanged between the trajectory tags (Appendix~\ref{app:prompts}).
+Section~\ref{sec:background-sinha} describes the input of an action-only monitor as the user messages, the messages of the agent and the tool outputs, without the private reasoning of the agent.
+This appendix records two places where the published files differ from that description.
+Both are properties of the files and not of our processing.
+
+\begin{table}[t]
+\caption{Hugging Face datasets that we use, with the revision that we read.}
+\label{tab:hf-data}
+\centering
+\small
+\begin{tabular}{lll}
+\toprule
+Split & Dataset & Revision \\
+\midrule
+Training & \texttt{adityaasinha28/deliberative-monitor-pipeline} (\texttt{merged/}) & \texttt{2f10f4e} \\
+Validation & \texttt{aksh-n/rich-trajectories-cleaned} (STRIDE, \texttt{test}) & \texttt{92a44c8} \\
+ & \texttt{Syghmon/gloom-data-exfiltration} & \texttt{ee3c56b} \\
+OOD & \texttt{adityaasinha28/deliberative-monitor-pipeline} (\texttt{filtered\_eval/}) & \texttt{2f10f4e} \\
+\bottomrule
+\end{tabular}
+\end{table}
 
 \paragraph{Agent reasoning in the STRIDE training set.}
 The training trajectories of STRIDE contain the reasoning of the agent.
@@ -169,14 +187,15 @@ We did not remove the reasoning: removing it only for the monitor would give the
 For the validation set we removed the typed reasoning of the agent and its \texttt{think} calls, and kept its visible text, its other tool calls and the tool results.
 All validation scores in this report use this version, which has 3,012 trajectories.
 
-\paragraph{Missing agent text in the OOD suite.}
-We found no private reasoning of the agent in the OOD inputs.
-However, most OOD inputs also lack the text that the agent wrote for the user (Table~\ref{tab:ood-inputs}).
+\paragraph{No agent text in the OOD suite.}
+The OOD inputs are stricter than the description: they contain no private reasoning of the agent, and most of them also contain no text of the agent at all (Table~\ref{tab:ood-inputs}).
 In the four benchmarks that come from ControlArena, every message of the agent has an empty body, and only its tool calls and the tool results remain.
 In CUA-SHADE-Arena, the messages of the agent contain only the names of its tool calls.
 Only MLE-Sabotage keeps the visible plans and the code of the agent.
-A monitor on this suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
-We keep the inputs unchanged so that our scores stay comparable with the scores that Sinha et al.\ report.
+This is the input that SleightBench uses as its main setting, which removes all text of the agent and keeps the user messages, the tool calls and the tool results.
+A monitor on the OOD suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
+The training set and the validation set do keep the text of the agent, so the monitors are trained on a wider input than the OOD suite tests.
+We keep the OOD inputs unchanged so that our scores stay comparable with the scores that Sinha et al.\ report.
 The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
 
 \begin{table}[t]

@@ -210,5 +210,19 @@ No results are reported yet.
   used in the exploratory SleightBench run `sb02`
   (`experiments/sleightbench_eval/README.md`); whether Section 5 reports that
   run is still to be decided.
+- Hugging Face datasets named in the data-processing appendix, with full
+  revisions: training set `adityaasinha28/deliberative-monitor-pipeline` at
+  `2f10f4e49f4bf349965640ac021406689455d1c3`, file
+  `merged/stride_gloom_crh_s45_o46_ctrl_t7_bal.parquet`
+  (`docs/findings/tool_trajectory_teacher_cost_estimate.md`); OOD inputs from
+  the same repository and revision under `filtered_eval/`
+  (`docs/findings/ood_input_reasoning.md`); validation set from
+  `aksh-n/rich-trajectories-cleaned` at `92a44c82…` (STRIDE `test`, 946 rows)
+  and `Syghmon/gloom-data-exfiltration` at `ee3c56ba…` (2,066 rows after the
+  length filter) (`docs/research/tool_transcript_monitoring.md`). The dataset
+  cards declare no license, so we name the datasets and do not redistribute
+  them. SleightBench's main setting removes all assistant text and thinking
+  and keeps user turns, tool calls and tool results
+  (`experiments/sleightbench_eval/README.md`, the `stripped` view).
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
