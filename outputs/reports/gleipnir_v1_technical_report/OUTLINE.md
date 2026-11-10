@@ -237,11 +237,12 @@ column. Material: 27B 0.588 (compact) against 0.730 (full specification) in
 BF16 and 0.832 under optimized serving; released 4B 0.299 (BF16, compact); 4B
 seeds 0.221 to 0.309; five task pairs. Not drafted.
 
-Pending experiment (JF, 2026-11-10): `experiments/gleipnir4b_full_specification/`
-scores the released 4B with the full specification on the validation set and
-the OOD suite (BF16 and optimized serving). Prepared, not launched. Its result
-replaces the "4B, 27B teacher" rows of Table `tab:instruction`. Appendix C.6
-(serving precision, Table `tab:precision`) is written.
+Experiments run 2026-11-10 (JF): `experiments/gleipnir4b_full_specification/`
+gives the 4B rows of Table `tab:instruction` (BF16 only; the optimized arm was
+dropped), and `experiments/filter_margin_ood/` gives validation and Mean-OOD
+for all five rows of Table `tab:filter` from one BF16 serving path. C.3 states
+that the margin was chosen on the validation set. Appendix C.6 (serving
+precision, Table `tab:precision`) is written.
 
 Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
 "Results and ablations" with subsections D.1 all monitors on the OOD suite,

@@ -45,4 +45,26 @@ PYTHONPATH=src:. python -m experiments.filter_margin_ood.compare
 
 ## Result
 
-Not run yet.
+Run 2026-11-10 on B200 Pod `xaqw5n348zwok3` (stock BF16 vLLM 0.31; deleted
+after the artifacts were pulled and checksum-verified). Every merge matched
+its recorded artifact and every arm passed the validation gate (score MAE
+0.0041 to 0.0049, pAUROC@20 within 0.0005 of the record). Source-macro
+pAUROC@20 (`results/filter_margin_ood/comparison.json`):
+
+| Arm | Removed | Validation (3,012) | OOD (6,395) |
+|---|---:|---:|---:|
+| control (unfiltered) | 0 | 0.8463 | 0.7757 |
+| delta000 (strict, selected) | 852 | 0.8963 | 0.7875 |
+| delta005 | 796 | 0.8788 | 0.7956 |
+| delta010 | 723 | 0.8366 | 0.7672 |
+| delta020 | 627 | 0.8509 | 0.7785 |
+
+- delta000 reproduces its recorded OOD score (0.7869; score MAE 0.0042).
+- The control's OOD score equals the cached reference to three decimals
+  (0.776), so the serving-path caveat on that number no longer applies.
+- delta005 scores 0.008 above the strict filter on OOD while scoring 0.017
+  below it on validation. The margin was selected on validation before this
+  run, and this result does not change the selection.
+- Neither split is monotone in the margin. The OOD spread across arms
+  (0.767 to 0.796) is within the three-seed range of the strict recipe
+  (0.777 to 0.813), so one seed per arm cannot rank the margins on OOD.

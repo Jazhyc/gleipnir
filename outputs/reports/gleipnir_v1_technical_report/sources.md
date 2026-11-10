@@ -327,10 +327,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   seed; Mean-OOD 0.6988, 0.7076, 0.8111, 0.7907, 0.8365, 0.8227):
   `docs/research/tool_trajectory_distillation_ood_scaling.md`. "Quantized to 4
   bits" is NF4 QLoRA as in the project's other QLoRA runs; the scaling record
-  says only "QLoRA". In Table `tab:filter` since the same day: the margin sweep (validation 0.896,
-  0.879, 0.836, 0.851 for margins 0, 0.05, 0.10, 0.20) and the OOD follow-up
-  (0.787 filtered against 0.776 unfiltered, cached reference with a different
-  serving path): `docs/findings/teacher_disagreement_ood.md`.
+  says only "QLoRA". In Table `tab:filter` since the same day: the margin sweep, with all five arms
+  rescored on validation and OOD through one BF16 serving path on 2026-11-10
+  (validation 0.846, 0.896, 0.879, 0.837, 0.851 and Mean-OOD 0.776, 0.788,
+  0.796, 0.767, 0.779 for unfiltered and margins 0, 0.05, 0.10, 0.20):
+  `experiments/filter_margin_ood/README.md`. The margin was selected on
+  validation (`docs/decisions/strict_teacher_filtering.md`); earlier records
+  in `docs/findings/teacher_disagreement_ood.md`.
 - Appendix C.5, 4B rows of `tab:instruction`. Validation 0.8773 (compact) and
   0.8762 (full specification): `experiments/gleipnir27b_teacher_4b/README.md`
   (seed 1, targets from Gleipnir 27B under the full specification, 8,239

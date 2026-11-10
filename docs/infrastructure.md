@@ -1005,6 +1005,18 @@ kernels and Inductor cache; not the venv) are archived on the Storage Box as
 `b0e9b6ee…`). At the user's instruction it was deleted on 2026-11-04 (HTTP
 204, lookup 404); no Pods remain. Volume `cb7bxu71ug` is retained.
 
+On 2026-11-10 the user authorized a B200 Pod for two report ablations
+([4B full specification](../experiments/gleipnir4b_full_specification/README.md),
+[filter margins on OOD](../experiments/filter_margin_ood/README.md)):
+`xaqw5n348zwok3` (`gleipnir-report-ablations`, $7.99/hour, snapshot
+`.runpod/report-ablations.json`), US-NC-2 with volume `ixbh81vf9c` at `/nc2`
+and the release image `ghcr.io/jazhyc/gleipnir-serve:0.2`. The REST API
+rejects `US-NC-2` in `dataCenterIds`; omit the field and attach the volume,
+which pins the datacenter. The image's `vllm` console script has a stale
+shebang, so start vLLM with `python -m vllm.entrypoints.cli.main`. Results and
+logs were pulled and checksum-verified, and the Pod was deleted the same day
+(HTTP 204, lookup 404). No Pods remain; both volumes are retained.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

@@ -261,16 +261,20 @@ One explanation for the two larger models is that a score from 0 to 10 mixes the
 The filter of Section~\ref{sec:binary-logit-distillation} removes 852 of the 8,688 training trajectories.
 We chose it in part for a practical reason: it shortens a training pass from 272 to 245 updates.
 We also compared training with and without the filter on one run of the 4B (Table~\ref{tab:filter}).
-The filter raised the score on the validation set from 0.847 to 0.896 and Mean-OOD from 0.776 to 0.787.
-The gain on the OOD suite is therefore about a fifth of the gain on the validation set.
+The filter raised the score on the validation set from 0.846 to 0.896 and Mean-OOD from 0.776 to 0.788.
+The gain on the OOD suite is therefore about a quarter of the gain on the validation set.
 
 A filter with a margin $\delta$ keeps the disagreeing trajectories on which the teacher is uncertain: it removes a harmful trajectory only when $p < 0.5 - \delta$ and a benign trajectory only when $p > 0.5 + \delta$.
-We tested three margins on the validation set.
-Each scores below the filter without a margin, and the scores do not fall steadily with the margin (0.879, 0.836 and 0.851).
-In these runs, keeping the uncertain trajectories did not help.
+We tested three margins and chose among them on the validation set.
+There each margin scores below the filter without a margin, so we use $\delta = 0$.
+We scored the OOD suite only after this choice.
+On the OOD suite the margin $\delta = 0.05$ scores 0.008 above $\delta = 0$, and the other two margins score below it.
+Neither set shows a steady trend with the margin.
+The five OOD scores lie between 0.767 and 0.796, a spread no wider than that between three runs of the same configuration (0.777 to 0.813, Table~\ref{tab:hard-soft}).
+With one run for each row, we therefore cannot rank the margins on the OOD suite.
 
 \begin{table}[h]
-\caption{Teacher-agreement filter with a margin $\delta$, one run of the 4B for each row, BF16 serving. Scores are pAUROC@20. We scored only the first two rows on the OOD suite, and the unfiltered OOD score comes from an earlier run with a different serving path.}
+\caption{Teacher-agreement filter with a margin $\delta$, one run of the 4B for each row, BF16 serving. Scores are pAUROC@20. We chose the margin on the validation set.}
 \label{tab:filter}
 \centering
 \small
@@ -278,11 +282,11 @@ In these runs, keeping the uncertain trajectories did not help.
 \toprule
 Training set & Removed & Remaining & Validation & Mean-OOD \\
 \midrule
-Unfiltered & 0 & 8,688 & 0.847 & 0.776 \\
-Filter, $\delta = 0$ (ours) & 852 & 7,836 & 0.896 & 0.787 \\
-Filter, $\delta = 0.05$ & 796 & 7,892 & 0.879 & --- \\
-Filter, $\delta = 0.10$ & 723 & 7,965 & 0.836 & --- \\
-Filter, $\delta = 0.20$ & 627 & 8,061 & 0.851 & --- \\
+Unfiltered & 0 & 8,688 & 0.846 & 0.776 \\
+Filter, $\delta = 0$ (ours) & 852 & 7,836 & 0.896 & 0.788 \\
+Filter, $\delta = 0.05$ & 796 & 7,892 & 0.879 & 0.796 \\
+Filter, $\delta = 0.10$ & 723 & 7,965 & 0.837 & 0.767 \\
+Filter, $\delta = 0.20$ & 627 & 8,061 & 0.851 & 0.779 \\
 \bottomrule
 \end{tabular}
 \end{table}
