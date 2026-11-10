@@ -55,7 +55,7 @@ arxiv: pdf
 	cp main.tex preamble.tex neurips_2026.sty arxiv/
 	cp sections/*.tex arxiv/sections/
 	cp build/$(JOB).bbl arxiv/main.bbl
-	find assets -type f \( -name '*.pdf' -o -name '*.png' -o -name '*.jpg' \) \
+	find assets -type f \( -name '*.pdf' -o -name '*.png' -o -name '*.jpg' -o -name '*.txt' \) \
 		-exec cp --parents {} arxiv/ \;
 	tar -czf arxiv.tar.gz -C arxiv .
 	@echo "Wrote arxiv.tar.gz; upload it as the source bundle."

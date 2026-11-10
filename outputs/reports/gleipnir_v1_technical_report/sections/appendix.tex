@@ -19,6 +19,7 @@ Only the teacher and the prompted baselines receive it.
 \paragraph{Data.}
 Table~\ref{tab:sinha-data} lists the training set, the validation set and the OOD suite.
 Where a source includes the chain of thought of the agent, Sinha et al.\ remove it.
+Appendix~\ref{app:data-processing} records where the prepared data departs from this description.
 They also drop every trajectory with more than 28,000 tokens, which leaves 4,000 tokens of headroom in the 32,000-token context of their shorter-context models.
 The training set is balanced between benign and harmful trajectories within each source.
 The validation set has two parts: STRIDE trajectories from held-out settings, and Gloom-Exfiltration, a variant of Gloom.
@@ -148,6 +149,88 @@ Kimi K3 & 25.118 & 0.908 \\
 \end{tabular*}
 \end{minipage}
 \end{table}
+
+\section{Data processing}
+\label{app:data-processing}
+
+We use the data as Sinha et al.\ prepared it, and we place each trajectory unchanged between the trajectory tags (Appendix~\ref{app:prompts}).
+This appendix records two properties of the prepared data that differ from the action-only description in Section~\ref{sec:background-sinha}.
+Both are properties of the prepared files and not of our processing.
+
+\paragraph{Agent reasoning in the STRIDE training set.}
+The training trajectories of STRIDE contain the reasoning of the agent.
+Of the 1,350 STRIDE training trajectories, 1,269 contain reasoning blocks that are flattened into the text of the agent, 1,230 contain explicit calls to a \texttt{think} tool, and 1,340 contain at least one of the two.
+These are 15.4\% of the 8,688 training trajectories.
+We found no \texttt{think} calls in the other four training sources, but we could not compare them with typed source messages, so 1,340 is a lower bound.
+The teacher computed its targets on these inputs, and the Gleipnir monitors are trained on the same inputs.
+We did not remove the reasoning: removing it only for the monitor would give the teacher information that the monitor lacks, and removing it for both requires new teacher targets.
+
+\paragraph{Validation set.}
+For the validation set we removed the typed reasoning of the agent and its \texttt{think} calls, and kept its visible text, its other tool calls and the tool results.
+All validation scores in this report use this version, which has 3,012 trajectories.
+
+\paragraph{Missing agent text in the OOD suite.}
+We found no private reasoning of the agent in the OOD inputs.
+However, most OOD inputs also lack the text that the agent wrote for the user (Table~\ref{tab:ood-inputs}).
+In the four benchmarks that come from ControlArena, every message of the agent has an empty body, and only its tool calls and the tool results remain.
+In CUA-SHADE-Arena, the messages of the agent contain only the names of its tool calls.
+Only MLE-Sabotage keeps the visible plans and the code of the agent.
+A monitor on this suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
+We keep the inputs unchanged so that our scores stay comparable with the scores that Sinha et al.\ report.
+The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
+
+\begin{table}[t]
+\caption{Text of the agent in the inputs of the OOD suite.}
+\label{tab:ood-inputs}
+\centering
+\small
+\begin{tabular}{lrl}
+\toprule
+Benchmark & Trajectories & Messages of the agent in the monitor input \\
+\midrule
+AgentDojo & 1,500 & All 6,380 bodies empty; tool calls and results kept \\
+IaC & 1,443 & All 27,734 bodies empty; tool calls and results kept \\
+Rogue Eval & 1,499 & All 3,533 bodies empty; tool calls and results kept \\
+SHADE-Arena & 850 & All 50,218 bodies empty; tool calls and results kept \\
+CUA-SHADE-Arena & 955 & All 24,571 bodies contain only tool-call names \\
+MLE-Sabotage & 148 & Plans and code kept; separate thinking fields excluded \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Length.}
+We do not truncate inputs.
+The longest training input has fewer than 29,696 tokens, which is the limit of our training configuration.
+
+\section{Prompts}
+\label{app:prompts}
+
+Every monitor input is one user message with the same form: an instruction, then the trajectory between two tags.
+\begin{Verbatim}[fontsize=\small]
+<instruction>
+<agent_trajectory>
+<trajectory>
+</agent_trajectory>
+\end{Verbatim}
+We apply the chat template of the model with thinking disabled and start the reply of the model with \texttt{Prediction:}.
+We use three instructions, which we print in full below.
+
+\paragraph{Compact instruction.}
+This instruction has 95 words.
+We use it to train all Gleipnir monitors and to score Gleipnir 4B.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/compact_instruction.txt}
+
+\paragraph{Full specification.}
+This instruction has 701 words.
+Kimi K3 receives it when it produces the training targets.
+We also use it to score the unadapted models and to score Gleipnir 27B, which is trained with the compact instruction.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/full_specification.txt}
+
+\paragraph{ControlArena instruction.}
+This instruction has 299 words.
+It is the monitor prompt of ControlArena as SleightBench distributes it, with one change: we replace its score from 0 to 100 and its output format with our two labels and the \texttt{Prediction:} output.
+We use it in Section~\ref{sec:held-out} to score SleightBench with the instruction that the prompted frontier monitors receive.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/control_arena_binary.txt}
 
 \section{Additional results}
 \label{app:additional-results}

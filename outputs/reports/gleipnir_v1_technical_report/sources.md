@@ -188,5 +188,27 @@ No results are reported yet.
   `..._reasoning_ood_benchmark.md` findings). Fixed across the four: model
   revision, rows, labels, the full specification with output wording adapted,
   non-thinking template, temperature zero. Costs are in the results table.
+- Appendix on data processing. STRIDE reasoning counts (1,269, 1,230, 1,340
+  of 1,350; 15.42% of 8,688) and the reason the inputs were not cleaned:
+  `docs/findings/training_input_reasoning.md`. Validation set (3,012 rows,
+  typed reasoning and `think` calls removed, visible text kept):
+  `docs/decisions/cot_removed_id_validation.md`. OOD inputs per source (empty
+  or name-only assistant bodies; no confirmed private reasoning):
+  `docs/findings/ood_input_reasoning.md`. Inputs kept unchanged for
+  comparability, and 6,247 rows that could not be restored:
+  `docs/decisions/frozen_ood_comparability.md`,
+  `docs/findings/ood_prose_restoration.md`. That decision notes that our
+  frozen inputs are not proven to be the exact bytes of every run in the
+  paper. Maximum training length 29,696 tokens: the 4B and 27B model cards.
+- Appendix on prompts. Byte copies in `assets/prompts/`, SHA-256:
+  `compact_instruction.txt` `39ab7657…` (from
+  `experiments/tool_trajectory_monitoring/prompts/student.txt`),
+  `full_specification.txt` `a5d403e6…` (from `.../prompts/teacher.txt`),
+  `control_arena_binary.txt` `a9437d61…` (from
+  `experiments/sleightbench_eval/prompts/control_arena_binary.txt`). Word
+  counts 95, 701 and 299 are from `wc -w`. The ControlArena instruction was
+  used in the exploratory SleightBench run `sb02`
+  (`experiments/sleightbench_eval/README.md`); whether Section 5 reports that
+  run is still to be decided.
 
 BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).

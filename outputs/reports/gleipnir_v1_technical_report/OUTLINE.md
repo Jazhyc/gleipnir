@@ -248,12 +248,18 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 - Two instructions: a compact one (95 words) used for training and for the
   4B, and the full specification (701 words) used for the teacher and for the
   released 27B.
-- **Open issue.** The training inputs are not fully action-only: 1,340 of the
-  1,350 STRIDE training rows still contain the agent's reasoning, and the
-  Kimi K3 targets were computed on them. Only the validation set has it
-  removed (`docs/findings/training_input_reasoning.md`). Section 2.2 says we
-  keep the action-only restriction; state this exception in 3.3 or the
-  limitations.
+- **Data properties, written in the appendix (`app:data-processing`).** The
+  training inputs are not fully action-only: 1,340 of the 1,350 STRIDE
+  training rows contain the agent's reasoning, and the Kimi K3 targets were
+  computed on them. The validation set has reasoning removed. In five of the
+  six OOD benchmarks the inputs lack the agent's own text and keep only tool
+  calls and results. These are properties of the files that Sinha et al.
+  prepared. Still to do: one sentence in 3.3 and one in the limitations that
+  point to this appendix, and decide whether Section 2.2's "we keep this
+  restriction" needs a qualifier.
+- **Prompts, written in the appendix (`app:prompts`).** The compact
+  instruction, the full specification and the ControlArena instruction are
+  printed in full from byte copies under `assets/prompts/`.
 
 ### 3.1 Monitor input and output
 
