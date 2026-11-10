@@ -1,3 +1,5 @@
+import json
+
 import pytest
 
 from experiments.gleipnir4b_serving_ladder import compare, run
@@ -32,37 +34,23 @@ def test_summarize_reports_speedups_and_score_drift():
 
 
 def test_retarget_rejects_other_differences():
-    release = [
-        "py",
-        "--model",
-        "m",
-        "--host",
-        "h",
-        "--port",
-        "1",
-        "--worker-cls",
-        "A",
-        "--additional-config",
-        "{}",
-        "--x",
-        "1",
-    ]
-    layered = [
-        "old",
-        "--model",
-        "o",
-        "--host",
-        "o",
-        "--port",
-        "0",
-        "--worker-cls",
-        "B",
-        "--additional-config",
-        "{1}",
-        "--x",
-        "1",
-    ]
-    assert run.retarget(layered, release)[:7] == release[:7]
+    def command(python, model, worker, config, x):
+        return [python, "--model", model, "--host", "h", "--port", "1"] + [
+            "--worker-cls",
+            worker,
+            "--additional-config",
+            json.dumps(config),
+            "--x",
+            x,
+        ]
+
+    release = command("py", "m", "A", {"serving_condition": {"merged_model": "m"}}, "1")
+    layered = command(
+        "old", "o", "B", {"serving_condition": {"merged_model": "o"}, "k": 1}, "1"
+    )
+    out = run.retarget(layered, release)
+    assert out[:7] == release[:7]
+    assert json.loads(out[10]) == {"serving_condition": {"merged_model": "m"}, "k": 1}
     layered[-1] = "2"
     with pytest.raises(ValueError):
         run.retarget(layered, release)

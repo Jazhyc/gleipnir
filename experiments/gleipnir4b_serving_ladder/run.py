@@ -43,6 +43,8 @@ def layered_command(root: Path, rung: str) -> list[str]:
 def retarget(command: list[str], release: list[str]) -> list[str]:
     """Point a layered command at the release command's model and socket.
 
+    The recorded ``serving_condition.merged_model`` label follows the model.
+
     Every other argument must already agree with the release command, apart
     from the worker class and the additional config that the layers change.
     """
@@ -50,6 +52,12 @@ def retarget(command: list[str], release: list[str]) -> list[str]:
     command[0] = release[0]
     for flag in ("--model", "--host", "--port"):
         command[command.index(flag) + 1] = release[release.index(flag) + 1]
+    index = command.index("--additional-config") + 1
+    additional = json.loads(command[index])
+    additional["serving_condition"]["merged_model"] = json.loads(
+        release[release.index("--additional-config") + 1]
+    )["serving_condition"]["merged_model"]
+    command[index] = json.dumps(additional, sort_keys=True)
     skip = {command.index(f) + 1 for f in ("--worker-cls", "--additional-config")}
     differing = [
         (a, b)
