@@ -342,7 +342,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   the released 4B scored with the full specification on the validation set or
   the OOD suite; `experiments/adversarial_is_it_4b/README.md` scores it that
   way only on an adversarial set.
-- Appendix C.6 (serving precision, `tab:precision`). 4B before QAD (v0.2):
+- Appendix C.6 (weight averaging, `tab:average`). Per-run validation 0.8959,
+  0.8978, 0.9142 (mean 0.9026) and Mean-OOD 0.7869, 0.8125, 0.7768 (mean
+  0.7921); average 0.9124 / 0.8108; release rule frozen before scoring, OOD
+  scored once: `experiments/seed_average/README.md`. Runs 1 to 3 are seeds 0
+  to 2. The average was scored on a B300 and the runs on B200s (seed 1
+  rescored on the B300: +0.0006); not stated in the report.
+- Appendix C.7 (serving precision, `tab:precision`). 4B before QAD (v0.2):
   BF16 0.9124 / 0.8108, optimized 0.8807 / 0.7579; released 4B (QAD): BF16
   0.9332 / 0.8039, optimized 0.9117 / 0.7703: `experiments/qad_v02/README.md`.
   27B with the full specification: BF16 0.9420 / 0.9352, optimized 0.9444 /

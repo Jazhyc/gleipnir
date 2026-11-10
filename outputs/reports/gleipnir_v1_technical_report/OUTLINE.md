@@ -226,6 +226,7 @@ the frontier of Section 4.
 
 Appendix order (JF, 2026-11-10): the prompts appendix is last (F), so results
 and ablations are Appendix C and the subsections below are C.1 to C.5.
+C.6 is weight averaging for the 4B (`app:ablation-average`, added 2026-11-10).
 
 The hard-soft comparison reports only the compact instruction with BF16
 serving (JF, 2026-11-10); the release-configuration 27B pair (0.933 against
@@ -241,7 +242,7 @@ Experiments run 2026-11-10 (JF): `experiments/gleipnir4b_full_specification/`
 gives the 4B rows of Table `tab:instruction` (BF16 only; the optimized arm was
 dropped), and `experiments/filter_margin_ood/` gives validation and Mean-OOD
 for all five rows of Table `tab:filter` from one BF16 serving path. C.3 states
-that the margin was chosen on the validation set. Appendix C.6 (serving
+that the margin was chosen on the validation set. Appendix C.7 (serving
 precision, Table `tab:precision`) is written.
 
 Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
