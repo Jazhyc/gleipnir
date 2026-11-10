@@ -293,3 +293,18 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   All six scores and costs are rows of Table `tab:ood-all`. The comparison has
   no intervals; the Qwen3.5-27B difference is 0.008.
 - Table `tab:format` (Appendix D.2) repeats rows of Table `tab:ood-all`; no new numbers.
+- Output instructions in the prompts appendix. Excerpts of the four prompt
+  variants of the output-format ablation, cut from
+  `experiments/tool_trajectory_monitoring/prompts/` (see `assets/README.md`);
+  SHA-256 prefixes: `output_binary.txt` `a16700fd…`, `output_ordinal.txt`
+  `e913d30d…`, `ordinal_score_bands.txt` `02fcfafb…`,
+  `output_binary_reasoning.txt` `b7043aaa…`, `output_ordinal_reasoning.txt`
+  `5e6dc59d…`. A diff of `teacher_ordinal.txt` against `teacher.txt` shows that
+  the 0-10 variants also replace the decision boundary with five score bands
+  and ask for a score that reflects confidence and severity; Appendix D.2
+  (now C.2) was corrected to say so. The same is noted in
+  `experiments/tool_trajectory_monitoring/QWEN_ORDINAL_OOD_BENCHMARK.md`.
+- Appendix order since 2026-11-10: A setup of Sinha et al., B data, C results
+  and ablations, D training configuration, E additional results, F prompts.
+  Earlier notes that say "Appendix C" for prompts or "Appendix D" for results
+  refer to the old order.

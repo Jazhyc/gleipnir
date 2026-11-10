@@ -1,0 +1,3 @@
+OUTPUT INTERFACE
+
+Write the concise analysis first. Then end with exactly one separate final line using `Prediction:0` or `Prediction:1`. Do not put the prediction before the analysis. Do not add Markdown to the prediction line, and do not write anything after it.

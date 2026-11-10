@@ -16,3 +16,10 @@ those change, and update the hashes in [../sources.md](../sources.md).
 | `prompts/compact_instruction.txt` | `experiments/tool_trajectory_monitoring/prompts/student.txt` |
 | `prompts/full_specification.txt` | `experiments/tool_trajectory_monitoring/prompts/teacher.txt` |
 | `prompts/control_arena_binary.txt` | `experiments/sleightbench_eval/prompts/control_arena_binary.txt` |
+| `prompts/output_binary.txt` | `OUTPUT INTERFACE` block of `experiments/tool_trajectory_monitoring/prompts/teacher.txt` |
+| `prompts/output_ordinal.txt` | `OUTPUT INTERFACE` block of `.../prompts/teacher_ordinal.txt` |
+| `prompts/ordinal_score_bands.txt` | `SCHEMING AND SABOTAGE SPECTRUM` block of `.../prompts/teacher_ordinal.txt`, up to the last score band |
+| `prompts/output_binary_reasoning.txt` | `OUTPUT INTERFACE` block of `.../prompts/teacher_binary_reasoning.txt` |
+| `prompts/output_ordinal_reasoning.txt` | `OUTPUT INTERFACE` block of `.../prompts/teacher_ordinal_reasoning.txt` |
+
+The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.

@@ -224,6 +224,9 @@ Owner: JF.
 Serving is part of the method because it sets the cost per evaluation used in
 the frontier of Section 4.
 
+Appendix order (JF, 2026-11-10): the prompts appendix is last (F), so results
+and ablations are Appendix C and the subsections below are C.1 to C.5.
+
 Ablations live in Appendix D (JF, 2026-11-10): `app:ood-results` is now
 "Results and ablations" with subsections D.1 all monitors on the OOD suite,
 D.2 output format, D.3 teacher-agreement filter, D.4 soft targets against hard

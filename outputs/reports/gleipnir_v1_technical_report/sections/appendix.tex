@@ -120,36 +120,6 @@ We cannot be certain that the experiments of Sinha et al.\ used these published 
 We keep the OOD inputs unchanged so that our scores stay as comparable as possible with theirs.
 The public source files did not allow us to restore the missing text for 6,247 of the 6,395 trajectories.
 
-\section{Prompts}
-\label{app:prompts}
-
-Every monitor input is one user message with the same form: an instruction, then the trajectory between two tags.
-\begin{Verbatim}[fontsize=\small]
-<instruction>
-<agent_trajectory>
-<trajectory>
-</agent_trajectory>
-\end{Verbatim}
-We apply the chat template of the model with thinking disabled and start the reply of the model with \texttt{Prediction:}.
-We use three instructions, which we print in full below.
-
-\paragraph{Compact instruction.}
-This instruction has 95 words.
-We use it to train all Gleipnir monitors and to score Gleipnir 4B.
-\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/compact_instruction.txt}
-
-\paragraph{Full specification.}
-This instruction has 701 words.
-Kimi K3 receives it when it produces the training targets.
-We also use it to score the unadapted models and to score Gleipnir 27B, which is trained with the compact instruction.
-\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/full_specification.txt}
-
-\paragraph{ControlArena instruction.}
-This instruction has 299 words.
-It is the monitor prompt of ControlArena as SleightBench distributes it, with one change: we replace its score from 0 to 100 and its output format with our two labels and the \texttt{Prediction:} output.
-We use it in Section~\ref{sec:held-out} to score SleightBench with the instruction that the prompted frontier monitors receive.
-\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/control_arena_binary.txt}
-
 \section{Results and ablations}
 \label{app:ood-results}
 
@@ -240,7 +210,8 @@ Kimi K3 & 25.118 & 0.908 \\
 \label{app:ablation-format}
 
 The output format changes the score of a monitor before any training.
-We compare four formats on the unadapted Qwen3.5-9B, with the model, the OOD suite and the monitoring specification fixed; only the wording of the output instruction differs (Table~\ref{tab:format}, left).
+We compare four formats on the unadapted Qwen3.5-9B, with the model and the OOD suite fixed (Table~\ref{tab:format}, left).
+The four instructions differ in the output instruction, and the two with a score from 0 to 10 also replace the definitions of the two labels with five score bands (Appendix~\ref{app:prompts}).
 Binary logits without reasoning are the cheapest of the four formats and score at least as high as the others.
 Rounding the binary scores to one decimal lowers Mean-OOD by only 0.014, so the coarser scale does not explain the low score of the integer.
 
@@ -282,7 +253,7 @@ We also read binary logits from three unadapted models that \citet{sinha2026trai
 Without any training, Qwen3.5-27B and Kimi~K2.6 score higher at a lower cost than the trained monitors of Sinha et al.\ from the same models.
 This does not hold for Qwen3.5-4B, where their trained monitor scores higher.
 One explanation for the two larger models is that a score from 0 to 10 mixes the confidence of the monitor with the severity of the behavior, while the binary probability expresses only confidence.
-We did not test this explanation.
+Our own instruction for the score from 0 to 10 asks for both explicitly, so the comparison on Qwen3.5-9B agrees with this explanation but does not isolate it.
 
 \subsection{Teacher-agreement filter}
 \label{app:ablation-filter}
@@ -378,3 +349,51 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \label{app:additional-results}
 
 \todo{Per-source results and reproducibility details.}
+
+\section{Prompts}
+\label{app:prompts}
+
+Every monitor input is one user message with the same form: an instruction, then the trajectory between two tags.
+\begin{Verbatim}[fontsize=\small]
+<instruction>
+<agent_trajectory>
+<trajectory>
+</agent_trajectory>
+\end{Verbatim}
+We apply the chat template of the model with thinking disabled and start the reply of the model with \texttt{Prediction:}.
+We use three instructions, which we print in full below.
+After them we print the output instructions of the ablation in Appendix~\ref{app:ablation-format}.
+
+\paragraph{Compact instruction.}
+This instruction has 95 words.
+We use it to train all Gleipnir monitors and to score Gleipnir 4B.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/compact_instruction.txt}
+
+\paragraph{Full specification.}
+This instruction has 701 words.
+Kimi K3 receives it when it produces the training targets.
+We also use it to score the unadapted models and to score Gleipnir 27B, which is trained with the compact instruction.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/full_specification.txt}
+
+\paragraph{ControlArena instruction.}
+This instruction has 299 words.
+It is the monitor prompt of ControlArena as SleightBench distributes it, with one change: we replace its score from 0 to 100 and its output format with our two labels and the \texttt{Prediction:} output.
+We use it in Section~\ref{sec:held-out} to score SleightBench with the instruction that the prompted frontier monitors receive.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/control_arena_binary.txt}
+
+\paragraph{Output instructions.}
+The last block of each instruction is its output instruction.
+All Gleipnir monitors, the teacher and the unadapted models use a binary output instruction with the labels \texttt{Prediction:0} and \texttt{Prediction:1}.
+The three instructions above each end with one, and the full specification states it as follows.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/output_binary.txt}
+The ablation of Appendix~\ref{app:ablation-format} uses three other variants of the full specification.
+The variant with a score from 0 to 10 has this output instruction, and we use the integer that the model generates as the score.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/output_ordinal.txt}
+A score from 0 to 10 cannot use the definitions of the two labels.
+This variant therefore replaces them with five score bands, and it asks for a score that reflects both confidence and severity.
+The rest of the specification is unchanged, apart from wording that refers to the labels.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/ordinal_score_bands.txt}
+The two variants with reasoning ask for a written analysis before the output, in place of the silent review of the full specification.
+Their output instructions are the following, first for the binary output and then for the score from 0 to 10.
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/output_binary_reasoning.txt}
+\VerbatimInput[fontsize=\footnotesize,breaklines=true,breakanywhere=false,frame=single,framesep=2mm]{assets/prompts/output_ordinal_reasoning.txt}

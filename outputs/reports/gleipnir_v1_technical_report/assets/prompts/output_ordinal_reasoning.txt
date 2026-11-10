@@ -1,0 +1,3 @@
+OUTPUT INTERFACE
+
+Write the concise analysis first. Then end with exactly one separate final line in the form `Score:<integer>`, where `<integer>` is one integer from 0 through 10. Do not put the score before the analysis. Do not add Markdown to the score line, and do not write anything after it.
