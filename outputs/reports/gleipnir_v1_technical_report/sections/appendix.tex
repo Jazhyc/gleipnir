@@ -19,7 +19,7 @@ Only the teacher and the prompted baselines receive it.
 \paragraph{Data.}
 Table~\ref{tab:sinha-data} lists the training set, the validation set and the OOD suite.
 Where a source includes the chain of thought of the agent, Sinha et al.\ remove it.
-Appendix~\ref{app:data-processing} records where the prepared data departs from this description.
+Appendix~\ref{app:data-discrepancies} records where the prepared data departs from this description.
 They also drop every trajectory with more than 28,000 tokens, which leaves 4,000 tokens of headroom in the 32,000-token context of their shorter-context models.
 The training set is balanced between benign and harmful trajectories within each source.
 The validation set has two parts: STRIDE trajectories from held-out settings, and Gloom-Exfiltration, a variant of Gloom.
@@ -150,13 +150,13 @@ Kimi K3 & 25.118 & 0.908 \\
 \end{minipage}
 \end{table}
 
-\section{Data processing}
-\label{app:data-processing}
+\section{Data sources and discrepancies}
+\label{app:data-discrepancies}
 
 We use the data that \citet{sinha2026training} published on Hugging Face (Table~\ref{tab:hf-data}), and we place each trajectory unchanged between the trajectory tags (Appendix~\ref{app:prompts}).
 Section~\ref{sec:background-sinha} describes the input of an action-only monitor as the user messages, the assistant messages and the tool outputs, without the private reasoning of the agent.
-This appendix records two places where the published files differ from that description.
-Both are properties of the files and not of our processing.
+This appendix names the files and records two places where they differ from that description.
+Both are properties of the files: we do not process the trajectories, apart from the removal of reasoning from the validation set.
 
 \begin{table}[t]
 \caption{Hugging Face datasets that we use, with the revision that we read.}

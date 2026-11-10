@@ -248,7 +248,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
 - Two instructions: a compact one (95 words) used for training and for the
   4B, and the full specification (701 words) used for the teacher and for the
   released 27B.
-- **Data properties, written in the appendix (`app:data-processing`).** The
+- **Data properties, written in the appendix (`app:data-discrepancies`).** The
   training inputs are not fully action-only: 1,340 of the 1,350 STRIDE
   training rows contain the agent's reasoning, and the Kimi K3 targets were
   computed on them. The validation set has reasoning removed. In five of the

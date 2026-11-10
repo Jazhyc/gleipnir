@@ -188,7 +188,7 @@ No results are reported yet.
   `..._reasoning_ood_benchmark.md` findings). Fixed across the four: model
   revision, rows, labels, the full specification with output wording adapted,
   non-thinking template, temperature zero. Costs are in the results table.
-- Appendix on data processing. STRIDE reasoning counts (1,269, 1,230, 1,340
+- Appendix on data sources and discrepancies. STRIDE reasoning counts (1,269, 1,230, 1,340
   of 1,350; 15.42% of 8,688) and the reason the inputs were not cleaned:
   `docs/findings/training_input_reasoning.md`. Validation set (3,012 rows,
   typed reasoning and `think` calls removed, visible text kept):
@@ -210,7 +210,7 @@ No results are reported yet.
   used in the exploratory SleightBench run `sb02`
   (`experiments/sleightbench_eval/README.md`); whether Section 5 reports that
   run is still to be decided.
-- Hugging Face datasets named in the data-processing appendix, with full
+- Hugging Face datasets named in the appendix on data sources and discrepancies, with full
   revisions: training set `adityaasinha28/deliberative-monitor-pipeline` at
   `2f10f4e49f4bf349965640ac021406689455d1c3`, file
   `merged/stride_gloom_crh_s45_o46_ctrl_t7_bal.parquet`
