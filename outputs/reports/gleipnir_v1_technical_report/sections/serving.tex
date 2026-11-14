@@ -66,11 +66,8 @@ QAD restores the validation score, but on the OOD suite the released 4B still sc
 The 27B loses nothing under the same arithmetic, so we release it without QAD.
 This difference agrees with \citet{ouyang2025lowbit}, who report that larger models lose less from low-bit quantization.
 
-This step has two limits.
 We built and validated the low-precision kernels only on the B200, so the released serving stack runs only on this GPU.
 Other Blackwell GPUs support the same number formats, and we expect that the stack can be ported to them, but we have not tested this.
 On all other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} apply.
-The scores are also not exactly repeatable.
-Two passes of the 4B over the same trajectories differ by about 0.01 per score on average, although pAUROC@20 changes by at most 0.0013.
 
 \todo{Remaining subsections: removing unneeded work (last-token final-layer attention, host path), released artifacts. Per-model breakdown of the gains goes in the appendix.}

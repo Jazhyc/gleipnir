@@ -405,6 +405,8 @@ implementation details are left out.
 - **C3.12 (draft).** The optimized stack changes scores against BF16 serving:
   −0.034 Mean-OOD pAUROC@20 for the 4B and +0.016 for the 27B. Runs on that
   stack are not bit-for-bit repeatable (per-row MAE about 0.01 for the 4B).
+  The repeatability note is left out of the report (JF, 2026-11-14: hardware
+  non-determinism is expected).
   Evidence: `experiments/release_serving/README.md`,
   `experiments/optimized_gap/README.md`.
 - **C3.13 (draft).** Released artifacts: FP32 LoRA adapters and merged BF16
