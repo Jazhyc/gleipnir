@@ -50,7 +50,7 @@ The merged BF16 checkpoints that we release run in this mode on stock vLLM, on a
 \subsection{Low-precision arithmetic}
 \label{sec:serving-precision}
 
-The largest gain in Table~\ref{tab:serving} comes from arithmetic at lower precision.
+Of our changes to stock vLLM, arithmetic at lower precision gives the largest gain in Table~\ref{tab:serving}.
 Stock vLLM computes in BF16, with 16 bits for each number.
 The B200 has native support for floating-point formats with 8 and 4 bits (FP8 and FP4), and matrix products in these formats run faster.
 Almost all of the prefill time goes to the linear projections of the model and to attention.
