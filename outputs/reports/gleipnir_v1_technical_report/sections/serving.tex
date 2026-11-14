@@ -55,6 +55,7 @@ Stock vLLM computes in BF16, with 16 bits for each number.
 The B200 has native support for floating-point formats with 8 and 4 bits (FP8 and FP4), and matrix products in these formats run faster.
 Almost all of the prefill time goes to the linear projections of the model and to attention.
 We run the projections around attention in FP8, the other large projections in FP4, and attention itself in an 8-bit format (MXFP8).
+These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
 For each projection we quantize both the weights and the activations.
 The state that the model stores between tokens and the two output logits keep their original precision.
 This step lowers the cost by 1.77 times for the 4B and by 2.25 times for the 27B.

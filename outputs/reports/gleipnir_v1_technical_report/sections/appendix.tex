@@ -486,6 +486,42 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 
 \todo{Table of prompt tokens per second and request latency after each serving step, for both monitors, on the 320-trajectory benchmark. Per-model breakdown of the steps of Table~\ref{tab:serving}.}
 
+\subsection{Low-precision kernels}
+\label{app:serving-kernels}
+
+The serving stack of Section~\ref{sec:serving-precision} does not contain new kernels.
+It uses three kernels from NVIDIA libraries and adapts them to the monitor workload (Table~\ref{tab:kernels}).
+The base models have two kinds of sequence layers: full-attention layers and gated delta network (GDN) layers, a form of linear attention with a recurrent state.
+The Qwen3.5-4B has 8 full-attention layers and 24 GDN layers.
+
+\begin{table}[h]
+\caption{Kernels of the serving stack. All run only on the forward pass.}
+\label{tab:kernels}
+\centering
+\small
+\begin{tabular}{@{}p{0.24\linewidth}p{0.09\linewidth}p{0.26\linewidth}p{0.29\linewidth}@{}}
+\toprule
+Operation & Format & Kernel & Our changes \\
+\midrule
+Projections of the full-attention layers (query, key, value, output) & FP8 & FP8 matrix product of CUTLASS~\citep{nvidia_cutlass} & One scale per output channel for the weights and one scale per token for the activations \\
+\addlinespace
+Projections of the MLPs and of the GDN layers & FP4 & FROST matrix product of the cuDNN frontend~\citep{nvidia_cudnn_frontend} & Tile sizes chosen for each projection shape; quantization of the activations fused with the preceding normalization or activation function \\
+\addlinespace
+Full attention & MXFP8 & Scaled dot-product attention of the cuDNN frontend for the B200 & Reads queries, keys and values from the paged cache of vLLM; a polynomial approximation of $2^x$ replaced by the hardware instruction; variants for the head counts of both models \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The recurrence of the GDN layers, the stored keys and values, the outputs of all projections and the final projection to the vocabulary stay in BF16 or FP32.
+For the 27B we built the same stack with the layer shapes and head counts of Qwen3.8-27B and chose the tile sizes again.
+
+\paragraph{Backward pass.}
+QAD (Section~\ref{sec:training-setup}) needs gradients through this arithmetic.
+The cuDNN frontend has a backward kernel for MXFP8 attention, but we do not use it.
+In our test on the 4B the adapter gradients that it gave differed by 18.7\% from the reference, above our limit of 10\%, and a training step took 30\% longer than with BF16 attention.
+In QAD the forward pass therefore uses the serving kernels, and the backward pass of attention uses a BF16 kernel on the quantized queries, keys and values.
+The backward pass of the quantized projections uses a straight-through estimator.
+
 \section{Prompts}
 \label{app:prompts}
 

@@ -434,3 +434,22 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `docs/research/tool_trajectory_inference_economics.md`. Hosted serving
   precision and hardware are not observed. Compared with the 27B committed
   cells of Table `tab:serving` (0.0414 BF16, 0.0180 final).
+
+- Appendix E.2 (low-precision kernels), collected 2026-11-14 from repo records:
+  recipe (16 FP8 W8A8 attention projections with per-channel weight and
+  per-token activation scales on native CUTLASS GEMM; 64 FP4 MLP and 48 FP4
+  GDN projections on FROST; cuDNN MXFP8 prefill) from
+  `docs/decisions/b200_monitor_score_reference.md`; FROST is
+  `cudnn.gemm.frost` (`src/gleipnir/serving/frost_wrappers.py`), tile tuning
+  from `docs/findings/b200_fp4_gemm_tuning.md`, fused activation packing from
+  `docs/findings/b200_fp4_serving_preparation.md`; MXFP8 forward kernel
+  `SdpaFwdDslSm100` D256, exp2 replacement and paged-cache bridge from
+  `docs/findings/b200_mxfp8_serving.md`; backward test (18.71% adapter-gradient
+  difference against a 10% ceiling, 29.64% slower update) from
+  `docs/findings/b200_nvidia_mxfp8.md`; QAD arithmetic (serving MXFP8 forward,
+  quantized-QKV FA4 surrogate backward, straight-through projections) from
+  `experiments/qad_v02/README.md`; 27B port from
+  `docs/research/qwen38_27b_serving_transfer.md`. The two NVIDIA bib entries
+  carry no year or version; library versions of the release image are not
+  yet recorded in the report. The 8/24 layer split of the 4B is from
+  `docs/findings/b200_nvidia_mxfp8.md`.
