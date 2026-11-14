@@ -492,7 +492,6 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 The serving stack of Section~\ref{sec:serving-precision} does not contain new kernels.
 It uses three kernels from NVIDIA libraries and adapts them to the monitor workload (Table~\ref{tab:kernels}).
 The base models have two kinds of sequence layers: full-attention layers and gated delta network (GDN) layers, a form of linear attention with a recurrent state.
-The Qwen3.5-4B has 8 full-attention layers and 24 GDN layers.
 
 \begin{table}[h]
 \caption{Kernels of the serving stack.}
@@ -512,7 +511,9 @@ Full attention & MXFP8 & Scaled dot-product attention of the cuDNN frontend for 
 \end{tabular}
 \end{table}
 
-The recurrence of the GDN layers, the stored keys and values, the outputs of all projections and the final projection to the vocabulary stay in BF16 or FP32.
+The rest of the model keeps the precision of stock vLLM.
+The quantized projections return their outputs in BF16, and the attention layers store their keys and values in BF16.
+The recurrence of the GDN layers runs in BF16, with its state and gates in FP32.
 For the 27B we built the same stack with the layer shapes and head counts of Qwen3.8-27B and chose the tile sizes again.
 
 \section{Prompts}

@@ -363,7 +363,11 @@ forward pass (`sec:serving-selfhost`) and 4.2 Low-precision arithmetic
 (`sec:serving-precision`). Remaining: removing unneeded work, released
 artifacts.
 Appendix E.2 (`app:serving-kernels`) lists the kernels, their NVIDIA sources
-and our changes; 4.2 points to it. No backward-pass or training-stack detail
+and our changes; 4.2 points to it. Layer counts belong in the subsection on
+removing unneeded work (JF, 2026-11-14): Qwen3.5-4B has 32 layers (8 full
+attention, 24 GDN) and Qwen3.8-27B has 64 (16, 48), so last-token attention
+covers 1 of 8 attention layers in the 4B and 1 of 16 in the 27B
+(`docs/research/qwen38_27b_serving_transfer.md`). No backward-pass or training-stack detail
 (JF, 2026-11-14: an implementation detail that users do not need).
 Serving has its own section because it is a separate contribution and sets
 the cost per evaluation used in the frontier of Section 5. Planned
