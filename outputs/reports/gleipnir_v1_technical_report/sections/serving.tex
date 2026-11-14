@@ -28,8 +28,10 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \label{sec:serving-selfhost}
 
 The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models.
+It is what a monitor on these models costs as such monitors are used today: the monitor writes a rationale before its score (Section~\ref{sec:background-sinha}), so it needs decoding and a standard API serves it.
 The Gleipnir monitors have the same architectures as these base models, but we price them at the cost of a GPU that we run ourselves.
-The reason is the workload.
+The two prices therefore show a user of such a monitor what a change to Gleipnir saves, and not the cost of two models on the same hardware.
+The reason for the difference is the workload.
 Standard LLM APIs generate text, which they decode one token at a time.
 Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
 A Gleipnir monitor does not decode.

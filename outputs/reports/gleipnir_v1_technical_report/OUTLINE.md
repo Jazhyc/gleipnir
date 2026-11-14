@@ -530,6 +530,14 @@ Owner: JF.
   few benign trajectories compared with production traffic. To support this
   with numbers when the section is drafted: the benign count per OOD source
   and the lowest false-positive rate each can resolve.
+- **C7.5 (draft; JF, 2026-11-14).** The cost comparison mixes price bases.
+  Baselines are priced at standard API prices, which is how monitors that
+  write a rationale are used today, and Gleipnir at the cost of a dedicated
+  self-hosted GPU (Section 4.1). A base model read with binary logits and
+  self-hosted would cost the same as the Gleipnir monitor of that size, so
+  the cost saving comes from the output format and serving and not from the
+  training. A fairer comparison of open models measures interactive latency
+  and throughput on the same hardware; state this as future work.
 
 ## 9. Conclusion
 
