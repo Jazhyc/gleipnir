@@ -38,7 +38,7 @@ We measure throughput on a benchmark of 320 trajectories, sent with 128 concurre
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
 We convert throughput to cost with two hourly rates for one NVIDIA B200.
 The on-demand rate of \$7.99 is what we paid at Runpod.
-The committed-use rate of \$3.44 is the published on-demand rate of CoreWeave (\$8.60) with its largest published discount for committed use (60\%).
+The committed-use rate of \$3.44 is the list price of CoreWeave for a B200 (\$8.60 per hour) less its largest published discount for committed use (60\%).
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
 A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
