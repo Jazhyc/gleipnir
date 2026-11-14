@@ -41,6 +41,9 @@ The on-demand rate of \$7.99 is what we paid at Runpod.
 The committed-use rate of \$3.44 is the published on-demand rate of CoreWeave (\$8.60) with its largest published discount for committed use (60\%).
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
+A commercial price for a comparable model is in the same range.
+Perplexity's pplx-decider v1.2~\citep{perplexity2026decider}, a decision model that also builds on Qwen3.8-27B, has a list price of \$0.02 per million input tokens on OpenRouter.
+Our committed cost for the 27B is \$0.0414 with stock vLLM and \$0.0180 with the full serving stack.
 
 These costs assume that the GPU is fully used.
 A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.

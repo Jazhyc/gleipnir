@@ -427,3 +427,10 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   and 0.0090 (OOD), 27B 0.0065 and 0.0057; |Δ pAUROC@20| ≤ 0.0013 on every
   split: `experiments/release_serving/README.md`.
 
+
+- Section 4.1, Decider price comparison: OpenRouter list price of the
+  `pplx-decider-v1.2` endpoint (`-20261016`), $0.02/M input tokens, no output
+  charge, from `docs/findings/pplx_decider_ood_benchmark.md` (Cost) and
+  `docs/research/tool_trajectory_inference_economics.md`. Hosted serving
+  precision and hardware are not observed. Compared with the 27B committed
+  cells of Table `tab:serving` (0.0414 BF16, 0.0180 final).
