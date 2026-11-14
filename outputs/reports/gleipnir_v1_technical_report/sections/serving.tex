@@ -71,4 +71,32 @@ We built and validated the low-precision kernels only on the B200, so the releas
 Other Blackwell GPUs support the same number formats, and we expect that the stack can be ported to them, but we have not tested this.
 On all other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} apply.
 
-\todo{Remaining subsections: removing unneeded work (last-token final-layer attention, host path), released artifacts. Per-model breakdown of the gains goes in the appendix.}
+\subsection{Removing unneeded work}
+\label{sec:serving-work}
+
+The last row of Table~\ref{tab:serving} comes from two changes that remove work which a monitor request does not need.
+Neither changes a kernel or the precision of a number, and with one request at a time the scores are bit-for-bit the same as before.
+Together they lower the cost by 1.07$\times$ for the 4B and 1.02$\times$ for the 27B.
+
+\paragraph{Last-token attention in the final layer.}
+Both base models alternate two kinds of sequence layers: one full-attention layer follows every three gated delta network (GDN) layers, which are a form of linear attention with a recurrent state.
+The final layer is a full-attention layer.
+vLLM computes its attention output for every token of the prompt, but the monitor reads the logits only at the last position (Equation~\ref{eq:score}), and no later layer uses the other positions.
+We therefore compute the attention of this layer for the last token alone.
+Its cost then grows linearly with the length of the prompt and no longer quadratically.
+On the benchmark this lowers the cost by 1.01$\times$ for the 4B, where the final layer is one of 8 full-attention layers, and by less than 1.01$\times$ for the 27B, where it is one of 16.
+The gain grows with the length of the prompt: for a single request of one million tokens the 4B answers 10\% sooner.
+
+\paragraph{Shorter host path for the GDN layers.}
+Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
+Much of it serves requests that continue from a stored recurrent state, as generation does after each new token.
+A monitor request always starts from an empty state and ends after the prefill.
+For such requests we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
+This lowers the cost by 1.06$\times$ for the 4B and 1.02$\times$ for the 27B.
+
+For the 4B we make one more change for short single requests.
+The GDN kernel has a variant that splits one long sequence into parallel parts, and the library selects it for every single request.
+Below 8,192 tokens this variant is slower, so we select the standard variant there.
+This lowers the latency of a short request by about 2\,ms and leaves the throughput of the benchmark unchanged.
+
+\todo{Remaining subsection: released artifacts. Per-model breakdown of the gains goes in the appendix.}

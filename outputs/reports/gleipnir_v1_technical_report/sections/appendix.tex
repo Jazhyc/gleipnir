@@ -491,7 +491,7 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 
 The serving stack of Section~\ref{sec:serving-precision} does not contain new kernels.
 It uses three kernels from NVIDIA libraries and adapts them to the monitor workload (Table~\ref{tab:kernels}).
-The base models have two kinds of sequence layers: full-attention layers and gated delta network (GDN) layers, a form of linear attention with a recurrent state.
+The base models have two kinds of sequence layers, full-attention layers and GDN layers (Section~\ref{sec:serving-work}).
 
 \begin{table}[h]
 \caption{Kernels of the serving stack.}

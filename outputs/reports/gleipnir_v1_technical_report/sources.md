@@ -462,3 +462,22 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   the current recipe (`docs/decisions/b200_monitor_score_reference.md`);
   ported to the 27B and rejected, no end-to-end gain
   (`docs/research/qwen38_27b_serving_transfer.md`).
+
+- Section 4.3 (removing unneeded work), 2026-11-14. Per-change gains for the
+  4B from the matched ladder (`experiments/gleipnir4b_serving_ladder`,
+  session 2 medians): last-query 1.011x, route 1.002x, lean GDN 1.059x. For
+  the 27B at BF16 (`experiments/qwen38_27b_serving/README.md`, candidates
+  table): last-query +0.40%, fast GDN +1.99%, both +2.28%. Layer counts 32
+  (8/24) and 64 (16/48), final layer full attention (layers 31 and 63):
+  `docs/research/qwen38_27b_serving_transfer.md`. Bitwise-unchanged scores at
+  concurrency 1 and the 10.3% lower latency at 1M tokens (4B, 43.08 s to
+  38.64 s): `docs/findings/b200_last_layer_trim.md`. Lean GDN host path
+  (boundaries once per forward, in-place output, zero-state start, bitwise
+  equal): `experiments/b200_gdn_fast/README.md`. Route gate (context-parallel
+  variant slower under 8,192 tokens, 2.3-2.9 ms on short single requests,
+  canary MAE 0.0005, 4B only): `docs/findings/b200_gdn_route.md`,
+  `docs/decisions.md` (2026-10-15). The route gate changes arithmetic for
+  short requests, so the bit-for-bit statement covers only the two main
+  changes. "One full-attention layer follows every three GDN layers" is
+  inferred from the 4B attention layer indices 3, 7, ..., 31 and the 16/48
+  split of the 27B.
