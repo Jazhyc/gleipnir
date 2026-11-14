@@ -77,6 +77,7 @@ On all other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} app
 The last row of Table~\ref{tab:serving} comes from two changes that remove work which a monitor request does not need.
 Neither changes a kernel or the precision of a number, and with one request at a time the scores are bit-for-bit the same as before.
 Together they lower the cost by 1.07$\times$ for the 4B and 1.02$\times$ for the 27B.
+Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and one further change for the 4B that affects only latency.
 
 \paragraph{Last-token attention in the final layer.}
 The final layer of both base models is a full-attention layer.
@@ -93,10 +94,3 @@ Much of it serves requests that continue from a stored recurrent state, as gener
 A monitor request always starts from an empty state and ends after the prefill.
 For such requests we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
 This lowers the cost by 1.06$\times$ for the 4B and 1.02$\times$ for the 27B.
-
-For the 4B we make one more change for short single requests.
-The GDN kernel has a variant that splits one long sequence into parallel parts, and the library selects it for every single request.
-Below 8,192 tokens this variant is slower, so we select the standard variant there.
-This lowers the latency of a short request by about 2\,ms and leaves the throughput of the benchmark unchanged.
-
-\todo{Remaining subsection: released artifacts. Per-model breakdown of the gains goes in the appendix.}

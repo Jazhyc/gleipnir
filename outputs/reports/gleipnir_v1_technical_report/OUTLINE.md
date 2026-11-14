@@ -361,8 +361,11 @@ central table (`tab:serving`, USD per million prompt tokens, all self-hosted
 cells from the 320-trajectory benchmark) and 4.1 Self-hosting with one
 forward pass (`sec:serving-selfhost`) and 4.2 Low-precision arithmetic
 (`sec:serving-precision`) and 4.3 Removing unneeded work (`sec:serving-work`:
-last-token attention in the final layer, shorter GDN host path, length-gated
-GDN variant for the 4B). Remaining: released artifacts.
+last-token attention in the final layer, shorter GDN host path; the
+length-gated GDN variant of the 4B is in Appendix E.1). Section 4 text is
+complete (JF, 2026-11-14). Released artifacts are not a subsection here; they
+go in the abstract or introduction. Appendix E.1 still needs the throughput
+and latency table and a reorganization.
 Appendix E.2 (`app:serving-kernels`) lists the kernels, their NVIDIA sources
 and our changes; 4.2 points to it. Layer counts belong in the subsection on
 removing unneeded work (JF, 2026-11-14): Qwen3.5-4B has 32 layers (8 full

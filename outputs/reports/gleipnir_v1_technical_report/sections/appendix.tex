@@ -484,6 +484,14 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \subsection{Serving throughput and latency}
 \label{app:serving-throughput}
 
+\paragraph{GDN kernel variant for short requests.}
+The serving stack of the 4B contains one change that Section~\ref{sec:serving-work} does not describe.
+The GDN kernel has a variant that splits one long sequence into parallel parts, and the library selects it for every single request.
+Below 8,192 tokens this variant is slower, so we select the standard variant there.
+This lowers the latency of a short single request by about 2\,ms and leaves the throughput of the benchmark unchanged (1.002$\times$).
+The last row of Table~\ref{tab:serving} includes it for the 4B.
+The 27B does not use it.
+
 \todo{Table of prompt tokens per second and request latency after each serving step, for both monitors, on the 320-trajectory benchmark. Per-model breakdown of the steps of Table~\ref{tab:serving}.}
 
 \subsection{Low-precision kernels}
