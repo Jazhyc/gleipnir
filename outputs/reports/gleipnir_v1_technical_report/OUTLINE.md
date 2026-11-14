@@ -57,6 +57,11 @@ Owner: JF.
   one paragraph each.
 - **C1.3 (draft).** Contributions: the training recipe, the evaluation, the
   adversarial and probing analysis, and the released models and serving stack.
+  State the pricing decision here (JF, 2026-11-14): baselines are priced at
+  standard API prices and Gleipnir at the cost of a dedicated self-hosted
+  GPU, although the architectures match, because a prefill-only workload uses
+  the GPU differently from decoding and a standard API price does not pass
+  that on. Point to Section 4.1 and to the Decider list price as support.
 
 Exhibit: optionally, the frontier figure (Figure 1) on the first page.
 
