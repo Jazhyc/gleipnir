@@ -27,19 +27,12 @@ Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\tim
 \subsection{Self-hosting with one forward pass}
 \label{sec:serving-selfhost}
 
-The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models.
-It is what a monitor on these models costs as such monitors are used today: the monitor writes a rationale before its score (Section~\ref{sec:background-sinha}), so it needs decoding and a standard API serves it.
-The Gleipnir monitors have the same architectures as these base models, but we price them at the cost of a GPU that we run ourselves.
-The two prices therefore show a user of such a monitor what a change to Gleipnir saves, and not the cost of two models on the same hardware.
-The reason for the difference is the workload.
+The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models, which is what a monitor that writes a rationale costs today.
 Standard LLM APIs generate text, which they decode one token at a time.
 Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
 A Gleipnir monitor does not decode.
 It needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
-A GPU that runs only prefill can therefore process more prompt tokens per second, but the price of a standard API is set for a GPU that also decodes.
-A provider can pass on the difference only with GPUs that it dedicates to prefill-only requests.
-The prices of decision models (Section~\ref{sec:background-related}) suggest that providers do so: pplx-decider v1.2~\citep{perplexity2026decider} builds on Qwen3.8-27B and has a list price of \$0.02 per million input tokens on OpenRouter, about a tenth of the API price of its base model.
-We therefore serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}.
+The price of a standard API does not reflect this, so we serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}, and we price it at the cost of the GPU.
 
 We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
@@ -48,7 +41,7 @@ The on-demand rate of \$7.99 is what we paid at Runpod.
 The committed-use rate of \$3.44 is the published on-demand rate of CoreWeave (\$8.60) with its largest published discount for committed use (60\%).
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
-Our committed cost for the 27B, \$0.0414 with stock vLLM and \$0.0180 with the full serving stack, is in the same range as the price of pplx-decider v1.2.
+A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
 
 These costs assume that the GPU is fully used.
 A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.
