@@ -363,7 +363,8 @@ forward pass (`sec:serving-selfhost`) and 4.2 Low-precision arithmetic
 (`sec:serving-precision`). Remaining: removing unneeded work, released
 artifacts.
 Appendix E.2 (`app:serving-kernels`) lists the kernels, their NVIDIA sources
-and our changes, with the backward-pass note for QAD; 4.2 points to it.
+and our changes; 4.2 points to it. No backward-pass or training-stack detail
+(JF, 2026-11-14: an implementation detail that users do not need).
 Serving has its own section because it is a separate contribution and sets
 the cost per evaluation used in the frontier of Section 5. Planned
 subsections: the serving stack (changes against stock vLLM), the effect on

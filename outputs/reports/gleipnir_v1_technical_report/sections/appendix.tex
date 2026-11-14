@@ -495,7 +495,7 @@ The base models have two kinds of sequence layers: full-attention layers and gat
 The Qwen3.5-4B has 8 full-attention layers and 24 GDN layers.
 
 \begin{table}[h]
-\caption{Kernels of the serving stack. All run only on the forward pass.}
+\caption{Kernels of the serving stack.}
 \label{tab:kernels}
 \centering
 \small
@@ -514,13 +514,6 @@ Full attention & MXFP8 & Scaled dot-product attention of the cuDNN frontend for 
 
 The recurrence of the GDN layers, the stored keys and values, the outputs of all projections and the final projection to the vocabulary stay in BF16 or FP32.
 For the 27B we built the same stack with the layer shapes and head counts of Qwen3.8-27B and chose the tile sizes again.
-
-\paragraph{Backward pass.}
-QAD (Section~\ref{sec:training-setup}) needs gradients through this arithmetic.
-The cuDNN frontend has a backward kernel for MXFP8 attention, but we do not use it.
-In our test on the 4B the adapter gradients that it gave differed by 18.7\% from the reference, above our limit of 10\%, and a training step took 30\% longer than with BF16 attention.
-In QAD the forward pass therefore uses the serving kernels, and the backward pass of attention uses a BF16 kernel on the quantized queries, keys and values.
-The backward pass of the quantized projections uses a straight-through estimator.
 
 \section{Prompts}
 \label{app:prompts}
