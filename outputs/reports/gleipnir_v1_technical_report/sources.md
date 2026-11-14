@@ -453,3 +453,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   carry no year or version; library versions of the release image are not
   yet recorded in the report. The 8/24 layer split of the 4B is from
   `docs/findings/b200_nvidia_mxfp8.md`.
+
+- Appendix E.2, fused SwiGLU kernel: adapted from NVIDIA's SM100 block-scaled
+  dense SwiGLU template (`docs/findings/b200_fp4_swiglu_fusion.md`); direct
+  FP4 output selected for the 4B on 2026-10-07
+  (`docs/decisions/b200_native_fp4_output_inference_baseline.md`, +1.88%
+  c128 throughput; used above 1,536 rows, original path below) and listed in
+  the current recipe (`docs/decisions/b200_monitor_score_reference.md`);
+  ported to the 27B and rejected, no end-to-end gain
+  (`docs/research/qwen38_27b_serving_transfer.md`).

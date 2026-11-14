@@ -515,6 +515,9 @@ The rest of the model keeps the precision of stock vLLM.
 The quantized projections return their outputs in BF16, and the attention layers store their keys and values in BF16.
 The recurrence of the GDN layers runs in BF16, with its state and gates in FP32.
 For the 27B we built the same stack with the layer shapes and head counts of Qwen3.8-27B and chose the tile sizes again.
+The two models differ in one step.
+For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
+For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
 \section{Prompts}
 \label{app:prompts}
