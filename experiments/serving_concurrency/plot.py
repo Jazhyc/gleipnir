@@ -92,7 +92,7 @@ def plot(summary: dict, output: Path) -> None:
             if curve:
                 right.plot(
                     [p[0] for p in curve],
-                    [p[1] / 1000 for p in curve],
+                    [p[1] for p in curve],
                     color=color,
                     ls=style,
                     lw=1.6,
@@ -107,7 +107,7 @@ def plot(summary: dict, output: Path) -> None:
             longest = shared[-1]
             right.annotate(
                 f"{stock[longest] / fast[longest]:.1f}×",
-                (longest, (stock[longest] * fast[longest]) ** 0.5 / 1000),
+                (longest, (stock[longest] * fast[longest]) ** 0.5),
                 xytext=(6, 0),
                 textcoords="offset points",
                 va="center",
@@ -136,7 +136,7 @@ def plot(summary: dict, output: Path) -> None:
         color="#666666",
     )
     right.set_xlabel("Prompt tokens")
-    right.set_ylabel("Latency of one request (s)")
+    right.set_ylabel("Latency of one request (ms)")
     right.set_title("About 2× faster on long prompts", fontsize=9)
     for axis in (left, right):
         axis.spines[["top", "right"]].set_visible(False)
