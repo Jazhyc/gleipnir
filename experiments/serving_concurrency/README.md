@@ -287,3 +287,32 @@ name).
   amplifies it about sixfold, from its first rung. The kernel responsible
   was not identified. ID/OOD quality under caching was not measured: those
   prompts are independent and would not hit the cache.
+
+**ID/OOD through the cache** (user request; `prefix.py --cache --splits ood
+id`, `prefix01/prefix_4b_fast_cache_eval`, 20:10–20:32 UTC). Released 4B,
+caching on, normal step size, concurrency 1. Each row starts from an empty
+cache, scores the first half of the prompt text (the midpoint decision; not
+a well-formed monitor prompt, it only fills the cache) and then the whole
+prompt. pAUROC@20 of the final scores against the same rows uncached at
+concurrency 1 without caching (`breakdown01/parity_4b_fast_c1`):
+
+| Source | Uncached | Cached | Rows with a hit |
+|---|---:|---:|---:|
+| ID macro | 0.9098 | 0.9113 | 3,007 of 3,012 |
+| Gloom exfiltration | 0.8473 | 0.8503 | |
+| STRIDE | 0.9724 | 0.9723 | |
+| OOD macro | 0.7669 | 0.7661 | 5,068 of 6,395 |
+| AgentDojo | 0.8152 | 0.8037 | 190 of 1,500 |
+| CUA-SHADE-Arena | 0.7599 | 0.7530 | 950 of 955 |
+| IaC | 0.8235 | 0.8352 | 1,433 of 1,443 |
+| MLE-Sabotage | 1.0000 | 1.0000 | 148 of 148 |
+| Rogue-Eval | 0.9547 | 0.9562 | 1,499 of 1,499 |
+| SHADE-Arena | 0.2479 | 0.2484 | 848 of 850 |
+
+About half of all prompt tokens came from the cache. Among rows with a hit,
+82% of scores change (ID mean 0.025, maximum 0.40, 71 cross 0.5; OOD mean
+0.027, maximum 0.51, 115 cross 0.5). Of the OOD rows without a hit, 1,016 of
+1,327 also change, because caching splits prompts above 528 tokens; this
+is most of AgentDojo's change. The macro scores move by +0.0015 and
+−0.0008, and no source by more than 0.012: individual scores change, the
+ranking quality does not.
