@@ -66,15 +66,21 @@ def graph_sizes(command: list[str], cap: int, layout: str = "") -> list[int]:
     if layout == "o":  # offset: other sizes between 256 and 768
         sizes = [n for n in sizes if not 256 < n < 768]
         sizes += [288, 352, 416, 480, 576, 704]
+    if layout == "e":  # exact: keep each prompt's row count modulo 32
+        # Below 768 rows the scores take one of two values, by whether the
+        # row count is a multiple of 32. Sizes 32k - 1 and 32k keep padded
+        # prompts on the side of that switch they are on without a graph.
+        sizes = [n for n in sizes if not 256 < n < 768]
+        sizes += [n for k in range(9, 25) for n in (32 * k - 1, 32 * k)]
     return sorted(n for n in {*sizes, 1535, 8191} if n <= cap)
 
 
 def graph_step(step: str) -> tuple[str, int, str] | None:
     """``fast_g2048`` is the 4B rung ``fast`` with graphs up to 2,048 tokens.
 
-    A trailing ``d`` or ``o`` selects another layout of the sizes below 768.
+    A trailing ``d``, ``o`` or ``e`` selects another layout of the sizes below 768.
     """
-    match = re.fullmatch(r"(bf16|quant|lastquery|route|fast)_g(\d+)([do]?)", step)
+    match = re.fullmatch(r"(bf16|quant|lastquery|route|fast)_g(\d+)([doe]?)", step)
     return (match.group(1), int(match.group(2)), match.group(3)) if match else None
 
 
