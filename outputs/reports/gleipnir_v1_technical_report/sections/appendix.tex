@@ -493,7 +493,7 @@ The software was Ubuntu 24.04 with Python 3.12, vLLM 0.31.0, PyTorch 2.13.0, cuD
 The client ran on the same machine and sent each request as soon as an earlier one returned.
 Latency is the time that the client waits for a score, so it includes HTTP, tokenization and waiting in the queue of the server.
 Each step ran in a new server, and each figure is the median of three passes after a warmup.
-Table~\ref{tab:serving} uses earlier measurements, for the 4B on another host, so its gains differ from the gains here by up to 0.04.
+Table~\ref{tab:serving} takes the gains of the 27B from this session. Its other figures come from earlier measurements, for the 4B on another host, so its gains for the 4B differ from the gains here by 0.01.
 
 \begin{table}[h]
 \caption{Prompt tokens per second and request latency after each serving step on the 320-trajectory benchmark. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile over the requests of a pass.}

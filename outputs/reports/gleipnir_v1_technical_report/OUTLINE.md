@@ -366,9 +366,11 @@ length-gated GDN variant of the 4B is in Appendix E.1). Section 4 text is
 complete (JF, 2026-11-14). Released artifacts are not a subsection here; they
 go in the abstract or introduction. Appendix E.1 has the environment, the
 per-step table (`tab:serving-steps`) and the latency figure
-(`fig:serving-latency`) from the EU-RO-1 session of 2026-11-15. Open (JF to
-decide): Table 1 still uses the earlier measurements, whose 27B
-low-precision cell was derived (2.25x, 1.02x; measured 2.21x, 1.04x).
+(`fig:serving-latency`) from the EU-RO-1 session of 2026-11-15. Table 1
+takes the 27B gains from that session (2.21x, 1.04x; JF, 2026-11-15); its
+other cells keep the earlier measurements. Open: the per-change 27B gains in
+4.3 (below 1.01x and 1.02x, from the earlier BF16 A/B) do not multiply to
+the measured 1.04x.
 Appendix E.2 (`app:serving-kernels`) lists the kernels, their NVIDIA sources
 and our changes; 4.2 points to it. Layer counts belong in the subsection on
 removing unneeded work (JF, 2026-11-14): Qwen3.5-4B has 32 layers (8 full

@@ -18,8 +18,8 @@ Serving step & Gain & On demand & Committed & Gain & On demand & Committed \\
 \midrule
 API price & --- & --- & 0.0300 & --- & --- & 0.1950 \\
 Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\times$ & 0.0961 & 0.0414 \\
-+ Low-precision arithmetic & 1.77$\times$ & 0.0105 & 0.0045 & 2.25$\times$ & 0.0428 & 0.0184 \\
-+ Removing unneeded work & 1.07$\times$ & 0.0098 & 0.0042 & 1.02$\times$ & 0.0418 & 0.0180 \\
++ Low-precision arithmetic & 1.77$\times$ & 0.0105 & 0.0045 & 2.21$\times$ & 0.0435 & 0.0188 \\
++ Removing unneeded work & 1.07$\times$ & 0.0098 & 0.0042 & 1.04$\times$ & 0.0418 & 0.0180 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -58,7 +58,7 @@ We run the projections around attention in FP8, the other large projections in F
 These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
 For each projection we quantize both the weights and the activations.
 The state that the model stores between tokens and the two output logits keep their original precision.
-This step lowers the cost by 1.77 times for the 4B and by 2.25 times for the 27B.
+This step lowers the cost by 1.77 times for the 4B and by 2.21 times for the 27B.
 
 Lower precision changes the scores (Appendix~\ref{app:ablation-precision}).
 Without further training, the 4B loses 0.032 pAUROC@20 on the validation set and 0.053 on the OOD suite.
@@ -76,7 +76,7 @@ On all other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} app
 
 The last row of Table~\ref{tab:serving} comes from two changes that remove work which a monitor request does not need.
 Neither changes a kernel or the precision of a number, and with one request at a time the scores are bit-for-bit the same as before.
-Together they lower the cost by 1.07$\times$ for the 4B and 1.02$\times$ for the 27B.
+Together they lower the cost by 1.07$\times$ for the 4B and 1.04$\times$ for the 27B.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and one further change for the 4B that affects only latency.
 
 \paragraph{Last-token attention in the final layer.}
