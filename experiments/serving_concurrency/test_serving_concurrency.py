@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from experiments.serving_concurrency import run, summarize
+from experiments.serving_concurrency import lengths, run, summarize
 
 
 def test_levels_sweep_only_at_both_ends():
@@ -43,3 +43,44 @@ def test_condition_summary_takes_medians(tmp_path):
     assert item["passes"] == 3
     assert item["prompt_tokens_per_second"] == 200.0
     assert item["p50_ms"] == pytest.approx(400.0)
+
+
+def command(limit: str = "32768") -> list[str]:
+    overrides = {
+        "text_config": {
+            "max_position_embeddings": 262144,
+            "rope_parameters": {"rope_type": "default"},
+        }
+    }
+    return [
+        "python",
+        "--max-model-len",
+        limit,
+        "--max-num-batched-tokens",
+        "32768",
+        "--hf-overrides",
+        json.dumps(overrides),
+    ]
+
+
+def test_native_phase_changes_only_the_limit():
+    original = command()
+    changed = lengths.phase_command(original, "native")
+    assert changed[2] == "262144"
+    assert changed[:2] + changed[3:] == original[:2] + original[3:]
+
+
+def test_yarn_phase_scales_rope():
+    changed = lengths.phase_command(command("262144"), "yarn")
+    text = json.loads(changed[-1])["text_config"]
+    assert changed[2] == "1048576"
+    assert text["max_position_embeddings"] == 1048576
+    assert text["rope_parameters"]["rope_type"] == "yarn"
+    assert text["rope_parameters"]["factor"] == 4.0
+
+
+def test_phase_command_rejects_other_chunk_budget():
+    bad = command()
+    bad[4] = "16384"
+    with pytest.raises(ValueError):
+        lengths.phase_command(bad, "native")
