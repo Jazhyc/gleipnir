@@ -241,8 +241,11 @@ ID rows, 6,395 OOD rows and 320 benchmark rows, with c1 136,574 tok/s, p50
 137,790, 11.5; c2 163,186, 34.6; c4 191,308, 69.9; c8 209,482, 160; c16
 225,109, 283; c32 229,031, 568; c64 228,205, 1,119; c128 227,709, 2,158.
 Scores at higher concurrency were not compared; they already vary with
-batch composition. Adopting the layout for the 4B release is the user's
-decision. 399 result and log files of the session were pulled and
+batch composition. The user adopted the layout for the report on
+2026-11-15; the release image and command are to follow. The switch at
+multiples of 32 was observed only on this software stack and its kernel is
+not identified, so every image rebuild must repeat the bit-identity check
+(`fast_g2048e` against `fast` at concurrency 1 on short prompts). 399 result and log files of the session were pulled and
 checksum-verified.
 
 ## Prefix caching and score identity
