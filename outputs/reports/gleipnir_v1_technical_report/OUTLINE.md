@@ -371,10 +371,7 @@ takes the 27B gains from that session (2.21x, 1.04x; JF, 2026-11-15); its
 other cells keep the earlier measurements. The two paragraphs of 4.3 give
 per-change gains only for the 4B (JF, 2026-11-15): the 27B changes were not
 measured separately in that session.
-Deferred B200 measurements (JF, 2026-11-15, not yet authorized): a
-per-change breakdown for the 27B (last-token attention and GDN host path on
-top of low precision, and low precision without CUDA graphs), and the 4B
-with CUDA graphs up to 2,048 tokens with its own breakdown.
+B200 breakdown session (2026-11-15, `experiments/serving_concurrency/README.md`, second Result): measured, not yet in the report. 27B per change: low precision 2.22×, larger graphs 1.00× (one-request p50 58.6 → 24.0 ms), last-token attention 1.01×, GDN host path 1.04×. 4B with graphs up to 2,048: one-request p50 29.0 → 11.3 ms, throughput and per-change gains unchanged, full concurrency curve measured. Open before any report change: with the larger graphs, 4B scores change for padded prompts of 257–767 tokens (OOD 0.7669 → 0.7639 at one request at a time, AgentDojo 0.8152 → 0.7973); cause unknown, no cap adopted.
 Appendix E.2 (`app:serving-kernels`) lists the kernels, their NVIDIA sources
 and our changes; 4.2 points to it. Layer counts belong in the subsection on
 removing unneeded work (JF, 2026-11-14): Qwen3.5-4B has 32 layers (8 full
