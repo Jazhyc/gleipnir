@@ -231,7 +231,8 @@ batches of 128, 0.8152 at c1, 0.8070 with `fast_g2048d` (half the short
 rows switched), 0.7973 with `fast_g2048`, against 0.9466 in BF16. The
 release's reported OOD scores are for batched scoring.
 
-**Layout `fast_g2048e`** (sizes 32k − 1 and 32k from 287 to 768, the
+**Layout `fast_g2048e`** (each multiple of 32 from 288 to 768 and the
+size one below it: 287, 288, 319, 320, … 767, 768; the
 default sizes to 256 and the 27B sizes from 896) keeps each row count's
 remainder class. Against the release at c1 it is bit-identical on all 3,012
 ID rows, 6,395 OOD rows and 320 benchmark rows, with c1 136,574 tok/s, p50
@@ -243,3 +244,43 @@ Scores at higher concurrency were not compared; they already vary with
 batch composition. Adopting the layout for the 4B release is the user's
 decision. 399 result and log files of the session were pulled and
 checksum-verified.
+
+## Prefix caching and score identity
+
+User request, 2026-11-15, same Pod, 19:45–20:06 UTC: do cached scores equal
+uncached scores, and if not, why. `prefix.py` scores each `full320` prompt
+at concurrency 1 after a cache reset (`uncached`), again (`replay`), and
+after a reset and a request with its first half (`half`), on the 4B with
+`--enable-prefix-caching --mamba-cache-mode align`
+(`results/serving_concurrency/prefix01/`; the released-stack run is in
+`rerun/`, `trial/` holds nothing, and the first attempt failed on a log
+name).
+
+| Step | Replay, 149 hit rows | Half, 126 hit rows | Half, 194 rows without hit |
+|---|---|---|---|
+| `bf16` | 0 changed | 32 changed, mean 0.004, max 0.054 | 0 changed |
+| `quant` | 0 changed | 100 changed, mean 0.025, max 0.210 | 1 changed (0.011) |
+| `fast` | 0 changed | 103 changed, mean 0.024, max 0.224 | 1 changed (0.005) |
+
+- **The cache is lossless**: an identical replay is bit-identical on every
+  step, with up to 99% of its tokens cached.
+- **The split of the prefill into steps is what changes scores.** vLLM sets
+  the attention block to 528 tokens for the 4B so that an attention page is
+  as large as a GDN state page, and align mode saves GDN state only at
+  block boundaries. A resumed request computes the rest in other steps than
+  an uncached one.
+  - Without a cache, `--max-num-batched-tokens 4096` changes `fast` on 67 of
+    87 prompts above 4,096 tokens (mean 0.017, maximum 0.342) and on none
+    below. (`bf16` with that budget also changes 62 of 233 shorter prompts,
+    mean 0.004; not explained.)
+  - Enabling caching alone changes prompts above 528 tokens against the
+    server without it (`fast` 115 of 149, mean 0.021; `quant` 118; `bf16`
+    21, mean 0.002) and no shorter prompt.
+  - With `--max-num-batched-tokens 528` every request advances in the same
+    steps, and `half` equals `uncached` on all 127 hit rows for `fast` and
+    `bf16`. One uncached pass over the 320 prompts then takes 72.2 s
+    against 19.3 s (`fast`).
+- BF16 is not split-invariant either (rounding); the low-precision path
+  amplifies it about sixfold, from its first rung. The kernel responsible
+  was not identified. ID/OOD quality under caching was not measured: those
+  prompts are independent and would not hit the cache.

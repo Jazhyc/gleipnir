@@ -1045,7 +1045,7 @@ The same day the user authorized a second EU-RO-1 B200 Pod for the
 `179xu9pmh64fxh` (`gleipnir-serving-breakdown`, $7.99/hour, same settings,
 snapshot `.runpod/serving-breakdown.json`), allocated at 16:47 UTC after
 about 70 minutes of retries, on the same machine and GPU as the first. Its
-results were collected and verified at 19:40 UTC. At the user's instruction
+results were collected and verified at 20:10 UTC. At the user's instruction
 it was left running for follow-up measurements; check the live inventory
 before relying on this.
 
