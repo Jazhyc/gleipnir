@@ -241,5 +241,5 @@ ID rows, 6,395 OOD rows and 320 benchmark rows, with c1 136,574 tok/s, p50
 225,109, 283; c32 229,031, 568; c64 228,205, 1,119; c128 227,709, 2,158.
 Scores at higher concurrency were not compared; they already vary with
 batch composition. Adopting the layout for the 4B release is the user's
-decision. 398 result and log files of the session were pulled and
+decision. 399 result and log files of the session were pulled and
 checksum-verified.
