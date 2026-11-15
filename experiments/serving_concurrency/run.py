@@ -36,7 +36,7 @@ def levels(step: str, ends: bool = False, top: int = 128) -> tuple[int, ...]:
     base = step.split("_g")[0]
     if base in ("bf16", "fast") and not ends:
         return tuple(level for level in SWEEP if level <= top)
-    return (top, 1)
+    return (top, 1) if top == 128 else (top, OPERATING, 1)
 
 
 def swap_worker(command: list[str], worker: str) -> list[str]:
@@ -185,6 +185,7 @@ def launch(command: list[str], env: dict, name: str, out: Path, attempts: int = 
 
 AGENT_SOURCES = ("bash_arena", "bash_bench", "gloom", "stride")
 AGENT_TOP = 64
+OPERATING = 16  # throughput saturates here; the report's table uses it
 
 
 def agent_only(rows: list[dict]) -> list[dict]:

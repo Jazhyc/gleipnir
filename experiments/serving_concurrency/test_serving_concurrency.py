@@ -11,7 +11,7 @@ def test_levels_sweep_only_at_both_ends():
     assert run.levels("quant") == (128, 1)
     assert run.levels("fast", ends=True) == (128, 1)
     assert run.levels("fast", top=64) == (64, 32, 16, 8, 4, 2, 1)
-    assert run.levels("quant", top=64) == (64, 1)
+    assert run.levels("quant", top=64) == (64, 16, 1)
     assert run.levels("fast_g2048") == run.SWEEP
     assert run.levels("quant_g2048") == (128, 1)
 
