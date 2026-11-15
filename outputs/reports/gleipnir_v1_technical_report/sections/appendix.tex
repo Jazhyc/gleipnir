@@ -565,9 +565,8 @@ The gain is larger for the 4B because the time saved is the same and the 4B spen
 With 128 concurrent requests the throughput does not change, because the CPU tokenizes a prompt while the GPU works on other requests.
 
 \paragraph{Prompt length.}
-We sent single requests with synthetic prompts of 256 to 1,048,576 tokens.
-Figure~\ref{fig:serving-latency} (right) shows them from 4,096 tokens, because the latency changes little below this length.
-For a prompt of 512 tokens the released stack takes 10\,ms for the 4B and 19\,ms for the 27B, close to the medians of Table~\ref{tab:serving-steps}, because the median prompt of the benchmark has 504 tokens.
+We sent single requests with synthetic prompts of 256 to 1,048,576 tokens (Figure~\ref{fig:serving-latency}, right).
+Up to 1,024 tokens the released 4B answers in about 10\,ms, and the released 27B in 17\,ms to 26\,ms.
 At 262,144 tokens the released stack answers in 2.9\,s for the 4B and in 10.8\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
 At 1,048,576 tokens the released stack answers in 36\,s for the 4B and in 126\,s for the 27B, against 90\,s and 297\,s.

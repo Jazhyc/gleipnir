@@ -21,7 +21,7 @@ MODELS = {"4b": ("Gleipnir 4B", "#E45756"), "27b": ("Gleipnir 27B", "#4C78A8")}
 STACKS = {"fast": ("Released stack", "-"), "bf16": ("Stock vLLM, BF16", "--")}
 LABELLED = (1, 16, 128)  # concurrency levels written next to their points
 NATIVE = 262144
-SHORTEST = 4096  # shorter prompts take about the same time and are not shown
+SHORTEST = 256
 
 
 def sweep(summary: dict, condition: str) -> list[tuple[int, float, float]]:
@@ -123,7 +123,7 @@ def plot(summary: dict, output: Path) -> None:
     left.set_ylabel("Median latency (ms)")
     left.set_title("Throughput saturates near 16 requests", fontsize=9)
     right.set_xscale("log", base=2)
-    right.set_xlim(right=right.get_xlim()[1] * 2.2)  # room for the labels
+    right.set_xlim(right=right.get_xlim()[1] * 4)  # room for the labels
     right.set_yscale("log")
     right.axvline(NATIVE, color="#999999", lw=0.8, ls=":")
     right.annotate(
