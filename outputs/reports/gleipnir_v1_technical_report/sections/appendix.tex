@@ -497,7 +497,7 @@ Each step ran in a new server, and each figure is the median of three passes aft
 Table~\ref{tab:serving} takes the gains of the 27B from this session. Its other figures come from earlier measurements, for the 4B on another host, so its gains for the 4B differ from the gains here by 0.01.
 
 \begin{table}[h]
-\caption{Prompt tokens per second and request latency after each serving step on the 320-trajectory benchmark. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile over the requests of a pass.}
+\caption{Prompt tokens per second and request latency after each serving step on the 320-trajectory benchmark. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile of the latency over the requests of a pass, in milliseconds.}
 \label{tab:serving-steps}
 \centering
 \small
@@ -506,19 +506,19 @@ Table~\ref{tab:serving} takes the gains of the 27B from this session. Its other 
 \toprule
  & \multicolumn{3}{c}{128 concurrent requests} & \multicolumn{3}{c}{One request at a time} \\
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
-Serving step & Tokens/s & Gain & p50 (s) & Tokens/s & p50 (ms) & p95 (ms) \\
+Serving step & Tokens/s & Gain & p50 (ms) & Tokens/s & p50 (ms) & p95 (ms) \\
 \midrule
 \multicolumn{7}{@{}l}{\textit{Gleipnir 4B}} \\
-Stock vLLM, BF16 & 119,329 & --- & 4.11 & 84,885 & 18.8 & 205 \\
-+ Low-precision arithmetic & 209,757 & 1.76$\times$ & 2.33 & 88,052 & 34.2 & 136 \\
-+ Last-token attention & 214,529 & 1.02$\times$ & 2.27 & 90,836 & 33.3 & 129 \\
-+ GDN kernel variant & 213,899 & 1.00$\times$ & 2.29 & 95,420 & 31.5 & 127 \\
-+ Shorter GDN host path & 226,278 & 1.06$\times$ & 2.15 & 99,125 & 29.2 & 122 \\
+Stock vLLM, BF16 & 119,329 & --- & 4,114 & 84,885 & 18.8 & 205 \\
++ Low-precision arithmetic & 209,757 & 1.76$\times$ & 2,330 & 88,052 & 34.2 & 136 \\
++ Last-token attention & 214,529 & 1.02$\times$ & 2,273 & 90,836 & 33.3 & 129 \\
++ GDN kernel variant & 213,899 & 1.00$\times$ & 2,286 & 95,420 & 31.5 & 127 \\
++ Shorter GDN host path & 226,278 & 1.06$\times$ & 2,154 & 99,125 & 29.2 & 122 \\
 \addlinespace
 \multicolumn{7}{@{}l}{\textit{Gleipnir 27B}} \\
-Stock vLLM, BF16 & 22,949 & --- & 21.42 & 20,993 & 34.5 & 989 \\
-+ Low-precision arithmetic & 50,675 & 2.21$\times$ & 10.00 & 42,009 & 24.6 & 461 \\
-+ Removing unneeded work & 52,864 & 1.04$\times$ & 9.55 & 44,112 & 23.0 & 443 \\
+Stock vLLM, BF16 & 22,949 & --- & 21,419 & 20,993 & 34.5 & 989 \\
++ Low-precision arithmetic & 50,675 & 2.21$\times$ & 9,997 & 42,009 & 24.6 & 461 \\
++ Removing unneeded work & 52,864 & 1.04$\times$ & 9,553 & 44,112 & 23.0 & 443 \\
 \bottomrule
 \end{tabular}
 \end{table}
