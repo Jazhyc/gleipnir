@@ -68,7 +68,8 @@ def run(
     out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
     command, env = prepare("4b", step, out)
-    process, startup, attempt = launch(command, env, name, out)
+    log = f"{session}_{name}".lstrip("_").replace("/", "_")
+    process, startup, attempt = launch(command, env, log, out)
     try:
         code = 0
         if concurrency == 128:
