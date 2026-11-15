@@ -50,6 +50,16 @@ def condition_summary(directory: Path) -> dict:
             "p50_ms": statistics.median(item["p50_ms"] for item in items),
             "p95_ms": statistics.median(item["p95_ms"] for item in items),
         }
+    lengths = directory / "lengths_c1.json"
+    if lengths.exists():
+        summary["lengths_c1"] = {
+            str(item["prompt_tokens"]): {
+                "median_ms": 1000 * statistics.median(item["latency_seconds"]),
+                "min_ms": 1000 * min(item["latency_seconds"]),
+                "max_ms": 1000 * max(item["latency_seconds"]),
+            }
+            for item in json.loads(lengths.read_text())["measurements"]
+        }
     return summary
 
 
@@ -62,6 +72,12 @@ def main() -> None:
     (OUT / "summary.json").write_text(json.dumps(report, indent=1) + "\n")
     for name, summary in report.items():
         for key, item in summary.items():
+            if key == "lengths_c1":
+                for length, value in item.items():
+                    print(
+                        f"{name:14s} length {length:>6s} {value['median_ms']:8.1f} ms"
+                    )
+                continue
             print(
                 f"{name:14s} {key:10s} {item['prompt_tokens_per_second']:9.0f} tok/s"
                 f"  p50 {item['p50_ms']:8.1f} ms  p95 {item['p95_ms']:8.1f} ms"

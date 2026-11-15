@@ -18,6 +18,8 @@ STEPS = {
 }
 SWEEP = (128, 64, 32, 16, 8, 4, 2, 1)
 ENDS = (128, 1)
+LENGTHS = (256, 512, 1024, 2048, 4096, 8192, 16384, 30720)
+LENGTH_REPEATS = 5
 COMPILE_RACE = "TYPE_UNSTABLE_JOIN"
 NO_TRIM = "experiments.serving_concurrency.workers.QuantNoTrimWorker"
 PORT = 8010
@@ -114,6 +116,29 @@ async def measure(out: Path, step: str, repeats: int) -> None:
         )
 
 
+async def measure_lengths(out: Path, model_path: str) -> None:
+    """Single-request latency on synthetic prompts of exact token length."""
+    from transformers import AutoTokenizer
+
+    from experiments.b200_long_context.run import synthetic
+    from experiments.b200_monitor_score.run import trial
+    from experiments.qwen38_27b_serving.bench import SETTINGS
+    from gleipnir.data.monitoring import write_json
+
+    tokenizer = AutoTokenizer.from_pretrained(model_path)
+    records = []
+    for length in LENGTHS:
+        row = synthetic(tokenizer, length)
+        await trial([row], 1, SETTINGS)
+        latencies = []
+        for _ in range(LENGTH_REPEATS):
+            values, _ = await trial([row], 1, SETTINGS)
+            latencies.append(values[0]["latency_seconds"])
+        records.append({"prompt_tokens": length, "latency_seconds": latencies})
+        write_json(out / "lengths_c1.json", {"measurements": records})
+        print(f"length {length}: {1000 * sorted(latencies)[2]:.1f} ms", flush=True)
+
+
 def run(model: str, step: str, repeats: int) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
@@ -126,6 +151,8 @@ def run(model: str, step: str, repeats: int) -> None:
     try:
         started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         asyncio.run(measure(out, step, repeats))
+        if step in ("bf16", "fast"):
+            asyncio.run(measure_lengths(out, command[command.index("--model") + 1]))
         audit = out / "bf16_audit.json"
         if audit.exists() and not json.loads(audit.read_text())["passed"]:
             raise ValueError("serving audit failed")

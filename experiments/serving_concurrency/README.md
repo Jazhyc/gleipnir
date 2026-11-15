@@ -27,6 +27,11 @@ older 4B recipe ([score scaling](../../docs/findings/b200_score_scaling.md)).
   - other steps: three timed passes at concurrency 128 and at 1.
   Every condition also runs `quick64` at concurrency 1 three times, for
   continuity with earlier records.
+- **Prompt length.** `bf16` and `fast` also time single requests on
+  synthetic plain-text prompts of exactly 256 to 16,384 tokens (powers of
+  two) and 30,720 tokens: one excluded warmup, then five requests each. The
+  servers keep the 32,768-token context of the benchmark; the longest OOD
+  trajectory has 29,723 tokens.
 - **Measures.** Median over passes of prompt tokens/s and of per-pass p50 and
   p95 request latency. Latency starts when the client slot is acquired and
   includes localhost HTTP, tokenization, queueing and inference.
