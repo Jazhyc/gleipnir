@@ -492,5 +492,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   has 224 threads. The 3,000-token crossover of the 4B is read from the
   single-request sweep (released 28.8 ms at 2,048 and 30.7 ms at 4,096
   tokens; BF16 22.0 and 38.8 ms). The 27B low-precision row keeps the CUDA
-  graphs of the release command. "Up to 0.04" compares the gains with Table 1
-  (27B 2.25x against 2.21x).
+  graphs of the release command. Table 1 takes the 27B gains from
+  this session (2.21x, 1.04x); its 27B middle-row costs are the BF16 costs
+  divided by 2.208 (0.0961 to 0.0435, 0.0414 to 0.0188). The 4B gains of
+  Table 1 (1.77x, 1.07x) differ by 0.01 from this session (1.76x, 1.08x).
