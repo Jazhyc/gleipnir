@@ -148,27 +148,23 @@ def plot(summary: dict, output: Path) -> None:
     figure.savefig(output)
 
 
-def replace_sweep(summary: dict, spec: str) -> None:
-    """``CONDITION=SUMMARY.json:KEY`` takes a condition's sweep from another run."""
+def replace(summary: dict, spec: str) -> None:
+    """``CONDITION=SUMMARY.json:KEY`` takes a condition from another run."""
     condition, source = spec.split("=", 1)
     path, key = source.rsplit(":", 1)
-    other = json.loads(Path(path).read_text())[key]
-    kept = {k: v for k, v in summary[condition].items() if not k.startswith("full_c")}
-    summary[condition] = kept | {
-        k: v for k, v in other.items() if k.startswith("full_c")
-    }
+    summary[condition] = json.loads(Path(path).read_text())[key]
 
 
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--summary", type=Path, default=SUMMARY)
     parser.add_argument("--output", type=Path, default=OUTPUT)
-    parser.add_argument("--replace-sweep", action="append", default=[])
+    parser.add_argument("--replace", action="append", default=[])
     parser.add_argument("--save-summary", type=Path, help="write the plotted data")
     arguments = parser.parse_args()
     summary = json.loads(arguments.summary.read_text())
-    for spec in arguments.replace_sweep:
-        replace_sweep(summary, spec)
+    for spec in arguments.replace:
+        replace(summary, spec)
     if arguments.save_summary:
         arguments.save_summary.write_text(json.dumps(summary, indent=1) + "\n")
     plot(summary, arguments.output)

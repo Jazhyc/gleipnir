@@ -316,3 +316,52 @@ About half of all prompt tokens came from the cache. Among rows with a hit,
 is most of AgentDojo's change. The macro scores move by +0.0015 and
 −0.0008, and no source by more than 0.012: individual scores change, the
 ranking quality does not.
+
+## Tokenizer
+
+User request, 2026-11-15, same Pod, 20:37–21:44 UTC: the end-to-end effect
+of Gigatoken against the tokenizer of Transformers.
+
+- **Gigatoken was not in use on vLLM 0.31.** `gleipnir.serving.gigatoken`
+  replaces `BaseRenderer._encode`; vLLM 0.31 has no such method and
+  tokenizes in `BaseRenderer._tokenize_prompt`. The first attempt
+  (`tokenizer01`, the SIGUSR1 switch of `GLEIPNIR_GIGATOKEN_AB`) counted
+  zero calls of the patched encoder in either mode over about 6,000
+  requests. Every vLLM 0.31 measurement and the released image therefore
+  tokenize with Transformers, although the startup log reports the native
+  frontend.
+- **Hook.** `tokenizer_hook/sitecustomize.py` routes
+  `_tokenize_prompt` through the installed native encoder while a mode file
+  says `native` (`GLEIPNIR_TOKENIZER_HOOK`, `--gigatoken` in `run.py` and
+  `lengths.py`). It is experiment code; the user decided to add Gigatoken
+  as the last serving step, so the deployment stack needs an equivalent.
+- **Direct timing** on the Pod CPU, `full320`: Transformers 1.262 s,
+  Gigatoken 0.020 s; median 0.49 against 0.01 ms for 257–1,024 tokens and
+  15.3 against 0.2 ms above 8,192 tokens; identical IDs on all 320 prompts.
+- **Matched comparison** (`tokenizer.py`, `tokenizer02`): one server,
+  alternating passes, three rounds (27B `bf16` two). Scores at c1 are
+  identical in every condition. Median tok/s at c128; tok/s, p50 and p95 ms
+  at c1:
+
+  | Condition | Transformers | Gigatoken |
+  |---|---|---|
+  | 4B `fast_g2048e` | 225,455; 133,051, 12.9, 123 | 225,560; 160,931, 10.7, 98 |
+  | 4B `bf16` | 119,126; 83,571, 18.9, 207 | 119,179; 92,104, 17.9, 182 |
+  | 27B `fast` | 52,984; 44,286, 22.6, 444 | 53,135; 46,233, 21.3, 422 |
+  | 27B `bf16` | 22,933; 20,954, 35.1, 991 | 22,877; 21,364, 34.9, 969 |
+
+  The server counted 9.1 to 9.8 s inside Transformers over 1,984 prompts
+  (4.6 to 4.9 ms each) and about 0.2 s inside Gigatoken over 2,304. The
+  Transformers passes of `fast_g2048e` here are slower than `sweep_e`
+  without the hook (12.9 against 11.5 ms); whether the hook or the run
+  causes this is not established.
+- **Sweeps with Gigatoken** (`giga01`, for the report's figure and last
+  table row): `4b_fast_g2048e_giga` c128 227,509 tok/s, p50 2,230 ms; c1
+  161,699, 10.4, 98.2; c16 225,396, 281; peak 229,608 at c32.
+  `27b_fast_giga` c128 52,957, 9,362; c1 46,728, 21.3, 421; c16 52,890,
+  1,197; peak 53,119 at c32. Single requests: 4B 2.94 s at 262,144 and
+  36.3 s at 1,048,576 tokens; 27B 10.75 s and 125.9 s. The 4B length sweep
+  ran with the `e` graph sizes at the 262,144 context without problems.
+
+All tokenizer results and logs were pulled and checksum-verified
+(`tokenizer02/manifest.sha256`, `giga01/manifest.sha256`).

@@ -515,6 +515,19 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   are 2.22x and 1.04x, and 1.76x and 1.09x (227,709 / 209,757). The released
   image does not yet record the larger 4B graphs (JF, 2026-11-15: the
   deployment stack will be updated).
+  Tokenizer (same Pod, README section "Tokenizer"): the "+ Gigatoken
+  tokenizer" rows, the released curves of both panels of the figure, the
+  concurrency figures (c16 281 and 1,197 ms; peaks 229,608 and 53,119) and
+  the prompt-length figures (2.94 and 10.75 s; 36.3 and 125.9 s) are from
+  `results/serving_concurrency/giga01/summary.json`. "About 5 ms" is the
+  server's count inside Transformers (9.1 s over 1,984 prompts for the 4B,
+  9.8 s for the 27B); 15 ms and 0.1 ms are the direct timing and the
+  server's Gigatoken count (0.19 s over 2,304 prompts). "Same tokens" was
+  checked on the 320 benchmark prompts, and scores at one request at a time
+  were identical in the matched comparison (`tokenizer02`). Until this
+  measurement the vLLM 0.31 stack tokenized with Transformers (the Gigatoken
+  patch was inert), so all other rows and the stock curves use Transformers.
+  The released image does not contain a working Gigatoken hook yet.
   Benchmark prompt lengths (320 rows, 1,310,581 tokens, the same prompts for
   both models): mean 4,096, median 503.5, quartiles 311 and 4,499, 95th
   percentile 21,564, range 188 to 28,733; from `prompt_tokens` in

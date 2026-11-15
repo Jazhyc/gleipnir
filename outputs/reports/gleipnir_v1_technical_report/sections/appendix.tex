@@ -517,6 +517,7 @@ Stock vLLM, BF16 & 119,329 & --- & 4,114 & 84,885 & 18.8 & 205 \\
 + Last-token attention & 215,660 & 1.02$\times$ & 2,254 & 122,209 & 15.3 & 125 \\
 + GDN kernel variant & 214,885 & 1.00$\times$ & 2,251 & 126,641 & 13.4 & 130 \\
 + Shorter GDN host path & 227,709 & 1.06$\times$ & 2,158 & 137,790 & 11.5 & 118 \\
++ Gigatoken tokenizer & 227,509 & 1.00$\times$ & 2,230 & 161,699 & 10.4 & 98 \\
 \addlinespace
 \multicolumn{7}{@{}l}{\textit{Gleipnir 27B}} \\
 Stock vLLM, BF16 & 22,924 & --- & 21,506 & 21,007 & 34.4 & 988 \\
@@ -524,6 +525,7 @@ Stock vLLM, BF16 & 22,924 & --- & 21,506 & 21,007 & 34.4 & 988 \\
 + CUDA graphs up to 2,048 tokens & 50,682 & 1.00$\times$ & 9,966 & 42,275 & 24.0 & 461 \\
 + Last-token attention & 50,981 & 1.01$\times$ & 9,726 & 42,093 & 24.7 & 462 \\
 + Shorter GDN host path & 52,922 & 1.04$\times$ & 9,525 & 44,660 & 22.5 & 443 \\
++ Gigatoken tokenizer & 52,957 & 1.00$\times$ & 9,362 & 46,728 & 21.3 & 421 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -538,9 +540,9 @@ Stock vLLM, BF16 & 22,924 & --- & 21,506 & 21,007 & 34.4 & 988 \\
 \paragraph{Concurrency.}
 Throughput rises with the number of concurrent requests up to about 16 and stays constant above it (Figure~\ref{fig:serving-latency}, left).
 Above this point more concurrent requests only wait longer.
-With 16 concurrent requests the released stack reaches 99\% of its throughput at 128, and the median request waits 283\,ms for the 4B and 1,200\,ms for the 27B, about eight times less than with 128.
-The released stack reaches at most 229,031 tokens per second for the 4B and 53,071 for the 27B, against 119,700 and 22,957 for stock vLLM.
-With one request at a time the 4B answers the median request in 12\,ms and the 27B in 23\,ms.
+With 16 concurrent requests the released stack reaches 99\% of its throughput at 128, and the median request waits 281\,ms for the 4B and 1,197\,ms for the 27B, about eight times less than with 128.
+The released stack reaches at most 229,608 tokens per second for the 4B and 53,119 for the 27B, against 119,700 and 22,957 for stock vLLM.
+With one request at a time the 4B answers the median request in 10\,ms and the 27B in 21\,ms.
 
 \paragraph{CUDA graphs.}
 vLLM records the GPU kernels of a step once as a CUDA graph and then starts them all with one call, which saves time on the CPU.
@@ -553,12 +555,21 @@ A graph has a fixed size, and vLLM pads a step to the next recorded size.
 For the 4B we chose the sizes so that, with one request at a time, every score is bit-for-bit the same as without the larger graphs.
 Stock vLLM with the same graphs has a median latency of 15.0\,ms for the 4B and 36.7\,ms for the 27B.
 
+\paragraph{Tokenizer.}
+vLLM turns each prompt into tokens on the CPU with the tokenizer of the Transformers library.
+For the prompts of the benchmark this takes about 5\,ms on average and 15\,ms for a prompt of more than 8,192 tokens.
+We replace it with Gigatoken\footnote{\url{https://github.com/marcelroed/gigatoken}}, which takes about 0.1\,ms.
+It returns the same tokens for every prompt of the benchmark, so the scores do not change.
+With one request at a time the throughput rises from 137,790 to 161,699 tokens per second for the 4B and from 44,660 to 46,728 for the 27B (Table~\ref{tab:serving-steps}).
+The gain is larger for the 4B because the time saved is the same and the 4B spends less time on the GPU.
+With 128 concurrent requests the throughput does not change, because the CPU tokenizes a prompt while the GPU works on other requests.
+
 \paragraph{Prompt length.}
 We sent single requests with synthetic prompts of 256 to 1,048,576 tokens.
 Figure~\ref{fig:serving-latency} (right) shows them from 4,096 tokens, because the latency changes little below this length.
-At 262,144 tokens the released stack answers in 3.2\,s for the 4B and in 11.1\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
+At 262,144 tokens the released stack answers in 2.9\,s for the 4B and in 10.8\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
-At 1,048,576 tokens the released stack answers in 38\,s for the 4B and in 128\,s for the 27B, against 90\,s and 297\,s.
+At 1,048,576 tokens the released stack answers in 36\,s for the 4B and in 126\,s for the 27B, against 90\,s and 297\,s.
 We did not train or validate the monitors with YaRN, so these figures show only the time and not the quality of the scores.
 
 \paragraph{GDN kernel variant for short requests.}
