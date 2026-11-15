@@ -484,15 +484,73 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \subsection{Serving throughput and latency}
 \label{app:serving-throughput}
 
+We measured every serving step of both monitors again in one session on one machine, because latency depends on the host.
+Table~\ref{tab:serving-steps} gives the result for each step, and Figure~\ref{fig:serving-latency} shows how latency changes with the number of concurrent requests and with the length of the prompt.
+
+\paragraph{Environment.}
+The machine was a Runpod Pod in the datacenter EU-RO-1 with one NVIDIA B200 (183\,GB, driver 595.91.07), an AMD EPYC 9555 CPU with 28 virtual cores, and 283\,GB of memory.
+The software was Ubuntu 24.04 with Python 3.12, vLLM 0.31.0, PyTorch 2.13.0, cuDNN 9.20.0, the cuDNN frontend 1.31.0 and the CUTLASS DSL 4.8.0.
+The client ran on the same machine and sent each request as soon as an earlier one returned.
+Latency is the time that the client waits for a score, so it includes HTTP, tokenization and waiting in the queue of the server.
+Each step ran in a new server, and each figure is the median of three passes after a warmup.
+Table~\ref{tab:serving} uses earlier measurements, for the 4B on another host, so its gains differ from the gains here by up to 0.04.
+
+\begin{table}[h]
+\caption{Prompt tokens per second and request latency after each serving step on the 320-trajectory benchmark. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile over the requests of a pass.}
+\label{tab:serving-steps}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+ & \multicolumn{3}{c}{128 concurrent requests} & \multicolumn{3}{c}{One request at a time} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Serving step & Tokens/s & Gain & p50 (s) & Tokens/s & p50 (ms) & p95 (ms) \\
+\midrule
+\multicolumn{7}{@{}l}{\textit{Gleipnir 4B}} \\
+Stock vLLM, BF16 & 119,329 & --- & 4.11 & 84,885 & 18.8 & 205 \\
++ Low-precision arithmetic & 209,757 & 1.76$\times$ & 2.33 & 88,052 & 34.2 & 136 \\
++ Last-token attention & 214,529 & 1.02$\times$ & 2.27 & 90,836 & 33.3 & 129 \\
++ GDN kernel variant & 213,899 & 1.00$\times$ & 2.29 & 95,420 & 31.5 & 127 \\
++ Shorter GDN host path & 226,278 & 1.06$\times$ & 2.15 & 99,125 & 29.2 & 122 \\
+\addlinespace
+\multicolumn{7}{@{}l}{\textit{Gleipnir 27B}} \\
+Stock vLLM, BF16 & 22,949 & --- & 21.42 & 20,993 & 34.5 & 989 \\
++ Low-precision arithmetic & 50,675 & 2.21$\times$ & 10.00 & 42,009 & 24.6 & 461 \\
++ Removing unneeded work & 52,864 & 1.04$\times$ & 9.55 & 44,112 & 23.0 & 443 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{serving_latency}
+\caption{Latency of the released serving stack and of stock vLLM in BF16. Left: median latency against throughput on the benchmark, with one point for each number of concurrent requests from 1 to 128 (labels). Right: latency of a single request against the length of its prompt. To the right of the dotted line the prompt is longer than the 262,144 positions of the base models and the server uses YaRN.}
+\label{fig:serving-latency}
+\end{figure}
+
+\paragraph{Concurrency.}
+Throughput rises with the number of concurrent requests up to about 16 and stays constant above it (Figure~\ref{fig:serving-latency}, left).
+Above this point more concurrent requests only wait longer.
+The released stack reaches at most 227,765 tokens per second for the 4B and 53,071 for the 27B, against 119,700 and 22,957 for stock vLLM.
+With one request at a time the 27B answers the median request in 23\,ms and the 4B in 29\,ms.
+For the 4B this median is 10\,ms higher than with stock vLLM, although the 95th percentile is lower.
+The reason is that the low-precision path of the 4B has a fixed cost for each request, which outweighs its faster arithmetic for prompts below about 3,000 tokens (Figure~\ref{fig:serving-latency}, right).
+
+\paragraph{Prompt length.}
+We sent single requests with synthetic prompts of 256 to 1,048,576 tokens (Figure~\ref{fig:serving-latency}, right).
+At 262,144 tokens the released stack answers in 3.2\,s for the 4B and in 11.1\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
+Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
+At 1,048,576 tokens the released stack answers in 38\,s for the 4B and in 128\,s for the 27B, against 90\,s and 297\,s.
+We did not train or validate the monitors with YaRN, so these figures show only the time and not the quality of the scores.
+
 \paragraph{GDN kernel variant for short requests.}
 The serving stack of the 4B contains one change that Section~\ref{sec:serving-work} does not describe.
 The GDN kernel has a variant that splits one long sequence into parallel parts, and the library selects it for every single request.
 Below 8,192 tokens this variant is slower, so we select the standard variant there.
-This lowers the latency of a short single request by about 2\,ms and leaves the throughput of the benchmark unchanged (1.002$\times$).
+This lowers the median latency of a single request by about 2\,ms and leaves the throughput of the benchmark unchanged (Table~\ref{tab:serving-steps}).
 The last row of Table~\ref{tab:serving} includes it for the 4B.
 The 27B does not use it.
-
-\todo{Table of prompt tokens per second and request latency after each serving step, for both monitors, on the 320-trajectory benchmark. Per-model breakdown of the steps of Table~\ref{tab:serving}.}
 
 \subsection{Low-precision kernels}
 \label{app:serving-kernels}

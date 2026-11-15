@@ -481,3 +481,16 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   changes. "One full-attention layer follows every three GDN layers" is
   inferred from the 4B attention layer indices 3, 7, ..., 31 and the 16/48
   split of the 27B.
+- Appendix E.1 (throughput and latency, `tab:serving-steps`,
+  `fig:serving-latency`), measured 2026-11-15 on Pod `nsw57y1tcxh9gw`
+  (EU-RO-1): `experiments/serving_concurrency/README.md` (Result),
+  `results/serving_concurrency/summary.json` (copied to
+  `assets/serving_latency.json`) and `environment.json`. Figure:
+  `python -m experiments.serving_concurrency.plot --output
+  assets/serving_latency.pdf` (and `.svg`). The 28 virtual cores and 283 GB
+  are the Pod's allotment (`RUNPOD_CPU_COUNT`, `RUNPOD_MEM_GB`); the host CPU
+  has 224 threads. The 3,000-token crossover of the 4B is read from the
+  single-request sweep (released 28.8 ms at 2,048 and 30.7 ms at 4,096
+  tokens; BF16 22.0 and 38.8 ms). The 27B low-precision row keeps the CUDA
+  graphs of the release command. "Up to 0.04" compares the gains with Table 1
+  (27B 2.25x against 2.21x).

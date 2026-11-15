@@ -1029,6 +1029,17 @@ hides the release image's repository; the API cannot shrink it, so PATCH
 set the mount path at creation. Deleted after verified collection (HTTP 204,
 lookup 404); no Pods remain.
 
+On 2026-11-15 the user authorized an EU-RO-1 B200 Pod for the
+[serving concurrency and length sweeps](../experiments/serving_concurrency/README.md):
+`nsw57y1tcxh9gw` (`gleipnir-serving-concurrency`, $7.99/hour, no network
+volume, `volumeMountPath` `/podvol`, snapshot `.runpod/serving-concurrency.json`).
+Creation failed with "no instances currently available" for about 100 minutes
+of once-a-minute retries before EU-RO-1 allocated one. Python `urllib`
+requests to the REST API were rejected (HTTP 403, error code 1010); `curl`
+works. A fresh Pod needs `experiments.release_serving.fetch` for each model
+and the benchmark data before a run. It ran from 02:19 to 04:37 UTC and was
+deleted after verified collection (HTTP 204, lookup 404); no Pods remain.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

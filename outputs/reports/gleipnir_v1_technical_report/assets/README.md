@@ -23,3 +23,4 @@ those change, and update the hashes in [../sources.md](../sources.md).
 | `prompts/output_ordinal_reasoning.txt` | `OUTPUT INTERFACE` block of `.../prompts/teacher_ordinal_reasoning.txt` |
 
 The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
+| `serving_latency.pdf`, `.svg`, `.json` | `experiments/serving_concurrency/plot.py` on `results/serving_concurrency/summary.json` |
