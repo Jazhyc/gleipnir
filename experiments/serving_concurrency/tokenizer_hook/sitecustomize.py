@@ -4,8 +4,8 @@
 0.31 no longer calls: it tokenizes in ``BaseRenderer._tokenize_prompt``. With
 ``GLEIPNIR_TOKENIZER_HOOK=1`` and this directory on ``PYTHONPATH``, that
 method uses the installed native encoder whenever the file named by
-``GLEIPNIR_TOKENIZER_MODE`` holds ``native``. Diagnostic only: it is not part
-of the released stack.
+``GLEIPNIR_TOKENIZER_MODE`` holds ``native``. The released image does not
+contain it yet.
 """
 
 import importlib.abc

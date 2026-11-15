@@ -9,7 +9,13 @@ import statistics
 import time
 from pathlib import Path
 
-from experiments.serving_concurrency.run import OUT, PORT, launch, prepare
+from experiments.serving_concurrency.run import (
+    OUT,
+    PORT,
+    launch,
+    prepare,
+    with_gigatoken,
+)
 
 NATIVE = 262144
 PHASES = {
@@ -84,18 +90,23 @@ async def measure(out: Path, model_path: str, lengths: list[int]) -> None:
         write_json(out / "lengths.json", {"measurements": records})
 
 
-def run(model: str, step: str, phase: str) -> None:
+def run(
+    model: str, step: str, phase: str, session: str = "", gigatoken: bool = False
+) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
 
-    if step not in ("bf16", "fast"):
+    if step.split("_g")[0] not in ("bf16", "fast"):
         raise ValueError("length sweeps cover bf16 and fast only")
-    name = f"{model}_{step}_{phase}"
-    out = OUT / name
+    name = f"{model}_{step}" + ("_giga" if gigatoken else "") + f"_{phase}"
+    out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
     command, env = prepare(model, step, out, limit=NATIVE)
     command = phase_command(command, phase)
-    process, startup, attempt = launch(command, env, name, out)
+    if gigatoken:
+        env = with_gigatoken(env, out)
+    log = f"{session}_{name}".lstrip("_").replace("/", "_")
+    process, startup, attempt = launch(command, env, log, out)
     try:
         started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
         model_path = command[command.index("--model") + 1]
@@ -106,6 +117,7 @@ def run(model: str, step: str, phase: str) -> None:
                 "model": model,
                 "step": step,
                 "phase": phase,
+                "gigatoken": gigatoken,
                 "worker": command[command.index("--worker-cls") + 1],
                 "command": command,
                 "startup_seconds": startup,
@@ -121,12 +133,14 @@ def run(model: str, step: str, phase: str) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--model", required=True, choices=("4b", "27b"))
-    parser.add_argument("--step", required=True, choices=("bf16", "fast"))
+    parser.add_argument("--step", required=True)
     parser.add_argument("--phase", required=True, choices=sorted(PHASES))
+    parser.add_argument("--session", default="", help="output subdirectory")
+    parser.add_argument("--gigatoken", action="store_true")
     args = parser.parse_args()
     if PORT != 8010:
         raise ValueError("benchmark port changed")
-    run(args.model, args.step, args.phase)
+    run(args.model, args.step, args.phase, args.session, args.gigatoken)
 
 
 if __name__ == "__main__":

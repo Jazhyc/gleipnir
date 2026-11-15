@@ -102,7 +102,12 @@ def prepare(
         if limit is not None and step == "fast":
             return release_prepare(TARGETS["4b"], "127.0.0.1", PORT, limit=limit)
         if graphs is not None:
-            command, env = ladder(graphs[0], out)
+            if limit is not None and graphs[0] == "fast":
+                command, env = release_prepare(
+                    TARGETS["4b"], "127.0.0.1", PORT, limit=limit
+                )
+            else:
+                command, env = ladder(graphs[0], out)
             if GRAPHS in command:
                 raise ValueError("4B release command already sets graphs")
             reference, _ = release_prepare(
@@ -139,6 +144,18 @@ def prepare(
     command[command.index("--port") + 1] = str(PORT)
     command[command.index("--host") + 1] = "127.0.0.1"
     return command, bf16_launch.environment(ROOT, selection, out / "bf16_audit.json")
+
+
+def with_gigatoken(env: dict, out: Path) -> dict:
+    """Tokenize with the native Gigatoken encoder (``tokenizer_hook``)."""
+    mode = out / "tokenizer_mode"
+    mode.write_text("native")
+    return env | {
+        "GLEIPNIR_TOKENIZER_HOOK": "1",
+        "GLEIPNIR_TOKENIZER_MODE": str(mode),
+        "GLEIPNIR_TOKENIZER_STATS": str(out / "encoder.json"),
+        "PYTHONPATH": f"{HERE / 'tokenizer_hook'}:{env['PYTHONPATH']}",
+    }
 
 
 def launch(command: list[str], env: dict, name: str, out: Path, attempts: int = 3):
@@ -193,16 +210,23 @@ async def measure(out: Path, timed: tuple[int, ...], repeats: int) -> None:
 
 
 def run(
-    model: str, step: str, repeats: int, session: str = "", ends: bool = False
+    model: str,
+    step: str,
+    repeats: int,
+    session: str = "",
+    ends: bool = False,
+    gigatoken: bool = False,
 ) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
 
-    name = f"{model}_{step}"
+    name = f"{model}_{step}" + ("_giga" if gigatoken else "")
     out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
     timed = levels(step, ends)
     command, env = prepare(model, step, out)
+    if gigatoken:
+        env = with_gigatoken(env, out)
     process, startup, attempt = launch(
         command, env, f"{session}_{name}".lstrip("_"), out
     )
@@ -223,6 +247,7 @@ def run(
                 "startup_attempt": attempt,
                 "measurement_started": started,
                 "levels": list(timed),
+                "gigatoken": gigatoken,
                 "repeats": repeats,
             },
         )
@@ -241,12 +266,15 @@ def main() -> None:
     parser.add_argument(
         "--ends", action="store_true", help="time concurrency 128 and 1 only"
     )
+    parser.add_argument(
+        "--gigatoken", action="store_true", help="tokenize with native Gigatoken"
+    )
     args = parser.parse_args()
     if args.prepare_only:
         command, _ = prepare(args.model, args.step, OUT / "_prepare")
         print(json.dumps(command, indent=1))
         return
-    run(args.model, args.step, args.repeats, args.session, args.ends)
+    run(args.model, args.step, args.repeats, args.session, args.ends, args.gigatoken)
 
 
 if __name__ == "__main__":
