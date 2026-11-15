@@ -65,7 +65,7 @@ def graph_sizes(command: list[str], cap: int) -> list[int]:
 
 def graph_step(step: str) -> tuple[str, int] | None:
     """``fast_g2048`` is the 4B rung ``fast`` with graphs up to 2,048 tokens."""
-    match = re.fullmatch(r"(quant|lastquery|route|fast)_g(\d+)", step)
+    match = re.fullmatch(r"(bf16|quant|lastquery|route|fast)_g(\d+)", step)
     return (match.group(1), int(match.group(2))) if match else None
 
 
@@ -73,7 +73,9 @@ def prepare(
     model: str, step: str, out: Path, limit: int | None = None
 ) -> tuple[list[str], dict]:
     """Command and environment of a step; ``limit`` extends the release context."""
-    graphs = graph_step(step) if model == "4b" else None
+    graphs = graph_step(step)
+    if graphs is not None and model == "27b" and graphs[0] != "bf16":
+        graphs = None
     if step not in STEPS[model] and graphs is None:
         raise ValueError(f"unknown step for {model}: {step}")
     from experiments.release_serving.serve import prepare as release_prepare
@@ -105,6 +107,10 @@ def prepare(
     env["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     if step == "fast":
         return release, env
+    if graphs is not None:  # stock BF16 with the larger graphs
+        command, env = prepare(model, "bf16", out)
+        sizes = {"cudagraph_capture_sizes": graph_sizes(release, graphs[1])}
+        return [*command, GRAPHS, json.dumps(sizes)], env
     if step == "quant":
         return swap_worker(release, NO_TRIM), env
     if step == "quant_nograph":
