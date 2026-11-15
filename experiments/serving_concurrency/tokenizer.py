@@ -1,39 +1,28 @@
 """Time one serving step with the native Gigatoken and the HF tokenizer.
 
-One server; ``GLEIPNIR_GIGATOKEN_AB`` lets SIGUSR1 switch the encoder between
-drained passes. Each round times the benchmark at concurrency 128 and 1
-with the native encoder, then with the tokenizer of Transformers.
+One server. ``tokenizer_hook/sitecustomize.py`` makes vLLM 0.31 tokenize
+with the native encoder while a mode file says so; the stock path runs
+otherwise. Each round times the benchmark at concurrency 128 and 1 with the
+native encoder, then with the tokenizer of Transformers.
 """
 
 from __future__ import annotations
 
 import argparse
 import asyncio
-import json
-import os
-import signal
-import time
 from pathlib import Path
 
 from experiments.serving_concurrency.run import ENDS, OUT, launch, prepare
 
-
-def switch(receipt: Path, mode: str) -> dict:
-    """Toggle the encoder of the API server and wait until it reports ``mode``."""
-    state = json.loads(receipt.read_text())
-    if state["ab_control"]["mode"] != mode:
-        os.kill(state["pid"], signal.SIGUSR1)
-        for _ in range(100):
-            time.sleep(0.1)
-            state = json.loads(receipt.read_text())
-            if state["ab_control"]["mode"] == mode:
-                break
-        else:
-            raise RuntimeError(f"encoder did not switch to {mode}")
-    return state["ab_control"]
+HOOK = Path(__file__).resolve().parent / "tokenizer_hook"
 
 
-async def measure(out: Path, receipt: Path, rounds: int) -> None:
+def switch(mode_file: Path, mode: str) -> None:
+    """The hook reads the mode on every request; switch between passes."""
+    mode_file.write_text(mode)
+
+
+async def measure(out: Path, mode_file: Path, rounds: int) -> None:
     from experiments.b200_monitor_score.run import trial
     from experiments.qwen38_27b_serving.bench import SETTINGS, workloads
     from gleipnir.data.monitoring import write_json
@@ -43,7 +32,7 @@ async def measure(out: Path, receipt: Path, rounds: int) -> None:
     await trial(loads["full"], 128, SETTINGS)
     for repeat in range(rounds):
         for mode in ("native", "hf"):
-            switch(receipt, mode)
+            switch(mode_file, mode)
             for concurrency in ENDS:
                 rows, seconds = await trial(loads["full"], concurrency, SETTINGS)
                 write_json(
@@ -56,7 +45,7 @@ async def measure(out: Path, receipt: Path, rounds: int) -> None:
                     f"{tokens / seconds:.0f} prompt tok/s",
                     flush=True,
                 )
-    write_json(out / "encoder.json", switch(receipt, "native"))
+    await trial(loads["quick"], 1, SETTINGS)  # flushes the hook counters
 
 
 def run(model: str, step: str, session: str, rounds: int) -> None:
@@ -67,12 +56,18 @@ def run(model: str, step: str, session: str, rounds: int) -> None:
     out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
     command, env = prepare(model, step, out)
-    env["GLEIPNIR_GIGATOKEN_AB"] = "1"
-    receipt = Path(env["GLEIPNIR_GIGATOKEN_RECEIPT"])
+    mode_file = out / "mode"
+    switch(mode_file, "native")
+    env.update(
+        GLEIPNIR_TOKENIZER_HOOK="1",
+        GLEIPNIR_TOKENIZER_MODE=str(mode_file),
+        GLEIPNIR_TOKENIZER_STATS=str(out / "encoder.json"),
+        PYTHONPATH=f"{HOOK}:{env['PYTHONPATH']}",
+    )
     log = f"{session}_{name}".lstrip("_").replace("/", "_")
     process, startup, attempt = launch(command, env, log, out)
     try:
-        asyncio.run(measure(out, receipt, rounds))
+        asyncio.run(measure(out, mode_file, rounds))
         write_json(
             out / "condition.json",
             {
