@@ -106,3 +106,12 @@ def test_phase_command_rejects_other_chunk_budget():
     bad[4] = "16384"
     with pytest.raises(ValueError):
         lengths.phase_command(bad, "native")
+
+
+def test_agent_only_keeps_tool_trajectories_in_order():
+    rows = [
+        {"id": 1, "dataset": "tool_trajectory/stride"},
+        {"id": 2, "dataset": "liars-bench/soft-trigger"},
+        {"id": 3, "dataset": "tool_trajectory/gloom"},
+    ]
+    assert [row["id"] for row in run.agent_only(rows)] == [1, 3]

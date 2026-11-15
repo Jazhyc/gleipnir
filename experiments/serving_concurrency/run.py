@@ -177,7 +177,20 @@ def launch(command: list[str], env: dict, name: str, out: Path, attempts: int = 
     raise RuntimeError("server failed to start after retries")
 
 
-async def measure(out: Path, timed: tuple[int, ...], repeats: int) -> None:
+def agent_only(rows: list[dict]) -> list[dict]:
+    """The agent trajectories of a workload, in its order.
+
+    User decision, 2026-11-15: the benchmark for the report keeps only the
+    ``tool_trajectory`` sources (BashArena, BashBench, CoT Red-Handed, Gloom,
+    STRIDE). The deception sources (Liars' Bench, Aletheia's Quest) are short
+    single prompts and not what a monitor of agents receives.
+    """
+    return [row for row in rows if row["dataset"].startswith("tool_trajectory/")]
+
+
+async def measure(
+    out: Path, timed: tuple[int, ...], repeats: int, agent: bool = False
+) -> None:
     from experiments.b200_monitor_score.run import trial
     from experiments.qwen38_27b_serving.bench import SETTINGS, workloads
     from gleipnir.data.monitoring import write_json
@@ -186,6 +199,8 @@ async def measure(out: Path, timed: tuple[int, ...], repeats: int) -> None:
     if SETTINGS["port"] != PORT:
         raise ValueError("benchmark port changed")
     loads = workloads()
+    if agent:
+        loads = {key: agent_only(rows) for key, rows in loads.items()}
     await trial(loads["quick"], 128, SETTINGS)
     await trial(loads["full"], 128, SETTINGS)
     for concurrency in timed:
@@ -216,6 +231,7 @@ def run(
     session: str = "",
     ends: bool = False,
     gigatoken: bool = False,
+    agent: bool = False,
 ) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
@@ -232,7 +248,7 @@ def run(
     )
     try:
         started = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
-        asyncio.run(measure(out, timed, repeats))
+        asyncio.run(measure(out, timed, repeats, agent))
         audit = out / "bf16_audit.json"
         if audit.exists() and not json.loads(audit.read_text())["passed"]:
             raise ValueError("serving audit failed")
@@ -248,6 +264,7 @@ def run(
                 "measurement_started": started,
                 "levels": list(timed),
                 "gigatoken": gigatoken,
+                "workload": "agent" if agent else "full320",
                 "repeats": repeats,
             },
         )
@@ -269,12 +286,23 @@ def main() -> None:
     parser.add_argument(
         "--gigatoken", action="store_true", help="tokenize with native Gigatoken"
     )
+    parser.add_argument(
+        "--agent", action="store_true", help="time the agent trajectories only"
+    )
     args = parser.parse_args()
     if args.prepare_only:
         command, _ = prepare(args.model, args.step, OUT / "_prepare")
         print(json.dumps(command, indent=1))
         return
-    run(args.model, args.step, args.repeats, args.session, args.ends, args.gigatoken)
+    run(
+        args.model,
+        args.step,
+        args.repeats,
+        args.session,
+        args.ends,
+        args.gigatoken,
+        args.agent,
+    )
 
 
 if __name__ == "__main__":
