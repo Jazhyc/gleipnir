@@ -21,6 +21,7 @@ MODELS = {"4b": ("Gleipnir 4B", "#E45756"), "27b": ("Gleipnir 27B", "#4C78A8")}
 STACKS = {"fast": ("Released stack", "-"), "bf16": ("Stock vLLM, BF16", "--")}
 LABELLED = (1, 16, 128)  # concurrency levels written next to their points
 NATIVE = 262144
+SHORTEST = 4096  # shorter prompts take about the same time and are not shown
 
 
 def sweep(summary: dict, condition: str) -> list[tuple[int, float, float]]:
@@ -46,7 +47,7 @@ def lengths(summary: dict, condition: str) -> list[tuple[int, float]]:
     for phase in ("yarn", "native"):
         entries = summary.get(f"{condition}_{phase}", {}).get("lengths", {})
         merged.update({int(n): item["median_ms"] for n, item in entries.items()})
-    return sorted(merged.items())
+    return sorted(item for item in merged.items() if item[0] >= SHORTEST)
 
 
 def legend(figure: plt.Figure) -> None:

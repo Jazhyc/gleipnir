@@ -535,10 +535,11 @@ Above this point more concurrent requests only wait longer.
 The released stack reaches at most 227,765 tokens per second for the 4B and 53,071 for the 27B, against 119,700 and 22,957 for stock vLLM.
 With one request at a time the 27B answers the median request in 23\,ms and the 4B in 29\,ms.
 For the 4B this median is 10\,ms higher than with stock vLLM, although the 95th percentile is lower.
-The reason is that the low-precision path of the 4B has a fixed cost for each request, which outweighs its faster arithmetic for prompts below about 3,000 tokens (Figure~\ref{fig:serving-latency}, right).
+The reason is that the low-precision path of the 4B has a fixed cost for each request, which outweighs its faster arithmetic for prompts below about 3,000 tokens.
 
 \paragraph{Prompt length.}
-We sent single requests with synthetic prompts of 256 to 1,048,576 tokens (Figure~\ref{fig:serving-latency}, right).
+We sent single requests with synthetic prompts of 256 to 1,048,576 tokens.
+Figure~\ref{fig:serving-latency} (right) shows them from 4,096 tokens, because the latency changes little below this length.
 At 262,144 tokens the released stack answers in 3.2\,s for the 4B and in 11.1\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
 At 1,048,576 tokens the released stack answers in 38\,s for the 4B and in 128\,s for the 27B, against 90\,s and 297\,s.
