@@ -10,6 +10,8 @@ def test_levels_sweep_only_at_both_ends():
     assert run.levels("fast") == run.SWEEP
     assert run.levels("quant") == (128, 1)
     assert run.levels("fast", ends=True) == (128, 1)
+    assert run.levels("fast", top=64) == (64, 32, 16, 8, 4, 2, 1)
+    assert run.levels("quant", top=64) == (64, 1)
     assert run.levels("fast_g2048") == run.SWEEP
     assert run.levels("quant_g2048") == (128, 1)
 
@@ -113,5 +115,6 @@ def test_agent_only_keeps_tool_trajectories_in_order():
         {"id": 1, "dataset": "tool_trajectory/stride"},
         {"id": 2, "dataset": "liars-bench/soft-trigger"},
         {"id": 3, "dataset": "tool_trajectory/gloom"},
+        {"id": 4, "dataset": "tool_trajectory/cot_red_handed"},
     ]
     assert [row["id"] for row in run.agent_only(rows)] == [1, 3]

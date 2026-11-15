@@ -27,10 +27,16 @@ GRAPH_CAPS = (512, 1024, 2048, 4096, 8192)
 PORT = 8010
 
 
-def levels(step: str, ends: bool = False) -> tuple[int, ...]:
-    """Concurrency levels timed for a step: the full sweep at both ends."""
+def levels(step: str, ends: bool = False, top: int = 128) -> tuple[int, ...]:
+    """Concurrency levels timed for a step: the full sweep at both ends.
+
+    ``top`` is the highest level: 64 for the 96 agent trajectories, so that
+    more requests wait than are in flight.
+    """
     base = step.split("_g")[0]
-    return SWEEP if base in ("bf16", "fast") and not ends else ENDS
+    if base in ("bf16", "fast") and not ends:
+        return tuple(level for level in SWEEP if level <= top)
+    return (top, 1)
 
 
 def swap_worker(command: list[str], worker: str) -> list[str]:
@@ -177,15 +183,21 @@ def launch(command: list[str], env: dict, name: str, out: Path, attempts: int = 
     raise RuntimeError("server failed to start after retries")
 
 
-def agent_only(rows: list[dict]) -> list[dict]:
-    """The agent trajectories of a workload, in its order.
+AGENT_SOURCES = ("bash_arena", "bash_bench", "gloom", "stride")
+AGENT_TOP = 64
 
-    User decision, 2026-11-15: the benchmark for the report keeps only the
-    ``tool_trajectory`` sources (BashArena, BashBench, CoT Red-Handed, Gloom,
-    STRIDE). The deception sources (Liars' Bench, Aletheia's Quest) are short
-    single prompts and not what a monitor of agents receives.
+
+def agent_only(rows: list[dict]) -> list[dict]:
+    """The multi-step agent trajectories of a workload, in its order.
+
+    User decision, 2026-11-15: the benchmark for the report keeps only
+    BashArena, BashBench, Gloom and STRIDE (96 of the 320 prompts, median
+    10,067 tokens). The deception sources (Liars' Bench, Aletheia's Quest)
+    and CoT Red-Handed are short single prompts, not what a monitor of
+    agents receives over a trajectory.
     """
-    return [row for row in rows if row["dataset"].startswith("tool_trajectory/")]
+    names = {f"tool_trajectory/{name}" for name in AGENT_SOURCES}
+    return [row for row in rows if row["dataset"] in names]
 
 
 async def measure(
@@ -201,8 +213,8 @@ async def measure(
     loads = workloads()
     if agent:
         loads = {key: agent_only(rows) for key, rows in loads.items()}
-    await trial(loads["quick"], 128, SETTINGS)
-    await trial(loads["full"], 128, SETTINGS)
+    await trial(loads["quick"], timed[0], SETTINGS)
+    await trial(loads["full"], timed[0], SETTINGS)
     for concurrency in timed:
         for repeat in range(repeats):
             rows, seconds = await trial(loads["full"], concurrency, SETTINGS)
@@ -239,7 +251,7 @@ def run(
     name = f"{model}_{step}" + ("_giga" if gigatoken else "")
     out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
-    timed = levels(step, ends)
+    timed = levels(step, ends, AGENT_TOP if agent else 128)
     command, env = prepare(model, step, out)
     if gigatoken:
         env = with_gigatoken(env, out)
