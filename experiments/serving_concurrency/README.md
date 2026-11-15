@@ -215,7 +215,7 @@ one of two values, by whether its row count is a multiple of 32:
 
 - Layouts `fast_g2048` (sizes 320, 384, … 768) and `fast_g2048o` (288, 352,
   … 704) give identical scores on all 1,500 AgentDojo rows.
-- `fast_g2048d` (every 16 from 272) equals `fast_g2048` on all 308 rows of
+- `fast_g2048d` (every 16 from 272) equals `fast_g2048` on all 320 rows of
   257–767 tokens whose padded size is a multiple of 32, and equals the
   release on 278 of the 279 others.
 - Without larger graphs, the 24 rows whose own length is a multiple of 32
