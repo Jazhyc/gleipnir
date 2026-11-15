@@ -29,7 +29,8 @@ PORT = 8010
 
 def levels(step: str, ends: bool = False) -> tuple[int, ...]:
     """Concurrency levels timed for a step: the full sweep at both ends."""
-    return SWEEP if step in ("bf16", "fast") and not ends else ENDS
+    base = step.split("_g")[0]
+    return SWEEP if base in ("bf16", "fast") and not ends else ENDS
 
 
 def swap_worker(command: list[str], worker: str) -> list[str]:
