@@ -147,8 +147,8 @@ completed on the first start. Added during the run at the user's request:
 stock BF16 with graphs to 2,048 for both models (`bf16_g2048`), the full
 concurrency sweep of `fast_g2048` (`breakdown01/sweep2`; `sweep_ends_only`
 is an earlier attempt that timed only 128 and 1), and ID/OOD scoring at
-concurrency 1 (`parity.py --concurrency 1`). 313 result and log files were
-pulled and checksum-verified (`breakdown01/manifest.sha256`). Medians of
+concurrency 1 (`parity.py --concurrency 1`). Results and logs were pulled
+and checksum-verified (`breakdown01/manifest.sha256`). Medians of
 three passes (`breakdown01/summary.json`):
 
 | Condition | c128 tok/s | vs previous | c1 tok/s | c1 p50 / p95 (ms) |
@@ -206,5 +206,40 @@ at c128; c1 102,582 tok/s, p50 29.0 ms):
   Batches of 128 rarely replay a graph. At concurrency 1 the ID rows are
   identical (14 of 3,012 are short enough for a graph). On OOD 499 of 6,395
   scores change, 496 of them in AgentDojo, whose pAUROC@20 falls from 0.8152
-  to 0.7973; the other five sources are unchanged. The cause of the
-  dependence on padding below 768 tokens is open, so no cap is adopted.
+  to 0.7973; the other five sources are unchanged.
+
+### Diagnosis of the score change (same Pod, 18:43–19:40 UTC)
+
+The change does not come from padding. Below 768 rows a step's scores take
+one of two values, by whether its row count is a multiple of 32:
+
+- Layouts `fast_g2048` (sizes 320, 384, … 768) and `fast_g2048o` (288, 352,
+  … 704) give identical scores on all 1,500 AgentDojo rows.
+- `fast_g2048d` (every 16 from 272) equals `fast_g2048` on all 308 rows of
+  257–767 tokens whose padded size is a multiple of 32, and equals the
+  release on 278 of the 279 others.
+- Without larger graphs, the 24 rows whose own length is a multiple of 32
+  already score as with graphs.
+- Stock BF16 has the same switch with a small effect (`bf16` against
+  `bf16_g2048`: 37 of 152 benchmark rows of 257–768 tokens, mean 0.003;
+  OOD at c1 0.8042 against 0.8044, AgentDojo 0.9466 against 0.9478), and the
+  27B too. The kernel responsible was not identified. The quantized 4B
+  amplifies it from its first low-precision rung on.
+
+AgentDojo is where the quantized 4B is sensitive to rounding: 0.8425 in
+batches of 128, 0.8152 at c1, 0.8070 with `fast_g2048d` (half the short
+rows switched), 0.7973 with `fast_g2048`, against 0.9466 in BF16. The
+release's reported OOD scores are for batched scoring.
+
+**Layout `fast_g2048e`** (sizes 32k − 1 and 32k from 287 to 768, the
+default sizes to 256 and the 27B sizes from 896) keeps each row count's
+remainder class. Against the release at c1 it is bit-identical on all 3,012
+ID rows, 6,395 OOD rows and 320 benchmark rows, with c1 136,574 tok/s, p50
+11.6 ms, p95 120 ms and c128 227,771 tok/s (release 102,582, 29.0, 119 and
+226,391). Its concurrency curve (`breakdown01/sweep_e`; tok/s, p50 ms): c1
+137,790, 11.5; c2 163,186, 34.6; c4 191,308, 69.9; c8 209,482, 160; c16
+225,109, 283; c32 229,031, 568; c64 228,205, 1,119; c128 227,709, 2,158.
+Scores at higher concurrency were not compared; they already vary with
+batch composition. Adopting the layout for the 4B release is the user's
+decision. 398 result and log files of the session were pulled and
+checksum-verified.
