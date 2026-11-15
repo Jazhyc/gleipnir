@@ -84,7 +84,8 @@ The final layer of both base models is a full-attention layer.
 vLLM computes its attention output for every token of the prompt, but the monitor reads the logits only at the last position (Equation~\ref{eq:score}), and no later layer uses the other positions.
 We therefore compute the attention of this layer for the last token alone.
 Its cost then grows linearly with the length of the prompt and no longer quadratically.
-On the benchmark this lowers the cost by 1.01$\times$ for the 4B, where the final layer is one of 8 full-attention layers, and by less than 1.01$\times$ for the 27B, where it is one of 16.
+On the benchmark this lowers the cost by 1.01$\times$ for the 4B, where the final layer is one of 8 full-attention layers.
+The gain is smaller for the 27B, where it is one of 16.
 The gain grows with the length of the prompt: for a single request of one million tokens the 4B answers 10\% sooner.
 
 \paragraph{Shorter host path for the GDN layers.}
@@ -93,4 +94,4 @@ Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
 Much of it serves requests that continue from a stored recurrent state, as generation does after each new token.
 A monitor request always starts from an empty state and ends after the prefill.
 For such requests we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
-This lowers the cost by 1.06$\times$ for the 4B and 1.02$\times$ for the 27B.
+This lowers the cost by 1.06$\times$ for the 4B.
