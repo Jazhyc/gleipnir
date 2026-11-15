@@ -45,7 +45,7 @@ def without_graphs(command: list[str]) -> list[str]:
     return command[:index] + command[index + 2 :]
 
 
-def graph_sizes(command: list[str], cap: int) -> list[int]:
+def graph_sizes(command: list[str], cap: int, layout: str = "") -> list[int]:
     """Capture sizes for the 4B up to ``cap`` tokens, padding at most 25%.
 
     Up to 2,048 these are the 27B release sizes; above, each power-of-two
@@ -61,13 +61,21 @@ def graph_sizes(command: list[str], cap: int) -> list[int]:
     while top < cap:
         sizes += [top + top // 4 * i for i in range(1, 5)]
         top *= 2
+    if layout == "d":  # dense: at most 15 padded tokens from 256 to 768
+        sizes += list(range(272, 768, 16))
+    if layout == "o":  # offset: other sizes between 256 and 768
+        sizes = [n for n in sizes if not 256 < n < 768]
+        sizes += [288, 352, 416, 480, 576, 704]
     return sorted(n for n in {*sizes, 1535, 8191} if n <= cap)
 
 
-def graph_step(step: str) -> tuple[str, int] | None:
-    """``fast_g2048`` is the 4B rung ``fast`` with graphs up to 2,048 tokens."""
-    match = re.fullmatch(r"(bf16|quant|lastquery|route|fast)_g(\d+)", step)
-    return (match.group(1), int(match.group(2))) if match else None
+def graph_step(step: str) -> tuple[str, int, str] | None:
+    """``fast_g2048`` is the 4B rung ``fast`` with graphs up to 2,048 tokens.
+
+    A trailing ``d`` or ``o`` selects another layout of the sizes below 768.
+    """
+    match = re.fullmatch(r"(bf16|quant|lastquery|route|fast)_g(\d+)([do]?)", step)
+    return (match.group(1), int(match.group(2)), match.group(3)) if match else None
 
 
 def prepare(
@@ -94,7 +102,7 @@ def prepare(
             reference, _ = release_prepare(
                 TARGETS["27b"], "127.0.0.1", PORT, limit=RECORDED_CONTEXT
             )
-            sizes = {"cudagraph_capture_sizes": graph_sizes(reference, graphs[1])}
+            sizes = {"cudagraph_capture_sizes": graph_sizes(reference, *graphs[1:])}
             return [*command, GRAPHS, json.dumps(sizes)], env
         return ladder(step, out)
     from gleipnir.data.monitoring import file_hash
@@ -110,7 +118,7 @@ def prepare(
         return release, env
     if graphs is not None:  # stock BF16 with the larger graphs
         command, env = prepare(model, "bf16", out)
-        sizes = {"cudagraph_capture_sizes": graph_sizes(release, graphs[1])}
+        sizes = {"cudagraph_capture_sizes": graph_sizes(release, *graphs[1:])}
         return [*command, GRAPHS, json.dumps(sizes)], env
     if step == "quant":
         return swap_worker(release, NO_TRIM), env

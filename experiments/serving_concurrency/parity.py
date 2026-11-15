@@ -17,7 +17,7 @@ from pathlib import Path
 from experiments.serving_concurrency.run import OUT, PORT, ROOT, launch, prepare
 
 
-def score_serial(out: Path, concurrency: int) -> None:
+def score_serial(out: Path, concurrency: int, splits: list[str] | None) -> None:
     """Score both splits at ``concurrency`` and report source-macro pAUROC@20."""
     from experiments.release_serving import validate
     from experiments.release_serving.targets import TARGETS
@@ -27,6 +27,8 @@ def score_serial(out: Path, concurrency: int) -> None:
     config = {"port": PORT, "concurrency": concurrency, "timeout_seconds": 600}
     report = {"concurrency": concurrency, "splits": {}}
     for split, (workload_path, recorded_path, _) in TARGETS["4b"].validation.items():
+        if splits and split not in splits:
+            continue
         workload = validate.rows(workload_path)
         recorded = {r["id"]: float(r["score"]) for r in read_rows(ROOT / recorded_path)}
         scored, seconds = asyncio.run(score_batch(workload, config))
@@ -56,7 +58,9 @@ def score_serial(out: Path, concurrency: int) -> None:
     write_json(out / "report.json", report)
 
 
-def run(step: str, session: str, concurrency: int) -> None:
+def run(
+    step: str, session: str, concurrency: int, splits: list[str] | None = None
+) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
 
@@ -73,7 +77,7 @@ def run(step: str, session: str, concurrency: int) -> None:
             validate += ["--output", str(out / "report.json")]
             code = subprocess.run(validate, cwd=ROOT, check=False).returncode
         else:
-            score_serial(out, concurrency)
+            score_serial(out, concurrency, splits)
         write_json(
             out / "condition.json",
             {
@@ -95,8 +99,9 @@ def main() -> None:
     parser.add_argument("--step", required=True)
     parser.add_argument("--session", default="", help="output subdirectory")
     parser.add_argument("--concurrency", type=int, default=128)
+    parser.add_argument("--splits", nargs="+", choices=("id", "ood"))
     args = parser.parse_args()
-    run(args.step, args.session, args.concurrency)
+    run(args.step, args.session, args.concurrency, args.splits)
 
 
 if __name__ == "__main__":

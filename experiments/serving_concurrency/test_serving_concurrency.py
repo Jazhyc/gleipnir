@@ -27,7 +27,10 @@ def test_graph_helpers_change_only_the_graph_sizes():
         run.graph_sizes(command, 3000)
     with pytest.raises(ValueError):
         run.graph_sizes(["python", run.GRAPHS, '{"cudagraph_capture_sizes": [1]}'], 512)
-    assert run.graph_step("fast_g2048") == ("fast", 2048)
+    assert run.graph_step("fast_g2048") == ("fast", 2048, "")
+    assert run.graph_step("fast_g2048d") == ("fast", 2048, "d")
+    assert 288 in run.graph_sizes(command, 2048, "o")
+    assert 752 in run.graph_sizes(command, 2048, "d")
     assert run.graph_step("fast") is None
 
 
