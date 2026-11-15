@@ -92,13 +92,28 @@ def plot(summary: dict, output: Path) -> None:
             if curve:
                 right.plot(
                     [p[0] for p in curve],
-                    [p[1] for p in curve],
+                    [p[1] / 1000 for p in curve],
                     color=color,
                     ls=style,
                     lw=1.6,
                     marker="o",
                     ms=3,
                 )
+    for model, (_, color) in MODELS.items():
+        fast = dict(lengths(summary, f"{model}_fast"))
+        stock = dict(lengths(summary, f"{model}_bf16"))
+        shared = sorted(set(fast) & set(stock))
+        if shared:  # ratio of the two stacks at the longest prompt
+            longest = shared[-1]
+            right.annotate(
+                f"{stock[longest] / fast[longest]:.1f}×",
+                (longest, (stock[longest] * fast[longest]) ** 0.5 / 1000),
+                xytext=(6, 0),
+                textcoords="offset points",
+                va="center",
+                fontsize=8,
+                color=color,
+            )
     left.set_xscale("log")
     left.set_xticks([20, 50, 100, 200], labels=["20", "50", "100", "200"])
     left.minorticks_off()
@@ -107,6 +122,7 @@ def plot(summary: dict, output: Path) -> None:
     left.set_ylabel("Median latency (ms)")
     left.set_title("Throughput saturates near 16 requests", fontsize=9)
     right.set_xscale("log", base=2)
+    right.set_xlim(right=right.get_xlim()[1] * 2.2)  # room for the labels
     right.set_yscale("log")
     right.axvline(NATIVE, color="#999999", lw=0.8, ls=":")
     right.annotate(
@@ -119,7 +135,7 @@ def plot(summary: dict, output: Path) -> None:
         color="#666666",
     )
     right.set_xlabel("Prompt tokens")
-    right.set_ylabel("Latency of one request (ms)")
+    right.set_ylabel("Latency of one request (s)")
     right.set_title("About 2× faster on long prompts", fontsize=9)
     for axis in (left, right):
         axis.spines[["top", "right"]].set_visible(False)

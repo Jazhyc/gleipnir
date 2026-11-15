@@ -525,7 +525,7 @@ Stock vLLM, BF16 & 22,949 & --- & 21.42 & 20,993 & 34.5 & 989 \\
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{serving_latency}
-\caption{Latency of the released serving stack and of stock vLLM in BF16. Left: median latency against throughput on the benchmark, with one point for each number of concurrent requests from 1 to 128 (labels). Right: latency of a single request against the length of its prompt. To the right of the dotted line the prompt is longer than the 262,144 positions of the base models and the server uses YaRN.}
+\caption{Latency of the released serving stack and of stock vLLM in BF16. Left: median latency against throughput on the benchmark, with one point for each number of concurrent requests from 1 to 128 (labels). Right: latency of a single request against the length of its prompt. The labels give how many times faster the released stack answers at 1,048,576 tokens. To the right of the dotted line the prompt is longer than the 262,144 positions of the base models and the server uses YaRN.}
 \label{fig:serving-latency}
 \end{figure}
 
