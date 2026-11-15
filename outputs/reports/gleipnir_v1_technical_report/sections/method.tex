@@ -18,6 +18,7 @@ This output has two properties that the output of Section~\ref{sec:background-si
 It needs one forward pass over the prompt and no generated text, so the monitor writes no rationale.
 It is also continuous, so it ranks trajectories without the ties of an integer scale.
 Binary logits also score higher than an integer from 0 to 10 before any training: on the unadapted Qwen3.5-9B they score 0.698 Mean-OOD against 0.486 (Appendix~\ref{app:ablation-format}).
+We hypothesize that the binary decision helps because its probability expresses only the confidence of the monitor, while a score from 0 to 10 mixes this confidence with the severity of the behavior.
 
 \subsection{Soft-target distillation}
 \label{sec:binary-logit-distillation}
