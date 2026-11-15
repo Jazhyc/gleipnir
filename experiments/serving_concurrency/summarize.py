@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import re
 import statistics
@@ -65,12 +66,15 @@ def condition_summary(directory: Path) -> dict:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--session", default="", help="output subdirectory")
+    out = OUT / parser.parse_args().session
     report = {
         directory.name: condition_summary(directory)
-        for directory in sorted(OUT.iterdir())
+        for directory in sorted(out.iterdir())
         if (directory / "condition.json").exists()
     }
-    (OUT / "summary.json").write_text(json.dumps(report, indent=1) + "\n")
+    (out / "summary.json").write_text(json.dumps(report, indent=1) + "\n")
     for name, summary in report.items():
         for key, item in summary.items():
             if key == "lengths":

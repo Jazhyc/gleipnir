@@ -9,7 +9,24 @@ def test_levels_sweep_only_at_both_ends():
     assert run.levels("bf16") == run.SWEEP
     assert run.levels("fast") == run.SWEEP
     assert run.levels("quant") == (128, 1)
-    assert set(run.STEPS["27b"]) <= set(run.STEPS["4b"])
+    assert run.levels("fast", ends=True) == (128, 1)
+
+
+def test_graph_helpers_change_only_the_graph_sizes():
+    sizes = json.dumps({"cudagraph_capture_sizes": [1, 1280, 1536, 2048]})
+    command = ["python", "--port", "1", run.GRAPHS, sizes, "--seed", "0"]
+    assert run.without_graphs(command) == ["python", "--port", "1", "--seed", "0"]
+    assert run.graph_sizes(command, 2048) == [1, 1280, 1535, 1536, 2048]
+    assert run.graph_sizes(command, 1024) == [1]
+    assert run.graph_sizes(command, 8192)[5:] == [
+        *(2560, 3072, 3584, 4096, 5120, 6144, 7168, 8191, 8192)
+    ]
+    with pytest.raises(ValueError):
+        run.graph_sizes(command, 3000)
+    with pytest.raises(ValueError):
+        run.graph_sizes(["python", run.GRAPHS, '{"cudagraph_capture_sizes": [1]}'], 512)
+    assert run.graph_step("fast_g2048") == ("fast", 2048)
+    assert run.graph_step("fast") is None
 
 
 def test_swap_worker_changes_only_the_worker():

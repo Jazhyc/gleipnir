@@ -101,3 +101,40 @@ was deleted (HTTP 204, lookup 404). Medians of three passes
   6.52 s (4B `bf16`), 11.06 s (27B `fast`), 24.82 s (27B `bf16`); at
   1,048,576 tokens with YaRN 37.9 s, 90.0 s, 127.8 s and 297.2 s. The YaRN
   server reproduces the native latency at 262,144 tokens within 1.5%.
+
+## Per-change breakdown and 4B graph sweep
+
+User request, 2026-11-15: the gain of each change for the 27B, and whether
+the 4B benefits from larger CUDA graphs (the 4B release captures vLLM's
+default sizes up to 256 tokens, the 27B up to 2,048), with a sweep of graph
+sizes and a 4B breakdown at the best one. Written before the run.
+
+- **27B ladder** (cumulative, one server each): `bf16`; `quant_nograph`
+  (`QuantNoTrimWorker` without `--compilation-config`); `quant` (+ graphs to
+  2,048); `lastquery` (`QuantLastQueryWorker`: + last-query attention);
+  `fast` (+ lean GDN host path, the release command).
+- **4B graph sweep.** `fast` (matched control) and `fast_g<cap>` for caps
+  512, 1,024, 2,048, 4,096 and 8,192: the release command plus piecewise
+  capture sizes up to the cap (the 27B sizes to 2,048, then four per
+  power-of-two interval, padding at most 25%; sizes 1,535 and 8,191 keep
+  padding from crossing the FP4 producer and GDN kernel switches).
+- **Selection** (frozen): the cap with the lowest median c1 latency on
+  `full320` among caps whose c128 throughput is at least 99% of the matched
+  `fast`; caps within 2% of the best latency tie and the smallest wins. If no
+  cap lowers the c1 median by more than 5%, the answer is that graphs do not
+  help and no breakdown follows.
+- **4B breakdown** at the selected cap: `quant_g<cap>`, `lastquery_g<cap>`,
+  `route_g<cap>`, with `bf16` and `fast_g<cap>` as its ends.
+- **Workload and measures** as above, at concurrency 128 and 1 only
+  (`--ends`), in `results/serving_concurrency/breakdown01/`
+  (`--session breakdown01`). Also c1 latency by prompt-length band, and the
+  shift of c1 scores of each graph condition against `fast` (mean and
+  maximum absolute difference, rows crossing 0.5). Larger graphs change the
+  serving recipe, so a selected cap is then scored on the frozen ID and OOD
+  workloads of `experiments/release_serving/validate.py` and compared with
+  the recorded release rows (user, 2026-11-15). No cap is adopted for the
+  release here; that stays the user's decision.
+- **Stop** as above; a graph condition that fails to start or audit is
+  recorded and skipped.
+- **Compute.** One EU-RO-1 B200 Pod from the same image, authorized by the
+  user on 2026-11-15.
