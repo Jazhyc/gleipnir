@@ -491,7 +491,8 @@ Table~\ref{tab:serving-steps} gives the result for each step, and Figure~\ref{fi
 The machine was a Runpod Pod in the datacenter EU-RO-1 with one NVIDIA B200 (183\,GB, driver 595.91.07), an AMD EPYC 9555 CPU with 28 virtual cores, and 283\,GB of memory.
 The software was Ubuntu 24.04 with Python 3.12, vLLM 0.31.0, PyTorch 2.13.0, cuDNN 9.20.0, the cuDNN frontend 1.31.0 and the CUTLASS DSL 4.8.0.
 The prompts of the benchmark have very different lengths: the mean is 4,096 tokens and the median is 504, 5\% of the prompts are longer than 21,564 tokens, and the longest has 28,733.
-The client ran on the same machine and sent each request as soon as an earlier one returned.
+The client ran on the same machine and kept a fixed number of requests in flight, the concurrency: when one request returned, it sent the next.
+With a concurrency of 1 the server therefore handles one request at a time.
 Latency is the time that the client waits for a score, so it includes HTTP, tokenization and waiting in the queue of the server.
 Each step ran in a new server, and each figure is the median of three passes after a warmup.
 Table~\ref{tab:serving} takes the gains of the 27B from this session. Its other figures come from earlier measurements, for the 4B on another host, so its gains for the 4B differ from the gains here by 0.01.
