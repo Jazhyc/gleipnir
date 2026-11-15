@@ -498,3 +498,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   Table 1 (1.77x, 1.07x) differ by 0.01 from this session (1.76x, 1.08x).
   Concurrency 16 against 128 (released stack): 224,323 / 226,278 and
   52,843 / 52,864 tokens/s; p50 280.7 ms and 1,199.6 ms (`summary.json`).
+  Benchmark prompt lengths (320 rows, 1,310,581 tokens, the same prompts for
+  both models): mean 4,096, median 503.5, quartiles 311 and 4,499, 95th
+  percentile 21,564, range 188 to 28,733; from `prompt_tokens` in
+  `results/serving_concurrency/4b_fast/full_c1_repeat0.json`.
