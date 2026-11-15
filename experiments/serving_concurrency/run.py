@@ -95,7 +95,7 @@ def prepare(
 ) -> tuple[list[str], dict]:
     """Command and environment of a step; ``limit`` extends the release context."""
     graphs = graph_step(step)
-    if graphs is not None and model == "27b" and graphs[0] != "bf16":
+    if graphs is not None and model == "27b" and graphs[0] not in ("bf16", "fast"):
         graphs = None
     if step not in STEPS[model] and graphs is None:
         raise ValueError(f"unknown step for {model}: {step}")
@@ -133,6 +133,10 @@ def prepare(
     env["GLEIPNIR_GIGATOKEN_RECEIPT"] = str(out / "frontend.json")
     if step == "fast":
         return release, env
+    if graphs is not None and graphs[0] == "fast":  # release with other graphs
+        sizes = graph_sizes(release, graphs[1])
+        sizes = {"cudagraph_capture_sizes": [n for n in sizes if n != 1535]}
+        return [*without_graphs(release), GRAPHS, json.dumps(sizes)], env
     if graphs is not None:  # stock BF16 with the larger graphs
         command, env = prepare(model, "bf16", out)
         sizes = {"cudagraph_capture_sizes": graph_sizes(release, *graphs[1:])}
