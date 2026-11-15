@@ -23,4 +23,4 @@ those change, and update the hashes in [../sources.md](../sources.md).
 | `prompts/output_ordinal_reasoning.txt` | `OUTPUT INTERFACE` block of `.../prompts/teacher_ordinal_reasoning.txt` |
 
 The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
-| `serving_latency.pdf`, `.svg`, `.json` | `experiments/serving_concurrency/plot.py` on `results/serving_concurrency/summary.json` |
+| `serving_latency.pdf`, `.svg`, `.json` | `experiments/serving_concurrency/plot.py` on `results/serving_concurrency/summary.json`, with `--replace-sweep 4b_fast=results/serving_concurrency/breakdown01/sweep_e/summary.json:4b_fast_g2048e` (4B released curve with CUDA graphs up to 2,048 tokens) |

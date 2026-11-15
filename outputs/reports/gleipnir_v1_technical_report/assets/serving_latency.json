@@ -542,86 +542,6 @@
   }
  },
  "4b_fast": {
-  "full_c1": {
-   "passes": 3,
-   "prompt_tokens_per_second": 99125.24633836483,
-   "prompt_tokens_per_second_range": [
-    97220.50144670188,
-    102948.68729805991
-   ],
-   "p50_ms": 29.173103161156178,
-   "p95_ms": 122.28002953343095
-  },
-  "full_c2": {
-   "passes": 3,
-   "prompt_tokens_per_second": 120923.2304295816,
-   "prompt_tokens_per_second_range": [
-    119839.96598624787,
-    121025.62410463931
-   ],
-   "p50_ms": 52.747110137715936,
-   "p95_ms": 151.3204292394221
-  },
-  "full_c4": {
-   "passes": 3,
-   "prompt_tokens_per_second": 170504.53522576284,
-   "prompt_tokens_per_second_range": [
-    169722.74357760313,
-    170757.93471442856
-   ],
-   "p50_ms": 78.40142399072647,
-   "p95_ms": 201.82610366027802
-  },
-  "full_c8": {
-   "passes": 3,
-   "prompt_tokens_per_second": 206951.6948040646,
-   "prompt_tokens_per_second_range": [
-    206699.60135770944,
-    209084.09501735127
-   ],
-   "p50_ms": 153.18506094627082,
-   "p95_ms": 280.1983576035127
-  },
-  "full_c16": {
-   "passes": 3,
-   "prompt_tokens_per_second": 224323.3841274097,
-   "prompt_tokens_per_second_range": [
-    223560.60793593893,
-    224588.8637074852
-   ],
-   "p50_ms": 280.701516661793,
-   "p95_ms": 430.440552555956
-  },
-  "full_c32": {
-   "passes": 3,
-   "prompt_tokens_per_second": 227720.12113701436,
-   "prompt_tokens_per_second_range": [
-    226614.94119824917,
-    228598.28078876645
-   ],
-   "p50_ms": 572.1941241063178,
-   "p95_ms": 722.7371940622106
-  },
-  "full_c64": {
-   "passes": 3,
-   "prompt_tokens_per_second": 227764.7879294581,
-   "prompt_tokens_per_second_range": [
-    226842.46661232112,
-    228004.1029902938
-   ],
-   "p50_ms": 1123.744399053976,
-   "p95_ms": 1319.719256507234
-  },
-  "full_c128": {
-   "passes": 3,
-   "prompt_tokens_per_second": 226277.57024282162,
-   "prompt_tokens_per_second_range": [
-    226097.1790911157,
-    226320.93034921656
-   ],
-   "p50_ms": 2154.173420276493,
-   "p95_ms": 2570.49315541517
-  },
   "quick_c1": {
    "passes": 3,
    "prompt_tokens_per_second": 92842.15345554383,
@@ -631,6 +551,86 @@
    ],
    "p50_ms": 31.533802393823862,
    "p95_ms": 148.64668042864636
+  },
+  "full_c1": {
+   "passes": 3,
+   "prompt_tokens_per_second": 137789.64729059834,
+   "prompt_tokens_per_second_range": [
+    135311.13594650762,
+    138585.1764394659
+   ],
+   "p50_ms": 11.519595049321651,
+   "p95_ms": 118.0799316382036
+  },
+  "full_c2": {
+   "passes": 3,
+   "prompt_tokens_per_second": 163185.69325281534,
+   "prompt_tokens_per_second_range": [
+    162947.26417085086,
+    163335.61235712282
+   ],
+   "p50_ms": 34.605205059051514,
+   "p95_ms": 145.37066018674528
+  },
+  "full_c4": {
+   "passes": 3,
+   "prompt_tokens_per_second": 191308.3707452759,
+   "prompt_tokens_per_second_range": [
+    190401.07461704462,
+    191576.47543114732
+   ],
+   "p50_ms": 69.92018083110452,
+   "p95_ms": 215.36044613458216
+  },
+  "full_c8": {
+   "passes": 3,
+   "prompt_tokens_per_second": 209481.52356027186,
+   "prompt_tokens_per_second_range": [
+    206907.0785691105,
+    209837.42474063407
+   ],
+   "p50_ms": 159.64694321155548,
+   "p95_ms": 294.06789161730563
+  },
+  "full_c16": {
+   "passes": 3,
+   "prompt_tokens_per_second": 225108.69198311438,
+   "prompt_tokens_per_second_range": [
+    224166.65120022642,
+    226659.5061295254
+   ],
+   "p50_ms": 282.7119829598814,
+   "p95_ms": 435.3006085846573
+  },
+  "full_c32": {
+   "passes": 3,
+   "prompt_tokens_per_second": 229031.16339255855,
+   "prompt_tokens_per_second_range": [
+    227747.098096447,
+    229080.4562701439
+   ],
+   "p50_ms": 567.5515783950686,
+   "p95_ms": 736.2119401572273
+  },
+  "full_c64": {
+   "passes": 3,
+   "prompt_tokens_per_second": 228205.12111012774,
+   "prompt_tokens_per_second_range": [
+    226778.29051180513,
+    228720.38484477866
+   ],
+   "p50_ms": 1118.9300979021937,
+   "p95_ms": 1319.0557768102747
+  },
+  "full_c128": {
+   "passes": 3,
+   "prompt_tokens_per_second": 227708.997969848,
+   "prompt_tokens_per_second_range": [
+    143853.29603838662,
+    227743.4159921497
+   ],
+   "p50_ms": 2158.01541460678,
+   "p95_ms": 2447.0789689337835
   }
  },
  "4b_fast_native": {

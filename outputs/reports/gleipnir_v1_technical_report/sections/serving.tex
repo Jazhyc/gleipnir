@@ -77,7 +77,7 @@ On all other GPUs the BF16 checkpoints of Section~\ref{sec:serving-selfhost} app
 The last row of Table~\ref{tab:serving} comes from two changes that remove work which a monitor request does not need.
 Neither changes a kernel or the precision of a number, and with one request at a time the scores are bit-for-bit the same as before.
 Together they lower the cost by 1.07$\times$ for the 4B and 1.04$\times$ for the 27B.
-Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and one further change for the 4B that affects only latency.
+Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and two further changes that affect only latency.
 
 \paragraph{Last-token attention in the final layer.}
 The final layer of both base models is a full-attention layer.

@@ -118,6 +118,7 @@ def plot(summary: dict, output: Path) -> None:
     left.set_xticks([20, 50, 100, 200], labels=["20", "50", "100", "200"])
     left.minorticks_off()
     left.set_yscale("log")
+    left.set_ylim(bottom=6)  # room for the label below the lowest point
     left.set_xlabel("Prompt tokens per second (thousands)")
     left.set_ylabel("Median latency (ms)")
     left.set_title("Throughput saturates near 16 requests", fontsize=9)
@@ -147,12 +148,30 @@ def plot(summary: dict, output: Path) -> None:
     figure.savefig(output)
 
 
+def replace_sweep(summary: dict, spec: str) -> None:
+    """``CONDITION=SUMMARY.json:KEY`` takes a condition's sweep from another run."""
+    condition, source = spec.split("=", 1)
+    path, key = source.rsplit(":", 1)
+    other = json.loads(Path(path).read_text())[key]
+    kept = {k: v for k, v in summary[condition].items() if not k.startswith("full_c")}
+    summary[condition] = kept | {
+        k: v for k, v in other.items() if k.startswith("full_c")
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--summary", type=Path, default=SUMMARY)
     parser.add_argument("--output", type=Path, default=OUTPUT)
+    parser.add_argument("--replace-sweep", action="append", default=[])
+    parser.add_argument("--save-summary", type=Path, help="write the plotted data")
     arguments = parser.parse_args()
-    plot(json.loads(arguments.summary.read_text()), arguments.output)
+    summary = json.loads(arguments.summary.read_text())
+    for spec in arguments.replace_sweep:
+        replace_sweep(summary, spec)
+    if arguments.save_summary:
+        arguments.save_summary.write_text(json.dumps(summary, indent=1) + "\n")
+    plot(summary, arguments.output)
 
 
 if __name__ == "__main__":

@@ -489,15 +489,32 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `python -m experiments.serving_concurrency.plot --output
   assets/serving_latency.pdf` (and `.svg`). The 28 virtual cores and 283 GB
   are the Pod's allotment (`RUNPOD_CPU_COUNT`, `RUNPOD_MEM_GB`); the host CPU
-  has 224 threads. The 3,000-token crossover of the 4B is read from the
-  single-request sweep (released 28.8 ms at 2,048 and 30.7 ms at 4,096
-  tokens; BF16 22.0 and 38.8 ms). The 27B low-precision row keeps the CUDA
-  graphs of the release command. Table 1 takes the 27B gains from
-  this session (2.21x, 1.04x); its 27B middle-row costs are the BF16 costs
-  divided by 2.208 (0.0961 to 0.0435, 0.0414 to 0.0188). The 4B gains of
-  Table 1 (1.77x, 1.07x) differ by 0.01 from this session (1.76x, 1.08x).
-  Concurrency 16 against 128 (released stack): 224,323 / 226,278 and
-  52,843 / 52,864 tokens/s; p50 280.7 ms and 1,199.6 ms (`summary.json`).
+  has 224 threads. Second session the same day on the same machine and GPU
+  (Pod `179xu9pmh64fxh`; README sections "Per-change breakdown and 4B graph
+  sweep" and "Diagnosis of the score change",
+  `results/serving_concurrency/breakdown01/summary.json`). Rows of
+  `tab:serving-steps`: 4B stock and low precision from the first session
+  (`4b_bf16`, `4b_quant`); 4B graphs, last-token and kernel-variant rows
+  from `4b_quant_g2048`, `4b_lastquery_g2048`, `4b_route_g2048` (graph
+  sizes in multiples of 32); 4B last row from
+  `breakdown01/sweep_e/summary.json` (`4b_fast_g2048e`, the layout with
+  bit-identical scores; its gain is 227,709 / 214,885). All 27B rows from
+  the second session (`27b_bf16`, `27b_quant_nograph`, `27b_quant`,
+  `27b_lastquery`, `27b_fast`). The "at most 2%" between sessions is the
+  largest difference of a repeated figure (27B released p50 at one request,
+  23.0 against 22.5 ms). Figure: the 4B released curve is `sweep_e`; the
+  other curves and the whole right panel are from the first session
+  (prompts from 4,096 tokens do not use the larger graphs). Concurrency 16
+  against 128: 4B 225,109 / 227,709 tokens/s, p50 282.7 against 2,158 ms;
+  27B 52,843 / 52,864, p50 1,199.6 against 9,553 ms; 4B peak 229,031 at
+  32. Bit-for-bit claim: `fast_g2048e` against `fast` at concurrency 1 on
+  3,012 ID, 6,395 OOD and 320 benchmark rows, 0 scores changed. Stock vLLM
+  with the same graphs: `4b_bf16_g2048` 15.0 ms, `27b_bf16_g2048` 36.7 ms.
+  Table 1 was not changed: its 27B gains (2.21x, 1.04x) are from the first
+  session, its 4B gains (1.77x, 1.07x) from the US-CA-2 ladder; here they
+  are 2.22x and 1.04x, and 1.76x and 1.09x (227,709 / 209,757). The released
+  image does not yet record the larger 4B graphs (JF, 2026-11-15: the
+  deployment stack will be updated).
   Benchmark prompt lengths (320 rows, 1,310,581 tokens, the same prompts for
   both models): mean 4,096, median 503.5, quartiles 311 and 4,499, 95th
   percentile 21,564, range 188 to 28,733; from `prompt_tokens` in
