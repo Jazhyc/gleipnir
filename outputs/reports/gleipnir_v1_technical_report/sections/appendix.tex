@@ -532,6 +532,7 @@ Stock vLLM, BF16 & 22,949 & --- & 21.42 & 20,993 & 34.5 & 989 \\
 \paragraph{Concurrency.}
 Throughput rises with the number of concurrent requests up to about 16 and stays constant above it (Figure~\ref{fig:serving-latency}, left).
 Above this point more concurrent requests only wait longer.
+With 16 concurrent requests the released stack reaches 99\% of its throughput at 128, and the median request waits 0.28\,s for the 4B and 1.2\,s for the 27B, against 2.15\,s and 9.55\,s with 128.
 The released stack reaches at most 227,765 tokens per second for the 4B and 53,071 for the 27B, against 119,700 and 22,957 for stock vLLM.
 With one request at a time the 27B answers the median request in 23\,ms and the 4B in 29\,ms.
 For the 4B this median is 10\,ms higher than with stock vLLM, although the 95th percentile is lower.

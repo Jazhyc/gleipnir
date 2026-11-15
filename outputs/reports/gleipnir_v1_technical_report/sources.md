@@ -496,3 +496,5 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   this session (2.21x, 1.04x); its 27B middle-row costs are the BF16 costs
   divided by 2.208 (0.0961 to 0.0435, 0.0414 to 0.0188). The 4B gains of
   Table 1 (1.77x, 1.07x) differ by 0.01 from this session (1.76x, 1.08x).
+  Concurrency 16 against 128 (released stack): 224,323 / 226,278 and
+  52,843 / 52,864 tokens/s; p50 280.7 ms and 1,199.6 ms (`summary.json`).
