@@ -567,6 +567,7 @@ With 128 concurrent requests the throughput does not change, because the CPU tok
 \paragraph{Prompt length.}
 We sent single requests with synthetic prompts of 256 to 1,048,576 tokens.
 Figure~\ref{fig:serving-latency} (right) shows them from 4,096 tokens, because the latency changes little below this length.
+For a prompt of 512 tokens the released stack takes 10\,ms for the 4B and 19\,ms for the 27B, close to the medians of Table~\ref{tab:serving-steps}, because the median prompt of the benchmark has 504 tokens.
 At 262,144 tokens the released stack answers in 2.9\,s for the 4B and in 10.8\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
 At 1,048,576 tokens the released stack answers in 36\,s for the 4B and in 126\,s for the 27B, against 90\,s and 297\,s.
