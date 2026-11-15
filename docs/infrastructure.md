@@ -1040,6 +1040,15 @@ works. A fresh Pod needs `experiments.release_serving.fetch` for each model
 and the benchmark data before a run. It ran from 02:19 to 04:37 UTC and was
 deleted after verified collection (HTTP 204, lookup 404); no Pods remain.
 
+The same day the user authorized a second EU-RO-1 B200 Pod for the
+[per-change breakdown and 4B graph sweep](../experiments/serving_concurrency/README.md):
+`179xu9pmh64fxh` (`gleipnir-serving-breakdown`, $7.99/hour, same settings,
+snapshot `.runpod/serving-breakdown.json`), allocated at 16:47 UTC after
+about 70 minutes of retries, on the same machine and GPU as the first. Its
+results were collected and verified at 18:40 UTC. At the user's instruction
+it was left running for follow-up measurements; check the live inventory
+before relying on this.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

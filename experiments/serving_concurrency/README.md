@@ -138,3 +138,73 @@ sizes and a 4B breakdown at the best one. Written before the run.
   recorded and skipped.
 - **Compute.** One EU-RO-1 B200 Pod from the same image, authorized by the
   user on 2026-11-15.
+
+### Result
+
+Run 2026-11-15, 16:55–18:39 UTC, Pod `179xu9pmh64fxh` (EU-RO-1, the same
+machine and B200 `GPU-e5eb9962…` as the first session). All conditions
+completed on the first start. Added during the run at the user's request:
+stock BF16 with graphs to 2,048 for both models (`bf16_g2048`), the full
+concurrency sweep of `fast_g2048` (`breakdown01/sweep2`; `sweep_ends_only`
+is an earlier attempt that timed only 128 and 1), and ID/OOD scoring at
+concurrency 1 (`parity.py --concurrency 1`). 313 result and log files were
+pulled and checksum-verified (`breakdown01/manifest.sha256`). Medians of
+three passes (`breakdown01/summary.json`):
+
+| Condition | c128 tok/s | vs previous | c1 tok/s | c1 p50 / p95 (ms) |
+|---|---:|---:|---:|---:|
+| 27B `bf16` | 22,924 | | 21,007 | 34.4 / 988 |
+| 27B `bf16_g2048` | 22,975 | | 20,883 | 36.7 / 987 |
+| 27B `quant_nograph` | 50,849 | 2.218× | 35,537 | 58.6 / 458 |
+| 27B `quant` | 50,682 | 0.997× | 42,275 | 24.0 / 461 |
+| 27B `lastquery` | 50,981 | 1.006× | 42,093 | 24.7 / 462 |
+| 27B `fast` | 52,922 | 1.038× | 44,660 | 22.5 / 443 |
+| 4B `bf16` | 119,728 | | 84,742 | 19.0 / 205 |
+| 4B `bf16_g2048` | 119,858 | | 89,175 | 15.0 / 202 |
+| 4B `quant_g2048` | 212,456 | 1.774× | 120,927 | 15.3 / 128 |
+| 4B `lastquery_g2048` | 215,660 | 1.015× | 122,209 | 15.3 / 125 |
+| 4B `route_g2048` | 214,885 | 0.996× | 126,641 | 13.4 / 130 |
+| 4B `fast_g2048` | 227,457 | 1.059× | 138,839 | 11.3 / 118 |
+
+4B graph sweep on the release command (`fast`, graphs to 256: 226,391 tok/s
+at c128; c1 102,582 tok/s, p50 29.0 ms):
+
+| Cap | c128 tok/s | c1 tok/s | c1 p50 (ms) |
+|---|---:|---:|---:|
+| 512 | 214,337 | 125,057 | 12.8 |
+| 1,024 | 226,498 | 128,430 | 12.2 |
+| 2,048 | 227,457 | 138,839 | 11.3 |
+| 4,096 | 222,838 | 138,022 | 11.9 |
+| 8,192 | 226,814 | 139,761 | 11.2 |
+
+- **Selection: 2,048** (8,192 is within 2%; 512 and 4,096 miss the c128
+  bound because one of their three passes ran at about 143K tok/s, as did
+  one pass of `fast` and of `fast_g2048`; cause not identified).
+- **Latency by length at c1.** Graphs remove the fixed cost for every length
+  they cover: 256–1,024 tokens 28–29 → 11 ms, 1,024–2,048 tokens 30 → 14 ms;
+  nothing changes above 4,096 tokens. The 27B shows the same effect
+  (`quant_nograph` 58.6 ms against 24.0 ms). BF16 gains for the 4B (19.0 →
+  15.0 ms) and not for the 27B (34.4 → 36.7 ms). Throughput at c128 does not
+  change with graphs.
+- **Per change.** 27B: last-query 1.006×, GDN host path 1.038×. 4B gains
+  with graphs equal the gains without them.
+- **`fast_g2048` across concurrency** (tok/s, p50 ms): c1 137,705, 11.5; c2
+  163,407, 34.5; c4 191,181, 70.9; c8 212,446, 149; c16 223,652, 279; c32
+  227,589, 575; c64 226,622, 1,132; c128 227,018, 2,151.
+- **Scores.** c1 scores are deterministic. With graphs to 2,048 they change
+  only for prompts of 257–767 tokens that are padded to a captured size;
+  exact-size prompts and all prompts of 769–2,048 tokens are bit-identical.
+  On `full320`: 135 rows change, mean 0.027, maximum 0.458, 5 cross 0.5 (the
+  release stack's own c1-to-c128 difference is mean 0.039, maximum 0.44).
+- **ID/OOD pAUROC@20, 4B** (recorded release 0.9117 / 0.7703):
+
+  | Scoring | `fast` ID / OOD | `fast_g2048` ID / OOD |
+  |---|---:|---:|
+  | batches of 128 (`validate.py`) | 0.9110 / 0.7708 | 0.9104 / 0.7712 |
+  | concurrency 1 | 0.9098 / 0.7669 | 0.9098 / 0.7639 |
+
+  Batches of 128 rarely replay a graph. At concurrency 1 the ID rows are
+  identical (14 of 3,012 are short enough for a graph). On OOD 499 of 6,395
+  scores change, 496 of them in AgentDojo, whose pAUROC@20 falls from 0.8152
+  to 0.7973; the other five sources are unchanged. The cause of the
+  dependence on padding below 768 tokens is open, so no cap is adopted.
