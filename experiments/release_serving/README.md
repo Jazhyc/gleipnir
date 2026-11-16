@@ -266,6 +266,9 @@ User request. Both changes were measured in
     one at a time and compares two runs bit for bit.
     `image/pod_fresh_check.sh` runs it for both models between the 0.2
     behaviour and the default.
+- **Parity for releases** (user, 2026-11-16): a release that changes the
+  serving stack scores the ID set only (`validate.py --splits id`), for this
+  and later images. OOD passes are not needed.
 - **Rebuild rule.** The switch at multiples of 32 was observed on this
   software stack only and its kernel is not identified. Every rebuild must
   pass `image/identity.py`; if it fails, re-derive the sizes or ship
