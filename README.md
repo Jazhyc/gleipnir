@@ -98,8 +98,7 @@ run it:
    - **Since image 1.1** the image also runs on an NVIDIA B300, for
      flexibility: it is about as fast as on the B200 and costs more per
      hour. Scores match the B200's with rare exceptions (1 of 248 check
-     prompts for the 27B, none for the 4B). The B200 path is that of 1.0,
-     but 1.1 has not yet been started on a B200.
+     prompts for the 27B, none for the 4B). On a B200, 1.1 behaves as 1.0.
    - **Prompts.** At most 262,144 tokens, the checkpoints' native range
      (`--max-model-len 32768` restores the 0.1 limit). Image 0.1 serves at
      most 32,768.

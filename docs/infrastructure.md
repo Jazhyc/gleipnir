@@ -1082,7 +1082,8 @@ snapshot `.runpod/image11-b300.json`) was allocated at 16:46 UTC and
 terminated at 17:23 UTC after its logs were collected. `rest.runpod.io` did
 not resolve from the VPS at that time, so the termination went through the
 GraphQL API (`podTerminate`; `myself.pods` then empty). No B200 was
-available at 16:46 UTC; a retry every 20 minutes is running.
+available from 16:46 to 18:32 UTC (five requests); the user then dropped
+the B200 check, so no B200 Pod was launched. No Pod remains.
 
 ## OpenRouter
 

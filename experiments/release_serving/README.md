@@ -354,8 +354,8 @@ gain in cost.
   `d85c1ffd…`. User decisions, 2026-11-16: the one differing 27B score is
   acceptable, and the tag does not wait for the B200 check, for which
   there was no B200 capacity from 16:46 UTC on. On a B200 the only new code
-  that runs is the `nvidia-smi` name query; the B200 check of `1.1` is
-  still to be run.
+  that runs is the `nvidia-smi` name query, so the B200 check of `1.1`
+  was dropped (user, 18:40 UTC) and no B200 Pod was launched for it.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
