@@ -144,16 +144,25 @@ def test_gpu_alias_hook_renames_the_gpu_and_runs_the_next_hook(tmp_path):
 
     (tmp_path / "torch").mkdir()
     (tmp_path / "torch/__init__.py").write_text("")
-    (tmp_path / "torch/cuda.py").write_text("get_device_name = lambda d=None: 'real'")
+    (tmp_path / "torch/cuda.py").write_text(
+        "get_device_name = lambda d=None: 'real'\n"
+        "get_device_capability = lambda d=None: (10, 3)"
+    )
+    (tmp_path / "gleipnir.py").write_text(
+        "import torch.cuda as c\ncapability = lambda: c.get_device_capability()"
+    )
     (tmp_path / "next").mkdir()
     (tmp_path / "next/sitecustomize.py").write_text("print('chained')")
     path = f"{tmp_path / 'next'}:{tmp_path}"
-    env = with_gpu_alias({"PYTHONPATH": path}, "NVIDIA B200")
+    env = with_gpu_alias({"PYTHONPATH": path}, "NVIDIA B200", "10.0")
     hook = Path(env["PYTHONPATH"].split(":")[0])
     assert hook.name == "gpu_alias_hook" and (hook / "sitecustomize.py").is_file()
-    code = "import torch.cuda; print(torch.cuda.get_device_name())"
+    code = (
+        "import torch.cuda as c, gleipnir as g;"
+        "print(c.get_device_name(), c.get_device_capability(), g.capability())"
+    )
     command = [sys.executable, "-c", code]
     result = subprocess.run(
         command, env=env, capture_output=True, text=True, check=True
     )
-    assert result.stdout.splitlines() == ["chained", "NVIDIA B200"]
+    assert result.stdout.splitlines() == ["chained", "NVIDIA B200 (10, 3) (10, 0)"]

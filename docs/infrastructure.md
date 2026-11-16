@@ -1064,6 +1064,15 @@ allocated at 01:23 UTC on a different machine (`klzaw5yqymgh`) from the
 benchmark Pods, and deleted at 03:22 UTC after the measurement finished and
 its results were collected (HTTP 204, lookup 404). No Pod remains.
 
+For the [B300 trial](../experiments/serving_concurrency/README.md) (user
+authorization 2026-11-16, any datacenter): no B300 was available at 14:48 UTC
+in EU-NL-1, EUR-IS-1 or unrestricted; a retry every 20 minutes allocated
+`4sr7r26kfoc0z9` (`gleipnir-b300-trial`, US-WA-2, $8.99/hour,
+`GPU-ac47d51d…`, Xeon 6787P, image 1.0, snapshot `.runpod/b300-trial.json`)
+at 15:11 UTC on the second try. The image lacks `experiments/gleipnir4b_serving_ladder`
+and `data/b200_inference_benchmark`, which the benchmark needs; both were
+copied over. Check the live inventory for its state.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

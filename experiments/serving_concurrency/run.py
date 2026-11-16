@@ -241,10 +241,11 @@ async def measure(
         )
 
 
-def with_gpu_alias(env: dict, alias: str) -> dict:
+def with_gpu_alias(env: dict, alias: str, capability: str = "") -> dict:
     """Report ``alias`` as the GPU model to the server (``gpu_alias_hook``)."""
     return env | {
         "GLEIPNIR_GPU_ALIAS": alias,
+        "GLEIPNIR_GPU_CAPABILITY": capability,
         "PYTHONPATH": f"{HERE / 'gpu_alias_hook'}:{env['PYTHONPATH']}",
     }
 
@@ -259,6 +260,7 @@ def run(
     agent: bool = False,
     only: tuple[int, ...] = (),
     gpu_alias: str = "",
+    gpu_capability: str = "",
 ) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
@@ -271,7 +273,7 @@ def run(
     if gigatoken:
         env = with_gigatoken(env, out)
     if gpu_alias:
-        env = with_gpu_alias(env, gpu_alias)
+        env = with_gpu_alias(env, gpu_alias, gpu_capability)
     process, startup, attempt = launch(
         command, env, f"{session}_{name}".lstrip("_"), out
     )
@@ -294,6 +296,7 @@ def run(
                 "levels": list(timed),
                 "gigatoken": gigatoken,
                 "gpu_alias": gpu_alias,
+                "gpu_capability": gpu_capability,
                 "workload": "agent" if agent else "full320",
                 "repeats": repeats,
             },
@@ -327,6 +330,11 @@ def main() -> None:
         default="",
         help="GPU model name to report to the receipt checks (hardware trials)",
     )
+    parser.add_argument(
+        "--gpu-capability",
+        default="",
+        help="compute capability to report with --gpu-alias, for example 10.0",
+    )
     args = parser.parse_args()
     if args.prepare_only:
         command, _ = prepare(args.model, args.step, OUT / "_prepare")
@@ -342,6 +350,7 @@ def main() -> None:
         args.agent,
         tuple(args.levels),
         args.gpu_alias,
+        args.gpu_capability,
     )
 
 

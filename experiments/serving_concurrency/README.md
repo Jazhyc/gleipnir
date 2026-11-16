@@ -490,27 +490,63 @@ tok/s.
 Results and logs were pulled and checksum-verified
 (`generation01/pod.sha256`). `generation_try` is a 4B trial of the client.
 
-## B300 trial (planned)
+## B300 trial
 
 User request, 2026-11-16: see whether the optimized stack runs on a B300
-(SM103), which has more FP4 compute. Written before launch:
+(SM103). Pod `4sr7r26kfoc0z9` (US-WA-2, `NVIDIA B300 SXM6 AC`, 275 GB,
+driver 595.91.07, Intel Xeon 6787P, 43 vCPU), from image 1.0, 15:17–16:07
+UTC. The Pod's `environment.json` says EU-RO-1 because the driver exports
+that name; it is wrong.
 
-- **Known blocker.** The workers compare `torch.cuda.get_device_name()` with
-  the GPU model in the hash-bound kernel receipts and refuse another model
-  ([2026-10-20 attempt](../optimized_gap/README.md)). `run.py --gpu-alias
-  "NVIDIA B200"` reports that name through `gpu_alias_hook` and changes
-  nothing else, so the bound sources stay untouched and a kernel that does
-  not run on SM103 still fails.
-- **Unknown.** Whether the kernels built for `sm_100a` and the checks on
-  compute capability (10, 0) hold on SM103.
-- **Conditions**, from image 1.0 on one B300 Pod, 96 agent trajectories at 1
-  and 8 concurrent requests: `bf16` for both monitors first (the baseline on
-  that host), then `fast_g4096e` (4B) and `fast` (27B) with `--gigatoken
-  --gpu-alias`. A B300 Pod is in another datacenter on another host, so
-  only the gain over `bf16` on the same Pod compares with the B200's.
-- **Scores.** `release_serving/image/identity.py --compare` against the
-  recorded B200 scores of the 248 synthetic prompts; report the largest and
-  mean difference.
-- **Stop.** After those conditions, or when a kernel fails in a way that
-  needs new kernel builds; then report before spending more.
+**Result: both optimized stacks run on the B300 and return the B200's
+scores bit for bit.** Three things stood in the way, none of them a kernel
+that does not work:
 
+1. **GPU name in the receipts.** The workers compare
+   `torch.cuda.get_device_name()` with the GPU model in the hash-bound
+   kernel receipts ([2026-10-20 attempt](../optimized_gap/README.md)).
+   `run.py --gpu-alias "NVIDIA B200"` reports that name through
+   `gpu_alias_hook`, without touching the bound sources.
+2. **Compute capability.** `nvidia_mxfp8_attention._cudnn` requires
+   (10, 0); a B300 reports (10, 3). `--gpu-capability 10.0` reports (10, 0)
+   to callers in the `gleipnir` package only. Reporting it to every caller
+   breaks Triton, which then builds `sm_100` binaries that the B300 refuses
+   (`no kernel image is available for execution on the device`).
+3. **Attention kernel compile.** The image ships compiled MXFP8 attention
+   kernels for the B200. The B300 needs its own, and compiling them inside
+   the server failed 10 of 10 times with the known `TYPE_UNSTABLE_JOIN`
+   (`b300_03`–`b300_07`). Compiling the plan once outside the server
+   (`optimized_gap/mxfp8_probe.py` with the hook; `--geometry 24 4 32768`
+   for the 27B) fills the cuDNN-frontend cache, and the server then starts
+   at the first attempt (50 s and 58 s).
+
+Medians of three passes on the 96 agent trajectories (tok/s; p50 ms), stock
+BF16 from `b300_01` (4B) and `b300_03` (27B), optimized with Gigatoken from
+`b300_08`; B200 from `agent03`:
+
+| | B300 c1 | B300 c8 | B200 c1 | B200 c8 |
+|---|---|---|---|---|
+| 4B `bf16` | 104,997; 91.1 | 130,982; 748 | 103,266; 93.7 | 120,284; 816 |
+| 4B `fast_g4096e_giga` | 191,239; 56.0 | 257,632; 375 | 204,673; 48.2 | 230,375; 424 |
+| 4B gain | 1.82× | 1.97× | 1.98× | 1.92× |
+| 27B `bf16` | 23,117; 423 | 24,727; 3,940 | 21,720; 452 | 22,950; 4,271 |
+| 27B `fast_giga` | 55,125; 171 | 59,606; 1,641 | 50,788; 190 | 53,356; 1,832 |
+| 27B gain | 2.38× | 2.41× | 2.34× | 2.32× |
+
+- **Scores.** At one request at a time, all 96 scores of each of the four
+  conditions equal the B200's exactly (same prompt hashes), and the B300
+  repeats equal each other.
+- **Speed.** The optimized B300 is 8.5% (27B) faster and 6.6% (4B) slower
+  than the B200 at one request, and 12% faster for both at 8. Stock BF16 is
+  2% to 9% faster, so most of the difference is not specific to the
+  low-precision path. Hosts differ (Xeon 6787P against EPYC 9555), and the
+  4B at one request is the most host-bound case.
+- **Cost.** At $8.99 against $7.99 per hour (+12.5%), the B300 does not
+  lower the cost per token in any of the four cases.
+- **Not done.** No ID/OOD pass, no length sweep, no kernel retuning for
+  SM103 (the FP4 tile choices are the B200's), and no release support: the
+  image still refuses a B300 without the hook and the outside compile.
+
+Results and logs were pulled and checksum-verified (`b300_08/pod.sha256`;
+driver scripts and failed attempts under
+`logs/runpod/serving_concurrency/b300_driver/`).
