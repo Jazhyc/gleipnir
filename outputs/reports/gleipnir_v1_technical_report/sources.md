@@ -507,7 +507,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     and 54.2 s (90.9 and 446 ms), within 3% of the benchmark Pod; the report
     compares with Table 13 instead: 1,193,325 / 103,266 = 11.6 s and
     / 21,720 = 54.9 s, ratios 10.2 and 9.7.
-    Costs in the table (JF, 2026-11-16, with the API price as reference
+    Costs in the table (JF, 2026-11-16, committed rate only, with the API price as reference
     and the caveat that output tokens are not priced) = hourly rate /
     (prompt tokens per second x 3,600) x 10^6.
     Released-stack seconds = 1,193,325 / 204,673 and / 50,788. The
