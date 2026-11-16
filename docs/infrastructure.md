@@ -1045,9 +1045,23 @@ The same day the user authorized a second EU-RO-1 B200 Pod for the
 `179xu9pmh64fxh` (`gleipnir-serving-breakdown`, $7.99/hour, same settings,
 snapshot `.runpod/serving-breakdown.json`), allocated at 16:47 UTC after
 about 70 minutes of retries, on the same machine and GPU as the first. Its
-results were collected and verified at 00:22 UTC on 2026-11-16. At the user's instruction
+results were collected and verified at 00:22 UTC on 2026-11-16; it then ran
+the checks of the image 1.0 release code and was deleted at 01:07 UTC after
+verified collection (HTTP 204, lookup 404). At the user's instruction
 it was left running for follow-up measurements; check the live inventory
 before relying on this.
+
+On 2026-11-16 the user authorized a fresh Pod for the
+[image 1.0 check](../experiments/release_serving/README.md): `7k2awsacb6zxyb`
+(`gleipnir-image10-fresh`, US-NC-2 B200, $7.99/hour, from
+`gleipnir-serve:1.0-rc1`, snapshot `.runpod/image10-fresh.json`), allocated
+at 01:09 UTC after EU-RO-1 had no capacity and deleted at 01:44 UTC after the
+check passed and its logs were collected (HTTP 204, lookup 404). For the
+generation-mode measurement the user asked for EU-RO-1 hardware:
+`8v7naalpvfybi5` (`gleipnir-generation-mode`, $7.99/hour, B200
+`GPU-2ab4adcc…`, EPYC 9555, snapshot `.runpod/generation-mode.json`),
+allocated at 01:23 UTC on a different machine (`klzaw5yqymgh`) from the
+benchmark Pods. Check the live inventory for its state.
 
 ## OpenRouter
 

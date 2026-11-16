@@ -73,7 +73,7 @@ run it:
    ```bash
    docker run --gpus all -p 8000:8000 \
      -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
-     ghcr.io/jazhyc/gleipnir-serve:0.2 4b    # or 27b
+     ghcr.io/jazhyc/gleipnir-serve:1.0 4b    # or 27b
 
    curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
      -d '{"model": "monitor", "prompt": "<rendered prompt ending in Prediction:>"}'

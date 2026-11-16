@@ -290,7 +290,23 @@ User request. Both changes were measured in
     unchanged and its token IDs are identical.
 - **Build.** One layer with the changed files of this directory, appended
   to `0.2` (digest `ba602599…`) with `crane` from the VPS
-  (`image/layer10.py`).
+  (`image/layer10.py`); pushed as `1.0-rc1`, 52 layers, the new one 21 KB.
+- **Fresh-Pod check.** US-NC-2 B200 Pod `7k2awsacb6zxyb` (Intel Xeon
+  Platinum 8568Y+, driver 595.91.07, no volume) ran `1.0-rc1` with
+  `image/pod_fresh_check.sh`.
+  - Cold entrypoint to ready: 4B 276 s and 27B 476 s, downloads included;
+    later starts 105 to 170 s.
+  - Identity between 0.2's behaviour and the default: 0 of 248 synthetic
+    prompts change, for each model.
+  - Smoke tests pass in the default and prefix modes of both models, with
+    the same scores as on the EU-RO-1 Pod (AMD host); the tokenizer
+    receipts name the native backend.
+  - Logs: `logs/runpod/release_serving/image10_fresh/`; rows:
+    `results/release_serving/image10/fresh/`.
+- **Release.** `1.0` was tagged from `1.0-rc1`, digest `d85c1ffd…`
+  (anonymous pulls resolve it); `0.2` is unchanged at `ba602599…`. The
+  model cards under `model_releases/hf/` still name image 0.1 and are to
+  be rewritten with the v1.0 model release.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
