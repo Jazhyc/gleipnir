@@ -582,7 +582,9 @@ On the benchmark it changes neither the latency nor the throughput (Table~\ref{t
 The 27B does not use it.
 
 \paragraph{Generation mode.}
-To measure what a rationale costs, we also served the two base models in generation mode with stock vLLM in BF16.
+The step from the API price to classification mode in Table~\ref{tab:serving} changes two things at once: we host the model ourselves, and the model no longer writes a rationale.
+To isolate the second, we also hosted the two base models in generation mode, with stock vLLM in BF16 on the same type of GPU.
+Generation and classification then differ only in the rationale.
 The instruction is the variant of the full specification that asks for a written analysis and then a score from 0 to 10 (Appendix~\ref{app:prompts}).
 Thinking was disabled, decoding was greedy, and the only limit on the answer was 4,096 tokens.
 Table~\ref{tab:serving-generation} gives the result.
