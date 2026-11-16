@@ -69,7 +69,7 @@ run it:
      to about 0.005 per row
      ([check](experiments/release_serving/README.md)).
    - **Prefix caching** stays off, matching the evaluated setup.
-3. **Optimized B200 serving** (fastest; one NVIDIA B200 only). The image
+3. **Optimized B200 serving** (fastest; one NVIDIA B200, or a B300). The image
    quantizes the BF16 checkpoint at load (FP8 attention projections, FP4
    MLP/GDN, MXFP8 attention). With one request at a time, one B200 scores an
    agent trajectory of about 10,000 tokens in 48 ms with the 4B (205K prompt
@@ -80,7 +80,7 @@ run it:
    ```bash
    docker run --gpus all -p 8000:8000 \
      -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
-     ghcr.io/jazhyc/gleipnir-serve:1.0 4b    # or 27b
+     ghcr.io/jazhyc/gleipnir-serve:1.1 4b    # or 27b
 
    curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
      -d '{"model": "monitor", "prompt": "<rendered prompt ending in Prediction:>"}'
@@ -95,6 +95,11 @@ run it:
      4,096 tokens and both models tokenize with Gigatoken. Neither changes a
      score at one request at a time; `--recorded-graphs` and
      `--transformers-tokenizer` switch them off.
+   - **Since image 1.1** the image also runs on an NVIDIA B300, for
+     flexibility: it is about as fast as on the B200 and costs more per
+     hour. Scores match the B200's with rare exceptions (1 of 248 check
+     prompts for the 27B, none for the 4B). The B200 path is that of 1.0,
+     but 1.1 has not yet been started on a B200.
    - **Prompts.** At most 262,144 tokens, the checkpoints' native range
      (`--max-model-len 32768` restores the 0.1 limit). Image 0.1 serves at
      most 32,768.

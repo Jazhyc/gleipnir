@@ -349,8 +349,13 @@ gain in cost.
     run by hand afterwards. Logs:
     `logs/runpod/release_serving/image11_b300/`; rows:
     `results/release_serving/image11/b300/`.
-- **Not yet done.** The B200 check of `1.1-rc1` (no B200 capacity at
-  16:46 UTC) and the `1.1` tag.
+- **Release.** `1.1` was tagged from `1.1-rc1` at 18:31 UTC, digest
+  `272f4a4d…` (anonymous pulls resolve it); `1.0` is unchanged at
+  `d85c1ffd…`. User decisions, 2026-11-16: the one differing 27B score is
+  acceptable, and the tag does not wait for the B200 check, for which
+  there was no B200 capacity from 16:46 UTC on. On a B200 the only new code
+  that runs is the `nvidia-smi` name query; the B200 check of `1.1` is
+  still to be run.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
