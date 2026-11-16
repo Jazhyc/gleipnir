@@ -581,6 +581,44 @@ On the 224 short prompts this lowers the median latency of a single request by a
 On the benchmark it changes neither the latency nor the throughput (Table~\ref{tab:serving-steps}).
 The 27B does not use it.
 
+\paragraph{Generation mode.}
+To measure what a rationale costs, we also served the two base models in generation mode with stock vLLM in BF16.
+The instruction is the variant of the full specification that asks for a written analysis and then a score from 0 to 10 (Appendix~\ref{app:prompts}).
+Thinking was disabled, decoding was greedy, and the only limit on the answer was 4,096 tokens.
+We used a second machine of the same type, on which stock vLLM in classification mode is within 3\% of the first: with one request at a time it answers the median trajectory in 91\,ms for the 4B and in 446\,ms for the 27B.
+Table~\ref{tab:serving-generation} gives the result.
+The base models write a mean of 391 tokens (4B) and 457 tokens (27B) for each trajectory.
+With one request at a time the 96 trajectories take 118\,s and 533\,s, against 11.3\,s and 54.2\,s in classification mode on the same machine.
+This is 10.4 and 9.8 times as long.
+The released serving stack needs 5.8\,s and 23.5\,s, so generation takes 20 and 23 times as long as the released stack.
+Concurrent requests help generation more than classification, because the server decodes one token for all requests in one step.
+Even at its highest throughput, generation is still 3.2 times (4B) and 3.4 times (27B) slower than the released stack with one request at a time, and the median request then waits 5\,s and 59\,s.
+The 4B did not stop before the limit of 4,096 tokens in 9 of its 2,016 requests, which leaves no score and slows down the pass.
+All three passes with 64 concurrent requests contain such a request, which is why the throughput of the 4B is lower there than with 32.
+The 27B returned a score for every request.
+
+\begin{table}[h]
+\caption{The base models in generation mode on the benchmark of 96 agent trajectories: they write a rationale and then a score from 0 to 10. Tokens/s counts prompt tokens, as in Table~\ref{tab:serving-steps}. p50 is the median latency over the requests of a pass, in milliseconds. Each figure is the median of three passes.}
+\label{tab:serving-generation}
+\centering
+\small
+\begin{tabular}{@{}rrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{Qwen3.5-4B} & \multicolumn{2}{c}{Qwen3.8-27B} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+Concurrent requests & Tokens/s & p50 (ms) & Tokens/s & p50 (ms) \\
+\midrule
+1 & 10,905 & 1,046 & 2,416 & 5,392 \\
+2 & 20,086 & 1,296 & 4,187 & 5,937 \\
+4 & 32,311 & 1,545 & 6,799 & 7,123 \\
+8 & 46,890 & 2,062 & 9,822 & 9,904 \\
+16 & 54,812 & 3,051 & 12,693 & 15,442 \\
+32 & 68,080 & 5,213 & 14,756 & 26,920 \\
+64 & 48,350 & 11,850 & 16,113 & 58,859 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Low-precision kernels}
 \label{app:serving-kernels}
 

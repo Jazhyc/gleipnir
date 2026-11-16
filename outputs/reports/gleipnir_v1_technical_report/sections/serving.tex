@@ -35,6 +35,7 @@ Decoding is limited by how fast the GPU can read memory, so it leaves most of th
 A Gleipnir monitor does not decode.
 It needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
 The price of a standard API does not reflect this, so we serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}, and we price it at the cost of the GPU.
+On the same GPU, the base models take about ten times as long for a trajectory when they write a rationale before the score (Appendix~\ref{app:serving-throughput}).
 
 We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching.
 This is how a monitor works that checks each action before it runs, and it gives the lowest latency.

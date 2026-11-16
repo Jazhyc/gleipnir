@@ -494,6 +494,16 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     (one request at a time; 8 concurrent for stock and the last row) and
     `agent03/c8/summary.json` (8 concurrent, other rows). Latencies are
     rounded to whole milliseconds.
+  - Generation mode (`tab:serving-generation`, the sentence in Section 4.1;
+    JF asked for it on 2026-11-16: thinking off, no rationale limit,
+    EU-RO-1): `results/serving_concurrency/generation01/` on Pod
+    `8v7naalpvfybi5`, README section "Generation mode of the base models".
+    Instruction `teacher_ordinal_reasoning.txt` (`f79026c9…`), which contains
+    `output_ordinal_reasoning.txt` and `ordinal_score_bands.txt`. Table
+    cells are medians of three passes; the p50 is that of the median pass.
+    Released-stack seconds = 1,193,325 / 204,673 and / 50,788. The
+    generation prompts have 1,286,829 tokens (longer instruction), so the
+    ratios compare seconds for the 96 trajectories, not tokens per second.
   - Table 1 (JF, 2026-11-16: lead with one request at a time and cost it
     that way): cost = hourly rate / (tokens per second x 3,600) x 10^6 with
     the one-request throughput of stock (103,266; 21,720), low precision
