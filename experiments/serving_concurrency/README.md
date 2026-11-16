@@ -423,8 +423,69 @@ tok/s and p50 ms at c8, then tok/s, p50 and p95 ms at c1:
 - 4B length sweep with graphs to 4,096 (`giga02`): 10.7, 10.6, 10.8, 14.5,
   22.5, 38.5, 73.2, 157.9, 375.5, 989.4 ms from 256 to 131,072 tokens;
   2.93 s at 262,144; 9.76 s and 36.3 s with YaRN.
-- Costs for the report's Table 1 use c8: 4B 120,284, 216,499, 231,065;
-  27B 22,950, 51,177, 53,408 tok/s.
+- Costs for the report's Table 1 use c1 (user, 2026-11-16): 4B 103,266,
+  160,069, 204,673; 27B 21,720, 46,717, 50,788 tok/s.
 
 Results and logs were pulled and checksum-verified
 (`agent03/manifest.sha256`).
+
+
+## Generation mode of the base models
+
+User request, 2026-11-16: what a monitor costs when the model writes a
+rationale and then a score, which is how the base models are prompted in the
+zero-shot comparison. Pod `8v7naalpvfybi5` (EU-RO-1, B200, EPYC 9555; a
+different machine from the benchmark Pods), 01:31–03:14 UTC, session
+`generation01`.
+
+- **Setup** (`generation.py`). Stock vLLM 0.31 `/v1/completions` on the base
+  checkpoints in BF16 (Qwen3.5-4B `851bf6e8…`, Qwen3.8-27B `1d4bf0f2…`), no
+  prefix caching. Prompt: `teacher_ordinal_reasoning.txt` (SHA256
+  `f79026c9…`), the trajectory, the chat template with thinking off (user).
+  Greedy decoding; no limit on the rationale beyond `max_tokens` 4,096
+  (user). The same 96 trajectories; the longer instruction makes them
+  1,286,829 prompt tokens (1,193,325 in classification mode). Three passes
+  at each of 1, 2, 4, 8, 16, 32 and 64 concurrent requests.
+- **Anchor.** Stock classification mode on this machine (`{4b,27b}_bf16`,
+  `run.py --step bf16 --agent --levels 1 8`): 4B 105,636 tok/s and 90.9 ms
+  at c1, 121,562 at c8; 27B 22,030 and 446 ms, 23,189. That is within 2.5%
+  of the benchmark Pod (103,266 / 94.4 ms; 21,720 / 452 ms), so the figures
+  below compare directly with the table above.
+
+Medians of three passes (`generation_{4b,27b}/summary.json`): seconds for
+the 96 trajectories, prompt tok/s, p50 and p95 latency in ms, generated
+tok/s.
+
+| Concurrent | 4B s | 4B tok/s | 4B p50; p95 | 4B out/s | 27B s | 27B tok/s | 27B p50; p95 | 27B out/s |
+|---:|---:|---:|---:|---:|---:|---:|---:|---:|
+| 1 | 118.0 | 10,905 | 1,046; 2,001 | 318 | 532.6 | 2,416 | 5,392; 9,084 | 82 |
+| 2 | 64.1 | 20,086 | 1,296; 2,195 | 544 | 307.3 | 4,187 | 5,937; 10,886 | 143 |
+| 4 | 39.8 | 32,311 | 1,545; 2,887 | 881 | 189.3 | 6,799 | 7,123; 12,512 | 234 |
+| 8 | 27.4 | 46,890 | 2,062; 4,131 | 1,258 | 131.0 | 9,822 | 9,904; 16,571 | 343 |
+| 16 | 23.5 | 54,812 | 3,051; 5,986 | 1,503 | 101.4 | 12,693 | 15,442; 28,305 | 447 |
+| 32 | 18.9 | 68,080 | 5,213; 10,202 | 1,876 | 87.2 | 14,756 | 26,920; 47,275 | 512 |
+| 64 | 26.6 | 48,350 | 11,850; 17,213 | 1,512 | 79.9 | 16,113 | 58,859; 73,590 | 560 |
+
+- **Rationale length.** 4B: mean 391 tokens at c1 (median 330, quartiles
+  263 and 408; 14 of 96 above 500). 27B: mean 457 (median 456, quartiles
+  367 and 532; 29 above 500, none above 1,000).
+- **One request at a time.** Generation takes 10.4 times (4B) and 9.8 times
+  (27B) as long as stock classification of the same trajectories on this
+  machine, and 20 and 23 times as long as the optimized Gleipnir stack
+  (5.83 s and 23.5 s for the 96 trajectories). At $7.99 per hour that is
+  $2.73 and $12.31 per 1,000 trajectories, against $0.13 and $0.54.
+- **Concurrency helps generation far more than classification**, because
+  decoding steps batch: the 4B is fastest at 32 (6.2 times its c1
+  throughput, p50 5.2 s) and the 27B still rises at 64 (6.7 times, p50
+  59 s). At its best level generation is still 3.2 times (4B) and 3.4
+  times (27B) slower than the optimized stack with one request at a time.
+- **Runaway answers.** The 4B looped until the 4,096-token limit on 9 of
+  2,016 requests (two trajectories; `bash_bench:a4a64502…` in 7), which
+  leaves no score. Those passes are slower: all three c64 passes contain
+  one, which is why c64 is below c32. The 27B never hit the limit and
+  always returned a score.
+- Greedy answers are identical between passes at c1 and differ across
+  concurrency levels (batch composition changes the logits slightly).
+
+Results and logs were pulled and checksum-verified
+(`generation01/pod.sha256`). `generation_try` is a 4B trial of the client.
