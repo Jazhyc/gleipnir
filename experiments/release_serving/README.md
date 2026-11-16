@@ -12,8 +12,9 @@ These are packaging releases: the weights are unchanged.
 - **No pre-quantized repo.** The optimized stack quantizes the BF16
   checkpoint online at load: NVFP4 MLP/GDN, FP8 attention projections and
   MXFP8 attention.
-- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 0.2;
-  0.1 is the earlier 32K build). It
+- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 1.0;
+  0.2 lacks the larger 4B graphs and tokenizes with Transformers, 0.1 is
+  the earlier 32K build). It
   is a frozen snapshot of the validated stack, not a redesign. It contains:
   - both serving runtimes and the native FA4, MXFP8 and Triton trees;
   - the receipts the integrity checks bind;
@@ -239,6 +240,53 @@ metrics move by about 0.001.
   - Logs: `logs/runpod/release_serving/image02_fresh/`.
 - **Release.** `0.2` was tagged from `0.2-rc1`, digest `ba602599…`; `0.1`
   is unchanged at `15673c65…`.
+
+## Image 1.0: larger 4B graphs and an effective Gigatoken (2026-11-16)
+
+User request. Both changes were measured in
+[serving_concurrency](../serving_concurrency/README.md).
+
+- **Changes** (release code only; runtimes, kernels and receipts are 0.2's).
+  - **4B CUDA graphs up to 4,096 tokens** (`targets.GRAPH_SIZES_4B`, added
+    to the recorded command by `serve.add_graphs`). Below 768 rows the
+    scores depend on whether a step's row count is a multiple of 32, so the
+    sizes from 257 to 768 are every multiple of 32 and the size below it;
+    scores at one request at a time then equal the recorded command's. The
+    27B keeps its recorded graphs to 2,048.
+  - **Gigatoken takes effect.** `gleipnir.serving.gigatoken` replaces
+    `BaseRenderer._encode`, which vLLM 0.31 never calls, so images 0.1 and
+    0.2 tokenized with Transformers. `tokenizer_hook/sitecustomize.py`
+    patches `_tokenize_prompt` to use the installed encoder; `serve.py`
+    puts it on `PYTHONPATH` and writes call counts to
+    `/tmp/gleipnir-release/<model>/tokenizer.json`.
+  - `--recorded-graphs` and `--transformers-tokenizer` give 0.2's
+    behaviour. `prepare()` adds neither change unless asked, so the serving
+    experiments still replay the recorded command.
+  - `image/identity.py` scores 248 synthetic prompts (330 to 7,170 tokens)
+    one at a time and compares two runs bit for bit.
+    `image/pod_fresh_check.sh` runs it for both models between the 0.2
+    behaviour and the default.
+- **Rebuild rule.** The switch at multiples of 32 was observed on this
+  software stack only and its kernel is not identified. Every rebuild must
+  pass `image/identity.py`; if it fails, re-derive the sizes or ship
+  `--recorded-graphs` as the default.
+- **Checks on EU-RO-1 B200 Pod `179xu9pmh64fxh`** (a container of 0.2 with
+  the new release code; `results/release_serving/image10/`).
+  - 4B identity, default against `--recorded-graphs
+    --transformers-tokenizer`, at 262K: 0 of 248 synthetic and 0 of 6,395
+    OOD prompts change. 27B identity (tokenizer only): 0 of 248.
+  - Smoke tests pass in the default and `--prefix-caching` modes of both
+    models (200,016-token prompt; 399K cached tokens hit).
+  - Tokenizer receipts: 6,001+ native calls, 0 Transformers calls (4B).
+  - 4B `validate.py`: ID 0.9096 and OOD 0.7705 (recorded 0.9117 and
+    0.7703); against the same host's 0.2-command pass of the day, MAE ratio
+    0.95 and 1.07 and correlation within 0.001, so the repeat-relative
+    gates pass (`4b_gate.json`). 231K and 227K tokens/s.
+  - The 27B's ID and OOD passes were not repeated: its command is
+    unchanged and its token IDs are identical.
+- **Build.** One layer with the changed files of this directory, appended
+  to `0.2` (digest `ba602599…`) with `crane` from the VPS
+  (`image/layer10.py`).
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
