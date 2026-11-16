@@ -594,28 +594,33 @@ This is 10.2 and 9.7 times as long.
 The released serving stack needs 5.8\,s and 23.5\,s, so generation takes 20 and 23 times as long as the released stack.
 Concurrent requests help generation more than classification, because the server decodes one token for all requests in one step.
 Even at its highest throughput, generation is still 3.2 times (4B) and 3.4 times (27B) slower than the released stack with one request at a time, and the median request then waits 5\,s and 59\,s.
+With one request at a time, generation on our own GPU costs more than the API price at both hourly rates.
+At the committed rate it costs less than the API price from 4 concurrent requests, where the median request waits 1.5\,s and 7.1\,s.
 The 4B did not stop before the limit of 4,096 tokens in 9 of its 2,016 requests, which leaves no score and slows down the pass.
 All three passes with 64 concurrent requests contain such a request, which is why the throughput of the 4B is lower there than with 32.
 The 27B returned a score for every request.
 
 \begin{table}[h]
-\caption{The base models in generation mode on the benchmark of 96 agent trajectories: they write a rationale and then a score from 0 to 10. Tokens/s counts prompt tokens, as in Table~\ref{tab:serving-steps}. p50 is the median latency over the requests of a pass, in milliseconds. Each figure is the median of three passes.}
+\caption{The base models in generation mode on the benchmark of 96 agent trajectories: they write a rationale and then a score from 0 to 10. Concurrent is the number of concurrent requests. Tokens/s counts prompt tokens, as in Table~\ref{tab:serving-steps}. p50 is the median latency over the requests of a pass, in milliseconds. Each figure is the median of three passes. The costs are in USD per million prompt tokens at the two hourly rates of Table~\ref{tab:serving}, and they include the time that the GPU spends on the rationale. The API price is the price for input tokens of Table~\ref{tab:serving}; an API charges for the generated tokens in addition, which we do not include.}
 \label{tab:serving-generation}
 \centering
 \small
-\begin{tabular}{@{}rrrrr@{}}
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}rrrrrrrrr@{}}
 \toprule
- & \multicolumn{2}{c}{Qwen3.5-4B} & \multicolumn{2}{c}{Qwen3.8-27B} \\
-\cmidrule(lr){2-3}\cmidrule(l){4-5}
-Concurrent requests & Tokens/s & p50 (ms) & Tokens/s & p50 (ms) \\
+ & \multicolumn{4}{c}{Qwen3.5-4B} & \multicolumn{4}{c}{Qwen3.8-27B} \\
+\cmidrule(lr){2-5}\cmidrule(l){6-9}
+Concurrent & Tokens/s & p50 (ms) & On demand & Committed & Tokens/s & p50 (ms) & On demand & Committed \\
 \midrule
-1 & 10,905 & 1,046 & 2,416 & 5,392 \\
-2 & 20,086 & 1,296 & 4,187 & 5,937 \\
-4 & 32,311 & 1,545 & 6,799 & 7,123 \\
-8 & 46,890 & 2,062 & 9,822 & 9,904 \\
-16 & 54,812 & 3,051 & 12,693 & 15,442 \\
-32 & 68,080 & 5,213 & 14,756 & 26,920 \\
-64 & 48,350 & 11,850 & 16,113 & 58,859 \\
+1 & 10,905 & 1,046 & 0.2035 & 0.0876 & 2,416 & 5,392 & 0.9186 & 0.3955 \\
+2 & 20,086 & 1,296 & 0.1105 & 0.0476 & 4,187 & 5,937 & 0.5300 & 0.2282 \\
+4 & 32,311 & 1,545 & 0.0687 & 0.0296 & 6,799 & 7,123 & 0.3264 & 0.1405 \\
+8 & 46,890 & 2,062 & 0.0473 & 0.0204 & 9,822 & 9,904 & 0.2260 & 0.0973 \\
+16 & 54,812 & 3,051 & 0.0405 & 0.0174 & 12,693 & 15,442 & 0.1749 & 0.0753 \\
+32 & 68,080 & 5,213 & 0.0326 & 0.0140 & 14,756 & 26,920 & 0.1504 & 0.0648 \\
+64 & 48,350 & 11,850 & 0.0459 & 0.0198 & 16,113 & 58,859 & 0.1377 & 0.0593 \\
+\midrule
+API price & --- & --- & --- & 0.0300 & --- & --- & --- & 0.1950 \\
 \bottomrule
 \end{tabular}
 \end{table}
