@@ -17,6 +17,24 @@ ROOT = Path(__file__).resolve().parents[2]
 RECORDED_CONTEXT = 32768
 CONTEXT_LIMIT = 262144
 
+# 4B CUDA graph sizes (image 1.0). vLLM pads a step to the next size.
+# - Up to 256: vLLM's defaults, which the recorded command already captured.
+# - 257 to 768: every multiple of 32 and the size one below it. Below 768
+#   rows the scores depend on whether the row count is a multiple of 32, so
+#   these sizes keep each padded step on its side of that switch and every
+#   score at one request at a time is bit-identical to the recorded command.
+# - Above: the 27B sizes to 2,048 (1,535 keeps the FP4 producer of 1,281 to
+#   1,535 rows) and four sizes to 4,096.
+# Measured in experiments/serving_concurrency (fast_g4096e). The switch at
+# multiples of 32 was observed on this software stack only: repeat the
+# bit-identity check at concurrency 1 on every rebuild.
+GRAPH_SIZES_4B = (
+    *(1, 2, 4),
+    *range(8, 257, 8),
+    *(n for k in range(9, 25) for n in (32 * k - 1, 32 * k)),
+    *(896, 1024, 1280, 1535, 1536, 1792, 2048, 2560, 3072, 3584, 4096),
+)
+
 
 @dataclass(frozen=True)
 class LongContext:
@@ -54,6 +72,9 @@ class Target:
     # Opt-in prefix caching: served worker -> its prefix-cached twin, whose
     # mixin masks the flag during the production audit. Empty: flags only.
     prefix_workers: dict[str, str] = field(default_factory=dict)
+    # CUDA graph capture sizes that the image adds to the recorded command.
+    # Empty: the recorded command already sets its sizes (27B, up to 2,048).
+    graph_sizes: tuple[int, ...] = ()
 
     @property
     def merged_path(self) -> Path:
@@ -108,6 +129,7 @@ TARGETS = {
                 "experiments.b200_prefix_replay.worker.PrefixReplayWorker"
             ),
         },
+        graph_sizes=GRAPH_SIZES_4B,
     ),
     "27b": Target(
         key="27b",

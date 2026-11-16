@@ -35,6 +35,8 @@ from experiments.release_serving.targets import (
 )
 
 STATE = Path("/tmp/gleipnir-release")
+GRAPHS = "--compilation-config"
+TOKENIZER_HOOK = Path(__file__).resolve().parent / "tokenizer_hook"
 PRISTINE = Path("/opt/gleipnir-release/sources-27b")
 COMPILE_RACE = "TYPE_UNSTABLE_JOIN"
 
@@ -110,13 +112,40 @@ def enable_prefix_caching(command: list[str], target: Target) -> None:
         command[index] = json.dumps(additional, sort_keys=True)
 
 
+def add_graphs(command: list[str], target: Target) -> None:
+    """Capture the target's larger CUDA graphs (scores stay bit-identical)."""
+    if not target.graph_sizes:
+        return
+    if GRAPHS in command:
+        raise ValueError("recorded command already sets a compilation config")
+    sizes = {"cudagraph_capture_sizes": list(target.graph_sizes)}
+    command += [GRAPHS, json.dumps(sizes)]
+
+
+def enable_native_tokenizer(env: dict, state: Path) -> None:
+    """Make the installed Gigatoken encoder effective on vLLM 0.31."""
+    env.update(
+        GLEIPNIR_TOKENIZER_HOOK="1",
+        GLEIPNIR_TOKENIZER_RECEIPT=str(state / "tokenizer.json"),
+        PYTHONPATH=f"{TOKENIZER_HOOK}:{env['PYTHONPATH']}",
+    )
+
+
 def prepare(
     target: Target,
     host: str,
     port: int,
     limit: int = CONTEXT_LIMIT,
     prefix_caching: bool = False,
+    graphs: bool = False,
+    native_tokenizer: bool = False,
 ) -> tuple[list[str], dict]:
+    """The recorded command and environment, plus the image's serving options.
+
+    ``graphs`` and ``native_tokenizer`` are what the image adds since 1.0;
+    without them (the default) the recorded command is replayed, which the
+    serving experiments rely on.
+    """
     from experiments.b200_vllm031.runtime import candidate_environment
     from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
     from gleipnir.serving.reference import selected_serving_default
@@ -160,6 +189,10 @@ def prepare(
     extend_context(command, env, target, limit)
     if prefix_caching:
         enable_prefix_caching(command, target)
+    if graphs:
+        add_graphs(command, target)
+    if native_tokenizer:
+        enable_native_tokenizer(env, state)
     return command, env
 
 
@@ -207,10 +240,26 @@ def main() -> None:
         "scores drift from uncached by up to about 0.15, so keep it off for "
         "evaluation",
     )
+    parser.add_argument(
+        "--recorded-graphs",
+        action="store_true",
+        help="keep the CUDA graph sizes of the recorded command (4B: up to 256)",
+    )
+    parser.add_argument(
+        "--transformers-tokenizer",
+        action="store_true",
+        help="tokenize with Transformers, as stock vLLM does, not Gigatoken",
+    )
     args = parser.parse_args()
     target = TARGETS[args.model]
     command, env = prepare(
-        target, args.host, args.port, args.max_model_len, args.prefix_caching
+        target,
+        args.host,
+        args.port,
+        args.max_model_len,
+        args.prefix_caching,
+        graphs=not args.recorded_graphs,
+        native_tokenizer=not args.transformers_tokenizer,
     )
     for attempt in range(1, args.attempts + 1):
         log_path = STATE / target.key / f"server.{attempt}.log"

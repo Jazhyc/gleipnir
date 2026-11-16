@@ -138,3 +138,34 @@ def test_prefix_caching_is_opt_in_flags_and_twin_worker(
     assert command[index + 1 : index + 3] == ["--mamba-cache-mode", "align"]
     served = command[command.index("--worker-cls") + 1]
     assert served == target.prefix_workers.get(worker, worker)
+
+
+def test_graphs_are_added_only_for_targets_that_name_sizes() -> None:
+    from experiments.release_serving.serve import GRAPHS, add_graphs
+
+    sizes = TARGETS["4b"].graph_sizes
+    assert len(sizes) == 78 and list(sizes) == sorted(set(sizes))
+    assert sizes[-1] == 4096 and {287, 288, 767, 768, 1535} <= set(sizes)
+    assert not [n for n in sizes if 256 < n < 768 and n % 32 not in (0, 31)]
+    command = ["python", "--port", "1"]
+    add_graphs(command, TARGETS["4b"])
+    assert command[:3] == ["python", "--port", "1"] and command[3] == GRAPHS
+    assert json.loads(command[4]) == {"cudagraph_capture_sizes": list(sizes)}
+    with pytest.raises(ValueError, match="already sets"):
+        add_graphs(command, TARGETS["4b"])
+    recorded = ["python", GRAPHS, "{}"]
+    add_graphs(recorded, TARGETS["27b"])
+    assert recorded == ["python", GRAPHS, "{}"]
+
+
+def test_native_tokenizer_puts_the_hook_first_on_the_path(tmp_path: Path) -> None:
+    from experiments.release_serving.serve import (
+        TOKENIZER_HOOK,
+        enable_native_tokenizer,
+    )
+
+    env = {"PYTHONPATH": "src:."}
+    enable_native_tokenizer(env, tmp_path)
+    assert env["PYTHONPATH"] == f"{TOKENIZER_HOOK}:src:."
+    assert env["GLEIPNIR_TOKENIZER_HOOK"] == "1"
+    assert (TOKENIZER_HOOK / "sitecustomize.py").is_file()
