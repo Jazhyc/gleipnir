@@ -58,12 +58,9 @@ run it:
    - **Overrides.** The classifier settings repeat inside `text_config`,
      because Qwen3.5/3.8 wrap the language model; `mamba_ssm_dtype` keeps
      the GDN state FP32.
-   - **Validated** on an RTX PRO 6000 against the recorded BF16 scores
-     (`cluster/slurm/release_stock_vllm.sh`). For the 4B: ID 0.9335 against
-     0.9332 and OOD 0.8045 against 0.8039, per-row MAE 0.004, 36K prompt
-     tokens/s. For the 27B (ID only): 0.9421 against 0.9420, per-row MAE
-     0.0014, 6.5K prompt tokens/s. Scores are reproducible to about 0.005
-     per row.
+   - **Reproducibility.** This recipe reproduces the recorded BF16 scores
+     to about 0.005 per row
+     ([check](experiments/release_serving/README.md)).
    - **Prefix caching** stays off, matching the evaluated setup.
 3. **Optimized B200 serving** (fastest; one NVIDIA B200 only). The image
    quantizes the BF16 checkpoint at load (FP8 attention projections, FP4
