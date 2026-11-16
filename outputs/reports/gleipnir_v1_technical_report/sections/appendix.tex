@@ -560,7 +560,7 @@ For the 4B we chose the sizes so that, with one request at a time, every score i
 \paragraph{Tokenizer.}
 vLLM turns each prompt into tokens on the CPU with the tokenizer of the Transformers library.
 For a prompt of more than 8,192 tokens this takes about 15\,ms.
-We replace it with Gigatoken\footnote{\url{https://github.com/marcelroed/gigatoken}}, which takes about 0.2\,ms.
+We replace it with Gigatoken~\citep{roed2026gigatoken}, which takes about 0.2\,ms.
 It returns the same tokens for every prompt of the benchmark, so the scores do not change.
 With one request at a time the median latency falls from 58\,ms to 48\,ms for the 4B and from 199\,ms to 192\,ms for the 27B (Table~\ref{tab:serving-steps}).
 With 8 concurrent requests the throughput does not change, because the CPU tokenizes a prompt while the GPU works on other requests.
