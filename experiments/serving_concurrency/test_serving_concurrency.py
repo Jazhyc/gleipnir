@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from experiments.serving_concurrency import lengths, run, summarize
+from experiments.serving_concurrency import generation, lengths, run, summarize
 
 
 def test_levels_sweep_only_at_both_ends():
@@ -118,3 +118,18 @@ def test_agent_only_keeps_tool_trajectories_in_order():
         {"id": 4, "dataset": "tool_trajectory/cot_red_handed"},
     ]
     assert [row["id"] for row in run.agent_only(rows)] == [1, 3]
+
+
+def test_rationale_prompt_swaps_only_the_instruction():
+    rendered = (
+        "<|im_start|>user\nold instruction\n\n<agent_trajectory>\n[USER]\nhi\n"
+        "</agent_trajectory><|im_end|>\n<|im_start|>assistant\n<think>\n\n"
+        "</think>\n\nPrediction:"
+    )
+    prompt = generation.rationale_prompt(rendered, "new instruction")
+    assert prompt.startswith("<|im_start|>user\nnew instruction\n\n<agent_trajectory>")
+    assert "old instruction" not in prompt and "Prediction:" not in prompt
+    assert prompt.endswith("</agent_trajectory>" + generation.SUFFIX)
+    with pytest.raises(ValueError):
+        generation.rationale_prompt(rendered + "x", "new")
+    assert generation.SCORE.search("analysis\nScore: 7").group(1) == "7"
