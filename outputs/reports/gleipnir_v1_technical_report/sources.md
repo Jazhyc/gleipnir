@@ -494,14 +494,20 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     (one request at a time; 8 concurrent for stock and the last row) and
     `agent03/c8/summary.json` (8 concurrent, other rows). Latencies are
     rounded to whole milliseconds.
-  - Table 1: cost = hourly rate / (tokens per second x 3,600) x 10^6 with
-    the 8-concurrent throughput of stock (120,284; 22,950), low precision
-    (216,499; 51,177) and the GDN host path row (231,065; 53,408). Gains:
-    3.78 and 4.68 against the API price; 1.80 and 2.23; 1.07 and 1.04;
-    totals 7.25 and 10.90. "Within 3%" of the OOD suite: the 4B scored the
-    OOD suite at 225,998 tokens per second (2.2% below 231,065). Section
-    4.3 gains: last-token 1.017 (4B) and 1.005 (27B); GDN host path 1.056
-    and 1.040.
+  - Table 1 (JF, 2026-11-16: lead with one request at a time and cost it
+    that way): cost = hourly rate / (tokens per second x 3,600) x 10^6 with
+    the one-request throughput of stock (103,266; 21,720), low precision
+    (160,069; 46,717) and the last row of `tab:serving-steps`, the released
+    stack with Gigatoken (204,673; 50,788). Gains: 3.24 and 4.43 against the
+    API price; 1.55 and 2.15; 1.28 and 1.09; totals 6.43 and 10.36. Section
+    4.3 gains at one request: last-token 1.014 and 1.006; GDN host path
+    1.095 and 1.041; tokenizer 1.176 and 1.046. "13% and 5% higher with 8
+    concurrent requests": 230,375 / 204,673 and 53,356 / 50,788; "about nine
+    times as long": 424 / 48 and 1,834 / 192 ms. The caption no longer says
+    that the last row agrees with the OOD-suite costs: those were measured
+    in batches of 128 (about 226K and 53K tokens per second) and are now
+    lower than Table 1. Open: the costs of `tab:ood-all` and the frontier
+    figures still use the batched throughput and are to be regenerated.
   - Figure: left panel from the sweeps in `agent03/summary.json`; right
     panel from `summary.json` (stock), `giga02` (4B released, graphs to
     4,096) and `giga01` (27B released). Concurrency paragraph: 424 and
