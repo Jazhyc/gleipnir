@@ -1061,7 +1061,8 @@ generation-mode measurement the user asked for EU-RO-1 hardware:
 `8v7naalpvfybi5` (`gleipnir-generation-mode`, $7.99/hour, B200
 `GPU-2ab4adcc…`, EPYC 9555, snapshot `.runpod/generation-mode.json`),
 allocated at 01:23 UTC on a different machine (`klzaw5yqymgh`) from the
-benchmark Pods. Check the live inventory for its state.
+benchmark Pods, and deleted at 03:22 UTC after the measurement finished and
+its results were collected (HTTP 204, lookup 404). No Pod remains.
 
 ## OpenRouter
 
