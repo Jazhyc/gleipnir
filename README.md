@@ -67,8 +67,11 @@ run it:
    - **Prefix caching** stays off, matching the evaluated setup.
 3. **Optimized B200 serving** (fastest; one NVIDIA B200 only). The image
    quantizes the BF16 checkpoint at load (FP8 attention projections, FP4
-   MLP/GDN, MXFP8 attention). One B200 scores about 226K prompt tokens/s
-   with the 4B and 54K with the 27B.
+   MLP/GDN, MXFP8 attention). With one request at a time, one B200 scores an
+   agent trajectory of about 10,000 tokens in 48 ms with the 4B (205K prompt
+   tokens/s) and in 192 ms with the 27B (51K). Sending 8 requests at once
+   raises the throughput to 230K and 53K and the latency about ninefold
+   ([measurements](experiments/serving_concurrency/README.md)).
 
    ```bash
    docker run --gpus all -p 8000:8000 \
