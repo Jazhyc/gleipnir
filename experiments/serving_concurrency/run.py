@@ -249,6 +249,7 @@ def run(
     ends: bool = False,
     gigatoken: bool = False,
     agent: bool = False,
+    only: tuple[int, ...] = (),
 ) -> None:
     from gleipnir.data.monitoring import write_json
     from gleipnir.serving import bf16_launch
@@ -256,7 +257,7 @@ def run(
     name = f"{model}_{step}" + ("_giga" if gigatoken else "")
     out = OUT / session / name
     out.mkdir(parents=True, exist_ok=False)
-    timed = levels(step, ends, AGENT_TOP if agent else 128)
+    timed = only or levels(step, ends, AGENT_TOP if agent else 128)
     command, env = prepare(model, step, out)
     if gigatoken:
         env = with_gigatoken(env, out)
@@ -306,6 +307,9 @@ def main() -> None:
     parser.add_argument(
         "--agent", action="store_true", help="time the agent trajectories only"
     )
+    parser.add_argument(
+        "--levels", type=int, nargs="+", default=[], help="time only these levels"
+    )
     args = parser.parse_args()
     if args.prepare_only:
         command, _ = prepare(args.model, args.step, OUT / "_prepare")
@@ -319,6 +323,7 @@ def main() -> None:
         args.ends,
         args.gigatoken,
         args.agent,
+        tuple(args.levels),
     )
 
 
