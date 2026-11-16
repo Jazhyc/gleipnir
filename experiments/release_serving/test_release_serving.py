@@ -169,3 +169,61 @@ def test_native_tokenizer_puts_the_hook_first_on_the_path(tmp_path: Path) -> Non
     assert env["PYTHONPATH"] == f"{TOKENIZER_HOOK}:src:."
     assert env["GLEIPNIR_TOKENIZER_HOOK"] == "1"
     assert (TOKENIZER_HOOK / "sitecustomize.py").is_file()
+
+
+def test_only_a_compatible_gpu_is_routed_through_the_hardware_hook() -> None:
+    from experiments.release_serving.serve import (
+        HARDWARE_HOOK,
+        enable_compatible_gpu,
+    )
+
+    for gpu in ("NVIDIA B200", "NVIDIA RTX PRO 6000"):
+        env = {"PYTHONPATH": "src:."}
+        assert not enable_compatible_gpu(env, gpu)
+        assert env == {"PYTHONPATH": "src:."}
+    env = {"PYTHONPATH": "hook:src:."}
+    assert enable_compatible_gpu(env, "NVIDIA B300 SXM6 AC")
+    assert env == {
+        "PYTHONPATH": f"{HARDWARE_HOOK}:hook:src:.",
+        "GLEIPNIR_GPU_ALIAS": "NVIDIA B200",
+        "GLEIPNIR_GPU_CAPABILITY": "10.0",
+    }
+
+
+def test_hardware_hook_aliases_the_gpu_and_runs_the_next_hook(tmp_path: Path) -> None:
+    import subprocess
+    import sys
+
+    from experiments.release_serving.serve import enable_compatible_gpu
+
+    (tmp_path / "torch").mkdir()
+    (tmp_path / "torch/__init__.py").write_text("")
+    (tmp_path / "torch/cuda.py").write_text(
+        "get_device_name = lambda d=None: 'NVIDIA B300 SXM6 AC'\n"
+        "get_device_capability = lambda d=None: (10, 3)"
+    )
+    (tmp_path / "gleipnir.py").write_text(
+        "import torch.cuda as c\ncapability = lambda: c.get_device_capability()"
+    )
+    (tmp_path / "next").mkdir()
+    (tmp_path / "next/sitecustomize.py").write_text("print('chained')")
+    env = {"PYTHONPATH": f"{tmp_path / 'next'}:{tmp_path}"}
+    enable_compatible_gpu(env, "NVIDIA B300 SXM6 AC")
+    code = (
+        "import torch.cuda as c, gleipnir as g;"
+        "print(c.get_device_name(), c.get_device_capability(), g.capability())"
+    )
+    result = subprocess.run(
+        [sys.executable, "-c", code], env=env, capture_output=True, text=True
+    )
+    assert result.stdout.splitlines() == ["chained", "NVIDIA B200 (10, 3) (10, 0)"]
+
+
+def test_attention_compile_uses_the_target_plan_and_limit() -> None:
+    from experiments.release_serving.serve import attention_compile_command
+
+    module = "experiments.release_serving.compile_attention"
+    small = attention_compile_command(TARGETS["4b"], 262144)
+    assert small[1:] == ["-m", module, "--length", "262144"]
+    large = attention_compile_command(TARGETS["27b"], 32768)
+    assert large[1:] == ["-m", module, "--length", "32768", "--heads", "24", "4"]

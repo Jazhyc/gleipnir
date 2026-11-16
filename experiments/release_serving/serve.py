@@ -4,6 +4,8 @@ Replays the recorded server command (same flags, workers, receipts and merged
 path) with the environment the recorded run used, then supervises the server
 in the foreground. The intermittent CuTeDSL MXFP8 compile race
 (``TYPE_UNSTABLE_JOIN``) is retried; any other startup failure is fatal.
+On a B300 the same stack runs through ``hardware_hook`` after the attention
+kernel is compiled outside the server (``compile_attention``).
 Run with the serving interpreter, ``PYTHONPATH=src:.``, from the repository.
 """
 
@@ -39,6 +41,14 @@ GRAPHS = "--compilation-config"
 TOKENIZER_HOOK = Path(__file__).resolve().parent / "tokenizer_hook"
 PRISTINE = Path("/opt/gleipnir-release/sources-27b")
 COMPILE_RACE = "TYPE_UNSTABLE_JOIN"
+HARDWARE_HOOK = Path(__file__).resolve().parent / "hardware_hook"
+# The GPU of the kernel receipts, and its compute capability.
+VALIDATED_GPU = ("NVIDIA B200", "10.0")
+# Other GPUs that run the validated kernels with identical scores.
+COMPATIBLE_GPUS = ("NVIDIA B300 SXM6 AC",)
+# Query and key/value heads of the targets whose attention plan is derived
+# from the model config.
+ATTENTION_HEADS = {"27b": (24, 4)}
 
 
 def scheduler_binding(selection: dict) -> dict:
@@ -129,6 +139,51 @@ def enable_native_tokenizer(env: dict, state: Path) -> None:
         GLEIPNIR_TOKENIZER_RECEIPT=str(state / "tokenizer.json"),
         PYTHONPATH=f"{TOKENIZER_HOOK}:{env['PYTHONPATH']}",
     )
+
+
+def gpu_name() -> str:
+    """Model name of the first GPU, without creating a CUDA context."""
+    query = ["nvidia-smi", "--query-gpu=name", "--format=csv,noheader"]
+    listing = subprocess.run(query, check=True, capture_output=True, text=True)
+    return listing.stdout.splitlines()[0].strip()
+
+
+def enable_compatible_gpu(env: dict, gpu: str) -> bool:
+    """Route a compatible GPU through ``hardware_hook``; True if it applies."""
+    if gpu not in COMPATIBLE_GPUS:
+        return False
+    env.update(
+        GLEIPNIR_GPU_ALIAS=VALIDATED_GPU[0],
+        GLEIPNIR_GPU_CAPABILITY=VALIDATED_GPU[1],
+        PYTHONPATH=f"{HARDWARE_HOOK}:{env['PYTHONPATH']}",
+    )
+    return True
+
+
+def attention_compile_command(target: Target, limit: int) -> list[str]:
+    module = "experiments.release_serving.compile_attention"
+    command = [sys.executable, "-m", module, "--length", str(limit)]
+    if target.key in ATTENTION_HEADS:
+        command += ["--heads", *map(str, ATTENTION_HEADS[target.key])]
+    return command
+
+
+def compile_attention(target: Target, env: dict, limit: int) -> None:
+    """Build the attention kernel for this GPU before the server needs it."""
+    log_path = STATE / target.key / "compile_attention.log"
+    started = time.perf_counter()
+    with log_path.open("w") as log:
+        code = subprocess.call(
+            attention_compile_command(target, limit),
+            cwd=ROOT,
+            env=env,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+        )
+    if code:
+        raise SystemExit(f"attention kernel compile failed ({code}); see {log_path}")
+    seconds = time.perf_counter() - started
+    print(f"gleipnir_serve_attention_compiled seconds={seconds:.0f}", flush=True)
 
 
 def prepare(
@@ -261,6 +316,10 @@ def main() -> None:
         graphs=not args.recorded_graphs,
         native_tokenizer=not args.transformers_tokenizer,
     )
+    gpu = gpu_name()
+    if enable_compatible_gpu(env, gpu):
+        print(f"gleipnir_serve_gpu {gpu} served as {VALIDATED_GPU[0]}", flush=True)
+        compile_attention(target, env, args.max_model_len)
     for attempt in range(1, args.attempts + 1):
         log_path = STATE / target.key / f"server.{attempt}.log"
         print(

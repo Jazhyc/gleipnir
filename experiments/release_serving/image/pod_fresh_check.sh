@@ -7,6 +7,8 @@
 #   require identical identity scores and a native tokenizer receipt;
 # - restart with --prefix-caching and smoke-test the cache.
 # No ID passes (user decision, 2026-10-21).
+# With REFERENCE=<directory of another Pod's rows>, the default-mode identity
+# scores must also equal its <model>_default.jsonl (B300 against B200).
 # Usage: pod_fresh_check.sh [4b] [27b]
 set -euo pipefail
 cd /workspace/gleipnir
@@ -40,6 +42,9 @@ for M in "${MODELS[@]}"; do
     fi
     if [ $MODE = default ]; then
       $PY -m experiments.release_serving.image.identity --output $L/${M}_default.jsonl --compare $L/${M}_recorded.jsonl | tail -1
+      if [ -n "${REFERENCE:-}" ]; then
+        $PY -m experiments.release_serving.image.identity --output $L/${M}_reference.jsonl --compare $REFERENCE/${M}_default.jsonl | tail -1
+      fi
       grep -q gigatoken_native /tmp/gleipnir-release/$M/tokenizer.json || { echo "NO_NATIVE_TOKENIZER $M"; exit 1; }
       cp /tmp/gleipnir-release/$M/tokenizer.json $L/${M}_tokenizer.json
     fi

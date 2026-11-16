@@ -308,6 +308,25 @@ User request. Both changes were measured in
   model cards under `model_releases/hf/` still name image 0.1 and are to
   be rewritten with the v1.0 model release.
 
+## Image 1.1: B300 support (2026-11-16)
+
+User decision, 2026-11-16: let the image run on a B300, for flexibility. The
+[B300 trial](../serving_concurrency/README.md) found identical scores and no
+gain in cost.
+
+- **What changes.** Only `serve.py`, and only when `nvidia-smi` names a GPU
+  in `COMPATIBLE_GPUS` (`NVIDIA B300 SXM6 AC`). On a B200 the command, the
+  environment and the start-up are those of 1.0.
+  - `hardware_hook` reports the receipts' `NVIDIA B200` as the GPU name, and
+    capability (10, 0) to callers in the `gleipnir` package, so the
+    hash-bound sources stay untouched.
+  - `compile_attention.py` builds the MXFP8 attention plan for the server's
+    context limit in a process of its own before the first server start.
+    The image ships that kernel compiled for the B200 only, and compiling
+    it inside the server on a cold cache fails with `TYPE_UNSTABLE_JOIN`.
+- **Other GPUs** are still refused by the receipts.
+- **Build.** One layer on `1.0` (digest `d85c1ffd…`), `image/layer11.py`.
+
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
 Public `-BF16` repositories at their release tags, served with the recipe in
