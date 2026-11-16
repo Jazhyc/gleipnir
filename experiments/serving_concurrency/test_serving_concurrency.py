@@ -133,3 +133,27 @@ def test_rationale_prompt_swaps_only_the_instruction():
     with pytest.raises(ValueError):
         generation.rationale_prompt(rendered + "x", "new")
     assert generation.SCORE.search("analysis\nScore: 7").group(1) == "7"
+
+
+def test_gpu_alias_hook_renames_the_gpu_and_runs_the_next_hook(tmp_path):
+    import subprocess
+    import sys
+    from pathlib import Path
+
+    from experiments.serving_concurrency.run import with_gpu_alias
+
+    (tmp_path / "torch").mkdir()
+    (tmp_path / "torch/__init__.py").write_text("")
+    (tmp_path / "torch/cuda.py").write_text("get_device_name = lambda d=None: 'real'")
+    (tmp_path / "next").mkdir()
+    (tmp_path / "next/sitecustomize.py").write_text("print('chained')")
+    path = f"{tmp_path / 'next'}:{tmp_path}"
+    env = with_gpu_alias({"PYTHONPATH": path}, "NVIDIA B200")
+    hook = Path(env["PYTHONPATH"].split(":")[0])
+    assert hook.name == "gpu_alias_hook" and (hook / "sitecustomize.py").is_file()
+    code = "import torch.cuda; print(torch.cuda.get_device_name())"
+    command = [sys.executable, "-c", code]
+    result = subprocess.run(
+        command, env=env, capture_output=True, text=True, check=True
+    )
+    assert result.stdout.splitlines() == ["chained", "NVIDIA B200"]

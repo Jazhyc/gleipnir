@@ -489,3 +489,28 @@ tok/s.
 
 Results and logs were pulled and checksum-verified
 (`generation01/pod.sha256`). `generation_try` is a 4B trial of the client.
+
+## B300 trial (planned)
+
+User request, 2026-11-16: see whether the optimized stack runs on a B300
+(SM103), which has more FP4 compute. Written before launch:
+
+- **Known blocker.** The workers compare `torch.cuda.get_device_name()` with
+  the GPU model in the hash-bound kernel receipts and refuse another model
+  ([2026-10-20 attempt](../optimized_gap/README.md)). `run.py --gpu-alias
+  "NVIDIA B200"` reports that name through `gpu_alias_hook` and changes
+  nothing else, so the bound sources stay untouched and a kernel that does
+  not run on SM103 still fails.
+- **Unknown.** Whether the kernels built for `sm_100a` and the checks on
+  compute capability (10, 0) hold on SM103.
+- **Conditions**, from image 1.0 on one B300 Pod, 96 agent trajectories at 1
+  and 8 concurrent requests: `bf16` for both monitors first (the baseline on
+  that host), then `fast_g4096e` (4B) and `fast` (27B) with `--gigatoken
+  --gpu-alias`. A B300 Pod is in another datacenter on another host, so
+  only the gain over `bf16` on the same Pod compares with the B200's.
+- **Scores.** `release_serving/image/identity.py --compare` against the
+  recorded B200 scores of the 248 synthetic prompts; report the largest and
+  mean difference.
+- **Stop.** After those conditions, or when a kernel fails in a way that
+  needs new kernel builds; then report before spending more.
+
