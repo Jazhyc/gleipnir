@@ -517,7 +517,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     4.2; JF, 2026-11-16: support is for flexibility, state that it brings no
     improvement): `experiments/serving_concurrency/README.md`, section "B300
     trial" (Pod `4sr7r26kfoc0z9`, results `b300_01`, `b300_03`, `b300_08`).
-    The trial ran at the recorded 32K context limit. Image support:
+    The trial ran at the recorded 32K context limit. The 248 synthetic
+    prompts and the one differing 27B score (0.560 against 0.617) are from
+    the fresh-Pod check of `1.1-rc1`. Image support:
     `experiments/release_serving/README.md`, section "Image 1.1".
   - Table 1 (JF, 2026-11-16: lead with one request at a time and cost it
     that way): cost = hourly rate / (tokens per second x 3,600) x 10^6 with

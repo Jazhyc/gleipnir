@@ -1074,6 +1074,16 @@ and `data/b200_inference_benchmark`, which the benchmark needs; both were
 copied over. It was deleted at 16:30 UTC after its results were collected
 (HTTP 204, lookup 404). No Pod remains.
 
+For the [image 1.1 check](../experiments/release_serving/README.md) (user
+authorization 2026-11-16: one B300 and one B200, each deleted after its
+check): B300 Pod `ef2mkaw6oa4orn` (`gleipnir-image11-b300`, EUR-IS-1,
+$8.99/hour, `GPU-da027ebc…`, Xeon 6740E, from `gleipnir-serve:1.1-rc1`,
+snapshot `.runpod/image11-b300.json`) was allocated at 16:46 UTC and
+terminated at 17:23 UTC after its logs were collected. `rest.runpod.io` did
+not resolve from the VPS at that time, so the termination went through the
+GraphQL API (`podTerminate`; `myself.pods` then empty). No B200 was
+available at 16:46 UTC; a retry every 20 minutes is running.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

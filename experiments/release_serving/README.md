@@ -325,7 +325,32 @@ gain in cost.
     The image ships that kernel compiled for the B200 only, and compiling
     it inside the server on a cold cache fails with `TYPE_UNSTABLE_JOIN`.
 - **Other GPUs** are still refused by the receipts.
-- **Build.** One layer on `1.0` (digest `d85c1ffd…`), `image/layer11.py`.
+- **Build.** One layer on `1.0` (digest `d85c1ffd…`), `image/layer11.py`;
+  pushed as `1.1-rc1` (digest `272f4a4d…`, layer 61 KB).
+- **Fresh-Pod check on a B300.** EUR-IS-1 Pod `ef2mkaw6oa4orn` (`NVIDIA B300
+  SXM6 AC`, Intel Xeon 6740E, driver 595.91.07, no volume) ran `1.1-rc1`
+  with `image/pod_fresh_check.sh` and `REFERENCE` set to the B200 rows of
+  the 1.0 check (`results/release_serving/image10/fresh/`).
+  - Every start went through the hook and the outside compile (4 to 10 s)
+    and was ready at the first attempt, at the 262,144-token limit: cold 4B
+    381 s and 27B 281 s with downloads, later starts 131 to 160 s.
+  - 4B: 0 of 248 synthetic scores differ from the B200's, and 0 between
+    the recorded and the default mode.
+  - 27B: 0 of 248 differ between the two modes on the B300, and **1 of 248
+    differs from the B200**: `synthetic-79` (2,072 tokens) has logits
+    (−1.891, −1.648) against (−2.188, −1.711), a score of 0.560 against
+    0.617. The B300 value repeats in three runs and the B200 value in four
+    runs on two hosts. Its neighbours at 2,046 and 2,098 tokens agree. The
+    cause is not known.
+  - Smoke tests (198 and 200,016 tokens, default and prefix modes, both
+    models) return the B200's scores exactly; the tokenizer receipts name
+    the native backend.
+  - The script stops at the first difference, so the 27B prefix mode was
+    run by hand afterwards. Logs:
+    `logs/runpod/release_serving/image11_b300/`; rows:
+    `results/release_serving/image11/b300/`.
+- **Not yet done.** The B200 check of `1.1-rc1` (no B200 capacity at
+  16:46 UTC) and the `1.1` tag.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

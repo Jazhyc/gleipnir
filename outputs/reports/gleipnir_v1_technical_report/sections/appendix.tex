@@ -632,6 +632,8 @@ We added this for flexibility: someone who has a B300 can use the image.
 It does not make serving cheaper.
 The B300 runs the kernels that we built for the B200, without changes.
 On the 96 agent trajectories of Appendix~\ref{app:serving-throughput}, sent one at a time, every score on the B300 is bit-for-bit the same as on the B200, for both monitors and for both stock vLLM and the released stack.
+On 248 synthetic prompts of 330 to 7,170 tokens, the released 4B also returns the same scores on both GPUs, and the released 27B differs on one prompt, by 0.06.
+We have not found the cause of this difference.
 
 Table~\ref{tab:serving-b300} compares the throughput.
 The B300 was a Runpod Pod in the datacenter US-WA-2 with an Intel Xeon 6787P CPU, so the two machines differ in more than the GPU.
