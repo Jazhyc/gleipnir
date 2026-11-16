@@ -501,6 +501,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     Instruction `teacher_ordinal_reasoning.txt` (`f79026c9…`), which contains
     `output_ordinal_reasoning.txt` and `ordinal_score_bands.txt`. Table
     cells are medians of three passes; the p50 is that of the median pass.
+    The run was on a second machine of the same type (EPYC 9555), which
+    the report does not mention (JF, 2026-11-16: the difference is small
+    against the size of the effect). Stock classification there took 11.3 s
+    and 54.2 s (90.9 and 446 ms), within 3% of the benchmark Pod; the report
+    compares with Table 13 instead: 1,193,325 / 103,266 = 11.6 s and
+    / 21,720 = 54.9 s, ratios 10.2 and 9.7.
     Released-stack seconds = 1,193,325 / 204,673 and / 50,788. The
     generation prompts have 1,286,829 tokens (longer instruction), so the
     ratios compare seconds for the 96 trajectories, not tokens per second.
