@@ -1071,7 +1071,8 @@ in EU-NL-1, EUR-IS-1 or unrestricted; a retry every 20 minutes allocated
 `GPU-ac47d51d…`, Xeon 6787P, image 1.0, snapshot `.runpod/b300-trial.json`)
 at 15:11 UTC on the second try. The image lacks `experiments/gleipnir4b_serving_ladder`
 and `data/b200_inference_benchmark`, which the benchmark needs; both were
-copied over. Check the live inventory for its state.
+copied over. It was deleted at 16:30 UTC after its results were collected
+(HTTP 204, lookup 404). No Pod remains.
 
 ## OpenRouter
 
