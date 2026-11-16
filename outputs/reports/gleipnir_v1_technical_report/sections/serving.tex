@@ -5,7 +5,7 @@ Table~\ref{tab:serving} follows the cost of running a monitor from a standard LL
 The subsections below describe one row each.
 
 \begin{table}[t]
-\caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a 320-trajectory benchmark, for one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 7.1$\times$ for the 4B and 10.8$\times$ for the 27B. The costs of the last row agree within 2\% with the costs measured on the OOD suite (Table~\ref{tab:ood-all}). Appendix~\ref{app:ablation-precision} gives the scores.}
+\caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a benchmark of 96 agent trajectories, for one fully used NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 7.3$\times$ for the 4B and 10.9$\times$ for the 27B. The costs of the last row agree within 3\% with the costs measured on the OOD suite (Table~\ref{tab:ood-all}). Appendix~\ref{app:ablation-precision} gives the scores.}
 \label{tab:serving}
 \centering
 \small
@@ -17,9 +17,9 @@ The subsections below describe one row each.
 Serving step & Gain & On demand & Committed & Gain & On demand & Committed \\
 \midrule
 API price & --- & --- & 0.0300 & --- & --- & 0.1950 \\
-Self-hosted vLLM, classification mode & 3.7$\times$ & 0.0187 & 0.0080 & 4.7$\times$ & 0.0961 & 0.0414 \\
-+ Low-precision arithmetic & 1.77$\times$ & 0.0105 & 0.0045 & 2.21$\times$ & 0.0435 & 0.0188 \\
-+ Removing unneeded work & 1.07$\times$ & 0.0098 & 0.0042 & 1.04$\times$ & 0.0418 & 0.0180 \\
+Self-hosted vLLM, classification mode & 3.8$\times$ & 0.0185 & 0.0079 & 4.7$\times$ & 0.0967 & 0.0416 \\
++ Low-precision arithmetic & 1.80$\times$ & 0.0103 & 0.0044 & 2.23$\times$ & 0.0434 & 0.0187 \\
++ Removing unneeded work & 1.07$\times$ & 0.0096 & 0.0041 & 1.04$\times$ & 0.0416 & 0.0179 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -34,12 +34,13 @@ A Gleipnir monitor does not decode.
 It needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
 The price of a standard API does not reflect this, so we serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}, and we price it at the cost of the GPU.
 
-We measure throughput on a benchmark of 320 trajectories, sent with 128 concurrent requests and without prefix caching.
+We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent with 8 concurrent requests and without prefix caching.
+More concurrent requests do not raise the throughput.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
 We convert throughput to cost with two hourly rates for one NVIDIA B200.
 The on-demand rate of \$7.99 is what we paid at Runpod.
 The committed-use rate of \$3.44 is the list price of CoreWeave for a B200 (\$8.60 per hour) with its largest published discount for committed use (60\%).
-With stock vLLM in BF16 at the committed rate, self-hosting costs 3.7 times less than the API price for the 4B and 4.7 times less for the 27B.
+With stock vLLM in BF16 at the committed rate, self-hosting costs 3.8 times less than the API price for the 4B and 4.7 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
 A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
 
@@ -58,7 +59,7 @@ We run the projections around attention in FP8, the other large projections in F
 These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
 For each projection we quantize both the weights and the activations.
 The state that the model stores between tokens and the two output logits keep their original precision.
-This step lowers the cost by 1.77 times for the 4B and by 2.21 times for the 27B.
+This step lowers the cost by 1.80 times for the 4B and by 2.23 times for the 27B.
 
 Lower precision changes the scores (Appendix~\ref{app:ablation-precision}).
 Without further training, the 4B loses 0.032 pAUROC@20 on the validation set and 0.053 on the OOD suite.
@@ -84,8 +85,8 @@ The final layer of both base models is a full-attention layer.
 vLLM computes its attention output for every token of the prompt, but the monitor reads the logits only at the last position (Equation~\ref{eq:score}), and no later layer uses the other positions.
 We therefore compute the attention of this layer for the last token alone.
 Its cost then grows linearly with the length of the prompt and no longer quadratically.
-On the benchmark this lowers the cost by 1.01$\times$ for the 4B, where the final layer is one of 8 full-attention layers.
-The gain is smaller for the 27B, where it is one of 16.
+On the benchmark this lowers the cost by 1.02$\times$ for the 4B, where the final layer is one of 8 full-attention layers.
+For the 27B, where it is one of 16, the gain is below 1.01$\times$.
 The gain grows with the length of the prompt: for a single request of one million tokens the 4B answers 10\% sooner.
 
 \paragraph{Shorter host path for the GDN layers.}
@@ -94,4 +95,4 @@ Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
 Much of it serves requests that continue from a stored recurrent state, as generation does after each new token.
 A monitor request always starts from an empty state and ends after the prefill.
 For such requests we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
-This lowers the cost by 1.06$\times$ for the 4B.
+This lowers the cost by 1.06$\times$ for the 4B and 1.04$\times$ for the 27B.

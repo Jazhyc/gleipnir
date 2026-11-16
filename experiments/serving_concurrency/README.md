@@ -365,3 +365,66 @@ of Gigatoken against the tokenizer of Transformers.
 
 All tokenizer results and logs were pulled and checksum-verified
 (`tokenizer02/manifest.sha256`, `giga01/manifest.sha256`).
+
+## Agent-trajectory benchmark (the report's benchmark)
+
+User decisions, 2026-11-15/16, same Pod, 22:06–00:21 UTC:
+
+- **Benchmark.** `full320` is a sample of the training mix: 224 of its
+  prompts are deception data or CoT Red-Handed (median 387 tokens), so its
+  median latency describes short single prompts. The report now uses the 96
+  multi-step agent trajectories (`run.py --agent`: BashArena 42, BashBench
+  22, STRIDE 20, Gloom 12; 1,193,325 tokens, mean 12,430, median 10,067,
+  quartiles 5,595 and 18,187, range 1,705–28,733), in the frozen order.
+  `agent01` (130 prompts, with CoT Red-Handed) and `agent02` (started while
+  an old server held the GPU; the launcher refused) hold nothing usable.
+- **Concurrency.** With 96 prompts the sweep stops at 64. Throughput
+  saturates at 8, which the report's table uses (user); intermediate steps
+  were timed at 64, 16 and 1 first and at 8 in `agent03/c8`.
+- **4B graphs up to 4,096** (`fast_g4096e`: the `e` sizes plus 2,560, 3,072,
+  3,584, 4,096; user, to remove the latency step at 4,096 tokens). Checked
+  first: ID and OOD at concurrency 1 are bit-identical to `fast`
+  (`parity4096`; 0 of 9,407 scores change, 1,443 rows are in the new
+  range). A 4,096-token prompt takes 22.5 ms against 26.3 ms.
+- **27B graphs up to 4,096** (`27b_fast_g4096_giga`): no gain (4,096
+  tokens 77.2 against 77.7 ms; benchmark c1 191.4 against 192.0 ms), so
+  the 27B stays at 2,048.
+
+Medians of three passes (`agent03/summary.json`, `agent03/c8/summary.json`);
+tok/s and p50 ms at c8, then tok/s, p50 and p95 ms at c1:
+
+| Condition | c8 | c1 |
+|---|---|---|
+| 4B `bf16` | 120,284; 816 | 103,266; 94.4; 268 |
+| 4B `quant` | 216,499; 450 | 160,069; 61.2; 168 |
+| 4B `quant_g4096e` | 216,286; 451 | 156,455; 63.9; 170 |
+| 4B `lastquery_g4096e` | 220,061; 443 | 158,629; 62.5; 168 |
+| 4B `route_g4096e` | 218,814; 448 | 158,908; 63.5; 167 |
+| 4B `fast_g4096e` | 231,065; 421 | 174,029; 57.8; 156 |
+| 4B `fast_g4096e_giga` | 230,375; 424 | 204,673; 48.0; 133 |
+| 27B `bf16` | 22,950; 4,271 | 21,720; 452; 1,288 |
+| 27B `quant_nograph` | 51,177; 1,910 | 46,717; 208; 606 |
+| 27B `quant` | 51,125; 1,913 | 46,354; 210; 607 |
+| 27B `lastquery` | 51,365; 1,908 | 46,641; 207; 614 |
+| 27B `fast` | 53,408; 1,831 | 48,535; 199; 581 |
+| 27B `fast_giga` | 53,356; 1,834 | 50,788; 192; 560 |
+
+- Graphs and the GDN route do not show on this benchmark (one prompt is
+  short enough for a graph). The 4B rungs with graphs to 2,048
+  (`*_g2048e`) agree with those to 4,096 within 2%.
+- Sweeps (tok/s, p50 ms) for c1, 2, 4, 8, 16, 32, 64: 4B
+  `fast_g4096e_giga` 204,673/48; 212,418/113; 224,844/207; 230,375/424;
+  230,205/846; 228,400/1,703; 230,317/2,671. 4B `bf16` 103,266/94;
+  114,597/210; 119,175/391; 120,284/816; 120,254/1,628; 119,992/3,258;
+  120,327/4,999. 27B `fast_giga` 50,788/192; 51,236/467; 52,769/887;
+  53,356/1,834; 53,373/3,681; 53,359/7,334; 53,298/11,234. 27B `bf16`
+  21,720/452; 22,296/1,064; 22,800/2,056; 22,950/4,271; 22,967/8,544;
+  22,964/17,067; 22,979/26,828.
+- 4B length sweep with graphs to 4,096 (`giga02`): 10.7, 10.6, 10.8, 14.5,
+  22.5, 38.5, 73.2, 157.9, 375.5, 989.4 ms from 256 to 131,072 tokens;
+  2.93 s at 262,144; 9.76 s and 36.3 s with YaRN.
+- Costs for the report's Table 1 use c8: 4B 120,284, 216,499, 231,065;
+  27B 22,950, 51,177, 53,408 tok/s.
+
+Results and logs were pulled and checksum-verified
+(`agent03/manifest.sha256`).

@@ -482,52 +482,48 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   inferred from the 4B attention layer indices 3, 7, ..., 31 and the 16/48
   split of the 27B.
 - Appendix E.1 (throughput and latency, `tab:serving-steps`,
-  `fig:serving-latency`), measured 2026-11-15 on Pod `nsw57y1tcxh9gw`
-  (EU-RO-1): `experiments/serving_concurrency/README.md` (Result),
-  `results/serving_concurrency/summary.json` (copied to
-  `assets/serving_latency.json`) and `environment.json`. Figure:
-  `python -m experiments.serving_concurrency.plot --output
-  assets/serving_latency.pdf` (and `.svg`). The 28 virtual cores and 283 GB
-  are the Pod's allotment (`RUNPOD_CPU_COUNT`, `RUNPOD_MEM_GB`); the host CPU
-  has 224 threads. Second session the same day on the same machine and GPU
-  (Pod `179xu9pmh64fxh`; README sections "Per-change breakdown and 4B graph
-  sweep" and "Diagnosis of the score change",
-  `results/serving_concurrency/breakdown01/summary.json`). Rows of
-  `tab:serving-steps`: 4B stock and low precision from the first session
-  (`4b_bf16`, `4b_quant`); 4B graphs, last-token and kernel-variant rows
-  from `4b_quant_g2048`, `4b_lastquery_g2048`, `4b_route_g2048` (graph
-  sizes in multiples of 32); 4B last row from
-  `breakdown01/sweep_e/summary.json` (`4b_fast_g2048e`, the layout with
-  bit-identical scores; its gain is 227,709 / 214,885). All 27B rows from
-  the second session (`27b_bf16`, `27b_quant_nograph`, `27b_quant`,
-  `27b_lastquery`, `27b_fast`). The "at most 2%" between sessions is the
-  largest difference of a repeated figure (27B released p50 at one request,
-  23.0 against 22.5 ms). Figure: the 4B released curve is `sweep_e`; the
-  other curves and the whole right panel are from the first session
-  (prompts from 4,096 tokens do not use the larger graphs). Concurrency 16
-  against 128: 4B 225,109 / 227,709 tokens/s, p50 282.7 against 2,158 ms;
-  27B 52,843 / 52,864, p50 1,199.6 against 9,553 ms; 4B peak 229,031 at
-  32. Bit-for-bit claim: `fast_g2048e` against `fast` at concurrency 1 on
-  3,012 ID, 6,395 OOD and 320 benchmark rows, 0 scores changed. Stock vLLM
-  with the same graphs: `4b_bf16_g2048` 15.0 ms, `27b_bf16_g2048` 36.7 ms.
-  Table 1 was not changed: its 27B gains (2.21x, 1.04x) are from the first
-  session, its 4B gains (1.77x, 1.07x) from the US-CA-2 ladder; here they
-  are 2.22x and 1.04x, and 1.76x and 1.09x (227,709 / 209,757). The released
-  image does not yet record the larger 4B graphs (JF, 2026-11-15: the
-  deployment stack will be updated).
-  Tokenizer (same Pod, README section "Tokenizer"): the "+ Gigatoken
-  tokenizer" rows, the released curves of both panels of the figure, the
-  concurrency figures (c16 281 and 1,197 ms; peaks 229,608 and 53,119) and
-  the prompt-length figures (2.94 and 10.75 s; 36.3 and 125.9 s) are from
-  `results/serving_concurrency/giga01/summary.json`. "About 5 ms" is the
-  server's count inside Transformers (9.1 s over 1,984 prompts for the 4B,
-  9.8 s for the 27B); 15 ms and 0.1 ms are the direct timing and the
-  server's Gigatoken count (0.19 s over 2,304 prompts). "Same tokens" was
-  checked on the 320 benchmark prompts, and scores at one request at a time
-  were identical in the matched comparison (`tokenizer02`). Until this
-  measurement the vLLM 0.31 stack tokenized with Transformers (the Gigatoken
-  patch was inert), so all other rows and the stock curves use Transformers.
-  The released image does not contain a working Gigatoken hook yet.
+  `fig:serving-latency`) and Table 1, measured 2026-11-15/16 on Pod
+  `179xu9pmh64fxh` (EU-RO-1; the stock BF16 length sweeps on Pod
+  `nsw57y1tcxh9gw`, the same machine and GPU):
+  `experiments/serving_concurrency/README.md`. The 28 virtual cores and
+  283 GB are the Pod's allotment; the host CPU has 224 threads.
+  - Benchmark: the 96 agent trajectories (README section "Agent-trajectory
+    benchmark"); JF removed the deception data and CoT Red-Handed on
+    2026-11-15 and chose 8 concurrent requests.
+  - `tab:serving-steps`: `results/serving_concurrency/agent03/summary.json`
+    (one request at a time; 8 concurrent for stock and the last row) and
+    `agent03/c8/summary.json` (8 concurrent, other rows). Latencies are
+    rounded to whole milliseconds.
+  - Table 1: cost = hourly rate / (tokens per second x 3,600) x 10^6 with
+    the 8-concurrent throughput of stock (120,284; 22,950), low precision
+    (216,499; 51,177) and the GDN host path row (231,065; 53,408). Gains:
+    3.78 and 4.68 against the API price; 1.80 and 2.23; 1.07 and 1.04;
+    totals 7.25 and 10.90. "Within 3%" of the OOD suite: the 4B scored the
+    OOD suite at 225,998 tokens per second (2.2% below 231,065). Section
+    4.3 gains: last-token 1.017 (4B) and 1.005 (27B); GDN host path 1.056
+    and 1.040.
+  - Figure: left panel from the sweeps in `agent03/summary.json`; right
+    panel from `summary.json` (stock), `giga02` (4B released, graphs to
+    4,096) and `giga01` (27B released). Concurrency paragraph: 424 and
+    1,834 ms at 8; 2,671 and 11,234 ms at 64; peaks 230,375 (c8), 53,373
+    (c16), 120,327 and 22,979 (c64).
+  - CUDA graphs paragraph: the 224 short prompts are the rest of the old
+    320-prompt benchmark (median 387 tokens); medians at one request from
+    the stored rows of `4b_bf16` 18.2, `4b_quant` 33.5,
+    `breakdown01/4b_quant_g2048` 14.9 ms and `breakdown01/27b_bf16` 30.2,
+    `27b_quant_nograph` 58.1, `27b_quant` 22.2 ms. 26 to 23 ms at 4,096
+    tokens: 26.3 (`giga01`) and 22.5 ms (`giga02`). 27B: 77.7 against 77.2
+    ms. Bit-for-bit claim: `parity4096` (ID and OOD, 0 of 9,407 scores
+    change against `fast`).
+  - GDN kernel variant: about 2 ms on the 224 short prompts
+    (`breakdown01/4b_lastquery_g2048` 14.9 to `4b_route_g2048` 13.0 ms).
+  - Tokenizer: 15.3 and 0.2 ms are the direct timing for prompts above
+    8,192 tokens; identical IDs on all 320 prompts of the old benchmark,
+    which contain these 96. Until this measurement the vLLM 0.31 stack
+    tokenized with Transformers (the Gigatoken patch was inert).
+  - The released image has neither the larger 4B graphs nor a working
+    Gigatoken hook yet (JF, 2026-11-15: the deployment stack will be
+    updated).
   Benchmark prompt lengths (320 rows, 1,310,581 tokens, the same prompts for
   both models): mean 4,096, median 503.5, quartiles 311 and 4,499, 95th
   percentile 21,564, range 188 to 28,733; from `prompt_tokens` in

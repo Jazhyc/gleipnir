@@ -19,7 +19,7 @@ SUMMARY = ROOT / "results/serving_concurrency/summary.json"
 OUTPUT = ROOT / "figures/serving_latency.pdf"
 MODELS = {"4b": ("Gleipnir 4B", "#E45756"), "27b": ("Gleipnir 27B", "#4C78A8")}
 STACKS = {"fast": ("Released stack", "-"), "bf16": ("Stock vLLM, BF16", "--")}
-LABELLED = (1, 16, 128)  # concurrency levels written next to their points
+LABELLED = (1, 8, 64)  # concurrency levels written next to their points
 NATIVE = 262144
 SHORTEST = 256
 
@@ -118,10 +118,10 @@ def plot(summary: dict, output: Path) -> None:
     left.set_xticks([20, 50, 100, 200], labels=["20", "50", "100", "200"])
     left.minorticks_off()
     left.set_yscale("log")
-    left.set_ylim(bottom=6)  # room for the label below the lowest point
+    left.set_ylim(bottom=left.get_ylim()[0] * 0.6)  # room for the lowest label
     left.set_xlabel("Prompt tokens per second (thousands)")
     left.set_ylabel("Median latency (ms)")
-    left.set_title("Throughput saturates near 16 requests", fontsize=9)
+    left.set_title("Throughput saturates near 8 requests", fontsize=9)
     right.set_xscale("log", base=2)
     right.set_xlim(right=right.get_xlim()[1] * 4)  # room for the labels
     right.set_yscale("log")

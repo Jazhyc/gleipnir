@@ -484,48 +484,48 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \subsection{Serving throughput and latency}
 \label{app:serving-throughput}
 
-We measured every serving step of both monitors again in one session on one machine, because latency depends on the host.
+We measured every serving step of both monitors on one machine, because latency depends on the host.
 Table~\ref{tab:serving-steps} gives the result for each step, and Figure~\ref{fig:serving-latency} shows how latency changes with the number of concurrent requests and with the length of the prompt.
 
 \paragraph{Environment.}
 The machine was a Runpod Pod in the datacenter EU-RO-1 with one NVIDIA B200 (183\,GB, driver 595.91.07), an AMD EPYC 9555 CPU with 28 virtual cores, and 283\,GB of memory.
 The software was Ubuntu 24.04 with Python 3.12, vLLM 0.31.0, PyTorch 2.13.0, cuDNN 9.20.0, the cuDNN frontend 1.31.0 and the CUTLASS DSL 4.8.0.
-The prompts of the benchmark have very different lengths: the mean is 4,096 tokens and the median is 504, 5\% of the prompts are longer than 21,564 tokens, and the longest has 28,733.
+The benchmark consists of 96 agent trajectories from four of our training sources: BashArena, BashBench, STRIDE and Gloom.
+Their mean length is 12,430 tokens and their median 10,067; the shortest has 1,705 tokens and the longest 28,733.
 The client ran on the same machine and kept a fixed number of requests in flight, the concurrency: when one request returned, it sent the next.
 With a concurrency of 1 the server therefore handles one request at a time.
 Latency is the time that the client waits for a score, so it includes HTTP, tokenization and waiting in the queue of the server.
 Each step ran in a new server, and each figure is the median of three passes after a warmup.
-The measurements come from two sessions on this machine, and figures that we measured in both differ by at most 2\%.
-Table~\ref{tab:serving} comes from earlier measurements, for the 4B on another host and without the larger CUDA graphs, so its gains differ from the gains here by up to 0.02.
+Table~\ref{tab:serving} takes its throughput from the column for 8 concurrent requests.
 
 \begin{table}[h]
-\caption{Prompt tokens per second and request latency after each serving step on the 320-trajectory benchmark. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile of the latency over the requests of a pass, in milliseconds.}
+\caption{Prompt tokens per second and request latency after each serving step on the benchmark of 96 agent trajectories. Gain is the factor by which throughput rises from the row above. p50 and p95 are the median and the 95th percentile of the latency over the requests of a pass, in milliseconds.}
 \label{tab:serving-steps}
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lrrrrrr@{}}
 \toprule
- & \multicolumn{3}{c}{128 concurrent requests} & \multicolumn{3}{c}{One request at a time} \\
+ & \multicolumn{3}{c}{8 concurrent requests} & \multicolumn{3}{c}{One request at a time} \\
 \cmidrule(lr){2-4}\cmidrule(l){5-7}
 Serving step & Tokens/s & Gain & p50 (ms) & Tokens/s & p50 (ms) & p95 (ms) \\
 \midrule
 \multicolumn{7}{@{}l}{\textit{Gleipnir 4B}} \\
-Stock vLLM, BF16 & 119,329 & --- & 4,114 & 84,885 & 18.8 & 205 \\
-+ Low-precision arithmetic & 209,757 & 1.76$\times$ & 2,330 & 88,052 & 34.2 & 136 \\
-+ CUDA graphs up to 2,048 tokens & 212,456 & 1.01$\times$ & 2,315 & 120,927 & 15.3 & 128 \\
-+ Last-token attention & 215,660 & 1.02$\times$ & 2,254 & 122,209 & 15.3 & 125 \\
-+ GDN kernel variant & 214,885 & 1.00$\times$ & 2,251 & 126,641 & 13.4 & 130 \\
-+ Shorter GDN host path & 227,709 & 1.06$\times$ & 2,158 & 137,790 & 11.5 & 118 \\
-+ Gigatoken tokenizer & 227,509 & 1.00$\times$ & 2,230 & 161,699 & 10.4 & 98 \\
+Stock vLLM, BF16 & 120,284 & --- & 816 & 103,266 & 94 & 268 \\
++ Low-precision arithmetic & 216,499 & 1.80$\times$ & 450 & 160,069 & 61 & 168 \\
++ CUDA graphs up to 4,096 tokens & 216,286 & 1.00$\times$ & 451 & 156,455 & 64 & 170 \\
++ Last-token attention & 220,061 & 1.02$\times$ & 443 & 158,629 & 63 & 168 \\
++ GDN kernel variant & 218,814 & 0.99$\times$ & 448 & 158,908 & 64 & 167 \\
++ Shorter GDN host path & 231,065 & 1.06$\times$ & 421 & 174,029 & 58 & 156 \\
++ Gigatoken tokenizer & 230,375 & 1.00$\times$ & 424 & 204,673 & 48 & 133 \\
 \addlinespace
 \multicolumn{7}{@{}l}{\textit{Gleipnir 27B}} \\
-Stock vLLM, BF16 & 22,924 & --- & 21,506 & 21,007 & 34.4 & 988 \\
-+ Low-precision arithmetic & 50,849 & 2.22$\times$ & 9,800 & 35,537 & 58.6 & 458 \\
-+ CUDA graphs up to 2,048 tokens & 50,682 & 1.00$\times$ & 9,966 & 42,275 & 24.0 & 461 \\
-+ Last-token attention & 50,981 & 1.01$\times$ & 9,726 & 42,093 & 24.7 & 462 \\
-+ Shorter GDN host path & 52,922 & 1.04$\times$ & 9,525 & 44,660 & 22.5 & 443 \\
-+ Gigatoken tokenizer & 52,957 & 1.00$\times$ & 9,362 & 46,728 & 21.3 & 421 \\
+Stock vLLM, BF16 & 22,950 & --- & 4,271 & 21,720 & 452 & 1,288 \\
++ Low-precision arithmetic & 51,177 & 2.23$\times$ & 1,910 & 46,717 & 208 & 606 \\
++ CUDA graphs up to 2,048 tokens & 51,125 & 1.00$\times$ & 1,913 & 46,354 & 210 & 607 \\
++ Last-token attention & 51,365 & 1.00$\times$ & 1,908 & 46,641 & 207 & 614 \\
++ Shorter GDN host path & 53,408 & 1.04$\times$ & 1,831 & 48,535 & 199 & 581 \\
++ Gigatoken tokenizer & 53,356 & 1.00$\times$ & 1,834 & 50,788 & 192 & 560 \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -533,40 +533,41 @@ Stock vLLM, BF16 & 22,924 & --- & 21,506 & 21,007 & 34.4 & 988 \\
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{serving_latency}
-\caption{Latency of the released serving stack and of stock vLLM in BF16. Left: median latency against throughput on the benchmark, with one point for each number of concurrent requests from 1 to 128 (labels). Right: latency of a single request against the length of its prompt. The labels give how many times faster the released stack answers at 1,048,576 tokens. To the right of the dotted line the prompt is longer than the 262,144 positions of the base models and the server uses YaRN.}
+\caption{Latency of the released serving stack and of stock vLLM in BF16. Left: median latency against throughput on the benchmark, with one point for each number of concurrent requests from 1 to 64 (labels). Right: latency of a single request against the length of its prompt. The labels give how many times faster the released stack answers at 1,048,576 tokens. To the right of the dotted line the prompt is longer than the 262,144 positions of the base models and the server uses YaRN.}
 \label{fig:serving-latency}
 \end{figure}
 
 \paragraph{Concurrency.}
-Throughput rises with the number of concurrent requests up to about 16 and stays constant above it (Figure~\ref{fig:serving-latency}, left).
+Throughput rises with the number of concurrent requests up to about 8 and stays constant above it (Figure~\ref{fig:serving-latency}, left).
 Above this point more concurrent requests only wait longer.
-With 16 concurrent requests the released stack reaches 99\% of its throughput at 128, and the median request waits 281\,ms for the 4B and 1,197\,ms for the 27B, about eight times less than with 128.
-The released stack reaches at most 229,608 tokens per second for the 4B and 53,119 for the 27B, against 119,700 and 22,957 for stock vLLM.
-With one request at a time the 4B answers the median request in 10\,ms and the 27B in 21\,ms.
+With 8 concurrent requests the median request waits 424\,ms for the 4B and 1,834\,ms for the 27B.
+With 64 it waits 2,671\,ms and 11,234\,ms, for the same throughput.
+The released stack reaches at most 230,375 tokens per second for the 4B and 53,373 for the 27B, against 120,327 and 22,979 for stock vLLM.
+With one request at a time the 4B answers the median request in 48\,ms and the 27B in 192\,ms, against 94\,ms and 452\,ms for stock vLLM.
 
 \paragraph{CUDA graphs.}
 vLLM records the GPU kernels of a step once as a CUDA graph and then starts them all with one call, which saves time on the CPU.
 By default it records graphs only for steps of up to 256 tokens.
-The low-precision path starts more kernels for each layer than BF16, so without larger graphs it answers a single short request more slowly than stock vLLM: the median latency rises from 18.8\,ms to 34.2\,ms for the 4B and from 34.4\,ms to 58.6\,ms for the 27B (Table~\ref{tab:serving-steps}).
-We therefore record graphs for steps of up to 2,048 tokens.
-The median latency then falls to 15.3\,ms and 24.0\,ms.
-The throughput with 128 concurrent requests does not change, because its steps are much longer than 2,048 tokens.
+The low-precision path starts more kernels for each layer than BF16, so without larger graphs it answers a single short request more slowly than stock vLLM.
+We measured this on 224 short prompts from our training data, with a median length of 387 tokens: the median latency rose from 18\,ms to 34\,ms for the 4B and from 30\,ms to 58\,ms for the 27B.
+We therefore record larger graphs.
+With graphs for steps of up to 2,048 tokens, the median latency on these prompts fell to 15\,ms and 22\,ms.
+For the 4B we record graphs up to 4,096 tokens, which lowers the latency of a prompt of 4,096 tokens from 26\,ms to 23\,ms; the 27B gains nothing above 2,048 tokens.
+The trajectories of the benchmark are longer than the graphs, so this step changes nothing in Table~\ref{tab:serving-steps}.
 A graph has a fixed size, and vLLM pads a step to the next recorded size.
 For the 4B we chose the sizes so that, with one request at a time, every score is bit-for-bit the same as without the larger graphs.
-Stock vLLM with the same graphs has a median latency of 15.0\,ms for the 4B and 36.7\,ms for the 27B.
 
 \paragraph{Tokenizer.}
 vLLM turns each prompt into tokens on the CPU with the tokenizer of the Transformers library.
-For the prompts of the benchmark this takes about 5\,ms on average and 15\,ms for a prompt of more than 8,192 tokens.
-We replace it with Gigatoken\footnote{\url{https://github.com/marcelroed/gigatoken}}, which takes about 0.1\,ms.
+For a prompt of more than 8,192 tokens this takes about 15\,ms.
+We replace it with Gigatoken\footnote{\url{https://github.com/marcelroed/gigatoken}}, which takes about 0.2\,ms.
 It returns the same tokens for every prompt of the benchmark, so the scores do not change.
-With one request at a time the throughput rises from 137,790 to 161,699 tokens per second for the 4B and from 44,660 to 46,728 for the 27B (Table~\ref{tab:serving-steps}).
-The gain is larger for the 4B because the time saved is the same and the 4B spends less time on the GPU.
-With 128 concurrent requests the throughput does not change, because the CPU tokenizes a prompt while the GPU works on other requests.
+With one request at a time the median latency falls from 58\,ms to 48\,ms for the 4B and from 199\,ms to 192\,ms for the 27B (Table~\ref{tab:serving-steps}).
+With 8 concurrent requests the throughput does not change, because the CPU tokenizes a prompt while the GPU works on other requests.
 
 \paragraph{Prompt length.}
 We sent single requests with synthetic prompts of 256 to 1,048,576 tokens (Figure~\ref{fig:serving-latency}, right).
-Up to 1,024 tokens the released 4B answers in about 10\,ms, and the released 27B in 17\,ms to 26\,ms.
+Up to 1,024 tokens the released 4B answers in about 11\,ms, and the released 27B in 17\,ms to 26\,ms.
 At 262,144 tokens the released stack answers in 2.9\,s for the 4B and in 10.8\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
 At 1,048,576 tokens the released stack answers in 36\,s for the 4B and in 126\,s for the 27B, against 90\,s and 297\,s.
@@ -576,7 +577,8 @@ We did not train or validate the monitors with YaRN, so these figures show only 
 The serving stack of the 4B contains one more change that Section~\ref{sec:serving-work} does not describe.
 The GDN kernel has a variant that splits one long sequence into parallel parts, and the library selects it for every single request.
 Below 8,192 tokens this variant is slower, so we select the standard variant there.
-This lowers the median latency of a single request by about 2\,ms and leaves the throughput of the benchmark unchanged (Table~\ref{tab:serving-steps}).
+On the 224 short prompts this lowers the median latency of a single request by about 2\,ms.
+On the benchmark it changes neither the latency nor the throughput (Table~\ref{tab:serving-steps}).
 The last row of Table~\ref{tab:serving} includes it for the 4B.
 The 27B does not use it.
 
