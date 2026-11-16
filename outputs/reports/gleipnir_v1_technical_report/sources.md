@@ -513,6 +513,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     Released-stack seconds = 1,193,325 / 204,673 and / 50,788. The
     generation prompts have 1,286,829 tokens (longer instruction), so the
     ratios compare seconds for the 96 trajectories, not tokens per second.
+  - B300 (`app:serving-b300`, `tab:serving-b300`, the sentence in Section
+    4.2; JF, 2026-11-16: support is for flexibility, state that it brings no
+    improvement): `experiments/serving_concurrency/README.md`, section "B300
+    trial" (Pod `4sr7r26kfoc0z9`, results `b300_01`, `b300_03`, `b300_08`).
+    The trial ran at the recorded 32K context limit. Image support:
+    `experiments/release_serving/README.md`, section "Image 1.1".
   - Table 1 (JF, 2026-11-16: lead with one request at a time and cost it
     that way): cost = hourly rate / (tokens per second x 3,600) x 10^6 with
     the one-request throughput of stock (103,266; 21,720), low precision

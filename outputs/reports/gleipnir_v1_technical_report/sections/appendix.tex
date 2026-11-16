@@ -624,6 +624,45 @@ API price & --- & --- & 0.0300 & --- & --- & 0.1950 \\
 \end{tabular}
 \end{table}
 
+\subsection{Serving on a B300}
+\label{app:serving-b300}
+
+The serving image also accepts the NVIDIA B300, which has more memory than the B200 (275\,GB against 183\,GB) and more FP4 compute.
+We added this for flexibility: someone who has a B300 can use the image.
+It does not make serving cheaper.
+The B300 runs the kernels that we built for the B200, without changes.
+On the 96 agent trajectories of Appendix~\ref{app:serving-throughput}, sent one at a time, every score on the B300 is bit-for-bit the same as on the B200, for both monitors and for both stock vLLM and the released stack.
+
+Table~\ref{tab:serving-b300} compares the throughput.
+The B300 was a Runpod Pod in the datacenter US-WA-2 with an Intel Xeon 6787P CPU, so the two machines differ in more than the GPU.
+With 8 concurrent requests the released stack processes 12\% more tokens per second on the B300 for both monitors.
+With one request at a time, the released 27B is 9\% faster on the B300 and the released 4B is 7\% slower, which is the case that depends most on the CPU.
+Stock vLLM in BF16 is 2\% to 9\% faster on the B300, so most of the difference does not come from the low-precision kernels.
+The B300 cost \$8.99 per hour on demand against \$7.99 for the B200, which is 12.5\% more, so the cost of a token is not lower in any of the four cases.
+We did not tune the FP4 kernels for the B300; they use the tile sizes that we selected on the B200.
+
+\begin{table}[h]
+\caption{Prompt tokens per second on one B300 and on one B200, on the benchmark of 96 agent trajectories. Each figure is the median of three passes. The B200 figures are those of Table~\ref{tab:serving-steps}.}
+\label{tab:serving-b300}
+\centering
+\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+ & \multicolumn{2}{c}{One request at a time} & \multicolumn{2}{c}{8 concurrent requests} \\
+\cmidrule(lr){2-3}\cmidrule(l){4-5}
+ & B300 & B200 & B300 & B200 \\
+\midrule
+\multicolumn{5}{@{}l}{\textit{Gleipnir 4B}} \\
+Stock vLLM, BF16 & 104,997 & 103,266 & 130,982 & 120,284 \\
+Released stack & 191,239 & 204,673 & 257,632 & 230,375 \\
+\addlinespace
+\multicolumn{5}{@{}l}{\textit{Gleipnir 27B}} \\
+Stock vLLM, BF16 & 23,117 & 21,720 & 24,727 & 22,950 \\
+Released stack & 55,125 & 50,788 & 59,606 & 53,356 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \subsection{Low-precision kernels}
 \label{app:serving-kernels}
 
