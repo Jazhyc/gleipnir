@@ -1,10 +1,8 @@
 \section{Serving and cost}
 \label{sec:serving}
 
-Table~\ref{tab:serving} follows the cost of running a monitor from a standard LLM API to the released serving stack.
-The subsections below describe one row each.
-The serving stack is an endpoint for one GPU that receives a prompt and returns a score.
-Distributing requests over several GPUs is left to the deployment.
+Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to the released serving stack, and the subsections below describe one row each.
+The stack is an endpoint for one GPU that takes a prompt and returns a score; spreading requests over several GPUs is beyond its scope.
 
 \begin{table}[t]
 \caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a benchmark of 96 agent trajectories that are sent one at a time, for one NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 6.4$\times$ for the 4B and 10.4$\times$ for the 27B. Appendix~\ref{app:ablation-precision} gives the scores.}
