@@ -484,7 +484,7 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \subsection{Serving throughput and latency}
 \label{app:serving-throughput}
 
-We measured every serving step of both monitors on one machine, because latency depends on the host.
+We measured every configuration of both monitors on one machine, because latency depends on the host.
 Table~\ref{tab:serving-steps} gives the result for each step, and Figure~\ref{fig:serving-latency} shows how latency changes with the number of concurrent requests and with the length of the prompt.
 
 \paragraph{Environment.}
@@ -499,7 +499,7 @@ Each step ran in a new server, and each figure is the median of three passes aft
 Table~\ref{tab:serving} takes its throughput from the columns for one request at a time.
 
 \begin{table}[h]
-\caption{Prompt tokens per second and request latency after each serving step on the benchmark of 96 agent trajectories. Gain is the factor by which the throughput with one request at a time rises from the row above. p50 and p95 are the median and the 95th percentile of the latency over the requests of a pass, in milliseconds.}
+\caption{Prompt tokens per second and request latency after each serving optimization on the benchmark of 96 agent trajectories. Gain is the factor by which the throughput with one request at a time rises from the row above. p50 and p95 are the median and the 95th percentile of the latency over the requests of a pass, in milliseconds.}
 \label{tab:serving-steps}
 \centering
 \small
@@ -508,7 +508,7 @@ Table~\ref{tab:serving} takes its throughput from the columns for one request at
 \toprule
  & \multicolumn{4}{c}{One request at a time} & \multicolumn{2}{c}{8 concurrent requests} \\
 \cmidrule(lr){2-5}\cmidrule(l){6-7}
-Serving step & Tokens/s & Gain & p50 (ms) & p95 (ms) & Tokens/s & p50 (ms) \\
+Configuration & Tokens/s & Gain & p50 (ms) & p95 (ms) & Tokens/s & p50 (ms) \\
 \midrule
 \multicolumn{7}{@{}l}{\textit{Gleipnir 4B}} \\
 Stock vLLM, BF16 & 103,266 & --- & 94 & 268 & 120,284 & 816 \\
