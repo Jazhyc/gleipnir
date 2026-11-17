@@ -72,7 +72,7 @@ The 27B loses nothing under the same arithmetic, so we release it without QAD.
 This difference agrees with \citet{ouyang2025lowbit}, who report that larger models lose less from low-bit quantization.
 
 We built and validated the low-precision kernels on the B200.
-The released serving stack also runs on the B300, with nearly identical scores and at about the same cost (Appendix~\ref{app:serving-b300}).
+The released serving stack also runs on the B300, at about the same cost (Appendix~\ref{app:serving-b300}).
 Other GPUs, including the workstation and consumer Blackwell GPUs, would need other kernels; on them, the BF16 checkpoints of Section~\ref{sec:serving-selfhost} apply.
 
 \subsection{Removing unneeded work}
