@@ -55,11 +55,10 @@ On one growing session this took 13 times less time (Appendix~\ref{app:serving-t
 \subsection{Low-precision arithmetic}
 \label{sec:serving-precision}
 
-Of our changes to stock vLLM, arithmetic at lower precision gives the largest gain in Table~\ref{tab:serving}.
-Stock vLLM computes in BF16, with 16 bits for each number.
-The B200 has native support for floating-point formats with 8 and 4 bits (FP8 and FP4), and matrix products in these formats run faster.
+Lower-precision arithmetic gives the largest gain in Table~\ref{tab:serving} among our changes to stock vLLM.
+Stock vLLM computes in BF16, while the B200 supports FP8 and FP4 natively, and matrix products in these formats run faster.
 Almost all of the prefill time goes to the linear projections of the model and to attention.
-We run the projections around attention in FP8, the other large projections in FP4, and attention itself in an 8-bit format (MXFP8).
+We run the projections around attention in FP8, the other large projections in FP4, and attention itself in MXFP8.
 These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
 For each projection we quantize both the weights and the activations.
 The state that the model stores between tokens and the two output logits keep their original precision.
