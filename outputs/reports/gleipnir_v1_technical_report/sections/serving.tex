@@ -5,7 +5,6 @@ Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to
 The stack is an endpoint for one GPU that takes a prompt and returns a score; spreading requests over several GPUs is beyond its scope.
 
 We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching (Appendix~\ref{app:serving-throughput}).
-This is how a monitor works that checks each action before it runs, and it gives the lowest latency.
 We convert throughput to cost with two hourly rates for one NVIDIA B200, which stand for two kinds of user.
 The committed-use rate of \$3.44 is the list price of CoreWeave (\$8.60 per hour) with its largest published discount for committed use (60\%).
 It is what a provider would pay to serve the monitor to the community over the long term.
