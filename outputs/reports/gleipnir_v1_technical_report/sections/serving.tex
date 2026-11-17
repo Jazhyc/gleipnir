@@ -39,9 +39,6 @@ Self-hosted vLLM, classification mode & 3.2$\times$ & 0.0215 & 0.0093 & 4.4$\tim
 The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models, which is what a monitor that writes a rationale costs today.
 A Gleipnir monitor needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position, so we serve it with vLLM in classification mode, which returns these logits without decoding, and price it at the cost of the GPU.
 On the same GPU, the base models take about ten times as long for a trajectory when they write a rationale before the score (Appendix~\ref{app:serving-throughput}).
-Decoding produces one token per step and leaves most of the GPU idle, so it gains from many concurrent requests, but each request then waits much longer.
-At its highest throughput, generation is still 3.2 times (4B) and 3.4 times (27B) slower than the released stack with one request at a time, and the median request waits 5\,s and 59\,s instead of 48\,ms and 192\,ms.
-
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.2 times less than the API price for the 4B and 4.4 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
 A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
