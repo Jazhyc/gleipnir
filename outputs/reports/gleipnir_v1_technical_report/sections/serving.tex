@@ -57,6 +57,7 @@ On one growing session this took 13 times less time (Appendix~\ref{app:serving-t
 
 Lower-precision arithmetic gives the largest gain in Table~\ref{tab:serving} among our changes to stock vLLM.
 Stock vLLM computes in BF16, while the B200 supports FP8 and FP4 natively, and matrix products in these formats run faster.
+The base models combine full-attention layers with Gated DeltaNet (GDN) layers~\citep{yang2025gateddelta}, a form of linear attention with a recurrent state, which make up 24 of 32 layers in the 4B and 48 of 64 in the 27B.
 Almost all of the prefill time goes to the linear layers of the model and to attention.
 We run the query, key, value and output layers of the full-attention layers in FP8, the linear layers of the MLPs and the GDN layers in FP4, and attention itself in MXFP8.
 These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
@@ -91,11 +92,11 @@ On the benchmark this lowers the cost by 1.01$\times$ for both monitors.
 The gain grows with the length of the prompt: for a single request of one million tokens the 4B answers 10\% sooner.
 
 \paragraph{Shorter host path for the GDN layers.}
-Most layers of the base models are not full-attention layers but gated delta network (GDN) layers, a form of linear attention with a recurrent state: 24 of 32 layers in the 4B and 48 of 64 in the 27B.
 Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
-Much of it serves requests that continue from a stored recurrent state, as generation does after each new token.
-A monitor request always starts from an empty state and ends after the prefill.
-For such requests we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
+Much of it serves requests that continue from a stored recurrent state, as in generation, with a prefix-cache hit, or when a long prompt is split over several steps.
+Without prefix caching, a monitor request that fits into one step starts from an empty state.
+When every request of a step starts from an empty state, we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
+Other steps take the path of vLLM.
 This lowers the cost by 1.10$\times$ for the 4B and 1.04$\times$ for the 27B.
 
 \paragraph{Faster tokenizer.}
