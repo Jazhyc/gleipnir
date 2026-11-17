@@ -569,9 +569,26 @@ With 8 concurrent requests the throughput does not change, because the CPU token
 We sent single requests with synthetic prompts of 256 to 1,048,576 tokens (Figure~\ref{fig:serving-latency}, right).
 Up to 1,024 tokens the released 4B answers in about 11\,ms, and the released 27B in 17\,ms to 26\,ms.
 At 262,144 tokens the released stack answers in 2.9\,s for the 4B and in 10.8\,s for the 27B, against 6.5\,s and 24.8\,s with stock vLLM.
+The serving image accepts prompts up to this length, the native range of the base models.
 Longer prompts need YaRN, which extends the positions of the base models by a factor of 4.
 At 1,048,576 tokens the released stack answers in 36\,s for the 4B and in 126\,s for the 27B, against 90\,s and 297\,s.
 We did not train or validate the monitors with YaRN, so these figures show only the time and not the quality of the scores.
+
+\paragraph{Prefix caching.}
+A monitor that checks every action scores the same transcript again after each step, so consecutive prompts share all but their newest tokens.
+With prefix caching, vLLM keeps the computed state of a shared prefix and processes only the new tokens.
+The trajectories of our benchmark share no prefix, so we turned caching off, and Table~\ref{tab:serving} does not count its saving.
+The serving image offers it as an option.
+We measured it with the 4B on one synthetic session, built from consecutive Gloom trajectories, that grows to 1,037,565 tokens over 598 checks, on a long-context server with YaRN and an earlier version of the released stack.
+Checking every action took 595\,s with caching, 12.9 times less than the 7,665\,s that we estimate without it, and 99.6\% of the prompt tokens came from the cache.
+Checking a random 7.2\% of the actions took 7.9 times less time.
+Cached scores are not exactly the scores without caching: on 8 checks of 15,000 to 1,040,000 tokens they differed by 0.055 on average and by up to 0.15.
+The GDN layers then process the prompt in different pieces, which changes scores by a similar amount elsewhere, but we did not isolate the cause.
+How much real traffic would hit the cache, and how much that would save, we leave to future work.
+
+\paragraph{Start-up.}
+On a new B200, a server of the serving image was ready to score 276\,s after start for the 4B and 476\,s for the 27B, including the download of the weights.
+With the weights already on disk, later starts took 105\,s to 170\,s.
 
 \paragraph{GDN kernel variant for short requests.}
 The serving stack of the 4B contains one more change that Section~\ref{sec:serving-work} does not describe.

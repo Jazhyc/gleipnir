@@ -561,3 +561,16 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   both models): mean 4,096, median 503.5, quartiles 311 and 4,499, 95th
   percentile 21,564, range 188 to 28,733; from `prompt_tokens` in
   `results/serving_concurrency/4b_fast/full_c1_repeat0.json`.
+- Appendix serving, prefix caching, context limit and start-up paragraphs
+  (2026-11-17):
+  - Prefix caching: `experiments/b200_prefix_replay/README.md` (`replay03`,
+    2026-10-16, 4B, 1M YaRN server, align mode): 598 checks, 595 s cached
+    against 7,665 s uncached estimate (12.9×), hit fraction 99.6%; 52
+    escalated checks 7.9×; |cached − uncached| on 8 checks mean 0.055, max
+    0.151; GDN route gate changed C1 scores by MAE 0.055. Opt-in in the image
+    since 0.2 (`serve.py --prefix-caching`;
+    `docs/decisions/prefix_cached_serving.md`).
+  - Context limit: `experiments/release_serving/README.md`, "Context limit"
+    (262,144 since image 0.2, no YaRN).
+  - Start-up: image 1.0 fresh-Pod check (US-NC-2 B200): cold 276 s (4B) and
+    476 s (27B) with downloads, later starts 105 to 170 s.
