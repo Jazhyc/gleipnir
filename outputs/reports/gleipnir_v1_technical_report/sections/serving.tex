@@ -93,8 +93,7 @@ The gain grows with the length of the prompt: for a single request of one millio
 
 \paragraph{Shorter host path for the GDN layers.}
 Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
-Much of it serves requests that continue from a stored recurrent state, as in generation, with a prefix-cache hit, or when a long prompt is split over several steps.
-Without prefix caching, a monitor request that fits into one step starts from an empty state.
+Much of it serves requests that continue from a stored recurrent state, as in generation.
 When every request of a step starts from an empty state, we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
 Other steps take the path of vLLM.
 This lowers the cost by 1.10$\times$ for the 4B and 1.04$\times$ for the 27B.
