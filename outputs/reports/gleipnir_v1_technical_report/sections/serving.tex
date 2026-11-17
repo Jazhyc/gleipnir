@@ -44,7 +44,7 @@ With stock vLLM in BF16 at the committed rate, self-hosting costs 3.2 times less
 At the on-demand rate it still costs less than the API price for both monitors.
 A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
 
-Sending several requests at once lowers the cost a little and raises the latency a lot: with 8 concurrent requests the throughput is 13\% higher for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
+Concurrent requests reduce the cost only slightly and increase latency substantially: with 8 concurrent requests the throughput is 13\% higher for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
 A monitor that checks every action scores the same transcript again after each step, so it can also reuse the computation for the part that it has already seen.
 On one growing session this took 13 times less time; individual scores change slightly, but their ranking does not (Appendix~\ref{app:serving-throughput}).
 The costs above do not count this saving.
