@@ -57,10 +57,10 @@ On one growing session this took 13 times less time (Appendix~\ref{app:serving-t
 
 Lower-precision arithmetic gives the largest gain in Table~\ref{tab:serving} among our changes to stock vLLM.
 Stock vLLM computes in BF16, while the B200 supports FP8 and FP4 natively, and matrix products in these formats run faster.
-Almost all of the prefill time goes to the linear projections of the model and to attention.
-We run the projections around attention in FP8, the other large projections in FP4, and attention itself in MXFP8.
+Almost all of the prefill time goes to the linear layers of the model and to attention.
+We run the query, key, value and output layers of the full-attention layers in FP8, the linear layers of the MLPs and the GDN layers in FP4, and attention itself in MXFP8.
 These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
-For each projection we quantize both the weights and the activations.
+For each linear layer we quantize both the weights and the activations.
 The state that the model stores between tokens and the two output logits keep their original precision.
 This step lowers the cost by 1.55 times for the 4B and by 2.15 times for the 27B.
 
