@@ -10,6 +10,8 @@ The committed-use rate of \$3.44 is the list price of CoreWeave (\$8.60 per hour
 It is what a provider would pay to serve the monitor to the community over the long term.
 The on-demand rate of \$7.99 is what we paid at Runpod, and what a researcher pays today for a short task such as a benchmark.
 Both rates assume that the GPU always has a request to work on; a GPU that waits for requests costs the same per hour, so idle time raises the cost of each token.
+Future work that reports the cost of Gleipnir should use the on-demand cost for as long as no provider serves the monitors, because it is what anyone who runs them today pays.
+Once a provider serves them, its price replaces both of our figures.
 
 \begin{table}[t]
 \caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a benchmark of 96 agent trajectories that are sent one at a time, for one NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 6.4$\times$ for the 4B and 10.4$\times$ for the 27B. Appendix~\ref{app:ablation-precision} gives the scores.}
