@@ -78,7 +78,7 @@ Other GPUs, including workstation and consumer Blackwell GPUs, would need other 
 \label{sec:serving-work}
 
 The last row of Table~\ref{tab:serving} comes from three changes that remove work which a monitor request does not need.
-None of them changes a kernel or the precision of a number, and with one request at a time the scores are bit-for-bit the same as before.
+With one request at a time, the scores are bit-for-bit the same as before.
 Together they lower the cost by 1.28$\times$ for the 4B and 1.09$\times$ for the 27B.
 Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and two further changes that matter only for prompts that are shorter than the trajectories of the benchmark.
 
