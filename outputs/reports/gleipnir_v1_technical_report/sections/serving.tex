@@ -51,7 +51,8 @@ These costs assume that the GPU always has a request to work on.
 A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.
 Sending several requests at once lowers the cost a little and raises the latency a lot: with 8 concurrent requests the throughput is 13\% higher for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
 A monitor that checks every action scores the same transcript again after each step, so it can also reuse the computation for the part that it has already seen.
-On one growing session this took 13 times less time, with scores that differ slightly from those without reuse (Appendix~\ref{app:serving-throughput}); the costs above do not count this saving.
+On one growing session this took 13 times less time; individual scores change slightly, but their ranking does not (Appendix~\ref{app:serving-throughput}).
+The costs above do not count this saving.
 The merged BF16 checkpoints that we release run in this mode on stock vLLM, on any GPU that vLLM supports.
 
 \subsection{Low-precision arithmetic}

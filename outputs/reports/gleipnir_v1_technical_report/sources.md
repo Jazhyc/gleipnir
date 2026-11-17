@@ -570,6 +570,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     0.151; GDN route gate changed C1 scores by MAE 0.055. Opt-in in the image
     since 0.2 (`serve.py --prefix-caching`;
     `docs/decisions/prefix_cached_serving.md`).
+    Cause and quality: `experiments/serving_concurrency/README.md`, "Prefix
+    caching and score identity" (`prefix01`, 2026-11-15, released 4B):
+    replay bit-identical; 528-token blocks; with `--max-num-batched-tokens
+    528` half-then-full equals uncached on all 127 hit rows, uncached pass
+    72.2 s against 19.3 s (3.7×); ID/OOD through the cache: 82% of hit rows
+    change (ID mean 0.025), macro pAUROC@20 +0.0015 ID and −0.0008 OOD, no
+    source more than 0.012 (IaC +0.0117).
   - Context limit: `experiments/release_serving/README.md`, "Context limit"
     (262,144 since image 0.2, no YaRN).
   - Start-up: image 1.0 fresh-Pod check (US-NC-2 B200): cold 276 s (4B) and

@@ -69,9 +69,12 @@ elsewhere: the GDN route gate changed C1 scores by MAE 0.055. Cached requests
 process about 2K new tokens per call (non-CP GDN route, different chunk
 boundaries), whereas uncached prefill runs 32K chunks (CP route). Enabling
 prefix caching also shifts the c4 canary slightly against the same YaRN stack
-without caching (MAE 0.0043). The cause is not isolated. Before production use,
-compare cached and uncached with the GDN route held fixed, and decide whether
-this path-dependence is acceptable.
+without caching (MAE 0.0043). The cause was isolated later (2026-11-15,
+[serving_concurrency](../serving_concurrency/README.md#prefix-caching-and-score-identity)):
+the cache is lossless, and scores change because a resumed request splits its
+prefill at other steps (528-token attention blocks in align mode). With
+`--max-num-batched-tokens 528` cached scores equal uncached ones, at about
+3.7 times the uncached prefill time.
 
 ## Opt-in prefix-cached serving
 

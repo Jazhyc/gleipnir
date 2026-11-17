@@ -582,8 +582,12 @@ The serving image offers it as an option.
 We measured it with the 4B on one synthetic session, built from consecutive Gloom trajectories, that grows to 1,037,565 tokens over 598 checks, on a long-context server with YaRN and an earlier version of the released stack.
 Checking every action took 595\,s with caching, 12.9 times less than the 7,665\,s that we estimate without it, and 99.6\% of the prompt tokens came from the cache.
 Checking a random 7.2\% of the actions took 7.9 times less time.
-Cached scores are not exactly the scores without caching: on 8 checks of 15,000 to 1,040,000 tokens they differed by 0.055 on average and by up to 0.15.
-The GDN layers then process the prompt in different pieces, which changes scores by a similar amount elsewhere, but we did not isolate the cause.
+The cache itself is lossless: a prompt sent a second time gets the same score as the first time.
+Scores change because caching changes how the prefill is split into steps.
+The GDN layers can save their state only at the end of an attention block, so vLLM sets the block to 528 tokens for the 4B, and a request that resumes from the cache computes the rest of the prompt in other steps than a request without it.
+BF16 arithmetic already depends slightly on this split, and the low-precision path amplifies the effect: caching changes 82\% of the scores of the released 4B, by 0.025 on average.
+The ranking hardly changes: when every prompt of our evaluation first fills the cache with its first half, pAUROC@20 moves by $+0.0015$ in distribution and by $-0.0008$ out of distribution, and by at most 0.012 for any source.
+With steps of 528 tokens every request advances in the same pieces, and cached scores equal the scores without caching, but a pass over the 320 prompts without caching then takes 3.7 times as long (72\,s against 19\,s).
 How much real traffic would hit the cache, and how much that would save, we leave to future work.
 
 \paragraph{Start-up.}
