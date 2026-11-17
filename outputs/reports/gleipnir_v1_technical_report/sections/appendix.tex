@@ -591,8 +591,9 @@ With steps of 528 tokens every request advances in the same pieces, and cached s
 How much real traffic would hit the cache, and how much that would save, we leave to future work.
 
 \paragraph{Start-up.}
-On a new B200, a server of the serving image was ready to score 276\,s after start for the 4B and 476\,s for the 27B, including the download of the weights.
-With the weights already on disk, later starts took 105\,s to 170\,s.
+On a new B200, a server of the serving image was ready to score 175\,s after start for the 4B and 186\,s for the 27B, not counting the download of the weights.
+Later starts on the same machine, with warm compilation caches, took 105\,s to 170\,s.
+The download depends on the datacenter: the 27B took between 51\,s and 290\,s on our Pods.
 
 \paragraph{GDN kernel variant for short requests.}
 The serving stack of the 4B contains one more change that Section~\ref{sec:serving-work} does not describe.

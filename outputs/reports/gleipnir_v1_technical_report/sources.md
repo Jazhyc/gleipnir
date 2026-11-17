@@ -579,5 +579,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     source more than 0.012 (IaC +0.0117).
   - Context limit: `experiments/release_serving/README.md`, "Context limit"
     (262,144 since image 0.2, no YaRN).
-  - Start-up: image 1.0 fresh-Pod check (US-NC-2 B200): cold 276 s (4B) and
-    476 s (27B) with downloads, later starts 105 to 170 s.
+  - Start-up: image 1.0 fresh-Pod check (US-NC-2 B200,
+    `logs/runpod/release_serving/image10_fresh/`): cold 276 s (4B) and 476 s
+    (27B) with downloads (`check.out`); downloads 1:41 and 4:50 from the
+    `Fetching N files` bars of `{4b,27b}_recorded.log`, so 175 s and 186 s
+    without; later starts 105 to 170 s. 27B downloads: 51 s
+    (`image11_b300`, EUR-IS-1), 178 s (`image02_fresh`), 290 s (`image10_fresh`).
