@@ -37,12 +37,10 @@ Self-hosted vLLM, classification mode & 3.2$\times$ & 0.0215 & 0.0093 & 4.4$\tim
 \label{sec:serving-selfhost}
 
 The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for the two base models, which is what a monitor that writes a rationale costs today.
-Standard LLM APIs generate text, which they decode one token at a time.
-Decoding is limited by how fast the GPU can read memory, so it leaves most of the arithmetic capacity of the GPU unused.
-A Gleipnir monitor does not decode.
-It needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position.
-The price of a standard API does not reflect this, so we serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}, and we price it at the cost of the GPU.
+A Gleipnir monitor needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position, so we serve it with vLLM in classification mode, which returns these logits without decoding, and price it at the cost of the GPU.
 On the same GPU, the base models take about ten times as long for a trajectory when they write a rationale before the score (Appendix~\ref{app:serving-throughput}).
+Decoding produces one token per step and leaves most of the GPU idle, so it gains from many concurrent requests, but each request then waits much longer.
+At its highest throughput, generation is still 3.2 times (4B) and 3.4 times (27B) slower than the released stack with one request at a time, and the median request waits 5\,s and 59\,s instead of 48\,ms and 192\,ms.
 
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.2 times less than the API price for the 4B and 4.4 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
