@@ -4,6 +4,14 @@
 Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to the released serving stack, and the subsections below describe one row each.
 The stack is an endpoint for one GPU that takes a prompt and returns a score; spreading requests over several GPUs is beyond its scope.
 
+We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching (Appendix~\ref{app:serving-throughput}).
+This is how a monitor works that checks each action before it runs, and it gives the lowest latency.
+We convert throughput to cost with two hourly rates for one NVIDIA B200, which stand for two kinds of user.
+The committed-use rate of \$3.44 is the list price of CoreWeave (\$8.60 per hour) with its largest published discount for committed use (60\%).
+It is what a provider would pay to serve the monitor to the community over the long term.
+The on-demand rate of \$7.99 is what we paid at Runpod, and what a researcher pays today for a short task such as a benchmark.
+Both rates assume that the GPU always has a request to work on; a GPU that waits for requests costs the same per hour, so idle time raises the cost of each token.
+
 \begin{table}[t]
 \caption{Cost in USD per million prompt tokens after each serving step. Self-hosted costs follow from the prompt tokens per second on a benchmark of 96 agent trajectories that are sent one at a time, for one NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 6.4$\times$ for the 4B and 10.4$\times$ for the 27B. Appendix~\ref{app:ablation-precision} gives the scores.}
 \label{tab:serving}
@@ -35,18 +43,10 @@ It needs only the prefill over the prompt and the two logits of Equation~\ref{eq
 The price of a standard API does not reflect this, so we serve the monitor ourselves with vLLM in classification mode, which runs the prefill and returns the logits of the tokens \texttt{0} and \texttt{1}, and we price it at the cost of the GPU.
 On the same GPU, the base models take about ten times as long for a trajectory when they write a rationale before the score (Appendix~\ref{app:serving-throughput}).
 
-We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching.
-This is how a monitor works that checks each action before it runs, and it gives the lowest latency.
-Appendix~\ref{app:serving-throughput} gives the throughput and latency after each step.
-We convert throughput to cost with two hourly rates for one NVIDIA B200.
-The on-demand rate of \$7.99 is what we paid at Runpod.
-The committed-use rate of \$3.44 is the list price of CoreWeave for a B200 (\$8.60 per hour) with its largest published discount for committed use (60\%).
 With stock vLLM in BF16 at the committed rate, self-hosting costs 3.2 times less than the API price for the 4B and 4.4 times less for the 27B.
 At the on-demand rate it still costs less than the API price for both monitors.
 A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter.
 
-These costs assume that the GPU always has a request to work on.
-A GPU that waits for requests costs the same per hour, so a deployment with idle time pays more for each token than Table~\ref{tab:serving} shows.
 Sending several requests at once lowers the cost a little and raises the latency a lot: with 8 concurrent requests the throughput is 13\% higher for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
 A monitor that checks every action scores the same transcript again after each step, so it can also reuse the computation for the part that it has already seen.
 On one growing session this took 13 times less time; individual scores change slightly, but their ranking does not (Appendix~\ref{app:serving-throughput}).
