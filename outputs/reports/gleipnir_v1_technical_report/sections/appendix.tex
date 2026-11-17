@@ -476,12 +476,10 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \end{tabular}
 \end{table}
 
-\section{Additional results}
-\label{app:additional-results}
+\section{Serving}
+\label{app:serving}
 
-\todo{Per-source results and reproducibility details.}
-
-\subsection{Serving throughput and latency}
+\subsection{Throughput and latency}
 \label{app:serving-throughput}
 
 We measured every configuration of both monitors on one machine, because latency depends on the host.
@@ -719,6 +717,11 @@ For the 27B we built the same stack with the layer shapes and head counts of Qwe
 The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
+
+\section{Additional results}
+\label{app:additional-results}
+
+\todo{Per-source results and reproducibility details.}
 
 \section{Prompts}
 \label{app:prompts}
