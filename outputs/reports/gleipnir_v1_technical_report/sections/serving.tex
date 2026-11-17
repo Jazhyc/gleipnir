@@ -99,8 +99,7 @@ Other steps take the path of vLLM.
 This lowers the cost by 1.10$\times$ for the 4B and 1.04$\times$ for the 27B.
 
 \paragraph{Faster tokenizer.}
-Before the GPU starts, the server turns the prompt into tokens on the CPU.
+After the changes above, the 4B scores the median trajectory in 58\,ms, so tokenizing the prompt on the CPU becomes a large part of the latency.
 vLLM uses the tokenizer of the Transformers library, which needs about 15\,ms for a trajectory of more than 8,192 tokens.
-This is a large part of the time for one request, because the released 4B answers the median trajectory in 48\,ms.
-We use Gigatoken~\citep{roed2026gigatoken}, which returns the same tokens in about 0.2\,ms.
+We use Gigatoken~\citep{roed2026gigatoken}, which returns the same tokens in about 0.2\,ms, and the median latency falls to 48\,ms.
 This lowers the cost by 1.18$\times$ for the 4B and 1.05$\times$ for the 27B.
