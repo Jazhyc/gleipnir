@@ -53,7 +53,7 @@ Owner: JF.
 
 - **C1.1 (draft).** A monitor that scores each agent action runs on the
   critical path of that action, so its latency and cost add to every action.
-- **C1.2 (draft).** Summary of the results: the main claims of Sections 5–7 in
+- **C1.2 (draft).** Summary of the results: the main claims of Sections 5–6 in
   one paragraph each.
 - **C1.3 (draft).** Contributions: the training recipe, the evaluation, the
   adversarial and probing analysis, and the released models and serving stack.
@@ -191,7 +191,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   (Goldowsky-Dill et al.), and near-zero inference cost, since the probe
   reuses the model's own forward pass. Both need access to the monitored
   model, which the action-only setting does not assume. The paragraph does
-  not point to Section 7, so that our probing experiments are not read as
+  not point to the probing appendix, so that our probing experiments are not read as
   resting on these two advantages.
 - **C2.7a (written in Appendix C.4 as one sentence, without the numbers).** Soft targets in decision models. Geuter et al.
   report no measurable change from soft targets for Gemma 4 31B (−0.2 ± 2.1
@@ -202,7 +202,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   soft targets help the small model more. Their tasks, metric and teachers
   differ from ours, so this is context, not a replication.
 - **C2.8 (written).** Activation probes in production. Kramár et al. propose
-  probe architectures that hold up on long inputs; Section 7 uses their
+  probe architectures that hold up on long inputs; the probing appendix uses their
   architectures. Cunningham et al. (Constitutional Classifiers++) run linear
   probes as the first stage of a classifier cascade on production traffic, at
   a refusal rate of 0.05%. Both works read the activations of the monitored
@@ -497,9 +497,14 @@ Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
 details, SleightBench per-attack results.
 
-## 7. Probing
+## 7. Probing (moved to the appendix)
 
 Owner: JF.
+
+Moved to the appendix (`app:probing`) on 2026-11-18 (JF): probing is
+tangential to describing Gleipnir. The main text keeps two pointers: one
+sentence in Section 3.2 that soft targets also help probes, and early exits
+as future work in the conclusion. Sections 8 and 9 move up by one.
 
 Framing (JF, 2026-11-09): the probing experiments ask whether early exits
 could lower inference cost further. If the backbone of the monitor already
@@ -507,7 +512,7 @@ holds a representation that supports the decision before the final layer, a
 probe at that layer could replace the remaining layers. The experiments also
 ask whether soft distillation helps such probes. They do not assume access to
 the monitored agent: the probes read the monitor backbone on the trajectory.
-Section 7 introduces Kramár et al.'s architectures itself; Section 2.3 does
+The probing appendix introduces Kramár et al.'s architectures itself; Section 2.3 does
 not point here. The claims below predate this framing and need a pass against
 it before they are accepted.
 

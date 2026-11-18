@@ -758,6 +758,11 @@ The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
+\section{Probing at half depth}
+\label{app:probing}
+
+\todo{Moved from the main text (JF, 2026-11-18). Hard-label then soft-target probes on a fixed probe family at half depth, compared with fine-tuning on quality and cost. Frame as representation analysis and as evidence that early exits are feasible, not as a deployment alternative. Soft targets help the probes too, which supports Section~\ref{sec:binary-logit-distillation}.}
+
 \section{Additional results}
 \label{app:additional-results}
 
