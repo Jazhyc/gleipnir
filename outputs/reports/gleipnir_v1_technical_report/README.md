@@ -4,7 +4,9 @@ arXiv technical report for the version 1 release of the Gleipnir monitors.
 Self-contained LaTeX source using the official NeurIPS 2026 style in
 `preprint` mode: authors shown, no line numbers, a "Technical report." footer and no
 NeurIPS checklist. Title: *Lightweight Restraints for Powerful Agents:
-Effective AI Control Monitors at a Fraction of the Cost*. It reads literally on
+AI Control Monitors That Decide in One Forward Pass* (since 2026-11-18;
+previously "Effective AI Control Monitors at a Fraction of the Cost", which
+repeated the cost point of "Lightweight"). It reads literally on
 first pass and also alludes to the myth: Gleipnir is the thin fetter that bound
 Fenrir after iron chains failed.
 
