@@ -612,3 +612,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   1". Two inputs blocked by Google's filter score 0.5; answered-only 0.8742.
   It is left out of the main figure like the other decision models off the
   frontier.
+- Table `tab:ood-all`, pplx-decider v1.3 (JF, 2026-11-18): registry row
+  0.894199 at $0.176015 per 1,000 (56,280,923 billed input tokens at the
+  $0.02/M list price of v1.2; the free endpoint billed $0).
+  `docs/findings/decision_models_ood_benchmark.md`, section "pplx-decider
+  v1.3". Section 5 still names v1.2 as the strongest decision model
+  (0.8956 against 0.8942).

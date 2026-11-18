@@ -56,6 +56,18 @@ costs about $0.11, above the shared $0.10 canary ceiling, so the config gives
 it a $0.15 canary ceiling and a $7.50 full-run ceiling (about 59M tokens
 expected, $5.90).
 
+### Amendment: pplx-decider v1.3 (2026-11-18, before the canary)
+
+The user added pplx-decider v1.3 through its free OpenRouter endpoint
+(`perplexity/pplx-decider-v1.3:free`, pinned to Perplexity, revision
+`-20261112`, 262,144-token window). Billed spend is $0, so the spend ceilings
+are $0.01. Costs are reported at the $0.02/M list price of v1.2, because a
+free price would dominate every frontier point; the endpoint may stop being
+free. Unlike the v1.2 row, which was scored locally from the readout logit
+margin, this row uses the hosted endpoint's probability and its billed input
+tokens, like the other models of this campaign. One probe request on a canary
+row (2026-11-18) confirmed the endpoint accepts these settings.
+
 ## Running
 
 ```bash
@@ -65,7 +77,7 @@ python -m experiments.decision_models_ood.run run <model> full
 ```
 
 Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`,
-`gemini_decision_1`.
+`gemini_decision_1`, `pplx_decider_v1_3`.
 Outputs go to `results/decision_models_ood/<model>/<phase>/`.
 
 ## Result
@@ -74,5 +86,7 @@ All four runs completed with no rejections. None reaches the frontier:
 d1-ultra 0.8929 ($0.3472/1K), Mercury Decide 0.8828 ($0.1811/1K),
 Microsoft-Decision-1 0.7506 ($0.3887/1K), d1 0.6742 ($0.1653/1K).
 Gemini Decision 1 (amendment, 2026-11-18) scores 0.8673 at $0.9306/1K, also
-off the frontier; Google's filter blocked 2 MLE-Sabotage inputs. See
+off the frontier; Google's filter blocked 2 MLE-Sabotage inputs.
+pplx-decider v1.3 (amendment, 2026-11-18, free endpoint, priced at v1.2's
+$0.02/M) scores 0.8942 at $0.1760/1K, just below v1.2. See
 [the finding](../../docs/findings/decision_models_ood_benchmark.md).

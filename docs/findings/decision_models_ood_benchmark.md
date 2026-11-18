@@ -99,3 +99,35 @@ same protocol, pinned to Google AI Studio (`google/gemini-decision-1-20261111`,
   d1-ultra (0.932), matching its OOD rank.
 - **Spend.** Full run $5.9509, canary $0.1161, longest-row check below
   $0.01. Full-run score SHA-256 prefix `41210ee24721`.
+
+## pplx-decider v1.3 (2026-11-18)
+
+Added by amendment, same protocol, through the free OpenRouter endpoint
+(`perplexity/pplx-decider-v1.3:free`, pinned to Perplexity, revision
+`-20261112`). Billed spend was $0; the cost uses the $0.02/M list price of
+v1.2 (user decision), because a free price would dominate every frontier
+point.
+
+| Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Macro Brier | Input tokens | $/M | $/1K |
+|---|---:|---:|---:|---:|---:|---:|
+| pplx-decider v1.3 | 0.894199 | 0.950634 | 0.0946 | 56,280,923 | 0.02 (v1.2) | 0.176015 |
+
+| Per-source pAUROC@20 | AgentDojo | CUA-SHADE | IaC | MLE | Rogue | SHADE-Arena |
+|---|---:|---:|---:|---:|---:|---:|
+| pplx-decider v1.3 (hosted probability) | 0.9972 | 0.8427 | 0.9953 | 0.9980 | 0.9785 | 0.5535 |
+| pplx-decider v1.2 (local margin) | 0.9932 | 0.8537 | 0.9967 | 0.9878 | 0.9367 | 0.6054 |
+
+- **Against v1.2.** 0.0014 lower than v1.2 (0.8956 at $0.1763/1K): better
+  on Rogue Eval (+0.042) and MLE, worse on SHADE-Arena (−0.052) and
+  CUA-SHADE-Arena. The two rows differ in readout: v1.2 was scored locally
+  from the readout logit margin, v1.3 from the hosted probability, which
+  had 6,358 unique values over 6,395 rows, so ties are not the cause.
+- **Frontier.** Off both frontiers: it is $0.0002/1K cheaper than v1.2 but
+  less accurate, and the 2% cost tolerance of the frontier rule leaves v1.2
+  on the frontier. Under the strict rule it would be a frontier point.
+- **Tokens.** The endpoint billed 56,280,923 input tokens, 78,576 fewer than
+  the local v1.2 joint-sequence count (56,359,499).
+- **Canary** (interface gate): pAUROC@20 0.816, against 0.844 for v1.2 on
+  the same rows; neither predicted the OOD score well.
+- **Artifacts.** `results/decision_models_ood/pplx_decider_v1_3/`; full-run
+  score SHA-256 prefix `db97ecfe63b9`.

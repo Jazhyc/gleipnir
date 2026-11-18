@@ -69,6 +69,17 @@
       "input_price_usd_per_million": 0.1,
       "maximum_canary_cost_usd": 0.15,
       "maximum_full_cost_usd": 7.5
+    },
+    "pplx_decider_v1_3": {
+      "added_at": "2026-11-18",
+      "openrouter_id": "perplexity/pplx-decider-v1.3:free",
+      "provider": "Perplexity",
+      "provider_revision": "perplexity/pplx-decider-v1.3-20261112",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.02,
+      "price_note": "Served free on OpenRouter; costs use the $0.02/M list price of v1.2 (user, 2026-11-18). Billed spend is $0.",
+      "maximum_canary_cost_usd": 0.01,
+      "maximum_full_cost_usd": 0.01
     }
   },
   "request": {
