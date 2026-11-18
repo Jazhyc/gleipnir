@@ -17,7 +17,7 @@ Figure~\ref{fig:frontier} shows the main comparisons. Table~\ref{tab:ood-all} in
 
 Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, with a 95\% bootstrap interval of 0.941--0.960, and Claude Opus 4.6, the strongest monitor of Sinha et al., scores 0.942.
 The difference lies within the interval, but Gleipnir 27B costs \$0.41 per 1,000 evaluations at the on-demand rate against \$94.79 for Claude Opus 4.6.
-It also scores higher than its teacher, Kimi K3, which reads the same specification and scores 0.908.
+It also scores higher than its teacher, Kimi K3, which reads the same specification and scores 0.908; this lead comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
 Gleipnir 4B scores 0.770 at \$0.094, against 0.684 at \$0.358 for the Qwen3.5-4B monitor that Sinha et al.\ train with SFT and RL.
 Training raises both base models: Qwen3.5-4B scores 0.618 and Qwen3.8-27B scores 0.890 before training.
 The strongest decision model, pplx-decider v1.2, scores 0.896 at \$0.176, between our two monitors; at the committed-use rate, Gleipnir 27B costs about the same (\$0.178) and scores 0.055 higher.

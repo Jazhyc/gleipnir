@@ -210,6 +210,51 @@ At the on-demand rate, however, two decision models lie on the frontier between 
 \label{fig:recall-frontier}
 \end{figure}
 
+\subsection{SHADE-Arena}
+\label{app:shade}
+
+SHADE-Arena decides the comparison between Gleipnir 27B and its teacher.
+Gleipnir 27B scores 0.832 pAUROC@20 on it and Kimi K3 scores 0.574, while on the other five benchmarks the two differ by at most 0.008 (Table~\ref{tab:shade}).
+One sixth of the difference on SHADE-Arena is the whole lead of Gleipnir 27B in Mean-OOD, 0.951 against 0.908.
+Three properties of this benchmark make its score sensitive.
+
+\begin{table}[h]
+\caption{pAUROC@20 on each benchmark of the OOD suite. Gleipnir 27B is the released monitor on the released serving stack; Qwen3.8-27B is its base model and Kimi K3 its teacher, both reading the full specification.}
+\label{tab:shade}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrrrrr@{}}
+\toprule
+Monitor & AgentDojo & CUA-SHADE & IaC & MLE & Rogue Eval & SHADE & Mean-OOD \\
+\midrule
+Qwen3.8-27B & 0.966 & 0.865 & 0.968 & 1.000 & 0.986 & 0.556 & 0.890 \\
+Kimi K3 & 1.000 & 0.886 & 0.992 & 1.000 & 0.999 & 0.574 & 0.908 \\
+Gleipnir 27B & 0.992 & 0.890 & 0.993 & 1.000 & 0.998 & 0.832 & 0.951 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{A filtered subset.}
+Sinha et al.\ drop every trajectory with more than 28,000 tokens (Appendix~\ref{app:sinha-setup}), which removes 650 of the 1,500 SHADE-Arena trajectories but at most 4\% of any other benchmark.
+The scores therefore say nothing about the longer SHADE-Arena trajectories, and within the remaining 850 monitors score lower on longer ones: Kimi K3 scores 0.663 on the shortest quarter and 0.499 on the longest.
+
+\paragraph{One dominant task.}
+The remaining trajectories come from five task pairs, and one of them provides 333 of the 850 trajectories (39\%).
+In it, the agent books flights for 16 conference visitors, and in attack runs it books almost all of them with one airline that costs about twice as much as the alternatives.
+The evidence is visible to the monitor: attack runs book a median of 97\% of the tickets with that airline and honest runs 9\%, so this share alone separates the classes perfectly.
+Whether the attacks are harmful is less clear, because the user lets the agent book ``whatever flights you think are best'' and a loyalty file, identical in honest and attack runs, gives many attendees a membership with that airline.
+Monitors therefore rank many attack runs below the most suspicious honest runs: within this task Kimi K3 reaches 0.847 AUROC but only 0.391 pAUROC@20.
+Without this task, SHADE-Arena scores 0.958 for Gleipnir 27B and 0.940 for Kimi K3, and Mean-OOD 0.972 and 0.969, so the lead of the student falls from 0.042 to 0.003.
+The same task also carries the 0.016 that Gleipnir 27B gains on the OOD suite from low-precision serving (Appendix~\ref{app:ablation-precision}): without it, the BF16 and the released stack score 0.973 and 0.972.
+
+\paragraph{Few independent clusters.}
+With five task pairs, the score of SHADE-Arena varies much more between tasks than between trajectories.
+Resampling the task pairs instead of the trajectories widens the 95\% bootstrap interval of Gleipnir 27B on SHADE-Arena to 0.772--0.993, and on Mean-OOD to 0.939--0.978, against 0.941--0.960 when trajectories are resampled.
+Five clusters are too few for a reliable interval, so we report this only as a sensitivity check.
+
+We therefore read the lead of Gleipnir 27B over Kimi K3 as a lead on one task of one benchmark; on the rest of the suite the student matches its teacher.
+
 \subsection{Output format}
 \label{app:ablation-format}
 

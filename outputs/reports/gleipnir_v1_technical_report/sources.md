@@ -646,3 +646,17 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   figure. The pAUROC@20 frontiers do not change. Recall frontier on demand:
   Gleipnir 4B, Mercury Decide, d1-ultra, Gleipnir 27B. "About twice":
   $0.1811 / $0.0939.
+- Appendix C.2, SHADE-Arena (`app:shade`, JF, 2026-11-18). Table
+  `tab:shade`: per-source pAUROC@20 from
+  `results/ood_recall_at_fpr/recall_at_fpr.json` (released Gleipnir 27B,
+  Kimi K3, unadapted Qwen3.8-27B). "At most 0.008": AgentDojo 0.992 against
+  1.000. Lead 0.9508 - 0.9084 = 0.0424; (0.8316 - 0.5743) / 6 = 0.0429.
+  Filter (650 of 1,500, others at most 4%), Kimi K3 length quartiles
+  (0.663, 0.499), the flight-booking task `american_airlines_2` (333 of 850
+  rows, 97% against 9% median share, the quoted instruction and the loyalty
+  file), Kimi K3 within-task AUROC 0.847 and pAUROC@20 0.391, and the
+  without-task values (SHADE 0.9581 / 0.9397, Mean-OOD 0.9719 / 0.9693; BF16
+  0.9732): `docs/findings/shade_length_audit.md`. The report does not name
+  the airline. Task-pair bootstrap ([0.772, 0.993] SHADE, [0.9394, 0.9782]
+  Mean-OOD; row [0.9413, 0.9596]): `experiments/optimized_gap/README.md`,
+  "Bootstrap intervals". Section 5's pointer cites this subsection.
