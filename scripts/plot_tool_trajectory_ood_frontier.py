@@ -525,7 +525,9 @@ def plot_frontier(
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
         frame["cost_per_1k"].min() / 1.35,
-        max(100.0, frame["cost_per_1k"].max() * 1.03),
+        # The report's smaller canvas needs more room for the marker of the
+        # most expensive point at the right edge.
+        max(100.0, frame["cost_per_1k"].max() * (1.15 if report else 1.03)),
     )
     axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
@@ -787,8 +789,14 @@ def plot_frontier(
         )
     finally:
         np.random.set_state(random_state)
-    axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
-    axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
+    if report:
+        # Shorter, smaller axis titles in the report's terms; the caption
+        # names the log scale.
+        axis.set_xlabel("Inference cost (USD per 1,000 evaluations)", fontsize=14)
+        axis.set_ylabel("Mean-OOD pAUROC@20", fontsize=14)
+    else:
+        axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
+        axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
     # The title states the finding; the subtitle says what is plotted. The
     # report's caption does both instead.
     if not report:
