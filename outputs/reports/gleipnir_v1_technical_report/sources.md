@@ -657,6 +657,5 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   file), Kimi K3 within-task AUROC 0.847 and pAUROC@20 0.391, and the
   without-task values (SHADE 0.9581 / 0.9397, Mean-OOD 0.9719 / 0.9693; BF16
   0.9732): `docs/findings/shade_length_audit.md`. The report does not name
-  the airline. Task-pair bootstrap ([0.772, 0.993] SHADE, [0.9394, 0.9782]
-  Mean-OOD; row [0.9413, 0.9596]): `experiments/optimized_gap/README.md`,
-  "Bootstrap intervals". Section 5's pointer cites this subsection.
+  the airline. The task-pair bootstrap paragraph was removed (JF,
+  2026-11-18). Section 5's pointer cites this subsection.

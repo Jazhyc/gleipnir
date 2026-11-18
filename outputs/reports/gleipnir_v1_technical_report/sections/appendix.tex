@@ -216,7 +216,7 @@ At the on-demand rate, however, two decision models lie on the frontier between 
 SHADE-Arena decides the comparison between Gleipnir 27B and its teacher.
 Gleipnir 27B scores 0.832 pAUROC@20 on it and Kimi K3 scores 0.574, while on the other five benchmarks the two differ by at most 0.008 (Table~\ref{tab:shade}).
 Mean-OOD weights the six benchmarks equally, so this gap of 0.258 raises the Mean-OOD of Gleipnir 27B by 0.043, which accounts for its whole lead (0.951 against 0.908).
-Three properties of this benchmark make its score sensitive.
+Two properties of this benchmark make its score sensitive.
 
 \begin{table}[h]
 \caption{pAUROC@20 on each benchmark of the OOD suite. Gleipnir 27B is the released monitor on the released serving stack; Qwen3.8-27B is its base model and Kimi K3 its teacher, both reading the full specification.}
@@ -247,11 +247,6 @@ Whether the attacks are harmful is less clear, because the user lets the agent b
 Monitors therefore rank many attack runs below the most suspicious honest runs: within this task Kimi K3 reaches 0.847 AUROC but only 0.391 pAUROC@20.
 Without this task, SHADE-Arena scores 0.958 for Gleipnir 27B and 0.940 for Kimi K3, and Mean-OOD 0.972 and 0.969, so the lead of the student falls from 0.042 to 0.003.
 The same task also carries the 0.016 that Gleipnir 27B gains on the OOD suite from low-precision serving (Appendix~\ref{app:ablation-precision}): without it, the BF16 and the released stack score 0.973 and 0.972.
-
-\paragraph{Few independent clusters.}
-With five task pairs, the score of SHADE-Arena varies much more between tasks than between trajectories.
-Resampling the task pairs instead of the trajectories widens the 95\% bootstrap interval of Gleipnir 27B on SHADE-Arena to 0.772--0.993, and on Mean-OOD to 0.939--0.978, against 0.941--0.960 when trajectories are resampled.
-Five clusters are too few for a reliable interval, so we report this only as a sensitivity check.
 
 We therefore read the lead of Gleipnir 27B over Kimi K3 as a lead on one task of one benchmark; on the rest of the suite the student matches its teacher.
 
