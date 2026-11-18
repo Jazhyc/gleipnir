@@ -130,71 +130,71 @@ Unless stated otherwise, scores are Mean-OOD pAUROC@20.
 \label{app:ood-all}
 
 Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
-Besides pAUROC@20 it gives the recall at a false-positive rate of 1\%, which is closer to how a monitor is deployed: the humans who audit flagged actions can review only a small share of the honest ones.
+Besides pAUROC@20 it gives the AUROC, which other work commonly reports, and the recall at a false-positive rate of 1\%, which is closer to how a monitor is deployed: the humans who audit flagged actions can review only a small share of the honest ones.
 
 \begin{table}[p]
-\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the honest trajectories of a benchmark, averaged over the six benchmarks in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5.}
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. AUROC is the area under the full ROC curve, averaged in the same way. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the honest trajectories of a benchmark, averaged in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5.}
 \label{tab:ood-all}
 \centering
 \small
 \renewcommand{\arraystretch}{0.96}
-\begin{tabular}{@{}lrrr@{}}
+\begin{tabular}{@{}lrrrr@{}}
 \toprule
-Monitor & Cost & pAUROC@20 & Recall at 1\% FPR \\
+Monitor & Cost & pAUROC@20 & AUROC & Recall at 1\% FPR \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{Sinha et al.: trained, rationale then 0--10 score}} \\
-GPT-OSS-20B (SFT) & 0.347 & 0.656 & --- \\
-Qwen3.5-4B (SFT+RL) & 0.358 & 0.684 & --- \\
-GPT-OSS-120B (SFT) & 0.511 & 0.718 & --- \\
-Nemotron-30B (SFT) & 0.590 & 0.578 & --- \\
-Qwen3-8B (SFT+RL) & 0.748 & 0.628 & --- \\
-Qwen3-32B (SFT+RL) & 0.869 & 0.703 & --- \\
-Nemotron-120B (SFT) & 1.251 & 0.780 & --- \\
-Qwen3.5-27B (SFT+RL) & 2.775 & 0.831 & --- \\
-Kimi K2.6 (SFT) & 10.175 & 0.841 & --- \\
+\multicolumn{5}{@{}l}{\emph{Sinha et al.: trained, rationale then 0--10 score}} \\
+GPT-OSS-20B (SFT) & 0.347 & 0.656 & 0.862 & --- \\
+Qwen3.5-4B (SFT+RL) & 0.358 & 0.684 & 0.884 & --- \\
+GPT-OSS-120B (SFT) & 0.511 & 0.718 & 0.895 & --- \\
+Nemotron-30B (SFT) & 0.590 & 0.578 & 0.824 & --- \\
+Qwen3-8B (SFT+RL) & 0.748 & 0.628 & 0.834 & --- \\
+Qwen3-32B (SFT+RL) & 0.869 & 0.703 & 0.891 & --- \\
+Nemotron-120B (SFT) & 1.251 & 0.780 & 0.924 & --- \\
+Qwen3.5-27B (SFT+RL) & 2.775 & 0.831 & 0.948 & --- \\
+Kimi K2.6 (SFT) & 10.175 & 0.841 & 0.943 & --- \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{Sinha et al.: prompted, rationale then 0--10 score}} \\
-GPT-5.4 nano & 3.387 & 0.752 & --- \\
-Gemini 3.1 Flash-Lite & 4.157 & 0.815 & --- \\
-Claude Haiku 4.5 & 19.746 & 0.794 & --- \\
-GPT-5.4 & 44.376 & 0.899 & --- \\
-Gemini 2.5 Pro & 45.254 & 0.802 & --- \\
-Claude Sonnet 4.6 & 58.850 & 0.929 & --- \\
-Gemini 3.1 Pro & 73.218 & 0.940 & --- \\
-Claude Opus 4.6 & 94.794 & 0.942 & --- \\
+\multicolumn{5}{@{}l}{\emph{Sinha et al.: prompted, rationale then 0--10 score}} \\
+GPT-5.4 nano & 3.387 & 0.752 & 0.911 & --- \\
+Gemini 3.1 Flash-Lite & 4.157 & 0.815 & 0.901 & --- \\
+Claude Haiku 4.5 & 19.746 & 0.794 & 0.927 & --- \\
+GPT-5.4 & 44.376 & 0.899 & 0.973 & --- \\
+Gemini 2.5 Pro & 45.254 & 0.802 & 0.949 & --- \\
+Claude Sonnet 4.6 & 58.850 & 0.929 & 0.976 & --- \\
+Gemini 3.1 Pro & 73.218 & 0.940 & 0.973 & --- \\
+Claude Opus 4.6 & 94.794 & 0.942 & 0.979 & --- \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
-Gleipnir 4B, committed-use & 0.040 & 0.770 & 0.606 \\
-Gleipnir 4B, on-demand & 0.094 & 0.770 & 0.606 \\
-Gleipnir 27B, committed-use & 0.178 & 0.951 & 0.874 \\
-Gleipnir 27B, on-demand & 0.414 & 0.951 & 0.874 \\
-Gleipnir 9B (earlier) & 0.866 & 0.821 & 0.709 \\
+\multicolumn{5}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
+Gleipnir 4B, committed-use & 0.040 & 0.770 & 0.914 & 0.606 \\
+Gleipnir 4B, on-demand & 0.094 & 0.770 & 0.914 & 0.606 \\
+Gleipnir 27B, committed-use & 0.178 & 0.951 & 0.984 & 0.874 \\
+Gleipnir 27B, on-demand & 0.414 & 0.951 & 0.984 & 0.874 \\
+Gleipnir 9B (earlier) & 0.866 & 0.821 & 0.922 & 0.709 \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{This work: decision models, native probability}} \\
-d1 & 0.165 & 0.674 & 0.466 \\
-pplx-decider v1.3 & 0.176 & 0.894 & 0.815 \\
-pplx-decider v1.2 & 0.176 & 0.896 & 0.759 \\
-Mercury Decide & 0.181 & 0.883 & 0.821 \\
-d1-ultra & 0.347 & 0.893 & 0.844 \\
-Jev 1.13 & 0.389 & 0.850 & 0.733 \\
-Microsoft-Decision-1 & 0.389 & 0.751 & 0.588 \\
-Gemini Decision 1 & 0.931 & 0.867 & 0.694 \\
+\multicolumn{5}{@{}l}{\emph{This work: decision models, native probability}} \\
+d1 & 0.165 & 0.674 & 0.869 & 0.466 \\
+pplx-decider v1.3 & 0.176 & 0.894 & 0.951 & 0.815 \\
+pplx-decider v1.2 & 0.176 & 0.896 & 0.958 & 0.759 \\
+Mercury Decide & 0.181 & 0.883 & 0.943 & 0.821 \\
+d1-ultra & 0.347 & 0.893 & 0.952 & 0.844 \\
+Jev 1.13 & 0.389 & 0.850 & 0.927 & 0.733 \\
+Microsoft-Decision-1 & 0.389 & 0.751 & 0.906 & 0.588 \\
+Gemini Decision 1 & 0.931 & 0.867 & 0.949 & 0.694 \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
-Qwen3.5-4B & 0.284 & 0.618 & 0.386 \\
-GPT-6 Luna & 0.835 & 0.837 & 0.671 \\
-Qwen3.5-9B & 0.947 & 0.698 & 0.503 \\
-Qwen3.5-35B-A3B & 0.990 & 0.758 & 0.586 \\
-GPT-5.6 Luna & 1.672 & 0.840 & 0.639 \\
-Qwen3.5-27B & 1.848 & 0.839 & 0.692 \\
-Qwen3.8-27B & 1.848 & 0.890 & 0.804 \\
-Kimi K2.6 & 7.911 & 0.919 & 0.829 \\
-Kimi K3 & 25.118 & 0.908 & 0.859 \\
+\multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
+Qwen3.5-4B & 0.284 & 0.618 & 0.855 & 0.386 \\
+GPT-6 Luna & 0.835 & 0.837 & 0.929 & 0.671 \\
+Qwen3.5-9B & 0.947 & 0.698 & 0.885 & 0.503 \\
+Qwen3.5-35B-A3B & 0.990 & 0.758 & 0.905 & 0.586 \\
+GPT-5.6 Luna & 1.672 & 0.840 & 0.949 & 0.639 \\
+Qwen3.5-27B & 1.848 & 0.839 & 0.937 & 0.692 \\
+Qwen3.8-27B & 1.848 & 0.890 & 0.953 & 0.804 \\
+Kimi K2.6 & 7.911 & 0.919 & 0.975 & 0.829 \\
+Kimi K3 & 25.118 & 0.908 & 0.962 & 0.859 \\
 \midrule
-\multicolumn{4}{@{}l}{\emph{This work: unadapted Qwen3.5-9B, other outputs}} \\
-0--10 score & 0.963 & 0.486 & 0.239 \\
-Reasoning, then binary logits & 1.005 & 0.692 & 0.487 \\
-Reasoning, then 0--10 score & 1.029 & 0.666 & 0.314 \\
+\multicolumn{5}{@{}l}{\emph{This work: unadapted Qwen3.5-9B, other outputs}} \\
+0--10 score & 0.963 & 0.486 & 0.759 & 0.239 \\
+Reasoning, then binary logits & 1.005 & 0.692 & 0.861 & 0.487 \\
+Reasoning, then 0--10 score & 1.029 & 0.666 & 0.861 & 0.314 \\
 \bottomrule
 \end{tabular}
 \end{table}

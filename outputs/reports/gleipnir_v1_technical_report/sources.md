@@ -626,3 +626,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   threshold); the six recalls are averaged with equal weight. Sinha et al.
   report no recall at 1% FPR, so their rows show a dash. Gemini Decision 1's
   two blocked rows score 0.5.
+- Table `tab:ood-all`, AUROC column (JF, 2026-11-18). Rows of Sinha et al.:
+  the AUROC column of their Table 4 (Appendix E.5, "six-dataset mean-OOD
+  metrics"), read through the arXiv HTML v1 of 2605.29601 by a fetch agent
+  on 2026-11-18. Its pAUROC@20 column matched our 17 rows exactly; the
+  AUROC values were not rechecked against the PDF. Their Table 9 gives the
+  per-benchmark AUROC with three-seed standard deviations. They report recall
+  only at 5% FPR (Figure 12, no table). Our rows: `mean_auroc` in
+  `results/ood_recall_at_fpr/recall_at_fpr.json`, the unweighted mean of six
+  per-source `roc_auc_score` values.

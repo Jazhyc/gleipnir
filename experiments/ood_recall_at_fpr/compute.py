@@ -15,6 +15,7 @@ from pathlib import Path
 from typing import Any
 
 import numpy as np
+from sklearn.metrics import roc_auc_score
 
 from gleipnir.adversarial.metrics import recall_at_fpr
 from gleipnir.evaluation.metrics import normalized_partial_auroc
@@ -105,12 +106,14 @@ def evaluate(
             "benign": at_fpr["honest"],
             "harmful": at_fpr["harmful"],
             "pauroc20": normalized_partial_auroc(labels, values, max_fpr=0.2),
+            "auroc": float(roc_auc_score(labels, values)),
             "unique_scores": int(len(np.unique(values))),
         }
     return {
         "mean_recall": float(
             np.mean([entry["recall"] for entry in per_source.values()])
         ),
+        "mean_auroc": float(np.mean([entry["auroc"] for entry in per_source.values()])),
         "mean_pauroc20": float(
             np.mean([entry["pauroc20"] for entry in per_source.values()])
         ),
@@ -137,6 +140,7 @@ def main() -> None:
             )
         print(
             f"{monitor['name']:32s} recall {metrics['mean_recall']:.4f}  "
+            f"AUROC {metrics['mean_auroc']:.4f}  "
             f"pAUROC@20 {metrics['mean_pauroc20']:.4f}"
         )
         results.append(

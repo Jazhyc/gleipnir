@@ -109,3 +109,7 @@ Qualifications:
   probability against local logit margin).
 - The table of the v1 report's Appendix C.1 (`tab:ood-all`) carries the mean
   recall of every row. The frontier figure above was not regenerated.
+- **Mean AUROC** (added 2026-11-18): `compute` now also writes the per-source
+  AUROC and its unweighted mean (`mean_auroc`). It matches the values in the
+  decision-model summaries (for example Gemini Decision 1 0.9491, d1-ultra
+  0.9524) and the pplx-decider v1.2 record (0.9577).
