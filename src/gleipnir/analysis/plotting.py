@@ -47,8 +47,15 @@ def set_plot_style() -> None:
 def pareto_frontier_mask(
     costs: np.ndarray | list[float],
     performances: np.ndarray | list[float],
+    *,
+    cost_tolerance: float = 0.0,
 ) -> np.ndarray:
-    """Return nondominated points for lower cost and higher performance."""
+    """Return nondominated points for lower cost and higher performance.
+
+    With ``cost_tolerance`` t > 0, a point is also dominated by a strictly
+    better point that costs at most (1 + t) times as much, so near-equal costs
+    do not split the frontier.
+    """
     cost = np.asarray(costs, dtype=float)
     performance = np.asarray(performances, dtype=float)
     if cost.ndim != 1 or cost.shape != performance.shape or not len(cost):
@@ -57,6 +64,8 @@ def pareto_frontier_mask(
         raise ValueError("costs and performances must be finite")
     if (cost <= 0).any():
         raise ValueError("costs must be positive")
+    if cost_tolerance < 0:
+        raise ValueError("cost_tolerance must be nonnegative")
 
     frontier = np.ones(len(cost), dtype=bool)
     for index, (point_cost, point_performance) in enumerate(
@@ -64,7 +73,10 @@ def pareto_frontier_mask(
     ):
         no_worse = (cost <= point_cost) & (performance >= point_performance)
         strictly_better = (cost < point_cost) | (performance > point_performance)
-        frontier[index] = not np.any(no_worse & strictly_better)
+        near_cost_better = (cost <= point_cost * (1 + cost_tolerance)) & (
+            performance > point_performance
+        )
+        frontier[index] = not np.any((no_worse & strictly_better) | near_cost_better)
     return frontier
 
 

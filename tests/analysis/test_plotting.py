@@ -26,6 +26,8 @@ def test_pareto_frontier_keeps_nondominated_and_duplicate_points() -> None:
     )
     assert mask.tolist() == [True, False, True, True, False]
 
+    near = pareto_frontier_mask([1.0, 1.01, 1.05], [0.5, 0.6, 0.7], cost_tolerance=0.02)
+    assert near.tolist() == [False, True, True]
     duplicates = pareto_frontier_mask([1.0, 1.0], [0.5, 0.5])
     assert duplicates.tolist() == [True, True]
 
@@ -189,9 +191,9 @@ def test_pricing_regimes_have_separate_frontiers() -> None:
     assert frame.loc[committed, "committed_frontier"].all()
     assert not frame.loc[committed, "on_demand_frontier"].any()
     assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
-    # Priced at one request at a time, the committed 27B costs slightly more
-    # than the Decider, which therefore stays on the committed frontier too.
-    assert frame.loc[[decider], "committed_frontier"].all()
+    # The committed 27B costs 1% more than the Decider; the cost tolerance
+    # keeps the Decider off the committed frontier.
+    assert not frame.loc[[decider], "committed_frontier"].any()
 
 
 def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:

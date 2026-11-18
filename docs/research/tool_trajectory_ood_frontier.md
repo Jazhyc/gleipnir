@@ -106,7 +106,8 @@ utilization and margin.
 
 Rows are ordered by cost. `Frontier` is point-estimate nondominance: no other
 row is both no more expensive and at least as accurate, with one strict
-improvement. Each pricing regime has its own frontier: on-demand rows compete
+improvement. A row is also dominated by a more accurate row that costs at most
+2% more (user, 2026-11-18), so near-equal costs do not split a frontier. Each pricing regime has its own frontier: on-demand rows compete
 with list-priced rows, and committed-GPU rows compete with list-priced rows.
 Committed-GPU rows report their regime's frontier; all other rows report the
 on-demand regime. The plot draws both frontiers. List prices such as the
@@ -605,8 +606,11 @@ at full utilization. SHADE-Arena stays weakest at
   serving stack about 3.5 times faster than the published one. Otherwise it
   is priced below cost.
 - **Committed GPUs.** Against Gleipnir rows at committed-GPU rates, the
-  Decider leaves the frontier: Gleipnir 27B (`0.9508` at `$0.1677/1K`) is
-  both cheaper and better.
+  Decider leaves the frontier. Priced at one request at a time, Gleipnir 27B
+  (`0.9508` at `$0.1781/1K`) costs 1% more per evaluation, although its
+  `$0.0188/M` is below the Decider's `$0.02/M`: its full specification makes
+  its prompts 7% longer (60.5M against 56.4M OOD tokens). The 2% cost
+  tolerance of the frontier rule treats the two costs as equal.
 - **Plotting.** The plot keeps the list price, which is what users pay.
   Plotted at self-hosted break-even, it would sit well behind Gleipnir 27B.
 - **Caveat.** Only the documented runtime configuration was measured, with

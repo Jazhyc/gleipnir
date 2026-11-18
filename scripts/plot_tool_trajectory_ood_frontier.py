@@ -341,6 +341,13 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     return frame
 
 
+# A row also leaves its regime's frontier when a better row costs at most 2%
+# more (user, 2026-11-18): at one request at a time the committed Gleipnir 27B
+# costs 1% more than pplx-decider v1.2 per evaluation, and a frontier step
+# for that difference makes the plot harder to read.
+FRONTIER_COST_TOLERANCE = 0.02
+
+
 def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
     """Nondominance among rows outside one self-hosted pricing regime."""
     rows = frame["pricing"].ne(excluded_pricing)
@@ -348,6 +355,7 @@ def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
     mask[rows] = pareto_frontier_mask(
         frame.loc[rows, "cost_per_1k"].to_numpy(),
         frame.loc[rows, "mean_ood_pauroc_at_20"].to_numpy(),
+        cost_tolerance=FRONTIER_COST_TOLERANCE,
     )
     return mask
 

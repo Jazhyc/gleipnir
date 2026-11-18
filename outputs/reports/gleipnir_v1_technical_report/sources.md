@@ -601,3 +601,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   intervals"); it excludes seed variation (one seed). The paper's Qwen3.5-4B
   SFT+RL: 0.684 at $0.358. Decider: 0.896 at $0.176; 0.951 - 0.896 = 0.055.
   Kimi K3 reads the full binary specification (registry interface column).
+  Frontier rule (JF, 2026-11-18): a row also leaves a frontier when a more
+  accurate row costs at most 2% more (`FRONTIER_COST_TOLERANCE`). It drops
+  pplx-decider v1.2 ($0.1763) from the committed frontier, where Gleipnir
+  27B* costs $0.1781 (1% more): $0.0188/M against $0.02/M, but 60,539,619
+  against 56,359,499 OOD prompt tokens.
