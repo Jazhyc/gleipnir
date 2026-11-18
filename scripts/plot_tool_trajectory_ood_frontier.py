@@ -32,6 +32,15 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
+# The technical report's version: no title (its caption states the finding),
+# a smaller canvas so the text stays legible at the width of the page, and
+# legend labels that name the two GPU rates as the report does.
+REPORT_OUTPUTS = [
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_frontier.pdf",
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_frontier.svg",
+]
 FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.png",
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
@@ -209,6 +218,33 @@ MANUAL_COMPARISON_LABELS = {
         "va": "center",
     },
 }
+# The report's smaller canvas puts these labels on neighbouring points.
+REPORT_LABEL_OVERRIDES = {
+    # Left of its point; the on-demand 27B's label goes above its own point.
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": {
+        "xytext": (-10, 0),
+        "ha": "right",
+        "va": "center",
+    },
+    "Qwen3.8-27B Kimi-soft strict": {
+        "xytext": (0, 11),
+        "ha": "center",
+        "va": "bottom",
+    },
+    # Below-right, clear of Jev 1.13 to its left.
+    "GPT-6 Luna binary logprobs": {
+        "xytext": (8, -8),
+        "ha": "left",
+        "va": "top",
+    },
+    # Below its point, clear of the paper points above.
+    "Kimi K3 binary logits": {
+        "xytext": (0, -12),
+        "ha": "center",
+        "va": "top",
+    },
+}
+REPORT_DISTILLATION_LABEL_POSITION = 0.5
 # Cost-saving callout: an arrow from the strongest paper monitor to the
 # on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
 COST_CALLOUT = ("Claude Opus 4.6 prompted", "Qwen3.8-27B Kimi-soft strict")
@@ -468,11 +504,13 @@ def _one_significant_figure(value: float) -> float:
     return round(value, -int(np.floor(np.log10(abs(value)))))
 
 
-def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
+def plot_frontier(
+    frame: pd.DataFrame, *, full: bool = False, report: bool = False
+) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame, full=full)
     set_plot_style()
-    figure, axis = plt.subplots(figsize=(14.2, 8.5))
+    figure, axis = plt.subplots(figsize=(10.5, 6.6) if report else (14.2, 8.5))
     axis.set_xscale("log")
     axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
@@ -537,8 +575,13 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         # rotates it to display.
         x0, x1 = base["cost_per_1k"], method["cost_per_1k"]
         y0, y1 = base["mean_ood_pauroc_at_20"], method["mean_ood_pauroc_at_20"]
-        x_mid = x0 * (x1 / x0) ** DISTILLATION_LABEL_POSITION
-        y_mid = y0 + DISTILLATION_LABEL_POSITION * (y1 - y0)
+        position = (
+            REPORT_DISTILLATION_LABEL_POSITION
+            if report
+            else DISTILLATION_LABEL_POSITION
+        )
+        x_mid = x0 * (x1 / x0) ** position
+        y_mid = y0 + position * (y1 - y0)
         angle = np.degrees(np.arctan2(y1 - y0, x_mid * np.log(x1 / x0)))
         if angle > 90:
             angle -= 180
@@ -551,7 +594,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             rotation=angle,
             transform_rotates_text=True,
             rotation_mode="anchor",
-            fontsize=10.5,
+            fontsize=9.5 if report else 10.5,
             fontweight="bold",
             color=ORIGIN_PALETTE["Gleipnir"],
             ha="center",
@@ -566,6 +609,10 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         )
 
     cost_ratio = _draw_cost_callout(axis, frame)
+    manual_labels = {
+        **MANUAL_COMPARISON_LABELS,
+        **(REPORT_LABEL_OVERRIDES if report else {}),
+    }
     # Direction cue in the empty upper-left corner.
     axis.annotate(
         "Better",
@@ -667,8 +714,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
                 zorder=4,
             )
             continue
-        if monitor in MANUAL_COMPARISON_LABELS:
-            placement = MANUAL_COMPARISON_LABELS[monitor]
+        if monitor in manual_labels:
+            placement = manual_labels[monitor]
             axis.annotate(
                 _display_label(monitor),
                 (row["cost_per_1k"], row["mean_ood_pauroc_at_20"]),
@@ -734,7 +781,17 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         np.random.set_state(random_state)
     axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
     axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
-    # The title states the finding; the subtitle says what is plotted.
+    # The title states the finding; the subtitle says what is plotted. The
+    # report's caption does both instead.
+    if not report:
+        _draw_slide_title(axis, cost_ratio)
+    axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
+    axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
+    _draw_legends(figure, axis, report=report)
+    return figure
+
+
+def _draw_slide_title(axis: plt.Axes, cost_ratio: float | None) -> None:
     axis.set_title(
         "Our distilled decision monitor matches the best reasoning monitor"
         f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
@@ -755,9 +812,9 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         fontweight="bold",
         color="#4B5563",
     )
-    axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
-    axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
+
+def _draw_legends(figure: plt.Figure, axis: plt.Axes, *, report: bool) -> None:
     legend_handles = [
         Line2D(
             [],
@@ -789,7 +846,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             [],
             color="#374151",
             linewidth=2.5,
-            label="Available now / on-demand GPUs",
+            label="On-demand rate" if report else "Available now / on-demand GPUs",
         ),
         Line2D(
             [],
@@ -797,7 +854,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             color="#374151",
             linestyle=(0, (5, 3)),
             linewidth=2.2,
-            label="At scale / reserved GPUs*",
+            label="Committed-use rate*" if report else "At scale / reserved GPUs*",
         ),
     ]
     legend_style = {
@@ -808,6 +865,27 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         "title_fontproperties": {"size": 13.5, "weight": "bold"},
         "alignment": "left",
     }
+    if report:
+        # One legend above the axes: monitor types in the first row, frontiers
+        # in the second. Legend columns fill top to bottom.
+        handles = [
+            handle
+            for pair in zip(legend_handles, frontier_handles, strict=True)
+            for handle in pair
+        ]
+        axis.legend(
+            handles=handles,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            frameon=False,
+            prop={"size": 13, "weight": "bold"},
+            handlelength=2.2,
+            columnspacing=1.6,
+            labelspacing=0.5,
+        )
+        figure.tight_layout()
+        return
     figure.tight_layout()
     # Stack the category legend above the frontier legend, both right-aligned
     # and as wide as the wider of the two.
@@ -843,7 +921,6 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         borderaxespad=0,
         **legend_style,
     )
-    return figure
 
 
 def parse_args() -> argparse.Namespace:
@@ -868,6 +945,11 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Plot every registry point (the appendix figure)",
     )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Plot the technical report's version of the main figure",
+    )
     return parser.parse_args()
 
 
@@ -876,13 +958,18 @@ def main() -> None:
     frame = load_frontier_registry(args.source)
     plotted = select_plot_points(frame, full=args.full)
     omitted_count = len(frame) - len(plotted)
-    default_outputs = (
-        FULL_OUTPUTS if args.full else [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
-    )
+    if args.report:
+        default_outputs = REPORT_OUTPUTS
+    elif args.full:
+        default_outputs = FULL_OUTPUTS
+    else:
+        default_outputs = [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
     outputs = args.output or default_outputs
     frontier_count = int(plotted["computed_frontier"].sum())
     for output_path in outputs:
-        output = save_figure(plot_frontier(frame, full=args.full), output_path)
+        output = save_figure(
+            plot_frontier(frame, full=args.full, report=args.report), output_path
+        )
         print(
             f"Wrote {output} from {len(plotted)} plotted points "
             f"({frontier_count} frontier; {omitted_count} omitted)."

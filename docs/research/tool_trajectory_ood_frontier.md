@@ -85,9 +85,14 @@ the full benchmark; see the
 ## Reference table
 
 Gleipnir release models (Gleipnir 4B v0.3 and Gleipnir 27B) are priced at
-self-hosted break-even (user decisions, 2026-10-20). The cost is the measured
-optimized-serving wall time for all 6,395 rows on one 100%-utilized B200,
-times an hourly rate, per 1,000 rows. Each model has two rows:
+self-hosted break-even (user decisions, 2026-10-20). Since 2026-11-18 the cost
+uses the one-request-at-a-time throughput of the released image on the
+96-trajectory agent benchmark (Table 1 of the v1 report: 204,673 prompt tokens/s
+for the 4B, 50,788 for the 27B) applied to the OOD prompt tokens of each model
+(55,346,879 and 60,539,619 over 6,395 rows), on one 100%-utilized B200 at an
+hourly rate, per 1,000 rows. The earlier costs (4B `$0.0850`/`$0.0366`, 27B
+`$0.3896`/`$0.1677`) came from batched OOD wall time (244.9 s and 1,122.6 s),
+which the report no longer uses. Each model has two rows:
 
 - **On-demand:** `$7.99/h`, our Runpod rate.
 - **Committed GPUs:** `$3.44/h`, CoreWeave's published committed-use ceiling
@@ -110,11 +115,11 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0366** | **0.7703** | **yes** |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0850** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0404** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0939** | **0.7703** | **yes** |
 | **Gleipnir** | **d1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1653** | **0.6742** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1677** | **0.9508** | **yes** |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1781** | **0.9508** | **yes** |
 | **Gleipnir** | **Mercury Decide native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1811** | **0.8828** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
@@ -124,7 +129,7 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
 | **Gleipnir** | **Microsoft-Decision-1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.7506** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.3896** | **0.9508** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.4137** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
@@ -202,7 +207,8 @@ plotted at its optimized-serving score (user decision, 2026-10-20):
 - **Cost.** It is priced at self-hosted break-even: one B200 at `$7.99/h`,
   fully utilized, scored the full benchmark workload (55,346,879 prompt
   tokens) through optimized serving in 244.9 s, which is `$0.0850/1K`
-  (`$0.0098/M` tokens). The earlier hosted proxy, the paper's `$0.03/M` input
+  (`$0.0098/M` tokens); the reference table now prices it at one request at
+  a time, `$0.0939/1K` (see its pricing note). The earlier hosted proxy, the paper's `$0.03/M` input
   and `$0.15/M` output 4B rate, gave `$0.2598/1K`.
 - **Frontier.** It is the lowest-cost frontier point. pplx-decider v1.2 is
   above it at about twice the cost. It dominates the unadapted 4B
@@ -411,7 +417,8 @@ prompt it was trained on), not on OOD. The workload renders byte-identically
 to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
 output token). It is priced at self-hosted break-even: one B200 at `$7.99/h`,
 fully utilized, scored this workload through optimized serving in 1,122.6 s,
-which is `$0.3896/1K` (`$0.0412/M` tokens). The shared 27B hosted proxy
+which is `$0.3896/1K` (`$0.0412/M` tokens); the reference table now prices
+it at one request at a time, `$0.4137/1K`. The shared 27B hosted proxy
 (`$0.195/M` input, `$1.56/M` output) gave `$1.8476/1K`. Training cost is
 excluded under the registry contract.
 

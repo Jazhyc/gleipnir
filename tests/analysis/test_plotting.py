@@ -127,9 +127,9 @@ def test_cost_callout_reports_opus_to_gleipnir_27b_ratio() -> None:
     frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
     figure, axis = plt.subplots()
     axis.set_xscale("log")
-    assert round(_draw_cost_callout(axis, frame)) == 243
+    assert round(_draw_cost_callout(axis, frame)) == 229
     labels = [text.get_text() for text in axis.texts if text.get_text()]
-    assert labels == ["243× cheaper"]
+    assert labels == ["229× cheaper"]
     plt.close(figure)
 
 
@@ -189,7 +189,9 @@ def test_pricing_regimes_have_separate_frontiers() -> None:
     assert frame.loc[committed, "committed_frontier"].all()
     assert not frame.loc[committed, "on_demand_frontier"].any()
     assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
-    assert not frame.loc[[decider], "committed_frontier"].any()
+    # Priced at one request at a time, the committed 27B costs slightly more
+    # than the Decider, which therefore stays on the committed frontier too.
+    assert frame.loc[[decider], "committed_frontier"].all()
 
 
 def test_main_figure_simplifies_while_full_keeps_every_eligible_row() -> None:
