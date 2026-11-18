@@ -11,7 +11,7 @@ Figure~\ref{fig:frontier} shows the main comparisons. Table~\ref{tab:ood-all} in
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{ood_frontier}
-\caption{Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost. Mean-OOD pAUROC@20 against the inference cost per 1,000 evaluations (log scale). Reasoning monitors are those of \citet{sinha2026training} at their reported costs; we scored the decision monitors at API or hosted prices. Gleipnir is priced at one B200 with one request at a time, at the on-demand rate (solid frontier) and at the committed-use rate (marked *, dashed frontier); each frontier treats costs within 3\% of each other as equal. Red arrows lead from each base model to the Gleipnir monitor trained from it. For readability the figure omits further decision models, base models and reasoning monitors below the prior frontier; Table~\ref{tab:ood-all} lists them.}
+\caption{Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost. Mean-OOD pAUROC@20 against the inference cost per 1,000 evaluations (log scale). Reasoning monitors are those of \citet{sinha2026training} at their reported costs; we scored the decision monitors at API or hosted prices. Gleipnir is priced at one B200 with one request at a time, at the on-demand rate (solid frontier) and at the committed-use rate (marked *, dashed frontier); each frontier treats costs within 3\% of each other as equal. Red arrows lead from each base model, at its hosted price, to the Gleipnir monitor distilled from it and served on our stack. For readability the figure omits further decision models, base models and reasoning monitors below the prior frontier; Table~\ref{tab:ood-all} lists them.}
 \label{fig:frontier}
 \end{figure}
 

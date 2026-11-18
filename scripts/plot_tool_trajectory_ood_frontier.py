@@ -699,7 +699,7 @@ def plot_frontier(
         axis.text(
             x_mid,
             y_mid,
-            "soft distillation",
+            "distillation + serving",
             rotation=angle,
             transform_rotates_text=True,
             rotation_mode="anchor",
@@ -707,7 +707,9 @@ def plot_frontier(
             fontweight="bold",
             color=ORIGIN_PALETTE["Gleipnir"],
             ha="center",
-            va="center",
+            # In the report the label sits beside the arrow, which is
+            # shorter than the label on the smaller canvas.
+            va="bottom" if report else "center",
             bbox={
                 "boxstyle": "round,pad=0.15",
                 "facecolor": "white",
