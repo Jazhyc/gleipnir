@@ -59,6 +59,16 @@
       "context_length": 65536,
       "input_price_usd_per_million": 0.02,
       "maximum_full_cost_usd": 1.55
+    },
+    "gemini_decision_1": {
+      "added_at": "2026-11-18",
+      "openrouter_id": "google/gemini-decision-1",
+      "provider": "Google AI Studio",
+      "provider_revision": "google/gemini-decision-1-20261111",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.1,
+      "maximum_canary_cost_usd": 0.15,
+      "maximum_full_cost_usd": 7.5
     }
   },
   "request": {

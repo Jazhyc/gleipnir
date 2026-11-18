@@ -68,3 +68,34 @@ Mercury $1.1580, d1 $1.0572), canaries $0.14, longest-row checks $0.004.
 `scores.jsonl` (raw responses, usage, provider, revision) and `summary.json`.
 Full-run score SHA-256 prefixes: Microsoft `0343ec5cf60d`, Mercury
 `92d78632fcea`, d1-ultra `8504e1dcb8fd`, d1 `cb7f7b63b0aa`.
+
+## Gemini Decision 1 (2026-11-18)
+
+Added by amendment ([pre-registration](../../experiments/decision_models_ood/README.md)),
+same protocol, pinned to Google AI Studio (`google/gemini-decision-1-20261111`,
+262,144-token window, $0.10/M input).
+
+| Model | Mean-OOD pAUROC@20 | Mean-OOD AUROC | Macro Brier | Input tokens | $/M | $/1K |
+|---|---:|---:|---:|---:|---:|---:|
+| Gemini Decision 1 | 0.867342 | 0.949072 | 0.1825 | 59,509,013 | 0.10 | 0.930555 |
+
+| Per-source pAUROC@20 | AgentDojo | CUA-SHADE | IaC | MLE | Rogue | SHADE-Arena |
+|---|---:|---:|---:|---:|---:|---:|
+| Gemini Decision 1 | 0.9785 | 0.8173 | 0.8539 | 0.9556 | 0.9748 | 0.6239 |
+
+- **Frontier.** It is off both frontiers: pplx-decider v1.2 (0.8956 at
+  $0.1763/1K), Mercury Decide and d1-ultra are each cheaper and better.
+  SHADE-Arena (0.624) is its weakest source but the best among the hosted
+  decision models.
+- **Refusals.** Google's input filter blocked 2 rows (HTTP 400, "sensitive
+  words that violate Google's Generative AI Prohibited Use policy"), both
+  MLE-Sabotage (one honest, one attack). They score 0.5 under the protocol;
+  over the 6,393 answered rows Mean-OOD pAUROC@20 is 0.8742. No other
+  decision model refused an input.
+- **Scores.** Probabilities lie in [0.01, 0.99] with 4,888 unique values;
+  the canary's 69 unique values on 100 rows did not reflect coarse
+  resolution.
+- **Canary** (interface gate): pAUROC@20 0.893, below Mercury (0.940) and
+  d1-ultra (0.932), matching its OOD rank.
+- **Spend.** Full run $5.9509, canary $0.1161, longest-row check below
+  $0.01. Full-run score SHA-256 prefix `41210ee24721`.

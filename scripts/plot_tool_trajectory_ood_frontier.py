@@ -58,6 +58,7 @@ EXCLUDED_MONITORS = {
 MAIN_FIGURE_OMISSIONS = {
     "Microsoft-Decision-1 native probabilities",
     "d1 native probabilities",
+    "Gemini Decision 1 native probabilities",
     "Mercury Decide native probabilities",
     "d1-ultra native probabilities",
     "Qwen3.5-9B base",
@@ -370,6 +371,7 @@ def _display_label(monitor: str) -> str:
         "Mercury Decide native probabilities": "Mercury Decide",
         "d1-ultra native probabilities": "d1-ultra",
         "d1 native probabilities": "d1",
+        "Gemini Decision 1 native probabilities": "Gemini Decision 1",
         "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",

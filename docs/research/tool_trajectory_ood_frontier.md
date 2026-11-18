@@ -137,6 +137,7 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 | **Gleipnir** | **GPT-6 Luna binary logprobs** | **Full binary specification, terminal `0\|1` logprobs, reasoning disabled** | **0.8355** | **0.8365** | **no** |
 | **Gleipnir** | **Qwen3.5-9B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.8659** | **0.8212** | **no** |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
+| **Gleipnir** | **Gemini Decision 1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.9306** | **0.8673** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
 | **Gleipnir** | **Qwen3.5-35B-A3B base (mixed providers)** | **Full binary specification, terminal `0\|1` logits; Darkbloom FP4 then Parasail FP8** | **0.9896** | **0.7580** | **no** |

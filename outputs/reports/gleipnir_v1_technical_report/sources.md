@@ -606,3 +606,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   pplx-decider v1.2 ($0.1763) from the committed frontier, where Gleipnir
   27B* costs $0.1781 (1% more): $0.0188/M against $0.02/M, but 60,539,619
   against 56,359,499 OOD prompt tokens.
+- Table `tab:ood-all`, Gemini Decision 1 (JF, 2026-11-18): registry row
+  0.867342 at $0.930555 per 1,000 (59,509,013 input tokens at $0.10/M);
+  `docs/findings/decision_models_ood_benchmark.md`, section "Gemini Decision
+  1". Two inputs blocked by Google's filter score 0.5; answered-only 0.8742.
+  It is left out of the main figure like the other decision models off the
+  frontier.

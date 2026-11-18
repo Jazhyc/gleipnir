@@ -47,6 +47,15 @@ Benchmarks four hosted decision models through OpenRouter's Decisions API:
   - reported spend above the ceiling;
   - question, input or request-settings hash drift.
 
+### Amendment: Gemini Decision 1 (2026-11-18, before any paid call)
+
+The user added Gemini Decision 1 (`google/gemini-decision-1`, pinned to
+Google AI Studio, revision `-20261111`, 262,144-token window, $0.10/M input).
+Every other part of the protocol is unchanged. At $0.10/M its 100-row canary
+costs about $0.11, above the shared $0.10 canary ceiling, so the config gives
+it a $0.15 canary ceiling and a $7.50 full-run ceiling (about 59M tokens
+expected, $5.90).
+
 ## Running
 
 ```bash
@@ -55,12 +64,15 @@ python -m experiments.decision_models_ood.run run <model> longest
 python -m experiments.decision_models_ood.run run <model> full
 ```
 
-Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`.
+Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`,
+`gemini_decision_1`.
 Outputs go to `results/decision_models_ood/<model>/<phase>/`.
 
 ## Result
 
 All four runs completed with no rejections. None reaches the frontier:
 d1-ultra 0.8929 ($0.3472/1K), Mercury Decide 0.8828 ($0.1811/1K),
-Microsoft-Decision-1 0.7506 ($0.3887/1K), d1 0.6742 ($0.1653/1K). See
+Microsoft-Decision-1 0.7506 ($0.3887/1K), d1 0.6742 ($0.1653/1K).
+Gemini Decision 1 (amendment, 2026-11-18) scores 0.8673 at $0.9306/1K, also
+off the frontier; Google's filter blocked 2 MLE-Sabotage inputs. See
 [the finding](../../docs/findings/decision_models_ood_benchmark.md).
