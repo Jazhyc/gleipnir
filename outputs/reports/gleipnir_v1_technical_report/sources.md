@@ -144,7 +144,13 @@ No results are reported yet.
   Qwen3.5-27B 0.839474 (0.839), GPT-6 Luna 0.836544 (0.837) at $0.835498
   (0.835), Jev 1.13 0.849513 (0.850). Gleipnir 4B and 27B are the optimized
   serving scores (student prompt and teacher prompt), priced at $3.44/h and
-  $7.99/h for one B200. "Gleipnir 9B (earlier release)" is the registry row
+  $7.99/h for one B200. Since 2026-11-18 (JF) their costs use one request
+  at a time, as in Table 1: hourly rate / (throughput x 3,600) x 10^6 with
+  204,673 and 50,788 prompt tokens/s, times 8,654.7 and 9,466.7 OOD prompt
+  tokens per evaluation (55,346,879 and 60,539,619 over 6,395 rows): 4B
+  $0.0939 / $0.0404, 27B $0.4137 / $0.1781 (formerly $0.0850 / $0.0366 and
+  $0.3896 / $0.1677 from batched OOD wall time). The registry carries the
+  same values. "Gleipnir 9B (earlier release)" is the registry row
   "Qwen3.5-9B Kimi-soft mixed". Results measured on 4B v0.3/v0.4 and 27B v0.2
   weights apply to v1.0 unchanged. Changes from the registry (JF,
   2026-11-09): our two unadapted GPT-OSS-120B rows are left out, because the
@@ -533,8 +539,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     times as long": 424 / 48 and 1,834 / 192 ms. The caption no longer says
     that the last row agrees with the OOD-suite costs: those were measured
     in batches of 128 (about 226K and 53K tokens per second) and are now
-    lower than Table 1. Open: the costs of `tab:ood-all` and the frontier
-    figures still use the batched throughput and are to be regenerated.
+    lower than Table 1. The costs of `tab:ood-all` and the frontier
+    figures were regenerated at one request on 2026-11-18.
   - Figure: left panel from the sweeps in `agent03/summary.json`; right
     panel from `summary.json` (stock), `giga02` (4B released, graphs to
     4,096) and `giga01` (27B released). Concurrency paragraph: 424 and
@@ -585,3 +591,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     `Fetching N files` bars of `{4b,27b}_recorded.log`, so 175 s and 186 s
     without; later starts 105 to 170 s. 27B downloads: 51 s
     (`image11_b300`, EUR-IS-1), 178 s (`image02_fresh`), 290 s (`image10_fresh`).
+- Section 5 (main evaluation, 2026-11-18). Figure `fig:frontier`
+  (`assets/ood_frontier.pdf`) is `scripts/plot_tool_trajectory_ood_frontier.py
+  --report` on the registry `docs/research/tool_trajectory_ood_frontier.md`;
+  the slide figure in `figures/` comes from the same registry. Scores and
+  costs are rows of `tab:ood-all`. "229 times": $94.794 / $0.4137. Interval
+  of Gleipnir 27B: row bootstrap within source x label, 2,000 resamples,
+  [0.9413, 0.9596] (`experiments/optimized_gap/README.md`, "Bootstrap
+  intervals"); it excludes seed variation (one seed). The paper's Qwen3.5-4B
+  SFT+RL: 0.684 at $0.358. Decider: 0.896 at $0.176; 0.951 - 0.896 = 0.055.
+  Kimi K3 reads the full binary specification (registry interface column).

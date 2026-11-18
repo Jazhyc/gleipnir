@@ -1,9 +1,23 @@
 \section{Main evaluation}
 \label{sec:evaluation}
 
-\todo{Metric definition (pAUROC@20 and supporting metrics), validation set and OOD suite, baselines.}
+We compare monitors on the OOD suite of Sinha et al.\ (Section~\ref{sec:background}) by Mean-OOD pAUROC@20 and by the cost of 1,000 evaluations.
+The reasoning monitors are those of Sinha et al., with the scores and costs that they report.
+We scored decision models and unadapted base models ourselves, from their binary logits or native probabilities, and price them at API or hosted prices.
+We price Gleipnir at the cost of one B200 with one request at a time, at both rates of Section~\ref{sec:serving}, on the released serving stack.
+Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification (Section~\ref{sec:training-setup}).
+Figure~\ref{fig:frontier} shows the main comparisons, and Table~\ref{tab:ood-all} lists every monitor.
 
-\subsection{Cost--performance frontier}
-\label{sec:frontier}
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{ood_frontier}
+\caption{Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost. Mean-OOD pAUROC@20 against the inference cost per 1,000 evaluations (log scale). Reasoning monitors are those of \citet{sinha2026training} at their reported costs; we scored the decision monitors at API or hosted prices. Gleipnir is priced at one B200 with one request at a time, at the on-demand rate (solid frontier) and at the committed-use rate (marked *, dashed frontier). Red arrows lead from each base model to the Gleipnir monitor trained from it. For readability the figure omits further decision models, base models and reasoning monitors below the prior frontier; Table~\ref{tab:ood-all} lists them.}
+\label{fig:frontier}
+\end{figure}
 
-\todo{Frontier figure and table with bootstrap intervals.}
+Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, with a 95\% bootstrap interval of 0.941--0.960, and Claude Opus 4.6, the strongest monitor of Sinha et al., scores 0.942.
+The difference lies within the interval, but Gleipnir 27B costs \$0.41 per 1,000 evaluations at the on-demand rate against \$94.79 for Claude Opus 4.6.
+It also scores higher than its teacher, Kimi K3, which reads the same specification and scores 0.908.
+Gleipnir 4B scores 0.770 at \$0.094, against 0.684 at \$0.358 for the Qwen3.5-4B monitor that Sinha et al.\ train with SFT and RL.
+Training raises both base models: Qwen3.5-4B scores 0.618 and Qwen3.8-27B scores 0.890 before training.
+The strongest decision model, pplx-decider v1.2, scores 0.896 at \$0.176, between our two monitors; at the committed-use rate, Gleipnir 27B costs about the same (\$0.178) and scores 0.055 higher.
