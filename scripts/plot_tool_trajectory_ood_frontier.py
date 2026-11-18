@@ -41,6 +41,42 @@ REPORT_OUTPUTS = [
     REPOSITORY_ROOT
     / "outputs/reports/gleipnir_v1_technical_report/assets/ood_frontier.svg",
 ]
+# The report's appendix figure: the same plot with recall at 1% FPR on the
+# y-axis, for the monitors we scored (Sinha et al. report no such recall).
+RECALL_SOURCE = REPOSITORY_ROOT / "results/ood_recall_at_fpr/recall_at_fpr.json"
+RECALL_REPORT_OUTPUTS = [
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_recall_frontier.pdf",
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_recall_frontier.svg",
+]
+# Registry monitor -> monitor name in the recall results.
+RECALL_NAMES = {
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": "Gleipnir 4B",
+    "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B",
+    "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
+    "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B (earlier)",
+    "d1 native probabilities": "d1",
+    "d1-ultra native probabilities": "d1-ultra",
+    "Mercury Decide native probabilities": "Mercury Decide",
+    "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
+    "Jev 1.13 native probabilities": "Jev 1.13",
+    "pplx-decider v1.2 native readout": "pplx-decider v1.2",
+    "pplx-decider v1.3 native probabilities": "pplx-decider v1.3",
+    "Gemini Decision 1 native probabilities": "Gemini Decision 1",
+    "Qwen3.5-4B base": "Qwen3.5-4B",
+    "Qwen3.5-9B base": "Qwen3.5-9B",
+    "Qwen3.5-35B-A3B base (mixed providers)": "Qwen3.5-35B-A3B",
+    "Qwen3.5-27B base": "Qwen3.5-27B",
+    "Qwen3.8-27B base": "Qwen3.8-27B",
+    "GPT-6 Luna binary logprobs": "GPT-6 Luna",
+    "Kimi K2.6 binary logits": "Kimi K2.6",
+    "Kimi K3 binary logits": "Kimi K3",
+    "Qwen3.5-9B base (ordinal)": "Qwen3.5-9B, 0-10 score",
+    "Qwen3.5-9B base (reasoned ordinal)": "Qwen3.5-9B, reasoning + 0-10",
+}
+RECALL_MIN_PLOTTED = 0.35
 FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.png",
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
@@ -246,6 +282,30 @@ REPORT_LABEL_OVERRIDES = {
         "va": "top",
     },
 }
+# The recall figure's middle is crowded: Decider v1.3 and Mercury Decide
+# nearly coincide, with Decider v1.2 and Jev 1.13 just below.
+RECALL_LABEL_OVERRIDES = {
+    "Mercury Decide native probabilities": {
+        "xytext": (12, -10),
+        "ha": "left",
+        "va": "top",
+    },
+    "pplx-decider v1.3 native probabilities": {
+        "xytext": (12, -27),
+        "ha": "left",
+        "va": "top",
+    },
+    "pplx-decider v1.2 native readout": {
+        "xytext": (0, -11),
+        "ha": "center",
+        "va": "top",
+    },
+    "d1-ultra native probabilities": {
+        "xytext": (8, -9),
+        "ha": "left",
+        "va": "top",
+    },
+}
 REPORT_DISTILLATION_LABEL_POSITION = 0.5
 # Cost-saving callout: an arrow from the strongest paper monitor to the
 # on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
@@ -350,6 +410,32 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
 FRONTIER_COST_TOLERANCE = 0.02
 
 
+def recall_frame(frame: pd.DataFrame, path: str | Path = RECALL_SOURCE) -> pd.DataFrame:
+    """Registry rows we scored, with recall at 1% FPR as the performance.
+
+    The ``mean_ood_pauroc_at_20`` column then holds the mean recall, and both
+    regime frontiers are recomputed on it.
+    """
+    import json
+
+    recall = {
+        m["monitor"]: m["mean_recall"]
+        for m in json.loads(Path(path).read_text(encoding="utf-8"))["monitors"]
+    }
+    rows = frame.loc[frame["monitor"].isin(RECALL_NAMES)].copy()
+    rows["mean_ood_pauroc_at_20"] = rows["monitor"].map(RECALL_NAMES).map(recall)
+    if rows["mean_ood_pauroc_at_20"].isna().any():
+        missing = rows.loc[rows["mean_ood_pauroc_at_20"].isna(), "monitor"]
+        raise ValueError("no recall for: " + ", ".join(missing))
+    rows["on_demand_frontier"] = _regime_frontier(rows, "committed")
+    rows["committed_frontier"] = _regime_frontier(rows, "on_demand")
+    rows["computed_frontier"] = rows["on_demand_frontier"].where(
+        rows["pricing"].ne("committed"), rows["committed_frontier"]
+    )
+    rows.attrs["metric"] = "recall"
+    return rows
+
+
 def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
     """Nondominance among rows outside one self-hosted pricing regime."""
     rows = frame["pricing"].ne(excluded_pricing)
@@ -398,12 +484,20 @@ def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFra
     is_binary_score_interface = frame["interface"].str.contains(
         "logits|logprobs|native binary probability", case=False, na=False
     )
+    recall = frame.attrs.get("metric") == "recall"
     included = (
         ~frame["monitor"].isin(EXCLUDED_MONITORS)
-        & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
+        & frame["mean_ood_pauroc_at_20"].ge(
+            RECALL_MIN_PLOTTED if recall else MIN_PLOTTED_PERFORMANCE
+        )
         & (~is_ours | is_binary_score_interface)
     )
-    if not full:
+    if not full and recall:
+        # No paper rows; the decision models that the main figure omits stay
+        # when they are on a recall frontier.
+        on_frontier = frame["on_demand_frontier"] | frame["committed_frontier"]
+        included &= ~frame["monitor"].isin(MAIN_FIGURE_OMISSIONS) | on_frontier
+    elif not full:
         paper = frame["origin"].eq("Paper") & included
         paper_frontier = pd.Series(False, index=frame.index)
         paper_frontier[paper] = pareto_frontier_mask(
@@ -533,13 +627,18 @@ def plot_frontier(
         # most expensive point at the right edge.
         max(100.0, frame["cost_per_1k"].max() * (1.15 if report else 1.03)),
     )
-    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
+    recall = frame.attrs.get("metric") == "recall"
+    if recall:
+        axis.set_ylim(RECALL_MIN_PLOTTED - 0.02, 0.92)
+        axis.set_xlim(frame["cost_per_1k"].min() / 1.35, 40.0)
+    else:
+        axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
     frontier = frame.loc[frame["on_demand_frontier"]].sort_values("cost_per_1k")
     committed_frontier = frame.loc[frame["committed_frontier"]].sort_values(
         "cost_per_1k"
     )
-    paper_frontier = _paper_frontier(frame)
+    paper_frontier = frame.iloc[:0] if recall else _paper_frontier(frame)
     axis.plot(
         paper_frontier["cost_per_1k"],
         paper_frontier["mean_ood_pauroc_at_20"],
@@ -626,6 +725,7 @@ def plot_frontier(
     manual_labels = {
         **MANUAL_COMPARISON_LABELS,
         **(REPORT_LABEL_OVERRIDES if report else {}),
+        **(RECALL_LABEL_OVERRIDES if recall else {}),
     }
     # Direction cue in the empty upper-left corner.
     axis.annotate(
@@ -797,7 +897,10 @@ def plot_frontier(
         # Shorter, smaller axis titles in the report's terms; the caption
         # names the log scale.
         axis.set_xlabel("Inference cost (USD per 1,000 evaluations)", fontsize=14)
-        axis.set_ylabel("Mean-OOD pAUROC@20", fontsize=14)
+        axis.set_ylabel(
+            "Mean-OOD recall at 1% FPR" if recall else "Mean-OOD pAUROC@20",
+            fontsize=14,
+        )
     else:
         axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
         axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
@@ -807,7 +910,7 @@ def plot_frontier(
         _draw_slide_title(axis, cost_ratio)
     axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
     axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
-    _draw_legends(figure, axis, report=report)
+    _draw_legends(figure, axis, report=report, recall=recall)
     return figure
 
 
@@ -834,7 +937,9 @@ def _draw_slide_title(axis: plt.Axes, cost_ratio: float | None) -> None:
     )
 
 
-def _draw_legends(figure: plt.Figure, axis: plt.Axes, *, report: bool) -> None:
+def _draw_legends(
+    figure: plt.Figure, axis: plt.Axes, *, report: bool, recall: bool = False
+) -> None:
     legend_handles = [
         Line2D(
             [],
@@ -885,6 +990,20 @@ def _draw_legends(figure: plt.Figure, axis: plt.Axes, *, report: bool) -> None:
         "title_fontproperties": {"size": 13.5, "weight": "bold"},
         "alignment": "left",
     }
+    if report and recall:
+        # No paper rows: one row with the two monitor types and two frontiers.
+        axis.legend(
+            handles=legend_handles[1:] + frontier_handles[1:],
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=4,
+            frameon=False,
+            prop={"size": 13, "weight": "bold"},
+            handlelength=2.2,
+            columnspacing=1.4,
+        )
+        figure.tight_layout()
+        return
     if report:
         # One legend above the axes: monitor types in the first row, frontiers
         # in the second. Legend columns fill top to bottom.
@@ -966,6 +1085,11 @@ def parse_args() -> argparse.Namespace:
         help="Plot every registry point (the appendix figure)",
     )
     parser.add_argument(
+        "--recall",
+        action="store_true",
+        help="Plot recall at 1%% FPR instead of pAUROC@20 (with --report)",
+    )
+    parser.add_argument(
         "--report",
         action="store_true",
         help="Plot the technical report's version of the main figure",
@@ -976,9 +1100,13 @@ def parse_args() -> argparse.Namespace:
 def main() -> None:
     args = parse_args()
     frame = load_frontier_registry(args.source)
+    if args.recall:
+        frame = recall_frame(frame)
     plotted = select_plot_points(frame, full=args.full)
     omitted_count = len(frame) - len(plotted)
-    if args.report:
+    if args.report and args.recall:
+        default_outputs = RECALL_REPORT_OUTPUTS
+    elif args.report:
         default_outputs = REPORT_OUTPUTS
     elif args.full:
         default_outputs = FULL_OUTPUTS

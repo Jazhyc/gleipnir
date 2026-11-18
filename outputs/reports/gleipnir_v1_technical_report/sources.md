@@ -635,3 +635,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   only at 5% FPR (Figure 12, no table). Our rows: `mean_auroc` in
   `results/ood_recall_at_fpr/recall_at_fpr.json`, the unweighted mean of six
   per-source `roc_auc_score` values.
+- Figure `fig:recall-frontier` (JF, 2026-11-18): `scripts/plot_tool_trajectory_ood_frontier.py
+  --report --recall`, which takes the registry rows we scored and replaces
+  pAUROC@20 with `mean_recall` from `results/ood_recall_at_fpr/recall_at_fpr.json`,
+  then recomputes both frontiers with the 2% cost tolerance. On demand:
+  Gleipnir 4B, pplx-decider v1.3, Mercury Decide, d1-ultra, Gleipnir 27B;
+  committed use: Gleipnir 4B*, Gleipnir 27B*. "About twice": $0.176 / $0.0939.

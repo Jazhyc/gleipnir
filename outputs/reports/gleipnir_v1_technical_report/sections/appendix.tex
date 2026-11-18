@@ -199,6 +199,17 @@ Reasoning, then 0--10 score & 1.029 & 0.666 & 0.861 & 0.314 \\
 \end{tabular}
 \end{table}
 
+Figure~\ref{fig:recall-frontier} plots the recall against the cost.
+At this false-positive rate Gleipnir 27B still catches the most attacks, 0.874 at \$0.414 per 1,000 evaluations on demand, and at the committed-use rate the two Gleipnir monitors still form the frontier alone.
+At the on-demand rate, however, three decision models lie on the frontier between them, and Gleipnir 4B (0.606) catches fewer attacks than pplx-decider v1.3 (0.815), which costs about twice as much.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{ood_recall_frontier}
+\caption{Mean-OOD recall at a false-positive rate of 1\% against the inference cost per 1,000 evaluations (log scale), for the monitors that we scored; \citet{sinha2026training} do not report this recall. Markers, rates and frontiers follow Figure~\ref{fig:frontier}, and the figure omits the same monitors, except decision models on a frontier.}
+\label{fig:recall-frontier}
+\end{figure}
+
 \subsection{Output format}
 \label{app:ablation-format}
 
