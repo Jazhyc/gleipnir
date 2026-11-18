@@ -638,6 +638,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Figure `fig:recall-frontier` (JF, 2026-11-18): `scripts/plot_tool_trajectory_ood_frontier.py
   --report --recall`, which takes the registry rows we scored and replaces
   pAUROC@20 with `mean_recall` from `results/ood_recall_at_fpr/recall_at_fpr.json`,
-  then recomputes both frontiers with the 2% cost tolerance. On demand:
-  Gleipnir 4B, pplx-decider v1.3, Mercury Decide, d1-ultra, Gleipnir 27B;
-  committed use: Gleipnir 4B*, Gleipnir 27B*. "About twice": $0.176 / $0.0939.
+  then recomputes both frontiers with the cost tolerance (see the next
+  entry). Committed use: Gleipnir 4B*, Gleipnir 27B*.
+- Frontier tolerance raised from 2% to 3% (JF, 2026-11-18): on recall at
+  1% FPR, Mercury Decide ($0.1811, 0.821) costs 2.9% more than pplx-decider
+  v1.3 ($0.1760, 0.815), so v1.3 leaves the on-demand recall frontier and the
+  figure. The pAUROC@20 frontiers do not change. Recall frontier on demand:
+  Gleipnir 4B, Mercury Decide, d1-ultra, Gleipnir 27B. "About twice":
+  $0.1811 / $0.0939.

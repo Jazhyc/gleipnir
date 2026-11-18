@@ -282,16 +282,11 @@ REPORT_LABEL_OVERRIDES = {
         "va": "top",
     },
 }
-# The recall figure's middle is crowded: Decider v1.3 and Mercury Decide
-# nearly coincide, with Decider v1.2 and Jev 1.13 just below.
+# The recall figure's middle is crowded: Mercury Decide sits just above
+# Decider v1.2, with Jev 1.13 below.
 RECALL_LABEL_OVERRIDES = {
     "Mercury Decide native probabilities": {
         "xytext": (12, -10),
-        "ha": "left",
-        "va": "top",
-    },
-    "pplx-decider v1.3 native probabilities": {
-        "xytext": (12, -27),
         "ha": "left",
         "va": "top",
     },
@@ -403,11 +398,12 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     return frame
 
 
-# A row also leaves its regime's frontier when a better row costs at most 2%
-# more (user, 2026-11-18): at one request at a time the committed Gleipnir 27B
-# costs 1% more than pplx-decider v1.2 per evaluation, and a frontier step
-# for that difference makes the plot harder to read.
-FRONTIER_COST_TOLERANCE = 0.02
+# A row also leaves its regime's frontier when a better row costs at most 3%
+# more (user, 2026-11-18): such cost differences are too small to show as
+# frontier steps. At one request at a time the committed Gleipnir 27B costs 1%
+# more than pplx-decider v1.2, and on recall at 1% FPR Mercury Decide costs
+# 2.9% more than pplx-decider v1.3 and catches more.
+FRONTIER_COST_TOLERANCE = 0.03
 
 
 def recall_frame(frame: pd.DataFrame, path: str | Path = RECALL_SOURCE) -> pd.DataFrame:
