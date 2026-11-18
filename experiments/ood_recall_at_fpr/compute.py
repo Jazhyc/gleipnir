@@ -70,6 +70,13 @@ def load_scores(
                 label = nested(row, field)
                 if label is not None and int(label) != reference[row_id][0]:
                     raise ValueError(f"{monitor['name']}: label mismatch for {row_id}")
+    # Rows whose input the provider rejected score a fixed uninformative value,
+    # as in the campaign that produced them.
+    for file in monitor.get("rejected_files", []):
+        for row in read_rows(REPOSITORY_ROOT / file):
+            if row["id"] in scores:
+                raise ValueError(f"{monitor['name']}: rejected id {row['id']} scored")
+            scores[row["id"]] = float(monitor["rejected_score"])
     if set(scores) != set(reference):
         raise ValueError(
             f"{monitor['name']}: scores do not cover the frozen suite exactly"

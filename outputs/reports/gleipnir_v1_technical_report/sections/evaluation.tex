@@ -6,7 +6,7 @@ The reasoning monitors are those of Sinha et al., with the scores and costs that
 We scored decision models and unadapted base models ourselves, from their binary logits or native probabilities, and price them at API or hosted prices.
 We price Gleipnir at the cost of one B200 with one request at a time, at both rates of Section~\ref{sec:serving}, on the released serving stack.
 Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification (Section~\ref{sec:training-setup}).
-Figure~\ref{fig:frontier} shows the main comparisons, and Table~\ref{tab:ood-all} lists every monitor.
+Figure~\ref{fig:frontier} shows the main comparisons. Table~\ref{tab:ood-all} in Appendix~\ref{app:ood-all} lists every monitor, together with its recall at a false-positive rate of 1\%, which is closer to deployment.
 
 \begin{figure}[t]
 \centering

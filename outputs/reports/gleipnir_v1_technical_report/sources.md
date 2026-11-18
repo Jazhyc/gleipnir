@@ -618,3 +618,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `docs/findings/decision_models_ood_benchmark.md`, section "pplx-decider
   v1.3". Section 5 still names v1.2 as the strongest decision model
   (0.8956 against 0.8942).
+- Table `tab:ood-all`, recall column (JF, 2026-11-18): mean recall at 1%
+  FPR from `results/ood_recall_at_fpr/recall_at_fpr.json`
+  (`experiments/ood_recall_at_fpr/compute`, 23 monitors, all reproducing
+  their registry pAUROC@20 within 0.0006). Per source, the threshold is the
+  largest that flags at most 1% of benign rows (flag when score >
+  threshold); the six recalls are averaged with equal weight. Sinha et al.
+  report no recall at 1% FPR, so their rows show a dash. Gemini Decision 1's
+  two blocked rows score 0.5.

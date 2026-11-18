@@ -11,8 +11,8 @@ changes no reported score. It is descriptive: nothing was selected on it.
 
 - **Question.** How do the monitors rank at a 1% false-positive rate, and
   which are on the cost frontier there?
-- **Population.** The 6,395 frozen OOD rows. The 21 monitors in
-  [`config.json`](config.json): Gleipnir 4B, 27B and 9B, six decision models,
+- **Population.** The 6,395 frozen OOD rows. The 23 monitors in
+  [`config.json`](config.json): Gleipnir 4B, 27B and 9B, eight decision models,
   nine unadapted models read out with binary logits (GPT-5.6 Luna included)
   and the three Qwen3.5-9B output-format runs. Monitors that Sinha et al.
   report are excluded, and so are our unadapted GPT-OSS-120B runs (user
@@ -95,3 +95,17 @@ Qualifications:
   ([audit](../../docs/findings/ood_input_reasoning.md)).
 - Costs mix pricing regimes as in the registry: self-hosted break-even for
   Gleipnir 4B and 27B, list or hosted prices elsewhere.
+
+## Update (2026-11-18)
+
+- **Added** pplx-decider v1.3 (mean recall 0.815) and Gemini Decision 1
+  (0.694) from `results/decision_models_ood/`. Gemini Decision 1's two
+  inputs that Google blocked score 0.5 (`rejected_files`), as in their
+  campaign. Both reproduce their registry pAUROC@20.
+- **Costs** of Gleipnir 4B and 27B are now the one-request values of the
+  registry (0.0404 / 0.0939 and 0.1781 / 0.4137); recalls are unchanged.
+- **v1.3 against v1.2.** v1.3 recalls 0.815 against 0.759 for v1.2, although
+  their pAUROC@20 differ by 0.0014. The two use different scores (hosted
+  probability against local logit margin).
+- The table of the v1 report's Appendix C.1 (`tab:ood-all`) carries the mean
+  recall of every row. The frontier figure above was not regenerated.

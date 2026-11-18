@@ -11,7 +11,7 @@ CONFIG = json.loads((Path(__file__).parent / "config.json").read_text())
 
 def test_config_lists_each_monitor_once_with_costs() -> None:
     names = [monitor["name"] for monitor in CONFIG["monitors"]]
-    assert len(names) == len(set(names)) == 21
+    assert len(names) == len(set(names)) == 23
     for monitor in CONFIG["monitors"]:
         costs = monitor["cost_usd_per_1k"]
         assert costs == sorted(costs) and all(cost > 0 for cost in costs)
