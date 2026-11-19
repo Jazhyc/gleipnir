@@ -706,7 +706,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   SleightBench finding; Opus 4.6 in the Claude Code scaffold 62%.
 - Kimi K3 threshold 0.9841 (highest benign score), catch 0/40.
 - Figures `fig:sleightbench` and `fig:sleightbench-catch` plot committed-use
-  Gleipnir only and omit the base models (JF, 2026-11-19); one frontier:
+  Gleipnir only and omit the base models and pplx-decider v1.2, superseded
+  by v1.3 (JF, 2026-11-19); the caption does not mention them. One frontier:
   Gleipnir 4B → 27B → pplx-decider v1.3 → GPT-6.1 Terra on both metrics. The
   SleightBench appendix sits in Appendix G so that Appendix C holds only
   results that shaped the monitors.

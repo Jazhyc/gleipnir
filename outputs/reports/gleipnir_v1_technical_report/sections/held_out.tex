@@ -24,7 +24,7 @@ Each of our monitors scores each trajectory once, while the authors average 10 s
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{sleightbench_frontier}
-\caption{On SleightBench, pplx-decider v1.3 scores above both Gleipnir monitors at about the cost of Gleipnir 27B. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Gleipnir is priced at the committed-use rate, and the figure omits the base models; Table~\ref{tab:sleightbench} gives the on-demand costs and the base models. Markers follow Figure~\ref{fig:frontier}, and the frontier treats costs within 3\% of each other as equal. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
+\caption{On SleightBench, pplx-decider v1.3 scores above both Gleipnir monitors at about the cost of Gleipnir 27B. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Gleipnir is priced at the committed-use rate; Table~\ref{tab:sleightbench} lists every monitor with both rates. Markers follow Figure~\ref{fig:frontier}, and the frontier treats costs within 3\% of each other as equal. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
 \label{fig:sleightbench}
 \end{figure}
 

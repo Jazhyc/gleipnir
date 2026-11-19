@@ -4,7 +4,8 @@ Reads ``results/sleightbench_eval/frontier.json`` (written by
 ``python -m experiments.sleightbench_eval.frontier``) and draws it in the style
 of the report's OOD frontier, with the 3% cost tolerance. Only the
 committed-use Gleipnir rows are plotted, with one frontier, and the base
-models are left out (user, 2026-11-19); the appendix table keeps both.
+models and pplx-decider v1.2 are left out (user, 2026-11-19); the appendix
+table keeps them.
 """
 
 from __future__ import annotations
@@ -44,6 +45,8 @@ METRICS = {
         (-0.03, 0.62),
     ),
 }
+# Superseded by pplx-decider v1.3 (user, 2026-11-19); the table keeps it.
+OMITTED = {"pplx-decider v1.2"}
 # Label placement per metric: offset in points, horizontal and vertical
 # alignment. Labels default to the right of their point.
 LABELS = {
@@ -78,7 +81,9 @@ def load(path: Path = SOURCE) -> pd.DataFrame:
     """The plotted rows: list-priced monitors and committed-use Gleipnir."""
     frame = pd.DataFrame(json.loads(path.read_text())["monitors"])
     frame = frame.loc[
-        frame["pricing"].ne("on_demand") & frame["kind"].ne("base")
+        frame["pricing"].ne("on_demand")
+        & frame["kind"].ne("base")
+        & ~frame["monitor"].isin(OMITTED)
     ].reset_index(drop=True)
     frame["category"] = np.where(frame["kind"].eq("gleipnir"), "Gleipnir", "Other")
     return frame
