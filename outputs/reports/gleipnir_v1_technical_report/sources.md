@@ -671,7 +671,6 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 
 ## Section 6 opening (JF, 2026-11-19)
 
-- Saturation of the OOD suite: Gleipnir 27B 0.951 (interval 0.941–0.960) and
-  Claude Opus 4.6 0.942 Mean-OOD pAUROC@20, as in Section 5; mean AUROC 0.984
-  and 0.979 from `tab:ood-all` (Opus from Sinha et al. Table 4). The SHADE-Arena
-  pointer repeats Appendix `app:shade`.
+- Saturation of the OOD suite is stated without numbers (JF): the strongest
+  monitors' scores are in Section 5 and `tab:ood-all`. The SHADE-Arena pointer
+  repeats Appendix `app:shade`.

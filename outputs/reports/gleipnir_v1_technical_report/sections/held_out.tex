@@ -2,14 +2,12 @@
 \label{sec:held-out}
 
 The OOD suite of \citet{sinha2026training} no longer separates the strongest monitors.
-Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20 (95\% bootstrap interval 0.941--0.960) and Claude Opus 4.6 scores 0.942, a difference of 0.009 that lies within the interval (Section~\ref{sec:evaluation}).
-Their mean AUROC is 0.984 and 0.979, which leaves little room for any monitor to improve.
-In addition, the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
+Their scores lie within each other's bootstrap intervals and close to the maximum (Section~\ref{sec:evaluation}), and the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
 This section therefore turns to benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
 
-\todo{ARK: natural cheats, misleading text in the trajectory, and text addressed to the monitor (OUTLINE C5.1--C5.3).}
-
 \todo{SleightBench (stripped view, ControlArena prompt), OUTLINE C5.4.}
+
+\todo{ARK: natural cheats, misleading text in the trajectory, and text addressed to the monitor (OUTLINE C5.1--C5.3).}
 
 \todo{Introduce monitor-directed attacks here: an agent can evade monitors by embedding prompt injections in its outputs~\citep{terekhov2025adaptive}. Then the tests of the Gleipnir monitors against such text.}
