@@ -56,6 +56,15 @@ No results are reported yet.
   sources) and `pplx-decider-v1-27b`. The cards give no release dates, no
   paper and no citation for the models. The v1.2 cards call the repository
   private although the pages load without a token.
+- Perplexity Decider blog post (`perplexity2026deciderblog`,
+  `https://www.perplexity.ai/hub/blog/perplexity-decider`, 2026-11-12;
+  section text and BibTeX supplied by JF on 2026-11-19, the page returns 403
+  to our fetcher). Its "Monitoring RL rollouts" section says Perplexity uses
+  Decider to diagnose RL rollouts (what failed in a step: tool service,
+  external site, sandbox, harness or the agent's code; whether the agent read
+  a result correctly), observing only. The excerpt names no training data.
+  The `pplx-decider-v1.3` card credits most gains to tasksource (Sileo 2024)
+  and gives no other training details.
 - A web search on 2026-11-09 found no survey of decision models and no
   evaluation of them as control monitors.
 - Anthropic, *How we built Claude Code auto mode*, Anthropic Engineering blog
