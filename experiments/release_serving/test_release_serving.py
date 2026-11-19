@@ -227,3 +227,35 @@ def test_attention_compile_uses_the_target_plan_and_limit() -> None:
     assert small[1:] == ["-m", module, "--length", "262144"]
     large = attention_compile_command(TARGETS["27b"], 32768)
     assert large[1:] == ["-m", module, "--length", "32768", "--heads", "24", "4"]
+
+
+ENTRYPOINT = ROOT / "experiments/release_serving/image/entrypoint.sh"
+
+
+def test_entrypoint_runs_other_commands_as_given() -> None:
+    import subprocess
+
+    result = subprocess.run(
+        ["bash", str(ENTRYPOINT), "echo", "shell"], capture_output=True, text=True
+    )
+    assert result.returncode == 0 and result.stdout == "shell\n"
+
+
+def test_entrypoint_serves_the_release_models_and_starts_ssh_only_with_a_key() -> None:
+    text = ENTRYPOINT.read_text()
+    assert '"" | 4b | 27b) ;;' in text
+    assert '[ -n "${PUBLIC_KEY:-}" ] && [ -x /start.sh ]' in text
+    assert text.rstrip().endswith(
+        'exec "$PY" -m experiments.release_serving.serve "$MODEL" "$@"'
+    )
+
+
+def test_layer12_replaces_the_image_entrypoint() -> None:
+    from experiments.release_serving.image import layer12
+
+    targets = [
+        target for source, target in layer12.FILES if source == layer12.ENTRYPOINT
+    ]
+    assert "opt/gleipnir-release/entrypoint.sh" in targets
+    assert f"{layer12.IMAGE_ROOT}/{layer12.ENTRYPOINT}" in targets
+    assert layer12.BASE.endswith(":1.1")

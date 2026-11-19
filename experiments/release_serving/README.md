@@ -357,6 +357,28 @@ gain in cost.
   that runs is the `nvidia-smi` name query, so the B200 check of `1.1`
   was dropped (user, 18:40 UTC) and no B200 Pod was launched for it.
 
+## Image 1.2: shell access (2026-11-19)
+
+User decision, 2026-11-19: let users of the image reach a shell on the Pod
+that serves it. In 1.1 any start command went to the release entrypoint as a
+model name, so a Runpod Pod could serve but not be reached over SSH unless
+its entrypoint was overridden, which Runpod's GraphQL API cannot do.
+
+- **What changes.** Only `image/entrypoint.sh`:
+  - `4b`, `27b` or no argument serves exactly as in 1.1;
+  - any other command runs as given (`/start.sh`, `bash`);
+  - with `PUBLIC_KEY` set (Runpod's convention) and the base image's
+    `/start.sh` present, SSH starts in the background before the server.
+  Serving layers, kernels, command and environment are 1.1's bytes.
+- **Build.** One layer on `1.1` (digest `272f4a4d…`), `image/layer12.py`:
+  the entrypoint at `/opt/gleipnir-release/entrypoint.sh` and its repository
+  copy, this README and the builder.
+- **Check.** A fresh B200 from `1.2-rc1` with start command `4b` and
+  `PUBLIC_KEY` set: SSH reachable while the server starts, then the
+  synthetic identity scores of both models against the 1.0 B200 rows
+  (no ID passes). The same Pod runs the
+  [per-action prefix-caching replay](../prefix_caching_replay/README.md).
+
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
 Public `-BF16` repositories at their release tags, served with the recipe in
