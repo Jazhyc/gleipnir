@@ -754,3 +754,15 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   counting-attack analysis). Section 6.1 now points to Appendix G.1 for the
   comparison instead of quoting Opus 4.6's 32%.
 - `tab:ood-all` row spacing 0.96 → 0.94 so the Jev 1.14 row fits the page.
+- Section 6.1 interpretation (JF, 2026-11-19). "Matches or exceeds its
+  teacher on the OOD suite": 0.951 against 0.908 (lead from one SHADE task,
+  `app:shade`); SleightBench gap 0.402 − 0.299 = 0.103. Training-data support:
+  `docs/findings/sleightbench_released_monitors.md` (source review of the five
+  training sources, none with a monitor in the loop; keyword scan of the
+  8,688 teacher-training prompts finds SleightBench mechanisms in roughly
+  1–3% of rows or fewer). Decider breadth: v1.2 card ("a large amount of other
+  decision data") and the blog's RL-rollout monitoring; the v1.3 card credits
+  tasksource. Terra 55% vs authors' Claude Code 60–62% and Gemini 3.1 Pro
+  high 54% from `tab:sleightbench`. The earlier "honest mistakes" reading was
+  dropped: on our four-category mistake-shaped split (21 attacks) Gleipnir 27B
+  AUROC 0.615 matches Kimi K3 0.629, so it does not explain the gap.
