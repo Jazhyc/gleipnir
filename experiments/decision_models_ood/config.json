@@ -80,6 +80,15 @@
       "price_note": "Served free on OpenRouter; costs use the $0.02/M list price of v1.2 (user, 2026-11-18). Billed spend is $0.",
       "maximum_canary_cost_usd": 0.01,
       "maximum_full_cost_usd": 0.01
+    },
+    "jev_1_14": {
+      "added_at": "2026-11-19",
+      "openrouter_id": "typesafe/jev-1.14",
+      "provider": "TypeSafe",
+      "provider_revision": "typesafe/jev-1.14-20261014",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.042,
+      "maximum_full_cost_usd": 3.25
     }
   },
   "request": {

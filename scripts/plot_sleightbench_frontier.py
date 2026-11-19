@@ -3,9 +3,9 @@
 Reads ``results/sleightbench_eval/frontier.json`` (written by
 ``python -m experiments.sleightbench_eval.frontier``) and draws it in the style
 of the report's OOD frontier, with the 3% cost tolerance. Only the
-committed-use Gleipnir rows are plotted, with one frontier, and the base
-models and pplx-decider v1.2 are left out (user, 2026-11-19); the appendix
-table keeps them.
+committed-use Gleipnir rows are plotted, with one frontier; the base models
+and the superseded pplx-decider v1.2 and Jev 1.13 are left out (user,
+2026-11-19). The appendix table keeps them.
 """
 
 from __future__ import annotations
@@ -45,8 +45,9 @@ METRICS = {
         (-0.03, 0.62),
     ),
 }
-# Superseded by pplx-decider v1.3 (user, 2026-11-19); the table keeps it.
-OMITTED = {"pplx-decider v1.2"}
+# Superseded by newer versions of the same models (user, 2026-11-19); the
+# table keeps them.
+OMITTED = {"pplx-decider v1.2", "Jev 1.13"}
 # Label placement per metric: offset in points, horizontal and vertical
 # alignment. Labels default to the right of their point.
 LABELS = {
@@ -56,7 +57,7 @@ LABELS = {
         # Shares its point with Gleipnir 27B.
         "pplx-decider v1.2": ((8, 6), "left", "bottom"),
         "pplx-decider v1.3": ((0, 12), "center", "bottom"),
-        "Jev 1.13": ((0, -11), "center", "top"),
+        "Jev 1.14": ((0, -11), "center", "top"),
         "GPT-6 Luna": ((0, -11), "center", "top"),
         "Gemini Decision 1": ((0, 10), "center", "bottom"),
         "GPT-6.1 Terra": ((0, 12), "center", "bottom"),

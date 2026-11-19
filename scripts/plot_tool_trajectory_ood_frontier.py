@@ -62,6 +62,7 @@ RECALL_NAMES = {
     "Mercury Decide native probabilities": "Mercury Decide",
     "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
     "Jev 1.13 native probabilities": "Jev 1.13",
+    "Jev 1.14 native probabilities": "Jev 1.14",
     "pplx-decider v1.2 native readout": "pplx-decider v1.2",
     "pplx-decider v1.3 native probabilities": "pplx-decider v1.3",
     "Gemini Decision 1 native probabilities": "Gemini Decision 1",
@@ -92,6 +93,8 @@ EXCLUDED_MONITORS = {
 # report's table instead), early base-model references without an improvement
 # arrow, and Kimi K2.6 (the teacher is K3).
 MAIN_FIGURE_OMISSIONS = {
+    # Superseded by Jev 1.14 (user, 2026-11-19).
+    "Jev 1.13 native probabilities",
     "Microsoft-Decision-1 native probabilities",
     "d1 native probabilities",
     "Gemini Decision 1 native probabilities",
@@ -147,7 +150,7 @@ PAPER_COMPARISON_MONITORS = {
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
-    "Jev 1.13 native probabilities": {
+    "Jev 1.14 native probabilities": {
         "xytext": (0, -14),
         "ha": "center",
         "va": "top",
@@ -258,6 +261,17 @@ MANUAL_COMPARISON_LABELS = {
 }
 # The report's smaller canvas puts these labels on neighbouring points.
 REPORT_LABEL_OVERRIDES = {
+    # Right of its point; Decider v1.2's label goes below it.
+    "Jev 1.14 native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    "pplx-decider v1.2 native readout": {
+        "xytext": (12, -28),
+        "ha": "left",
+        "va": "top",
+    },
     # Left of its point; the on-demand 27B's label goes above its own point.
     "Qwen3.8-27B Kimi-soft strict (committed GPUs)": {
         "xytext": (-10, 0),
@@ -285,13 +299,19 @@ REPORT_LABEL_OVERRIDES = {
 # The recall figure's middle is crowded: Mercury Decide sits just above
 # Decider v1.2, with Jev 1.13 below.
 RECALL_LABEL_OVERRIDES = {
+    "Jev 1.14 native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    # Below Jev 1.14's point.
     "Mercury Decide native probabilities": {
-        "xytext": (12, -10),
+        "xytext": (12, -40),
         "ha": "left",
         "va": "top",
     },
     "pplx-decider v1.2 native readout": {
-        "xytext": (0, -11),
+        "xytext": (0, -26),
         "ha": "center",
         "va": "top",
     },
@@ -450,6 +470,7 @@ def _display_label(monitor: str) -> str:
         "Kimi K3 binary logits": "Kimi K3 (teacher)",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
+        "Jev 1.14 native probabilities": "Jev 1.14",
         "pplx-decider v1.2 native readout": "Decider v1.2",
         "Mercury Decide native probabilities": "Mercury Decide",
         "d1-ultra native probabilities": "d1-ultra",

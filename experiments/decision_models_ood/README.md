@@ -68,6 +68,15 @@ margin, this row uses the hosted endpoint's probability and its billed input
 tokens, like the other models of this campaign. One probe request on a canary
 row (2026-11-18) confirmed the endpoint accepts these settings.
 
+### Amendment: Jev 1.14 (2026-11-19, before any paid call)
+
+The user added Jev 1.14 (`typesafe/jev-1.14`, pinned to TypeSafe, revision
+`-20261014`, 262,144-token window, $0.042/M input, free output; endpoint
+listing checked 2026-11-19), so that both TypeSafe and Perplexity are
+represented by their newest model. Every other part of the protocol,
+including the shared ceilings, is unchanged; about 60M tokens are expected,
+$2.50 at list price.
+
 ## Running
 
 ```bash
@@ -77,7 +86,7 @@ python -m experiments.decision_models_ood.run run <model> full
 ```
 
 Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`,
-`gemini_decision_1`, `pplx_decider_v1_3`.
+`gemini_decision_1`, `pplx_decider_v1_3`, `jev_1_14`.
 Outputs go to `results/decision_models_ood/<model>/<phase>/`.
 
 ## Result
@@ -88,5 +97,7 @@ Microsoft-Decision-1 0.7506 ($0.3887/1K), d1 0.6742 ($0.1653/1K).
 Gemini Decision 1 (amendment, 2026-11-18) scores 0.8673 at $0.9306/1K, also
 off the frontier; Google's filter blocked 2 MLE-Sabotage inputs.
 pplx-decider v1.3 (amendment, 2026-11-18, free endpoint, priced at v1.2's
-$0.02/M) scores 0.8942 at $0.1760/1K, just below v1.2. See
+$0.02/M) scores 0.8942 at $0.1760/1K, just below v1.2. Jev 1.14
+(amendment, 2026-11-19) scores 0.8763 at $0.3887/1K, above Jev 1.13 (0.8495)
+and off the frontier. See
 [the finding](../../docs/findings/decision_models_ood_benchmark.md).

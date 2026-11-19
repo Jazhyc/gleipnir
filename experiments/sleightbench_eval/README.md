@@ -547,6 +547,19 @@ python -m experiments.sleightbench_eval.api_decisions decider_v13_ca --limit 1
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb15
 ```
 
+## Exploratory run sb16: Jev 1.14 with the ControlArena prompt (frozen 2026-11-19)
+
+User-requested on 2026-11-19 so that TypeSafe's newest model is measured as
+Perplexity's is (`sb15`). Identical to `sb15` with the model changed to
+`typesafe/jev-1.14` (revision `-20261014`, pinned to TypeSafe, $0.042/M
+input, free output; listing checked 2026-11-19). Model `jev_114_ca`, stripped
+view, about $0.07, $0.50 bound.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions jev_114_ca --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb16
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

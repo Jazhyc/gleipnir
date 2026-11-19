@@ -686,6 +686,28 @@ v1.3 $0 ($0.030 at list price).
 
 Results: `results/sleightbench_eval/sb15/`.
 
+## Exploratory: Jev 1.14 with the ControlArena prompt (run `sb16`)
+
+User-requested on 2026-11-19 so that TypeSafe's newest model is measured as
+Perplexity's is: `sb15` with the model changed to `jev-1.14-20261014`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb16-jev-114-with-the-controlarena-prompt-frozen-2026-11-19)).
+All 86 stripped rows answered with no rejections, for $0.066.
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **Jev 1.14** | `sb16` | **20.0%** [7.5, 32.5] | **0.679** | **0.260** [0.165, 0.391] | 62.5% |
+| Jev 1.13 | `sb12` | 12.5% [5.0, 27.5] | 0.665 | 0.255 | 60% |
+| pplx-decider v1.3 | `sb15` | 27.5% [15.0, 42.5] | 0.738 | 0.397 | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+
+- **Jev 1.14 ranks like Jev 1.13** (pAUROC@20 0.260 against 0.255) and catches
+  three more attacks, level with Gleipnir 27B at 1% FPR.
+- **Coarse scores.** It returns 21 distinct values over 86 rows, and 11 of 40
+  attacks tie their benign twin, as Jev 1.13 did.
+- Threshold 0.17 with 0% realized FPR.
+
+Results: `results/sleightbench_eval/sb16/`.
+
 ## Diagnostic: single-trial ranking for the authors' protocol
 
 Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each

@@ -3,7 +3,7 @@
 Every row is the stripped view with the ControlArena instruction: the binary
 logit prompt (``sb02`` for Gleipnir, ``sb04`` immediate for the base models,
 ``sb05`` and the OpenAI runs) or the same instruction as a Noul question for
-the decision models (``sb12``, ``sb15``).
+the decision models (``sb12``, ``sb15``, ``sb16``).
 
 Costs are USD per 1,000 SleightBench evaluations, at the prices of the OOD
 frontier (``docs/research/tool_trajectory_ood_frontier.md``):
@@ -60,6 +60,7 @@ MONITORS = [
     Monitor("GPT-6 Sol", "sb07", "gpt6_sol", "api", 2.0, 10.0),
     Monitor("GPT-5.5", "sb08", "gpt55", "api", 5.0, 30.0),
     Monitor("Jev 1.13", "sb12", "jev_113_ca", "api", 0.042),
+    Monitor("Jev 1.14", "sb16", "jev_114_ca", "api", 0.042),
     Monitor("pplx-decider v1.2", "sb12", "decider_v12_ca", "api", 0.02),
     # Free on OpenRouter; priced at v1.2's list price (user, 2026-11-18).
     Monitor("pplx-decider v1.3", "sb15", "decider_v13_ca", "api", 0.02),

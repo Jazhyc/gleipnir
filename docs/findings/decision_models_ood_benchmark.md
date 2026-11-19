@@ -131,3 +131,32 @@ point.
   the same rows; neither predicted the OOD score well.
 - **Artifacts.** `results/decision_models_ood/pplx_decider_v1_3/`; full-run
   score SHA-256 prefix `db97ecfe63b9`.
+
+## Jev 1.14 (2026-11-19)
+
+User-requested so that TypeSafe's newest model is measured as Perplexity's
+v1.3 was ([amendment](../../experiments/decision_models_ood/README.md#amendment-jev-114-2026-11-19-before-any-paid-call)).
+`typesafe/jev-1.14`, pinned to TypeSafe, revision `jev-1.14-20261014`. The
+canary passed ($0.049), and all 6,395 OOD rows answered on the first attempt
+with no rejections: 59,178,752 input tokens, $2.49 at $0.042/M.
+
+| Monitor | Mean-OOD pAUROC@20 | Mean AUROC | Recall at 1% FPR | USD / 1K |
+|---|---:|---:|---:|---:|
+| Jev 1.14 | 0.8763 | 0.9393 | 0.783 | 0.3887 |
+| Jev 1.13 | 0.8495 | 0.9269 | 0.733 | 0.3887 |
+
+| Benchmark | AgentDojo | CUA-SHADE | IaC | MLE | Rogue Eval | SHADE |
+|---|---:|---:|---:|---:|---:|---:|
+| Jev 1.14 pAUROC@20 | 0.9959 | 0.8340 | 0.9808 | 0.9934 | 0.9341 | 0.5194 |
+
+- **Better than 1.13 at the same price**, by 0.027 pAUROC@20, but off the
+  frontier: pplx-decider v1.2 (0.8956) and Mercury Decide (0.8828) score
+  higher at under half the cost.
+- **Coarse scores.** 97 distinct values over 6,395 rows (0.03 to 0.99), as
+  for 1.13.
+- On SleightBench (stripped view, ControlArena prompt, run `sb16`) it scores
+  0.260 pAUROC@20 and catches 20% at 1% FPR
+  ([finding](sleightbench_released_monitors.md)).
+- In the report figures Jev 1.14 replaces Jev 1.13 (user, 2026-11-19); the
+  tables keep both.
+- **Artifacts.** `results/decision_models_ood/jev_1_14/`.

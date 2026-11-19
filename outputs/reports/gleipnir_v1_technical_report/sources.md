@@ -711,3 +711,15 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   Gleipnir 4B → 27B → pplx-decider v1.3 → GPT-6.1 Terra on both metrics. The
   SleightBench appendix sits in Appendix G so that Appendix C holds only
   results that shaped the monitors.
+
+## Jev 1.14 (JF, 2026-11-19)
+
+- `tab:ood-all` row: `results/decision_models_ood/jev_1_14/full/summary.json`
+  (0.8763 pAUROC@20, 0.9393 AUROC, $0.3887/1K at $0.042/M) and recall 0.783
+  from `results/ood_recall_at_fpr/recall_at_fpr.json`. Registry row added to
+  `docs/research/tool_trajectory_ood_frontier.md`.
+- `tab:sleightbench` row: run `sb16` (0.260 [0.165, 0.391], AUROC 0.679, catch
+  0.200 [0.075, 0.325], $0.771/1K).
+- Figures `fig:frontier`, `fig:recall-frontier`, `fig:sleightbench` and
+  `fig:sleightbench-catch` show Jev 1.14 in place of Jev 1.13 (superseded);
+  the frontiers are unchanged.
