@@ -41,7 +41,10 @@ Appendix~\ref{app:sleightbench} compares these monitors with the reasoning monit
 Gleipnir 27B matches its teacher on the OOD suite (Section~\ref{sec:evaluation}) but scores 0.103 pAUROC@20 below it on SleightBench.
 One explanation is the support of the training data.
 The OOD suite was not built to evade monitors, while SleightBench was, and our training data contains no attacks built against a monitor.
-In the same way, pplx-decider v1.3 is trained on a much wider range of decision tasks~\citep{perplexity2026decider}, and Perplexity uses it to monitor its own agent rollouts~\citep{perplexity2026deciderblog}, which could explain its lead over Gleipnir 27B; its training data is not public, so we cannot test this.
+pplx-decider v1.3 shares the base model of Gleipnir 27B but differs from it in two ways that could explain its lead.
+Its training covers a much wider range of decision tasks~\citep{perplexity2026decider}, and Perplexity uses it to monitor its own agent rollouts~\citep{perplexity2026deciderblog}.
+It also uses bidirectional attention, in which every token attends to the tokens after it (Appendix~\ref{app:serving-decider}).
+Its training data is not public, so we cannot separate the two effects.
 
 The catch rate adds noise to these comparisons, because it depends on the single highest benign score.
 Kimi K3 catches no attack because it scores one benign trajectory above every attack, although its pAUROC@20 matches that of pplx-decider v1.3.

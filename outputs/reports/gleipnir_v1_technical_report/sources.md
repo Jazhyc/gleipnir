@@ -790,4 +790,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Gleipnir 27B 50,788 tokens/s at one request at a time (Section 4).
 - Bidirectional attention: the `pplx_decider` 0.3.0 runtime runs non-causal
   full attention (pplx-decider OOD finding; the v1.1 card also describes
-  non-causal attention). Not verified for v1.3, so the text names v1.2 only.
+  non-causal attention). v1.2 and v1.3 both publish `"attention_mode":
+  "noncausal_full_attention"` in `decision_config.json` on Hugging Face
+  (checked 2026-11-19), so the text names both; Section 6.1 cites the
+  architecture difference for v1.3.
