@@ -801,14 +801,14 @@ In this scaffold Claude Opus 4.6 catches 62\% of the attacks and Claude Opus 4.7
 Without the scaffold, the strongest monitor of the authors is Gemini 3.1 Pro with high thinking effort, at 54\%.
 
 \begin{table}[h]
-\caption{Results on SleightBench (stripped view, ControlArena instruction), ordered by cost within each group. Cost is in USD per 1,000 evaluations, priced as in Table~\ref{tab:ood-all} for the trajectories of this benchmark; the Gleipnir rows give the committed-use and the on-demand cost. Catch is the share of the 40 attacks scored above the highest of the 43 benign scores, the threshold of \citet{najt2026sleight} for a 1\% false-positive rate; multi-session attacks take the maximum over their parts. Intervals resample scenarios, each attack together with its benign twin (10,000 draws). The last two groups are copied from \citet{najt2026sleight}, read from their per-model figures.}
+\caption{Results on SleightBench (stripped view, ControlArena instruction), ordered by cost within each group. Cost is in USD per 1,000 evaluations, priced as in Table~\ref{tab:ood-all} for the trajectories of this benchmark; the Gleipnir rows give the committed-use and the on-demand cost. Multi-session attacks take the maximum over their parts. Intervals resample scenarios, each attack together with its benign twin (10,000 draws). The last two groups are copied from \citet{najt2026sleight}, read from their per-model figures.}
 \label{tab:sleightbench}
 \centering
 \small
 \setlength{\tabcolsep}{4pt}
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
-Monitor & Cost & pAUROC@20 & AUROC & Catch \\
+Monitor & Cost & pAUROC@20 & AUROC & Catch rate @ 1\% FPR \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
 Gleipnir 4B & 0.082 / 0.190 & 0.209 (0.112--0.347) & 0.611 & 0.075 (0.000--0.225) \\
