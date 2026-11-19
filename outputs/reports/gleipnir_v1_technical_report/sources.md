@@ -766,3 +766,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   high 54% from `tab:sleightbench`. The earlier "honest mistakes" reading was
   dropped: on our four-category mistake-shaped split (21 attacks) Gleipnir 27B
   AUROC 0.615 matches Kimi K3 0.629, so it does not explain the gap.
+- Interpretation trimmed (JF): "matches its teacher" on the OOD suite; the
+  keyword-scan and test sentences and the one-pass/10-sample caveat were
+  removed. "Our training data contains no attacks built against a monitor"
+  rests on the source review in the SleightBench finding (no source put a
+  monitor in the loop).
