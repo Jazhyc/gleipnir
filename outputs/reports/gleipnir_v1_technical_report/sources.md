@@ -675,7 +675,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   monitors' scores are in Section 5 and `tab:ood-all`. The SHADE-Arena pointer
   repeats Appendix `app:shade`.
 
-## Section 6.1 SleightBench and Appendix C.3 (JF, 2026-11-19)
+## Section 6.1 SleightBench and Appendix G.1 (JF, 2026-11-19)
 
 - Citation `najt2026sleight`: arXiv:2605.16626 (v2, 2026-05-19), Najt, Toft,
   Tracy, Roger and Benton. "40 attacks across 11 categories" and the 32% Opus
@@ -705,3 +705,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   appendix per-model figures 21–26 (CA prompt, stripped), as recorded in the
   SleightBench finding; Opus 4.6 in the Claude Code scaffold 62%.
 - Kimi K3 threshold 0.9841 (highest benign score), catch 0/40.
+- Figures `fig:sleightbench` and `fig:sleightbench-catch` plot committed-use
+  Gleipnir only and omit the base models (JF, 2026-11-19); one frontier:
+  Gleipnir 4B → 27B → pplx-decider v1.3 → GPT-6.1 Terra on both metrics. The
+  SleightBench appendix sits in Appendix G so that Appendix C holds only
+  results that shaped the monitors.
