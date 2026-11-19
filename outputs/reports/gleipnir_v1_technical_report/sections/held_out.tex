@@ -17,7 +17,7 @@ Each attack has a benign twin, the same trajectory without the harmful part, and
 
 We score the stripped view of the authors, a stricter form of the action-only input (Section~\ref{sec:background-sinha}) that also removes the assistant messages.
 Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.
-A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, which is the authors' threshold for a false-positive rate of 1\%.
+A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, the authors' threshold for a 1\% false-positive rate.
 We price the monitors as in Section~\ref{sec:evaluation}, for trajectories with a mean of about 17,600 tokens.
 Each of our monitors scores each trajectory once, while the authors average 10 samples at temperature 1 and report only the catch rate, so Figure~\ref{fig:sleightbench} omits their monitors; Appendix~\ref{app:sleightbench} lists them.
 
