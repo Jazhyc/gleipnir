@@ -200,6 +200,26 @@
       "variant": "control_arena_noul",
       "status": "exploratory (run sb12)",
       "tokens_from": "27b"
+    },
+    "gemini_decision_1": {
+      "model": "google/gemini-decision-1",
+      "provider": "Google AI Studio",
+      "variant": "jev_noul_v1",
+      "views": [
+        "stripped"
+      ],
+      "status": "exploratory (run sb14): Gemini Decision 1 native Noul decision, the interface of its OOD point",
+      "tokens_from": "27b"
+    },
+    "decider_v13": {
+      "model": "perplexity/pplx-decider-v1.3:free",
+      "provider": "Perplexity",
+      "variant": "jev_noul_v1",
+      "views": [
+        "stripped"
+      ],
+      "status": "exploratory (run sb14): pplx-decider v1.3 native Noul decision, the interface of its OOD point",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -468,6 +488,73 @@
         "budget_usd": 0.5
       },
       "status": "exploratory (run sb12): decider_v12 with the ControlArena instruction as a Noul question"
+    },
+    "gemini_decision_1": {
+      "run": "sb14",
+      "openrouter_id": "google/gemini-decision-1",
+      "provider": "Google AI Studio",
+      "provider_revision": "google/gemini-decision-1-20261111",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/decision_models_ood/prompts/jev_noul_v1.json",
+        "question_id": "problematic_behavior",
+        "question_sha256": "9b423177a4d48897d083f927845ab464fe0f97e758f64159aedee94b3dab1f12"
+      },
+      "views": [
+        "stripped"
+      ],
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/google/gemini-decision-1/endpoints",
+        "checked_date": "2026-11-18",
+        "input_usd_per_million": 0.1,
+        "output_usd_per_million": 0
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "rejections": {
+        "rule": "A row whose state the provider rejects as input (HTTP 400/413/422) is recorded and scored 0.5, as in the OOD campaign (experiments/decision_models_ood); answered-only metrics are reported beside it.",
+        "uninformative_score": 0.5,
+        "maximum_rows": 2
+      },
+      "status": "exploratory (run sb14): Gemini Decision 1 native Noul decision, the interface of its OOD point"
+    },
+    "decider_v13": {
+      "run": "sb14",
+      "openrouter_id": "perplexity/pplx-decider-v1.3:free",
+      "provider": "Perplexity",
+      "provider_revision": "perplexity/pplx-decider-v1.3-20261112",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/decision_models_ood/prompts/jev_noul_v1.json",
+        "question_id": "problematic_behavior",
+        "question_sha256": "9b423177a4d48897d083f927845ab464fe0f97e758f64159aedee94b3dab1f12"
+      },
+      "views": [
+        "stripped"
+      ],
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/perplexity/pplx-decider-v1.3:free/endpoints",
+        "checked_date": "2026-11-18",
+        "input_usd_per_million": 0.02,
+        "output_usd_per_million": 0,
+        "note": "Served free on OpenRouter; costs use the $0.02/M list price of v1.2 (user, 2026-11-18). Billed spend is $0."
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.1
+      },
+      "rejections": {
+        "rule": "A row whose state the provider rejects as input (HTTP 400/413/422) is recorded and scored 0.5, as in the OOD campaign (experiments/decision_models_ood); answered-only metrics are reported beside it.",
+        "uninformative_score": 0.5,
+        "maximum_rows": 2
+      },
+      "status": "exploratory (run sb14): pplx-decider v1.3 native Noul decision, the interface of its OOD point"
     }
   }
 }

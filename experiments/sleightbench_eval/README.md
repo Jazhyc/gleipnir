@@ -506,6 +506,33 @@ python -m experiments.sleightbench_eval.api_openai gpt61_terra --limit 1   # can
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb13
 ```
 
+## Exploratory run sb14: Gemini Decision 1 and pplx-decider v1.3 (frozen 2026-11-19)
+
+User-requested on 2026-11-19 for the technical report, after both models
+joined the OOD comparison
+([finding](../../docs/findings/decision_models_ood_benchmark.md)). Identical
+to `sb11` (states, frozen Jev Noul question, Decisions API, routing rules)
+except:
+- **Models.** `gemini_decision_1` (`google/gemini-decision-1-20261111`,
+  pinned to Google AI Studio, $0.10/M input) and `decider_v13`
+  (`perplexity/pplx-decider-v1.3-20261112` on the free endpoint
+  `pplx-decider-v1.3:free`, pinned to Perplexity, priced at v1.2's $0.02/M;
+  billed $0).
+- **View.** Stripped only (86 rows per model), per the 2026-10-31 decision
+  below.
+- **Rejections.** Google's input filter blocked 2 OOD rows, so the OOD
+  campaign's rule applies: a row the provider rejects as input
+  (HTTP 400/413/422) is recorded and scored 0.5, answered-only metrics are
+  reported beside it, and more than 2 rejections per model stop the run.
+- **Budget.** About $0.15 for Gemini ($0.50 bound) and $0.03 at list price for
+  v1.3 ($0.10 bound).
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions gemini_decision_1 --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.api_decisions decider_v13 --limit 1
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb14
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

@@ -626,6 +626,36 @@ for about $3.38 at the 30m cache-write rate ($6.75 conservative bound).
 
 Results: `results/sleightbench_eval/sb13/`.
 
+## Exploratory: Gemini Decision 1 and pplx-decider v1.3 (run `sb14`)
+
+User-requested on 2026-11-19 for the technical report: the `sb11` setup (Jev
+Noul question, Decisions API) with the two decision models added to the OOD
+comparison, stripped view only
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb14-gemini-decision-1-and-pplx-decider-v13-frozen-2026-11-19)).
+All 86 rows per model answered on the pinned revisions
+(`gemini-decision-1-20261111`, `pplx-decider-v1.3-20261112`) with no input
+rejections. Gemini billed $0.165 for 1.65M input tokens; v1.3 billed $0
+(1.50M tokens, $0.030 at v1.2's list price).
+
+| Monitor, stripped | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins | Mean-OOD pAUROC@20 |
+|---|---:|---:|---:|---:|---:|
+| **pplx-decider v1.3** | **20.0%** [10.0, 35.0] | **0.719** | **0.355** | 82.5% | 0.894 |
+| pplx-decider v1.2 (`sb11`) | 25.0% [12.5, 40.0] | 0.690 | 0.319 | 90% | 0.896 |
+| **Gemini Decision 1** | **2.5%** [0, 30.0] | **0.677** | **0.287** | 65% | 0.867 |
+| Gleipnir 27B (`sb01`) | 15.0% | 0.706 | 0.317 | 70% | 0.951 |
+| Gleipnir 4B (`sb01`) | 5.0% | 0.657 | 0.212 | 60% | 0.770 |
+
+- **v1.3 ranks slightly above v1.2 and Gleipnir 27B** (AUROC 0.719 against
+  0.690 and 0.706) but catches one attack fewer than v1.2 at 1% FPR. All
+  three are within each other's intervals.
+- **Gemini Decision 1 catches one attack.** Its highest benign score (0.302)
+  sits far above the benign mean (0.075), so the threshold excludes almost
+  every attack; its ranking is between Gleipnir 4B and 27B. One attack ties
+  its twin.
+- Both thresholds give 0% realized FPR.
+
+Results: `results/sleightbench_eval/sb14/`.
+
 ## Diagnostic: single-trial ranking for the authors' protocol
 
 Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each
