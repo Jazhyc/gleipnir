@@ -654,7 +654,37 @@ rejections. Gemini billed $0.165 for 1.65M input tokens; v1.3 billed $0
   its twin.
 - Both thresholds give 0% realized FPR.
 
+The Gleipnir rows above use their own instructions (`sb01`), not the Jev
+question, so this table does not match prompts; `sb15` does.
+
 Results: `results/sleightbench_eval/sb14/`.
+
+## Exploratory: Gemini Decision 1 and pplx-decider v1.3 with the ControlArena prompt (run `sb15`)
+
+User-requested on 2026-11-19: `sb14` with the ControlArena instruction as the
+Noul question, the prompt that the decision models received in `sb12` and the
+Gleipnir monitors in `sb02`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb15-gemini-decision-1-and-pplx-decider-v13-with-the-controlarena-prompt-frozen-2026-11-19)).
+All 86 rows per model answered with no rejections; Gemini billed $0.165,
+v1.3 $0 ($0.030 at list price).
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **pplx-decider v1.3** | `sb15` | **27.5%** [15.0, 42.5] | **0.738** | **0.397** | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+| **Gemini Decision 1** | `sb15` | **20.0%** [10.0, 37.5] | **0.665** | **0.309** | 75% |
+| pplx-decider v1.2 | `sb12` | 12.5% [5.0, 32.5] | 0.676 | 0.300 | 87.5% |
+| Jev 1.13 | `sb12` | 12.5% [5.0, 27.5] | 0.665 | 0.255 | 60% |
+| Gleipnir 4B | `sb02` | 7.5% [0, 22.5] | 0.611 | 0.209 | 52.5% |
+
+- **v1.3 is the strongest decision model here**, above Gleipnir 27B on every
+  metric (0.738 against 0.697 AUROC), though the catch intervals overlap.
+- **The prompt matters more for these models than for Gleipnir.** v1.3 rises
+  from 20% to 27.5% catch and Gemini from 2.5% to 20%, whose highest benign
+  score falls from 0.302 to 0.206; v1.2 fell from 25% to 12.5% in `sb12`.
+- Both thresholds give 0% realized FPR, with no score ties.
+
+Results: `results/sleightbench_eval/sb15/`.
 
 ## Diagnostic: single-trial ranking for the authors' protocol
 

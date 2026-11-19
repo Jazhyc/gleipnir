@@ -533,6 +533,20 @@ python -m experiments.sleightbench_eval.api_decisions decider_v13 --limit 1
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb14
 ```
 
+## Exploratory run sb15: Gemini Decision 1 and pplx-decider v1.3 with the ControlArena prompt (frozen 2026-11-19)
+
+User-requested on 2026-11-19 so the two models receive the ControlArena
+instruction, as the decision models did in `sb12` and the Gleipnir monitors in
+`sb02`. Identical to `sb14` except the question, `prompts/control_arena_noul.json`
+(SHA-256 `45edb32e…`). Models `gemini_decision_1_ca` and `decider_v13_ca`,
+with the `sb14` bounds and rejection rule.
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions gemini_decision_1_ca --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.api_decisions decider_v13_ca --limit 1
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb15
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.
