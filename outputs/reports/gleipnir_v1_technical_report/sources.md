@@ -728,3 +728,6 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - "No training, prompt or selection decision of Gleipnir used these benchmarks" moved from
   Section 6.1 to the Section 6 opening (JF); ARK to confirm it holds for the
   benchmarks of their subsections.
+- Section 6.1 gives no interval values in the text (JF, 2026-11-19); it
+  states that all intervals except GPT-6.1 Terra overlap and points to
+  `tab:sleightbench`.
