@@ -15,7 +15,7 @@ SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks tha
 It contains 40 hand-written attacks in 11 categories, each a trajectory of a coding agent that covertly pursues a harmful objective.
 Each attack has a benign twin, the same trajectory without the harmful part, and in several pairs the two differ by one token.
 
-We score the stripped view of the authors, which keeps the user turns, tool calls and tool results and removes the assistant messages and the descriptions in tool calls.
+We score the stripped view of the authors, a stricter form of the action-only input (Section~\ref{sec:background-sinha}) that also removes the assistant messages.
 Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.
 A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, which is the authors' threshold for a false-positive rate of 1\%.
 We price the monitors as in Section~\ref{sec:evaluation}, for trajectories with a mean of about 17,600 tokens.
