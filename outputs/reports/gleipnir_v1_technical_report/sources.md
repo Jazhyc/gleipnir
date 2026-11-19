@@ -775,3 +775,19 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   mean output about 7 tokens at $5/M is about $0.04 of it. No cost is
   published for the authors' Claude Code scaffold, so the comparison stays
   qualitative.
+
+## Appendix E: cost of serving pplx-decider (JF, 2026-11-19)
+
+- List prices: `experiments/decision_models_ood/config.json` (Mercury Decide
+  and d1 $0.02/M; Microsoft-Decision-1, d1-ultra, Jev $0.042/M) and the Decider
+  v1.2 OpenRouter endpoint ($0.02/M, checked 2026-10-22).
+- Throughput: `docs/research/tool_trajectory_ood_frontier.md` ("Self-hosting
+  it costs far more than its list price") and
+  `docs/findings/pplx_decider_ood_benchmark.md`: published fast path, 56,359,499
+  tokens in 4,170 s = 13,515 tokens/s on a Runpod B200, 2026-10-19. $7.99/h →
+  $0.164/M; $3.44/h → $0.0707/M; break-even at $0.02/M needs 111K / 47.8K
+  tokens/s. Flash 30,655 tokens/s → $0.072/M against $0.01/M.
+- Gleipnir 27B 50,788 tokens/s at one request at a time (Section 4).
+- Bidirectional attention: the `pplx_decider` 0.3.0 runtime runs non-causal
+  full attention (pplx-decider OOD finding; the v1.1 card also describes
+  non-causal attention). Not verified for v1.3, so the text names v1.2 only.

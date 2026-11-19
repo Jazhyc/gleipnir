@@ -728,6 +728,28 @@ Released stack & 55,125 & 50,788 & 59,606 & 53,356 \\
 \end{tabular}
 \end{table}
 
+\subsection{Cost of serving pplx-decider}
+\label{app:serving-decider}
+
+We price the decision models at their list prices on OpenRouter, which are what users pay.
+Several of these prices are low: pplx-decider v1.2, Mercury Decide and d1 cost \$0.02 per million input tokens, and Jev, d1-ultra and Microsoft-Decision-1 cost \$0.042.
+For most of these models the size and the serving stack are not public, so we cannot compare the price with the cost of serving them.
+pplx-decider v1.2 is the exception: its weights and serving code are public~\citep{perplexity2026decider}, and its base model is that of Gleipnir 27B.
+
+We served pplx-decider v1.2 on one B200 with the fast path that Perplexity publishes, which packs requests into batches and uses \texttt{torch.compile} and CUDA graphs.
+It processed the OOD suite at 13,515 prompt tokens per second.
+At the rates of Section~\ref{sec:serving}, this costs \$0.164 per million tokens on demand and \$0.071 with committed use, 8.2 and 3.5 times the list price.
+Matching the list price would take about 111,000 tokens per second on demand or 47,800 with committed use.
+On the same base model, Gleipnir 27B processes 50,788 tokens per second on our stack with one request at a time.
+The list price is therefore attainable with committed-use GPUs and a serving stack as fast as ours, but not with the published implementation.
+pplx-decider-flash v1.2 behaves in the same way: its published fast path costs \$0.072 per million tokens on demand, 7.2 times its list price of \$0.01.
+We measured only the documented configuration, and Perplexity may serve the models with a faster stack.
+
+pplx-decider v1.2 also uses bidirectional attention, in which every token attends to the tokens after it.
+This keeps it out of serving stacks such as vLLM, which assume causal attention, and it rules out prefix caching.
+When a monitor scores a growing trajectory after each step, a new token changes the states of all earlier tokens, so the model must process the whole trajectory again.
+A causal monitor such as Gleipnir processes only the new tokens (Section~\ref{sec:serving-selfhost}).
+
 \subsection{Low-precision kernels}
 \label{app:serving-kernels}
 
