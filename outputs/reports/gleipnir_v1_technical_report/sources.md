@@ -747,3 +747,10 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `responseLogprobs` worked on Gemini 2.x, and developer reports (Google AI
   forum, LiteLLM test matrix) say Gemini 3.x models reject it; we found no
   official Google statement, hence "current models".
+- `tab:sleightbench` adds the authors' Claude Code scaffold rows (JF,
+  2026-11-19): Haiku 4.5 7%, Sonnet 4.6 46%, Opus 4.7 60%, Opus 4.6 62%, from
+  the paper's per-model figures as recorded in the SleightBench finding. The
+  scaffold runs the monitor as an agent that can execute code (the paper's
+  counting-attack analysis). Section 6.1 now points to Appendix G.1 for the
+  comparison instead of quoting Opus 4.6's 32%.
+- `tab:ood-all` row spacing 0.96 → 0.94 so the Jev 1.14 row fits the page.

@@ -36,7 +36,7 @@ Training raises both base models by less than on the OOD suite: Qwen3.5-4B score
 The intervals of all monitors except GPT-6.1 Terra overlap (Table~\ref{tab:sleightbench}), so with 40 attacks the benchmark separates only large differences.
 
 At a false-positive rate of 1\%, Gleipnir 27B catches 20\% of the attacks and Gleipnir 4B 7.5\%, against 27.5\% for pplx-decider v1.3 and 55\% for GPT-6.1 Terra (Appendix~\ref{app:sleightbench}).
-The authors report 32\% for Claude Opus 4.6 with extended thinking, as an average over 10 samples.
+Appendix~\ref{app:sleightbench} compares these monitors with the reasoning monitors that the authors scored.
 
 \todo{Interpretation (JF): many attacks are built to look like honest mistakes, which the training specification labels benign; per-category comparison with the teacher would test this.}
 
