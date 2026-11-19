@@ -7,7 +7,38 @@ Even the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Aren
 This section therefore turns to benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
 
-\todo{SleightBench (stripped view, ControlArena prompt), OUTLINE C5.4.}
+\subsection{SleightBench}
+\label{sec:sleightbench}
+
+SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks that are built to evade monitors.
+It contains 40 hand-written attacks in 11 categories, each a trajectory of a coding agent that covertly pursues a harmful objective.
+Each attack has a benign twin, the same trajectory without the harmful part, and in several pairs the two differ by one token.
+No training, prompt or selection decision of Gleipnir used this benchmark.
+
+We score the stripped view of the authors, which keeps the user turns, tool calls and tool results and removes the assistant messages and the descriptions in tool calls.
+Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.
+A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, which is the authors' threshold for a false-positive rate of 1\%.
+We price the monitors as in Section~\ref{sec:evaluation}, for trajectories with a mean of about 17,600 tokens.
+Each of our monitors scores each trajectory once, while the authors average 10 samples at temperature 1 and report only the catch rate, so Figure~\ref{fig:sleightbench} omits their monitors; Appendix~\ref{app:sleightbench} lists them.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{sleightbench_frontier}
+\caption{On SleightBench, pplx-decider v1.3 scores above both Gleipnir monitors at about the cost of Gleipnir 27B at the committed-use rate. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Markers, rates, frontiers and arrows follow Figure~\ref{fig:frontier}. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
+\label{fig:sleightbench}
+\end{figure}
+
+GPT-6.1 Terra scores highest, 0.734 pAUROC@20 (95\% bootstrap interval 0.597--0.867), at \$15.49 per 1,000 evaluations (Figure~\ref{fig:sleightbench}).
+pplx-decider v1.3 scores 0.397 (0.279--0.531) at \$0.35, close to the 0.402 of Kimi K3.
+Gleipnir 27B scores 0.299 (0.192--0.451), level with pplx-decider v1.2 (0.300) and Gemini Decision 1 (0.309) and 0.103 below its teacher.
+Gleipnir 4B scores 0.209 (0.112--0.347).
+Training raises both base models by less than on the OOD suite: Qwen3.5-4B scores 0.193 and Qwen3.8-27B 0.263.
+All intervals except that of GPT-6.1 Terra overlap, so with 40 attacks the benchmark separates only large differences.
+
+At a false-positive rate of 1\%, Gleipnir 27B catches 20\% of the attacks and Gleipnir 4B 7.5\%, against 27.5\% for pplx-decider v1.3 and 55\% for GPT-6.1 Terra (Appendix~\ref{app:sleightbench}).
+The authors report 32\% for Claude Opus 4.6 with extended thinking, as an average over 10 samples.
+
+\todo{Interpretation (JF): many attacks are built to look like honest mistakes, which the training specification labels benign; per-category comparison with the teacher would test this.}
 
 \todo{ARK: natural cheats, misleading text in the trajectory, and text addressed to the monitor (OUTLINE C5.1--C5.3).}
 

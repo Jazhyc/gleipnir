@@ -674,3 +674,34 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Saturation of the OOD suite is stated without numbers (JF): the strongest
   monitors' scores are in Section 5 and `tab:ood-all`. The SHADE-Arena pointer
   repeats Appendix `app:shade`.
+
+## Section 6.1 SleightBench and Appendix C.3 (JF, 2026-11-19)
+
+- Citation `najt2026sleight`: arXiv:2605.16626 (v2, 2026-05-19), Najt, Toft,
+  Tracy, Roger and Benton. "40 attacks across 11 categories" and the 32% Opus
+  4.6 catch rate (extended thinking, 10 trials, 1% FPR) are from its abstract.
+- Every row is the stripped view with the ControlArena instruction (user,
+  2026-11-19): Gleipnir `sb02` (released optimized stack), unadapted Qwen
+  `sb04_immediate`, Kimi K3 `sb05`, GPT-6 Sol/GPT-5.5/GPT-6 Luna/GPT-6.1 Terra
+  `sb07`/`sb08`/`sb09`/`sb13`, Jev 1.13 and pplx-decider v1.2 `sb12`, v1.3 and
+  Gemini Decision 1 `sb15`. Scores and intervals from each run's
+  `results/sleightbench_eval/<run>/report.json`; findings in
+  `docs/findings/sleightbench_released_monitors.md`.
+- Costs: `experiments/sleightbench_eval/frontier.py` →
+  `results/sleightbench_eval/frontier.json`. API rows: mean billed input and
+  output tokens over the 86 stripped rows at the OOD frontier's list prices,
+  no cache discounts (Kimi K3 at the OOD frontier's $3/M in, $15/M out
+  Fireworks ceiling, not the Makora rate that sb05 paid; v1.3 at v1.2's
+  $0.02/M). Gleipnir and the base models: mean Qwen prompt tokens of the
+  ControlArena manifest (17,555); Gleipnir at the Section 4 per-token cost
+  (one B200, one request at a time), base models at the OOD hosted proxy
+  rates plus one output token.
+- "About 17,600 tokens" rounds 17,555 (Qwen) and the API tokenizers' 15,455
+  to 19,244 lie around it.
+- Frontier (3% tolerance): on demand Gleipnir 4B → pplx-decider v1.3 → GPT-6.1
+  Terra; committed use 4B* → 27B* → v1.3 → Terra (27B* costs 6% less than
+  v1.3). Same frontiers on catch rate.
+- Paper rows of `tab:sleightbench`: per-trial catch rates read from their
+  appendix per-model figures 21–26 (CA prompt, stripped), as recorded in the
+  SleightBench finding; Opus 4.6 in the Claude Code scaffold 62%.
+- Kimi K3 threshold 0.9841 (highest benign score), catch 0/40.
