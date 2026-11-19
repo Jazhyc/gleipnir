@@ -731,3 +731,19 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Section 6.1 gives no interval values in the text (JF, 2026-11-19); it
   states that all intervals except GPT-6.1 Terra overlap and points to
   `tab:sleightbench`.
+
+## OpenAI log probabilities (Appendix C.1, JF, 2026-11-19)
+
+- 2026-11-19 probes (unbilled HTTP 400s) on `gpt-6.2-sol` and `gpt-6.2-astra`:
+  `reasoning.effort: none` → "'none' is not supported ... Supported values are:
+  'low', 'medium', 'high', 'xhigh', and 'max'"; `low` with
+  `message.output_text.logprobs` → "logprobs are not supported with reasoning
+  models." OpenAI's reasoning guide states that GPT-6 Astra and GPT-6.1 Sol do
+  not support `none` (https://developers.openai.com/api/docs/guides/reasoning,
+  read 2026-11-19). The Luna canary
+  (`docs/findings/openai_luna_logprobs_canary.md`) shows logprobs only with
+  effort `none`.
+- "Only OpenAI": Anthropic's API returns no log probabilities. Google's
+  `responseLogprobs` worked on Gemini 2.x, and developer reports (Google AI
+  forum, LiteLLM test matrix) say Gemini 3.x models reject it; we found no
+  official Google statement, hence "current models".
