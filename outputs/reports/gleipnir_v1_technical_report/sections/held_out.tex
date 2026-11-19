@@ -6,6 +6,7 @@ Their scores lie within each other's bootstrap intervals and close to the maximu
 Even the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
 This section therefore turns to benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
+No training, prompt or selection decision of Gleipnir used these benchmarks.
 
 \subsection{SleightBench}
 \label{sec:sleightbench}
@@ -13,7 +14,6 @@ They show how the Gleipnir monitors compare with other monitors in these setting
 SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks that are built to evade monitors.
 It contains 40 hand-written attacks in 11 categories, each a trajectory of a coding agent that covertly pursues a harmful objective.
 Each attack has a benign twin, the same trajectory without the harmful part, and in several pairs the two differ by one token.
-No training, prompt or selection decision of Gleipnir used this benchmark.
 
 We score the stripped view of the authors, which keeps the user turns, tool calls and tool results and removes the assistant messages and the descriptions in tool calls.
 Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.

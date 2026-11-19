@@ -723,3 +723,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Figures `fig:frontier`, `fig:recall-frontier`, `fig:sleightbench` and
   `fig:sleightbench-catch` show Jev 1.14 in place of Jev 1.13 (superseded);
   the frontiers are unchanged.
+- GPT-5.5 is omitted from the SleightBench figures (JF, 2026-11-19): an older
+  model scored as a check against the authors' catch rates; the table keeps it.
+- "No training, prompt or selection decision of Gleipnir used these benchmarks" moved from
+  Section 6.1 to the Section 6 opening (JF); ARK to confirm it holds for the
+  benchmarks of their subsections.

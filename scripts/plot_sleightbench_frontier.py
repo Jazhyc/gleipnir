@@ -4,8 +4,8 @@ Reads ``results/sleightbench_eval/frontier.json`` (written by
 ``python -m experiments.sleightbench_eval.frontier``) and draws it in the style
 of the report's OOD frontier, with the 3% cost tolerance. Only the
 committed-use Gleipnir rows are plotted, with one frontier; the base models
-and the superseded pplx-decider v1.2 and Jev 1.13 are left out (user,
-2026-11-19). The appendix table keeps them.
+the superseded pplx-decider v1.2 and Jev 1.13, and GPT-5.5 are left out
+(user, 2026-11-19). The appendix table keeps them.
 """
 
 from __future__ import annotations
@@ -45,9 +45,10 @@ METRICS = {
         (-0.03, 0.62),
     ),
 }
-# Superseded by newer versions of the same models (user, 2026-11-19); the
-# table keeps them.
-OMITTED = {"pplx-decider v1.2", "Jev 1.13"}
+# Superseded by newer versions of the same models, and GPT-5.5, an older model
+# scored as a check against the authors (user, 2026-11-19); the table keeps
+# them.
+OMITTED = {"pplx-decider v1.2", "Jev 1.13", "GPT-5.5"}
 # Label placement per metric: offset in points, horizontal and vertical
 # alignment. Labels default to the right of their point.
 LABELS = {
@@ -62,7 +63,7 @@ LABELS = {
         "Gemini Decision 1": ((0, 10), "center", "bottom"),
         "GPT-6.1 Terra": ((0, 12), "center", "bottom"),
         "GPT-6 Sol": ((0, 12), "center", "bottom"),
-        "Kimi K3": ((0, -12), "center", "top"),
+        "Kimi K3": ((6, -12), "right", "top"),
         "GPT-5.5": ((0, 12), "center", "bottom"),
     },
     "catch_rate": {
@@ -72,7 +73,7 @@ LABELS = {
         "pplx-decider v1.3": ((0, 12), "center", "bottom"),
         "GPT-6.1 Terra": ((0, 12), "center", "bottom"),
         "GPT-6 Sol": ((0, 12), "center", "bottom"),
-        "Kimi K3": ((0, 10), "center", "bottom"),
+        "Kimi K3": ((6, 10), "right", "bottom"),
         "GPT-5.5": ((6, -11), "right", "top"),
     },
 }
