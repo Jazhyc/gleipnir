@@ -771,3 +771,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   removed. "Our training data contains no attacks built against a monitor"
   rests on the source review in the SleightBench finding (no source put a
   monitor in the loop).
+- Terra cost sentence: $15.49/1K from `results/sleightbench_eval/frontier.json`;
+  mean output about 7 tokens at $5/M is about $0.04 of it. No cost is
+  published for the authors' Claude Code scaffold, so the comparison stays
+  qualitative.

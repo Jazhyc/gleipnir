@@ -48,6 +48,7 @@ Kimi K3 catches no attack because it scores one benign trajectory above every at
 
 GPT-6.1 Terra answers without reasoning, with one decision token, and still catches 55\% of the attacks.
 This is close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors, which can run code while it reads the transcript, and above their strongest monitor without the scaffold, Gemini 3.1 Pro with high thinking effort (54\%; Appendix~\ref{app:sleightbench}).
+Because it reads the transcript once and writes only its decision, it costs \$15.49 per 1,000 evaluations, almost all of it for input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
 
 \todo{ARK: natural cheats, misleading text in the trajectory, and text addressed to the monitor (OUTLINE C5.1--C5.3).}
 
