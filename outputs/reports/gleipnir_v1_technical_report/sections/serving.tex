@@ -48,9 +48,12 @@ We price the monitor with one request at a time, because concurrent requests red
 With 8 concurrent requests the throughput is 13\% higher than with one request at a time for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
 The merged BF16 checkpoints that we release run in classification mode on stock vLLM, on any GPU that vLLM supports.
 
-Prefix caching would lower the cost further.
-A monitor that checks every action scores the same transcript again after each step, and with prefix caching it processes only the tokens that are new since the previous check.
-On one growing session this took 13 times less time (Appendix~\ref{app:serving-throughput}), but our costs do not count this saving.
+Prefix caching lowers the cost of a monitor that checks every action.
+Such a monitor scores the transcript again after each step, and with prefix caching it processes only the tokens that are new since the previous check.
+On the 96 trajectories of our benchmark, a check before every action processes 12 times the prompt tokens of one check per trajectory.
+With prefix caching these checks take 3.3 times as long as one check per trajectory for the 27B, against 12.2 times without it (Appendix~\ref{app:serving-throughput}).
+For the 4B they take 6.9 against 12.8 times, because a fixed cost per request weighs more for the faster model.
+The saving grows with the length of the trajectory, and our costs elsewhere count one check per trajectory.
 
 \subsection{Low-precision arithmetic}
 \label{sec:serving-precision}

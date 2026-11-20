@@ -624,12 +624,41 @@ A monitor that checks every action scores the same transcript again after each s
 With prefix caching, vLLM keeps the computed state of a shared prefix and processes only the new tokens.
 The trajectories of our benchmark share no prefix, so we turned caching off, and Table~\ref{tab:serving} does not count its saving.
 The serving image offers it as an option.
+
+We measured it on the 96 trajectories of the benchmark, with one check before every action that calls a tool, 1,882 checks in all (Table~\ref{tab:prefix-replay}).
+Each check is the prompt through that action, closed as the full prompt is, and each trajectory starts with an empty cache.
+Without caching, these checks process 12.1 times the prompt tokens of one check per trajectory and take 12.2 to 12.8 times as long.
+With caching, 87 to 88\% of their prompt tokens come from the cache, and they take 3.3 times as long as one check per trajectory for the 27B and 6.9 times for the 4B.
+A cached check still takes 41\,ms on average for the 27B and 21\,ms for the 4B, a large part of the 48\,ms that the 4B needs for a whole trajectory, so the 4B gains less.
+The B200 of this measurement had an AMD EPYC 9555, and one check per trajectory ran at 206,289 and 50,978 prompt tokens per second, within 1\% of the throughput behind Table~\ref{tab:serving}.
+Cached scores differ from uncached ones by 0.015 on average for the 4B and 0.010 for the 27B, and by at most 0.55 and 0.18.
+
+\begin{table}[h]
+\caption{Monitoring every action of the 96 benchmark trajectories (1,882 checks) on one B200, one request at a time. Time is the total over all trajectories, with its multiple of one check per trajectory. Cost is in USD per 1,000 trajectories at the on-demand and committed-use rates of Section~\ref{sec:serving}.}
+\label{tab:prefix-replay}
+\centering
+\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+Model & Checks & Time & On demand & Committed \\
+\midrule
+Gleipnir 4B & One per trajectory & 5.8\,s (1.0$\times$) & 0.134 & 0.058 \\
+ & Every action, no caching & 74.1\,s (12.8$\times$) & 1.713 & 0.738 \\
+ & Every action, prefix caching & 39.9\,s (6.9$\times$) & 0.923 & 0.397 \\
+\midrule
+Gleipnir 27B & One per trajectory & 23.4\,s (1.0$\times$) & 0.541 & 0.233 \\
+ & Every action, no caching & 285.7\,s (12.2$\times$) & 6.606 & 2.844 \\
+ & Every action, prefix caching & 77.3\,s (3.3$\times$) & 1.788 & 0.770 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The saving grows with the length of the trajectory.
 We measured it with the 4B on one synthetic session, built from consecutive Gloom trajectories, that grows to 1,037,565 tokens over 598 checks, on a long-context server with YaRN and an earlier version of the released stack.
 Checking every action took 595\,s with caching, 12.9 times less than the 7,665\,s that we estimate without it, and 99.6\% of the prompt tokens came from the cache.
 Checking a random 7.2\% of the actions took 7.9 times less time.
 Caching changes individual scores of the released 4B slightly, by 0.025 on average, but not their ranking: when every prompt of our evaluation first fills the cache with its first half, pAUROC@20 moves by $+0.0015$ in distribution and by $-0.0008$ out of distribution, and by at most 0.012 for any source.
 Prefill steps of 528 tokens make the scores identical to those without caching, but make prefill without cache hits 3.7 times slower.
-How much real traffic would hit the cache, and how much that would save, we leave to future work.
 
 \paragraph{Start-up.}
 On a new B200, a server of the serving image was ready to score 175\,s after start for the 4B and 186\,s for the 27B, not counting the download of the weights.
@@ -749,6 +778,9 @@ pplx-decider v1.2 and v1.3 also use bidirectional attention, in which every toke
 This keeps them out of serving stacks such as vLLM, which assume causal attention, and it rules out prefix caching.
 When a monitor scores a growing trajectory after each step, a new token changes the states of all earlier tokens, so the model must process the whole trajectory again.
 A causal monitor such as Gleipnir processes only the new tokens (Section~\ref{sec:serving-selfhost}).
+For a check before every action of our benchmark trajectories, pplx-decider therefore pays for 12.1 times the prompt tokens of one check per trajectory.
+At its list price this costs about \$3.0 per 1,000 trajectories, against \$1.79 on demand and \$0.77 with committed use for Gleipnir 27B with prefix caching (Table~\ref{tab:prefix-replay}).
+With one check per trajectory, it costs about \$0.25, against \$0.54 and \$0.23.
 
 \subsection{Low-precision kernels}
 \label{app:serving-kernels}

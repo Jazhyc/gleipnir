@@ -794,3 +794,22 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   "noncausal_full_attention"` in `decision_config.json` on Hugging Face
   (checked 2026-11-19), so the text names both; Section 6.1 cites the
   architecture difference for v1.3.
+
+## Prefix caching for per-action monitoring (Section 4.1, Appendix E.1 and E.3; JF, 2026-11-20)
+
+- `experiments/prefix_caching_replay/README.md`, run `replay02`
+  (`results/prefix_caching_replay/replay02/summary.json`): US-CA-2 B200 with
+  AMD EPYC 9555, image `1.2-rc2-zstd` (= `1.2`), one request at a time, 96
+  benchmark trajectories, 1,882 checks. Isolated 5.8 s / 23.4 s; every
+  action uncached 74.1 s / 285.7 s (12.8× / 12.2×); cached 39.9 s / 77.3 s
+  (6.9× / 3.3×); cache hit fraction 88.2% / 86.6%; tokens 14,440,542 against
+  1,193,325 (12.1×). Mean cached check 39.9/1882 = 21 ms, 77.3/1882 = 41 ms.
+  Isolated throughput 206,289 / 50,978 tokens/s against 204,673 / 50,788 in
+  Section 4 (+0.8%, +0.4%). Probe: 4B 49.6 ms plain, 49.2 ms with /metrics
+  scrapes. Score drift |cached − uncached| mean 0.0146 / 0.0102, max 0.553 /
+  0.175. Costs per 1,000 trajectories from `summary.json`.
+- Decider per-action cost: 14,440,542 / 96 × 1,000 × $0.02/M = $3.01;
+  isolated 1,193,325 / 96 × 1,000 × $0.02/M = $0.249. Approximate: Decider's
+  own prompts (raw state plus question) have somewhat different lengths.
+- The earlier US-NC-2 run (Xeon 8568Y+, 89.5K tokens/s for the 4B) is not
+  used; see the experiment README.
