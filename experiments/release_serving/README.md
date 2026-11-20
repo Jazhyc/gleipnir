@@ -401,6 +401,17 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   the builder) to both `1.2-rc1` and `1.2-rc1-zstd`, giving `1.2-rc2` and
   `1.2-rc2-zstd` with the same uncompressed layers. The runtimes under
   `/tmp` keep their own modes.
+- **rc2 check (`1.2-rc2-zstd`, digest `f3a0503f…`).** US-CA-2 Pod
+  `2o57cwijinnbp3` (B200 `GPU-512bfd53…`, AMD EPYC 9555, driver 595.112.07,
+  no volume), 2026-11-20:
+  - Runpod pulled the zstd layers; the Pod was reachable over SSH 6 minutes
+    after creation (gzip Pods on other machines: about 9 and 13 minutes;
+    not a controlled comparison).
+  - `/tmp` is mode 1777, the runtimes under it keep 755, and `apt-get
+    update` runs without errors.
+  - The `PUBLIC_KEY` path started SSH beside the 4B server; both models in
+    both modes passed `smoke.py`; identity scores equal the 1.0 B200 rows
+    (0 of 248 changed, both models).
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
