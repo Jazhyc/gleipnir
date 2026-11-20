@@ -178,3 +178,26 @@ Artifacts: `results/flint_ood/` (`flint/`, `comparison.json`,
 `diagnostics/`, the failed canary) and `logs/runpod/flint_ood/` (25 files
 verified against the Pod by SHA-256, `collect.sha256`). Pod lifecycle:
 [infrastructure](../../docs/infrastructure.md#runpod).
+
+## Second arm: empty think block (frozen 2026-11-20, not yet scored)
+
+At the user's suggestion: close an empty reasoning block before the decision
+prefix, as the Qwen contract does. The prompt ends
+`<|assistant|><think></think>Prediction:`, using the form in which Flint's
+template writes reasoning before an answer (no newlines).
+
+- **Hypothesis.** The empty block moves Flint out of the reasoning-opening
+  state and lifts Mean-OOD pAUROC@20 above the bare boundary's 0.4486.
+  "Competitive" is still 0.8701 or more.
+- **Intervention.** Only the prefill changes (`flint_empty_think.json`); the
+  rows, prompt, scoring and engine settings are those of the first arm. The
+  canary also records the unconstrained first token after `</think>`.
+- **Audit.** 50,948,726 prompt tokens (two more per row), maximum 26,049,
+  decision tokens 15 / 16, rendered SHA-256 `7630c888…`.
+- **Caveat.** The arm was added after the first arm's OOD score was known. It
+  is one fixed prefill; no other prefills are tried on these labels, and both
+  arms are reported.
+
+```bash
+experiments/flint_ood/run.sh flint_empty_think
+```

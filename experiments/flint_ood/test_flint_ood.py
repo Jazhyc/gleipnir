@@ -6,6 +6,7 @@ from pathlib import Path
 import pytest
 
 from experiments.flint_ood.interface import (
+    EMPTY_THINK,
     MODEL_ID,
     REVISION,
     render_margin_prompt,
@@ -63,4 +64,29 @@ def test_configs_keep_the_qwen_contract():
         assert flint["engine"][key] == frozen["engine"][key]
     assert (
         flint["engine"]["audited_max_prompt_tokens"] < flint["engine"]["max_model_len"]
+    )
+
+
+def test_empty_think_prefill_sits_between_marker_and_prefix():
+    rendered = render_margin_prompt(
+        FakeTokenizer(), "judge this", assistant_prefill=EMPTY_THINK
+    )
+    assert rendered.endswith("<|assistant|><think></think>Prediction:")
+
+
+def test_empty_think_arm_changes_only_the_prefill():
+    bare = json.loads((HERE / "flint.json").read_text())
+    arm = json.loads((HERE / "flint_empty_think.json").read_text())
+    assert arm["prompt"]["assistant_prefill"] == EMPTY_THINK
+    assert "assistant_prefill" not in bare["prompt"]
+    for key in ("scope", "model", "scoring", "stop_conditions"):
+        assert arm[key] == bare[key]
+    audited = {"audited_max_prompt_tokens", "audited_total_prompt_tokens"}
+    for key in bare["engine"].keys() - audited:
+        assert arm["engine"][key] == bare["engine"][key]
+    # Two extra tokens per row: <think> and </think>.
+    rows = bare["scope"]["rows"]
+    assert (
+        arm["engine"]["audited_total_prompt_tokens"]
+        == bare["engine"]["audited_total_prompt_tokens"] + 2 * rows
     )

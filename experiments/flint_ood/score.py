@@ -10,7 +10,12 @@ import time
 from pathlib import Path
 from typing import Any
 
-from experiments.flint_ood.interface import MODEL_ID, REVISION, render_margin_prompt
+from experiments.flint_ood.interface import (
+    EMPTY_THINK,
+    MODEL_ID,
+    REVISION,
+    render_margin_prompt,
+)
 from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
     balanced_canary_rows,
     batches,
@@ -47,6 +52,8 @@ def validate_config(config: dict[str, Any]) -> None:
         raise ValueError("benchmark must use the full teacher prompt")
     if prompt.get("assistant_suffix") != "<|assistant|>":
         raise ValueError("frozen Flint assistant boundary differs")
+    if prompt.get("assistant_prefill", "") not in ("", EMPTY_THINK):
+        raise ValueError("assistant prefill must be empty or one empty think block")
     if prompt.get("decision_prefix") != "Prediction:":
         raise ValueError("frozen decision prefix must be Prediction:")
     if config.get("scoring", {}).get("tokens") != ["0", "1"]:
@@ -109,6 +116,7 @@ def run(args: argparse.Namespace) -> None:
             tokenizer,
             str(row["prompt"]),
             assistant_suffix=prompt_config["assistant_suffix"],
+            assistant_prefill=prompt_config.get("assistant_prefill", ""),
             decision_prefix=prompt_config["decision_prefix"],
         )
 

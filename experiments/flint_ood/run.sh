@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Score on the Pod with the vLLM 0.34.0 runtime. Usage: run.sh flint
+# Score on the Pod with the vLLM 0.34.0 runtime. Usage: run.sh flint|flint_empty_think
 # CANARY_ONLY=1 stops after the canary.
 set -euo pipefail
 cd /workspace/gleipnir
@@ -16,9 +16,9 @@ L=logs/runpod/flint_ood; mkdir -p $L
 EXTRA=${CANARY_ONLY:+--stop-after-canary}
 SUFFIX=${CANARY_ONLY:+_canary}
 case $1 in
-  flint)
+  flint|flint_empty_think)
     export HF_HOME=/root/hf-flint
-    MODULE=experiments.flint_ood.score CONFIG=flint.json NAME=flint ;;
+    MODULE=experiments.flint_ood.score CONFIG=$1.json NAME=$1 ;;
   *) echo "unknown run $1"; exit 2 ;;
 esac
 echo "start $NAME$SUFFIX $(date -Is)"

@@ -9,6 +9,7 @@ import json
 from pathlib import Path
 
 from experiments.flint_ood.interface import (
+    EMPTY_THINK,
     MODEL_ID,
     REVISION,
     render_margin_prompt,
@@ -21,7 +22,7 @@ INPUT_SHA256 = "fa4b0d917e51eb91a52efa93cddf0eb154b88993269c97cfdb161c42680136a9
 QWEN_TOTAL, QWEN_MAX = 60_539_619, 30_382
 
 
-def audit() -> dict:
+def audit(assistant_prefill: str = "") -> dict:
     from transformers import AutoTokenizer
 
     data = (ROOT / INPUT).read_bytes()
@@ -36,7 +37,12 @@ def audit() -> dict:
     with_special = 0
     for start in range(0, len(rows), 64):
         chunk = rows[start : start + 64]
-        rendered = [render_margin_prompt(tokenizer, str(r["prompt"])) for r in chunk]
+        rendered = [
+            render_margin_prompt(
+                tokenizer, str(r["prompt"]), assistant_prefill=assistant_prefill
+            )
+            for r in chunk
+        ]
         for row, text in zip(chunk, rendered, strict=True):
             digest.update(text.encode() + b"\0")
             if template_changed_user_text(text, str(row["prompt"])):
@@ -51,10 +57,13 @@ def audit() -> dict:
     longest = max(range(len(rows)), key=lengths.__getitem__)
     decision = [tokenizer.encode(v, add_special_tokens=False) for v in ("0", "1")]
     tail = tokenizer.convert_ids_to_tokens(
-        tokenizer.encode("<|assistant|>Prediction:1", add_special_tokens=False)
+        tokenizer.encode(
+            f"<|assistant|>{assistant_prefill}Prediction:1", add_special_tokens=False
+        )
     )
     return {
         "model": MODEL_ID,
+        "assistant_prefill": assistant_prefill,
         "revision": REVISION,
         "rows": len(rows),
         "rendered_sha256": digest.hexdigest(),
@@ -71,8 +80,12 @@ def audit() -> dict:
 
 
 if __name__ == "__main__":
-    out = ROOT / "results/flint_ood/interface_audit.json"
+    import sys
+
+    empty_think = "--empty-think" in sys.argv[1:]
+    name = "interface_audit_empty_think.json" if empty_think else "interface_audit.json"
+    out = ROOT / "results/flint_ood" / name
     out.parent.mkdir(parents=True, exist_ok=True)
-    report = audit()
+    report = audit(EMPTY_THINK if empty_think else "")
     out.write_text(json.dumps(report, indent=2) + "\n")
     print(json.dumps(report, indent=2))
