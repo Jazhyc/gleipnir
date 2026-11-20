@@ -819,7 +819,7 @@ The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
-\section{Probing at half depth}
+\section{Activation probes: soft targets and depth}
 \label{app:probing}
 
 A monitor that decides in one forward pass could stop earlier still.
