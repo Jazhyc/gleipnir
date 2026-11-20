@@ -55,8 +55,8 @@ Perplexity then released the Decider models with open weights~\citep{perplexity2
 Decider and the open-weight Drex Max~\citep{dhankhar2026drex} remove the causal mask in their full-attention layers.
 The authors of Drex report that this design gives higher accuracy at a higher cost per question, but they did not compare the two masks on the same model.
 Their benchmarks ask single decisions about a fixed input, so they do not measure a transcript that grows between checks (Section~\ref{sec:serving-caching}).
-\citet{geuter2026releasing} show that a general instruction-tuned model works in the same way when the answer is read from the answer-letter logits at its last prompt token, and that LoRA fine-tuning on general decision tasks improves it.
-Gleipnir applies this format to one task: it reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
+Gleipnir keeps causal attention and reads one binary decision token at the last prompt position, the readout that \citet{geuter2026releasing} apply with LoRA to general decision tasks.
+It applies this format to one task, the agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
 \citet{liu2026evaluating} evaluates decision models on security checks of the inputs of an agent, such as the detection of prompt injections.
 We found no evaluation of decision models in an AI control scenario.
 Section~\ref{sec:evaluation} therefore scores both dedicated decision models and general language models that we read out in the same way.

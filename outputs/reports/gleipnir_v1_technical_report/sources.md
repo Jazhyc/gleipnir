@@ -863,3 +863,6 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   "Because the full-attention layers are non-causal, the representation of
   the state depends on the question, so it cannot be cached across
   questions".
+- Geuter et al. kept as support for Gleipnir's causal last-token readout (JF,
+  2026-11-20): their readout of answer-letter logits at the last prompt token
+  with LoRA fine-tuning on general decision tasks.
