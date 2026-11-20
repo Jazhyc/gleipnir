@@ -49,6 +49,7 @@ async def run(model: str, name: str) -> None:
             }
             print(arm, round(out[arm]["median_ms"], 1), flush=True)
     path = OUT / name / f"probe_{model}.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(out, indent=1) + "\n")
 
 
