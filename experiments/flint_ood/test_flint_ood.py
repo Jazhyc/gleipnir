@@ -58,7 +58,6 @@ def test_configs_keep_the_qwen_contract():
         "batch_rows",
         "seed",
         "max_model_len",
-        "enable_prefix_caching",
         "gpu_memory_utilization",
     ):
         assert flint["engine"][key] == frozen["engine"][key]

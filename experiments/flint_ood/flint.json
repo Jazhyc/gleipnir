@@ -54,7 +54,7 @@
     "gpu_memory_utilization": 0.9,
     "max_num_seqs": 16,
     "max_num_batched_tokens": 32768,
-    "enable_prefix_caching": true,
+    "enable_prefix_caching": false,
     "batch_rows": 128,
     "canary_rows_per_source_label": 1,
     "canary_include_longest": true,

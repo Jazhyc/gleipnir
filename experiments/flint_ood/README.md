@@ -59,6 +59,19 @@ vLLM 0.34.0 defaults to 64-token KV-cache blocks, and Flint's decode kernel
 asserts on anything but 16. `flint.json` now sets `block_size: 16`; this
 changed its hash before any prediction existed.
 
+The second canary attempt scored its 13 rows and then stopped on the
+batched-versus-singleton gate (mean 0.039, maximum 0.153 in score).
+`diagnose_parity.py` located the cause without reading labels. With prefix
+caching off, a batch, singletons and a reversed batch give bit-identical
+margins. With it on, the same prompt moves by up to 0.74 nats between passes
+(mean 0.08 to 0.23), including between two identical batches. Prefix-cache
+hits therefore change Flint's logits in vLLM 0.34.0. `flint.json` now sets
+`enable_prefix_caching: false`, the one engine setting that departs from the
+Qwen contract; the failed canary is kept as
+`results/flint_ood/flint_canary_prefix_cache_failed/`. Qwen3.8-27B's stored
+throughput had prefix caching on, so the throughput comparison carries that
+difference as well.
+
 ## Interface audit (`audit.py`, CPU only)
 
 | | Flint | Qwen 27B |
@@ -92,6 +105,8 @@ PYTHONPATH=src:. python -m experiments.flint_ood.audit   # tokenizer only
 experiments/flint_ood/setup.sh
 CANARY_ONLY=1 experiments/flint_ood/run.sh flint
 experiments/flint_ood/run.sh flint
+# consistency diagnostic used for the prefix-caching amendment
+python -m experiments.flint_ood.diagnose_parity --output results/flint_ood/diagnostics/parity_no_prefix_cache.json
 ```
 
 ## Results
