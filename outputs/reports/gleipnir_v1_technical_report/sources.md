@@ -897,3 +897,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   says its state cannot be cached across questions, so the flag is likely a
   provider default. Mercury Decide had no endpoint listed on 2026-11-20, hence
   "the endpoints that we checked".
+- OpenAI cached-input ratios (JF, 2026-11-20), from
+  `experiments/sleightbench_eval/config.json` (OpenAI pricing page, checked
+  2026-09-30 to 2026-10-31): GPT-6 Luna $0.10/$0.01, GPT-6 Sol $2.00/$0.20,
+  GPT-5.5 $5.00/$0.50 (one tenth), GPT-6.1 Terra $1.00/$0.05 (one twentieth).
