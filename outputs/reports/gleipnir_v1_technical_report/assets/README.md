@@ -29,3 +29,4 @@ The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
 | `sleightbench_frontier.pdf`, `.svg` | `scripts/plot_sleightbench_frontier.py` on `results/sleightbench_eval/frontier.json` (from `python -m experiments.sleightbench_eval.frontier`) |
 | `sleightbench_catch_frontier.pdf`, `.svg` | `scripts/plot_sleightbench_frontier.py --metric catch_rate` on the same file |
 | `probe_objective.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report` on `results/probe_generalization/full01/` |
+| `probe_objective_27b.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report --model 27b` on `results/probe_generalization/scale27b_{prompted01,full01}/` |

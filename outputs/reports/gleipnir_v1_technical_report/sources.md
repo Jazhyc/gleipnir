@@ -979,3 +979,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   is the mean difference of `tab:hard-soft`). 27B per-architecture differences
   from `experiments/probe_scale_27b/README.md` family tables (prompted +0.011
   to +0.058, NTP +0.034 to +0.049, excluding mean-pooled probes).
+- `fig:probe-objective-27b` (JF, 2026-11-20): `scripts/plot_probe_objective_dumbbell.py
+  --report --model 27b` on `results/probe_generalization/scale27b_prompted01/ood_prompted.json`
+  and `scale27b_full01/ood_ntp.json`; LoRA row 0.9044 / 0.9087 (one run each,
+  compact instruction, `experiments/qwen38_27b_hard_labels/README.md`);
+  references Gleipnir 27B BF16 0.935 (`tab:precision`) and zero-shot 0.8901.
+  Seed-median gains: prompted +0.011 to +0.057, bare trajectory +0.034 to
+  +0.049, 5/5 seeds in every architecture (the README family table, rounded
+  separately, gives +0.058 for prompted attention).

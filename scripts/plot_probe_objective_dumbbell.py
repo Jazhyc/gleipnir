@@ -60,8 +60,47 @@ FAMILIES = {
 # Matched 4B LoRA seeds 0-2, OOD macro pAUROC@20, from the result table in
 # experiments/hard_label_seeds/README.md (artifacts span several run dirs).
 LORA_SEEDS = {"hard": [0.7458, 0.7131, 0.6902], "soft": [0.7869, 0.8125, 0.7768]}
+LORA_LABEL = "Gleipnir 4B recipe"
 GLEIPNIR_4B_OOD = 0.804
 ZERO_SHOT_OOD = 0.6175
+XLIM = (0.575, 0.84)
+# Horizontal alignment of the zero-shot and Gleipnir reference labels.
+REFERENCE_ALIGN = ("center", "center")
+# Optional per-backbone result files; by default ``<results_dir>/ood_<backbone>.json``.
+RESULT_FILES: dict[str, Path] = {}
+# The 27B version (``--model 27b``): its two inputs ran as separate studies,
+# and its LoRA comparison is one run per objective with the compact
+# instruction (experiments/qwen38_27b_hard_labels/README.md).
+MODEL_27B = {
+    "RESULT_FILES": {
+        "prompted": REPOSITORY_ROOT
+        / "results/probe_generalization/scale27b_prompted01/ood_prompted.json",
+        "ntp": REPOSITORY_ROOT
+        / "results/probe_generalization/scale27b_full01/ood_ntp.json",
+    },
+    "LORA_SEEDS": {"hard": [0.9044], "soft": [0.9087]},
+    "LORA_LABEL": "Gleipnir 27B recipe",
+    "LORA_HEADER": "Fine-tuned 27B monitor\n(LoRA, 1 run)",
+    "GLEIPNIR_4B_OOD": 0.935,
+    "ZERO_SHOT_OOD": 0.8901,
+    "XLIM": (0.765, 0.955),
+    # The two reference lines are close: labels point away from each other.
+    "REFERENCE_ALIGN": ("right", "left"),
+    "REPORT_BACKBONES": {
+        "prompted": "Probe on Qwen3.8-27B,\nprompted (5 seeds)",
+        "ntp": "Probe on Qwen3.8-27B,\nbare trajectory (5 seeds)",
+    },
+    "REPORT_REFERENCE_LABELS": {
+        "zero_shot": "Qwen3.8-27B zero-shot",
+        "gleipnir": "Gleipnir 27B (BF16)",
+    },
+    "REPORT_OUTPUTS": [
+        REPOSITORY_ROOT
+        / "outputs/reports/gleipnir_v1_technical_report/assets/probe_objective_27b.pdf",
+        REPOSITORY_ROOT
+        / "outputs/reports/gleipnir_v1_technical_report/assets/probe_objective_27b.svg",
+    ],
+}
 
 # Green/red separated in lightness so the pair stays distinct under CVD.
 GAIN_COLOR = "#176D35"
@@ -155,9 +194,8 @@ def _row(label: str, hard: dict, soft: dict, hard_pick: dict, soft_pick: dict) -
 def load_rows(results_dir: Path) -> list[Row]:
     rows: list[Row] = []
     for backbone, title in BACKBONES.items():
-        pooled = json.loads((results_dir / f"ood_{backbone}.json").read_text())[
-            "pooled"
-        ]
+        path = RESULT_FILES.get(backbone, results_dir / f"ood_{backbone}.json")
+        pooled = json.loads(path.read_text())["pooled"]
         hard, soft = pooled["hard"], pooled["soft"]
         rows.append(Row(title, header=True))
         family_rows = [
@@ -177,7 +215,7 @@ def load_rows(results_dir: Path) -> list[Row]:
     rows.append(Row(LORA_HEADER, header=True))
     rows.append(
         Row(
-            "Gleipnir 4B recipe",
+            LORA_LABEL,
             hard=median(LORA_SEEDS["hard"]),
             soft=median(LORA_SEEDS["soft"]),
             hard_seeds=tuple(LORA_SEEDS["hard"]),
@@ -361,11 +399,11 @@ def _draw_panel(
     axis.spines["left"].set_visible(False)
     axis.spines["bottom"].set_color("#BBBBBB")
 
-    axis.set_xlim(0.575, 0.84)
+    axis.set_xlim(*XLIM)
     axis.set_ylim(-0.2, top + 0.2)
-    for x, label, style in (
-        (ZERO_SHOT_OOD, REFERENCE_LABELS["zero_shot"], ":"),
-        (GLEIPNIR_4B_OOD, REFERENCE_LABELS["gleipnir"], "--"),
+    for x, label, style, align in (
+        (ZERO_SHOT_OOD, REFERENCE_LABELS["zero_shot"], ":", REFERENCE_ALIGN[0]),
+        (GLEIPNIR_4B_OOD, REFERENCE_LABELS["gleipnir"], "--", REFERENCE_ALIGN[1]),
     ):
         axis.axvline(x, color=INK_MUTED, linestyle=style, linewidth=1.5, zorder=1)
         axis.text(
@@ -373,7 +411,7 @@ def _draw_panel(
             top + 0.2,
             f"{label} {x:.3f}",
             rotation=0,
-            ha="center",
+            ha=align,
             va="bottom",
             fontsize=11.5,
             color=INK_MUTED,
@@ -630,6 +668,12 @@ def parse_args() -> argparse.Namespace:
         "Defaults to both PNG and SVG.",
     )
     parser.add_argument(
+        "--model",
+        choices=("4b", "27b"),
+        default="4b",
+        help="Which model's probes; the 27B is available with --report only",
+    )
+    parser.add_argument(
         "--report",
         action="store_true",
         help="The technical report's version: no title or footnote, report terms",
@@ -644,12 +688,27 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    report_outputs = REPORT_OUTPUTS
+    if args.model == "27b":
+        if not args.report:
+            raise SystemExit("the 27B figure exists only as the report version")
+        globals().update(
+            {
+                key: value
+                for key, value in MODEL_27B.items()
+                if not key.startswith("REPORT_")
+            }
+        )
+        REPORT_BACKBONES.update(MODEL_27B["REPORT_BACKBONES"])
+        REPORT_REFERENCE_LABELS.update(MODEL_27B["REPORT_REFERENCE_LABELS"])
+        report_outputs = MODEL_27B["REPORT_OUTPUTS"]
     if args.report:
         BACKBONES.update(REPORT_BACKBONES)
         REFERENCE_LABELS.update(REPORT_REFERENCE_LABELS)
     rows = load_rows(args.results_dir)
-    note = omitted_probes_note(args.results_dir)
-    defaults = REPORT_OUTPUTS if args.report else DEFAULT_OUTPUTS
+    # The footnote is not drawn in the report version.
+    note = "" if args.report else omitted_probes_note(args.results_dir)
+    defaults = report_outputs if args.report else DEFAULT_OUTPUTS
     for output_path in args.output or defaults:
         # Extra padding keeps a white margin beside the full-width cards.
         output = save_figure(
