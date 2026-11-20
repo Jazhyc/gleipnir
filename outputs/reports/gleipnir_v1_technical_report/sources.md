@@ -878,3 +878,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   0.92–0.96); also monitor-directed comments and best-of-N attackers. No
   agent trajectories, no architecture or caching discussion. Hence "no
   published evaluation ... of agent trajectories" in the background.
+- `subramanian2026jev`: arXiv:2611.00505 (v1, 2026-10-31), Shreyas Subramanian,
+  Scale AI. Verbatim: 14 decision models against four generative judges on
+  eleven judge benchmarks; cites AgentRewardBench ("Evaluating automatic
+  evaluations of web agent trajectories"). Its AgentRewardBench AUROCs (Table
+  8, e.g. pplx-decider 0.921) were seen only in a summary and are not used.
+  Searches on 2026-11-20 (decision-model, classifier-monitor and product-name
+  terms) found no control paper that evaluates decision models as monitors for
+  harmful behaviour; prompt-injection papers on Jev (arXiv 2610.17820,
+  2610.18612, 2610.14404) were seen only as snippets.
