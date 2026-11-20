@@ -1123,6 +1123,14 @@ Allocated on the first request at 21:21 UTC and reachable over SSH at 21:28
 22:17 UTC (`podTerminate`; `myself.pods` empty) after verified collection of
 25 files; about $7.40. No Pod remains.
 
+For the benchmark's empty-think arm and the Flint agent-trajectory serving
+benchmark (user authorization 2026-11-20, one more B200): `j59qldo1255y10`
+(same name, settings, machine and GPU; snapshot `.runpod/flint-ood-2.json`).
+Allocated on the first request at 22:24 UTC, reachable at 22:25; the compiled
+kernels of the first Pod were gone with its disk, so the first engine start
+took 581 s. Terminated at 22:49 UTC (`podTerminate`; `myself.pods` empty)
+after verified collection of 35 files; about $3.20. No Pod remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

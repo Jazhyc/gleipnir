@@ -158,11 +158,7 @@ The Qwen3.5-4B figure is the archived zero-shot teacher-prompt result
 - Flint is 6.0 times faster per row. The comparison is not matched: Flint ran
   on vLLM 0.34.0 without prefix caching, Qwen3.8-27B on vLLM 0.31 with it, on
   different EU-RO-1 B200 hosts.
-- The only B200 reference for a BF16 Qwen3.5-4B is 106K prompt tokens/s
-  through a stock vLLM 0.31 server on compact prompts
-  ([4B full specification](../gleipnir4b_full_specification/README.md)). Flint's
-  rate equals 167K Qwen tokens/s on these prompts, so it is in the 4B's range;
-  this was not measured side by side.
+- Against the 4B, see the agent-trajectory benchmark below.
 - **Tokenization is not the bottleneck** (`throughput.py`). Scoring from
   pre-tokenized IDs took 363 s, the same as from text, with identical scores.
   The stock tokenizer needs 73 s on one thread for the 50.9M tokens (700K
@@ -176,10 +172,11 @@ amendment), which would need resolving before serving it with a shared prefix.
 
 Artifacts: `results/flint_ood/` (`flint/`, `comparison.json`,
 `diagnostics/`, the failed canary) and `logs/runpod/flint_ood/` (25 files
-verified against the Pod by SHA-256, `collect.sha256`). Pod lifecycle:
+verified against the first Pod by SHA-256, `collect.sha256`; 35 against the
+second, `collect_pod2.sha256`). Pod lifecycle:
 [infrastructure](../../docs/infrastructure.md#runpod).
 
-## Second arm: empty think block (frozen 2026-11-20, not yet scored)
+## Second arm: empty think block (frozen 2026-11-20 before scoring)
 
 At the user's suggestion: close an empty reasoning block before the decision
 prefix, as the Qwen contract does. The prompt ends
@@ -201,3 +198,67 @@ template writes reasoning before an answer (no newlines).
 ```bash
 experiments/flint_ood/run.sh flint_empty_think
 ```
+
+### Result (2026-11-20, same B200 `GPU-a2b24934…`, Pod `j59qldo1255y10`)
+
+All 6,395 rows scored, no stop condition, batch and singleton canary scores
+identical, 363 s of scoring.
+
+| strict OOD | bare boundary | empty think | Qwen3.8-27B | Qwen3.5-4B, unadapted |
+|---|---:|---:|---:|---:|
+| **Mean-OOD pAUROC@20** | 0.4486 | 0.4811 | **0.8901** | 0.6175 |
+| macro AUROC | 0.7819 | 0.8025 | **0.9535** | 0.8549 |
+| macro Brier | 0.2268 | 0.2356 | **0.0823** | |
+| AgentDojo | 0.4539 | 0.4897 | 0.9657 | |
+| CUA-SHADE-Arena | 0.5244 | 0.5140 | 0.8648 | |
+| IaC | 0.1625 | 0.1793 | 0.9678 | |
+| MLE-Sabotage | 0.6735 | 0.7806 | 1.0000 | |
+| Rogue Eval | 0.3951 | 0.4657 | 0.9862 | |
+| SHADE-Arena | 0.4824 | 0.4572 | 0.5560 | |
+
+- **The empty block helps a little: +3.2 points**, with gains on four sources
+  and small losses on CUA-SHADE-Arena and SHADE-Arena. Flint stays 41 points
+  below Qwen3.8-27B and 14 below unadapted Qwen3.5-4B. Not competitive.
+- **The boundary is now one Flint uses.** After `</think>` the unconstrained
+  next token is `Prediction` with probability 0.995 or more on all 13 canary
+  prompts (the runner-up, `We`, is at most 0.4%). So the weak result is not
+  explained by an off-distribution boundary: the unadapted model does not
+  rank these trajectories well without reasoning.
+- The two arms' scores correlate at 0.84. Both over-flag (mean score 0.67
+  to 0.69; 90% of benign SHADE-Arena rows are flagged at 0.5).
+
+## Serving throughput on the 96 agent trajectories (`agent_bench.py`)
+
+User request: a direct throughput measurement on the report's serving
+benchmark ([serving concurrency](../serving_concurrency/README.md), `--agent`:
+BashArena, BashBench, Gloom and STRIDE with the compact instruction, closed
+loop, three passes per level after one warmup pass, prefix caching off, 32,768
+maximum length and batch budget, 128 sequences). Flint is served by stock
+`vllm serve` 0.34.0 in BF16 through `/v1/completions` (one constrained token
+with logprobs, empty-think boundary). Flint tokenizes these rows to 1,064,479
+tokens (median 9,040) against Qwen's 1,193,325, so requests/s is the
+like-for-like unit.
+
+| one request at a time | Flint BF16 | Qwen3.5-4B BF16 | Qwen3.8-27B BF16 |
+|---|---:|---:|---:|
+| requests/s | 9.6 | 8.3 | 1.7 |
+| prompt tokens/s (own tokenizer) | 106,319 | 103,266 | 21,720 |
+| latency p50 / p95, ms | 82 / 226 | 94 / 267 | 452 / 1,281 |
+
+| 8 concurrent requests | Flint BF16 | Qwen3.5-4B BF16 | Qwen3.8-27B BF16 |
+|---|---:|---:|---:|
+| requests/s | 12.3 | 9.7 | 1.8 |
+| prompt tokens/s (own tokenizer) | 136,701 | 120,284 | 22,950 |
+| latency p50 / p95, ms | 627 / 907 | 816 / 1,131 | 4,271 / 5,832 |
+
+- Flint BF16 serves these trajectories about 1.15 times as fast as the BF16
+  4B at one request at a time and 1.27 times at eight, and 5.5 to 6.7 times
+  as fast as the BF16 27B. It saturates near 137K tokens/s from 8 concurrent
+  requests (12.4 requests/s up to 64).
+- The optimized 4B stack is faster than Flint BF16: 161,699 tokens/s
+  (13.0 requests/s) at one request at a time with Gigatoken.
+- Not matched: the Qwen numbers are from 2026-11-16 (`agent03`, vLLM 0.31,
+  the project's two-logit scoring server, another EU-RO-1 B200 host of the
+  same CPU type); Flint used the generic completions endpoint on vLLM 0.34.0.
+  One session, no repeat on another day.
+- Results: `results/flint_ood/agent_bench/` (`summary.json`, per-pass rows).

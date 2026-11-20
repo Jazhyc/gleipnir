@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[2]
 OUT = ROOT / "results/flint_ood"
 RUNS = {
     "flint": OUT / "flint",
+    "flint_empty_think": OUT / "flint_empty_think",
     "qwen38_vllm031": ROOT / "results/qwen27b_generations_ood/qwen38_27b",
 }
 SOURCES = [
