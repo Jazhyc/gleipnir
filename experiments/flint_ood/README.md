@@ -109,6 +109,72 @@ experiments/flint_ood/run.sh flint
 python -m experiments.flint_ood.diagnose_parity --output results/flint_ood/diagnostics/parity_no_prefix_cache.json
 ```
 
-## Results
+## Results (2026-11-20, EU-RO-1 B200 `GPU-a2b24934…`, vLLM 0.34.0)
 
-Pending.
+Pod `8l2ln36loy87kt` (EPYC 9555, driver 595.112.07). The run scored all 6,395
+rows and hit no stop condition. The canary's batch and singleton scores were
+identical. Engine start-up took 41 s with warm kernel caches; the first start
+spent about 9 minutes on one-off kernel builds and autotuning.
+
+**Flint is not competitive at the direct-logit interface.** It is 44 points
+below Qwen3.8-27B and 17 below unadapted Qwen3.5-4B.
+
+| strict OOD | Flint | Qwen3.8-27B | Qwen3.5-4B, unadapted |
+|---|---:|---:|---:|
+| **Mean-OOD pAUROC@20** | 0.4486 | **0.8901** | 0.6175 |
+| macro AUROC | 0.7819 | **0.9535** | 0.8549 |
+| macro Brier | 0.2268 | **0.0823** | |
+| macro balanced accuracy | 0.6361 | **0.8894** | |
+
+| pAUROC@20 by source | Flint | Qwen3.8-27B |
+|---|---:|---:|
+| AgentDojo | 0.4539 | 0.9657 |
+| CUA-SHADE-Arena | 0.5244 | 0.8648 |
+| IaC | 0.1625 | 0.9678 |
+| MLE-Sabotage | 0.6735 | 1.0000 |
+| Rogue Eval | 0.3951 | 0.9862 |
+| SHADE-Arena | 0.4824 | 0.5560 |
+
+The Qwen3.5-4B figure is the archived zero-shot teacher-prompt result
+([finding](../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md)).
+
+- **Flint over-flags.** At 0.5 it flags 98% of benign Rogue Eval rows, 92% of
+  SHADE-Arena and 69% of AgentDojo. Mean scores on benign rows are 0.30 to
+  0.70 by source, and Flint's scores correlate with Qwen3.8-27B's at only 0.50.
+- **The direct turn is off-distribution for Flint.** On all 13 canary prompts
+  the unconstrained first assistant token is `<think>` with probability above
+  0.99999. Flint practically never answers this prompt without reasoning, so
+  this measures the unadapted model at a boundary it does not use. It says
+  nothing about Flint with reasoning or after adapter training.
+
+**Throughput.**
+
+| scoring the 6,395 rows | Flint | Qwen3.8-27B |
+|---|---:|---:|
+| seconds | 364 | 2,190 |
+| rows/s | 17.6 | 2.9 |
+| prompt tokens/s (own tokenizer) | 139,800 | 27,600 |
+
+- Flint is 6.0 times faster per row. The comparison is not matched: Flint ran
+  on vLLM 0.34.0 without prefix caching, Qwen3.8-27B on vLLM 0.31 with it, on
+  different EU-RO-1 B200 hosts.
+- The only B200 reference for a BF16 Qwen3.5-4B is 106K prompt tokens/s
+  through a stock vLLM 0.31 server on compact prompts
+  ([4B full specification](../gleipnir4b_full_specification/README.md)). Flint's
+  rate equals 167K Qwen tokens/s on these prompts, so it is in the 4B's range;
+  this was not measured side by side.
+- **Tokenization is not the bottleneck** (`throughput.py`). Scoring from
+  pre-tokenized IDs took 363 s, the same as from text, with identical scores.
+  The stock tokenizer needs 73 s on one thread for the 50.9M tokens (700K
+  tokens/s), which vLLM overlaps with GPU work. Gigatoken 0.10.0 and 0.11.0
+  cannot load Flint's tokenizer (unsupported Split pre-tokenizer regexes), so
+  it was not run; the token-ID pass is the ceiling it could reach.
+
+**Limits.** One unadapted checkpoint, one prompt interface, one pass. ID was
+not scored. Prefix caching changes Flint's logits in vLLM 0.34.0 (see the
+amendment), which would need resolving before serving it with a shared prefix.
+
+Artifacts: `results/flint_ood/` (`flint/`, `comparison.json`,
+`diagnostics/`, the failed canary) and `logs/runpod/flint_ood/` (25 files
+verified against the Pod by SHA-256, `collect.sha256`). Pod lifecycle:
+[infrastructure](../../docs/infrastructure.md#runpod).

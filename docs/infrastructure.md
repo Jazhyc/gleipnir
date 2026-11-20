@@ -1112,6 +1112,17 @@ UTC, reachable over SSH at 06:16 (about 18 minutes to pull the image), run
 06:24–06:39, terminated at 06:40 (`podTerminate`; `myself.pods` empty) after
 verified collection of 13 files. No Pod remains.
 
+For the [Flint OOD benchmark](../experiments/flint_ood/README.md) (user
+authorization 2026-11-20, one B200, EU-RO-1 preferred, terminated after
+collection): `8l2ln36loy87kt` (`gleipnir-flint-ood`, EU-RO-1, image `1.2`,
+machine `ods55hcq87v4`, B200 `GPU-a2b24934…`, EPYC 9555, driver 595.112.07,
+250 GB container disk, no network volume, snapshot `.runpod/flint-ood.json`).
+Allocated on the first request at 21:21 UTC and reachable over SSH at 21:28
+(the image was cached on the host). It ran an isolated vLLM 0.34.0 runtime
+(`/root/flint-vllm034`); the image's 0.31 runtime was not used. Terminated at
+22:17 UTC (`podTerminate`; `myself.pods` empty) after verified collection of
+25 files; about $7.40. No Pod remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
