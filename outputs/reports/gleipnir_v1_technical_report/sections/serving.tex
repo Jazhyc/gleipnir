@@ -50,9 +50,8 @@ The merged BF16 checkpoints that we release run in classification mode on stock 
 
 Prefix caching lowers the cost of a monitor that checks every action.
 Such a monitor scores the transcript again after each step, and with prefix caching it processes only the tokens that are new since the previous check.
-On the 96 trajectories of our benchmark, a check before every action processes 12 times the prompt tokens of one check per trajectory.
-With prefix caching these checks take 3.3 times as long as one check per trajectory for the 27B, against 12.2 times without it (Appendix~\ref{app:serving-throughput}).
-For the 4B they take 6.9 against 12.8 times, because a fixed cost per request weighs more for the faster model.
+On the 96 trajectories of our benchmark, checking every action takes 3.7 times less time with prefix caching than without it for the 27B, and 1.9 times less for the 4B (Appendix~\ref{app:serving-throughput}).
+The 4B gains less because a fixed cost per request weighs more for the faster model.
 The saving grows with the length of the trajectory, and our costs elsewhere count one check per trajectory.
 
 \subsection{Low-precision arithmetic}

@@ -813,3 +813,6 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   own prompts (raw state plus question) have somewhat different lengths.
 - The earlier US-NC-2 run (Xeon 8568Y+, 89.5K tokens/s for the 4B) is not
   used; see the experiment README.
+- Section 4.1 states only the speed-up of caching for every-action checking
+  (JF): 285.7 / 77.3 = 3.70 (27B), 74.1 / 39.9 = 1.86 (4B); the multiples of
+  one check per trajectory stay in Appendix E.1.
