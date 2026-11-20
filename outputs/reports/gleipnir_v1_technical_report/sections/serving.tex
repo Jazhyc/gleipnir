@@ -114,3 +114,4 @@ Providers of language models can pass this saving on: for the four OpenAI models
 The decision models currently do not, as none of their OpenRouter endpoints that we checked lists a lower price for cached input.
 pplx-decider and Drex Max~\citep{dhankhar2026drex} cannot use prefix caching at all: they attend bidirectionally, so earlier tokens depend on later ones and each check processes the whole transcript again (Appendix~\ref{app:serving-decider}).
 To compare all monitors on one workload, our costs and those of the API monitors count one uncached check per trajectory.
+These costs therefore understate the advantage of Gleipnir over the decision models for synchronous monitoring, which checks every action: on our benchmark, Gleipnir 27B with prefix caching costs \$1.79 per 1,000 trajectories on demand and \$0.77 with committed use, against about \$3.0 for pplx-decider (Appendix~\ref{app:serving-decider}).

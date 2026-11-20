@@ -933,3 +933,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `experiments/release_serving/serve.py` sets `GLEIPNIR_FLASHINFER_GDN_CP="auto"`
   (FlashInfer's automatic context-parallel route; `experiments/b200_gdn_route`).
   The direct call on empty-state steps is the "shorter host path" of Section 4.3.
+- Section 4.4 synchronous-monitoring sentence (JF, 2026-11-20): per-action costs
+  from `results/prefix_caching_replay/replay02/summary.json` (27B cached $1.788
+  on demand, $0.770 committed) and the Decider estimate of Appendix E.3 ($3.01
+  at $0.02/M on the same prompt tokens). Scoped to the decision models because
+  OpenAI's models discount cached input too.
