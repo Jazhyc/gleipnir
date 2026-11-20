@@ -28,3 +28,4 @@ The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
 | `ood_recall_frontier.pdf`, `.svg` | `scripts/plot_tool_trajectory_ood_frontier.py --report --recall` on the registry and `results/ood_recall_at_fpr/recall_at_fpr.json` |
 | `sleightbench_frontier.pdf`, `.svg` | `scripts/plot_sleightbench_frontier.py` on `results/sleightbench_eval/frontier.json` (from `python -m experiments.sleightbench_eval.frontier`) |
 | `sleightbench_catch_frontier.pdf`, `.svg` | `scripts/plot_sleightbench_frontier.py --metric catch_rate` on the same file |
+| `probe_objective.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report` on `results/probe_generalization/full01/` |

@@ -859,8 +859,17 @@ Qwen3.8-27B & 31 of 64 & Prompted & 0.841 & 0.861 \\
 
 \paragraph{Soft targets help the probes.}
 Soft targets raise every selected probe in Table~\ref{tab:probes}: by 0.007 and 0.055 for the 4B and by 0.020 and 0.034 for the 27B at half depth.
-On the bare trajectory, the soft probe scores higher than the hard one in every architecture, for both models.
+The selected probes understate the effect, because the validation set picks architectures that gain little.
+Figure~\ref{fig:probe-objective} shows every 4B architecture: on the bare trajectory, soft targets add 0.053 to 0.088 in each of them, about as much as they add to LoRA, while with the prompt they add at most 0.034 and lose in two architectures.
+For the 27B, soft targets raise every architecture on both inputs, by 0.011 to 0.058.
 For LoRA, soft targets raise the 4B by 0.076 and leave the 27B within 0.005 (Appendix~\ref{app:ablation-targets}), so at 27B they help the probes but not the adapter.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{probe_objective}
+\caption{Soft targets raise the OOD score of the 4B probes in almost every architecture, and by about as much as for LoRA when the probes read the bare trajectory. Mean-OOD pAUROC@20 of probes on Qwen3.5-4B after layer 15, trained on dataset labels (hard) or Kimi K3 probabilities (soft), as medians over five seeds; small dots are single seeds. Wins count the seeds in which the soft probe beats the hard probe from the same initialization. Stars mark the probe selected on the validation set for each objective, which Table~\ref{tab:probes} reports. The last row trains the 4B monitor with LoRA on the same two objectives (three seeds; Appendix~\ref{app:ablation-targets}). Each objective uses its own validation-best training length. Mean-pooled probes, which score at most 0.60, are omitted.}
+\label{fig:probe-objective}
+\end{figure}
 
 \paragraph{Half depth is not enough.}
 The best half-depth probes score 0.040 below Gleipnir 4B and 0.074 below Gleipnir 27B.
@@ -877,6 +886,7 @@ We measured this before the tokenizer change of Section~\ref{sec:serving-work}, 
 Early exits are therefore cheap to run but cost quality at half depth.
 One explanation is that the decision forms late in the network; an exit placed later in the 27B, or trained together with the adapter, may close part of the gap, which we leave to future work.
 
+\FloatBarrier
 \section{Additional results}
 \label{app:additional-results}
 

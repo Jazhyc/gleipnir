@@ -971,3 +971,11 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   about it. "Probes ... usually trained on dataset labels" refers to Kramár et
   al. Our contribution as framed: soft targets from an external teacher into
   probes on the unadapted model, compared with LoRA fine-tuning.
+- `fig:probe-objective` (JF, 2026-11-20): `scripts/plot_probe_objective_dumbbell.py
+  --report` on `results/probe_generalization/full01/ood_{prompted,ntp}.json`
+  (the slide/presentation figure `figures/probe_objective_ood_dumbbell.svg`
+  without title and footnote, report terms). LoRA seeds from
+  `experiments/hard_label_seeds/README.md` (medians: +0.074; the text's 0.076
+  is the mean difference of `tab:hard-soft`). 27B per-architecture differences
+  from `experiments/probe_scale_27b/README.md` family tables (prompted +0.011
+  to +0.058, NTP +0.034 to +0.049, excluding mean-pooled probes).

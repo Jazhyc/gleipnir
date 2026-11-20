@@ -21,6 +21,27 @@ DEFAULT_OUTPUTS = [
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.png",
     REPOSITORY_ROOT / "figures/probe_objective_ood_dumbbell.svg",
 ]
+# The technical report's version (Appendix F): no title or footnote, since
+# the caption carries them, and the report's terms for inputs and references.
+REPORT_OUTPUTS = [
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/probe_objective.pdf",
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/probe_objective.svg",
+]
+REPORT_BACKBONES = {
+    "prompted": "Probe on Qwen3.5-4B,\nprompted (5 seeds)",
+    "ntp": "Probe on Qwen3.5-4B,\nbare trajectory (5 seeds)",
+}
+LORA_HEADER = "Fine-tuned 4B monitor\n(LoRA, 3 seeds)"
+REFERENCE_LABELS = {
+    "zero_shot": "Base 4B zero-shot",
+    "gleipnir": "LoRA seed average + QAD",
+}
+REPORT_REFERENCE_LABELS = {
+    "zero_shot": "Qwen3.5-4B zero-shot",
+    "gleipnir": "Gleipnir 4B (BF16)",
+}
 BACKBONES = {
     "prompted": "Probe on frozen 4B,\nmonitor prompt (5 seeds)",
     "ntp": "Probe on frozen 4B,\nraw transcript (5 seeds)",
@@ -153,7 +174,7 @@ def load_rows(results_dir: Path) -> list[Row]:
         assert sum(row.hard_selected for row in family_rows) == 1
         assert sum(row.soft_selected for row in family_rows) == 1
         rows.extend(family_rows)
-    rows.append(Row("Fine-tuned 4B monitor\n(LoRA, 3 seeds)", header=True))
+    rows.append(Row(LORA_HEADER, header=True))
     rows.append(
         Row(
             "Gleipnir 4B recipe",
@@ -343,8 +364,8 @@ def _draw_panel(
     axis.set_xlim(0.575, 0.84)
     axis.set_ylim(-0.2, top + 0.2)
     for x, label, style in (
-        (ZERO_SHOT_OOD, "Base 4B zero-shot", ":"),
-        (GLEIPNIR_4B_OOD, "LoRA seed average + QAD", "--"),
+        (ZERO_SHOT_OOD, REFERENCE_LABELS["zero_shot"], ":"),
+        (GLEIPNIR_4B_OOD, REFERENCE_LABELS["gleipnir"], "--"),
     ):
         axis.axvline(x, color=INK_MUTED, linestyle=style, linewidth=1.5, zorder=1)
         axis.text(
@@ -361,12 +382,20 @@ def _draw_panel(
 
 
 def plot_dumbbell(
-    rows: list[Row], footnote_text: str = FOOTNOTE, landscape: bool = False
+    rows: list[Row],
+    footnote_text: str = FOOTNOTE,
+    landscape: bool = False,
+    report: bool = False,
 ) -> plt.Figure:
     """Portrait: all sections in one panel, with the title. Landscape (slides):
     the monitor-prompt and raw-transcript sections side by side, each closed by
     the LoRA monitor for reference, and no title, since the slide carries it."""
     set_plot_style()
+    # The style's font lacks the minus sign and the Greek delta; fall back to
+    # DejaVu Sans for those glyphs.
+    families = list(plt.rcParams["font.family"])
+    if "DejaVu Sans" not in families:
+        plt.rcParams["font.family"] = [*families, "DejaVu Sans"]
     if landscape:
         headers = [i for i, row in enumerate(rows) if row.header]
         second, lora = headers[1], headers[-1]
@@ -455,7 +484,7 @@ def plot_dumbbell(
         _add_section_cards(figure, axis, section, shifted, *span)
         spans.append(span)
     left, right = spans[0][0], spans[-1][1]
-    if not landscape:
+    if not landscape and not report:
         _add_title(figure, axes[0], TITLE, left, right)
     # The two legends sit side by side, centered under the cards; the footnote
     # starts at the cards' left edge.
@@ -485,6 +514,8 @@ def plot_dumbbell(
             (to_figure.transform((x, 0))[0], 0.0), transform=figure.transFigure
         )
         x += width + LEGEND_GAP
+    if report:
+        return figure
     # Start the footnote a little below the legends.
     legend_bottom = min(
         legend.get_window_extent(renderer).y0 for legend in figure.legends
@@ -599,6 +630,11 @@ def parse_args() -> argparse.Namespace:
         "Defaults to both PNG and SVG.",
     )
     parser.add_argument(
+        "--report",
+        action="store_true",
+        help="The technical report's version: no title or footnote, report terms",
+    )
+    parser.add_argument(
         "--landscape",
         action="store_true",
         help="Two panels side by side and no title, for slides",
@@ -608,12 +644,16 @@ def parse_args() -> argparse.Namespace:
 
 def main() -> None:
     args = parse_args()
+    if args.report:
+        BACKBONES.update(REPORT_BACKBONES)
+        REFERENCE_LABELS.update(REPORT_REFERENCE_LABELS)
     rows = load_rows(args.results_dir)
     note = omitted_probes_note(args.results_dir)
-    for output_path in args.output or DEFAULT_OUTPUTS:
+    defaults = REPORT_OUTPUTS if args.report else DEFAULT_OUTPUTS
+    for output_path in args.output or defaults:
         # Extra padding keeps a white margin beside the full-width cards.
         output = save_figure(
-            plot_dumbbell(rows, f"{FOOTNOTE} {note}", args.landscape),
+            plot_dumbbell(rows, f"{FOOTNOTE} {note}", args.landscape, args.report),
             output_path,
             pad_inches=0.4,
         )
