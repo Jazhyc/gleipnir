@@ -865,14 +865,14 @@ For LoRA, soft targets raise the 4B by 0.076 and leave the 27B within 0.005 (App
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{probe_objective}
+\includegraphics[width=0.8\linewidth]{probe_objective}
 \caption{Soft targets raise the OOD score of the 4B probes in almost every architecture, and by about as much as for LoRA when the probes read the bare trajectory. Mean-OOD pAUROC@20 of probes on Qwen3.5-4B after layer 15, trained on dataset labels (hard) or Kimi K3 probabilities (soft), as medians over five seeds; small dots are single seeds. Wins count the seeds in which the soft probe beats the hard probe from the same initialization. Stars mark the probe selected on the validation set for each objective, which Table~\ref{tab:probes} reports. The last row trains the 4B monitor with LoRA on the same two objectives (three seeds; Appendix~\ref{app:ablation-targets}). The dashed line is the released Gleipnir 4B, the weight average of the three soft-target seeds after QAD, read in BF16. The differences in the right column compare soft with hard targets in each row. Each objective uses its own validation-best training length. Mean-pooled probes, which score at most 0.60, are omitted.}
 \label{fig:probe-objective}
 \end{figure}
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{probe_objective_27b}
+\includegraphics[width=0.8\linewidth]{probe_objective_27b}
 \caption{Soft targets raise the OOD score of the 27B probes in every architecture and every seed, although they barely change the 27B adapter. The same comparison as Figure~\ref{fig:probe-objective} for probes on Qwen3.8-27B after block 31. The last row is one LoRA run for each objective with the compact instruction (Appendix~\ref{app:ablation-targets}), and its difference compares these two runs. The dashed line is the released Gleipnir 27B, a single run that reads the full specification instead, which accounts for its higher score. Mean-pooled probes are omitted.}
 \label{fig:probe-objective-27b}
 \end{figure}
@@ -888,7 +888,7 @@ For the 4B, the validation score peaks at layer 17 of 32, where the OOD score is
 
 \begin{figure}[t]
 \centering
-\includegraphics[width=\linewidth]{lasttoken_depth}
+\includegraphics[width=0.8\linewidth]{lasttoken_depth}
 \caption{The OOD score of the 27B keeps rising after its validation score has levelled off. pAUROC@20 of logistic-regression probes on the last token of the prompt, trained on soft targets, against the relative depth of the probed layer. Lines give the validation score at every layer; markers give the Mean-OOD score where we measured it: for the 27B at layers 24 to 44 and at layer 50, chosen on the validation set, and for the 4B at layer 17, chosen in the same way. The band marks the half-depth layers of the probes of Table~\ref{tab:probes}, and the dotted line marks chance (0.1).}
 \label{fig:lasttoken-depth}
 \end{figure}
