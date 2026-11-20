@@ -866,3 +866,15 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Geuter et al. kept as support for Gleipnir's causal last-token readout (JF,
   2026-11-20): their readout of answer-letter logits at the last prompt token
   with LoRA fine-tuning on general decision tasks.
+
+## Jev as a trusted monitor (Background; JF, 2026-11-20)
+
+- `t2026jevmonitor`: LessWrong post by Venkat T, 2026-09-18, read in full
+  2026-11-20. Jev 1.13 (one Noul question, P(yes) as suspicion) on
+  ControlArena's APPS backdoor setting (single-file Python with the problem
+  statement): AUROC 0.976 / 0.970 against two honest sets, TPR@1% FPR
+  0.878 / 0.853; about $0.044 per 1,000 submissions, 0.34 s median latency;
+  no LLM baseline was run (positioned against published o3-mini AUROC
+  0.92–0.96); also monitor-directed comments and best-of-N attackers. No
+  agent trajectories, no architecture or caching discussion. Hence "no
+  published evaluation ... of agent trajectories" in the background.
