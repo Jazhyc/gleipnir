@@ -962,3 +962,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   −0.014, 4B −0.034 to −0.054 (selected −0.051, −0.054; soft attention family
   −0.034), hence "0.034 to 0.054".
   Measured 2026-10-27/29 on the pre-Gigatoken stack.
+- Appendix F citations (JF, 2026-11-20): `xin2020deebert` (ACL 2020, pp.
+  2246–2251, arXiv 2004.12993; ACL Anthology 2020.acl-main.204) and
+  `liu2020fastbert` (ACL 2020 main.537; authors as listed on the ACL virtual
+  site). FastBERT is cited only for what it does (intermediate classifiers
+  trained on the same model's final classifier, i.e. self-distillation); its
+  comparison with hard labels was not checked, so the text makes no claim
+  about it. "Probes ... usually trained on dataset labels" refers to Kramár et
+  al. Our contribution as framed: soft targets from an external teacher into
+  probes on the unadapted model, compared with LoRA fine-tuning.

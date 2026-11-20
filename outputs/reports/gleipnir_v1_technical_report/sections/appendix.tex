@@ -824,8 +824,10 @@ For the 27B this fused kernel gave no gain in throughput, so the 27B applies the
 
 A monitor that decides in one forward pass could stop earlier still.
 If its backbone already represents the decision halfway through, a probe at that layer could replace the remaining layers and halve the compute of a check.
-We test this with probes on the activations of the unadapted base models of Gleipnir, which read the trajectory as the monitor does; the probes read the backbone of the monitor, not the monitored agent.
-We also test whether the soft targets of Section~\ref{sec:binary-logit-distillation} help probes as they help LoRA.
+Early-exit classifiers stop a model at an intermediate layer in this way when an earlier classifier suffices~\citep{xin2020deebert}, and \citet{liu2020fastbert} train them on the outputs of the final classifier of the same fine-tuned model.
+Probes for safety classification are usually trained on dataset labels~\citep{kramar2026building}.
+We test whether soft targets from an external teacher, those of Section~\ref{sec:binary-logit-distillation}, help such probes as much as they help fine-tuning with LoRA.
+The probes read the activations of the unadapted base models of Gleipnir on the trajectory, as the monitor does; they read the backbone of the monitor, not the monitored agent.
 These experiments are exploratory: a probe cannot change its policy without retraining, and we do not propose it as a deployment path.
 
 \paragraph{Setup.}
