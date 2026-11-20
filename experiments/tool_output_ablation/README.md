@@ -113,8 +113,9 @@ only tool names.
   recall at 1% FPR falls by 0.046 and 0.044. Stripped inputs are therefore not
   used for the SWE-chat thresholds without a separate decision.
 - **Where the loss is.** For the 4B, IaC (−0.088) and AgentDojo (−0.079); for
-  the 27B, SHADE-Arena (−0.167), where the evidence of a side task often sits
-  in what the tools returned (emails, documents, transaction results).
+  the 27B, SHADE-Arena (−0.167). Its side tasks work on what the tools return
+  (emails, documents, transactions), which may explain the loss; no rows were
+  inspected to check this.
   AgentDojo's injections arrive in tool outputs; the 27B still scores 0.970
   there from the following actions alone.
 - **Cost.** The stripped suite is 26% (4B) and 32% (27B) of the full prompt
