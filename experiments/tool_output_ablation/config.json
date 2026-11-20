@@ -1,0 +1,4 @@
+{
+  "ood_prompts": "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+  "tokenizer": "Qwen/Qwen3.5-4B"
+}
