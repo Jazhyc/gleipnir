@@ -987,3 +987,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   Seed-median gains: prompted +0.011 to +0.057, bare trajectory +0.034 to
   +0.049, 5/5 seeds in every architecture (the README family table, rounded
   separately, gives +0.058 for prompted attention).
+- `fig:lasttoken-depth` (JF, 2026-11-20): `scripts/plot_lasttoken_depth_report.py`
+  combining the talk figures `lasttoken_depth_id` (slide-figures a7c1497) and
+  `lasttoken_ood_depth` (4ceae29) without their annotations ("most score per
+  layer" ring dropped, user). Soft targets throughout (the talk's validation
+  curve used hard labels). Validation curve: best C per layer in
+  `results/probe_generalization/{full01,scale27b_prompted01}/lasttoken_prompted.json`;
+  27B OOD: `lasttoken_depth_prompted.json` (layers 24–44) and the selected layer
+  50 (0.8957) in `ood_prompted.json`; 4B OOD at its selected layer 17 (0.7272).
+  Hard-label 27B selection layer 47 (0.8867). Gap to Gleipnir 27B BF16:
+  0.935 − 0.896 = 0.039. The last-token row was removed from `tab:probes`.

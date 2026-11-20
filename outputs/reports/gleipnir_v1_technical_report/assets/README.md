@@ -30,3 +30,4 @@ The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
 | `sleightbench_catch_frontier.pdf`, `.svg` | `scripts/plot_sleightbench_frontier.py --metric catch_rate` on the same file |
 | `probe_objective.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report` on `results/probe_generalization/full01/` |
 | `probe_objective_27b.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report --model 27b` on `results/probe_generalization/scale27b_{prompted01,full01}/` |
+| `lasttoken_depth.pdf`, `.svg` | `scripts/plot_lasttoken_depth_report.py` on `results/probe_generalization/{full01,scale27b_prompted01}/` |
