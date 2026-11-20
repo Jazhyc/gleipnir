@@ -35,6 +35,7 @@ for M in "${MODELS[@]}"; do
     $PY -m experiments.release_serving.image.smoke --port 8000 $SMOKE | tail -1
     if [ $MODE = uncached ]; then
       $PY -m experiments.release_serving.image.identity --output $L/${M}_identity.jsonl --compare $REFERENCE/${M}_default.jsonl | tail -1
+      $PY -m experiments.prefix_caching_replay.probe --model $M --name $NAME | tail -2
     fi
     $PY -m experiments.prefix_caching_replay.replay --model $M --mode $MODE --name $NAME > $L/replay_${M}_$MODE.log 2>&1
     echo "REPLAYED $M $MODE $(date -Is)"
