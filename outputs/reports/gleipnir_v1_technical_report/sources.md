@@ -887,3 +887,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   terms) found no control paper that evaluates decision models as monitors for
   harmful behaviour; prompt-injection papers on Jev (arXiv 2610.17820,
   2610.18612, 2610.14404) were seen only as snippets.
+- Section 4.4 OpenRouter sentence (JF, 2026-11-20): public endpoint listings
+  (`https://openrouter.ai/api/v1/models/<id>/endpoints`) read 2026-11-20.
+  No caching listed: Jev 1.13 and 1.14 (TypeSafe), pplx-decider v1.2 and
+  v1.3:free (Perplexity), Gemini Decision 1 (Google AI Studio),
+  Microsoft-Decision-1 (Azure). Caching listed but `input_cache_read` equal to
+  the input price: d1, d1-ultra (Liquid), Drex Max (DeepInfra). The
+  `supports_implicit_caching` flag is not used as evidence: Drex Section 5.3
+  says its state cannot be cached across questions, so the flag is likely a
+  provider default. Mercury Decide had no endpoint listed on 2026-11-20, hence
+  "the endpoints that we checked".
