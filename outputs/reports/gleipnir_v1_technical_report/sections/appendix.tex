@@ -777,7 +777,7 @@ We measured only the documented configuration, and Perplexity may serve the mode
 pplx-decider v1.2 and v1.3 also use bidirectional attention, in which every token attends to the tokens after it.
 This keeps them out of serving stacks such as vLLM, which assume causal attention, and it rules out prefix caching.
 When a monitor scores a growing trajectory after each step, a new token changes the states of all earlier tokens, so the model must process the whole trajectory again.
-A causal monitor such as Gleipnir processes only the new tokens (Section~\ref{sec:serving-selfhost}).
+A causal monitor such as Gleipnir processes only the new tokens (Section~\ref{sec:serving-caching}).
 For a check before every action of our benchmark trajectories, pplx-decider therefore pays for 12.1 times the prompt tokens of one check per trajectory.
 At its list price this costs about \$3.0 per 1,000 trajectories, against \$1.79 on demand and \$0.77 with committed use for Gleipnir 27B with prefix caching (Table~\ref{tab:prefix-replay}).
 With one check per trajectory, it costs about \$0.25, against \$0.54 and \$0.23.

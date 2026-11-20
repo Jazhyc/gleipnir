@@ -816,3 +816,13 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Section 4.1 states only the speed-up of caching for every-action checking
   (JF): 285.7 / 77.3 = 3.70 (27B), 74.1 / 39.9 = 1.86 (4B); the multiples of
   one check per trajectory stay in Appendix E.1.
+- Section 4.4 "Prefix caching" (JF, 2026-11-20): moved from 4.1 because the
+  measurement used the released stack, not stock vLLM. "Lowers the cost of
+  each billed input token by the same factors": billed tokens are the
+  uncached count (14,440,542) and compute time is the cached time, so the
+  cost per billed token falls by uncached/cached time (3.70×, 1.86×). The
+  cached-input discount practice: OpenAI lists GPT-6.1 Terra cached input at
+  $0.05/M against $1/M (`experiments/sleightbench_eval/config.json`). Only
+  pplx-decider's attention is documented (non-causal: v1.1 card, v1.2/v1.3
+  `decision_config.json`); Jev's announcement names a new architecture
+  without details; the others publish nothing.

@@ -1,7 +1,7 @@
 \section{Serving and cost}
 \label{sec:serving}
 
-Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to the released serving stack, and the subsections below describe one row each.
+Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to the released serving stack, and the next three subsections describe one row each; the last subsection covers prefix caching, which the table does not count.
 The stack is an endpoint for one GPU that takes a prompt and returns a score; spreading requests over several GPUs is beyond its scope.
 
 We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching (Appendix~\ref{app:serving-throughput}).
@@ -47,12 +47,6 @@ A commercial price is in the same range as our committed cost for the 27B: pplx-
 We price the monitor with one request at a time, because concurrent requests reduce the cost only slightly and increase latency substantially.
 With 8 concurrent requests the throughput is 13\% higher than with one request at a time for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
 The merged BF16 checkpoints that we release run in classification mode on stock vLLM, on any GPU that vLLM supports.
-
-Prefix caching lowers the cost of a monitor that checks every action.
-Such a monitor scores the transcript again after each step, and with prefix caching it processes only the tokens that are new since the previous check.
-On the 96 trajectories of our benchmark, checking every action takes 3.7 times less time with prefix caching than without it for the 27B, and 1.9 times less for the 4B (Appendix~\ref{app:serving-throughput}).
-The 4B gains less because a fixed cost per request weighs more for the faster model.
-The saving grows with the length of the trajectory, and our costs elsewhere count one check per trajectory.
 
 \subsection{Low-precision arithmetic}
 \label{sec:serving-precision}
@@ -105,3 +99,18 @@ After the changes above, the 4B scores the median trajectory in 58\,ms, so token
 vLLM uses the tokenizer of the Transformers library, which needs about 15\,ms for a trajectory of more than 8,192 tokens.
 We use Gigatoken~\citep{roed2026gigatoken}, which returns the same tokens in about 0.2\,ms, and the median latency falls to 48\,ms.
 This lowers the cost by 1.18$\times$ for the 4B and 1.05$\times$ for the 27B.
+
+\subsection{Prefix caching}
+\label{sec:serving-caching}
+
+A monitor that checks every action scores the transcript again after each step.
+With prefix caching, the server keeps the computed state of the transcript and processes only the tokens that are new since the previous check.
+The serving image offers it as an option, and we measured it on the released stack, with all the changes above.
+On the 96 trajectories of our benchmark, checking every action takes 3.7 times less time with prefix caching than without it for the 27B, and 1.9 times less for the 4B (Appendix~\ref{app:serving-throughput}).
+The 4B gains less because a fixed cost per request weighs more for the faster model, and the saving grows with the length of the trajectory.
+
+On such a workload, caching lowers the cost of each billed input token by the same factors.
+API providers usually pass this saving on as a lower price for cached input tokens, not in the base price, so our costs and those of the API monitors count one uncached check per trajectory.
+The saving requires causal attention, in which earlier tokens do not depend on later ones.
+pplx-decider attends bidirectionally, so it must process the whole transcript again at every check (Appendix~\ref{app:serving-decider}); the attention of the other decision models is not documented.
+
