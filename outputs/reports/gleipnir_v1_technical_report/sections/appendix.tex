@@ -805,6 +805,8 @@ Projections of the full-attention layers (query, key, value, output) & FP8 & FP8
 Projections of the MLPs and of the GDN layers & FP4 & FROST matrix product of the cuDNN frontend~\citep{nvidia_cudnn_frontend} & Tile sizes chosen for each projection shape; quantization of the activations fused with the preceding normalization or activation function \\
 \addlinespace
 Full attention & MXFP8 & Scaled dot-product attention of the cuDNN frontend for the B200 & Reads queries, keys and values from the paged cache of vLLM; a polynomial approximation of $2^x$ replaced by the hardware instruction; variants for the head counts of both models \\
+\addlinespace
+Recurrence of the GDN layers & BF16 (state and gates FP32) & Chunked gated delta rule of FlashInfer~\citep{ye2025flashinfer}, as in stock vLLM & Called directly when every request starts from an empty state (Section~\ref{sec:serving-work}); FlashInfer chooses its context-parallel path automatically \\
 \bottomrule
 \end{tabular}
 \end{table}

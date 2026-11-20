@@ -926,3 +926,10 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Price: OpenRouter lists $0.06/M with `discount: 0.5`; the undiscounted
   $0.12/M is used (user, 2026-11-20). Billing rule: see the decision-model OOD
   finding (needle probes and tokenizer check, 2026-11-20).
+- Kernels table, GDN row (JF, 2026-11-20): the released stack runs FlashInfer's
+  `flashinfer.gdn_prefill.chunk_gated_delta_rule` in BF16 with FP32 state and
+  gates (`docs/decisions/b200_low_precision_attention_serving.md`,
+  `docs/decisions/b200_frost_inference.md`: "FROST FP4 MLP/BF16 FlashInfer GDN");
+  `experiments/release_serving/serve.py` sets `GLEIPNIR_FLASHINFER_GDN_CP="auto"`
+  (FlashInfer's automatic context-parallel route; `experiments/b200_gdn_route`).
+  The direct call on empty-state steps is the "shorter host path" of Section 4.3.
