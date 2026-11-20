@@ -831,3 +831,18 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   checked 2026-10-31, recorded in `experiments/sleightbench_eval/config.json`):
   GPT-6.1 Terra $1.00/M input, $0.05/M cached input (one twentieth). Pricing
   every monitor at one uncached check per trajectory is our choice.
+
+## Drex (Background and Section 4.4; JF, 2026-11-20)
+
+- `dhankhar2026drex`: arXiv:2611.07854, "Towards Foundation Decision Models:
+  Drex", v1 2026-11-05, v2 2026-11-09, Nace.AI (models and code under
+  huggingface.co/nace-ai, github.com/nace-ai). Only statements read verbatim
+  are used: open weights for all four models; SFT with permutation (and
+  state-shuffle) consistency terms, then RLAF, a KL-regularized RL objective
+  whose reward combines the verified answer with a judge's option
+  probabilities; "Drex Max ... is trained from Qwen3.8-27B"; "The model
+  removes the causal attention mask in its full-attention layers"; "Drex
+  Max's attention pattern and readout adopt the open pplx-decider design";
+  "Drex Max cannot share the encoded context between questions". Unverified
+  (summary only, not used): data scale, teacher names, prices, latency.
+  Drex was not benchmarked here.

@@ -113,5 +113,6 @@ On such a workload, caching lowers the cost of each billed input token by the sa
 Some API providers price cached input tokens separately; OpenAI, for example, charges a twentieth of the base price for them on GPT-6.1 Terra.
 To compare all monitors on one workload, our costs and those of the API monitors count one uncached check per trajectory.
 The saving requires causal attention, in which earlier tokens do not depend on later ones.
-pplx-decider attends bidirectionally, so it must process the whole transcript again at every check (Appendix~\ref{app:serving-decider}); the attention of the other decision models is not documented.
+pplx-decider and Drex Max~\citep{dhankhar2026drex} attend bidirectionally, so they must process the whole transcript again at every check (Appendix~\ref{app:serving-decider}); the authors of Drex Max note that it cannot share the encoded context between questions.
+The attention of the other hosted decision models is not documented.
 
