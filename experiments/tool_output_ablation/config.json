@@ -1,4 +1,19 @@
 {
   "ood_prompts": "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
-  "tokenizer": "Qwen/Qwen3.5-4B"
+  "tokenizer": "Qwen/Qwen3.5-4B",
+  "models": {
+    "4b": {
+      "workload": "data/teacher-disagreement-strict-ood01/workload.jsonl",
+      "baseline": "results/qad-v02-optimized01/evaluation/ood.jsonl"
+    },
+    "27b": {
+      "workload": "data/optimized_gap/teacher_ood_workload.jsonl",
+      "baseline": "results/optimized_gap/opt27b_teacher_eu01/ood.jsonl"
+    }
+  },
+  "stripped_dir": "data/tool_output_ablation",
+  "results_dir": "results/tool_output_ablation",
+  "batch_rows": 128,
+  "concurrency": 128,
+  "fprs": [0.01]
 }
