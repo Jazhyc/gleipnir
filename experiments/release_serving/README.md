@@ -394,8 +394,13 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   User decision, 2026-11-20: check only that a Pod starts from it and how
   long the pull takes, without scoring. A first `skopeo copy` reused the
   gzip blobs through its blob-info cache; the tag was overwritten.
-- **Known issue.** The image's `/tmp` is mode 755, so `apt-get` inside the
-  container fails unless `TMPDIR` points elsewhere.
+- **`/tmp` mode (rc2).** 1.1 and `1.2-rc1` ship `/tmp` as mode 755, so
+  `apt-get` inside the container fails unless `TMPDIR` points elsewhere.
+  User decision, 2026-11-20: fix it in 1.2. `image/layer12_tmp.py` appends
+  one layer with a `tmp` directory entry of mode 1777 (plus this README and
+  the builder) to both `1.2-rc1` and `1.2-rc1-zstd`, giving `1.2-rc2` and
+  `1.2-rc2-zstd` with the same uncompressed layers. The runtimes under
+  `/tmp` keep their own modes.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

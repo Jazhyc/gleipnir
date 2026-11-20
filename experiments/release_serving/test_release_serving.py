@@ -259,3 +259,19 @@ def test_layer12_replaces_the_image_entrypoint() -> None:
     assert "opt/gleipnir-release/entrypoint.sh" in targets
     assert f"{layer12.IMAGE_ROOT}/{layer12.ENTRYPOINT}" in targets
     assert layer12.BASE.endswith(":1.1")
+
+
+def test_tmp_layer_makes_tmp_world_writable_and_sticky(tmp_path: Path) -> None:
+    import tarfile
+
+    from experiments.release_serving.image import layer12_tmp
+
+    layer12_tmp.build(tmp_path / "layer.tar")
+    with tarfile.open(tmp_path / "layer.tar") as archive:
+        entry = archive.getmember("tmp")
+    assert entry.isdir() and entry.mode == 0o1777
+    targets = {target for _, _, target in layer12_tmp.BASES.values()}
+    assert targets == {
+        "ghcr.io/jazhyc/gleipnir-serve:1.2-rc2",
+        "ghcr.io/jazhyc/gleipnir-serve:1.2-rc2-zstd",
+    }
