@@ -3,7 +3,8 @@
 For each trajectory, in the benchmark's frozen order, send one check per
 tool-calling assistant turn (``prefix_caching_tokens.compute.action_ends``),
 one at a time, then the whole prompt as an isolated check. Records latency,
-prompt tokens, score and the server's prefix-cache counters per request.
+prompt tokens and score per request, and the server's prefix-cache counters
+per trajectory (read before and after its checks, not between them).
 Resumable: a trajectory already in the output is skipped.
 
 Usage (on the Pod, with a released-image server on port 8000):
@@ -67,14 +68,12 @@ async def counters(client: httpx.AsyncClient) -> dict[str, float]:
 
 
 async def score(client: httpx.AsyncClient, prompt: str) -> dict:
-    before = await counters(client)
     started = time.perf_counter()
     response = await client.post(
         "/v1/monitor/score", json={"model": "monitor", "prompt": prompt}
     )
     response.raise_for_status()
     latency = time.perf_counter() - started
-    after = await counters(client)
     body = response.json()
     if not all(abs(body[k]) < float("inf") for k in ("score", "margin")):
         raise ValueError("nonfinite score")
@@ -83,10 +82,6 @@ async def score(client: httpx.AsyncClient, prompt: str) -> dict:
         "latency_seconds": latency,
         "score": body["score"],
         "margin": body["margin"],
-        "cache_queried_tokens": after["vllm:prefix_cache_queries"]
-        - before["vllm:prefix_cache_queries"],
-        "cache_hit_tokens": after["vllm:prefix_cache_hits"]
-        - before["vllm:prefix_cache_hits"],
     }
 
 
@@ -112,7 +107,9 @@ async def main_async(model: str, mode: str, name: str) -> None:
                 if row["id"] in done:
                     continue
                 was_reset = await reset(client) if mode == "cached" else None
+                before = await counters(client)
                 values = [await score(client, p) for p in checks(row["prompt"])]
+                after = await counters(client)
                 isolated = await score(client, row["prompt"])
                 handle.write(
                     json.dumps(
@@ -121,6 +118,12 @@ async def main_async(model: str, mode: str, name: str) -> None:
                             "dataset": row["dataset"],
                             "label": row["label"],
                             "cache_reset": was_reset,
+                            # Over the trajectory's checks only: scraping
+                            # /metrics between checks may add latency.
+                            "cache_queried_tokens": after["vllm:prefix_cache_queries"]
+                            - before["vllm:prefix_cache_queries"],
+                            "cache_hit_tokens": after["vllm:prefix_cache_hits"]
+                            - before["vllm:prefix_cache_hits"],
                             "checks": values,
                             "isolated": isolated,
                         }

@@ -45,8 +45,8 @@ def summarize(name: str, model: str) -> dict:
         ratios.append(t_c / iso)
         tokens["isolated"] += uncached[i]["isolated"]["prompt_tokens"]
         tokens["uncached"] += sum(v["prompt_tokens"] for v in u)
-        tokens["cached_hit"] += sum(v["cache_hit_tokens"] for v in c)
-        tokens["cached_queried"] += sum(v["cache_queried_tokens"] for v in c)
+        tokens["cached_hit"] += cached[i]["cache_hit_tokens"]
+        tokens["cached_queried"] += cached[i]["cache_queried_tokens"]
         drift += [abs(a["score"] - b["score"]) for a, b in zip(c, u, strict=True)]
     return {
         "trajectories": len(ids),

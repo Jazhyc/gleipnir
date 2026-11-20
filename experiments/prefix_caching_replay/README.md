@@ -23,8 +23,10 @@ its per-action cost follows from its billed tokens
   (`uncached`), then a restart with `--prefix-caching` (`cached`, align mode;
   the cache is reset before each trajectory). One server at a time; three
   untimed warmup checks per server.
-- **Measures.** Per check: latency, prompt tokens, score, prefix-cache queried
-  and hit tokens. Per trajectory: total check time cached and uncached, and
+- **Measures.** Per check: latency, prompt tokens, score. Per trajectory:
+  prefix-cache queried and hit tokens, read from `/metrics` before and after
+  its checks (amended 2026-11-20 before the EU run: the US run read them around
+  every check, which may add latency; `probe.py` measures that cost). Per trajectory: total check time cached and uncached, and
   the ratio to the uncached isolated check. Cost per 1,000 trajectories at
   $7.99/h and $3.44/h. Score drift: |cached − uncached| per check.
 - **Primary result.** Cached and uncached per-action time over the 96
