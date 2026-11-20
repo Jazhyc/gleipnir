@@ -47,6 +47,7 @@
   "engine": {
     "vllm_version": "0.34.0",
     "tensor_parallel_size": 1,
+    "block_size": 16,
     "max_model_len": 32768,
     "audited_max_prompt_tokens": 26047,
     "audited_total_prompt_tokens": 50935936,

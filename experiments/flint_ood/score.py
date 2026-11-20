@@ -143,6 +143,8 @@ def run(args: argparse.Namespace) -> None:
         tensor_parallel_size=1,
         gpu_memory_utilization=float(engine["gpu_memory_utilization"]),
         max_model_len=int(engine["max_model_len"]),
+        # Flint's decode kernel needs 16-token KV blocks; vLLM 0.34 defaults to 64.
+        block_size=int(engine["block_size"]),
         max_num_seqs=int(engine["max_num_seqs"]),
         max_num_batched_tokens=int(engine["max_num_batched_tokens"]),
         enable_prefix_caching=bool(engine["enable_prefix_caching"]),

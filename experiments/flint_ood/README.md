@@ -52,7 +52,12 @@ The first version planned a same-stack control: Qwen3.8-27B rescored on this
 Pod with vLLM 0.34.0. The user dropped it; it was never run. Throughput is
 compared with the stored vLLM 0.31 result instead. `flint.json` was frozen
 with the control listed as its third baseline and is left unchanged so that
-its hash matches the canary's.
+the pre-registration stays as written.
+
+A first canary attempt failed in engine warm-up before any row was scored:
+vLLM 0.34.0 defaults to 64-token KV-cache blocks, and Flint's decode kernel
+asserts on anything but 16. `flint.json` now sets `block_size: 16`; this
+changed its hash before any prediction existed.
 
 ## Interface audit (`audit.py`, CPU only)
 
