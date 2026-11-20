@@ -110,7 +110,8 @@ On the 96 trajectories of our benchmark, checking every action takes 3.7 times l
 The 4B gains less because a fixed cost per request weighs more for the faster model, and the saving grows with the length of the trajectory.
 
 On such a workload, caching lowers the cost of each billed input token by the same factors.
-API providers usually pass this saving on as a lower price for cached input tokens, not in the base price, so our costs and those of the API monitors count one uncached check per trajectory.
+Some API providers price cached input tokens separately; OpenAI, for example, charges a twentieth of the base price for them on GPT-6.1 Terra.
+To compare all monitors on one workload, our costs and those of the API monitors count one uncached check per trajectory.
 The saving requires causal attention, in which earlier tokens do not depend on later ones.
 pplx-decider attends bidirectionally, so it must process the whole transcript again at every check (Appendix~\ref{app:serving-decider}); the attention of the other decision models is not documented.
 

@@ -826,3 +826,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   pplx-decider's attention is documented (non-causal: v1.1 card, v1.2/v1.3
   `decision_config.json`); Jev's announcement names a new architecture
   without details; the others publish nothing.
+- Revised (JF, 2026-11-20): no claim about how providers set base prices.
+  Sourced fact only: OpenAI pricing page (https://developers.openai.com/api/docs/pricing,
+  checked 2026-10-31, recorded in `experiments/sleightbench_eval/config.json`):
+  GPT-6.1 Terra $1.00/M input, $0.05/M cached input (one twentieth). Pricing
+  every monitor at one uncached check per trajectory is our choice.
