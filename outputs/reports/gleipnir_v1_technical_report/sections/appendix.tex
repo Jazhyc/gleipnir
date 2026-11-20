@@ -889,7 +889,7 @@ For the 4B, the validation score peaks at layer 17 of 32, where the OOD score is
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{lasttoken_depth}
-\caption{The OOD score of the 27B keeps rising after its validation score has levelled off. pAUROC@20 of logistic-regression probes on the last token of the prompt, trained on soft targets, against the relative depth of the probed layer. Lines give the validation score at every layer; markers give the Mean-OOD score where we measured it: for the 27B at layers 24 to 44 and at layer 50, chosen on the validation set, and for the 4B at layer 17, chosen in the same way. The band marks the half-depth layers of the probes of Table~\ref{tab:probes}.}
+\caption{The OOD score of the 27B keeps rising after its validation score has levelled off. pAUROC@20 of logistic-regression probes on the last token of the prompt, trained on soft targets, against the relative depth of the probed layer. Lines give the validation score at every layer; markers give the Mean-OOD score where we measured it: for the 27B at layers 24 to 44 and at layer 50, chosen on the validation set, and for the 4B at layer 17, chosen in the same way. The band marks the half-depth layers of the probes of Table~\ref{tab:probes}, and the dotted line marks chance (0.1).}
 \label{fig:lasttoken-depth}
 \end{figure}
 

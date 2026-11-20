@@ -38,6 +38,7 @@ MODELS = {
 }
 OBJECTIVE = "soft"
 INK_MUTED = "#6B7280"
+CHANCE = 0.1
 
 
 def validation_curve(run: str) -> dict[int, float]:
@@ -70,7 +71,7 @@ def plot() -> plt.Figure:
     figure, axis = plt.subplots(figsize=(10.5, 5.2))
     axis.axvspan(0.46, 0.52, color="#EEF1F4", zorder=0)
     axis.text(
-        0.49, 0.235, "half-depth\nprobes", color=INK_MUTED, ha="center", fontsize=12
+        0.49, 0.15, "half-depth\nprobes", color=INK_MUTED, ha="center", fontsize=12
     )
     for spec in MODELS.values():
         n, color = spec["layers"], spec["color"]
@@ -96,8 +97,13 @@ def plot() -> plt.Figure:
             markeredgewidth=1.2,
             zorder=3,
         )
+    # pAUROC@20 normalizes by the FPR width, so a random monitor scores 0.1.
+    axis.axhline(CHANCE, color=INK_MUTED, linewidth=1.4, linestyle=":", zorder=1)
+    axis.text(
+        0.99, CHANCE + 0.015, "chance", color=INK_MUTED, ha="right", fontsize=12
+    )
     axis.set_xlim(0, 1.0)
-    axis.set_ylim(0.2, 1.0)
+    axis.set_ylim(0.0, 1.0)
     axis.set_xticks([0, 0.25, 0.5, 0.75, 1.0])
     axis.set_xticklabels(["input", "25%", "50%", "75%", "output"])
     axis.set_xlabel("Relative depth of the probed layer", fontsize=14)
