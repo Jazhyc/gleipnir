@@ -110,9 +110,7 @@ On the 96 trajectories of our benchmark, checking every action takes 3.7 times l
 The 4B gains less because a fixed cost per request weighs more for the faster model, and the saving grows with the length of the trajectory.
 
 On such a workload, caching lowers the cost of each billed input token by the same factors.
-Some API providers price cached input tokens separately; OpenAI, for example, charges a twentieth of the base price for them on GPT-6.1 Terra.
+Providers of language models can pass this saving on: OpenAI charges a twentieth of the base input price for cached tokens on GPT-6.1 Terra.
+The decision models currently do not, as none of their OpenRouter endpoints that we checked lists a lower price for cached input.
+pplx-decider and Drex Max~\citep{dhankhar2026drex} cannot use prefix caching at all: they attend bidirectionally, so earlier tokens depend on later ones and each check processes the whole transcript again (Appendix~\ref{app:serving-decider}).
 To compare all monitors on one workload, our costs and those of the API monitors count one uncached check per trajectory.
-The saving requires causal attention, in which earlier tokens do not depend on later ones.
-pplx-decider and Drex Max~\citep{dhankhar2026drex} attend bidirectionally, so they must process the whole transcript again at every check (Appendix~\ref{app:serving-decider}).
-On OpenRouter, none of the decision-model endpoints that we checked lists a lower price for cached input.
-
