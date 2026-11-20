@@ -846,3 +846,20 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   "Drex Max cannot share the encoded context between questions". Unverified
   (summary only, not used): data scale, teacher names, prices, latency.
   Drex was not benchmarked here.
+- Background revision (JF, 2026-11-20): the Perplexity RL-rollout sentence
+  was removed (the blog is still cited in Section 6.1). Drex sentence, from
+  a verbatim read of the HTML v2 through Appendix C.2: Section 1 "This
+  results in higher accuracy in exchange for increased cost per question"
+  (for the non-causal dense backbone with readout, bundled changes); no
+  causal-vs-non-causal ablation (Sections 1, 10, 11 list it as future work;
+  Section 8.8 ablates RLAF, consistency and vision only; Section 5.1's
+  non-causal-ratio probe uses hypernetwork weight edits and reports no
+  numbers). Benchmarks: Decision Index 0.4.1 (37 public benchmarks in five
+  domains), Decision Bench v4 (1,071 single-question decisions) and the
+  Artificial Analysis Decision Index (v2.1 on its site: AA-Paperclip,
+  EvalSafe-O*NET-AA, When2Call, AA-Omniscience-Decision, HLE-MultiChoice,
+  AA-Symmetry; every task one call on a fixed state; read 2026-11-20 at
+  https://artificialanalysis.ai/methodology/decision-index). Section 5.3
+  "Because the full-attention layers are non-causal, the representation of
+  the state depends on the question, so it cannot be cached across
+  questions".
