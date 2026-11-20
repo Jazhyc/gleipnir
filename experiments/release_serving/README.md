@@ -412,6 +412,10 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   - The `PUBLIC_KEY` path started SSH beside the 4B server; both models in
     both modes passed `smoke.py`; identity scores equal the 1.0 B200 rows
     (0 of 248 changed, both models).
+- **Release.** `1.2` was tagged from `1.2-rc2-zstd` on 2026-11-20 at 02:08
+  UTC (user decision: the zstd variant), digest `f3a0503f…` (anonymous
+  pulls resolve it). `1.2-rc2` is the same image with gzip layers; `1.1`
+  is unchanged at `272f4a4d…`.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

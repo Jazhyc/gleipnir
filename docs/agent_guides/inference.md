@@ -52,7 +52,7 @@ repeat scoring only when measuring serving variability or changing its recipe.
 
 ## Released optimized serving image
 
-`ghcr.io/jazhyc/gleipnir-serve:1.1` (digest `272f4a4d…`) serves the released
+`ghcr.io/jazhyc/gleipnir-serve:1.2` (digest `f3a0503f…`) serves the released
 Gleipnir 4B v0.4 and 27B v0.2 through their validated optimized stacks on one
 B200, at up to 262,144 tokens, with opt-in `--prefix-caching`. It is `0.2`
 (`ba602599…`) plus larger 4B CUDA graphs (up to 4,096 tokens, scores
@@ -60,7 +60,10 @@ unchanged at one request at a time) and an effective Gigatoken tokenizer
 (both since `1.0`, `d85c1ffd…`; `--recorded-graphs` and
 `--transformers-tokenizer` restore 0.2's behaviour), and since `1.1` it also
 runs on a B300 (same kernels, no cost gain, scores equal to the B200's with
-rare exceptions; see `experiments/release_serving/README.md`). `0.1`
+rare exceptions). `1.2` changes only the entrypoint (other commands run as
+given; with `PUBLIC_KEY` set, SSH starts beside the server), makes `/tmp` mode
+1777, and ships zstd layers (15.3 GB, byte-identical files); serving is
+`1.1`'s (`272f4a4d…`). See `experiments/release_serving/README.md`. `0.1`
 (`15673c65…`) is the earlier 32K image. It is a frozen snapshot of the
 recorded runs' command, environment, receipts and runtimes. Use it to score released models on a B200 without
 restoring the volume stack:
@@ -69,9 +72,10 @@ restoring the volume stack:
   - Create the Pod from the image with no volume mounted at `/workspace` or
     `/tmp`; the image keeps its repository at `/workspace/gleipnir` and its
     runtimes under `/tmp`.
-  - For SSH, set the start command to `/start.sh` (entrypoint
-    `/opt/nvidia/nvidia_entrypoint.sh`).
-  - Then run `/opt/nvidia/nvidia_entrypoint.sh /opt/gleipnir-release/entrypoint.sh {4b|27b} --port 8000`.
+  - Runpod's REST API is gone (2026-11-19) and GraphQL cannot override the
+    entrypoint. With `1.2`, set the start command to `/start.sh` for a shell
+    only, or to `4b`/`27b` to serve with SSH beside it (`PUBLIC_KEY` set).
+  - In a shell, serve with `/opt/nvidia/nvidia_entrypoint.sh /opt/gleipnir-release/entrypoint.sh {4b|27b} --port 8000`.
     It fetches `Jazhyc/Gleipnir-*-BF16@<version>`, verifies the hashes in
     `experiments/release_serving/targets.py`, and replays the recorded
     server command (`experiments/release_serving/serve.py`).

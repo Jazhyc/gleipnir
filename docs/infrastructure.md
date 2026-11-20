@@ -1085,6 +1085,26 @@ GraphQL API (`podTerminate`; `myself.pods` then empty). No B200 was
 available from 16:46 to 18:32 UTC (five requests); the user then dropped
 the B200 check, so no B200 Pod was launched. No Pod remains.
 
+**API change, 2026-11-19.** `rest.runpod.io` no longer resolves (NXDOMAIN on
+public DNS). Lifecycle now goes through GraphQL (`https://api.runpod.io/graphql`,
+`podFindAndDeployOnDemand`, `pod`, `podTerminate`, `myself.pods`), which cannot
+override an image's entrypoint and has introspection disabled. Images from
+`gleipnir-serve:1.2` on start with `/start.sh` as `dockerArgs`.
+
+For the [per-action prefix-caching replay](../experiments/prefix_caching_replay/README.md)
+and the [image 1.2 check](../experiments/release_serving/README.md) (user
+authorization 2026-11-19, one B200 at a time, each deleted after use):
+- `5ndq8wcpbn8bmv` (US-TX-6, image 1.1, 22:48 UTC): restart-looped because
+  the start command reached the release entrypoint; deleted at 23:09 with
+  nothing to collect.
+- `ypx6hooyaa38zi` (US-NC-2, `1.2-rc1`, 23:24 UTC; Xeon Platinum 8568Y+):
+  image check, a superseded replay and the zstd recompression; deleted at
+  00:35 on 2026-11-20 after collection. Its host served the 4B at 141 ms
+  per isolated check against 48 ms on EPYC 9555 hosts.
+- `2o57cwijinnbp3` (US-CA-2, `1.2-rc2-zstd`, 01:40 UTC; EPYC 9555): rc2
+  check and the replay result; deleted at 02:05 after verified collection.
+No Pod remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

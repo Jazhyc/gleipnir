@@ -80,7 +80,7 @@ run it:
    ```bash
    docker run --gpus all -p 8000:8000 \
      -v "$HOME/gleipnir-models:/models" -e GLEIPNIR_MODEL_CACHE=/models \
-     ghcr.io/jazhyc/gleipnir-serve:1.1 4b    # or 27b
+     ghcr.io/jazhyc/gleipnir-serve:1.2 4b    # or 27b
 
    curl -s localhost:8000/v1/monitor/score -H 'Content-Type: application/json' \
      -d '{"model": "monitor", "prompt": "<rendered prompt ending in Prediction:>"}'
@@ -99,6 +99,12 @@ run it:
      flexibility: it is about as fast as on the B200 and costs more per
      hour. Scores match the B200's with rare exceptions (1 of 248 check
      prompts for the 27B, none for the 4B). On a B200, 1.1 behaves as 1.0.
+   - **Since image 1.2** the image is easier to reach on hosted GPUs, and
+     serving is unchanged. Any command other than `4b`/`27b` runs as given
+     (e.g. `bash`); on Runpod, set `PUBLIC_KEY` and the start command `4b`
+     to get SSH beside the server, or `/start.sh` for a shell only. `/tmp`
+     is writable by all users, so `apt-get` works, and the layers are zstd
+     compressed (15.3 GB), which unpack faster on a first pull.
    - **Prompts.** At most 262,144 tokens, the checkpoints' native range
      (`--max-model-len 32768` restores the 0.1 limit). Image 0.1 serves at
      most 32,768.
