@@ -938,3 +938,27 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   on demand, $0.770 committed) and the Decider estimate of Appendix E.3 ($3.01
   at $0.02/M on the same prompt tokens). Scoped to the decision models because
   OpenAI's models discount cached input too.
+
+## Appendix F: probing at half depth (JF, 2026-11-20)
+
+- 4B: `experiments/probe_generalization/README.md`, run `full01` (5 seeds,
+  frozen validation selection, OOD read once): prompted hard attention e12
+  0.7057, soft rolling_w10 e8 0.7126; NTP hard attention e8 0.7092, soft
+  rolling_w256 e8 0.7643. Soft wins every family on NTP; 7/9 prompted.
+- 27B: `experiments/probe_scale_27b/README.md`, runs `scale27b_full01` (NTP:
+  hard 0.8142, soft 0.8481, soft wins every family) and `scale27b_prompted01`
+  (hard 0.8406, soft 0.8610; last token hard layer 47 0.8867, soft layer 50
+  0.8957). Depth curve of prompted soft last-token probes, OOD 0.30 / 0.56 /
+  0.79 / 0.85 / 0.86 / 0.87 at layers 24–44, ID ~0.89–0.92 from layer 32.
+  Zero-shot Qwen3.8-27B 0.8903 (parity 0.8901).
+- Comparisons: Gleipnir 4B BF16 0.804 and 27B BF16 0.935 from `tab:precision`;
+  the probe study's own 27B teacher-prompt reference is 0.9352 (same value).
+  Gaps: 0.804 − 0.764 = 0.040; 0.935 − 0.861 = 0.074. LoRA soft vs hard from
+  `tab:hard-soft`.
+- Cost: `experiments/probe_optimized_serving/README.md` (`thr01`, `thr27b01`):
+  truncated + deployed probe 48.5 vs 26.4 rows/s (4B, 1.84×), 12.30 vs 6.31
+  NTP / 11.07 vs 5.68 prompted (27B, 1.95×), 128-row batches at concurrency
+  128; probe ~1% over truncation. Optimized-stack quality loss: 27B −0.001 to
+  −0.014, 4B −0.034 to −0.054 (selected −0.051, −0.054; soft attention family
+  −0.034), hence "0.034 to 0.054".
+  Measured 2026-10-27/29 on the pre-Gigatoken stack.

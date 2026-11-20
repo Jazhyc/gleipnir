@@ -822,7 +822,58 @@ For the 27B this fused kernel gave no gain in throughput, so the 27B applies the
 \section{Probing at half depth}
 \label{app:probing}
 
-\todo{Moved from the main text (JF, 2026-11-18). Hard-label then soft-target probes on a fixed probe family at half depth, compared with fine-tuning on quality and cost. Frame as representation analysis and as evidence that early exits are feasible, not as a deployment alternative. Soft targets help the probes too, which supports Section~\ref{sec:binary-logit-distillation}.}
+A monitor that decides in one forward pass could stop earlier still.
+If its backbone already represents the decision halfway through, a probe at that layer could replace the remaining layers and halve the compute of a check.
+We test this with probes on the activations of the unadapted base models of Gleipnir, which read the trajectory as the monitor does; the probes read the backbone of the monitor, not the monitored agent.
+We also test whether the soft targets of Section~\ref{sec:binary-logit-distillation} help probes as they help LoRA.
+These experiments are exploratory: a probe cannot change its policy without retraining, and we do not propose it as a deployment path.
+
+\paragraph{Setup.}
+We train the probe architectures of \citet{kramar2026building}: linear and MLP probes on mean-pooled states, attention probes, MultiMax, rolling attention with windows of 10, 64 and 256 tokens, and their AlphaEvolve probe.
+The probes read the residual stream after layer 15 of the 32 layers of Qwen3.5-4B and after block 31 of the 64 of Qwen3.8-27B, on the training trajectories of Gleipnir.
+Each probe reads either the prompt of the monitor (prompted) or the bare trajectory, and trains either on the dataset labels (hard) or on the probabilities of Kimi K3 (soft), with five seeds.
+For each input and objective we select one architecture and epoch on the validation set and read the OOD suite once; scores are medians over the seeds.
+For the prompted 27B we also train probes on the last token of the prompt, at the layer chosen on the validation set.
+All activations come from BF16 inference.
+
+\begin{table}[h]
+\caption{Probes on the unadapted base models, with the architecture and epoch selected on the validation set. Scores are Mean-OOD pAUROC@20, medians over five seeds. For comparison, in BF16, Gleipnir 4B scores 0.804, Gleipnir 27B 0.935, and the unadapted Qwen3.8-27B read zero-shot 0.890.}
+\label{tab:probes}
+\centering
+\small
+\begin{tabular}{@{}lllrr@{}}
+\toprule
+Base model & Layer & Input & Hard & Soft \\
+\midrule
+Qwen3.5-4B & 15 of 32 & Prompted & 0.706 & 0.713 \\
+ & & Bare trajectory & 0.709 & 0.764 \\
+\midrule
+Qwen3.8-27B & 31 of 64 & Prompted & 0.841 & 0.861 \\
+ & & Bare trajectory & 0.814 & 0.848 \\
+ & 47 / 50, last token & Prompted & 0.887 & 0.896 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Soft targets help the probes.}
+Soft targets raise every selected probe in Table~\ref{tab:probes}: by 0.007 and 0.055 for the 4B and by 0.020 and 0.034 for the 27B at half depth.
+On the bare trajectory, the soft probe scores higher than the hard one in every architecture, for both models.
+For LoRA, soft targets raise the 4B by 0.076 and leave the 27B within 0.005 (Appendix~\ref{app:ablation-targets}), so at 27B they help the probes but not the adapter.
+
+\paragraph{Half depth is not enough.}
+The best half-depth probes score 0.040 below Gleipnir 4B and 0.074 below Gleipnir 27B.
+At 27B they also score below the unadapted model read zero-shot (0.861 against 0.890).
+Probes on the last token show where the signal forms: their OOD score rises from 0.30 at layer 24 to 0.79 at layer 32, 0.87 at layer 44 and 0.896 at layer 50, while their validation score stays between 0.89 and 0.92 from layer 32 on.
+The validation set therefore does not show how much depth the OOD suite needs.
+
+\paragraph{Cost.}
+Stopping the base model after the probe layer roughly doubles throughput.
+On one B200 with the low-precision stack of Section~\ref{sec:serving}, the truncated model with its probe scores 1.84 times as many trajectories per second as the full model for the 4B and 1.95 times for the 27B, in batches of 128 trajectories; the probe itself costs about 1\%.
+Under this arithmetic, the 27B probes lose at most 0.014 Mean-OOD, and the 4B probes 0.034 to 0.054, as the 4B adapter does before QAD (Appendix~\ref{app:ablation-precision}).
+We measured this before the tokenizer change of Section~\ref{sec:serving-work}, which shortens the host work of each request, and did not repeat the measurement.
+
+Early exits are therefore cheap to run but cost quality at half depth.
+One explanation is that the decision forms late in the network; an exit placed later in the 27B, or trained together with the adapter, may close part of the gap, which we leave to future work.
 
 \section{Additional results}
 \label{app:additional-results}
