@@ -378,6 +378,24 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   synthetic identity scores of both models against the 1.0 B200 rows
   (no ID passes). The same Pod runs the
   [per-action prefix-caching replay](../prefix_caching_replay/README.md).
+- **Check result (`1.2-rc1`, digest `7725d8a0…`).** US-NC-2 Pod
+  `ypx6hooyaa38zi` (B200 `GPU-ca5da4f7…`, driver 595.112.07, no volume),
+  started with `/start.sh` through the new pass-through path: SSH came up
+  with the container. Servers were then started by hand with the image's
+  entrypoint; the first, with `PUBLIC_KEY` set, ran `/start.sh` beside the
+  server. Both models in both modes started and passed `smoke.py` (198 and
+  200,016 tokens; prefix mode hit 399,168 and 399,840 cached tokens), and
+  the synthetic identity scores equal the 1.0 B200 rows for both models
+  (0 of 248 changed). Logs: `logs/runpod/prefix_caching_replay/replay01_us_nc2/`.
+- **zstd copy (`1.2-rc1-zstd`, digest `06f12fee…`).** The same image with
+  every layer recompressed as zstd (level 3) by `skopeo` on that Pod:
+  15.3 GB instead of 17.1 GB, and the 54 uncompressed layer digests
+  (`rootfs.diff_ids`) equal `1.2-rc1`'s, so the files are byte-identical.
+  User decision, 2026-11-20: check only that a Pod starts from it and how
+  long the pull takes, without scoring. A first `skopeo copy` reused the
+  gzip blobs through its blob-info cache; the tag was overwritten.
+- **Known issue.** The image's `/tmp` is mode 755, so `apt-get` inside the
+  container fails unless `TMPDIR` points elsewhere.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

@@ -39,3 +39,24 @@ its per-action cost follows from its billed tokens
 # on the Pod, after pushing experiments/prefix_caching_{tokens,replay} and data/b200_inference_benchmark
 experiments/prefix_caching_replay/pod_run.sh replay01 4b 27b
 ```
+
+## Attempts
+
+- **2026-11-19, `5ndq8wcpbn8bmv` (US-TX-6, image 1.1).** Restart-looped: the
+  start command `/start.sh` reached the release entrypoint as a model name,
+  and Runpod's REST API, which earlier Pods used to override the entrypoint,
+  no longer resolves (GraphQL cannot override it). Deleted after about 20
+  minutes with nothing to collect; this led to image 1.2.
+- **2026-11-19/20, `ypx6hooyaa38zi` (US-NC-2, image `1.2-rc1`, B200
+  `GPU-ca5da4f7…`, Xeon Platinum 8568Y+, driver 595.112.07).** Completed the
+  image 1.2 check (see the release README) and three of the four replay
+  passes (`results/prefix_caching_replay/replay01_us_nc2/`, logs alongside).
+  Not used for the result: the user asked for EU-RO-1, the host of the
+  report's serving numbers. Per-request latency was far above those
+  numbers: isolated checks ran at 89.5K prompt tokens/s for the 4B (205K
+  on EU-RO-1) and 39.6K for the 27B (50.8K), with a floor of about 70 ms
+  even for checks of a few hundred new tokens. On this host the 4B's
+  per-action time fell only from 214 s uncached to 193 s cached, although
+  88% of prompt tokens hit the cache. Whether the floor comes from the host
+  or from the replay's `/metrics` scrapes is what `probe.py` separates.
+
