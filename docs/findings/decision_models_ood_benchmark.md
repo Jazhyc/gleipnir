@@ -160,3 +160,45 @@ with no rejections: 59,178,752 input tokens, $2.49 at $0.042/M.
 - In the report figures Jev 1.14 replaces Jev 1.13 (user, 2026-11-19); the
   tables keep both.
 - **Artifacts.** `results/decision_models_ood/jev_1_14/`.
+
+## Drex Max (2026-11-20)
+
+User-requested after the Drex report (arXiv:2611.07854) was cited in the
+technical report ([amendment](../../experiments/decision_models_ood/README.md#amendment-drex-max-2026-11-20-before-any-paid-call)).
+`nace-ai/drex-max`, pinned to DeepInfra, revision `drex-max-20261016`. The
+canary passed ($0.044), and all 6,395 OOD rows answered with no rejections:
+37,974,756 billed input tokens, $2.28 billed at the discounted $0.06/M,
+**$4.56 at the undiscounted $0.12/M** used for the cost (user, 2026-11-20).
+
+| Monitor | Mean-OOD pAUROC@20 | Mean AUROC | Recall at 1% FPR | USD / 1K |
+|---|---:|---:|---:|---:|
+| Drex Max | 0.8299 | 0.9334 | 0.566 | 0.7126 |
+| Jev 1.14 | 0.8763 | 0.9393 | 0.783 | 0.3887 |
+| pplx-decider v1.3 | 0.8942 | 0.9506 | 0.815 | 0.1760 |
+
+| Benchmark | AgentDojo | CUA-SHADE | IaC | MLE | Rogue Eval | SHADE |
+|---|---:|---:|---:|---:|---:|---:|
+| Drex Max pAUROC@20 | 0.7924 | 0.8420 | 0.9721 | 0.9918 | 0.9413 | 0.4396 |
+
+- **Below Jev 1.14 and Decider v1.3, off the frontier.** Its lowest scores
+  are SHADE-Arena (0.440) and AgentDojo (0.792), where the other decision
+  models score near 1 on AgentDojo.
+- **Billing rule.** DeepInfra's endpoint bills long states at fewer tokens
+  than their Qwen3.8 length: in full below about 10K tokens, about 10.3K up
+  to about 33K, then 0.314 of the length. No OOD row was billed above 10,637
+  tokens, against up to about 28K for the other models. Probes on
+  2026-11-20 (needle at start, middle or end of filler and of random text,
+  up to 140K tokens) show the model reads the whole state, and Drex Max's
+  published tokenizer gives the same counts as Qwen3.8-27B's, so this is a
+  billing rule, not truncation or a different tokenizer. Costs use the
+  billed tokens, as for every API model.
+- **Scores.** 484 distinct values over 6,395 rows, 0.0009 to 0.9997.
+- **Retries.** 390 rows needed more than one attempt (at most six), all
+  within the protocol's retry budget.
+- On SleightBench (stripped view, ControlArena prompt, run `sb17`): 0.322
+  pAUROC@20, 25% catch at 1% FPR ([finding](sleightbench_released_monitors.md)).
+- In the report, Drex Max appears in the OOD table but not in the OOD
+  figures (off the frontier, like Gemini Decision 1), and in the SleightBench
+  figures and table.
+- **Artifacts.** `results/decision_models_ood/drex_max/`.
+

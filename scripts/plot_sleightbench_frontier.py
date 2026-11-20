@@ -59,6 +59,8 @@ LABELS = {
         "pplx-decider v1.2": ((8, 6), "left", "bottom"),
         "pplx-decider v1.3": ((0, 12), "center", "bottom"),
         "Jev 1.14": ((0, -11), "center", "top"),
+        # Left of its point, clear of Gemini Decision 1 to its right.
+        "Drex Max": ((-10, 0), "right", "center"),
         "GPT-6 Luna": ((0, -11), "center", "top"),
         "Gemini Decision 1": ((0, 10), "center", "bottom"),
         "GPT-6.1 Terra": ((0, 12), "center", "bottom"),

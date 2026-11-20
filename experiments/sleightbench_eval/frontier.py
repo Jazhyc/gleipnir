@@ -61,6 +61,8 @@ MONITORS = [
     Monitor("GPT-5.5", "sb08", "gpt55", "api", 5.0, 30.0),
     Monitor("Jev 1.13", "sb12", "jev_113_ca", "api", 0.042),
     Monitor("Jev 1.14", "sb16", "jev_114_ca", "api", 0.042),
+    # Undiscounted list price; OpenRouter lists $0.06/M at 50% off.
+    Monitor("Drex Max", "sb17", "drex_max_ca", "api", 0.12),
     Monitor("pplx-decider v1.2", "sb12", "decider_v12_ca", "api", 0.02),
     # Free on OpenRouter; priced at v1.2's list price (user, 2026-11-18).
     Monitor("pplx-decider v1.3", "sb15", "decider_v13_ca", "api", 0.02),

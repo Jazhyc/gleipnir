@@ -913,3 +913,16 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   llama.cpp Q8_0 GGUF via a Nace branch of `llama-server`; Kapitsa, an Ollama
   fork and an affine Q4 checkpoint for Apple silicon. No vLLM/SGLang path and
   no throughput figures.
+
+## Drex Max results (Appendix tables and SleightBench figures; JF, 2026-11-20)
+
+- `tab:ood-all`: `results/decision_models_ood/drex_max/full/summary.json`
+  (0.8299 pAUROC@20, 0.9334 AUROC; 37,974,756 billed tokens × $0.12/M =
+  $0.7126/1K) and recall 0.566 from `results/ood_recall_at_fpr/`. Not in the
+  OOD figures (off the frontier; `MAIN_FIGURE_OMISSIONS`).
+- `tab:sleightbench` and `fig:sleightbench(-catch)`: run `sb17`, 0.322
+  [0.206, 0.483], AUROC 0.706, catch 0.250 [0.125, 0.400], $1.020/1K at
+  $0.12/M on 8,499 billed tokens per row.
+- Price: OpenRouter lists $0.06/M with `discount: 0.5`; the undiscounted
+  $0.12/M is used (user, 2026-11-20). Billing rule: see the decision-model OOD
+  finding (needle probes and tokenizer check, 2026-11-20).

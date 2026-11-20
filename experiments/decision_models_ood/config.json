@@ -89,6 +89,17 @@
       "context_length": 262144,
       "input_price_usd_per_million": 0.042,
       "maximum_full_cost_usd": 3.25
+    },
+    "drex_max": {
+      "added_at": "2026-11-20",
+      "openrouter_id": "nace-ai/drex-max",
+      "provider": "DeepInfra",
+      "provider_revision": "nace-ai/drex-max-20261016",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.12,
+      "maximum_canary_cost_usd": 0.15,
+      "maximum_full_cost_usd": 4.75,
+      "price_note": "OpenRouter lists $0.06/M with a 50% discount (endpoint pricing.discount = 0.5, checked 2026-11-20); costs use the undiscounted $0.12/M, as for Mercury Decide's temporary discount (user, 2026-11-20). Billed spend is at the discounted rate."
     }
   },
   "request": {

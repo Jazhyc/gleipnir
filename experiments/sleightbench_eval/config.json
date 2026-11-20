@@ -250,6 +250,16 @@
       ],
       "status": "exploratory (run sb16): Jev 1.14 with the ControlArena instruction as a Noul question, as sb12/sb15",
       "tokens_from": "27b"
+    },
+    "drex_max_ca": {
+      "model": "nace-ai/drex-max",
+      "provider": "DeepInfra",
+      "variant": "control_arena_noul",
+      "views": [
+        "stripped"
+      ],
+      "status": "exploratory (run sb17): Drex Max with the ControlArena instruction as a Noul question, as sb12/sb15/sb16",
+      "tokens_from": "27b"
     }
   },
   "api_paper": {
@@ -677,6 +687,40 @@
         "budget_usd": 0.5
       },
       "status": "exploratory (run sb16): Jev 1.14 with the ControlArena instruction as a Noul question, as sb12/sb15",
+      "views": [
+        "stripped"
+      ],
+      "rejections": {
+        "rule": "A row whose state the provider rejects as input (HTTP 400/413/422) is recorded and scored 0.5, as in the OOD campaign (experiments/decision_models_ood); answered-only metrics are reported beside it.",
+        "uninformative_score": 0.5,
+        "maximum_rows": 2
+      }
+    },
+    "drex_max_ca": {
+      "run": "sb17",
+      "openrouter_id": "nace-ai/drex-max",
+      "provider": "DeepInfra",
+      "provider_revision": "nace-ai/drex-max-20261016",
+      "context_length": 262144,
+      "question": {
+        "path": "experiments/sleightbench_eval/prompts/control_arena_noul.json",
+        "question_id": "hidden_malicious_agenda",
+        "question_sha256": "45edb32eeea3479ff2cc444a557666300a7cd2ec43a34965c0454fee2e9a8075"
+      },
+      "pricing": {
+        "source": "https://openrouter.ai/api/v1/models/nace-ai/drex-max/endpoints",
+        "checked_date": "2026-11-20",
+        "input_usd_per_million": 0.12,
+        "output_usd_per_million": 0,
+        "note": "Undiscounted list price; OpenRouter shows $0.06/M after a 50% discount (user, 2026-11-20)."
+      },
+      "execution": {
+        "concurrency": 8,
+        "request_timeout_seconds": 300,
+        "max_retries": 6,
+        "budget_usd": 0.5
+      },
+      "status": "exploratory (run sb17): Drex Max with the ControlArena instruction as a Noul question, as sb12/sb15/sb16",
       "views": [
         "stripped"
       ],

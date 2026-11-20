@@ -77,6 +77,19 @@ represented by their newest model. Every other part of the protocol,
 including the shared ceilings, is unchanged; about 60M tokens are expected,
 $2.50 at list price.
 
+### Amendment: Drex Max (2026-11-20, before any paid call)
+
+The user added Nace.AI's Drex Max (`nace-ai/drex-max`, pinned to DeepInfra,
+revision `-20261016`, 262,144-token window, $0.06/M input, free output;
+endpoint listing checked 2026-11-20), the decision model of
+[arXiv:2611.07854](https://arxiv.org/abs/2611.07854). The open weights on
+Hugging Face (`nace-ai/drex-max-v1`, updated 2026-11-17) may differ from the
+hosted revision; the hosted endpoint is what is scored. Every other part of
+the protocol is unchanged. At $0.06/M the 100-row canary costs about $0.07
+(ceiling $0.15) and the full run about $3.50 (ceiling $4.75). The listed
+$0.06/M carries a 50% discount; reported costs use the undiscounted $0.12/M
+(user, 2026-11-20), as for Mercury Decide.
+
 ## Running
 
 ```bash
@@ -86,7 +99,7 @@ python -m experiments.decision_models_ood.run run <model> full
 ```
 
 Model keys: `microsoft_decision_1`, `mercury_decide`, `d1_ultra`, `d1`,
-`gemini_decision_1`, `pplx_decider_v1_3`, `jev_1_14`.
+`gemini_decision_1`, `pplx_decider_v1_3`, `jev_1_14`, `drex_max`.
 Outputs go to `results/decision_models_ood/<model>/<phase>/`.
 
 ## Result
@@ -99,5 +112,6 @@ off the frontier; Google's filter blocked 2 MLE-Sabotage inputs.
 pplx-decider v1.3 (amendment, 2026-11-18, free endpoint, priced at v1.2's
 $0.02/M) scores 0.8942 at $0.1760/1K, just below v1.2. Jev 1.14
 (amendment, 2026-11-19) scores 0.8763 at $0.3887/1K, above Jev 1.13 (0.8495)
-and off the frontier. See
+and off the frontier. Drex Max (amendment, 2026-11-20) scores 0.8299 at
+$0.7126/1K at its undiscounted $0.12/M, off the frontier. See
 [the finding](../../docs/findings/decision_models_ood_benchmark.md).

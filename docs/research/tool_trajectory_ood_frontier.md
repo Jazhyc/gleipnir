@@ -132,6 +132,7 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
 | **Gleipnir** | **Jev 1.14 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.8763** | **no** |
+| **Gleipnir** | **Drex Max native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.7126** | **0.8299** | **no** |
 | **Gleipnir** | **Microsoft-Decision-1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.7506** | **no** |
 | **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.4137** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |

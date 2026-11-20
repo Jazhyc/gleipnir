@@ -708,6 +708,28 @@ All 86 stripped rows answered with no rejections, for $0.066.
 
 Results: `results/sleightbench_eval/sb16/`.
 
+## Exploratory: Drex Max with the ControlArena prompt (run `sb17`)
+
+User-requested on 2026-11-20: `sb16` with the model changed to Nace.AI's
+`drex-max-20261016` on DeepInfra
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb17-drex-max-with-the-controlarena-prompt-frozen-2026-11-20)).
+All 86 stripped rows answered with no rejections; $0.044 billed. Costs use
+the undiscounted $0.12/M: $1.02 per 1,000 evaluations, on 8,499 billed
+tokens per row on average (the endpoint bills long states at about a third
+of their length; see the decision-model OOD finding).
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **Drex Max** | `sb17` | **25.0%** [12.5, 40.0] | **0.706** | **0.322** [0.206, 0.483] | 70% |
+| pplx-decider v1.3 | `sb15` | 27.5% [15.0, 42.5] | 0.738 | 0.397 | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+
+- Between Gleipnir 27B and Decider v1.3 on ranking, within both intervals.
+- 65 distinct values over 86 rows; 2 attacks tie their twin; threshold 0.121
+  with 0% realized FPR.
+
+Results: `results/sleightbench_eval/sb17/`.
+
 ## Diagnostic: single-trial ranking for the authors' protocol
 
 Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each

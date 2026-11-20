@@ -135,11 +135,11 @@ Of the APIs of the frontier labs, only that of OpenAI returns token log probabil
 GPT-6 Astra, GPT-6.1 Sol, GPT-6.2 Sol and GPT-6.2 Astra do not allow reasoning to be disabled, so we cannot read their binary logits and do not score them.
 
 \begin{table}[p]
-\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. AUROC is the area under the full ROC curve, averaged in the same way. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the honest trajectories of a benchmark, averaged in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5.}
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. AUROC is the area under the full ROC curve, averaged in the same way. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the honest trajectories of a benchmark, averaged in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5. Drex Max is priced at its list price before a 50\% discount; its endpoint bills inputs above about 10,000 tokens at fewer tokens than their length.}
 \label{tab:ood-all}
 \centering
 \small
-\renewcommand{\arraystretch}{0.94}
+\renewcommand{\arraystretch}{0.90}
 \begin{tabular}{@{}lrrrr@{}}
 \toprule
 Monitor & Cost & pAUROC@20 & AUROC & Recall at 1\% FPR \\
@@ -181,6 +181,7 @@ d1-ultra & 0.347 & 0.893 & 0.952 & 0.844 \\
 Jev 1.13 & 0.389 & 0.850 & 0.927 & 0.733 \\
 Jev 1.14 & 0.389 & 0.876 & 0.939 & 0.783 \\
 Microsoft-Decision-1 & 0.389 & 0.751 & 0.906 & 0.588 \\
+Drex Max & 0.713 & 0.830 & 0.933 & 0.566 \\
 Gemini Decision 1 & 0.931 & 0.867 & 0.949 & 0.694 \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
@@ -852,6 +853,7 @@ pplx-decider v1.2 & 0.351 & 0.300 (0.200--0.451) & 0.676 & 0.125 (0.050--0.325) 
 pplx-decider v1.3 & 0.351 & 0.397 (0.279--0.531) & 0.738 & 0.275 (0.150--0.425) \\
 Jev 1.13 & 0.771 & 0.255 (0.169--0.386) & 0.665 & 0.125 (0.050--0.275) \\
 Jev 1.14 & 0.771 & 0.260 (0.165--0.391) & 0.679 & 0.200 (0.075--0.325) \\
+Drex Max & 1.020 & 0.322 (0.206--0.483) & 0.706 & 0.250 (0.125--0.400) \\
 Gemini Decision 1 & 1.924 & 0.309 (0.193--0.449) & 0.665 & 0.200 (0.100--0.375) \\
 \midrule
 \multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\

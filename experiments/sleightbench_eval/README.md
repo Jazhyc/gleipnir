@@ -560,6 +560,19 @@ python -m experiments.sleightbench_eval.api_decisions jev_114_ca --limit 1   # c
 python -m experiments.sleightbench_eval.run --variant control_arena report --name sb16
 ```
 
+## Exploratory run sb17: Drex Max with the ControlArena prompt (frozen 2026-11-20)
+
+User-requested on 2026-11-20: `sb16` with the model changed to Nace.AI's
+`nace-ai/drex-max` (revision `-20261016`, pinned to DeepInfra, $0.06/M input,
+free output; listing checked 2026-11-20). Model `drex_max_ca`, stripped view,
+about $0.10, $0.50 bound. Costs use the undiscounted $0.12/M (the listed
+$0.06/M carries a 50% discount; user, 2026-11-20).
+
+```bash
+python -m experiments.sleightbench_eval.api_decisions drex_max_ca --limit 1   # canary; then without --limit
+python -m experiments.sleightbench_eval.run --variant control_arena report --name sb17
+```
+
 ## Deferred: GPT-6 Sol under the authors' protocol
 
 The user deferred this on 2026-10-21 for budget reasons.

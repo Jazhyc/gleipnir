@@ -120,6 +120,18 @@
       ]
     },
     {
+      "name": "Drex Max",
+      "group": "Decision model",
+      "files": [
+        "results/decision_models_ood/drex_max/full/scores.jsonl"
+      ],
+      "score_field": "score",
+      "registry_pauroc20": 0.8299,
+      "cost_usd_per_1k": [
+        0.7126
+      ]
+    },
+    {
       "name": "pplx-decider v1.2",
       "group": "Decision model",
       "files": [
