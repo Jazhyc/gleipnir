@@ -773,6 +773,7 @@ On the same base model, Gleipnir 27B processes 50,788 tokens per second on our s
 The list price is therefore attainable with committed-use GPUs and a serving stack as fast as ours, but not with the published implementation.
 pplx-decider-flash v1.2 behaves in the same way: its published fast path costs \$0.072 per million tokens on demand, 7.2 times its list price of \$0.01.
 We measured only the documented configuration, and Perplexity may serve the models with a faster stack.
+The public serving paths of Drex Max, Transformers on one GPU and llama.cpp, are reference implementations without throughput figures, so its list price cannot be checked in the same way~\citep{dhankhar2026drex}.
 
 pplx-decider v1.2 and v1.3 also use bidirectional attention, in which every token attends to the tokens after it.
 This keeps them out of serving stacks such as vLLM, which assume causal attention, and it rules out prefix caching.

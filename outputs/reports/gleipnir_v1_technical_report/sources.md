@@ -906,3 +906,10 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   updated 2026-11-17) has the weights, `inference.py`, `code/drex_max/` and
   `decision_config.json`; `nace-ai/drex-v1.5`, `drex-v2.0` and `drex-dlm` are
   public too.
+- E.3 Drex serving sentence (JF, 2026-11-20): Hugging Face `nace-ai/drex-max-v1`
+  README, `inference.py` and `requirements.txt` (read 2026-11-20): Python path
+  on Transformers 5.17 with flash-linear-attention and the `kernels` package,
+  tested on an H100 (BF16) and L40S (8-bit), default max length 8,192;
+  llama.cpp Q8_0 GGUF via a Nace branch of `llama-server`; Kapitsa, an Ollama
+  fork and an affine Q4 checkpoint for Apple silicon. No vLLM/SGLang path and
+  no throughput figures.
