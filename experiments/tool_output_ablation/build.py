@@ -3,7 +3,8 @@
 Each released model keeps the workload of its recorded OOD run (the 4B with
 the compact instruction, the 27B with the full specification); only the
 trajectory envelope changes. Prompt token counts come from the Qwen3.5
-tokenizer, which reproduces the recorded counts of the unstripped workloads.
+tokenizer, which can undercount the server by a few tokens on some emoji
+and combining-mark sequences; ``recount.py`` fixes the counts on the Pod.
 
 ``PYTHONPATH=src:. python -m experiments.tool_output_ablation.build``
 """

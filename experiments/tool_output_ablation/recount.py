@@ -2,9 +2,10 @@
 
 The release server tokenizes with Gigatoken and rejects a row whose count
 differs from the client's. The standalone ``tokenizers`` count used by
-``build.py`` reproduces the recorded counts of the unstripped workloads but
-undercounts 49 stripped prompts per model by one or two tokens (same
-``tokenizer.json``, SHA-256 ``5f9e4d49…``). Run this with the image's runtime
+``build.py`` undercounts 49 stripped prompts per model by one to four tokens
+(same ``tokenizer.json``, SHA-256 ``5f9e4d49…``): Transformers replaces its
+pre-tokenizer with one built from ``tokenizer_config.json``, which splits
+some emoji and combining-mark sequences differently. Run this with the image's runtime
 on the Pod after ``build.py``:
 
 ``/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.tool_output_ablation.recount``

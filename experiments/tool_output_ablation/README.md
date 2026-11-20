@@ -78,9 +78,20 @@ PYTHONPATH=src:. python -m experiments.tool_output_ablation.analyze --name run01
 - **2026-11-20, `9nxfkcv2wrzr24` (US-CA-2, image 1.2).** The first 4B pass
   stopped at its first batch: the server rejected rows whose prompt token
   count differed from the workload's. `build.py` counts with the standalone
-  `tokenizers` library, which matches the recorded unstripped counts but
-  undercounts 49 stripped prompts per model by one or two tokens against the
-  server's Gigatoken encoder (same `tokenizer.json`). `recount.py` rewrote
+  `tokenizers` library, which matched the recorded counts of the first 200
+  unstripped rows but undercounts 49 stripped prompts per model by one or two tokens against the
+  server's Gigatoken encoder (same `tokenizer.json`). The cause is the
+  pre-tokenizer: Transformers (5.14.1 on the server, and 5.15.1) loads the
+  release's `tokenizer_config.json` (`Qwen2Tokenizer`, its own
+  `pretokenize_regex`) and replaces the pre-tokenizer of `tokenizer.json`
+  with one that splits some emoji and combining-mark sequences differently,
+  for example `🏌️‍♀️\\n` in an email body written by a tool call (the
+  standalone library merges `\\` and `n` into one token; the server splits
+  them). Every mismatch is a server count one to four tokens higher. The
+  unstripped 4B workload has the same mismatch in 141 of 6,395 rows; its
+  recorded counts come from the server, and the 200-row check in `build.py`
+  missed them. Token counts from the standalone library (the tables above,
+  the SWE-chat estimates) are therefore very slightly low. `recount.py` rewrote
   those counts on the Pod (receipts: `logs/runpod/tool_output_ablation/tokdiff_*.json`;
   failed log kept as `run01_failed_tokens/`) and the run restarted with
   nothing scored twice. Pod lifecycle: [infrastructure](../../docs/infrastructure.md#runpod).
@@ -127,3 +138,10 @@ only tool names.
 
 Outputs: `results/tool_output_ablation/run01/` (scored rows, timings,
 `summary.json`; ignored).
+
+## Decision (user, 2026-11-20)
+
+Stripping tool outputs is ruled out for Gleipnir's monitor input, including
+the SWE-chat threshold study: both released models lose about 0.04 Mean-OOD
+outside CUA-SHADE-Arena, and assuming that outputs can be dropped is too strong
+an assumption to build on.
