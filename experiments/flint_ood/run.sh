@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Score on the Pod with the vLLM 0.34.0 runtime. Usage: run.sh flint|qwen38
+# Score on the Pod with the vLLM 0.34.0 runtime. Usage: run.sh flint
 # CANARY_ONLY=1 stops after the canary.
 set -euo pipefail
 cd /workspace/gleipnir
@@ -19,10 +19,6 @@ case $1 in
   flint)
     export HF_HOME=/root/hf-flint
     MODULE=experiments.flint_ood.score CONFIG=flint.json NAME=flint ;;
-  qwen38)
-    export HF_HOME=/root/hf-27b
-    MODULE=experiments.tool_trajectory_monitoring.benchmark_qwen_ood
-    CONFIG=qwen38_27b_vllm034.json NAME=qwen38_27b_vllm034 ;;
   *) echo "unknown run $1"; exit 2 ;;
 esac
 echo "start $NAME$SUFFIX $(date -Is)"

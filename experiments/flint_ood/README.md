@@ -6,7 +6,7 @@ mixture-of-experts model with about 2.5B parameters active per token
 (Apache 2.0, released 2026-10-21, revision `2a247be0…`). This experiment scores
 the unadapted checkpoint under the contract that chose Qwen3.8-27B
 ([Qwen 27B generations](../qwen27b_generations_ood/README.md)) and measures its
-scoring throughput beside Qwen3.8-27B on the same GPU.
+scoring throughput beside Qwen3.8-27B's on the same GPU type.
 
 ## Pre-registration (frozen 2026-11-20, before any scoring)
 
@@ -27,11 +27,10 @@ scoring throughput beside Qwen3.8-27B on the same GPU.
   diagnostic only, the unconstrained first assistant token.
 - **Baselines.** Qwen3.8-27B 0.8901, Qwen3.6-27B 0.8726 and Qwen3.5-27B 0.8388
   (2026-10-17, vLLM 0.31).
-- **Same-stack control.** Qwen3.8-27B BF16 is rescored on the same Pod with
-  vLLM 0.34.0 under its frozen contract (`qwen38_27b_vllm034.json`). It is the
-  throughput reference, and its scores are compared with the stored vLLM 0.31
-  predictions (score MAE, correlation, Mean-OOD difference) to show whether the
-  stack change moves scores.
+- **Throughput reference.** The stored Qwen3.8-27B run: 2,190 s per scoring
+  invocation on an EU-RO-1 B200 with vLLM 0.31. The comparison therefore
+  includes the vLLM version change (0.31 to 0.34) and a different physical
+  host of the same type.
 - **Reporting.** Mean-OOD pAUROC@20 (unweighted mean of six sources),
   per-source pAUROC@20 and AUROC, macro Brier, balanced accuracy, score ties;
   scoring seconds, rows/s and prompt tokens/s.
@@ -46,6 +45,14 @@ scoring throughput beside Qwen3.8-27B on the same GPU.
   duplicate rows.
 - **Compute.** User authorization 2026-11-20: one B200 Pod, EU-RO-1 preferred
   so that throughput is comparable with the earlier Qwen3.8-27B runs.
+
+### Amendment (2026-11-20, during the canary, before any full-suite score)
+
+The first version planned a same-stack control: Qwen3.8-27B rescored on this
+Pod with vLLM 0.34.0. The user dropped it; it was never run. Throughput is
+compared with the stored vLLM 0.31 result instead. `flint.json` was frozen
+with the control listed as its third baseline and is left unchanged so that
+its hash matches the canary's.
 
 ## Interface audit (`audit.py`, CPU only)
 
@@ -77,10 +84,9 @@ chat, and the account is limited to 1,000 free requests per day.
 ```bash
 PYTHONPATH=src:. python -m experiments.flint_ood.audit   # tokenizer only
 # on the Pod, after syncing the code and the OOD input
-experiments/flint_ood/setup.sh flint qwen38
+experiments/flint_ood/setup.sh
 CANARY_ONLY=1 experiments/flint_ood/run.sh flint
 experiments/flint_ood/run.sh flint
-experiments/flint_ood/run.sh qwen38
 ```
 
 ## Results

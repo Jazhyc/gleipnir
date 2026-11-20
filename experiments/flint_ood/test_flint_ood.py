@@ -45,13 +45,12 @@ def test_sanitizer_rewrite_is_detected():
 
 def test_configs_keep_the_qwen_contract():
     flint = json.loads((HERE / "flint.json").read_text())
-    control = json.loads((HERE / "qwen38_27b_vllm034.json").read_text())
     frozen = json.loads(
         (HERE.parent / "qwen27b_generations_ood/qwen38_27b.json").read_text()
     )
     assert (flint["model"]["id"], flint["model"]["revision"]) == (MODEL_ID, REVISION)
     for key in ("scope", "scoring"):
-        assert flint[key] == frozen[key] == control[key]
+        assert flint[key] == frozen[key]
     assert flint["prompt"]["template_sha256"] == frozen["prompt"]["template_sha256"]
     for key in (
         "max_num_seqs",
@@ -66,5 +65,3 @@ def test_configs_keep_the_qwen_contract():
     assert (
         flint["engine"]["audited_max_prompt_tokens"] < flint["engine"]["max_model_len"]
     )
-    for key in ("model", "prompt", "engine", "scope", "scoring", "stop_conditions"):
-        assert control[key] == frozen[key]
