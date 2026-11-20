@@ -901,3 +901,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `experiments/sleightbench_eval/config.json` (OpenAI pricing page, checked
   2026-09-30 to 2026-10-31): GPT-6 Luna $0.10/$0.01, GPT-6 Sol $2.00/$0.20,
   GPT-5.5 $5.00/$0.50 (one tenth), GPT-6.1 Terra $1.00/$0.05 (one twentieth).
+- E.3 correction (JF, 2026-11-20): Decider is not the only decision model with
+  public weights and serving code. Hugging Face `nace-ai/drex-max-v1` (public,
+  updated 2026-11-17) has the weights, `inference.py`, `code/drex_max/` and
+  `decision_config.json`; `nace-ai/drex-v1.5`, `drex-v2.0` and `drex-dlm` are
+  public too.

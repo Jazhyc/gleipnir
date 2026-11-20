@@ -762,8 +762,8 @@ Released stack & 55,125 & 50,788 & 59,606 & 53,356 \\
 
 We price the decision models at their list prices on OpenRouter, which are what users pay.
 Several of these prices are low: pplx-decider v1.2, Mercury Decide and d1 cost \$0.02 per million input tokens, and Jev, d1-ultra and Microsoft-Decision-1 cost \$0.042.
-For most of these models the size and the serving stack are not public, so we cannot compare the price with the cost of serving them.
-pplx-decider v1.2 is the exception: its weights and serving code are public~\citep{perplexity2026decider}, and its base model is that of Gleipnir 27B.
+For several of these models the size and the serving stack are not public, so we cannot compare the price with the cost of serving them.
+pplx-decider v1.2 publishes its weights and serving code~\citep{perplexity2026decider}, as Drex Max does~\citep{dhankhar2026drex}, and its base model is that of Gleipnir 27B, so we measured its serving cost.
 
 We served pplx-decider v1.2 on one B200 with the fast path that Perplexity publishes, which packs requests into batches and uses \texttt{torch.compile} and CUDA graphs.
 It processed the OOD suite at 13,515 prompt tokens per second.
