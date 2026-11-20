@@ -53,7 +53,7 @@ It returns a probability for each answer in one forward pass and generates no te
 The class became prominent with Jev~\citep{almeida2026jev}, whose weights and training method are not public.
 Perplexity then released the Decider models with open weights~\citep{perplexity2026decider}, and other providers followed.
 Perplexity uses Decider to monitor the rollouts of its own reinforcement learning, for example to ask whether a step failed because of a tool, the sandbox or the agent's own code, but it does not describe the training data~\citep{perplexity2026deciderblog}.
-Drex Max~\citep{dhankhar2026drex}, an open-weight decision model trained from Qwen3.8-27B, the base model of Gleipnir 27B, also removes the causal mask in its full-attention layers, as Decider does.
+Drex Max~\citep{dhankhar2026drex}, an open-weight decision model, also removes the causal mask in its full-attention layers, as Decider does.
 \citet{geuter2026releasing} show that a general instruction-tuned model works in the same way when the answer is read from the answer-letter logits at its last prompt token, and that LoRA fine-tuning on general decision tasks improves it.
 Gleipnir applies this format to one task: it reads one binary decision token for an agent trajectory, and its only training target is the probability that a frontier teacher gives to that token.
 \citet{liu2026evaluating} evaluates decision models on security checks of the inputs of an agent, such as the detection of prompt injections.
