@@ -1103,7 +1103,14 @@ authorization 2026-11-19, one B200 at a time, each deleted after use):
   per isolated check against 48 ms on EPYC 9555 hosts.
 - `2o57cwijinnbp3` (US-CA-2, `1.2-rc2-zstd`, 01:40 UTC; EPYC 9555): rc2
   check and the replay result; deleted at 02:05 after verified collection.
-No Pod remains.
+
+For the [tool-output ablation](../experiments/tool_output_ablation/README.md)
+(user authorization 2026-11-20, one B200, deleted after collection):
+`9nxfkcv2wrzr24` (US-CA-2, image `1.2`, machine `bipo9o2yngg1`, B200
+`GPU-92d608c1…`, Xeon Platinum 8568Y+, driver 595.112.07). Created at 05:58
+UTC, reachable over SSH at 06:16 (about 18 minutes to pull the image), run
+06:24–06:39, terminated at 06:40 (`podTerminate`; `myself.pods` empty) after
+verified collection of 13 files. No Pod remains.
 
 ## OpenRouter
 

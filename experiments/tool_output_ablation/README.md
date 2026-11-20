@@ -67,7 +67,62 @@ the same cut keeps 32% of tokens (0.54B of 1.71B; sessions over 262K fall from
 ```bash
 PYTHONPATH=src:. python -m experiments.tool_output_ablation.build
 # on the Pod, after pushing the experiment and data/tool_output_ablation
+/tmp/gleipnir-vllm031-runtime/bin/python -m experiments.tool_output_ablation.recount
 experiments/tool_output_ablation/pod_run.sh run01 4b 27b
 # locally, after pulling results/ and logs/
 PYTHONPATH=src:. python -m experiments.tool_output_ablation.analyze --name run01
 ```
+
+## Attempts
+
+- **2026-11-20, `9nxfkcv2wrzr24` (US-CA-2, image 1.2).** The first 4B pass
+  stopped at its first batch: the server rejected rows whose prompt token
+  count differed from the workload's. `build.py` counts with the standalone
+  `tokenizers` library, which matches the recorded unstripped counts but
+  undercounts 49 stripped prompts per model by one or two tokens against the
+  server's Gigatoken encoder (same `tokenizer.json`). `recount.py` rewrote
+  those counts on the Pod (receipts: `logs/runpod/tool_output_ablation/tokdiff_*.json`;
+  failed log kept as `run01_failed_tokens/`) and the run restarted with
+  nothing scored twice. Pod lifecycle: [infrastructure](../../docs/infrastructure.md#runpod).
+
+## Result (`run01`, 2026-11-20)
+
+pAUROC@20 and recall at 1% FPR per source, full inputs (the recorded
+released-stack rows) against stripped inputs. Means weight the sources
+equally; "without CUA" leaves out CUA-SHADE-Arena, whose stripped view keeps
+only tool names.
+
+| Source | 4B full | 4B stripped | 27B full | 27B stripped |
+|---|---:|---:|---:|---:|
+| AgentDojo | 0.840 | 0.761 | 0.992 | 0.970 |
+| CUA-SHADE-Arena | 0.749 | 0.330 | 0.890 | 0.249 |
+| IaC | 0.821 | 0.733 | 0.993 | 0.978 |
+| MLE-Sabotage | 1.000 | 0.990 | 1.000 | 1.000 |
+| Rogue Eval (control) | 0.959 | 0.957 | 0.998 | 0.998 |
+| SHADE-Arena | 0.252 | 0.244 | 0.832 | 0.665 |
+| **Mean-OOD** | **0.770** | **0.669** | **0.951** | **0.810** |
+| **Mean without CUA** | **0.774** | **0.737** | **0.963** | **0.922** |
+| Recall at 1% FPR, mean | 0.606 | 0.499 | 0.874 | 0.745 |
+| Recall at 1% FPR, without CUA | 0.605 | 0.559 | 0.898 | 0.854 |
+
+- **The control holds.** Rogue Eval, where stripping removes only "Code
+  uploaded successfully.", moves by at most 0.002, so the drops come from the
+  missing outputs and not from the run.
+- **Both models fail the stop condition.** Without CUA-SHADE-Arena the 4B
+  loses 0.037 Mean-OOD and the 27B 0.041 (threshold 0.03, set for the 4B), and
+  recall at 1% FPR falls by 0.046 and 0.044. Stripped inputs are therefore not
+  used for the SWE-chat thresholds without a separate decision.
+- **Where the loss is.** For the 4B, IaC (−0.088) and AgentDojo (−0.079); for
+  the 27B, SHADE-Arena (−0.167), where the evidence of a side task often sits
+  in what the tools returned (emails, documents, transaction results).
+  AgentDojo's injections arrive in tool outputs; the 27B still scores 0.970
+  there from the following actions alone.
+- **Cost.** The stripped suite is 26% (4B) and 32% (27B) of the full prompt
+  tokens. The 4B scored it in 91 s and the 27B in 377 s (158K and 52K prompt
+  tokens/s at 128 concurrent requests, on a Xeon 8568Y+ host).
+- **Scope.** The released models were trained only on full trajectories, so
+  this measures them on inputs they never saw. Training on stripped inputs,
+  or keeping truncated outputs, may recover part of the loss; neither was run.
+
+Outputs: `results/tool_output_ablation/run01/` (scored rows, timings,
+`summary.json`; ignored).
