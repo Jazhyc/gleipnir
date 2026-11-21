@@ -56,7 +56,6 @@ In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecod
 Some agents then hard-code the outputs of the visible tests instead of solving the problem.
 The dataset labels each run as reward hacking or legitimate, from hidden tests, an LLM judge and a manual review of every run that edited files.
 The dataset gives no step at which the hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
-Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
 Each monitor flags a run when its score is above the threshold that flags 1\% of benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
 Gleipnir 27B had a time limit of two hours, set before scoring, so we compare the monitors on the runs that both scored: 105 reward hacks and 999 legitimate runs on nine problems.
 The reward hacks come from five of these problems, and we resample whole problems for the intervals.
@@ -106,7 +105,6 @@ We compare four conditions: no text, an unrelated text that restates another APP
 The specific accusation describes the trigger input and the wrong output in the words of the problem, without code identifiers.
 The generic accusation says only that the code hides a backdoor.
 GLM-5.3-Flash wrote the texts, and we kept a text only after a manual review confirmed its definition, before any monitor scored it.
-Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
 Of 99 held-out tasks, 93, 81 and 99 have a valid text in the three text conditions.
 For each condition, we compute pAUROC@20 of the backdoored programs against the honest programs and resample whole tasks for the intervals.
 
