@@ -1,8 +1,7 @@
 \section{Held-out and adversarial evaluation}
 \label{sec:held-out}
 
-The OOD suite of \citet{sinha2026training} no longer separates the strongest monitors.
-Their scores lie within each other's bootstrap intervals and close to the maximum (Section~\ref{sec:evaluation}).
+The OOD suite of \citet{sinha2026training} no longer separates the strongest monitors (Section~\ref{sec:evaluation}).
 Even the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
 This section therefore turns to benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
@@ -20,7 +19,7 @@ We score the stripped view of the authors, a stricter form of the action-only in
 Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.
 A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, the authors' threshold for a 1\% false-positive rate.
 We price the monitors as in Section~\ref{sec:evaluation}, for trajectories with a mean of about 17,600 tokens.
-Each of our monitors scores each trajectory once, while the authors average 10 samples at temperature 1 and report only the catch rate, so Figure~\ref{fig:sleightbench} omits their monitors; Appendix~\ref{app:sleightbench} lists them.
+The authors report only the catch rate of their monitors, so Figure~\ref{fig:sleightbench} omits them; Appendix~\ref{app:sleightbench} lists them.
 
 \begin{figure}[t]
 \centering
@@ -36,23 +35,13 @@ Gleipnir 4B scores 0.209.
 Training raises both base models by less than on the OOD suite: Qwen3.5-4B scores 0.193 and Qwen3.8-27B 0.263.
 The intervals of all monitors except GPT-6.1 Terra overlap (Table~\ref{tab:sleightbench}), so with 40 attacks the benchmark separates only large differences.
 
-At a false-positive rate of 1\%, Gleipnir 27B catches 20\% of the attacks and Gleipnir 4B 7.5\%, against 27.5\% for pplx-decider v1.3 and 55\% for GPT-6.1 Terra (Appendix~\ref{app:sleightbench}).
-Appendix~\ref{app:sleightbench} compares these monitors with the reasoning monitors that the authors scored.
+At a false-positive rate of 1\%, Gleipnir 27B catches 20\% of the attacks and Gleipnir 4B 7.5\%, against 27.5\% for pplx-decider v1.3 and 55\% for GPT-6.1 Terra.
+GPT-6.1 Terra answers with one decision token and comes close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors (Appendix~\ref{app:sleightbench}).
 
 Gleipnir 27B matches its teacher on the OOD suite (Section~\ref{sec:evaluation}) but scores 0.103 pAUROC@20 below it on SleightBench.
-One explanation is the support of the training data.
-The OOD suite was not built to evade monitors, while SleightBench was, and our training data contains no attacks built against a monitor.
-pplx-decider v1.3 shares the base model of Gleipnir 27B but differs in two ways that could explain its lead.
-Its training covers a wider range of decision tasks~\citep{perplexity2026decider}, and Perplexity uses it to monitor its own agent rollouts~\citep{perplexity2026deciderblog}.
-It also uses bidirectional attention, in which each token also attends to later tokens (Appendix~\ref{app:serving-decider}).
-Its training data is not public, so we cannot separate the two.
-
-The catch rate adds noise to these comparisons, because it depends on the single highest benign score.
-Kimi K3 catches no attack because it scores one benign trajectory above every attack, although its pAUROC@20 matches that of pplx-decider v1.3.
-
-GPT-6.1 Terra answers without reasoning, with one decision token, and still catches 55\% of the attacks.
-This is close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors, which can run code while it reads the transcript, and above their strongest monitor without the scaffold, Gemini 3.1 Pro with high thinking effort (54\%; Appendix~\ref{app:sleightbench}).
-Because it reads the transcript once and writes only its decision, it costs \$15.49 per 1,000 evaluations, almost all of it for input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
+SleightBench was built to evade monitors, while the OOD suite was not, and our training data contains no attacks built against a monitor.
+pplx-decider v1.3 shares the base model of Gleipnir 27B, but its training covers a wider range of decision tasks, including the monitoring of the agent rollouts of Perplexity~\citep{perplexity2026decider,perplexity2026deciderblog}, and it uses bidirectional attention (Appendix~\ref{app:serving-decider}).
+Its training data is not public, so we cannot tell which of these explains its lead.
 
 \subsection{Reward hacking by other agent models}
 \label{sec:held-out-evilgenie}

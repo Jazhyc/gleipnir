@@ -1386,6 +1386,8 @@ Their monitors write a rationale before the score, and their catch rate is the m
 Their strongest monitors run Claude in the Claude Code scaffold, as an agent that can execute code while it reads the transcript, for example to count lines.
 In this scaffold Claude Opus 4.6 catches 62\% of the attacks and Claude Opus 4.7 60\%, above every monitor that we scored: GPT-6.1 Terra catches 55\%, pplx-decider v1.3 27.5\% and Gleipnir 27B 20\%.
 Without the scaffold, the strongest monitor of the authors is Gemini 3.1 Pro with high thinking effort, at 54\%.
+GPT-6.1 Terra reads the transcript once and writes only its decision, so its \$15.49 per 1,000 evaluations is almost all input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
+The catch rate depends on the single highest benign score, which adds noise: Kimi K3 catches no attack because it scores one benign trajectory above every attack, although its pAUROC@20 matches that of pplx-decider v1.3.
 
 \begin{table}[h]
 \caption{Results on SleightBench (stripped view, ControlArena instruction), ordered by cost within each group. Cost is in USD per 1,000 evaluations, priced as in Table~\ref{tab:ood-all} for the trajectories of this benchmark; the Gleipnir rows give the committed-use and the on-demand cost. Multi-session attacks take the maximum over their parts. Intervals resample scenarios, each attack together with its benign twin (10,000 draws). The last two groups are copied from \citet{najt2026sleight}, read from their per-model figures.}
