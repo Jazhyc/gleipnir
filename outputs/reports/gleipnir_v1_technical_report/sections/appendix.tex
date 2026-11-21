@@ -1007,7 +1007,7 @@ These tasks are disjoint from the study tasks.
 
 \paragraph{Text addressed to the monitor.}
 An earlier study scored the released Gleipnir 4B and 27B on the serving stack of Section~\ref{sec:serving}, on the frozen APPS injection sets~\citep{kenney2026monitorinjection}.
-In these sets, a text in the program asks the monitor to rate the program as benign, in one of three templates.
+In these sets, a text in the program asks the monitor to rate the program as benign, in one of three templates; such prompt injections can let an agent evade a trusted monitor~\citep{terekhov2025adaptive}.
 At a threshold that flags at most 2\% of honest programs without injections, both monitors flag every honest program with an injection, under all three templates.
 At a threshold of 0.5, the 4B flags 89.5\% to 99.5\% of them, and the 27B flags 26.7\% to 100\%.
 The unadapted Qwen3.8-27B flags 76\% to 100\% at 0.5, so this reaction comes from the base model, and the adapter of the 27B reduces it.
