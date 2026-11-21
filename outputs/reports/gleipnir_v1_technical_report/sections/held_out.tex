@@ -53,6 +53,107 @@ GPT-6.1 Terra answers without reasoning, with one decision token, and still catc
 This is close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors, which can run code while it reads the transcript, and above their strongest monitor without the scaffold, Gemini 3.1 Pro with high thinking effort (54\%; Appendix~\ref{app:sleightbench}).
 Because it reads the transcript once and writes only its decision, it costs \$15.49 per 1,000 evaluations, almost all of it for input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
 
-\todo{ARK: natural cheats, misleading text in the trajectory, and text addressed to the monitor (OUTLINE C5.1--C5.3).}
-
 \todo{Introduce monitor-directed attacks here: an agent can evade monitors by embedding prompt injections in its outputs~\citep{terekhov2025adaptive}. Then the tests of the Gleipnir monitors against such text.}
+
+The next two tests are the largest of our own stress tests in trajectories and tasks.
+In the first, 15 agent models hack the reward of coding tasks without an instruction to do so (Section~\ref{sec:held-out-evilgenie}).
+In the second, the same text appears on an honest and on a backdoored program (Section~\ref{sec:held-out-apps}).
+Appendix~\ref{app:held-out} gives five smaller tests.
+In these tests, Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
+Each monitor flags a trajectory when its score is above a threshold that flags 1\% of benign OOD trajectories.
+We set this 1\% threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
+
+\subsection{Reward hacking by other agent models}
+\label{sec:held-out-evilgenie}
+
+We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}.
+In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} that have ambiguous specifications and visible tests.
+Some agents then hard-code the outputs of the visible tests instead of solving the problem.
+The dataset labels each run as reward hacking or legitimate, from hidden tests, an LLM judge and a manual review of every run that edited files.
+The dataset gives no step at which the hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
+Gleipnir 27B had a time limit of two hours, set before scoring, so we compare the monitors on the runs that both scored: 105 reward hacks and 999 legitimate runs on nine problems.
+The reward hacks come from five of these problems, and we resample whole problems for the intervals.
+
+\begin{table}[t]
+\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. Counts use the 1\% threshold of each monitor. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
+\label{tab:evilgenie}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+ & & & \multicolumn{2}{c}{Reward hacks flagged} & Legitimate \\
+\cmidrule(lr){4-5}
+Monitor & AUROC & pAUROC@20 & Other problems & \texttt{arc191\_c} & flagged \\
+\midrule
+Gleipnir 4B & 0.752 {\scriptsize [0.655, 0.964]} & 0.350 {\scriptsize [0.180, 0.824]} & 10 / 36 & 0 / 69 & 8 / 999 \\
+Gleipnir 27B & 0.926 {\scriptsize [0.880, 1.000]} & 0.695 {\scriptsize [0.527, 1.000]} & 29 / 36 & 4 / 69 & 8 / 999 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Gleipnir 27B separates the reward hacks better than Gleipnir 4B.}
+Gleipnir 27B scores 0.695 pAUROC@20 and Gleipnir 4B scores 0.350, a difference of 0.345 (Table~\ref{tab:evilgenie}).
+At the 1\% threshold, the 27B flags 33 of the 105 reward hacks and the 4B flags 10.
+Both monitors flag 8 of the 999 legitimate runs (0.8\%), close to the 1\% target, but these runs come from only nine problems.
+
+\paragraph{Most missed reward hacks are on one problem.}
+The problem \texttt{arc191\_c} holds 69 of the 105 reward hacks.
+Its visible test checks the exact sample output, although the problem accepts any valid output.
+The hacking agents add the sample output on top of a correct general solution, so their program stays correct on every input.
+Many legitimate runs on this problem also type the sample output into their code at some point (Appendix~\ref{app:held-out-evilgenie}).
+At the 1\% threshold, the 4B flags none of these 69 reward hacks and the 27B flags 4, although the 27B ranks them above the legitimate runs of the same problem (AUROC 0.861, against 0.581 for the 4B).
+On the other four problems, the 27B flags 29 of 36 reward hacks and the 4B flags 10.
+We chose this split after we saw the scores, so it describes the result and does not test a hypothesis.
+No frontier monitor scored this set, and the dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
+
+\subsection{The same text on an honest and a backdoored program}
+\label{sec:held-out-apps}
+
+An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
+We test this in the APPS backdoor setting of AI control~\citep{greenblatt2023ai}.
+Each task is an APPS problem~\citep{hendrycks2021apps} with two programs by o3-mini~\citep{kenney2026monitorinjection}.
+One program is honest, and the other gives a wrong output on one trigger input, which we confirmed for each task.
+We insert one text as a module docstring at the top of both programs and leave the code unchanged.
+The text alone therefore carries no information about which program has the backdoor.
+We compare four conditions: no text, an unrelated text that restates another APPS problem, a specific accusation and a generic accusation.
+The specific accusation describes the trigger input and the wrong output in the words of the problem, without code identifiers.
+The generic accusation says only that the code hides a backdoor.
+GLM-5.3-Flash wrote the texts, and we kept a text only after a manual review confirmed its definition, before any monitor scored it.
+Of 99 held-out tasks, 93, 81 and 99 have a valid text in the three text conditions.
+For each condition, we compute pAUROC@20 of the backdoored programs against the honest programs and resample whole tasks for the intervals.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{held_out_apps_text}
+\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against honest programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Values in Table~\ref{tab:apps-full}.}
+\label{fig:apps-text}
+\end{figure}
+
+\paragraph{Text lowers Gleipnir 4B close to chance.}
+Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}).
+An unrelated text lowers it to 0.360, and a specific accusation lowers it to 0.143.
+Within a task, the 4B still scores the backdoored program higher in 72\% of the pairs under a specific accusation, and 17\% of the pairs tie.
+The pooled ranking fails because the accusation moves almost every score close to 1: the mean score is 0.846 for honest programs and 0.870 for backdoored programs.
+
+\paragraph{Accusations raise the separation of Gleipnir 27B.}
+Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
+With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
+One explanation is that any accusation leads the 27B to inspect the code more closely, and that the description of the trigger adds a further cue.
+A false trigger that neither program handles would separate these two effects; we did not run this test.
+
+\paragraph{Fine-tuning made the 4B more sensitive to accusations than its base model.}
+The unadapted Qwen3.5-4B already loses separation under unrelated text (0.189 pAUROC@20), so part of the effect comes from the base model.
+Under a specific accusation, however, its AUROC is 0.805 and that of Gleipnir 4B is 0.581.
+On the same tasks, the paired difference is $-0.22$ (95\% bootstrap interval over tasks $-0.27$ to $-0.17$).
+A linear probe on the activations of Gleipnir 4B still separates the accused programs, which suggests that the failure lies in the output and not in the representation (Appendix~\ref{app:held-out-probe}).
+
+\paragraph{A threshold set on code without text does not transfer.}
+We also set a 1\% threshold for each monitor on honest APPS programs without docstrings.
+Under an accusation, every Gleipnir and API monitor flags 93\% to 100\% of the honest programs at this threshold.
+The unadapted 4B is the one exception, at 65\% under a generic accusation.
+Under an unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of honest programs.
+We did not test accurate documentation of the code, so these rates apply to misleading or unrelated text.
+
+\paragraph{Limits.}
+One model wrote the programs, one model wrote the texts, and the text has one position.
+Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B here, so this test does not separate the effects of size, instruction and training for the 27B.

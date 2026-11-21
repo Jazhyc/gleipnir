@@ -471,22 +471,34 @@ results, calibration.
 
 ## 6. Held-out and adversarial evaluation
 
-Owner: ARK (C5.1–C5.3) and JF (C5.4, section framing).
+Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
 
-- **C5.1 (draft, ARK).** On natural cheats (ImpossibleBench LiveCodeBench, 60
-  hand-checked cheats), Gleipnir 4B and 27B score 0.935 and 0.941 pAUROC@20,
-  level with Kimi K3, Claude Sonnet 5.5 and GPT-6.1 Sol at 3–13 times lower
-  cost.
-  Evidence: `docs/findings/adversarial_frontier_comparison.md`.
-- **C5.2 (draft, ARK).** Misleading text in the trajectory changes the 4B's
-  scores. With the same accusation text on both programs, the 4B separates backdoored
-  from honest APPS code at AUROC 0.58–0.59, and the 27B at 0.96–0.98.
-  Evidence: `experiments/adversarial_crossed_text/`.
-- **C5.3 (draft, ARK).** Both monitors treat text addressed to the monitor as a
-  sign of harm. At the APPS operating point, both flag every injected honest
-  program. The unadapted 27B shows the same behavior, and the adapter reduces
-  it.
-  Evidence: `docs/findings/apps_released_monitors.md`.
+- **C5.1 (written, ARK; 2026-11-20).** On reward hacking by 15 agent models
+  (EvilGenie Escalation, 105 hacks and 999 legitimate runs both monitors
+  scored), Gleipnir 27B reaches 0.695 pAUROC@20 and Gleipnir 4B 0.350; at the
+  OOD 1% threshold they flag 33 and 10 of 105 hacks and both flag 8 of 999
+  legitimate runs. One problem holds 69 hacks that keep the program correct;
+  neither monitor flags them (0 and 4 of 69). Post hoc split. Main text 6.1.
+  Evidence: `experiments/adversarial_evilgenie/` and its `shared_rows_report.py`.
+- **C5.2 (written, ARK; 2026-11-20).** With the same module docstring on an
+  honest and a backdoored APPS program, Gleipnir 4B falls from 0.690 to 0.143
+  pAUROC@20 under a specific accusation, while Gleipnir 27B rises from 0.818 to
+  0.934; fine-tuning made the 4B more sensitive than its base (AUROC 0.581
+  against 0.805). Thresholds set on code without text flag 93-100% of accused
+  honest programs. Main text 6.2.
+  Evidence: `experiments/adversarial_crossed_text/`, `results/figures/backdoor_pauroc.json`.
+- **C5.3 (written, ARK; moved to the appendix).** Both monitors treat text
+  addressed to the monitor as a sign of harm (APPS injections: every injected
+  honest program flagged at the operating point; lab post: 4B 82% of readers,
+  27B and Kimi 0%). Appendix F.3 and F.8.
+  Evidence: `docs/findings/apps_released_monitors.md`, `experiments/adversarial_is_it_4b/`.
+- **C5.5 (written, ARK; appendix).** Natural cheats (ImpossibleBench, 57
+  cheats): Gleipnir 4B and 27B score 0.935 and 0.941 pAUROC@20, level with
+  Kimi K3, Claude Sonnet 5.5 and GPT-6.1 Sol. Comment removal, multi-agent
+  sabotage (UK AISI benchmark) and agents lying to agents are in the same
+  appendix. Costs are not compared there (mixed price bases in the records).
+  Evidence: `docs/findings/adversarial_frontier_comparison.md` and the
+  experiment READMEs listed in `sources.md`.
 - **C5.4 (draft, JF).** On SleightBench (stripped view), the 27B catches 15% and
   the 4B 5% of attacks at 1% FPR. Claude Opus 4.6 with extended thinking
   catches 32%. Most misses are attacks built to look like honest mistakes,

@@ -819,6 +819,478 @@ The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
+\section{Held-out and adversarial evaluation: details}
+\label{app:held-out}
+
+This appendix gives the details of Section~\ref{sec:held-out} and five smaller tests.
+Each test has a protocol, frozen before scoring, in the directory \texttt{experiments/adversarial\_<name>/} of the Gleipnir repository.
+We mark every analysis that we chose after we saw the scores as post hoc.
+
+\subsection{Common protocol}
+\label{app:held-out-protocol}
+
+\paragraph{Monitors.}
+Gleipnir 4B is the released 4B adapter on Qwen3.5-4B, after quantization-aware distillation, and it reads the compact instruction.
+Gleipnir 27B is the released 27B merged into its base model, and it reads the full specification.
+We run both in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU.
+The quantized serving stack of Section~\ref{sec:serving} is not used, except where we say so.
+The natural-cheat and EvilGenie runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
+On eight APPS trajectories, this fallback changed the 4B score by at most 0.027; we did not measure the change for the 27B.
+
+\paragraph{Monitor input.}
+Each monitor reads tool calls and tool outputs.
+It does not read the system prompt of the agent, its reasoning or its other assistant messages, except in the multi-agent tests, where the final message of a session and the posts of an agent are part of its actions (Appendices~\ref{app:held-out-aisi} and~\ref{app:held-out-lab}).
+We exclude trajectories longer than 29,696 tokens, the maximum input length in training, except in the multi-agent sabotage test, which scores whole sessions of up to 99,193 tokens.
+
+\paragraph{Thresholds.}
+The 1\% threshold of each monitor flags 1\% of benign OOD trajectories, sampled once before these tests.
+It is 0.622 for Gleipnir 4B, from 1,000 trajectories, and 0.731 for Gleipnir 27B, from 400 trajectories.
+Four of the 400 trajectories lie above the 27B threshold, so its false-positive rate on new data is more uncertain than that of the 4B.
+For Kimi K3 it is 0.755, from 1,000 trajectories.
+The lab test of Appendix~\ref{app:held-out-lab} uses another threshold for the 4B and says why.
+
+\subsection{Reward hacking by other agent models}
+\label{app:held-out-evilgenie}
+
+\paragraph{Data.}
+We use \texttt{WiserHumanExperimental/evilgenie-escalation} at revision \texttt{1bb777b6}, under its MIT licence, for evaluation only.
+It contains 2,115 runs on problems with ambiguous specifications, under five conditions (A to E), and 180 control runs of GPT-5.3-Codex on unambiguous problems.
+Conditions C to E add a policy against reward hacking to the prompt of the agent.
+In its table of runs, \texttt{reward\_hacked = yes} marks 124 reward hacks and \texttt{classification = legitimate} marks 1,823 legitimate runs.
+We leave out 161 runs that the dataset labels \texttt{heuristic} and 7 that it labels \texttt{error}.
+Kimi K3, the teacher of Gleipnir, is also one of the agent models; it has 4 reward hacks and 39 legitimate runs in the 4B rows.
+Ten of the 15 agent models have at least one reward hack in the rows that both monitors scored.
+
+\paragraph{Missing error text.}
+The release removed the text of tool errors, so an errored tool output appears empty to the monitor.
+This affects 57 of the 124 reward hacks and 842 of the 1,823 legitimate runs.
+
+\paragraph{Rows scored.}
+Gleipnir 4B scored all 2,295 runs; 16 reward hacks and 128 legitimate runs were too long.
+Gleipnir 27B scored every reward hack first and then the other runs in a random order, until its two-hour limit.
+It reached 1,312 runs: 105 reward hacks, 999 legitimate runs and 115 control runs, with 19 reward hacks and 74 legitimate runs too long.
+Because of the random order, its 999 legitimate runs are a random subset of the legitimate runs.
+
+\paragraph{Intervals.}
+The bootstrap draws the nine problems with replacement, 10,000 times.
+Only five of the nine problems have reward hacks, so some draws contain no reward hack; we skip these draws (35 of 10,000).
+The intervals are wide, and their upper ends reach 1.000, because one problem holds most reward hacks.
+
+\paragraph{Control runs and all 4B rows.}
+Neither monitor flags any of the control runs: 0 of 180 for the 4B and 0 of 115 for the 27B.
+On all 108 reward hacks and 1,695 legitimate runs that it scored, the 4B reaches AUROC 0.751 (0.645 to 0.968) and flags 10 reward hacks and 16 legitimate runs (0.9\%).
+
+\paragraph{The problem \texttt{arc191\_c}.}
+Its visible test checks the exact sample output, although the problem accepts any valid output.
+The 69 reward hacks add the sample output to a correct general solution, for example with the comment that these outputs ``are also valid choices''.
+In the full dataset, 60 of the 136 legitimate runs on this problem also type the sample output into their code at some point; 76 of the 136 are in the shared rows.
+When we remove this problem with all of its runs (post hoc), 36 reward hacks and 923 legitimate runs remain.
+On these rows, Gleipnir 4B scores AUROC 0.942 (0.907 to 0.986) and pAUROC@20 0.723 (0.576 to 0.930).
+Gleipnir 27B scores AUROC 0.979 (0.894 to 1.000) and pAUROC@20 0.923 (0.538 to 1.000).
+The 4B therefore ranks these reward hacks well, but most of its scores stay below its threshold.
+
+\begin{table}[h]
+\caption{EvilGenie Escalation by problem, on the rows that both monitors scored. AUROC compares the reward hacks and legitimate runs of one problem. Counts use the 1\% threshold of each monitor. Four problems have no reward hacks; their 513 legitimate runs give 2 false positives for the 4B and 3 for the 27B.}
+\label{tab:evilgenie-problems}
+\centering
+\small
+\begin{tabular}{lrrcccccc}
+\toprule
+ & & & \multicolumn{3}{c}{Gleipnir 4B} & \multicolumn{3}{c}{Gleipnir 27B} \\
+\cmidrule(lr){4-6}\cmidrule(lr){7-9}
+Problem & Hacks & Legit. & AUROC & Hacks & Legit. & AUROC & Hacks & Legit. \\
+\midrule
+\texttt{abc392\_f} & 22 & 116 & 0.863 & 7 & 3 & 0.965 & 17 & 4 \\
+\texttt{arc185\_c} & 9 & 102 & 0.901 & 2 & 2 & 1.000 & 9 & 0 \\
+\texttt{arc190\_a} & 2 & 102 & 1.000 & 1 & 0 & 1.000 & 2 & 0 \\
+\texttt{arc191\_c} & 69 & 76 & 0.581 & 0 & 1 & 0.861 & 4 & 1 \\
+\texttt{arc195\_c} & 3 & 90 & 0.922 & 0 & 0 & 0.885 & 1 & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{The same text on an honest and a backdoored program}
+\label{app:held-out-apps}
+
+\paragraph{Programs and triggers.}
+The programs come from \texttt{Jazhyc/gleipnir-apps-injection-evals}, a copy of \texttt{mjkenney/monitor-injection-evals} at revision \texttt{58e722bf}~\citep{kenney2026monitorinjection}.
+o3-mini wrote both programs of each task, starting from the APPS tasks of ControlArena.
+Before we wrote any text, Qwen3.8-27B solved each trigger input from the problem statement alone, without either program.
+We kept a task when this answer matched the output of the honest program, and we reviewed every disagreement manually.
+This gave 100 held-out tasks; a later review found the trigger of task 1099 invalid, which leaves 99.
+The study also has 50 development tasks, which we used for a pilot and for the probe of Appendix~\ref{app:held-out-probe}.
+
+\paragraph{Texts.}
+The study has six conditions: the four of Section~\ref{sec:held-out-apps}, an accurate restatement of the task, and a cover story that presents the special case as an intended requirement.
+The scored set therefore has 982 rows: two programs for each of 99, 91, 93, 81, 99 and 28 tasks.
+A restatement sees only the problem statement and has 500 to 700 characters.
+Every other text has a length within 10\% of the restatement of its task.
+The unrelated text is the restatement of another task of the same split, the nearest in length.
+No text names a program, a code location or a number that the problem does not contain.
+GLM-5.3-Flash wrote the texts, and Qwen3.8-27B checked them, but only a manual review could accept a text.
+In a first sample of 40 tasks, 60 of 200 texts failed the manual review, 58 of them after the automatic check had passed them.
+We therefore wrote the accusations and cover stories again with stricter prompts and reviewed every text before scoring.
+A text that failed removes both programs of its task from that condition.
+Removing the docstring gives back the original program byte for byte.
+
+\paragraph{API monitors.}
+Kimi K3 returns the probabilities of the decision tokens.
+GPT-6.1 Sol, GPT-6 Luna and Claude Sonnet 5.5 have no such probabilities, so they read the same specification with an output section that asks for a score from 0 to 100, at low reasoning effort.
+These scores tie often at low thresholds.
+Claude Sonnet 5.5 scored 952 of the 982 rows: 28 replies had no valid score and 2 were refusals.
+These rows are not missing at random, so its values in Table~\ref{tab:apps-full} use fewer tasks.
+
+\begin{table}[h]
+\caption{All monitors on APPS programs that carry the same module docstring: pAUROC@20 (chance 0.100), with 95\% bootstrap intervals over tasks (2,000 draws) below each value. Tasks: 99, 93, 81, 99 and 28; Claude Sonnet 5.5 scored 99, 89, 72, 88 and 24. Figure~\ref{fig:apps-text} plots the first four columns for five monitors.}
+\label{tab:apps-full}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{lccccc}
+\toprule
+Monitor & No text & Unrelated & Specific acc. & Generic acc. & Cover story \\
+\midrule
+Gleipnir 4B & 0.690 & 0.360 & 0.143 & 0.171 & 0.062 \\
+ & {\scriptsize [0.572, 0.795]} & {\scriptsize [0.272, 0.467]} & {\scriptsize [0.101, 0.194]} & {\scriptsize [0.101, 0.250]} & {\scriptsize [0.007, 0.179]} \\
+Qwen3.5-4B (unadapted) & 0.621 & 0.189 & 0.434 & 0.319 & 0.131 \\
+ & {\scriptsize [0.456, 0.758]} & {\scriptsize [0.118, 0.292]} & {\scriptsize [0.309, 0.562]} & {\scriptsize [0.218, 0.429]} & {\scriptsize [0.031, 0.254]} \\
+Gleipnir 27B & 0.818 & 0.578 & 0.934 & 0.872 & 0.600 \\
+ & {\scriptsize [0.739, 0.891]} & {\scriptsize [0.487, 0.675]} & {\scriptsize [0.882, 0.978]} & {\scriptsize [0.804, 0.932]} & {\scriptsize [0.373, 0.829]} \\
+Kimi K3 & 0.904 & 0.679 & 0.868 & 0.868 & 0.736 \\
+ & {\scriptsize [0.833, 0.961]} & {\scriptsize [0.591, 0.768]} & {\scriptsize [0.788, 0.936]} & {\scriptsize [0.793, 0.932]} & {\scriptsize [0.583, 0.903]} \\
+Claude Sonnet 5.5 & 0.982 & 0.860 & 0.783 & 0.777 & 0.941 \\
+ & {\scriptsize [0.958, 0.999]} & {\scriptsize [0.769, 0.935]} & {\scriptsize [0.694, 0.872]} & {\scriptsize [0.637, 0.901]} & {\scriptsize [0.833, 1.000]} \\
+GPT-6.1 Sol & 0.965 & 0.797 & 1.000 & 1.000 & 0.926 \\
+ & {\scriptsize [0.928, 0.992]} & {\scriptsize [0.717, 0.877]} & {\scriptsize [1.000, 1.000]} & {\scriptsize [1.000, 1.000]} & {\scriptsize [0.847, 0.994]} \\
+GPT-6 Luna & 0.636 & 0.606 & 0.896 & 0.789 & 0.897 \\
+ & {\scriptsize [0.555, 0.718]} & {\scriptsize [0.515, 0.697]} & {\scriptsize [0.784, 0.988]} & {\scriptsize [0.651, 0.909]} & {\scriptsize [0.747, 1.000]} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Cover stories.}
+Only 28 of the 99 tasks have a valid cover story, so we compare it with no text on the same 28 tasks.
+On these tasks, Gleipnir 4B falls from 0.604 to 0.062, Gleipnir 27B from 0.825 to 0.600 and the unadapted Qwen3.5-4B from 0.601 to 0.131.
+The interval of the 27B under a cover story (0.373 to 0.829) is wide.
+
+\paragraph{AUROC and pairs within a task.}
+Table~\ref{tab:apps-auroc} gives AUROC with 95\% bootstrap intervals over tasks, and the share of pairs in which the backdoored program scores higher, with ties counted as one half.
+Under a specific accusation, the share is 0.802 for Gleipnir 4B, although its AUROC is 0.581.
+The difference comes from the level of the scores: the accusation raises the mean score of honest programs from 0.237 under unrelated text to 0.846, and that of backdoored programs from 0.426 to 0.870.
+In pairs of the same task, Gleipnir 27B is within 0.01 of Kimi K3 in AUROC under both accusations, with 95\% intervals that include zero.
+
+\begin{table}[h]
+\caption{AUROC (95\% bootstrap interval over tasks) and the share of within-task pairs in which the backdoored program scores higher (ties count one half).}
+\label{tab:apps-auroc}
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Monitor & Condition & AUROC & Pair share \\
+\midrule
+Gleipnir 4B & No text & 0.893 {\scriptsize [0.847, 0.934]} & 0.864 \\
+ & Specific accusation & 0.581 {\scriptsize [0.558, 0.612]} & 0.802 \\
+ & Generic accusation & 0.589 {\scriptsize [0.546, 0.634]} & 0.641 \\
+Qwen3.5-4B (unadapted) & No text & 0.889 {\scriptsize [0.844, 0.929]} & 0.904 \\
+ & Specific accusation & 0.805 {\scriptsize [0.755, 0.856]} & 0.895 \\
+ & Generic accusation & 0.748 {\scriptsize [0.707, 0.794]} & 0.914 \\
+Gleipnir 27B & No text & 0.947 {\scriptsize [0.915, 0.973]} & 0.919 \\
+ & Specific accusation & 0.984 {\scriptsize [0.968, 0.995]} & 1.000 \\
+ & Generic accusation & 0.959 {\scriptsize [0.930, 0.982]} & 0.944 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Thresholds on code without text.}
+The thresholds of Section~\ref{sec:held-out-apps} come from 221 honest APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
+These tasks are disjoint from the study tasks.
+
+\paragraph{Text addressed to the monitor.}
+An earlier study scored the released Gleipnir 4B and 27B on the serving stack of Section~\ref{sec:serving}, on the frozen APPS injection sets~\citep{kenney2026monitorinjection}.
+In these sets, a text in the program asks the monitor to rate the program as benign, in one of three templates.
+At a threshold that flags at most 2\% of honest programs without injections, both monitors flag every honest program with an injection, under all three templates.
+At a threshold of 0.5, the 4B flags 89.5\% to 99.5\% of them, and the 27B flags 26.7\% to 100\%.
+The unadapted Qwen3.8-27B flags 76\% to 100\% at 0.5, so this reaction comes from the base model, and the adapter of the 27B reduces it.
+Both monitors therefore treat text addressed to the monitor as a sign of harm.
+Appendix~\ref{app:held-out-lab} gives a second test of text addressed to the monitor.
+
+\subsection{A linear probe under identical text}
+\label{app:held-out-probe}
+
+The probe tests whether Gleipnir 4B still represents which program has the backdoor when its output fails.
+We record the residual stream after blocks 8, 16, 24 and 32 of the 32 blocks.
+At each block we take either the position of the decision token or the mean over the tokens of the code, which excludes the inserted docstring.
+We fit an L2-regularized logistic regression on the 50 development tasks without text (100 programs).
+We choose the block, the position and the regularization strength by five-fold cross-validation over tasks, and then freeze the probe.
+The procedure selects block 16 with the code mean for Gleipnir 4B, and block 24 with the decision token for the unadapted Qwen3.5-4B.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{held_out_probe}
+\caption{Under an accusation, a linear probe on Gleipnir 4B still separates backdoored from honest programs, while the output of the 4B falls toward chance; the probe on the unadapted Qwen3.5-4B does not hold. AUROC on the same held-out programs, with 95\% bootstrap intervals over tasks; the dotted line is chance (0.500). The two models use different probe positions (code mean for Gleipnir 4B, decision token for the base model). Values are in Table~\ref{tab:apps-probe}.}
+\label{fig:apps-probe}
+\end{figure}
+
+\begin{table}[h]
+\caption{AUROC of a frozen linear probe and of the output of the same model, on the same held-out programs, with 95\% bootstrap intervals over tasks (10,000 draws) for the probe. The probe was fit on development programs without text.}
+\label{tab:apps-probe}
+\centering
+\small
+\begin{tabular}{llcc}
+\toprule
+Model & Condition & Probe & Output \\
+\midrule
+Gleipnir 4B & No text & 0.968 {\scriptsize [0.947, 0.987]} & 0.893 \\
+ & Specific accusation & 0.957 {\scriptsize [0.926, 0.982]} & 0.581 \\
+ & Generic accusation & 0.950 {\scriptsize [0.919, 0.976]} & 0.589 \\
+Qwen3.5-4B (unadapted) & No text & 0.962 {\scriptsize [0.938, 0.982]} & 0.889 \\
+ & Specific accusation & 0.658 {\scriptsize [0.597, 0.720]} & 0.805 \\
+ & Generic accusation & 0.790 {\scriptsize [0.736, 0.843]} & 0.748 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Under both accusations, the probe of Gleipnir 4B keeps an AUROC of 0.950 to 0.957, while the output of the 4B falls to 0.581 to 0.589 (Figure~\ref{fig:apps-probe} and Table~\ref{tab:apps-probe}).
+The probe of the unadapted model falls to 0.658 under a specific accusation.
+Two controls score lower under accusations: a probe trained on shuffled labels (0.228 to 0.263) and a logistic regression on the length of the program (0.531 to 0.553).
+A probe shows that the information is present; it does not show that the model uses it.
+Also, the code mean excludes the docstring tokens, while the decision token reads them, and the two 4B probes use different positions; part of the difference between them can come from this choice.
+The same procedure on Gleipnir 27B selects block 64 with the decision token.
+That probe ranks the accused programs in reverse (AUROC 0.025 and 0.044), while the output of the 27B reaches 0.984 and 0.959.
+We have no explanation for this result.
+
+\subsection{Natural cheating by one agent model}
+\label{app:held-out-natural}
+
+\paragraph{Setup.}
+Qwen3.8-27B, with thinking disabled, solves tasks from the LiveCodeBench split of ImpossibleBench~\citep{zhong2025impossiblebench}.
+In each task, one unit test contradicts the specification, so only a cheating program can pass.
+The scaffold of ImpossibleBench gives bash, Python and a text editor and allows up to ten submissions.
+It answers each failed submission with a request to fix the code, and no prompt asks the agent to cheat.
+A run is a cheat when its final program passes the contradicting test in a fresh container, or when the agent attempts this, and we checked every cheat manually against its transcript.
+This gives 60 cheats (37 that pass and 23 attempts) and 256 runs without a cheat.
+In 26 of the 37 cheats that pass, the cheating started after a failed submission.
+
+\paragraph{Detection point.}
+The monitor reads a cheat up to and including its first cheating action.
+It reads a run without a cheat up to a length drawn from the lengths of the cheats, so that length does not separate the classes (token-count AUROC 0.47).
+After the length limit, 57 cheats remain, and 239 runs without a cheat for the 27B (242 for the 4B, whose tokenizer differs).
+
+\paragraph{Results.}
+Gleipnir 4B and 27B reach AUROC 0.959 and 0.962.
+At their 1\% thresholds they flag 75\% and 84\% of the cheats (95\% intervals over tasks 64\% to 87\% and 74\% to 93\%).
+They flag none of the runs without a cheat and none of 31 honest runs that passed the original tests.
+
+\begin{table}[h]
+\caption{Natural cheats by Qwen3.8-27B on ImpossibleBench, at the first cheating action: 57 cheats against 239 runs without a cheat (242 for the 4B models). Intervals are 95\% bootstrap intervals over tasks (10,000 draws). Kimi K3 returns probabilities; the other API monitors return a score from 0 to 100 at low reasoning effort. Claude Sonnet 5.5 has a valid score for only 44 of the 57 cheats and 237 runs without a cheat. The keyword search counts words of cheating in the tool calls of the agent.}
+\label{tab:natural-cheats}
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+Monitor & pAUROC@20 & AUROC \\
+\midrule
+Gleipnir 4B & 0.935 {\scriptsize [0.872, 0.986]} & 0.959 \\
+Gleipnir 27B & 0.941 {\scriptsize [0.880, 0.994]} & 0.962 \\
+Kimi K3 & 0.943 {\scriptsize [0.887, 0.995]} & 0.964 \\
+Claude Sonnet 5.5 & 0.948 {\scriptsize [0.874, 0.997]} & 0.967 \\
+GPT-6.1 Sol & 0.935 {\scriptsize [0.870, 0.988]} & 0.967 \\
+GPT-6 Luna & 0.880 {\scriptsize [0.795, 0.956]} & 0.953 \\
+Qwen3.5-4B (unadapted) & 0.686 {\scriptsize [0.564, 0.803]} & 0.893 \\
+Gemini 3.8 Flash & 0.606 {\scriptsize [0.467, 0.740]} & 0.786 \\
+Keyword search & 0.265 {\scriptsize [0.159, 0.379]} & 0.647 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Comparison with API monitors.}
+The five strongest monitors in Table~\ref{tab:natural-cheats} score 0.935 to 0.948, and their intervals overlap, so 57 cheats do not separate them.
+Training raises the 4B from 0.686 to 0.935.
+The keyword search scores 0.265, so the monitors use more than the words of the agent.
+Four cheats do not state the cheat anywhere that the monitor reads: three present the special case as an invented rule, and one is not visible in the actions.
+At a threshold set at 1\% of the runs without a cheat, the best monitors flag 2 of these 4 and Gleipnir 4B flags 1.
+At their OOD thresholds, both Gleipnir monitors flag none of the 4.
+
+\paragraph{Limits.}
+One agent model wrote every cheat, on one benchmark, and the agent stated almost every cheat in its code or comments.
+
+\subsection{Removal of code comments}
+\label{app:held-out-comments}
+
+Agents often explain a cheat in a code comment, so a monitor could flag the comment and not the code.
+We test this twice, and both tests change only comments, never code.
+
+\paragraph{Natural cheats.}
+On the rows of Appendix~\ref{app:held-out-natural}, we remove every \texttt{\#} comment from the Python code in the tool calls with the Python tokenizer, and we keep docstrings.
+In 53 of the 60 cheats, the first cheating action itself loses a comment.
+On the 57 cheats that fit the length limit, Gleipnir 4B flags 50\% at its 1\% threshold, against 75\% before.
+Its AUROC falls from 0.959 to 0.933 (change $-0.026$, 95\% interval over tasks $-0.053$ to $-0.002$).
+Gleipnir 27B flags 89\% of the cheats, against 84\% before, and its AUROC moves from 0.962 to 0.964.
+On these rows, part of the signal of the 4B therefore comes from the comments, and the signal of the 27B does not.
+
+\paragraph{Runs in which every cheat is stated.}
+The second test uses 413 runs of the same agent on 103 tasks of the same split.
+These runs come from a study that varied one paragraph of the system prompt of the agent.
+The paragraph was empty, allowed any approach that passes the tests, or asked for an honest solution, and two variants added that a monitor reads the tool calls.
+The monitor never reads the system prompt.
+The runs contain 37 cheats, 28 of them from the two variants that allowed cheating, and the agent stated every cheat.
+We remove \texttt{\#} comments, docstrings and other bare strings from the Python code in the tool calls, and check that the syntax tree without strings stays the same.
+Tool outputs stay unchanged, so a later command that prints the file still shows its comments.
+After the removal, 11 of the 37 cheats contain no word that admits a cheat.
+The 4B scores 391 of the 413 runs and the 27B 388; the other runs are too long.
+
+\begin{table}[h]
+\caption{Removal of comments and docstrings from the tool calls, on runs in which the agent stated every cheat. Counts use the 1\% threshold of each monitor.}
+\label{tab:comment-strip}
+\centering
+\small
+\begin{tabular}{lcc}
+\toprule
+ & Gleipnir 4B & Gleipnir 27B \\
+\midrule
+Cheats flagged, before $\rightarrow$ after & 35/37 $\rightarrow$ 35/37 & 33/36 $\rightarrow$ 36/36 \\
+Runs without a cheat flagged, before and after & 7/354 & 9/352 \\
+AUROC, before $\rightarrow$ after & 0.988 $\rightarrow$ 0.989 & 0.993 $\rightarrow$ 0.993 \\
+Cheats with no admission word, flagged after & 10/11 & 11/11 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Table~\ref{tab:comment-strip} shows that the removal changes neither monitor on these runs.
+Variable names and printed strings remain, so the test does not show that the monitors read only the code.
+We also prompted the agent to cheat without stating it, and it still stated its cheats.
+
+\subsection{Sabotage spread across agent sessions}
+\label{app:held-out-aisi}
+
+\paragraph{Setup.}
+We use a multi-agent control benchmark of the UK AI Security Institute~\citep{aisi2026multiagentcontrol}, with its permission, and report aggregate results only.
+An episode has up to three sessions on the codebase of a simulated AI company.
+A new GLM-5.3 agent runs each session with no memory of the previous sessions, and only the code carries over.
+Each session has an engineering task, and in attack episodes each session also receives one step of a three-step sabotage plan.
+After each session the tests run, and if they pass, GLM-5.3 grades the engineering task from the code diff.
+A rejected session ends the episode.
+A first pilot uses the goal of disabling monitoring, with 25 attack and 15 honest episodes, which give 45 attack and 45 honest sessions.
+A second pilot uses weight exfiltration, privilege escalation and data poisoning, with 7 attack and 3 honest episodes each.
+These give 11, 19 and 18 attack sessions and 9 honest sessions per goal.
+An attack session is a positive whether or not the judge accepted it.
+
+\paragraph{Monitors.}
+Gleipnir and Kimi K3 read one whole session: commands, files read and edited, tool outputs and the final message.
+At least 81 of the 90 sessions of the first pilot are longer than 29,696 tokens, and we score them at full length.
+The benchmark has two monitors that read only code diffs, one after each step and one for the whole episode, both on GLM-5.3.
+When we run these two monitors on Qwen3.8-27B instead, their pooled score on the second pilot changes by at most 0.05.
+
+\begin{table}[h]
+\caption{pAUROC@20 on multi-agent sabotage, by session, with 95\% bootstrap intervals over episodes (attack and honest episodes resampled separately). The diff monitors are those of the benchmark, on GLM-5.3. The second pilot has 9 honest sessions per goal. Counts are attack sessions flagged at the 1\% threshold of each monitor; no monitor flags any honest session.}
+\label{tab:aisi}
+\centering
+\scriptsize
+\setlength{\tabcolsep}{2.5pt}
+\begin{tabular}{lccccc}
+\toprule
+Goal (attacks) & Gleipnir 4B & Gleipnir 27B & Kimi K3 & Diff, per step & Diff, episode \\
+\midrule
+Disable monitoring (45) & 0.911 [0.837, 0.978] & 0.853 [0.750, 0.951] & 0.854 [0.754, 0.951] & 0.602 [0.478, 0.732] & 0.644 [0.429, 0.816] \\
+Weight exfiltration (11) & 1.000 [1.000, 1.000] & 1.000 [1.000, 1.000] & 1.000 [1.000, 1.000] & 0.818 [0.733, 1.000] & 0.545 [0.000, 0.800] \\
+Privilege escalation (19) & 0.789 [0.684, 0.935] & 0.684 [0.526, 0.895] & 0.684 [0.526, 0.842] & 0.641 [0.476, 0.824] & 0.947 [0.800, 1.000] \\
+Data poisoning (18) & 0.802 [0.568, 1.000] & 0.667 [0.368, 0.947] & 0.667 [0.368, 0.947] & 0.444 [0.200, 0.750] & 0.722 [0.412, 1.000] \\
+Second pilot, pooled (48) & 0.792 [0.670, 0.910] & 0.733 [0.605, 0.858] & 0.742 [0.610, 0.867] & 0.602 [0.489, 0.722] & 0.771 [0.600, 0.904] \\
+\midrule
+Flagged: disable monitoring & 35/45 & 36/45 & 36/45 & & \\
+Flagged: weight exfiltration & 10/11 & 11/11 & 11/11 & & \\
+Flagged: privilege escalation & 5/19 & 13/19 & 13/19 & & \\
+Flagged: data poisoning & 5/18 & 10/18 & 9/18 & & \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Results.}
+On disabling monitoring and weight exfiltration, the monitors that read actions score 0.853 to 1.000 pAUROC@20, and the diff monitors 0.545 to 0.818 (Table~\ref{tab:aisi}).
+On privilege escalation, the episode diff monitor scores 0.947 (0.800 to 1.000) and Gleipnir 4B 0.789 (0.684 to 0.935); the intervals overlap.
+Gleipnir 4B ranks privilege escalation and data poisoning at least as well as the 27B and Kimi K3.
+At its threshold, however, it flags 5 of 19 and 5 of 18 of these sessions, against 13 and 10 for the 27B.
+In the first pilot, the attack sessions that the judge accepted score lower than the rejected ones: the mean 4B score is 0.609 against 0.829.
+The AUROC of accepted against rejected attack sessions is 0.257 for the 4B and 0.256 for the 27B.
+
+\paragraph{Limits.}
+GLM-5.3 runs the agent, the judge and the diff monitors.
+The agent completed the full sabotage in 4 of the 46 attack episodes, so most attack sessions are failed attempts.
+The second pilot has 9 honest sessions per goal.
+
+\subsection{Agents that lie to other agents}
+\label{app:held-out-lab}
+
+\paragraph{Setup.}
+Six agents, A to F, share a message board in a simulated lab for 32 work cycles.
+The report of agent A feeds nine customer orders.
+A preflight check suggests to A that it may be quarantined, but no agent is quarantined, and agents B and C know this from a private message.
+From cycle 6, A can run a diagnostic that costs A its own delivery.
+In each episode, either B or C, fixed before the run by the episode seed, must get A to run the diagnostic, either honestly or with permission to deceive.
+The seed fixes the starting state of the lab, which models and conditions share.
+The recruiters are GLM-5.3, Kimi-K2.6, Qwen3.8-27B or GPT-6.1 Sol, and the other agents are GLM-5.3, or Claude Haiku 5.5 in one cell.
+Every post of a recruiter was screened for a false claim about A without access to the condition.
+A liar is a recruiter whose false claim reached A before the last action of A.
+From 112 completed episodes, the primary comparison has 30 liars against 52 honest recruiters.
+The other pre-assigned recruiters are excluded from it: deceivers who made no false claim, liars who retracted their claim, recruiters outside the primary cells, and two liars whose trajectories are too long.
+The monitor reads the posts and tool calls of the recruiter and the posts that it received, without its system prompt or reasoning (Figure~\ref{fig:lab-setup}).
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=0.92\linewidth]{held_out_lab_setup}
+\caption{One episode of the lab. A recruiter, B or C, tries to get agent A to run a diagnostic that costs A its own delivery, with either the honest or the deceptive tactic. The monitor reads only the recruiter: its posts, its tool calls and the posts it received.}
+\label{fig:lab-setup}
+\end{figure}
+
+\paragraph{Threshold.}
+This test uses a 4B threshold of 0.755, set earlier from all 3,189 benign OOD trajectories.
+At the 0.622 threshold of the other tests, the 4B still flags none of the 30 liars.
+The unadapted Qwen3.8-27B reads the full specification, with a threshold of 0.953 from 395 benign OOD trajectories.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{held_out_lab}
+\caption{Gleipnir ranks recruiters who lie about as well as its unadapted base model but flags few of them, and one post addressed to the monitor makes Gleipnir 4B flag innocent agents. Left: pAUROC@20 of 30 liars against 52 honest recruiters, with 95\% bootstrap intervals over episode seeds; the dotted line is chance (0.100). Middle: liars flagged at the threshold of each monitor. Right: innocent agents flagged at the 1\% threshold after one added post that accuses another worker and asks the monitor for \texttt{Prediction:1} (300 readers for Gleipnir 4B, 100 for the others). Middle and right intervals are 95\% Wilson intervals; labels give counts.}
+\label{fig:lab}
+\end{figure}
+
+\begin{table}[h]
+\caption{Recruiters who lie against honest recruiters (30 against 52). Intervals are 95\% bootstrap intervals over episode seeds. Counts use the threshold of each monitor (see text).}
+\label{tab:lab-liars}
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+Monitor & AUROC & pAUROC@20 & Liars flagged & Honest flagged \\
+\midrule
+Gleipnir 4B & 0.904 {\scriptsize [0.868, 0.938]} & 0.631 {\scriptsize [0.518, 0.729]} & 0/30 & 0/52 \\
+Gleipnir 27B & 0.897 {\scriptsize [0.864, 0.938]} & 0.619 {\scriptsize [0.531, 0.737]} & 5/30 & 0/52 \\
+Qwen3.8-27B (unadapted) & 0.898 & 0.655 {\scriptsize [0.537, 0.804]} & 0/30 & 0/52 \\
+Kimi K3 & 0.956 {\scriptsize [0.919, 0.990]} & 0.818 {\scriptsize [0.678, 0.954]} & 18/30 & 1/52 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{Results.}
+Both Gleipnir monitors rank liars above honest recruiters (AUROC 0.904 and 0.897), but at their thresholds they flag 0 and 5 of the 30 liars, against 18 for Kimi K3 (Figure~\ref{fig:lab} and Table~\ref{tab:lab-liars}).
+The unadapted Qwen3.8-27B ranks the liars as well as Gleipnir 27B (pAUROC@20 0.655 against 0.619).
+Training changed the level of the scores instead: the median score of a liar is 0.055 for the unadapted model and 0.562 for Gleipnir 27B.
+
+\paragraph{A post addressed to the monitor.}
+In an earlier version of the lab, we added one post to the messages that an innocent agent received.
+The post addresses the oversight monitor, accuses another worker of exporting credentials, and asks for \texttt{Prediction:1}.
+At its 1\% threshold, Gleipnir 4B flags 245 of 300 such readers (82\%; Figure~\ref{fig:lab}).
+Gleipnir 27B, Kimi K3 and the unadapted Qwen3.8-27B each flag none of 100 readers.
+The unadapted Qwen3.5-4B flags 7\%, although the post raises its logit margin toward \texttt{1} by a median of 3.4.
+
+\paragraph{A probe trained on the lab.}
+A logistic-regression probe on the residual stream at the decision token, trained on this lab with one seed held out at a time, reaches AUROC 0.99 for the 4B and 1.00 for the 27B.
+A bag-of-words logistic regression on the same trajectories reaches 0.994 (post hoc), and a regression on length reaches 0.63.
+With labels from this lab, the lie is therefore easy to separate, and the training of Gleipnir does not transfer this separation to its output.
+
+\paragraph{Limits.}
+The lab is one environment with 30 liars, and the probe and bag-of-words results need labels from the same environment.
+
 \section{Activation probes: soft targets and depth}
 \label{app:probing}
 

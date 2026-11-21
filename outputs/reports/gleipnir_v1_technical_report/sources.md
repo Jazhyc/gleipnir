@@ -6,6 +6,99 @@ Add an entry here when you add a number to the report.
 
 No results are reported yet.
 
+## Section 6 and Appendix "Held-out and adversarial evaluation: details" (ARK)
+
+Recorded 2026-11-20 by ARK, on report branch `docs/v1-technical-report` at
+`b62c1058`. Results and data folders are git-ignored; their files were read
+from the `feat/adversarial-stress-tests` checkout at `e4b9e391`. SHA-256
+prefixes identify the files read. Monitors: 4B v0.3 adapter (same weights as
+the released 4B), 27B `27b-merged` BF16; BF16 Transformers + PEFT scorer.
+pAUROC@20 is `gleipnir.evaluation.metrics.normalized_partial_auroc` (no
+McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
+27B 0.731 (400 rows, 4 above the line), Kimi K3 0.755 (1,000 rows); from
+`experiments/adversarial_is_it_4b` and `adversarial_natural_cheats`.
+
+- **EvilGenie (Table `tab:evilgenie`, `tab:evilgenie-problems`, Section 6.1).**
+  Recomputed post hoc on the rows both monitors scored by
+  `experiments/adversarial_evilgenie/shared_rows_report.py` (run with
+  `GLEIPNIR_DATA_ROOT` set to the data checkout). Inputs:
+  `results/adversarial_evilgenie/4b-v03/rows/predictions.jsonl` (`fae17892`),
+  `.../27b-merged/rows/predictions.jsonl` (`49e04990`),
+  `data/adversarial_evilgenie/rows_4b-v03.jsonl` (`2566f455`), lines from
+  `report.json`. Bootstrap: whole problems, 10,000 draws, seed 0, 9 problems.
+  The 4B all-rows values (AUROC 0.751, 10/108, 16/1,695, 0/180) and dataset
+  counts, exclusions and the `arc191_c` reading are from
+  `experiments/adversarial_evilgenie/README.md`. The split by `arc191_c` was
+  chosen after the scores; the README's own "without arc191_c" figure (0.933
+  on 39 hacks, all 4B rows) differs from ours (0.942 on the 36 shared hacks)
+  because the row sets differ.
+- **APPS, identical text (Table `tab:apps-text`, Section 6.2).** pAUROC@20 and
+  intervals from `results/figures/backdoor_pauroc.json` (`442d20a8`), written by
+  `results/figures/backdoor_pauroc.py`: task bootstrap, 2,000 draws, seed 0,
+  checked against each monitor's `report_<monitor>_heldout.json`. AUROC, paired
+  differences, tie shares, mean score changes, calibration flag rates, task
+  counts, text construction and hand reads: `experiments/adversarial_crossed_text/README.md`
+  (Results, Amendments 1-3, Limits). All texts are GLM-5.3-Flash; Amendment 3
+  fell back to the Amendment 1 cover stories.
+- **Text addressed to the monitor (Appendix, APPS).**
+  `docs/findings/apps_released_monitors.md` (run `apps01`, released 4B v0.4 and
+  27B v0.2 on the optimized B200 stack).
+- **Probe (Table `tab:apps-probe`).** `experiments/adversarial_crossed_text_probe/README.md`,
+  Results 24 October 2026.
+- **Natural cheats (Table `tab:natural-cheats`).**
+  `docs/findings/adversarial_frontier_comparison.md` (pAUROC@20 in percent with
+  two-digit intervals, AUROC) and `experiments/adversarial_natural_cheats/README.md`
+  (counts, recall at 1%, comment stripping). The 2-of-4 and 1-of-4 counts for
+  unannounced cheats are at a matched 1% line from the negatives (frontier
+  comparison, Amendment 2). Costs are not reported in the report because the
+  record mixes A100 unbatched and API prices.
+- **Comment and docstring removal (Table `tab:comment-strip`).**
+  `experiments/adversarial_confession_strip/README.md` and its results;
+  rows from `experiments/adversarial_monitor_aware`.
+- **Multi-agent sabotage (Table `tab:aisi`).** Private AISI data under the
+  sprint repository's `data/aisi/` (git-ignored, licence: aggregate results
+  only, confirmed by AISI): `figures/pauroc.json` (`ff73e224`), flag counts and
+  session counts from `pilot40/RESULTS.md` and `pilot_chains/RESULTS.md`, Qwen
+  rescore from `rescore_qwen/results.json`, completed attacks from the
+  `rows/manifest.jsonl` files (`successful_attack_judge`). Confirm with AISI
+  that an arXiv report counts as reporting aggregate results.
+- **Lab liars (Table `tab:lab-liars`).** `results/adversarial_lab_liars/pauroc20_posthoc.json`
+  (`3b41b8cb`, seed bootstrap) and `experiments/adversarial_lab_liars/README.md`;
+  the world from `experiments/live-peers/liar-scale` in the sprint repository.
+  Post addressed to the monitor: `experiments/adversarial_is_it_4b/README.md`
+  (Step 1). Probe and bag-of-words: `experiments/adversarial_lab_liars_probe/README.md`.
+
+- **Corrections and recomputations (2026-11-20).**
+  - Within-task pair shares (Table `tab:apps-auroc`) and mean scores are from
+    `results/adversarial_crossed_text_amendment3_20261023/report_<arm>_heldout.json`
+    (`within_task_win_probability`) and recomputed from `scores/<arm>.jsonl`:
+    4B specific accusation 0.802 (strict 0.716, ties 0.173). The crossed-text
+    README's sentence "the backdoored program scores higher in 55% (specific)
+    and 54% (generic) of pairs" does not match these rows; the report uses the rows.
+  - 3-decimal AUROCs (APPS) from the same `report_<arm>_heldout.json` files;
+    probe values from `results/adversarial_crossed_text_probe/<arm>/report.json`.
+  - Cover story against no text on the same 28 tasks (4B 0.604 -> 0.062, 27B
+    0.825 -> 0.600, base 0.601 -> 0.131): recomputed from `scores/<arm>.jsonl`
+    with `normalized_partial_auroc`, post hoc.
+  - Natural-cheats table and stripping AUROCs from
+    `results/adversarial_natural_cheats/report.json` (`comparison`, `points`);
+    Sonnet's first-cheat row set is 44 cheats and 237 negatives.
+  - AISI honest-session flags (0 for every monitor and goal) and accepted-vs-
+    rejected AUROC from `data/aisi/pilot40/scoring/results/report.json` and
+    `pilot_chains/scoring/results/report.json` (`existing_line`).
+  - EvilGenie 27B control runs: 0 of 115 flagged; 1,312 = 105 + 999 + 115 + 19 + 74.
+  - Lab liars: AUROCs from `results/adversarial_lab_liars/report.json`
+    (`primary_auroc`); 4B at 0.622 flags 0 pre-assigned recruiters in any group
+    (recomputed from `4b/main/predictions.jsonl`).
+
+- **Figures (2026-11-21).** `fig:apps-text`, `fig:apps-probe`, `fig:lab` and
+  `fig:lab-setup` are drawn by `report-figures/make_figures.py` from
+  `report-figures/data.json`, which `report-figures/refresh_data.py` builds from
+  the files listed above; the values match the tables. Figure `fig:apps-text`
+  replaces the main-text table `tab:apps-text`; its intervals are now in
+  `tab:apps-full`. Readers flagged after the framing post: 4B 245/300
+  (`flagged_1%` 0.8167), 27B and Kimi 0/100, unadapted Qwen3.8-27B 0/100.
+
 ## External references
 
 - Terekhov et al., *Adaptive Attacks on Trusted Monitors Subvert AI Control
