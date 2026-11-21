@@ -45,6 +45,9 @@ The intervals of pAUROC@20 are about 0.25 wide.
 The catch rate is noisier still, because it depends on the single highest benign score: Kimi K3 catches no attack because it scores one benign trajectory above every attack, although its pAUROC@20 matches that of pplx-decider v1.3.
 Otherwise the catch rates rank the monitors much as pAUROC@20 does (Appendix~\ref{app:sleightbench}).
 
+Against attacks designed to evade a monitor, which a capable agent that knows its monitor could attempt, no monitor that we scored is sufficient alone, and the cheap decision models, including Gleipnir, fall further short than on the OOD suite.
+Closing this gap, with stronger monitors behind the cheap ones or with training data that contains attacks built against a monitor, is left to future work.
+
 \subsection{Reward hacking by other agent models}
 \label{sec:held-out-evilgenie}
 
