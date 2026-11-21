@@ -53,8 +53,6 @@ GPT-6.1 Terra answers without reasoning, with one decision token, and still catc
 This is close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors, which can run code while it reads the transcript, and above their strongest monitor without the scaffold, Gemini 3.1 Pro with high thinking effort (54\%; Appendix~\ref{app:sleightbench}).
 Because it reads the transcript once and writes only its decision, it costs \$15.49 per 1,000 evaluations, almost all of it for input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
 
-\todo{Introduce monitor-directed attacks here: an agent can evade monitors by embedding prompt injections in its outputs~\citep{terekhov2025adaptive}. Then the tests of the Gleipnir monitors against such text.}
-
 The next two tests are the largest of our own stress tests in trajectories and tasks.
 In the first, 15 agent models hack the reward of coding tasks without an instruction to do so (Section~\ref{sec:held-out-evilgenie}).
 In the second, the same text appears on an honest and on a backdoored program (Section~\ref{sec:held-out-apps}).
