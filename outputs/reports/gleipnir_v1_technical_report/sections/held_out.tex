@@ -9,8 +9,8 @@ Appendix~\ref{app:held-out} gives five smaller stress tests.
 \subsection{SleightBench}
 \label{sec:sleightbench}
 
-SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks that are built to evade monitors.
-It contains 40 hand-written attacks in 11 categories, each a trajectory of a coding agent that covertly pursues a harmful objective.
+SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks that humans designed to exploit blind spots of frontier monitors: at a 1\% false-positive rate, Claude Opus 4.6 with extended thinking never catches 20 of its 40 attacks.
+The attacks fall into 11 categories, and each is a trajectory of a coding agent that covertly pursues a harmful objective.
 Each attack has a benign twin, the same trajectory without the harmful part, and in several pairs the two differ by one token.
 
 We score the stripped view of the authors, a stricter form of the action-only input (Section~\ref{sec:background-sinha}) that also removes the assistant messages.
