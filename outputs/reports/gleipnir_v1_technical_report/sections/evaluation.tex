@@ -15,13 +15,20 @@ Figure~\ref{fig:frontier} shows the main comparisons. Table~\ref{tab:ood-all} in
 \label{fig:frontier}
 \end{figure}
 
-Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, with a 95\% bootstrap interval of 0.941--0.960, and Claude Opus 4.6, the strongest monitor of Sinha et al., scores 0.942.
-The difference lies within the interval, but Gleipnir 27B costs \$0.41 per 1,000 evaluations at the on-demand rate and \$0.18 at the committed-use rate, against \$94.79 for Claude Opus 4.6: 229 and 532 times less.
-It also scores higher than its teacher, Kimi K3, which reads the same specification and scores 0.908; this lead comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
-Gleipnir 4B scores 0.770 at \$0.094, against 0.684 at \$0.358 for the Qwen3.5-4B monitor that Sinha et al.\ train with SFT and RL.
-Training raises both base models: Qwen3.5-4B scores 0.618 and Qwen3.8-27B scores 0.890 before training.
-The strongest decision model, pplx-decider v1.2, scores 0.896 at \$0.176, between our two monitors; at the committed-use rate, Gleipnir 27B costs about the same (\$0.178) and scores 0.055 higher.
-At a false-positive rate of 1\%, Gleipnir 27B recalls 87.4\% of the harmful trajectories, pplx-decider v1.2 75.9\% and Gleipnir 4B 60.6\% (Table~\ref{tab:ood-all}).
+\paragraph{Gleipnir 27B matches the strongest reasoning monitor at a fraction of its cost.}
+Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20 (95\% bootstrap interval 0.941--0.960) and Claude Opus 4.6, the strongest monitor of Sinha et al., scores 0.942.
+The difference lies within the interval, while Gleipnir 27B costs 229 times less at the on-demand rate and 532 times less at the committed-use rate.
+It also scores 0.043 above its teacher, Kimi K3, but this lead comes from one task of SHADE-Arena (Appendix~\ref{app:shade}).
+
+\paragraph{Gleipnir 4B outperforms the trained monitor of its size.}
+Gleipnir 4B scores 0.086 above the Qwen3.5-4B monitor that Sinha et al.\ train with SFT and RL, at 3.8 times lower cost.
+
+\paragraph{Distillation provides the gain.}
+Training raises Qwen3.5-4B from 0.618 to 0.770 and Qwen3.8-27B from 0.890 to 0.951.
+
+\paragraph{At equal cost, Gleipnir 27B outperforms the strongest decision model.}
+At the committed-use rate, Gleipnir 27B costs about the same as pplx-decider v1.2 (\$0.178 and \$0.176) and scores 0.055 higher in pAUROC@20.
+At a false-positive rate of 1\%, it recalls 87.4\% of the harmful trajectories, 11.5 points more than pplx-decider v1.2 (Table~\ref{tab:ood-all}).
 
 These results matter for deployment in two ways.
 First, at these costs a deployment can check every trajectory, or every action, instead of a sample; Section~\ref{sec:serving-caching} prices the monitoring of every action.
