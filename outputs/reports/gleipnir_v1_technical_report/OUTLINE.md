@@ -512,6 +512,15 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   pre-registered 2-hour cap after 1,312 of 2,295 rows. Score every row, and
   take the 1% thresholds from the released-stack OOD scores. Needs a B200 Pod
   (JF's go-ahead; budget).
+- **TODO (JF, 2026-11-21): add baselines to the rerun.** EvilGenie (6.2)
+  has none: score the unadapted Qwen3.5-4B and Qwen3.8-27B (same Pod),
+  pplx-decider v1.3, Kimi K3 (the teacher; a newer, cheaper provider) and
+  GPT-6.1 Terra on the same rows, reporting Kimi K3's own agent runs
+  separately. In APPS (6.3), GPT-6.1 Sol, GPT-6 Luna and Claude Sonnet 5.5
+  return a 0-100 score at low reasoning effort, unlike the binary readout
+  used everywhere else; rescore with binary logits where the API allows it
+  (GPT-6.1 Terra in place of Sol, which cannot disable reasoning; GPT-6 Luna),
+  and keep any ordinal monitor as a labelled reasoning reference.
 
 Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
