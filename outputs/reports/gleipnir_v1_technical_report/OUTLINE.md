@@ -505,6 +505,14 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   which the training specification labels benign.
   Evidence: `docs/findings/sleightbench_released_monitors.md`.
 
+- **TODO (JF, 2026-11-21): rerun ARK's main held-out experiments on the
+  released serving stack** once JF has reviewed them, so they match the rest
+  of the report. Those runs used BF16 Transformers on an A100/H100 without the
+  `flash-linear-attention` kernels, and the EvilGenie 27B run stopped at a
+  pre-registered 2-hour cap after 1,312 of 2,295 rows. Score every row, and
+  take the 1% thresholds from the released-stack OOD scores. Needs a B200 Pod
+  (JF's go-ahead; budget).
+
 Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
 details, SleightBench per-attack results.
