@@ -24,5 +24,5 @@ The strongest decision model, pplx-decider v1.2, scores 0.896 at \$0.176, betwee
 
 These results matter for deployment in three ways.
 First, a deployed monitor flags at a fixed false-positive rate, and at 1\% Gleipnir 27B recalls 87.4\% of the harmful trajectories, against 75.9\% for pplx-decider v1.2 and 60.6\% for Gleipnir 4B (Table~\ref{tab:ood-all}).
-Second, at these costs a deployment can check every trajectory, or every action, instead of a sample; Section~\ref{sec:serving} prices the monitoring of every action.
+Second, at these costs a deployment can check every trajectory, or every action, instead of a sample; Section~\ref{sec:serving-caching} prices the monitoring of every action.
 Third, the strongest monitors lie within each other's bootstrap intervals and close to the maximum, so the OOD suite no longer separates them; Section~\ref{sec:held-out} turns to benchmarks that do.
