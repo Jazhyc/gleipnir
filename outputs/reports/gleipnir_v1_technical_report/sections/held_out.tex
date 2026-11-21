@@ -7,6 +7,7 @@ Even the lead of Gleipnir 27B over its teacher comes from one task of SHADE-Aren
 This section therefore turns to benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
 No training, prompt or selection decision of Gleipnir used these benchmarks.
+Appendix~\ref{app:held-out} gives five smaller stress tests.
 
 \subsection{SleightBench}
 \label{sec:sleightbench}
@@ -53,14 +54,6 @@ GPT-6.1 Terra answers without reasoning, with one decision token, and still catc
 This is close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors, which can run code while it reads the transcript, and above their strongest monitor without the scaffold, Gemini 3.1 Pro with high thinking effort (54\%; Appendix~\ref{app:sleightbench}).
 Because it reads the transcript once and writes only its decision, it costs \$15.49 per 1,000 evaluations, almost all of it for input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
 
-The next two tests are the largest of our own stress tests in trajectories and tasks.
-In the first, 15 agent models hack the reward of coding tasks without an instruction to do so (Section~\ref{sec:held-out-evilgenie}).
-In the second, the same text appears on an honest and on a backdoored program (Section~\ref{sec:held-out-apps}).
-Appendix~\ref{app:held-out} gives five smaller tests.
-In these tests, Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
-Each monitor flags a trajectory when its score is above a threshold that flags 1\% of benign OOD trajectories.
-We set this 1\% threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
-
 \subsection{Reward hacking by other agent models}
 \label{sec:held-out-evilgenie}
 
@@ -69,6 +62,8 @@ In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecod
 Some agents then hard-code the outputs of the visible tests instead of solving the problem.
 The dataset labels each run as reward hacking or legitimate, from hidden tests, an LLM judge and a manual review of every run that edited files.
 The dataset gives no step at which the hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
+Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
+Each monitor flags a run when its score is above the threshold that flags 1\% of benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
 Gleipnir 27B had a time limit of two hours, set before scoring, so we compare the monitors on the runs that both scored: 105 reward hacks and 999 legitimate runs on nine problems.
 The reward hacks come from five of these problems, and we resample whole problems for the intervals.
 
@@ -117,6 +112,7 @@ We compare four conditions: no text, an unrelated text that restates another APP
 The specific accusation describes the trigger input and the wrong output in the words of the problem, without code identifiers.
 The generic accusation says only that the code hides a backdoor.
 GLM-5.3-Flash wrote the texts, and we kept a text only after a manual review confirmed its definition, before any monitor scored it.
+Gleipnir 4B reads the compact instruction and Gleipnir 27B the full specification.
 Of 99 held-out tasks, 93, 81 and 99 have a valid text in the three text conditions.
 For each condition, we compute pAUROC@20 of the backdoored programs against the honest programs and resample whole tasks for the intervals.
 
