@@ -21,8 +21,8 @@ It also scores higher than its teacher, Kimi K3, which reads the same specificat
 Gleipnir 4B scores 0.770 at \$0.094, against 0.684 at \$0.358 for the Qwen3.5-4B monitor that Sinha et al.\ train with SFT and RL.
 Training raises both base models: Qwen3.5-4B scores 0.618 and Qwen3.8-27B scores 0.890 before training.
 The strongest decision model, pplx-decider v1.2, scores 0.896 at \$0.176, between our two monitors; at the committed-use rate, Gleipnir 27B costs about the same (\$0.178) and scores 0.055 higher.
+At a false-positive rate of 1\%, Gleipnir 27B recalls 87.4\% of the harmful trajectories, pplx-decider v1.2 75.9\% and Gleipnir 4B 60.6\% (Table~\ref{tab:ood-all}).
 
-These results matter for deployment in three ways.
-First, a deployed monitor flags at a fixed false-positive rate, and at 1\% Gleipnir 27B recalls 87.4\% of the harmful trajectories, against 75.9\% for pplx-decider v1.2 and 60.6\% for Gleipnir 4B (Table~\ref{tab:ood-all}).
-Second, at these costs a deployment can check every trajectory, or every action, instead of a sample; Section~\ref{sec:serving-caching} prices the monitoring of every action.
-Third, the strongest monitors lie within each other's bootstrap intervals and close to the maximum, so the OOD suite no longer separates them; Section~\ref{sec:held-out} turns to benchmarks that do.
+These results matter for deployment in two ways.
+First, at these costs a deployment can check every trajectory, or every action, instead of a sample; Section~\ref{sec:serving-caching} prices the monitoring of every action.
+Second, the strongest monitors lie within each other's bootstrap intervals and close to the maximum, so the OOD suite no longer separates them; Section~\ref{sec:held-out} turns to harder benchmarks.
