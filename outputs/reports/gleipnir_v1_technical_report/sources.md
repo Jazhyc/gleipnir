@@ -791,6 +791,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   rates plus one output token.
 - "About 17,600 tokens" rounds 17,555 (Qwen) and the API tokenizers' 15,455
   to 19,244 lie around it.
+- "About twice as long as those of the OOD suite" (2026-11-21): the OOD
+  prompts average 9,467 Qwen tokens for Gleipnir 27B (60,539,619 / 6,395)
+  and about 8,650 for Gleipnir 4B (55.3M / 6,395), so 17,555 is 1.9 to 2.0
+  times as long. Costs follow: Gleipnir 27B on demand $0.767 against $0.414
+  (1.9x), Gleipnir 4B $0.190 against $0.094 (2.0x), pplx-decider v1.2
+  $0.351 against $0.176 (2.0x).
 - Frontier (3% tolerance): on demand Gleipnir 4B → pplx-decider v1.3 → GPT-6.1
   Terra; committed use 4B* → 27B* → v1.3 → Terra (27B* costs 6% less than
   v1.3). Same frontiers on catch rate.
