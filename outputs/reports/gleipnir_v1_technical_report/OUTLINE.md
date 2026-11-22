@@ -526,6 +526,10 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   used (JF, 2026-11-22). The ordinal APPS monitors (GPT-6.1 Sol, Claude
   Sonnet 5.5, 0-100 at low reasoning effort) are dropped or kept only as a
   labelled reasoning reference.
+  Update (JF, 2026-11-22): the 6.2 API baselines are done
+  (`experiments/evilgenie_api_baselines/`, in Table 2). For 6.3, ARK's
+  existing API monitors stay as they are: the crossed-text variants are not
+  on the box, and those runs already cover every row.
   The 999 legitimate runs of 6.2 are an artefact of the 27B's cap (1,823
   labelled legitimate, 1,695 fit in context); the rerun should report the
   full set, with rates alongside counts.
