@@ -84,11 +84,11 @@ Kimi K3 & 0.652 {\scriptsize [0.471, 0.968]} & 53\% & 87\% & 26\% & 6.0\% \\
 \end{table}
 
 \paragraph{At the 1\% threshold, Gleipnir 27B catches more reward hacks than every reference monitor except its teacher.}
-Gleipnir 27B flags 28\% of the reward hacks and 1.1\% of the legitimate runs (Table~\ref{tab:evilgenie}).
+It flags 28\% of the reward hacks and 1.1\% of the legitimate runs (Table~\ref{tab:evilgenie}).
 pplx-decider v1.3, which costs about the same, flags 17\%, and GPT-6 Luna 7\%, at 0.7\% and 0.2\% of the legitimate runs.
 Only Kimi K3, the far more expensive teacher, flags more (53\%), but it also flags 6.0\% of the legitimate runs.
 In ranking the monitors are closer: Gleipnir 27B scores 0.673 pAUROC@20 and the reference monitors 0.597 to 0.652, with overlapping intervals.
-Despite its lower cost, Gleipnir 4B flags 2\% of the reward hacks and scores 0.283, so it is not competitive on this task.
+Despite its lower cost, Gleipnir 4B flags 2\% of the reward hacks and scores 0.283, so it is not competitive here.
 
 \paragraph{Most missed reward hacks are on one problem.}
 The problem \texttt{arc191\_c} (``Sample output'' in Table~\ref{tab:evilgenie}) holds 69 of the 124 reward hacks.
