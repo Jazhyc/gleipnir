@@ -949,6 +949,9 @@ Each scored all runs once, and its threshold flags at most 1\% of the 3,189 beni
 The benign OOD scores of GPT-6 Luna saturate: 8\% of them are at least 0.999, so its threshold lies within $10^{-7}$ of 1 and it flags almost nothing.
 On \texttt{arc191\_c}, Kimi K3, GPT-6 Luna and pplx-decider v1.3 reach AUROC 0.856, 0.756 and 0.847.
 
+\paragraph{AUROC.}
+On all runs, the AUROC is 0.751 {\scriptsize [0.655, 0.925]} for Gleipnir 4B and 0.905 {\scriptsize [0.758, 0.981]} for Gleipnir 27B, against 0.917 {\scriptsize [0.840, 0.993]} for Kimi K3, 0.888 {\scriptsize [0.823, 0.989]} for GPT-6 Luna and 0.889 {\scriptsize [0.786, 0.979]} for pplx-decider v1.3.
+
 \paragraph{Intervals.}
 The bootstrap draws the nine problems with replacement, 10,000 times.
 Only five of the nine problems have reward hacks, so some draws contain no reward hack; we skip these draws (5 of 10,000).
