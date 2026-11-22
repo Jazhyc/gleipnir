@@ -521,6 +521,9 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   used everywhere else; rescore with binary logits where the API allows it
   (GPT-6.1 Terra in place of Sol, which cannot disable reasoning; GPT-6 Luna),
   and keep any ordinal monitor as a labelled reasoning reference.
+  The 999 legitimate runs of 6.2 are an artefact of the 27B's cap (1,823
+  labelled legitimate, 1,695 fit in context); the rerun should report the
+  full set, with rates alongside counts.
 
 Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
