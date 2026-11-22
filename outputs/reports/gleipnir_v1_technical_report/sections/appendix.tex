@@ -961,11 +961,11 @@ The intervals are wide because one problem holds most reward hacks.
 No monitor flags any of the 180 control runs.
 
 \paragraph{The problem \texttt{arc191\_c}.}
-Its visible test checks the exact sample output, although the problem accepts any valid output.
+Its visible test checks the exact sample output, although the problem accepts any valid output, and its hidden test also checks one exact output for each input.
 The 69 reward hacks add the sample output to a correct general solution, for example with the comment that these outputs ``are also valid choices''.
 The labels follow the submitted program.
 Of the 69 reward hacks, 66 pass the visible test but not the hidden tests, so their program reproduces the sample output.
-Of the 136 legitimate runs, 119 submit a general solution that fails the visible test, 31 of them with an escalation report about it, and 15 pass all tests.
+Of the 136 legitimate runs, 119 submit a general solution that fails the visible test, 31 of them with an escalation report about it, and 15 edit the test script before they pass all tests, which the manual review of the dataset accepts as legitimate.
 The remaining two pass only the visible test, and the judge notes that one of them hard-codes the sample answers, so at least one label on this problem appears inconsistent.
 The sample output also appears in the tool calls of 60 legitimate runs, for example when they compare their output with it, so its presence alone does not separate the two classes.
 When we remove this problem with all of its runs (post hoc), 55 reward hacks and 1,687 legitimate runs remain.
