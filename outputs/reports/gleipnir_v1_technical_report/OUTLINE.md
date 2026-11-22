@@ -473,13 +473,15 @@ results, calibration.
 
 Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
 
-- **C5.1 (written, ARK; 2026-11-20).** On reward hacking by 15 agent models
-  (EvilGenie Escalation, 105 hacks and 999 legitimate runs both monitors
-  scored), Gleipnir 27B reaches 0.695 pAUROC@20 and Gleipnir 4B 0.350; at the
-  OOD 1% threshold they flag 33 and 10 of 105 hacks and both flag 8 of 999
-  legitimate runs. One problem holds 69 hacks that keep the program correct;
-  neither monitor flags them (0 and 4 of 69). Post hoc split. Main text 6.1.
-  Evidence: `experiments/adversarial_evilgenie/` and its `shared_rows_report.py`.
+- **C5.1 (written, ARK; rescored by JF 2026-11-22).** On reward hacking by
+  15 agent models (EvilGenie Escalation, all 124 hacks and 1,823 legitimate
+  runs, released serving stack, no length limit), Gleipnir 27B reaches 0.673
+  pAUROC@20 and Gleipnir 4B 0.283, against Kimi K3 0.652, GPT-6 Luna 0.610
+  and pplx-decider v1.3 0.597; at its OOD 1% threshold the 27B flags 28% of
+  hacks and 1.1% of legitimate runs. One problem holds 69 hacks that keep the
+  program correct; only Kimi K3 flags more than 3% of them. Post hoc split.
+  Main text 6.2. Evidence: `experiments/evilgenie_released_stack/`,
+  `experiments/evilgenie_api_baselines/`.
 - **C5.2 (written, ARK; 2026-11-20).** With the same module docstring on an
   honest and a backdoored APPS program, Gleipnir 4B falls from 0.690 to 0.143
   pAUROC@20 under a specific accusation, while Gleipnir 27B rises from 0.818 to
@@ -510,7 +512,8 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   are exploratory and have their own appendix section.**
   Their reference monitors and readouts differ by test; no main claim rests
   on them, and they are not rerun. The reruns below cover 6.2 and 6.3 only.
-- **TODO (JF, 2026-11-21): rerun ARK's main held-out experiments on the
+- **Done for 6.2 (2026-11-22; `experiments/evilgenie_released_stack/`).**
+  **TODO (JF, 2026-11-21): rerun ARK's main held-out experiments on the
   released serving stack** once JF has reviewed them, so they match the rest
   of the report. Those runs used BF16 Transformers on an A100/H100 without the
   `flash-linear-attention` kernels, and the EvilGenie 27B run stopped at a

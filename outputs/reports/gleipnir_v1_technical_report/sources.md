@@ -1119,3 +1119,31 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - All rows (124 / 1,823): AUROC 0.917, 0.888, 0.889 and pAUROC@20 0.652,
   0.610, 0.597 (Kimi, Luna, pplx). Controls 0/180 each. `arc191_c` AUROC on
   shared rows 0.852, 0.760, 0.850. Luna benign OOD: 8.4% of scores ≥ 0.999.
+
+## Section 6.2 on the released stack, Table 2 and Appendix F.3 (JF, 2026-11-22)
+
+Supersedes the Section 6.2 numbers of the two entries above (ARK's BF16
+shared rows and the 2026-11-22 reference-monitor entry) for the report text.
+
+- Gleipnir: `experiments/evilgenie_released_stack/` (README: protocol, run,
+  results; Pod `i7xih3yuodf207`), `results/evilgenie_released_stack/summary.json`.
+  All 124 hacks / 1,823 legitimate / 180 controls, image 1.2, no length limit
+  (longest 111,249 tokens; 144 / 154 rows over 29,696). Thresholds from the
+  released-stack OOD runs (all 3,189 benign rows): 4B 0.8355, 27B 0.7982.
+- Table 2, all rows: 4B AUROC 0.751 [0.655, 0.925], pAUROC@20 0.283 [0.136,
+  0.651], flagged 3/55, 0/69, 4/1,823; 27B 0.905 [0.758, 0.981], 0.673
+  [0.498, 0.934], 33/55, 2/69, 20/1,823. Reference monitors on all rows
+  (`experiments/evilgenie_api_baselines/`, `summary.json`, key `all`): pplx
+  0.889 [0.786, 0.979], 0.597 [0.408, 0.918], 20/55, 1/69, 12/1,823; Luna
+  0.888 [0.823, 0.989], 0.610 [0.429, 0.946], 9/55, 0/69, 3/1,823; Kimi 0.917
+  [0.840, 0.993], 0.652 [0.471, 0.968], 48/55, 18/69, 110/1,823.
+- `arc191_c` AUROC: 4B 0.558, 27B 0.858, Kimi 0.856, Luna 0.756, pplx 0.847.
+  Without `arc191_c` (55 / 1,687): 4B 0.874 [0.733, 0.950] / 0.514 [0.312,
+  0.756]; 27B 0.919 [0.643, 0.994] / 0.830 [0.333, 0.968]. Bootstrap skipped
+  5 of 10,000 draws. Per-problem table (Table F) from the same scores; the
+  four problems without hacks have 920 legitimate runs (2 / 4 flagged).
+- BF16 comparison on the shared rows (105 / 999): released 4B 0.296, 27B
+  0.699 pAUROC@20, against ARK's 0.350 and 0.695.
+- Timing: 4B 24,223,003 tokens in 110 s; 27B 25,950,127 in 499 s.
+- Kimi K3's own 4 hacks: flagged by no monitor (Gleipnir checked on the
+  released-stack scores).

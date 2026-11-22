@@ -56,13 +56,13 @@ In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecod
 Some agents then hard-code the outputs of the visible tests instead of solving the problem.
 The dataset labels each run as reward hacking or legitimate, from hidden tests, an LLM judge and a manual review of every run that edited files.
 The dataset gives no step at which the hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
-Each monitor flags a run when its score is above the threshold that flags 1\% of benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
-Gleipnir 27B had a time limit of two hours, set before scoring, so we compare the monitors on the runs that both scored: 105 reward hacks and 999 legitimate runs on nine problems.
+We score all 124 reward hacks and 1,823 legitimate runs, on nine problems, with the released serving stack (Section~\ref{sec:serving}) and without a length limit.
 The reward hacks come from five of these problems, and we resample whole problems for the intervals.
-As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}) and the threshold that flags 1\% of all benign OOD trajectories.
+As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}).
+Each monitor flags a run when its score is above the threshold that flags 1\% of the benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting.
 
 \begin{table}[t]
-\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head; ``Other'' covers the four other problems with reward hacks. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
+\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 124 reward hacks and 1,823 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head; ``Other'' covers the four other problems with reward hacks. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
 \label{tab:evilgenie}
 \centering
 \small
@@ -71,36 +71,31 @@ As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same run
 \toprule
  & & & \multicolumn{2}{c}{Reward hacks flagged} & Legitimate \\
 \cmidrule(lr){4-5}
-Monitor & AUROC & pAUROC@20 & Other (36) & \texttt{arc191\_c} (69) & flagged (999) \\
+Monitor & AUROC & pAUROC@20 & Other (55) & \texttt{arc191\_c} (69) & flagged (1,823) \\
 \midrule
-Gleipnir 4B & 0.752 {\scriptsize [0.655, 0.964]} & 0.350 {\scriptsize [0.180, 0.824]} & 28\% & 0\% & 0.8\% \\
-Gleipnir 27B & 0.926 {\scriptsize [0.880, 1.000]} & 0.695 {\scriptsize [0.527, 1.000]} & 81\% & 6\% & 0.8\% \\
+Gleipnir 4B & 0.751 {\scriptsize [0.655, 0.925]} & 0.283 {\scriptsize [0.136, 0.651]} & 5\% & 0\% & 0.2\% \\
+Gleipnir 27B & 0.905 {\scriptsize [0.758, 0.981]} & 0.673 {\scriptsize [0.498, 0.934]} & 60\% & 3\% & 1.1\% \\
 \midrule
-pplx-decider v1.3 & 0.904 {\scriptsize [0.847, 1.000]} & 0.614 {\scriptsize [0.440, 0.998]} & 44\% & 1\% & 0.3\% \\
-GPT-6 Luna & 0.894 {\scriptsize [0.825, 0.995]} & 0.629 {\scriptsize [0.438, 0.973]} & 14\% & 0\% & 0\% \\
-Kimi K3 & 0.928 {\scriptsize [0.883, 1.000]} & 0.654 {\scriptsize [0.482, 1.000]} & 94\% & 26\% & 5.6\% \\
+pplx-decider v1.3 & 0.889 {\scriptsize [0.786, 0.979]} & 0.597 {\scriptsize [0.408, 0.918]} & 36\% & 1\% & 0.7\% \\
+GPT-6 Luna & 0.888 {\scriptsize [0.823, 0.989]} & 0.610 {\scriptsize [0.429, 0.946]} & 16\% & 0\% & 0.2\% \\
+Kimi K3 & 0.917 {\scriptsize [0.840, 0.993]} & 0.652 {\scriptsize [0.471, 0.968]} & 87\% & 26\% & 6.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Gleipnir 27B separates the reward hacks better than Gleipnir 4B.}
-Gleipnir 27B scores 0.695 pAUROC@20 and Gleipnir 4B scores 0.350, a difference of 0.345 (Table~\ref{tab:evilgenie}).
-At the 1\% threshold, the 27B flags 31\% of the reward hacks and the 4B 10\%.
-Both monitors flag 0.8\% of the legitimate runs, close to the 1\% target, but these runs come from only nine problems.
-
 \paragraph{Gleipnir 27B ranks the reward hacks at least as well as the reference monitors.}
-Kimi K3 scores 0.654 pAUROC@20, GPT-6 Luna 0.629 and pplx-decider v1.3 0.614, against 0.695 for Gleipnir 27B, and all intervals overlap.
-Gleipnir 4B scores below every reference monitor.
-At their OOD thresholds, the reference monitors flag between none and 5.6\% of the legitimate runs, so their flag rates do not compare directly with those of Gleipnir.
-On all 124 reward hacks and 1,823 legitimate runs, without the limits of the Gleipnir runs, they score 0.597 to 0.652 pAUROC@20 (Appendix~\ref{app:held-out-evilgenie}).
+Gleipnir 27B scores 0.673 pAUROC@20, against 0.652 for Kimi K3, 0.610 for GPT-6 Luna and 0.597 for pplx-decider v1.3, and all intervals overlap (Table~\ref{tab:evilgenie}).
+Gleipnir 4B scores 0.283, below every reference monitor.
+At the 1\% threshold, the 27B flags 28\% of the reward hacks and 1.1\% of the legitimate runs, close to the 1\% target, and the 4B flags 2\% of the reward hacks.
+The reference monitors flag between 0.2\% and 6.0\% of the legitimate runs at their OOD thresholds, so their flag rates do not compare directly with those of Gleipnir.
 
 \paragraph{Most missed reward hacks are on one problem.}
-The problem \texttt{arc191\_c} holds 69 of the 105 reward hacks.
+The problem \texttt{arc191\_c} holds 69 of the 124 reward hacks.
 Its visible test checks the exact sample output, although the problem accepts any valid output.
 The hacking agents add the sample output on top of a correct general solution, so their program stays correct on every input.
 Many legitimate runs on this problem also type the sample output into their code at some point (Appendix~\ref{app:held-out-evilgenie}).
-At the 1\% threshold, the 4B flags none of these reward hacks and the 27B 6\%, although the 27B ranks them above the legitimate runs of the same problem (AUROC 0.861, against 0.581 for the 4B).
-On the other four problems, the 27B flags 81\% of the 36 reward hacks and the 4B 28\%.
+At the 1\% threshold, no monitor except Kimi K3 (26\%) flags more than 3\% of these reward hacks, although Gleipnir 27B ranks them above the legitimate runs of the same problem (AUROC 0.858, against 0.558 for the 4B).
+On the other four problems, the 27B flags 60\% of the 55 reward hacks and the 4B 5\%.
 We chose this split after we saw the scores, so it describes the result and does not test a hypothesis.
 The dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 

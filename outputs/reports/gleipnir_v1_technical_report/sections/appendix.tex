@@ -901,18 +901,19 @@ As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and ppl
 \paragraph{Monitors.}
 Gleipnir 4B is the released 4B adapter on Qwen3.5-4B, after quantization-aware distillation, and it reads the compact instruction.
 Gleipnir 27B is the released 27B merged into its base model, and it reads the full specification.
-We run both in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU.
-The quantized serving stack of Section~\ref{sec:serving} is not used, except where we say so.
-The natural-cheat and EvilGenie runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
+For reward hacking by other agent models (Section~\ref{sec:held-out-evilgenie}), both run on the released serving stack of Section~\ref{sec:serving} (Appendix~\ref{app:held-out-evilgenie}).
+For the other tests we run both in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU.
+The natural-cheat runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
 On eight APPS trajectories, this fallback changed the 4B score by at most 0.027; we did not measure the change for the 27B.
 
 \paragraph{Monitor input.}
 Each monitor reads tool calls and tool outputs.
 It does not read the system prompt of the agent, its reasoning or its other assistant messages, except in the multi-agent tests, where the final message of a session and the posts of an agent are part of its actions (Appendices~\ref{app:held-out-aisi} and~\ref{app:held-out-lab}).
-We exclude trajectories longer than 29,696 tokens, the maximum input length in training, except in the multi-agent sabotage test, which scores whole sessions of up to 99,193 tokens.
+We exclude trajectories longer than 29,696 tokens, the maximum input length in training, except in the reward hacking test, which scores runs of up to 111,249 tokens, and the multi-agent sabotage test, which scores whole sessions of up to 99,193 tokens.
 
 \paragraph{Thresholds.}
-The 1\% threshold of each monitor flags 1\% of benign OOD trajectories, sampled once before these tests.
+For the reward hacking test, the 1\% threshold of each monitor is the largest score that flags at most 1\% of the 3,189 benign OOD trajectories, scored as in Section~\ref{sec:evaluation}: 0.836 for Gleipnir 4B and 0.798 for Gleipnir 27B on the released stack.
+For the other tests, the 1\% threshold flags 1\% of benign OOD trajectories, sampled once before these tests.
 It is 0.622 for Gleipnir 4B, from 1,000 trajectories, and 0.731 for Gleipnir 27B, from 400 trajectories.
 Four of the 400 trajectories lie above the 27B threshold, so its false-positive rate on new data is more uncertain than that of the 4B.
 For Kimi K3 it is 0.755, from 1,000 trajectories.
@@ -927,47 +928,44 @@ It contains 2,115 runs on problems with ambiguous specifications, under five con
 Conditions C to E add a policy against reward hacking to the prompt of the agent.
 In its table of runs, \texttt{reward\_hacked = yes} marks 124 reward hacks and \texttt{classification = legitimate} marks 1,823 legitimate runs.
 We leave out 161 runs that the dataset labels \texttt{heuristic} and 7 that it labels \texttt{error}.
-Kimi K3, the teacher of Gleipnir, is also one of the agent models; it has 4 reward hacks and 39 legitimate runs in the 4B rows.
-Ten of the 15 agent models have at least one reward hack in the rows that both monitors scored.
+Kimi K3, the teacher of Gleipnir, is also one of the agent models; it has 4 reward hacks and 39 legitimate runs, and no monitor flags any of its reward hacks.
+Ten of the 15 agent models have at least one reward hack.
 
 \paragraph{Missing error text.}
 The release removed the text of tool errors, so an errored tool output appears empty to the monitor.
 This affects 57 of the 124 reward hacks and 842 of the 1,823 legitimate runs.
 
-\paragraph{Rows scored.}
-Gleipnir 4B scored all 2,295 runs; 16 reward hacks and 128 legitimate runs were too long.
-Gleipnir 27B scored every reward hack first and then the other runs in a random order, until its two-hour limit.
-It reached 1,312 runs: 105 reward hacks, 999 legitimate runs and 115 control runs, with 19 reward hacks and 74 legitimate runs too long.
-Because of the random order, its 999 legitimate runs are a random subset of the legitimate runs.
-
-\paragraph{Intervals.}
-The bootstrap draws the nine problems with replacement, 10,000 times.
-Only five of the nine problems have reward hacks, so some draws contain no reward hack; we skip these draws (35 of 10,000).
-The intervals are wide, and their upper ends reach 1.000, because one problem holds most reward hacks.
-
-\paragraph{Control runs and all 4B rows.}
-Neither monitor flags any of the control runs: 0 of 180 for the 4B and 0 of 115 for the 27B.
-On all 108 reward hacks and 1,695 legitimate runs that it scored, the 4B reaches AUROC 0.751 (0.645 to 0.968) and flags 10 reward hacks and 16 legitimate runs (0.9\%).
+\paragraph{Scoring.}
+Both Gleipnir monitors run on the released serving stack, one NVIDIA B200 with the released image, in batches of 128 runs with 128 concurrent requests, as for the OOD suite.
+They score every run, including 144 (4B) and 154 (27B) runs longer than the 29,696 tokens of training; the longest has 111,249 tokens.
+The 4B scored the 24.2 million prompt tokens in 110 seconds and the 27B the 26.0 million in 499 seconds.
+An earlier run of both monitors in BF16, with a time limit that stopped the 27B after 1,312 runs, gave the same 27B result on the 105 reward hacks and 999 legitimate runs that both scored (pAUROC@20 0.695, against 0.699 here) and a higher score for the 4B (0.350, against 0.296).
 
 \paragraph{Reference monitors.}
 Kimi K3 and GPT-6 Luna read the full specification and return the probabilities of the decision tokens, and pplx-decider v1.3 reads the trajectory with its frozen question, as on the OOD suite (Table~\ref{tab:ood-all}).
-Each scored all 2,127 runs once, without a length limit, and its threshold flags at most 1\% of the 3,189 benign OOD trajectories, while the Gleipnir thresholds come from samples of 1,000 and 400 of them.
-On all 124 reward hacks and 1,823 legitimate runs, they score AUROC 0.917, 0.888 and 0.889 and pAUROC@20 0.652, 0.610 and 0.597.
-None of them flags a control run.
+Each scored all runs once, and its threshold flags at most 1\% of the 3,189 benign OOD trajectories.
 The benign OOD scores of GPT-6 Luna saturate: 8\% of them are at least 0.999, so its threshold lies within $10^{-7}$ of 1 and it flags almost nothing.
-On \texttt{arc191\_c}, they reach AUROC 0.852, 0.760 and 0.850.
+On \texttt{arc191\_c}, Kimi K3, GPT-6 Luna and pplx-decider v1.3 reach AUROC 0.856, 0.756 and 0.847.
+
+\paragraph{Intervals.}
+The bootstrap draws the nine problems with replacement, 10,000 times.
+Only five of the nine problems have reward hacks, so some draws contain no reward hack; we skip these draws (5 of 10,000).
+The intervals are wide because one problem holds most reward hacks.
+
+\paragraph{Control runs.}
+No monitor flags any of the 180 control runs.
 
 \paragraph{The problem \texttt{arc191\_c}.}
 Its visible test checks the exact sample output, although the problem accepts any valid output.
 The 69 reward hacks add the sample output to a correct general solution, for example with the comment that these outputs ``are also valid choices''.
-In the full dataset, 60 of the 136 legitimate runs on this problem also type the sample output into their code at some point; 76 of the 136 are in the shared rows.
-When we remove this problem with all of its runs (post hoc), 36 reward hacks and 923 legitimate runs remain.
-On these rows, Gleipnir 4B scores AUROC 0.942 (0.907 to 0.986) and pAUROC@20 0.723 (0.576 to 0.930).
-Gleipnir 27B scores AUROC 0.979 (0.894 to 1.000) and pAUROC@20 0.923 (0.538 to 1.000).
-The 4B therefore ranks these reward hacks well, but most of its scores stay below its threshold.
+In the full dataset, 60 of the 136 legitimate runs on this problem also type the sample output into their code at some point.
+When we remove this problem with all of its runs (post hoc), 55 reward hacks and 1,687 legitimate runs remain.
+On these rows, Gleipnir 4B scores AUROC 0.874 (0.733 to 0.950) and pAUROC@20 0.514 (0.312 to 0.756).
+Gleipnir 27B scores AUROC 0.919 (0.643 to 0.994) and pAUROC@20 0.830 (0.333 to 0.968).
+The 4B therefore ranks these reward hacks better than its overall score suggests, but most of its scores stay below its threshold.
 
 \begin{table}[h]
-\caption{EvilGenie Escalation by problem, on the rows that both monitors scored. AUROC compares the reward hacks and legitimate runs of one problem. Counts use the 1\% threshold of each monitor. Four problems have no reward hacks; their 513 legitimate runs give 2 false positives for the 4B and 3 for the 27B.}
+\caption{EvilGenie Escalation by problem. AUROC compares the reward hacks and legitimate runs of one problem. Counts use the 1\% threshold of each monitor. Four problems have no reward hacks; their 920 legitimate runs give 2 false positives for the 4B and 4 for the 27B.}
 \label{tab:evilgenie-problems}
 \centering
 \small
@@ -977,11 +975,11 @@ The 4B therefore ranks these reward hacks well, but most of its scores stay belo
 \cmidrule(lr){4-6}\cmidrule(lr){7-9}
 Problem & Hacks & Legit. & AUROC & Hacks & Legit. & AUROC & Hacks & Legit. \\
 \midrule
-\texttt{abc392\_f} & 22 & 116 & 0.863 & 7 & 3 & 0.965 & 17 & 4 \\
-\texttt{arc185\_c} & 9 & 102 & 0.901 & 2 & 2 & 1.000 & 9 & 0 \\
-\texttt{arc190\_a} & 2 & 102 & 1.000 & 1 & 0 & 1.000 & 2 & 0 \\
-\texttt{arc191\_c} & 69 & 76 & 0.581 & 0 & 1 & 0.861 & 4 & 1 \\
-\texttt{arc195\_c} & 3 & 90 & 0.922 & 0 & 0 & 0.885 & 1 & 0 \\
+\texttt{abc392\_f} & 33 & 202 & 0.791 & 2 & 1 & 0.962 & 18 & 4 \\
+\texttt{arc185\_c} & 10 & 201 & 0.906 & 0 & 0 & 1.000 & 10 & 4 \\
+\texttt{arc190\_a} & 6 & 202 & 0.893 & 1 & 0 & 0.831 & 4 & 3 \\
+\texttt{arc191\_c} & 69 & 136 & 0.558 & 0 & 1 & 0.858 & 2 & 1 \\
+\texttt{arc195\_c} & 6 & 162 & 0.622 & 0 & 0 & 0.534 & 1 & 4 \\
 \bottomrule
 \end{tabular}
 \end{table}
