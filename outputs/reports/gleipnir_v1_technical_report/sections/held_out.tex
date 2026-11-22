@@ -53,7 +53,7 @@ Closing this gap, with stronger monitors behind the cheap ones or with training 
 
 Coding agents can exploit flaws in how their work is checked, for example by special-casing the tests instead of solving the task.
 A monitor that recognizes such reward hacks could judge agent runs, both in deployment and in a reinforcement learning pipeline, where its low cost matters because every rollout must be scored.
-In training, the monitor's score should not be optimized hard, because agents trained against a chain-of-thought monitor learn to hide their reward hacking~\citep{baker2025monitoring}.
+Strong optimization pressure against a monitor can, however, teach agents to obfuscate their reward hacking~\citep{baker2025monitoring}.
 This section tests whether Gleipnir recognizes reward hacks by other agent models.
 
 We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}.
