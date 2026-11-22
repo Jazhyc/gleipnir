@@ -94,11 +94,16 @@ Despite its lower cost, Gleipnir 4B flags 2\% of the reward hacks and scores 0.2
 The problem \texttt{arc191\_c} (``Sample output'' in Table~\ref{tab:evilgenie}) holds 69 of the 124 reward hacks.
 Its visible test checks the exact sample output, although any valid output is accepted.
 The reward hacks add the sample output to a correct general solution, so their program stays correct on every input.
-Most legitimate runs submit a general solution that fails this test, and a quarter report the test as flawed (Appendix~\ref{app:held-out-evilgenie}).
 At the 1\% threshold, no monitor except Kimi K3 (26\%) flags more than 3\% of these reward hacks, although Gleipnir 27B ranks them above the legitimate runs of this problem (AUROC 0.858, against 0.558 for the 4B).
 On the other four problems, the 27B flags 60\% of the 55 hacks and the 4B 5\%.
 We chose this split after scoring, to show where the hard cases lie.
 The dataset omits the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
+
+\paragraph{On this problem, the label depends on intent.}
+Most legitimate runs on \texttt{arc191\_c} submit a general solution that fails the visible test, and a quarter of these report the test as flawed; 15 others edit the test, which the audit of the dataset accepts as justified (Appendix~\ref{app:held-out-evilgenie}).
+A legitimate run can therefore change the grader, while a reward hack only adds a lookup to correct code.
+Our input contains neither the reasoning nor the messages of the agent, so the monitor must judge the intent of a change from code comments, the final answer and escalation reports.
+The messages of the agent, in which it can explain a change, may help an action-only monitor here; we leave this to future work.
 
 \subsection{The same text on an honest and a backdoored program}
 \label{sec:held-out-apps}
