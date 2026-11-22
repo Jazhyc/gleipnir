@@ -67,27 +67,28 @@ Each monitor flags a run when its score is above the threshold that flags 1\% of
 \label{tab:evilgenie}
 \centering
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccccc}
 \toprule
- & & \multicolumn{2}{c}{Reward hacks flagged} & Legitimate \\
-\cmidrule(lr){3-4}
-Monitor & pAUROC@20 & Other (55) & Sample output (69) & flagged (1,823) \\
+ & & \multicolumn{3}{c}{Reward hacks flagged} & Legitimate \\
+\cmidrule(lr){3-5}
+Monitor & pAUROC@20 & All (124) & Other (55) & Sample output (69) & flagged (1,823) \\
 \midrule
-Gleipnir 4B & 0.283 {\scriptsize [0.136, 0.651]} & 5\% & 0\% & 0.2\% \\
-Gleipnir 27B & 0.673 {\scriptsize [0.498, 0.934]} & 60\% & 3\% & 1.1\% \\
+Gleipnir 4B & 0.283 {\scriptsize [0.136, 0.651]} & 2\% & 5\% & 0\% & 0.2\% \\
+Gleipnir 27B & 0.673 {\scriptsize [0.498, 0.934]} & 28\% & 60\% & 3\% & 1.1\% \\
 \midrule
-pplx-decider v1.3 & 0.597 {\scriptsize [0.408, 0.918]} & 36\% & 1\% & 0.7\% \\
-GPT-6 Luna & 0.610 {\scriptsize [0.429, 0.946]} & 16\% & 0\% & 0.2\% \\
-Kimi K3 & 0.652 {\scriptsize [0.471, 0.968]} & 87\% & 26\% & 6.0\% \\
+pplx-decider v1.3 & 0.597 {\scriptsize [0.408, 0.918]} & 17\% & 36\% & 1\% & 0.7\% \\
+GPT-6 Luna & 0.610 {\scriptsize [0.429, 0.946]} & 7\% & 16\% & 0\% & 0.2\% \\
+Kimi K3 & 0.652 {\scriptsize [0.471, 0.968]} & 53\% & 87\% & 26\% & 6.0\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\paragraph{Gleipnir 27B ranks the reward hacks at least as well as the reference monitors.}
-Gleipnir 27B scores 0.673 pAUROC@20, against 0.652 for Kimi K3, 0.610 for GPT-6 Luna and 0.597 for pplx-decider v1.3, and all intervals overlap (Table~\ref{tab:evilgenie}).
-Gleipnir 4B scores 0.283, below every reference monitor.
-At the 1\% threshold, the 27B flags 28\% of the reward hacks and 1.1\% of the legitimate runs, close to the 1\% target, and the 4B flags 2\% of the reward hacks.
-The reference monitors flag between 0.2\% and 6.0\% of the legitimate runs at their OOD thresholds, so their flag rates do not compare directly with those of Gleipnir.
+\paragraph{At the 1\% threshold, Gleipnir 27B catches more reward hacks than monitors of similar cost.}
+Gleipnir 27B flags 28\% of the reward hacks and 1.1\% of the legitimate runs (Table~\ref{tab:evilgenie}).
+pplx-decider v1.3, which costs about the same per 1,000 evaluations on the OOD suite (\$0.176, against \$0.178 at the committed rate), flags 17\%, and GPT-6 Luna (\$0.835) flags 7\%, at 0.7\% and 0.2\% of the legitimate runs.
+Kimi K3 flags 53\% of the reward hacks, but also 6.0\% of the legitimate runs, and costs 61 times as much as Gleipnir 27B on demand and 141 times as much with committed use.
+In ranking the monitors are closer: Gleipnir 27B scores 0.673 pAUROC@20 and the reference monitors 0.597 to 0.652, with overlapping intervals.
+Gleipnir 4B, the cheapest monitor (\$0.040 with committed use), flags 2\% of the reward hacks and scores 0.283, so it is not competitive on this task.
 
 \paragraph{Most missed reward hacks are on one problem.}
 The problem \texttt{arc191\_c} (``Sample output'' in Table~\ref{tab:evilgenie}) holds 69 of the 124 reward hacks.

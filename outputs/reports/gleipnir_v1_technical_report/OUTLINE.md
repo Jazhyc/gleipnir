@@ -478,7 +478,10 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   runs, released serving stack, no length limit), Gleipnir 27B reaches 0.673
   pAUROC@20 and Gleipnir 4B 0.283, against Kimi K3 0.652, GPT-6 Luna 0.610
   and pplx-decider v1.3 0.597; at its OOD 1% threshold the 27B flags 28% of
-  hacks and 1.1% of legitimate runs. One problem holds 69 hacks that keep the
+  hacks and 1.1% of legitimate runs, against 17% (pplx-decider v1.3, same
+  cost), 7% (GPT-6 Luna) and 53% at 6.0% (Kimi K3, 61-141x the cost); the
+  4B flags 2% and is not competitive. Recall-led framing (JF 2026-11-22).
+  One problem holds 69 hacks that keep the
   program correct; only Kimi K3 flags more than 3% of them. Post hoc split.
   Main text 6.2. Evidence: `experiments/evilgenie_released_stack/`,
   `experiments/evilgenie_api_baselines/`.
