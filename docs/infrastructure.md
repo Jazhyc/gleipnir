@@ -1131,6 +1131,14 @@ kernels of the first Pod were gone with its disk, so the first engine start
 took 581 s. Terminated at 22:49 UTC (`podTerminate`; `myself.pods` empty)
 after verified collection of 35 files; about $3.20. No Pod remains.
 
+For the [EvilGenie rescoring on the released stack](../experiments/evilgenie_released_stack/README.md)
+(user authorization 2026-11-22, one B200, terminated after collection):
+`i7xih3yuodf207` (`gleipnir-evilgenie-rerun`, EU-RO-1, image `1.2`, machine
+`2mj1yzztlz17`, B200 `GPU-e5eb9962…`, EPYC 9555, driver 595.112.07, 250 GB
+container disk, no volume). Created at 02:30 UTC, reachable at 02:35, run
+02:37–02:50, terminated at 02:51 (`podTerminate`; `myself.pods` empty) after
+verified collection of 11 files; about $2.80. No Pod remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

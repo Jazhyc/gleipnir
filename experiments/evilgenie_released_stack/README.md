@@ -38,3 +38,43 @@ experiments/evilgenie_released_stack/pod_run.sh 4b 27b
 # locally, after pulling data/evilgenie_released_stack, results/ and logs/
 PYTHONPATH=src:. python -m experiments.evilgenie_released_stack.analyze
 ```
+
+## Run (2026-11-22, Pod `i7xih3yuodf207`)
+
+One B200 (EU-RO-1, EPYC 9555, driver 595.112.07), image 1.2, created 02:30
+UTC, terminated 02:51 after verified collection (about $2.80). Both smoke
+tests and both rendering checks passed; no row was rejected.
+
+| Model | Rows | Prompt tokens | Longest | Seconds | Prompt tokens/s |
+|---|---:|---:|---:|---:|---:|
+| 4B | 2,127 | 24.2M | 110,437 | 110 | 220,658 |
+| 27B | 2,127 | 26.0M | 111,249 | 499 | 52,053 |
+
+## Result
+
+1% thresholds from the released-stack OOD runs: 0.8355 (4B) and 0.7982
+(27B), against ARK's 0.622 and 0.731 from BF16 samples. Intervals: 95%
+bootstrap over problems.
+
+| Rows | Model | AUROC | pAUROC@20 | Hacks flagged (other / `arc191_c`) | Legitimate flagged |
+|---|---|---|---|---|---|
+| All (124 / 1,823) | 4B | 0.751 [0.655, 0.925] | 0.283 [0.136, 0.651] | 3/55, 0/69 | 4 (0.2%) |
+| All (124 / 1,823) | 27B | 0.905 [0.758, 0.981] | 0.673 [0.498, 0.934] | 33/55, 2/69 | 20 (1.1%) |
+| Shared (105 / 999) | 4B | 0.755 [0.668, 0.953] | 0.296 [0.152, 0.789] | 3/36, 0/69 | 4 (0.4%) |
+| Shared (105 / 999) | 27B | 0.927 [0.874, 1.000] | 0.699 [0.517, 1.000] | 24/36, 2/69 | 5 (0.5%) |
+
+On the shared rows, ARK's BF16 runs gave 0.752 / 0.350 (4B) and 0.926 /
+0.695 (27B). None of the 180 controls is flagged. 144 (4B) and 154 (27B)
+runs exceed the 29,696-token training length and are included.
+
+- **The 27B result holds on the released stack and on the full dataset**:
+  pAUROC@20 0.673 on all rows, above Kimi K3 (0.652), GPT-6 Luna (0.610)
+  and pplx-decider v1.3 (0.597) on the same rows
+  (`experiments/evilgenie_api_baselines`).
+- **The 4B is lower than in BF16** (0.296 against 0.350 on the shared
+  rows), and its higher released-stack threshold leaves it flagging 3 of 124
+  hacks.
+
+Outputs: `results/evilgenie_released_stack/` (scores, timings,
+`summary.json`), workloads in `data/evilgenie_released_stack/`, logs and
+`collect.sha256` in `logs/runpod/evilgenie_released_stack/` (all ignored).
