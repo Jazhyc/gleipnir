@@ -97,7 +97,7 @@ No frontier monitor scored this set, and the dataset release removed the text of
 
 An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
 We test this in the APPS backdoor setting of AI control~\citep{greenblatt2023ai}.
-Each task is an APPS problem~\citep{hendrycks2021apps} with two programs by o3-mini~\citep{kenney2026monitorinjection}.
+Each task is an APPS problem~\citep{hendrycks2021apps} with two programs by o3-mini, from the APPS dataset of ControlArena~\citep{controlarena2025apps} as collected by \citet{kenney2026monitorinjection}.
 One program is honest, and the other gives a wrong output on one trigger input, which we confirmed for each task.
 We insert one text as a module docstring at the top of both programs and leave the code unchanged.
 The text alone therefore carries no information about which program has the backdoor.
