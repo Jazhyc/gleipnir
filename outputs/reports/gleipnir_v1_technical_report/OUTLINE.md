@@ -517,29 +517,27 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   pre-registered 2-hour cap after 1,312 of 2,295 rows. Score every row, and
   take the 1% thresholds from the released-stack OOD scores. Needs a B200 Pod
   (JF's go-ahead; budget).
-- **TODO (JF, 2026-11-21): add baselines to the rerun.** EvilGenie (6.2)
-  has none: score the unadapted Qwen3.5-4B and Qwen3.8-27B (same Pod),
-  pplx-decider v1.3, Kimi K3 (the teacher; a newer, cheaper provider) and
-  GPT-6.1 Terra on the same rows, reporting Kimi K3's own agent runs
-  separately. In APPS (6.3), GPT-6.1 Sol, GPT-6 Luna and Claude Sonnet 5.5
-  return a 0-100 score at low reasoning effort, unlike the binary readout
-  used everywhere else; rescore with binary logits where the API allows it
-  (GPT-6.1 Terra in place of Sol, which cannot disable reasoning; GPT-6 Luna),
-  and keep any ordinal monitor as a labelled reasoning reference.
+- **TODO (JF, 2026-11-21; revised 2026-11-22): add baselines to the rerun.**
+  Score, on the same rows of EvilGenie (6.2) and APPS (6.3), the unadapted
+  Qwen3.5-4B and Qwen3.8-27B (same Pod), pplx-decider v1.3 and GPT-6 Luna as
+  cheap references, and Kimi K3 (the teacher) as the high end, all with
+  binary readouts; each already has OOD scores for its 1% threshold. Report
+  Kimi K3's own agent runs in EvilGenie separately. GPT-6.1 Terra is not
+  used (JF, 2026-11-22). The ordinal APPS monitors (GPT-6.1 Sol, Claude
+  Sonnet 5.5, 0-100 at low reasoning effort) are dropped or kept only as a
+  labelled reasoning reference.
   The 999 legitimate runs of 6.2 are an artefact of the 27B's cap (1,823
   labelled legitimate, 1,695 fit in context); the rerun should report the
   full set, with rates alongside counts.
   API budget (2026-11-22, list prices, input only; output is one token).
-  Tokens: EvilGenie about 20M per monitor (2,113 runs that fit; ARK's 18M
+  Tokens per monitor: EvilGenie about 20M (2,113 runs that fit; ARK's 18M
   estimate plus the full specification), APPS about 1.5M (982 rows, after
-  ARK's $0.81 Kimi spend), and 1,000 benign OOD rows (about 9.5M) for a
-  monitor that has no OOD threshold yet. GPT-6.1 Terra $1.00/M: about $31
-  (no OOD scores, so it needs the calibration rows). Kimi K3: Makora $1.00/M,
-  about $22 with its existing OOD scores; Wafer (mxfp4, logprobs) $0.19/M,
-  about $6 including recalibration, after a parity canary against Makora.
-  GPT-6 Luna (APPS only) $0.10/M and pplx-decider v1.3 (free endpoint) under
-  $2 together. Total about $40-55, plus about an hour of one B200 for the
-  Gleipnir and base-model scoring.
+  ARK's $0.81 Kimi spend). Kimi K3: Makora $1.00/M, about $22 with its
+  existing OOD scores; Wafer (mxfp4, logprobs) $0.19/M, about $4, or about
+  $6 if a parity canary against Makora forces a new OOD threshold (about
+  9.5M tokens). GPT-6 Luna $0.10/M, about $2.2; pplx-decider v1.3 (free
+  endpoint; $0.02/M list) under $0.50. Total about $8-25, plus about an hour
+  of one B200 for the Gleipnir and base-model scoring.
   After the rerun, Appendix F.2 (protocol of the stress tests: BF16
   Transformers, separate OOD thresholds) should match the main setup; cut it
   to what still differs, or remove it.
