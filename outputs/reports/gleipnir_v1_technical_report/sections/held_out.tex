@@ -94,11 +94,11 @@ Despite its lower cost, Gleipnir 4B flags 2\% of the reward hacks and scores 0.2
 The problem \texttt{arc191\_c} (``Sample output'' in Table~\ref{tab:evilgenie}) holds 69 of the 124 reward hacks.
 Its visible test checks the exact sample output, although the problem accepts any valid output.
 The hacking agents add the sample output on top of a correct general solution, so their program stays correct on every input.
-Many legitimate runs on this problem also type the sample output into their code at some point (Appendix~\ref{app:held-out-evilgenie}).
-At the 1\% threshold, no monitor except Kimi K3 (26\%) flags more than 3\% of these reward hacks, although Gleipnir 27B ranks them above the legitimate runs of the same problem (AUROC 0.858, against 0.558 for the 4B).
-On the other four problems, the 27B flags 60\% of the 55 reward hacks and the 4B 5\%.
-We chose this split after we saw the scores, so it describes the result and does not test a hypothesis.
-The dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
+Many legitimate runs on this problem also type the sample output into their code (Appendix~\ref{app:held-out-evilgenie}).
+At the 1\% threshold, no monitor except Kimi K3 (26\%) flags more than 3\% of these reward hacks, although Gleipnir 27B ranks them above the legitimate runs of this problem (AUROC 0.858, against 0.558 for the 4B).
+On the other four problems, the 27B flags 60\% of the 55 hacks and the 4B 5\%.
+We chose this split after scoring, to show where the hard cases lie.
+The dataset omits the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 
 \subsection{The same text on an honest and a backdoored program}
 \label{sec:held-out-apps}
