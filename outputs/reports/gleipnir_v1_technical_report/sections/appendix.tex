@@ -822,9 +822,10 @@ For the 27B this fused kernel gave no gain in throughput, so the 27B applies the
 \section{Held-out and adversarial evaluation: details}
 \label{app:held-out}
 
-This appendix gives the details of Section~\ref{sec:held-out} and five smaller tests.
+This appendix gives the details of Section~\ref{sec:held-out} and four smaller tests.
 Each test has a protocol, frozen before scoring, in the directory \texttt{experiments/adversarial\_<name>/} of the Gleipnir repository.
 We mark every analysis that we chose after we saw the scores as post hoc.
+The four smaller tests (Appendices~\ref{app:held-out-natural} to~\ref{app:held-out-lab}) are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
 
 \subsection{Common protocol}
 \label{app:held-out-protocol}
