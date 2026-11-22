@@ -61,7 +61,7 @@ Gleipnir 27B had a time limit of two hours, set before scoring, so we compare th
 The reward hacks come from five of these problems, and we resample whole problems for the intervals.
 
 \begin{table}[t]
-\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. Counts use the 1\% threshold of each monitor. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
+\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
 \label{tab:evilgenie}
 \centering
 \small
@@ -69,26 +69,26 @@ The reward hacks come from five of these problems, and we resample whole problem
 \toprule
  & & & \multicolumn{2}{c}{Reward hacks flagged} & Legitimate \\
 \cmidrule(lr){4-5}
-Monitor & AUROC & pAUROC@20 & Other problems & \texttt{arc191\_c} & flagged \\
+Monitor & AUROC & pAUROC@20 & Other problems (36) & \texttt{arc191\_c} (69) & flagged (999) \\
 \midrule
-Gleipnir 4B & 0.752 {\scriptsize [0.655, 0.964]} & 0.350 {\scriptsize [0.180, 0.824]} & 10 / 36 & 0 / 69 & 8 / 999 \\
-Gleipnir 27B & 0.926 {\scriptsize [0.880, 1.000]} & 0.695 {\scriptsize [0.527, 1.000]} & 29 / 36 & 4 / 69 & 8 / 999 \\
+Gleipnir 4B & 0.752 {\scriptsize [0.655, 0.964]} & 0.350 {\scriptsize [0.180, 0.824]} & 28\% & 0\% & 0.8\% \\
+Gleipnir 27B & 0.926 {\scriptsize [0.880, 1.000]} & 0.695 {\scriptsize [0.527, 1.000]} & 81\% & 6\% & 0.8\% \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \paragraph{Gleipnir 27B separates the reward hacks better than Gleipnir 4B.}
 Gleipnir 27B scores 0.695 pAUROC@20 and Gleipnir 4B scores 0.350, a difference of 0.345 (Table~\ref{tab:evilgenie}).
-At the 1\% threshold, the 27B flags 33 of the 105 reward hacks and the 4B flags 10.
-Both monitors flag 8 of the 999 legitimate runs (0.8\%), close to the 1\% target, but these runs come from only nine problems.
+At the 1\% threshold, the 27B flags 31\% of the reward hacks and the 4B 10\%.
+Both monitors flag 0.8\% of the legitimate runs, close to the 1\% target, but these runs come from only nine problems.
 
 \paragraph{Most missed reward hacks are on one problem.}
 The problem \texttt{arc191\_c} holds 69 of the 105 reward hacks.
 Its visible test checks the exact sample output, although the problem accepts any valid output.
 The hacking agents add the sample output on top of a correct general solution, so their program stays correct on every input.
 Many legitimate runs on this problem also type the sample output into their code at some point (Appendix~\ref{app:held-out-evilgenie}).
-At the 1\% threshold, the 4B flags none of these 69 reward hacks and the 27B flags 4, although the 27B ranks them above the legitimate runs of the same problem (AUROC 0.861, against 0.581 for the 4B).
-On the other four problems, the 27B flags 29 of 36 reward hacks and the 4B flags 10.
+At the 1\% threshold, the 4B flags none of these reward hacks and the 27B 6\%, although the 27B ranks them above the legitimate runs of the same problem (AUROC 0.861, against 0.581 for the 4B).
+On the other four problems, the 27B flags 81\% of the 36 reward hacks and the 4B 28\%.
 We chose this split after we saw the scores, so it describes the result and does not test a hypothesis.
 No frontier monitor scored this set, and the dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 
