@@ -529,6 +529,17 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   The 999 legitimate runs of 6.2 are an artefact of the 27B's cap (1,823
   labelled legitimate, 1,695 fit in context); the rerun should report the
   full set, with rates alongside counts.
+  API budget (2026-11-22, list prices, input only; output is one token).
+  Tokens: EvilGenie about 20M per monitor (2,113 runs that fit; ARK's 18M
+  estimate plus the full specification), APPS about 1.5M (982 rows, after
+  ARK's $0.81 Kimi spend), and 1,000 benign OOD rows (about 9.5M) for a
+  monitor that has no OOD threshold yet. GPT-6.1 Terra $1.00/M: about $31
+  (no OOD scores, so it needs the calibration rows). Kimi K3: Makora $1.00/M,
+  about $22 with its existing OOD scores; Wafer (mxfp4, logprobs) $0.19/M,
+  about $6 including recalibration, after a parity canary against Makora.
+  GPT-6 Luna (APPS only) $0.10/M and pplx-decider v1.3 (free endpoint) under
+  $2 together. Total about $40-55, plus about an hour of one B200 for the
+  Gleipnir and base-model scoring.
   After the rerun, Appendix F.2 (protocol of the stress tests: BF16
   Transformers, separate OOD thresholds) should match the main setup; cut it
   to what still differs, or remove it.
