@@ -529,6 +529,9 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   The 999 legitimate runs of 6.2 are an artefact of the 27B's cap (1,823
   labelled legitimate, 1,695 fit in context); the rerun should report the
   full set, with rates alongside counts.
+  After the rerun, Appendix F.2 (protocol of the stress tests: BF16
+  Transformers, separate OOD thresholds) should match the main setup; cut it
+  to what still differs, or remove it.
 
 Exhibits: natural-cheats table, crossed-text comparison, SleightBench catch
 rate (`figures/sleightbench_catch_rate.svg`). Appendix: APPS injection
