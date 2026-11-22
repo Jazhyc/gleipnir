@@ -57,7 +57,7 @@ Strong optimization pressure against a monitor can, however, teach agents to obf
 We test whether Gleipnir recognizes reward hacks by other agent models.
 
 We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}: 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} with ambiguous specifications and visible tests, and some hard-code the visible test outputs instead of solving the problem.
-We score all 124 reward hacks and 1,823 legitimate runs, from nine problems, with the released serving stack (Section~\ref{sec:serving}) and without a length limit (Appendix~\ref{app:held-out-evilgenie}).
+We score all 124 reward hacks and 1,823 legitimate runs, from nine problems, with the released serving stack (Section~\ref{sec:serving}).
 The reward hacks come from five of them, and the intervals resample whole problems.
 As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}).
 Each monitor flags a run when its score is above the threshold that flags 1\% of the benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting.
