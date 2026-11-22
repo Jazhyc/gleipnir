@@ -532,11 +532,17 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   API budget (2026-11-22, list prices, input only; output is one token).
   Tokens per monitor: EvilGenie about 20M (2,113 runs that fit; ARK's 18M
   estimate plus the full specification), APPS about 1.5M (982 rows, after
-  ARK's $0.81 Kimi spend). Kimi K3: Makora $1.00/M, about $22 with its
-  existing OOD scores; Wafer (mxfp4, logprobs) $0.19/M, about $4, or about
-  $6 if a parity canary against Makora forces a new OOD threshold (about
-  9.5M tokens). GPT-6 Luna $0.10/M, about $2.2; pplx-decider v1.3 (free
-  endpoint; $0.02/M list) under $0.50. Total about $8-25, plus about an hour
+  ARK's $0.81 Kimi spend). Kimi K3: its OOD scores (and threshold) come
+  from Fireworks ($3.00/M), not Makora. Wafer parity canary (2026-11-22,
+  120 OOD rows, 10 per source and label from the Fireworks canary;
+  `results/kimi_wafer_parity/`, $0.31, billed $0.27/M): median |score
+  difference| 0.006, 90% within 0.05, max 0.29, one decision flip at 0.5,
+  Spearman 0.987, pooled AUROC 0.958 on both. Close but not identical, so a
+  Wafer run needs its own OOD threshold: benign OOD rows about 30M tokens
+  ($8), EvilGenie about $5.5, APPS under $0.50, about $14 in all (about $60
+  on Fireworks). GPT-6 Luna $0.10/M, about $2.2; pplx-decider v1.3 (free
+  endpoint; $0.02/M list) under $0.50. Total about $17 with Kimi K3 on
+  Wafer, plus about an hour
   of one B200 for the Gleipnir and base-model scoring.
   After the rerun, Appendix F.2 (protocol of the stress tests: BF16
   Transformers, separate OOD thresholds) should match the main setup; cut it
