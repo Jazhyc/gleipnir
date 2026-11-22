@@ -927,6 +927,8 @@ We use \texttt{WiserHumanExperimental/evilgenie-escalation} at revision \texttt{
 It contains 2,115 runs on problems with ambiguous specifications, under five conditions (A to E), and 180 control runs of GPT-5.3-Codex on unambiguous problems.
 Conditions C to E add a policy against reward hacking to the prompt of the agent.
 In its table of runs, \texttt{reward\_hacked = yes} marks 124 reward hacks and \texttt{classification = legitimate} marks 1,823 legitimate runs.
+The dataset labels the runs from hidden tests, an LLM judge and a manual review of every run that edited files.
+It gives no step at which a hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
 We leave out 161 runs that the dataset labels \texttt{heuristic} and 7 that it labels \texttt{error}.
 Kimi K3, the teacher of Gleipnir, is also one of the agent models; it has 4 reward hacks and 39 legitimate runs, and no monitor flags any of its reward hacks.
 Ten of the 15 agent models have at least one reward hack.

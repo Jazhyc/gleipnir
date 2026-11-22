@@ -56,13 +56,9 @@ A monitor that recognizes such reward hacks could judge agent runs, both in depl
 Strong optimization pressure against a monitor can, however, teach agents to obfuscate their reward hacking~\citep{baker2025monitoring}.
 This section tests whether Gleipnir recognizes reward hacks by other agent models.
 
-We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}.
-In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} that have ambiguous specifications and visible tests.
-Some agents then hard-code the outputs of the visible tests instead of solving the problem.
-The dataset labels each run as reward hacking or legitimate, from hidden tests, an LLM judge and a manual review of every run that edited files.
-The dataset gives no step at which the hack happens, so each monitor reads the full run, with tool calls and tool outputs only.
-We score all 124 reward hacks and 1,823 legitimate runs, on nine problems, with the released serving stack (Section~\ref{sec:serving}) and without a length limit.
-The reward hacks come from five of these problems, and we resample whole problems for the intervals.
+We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}: 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} with ambiguous specifications and visible tests, and some hard-code the outputs of the visible tests instead of solving the problem.
+We score all 124 reward hacks and 1,823 legitimate runs, from nine problems, with the released serving stack (Section~\ref{sec:serving}) and without a length limit (Appendix~\ref{app:held-out-evilgenie}).
+The reward hacks come from five of these problems, and the intervals resample whole problems.
 As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}).
 Each monitor flags a run when its score is above the threshold that flags 1\% of the benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting.
 
