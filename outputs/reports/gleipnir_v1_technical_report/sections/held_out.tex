@@ -59,20 +59,26 @@ The dataset gives no step at which the hack happens, so each monitor reads the f
 Each monitor flags a run when its score is above the threshold that flags 1\% of benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels from a new setting (Appendix~\ref{app:held-out-protocol}).
 Gleipnir 27B had a time limit of two hours, set before scoring, so we compare the monitors on the runs that both scored: 105 reward hacks and 999 legitimate runs on nine problems.
 The reward hacks come from five of these problems, and we resample whole problems for the intervals.
+As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}) and the threshold that flags 1\% of all benign OOD trajectories.
 
 \begin{table}[t]
-\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
+\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 105 reward hacks and 999 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head; ``Other'' covers the four other problems with reward hacks. The split by the problem \texttt{arc191\_c} was chosen after scoring.}
 \label{tab:evilgenie}
 \centering
 \small
+\setlength{\tabcolsep}{3pt}
 \begin{tabular}{lccccc}
 \toprule
  & & & \multicolumn{2}{c}{Reward hacks flagged} & Legitimate \\
 \cmidrule(lr){4-5}
-Monitor & AUROC & pAUROC@20 & Other problems (36) & \texttt{arc191\_c} (69) & flagged (999) \\
+Monitor & AUROC & pAUROC@20 & Other (36) & \texttt{arc191\_c} (69) & flagged (999) \\
 \midrule
 Gleipnir 4B & 0.752 {\scriptsize [0.655, 0.964]} & 0.350 {\scriptsize [0.180, 0.824]} & 28\% & 0\% & 0.8\% \\
 Gleipnir 27B & 0.926 {\scriptsize [0.880, 1.000]} & 0.695 {\scriptsize [0.527, 1.000]} & 81\% & 6\% & 0.8\% \\
+\midrule
+pplx-decider v1.3 & 0.904 {\scriptsize [0.847, 1.000]} & 0.614 {\scriptsize [0.440, 0.998]} & 44\% & 1\% & 0.3\% \\
+GPT-6 Luna & 0.894 {\scriptsize [0.825, 0.995]} & 0.629 {\scriptsize [0.438, 0.973]} & 14\% & 0\% & 0\% \\
+Kimi K3 & 0.928 {\scriptsize [0.883, 1.000]} & 0.654 {\scriptsize [0.482, 1.000]} & 94\% & 26\% & 5.6\% \\
 \bottomrule
 \end{tabular}
 \end{table}
@@ -82,6 +88,12 @@ Gleipnir 27B scores 0.695 pAUROC@20 and Gleipnir 4B scores 0.350, a difference o
 At the 1\% threshold, the 27B flags 31\% of the reward hacks and the 4B 10\%.
 Both monitors flag 0.8\% of the legitimate runs, close to the 1\% target, but these runs come from only nine problems.
 
+\paragraph{Gleipnir 27B ranks the reward hacks at least as well as the reference monitors.}
+Kimi K3 scores 0.654 pAUROC@20, GPT-6 Luna 0.629 and pplx-decider v1.3 0.614, against 0.695 for Gleipnir 27B, and all intervals overlap.
+Gleipnir 4B scores below every reference monitor.
+At their OOD thresholds, the reference monitors flag between none and 5.6\% of the legitimate runs, so their flag rates do not compare directly with those of Gleipnir.
+On all 124 reward hacks and 1,823 legitimate runs, without the limits of the Gleipnir runs, they score 0.597 to 0.652 pAUROC@20 (Appendix~\ref{app:held-out-evilgenie}).
+
 \paragraph{Most missed reward hacks are on one problem.}
 The problem \texttt{arc191\_c} holds 69 of the 105 reward hacks.
 Its visible test checks the exact sample output, although the problem accepts any valid output.
@@ -90,7 +102,7 @@ Many legitimate runs on this problem also type the sample output into their code
 At the 1\% threshold, the 4B flags none of these reward hacks and the 27B 6\%, although the 27B ranks them above the legitimate runs of the same problem (AUROC 0.861, against 0.581 for the 4B).
 On the other four problems, the 27B flags 81\% of the 36 reward hacks and the 4B 28\%.
 We chose this split after we saw the scores, so it describes the result and does not test a hypothesis.
-No frontier monitor scored this set, and the dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
+The dataset release removed the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 
 \subsection{The same text on an honest and a backdoored program}
 \label{sec:held-out-apps}

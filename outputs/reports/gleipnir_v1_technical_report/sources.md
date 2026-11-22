@@ -1096,3 +1096,26 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   50 (0.8957) in `ood_prompted.json`; 4B OOD at its selected layer 17 (0.7272).
   Hard-label 27B selection layer 47 (0.8867). Gap to Gleipnir 27B BF16:
   0.935 − 0.896 = 0.039. The last-token row was removed from `tab:probes`.
+
+## Section 6.2 reference monitors and Appendix F.3 (JF, 2026-11-22)
+
+- Source: `experiments/evilgenie_api_baselines/` (README with frozen
+  protocol and results), `results/evilgenie_api_baselines/summary.json`.
+  Kimi K3 on OpenRouter (Wafer endpoint, same settings as its Fireworks OOD
+  run; threshold from the Fireworks OOD scores by JF's decision), GPT-6 Luna
+  with the settings of `experiments/openai_monitoring_ood/config.json`,
+  pplx-decider v1.3 with the frozen Jev Noul question. Thresholds: largest
+  score flagging at most 1% of the 3,189 benign strict-OOD rows (Kimi
+  0.7773, pplx 0.7525, Luna 1 − 3.6e-8).
+- Shared rows (Table 2): reconstructed from ARK's scorer order (positives,
+  then negatives and controls shuffled with seed 0), the 27B's 1,312 reached
+  rows and the 29,696-token limit under both Gleipnir prompts (standalone
+  Qwen tokenizer + 12 chat tokens); reproduces 105 / 999 / 115 and 19 / 74
+  too long exactly.
+- Table 2 rows (shared rows): pplx-decider v1.3 AUROC 0.904 [0.847, 1.000],
+  pAUROC@20 0.614 [0.440, 0.998], flagged 16/36, 1/69, 3/999; GPT-6 Luna
+  0.894 [0.825, 0.995], 0.629 [0.438, 0.973], 5/36, 0/69, 0/999; Kimi K3
+  0.928 [0.883, 1.000], 0.654 [0.482, 1.000], 34/36, 18/69, 56/999.
+- All rows (124 / 1,823): AUROC 0.917, 0.888, 0.889 and pAUROC@20 0.652,
+  0.610, 0.597 (Kimi, Luna, pplx). Controls 0/180 each. `arc191_c` AUROC on
+  shared rows 0.852, 0.760, 0.850. Luna benign OOD: 8.4% of scores ≥ 0.999.

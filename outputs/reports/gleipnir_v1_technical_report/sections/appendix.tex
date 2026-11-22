@@ -949,6 +949,14 @@ The intervals are wide, and their upper ends reach 1.000, because one problem ho
 Neither monitor flags any of the control runs: 0 of 180 for the 4B and 0 of 115 for the 27B.
 On all 108 reward hacks and 1,695 legitimate runs that it scored, the 4B reaches AUROC 0.751 (0.645 to 0.968) and flags 10 reward hacks and 16 legitimate runs (0.9\%).
 
+\paragraph{Reference monitors.}
+Kimi K3 and GPT-6 Luna read the full specification and return the probabilities of the decision tokens, and pplx-decider v1.3 reads the trajectory with its frozen question, as on the OOD suite (Table~\ref{tab:ood-all}).
+Each scored all 2,127 runs once, without a length limit, and its threshold flags at most 1\% of the 3,189 benign OOD trajectories, while the Gleipnir thresholds come from samples of 1,000 and 400 of them.
+On all 124 reward hacks and 1,823 legitimate runs, they score AUROC 0.917, 0.888 and 0.889 and pAUROC@20 0.652, 0.610 and 0.597.
+None of them flags a control run.
+The benign OOD scores of GPT-6 Luna saturate: 8\% of them are at least 0.999, so its threshold lies within $10^{-7}$ of 1 and it flags almost nothing.
+On \texttt{arc191\_c}, they reach AUROC 0.852, 0.760 and 0.850.
+
 \paragraph{The problem \texttt{arc191\_c}.}
 Its visible test checks the exact sample output, although the problem accepts any valid output.
 The 69 reward hacks add the sample output to a correct general solution, for example with the comment that these outputs ``are also valid choices''.
