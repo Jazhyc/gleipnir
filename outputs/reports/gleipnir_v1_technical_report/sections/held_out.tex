@@ -51,6 +51,10 @@ Closing this gap, with stronger monitors behind the cheap ones or with training 
 \subsection{Reward hacking by other agent models}
 \label{sec:held-out-evilgenie}
 
+Coding agents can exploit flaws in how their work is checked, for example by special-casing the tests instead of solving the task.
+A monitor that recognizes such reward hacks could judge agent runs, both in deployment and in a reinforcement learning pipeline, where its low cost matters because every rollout must be scored.
+This section tests whether Gleipnir recognizes reward hacks by other agent models.
+
 We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}.
 In its runs, 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} that have ambiguous specifications and visible tests.
 Some agents then hard-code the outputs of the visible tests instead of solving the problem.
