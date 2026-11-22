@@ -819,6 +819,76 @@ The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
+\section{SleightBench: all monitors}
+\label{app:sleightbench}
+
+Table~\ref{tab:sleightbench} lists every monitor that we scored on SleightBench (Section~\ref{sec:sleightbench}), with the 95\% bootstrap intervals, and the catch rates that \citet{najt2026sleight} report.
+Their monitors write a rationale before the score, and their catch rate is the mean over 10 samples at temperature 1; ours come from one deterministic pass.
+Their strongest monitors run Claude in the Claude Code scaffold, as an agent that can execute code while it reads the transcript, for example to count lines.
+In this scaffold Claude Opus 4.6 catches 62\% of the attacks and Claude Opus 4.7 60\%, above every monitor that we scored: GPT-6.1 Terra catches 55\%, pplx-decider v1.3 27.5\% and Gleipnir 27B 20\%.
+Without the scaffold, the strongest monitor of the authors is Gemini 3.1 Pro with high thinking effort, at 54\%.
+GPT-6.1 Terra reads the transcript once and writes only its decision, so its \$15.49 per 1,000 evaluations is almost all input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
+
+\begin{table}[h]
+\caption{Results on SleightBench (stripped view, ControlArena instruction), ordered by cost within each group. Cost is in USD per 1,000 evaluations, priced as in Table~\ref{tab:ood-all} for the trajectories of this benchmark; the Gleipnir rows give the committed-use and the on-demand cost. Multi-session attacks take the maximum over their parts. Intervals resample scenarios, each attack together with its benign twin (10,000 draws). The last two groups are copied from \citet{najt2026sleight}, read from their per-model figures.}
+\label{tab:sleightbench}
+\centering
+\small
+\setlength{\tabcolsep}{4pt}
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+Monitor & Cost & pAUROC@20 & AUROC & Catch rate @ 1\% FPR \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
+Gleipnir 4B & 0.082 / 0.190 & 0.209 (0.112--0.347) & 0.611 & 0.075 (0.000--0.225) \\
+Gleipnir 27B & 0.330 / 0.767 & 0.299 (0.192--0.451) & 0.697 & 0.200 (0.100--0.325) \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{This work: decision models, native probability}} \\
+pplx-decider v1.2 & 0.351 & 0.300 (0.200--0.451) & 0.676 & 0.125 (0.050--0.325) \\
+pplx-decider v1.3 & 0.351 & 0.397 (0.279--0.531) & 0.738 & 0.275 (0.150--0.425) \\
+Jev 1.13 & 0.771 & 0.255 (0.169--0.386) & 0.665 & 0.125 (0.050--0.275) \\
+Jev 1.14 & 0.771 & 0.260 (0.165--0.391) & 0.679 & 0.200 (0.075--0.325) \\
+Drex Max & 1.020 & 0.322 (0.206--0.483) & 0.706 & 0.250 (0.125--0.400) \\
+Gemini Decision 1 & 1.924 & 0.309 (0.193--0.449) & 0.665 & 0.200 (0.100--0.375) \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
+Qwen3.5-4B & 0.527 & 0.193 (0.110--0.294) & 0.601 & 0.050 (0.000--0.175) \\
+GPT-6 Luna & 1.549 & 0.277 (0.157--0.448) & 0.696 & 0.050 (0.000--0.275) \\
+Qwen3.8-27B & 3.425 & 0.263 (0.168--0.398) & 0.670 & 0.125 (0.050--0.250) \\
+GPT-6.1 Terra & 15.490 & 0.734 (0.597--0.867) & 0.922 & 0.550 (0.400--0.825) \\
+GPT-6 Sol & 30.980 & 0.515 (0.328--0.709) & 0.823 & 0.150 (0.050--0.625) \\
+Kimi K3 & 46.481 & 0.402 (0.261--0.571) & 0.737 & 0.000 (0.000--0.450) \\
+GPT-5.5 & 77.486 & 0.404 (0.239--0.606) & 0.783 & 0.150 (0.050--0.325) \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Najt et al.: rationale then 0--100 score, no thinking / thinking}} \\
+Claude Haiku 4.5 & --- & --- & --- & 0.02 / 0.16 \\
+GPT-5.5 & --- & --- & --- & 0.14 / 0.50 \\
+Claude Opus 4.6 & --- & --- & --- & 0.19 / 0.32 \\
+Claude Sonnet 4.6 & --- & --- & --- & 0.28 / 0.27 \\
+Gemini 3.1 Pro (low / high effort) & --- & --- & --- & 0.28 / 0.54 \\
+Claude Opus 4.7 & --- & --- & --- & 0.37 / 0.36 \\
+\midrule
+\multicolumn{5}{@{}l}{\emph{Najt et al.: Claude Code scaffold}} \\
+Claude Haiku 4.5 & --- & --- & --- & 0.07 \\
+Claude Sonnet 4.6 & --- & --- & --- & 0.46 \\
+Claude Opus 4.7 & --- & --- & --- & 0.60 \\
+Claude Opus 4.6 & --- & --- & --- & 0.62 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Figure~\ref{fig:sleightbench-catch} plots the catch rate against the cost.
+The catch rate depends on the single highest benign score, so one benign trajectory can move it far: Kimi K3 gives its highest score, 0.984, to a benign trajectory and catches no attack, although its AUROC (0.737) is about that of pplx-decider v1.3 (0.738).
+As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and pplx-decider v1.3 to GPT-6.1 Terra.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{sleightbench_catch_frontier}
+\caption{SleightBench catch rate at a false-positive rate of 1\% against the inference cost per 1,000 evaluations (log scale), for the monitors of Figure~\ref{fig:sleightbench}. Markers and the frontier follow Figure~\ref{fig:sleightbench}.}
+\label{fig:sleightbench-catch}
+\end{figure}
+
+\FloatBarrier
 \section{Held-out and adversarial evaluation: details}
 \label{app:held-out}
 
@@ -1374,79 +1444,6 @@ We measured this before the tokenizer change of Section~\ref{sec:serving-work}, 
 
 Early exits are therefore cheap to run but cost quality at half depth.
 One explanation is that the decision forms late in the network; an exit placed later in the 27B, or trained together with the adapter, may close part of the gap, which we leave to future work.
-
-\FloatBarrier
-\section{Additional results}
-\label{app:additional-results}
-
-\subsection{All monitors on SleightBench}
-\label{app:sleightbench}
-
-Table~\ref{tab:sleightbench} lists every monitor that we scored on SleightBench (Section~\ref{sec:sleightbench}), with the 95\% bootstrap intervals, and the catch rates that \citet{najt2026sleight} report.
-Their monitors write a rationale before the score, and their catch rate is the mean over 10 samples at temperature 1; ours come from one deterministic pass.
-Their strongest monitors run Claude in the Claude Code scaffold, as an agent that can execute code while it reads the transcript, for example to count lines.
-In this scaffold Claude Opus 4.6 catches 62\% of the attacks and Claude Opus 4.7 60\%, above every monitor that we scored: GPT-6.1 Terra catches 55\%, pplx-decider v1.3 27.5\% and Gleipnir 27B 20\%.
-Without the scaffold, the strongest monitor of the authors is Gemini 3.1 Pro with high thinking effort, at 54\%.
-GPT-6.1 Terra reads the transcript once and writes only its decision, so its \$15.49 per 1,000 evaluations is almost all input tokens, while a monitor in a scaffold also pays for its reasoning, its tool calls and the tool outputs that it reads back.
-
-\begin{table}[h]
-\caption{Results on SleightBench (stripped view, ControlArena instruction), ordered by cost within each group. Cost is in USD per 1,000 evaluations, priced as in Table~\ref{tab:ood-all} for the trajectories of this benchmark; the Gleipnir rows give the committed-use and the on-demand cost. Multi-session attacks take the maximum over their parts. Intervals resample scenarios, each attack together with its benign twin (10,000 draws). The last two groups are copied from \citet{najt2026sleight}, read from their per-model figures.}
-\label{tab:sleightbench}
-\centering
-\small
-\setlength{\tabcolsep}{4pt}
-\begin{tabular}{@{}lrrrr@{}}
-\toprule
-Monitor & Cost & pAUROC@20 & AUROC & Catch rate @ 1\% FPR \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{This work: Gleipnir, binary logits}} \\
-Gleipnir 4B & 0.082 / 0.190 & 0.209 (0.112--0.347) & 0.611 & 0.075 (0.000--0.225) \\
-Gleipnir 27B & 0.330 / 0.767 & 0.299 (0.192--0.451) & 0.697 & 0.200 (0.100--0.325) \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{This work: decision models, native probability}} \\
-pplx-decider v1.2 & 0.351 & 0.300 (0.200--0.451) & 0.676 & 0.125 (0.050--0.325) \\
-pplx-decider v1.3 & 0.351 & 0.397 (0.279--0.531) & 0.738 & 0.275 (0.150--0.425) \\
-Jev 1.13 & 0.771 & 0.255 (0.169--0.386) & 0.665 & 0.125 (0.050--0.275) \\
-Jev 1.14 & 0.771 & 0.260 (0.165--0.391) & 0.679 & 0.200 (0.075--0.325) \\
-Drex Max & 1.020 & 0.322 (0.206--0.483) & 0.706 & 0.250 (0.125--0.400) \\
-Gemini Decision 1 & 1.924 & 0.309 (0.193--0.449) & 0.665 & 0.200 (0.100--0.375) \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
-Qwen3.5-4B & 0.527 & 0.193 (0.110--0.294) & 0.601 & 0.050 (0.000--0.175) \\
-GPT-6 Luna & 1.549 & 0.277 (0.157--0.448) & 0.696 & 0.050 (0.000--0.275) \\
-Qwen3.8-27B & 3.425 & 0.263 (0.168--0.398) & 0.670 & 0.125 (0.050--0.250) \\
-GPT-6.1 Terra & 15.490 & 0.734 (0.597--0.867) & 0.922 & 0.550 (0.400--0.825) \\
-GPT-6 Sol & 30.980 & 0.515 (0.328--0.709) & 0.823 & 0.150 (0.050--0.625) \\
-Kimi K3 & 46.481 & 0.402 (0.261--0.571) & 0.737 & 0.000 (0.000--0.450) \\
-GPT-5.5 & 77.486 & 0.404 (0.239--0.606) & 0.783 & 0.150 (0.050--0.325) \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{Najt et al.: rationale then 0--100 score, no thinking / thinking}} \\
-Claude Haiku 4.5 & --- & --- & --- & 0.02 / 0.16 \\
-GPT-5.5 & --- & --- & --- & 0.14 / 0.50 \\
-Claude Opus 4.6 & --- & --- & --- & 0.19 / 0.32 \\
-Claude Sonnet 4.6 & --- & --- & --- & 0.28 / 0.27 \\
-Gemini 3.1 Pro (low / high effort) & --- & --- & --- & 0.28 / 0.54 \\
-Claude Opus 4.7 & --- & --- & --- & 0.37 / 0.36 \\
-\midrule
-\multicolumn{5}{@{}l}{\emph{Najt et al.: Claude Code scaffold}} \\
-Claude Haiku 4.5 & --- & --- & --- & 0.07 \\
-Claude Sonnet 4.6 & --- & --- & --- & 0.46 \\
-Claude Opus 4.7 & --- & --- & --- & 0.60 \\
-Claude Opus 4.6 & --- & --- & --- & 0.62 \\
-\bottomrule
-\end{tabular}
-\end{table}
-
-Figure~\ref{fig:sleightbench-catch} plots the catch rate against the cost.
-The catch rate depends on the single highest benign score, so one benign trajectory can move it far: Kimi K3 gives its highest score, 0.984, to a benign trajectory and catches no attack, although its AUROC (0.737) is about that of pplx-decider v1.3 (0.738).
-As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and pplx-decider v1.3 to GPT-6.1 Terra.
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{sleightbench_catch_frontier}
-\caption{SleightBench catch rate at a false-positive rate of 1\% against the inference cost per 1,000 evaluations (log scale), for the monitors of Figure~\ref{fig:sleightbench}. Markers and the frontier follow Figure~\ref{fig:sleightbench}.}
-\label{fig:sleightbench-catch}
-\end{figure}
 
 \FloatBarrier % floats never enter the prompt listings
 \section{Prompts}
