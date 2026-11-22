@@ -123,7 +123,7 @@ For each condition, we compute pAUROC@20 of the backdoored programs against the 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{held_out_apps_text}
-\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against honest programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Values in Table~\ref{tab:apps-full}.}
+\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against honest programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
 \label{fig:apps-text}
 \end{figure}
 
