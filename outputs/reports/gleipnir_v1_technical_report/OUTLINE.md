@@ -505,9 +505,9 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   which the training specification labels benign.
   Evidence: `docs/findings/sleightbench_released_monitors.md`.
 
-- **Decision (JF, 2026-11-22): the four smaller tests of Appendix F (natural
+- **Decision (JF, 2026-11-22): the four smaller tests (natural
   cheats, comment removal, multi-agent sabotage, agents that lie to agents)
-  are exploratory.**
+  are exploratory and have their own appendix section.**
   Their reference monitors and readouts differ by test; no main claim rests
   on them, and they are not rerun. The reruns below cover 6.2 and 6.3 only.
 - **TODO (JF, 2026-11-21): rerun ARK's main held-out experiments on the

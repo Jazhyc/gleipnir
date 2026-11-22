@@ -819,7 +819,13 @@ The two models differ in one step.
 For the 4B, one kernel that we adapted from an NVIDIA template computes the first matrix product of each MLP, applies the SwiGLU activation and writes the result in FP4 for the next projection.
 For the 27B this fused kernel gave no gain in throughput, so the 27B applies the activation in a separate step.
 
-\section{SleightBench: all monitors}
+\section{Held-out and adversarial evaluation: details}
+\label{app:held-out}
+
+This appendix gives the details of Section~\ref{sec:held-out}.
+Each stress test follows a protocol that we froze before scoring, and we mark every analysis that we chose after we saw the scores as post hoc.
+
+\subsection{All monitors on SleightBench}
 \label{app:sleightbench}
 
 Table~\ref{tab:sleightbench} lists every monitor that we scored on SleightBench (Section~\ref{sec:sleightbench}), with the 95\% bootstrap intervals, and the catch rates that \citet{najt2026sleight} report.
@@ -889,15 +895,7 @@ As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and ppl
 \end{figure}
 
 \FloatBarrier
-\section{Held-out evaluation: details and exploratory stress tests}
-\label{app:held-out}
-
-This appendix gives the details of Section~\ref{sec:held-out} and four smaller tests.
-Each test follows a protocol that we froze before scoring.
-We mark every analysis that we chose after we saw the scores as post hoc.
-The four smaller tests (Appendices~\ref{app:held-out-natural} to~\ref{app:held-out-lab}) are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
-
-\subsection{Common protocol}
+\subsection{Protocol of the stress tests}
 \label{app:held-out-protocol}
 
 \paragraph{Monitors.}
@@ -1129,6 +1127,14 @@ Also, the code mean excludes the docstring tokens, while the decision token read
 The same procedure on Gleipnir 27B selects block 64 with the decision token.
 That probe ranks the accused programs in reverse (AUROC 0.025 and 0.044), while the output of the 27B reaches 0.984 and 0.959.
 We have no explanation for this result.
+
+\FloatBarrier
+\section{Exploratory stress tests}
+\label{app:exploratory}
+
+This appendix gives four smaller stress tests, with the protocol of Appendix~\ref{app:held-out-protocol}.
+They are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
+We mark every analysis that we chose after we saw the scores as post hoc.
 
 \subsection{Natural cheating by one agent model}
 \label{app:held-out-natural}
