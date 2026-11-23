@@ -1,3 +1,7 @@
 \begin{abstract}
-\todo{Abstract: problem (monitoring on the critical path of agent actions), method (binary-logit distillation from a frontier teacher into small open-weight monitors), headline results, and what is released, with one link to the project page that gathers the code, weights, teacher probabilities and serving image.}
+Monitors that review the actions of AI agents add cost and latency to every action they check, and the strongest monitors reason at length before they answer.
+We present Gleipnir, small open-weight monitors that learn the decision of a frontier teacher directly and score an agent trajectory in one forward pass, served with a stack built for this pass.
+On a suite of six held-out AI control benchmarks, Gleipnir 27B matches the strongest reasoning monitor (0.951 against 0.942 mean pAUROC@20) at 229 times lower cost, and scores 0.055 above the strongest decision model at the same cost.
+On attacks built to evade monitors and on reward hacking by other agents, Gleipnir, like other low-cost monitors, misses many harmful runs, so it suits a first line of defense rather than a sole safeguard.
+We release the code, teacher probabilities, weights and serving image under the MIT licence.\todo{Link to the project page.}
 \end{abstract}
