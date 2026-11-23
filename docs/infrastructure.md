@@ -1139,6 +1139,15 @@ container disk, no volume). Created at 02:30 UTC, reachable at 02:35, run
 02:37–02:50, terminated at 02:51 (`podTerminate`; `myself.pods` empty) after
 verified collection of 11 files; about $2.80. No Pod remains.
 
+For the [EvilGenie run with assistant messages](../experiments/evilgenie_assistant_messages/README.md)
+(user authorization 2026-11-23, one B200, terminated after collection):
+`soaw1em7gkhycu` (`gleipnir-evilgenie-messages`, US-TX-6 because EU-RO-1 had
+no B200, image `1.2`, machine `40ko8z1ne43c`, B200 `GPU-edea2da8…`, Xeon
+6972P, driver 595.112.07, 250 GB container disk, no volume). Created at 04:24
+UTC, reachable at 04:40 after a 16-minute image pull, run 04:43–04:58,
+terminated at 04:58 (`podTerminate`; `myself.pods` empty) after verified
+collection of 11 files; about $4.60. No Pod remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

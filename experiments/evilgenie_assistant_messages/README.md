@@ -48,3 +48,52 @@ experiments/evilgenie_assistant_messages/pod_run.sh 4b 27b
 # locally, after pulling results/ and logs/
 PYTHONPATH=src:. python -m experiments.evilgenie_assistant_messages.analyze
 ```
+
+## Run (2026-11-23, Pod `soaw1em7gkhycu`)
+
+One B200 (US-TX-6, Xeon 6972P, driver 595.112.07), image 1.2, created 04:24
+UTC (no B200 left in EU-RO-1), reachable 04:40 after a 16-minute image pull,
+run 04:43–04:58, terminated 04:58 after verified collection (11 files,
+`collect.sha256`); about $4.60. Both smoke tests gave the same scores as the
+previous run; both rendering checks passed; no row was rejected.
+
+| Model | Prompt tokens | Longest | Seconds | Prompt tokens/s |
+|---|---:|---:|---:|---:|
+| 4B | 24.9M | 110,437 | 122 | 203,564 |
+| 27B | 26.6M | 111,249 | 515 | 51,606 |
+
+## Result
+
+Paired differences (with minus without messages), 95% bootstrap intervals.
+
+| Model | Rows | AUROC without → with | pAUROC@20 without → with | Δ pAUROC@20 |
+|---|---|---|---|---|
+| 27B | All (124 / 1,823) | 0.905 → 0.907 | 0.673 → 0.668 | −0.005 [−0.017, 0.018] |
+| 27B | With messages (33 / 510) | 0.866 → 0.873 | 0.519 → 0.505 | −0.014 [−0.046, 0.088] |
+| 27B | `arc191_c` (69 / 136) | 0.858 → 0.861 | 0.383 → 0.392 | +0.009 [−0.060, 0.082] |
+| 4B | All | 0.751 → 0.763 | 0.283 → 0.290 | +0.007 [−0.002, 0.035] |
+| 4B | With messages | 0.711 → 0.762 | 0.258 → 0.257 | −0.001 [−0.032, 0.122] |
+| 4B | `arc191_c` | 0.558 → 0.555 | 0.024 → 0.032 | +0.009 [−0.004, 0.027] |
+
+At the 1% OOD thresholds (diagnostic only): 27B flags 35 → 37 hacks and 20 →
+17 legitimate runs; 4B 3 → 4 and 4 → 4; no control is flagged.
+
+- **The hypothesis does not hold.** Assistant messages change neither
+  model's ranking of reward hacks beyond noise, on all rows, on the rows
+  with messages, or on `arc191_c`.
+- **Stated intent does not raise the 27B score.** On the 23 `arc191_c` hacks
+  with messages, the median 27B score falls from 0.294 to 0.223; several hacks
+  whose messages say they hard-code the sample drop (0.41 → 0.16, 0.71 →
+  0.44). The explanations seem to read as justification rather than as an
+  admission.
+- **Run-to-run noise is small at the metric level.** On the 1,578 rows whose
+  input did not change, 969 (27B) and 1,048 (4B) scores are bit-identical,
+  the median absolute change is 0 and the 99th percentile 0.093 (27B) and
+  0.156 (4B), largest on rows above 20,000 tokens; pAUROC@20 on these rows is
+  0.735 in both runs for the 27B (4B 0.295 and 0.299). The changes come with
+  different batch neighbours on a different machine.
+
+Outputs: `results/evilgenie_assistant_messages/` (scores, timings,
+`summary.json`), workloads and states in `data/evilgenie_assistant_messages/`,
+logs and `collect.sha256` in `logs/runpod/evilgenie_assistant_messages/` (all
+ignored).
