@@ -1,9 +1,9 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-We trained small open-weight monitors to match the decision-token probability of a frontier teacher, so that a monitor reads a trajectory once and returns a score without writing text, and we built a serving stack for this single forward pass.
-On the OOD suite of \citet{sinha2026training}, Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost on demand, and at the cost of the strongest decision model it scores 0.055 higher.
-Self-hosting, low-precision arithmetic and the removal of unneeded work lower the cost from the API price by 6.4 times for the 4B and 10.4 times for the 27B, and prefix caching makes checking every action cheaper still.
+We trained small open-weight monitors that score an agent trajectory in one forward pass by learning the decision of a frontier teacher.
+On the OOD suite, Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost on demand, and at the cost of the strongest decision model it scores 0.055 higher.
+Our serving stack lowers the cost from the API price by 6.4 to 10.4 times, and prefix caching makes checking every action cheaper still.
 
 Outside the OOD suite, the monitors are weaker.
 On SleightBench, Gleipnir 4B and 27B, like other low-cost monitors, trail far behind the strongest model that we scored.
@@ -13,5 +13,5 @@ Future work could close these gaps or lower the cost further.
 Pipelines that generate and refine attacks against a monitor at scale, such as MonitoringBench~\citep{jotautaite2026monitoringbench}, could supply the training data that SleightBench shows is missing.
 The cost of the monitor is the prefill over long trajectories, so learned token pruning~\citep{patel2026tokengate}, which shortens this prefill, is the most promising way to lower it, and an engine built for prefill-only workloads~\citep{du2025prefillonly} could serve more concurrent requests on one GPU.
 
-Since the code, weights and teacher probabilities are public, others can use the monitors as a baseline, train them further on new data, or place them as a cheap first stage in front of stronger monitors.
+Since the code, weights and teacher probabilities are public, others can use the monitors as a baseline, train them further on new data, or deploy them as a first line of defense in front of stronger monitors.
 Because our thresholds come from benchmarks, a deployment should set its own threshold on its benign traffic and test the monitor against the attacks that it expects.
