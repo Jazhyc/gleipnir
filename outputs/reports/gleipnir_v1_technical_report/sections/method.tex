@@ -60,14 +60,12 @@ The scores of single runs vary, and on the validation set and the OOD suite the 
 The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
 We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack.
 In this pass the target is the score that the same adapter gives without quantization, a step known as quantization-aware distillation (QAD)~\citep{xin2026qad}.
-Section~\ref{sec:serving-precision} reports the scores before and after this step.
+Section~\ref{sec:serving-precision} reports its effect.
 
 \paragraph{Gleipnir 27B.}
 The 27B is a single training run, without seed averaging and without QAD.
 It differs from the 4B in the instruction that it reads at scoring time.
-Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification: 0.942 pAUROC@20 against 0.922.
-We made this choice on the validation set.
-The released 27B therefore reads the full specification, with 9.9\% more prompt tokens.
+Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification (0.942 against 0.922 pAUROC@20), so the released 27B reads the full specification, with 9.9\% more prompt tokens.
 The 4B does not gain from the full specification (Appendix~\ref{app:ablation-instruction}).
 
 \paragraph{Effect of the soft targets.}
