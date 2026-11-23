@@ -126,8 +126,6 @@ Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tun
 \paragraph{Accusations raise the separation of Gleipnir 27B.}
 Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
 With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
-One explanation is that any accusation leads the 27B to inspect the code more closely, and that the description of the trigger adds a further cue.
-A false trigger that neither program handles would separate these two effects; we did not run this test.
 
 \paragraph{A threshold set on code without text does not transfer.}
 We also set a 1\% threshold for each monitor on benign APPS programs without docstrings.

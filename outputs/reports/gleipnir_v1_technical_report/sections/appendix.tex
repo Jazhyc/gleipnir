@@ -1070,6 +1070,7 @@ Under a specific accusation, the share is 0.802 for Gleipnir 4B, although its AU
 The difference comes from the level of the scores: the accusation raises the mean score of benign programs from 0.237 under unrelated text to 0.846, and that of backdoored programs from 0.426 to 0.870.
 On the same tasks, the AUROC of Gleipnir 4B under a specific accusation is 0.22 below that of the unadapted Qwen3.5-4B (paired 95\% bootstrap interval over tasks 0.17 to 0.27).
 In pairs of the same task, Gleipnir 27B is within 0.01 of Kimi K3 in AUROC under both accusations, with 95\% intervals that include zero.
+An accusation may lead the 27B to inspect the code more closely, and the description of the trigger may add a further cue; a false trigger that neither program handles would separate the two, but we did not run this test.
 
 \begin{table}[h]
 \caption{AUROC (95\% bootstrap interval over tasks) and the share of within-task pairs in which the backdoored program scores higher (ties count one half).}
