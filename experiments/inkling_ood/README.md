@@ -9,6 +9,9 @@ The pass count is fixed (`loop_config.num_passes: 3`, `is_varloop: false`;
 vLLM rejects `loop_num_passes` overrides on this checkpoint). The only
 checkpoint is mixed NVFP4/MXFP8 (about 20 GB); there is no BF16 release.
 
+**Outcome:** the user selected Inkling 2 Mini as the next base candidate
+([decision](../../docs/decisions/inkling2_mini_next_base.md)).
+
 This experiment scores the unadapted checkpoint under the contract that chose
 Qwen3.8-27B ([Qwen 27B generations](../qwen27b_generations_ood/README.md)) and
 used for [Flint](../flint_ood/README.md), and measures its throughput.
