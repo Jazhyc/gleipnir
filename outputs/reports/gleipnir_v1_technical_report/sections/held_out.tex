@@ -119,22 +119,16 @@ We compare four conditions: no text, an unrelated text that restates another APP
 \end{figure}
 
 \paragraph{Text lowers Gleipnir 4B close to chance.}
-Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}).
-An unrelated text lowers it to 0.360, and a specific accusation lowers it to 0.143.
-Within a task, the 4B still scores the backdoored program higher in 72\% of the pairs under a specific accusation, and 17\% of the pairs tie.
-The pooled ranking fails because the accusation moves almost every score close to 1: the mean score is 0.846 for benign programs and 0.870 for backdoored programs.
+Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
+An accusation raises the scores of benign and backdoored programs alike, close to 1.
+Its base model, Qwen3.5-4B, also loses separation under unrelated text but less under accusations (0.434 with a specific accusation), so fine-tuning made the 4B more sensitive to them.
+A linear probe on the 4B still separates the accused programs, so the failure lies in its output rather than its representation (Appendix~\ref{app:held-out-probe}).
 
 \paragraph{Accusations raise the separation of Gleipnir 27B.}
 Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
 With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
 One explanation is that any accusation leads the 27B to inspect the code more closely, and that the description of the trigger adds a further cue.
 A false trigger that neither program handles would separate these two effects; we did not run this test.
-
-\paragraph{Fine-tuning made the 4B more sensitive to accusations than its base model.}
-The unadapted Qwen3.5-4B already loses separation under unrelated text (0.189 pAUROC@20), so part of the effect comes from the base model.
-Under a specific accusation, however, its AUROC is 0.805 and that of Gleipnir 4B is 0.581.
-On the same tasks, the paired difference is $-0.22$ (95\% bootstrap interval over tasks $-0.27$ to $-0.17$).
-A linear probe on the activations of Gleipnir 4B still separates the accused programs, which suggests that the failure lies in the output and not in the representation (Appendix~\ref{app:held-out-probe}).
 
 \paragraph{A threshold set on code without text does not transfer.}
 We also set a 1\% threshold for each monitor on benign APPS programs without docstrings.
