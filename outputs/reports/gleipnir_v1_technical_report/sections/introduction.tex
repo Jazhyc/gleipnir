@@ -8,18 +8,16 @@ Such monitoring is expensive: OpenAI estimates the overhead of its monitoring at
 A monitor that checks each action before it runs also delays every action (Section~\ref{sec:background-monitoring}).
 Cheaper, faster monitors would let developers check more of what their agents do.
 
-We introduce Gleipnir, small open-weight monitors that read an agent trajectory once and return the probability that it is harmful, without writing text.
+We introduce Gleipnir, small open-weight monitors that return the probability that an agent trajectory is harmful.
 The name comes from the ribbon in Norse myth that binds the wolf Fenrir: as thin as silk, yet stronger than any chain.
-A reasoning monitor writes a rationale before its score, and this text takes most of its time: on the same GPU, our base models take about ten times as long for a trajectory when they write one (Section~\ref{sec:serving-selfhost}).
-Gleipnir instead learns the decision of a stronger teacher directly, so that one forward pass replaces the rationale, and we serve it with a stack built for this pass.
-We price the reference monitors at API prices and Gleipnir at the cost of a dedicated self-hosted GPU, because a workload without decoding uses the GPU differently, and a standard API price does not pass this saving on (Section~\ref{sec:serving-selfhost}).
+A reasoning monitor spends most of its compute on a rationale; Gleipnir learns the decision of a stronger teacher directly, so that one forward pass replaces it.
 
 On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and 0.055 above the strongest decision model, a model built to answer a question in one step without reasoning, at the same cost (Section~\ref{sec:evaluation}).
 On harder benchmarks, results are mixed: on attacks designed to evade monitors, both monitors score below a decision model of similar cost, and on reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most (Section~\ref{sec:held-out}).
 
 We release the code, data and weights of our contributions under the MIT licence:
 \begin{itemize}
-\item a training recipe that distills the decision-token probabilities of a frontier teacher, Kimi K3, and raises Qwen3.5-4B from 0.618 to 0.770 and Qwen3.8-27B from 0.890 to 0.951 Mean-OOD, 0.086 above the SFT and RL recipe of Sinha et al.\ for the 4B (Sections~\ref{sec:method} and~\ref{sec:evaluation});
-\item a serving stack that lowers the cost of the monitors from the API price by 6.4 times for the 4B and 10.4 times for the 27B, with prefix caching for checking every action (Section~\ref{sec:serving});
-\item an evaluation against reasoning monitors, decision models and frontier models on the OOD suite, on attacks designed to evade monitors and on reward hacking (Sections~\ref{sec:evaluation} and~\ref{sec:held-out}).
+\item a training recipe that distills the decision-token probabilities of a frontier teacher into small open models (Sections~\ref{sec:method} and~\ref{sec:evaluation});
+\item a serving stack for this single forward pass, which lowers the cost of the monitors 6.4 to 10.4 times below the API price (Section~\ref{sec:serving});
+\item an evaluation against reasoning monitors, decision models and frontier models on the OOD suite and two harder benchmarks (Sections~\ref{sec:evaluation} and~\ref{sec:held-out}).
 \end{itemize}
