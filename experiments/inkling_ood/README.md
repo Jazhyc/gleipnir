@@ -214,6 +214,68 @@ batch-invariant (see the amendment); they are timing payloads only.
   0.31 with the project's scoring server, 2026-11-16; Flint on vLLM 0.34.0,
   2026-11-20). One session, no repeat on another day.
 
+## Where the GPU time goes (`profile_kernels.py`)
+
+User request, 2026-11-23: Inkling needs about 5 times fewer linear-layer
+FLOPs per token than the 27B (about 5.4B effective active parameters against
+27B) but scores only about 1.2 times as many tokens/s as the optimized 27B,
+so where does the time go? Four of the 96 agent trajectories, rendered at the
+effort none boundary, scored alone on the OOD engine settings: five timed
+requests each, then one torch-profiler trace each
+(`results/inkling_ood/profile/`).
+
+| prompt tokens | median ms | prompt tokens/s | GPU busy in trace, ms |
+|---:|---:|---:|---:|
+| 1,760 | 36.9 | 47,700 | 32.2 |
+| 8,161 | 121.1 | 67,400 | 104.9 |
+| 16,420 | 240.5 | 68,300 | 201.1 |
+| 33,988 | 493.8 | 68,800 | 454.4 |
+
+A first run, stopped by a path bug after its timing phase, measured
+70,600 to 74,100 tokens/s from 8K to 34K tokens
+(`profile_failed_path/`), the same host variation as between the two OOD
+arms.
+
+Share of GPU kernel time (the 30 largest kernels cover 98 to 100%):
+
+| kernel family | 1.8K | 8.2K | 16.4K | 34.0K |
+|---|---:|---:|---:|---:|
+| FA4 attention core (`FlashAttentionForwardSm100`, BF16) | 7% | 10% | 13% | 17% |
+| attention glue: relative logits `_qr_rel`, `_attn_res`, `_attn_prologue`, `_gate_sink` | 17% | 23% | 21% | 21% |
+| dense BF16 GEMMs (`nvjet`: attention projections, LM head) | 17% | 17% | 17% | 15% |
+| expert GEMMs (NVFP4 and MXFP8 `bmm`) | 20% | 14% | 14% | 13% |
+| MoE activation quantization, routing, scatter, combine | 16% | 14% | 14% | 13% |
+| RMS norms (`_blend_rms_norm`, `_pair_rms_norm`) | 8% | 11% | 11% | 11% |
+| short convolutions (`convMixKernel`) | 8% | 10% | 10% | 9% |
+
+- **The GPU is never idle.** Kernel time fills the whole request (busy time
+  equals or exceeds the span because some kernels overlap), so CPU or launch
+  overhead is not what holds it back.
+- **The FP4 expert GEMMs are only 13 to 14%** of the time at 8K tokens and
+  above. Quantizing activations and moving tokens to and from the experts
+  costs as much again. The MoE design saves FLOPs, but FLOPs are not where
+  the time goes.
+- **About half the time is memory-bound Triton glue**: attention prologue and
+  relative logits, the cross-layer attention residual, gates and sinks, RMS
+  norms, short convolutions and MoE quantization. On a 2,304-wide hidden
+  state these move data more than they compute.
+- **The BF16 attention projections cost more than the FP4 experts** (15 to
+  17% against 13 to 14%).
+- **Attention scales gently.** Tokens/s is flat from 8K to 34K tokens; the
+  FA4 core grows from 10% to 17%.
+- **The loop multiplies all of it.** Every family above runs per layer visit,
+  and 36 of the 48 visits per token are the three passes of the 12 core
+  layers. A single pass would make 24 visits, so the loop roughly doubles the
+  per-token layer time. That is the architecture and stays.
+
+**Where speed could come from**, in order of likely size (none tried):
+fusing the glue kernels around attention and the MoE (norms, prologue,
+relative logits, gates, quantize-and-scatter); FP8 or FP4 attention
+projections (W16A16 now); FP8 attention and KV cache at long context; and
+fixing batch-invariance so several prompts can share a step. The glue is
+about half of GPU time, so fusing it well could plausibly give 1.3 to 1.5
+times; this is an estimate, not a measurement.
+
 **Limits.** One unadapted checkpoint at one prompt interface, scored one
 sequence at a time because batched scores depend on batch composition on
 this vLLM nightly; whether singleton scores match the reference
