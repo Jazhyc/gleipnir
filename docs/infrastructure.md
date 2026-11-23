@@ -1148,6 +1148,19 @@ UTC, reachable at 04:40 after a 16-minute image pull, run 04:43–04:58,
 terminated at 04:58 (`podTerminate`; `myself.pods` empty) after verified
 collection of 11 files; about $4.60. No Pod remains.
 
+For the [Inkling 2 Mini OOD screen](../experiments/inkling_ood/README.md)
+(user authorization 2026-11-23: one B200, kept running afterwards for
+follow-up experiments): `5uo9tcfq79m724` (`gleipnir-inkling-ood`, US-TX-6
+because EU-RO-1 and US-CA-2 had no B200, image `1.2`, machine
+`40ko8z1ne43c`, B200 `GPU-62b8cec6…`, Xeon 6972P, driver 595.112.07, 250 GB
+container disk, no volume, $7.99/hour, snapshot `.runpod/inkling-ood.json`).
+Created at 20:52 UTC, reachable at 21:02. It runs an isolated vLLM nightly
+(`/root/inkling-vllm`, `0.34.0rc1.dev1201+gbfe3d7e87`) with the checkpoint in
+`/root/hf-inkling` and compile caches in `/root/cache/inkling_ood`; the image's
+0.31 runtime is not used. Results were collected and verified (34 files) at
+about 23:30 UTC. **Still running** at the user's request; terminating it
+needs the user's instruction.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary
