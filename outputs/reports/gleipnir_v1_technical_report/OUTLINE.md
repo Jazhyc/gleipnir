@@ -601,6 +601,12 @@ Appendix: probe families, layer sweep, attention maps.
 
 Owner: JF.
 
+Drafted 2026-11-23 as five paragraphs: benchmarks not production traffic
+(C7.3, C7.4), attacks and text aimed at the monitor (C7.2), cost comparison
+(C7.5), serving at scale (one GPU, no cache management across sessions), and
+one teacher and one training set (C7.1). Teacher dependence as such is not
+listed: distillation is the method; only the single teacher limits generality.
+
 - **C7.1 (draft).** One teacher, one training domain, one seed for the 27B.
 - **C7.2 (draft).** The monitors do not catch mistake-shaped attacks or resist
   monitor-directed text (Section 6).
