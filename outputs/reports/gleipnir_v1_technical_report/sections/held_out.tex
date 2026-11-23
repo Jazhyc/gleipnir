@@ -1,7 +1,7 @@
 \section{Held-out and adversarial evaluation}
 \label{sec:held-out}
 
-This section compares Gleipnir with other monitors in two settings that differ from the OOD suite: attacks designed to evade monitors, and reward hacking by other agent models.
+This section compares Gleipnir with other monitors in two settings that differ from the OOD suite: attacks designed to evade monitors, and reward hacking by other agents.
 No training, prompt or selection decision of Gleipnir used either.
 Appendix~\ref{app:exploratory} gives five exploratory stress tests.
 
@@ -47,7 +47,7 @@ Otherwise the catch rates rank the monitors much as pAUROC@20 does (Appendix~\re
 Against attacks designed to evade a monitor, which a capable agent that knows its monitor could attempt, no monitor that we scored is sufficient alone, and the cheap decision models, including Gleipnir, fall further short than on the OOD suite.
 Closing this gap, with stronger monitors behind the cheap ones or with training data that contains attacks built against a monitor, is left to future work.
 
-\subsection{Reward hacking by other agent models}
+\subsection{Reward hacking by other agents}
 \label{sec:held-out-evilgenie}
 
 Coding agents can exploit flaws in how their work is checked, for example by special-casing the tests instead of solving the task.
