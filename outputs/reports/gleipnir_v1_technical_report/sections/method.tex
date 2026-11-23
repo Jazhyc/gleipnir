@@ -6,8 +6,8 @@
 
 A Gleipnir monitor reads one trajectory and returns one score.
 The input is a single user message: an instruction that describes harmful behavior, followed by the trajectory between \texttt{<agent\_trajectory>} tags.
-Appendix~\ref{app:prompts} gives the instructions in full, and Appendix~\ref{app:data-discrepancies} describes what the trajectories contain.
-We apply the chat template of the model with thinking disabled and start the reply of the model with the text \texttt{Prediction:}.
+Appendix~\ref{app:prompts} gives the instructions and Appendix~\ref{app:data-discrepancies} the content of the trajectories.
+We apply the chat template of the model with thinking disabled and start its reply with the text \texttt{Prediction:}.
 The monitor then reads the logits $z_0$ and $z_1$ of the tokens \texttt{0} (benign) and \texttt{1} (harmful) at the next position.
 The score is the probability of \texttt{1} among these two tokens,
 \begin{equation}
@@ -15,7 +15,7 @@ s = \frac{e^{z_1}}{e^{z_0} + e^{z_1}} = \sigma(z_1 - z_0) .
 \label{eq:score}
 \end{equation}
 This output has two properties that the output of Section~\ref{sec:background-sinha} lacks.
-It needs one forward pass over the prompt and no generated text, so the monitor writes no rationale.
+It needs one forward pass over the prompt and writes no rationale.
 It is also continuous, so it ranks trajectories without the ties of an integer scale.
 Binary logits also score higher than an integer from 0 to 10 before any training: on the unadapted Qwen3.5-9B they score 0.698 Mean-OOD against 0.486 (Appendix~\ref{app:ablation-format}).
 We hypothesize that the binary decision helps because its probability expresses only the confidence of the monitor, while a score from 0 to 10 mixes this confidence with the severity of the behavior.
