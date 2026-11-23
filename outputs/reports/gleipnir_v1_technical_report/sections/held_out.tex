@@ -21,13 +21,13 @@ The authors report only the catch rate of their monitors, so Figure~\ref{fig:sle
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{sleightbench_frontier}
-\caption{On SleightBench, pplx-decider v1.3 scores above both Gleipnir monitors at about the cost of Gleipnir 27B. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Gleipnir is priced at the committed-use rate; Table~\ref{tab:sleightbench} lists every monitor with both rates. Markers follow Figure~\ref{fig:frontier}, and the frontier treats costs within 3\% of each other as equal. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
+\caption{On SleightBench, the low-cost monitors score close together, far below GPT-6.1 Terra. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Gleipnir is priced at the committed-use rate; Table~\ref{tab:sleightbench} lists every monitor with both rates. Markers follow Figure~\ref{fig:frontier}, and the frontier treats costs within 3\% of each other as equal. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
 \label{fig:sleightbench}
 \end{figure}
 
-\paragraph{At low cost, pplx-decider v1.3 leads both Gleipnir monitors.}
-At about the committed-use cost of Gleipnir 27B (\$0.35 against \$0.33 per 1,000 evaluations), pplx-decider v1.3 scores 0.397 pAUROC@20, against 0.299 for Gleipnir 27B and 0.209 for Gleipnir 4B (Figure~\ref{fig:sleightbench}).
-Gleipnir 27B is level with pplx-decider v1.2 (0.300).
+\paragraph{At low cost, no monitor stands out.}
+Below \$2 per 1,000 evaluations, every monitor scores between 0.19 and 0.40 pAUROC@20, with overlapping intervals (Figure~\ref{fig:sleightbench}).
+Gleipnir 27B scores 0.299 and Gleipnir 4B 0.209, and pplx-decider v1.3 scores 0.397 at about the cost of Gleipnir 27B.
 
 \paragraph{GPT-6.1 Terra leads at the high end.}
 GPT-6.1 Terra scores 0.734 at \$15.49, and its interval lies above those of all cheaper monitors (Table~\ref{tab:sleightbench}).
