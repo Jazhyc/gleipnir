@@ -1157,9 +1157,11 @@ container disk, no volume, $7.99/hour, snapshot `.runpod/inkling-ood.json`).
 Created at 20:52 UTC, reachable at 21:02. It runs an isolated vLLM nightly
 (`/root/inkling-vllm`, `0.34.0rc1.dev1201+gbfe3d7e87`) with the checkpoint in
 `/root/hf-inkling` and compile caches in `/root/cache/inkling_ood`; the image's
-0.31 runtime is not used. Results were collected and verified (34 files) at
-about 23:30 UTC. **Still running** at the user's request; terminating it
-needs the user's instruction.
+0.31 runtime is not used. Kept running after the OOD runs at the user's
+request for the kernel profile. Terminated at 23:45 UTC on the user's
+instruction (`podTerminate`; `myself.pods` empty) after verified collection
+of 47 files (`collect.sha256`, `collect_profile.sha256`); about $23. No Pod
+remains.
 
 ## OpenRouter
 
