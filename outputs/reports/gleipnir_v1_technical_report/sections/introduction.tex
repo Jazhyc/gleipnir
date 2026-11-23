@@ -13,8 +13,8 @@ The name comes from the ribbon in Norse myth that binds the wolf Fenrir: as thin
 We distill the decision-token probabilities of a frontier teacher, Kimi K3, into Qwen3.5-4B and Qwen3.8-27B, and serve the monitors with a stack built for this single forward pass.
 We price the reference monitors at API prices and Gleipnir at the cost of a dedicated self-hosted GPU, because a workload without decoding uses the GPU differently, and a standard API price does not pass this saving on (Section~\ref{sec:serving-selfhost}).
 
-On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and 0.055 above the strongest decision model at the same cost (Section~\ref{sec:evaluation}).
-On harder benchmarks, results are mixed: on attacks designed to evade monitors, both monitors score below pplx-decider v1.3, and on reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most (Section~\ref{sec:held-out}).
+On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and 0.055 above the strongest decision model, a model built to answer a question in one step without reasoning, at the same cost (Section~\ref{sec:evaluation}).
+On harder benchmarks, results are mixed: on attacks designed to evade monitors, both monitors score below a decision model of similar cost, and on reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most (Section~\ref{sec:held-out}).
 
 Our contributions are:
 \begin{itemize}
