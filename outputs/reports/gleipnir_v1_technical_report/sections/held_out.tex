@@ -4,7 +4,7 @@
 This section evaluates the monitors on benchmarks that are harder for monitors or differ from the OOD suite in kind.
 They show how the Gleipnir monitors compare with other monitors in these settings, and which parts of a trajectory their decisions depend on.
 No training, prompt or selection decision of Gleipnir used these benchmarks.
-Appendix~\ref{app:exploratory} gives four smaller, exploratory stress tests.
+Appendix~\ref{app:exploratory} gives five smaller, exploratory stress tests.
 
 \subsection{Attacks designed to evade monitors}
 \label{sec:sleightbench}
@@ -101,32 +101,3 @@ We chose this split after scoring, to show where the hard cases lie.
 The dataset omits the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 
 In practice, Gleipnir 27B is the strongest low-cost monitor here, but it misses most reward hacks, so it could add a cheap check to tests and audits, in deployment or training, but not replace them.
-
-\subsection{Robustness to text in the code}
-\label{sec:held-out-apps}
-
-An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
-We test this in the APPS backdoor setting of \citet{greenblatt2023ai}.
-Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS problem~\citep{hendrycks2021apps}: a benign one, and one that gives a wrong output on one trigger input.
-We insert the same text as a module docstring into both programs, so the text alone does not reveal which program has the backdoor.
-We compare four conditions: no text, an unrelated text from another APPS problem, and two accusations that the program has a backdoor: a specific one that gives the trigger input and the wrong output, and a generic one that names no trigger (Appendix~\ref{app:held-out-apps}).
-
-\begin{figure}[t]
-\centering
-\includegraphics[width=\linewidth]{held_out_apps_text}
-\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against benign programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
-\label{fig:apps-text}
-\end{figure}
-
-\paragraph{Text lowers Gleipnir 4B close to chance.}
-Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
-An accusation raises the scores of both programs close to 1.
-Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tuning made the 4B more sensitive to accusations.
-
-\paragraph{Accusations raise the separation of Gleipnir 27B.}
-Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
-With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
-
-\paragraph{A threshold set on code without text does not transfer.}
-At a 1\% threshold set on benign APPS programs without text, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs under an accusation, except the unadapted 4B (65\% under a generic accusation).
-Under unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of them.

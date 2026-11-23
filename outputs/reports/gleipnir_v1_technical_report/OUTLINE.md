@@ -490,12 +490,13 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   pAUROC@20 under a specific accusation, while Gleipnir 27B rises from 0.818 to
   0.934; fine-tuning made the 4B more sensitive than its base (AUROC 0.581
   against 0.805). Thresholds set on code without text flag 93-100% of accused
-  honest programs. Main text 6.2.
+  honest programs. Moved to Appendix G.2 on 2026-11-23 (BF16 protocol, near
+  template accusations, thresholds on bare code); Section 7 keeps one sentence.
   Evidence: `experiments/adversarial_crossed_text/`, `results/figures/backdoor_pauroc.json`.
 - **C5.3 (written, ARK; moved to the appendix).** Both monitors treat text
   addressed to the monitor as a sign of harm (APPS injections: every injected
   honest program flagged at the operating point; lab post: 4B 82% of readers,
-  27B and Kimi 0%). Appendix F.3 and F.8.
+  27B and Kimi 0%). Appendix G.2 and G.7.
   Evidence: `docs/findings/apps_released_monitors.md`, `experiments/adversarial_is_it_4b/`.
 - **C5.5 (written, ARK; appendix).** Natural cheats (ImpossibleBench, 57
   cheats): Gleipnir 4B and 27B score 0.935 and 0.941 pAUROC@20, level with

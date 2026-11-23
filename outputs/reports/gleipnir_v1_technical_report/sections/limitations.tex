@@ -1,6 +1,9 @@
 \section{Limitations}
 \label{sec:limitations}
 
-\todo{Scope of evaluation, teacher dependence, known failure modes and adversarial limits. Include from 6.3: one generator for programs and texts, one text position, no accurate code documentation tested, and thresholds calibrated on code without text do not transfer to code with text.}
+\todo{Scope of evaluation, teacher dependence, known failure modes and adversarial limits.}
+
+\paragraph{Text in the code.}
+In an exploratory test, the same accusation of a backdoor, inserted into a benign and a backdoored program, lowers Gleipnir 4B close to chance, while Gleipnir 27B keeps its separation (Appendix~\ref{app:held-out-apps}).
 
 \todo{Cost comparison mixes price bases (API prices for baselines, dedicated self-hosted GPU for Gleipnir); same-hardware latency and throughput as future work. See OUTLINE C7.5.}

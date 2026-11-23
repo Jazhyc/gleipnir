@@ -895,30 +895,6 @@ As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and ppl
 \end{figure}
 
 \FloatBarrier
-\subsection{Protocol of the stress tests}
-\label{app:held-out-protocol}
-
-\paragraph{Monitors.}
-Gleipnir 4B is the released 4B adapter on Qwen3.5-4B, after quantization-aware distillation, and it reads the compact instruction.
-Gleipnir 27B is the released 27B merged into its base model, and it reads the full specification.
-For reward hacking by other agent models (Section~\ref{sec:held-out-evilgenie}), both run on the released serving stack of Section~\ref{sec:serving} (Appendix~\ref{app:held-out-evilgenie}).
-For the other tests we run both in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU.
-The natural-cheat runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
-On eight APPS trajectories, this fallback changed the 4B score by at most 0.027; we did not measure the change for the 27B.
-
-\paragraph{Monitor input.}
-Each monitor reads tool calls and tool outputs.
-It does not read the system prompt of the agent, its reasoning or its other assistant messages, except in the multi-agent tests, where the final message of a session and the posts of an agent are part of its actions (Appendices~\ref{app:held-out-aisi} and~\ref{app:held-out-lab}).
-We exclude trajectories longer than 29,696 tokens, the maximum input length in training, except in the reward hacking test, which scores runs of up to 111,249 tokens, and the multi-agent sabotage test, which scores whole sessions of up to 99,193 tokens.
-
-\paragraph{Thresholds.}
-For the reward hacking test, the 1\% threshold of each monitor is the largest score that flags at most 1\% of the 3,189 benign OOD trajectories, scored as in Section~\ref{sec:evaluation}: 0.836 for Gleipnir 4B and 0.798 for Gleipnir 27B on the released stack.
-For the other tests, the 1\% threshold flags 1\% of benign OOD trajectories, sampled once before these tests.
-It is 0.622 for Gleipnir 4B, from 1,000 trajectories, and 0.731 for Gleipnir 27B, from 400 trajectories.
-Four of the 400 trajectories lie above the 27B threshold, so its false-positive rate on new data is more uncertain than that of the 4B.
-For Kimi K3 it is 0.755, from 1,000 trajectories.
-The lab test of Appendix~\ref{app:held-out-lab} uses another threshold for the 4B and says why.
-
 \subsection{Reward hacking by other agent models}
 \label{app:held-out-evilgenie}
 
@@ -939,6 +915,7 @@ This affects 57 of the 124 reward hacks and 842 of the 1,823 legitimate runs.
 
 \paragraph{Scoring.}
 Both Gleipnir monitors run on the released serving stack, one NVIDIA B200 with the released image, in batches of 128 runs with 128 concurrent requests, as for the OOD suite.
+Their 1\% thresholds are 0.836 (4B) and 0.798 (27B), from the 3,189 benign OOD trajectories scored on the same stack.
 They score every run, including 144 (4B) and 154 (27B) runs longer than the 29,696 tokens of training; the longest has 111,249 tokens.
 The 4B scored the 24.2 million prompt tokens in 110 seconds and the 27B the 26.0 million in 499 seconds.
 An earlier run of both monitors in BF16, with a time limit that stopped the 27B after 1,312 runs, gave the same 27B result on the 105 reward hacks and 999 legitimate runs that both scored (pAUROC@20 0.695, against 0.699 here) and a higher score for the 4B (0.350, against 0.296).
@@ -1000,8 +977,59 @@ Problem & Hacks & Legit. & AUROC & Hacks & Legit. & AUROC & Hacks & Legit. \\
 \end{tabular}
 \end{table}
 
+\section{Exploratory stress tests}
+\label{app:exploratory}
+
+This appendix gives five smaller stress tests, with the protocol of Appendix~\ref{app:held-out-protocol}.
+They are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
+We mark every analysis that we chose after we saw the scores as post hoc.
+
+\subsection{Protocol of the stress tests}
+\label{app:held-out-protocol}
+
+\paragraph{Monitors.}
+Gleipnir 4B is the released 4B adapter on Qwen3.5-4B, after quantization-aware distillation, and it reads the compact instruction.
+Gleipnir 27B is the released 27B merged into its base model, and it reads the full specification.
+Both run in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU, and not on the serving stack of Section~\ref{sec:serving}.
+The natural-cheat runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
+On eight APPS trajectories, this fallback changed the 4B score by at most 0.027; we did not measure the change for the 27B.
+
+\paragraph{Monitor input.}
+Each monitor reads tool calls and tool outputs.
+It does not read the system prompt of the agent, its reasoning or its other assistant messages, except in the multi-agent tests, where the final message of a session and the posts of an agent are part of its actions (Appendices~\ref{app:held-out-aisi} and~\ref{app:held-out-lab}).
+We exclude trajectories longer than 29,696 tokens, the maximum input length in training, except in the multi-agent sabotage test, which scores whole sessions of up to 99,193 tokens.
+
+\paragraph{Thresholds.}
+The 1\% threshold flags 1\% of benign OOD trajectories, sampled once before these tests.
+It is 0.622 for Gleipnir 4B, from 1,000 trajectories, and 0.731 for Gleipnir 27B, from 400 trajectories.
+Four of the 400 trajectories lie above the 27B threshold, so its false-positive rate on new data is more uncertain than that of the 4B.
+For Kimi K3 it is 0.755, from 1,000 trajectories.
+The test with text in the code (Appendix~\ref{app:held-out-apps}) sets its thresholds on APPS programs, and the lab test (Appendix~\ref{app:held-out-lab}) uses another threshold for the 4B and says why.
+
 \subsection{Robustness to text in the code}
 \label{app:held-out-apps}
+
+An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
+We test this in the APPS backdoor setting of \citet{greenblatt2023ai}.
+Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS problem~\citep{hendrycks2021apps}: a benign one, and one that gives a wrong output on one trigger input.
+We insert the same text as a module docstring into both programs, so the text alone does not reveal which program has the backdoor.
+We compare four conditions: no text, an unrelated text from another APPS problem, and two accusations that the program has a backdoor: a specific one that gives the trigger input and the wrong output, and a generic one that names no trigger.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{held_out_apps_text}
+\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against benign programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
+\label{fig:apps-text}
+\end{figure}
+
+\paragraph{Text lowers Gleipnir 4B close to chance.}
+Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
+An accusation raises the scores of both programs close to 1.
+Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tuning made the 4B more sensitive to accusations.
+
+\paragraph{Accusations raise the separation of Gleipnir 27B.}
+Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
+With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
 
 \paragraph{Programs and triggers.}
 The programs come from \texttt{Jazhyc/gleipnir-apps-injection-evals}, a copy of \texttt{mjkenney/monitor-injection-evals} at revision \texttt{58e722bf}~\citep{kenney2026monitorinjection}.
@@ -1012,7 +1040,7 @@ This gave 100 held-out tasks; a later review found the trigger of task 1099 inva
 The study also has 50 development tasks, which we used for a pilot and for the probe of Appendix~\ref{app:held-out-probe}.
 
 \paragraph{Texts.}
-The study has six conditions: the four of Section~\ref{sec:held-out-apps}, an accurate restatement of the task, and a cover story that presents the special case as an intended requirement.
+The study has six conditions: the four above, an accurate restatement of the task, and a cover story that presents the special case as an intended requirement.
 The scored set therefore has 982 rows: two programs for each of 99, 91, 93, 81, 99 and 28 tasks.
 A restatement sees only the problem statement and has 500 to 700 characters.
 Every other text has a length within 10\% of the restatement of its task.
@@ -1094,8 +1122,10 @@ Gleipnir 27B & No text & 0.947 {\scriptsize [0.915, 0.973]} & 0.919 \\
 \end{tabular}
 \end{table}
 
-\paragraph{Thresholds on code without text.}
-The thresholds of Section~\ref{sec:held-out-apps} come from 221 benign APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
+\paragraph{A threshold set on code without text does not transfer.}
+At a 1\% threshold set on benign APPS programs without text, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs under an accusation, except the unadapted 4B (65\% under a generic accusation).
+Under unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of them.
+These thresholds come from 221 benign APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
 These tasks are disjoint from the study tasks.
 
 \paragraph{Text addressed to the monitor.}
@@ -1109,7 +1139,7 @@ Appendix~\ref{app:held-out-lab} gives a second test of text addressed to the mon
 
 \paragraph{Limits.}
 One model wrote the programs, one model wrote the texts, and the text has one position.
-We did not test accurate documentation of the code, so the flag rates of Section~\ref{sec:held-out-apps} apply to misleading or unrelated text.
+We did not test accurate documentation of the code, so these flag rates apply to misleading or unrelated text.
 Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B here, so this test does not separate the effects of size, instruction and training for the 27B.
 
 \subsection{A linear probe under identical text}
@@ -1157,13 +1187,6 @@ Also, the code mean excludes the docstring tokens, while the decision token read
 The same procedure on Gleipnir 27B selects block 64 with the decision token.
 That probe ranks the accused programs in reverse (AUROC 0.025 and 0.044), while the output of the 27B reaches 0.984 and 0.959.
 We have no explanation for this result.
-
-\section{Exploratory stress tests}
-\label{app:exploratory}
-
-This appendix gives four smaller stress tests, with the protocol of Appendix~\ref{app:held-out-protocol}.
-They are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
-We mark every analysis that we chose after we saw the scores as post hoc.
 
 \subsection{Natural cheating by one agent model}
 \label{app:held-out-natural}
