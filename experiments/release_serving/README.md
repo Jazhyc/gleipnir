@@ -4,8 +4,10 @@ Packages Gleipnir 4B **v0.4** and Gleipnir 27B **v0.2** for outside users.
 These are packaging releases: the weights are unchanged.
 
 - **Hugging Face, two repos per model.**
-  - `Jazhyc/Gleipnir-4B` and `Jazhyc/Gleipnir-27B` keep the FP32 and `vllm/`
-    adapters, for merging and fine-tuning.
+  - `Jazhyc/Gleipnir-4B-LoRA` and `Jazhyc/Gleipnir-27B-LoRA` keep the FP32
+    and `vllm/` adapters, for merging and fine-tuning. They were renamed from
+    `Jazhyc/Gleipnir-4B` and `Jazhyc/Gleipnir-27B` on 2026-11-23; the old IDs
+    redirect.
   - `Jazhyc/Gleipnir-4B-BF16` and `Jazhyc/Gleipnir-27B-BF16` hold the merged
     BF16 checkpoints, for stock vLLM or Transformers and for the image.
   - Every repo of a model gets the model's version tag.

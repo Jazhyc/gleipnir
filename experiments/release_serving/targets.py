@@ -89,7 +89,7 @@ TARGETS = {
     "4b": Target(
         key="4b",
         version="v0.4",
-        adapter_repo="Jazhyc/Gleipnir-4B",
+        adapter_repo="Jazhyc/Gleipnir-4B-LoRA",
         merged_repo="Jazhyc/Gleipnir-4B-BF16",
         server_receipt="results/qad-v02-optimized01/server.json",
         merged_artifact="results/qad-v02-optimized01/merged_artifact.json",
@@ -134,7 +134,7 @@ TARGETS = {
     "27b": Target(
         key="27b",
         version="v0.2",
-        adapter_repo="Jazhyc/Gleipnir-27B",
+        adapter_repo="Jazhyc/Gleipnir-27B-LoRA",
         merged_repo="Jazhyc/Gleipnir-27B-BF16",
         server_receipt="results/optimized_gap/opt27b_teacher_eu01/server.json",
         merged_artifact="results/qwen38-27b-s0-01/merged_artifact.json",

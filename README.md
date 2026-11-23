@@ -21,8 +21,8 @@ conclusions live in `docs/`.
 
 | Model | Adapter (FP32 LoRA) | Merged BF16 checkpoint | Mean-OOD pAUROC@20 |
 | --- | --- | --- | ---: |
-| Gleipnir 4B v0.4 | [`Jazhyc/Gleipnir-4B`](https://huggingface.co/Jazhyc/Gleipnir-4B) | [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | 0.804 (BF16), 0.770 (optimized) |
-| Gleipnir 27B v0.2 | [`Jazhyc/Gleipnir-27B`](https://huggingface.co/Jazhyc/Gleipnir-27B) | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | 0.935 (BF16), 0.951 (optimized) |
+| Gleipnir 4B v0.4 | [`Jazhyc/Gleipnir-4B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA) | [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | 0.804 (BF16), 0.770 (optimized) |
+| Gleipnir 27B v0.2 | [`Jazhyc/Gleipnir-27B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-27B-LoRA) | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | 0.935 (BF16), 0.951 (optimized) |
 
 - **What they are.** MIT-licensed research monitors that score visible
   AI-agent tool-use trajectories for sabotage, exfiltration and other covert
