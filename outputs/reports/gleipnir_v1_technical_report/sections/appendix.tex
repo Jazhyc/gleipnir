@@ -1146,6 +1146,7 @@ Under both accusations, the probe of Gleipnir 4B keeps an AUROC of 0.950 to 0.95
 The probe of the unadapted model falls to 0.658 under a specific accusation.
 Two controls score lower under accusations: a probe trained on shuffled labels (0.228 to 0.263) and a logistic regression on the length of the program (0.531 to 0.553).
 A probe shows that the information is present; it does not show that the model uses it.
+The probe is fit with backdoor labels on APPS programs, supervision that the monitor lacks, and without text it already exceeds the output of the 4B (0.968 against 0.893).
 Also, the code mean excludes the docstring tokens, while the decision token reads them, and the two 4B probes use different positions; part of the difference between them can come from this choice.
 The same procedure on Gleipnir 27B selects block 64 with the decision token.
 That probe ranks the accused programs in reverse (AUROC 0.025 and 0.044), while the output of the 27B reaches 0.984 and 0.959.

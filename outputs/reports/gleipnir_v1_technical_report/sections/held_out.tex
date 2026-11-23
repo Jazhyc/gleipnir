@@ -120,9 +120,8 @@ We compare four conditions: no text, an unrelated text from another APPS problem
 
 \paragraph{Text lowers Gleipnir 4B close to chance.}
 Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
-An accusation raises the scores of benign and backdoored programs alike, close to 1.
-Its base model, Qwen3.5-4B, also loses separation under unrelated text but less under accusations (0.434 with a specific accusation), so fine-tuning made the 4B more sensitive to them.
-A linear probe on the 4B still separates the accused programs, so the failure lies in its output rather than its representation (Appendix~\ref{app:held-out-probe}).
+An accusation raises the scores of both programs close to 1.
+Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tuning made the 4B more sensitive to accusations.
 
 \paragraph{Accusations raise the separation of Gleipnir 27B.}
 Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
