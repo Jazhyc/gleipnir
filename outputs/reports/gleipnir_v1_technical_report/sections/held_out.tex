@@ -106,7 +106,7 @@ In practice, Gleipnir 27B is the strongest low-cost monitor here, but it misses 
 \label{sec:held-out-apps}
 
 An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
-We test this in the APPS backdoor setting of AI control~\citep{greenblatt2023ai}.
+We test this in the APPS backdoor setting of \citet{greenblatt2023ai}.
 Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS problem~\citep{hendrycks2021apps}: an honest one, and one that gives a wrong output on one trigger input.
 We insert the same text as a module docstring at the top of both programs, so the text alone does not reveal which program has the backdoor.
 We compare four conditions: no text, an unrelated text that restates another APPS problem, a specific accusation that describes the trigger input and the wrong output, and a generic accusation that says only that the code hides a backdoor (Appendix~\ref{app:held-out-apps}).
