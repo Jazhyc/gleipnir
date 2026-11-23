@@ -1,4 +1,15 @@
 \section{Conclusion}
 \label{sec:conclusion}
 
-\todo{Summary and future work. Future work: early exits, which roughly double throughput but at half depth lose 0.04--0.07 Mean-OOD against Gleipnir (Appendix~\ref{app:probing}).}
+We trained small open-weight monitors to match the decision-token probability of a frontier teacher, so that a monitor reads a trajectory once and returns a score without writing text, and we built a serving stack for this single forward pass.
+On the OOD suite of \citet{sinha2026training}, Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost on demand, and at the cost of the strongest decision model it scores 0.055 higher.
+Self-hosting, low-precision arithmetic and the removal of unneeded work lower the cost from the API price by 6.4 times for the 4B and 10.4 times for the 27B, and prefix caching makes checking every action cheaper still.
+
+Outside the OOD suite, the monitors are weaker.
+On SleightBench both fall further behind the other monitors, and the 27B falls behind its teacher.
+On reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most hacks, and in an exploratory test, text in the code pushes Gleipnir 4B close to chance.
+
+Three directions could close these gaps or lower the cost further.
+Pipelines that generate and refine attacks against a monitor at scale, such as MonitoringBench~\citep{jotautaite2026monitoringbench}, could supply the training data that SleightBench shows is missing.
+Learned token pruning~\citep{patel2026tokengate} could shorten the prefill over long trajectories, and an engine built for prefill-only workloads~\citep{du2025prefillonly} could serve more concurrent requests on one GPU.
+Early exits could lower the cost of the model itself: a probe at half depth roughly doubles throughput but scores 0.04 to 0.07 below Gleipnir on the OOD suite (Appendix~\ref{app:probing}), and an exit placed later, or trained together with the adapter, may keep more of the quality.
