@@ -2,7 +2,8 @@
 
 Reads only data.json (rebuild it with refresh_data.py). Uses the report register
 of the alignment-research-figures skill (anthro_style). Writes PNG previews here
-and vector PDFs to ../assets/, which the report includes. No in-figure titles:
+and vector PDFs to ../assets/, which the report includes. The probe figure
+has its own script without the style package (make_probe_figure.py). No in-figure titles:
 the LaTeX captions carry the takeaway, as for the other report figures.
 
     python make_figures.py
@@ -82,28 +83,6 @@ def fig_apps() -> None:
                                         [None] * 4 + ["//"]), ncols=5,
                      fontsize=9.6, columnspacing=1.2, handletextpad=0.5, handlelength=1.3)
     save(fig, "held_out_apps_text")
-
-
-# -------------------------------------------------------------- Figure: probe
-def fig_probe() -> None:
-    conds = [("none", "No text"), ("specific_accusation", "Specific\naccusation"),
-             ("generic_accusation", "Generic\naccusation")]
-    cols = [G["450"], ast.ramp("violet", 500)]
-    fig, axes = ast.new_figure(1, 2, figsize=(7.2, 2.7), sharey=True)
-    for ax, (m, title) in zip(axes, (("4b", "Gleipnir 4B"), ("base4b", "Qwen3.5-4B (unadapted)"))):
-        ast.panel_title(ax, title)
-        series = {}
-        for s, lab in (("output", "Output of the model"), ("probe", "Linear probe")):
-            v, e = errs([D["probe"][m][c][s] for c, _ in conds])
-            series[lab] = (v, e)
-        ast.grouped_bars(ax, [l for _, l in conds], series, colors=cols, ylim=(0, 1.08), group_width=0.66, gap=0.02)
-        ax.axhline(0.5, **CHANCE_KW)
-        ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
-    axes[0].set_ylabel("AUROC,\nbackdoored vs benign")
-    axes[1].tick_params(axis="y", labelleft=False)
-    axes[0].text(-0.57, 0.515, "chance", ha="left", va="bottom", fontsize=9.5 * S, color=G["550"])
-    ast.bottom_legend(fig, ast.swatches(["Output of the model", "Linear probe"], cols), ncols=2)
-    save(fig, "held_out_probe")
 
 
 # ---------------------------------------------------------------- Figure: lab
@@ -189,6 +168,5 @@ def fig_lab_setup() -> None:
 
 if __name__ == "__main__":
     fig_apps()
-    fig_probe()
     fig_lab()
     fig_lab_setup()

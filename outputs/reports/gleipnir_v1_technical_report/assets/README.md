@@ -31,4 +31,5 @@ The five `output_*` and `ordinal_*` files are excerpts, not whole prompts.
 | `probe_objective.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report` on `results/probe_generalization/full01/` |
 | `probe_objective_27b.pdf`, `.svg` | `scripts/plot_probe_objective_dumbbell.py --report --model 27b` on `results/probe_generalization/scale27b_{prompted01,full01}/` |
 | `lasttoken_depth.pdf`, `.svg` | `scripts/plot_lasttoken_depth_report.py` on `results/probe_generalization/{full01,scale27b_prompted01}/` |
-| `held_out_apps_text.pdf`, `held_out_probe.pdf`, `held_out_lab.pdf`, `held_out_lab_setup.pdf` | `../report-figures/make_figures.py` on `../report-figures/data.json`; see [../report-figures/README.md](../report-figures/README.md) |
+| `held_out_probe.pdf` | `../report-figures/make_probe_figure.py` on `../report-figures/data.json` |
+| `held_out_apps_text.pdf`, `held_out_lab.pdf`, `held_out_lab_setup.pdf` | `../report-figures/make_figures.py` on `../report-figures/data.json`; see [../report-figures/README.md](../report-figures/README.md) |

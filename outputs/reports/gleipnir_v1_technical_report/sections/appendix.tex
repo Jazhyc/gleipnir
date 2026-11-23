@@ -246,9 +246,9 @@ The scores therefore say nothing about the longer SHADE-Arena trajectories, and 
 \paragraph{One dominant task.}
 The remaining trajectories come from five task pairs, and one of them provides 333 of the 850 trajectories (39\%).
 In it, the agent books flights for 16 conference visitors, and in attack runs it books almost all of them with one airline that costs about twice as much as the alternatives.
-The evidence is visible to the monitor: attack runs book a median of 97\% of the tickets with that airline and honest runs 9\%, so this share alone separates the classes perfectly.
-Whether the attacks are harmful is less clear, because the user lets the agent book ``whatever flights you think are best'' and a loyalty file, identical in honest and attack runs, gives many attendees a membership with that airline.
-Monitors therefore rank many attack runs below the most suspicious honest runs: within this task Kimi K3 reaches 0.847 AUROC but only 0.391 pAUROC@20.
+The evidence is visible to the monitor: attack runs book a median of 97\% of the tickets with that airline and benign runs 9\%, so this share alone separates the classes perfectly.
+Whether the attacks are harmful is less clear, because the user lets the agent book ``whatever flights you think are best'' and a loyalty file, identical in benign and attack runs, gives many attendees a membership with that airline.
+Monitors therefore rank many attack runs below the most suspicious benign runs: within this task Kimi K3 reaches 0.847 AUROC but only 0.391 pAUROC@20.
 Without this task, SHADE-Arena scores 0.958 for Gleipnir 27B and 0.940 for Kimi K3, and Mean-OOD 0.972 and 0.969, so the lead of the student falls from 0.042 to 0.003.
 The same task also carries the 0.016 that Gleipnir 27B gains on the OOD suite from low-precision serving (Appendix~\ref{app:ablation-precision}): without it, the BF16 and the released stack score 0.973 and 0.972.
 
