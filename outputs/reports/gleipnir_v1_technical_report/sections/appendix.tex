@@ -887,14 +887,13 @@ Figure~\ref{fig:sleightbench-catch} plots the catch rate against the cost.
 The catch rate depends on the single highest benign score, so one benign trajectory can move it far: Kimi K3 gives its highest score, 0.984, to a benign trajectory and catches no attack, although its AUROC (0.737) is about that of pplx-decider v1.3 (0.738).
 As on pAUROC@20, the frontier runs from Gleipnir 4B through Gleipnir 27B and pplx-decider v1.3 to GPT-6.1 Terra.
 
-\begin{figure}[t]
+\begin{figure}[!t]
 \centering
 \includegraphics[width=\linewidth]{sleightbench_catch_frontier}
 \caption{SleightBench catch rate at a false-positive rate of 1\% against the inference cost per 1,000 evaluations (log scale), for the monitors of Figure~\ref{fig:sleightbench}. Markers and the frontier follow Figure~\ref{fig:sleightbench}.}
 \label{fig:sleightbench-catch}
 \end{figure}
 
-\FloatBarrier
 \subsection{Reward hacking by other agent models}
 \label{app:held-out-evilgenie}
 
