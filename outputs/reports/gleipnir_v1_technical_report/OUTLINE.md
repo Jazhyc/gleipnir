@@ -469,7 +469,7 @@ rows; move the section to match where the main
 text first cites it), per-source results, full frontier figure, validation
 results, calibration.
 
-## 6. Held-out and adversarial evaluation
+## 6. Monitor-evading attacks and reward hacking
 
 Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
 
