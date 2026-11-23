@@ -14,7 +14,7 @@ A reasoning monitor spends most of its compute on a rationale; Gleipnir learns t
 Decision models also answer in one forward pass, but they are general-purpose models for any question, while Gleipnir is trained only to monitor agents.
 
 On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and 0.055 above the strongest decision model at the same cost (Section~\ref{sec:evaluation}).
-On harder benchmarks, results are mixed: on attacks designed to evade monitors, both score below a decision model of similar cost, and on reward hacks by other agents, Gleipnir 27B flags more than other cheap monitors but misses most (Section~\ref{sec:held-out}).
+On attacks built to evade monitors, Gleipnir 4B and 27B, like other low-cost monitors, trail far behind the strongest language model, and on reward hacks by other agents, the 27B flags more than other cheap monitors but misses most (Section~\ref{sec:held-out}).
 
 We release the code, data and weights of our contributions under the MIT licence:
 \begin{itemize}
