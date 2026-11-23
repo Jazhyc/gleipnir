@@ -128,12 +128,5 @@ Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusatio
 With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
 
 \paragraph{A threshold set on code without text does not transfer.}
-We also set a 1\% threshold for each monitor on benign APPS programs without docstrings.
-Under an accusation, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs at this threshold.
-The unadapted 4B is the one exception, at 65\% under a generic accusation.
-Under an unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of benign programs.
-We did not test accurate documentation of the code, so these rates apply to misleading or unrelated text.
-
-\paragraph{Limits.}
-One model wrote the programs, one model wrote the texts, and the text has one position.
-Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B here, so this test does not separate the effects of size, instruction and training for the 27B.
+At a 1\% threshold set on benign APPS programs without text, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs under an accusation, except the unadapted 4B (65\% under a generic accusation).
+Under unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of them.

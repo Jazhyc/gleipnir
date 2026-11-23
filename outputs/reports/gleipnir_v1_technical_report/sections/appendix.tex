@@ -1107,6 +1107,11 @@ The unadapted Qwen3.8-27B flags 76\% to 100\% at 0.5, so this reaction comes fro
 Both monitors therefore treat text addressed to the monitor as a sign of harm.
 Appendix~\ref{app:held-out-lab} gives a second test of text addressed to the monitor.
 
+\paragraph{Limits.}
+One model wrote the programs, one model wrote the texts, and the text has one position.
+We did not test accurate documentation of the code, so the flag rates of Section~\ref{sec:held-out-apps} apply to misleading or unrelated text.
+Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B here, so this test does not separate the effects of size, instruction and training for the 27B.
+
 \subsection{A linear probe under identical text}
 \label{app:held-out-probe}
 
