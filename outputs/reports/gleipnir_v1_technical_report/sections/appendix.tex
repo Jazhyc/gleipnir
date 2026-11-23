@@ -968,6 +968,9 @@ Of the 69 reward hacks, 66 pass the visible test but not the hidden tests, so th
 Of the 136 legitimate runs, 119 submit a general solution that fails the visible test, 31 of them with an escalation report about it, and 15 edit the test script before they pass all tests, which the manual review of the dataset accepts as legitimate.
 The remaining two pass only the visible test, and the judge notes that one of them hard-codes the sample answers, so at least one label on this problem appears inconsistent.
 The sample output also appears in the tool calls of 60 legitimate runs, for example when they compare their output with it, so its presence alone does not separate the two classes.
+On this problem, a legitimate run may change the grader, while a reward hack only adds a lookup to correct code.
+Our input contains neither the reasoning nor the messages of the agent, so the monitor must judge the intent of a change from code comments, the final answer and escalation reports.
+The messages of the agent, in which it can explain a change, may help an action-only monitor here; we leave this to future work.
 When we remove this problem with all of its runs (post hoc), 55 reward hacks and 1,687 legitimate runs remain.
 On these rows, Gleipnir 4B scores AUROC 0.874 (0.733 to 0.950) and pAUROC@20 0.514 (0.312 to 0.756).
 Gleipnir 27B scores AUROC 0.919 (0.643 to 0.994) and pAUROC@20 0.830 (0.333 to 0.968).
