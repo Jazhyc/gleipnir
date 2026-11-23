@@ -100,6 +100,8 @@ On the other four problems, the 27B flags 60\% of the 55 hacks and the 4B 5\%.
 We chose this split after scoring, to show where the hard cases lie.
 The dataset omits the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
 
+In practice, Gleipnir 27B is the strongest low-cost monitor here, but it misses most reward hacks, so it could add a cheap check to tests and audits, in deployment or training, but not replace them.
+
 \subsection{The same text on an honest and a backdoored program}
 \label{sec:held-out-apps}
 
