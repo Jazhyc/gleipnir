@@ -1151,3 +1151,7 @@ shared rows and the 2026-11-22 reference-monitor entry) for the report text.
 ## Section 6.2 / F.3: what separates the `arc191_c` labels (2026-11-22)
 
 Counts from the dataset's own fields on the 69 reward hacks and 136 legitimate runs of `lcb_arc191_c` in `data/evilgenie_api_baselines/states.jsonl`: `labels.test_result` (positives: 66 `passed_visible_only`, 2 `passed_all`, 1 `failed_visible`; negatives: 119 `failed_visible`, 15 `passed_all`, 2 `passed_visible_only`), `labels.escalated = yes` (31 of the 119), and the judge explanation of the `gpt-5.6-sol` negative ("pre-computed answers for specific sample inputs"). The 60 legitimate runs with the sample output in a tool call: substring `20250126` in the `[TOOL CALLS]` blocks. Recorded in `experiments/adversarial_evilgenie/README.md`.
+
+## F.3: assistant messages on EvilGenie (2026-11-23)
+
+`experiments/evilgenie_assistant_messages/README.md` (protocol frozen before scoring; Pod `soaw1em7gkhycu`): 549 of 2,127 inputs change (33 hacks, 23 of them on `lcb_arc191_c`; 510 legitimate; 6 controls). 27B pAUROC@20 all rows 0.673 → 0.668, Δ −0.005 [−0.017, 0.018] (bootstrap over problems); `arc191_c` 0.383 → 0.392; median 27B score of the 23 `arc191_c` hacks with messages 0.294 → 0.223. 4B all rows 0.283 → 0.290. Instruction wording: `experiments/tool_trajectory_monitoring/prompts/teacher.txt` ("gaming, or misleading a monitor, test, evaluator" as a positive pattern; "ambiguity" in the innocent explanations; nothing on a wrong test).

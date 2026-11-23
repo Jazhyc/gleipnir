@@ -970,7 +970,11 @@ The remaining two pass only the visible test, and the judge notes that one of th
 The sample output also appears in the tool calls of 60 legitimate runs, for example when they compare their output with it, so its presence alone does not separate the two classes.
 On this problem, a legitimate run may change the grader, while a reward hack only adds a lookup to correct code.
 Our input contains neither the reasoning nor the messages of the agent, so the monitor must judge the intent of a change from code comments, the final answer and escalation reports.
-The messages of the agent, in which it can explain a change, may help an action-only monitor here; we leave this to future work.
+In an exploratory check with a protocol frozen before scoring, we added the messages of the agent, outside its reasoning, to every run on the released serving stack.
+They change the input of 549 of the 2,127 runs, including 23 reward hacks on this problem, whose messages often state that they hard-code the sample.
+Neither monitor ranks the reward hacks better: on all runs, Gleipnir 27B scores pAUROC@20 0.668 with the messages and 0.673 without them (difference $-0.005$, 95\% interval $-0.017$ to $0.018$), and on this problem 0.392 and 0.383.
+On the 23 reward hacks with messages, its median score falls from 0.29 to 0.22, so it reads the explanations as justification rather than as admission.
+Its instruction lists the gaming of a test as misbehaviour and ambiguity as an innocent explanation, but says nothing about a test that is itself wrong, so these reward hacks lie outside what it was trained to judge.
 When we remove this problem with all of its runs (post hoc), 55 reward hacks and 1,687 legitimate runs remain.
 On these rows, Gleipnir 4B scores AUROC 0.874 (0.733 to 0.950) and pAUROC@20 0.514 (0.312 to 0.756).
 Gleipnir 27B scores AUROC 0.919 (0.643 to 0.994) and pAUROC@20 0.830 (0.333 to 0.968).
