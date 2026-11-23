@@ -9,7 +9,7 @@ A monitor that checks each action before it runs also delays every action (Secti
 Cheaper, faster monitors would let developers check more of what their agents do.
 
 We introduce Gleipnir, small open-weight monitors that read an agent trajectory once and return the probability that it is harmful, without writing text.
-The name comes from the fetter of Norse myth that binds the wolf Fenrir: thin as a silk ribbon, yet stronger than any chain.
+The name comes from the ribbon in Norse myth that binds the wolf Fenrir: as thin as silk, yet stronger than any chain.
 We distill the decision-token probabilities of a frontier teacher, Kimi K3, into Qwen3.5-4B and Qwen3.8-27B, and serve the monitors with a stack built for this single forward pass.
 We price the reference monitors at API prices and Gleipnir at the cost of a dedicated self-hosted GPU, because a workload without decoding uses the GPU differently, and a standard API price does not pass this saving on (Section~\ref{sec:serving-selfhost}).
 
