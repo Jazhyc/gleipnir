@@ -16,10 +16,9 @@ We price the reference monitors at API prices and Gleipnir at the cost of a dedi
 On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and 0.055 above the strongest decision model, a model built to answer a question in one step without reasoning, at the same cost (Section~\ref{sec:evaluation}).
 On harder benchmarks, results are mixed: on attacks designed to evade monitors, both monitors score below a decision model of similar cost, and on reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most (Section~\ref{sec:held-out}).
 
-Our contributions are:
+We release the code, data and weights of our contributions under the MIT licence:
 \begin{itemize}
 \item a training recipe that distills the soft decision of a teacher and raises Qwen3.5-4B from 0.618 to 0.770 and Qwen3.8-27B from 0.890 to 0.951 Mean-OOD, 0.086 above the SFT and RL recipe of Sinha et al.\ from the same 4B base model (Sections~\ref{sec:method} and~\ref{sec:evaluation});
 \item a serving stack that lowers the cost of the monitors from the API price by 6.4 times for the 4B and 10.4 times for the 27B, with prefix caching for checking every action (Section~\ref{sec:serving});
-\item an evaluation against reasoning monitors, decision models and frontier models on the OOD suite, on attacks designed to evade monitors and on reward hacking by other agents (Sections~\ref{sec:evaluation} and~\ref{sec:held-out});
-\item a release under the MIT licence of the training and inference code, the teacher probabilities of the training data, both monitors as adapters and as merged BF16 checkpoints, and the serving image, gathered on one project page.\todo{Link to the project page.}
+\item an evaluation against reasoning monitors, decision models and frontier models on the OOD suite, on attacks designed to evade monitors and on reward hacking (Sections~\ref{sec:evaluation} and~\ref{sec:held-out}).
 \end{itemize}
