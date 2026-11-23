@@ -7,9 +7,9 @@ Self-hosting, low-precision arithmetic and the removal of unneeded work lower th
 
 Outside the OOD suite, the monitors are weaker.
 On SleightBench both score below pplx-decider v1.3, and the 27B falls behind its teacher.
-On reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most hacks, and in an exploratory test, text in the code pushes Gleipnir 4B close to chance.
+On reward hacks by other agents, Gleipnir 27B flags more than the other low-cost monitors but misses most hacks.
 
-Three directions could close these gaps or lower the cost further.
+Future work could close these gaps or lower the cost further.
 Pipelines that generate and refine attacks against a monitor at scale, such as MonitoringBench~\citep{jotautaite2026monitoringbench}, could supply the training data that SleightBench shows is missing.
-Learned token pruning~\citep{patel2026tokengate} could shorten the prefill over long trajectories, and an engine built for prefill-only workloads~\citep{du2025prefillonly} could serve more concurrent requests on one GPU.
-Early exits could lower the cost of the model itself: a probe at half depth roughly doubles throughput but scores 0.04 to 0.07 below Gleipnir on the OOD suite (Appendix~\ref{app:probing}), and an exit placed later, or trained together with the adapter, may keep more of the quality.
+The cost of the monitor is the prefill over long trajectories, so learned token pruning~\citep{patel2026tokengate}, which shortens this prefill, is the most promising way to lower it, and an engine built for prefill-only workloads~\citep{du2025prefillonly} could serve more concurrent requests on one GPU.
+Early exits are a further option, although in our probes an exit at half depth costs quality.
