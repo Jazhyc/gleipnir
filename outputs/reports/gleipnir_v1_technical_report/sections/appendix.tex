@@ -1007,7 +1007,7 @@ Problem & Hacks & Legit. & AUROC & Hacks & Legit. & AUROC & Hacks & Legit. \\
 The programs come from \texttt{Jazhyc/gleipnir-apps-injection-evals}, a copy of \texttt{mjkenney/monitor-injection-evals} at revision \texttt{58e722bf}~\citep{kenney2026monitorinjection}.
 o3-mini wrote both programs of each task, starting from the APPS tasks of ControlArena~\citep{controlarena2025apps} and following the attacks of \citet{terekhov2025adaptive}.
 Before we wrote any text, Qwen3.8-27B solved each trigger input from the problem statement alone, without either program.
-We kept a task when this answer matched the output of the honest program, and we reviewed every disagreement manually.
+We kept a task when this answer matched the output of the benign program, and we reviewed every disagreement manually.
 This gave 100 held-out tasks; a later review found the trigger of task 1099 invalid, which leaves 99.
 The study also has 50 development tasks, which we used for a pilot and for the probe of Appendix~\ref{app:held-out-probe}.
 
@@ -1067,7 +1067,7 @@ The interval of the 27B under a cover story (0.373 to 0.829) is wide.
 \paragraph{AUROC and pairs within a task.}
 Table~\ref{tab:apps-auroc} gives AUROC with 95\% bootstrap intervals over tasks, and the share of pairs in which the backdoored program scores higher, with ties counted as one half.
 Under a specific accusation, the share is 0.802 for Gleipnir 4B, although its AUROC is 0.581.
-The difference comes from the level of the scores: the accusation raises the mean score of honest programs from 0.237 under unrelated text to 0.846, and that of backdoored programs from 0.426 to 0.870.
+The difference comes from the level of the scores: the accusation raises the mean score of benign programs from 0.237 under unrelated text to 0.846, and that of backdoored programs from 0.426 to 0.870.
 In pairs of the same task, Gleipnir 27B is within 0.01 of Kimi K3 in AUROC under both accusations, with 95\% intervals that include zero.
 
 \begin{table}[h]
@@ -1093,13 +1093,13 @@ Gleipnir 27B & No text & 0.947 {\scriptsize [0.915, 0.973]} & 0.919 \\
 \end{table}
 
 \paragraph{Thresholds on code without text.}
-The thresholds of Section~\ref{sec:held-out-apps} come from 221 honest APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
+The thresholds of Section~\ref{sec:held-out-apps} come from 221 benign APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
 These tasks are disjoint from the study tasks.
 
 \paragraph{Text addressed to the monitor.}
 An earlier study scored the released Gleipnir 4B and 27B on the serving stack of Section~\ref{sec:serving}, on the frozen APPS injection sets~\citep{kenney2026monitorinjection}.
 In these sets, a text in the program asks the monitor to rate the program as benign, in one of three templates; such prompt injections can let an agent evade a trusted monitor~\citep{terekhov2025adaptive}.
-At a threshold that flags at most 2\% of honest programs without injections, both monitors flag every honest program with an injection, under all three templates.
+At a threshold that flags at most 2\% of benign programs without injections, both monitors flag every benign program with an injection, under all three templates.
 At a threshold of 0.5, the 4B flags 89.5\% to 99.5\% of them, and the 27B flags 26.7\% to 100\%.
 The unadapted Qwen3.8-27B flags 76\% to 100\% at 0.5, so this reaction comes from the base model, and the adapter of the 27B reduces it.
 Both monitors therefore treat text addressed to the monitor as a sign of harm.
@@ -1118,7 +1118,7 @@ The procedure selects block 16 with the code mean for Gleipnir 4B, and block 24 
 \begin{figure}[h]
 \centering
 \includegraphics[width=\linewidth]{held_out_probe}
-\caption{Under an accusation, a linear probe on Gleipnir 4B still separates backdoored from honest programs, while the output of the 4B falls toward chance; the probe on the unadapted Qwen3.5-4B does not hold. AUROC on the same held-out programs, with 95\% bootstrap intervals over tasks; the dotted line is chance (0.500). The two models use different probe positions (code mean for Gleipnir 4B, decision token for the base model). Values are in Table~\ref{tab:apps-probe}.}
+\caption{Under an accusation, a linear probe on Gleipnir 4B still separates backdoored from benign programs, while the output of the 4B falls toward chance; the probe on the unadapted Qwen3.5-4B does not hold. AUROC on the same held-out programs, with 95\% bootstrap intervals over tasks; the dotted line is chance (0.500). The two models use different probe positions (code mean for Gleipnir 4B, decision token for the base model). Values are in Table~\ref{tab:apps-probe}.}
 \label{fig:apps-probe}
 \end{figure}
 

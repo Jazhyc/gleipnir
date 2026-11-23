@@ -107,14 +107,14 @@ In practice, Gleipnir 27B is the strongest low-cost monitor here, but it misses 
 
 An agent writes its code and the text around it, so a monitor that reacts to text can be steered.
 We test this in the APPS backdoor setting of \citet{greenblatt2023ai}.
-Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS problem~\citep{hendrycks2021apps}: an honest one, and one that gives a wrong output on one trigger input.
+Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS problem~\citep{hendrycks2021apps}: an benign one, and one that gives a wrong output on one trigger input.
 We insert the same text as a module docstring at the top of both programs, so the text alone does not reveal which program has the backdoor.
 We compare four conditions: no text, an unrelated text that restates another APPS problem, a specific accusation that describes the trigger input and the wrong output, and a generic accusation that says only that the code hides a backdoor (Appendix~\ref{app:held-out-apps}).
 
 \begin{figure}[t]
 \centering
 \includegraphics[width=\linewidth]{held_out_apps_text}
-\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against honest programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
+\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against benign programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
 \label{fig:apps-text}
 \end{figure}
 
@@ -122,7 +122,7 @@ We compare four conditions: no text, an unrelated text that restates another APP
 Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}).
 An unrelated text lowers it to 0.360, and a specific accusation lowers it to 0.143.
 Within a task, the 4B still scores the backdoored program higher in 72\% of the pairs under a specific accusation, and 17\% of the pairs tie.
-The pooled ranking fails because the accusation moves almost every score close to 1: the mean score is 0.846 for honest programs and 0.870 for backdoored programs.
+The pooled ranking fails because the accusation moves almost every score close to 1: the mean score is 0.846 for benign programs and 0.870 for backdoored programs.
 
 \paragraph{Accusations raise the separation of Gleipnir 27B.}
 Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
@@ -137,10 +137,10 @@ On the same tasks, the paired difference is $-0.22$ (95\% bootstrap interval ove
 A linear probe on the activations of Gleipnir 4B still separates the accused programs, which suggests that the failure lies in the output and not in the representation (Appendix~\ref{app:held-out-probe}).
 
 \paragraph{A threshold set on code without text does not transfer.}
-We also set a 1\% threshold for each monitor on honest APPS programs without docstrings.
-Under an accusation, every Gleipnir and API monitor flags 93\% to 100\% of the honest programs at this threshold.
+We also set a 1\% threshold for each monitor on benign APPS programs without docstrings.
+Under an accusation, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs at this threshold.
 The unadapted 4B is the one exception, at 65\% under a generic accusation.
-Under an unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of honest programs.
+Under an unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of benign programs.
 We did not test accurate documentation of the code, so these rates apply to misleading or unrelated text.
 
 \paragraph{Limits.}

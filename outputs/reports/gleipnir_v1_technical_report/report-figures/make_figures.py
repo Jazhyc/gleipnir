@@ -99,7 +99,7 @@ def fig_probe() -> None:
         ast.grouped_bars(ax, [l for _, l in conds], series, colors=cols, ylim=(0, 1.08), group_width=0.66, gap=0.02)
         ax.axhline(0.5, **CHANCE_KW)
         ax.set_yticks([0, 0.25, 0.5, 0.75, 1.0])
-    axes[0].set_ylabel("AUROC,\nbackdoored vs honest")
+    axes[0].set_ylabel("AUROC,\nbackdoored vs benign")
     axes[1].tick_params(axis="y", labelleft=False)
     axes[0].text(-0.57, 0.515, "chance", ha="left", va="bottom", fontsize=9.5 * S, color=G["550"])
     ast.bottom_legend(fig, ast.swatches(["Output of the model", "Linear probe"], cols), ncols=2)
