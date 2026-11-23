@@ -180,9 +180,15 @@ def score(model: str, port: int) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("step", choices=("check-rows", "workload", "score"))
-    parser.add_argument("--model", choices=sorted(CONFIG["models"]))
+    parser.add_argument("--model", choices=("4b", "27b"))
     parser.add_argument("--port", type=int, default=8000)
+    parser.add_argument(
+        "--config", type=Path, help="another experiment's config (same keys)"
+    )
     args = parser.parse_args()
+    if args.config:
+        CONFIG.clear()
+        CONFIG.update(json.loads((ROOT / args.config).read_text()))
     if args.step == "check-rows":
         check_rows()
     elif args.step == "workload":
