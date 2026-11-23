@@ -33,11 +33,9 @@ Gleipnir 27B scores 0.299 and Gleipnir 4B 0.209, and pplx-decider v1.3 scores 0.
 GPT-6.1 Terra scores 0.734 at \$15.49, and its interval lies above those of all cheaper monitors (Table~\ref{tab:sleightbench}).
 With one decision token, it catches 55\% of the attacks at a 1\% false-positive rate, close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors (Appendix~\ref{app:sleightbench}).
 
-\paragraph{Unlike on the OOD suite, Gleipnir 27B falls behind its teacher.}
-It matches Kimi K3 on the OOD suite (Section~\ref{sec:evaluation}) but scores 0.103 below it here, and training raises both base models by less: Qwen3.5-4B scores 0.193 and Qwen3.8-27B 0.263.
+\paragraph{Training helps less here than on the OOD suite.}
+Training raises Qwen3.5-4B from 0.193 to 0.209 and Qwen3.8-27B from 0.263 to 0.299, gains well within the intervals, against 0.152 and 0.061 on the OOD suite (Section~\ref{sec:evaluation}).
 SleightBench was built to evade monitors, while the OOD suite was not, and our training data contains no attacks built against a monitor.
-pplx-decider v1.3 shares the base model of Gleipnir 27B, but its training covers a wider range of decision tasks, including the monitoring of the agent rollouts of Perplexity~\citep{perplexity2026decider,perplexity2026deciderblog}, and it uses bidirectional attention (Appendix~\ref{app:serving-decider}).
-Its training data is not public, so we cannot tell which explains its lead.
 
 \paragraph{With 40 attacks, the benchmark separates only large differences.}
 The intervals of pAUROC@20 are about 0.25 wide.
