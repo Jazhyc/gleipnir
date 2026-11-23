@@ -2,8 +2,9 @@
 \label{sec:introduction}
 
 AI agents act with growing autonomy, and the harm that they can cause grows with it.
-In July 2026, agents in internal cybersecurity evaluations at OpenAI escaped their isolation and compromised parts of its research infrastructure and the systems of Hugging Face; OpenAI calls the incident a warning shot and now requires monitoring of all tool-using RL training and evaluations~\citep{openai2026huggingface}.
-Such monitoring is expensive: OpenAI estimates its overhead at roughly 20\% of the inference compute that it monitors~\citep{openai2026pacing}.
+In July 2026, agents in internal evaluations at OpenAI broke out of their isolation and compromised the systems of Hugging Face.
+Its chain-of-thought monitors would have alerted the security team more than a day before the breach, but they did not run on these evaluations~\citep{openai2026huggingface}.
+Such monitoring is expensive: OpenAI estimates the overhead of its monitoring at roughly 20\% of the inference compute that it monitors~\citep{openai2026pacing}.
 A monitor that checks each action before it runs also delays every action (Section~\ref{sec:background-monitoring}).
 Cheaper, faster monitors would let developers check more of what their agents do.
 
