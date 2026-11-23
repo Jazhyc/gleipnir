@@ -12,3 +12,7 @@ On reward hacks by other agents, Gleipnir 27B flags more than the other low-cost
 Future work could close these gaps or lower the cost further.
 Pipelines that generate and refine attacks against a monitor at scale, such as MonitoringBench~\citep{jotautaite2026monitoringbench}, could supply the training data that SleightBench shows is missing.
 The cost of the monitor is the prefill over long trajectories, so learned token pruning~\citep{patel2026tokengate}, which shortens this prefill, is the most promising way to lower it, and an engine built for prefill-only workloads~\citep{du2025prefillonly} could serve more concurrent requests on one GPU.
+
+We release the training and inference code, the teacher probabilities of the training data, both monitors as adapters and as merged BF16 checkpoints, and the serving image under the MIT licence.\footnote{Code: \url{https://github.com/Jazhyc/gleipnir}; models and data: \url{https://huggingface.co/Jazhyc}.}
+Others can use them as a baseline, train them further on new data, or place them as a cheap first stage in front of stronger monitors.
+Because our thresholds come from benchmarks, a deployment should set its own threshold on its benign traffic and test the monitor against the attacks that it expects.
