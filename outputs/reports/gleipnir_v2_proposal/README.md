@@ -30,3 +30,13 @@ make clean    # remove build/
 ```
 
 Before sending, run `make check` and resolve every marker.
+
+## Sources of numbers
+
+- v1 results: the [v1 report](../gleipnir_v1_technical_report/) and its `sources.md`;
+  3,189 benign trajectories is the benign count of the six-benchmark suite there.
+- Inkling 2 Mini: [experiments/inkling_ood](../../../experiments/inkling_ood/README.md).
+- SWE-chat context lengths: `max_ctx` (largest per-call agent context, input plus
+  cache tokens) of `data/swe_chat/per_session.parquet` (revision `202b071f`; see
+  its `PROVENANCE.md`), 17,819 sessions: 74.8% over 28,000 tokens, 13.7% over
+  200,000, median 77,367, maximum 1,056,358.

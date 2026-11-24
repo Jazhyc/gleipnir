@@ -28,8 +28,12 @@ rate, while classifiers on production traffic run far lower, for example at a
 refusal rate of 0.05\% \citep{cunningham2026constitutional}. The six benchmarks
 contain only 3,189 benign trajectories in total, so a single false positive
 already makes up 0.03\%, more than half of that rate. Its evaluation
-also drops every trajectory over 28,000 tokens. Almost all of the monitor's cost is
-the prefill over long trajectories, which v1 does not shorten. Attacks built to
+also drops every trajectory over 28,000 tokens, while agents in production
+work over far longer contexts. In SWE-chat \citep{baumann2026swechat}, 17,819
+real coding-agent sessions, the agent's context exceeds 28,000 tokens in three
+quarters of sessions and 200,000 tokens in 14\%, and reaches up to a million
+tokens. Almost all of the monitor's cost is the prefill over these
+trajectories, which v1 does not shorten. Attacks built to
 evade the monitor, where v1 falls far behind on SleightBench
 \citep{najt2026sleight}, are out of scope for this proposal
 (Section~\ref{sec:aims}).
