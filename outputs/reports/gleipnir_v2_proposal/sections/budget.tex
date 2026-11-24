@@ -1,11 +1,11 @@
 \section{Budget}
 \label{sec:budget}
 GPU time is priced at \$8 per hour for one NVIDIA B200, the current on-demand
-rate at Runpod. For scale, one pass of the v1 monitors over the 16,625
-SWE-chat sessions that fit in their context takes 2.2 GPU-hours for Gleipnir
-4B and 6.7 for Gleipnir 27B. No teacher is queried. API credits pay for baseline monitors on production traffic, so that
-the new thresholds can be compared with other monitors; on the six benchmarks,
-the baseline scores of v1 are reused.
+rate at Runpod. The GPU-hours are educated guesses from the experience of v1;
+Section~\ref{sec:risks} discusses where they may run over, and the contingency
+covers that. API credits pay for baseline monitors on production traffic, so
+that the new thresholds can be compared with other monitors; on the six
+benchmarks, the baseline scores of v1 are reused.
 
 \begin{tabularx}{\linewidth}{@{}Xrrr@{}}
 \toprule

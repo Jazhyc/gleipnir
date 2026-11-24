@@ -1,3 +1,22 @@
 \section{Risks and mitigations}
 \label{sec:risks}
-\todo{Main technical and scheduling risks, with fallbacks.}
+The time and compute estimates are educated guesses, and the milestones
+differ in how much they may change.
+
+\begin{itemize}
+    \item \textbf{M1 may finish early.} The serving engine depends little on
+    the model and builds on the v1 stack. Time it saves goes to M2.
+    \item \textbf{M2 is the most uncertain.} Learned token pruning is a
+    recent method, and on monitors it may lose more than the 0.01 allowed.
+    If no setting stays within it, I report the trade-off as a negative
+    result and M3 proceeds without pruning.
+    \item \textbf{M3 needs many training runs.} Once M1 and M2 are complete,
+    the work is straightforward, but it repeats the training and pruning for
+    a new base. Its support in vLLM and in training libraries is still
+    changing; M3 starts last so that it can use a more stable version. If
+    that support is not ready in time, M1 and M2 still improve the released
+    v1 monitors, and M4 runs on them.
+    \item \textbf{M4 is straightforward.} Its main cost is GPU time. Real
+    sessions are not labelled, and a few may be harmful; I review the
+    sessions above each threshold before treating them as false positives.
+\end{itemize}

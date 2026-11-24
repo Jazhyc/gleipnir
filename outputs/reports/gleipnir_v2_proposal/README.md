@@ -44,7 +44,3 @@ Before sending, run `make check` and resolve every marker.
   sections (arXiv 2505.07203v1 §7; 2610.26754v1 abstract and §5). TokenGate's
   1.4–11.3× is time to first token against full-context prefill on Qwen3-1.7B
   tasks (3.8× on its hybrid Qwen3.5-2B, not cited).
-- Budget input: SWE-chat
-  pass 2.2 (4B) and 6.7 (27B) B200-hours for the 16,625 sessions within 262K
-  tokens (0.89B tokens), the estimate made when the test was deferred on
-  2026-11-20 (27B assumes the 4B's long-context slowdown).
