@@ -16,7 +16,10 @@ differ in how much they may change.
     changing; M3 starts last so that it can use a more stable version. If
     that support is not ready in time, M1 and M2 still improve the released
     v1 monitors, and M4 runs on them.
-    \item \textbf{M4 is straightforward.} Its main cost is GPU time. Real
-    sessions are not labelled, and a few may be harmful; I review the
-    sessions above each threshold before treating them as false positives.
+    \item \textbf{M4 is straightforward,} and its main cost is GPU time. Its
+    thresholds assume that real traffic contains only benign sessions, but the
+    sessions are not labelled, and some may contain harmful or problematic
+    actions. I will review the sessions that score above each threshold, set
+    aside those I judge harmful, recompute the thresholds without them, and
+    report how many were set aside.
 \end{itemize}
