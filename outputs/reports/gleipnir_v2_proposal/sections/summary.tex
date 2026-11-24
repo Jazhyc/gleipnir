@@ -2,14 +2,14 @@
 Monitors that review the actions of AI agents add cost and latency to every
 action they check, and agents in production often work over very long contexts.
 Gleipnir v1 \citep{ferrao2026gleipnir} showed that a small open-weight
-monitor can score an agent trajectory in one forward pass: Gleipnir 27B
-matches Claude Opus 4.6 on six held-out AI control benchmarks at 229 times
+monitor can score an agent trajectory in one forward pass: Gleipnir 27B matches
+a frontier reasoning model on six held-out AI control benchmarks at 229 times
 lower cost. This project makes Gleipnir fit for production. I will first make
 the released monitors cheaper on long trajectories, with a serving engine
 built for prompt-only requests and learned token pruning. I will then carry
-both over to Inkling 2 Mini \citep{inkling2mini}, a base model with 3.4B
-active parameters that, before any training, nearly matches the base model of
-Gleipnir 27B, and finally set thresholds on real agent traffic at the low
+both over to Inkling 2 Mini \citep{inkling2mini}, a faster
+mixture-of-experts model that, before any training, nearly matches the base
+model of Gleipnir 27B, and finally set thresholds on real agent traffic at the low
 false-positive rates that deployments need.
 
 \begin{tabularx}{\linewidth}{@{}lX@{}}
