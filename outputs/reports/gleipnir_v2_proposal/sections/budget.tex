@@ -1,15 +1,34 @@
 \section{Budget}
 \label{sec:budget}
-\todo{Itemized costs and the assumptions behind each.}
+GPU time is priced at \$8 per hour for one NVIDIA B200, the current on-demand
+rate at Runpod. The estimates follow the measured costs of v1: training
+Gleipnir 27B once takes 4.2 GPU-hours, the first screen of Inkling 2 Mini took
+about 3, and one pass over the 16,625 SWE-chat sessions that fit in the v1
+context takes 2.2 for Gleipnir 4B and 6.7 for Gleipnir 27B. No teacher is
+queried. API credits pay for baseline monitors on production traffic, so that
+the new thresholds can be compared with other monitors; on the six benchmarks,
+the baseline scores of v1 are reused.
 
-\begin{tabularx}{\linewidth}{@{}Xr@{}}
+\begin{tabularx}{\linewidth}{@{}Xrrr@{}}
 \toprule
-Item & Cost (USD) \\
+Deliverable & GPU-hours & GPU (USD) & API (USD) \\
 \midrule
-GPU compute & \todo{} \\
-Teacher API credits & \todo{} \\
-Stipends & \todo{} \\
+M1: prefill-only serving engine & 25 & 200 & --- \\
+M2: learned token pruning & 100 & 800 & --- \\
+M3: Gleipnir on Inkling 2 Mini & 200 & 1,600 & --- \\
+M4: production operating points & 50 & 400 & 500 \\
 \midrule
-\textbf{Total} & \todo{} \\
+Storage of models and data & & \multicolumn{2}{r}{50} \\
+Contingency (10\%) & & \multicolumn{2}{r}{355} \\
+\todo{Stipend, if any} & & \multicolumn{2}{r}{\todo{}} \\
+\midrule
+\textbf{Total} & \textbf{375} & \multicolumn{2}{r}{\textbf{3,905}} \\
 \bottomrule
 \end{tabularx}
+
+M4's GPU time covers several monitors (the v1 monitors, their pruned versions
+and Gleipnir on Inkling 2 Mini) on SWE-chat and other datasets, including
+sessions longer than the v1 context. Its API credits cover inexpensive
+decision models and monitors on the full traffic; a frontier reasoning monitor
+would cost thousands of dollars per pass at this volume, so it is run at most
+on a sample.
