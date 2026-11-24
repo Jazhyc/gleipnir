@@ -12,12 +12,13 @@ check more of what their agents do.
 
 Gleipnir v1 \citep{ferrao2026gleipnir} showed that small open-weight monitors
 can learn the decision of a frontier teacher and score an agent trajectory in
-one forward pass, instead of writing a rationale first. On a suite of six held-out
-AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores 0.951 mean pAUROC@20, level
-with the strongest reasoning monitor (0.942) at 229 times lower on-demand cost,
-and its serving stack runs it 10.4 times below the API price at committed-use
-GPU rates. The code, weights,
-teacher probabilities and serving image are public.
+one forward pass, instead of writing a rationale first. On a suite of six
+held-out AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores
+0.951 mean pAUROC@20, level with the strongest monitor on these benchmarks:
+Claude Opus 4.6, a frontier model that reasons before it answers (0.942).
+Gleipnir 27B does so at 229 times lower on-demand cost, and its serving stack
+runs it 10.4 times below the API price at committed-use GPU rates. The code,
+weights, teacher probabilities and serving image are public.
 
 \subsection{What v1 leaves open for production}
 \label{sec:gaps}
