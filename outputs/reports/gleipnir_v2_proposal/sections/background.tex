@@ -43,11 +43,9 @@ SleightBench \citep{najt2026sleight}, are out of scope for this proposal
 Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model that uses
 only 3.4B active parameters for each token. It accepts contexts of up to 1,048,576 tokens, and 20 of
 its 24 layers attend only over the last 1,024 tokens, which slows the growth
-of attention cost with context length. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It
-already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
-requests per second one at a time and 5.6 at eight concurrent requests,
-against 4.1 and 4.3 for the optimized Gleipnir 27B, with no optimization of my
-own. I therefore expect a Gleipnir monitor trained on it to match or exceed
+of attention cost with context length. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
+requests per second, sent one at a time, against 4.1 for the optimized
+Gleipnir 27B, with no optimization of my own. I therefore expect a Gleipnir monitor trained on it to match or exceed
 Gleipnir 27B at lower cost. Its support in vLLM is new and still changing, and its weights ship only in
 low-precision formats (NVFP4 and MXFP8), so training and batched serving need
 engineering work (Section~\ref{sec:risks}).
