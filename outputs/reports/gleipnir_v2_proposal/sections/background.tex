@@ -26,8 +26,8 @@ v1 was evaluated on the six AI control benchmarks above, not on the traffic of
 a deployed agent. Its lowest reported operating point is a 1\% false-positive
 rate, while classifiers on production traffic run far lower, for example at a
 refusal rate of 0.05\% \citep{cunningham2026constitutional}. The six benchmarks
-contain only 3,189 benign trajectories in total, so a 0.05\% rate would rest on
-one or two of them. Its evaluation
+contain only 3,189 benign trajectories in total, so a single false positive
+already makes up 0.03\%, more than half of that rate. Its evaluation
 also drops every trajectory over 28,000 tokens. Almost all of the monitor's cost is
 the prefill over long trajectories, which v1 does not shorten. Attacks built to
 evade the monitor, where v1 falls far behind on SleightBench
