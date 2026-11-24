@@ -38,10 +38,12 @@ sets thresholds for the final monitors on real traffic.
     serving are close to final, set and test thresholds at 1\% and 0.1\%
     false-positive rates on real agent sessions.
 
-    \emph{Success:} thresholds set on SWE-chat \citep{baumann2026swechat} and
-    other datasets of real agent traffic, with enough sessions that each rate
-    rests on many false positives rather than one, and for each threshold the
-    share of harmful trajectories on the six benchmarks that it catches.
+    \emph{Success:} a measured answer to whether benchmark performance holds
+    at deployment false-positive rates. Thresholds are set on SWE-chat
+    \citep{baumann2026swechat} and other datasets of real agent traffic, with
+    enough sessions that each rate rests on many false positives rather than
+    one, and each threshold reports the share of harmful trajectories on the
+    six benchmarks that it catches.
 \end{enumerate}
 
 Robustness to attacks aimed at the monitor is out of scope. It needs attacks

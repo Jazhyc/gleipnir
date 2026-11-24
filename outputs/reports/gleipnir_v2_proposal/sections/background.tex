@@ -20,6 +20,19 @@ Gleipnir 27B does so at 229 times lower cost, served by a stack built for this
 single forward pass. The code,
 weights, teacher probabilities and serving image are public.
 
+\subsection{Why cheaper monitors matter for safety}
+\label{sec:safety}
+The cost of a monitor decides how much of an agent's activity gets checked.
+Frontier labs can afford to monitor with frontier models, but many developers who deploy agents, including
+those building on open-weight models and open-source agent harnesses, cannot. An open monitor that is cheap and fast
+enough to check every action lowers that barrier for everyone, while a company that builds a monitor for
+its own traffic has little reason to release it. Cheap monitors also make AI control research
+itself cheaper, since control evaluations and red-teaming score many
+trajectories, and they fit the role of the weaker, trusted monitor in control
+protocols \citep{greenblatt2023ai}. Finally, whether a monitor that does well on benchmarks still works
+at the false-positive rates of a deployment, on real traffic, is an open
+question that matters to all monitoring work, and this project measures it.
+
 \subsection{What v1 leaves open for production}
 \label{sec:gaps}
 v1 was evaluated on the six AI control benchmarks above, not on the traffic of

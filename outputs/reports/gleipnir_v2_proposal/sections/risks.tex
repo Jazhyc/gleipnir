@@ -9,7 +9,11 @@ differ in how much they may change.
     \item \textbf{M2 is the most uncertain.} Learned token pruning is a
     recent method, and on monitors it may lose more than the 0.01 allowed.
     If no setting stays within it, I will report the trade-off as a negative
-    result and M3 will proceed without pruning.
+    result and M3 will proceed without pruning. Pruning also opens a new attack
+    surface: an agent could place a harmful action where the monitor has
+    learned to skip. I will compare the pruned and unpruned monitors on
+    SleightBench \citep{najt2026sleight}, a benchmark of attacks built to evade
+    monitors, and report any loss.
     \item \textbf{M3 needs many training runs.} Once M1 and M2 are complete,
     the work is straightforward, but it repeats the training and pruning for
     a new base. Support for Inkling 2 Mini in vLLM and in training
