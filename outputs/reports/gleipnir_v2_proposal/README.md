@@ -43,4 +43,4 @@ Before sending, run `make check` and resolve every marker.
 - PrefillOnly and TokenGate figures: the papers' abstracts and evaluation
   sections (arXiv 2505.07203v1 §7; 2610.26754v1 abstract and §5). TokenGate's
   1.4–11.3× is time to first token against full-context prefill on Qwen3-1.7B
-  tasks; 3.8× is its hybrid model (Qwen3.5-2B).
+  tasks (3.8× on its hybrid Qwen3.5-2B, not cited).

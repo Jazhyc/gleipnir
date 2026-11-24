@@ -22,11 +22,9 @@ Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
     \citep{patel2026tokengate}. The pruning is learned for each base model, so
     it is retrained for Inkling 2 Mini in Aim~3.
 
-    \emph{Success:} lower latency on long trajectories with minimal loss on the
-    six benchmarks \todo{tolerance, e.g.\ at most 0.01 mean pAUROC@20}.
-    \Citet{patel2026tokengate} report 1.4 to 11.3 times faster prefill without
-    loss of accuracy, and 3.8 times on a model that, like the v1 base models,
-    mixes full and linear attention.
+    \emph{Success:} lower latency on long trajectories, losing at most 0.01
+    mean pAUROC@20 on the six benchmarks. \Citet{patel2026tokengate} report
+    1.4 to 11.3 times faster prefill without loss of accuracy.
 
     \item \textbf{Gleipnir on Inkling 2 Mini.} Train the monitor on Inkling 2
     Mini, adapt the serving stack to it, and bring over the engine of Aim~1
@@ -37,8 +35,7 @@ Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
 
     \item \textbf{Production operating points.} Once the monitors and their
     serving are close to final, set and test thresholds at 1\% and 0.1\%
-    false-positive rates on real agent sessions, without the 28,000-token
-    filter of the v1 evaluation.
+    false-positive rates on real agent sessions.
 
     \emph{Success:} thresholds set on SWE-chat \citep{baumann2026swechat} and
     other datasets of real agent traffic, enough benign sessions that each
