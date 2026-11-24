@@ -41,7 +41,9 @@ evade the monitor, where v1 falls far behind on SleightBench
 \subsection{Why Inkling 2 Mini}
 \label{sec:inkling}
 Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model with 3.4B
-active parameters. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It
+active parameters. It accepts contexts of up to 1,048,576 tokens, and 20 of
+its 24 layers attend only over the last 1,024 tokens, which slows the growth
+of attention cost with context length. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It
 already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
 requests per second one at a time and 5.6 at eight concurrent requests,
 against 4.1 and 4.3 for the optimized Gleipnir 27B, with no optimization of my
