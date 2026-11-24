@@ -8,9 +8,9 @@ lower cost. This project makes Gleipnir efficient enough to check every
 action in production. I will first make
 the released monitors cheaper on long trajectories, with a serving engine
 built for prompt-only requests and learned token pruning. I will then carry
-both over to Inkling 2 Mini \citep{inkling2mini}, a faster
-mixture-of-experts model that, before any training, nearly matches the base
-model of Gleipnir 27B, and finally set thresholds on real agent traffic at the low
+both over to Inkling 2 Mini \citep{inkling2mini}, a mixture-of-experts model
+of similar quality that, before any optimization, already scores
+trajectories faster than the optimized Gleipnir 27B, and finally set thresholds on real agent traffic at the low
 false-positive rates that deployments need.
 
 \begin{tabularx}{\linewidth}{@{}lX@{}}
