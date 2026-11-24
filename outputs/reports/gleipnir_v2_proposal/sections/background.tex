@@ -1,29 +1,46 @@
 \section{Problem and prior work}
 \label{sec:background}
-\todo{Why fast, cheap monitors matter for AI control; the safety tax of
-frontier monitors; what ``fit for production'' means here.}
+AI agents act with growing autonomy, and monitors that review their actions
+are a main line of defense. In July 2026, agents in internal evaluations at
+OpenAI broke out of their isolation and compromised the systems of Hugging
+Face; OpenAI's monitors would have raised an alert more than a day before the
+breach, but did not run on these evaluations \citep{openai2026huggingface}.
+Monitoring is expensive, about 20\% of the inference compute it monitors at
+OpenAI \citep{openai2026pacing}, and a monitor that checks each action before
+it runs also delays every action. Cheaper and faster monitors let developers
+check more of what their agents do.
 
-\subsection{Gleipnir v1}
-\label{sec:v1}
-\todo{Summarize v1 \citep{ferrao2026gleipnir}: binary-logit distillation of
-Kimi K3; Gleipnir 27B matches the strongest reasoning monitor on the OOD suite
-of \citet{sinha2026training} (0.951 against 0.942 mean pAUROC@20) at 229 times
-lower cost; released weights, data and serving image.}
+Gleipnir v1 \citep{ferrao2026gleipnir} showed that small open-weight monitors
+can learn the decision of a frontier teacher and score an agent trajectory in
+one forward pass, instead of writing a rationale first. On the OOD suite of
+\citet{sinha2026training}, Gleipnir 27B scores 0.951 mean pAUROC@20, level
+with the strongest reasoning monitor (0.942) at 229 times lower on-demand cost,
+and its serving stack runs it 10.4 times below the API price at committed-use
+GPU rates. The code, weights,
+teacher probabilities and serving image are public.
 
 \subsection{What v1 leaves open for production}
 \label{sec:gaps}
-\todo{The gaps from the v1 limitations and conclusion, each answered by an aim:
-operating points far below 1\% FPR, as production classifiers use
-\citep{cunningham2026constitutional}, measured on real benign traffic;
-prefill cost over long trajectories; serving many concurrent sessions. Attacks built against the monitor
-(SleightBench \citep{najt2026sleight}) remain open and are out of scope
-(Section~\ref{sec:aims}).}
+v1 was evaluated on benchmarks, not on the traffic of a deployed agent. Its
+lowest reported operating point is a 1\% false-positive rate, while classifiers
+on production traffic run far lower, for example at a refusal rate of 0.05\%
+\citep{cunningham2026constitutional}, and the benchmarks have too few benign
+trajectories to resolve such rates. Its evaluation also inherits a filter that
+drops every trajectory over 28,000 tokens. Almost all of the monitor's cost is
+the prefill over long trajectories, which v1 does not shorten. Attacks built to
+evade the monitor, where v1 falls far behind on SleightBench
+\citep{najt2026sleight}, are out of scope for this proposal
+(Section~\ref{sec:aims}).
 
 \subsection{Why Inkling 2 Mini}
 \label{sec:inkling}
-\todo{Unadapted Inkling 2 Mini scores 0.884 Mean-OOD pAUROC@20 against 0.890
-for Qwen3.8-27B, the base of Gleipnir 27B, and already serves the 96 agent
-trajectories at 4.3 requests/s one at a time (5.6 at 8 concurrent) against 4.1
-(4.3) for the optimized Gleipnir 27B, with no model-specific optimization.
-Open issues: nightly-only vLLM support, batch-dependent scores, training
-support for its looped NVFP4/MXFP8 architecture.}
+Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model with 3.4B
+active parameters. Without any training, it scores 0.884 mean pAUROC@20 on the
+same OOD suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It
+already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
+requests per second one at a time and 5.6 at eight concurrent requests,
+against 4.1 and 4.3 for the optimized Gleipnir 27B, with no optimization of my
+own. I therefore expect a Gleipnir monitor trained on it to match or exceed
+Gleipnir 27B at lower cost. Its support in vLLM is new, and its weights ship
+only in low-precision formats (NVFP4 and MXFP8), so training and batched
+serving need engineering work (Section~\ref{sec:risks}).
