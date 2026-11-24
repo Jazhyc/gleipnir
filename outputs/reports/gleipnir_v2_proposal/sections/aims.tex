@@ -5,11 +5,11 @@ they become cheaper during the project, while software support for Inkling 2
 Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
 
 \begin{enumerate}
-    \item \textbf{A prefill-only serving engine.} Scheduling and cache
-    management built for requests that only read a prompt and never generate
-    text \citep{du2025prefillonly}, including the reuse of computation across
-    many concurrent agent sessions, which v1 does not manage. This work
-    depends little on the model, so it applies to Inkling 2 Mini unchanged.
+    \item \textbf{A prefill-only serving engine.} Make the monitors cheaper
+    to serve when many agent sessions send requests at once and over time,
+    through better cache management for requests that only read a prompt
+    \citep{du2025prefillonly}. This work depends little on the model, so it
+    applies to Inkling 2 Mini unchanged.
     \todo{target, e.g.\ throughput per GPU or cost per trajectory.}
     \item \textbf{Learned token pruning.} Train the monitors to skip tokens
     that do not affect their decision, which shortens the prefill
