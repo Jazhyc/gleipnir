@@ -32,21 +32,22 @@ also drops every trajectory over 28,000 tokens, while agents in production
 generally work over far longer contexts: in real coding-agent sessions
 \citep{baumann2026swechat}, the agent's context reaches about 77,000 tokens in
 a typical session and up to a million. Almost all of the monitor's cost is the prefill over these
-trajectories, which v1 does not shorten. Attacks built to
-evade the monitor, where v1 falls far behind on SleightBench
-\citep{najt2026sleight}, are out of scope for this proposal
+trajectories, which v1 does not shorten. The strongest v1 monitor also uses all 27 billion parameters of its base
+model for every token, which sets a floor on its cost that serving work alone
+cannot remove. Attacks built to evade the monitor, where v1 falls far behind on
+SleightBench \citep{najt2026sleight}, are out of scope for this proposal
 (Section~\ref{sec:aims}).
 
-\subsection{Why Inkling 2 Mini}
+\subsection{A cheaper base model: Inkling 2 Mini}
 \label{sec:inkling}
-Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model with 3.4B
-active parameters. It accepts contexts of up to 1,048,576 tokens, and 20 of
+Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model that uses
+only 3.4B active parameters for each token. It accepts contexts of up to 1,048,576 tokens, and 20 of
 its 24 layers attend only over the last 1,024 tokens, which slows the growth
 of attention cost with context length. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It
 already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
 requests per second one at a time and 5.6 at eight concurrent requests,
 against 4.1 and 4.3 for the optimized Gleipnir 27B, with no optimization of my
 own. I therefore expect a Gleipnir monitor trained on it to match or exceed
-Gleipnir 27B at lower cost. Its support in vLLM is new, and its weights ship
-only in low-precision formats (NVFP4 and MXFP8), so training and batched
-serving need engineering work (Section~\ref{sec:risks}).
+Gleipnir 27B at lower cost. Its support in vLLM is new and still changing, and its weights ship only in
+low-precision formats (NVFP4 and MXFP8), so training and batched serving need
+engineering work (Section~\ref{sec:risks}).

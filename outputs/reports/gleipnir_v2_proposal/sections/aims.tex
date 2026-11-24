@@ -1,20 +1,23 @@
 \section{Aims}
 \label{sec:aims}
-\todo{Draft aims, mapped from the v1 future work and limitations. Set each
-success criterion.}
+\todo{Set each success criterion.}
 
 \begin{enumerate}
-    \item \textbf{Gleipnir on Inkling 2 Mini.} Train the binary-logit monitor
-    on Inkling 2 Mini and serve it with batch-invariant scores.
-    \todo{success criterion, e.g.\ Mean-OOD at or above Gleipnir 27B at lower cost per trajectory.}
-    \item \textbf{Lower prefill cost.} Learned token pruning
+    \item \textbf{Lower prefill cost.} Develop learned token pruning
     \citep{patel2026tokengate} and a prefill-only serving engine
-    \citep{du2025prefillonly}.
+    \citep{du2025prefillonly} on the released Gleipnir 4B and 27B, so that
+    they become cheaper on long trajectories during the project. Both methods
+    carry over to Aim~2; the pruner is retrained for the new base.
     \todo{target cost per trajectory or throughput.}
-    \item \textbf{Production operating points.} Once the monitor and
-    its serving are close to final, set and test thresholds at
-    1\% and 0.1\% FPR on real benign agent sessions, without the 28,000-token
-    filter of the v1 evaluation.
+    \item \textbf{Gleipnir on Inkling 2 Mini.} Train the monitor on Inkling 2
+    Mini, serve it with batch-invariant scores and bring over the prefill
+    methods of Aim~1. It comes second because its software support is still
+    maturing.
+    \todo{success criterion, e.g.\ matching Gleipnir 27B on the six benchmarks at lower cost per trajectory.}
+    \item \textbf{Production operating points.} Once the monitors and their
+    serving are close to final, set and test thresholds at 1\% and 0.1\%
+    false-positive rates on real benign agent sessions, without the
+    28,000-token filter of the v1 evaluation.
     \todo{dataset, success criterion.}
 \end{enumerate}
 
