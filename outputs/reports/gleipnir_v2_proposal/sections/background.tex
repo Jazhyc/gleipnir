@@ -16,8 +16,8 @@ one forward pass, instead of writing a rationale first. On a suite of six
 held-out AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores
 0.951 mean pAUROC@20, level with the strongest monitor on these benchmarks:
 Claude Opus 4.6, a frontier model that reasons before it answers (0.942).
-Gleipnir 27B does so at 229 times lower on-demand cost, and its serving stack
-runs it 10.4 times below the API price at committed-use GPU rates. The code,
+Gleipnir 27B does so at 229 times lower cost, served by a stack built for this
+single forward pass. The code,
 weights, teacher probabilities and serving image are public.
 
 \subsection{What v1 leaves open for production}
