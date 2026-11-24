@@ -5,9 +5,9 @@ are a main line of defense. In July 2026, agents in internal evaluations at
 OpenAI broke out of their isolation and compromised the systems of Hugging
 Face; OpenAI's monitors would have raised an alert more than a day before the
 breach, but did not run on these evaluations \citep{openai2026huggingface}.
-Monitoring is expensive, about 20\% of the inference compute it monitors at
-OpenAI \citep{openai2026pacing}, and a monitor that checks each action before
-it runs also delays every action. Cheaper and faster monitors let developers
+Monitoring is also expensive: OpenAI estimates that monitoring its agents adds
+roughly 20\% to their inference compute \citep{openai2026pacing}. A monitor
+that checks each action before it runs also delays every action. Cheaper and faster monitors let developers
 check more of what their agents do.
 
 Gleipnir v1 \citep{ferrao2026gleipnir} showed that small open-weight monitors
