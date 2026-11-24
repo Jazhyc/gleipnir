@@ -1,0 +1,34 @@
+\usepackage[a4paper,margin=1in]{geometry}
+\usepackage[T1]{fontenc}
+\usepackage{mathptmx} % Times, as in the v1 report; newtx is not installed here
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage{graphicx}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage{enumitem}
+\usepackage{titlesec}
+\usepackage[numbers,sort&compress]{natbib}
+\usepackage{hyperref}
+\usepackage[capitalize,noabbrev]{cleveref}
+
+\graphicspath{{assets/}}
+
+\definecolor{accent}{HTML}{1F4E79}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=accent,
+    citecolor=accent,
+    urlcolor=accent
+}
+
+\titleformat{\section}{\large\bfseries\color{accent}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalsize\bfseries}{\thesubsection}{0.6em}{}
+\titlespacing*{\section}{0pt}{12pt}{4pt}
+\titlespacing*{\subsection}{0pt}{8pt}{2pt}
+\setlist{itemsep=1pt,topsep=3pt,leftmargin=1.3em}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{5pt}
+
+% Drafting markers; remove every use before sending (`make check` lists them).
+\newcommand{\todo}[1]{\textcolor{red}{[TODO: #1]}}
