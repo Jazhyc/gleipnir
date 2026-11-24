@@ -2,7 +2,8 @@
 \label{sec:aims}
 The first two aims improve the released Gleipnir 4B and 27B directly, so that
 they become cheaper during the project, while software support for Inkling 2
-Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
+Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini, and Aim~4
+sets thresholds for the final monitors on real traffic.
 
 \begin{enumerate}
     \item \textbf{A prefill-only serving engine.} Make the monitors cheaper
@@ -38,9 +39,9 @@ Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
     false-positive rates on real agent sessions.
 
     \emph{Success:} thresholds set on SWE-chat \citep{baumann2026swechat} and
-    other datasets of real agent traffic, enough benign sessions that each
-    rate rests on many false positives rather than one, and the share of
-    harmful trajectories on the six benchmarks that each threshold catches.
+    other datasets of real agent traffic, with enough sessions that each rate
+    rests on many false positives rather than one, and for each threshold the
+    share of harmful trajectories on the six benchmarks that it catches.
 \end{enumerate}
 
 Robustness to attacks aimed at the monitor is out of scope. It needs attacks

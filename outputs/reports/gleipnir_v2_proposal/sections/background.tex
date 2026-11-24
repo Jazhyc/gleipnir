@@ -13,8 +13,8 @@ check more of what their agents do.
 Gleipnir v1 \citep{ferrao2026gleipnir} showed that small open-weight monitors
 can learn the decision of a frontier teacher and score an agent trajectory in
 one forward pass, instead of writing a rationale first. On a suite of six
-held-out AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores
-0.951 mean pAUROC@20, level with the strongest monitor on these benchmarks:
+held-out AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores 0.951 mean pAUROC@20 (the normalized area under the ROC
+curve up to a 20\% false-positive rate; higher is better), level with the strongest monitor on these benchmarks:
 Claude Opus 4.6, a frontier model that reasons before it answers (0.942).
 Gleipnir 27B does so at 229 times lower cost, served by a stack built for this
 single forward pass. The code,
@@ -34,7 +34,7 @@ generally work over far longer contexts: in real coding-agent sessions
 a typical session and up to a million. Almost all of the monitor's cost is the prefill over these
 trajectories, which v1 does not shorten. The strongest v1 monitor also uses all 27 billion parameters of its base
 model for every token, which sets a floor on its cost that serving work alone
-cannot remove. Attacks built to evade the monitor, where v1 falls far behind on
+cannot remove. Attacks built to evade the monitor, where v1 falls far behind the strongest monitors on
 SleightBench \citep{najt2026sleight}, are out of scope for this proposal
 (Section~\ref{sec:aims}).
 
