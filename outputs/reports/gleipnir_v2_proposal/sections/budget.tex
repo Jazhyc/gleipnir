@@ -1,11 +1,9 @@
 \section{Budget}
 \label{sec:budget}
 GPU time is priced at \$8 per hour for one NVIDIA B200, the current on-demand
-rate at Runpod. The estimates follow the measured costs of v1: training
-Gleipnir 27B once takes 4.2 GPU-hours, the first screen of Inkling 2 Mini took
-about 3, and one pass over the 16,625 SWE-chat sessions that fit in the v1
-context takes 2.2 for Gleipnir 4B and 6.7 for Gleipnir 27B. No teacher is
-queried. API credits pay for baseline monitors on production traffic, so that
+rate at Runpod. For scale, one pass of the v1 monitors over the 16,625
+SWE-chat sessions that fit in their context takes 2.2 GPU-hours for Gleipnir
+4B and 6.7 for Gleipnir 27B. No teacher is queried. API credits pay for baseline monitors on production traffic, so that
 the new thresholds can be compared with other monitors; on the six benchmarks,
 the baseline scores of v1 are reused.
 
