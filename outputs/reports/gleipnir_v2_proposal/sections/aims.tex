@@ -1,18 +1,24 @@
 \section{Aims}
 \label{sec:aims}
-\todo{Set each success criterion.}
+The first two aims improve the released Gleipnir 4B and 27B directly, so that
+they become cheaper during the project, while software support for Inkling 2
+Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini.
 
 \begin{enumerate}
-    \item \textbf{Lower prefill cost.} Develop learned token pruning
-    \citep{patel2026tokengate} and a prefill-only serving engine
-    \citep{du2025prefillonly} on the released Gleipnir 4B and 27B, so that
-    they become cheaper on long trajectories during the project. Both methods
-    carry over to Aim~2; the pruner is retrained for the new base.
-    \todo{target cost per trajectory or throughput.}
+    \item \textbf{A prefill-only serving engine.} Scheduling and cache
+    management built for requests that only read a prompt and never generate
+    text \citep{du2025prefillonly}, including the reuse of computation across
+    many concurrent agent sessions, which v1 does not manage. This work
+    depends little on the model, so it applies to Inkling 2 Mini unchanged.
+    \todo{target, e.g.\ throughput per GPU or cost per trajectory.}
+    \item \textbf{Learned token pruning.} Train the monitors to skip tokens
+    that do not affect their decision, which shortens the prefill
+    \citep{patel2026tokengate}. The pruning is learned for each base model, so
+    it is retrained for Inkling 2 Mini in Aim~3.
+    \todo{target, e.g.\ fraction of tokens removed at no loss on the six benchmarks.}
     \item \textbf{Gleipnir on Inkling 2 Mini.} Train the monitor on Inkling 2
-    Mini, adapt the serving stack to it and bring over the prefill
-    methods of Aim~1. It comes second because its software support is still
-    maturing.
+    Mini, adapt the serving stack to it, and bring over the engine of Aim~1
+    and the pruning of Aim~2.
     \todo{success criterion, e.g.\ matching Gleipnir 27B on the six benchmarks at lower cost per trajectory.}
     \item \textbf{Production operating points.} Once the monitors and their
     serving are close to final, set and test thresholds at 1\% and 0.1\%
