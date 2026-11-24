@@ -40,3 +40,7 @@ Before sending, run `make check` and resolve every marker.
   cache tokens) of `data/swe_chat/per_session.parquet` (revision `202b071f`; see
   its `PROVENANCE.md`), 17,819 sessions: 74.8% over 28,000 tokens, 13.7% over
   200,000, median 77,367, maximum 1,056,358.
+- PrefillOnly and TokenGate figures: the papers' abstracts and evaluation
+  sections (arXiv 2505.07203v1 §7; 2610.26754v1 abstract and §5). TokenGate's
+  1.4–11.3× is time to first token against full-context prefill on Qwen3-1.7B
+  tasks; 3.8× is its hybrid model (Qwen3.5-2B).
