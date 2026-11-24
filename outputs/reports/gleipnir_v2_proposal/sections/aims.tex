@@ -8,12 +8,13 @@ success criterion. Robustness to attacks aimed at the monitor is out of scope
     \item \textbf{Gleipnir on Inkling 2 Mini.} Train the binary-logit monitor
     on Inkling 2 Mini and serve it with batch-invariant scores.
     \todo{success criterion, e.g.\ Mean-OOD at or above Gleipnir 27B at lower cost per trajectory.}
-    \item \textbf{Production operating points.} Set and test thresholds at
-    1\% and 0.1\% FPR on real benign agent sessions, without the 28,000-token
-    filter of the v1 evaluation.
-    \todo{dataset, success criterion.}
     \item \textbf{Lower prefill cost.} Learned token pruning
     \citep{patel2026tokengate} and a prefill-only serving engine
     \citep{du2025prefillonly}.
     \todo{target cost per trajectory or throughput.}
+    \item \textbf{Production operating points.} Once the monitor and
+    its serving are close to final, set and test thresholds at
+    1\% and 0.1\% FPR on real benign agent sessions, without the 28,000-token
+    filter of the v1 evaluation.
+    \todo{dataset, success criterion.}
 \end{enumerate}
