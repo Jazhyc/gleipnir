@@ -1,6 +1,8 @@
 # Gleipnir v2 funding proposal
 
-Funding proposal for version 2 of the Gleipnir monitors, to be shared with AI
+Funding proposal for version 2 of the Gleipnir monitors (sole investigator,
+about six weeks from December 2026 to mid-January 2027; theme: production
+readiness on Inkling 2 Mini), to be shared with AI
 safety funders. Status: template; every section is a `\todo{}` stub.
 
 It cites the version 1 technical report

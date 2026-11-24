@@ -1,10 +1,28 @@
 \section{Problem and prior work}
 \label{sec:background}
 \todo{Why fast, cheap monitors matter for AI control; the safety tax of
-frontier monitors.}
+frontier monitors; what ``fit for production'' means here.}
 
 \subsection{Gleipnir v1}
 \label{sec:v1}
-\todo{Summarize the v1 results \citep{ferrao2026gleipnir}: binary-logit
-distillation, Gleipnir 4B and 27B, held-out quality, cost, serving, and the
-limitations v2 addresses.}
+\todo{Summarize v1 \citep{ferrao2026gleipnir}: binary-logit distillation of
+Kimi K3; Gleipnir 27B matches the strongest reasoning monitor on the OOD suite
+of \citet{sinha2026training} (0.951 against 0.942 mean pAUROC@20) at 229 times
+lower cost; released weights, data and serving image.}
+
+\subsection{What v1 leaves open for production}
+\label{sec:gaps}
+\todo{The gaps from the v1 limitations and conclusion, each answered by an aim:
+attacks built against the monitor (SleightBench \citep{najt2026sleight});
+operating points far below 1\% FPR, as production classifiers use
+\citep{cunningham2026constitutional}, measured on real benign traffic;
+prefill cost over long trajectories; serving many concurrent sessions.}
+
+\subsection{Why Inkling 2 Mini}
+\label{sec:inkling}
+\todo{Unadapted Inkling 2 Mini scores 0.884 Mean-OOD pAUROC@20 against 0.890
+for Qwen3.8-27B, the base of Gleipnir 27B, and already serves the 96 agent
+trajectories at 4.3 requests/s one at a time (5.6 at 8 concurrent) against 4.1
+(4.3) for the optimized Gleipnir 27B, with no model-specific optimization.
+Open issues: nightly-only vLLM support, batch-dependent scores, training
+support for its looped NVFP4/MXFP8 architecture.}

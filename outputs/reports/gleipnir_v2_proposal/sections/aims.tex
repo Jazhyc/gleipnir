@@ -1,8 +1,22 @@
-\section{Aims for v2}
+\section{Aims}
 \label{sec:aims}
-\todo{Two to four aims, each with a measurable success criterion.}
+\todo{Draft aims, mapped from the v1 future work and limitations. Six weeks
+will not cover all of them; choose and order, and set each success criterion.}
 
 \begin{enumerate}
-    \item \todo{Aim 1.}
-    \item \todo{Aim 2.}
+    \item \textbf{Gleipnir on Inkling 2 Mini.} Train the binary-logit monitor
+    on Inkling 2 Mini and serve it with batch-invariant scores.
+    \todo{success criterion, e.g.\ Mean-OOD at or above Gleipnir 27B at lower cost per trajectory.}
+    \item \textbf{Robustness to attacks aimed at the monitor.} Generate and
+    refine attacks against the monitor at scale, as in MonitoringBench
+    \citep{jotautaite2026monitoringbench}, and train on them.
+    \todo{success criterion on SleightBench \citep{najt2026sleight} without OOD loss.}
+    \item \textbf{Production operating points.} Set and test thresholds at
+    1\% and 0.1\% FPR on real benign agent sessions, without the 28,000-token
+    filter of the v1 evaluation.
+    \todo{dataset, success criterion.}
+    \item \textbf{Lower prefill cost.} Learned token pruning
+    \citep{patel2026tokengate} and a prefill-only serving engine
+    \citep{du2025prefillonly}.
+    \todo{target cost per trajectory or throughput.}
 \end{enumerate}
