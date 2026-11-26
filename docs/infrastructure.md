@@ -972,6 +972,197 @@ The BF16 OOD references ran on a user-authorized Lambda `gpu_1x_h100_pcie`
 `gleipnir-probes`, using a light scoring venv. It was terminated at the user's
 instruction after its 4 result files and 3 logs were SHA-256 verified.
 
+### EU-RO-1 B200 for the 27B hard-label baseline; volume damage, 2026-11-03
+
+At the user's instruction, Pod `6ucjc9wunbydk8` (B200 `GPU-2ab4adcc…`,
+machine `klzaw5yqymgh`, driver 595.91.07, $7.99/hour) was created through the
+REST API on volume `cb7bxu71ug` with the usual image, project key and a 300 GB
+container disk, after about 25 minutes of polling for capacity. A user-authorized
+CPU Pod (`f2rx7i1093saug`, $0.24/hour) mounted the same volume to export
+runtimes to the Storage Box (`research/gleipnir/_runpod_eu_volume_20261103/`:
+the serving bundle, the two runtime archives and part of the venv, hash-checked)
+and was deleted at the user's instruction (HTTP 204, lookup 404).
+
+**The volume has unreadable files.** Reads of 55 files hang for minutes, then
+fail with `ENXIO` from both Pods, repeatably: 41 in `.venv-vllm031`, 6 in
+TileLang's third-party trees under `.cache/kernels/flashqla-da06429`, one in
+the FlashQLA source tree, one FLA `.pyc` and Triton/TileLang entries in
+`.cache/training/{qwen35_4b_b200_fa4,b200_training_trim}` (list:
+`logs/runpod/qwen38_27b_hard_labels/volume_scan_bad.txt`). The runtime archives
+under `results/b200_shutdown/` and the campaign inputs read cleanly and passed
+their hashes. Damaged directories were renamed `*.damaged-20261103` (the
+unscanned `.cache/{vllm,flashinfer,torchinductor}` `*.unverified-20261103`),
+and the Pod links those paths to container-disk rebuilds; see the
+[experiment run log](../experiments/qwen38_27b_hard_labels/README.md). Treat
+volume contents as unverified until rehashed; rebuild environments rather than
+reusing them.
+
+The Pod also rescored the hard checkpoint on the optimized stack. Its
+container-only caches (training, vLLM and FlashInfer caches with the warm
+cuDNN-frontend cache, the rebuilt FlashQLA target, FLA/causal-conv1d/Triton
+kernels and Inductor cache; not the venv) are archived on the Storage Box as
+`results/b200_shutdown/20261104_eu_hard27b/container_caches.tar.zst` (SHA-256
+`b0e9b6ee…`). At the user's instruction it was deleted on 2026-11-04 (HTTP
+204, lookup 404); no Pods remain. Volume `cb7bxu71ug` is retained.
+
+On 2026-11-10 the user authorized a B200 Pod for two report ablations
+([4B full specification](../experiments/gleipnir4b_full_specification/README.md),
+[filter margins on OOD](../experiments/filter_margin_ood/README.md)):
+`xaqw5n348zwok3` (`gleipnir-report-ablations`, $7.99/hour, snapshot
+`.runpod/report-ablations.json`), US-NC-2 with volume `ixbh81vf9c` at `/nc2`
+and the release image `ghcr.io/jazhyc/gleipnir-serve:0.2`. The REST API
+rejects `US-NC-2` in `dataCenterIds`; omit the field and attach the volume,
+which pins the datacenter. The image's `vllm` console script has a stale
+shebang, so start vLLM with `python -m vllm.entrypoints.cli.main`. Results and
+logs were pulled and checksum-verified, and the Pod was deleted the same day
+(HTTP 204, lookup 404). No Pods remain; both volumes are retained.
+
+The same day a second B200 Pod ran the
+[4B serving ladder](../experiments/gleipnir4b_serving_ladder/README.md):
+`x82ld1enklasda` (`gleipnir-4b-serving-ladder`, $7.99/hour, US-CA-2, snapshot
+`.runpod/4b-serving-ladder.json`). B200 creation failed with "no instances
+currently available" for about 40 minutes in EU-RO-1 and then in every
+datacenter (also in the web UI) before one was allocated. A Pod created
+without a network volume gets a default 20 GB volume at `/workspace`, which
+hides the release image's repository; the API cannot shrink it, so PATCH
+`volumeMountPath` to another path (the Pod restarts on the same machine), or
+set the mount path at creation. Deleted after verified collection (HTTP 204,
+lookup 404); no Pods remain.
+
+On 2026-11-15 the user authorized an EU-RO-1 B200 Pod for the
+[serving concurrency and length sweeps](../experiments/serving_concurrency/README.md):
+`nsw57y1tcxh9gw` (`gleipnir-serving-concurrency`, $7.99/hour, no network
+volume, `volumeMountPath` `/podvol`, snapshot `.runpod/serving-concurrency.json`).
+Creation failed with "no instances currently available" for about 100 minutes
+of once-a-minute retries before EU-RO-1 allocated one. Python `urllib`
+requests to the REST API were rejected (HTTP 403, error code 1010); `curl`
+works. A fresh Pod needs `experiments.release_serving.fetch` for each model
+and the benchmark data before a run. It ran from 02:19 to 04:37 UTC and was
+deleted after verified collection (HTTP 204, lookup 404); no Pods remain.
+
+The same day the user authorized a second EU-RO-1 B200 Pod for the
+[per-change breakdown and 4B graph sweep](../experiments/serving_concurrency/README.md):
+`179xu9pmh64fxh` (`gleipnir-serving-breakdown`, $7.99/hour, same settings,
+snapshot `.runpod/serving-breakdown.json`), allocated at 16:47 UTC after
+about 70 minutes of retries, on the same machine and GPU as the first. Its
+results were collected and verified at 00:22 UTC on 2026-11-16; it then ran
+the checks of the image 1.0 release code and was deleted at 01:07 UTC after
+verified collection (HTTP 204, lookup 404). At the user's instruction
+it was left running for follow-up measurements; check the live inventory
+before relying on this.
+
+On 2026-11-16 the user authorized a fresh Pod for the
+[image 1.0 check](../experiments/release_serving/README.md): `7k2awsacb6zxyb`
+(`gleipnir-image10-fresh`, US-NC-2 B200, $7.99/hour, from
+`gleipnir-serve:1.0-rc1`, snapshot `.runpod/image10-fresh.json`), allocated
+at 01:09 UTC after EU-RO-1 had no capacity and deleted at 01:44 UTC after the
+check passed and its logs were collected (HTTP 204, lookup 404). For the
+generation-mode measurement the user asked for EU-RO-1 hardware:
+`8v7naalpvfybi5` (`gleipnir-generation-mode`, $7.99/hour, B200
+`GPU-2ab4adcc…`, EPYC 9555, snapshot `.runpod/generation-mode.json`),
+allocated at 01:23 UTC on a different machine (`klzaw5yqymgh`) from the
+benchmark Pods, and deleted at 03:22 UTC after the measurement finished and
+its results were collected (HTTP 204, lookup 404). No Pod remains.
+
+For the [B300 trial](../experiments/serving_concurrency/README.md) (user
+authorization 2026-11-16, any datacenter): no B300 was available at 14:48 UTC
+in EU-NL-1, EUR-IS-1 or unrestricted; a retry every 20 minutes allocated
+`4sr7r26kfoc0z9` (`gleipnir-b300-trial`, US-WA-2, $8.99/hour,
+`GPU-ac47d51d…`, Xeon 6787P, image 1.0, snapshot `.runpod/b300-trial.json`)
+at 15:11 UTC on the second try. The image lacks `experiments/gleipnir4b_serving_ladder`
+and `data/b200_inference_benchmark`, which the benchmark needs; both were
+copied over. It was deleted at 16:30 UTC after its results were collected
+(HTTP 204, lookup 404). No Pod remains.
+
+For the [image 1.1 check](../experiments/release_serving/README.md) (user
+authorization 2026-11-16: one B300 and one B200, each deleted after its
+check): B300 Pod `ef2mkaw6oa4orn` (`gleipnir-image11-b300`, EUR-IS-1,
+$8.99/hour, `GPU-da027ebc…`, Xeon 6740E, from `gleipnir-serve:1.1-rc1`,
+snapshot `.runpod/image11-b300.json`) was allocated at 16:46 UTC and
+terminated at 17:23 UTC after its logs were collected. `rest.runpod.io` did
+not resolve from the VPS at that time, so the termination went through the
+GraphQL API (`podTerminate`; `myself.pods` then empty). No B200 was
+available from 16:46 to 18:32 UTC (five requests); the user then dropped
+the B200 check, so no B200 Pod was launched. No Pod remains.
+
+**API change, 2026-11-19.** `rest.runpod.io` no longer resolves (NXDOMAIN on
+public DNS). Lifecycle now goes through GraphQL (`https://api.runpod.io/graphql`,
+`podFindAndDeployOnDemand`, `pod`, `podTerminate`, `myself.pods`), which cannot
+override an image's entrypoint and has introspection disabled. Images from
+`gleipnir-serve:1.2` on start with `/start.sh` as `dockerArgs`.
+
+For the [per-action prefix-caching replay](../experiments/prefix_caching_replay/README.md)
+and the [image 1.2 check](../experiments/release_serving/README.md) (user
+authorization 2026-11-19, one B200 at a time, each deleted after use):
+- `5ndq8wcpbn8bmv` (US-TX-6, image 1.1, 22:48 UTC): restart-looped because
+  the start command reached the release entrypoint; deleted at 23:09 with
+  nothing to collect.
+- `ypx6hooyaa38zi` (US-NC-2, `1.2-rc1`, 23:24 UTC; Xeon Platinum 8568Y+):
+  image check, a superseded replay and the zstd recompression; deleted at
+  00:35 on 2026-11-20 after collection. Its host served the 4B at 141 ms
+  per isolated check against 48 ms on EPYC 9555 hosts.
+- `2o57cwijinnbp3` (US-CA-2, `1.2-rc2-zstd`, 01:40 UTC; EPYC 9555): rc2
+  check and the replay result; deleted at 02:05 after verified collection.
+
+For the [tool-output ablation](../experiments/tool_output_ablation/README.md)
+(user authorization 2026-11-20, one B200, deleted after collection):
+`9nxfkcv2wrzr24` (US-CA-2, image `1.2`, machine `bipo9o2yngg1`, B200
+`GPU-92d608c1…`, Xeon Platinum 8568Y+, driver 595.112.07). Created at 05:58
+UTC, reachable over SSH at 06:16 (about 18 minutes to pull the image), run
+06:24–06:39, terminated at 06:40 (`podTerminate`; `myself.pods` empty) after
+verified collection of 13 files. No Pod remains.
+
+For the [Flint OOD benchmark](../experiments/flint_ood/README.md) (user
+authorization 2026-11-20, one B200, EU-RO-1 preferred, terminated after
+collection): `8l2ln36loy87kt` (`gleipnir-flint-ood`, EU-RO-1, image `1.2`,
+machine `ods55hcq87v4`, B200 `GPU-a2b24934…`, EPYC 9555, driver 595.112.07,
+250 GB container disk, no network volume, snapshot `.runpod/flint-ood.json`).
+Allocated on the first request at 21:21 UTC and reachable over SSH at 21:28
+(the image was cached on the host). It ran an isolated vLLM 0.34.0 runtime
+(`/root/flint-vllm034`); the image's 0.31 runtime was not used. Terminated at
+22:17 UTC (`podTerminate`; `myself.pods` empty) after verified collection of
+25 files; about $7.40. No Pod remains.
+
+For the benchmark's empty-think arm and the Flint agent-trajectory serving
+benchmark (user authorization 2026-11-20, one more B200): `j59qldo1255y10`
+(same name, settings, machine and GPU; snapshot `.runpod/flint-ood-2.json`).
+Allocated on the first request at 22:24 UTC, reachable at 22:25; the compiled
+kernels of the first Pod were gone with its disk, so the first engine start
+took 581 s. Terminated at 22:49 UTC (`podTerminate`; `myself.pods` empty)
+after verified collection of 35 files; about $3.20. No Pod remains.
+
+For the [EvilGenie rescoring on the released stack](../experiments/evilgenie_released_stack/README.md)
+(user authorization 2026-11-22, one B200, terminated after collection):
+`i7xih3yuodf207` (`gleipnir-evilgenie-rerun`, EU-RO-1, image `1.2`, machine
+`2mj1yzztlz17`, B200 `GPU-e5eb9962…`, EPYC 9555, driver 595.112.07, 250 GB
+container disk, no volume). Created at 02:30 UTC, reachable at 02:35, run
+02:37–02:50, terminated at 02:51 (`podTerminate`; `myself.pods` empty) after
+verified collection of 11 files; about $2.80. No Pod remains.
+
+For the [EvilGenie run with assistant messages](../experiments/evilgenie_assistant_messages/README.md)
+(user authorization 2026-11-23, one B200, terminated after collection):
+`soaw1em7gkhycu` (`gleipnir-evilgenie-messages`, US-TX-6 because EU-RO-1 had
+no B200, image `1.2`, machine `40ko8z1ne43c`, B200 `GPU-edea2da8…`, Xeon
+6972P, driver 595.112.07, 250 GB container disk, no volume). Created at 04:24
+UTC, reachable at 04:40 after a 16-minute image pull, run 04:43–04:58,
+terminated at 04:58 (`podTerminate`; `myself.pods` empty) after verified
+collection of 11 files; about $4.60. No Pod remains.
+
+For the [Inkling 2 Mini OOD screen](../experiments/inkling_ood/README.md)
+(user authorization 2026-11-23: one B200, kept running afterwards for
+follow-up experiments): `5uo9tcfq79m724` (`gleipnir-inkling-ood`, US-TX-6
+because EU-RO-1 and US-CA-2 had no B200, image `1.2`, machine
+`40ko8z1ne43c`, B200 `GPU-62b8cec6…`, Xeon 6972P, driver 595.112.07, 250 GB
+container disk, no volume, $7.99/hour, snapshot `.runpod/inkling-ood.json`).
+Created at 20:52 UTC, reachable at 21:02. It runs an isolated vLLM nightly
+(`/root/inkling-vllm`, `0.34.0rc1.dev1201+gbfe3d7e87`) with the checkpoint in
+`/root/hf-inkling` and compile caches in `/root/cache/inkling_ood`; the image's
+0.31 runtime is not used. Kept running after the OOD runs at the user's
+request for the kernel profile. Terminated at 23:45 UTC on the user's
+instruction (`podTerminate`; `myself.pods` empty) after verified collection
+of 47 files (`collect.sha256`, `collect_profile.sha256`); about $23. No Pod
+remains.
+
 ## OpenRouter
 
 `gleipnir-openrouter` reads prompt records from JSONL and checkpoints binary

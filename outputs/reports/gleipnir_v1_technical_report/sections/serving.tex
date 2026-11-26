@@ -1,0 +1,116 @@
+\section{Serving and cost}
+\label{sec:serving}
+
+Table~\ref{tab:serving} follows the cost of a monitor from a standard LLM API to the released serving stack, and the next three subsections describe one row each; the last subsection covers prefix caching, which the table does not count.
+The stack is an endpoint for one GPU that takes a prompt and returns a score; spreading requests over several GPUs is beyond its scope.
+
+We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching (Appendix~\ref{app:serving-throughput}).
+We convert throughput to cost with two hourly rates for one NVIDIA B200, which stand for two kinds of user.
+The committed-use rate of \$3.44, for a GPU rented at a long-term discount, is the list price of CoreWeave (\$8.60 per hour) with its largest published discount for committed use (60\%).
+It is what a provider would pay to serve the monitor to the community over the long term.
+The on-demand rate of \$7.99 is what we paid at Runpod, and what a researcher pays today for a short task such as a benchmark.
+Both rates assume that the GPU always has a request to work on; a GPU that waits for requests costs the same per hour, so idle time raises the cost of each token.
+Future work that reports the cost of Gleipnir should use the on-demand cost for as long as no provider serves the monitors, because it is what anyone who runs them today pays.
+Once a provider serves them, its price replaces both of our figures.
+
+\begin{table}[t]
+\caption{Cost in USD per million prompt tokens after each serving optimization. Self-hosted costs follow from the prompt tokens per second on a benchmark of 96 agent trajectories that are sent one at a time, for one NVIDIA B200 at \$7.99 per hour on demand or \$3.44 per hour with committed use. Stock vLLM runs in BF16. Gain is the factor by which the cost falls from the row above; for self-hosting we compare the committed rate with the API price. Over all steps the committed cost falls by 6.4$\times$ for the 4B and 10.4$\times$ for the 27B. Appendix~\ref{app:ablation-precision} gives the scores.}
+\label{tab:serving}
+\centering
+\small
+\setlength{\tabcolsep}{3.5pt}
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+ & \multicolumn{3}{c}{Gleipnir 4B} & \multicolumn{3}{c}{Gleipnir 27B} \\
+\cmidrule(lr){2-4}\cmidrule(l){5-7}
+Configuration & Gain & On demand & Committed & Gain & On demand & Committed \\
+\midrule
+API price & --- & --- & 0.0300 & --- & --- & 0.1950 \\
+Self-hosted vLLM, classification mode & 3.2$\times$ & 0.0215 & 0.0093 & 4.4$\times$ & 0.1022 & 0.0440 \\
++ Low-precision arithmetic & 1.55$\times$ & 0.0139 & 0.0060 & 2.15$\times$ & 0.0475 & 0.0205 \\
++ Removing unneeded work & 1.28$\times$ & 0.0108 & 0.0047 & 1.09$\times$ & 0.0437 & 0.0188 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\subsection{Self-hosting with one forward pass}
+\label{sec:serving-selfhost}
+
+The API price in Table~\ref{tab:serving} is the price per million input tokens that Sinha et al.\ report for Qwen3.5-4B and Qwen3.5-27B, which is what a monitor that writes a rationale costs today; we apply the price of Qwen3.5-27B to Qwen3.8-27B, which has the same architecture.
+A Gleipnir monitor needs only the prefill over the prompt and the two logits of Equation~\ref{eq:score} at the last position, so we serve it with vLLM in classification mode, which returns these logits without decoding, and price it at the cost of the GPU.
+On the same GPU, the base models take about ten times as long for a trajectory when they write a rationale before the score (Appendix~\ref{app:serving-throughput}).
+
+With stock vLLM in BF16 at the committed rate, self-hosting costs 3.2 times less than the API price for the 4B and 4.4 times less for the 27B.
+At the on-demand rate it still costs less than the API price for both monitors.
+A commercial price is in the same range as our committed cost for the 27B: pplx-decider v1.2~\citep{perplexity2026decider}, a decision model on the same base model, has a list price of \$0.02 per million input tokens on OpenRouter, well below the cost of its published implementation (Appendix~\ref{app:serving-decider}).
+
+We price the monitor with one request at a time, because concurrent requests reduce the cost only slightly and increase latency substantially.
+With 8 concurrent requests the throughput is 13\% higher than with one request at a time for the 4B and 5\% higher for the 27B, and each request waits about nine times as long (Appendix~\ref{app:serving-throughput}).
+The merged BF16 checkpoints that we release run in classification mode on stock vLLM, on any GPU that vLLM supports.
+
+\subsection{Low-precision arithmetic}
+\label{sec:serving-precision}
+
+Lower-precision arithmetic gives the largest gain in Table~\ref{tab:serving} among our changes to stock vLLM.
+Stock vLLM computes in BF16, while the B200 supports FP8 and FP4 natively, and matrix products in these formats run faster.
+The base models combine full-attention layers with Gated DeltaNet (GDN) layers~\citep{yang2025gateddelta}, a form of linear attention with a recurrent state, which make up 24 of 32 layers in the 4B and 48 of 64 in the 27B.
+Almost all of the prefill time goes to the linear layers of the model and to attention.
+We run the query, key, value and output layers of the full-attention layers in FP8, the linear layers of the MLPs and the GDN layers in FP4, and attention itself in MXFP8.
+These kernels come from NVIDIA libraries, and Appendix~\ref{app:serving-kernels} lists them with our changes.
+For each linear layer we quantize both the weights and the activations.
+The state that the model stores between tokens and the two output logits keep their original precision.
+This step lowers the cost by 1.55 times for the 4B and by 2.15 times for the 27B.
+
+Lower precision changes the scores (Appendix~\ref{app:ablation-precision}).
+Without further training, the 4B loses 0.032 pAUROC@20 on the validation set and 0.053 on the OOD suite.
+This is why we train the 4B with QAD (Section~\ref{sec:training-setup}).
+QAD restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score.
+The 27B loses nothing under the same arithmetic, so we release it without QAD.
+This difference agrees with \citet{ouyang2025lowbit}, who report that larger models lose less from low-bit quantization.
+
+We built and validated the low-precision kernels on the B200, and the released serving stack also runs on the B300, at the same or a higher cost per token (Appendix~\ref{app:serving-b300}).
+Other GPUs would need other kernels and can run the BF16 checkpoints instead.
+
+\subsection{Removing unneeded work}
+\label{sec:serving-work}
+
+The last row of Table~\ref{tab:serving} comes from three changes that remove work which a monitor request does not need.
+With one request at a time, the scores are bit-for-bit the same as before.
+Together with larger CUDA graphs, which cost 2\% and 1\% on this benchmark, they lower the cost by 1.28$\times$ for the 4B and 1.09$\times$ for the 27B.
+Appendix~\ref{app:serving-throughput} gives the throughput and latency after each change, and two further changes that matter only for prompts that are shorter than the trajectories of the benchmark.
+
+\paragraph{Last-token attention in the final layer.}
+The final layer of both base models is a full-attention layer.
+vLLM computes its attention output for every token of the prompt, but the monitor reads the logits only at the last position (Equation~\ref{eq:score}), and no later layer uses the other positions.
+We therefore compute the attention of this layer for the last token alone.
+Its cost then grows linearly with the length of the prompt and no longer quadratically.
+On the benchmark it lowers the cost by 1.01$\times$.
+The gain grows with the prompt: for one request of a million tokens the 4B answers 10\% sooner.
+
+\paragraph{Shorter host path for the GDN layers.}
+Between the kernels of a GDN layer, vLLM does bookkeeping on the CPU.
+Much of it serves requests that continue from a stored recurrent state, as in generation.
+When every request of a step starts from an empty state, we call the same kernels directly: we prepare the sequence boundaries once for all layers, let the kernel write its output in place, and skip the steps that load and mask a stored state.
+Other steps take the path of vLLM.
+This lowers the cost by 1.10$\times$ for the 4B and 1.04$\times$ for the 27B.
+
+\paragraph{Faster tokenizer.}
+After the changes above, the 4B scores the median trajectory in 58\,ms, so tokenizing the prompt on the CPU becomes a large part of the latency.
+vLLM uses the tokenizer of the Transformers library, which needs about 15\,ms for a trajectory of more than 8,192 tokens.
+We use Gigatoken~\citep{roed2026gigatoken}, which returns the same tokens in about 0.2\,ms, and the median latency falls to 48\,ms.
+This lowers the cost by 1.18$\times$ for the 4B and 1.05$\times$ for the 27B.
+
+\subsection{Prefix caching}
+\label{sec:serving-caching}
+
+A monitor that checks every action scores the transcript again after each step.
+With prefix caching, the server keeps the computed state of the transcript and processes only the tokens that are new since the previous check.
+The serving image offers it as an option, and we measured it on the released stack, with all the changes above.
+On the 96 trajectories of our benchmark, checking every action takes 3.7 times less time with prefix caching than without it for the 27B, and 1.9 times less for the 4B (Appendix~\ref{app:serving-throughput}).
+The 4B gains less because a fixed cost per request weighs more for the faster model, and the saving grows with the length of the trajectory.
+
+On such a workload, caching lowers the cost of each billed input token by the same factors.
+Providers of language models can pass this saving on: for the four OpenAI models that we scored on SleightBench, cached input tokens cost a tenth to a twentieth of the base input price.
+The decision models currently do not, as none of their OpenRouter endpoints that we checked lists a lower price for cached input.
+pplx-decider and Drex Max~\citep{dhankhar2026drex} cannot use prefix caching at all: they attend bidirectionally, so earlier tokens depend on later ones and each check processes the whole transcript again (Section~\ref{sec:background-related} and Appendix~\ref{app:serving-decider}).
+Checking every action therefore favors Gleipnir over the decision models: on our benchmark, Gleipnir 27B with prefix caching costs \$1.79 per 1,000 trajectories on demand and \$0.77 with committed use, against about \$3.0 for pplx-decider (Appendix~\ref{app:serving-decider}).

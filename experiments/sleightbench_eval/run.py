@@ -428,7 +428,7 @@ def report(name: str, variant: str) -> None:
         }
         output["models"][model] = {
             view: view_report(view, scored, tokens, manifest["transcripts"])
-            for view in CONFIG["views"]
+            for view in api.get(model, {}).get("views", CONFIG["views"])
         }
         for view, result in output["models"][model].items():
             units, ci = result["units"], result["intervals_95"]

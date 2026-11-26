@@ -10,7 +10,11 @@ default: evaluation and benchmark runners replay identical prompts and keep
 - **Speed:** 12.9× less time to monitor every action of a 1M-token session;
   7.9× for 7.2% escalated actions.
 - **Drift:** cached scores differ from uncached by 0.03–0.15 (mean 0.055),
-  the same size as other measured path effects.
+  the same size as other measured path effects. Cause (2026-11-15,
+  [serving_concurrency](../../experiments/serving_concurrency/README.md#prefix-caching-and-score-identity)):
+  a resumed request splits its prefill at other steps; 528-token steps make
+  cached scores exact but slow uncached prefill about 3.7 times. Ranking
+  quality under caching moves by at most 0.0015 macro pAUROC@20.
 
 **Startup acceptance.** The mode's startup canary uses MAE ≤ 0.02 and
 correlation ≥ 0.99, the campaigns' new-adapter serving parity limits. The

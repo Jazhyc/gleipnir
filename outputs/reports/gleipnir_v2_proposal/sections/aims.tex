@@ -1,0 +1,52 @@
+\section{Aims}
+\label{sec:aims}
+The first two aims improve the released Gleipnir 4B and 27B directly, so that
+they become cheaper during the project, while software support for Inkling 2
+Mini matures. Aim~3 then carries both improvements over to Inkling 2 Mini, and Aim~4
+sets thresholds for the final monitors on real traffic.
+
+\begin{enumerate}
+    \item \textbf{A prefill-only serving engine.} Make the monitors cheaper
+    to serve when many agent sessions send requests at once and over time,
+    through better cache management for requests that only read a prompt
+    \citep{du2025prefillonly}. This work depends little on the model, so it
+    applies to Inkling 2 Mini unchanged.
+
+    \emph{Success:} on a synthetic benchmark of agent sessions in the style of
+    \citet{du2025prefillonly}, where simulated sessions arrive at random and
+    are checked again after each new action, the engine reaches a higher cache
+    hit rate and lower mean and tail latency than the v1 serving stack at the
+    same request rate, with unchanged scores.
+
+    \item \textbf{Learned token pruning.} Train the monitors to skip tokens
+    that do not affect their decision, which shortens the prefill
+    \citep{patel2026tokengate}. The pruning is learned for each base model, so
+    it is retrained for Inkling 2 Mini in Aim~3.
+
+    \emph{Success:} lower latency on long trajectories, losing at most 0.01
+    mean pAUROC@20 on the six benchmarks. \Citet{patel2026tokengate} report
+    1.4 to 11.3 times faster prefill without loss of accuracy.
+
+    \item \textbf{Gleipnir on Inkling 2 Mini.} Train the monitor on Inkling 2
+    Mini, adapt the serving stack to it, and bring over the engine of Aim~1
+    and the pruning of Aim~2.
+
+    \emph{Success:} at least the 0.951 mean pAUROC@20 of Gleipnir 27B on the
+    six benchmarks, at lower latency and cost per trajectory.
+
+    \item \textbf{Production operating points.} Once the monitors and their
+    serving are close to final, set and test thresholds at 1\% and 0.1\%
+    false-positive rates on real agent sessions.
+
+    \emph{Success:} a measured answer to whether benchmark performance holds
+    at deployment false-positive rates. Thresholds are set on SWE-chat
+    \citep{baumann2026swechat} and other datasets of real agent traffic, with
+    enough sessions that each rate rests on many false positives rather than
+    one, and each threshold reports the share of harmful trajectories on the
+    six benchmarks that it catches.
+\end{enumerate}
+
+Robustness to attacks aimed at the monitor is out of scope. It needs attacks
+generated and refined against the monitor at scale, as in MonitoringBench
+\citep{jotautaite2026monitoringbench}, as training data, which is costly; it is
+planned as separately funded later work.

@@ -158,3 +158,23 @@ def test_threshold_robustness_drops_whole_scenarios():
     assert result["loso_max"] == 1.0 and result["loso_max_drop"] == "b"
     assert result["loso_min"] == 0.0
     assert result["second_benign_catch"] == 1.0
+
+
+def test_select_rows_keeps_only_requested_views():
+    from experiments.sleightbench_eval.api_decisions import select_rows
+
+    rows = [{"id": "stripped/a/x/transcript"}, {"id": "visible/a/x/transcript"}]
+    assert select_rows(rows, ["stripped"]) == rows[:1]
+    assert select_rows(rows, None) == rows
+
+
+def test_gleipnir_cost_matches_section_5_rate():
+    from experiments.sleightbench_eval.frontier import (
+        gleipnir_usd_per_million,
+        per_thousand,
+    )
+
+    # Section 5: Gleipnir 4B costs $0.0939 per 1,000 OOD evaluations of
+    # 8,654.7 tokens on demand.
+    price = gleipnir_usd_per_million("4b", "on_demand")
+    assert per_thousand(8654.7, price) == pytest.approx(0.0939, abs=5e-5)

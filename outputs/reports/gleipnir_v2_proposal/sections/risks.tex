@@ -1,0 +1,31 @@
+\section{Risks and mitigations}
+\label{sec:risks}
+The time and compute estimates are educated guesses, and the milestones
+differ in how much they may change.
+
+\begin{itemize}
+    \item \textbf{M1 may finish early.} The serving engine depends little on
+    the model and builds on the v1 stack. Time it saves goes to M2.
+    \item \textbf{M2 is the most uncertain.} Learned token pruning is a
+    recent method, and on monitors it may lose more than the 0.01 allowed.
+    If no setting stays within it, I will report the trade-off as a negative
+    result and M3 will proceed without pruning. Pruning also opens a new attack
+    surface: an agent could place a harmful action where the monitor has
+    learned to skip. I will compare the pruned and unpruned monitors on
+    SleightBench \citep{najt2026sleight}, a benchmark of attacks built to evade
+    monitors, and report any loss.
+    \item \textbf{M3 needs many training runs.} Once M1 and M2 are complete,
+    the work is straightforward, but it repeats the training and pruning for
+    a new base. Support for Inkling 2 Mini in vLLM and in training
+    libraries is still changing; M3 starts after
+    M1 and M2 so that it can use a more stable version. If
+    that support is not ready in time, M1 and M2 still improve the released
+    v1 monitors, and M4 runs on them.
+    \item \textbf{M4 is straightforward,} and its main cost is API credits
+    for the baseline monitors. Its
+    thresholds assume that real traffic contains only benign sessions, but the
+    sessions are not labelled, and some may contain harmful or problematic
+    actions. I will review the sessions that score above each threshold, set
+    aside those I judge harmful, recompute the thresholds without them, and
+    report how many were set aside.
+\end{itemize}

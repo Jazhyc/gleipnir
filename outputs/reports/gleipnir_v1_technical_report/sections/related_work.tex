@@ -1,0 +1,73 @@
+\section{Background and related work}
+\label{sec:background}
+
+\subsection{Monitoring agent actions}
+\label{sec:background-monitoring}
+
+\paragraph{Monitors in AI control.}
+AI control studies how to deploy an AI agent safely even if the agent tries to cause harm~\citep{greenblatt2023ai}.
+To test this, control evaluations give the agent a \emph{main task}, the work that a user asked for~\citep{kutasov2025shade,kaufman2025basharena}.
+An agent that attacks also has a \emph{side task}: a harmful objective that it pursues in secret while it works on the main task.
+A \emph{monitor} guards against such an agent.
+It reads what the agent did and rates how suspicious the actions look.
+In the trusted monitoring protocol of Greenblatt et al., this monitor is a weaker model that is trusted not to cause harm, and humans audit the actions that it rates highest.
+Because human time is limited, the audit covers only a small share of the actions.
+The monitor is therefore useful only if it rates agents with a side task above almost all honest agents.
+The training data and the benchmarks in this report follow the same design.
+
+\paragraph{Monitors in production.}
+Coding agents already use such monitors in production.
+In the auto mode of Claude Code~\citep{anthropic2026auto} and the auto-review of Codex~\citep{openai2026autoreview}, a separate model approves or blocks an action before it runs.
+This model takes the place of the human who would otherwise approve the action.
+When it blocks an action, the agent must find another approach, and after repeated blocks it stops and asks the user for permission.
+A false positive is therefore costly: it blocks a harmless action, and repeated false positives halt autonomous work until the user responds.
+In addition, the monitor runs before each reviewed action, so its latency delays the action and its inference cost adds to the cost of the agent.
+A monitor in production thus needs a low false-positive rate, low latency and low cost.
+
+\subsection{Trained monitors and their evaluation}
+\label{sec:background-sinha}
+
+\paragraph{Trained action-only monitors.}
+\citet{sinha2026training} train open-weight models as monitors, from Qwen3.5-4B up to Kimi~K2.6, and our work builds on their setup (details in Appendix~\ref{app:sinha-setup}).
+Their monitors are \emph{action-only}: the monitor reads the visible trajectory, which consists of the user messages, the assistant messages and the tool outputs.
+It does not read the private reasoning or the activations of the agent, and we keep this restriction because both may become unreliable in future models.
+A model that reasons in its latent space leaves no reasoning to read~\citep{korbak2025chain}, and activations can be reshaped to evade the monitors that read them~\citep{bailey2024obfuscated}.
+The training set has 8,688 such trajectories, half of them benign, from five sources: STRIDE and Gloom~\citep{storf2026constitutional}, CoT-Red-Handed~\citep{arnav2025cot}, BashArena~\citep{kaufman2025basharena} and BashBench~\citep{bhatt2025ctrlz}.
+The training targets are inspired by deliberative alignment~\citep{guan2024deliberative}.
+A teacher model reads each trajectory with a written specification of scheming and writes a rationale that ends in a score from 0 to 10.
+The monitor learns to reproduce it, so it writes a rationale before its score.
+
+\paragraph{Evaluation suite and metric.}
+Sinha et al.\ select checkpoints on a validation set that is built like STRIDE and Gloom.
+They measure generalization on six out-of-distribution (OOD) benchmarks, which play no part in training or selection: AgentDojo~\citep{debenedetti2024agentdojo}, CUA-SHADE-Arena~\citep{kale2025reliable}, IaC~\citep{controlarena2025iac}, MLE-Sabotage~\citep{ward2025ctrl}, Rogue Eval~\citep{roger2024rogue} and SHADE-Arena~\citep{kutasov2025shade}.
+Their metric is pAUROC@20: the area under the ROC curve for false-positive rates up to 20\%, normalized so that a perfect monitor scores 1.
+They report its unweighted mean over the benchmarks, Mean-OOD, and the inference cost per 1,000 evaluations.
+We reuse their training trajectories, OOD suite, metric and cost axis and compare with their reported scores, but change the monitor output and training target (Section~\ref{sec:method}).
+
+\subsection{Related approaches}
+\label{sec:background-related}
+
+\paragraph{Decision models.}
+A decision model uses a pretrained language model to answer a question whose permitted answers are given in the request and not fixed in the architecture.
+It returns a probability for each answer in one forward pass and generates no text.
+The class became prominent with Jev~\citep{almeida2026jev}, whose weights and training method are not public.
+Perplexity then released the Decider models with open weights~\citep{perplexity2026decider}, and other providers followed.
+Decider and the open-weight Drex Max~\citep{dhankhar2026drex} remove the causal mask in their full-attention layers.
+The authors of Drex associate this design with higher accuracy at a higher cost per question, but they did not compare the two masks on the same model.
+Their benchmarks ask single decisions about a fixed input, so they do not measure a transcript that grows between checks (Section~\ref{sec:serving-caching}).
+Gleipnir keeps causal attention and reads one binary decision token at the last prompt position of an agent trajectory.
+Its only training target is the probability that a frontier teacher gives to that token.
+\citet{geuter2026releasing} use the same kind of readout, the answer-letter logits at the last prompt token, and fine-tune instruction-tuned models with LoRA on general decision tasks.
+\citet{liu2026evaluating} evaluates decision models on security checks of the inputs of an agent, such as the detection of prompt injections.
+In AI control, we found only one blog post, which scores Jev as a monitor of backdoored single-file programs from APPS~\citep{t2026jevmonitor}; we found no published evaluation of decision models as monitors for harmful behavior in agent trajectories.
+The closest work tests them as judges of whether a web agent completed its task~\citep{subramanian2026jev}.
+Section~\ref{sec:evaluation} therefore scores both dedicated decision models and unadapted language models that we read out in the same way.
+
+\paragraph{Activation probes.}
+A probe is a small classifier that reads the activations of a model.
+A probe on the monitored model has two advantages over a separate monitor.
+It has privileged access to the internal state of that model, which may hold a stable representation of misaligned intent~\citep{goldowskydill2025detecting}.
+Its inference cost is also close to zero, because the probe is small and reuses the forward pass that the model runs anyway.
+\citet{kramar2026building} propose probe architectures that handle long inputs, and \citet{cunningham2026constitutional} run linear probes in a cascade of classifiers on production traffic at a refusal rate of 0.05\%.
+Both advantages require access to the monitored model, which the action-only setting does not assume.
+Gleipnir is therefore a separate model that reads only the trajectory.

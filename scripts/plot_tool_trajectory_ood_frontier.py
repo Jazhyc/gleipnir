@@ -32,6 +32,53 @@ REPOSITORY_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
+# The technical report's version: no title (its caption states the finding),
+# a smaller canvas so the text stays legible at the width of the page, and
+# legend labels that name the two GPU rates as the report does.
+REPORT_OUTPUTS = [
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_frontier.pdf",
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_frontier.svg",
+]
+# The report's appendix figure: the same plot with recall at 1% FPR on the
+# y-axis, for the monitors we scored (Sinha et al. report no such recall).
+RECALL_SOURCE = REPOSITORY_ROOT / "results/ood_recall_at_fpr/recall_at_fpr.json"
+RECALL_REPORT_OUTPUTS = [
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_recall_frontier.pdf",
+    REPOSITORY_ROOT
+    / "outputs/reports/gleipnir_v1_technical_report/assets/ood_recall_frontier.svg",
+]
+# Registry monitor -> monitor name in the recall results.
+RECALL_NAMES = {
+    "Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)": "Gleipnir 4B",
+    "Qwen3.5-4B Kimi-soft strict seed average": "Gleipnir 4B",
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": "Gleipnir 27B",
+    "Qwen3.8-27B Kimi-soft strict": "Gleipnir 27B",
+    "Qwen3.5-9B Kimi-soft mixed": "Gleipnir 9B (earlier)",
+    "d1 native probabilities": "d1",
+    "d1-ultra native probabilities": "d1-ultra",
+    "Mercury Decide native probabilities": "Mercury Decide",
+    "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
+    "Jev 1.13 native probabilities": "Jev 1.13",
+    "Jev 1.14 native probabilities": "Jev 1.14",
+    "Drex Max native probabilities": "Drex Max",
+    "pplx-decider v1.2 native readout": "pplx-decider v1.2",
+    "pplx-decider v1.3 native probabilities": "pplx-decider v1.3",
+    "Gemini Decision 1 native probabilities": "Gemini Decision 1",
+    "Qwen3.5-4B base": "Qwen3.5-4B",
+    "Qwen3.5-9B base": "Qwen3.5-9B",
+    "Qwen3.5-35B-A3B base (mixed providers)": "Qwen3.5-35B-A3B",
+    "Qwen3.5-27B base": "Qwen3.5-27B",
+    "Qwen3.8-27B base": "Qwen3.8-27B",
+    "GPT-6 Luna binary logprobs": "GPT-6 Luna",
+    "Kimi K2.6 binary logits": "Kimi K2.6",
+    "Kimi K3 binary logits": "Kimi K3",
+    "Qwen3.5-9B base (ordinal)": "Qwen3.5-9B, 0-10 score",
+    "Qwen3.5-9B base (reasoned ordinal)": "Qwen3.5-9B, reasoning + 0-10",
+}
+RECALL_MIN_PLOTTED = 0.35
 FULL_OUTPUTS = [
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.png",
     REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier_full.svg",
@@ -47,8 +94,13 @@ EXCLUDED_MONITORS = {
 # report's table instead), early base-model references without an improvement
 # arrow, and Kimi K2.6 (the teacher is K3).
 MAIN_FIGURE_OMISSIONS = {
+    # Superseded by Jev 1.14 (user, 2026-11-19).
+    "Jev 1.13 native probabilities",
     "Microsoft-Decision-1 native probabilities",
     "d1 native probabilities",
+    "Gemini Decision 1 native probabilities",
+    "Drex Max native probabilities",
+    "pplx-decider v1.3 native probabilities",
     "Mercury Decide native probabilities",
     "d1-ultra native probabilities",
     "Qwen3.5-9B base",
@@ -100,7 +152,7 @@ PAPER_COMPARISON_MONITORS = {
     "Qwen3.5-27B SFT+RL",
 }
 MANUAL_COMPARISON_LABELS = {
-    "Jev 1.13 native probabilities": {
+    "Jev 1.14 native probabilities": {
         "xytext": (0, -14),
         "ha": "center",
         "va": "top",
@@ -209,6 +261,69 @@ MANUAL_COMPARISON_LABELS = {
         "va": "center",
     },
 }
+# The report's smaller canvas puts these labels on neighbouring points.
+REPORT_LABEL_OVERRIDES = {
+    # Right of its point; Decider v1.2's label goes below it.
+    "Jev 1.14 native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    "pplx-decider v1.2 native readout": {
+        "xytext": (12, -28),
+        "ha": "left",
+        "va": "top",
+    },
+    # Left of its point; the on-demand 27B's label goes above its own point.
+    "Qwen3.8-27B Kimi-soft strict (committed GPUs)": {
+        "xytext": (-10, 0),
+        "ha": "right",
+        "va": "center",
+    },
+    "Qwen3.8-27B Kimi-soft strict": {
+        "xytext": (0, 11),
+        "ha": "center",
+        "va": "bottom",
+    },
+    # Below-right, clear of Jev 1.13 to its left.
+    "GPT-6 Luna binary logprobs": {
+        "xytext": (8, -8),
+        "ha": "left",
+        "va": "top",
+    },
+    # Below its point, clear of the paper points above.
+    "Kimi K3 binary logits": {
+        "xytext": (0, -12),
+        "ha": "center",
+        "va": "top",
+    },
+}
+# The recall figure's middle is crowded: Mercury Decide sits just above
+# Decider v1.2, with Jev 1.13 below.
+RECALL_LABEL_OVERRIDES = {
+    "Jev 1.14 native probabilities": {
+        "xytext": (10, 0),
+        "ha": "left",
+        "va": "center",
+    },
+    # Below Jev 1.14's point.
+    "Mercury Decide native probabilities": {
+        "xytext": (12, -40),
+        "ha": "left",
+        "va": "top",
+    },
+    "pplx-decider v1.2 native readout": {
+        "xytext": (0, -26),
+        "ha": "center",
+        "va": "top",
+    },
+    "d1-ultra native probabilities": {
+        "xytext": (8, -9),
+        "ha": "left",
+        "va": "top",
+    },
+}
+REPORT_DISTILLATION_LABEL_POSITION = 0.5
 # Cost-saving callout: an arrow from the strongest paper monitor to the
 # on-demand Gleipnir 27B, labelled with the cost ratio (user, 2026-10-20).
 COST_CALLOUT = ("Claude Opus 4.6 prompted", "Qwen3.8-27B Kimi-soft strict")
@@ -305,6 +420,40 @@ def load_frontier_registry(path: str | Path) -> pd.DataFrame:
     return frame
 
 
+# A row also leaves its regime's frontier when a better row costs at most 3%
+# more (user, 2026-11-18): such cost differences are too small to show as
+# frontier steps. At one request at a time the committed Gleipnir 27B costs 1%
+# more than pplx-decider v1.2, and on recall at 1% FPR Mercury Decide costs
+# 2.9% more than pplx-decider v1.3 and catches more.
+FRONTIER_COST_TOLERANCE = 0.03
+
+
+def recall_frame(frame: pd.DataFrame, path: str | Path = RECALL_SOURCE) -> pd.DataFrame:
+    """Registry rows we scored, with recall at 1% FPR as the performance.
+
+    The ``mean_ood_pauroc_at_20`` column then holds the mean recall, and both
+    regime frontiers are recomputed on it.
+    """
+    import json
+
+    recall = {
+        m["monitor"]: m["mean_recall"]
+        for m in json.loads(Path(path).read_text(encoding="utf-8"))["monitors"]
+    }
+    rows = frame.loc[frame["monitor"].isin(RECALL_NAMES)].copy()
+    rows["mean_ood_pauroc_at_20"] = rows["monitor"].map(RECALL_NAMES).map(recall)
+    if rows["mean_ood_pauroc_at_20"].isna().any():
+        missing = rows.loc[rows["mean_ood_pauroc_at_20"].isna(), "monitor"]
+        raise ValueError("no recall for: " + ", ".join(missing))
+    rows["on_demand_frontier"] = _regime_frontier(rows, "committed")
+    rows["committed_frontier"] = _regime_frontier(rows, "on_demand")
+    rows["computed_frontier"] = rows["on_demand_frontier"].where(
+        rows["pricing"].ne("committed"), rows["committed_frontier"]
+    )
+    rows.attrs["metric"] = "recall"
+    return rows
+
+
 def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
     """Nondominance among rows outside one self-hosted pricing regime."""
     rows = frame["pricing"].ne(excluded_pricing)
@@ -312,6 +461,7 @@ def _regime_frontier(frame: pd.DataFrame, excluded_pricing: str) -> pd.Series:
     mask[rows] = pareto_frontier_mask(
         frame.loc[rows, "cost_per_1k"].to_numpy(),
         frame.loc[rows, "mean_ood_pauroc_at_20"].to_numpy(),
+        cost_tolerance=FRONTIER_COST_TOLERANCE,
     )
     return mask
 
@@ -322,10 +472,14 @@ def _display_label(monitor: str) -> str:
         "Kimi K3 binary logits": "Kimi K3 (teacher)",
         "GPT-6 Luna binary logprobs": "GPT-6 Luna",
         "Jev 1.13 native probabilities": "Jev 1.13",
+        "Jev 1.14 native probabilities": "Jev 1.14",
+        "Drex Max native probabilities": "Drex Max",
         "pplx-decider v1.2 native readout": "Decider v1.2",
         "Mercury Decide native probabilities": "Mercury Decide",
         "d1-ultra native probabilities": "d1-ultra",
         "d1 native probabilities": "d1",
+        "Gemini Decision 1 native probabilities": "Gemini Decision 1",
+        "pplx-decider v1.3 native probabilities": "Decider v1.3",
         "Microsoft-Decision-1 native probabilities": "Microsoft-Decision-1",
         "Claude Sonnet 4.6 prompted": "Claude Sonnet 4.6",
         "Gemini 3.1 Pro prompted": "Gemini 3.1 Pro",
@@ -350,12 +504,20 @@ def select_plot_points(frame: pd.DataFrame, *, full: bool = False) -> pd.DataFra
     is_binary_score_interface = frame["interface"].str.contains(
         "logits|logprobs|native binary probability", case=False, na=False
     )
+    recall = frame.attrs.get("metric") == "recall"
     included = (
         ~frame["monitor"].isin(EXCLUDED_MONITORS)
-        & frame["mean_ood_pauroc_at_20"].ge(MIN_PLOTTED_PERFORMANCE)
+        & frame["mean_ood_pauroc_at_20"].ge(
+            RECALL_MIN_PLOTTED if recall else MIN_PLOTTED_PERFORMANCE
+        )
         & (~is_ours | is_binary_score_interface)
     )
-    if not full:
+    if not full and recall:
+        # No paper rows; the decision models that the main figure omits stay
+        # when they are on a recall frontier.
+        on_frontier = frame["on_demand_frontier"] | frame["committed_frontier"]
+        included &= ~frame["monitor"].isin(MAIN_FIGURE_OMISSIONS) | on_frontier
+    elif not full:
         paper = frame["origin"].eq("Paper") & included
         paper_frontier = pd.Series(False, index=frame.index)
         paper_frontier[paper] = pareto_frontier_mask(
@@ -468,26 +630,35 @@ def _one_significant_figure(value: float) -> float:
     return round(value, -int(np.floor(np.log10(abs(value)))))
 
 
-def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
+def plot_frontier(
+    frame: pd.DataFrame, *, full: bool = False, report: bool = False
+) -> plt.Figure:
     """Build the publication-ready OOD frontier plot."""
     frame = select_plot_points(frame, full=full)
     set_plot_style()
-    figure, axis = plt.subplots(figsize=(14.2, 8.5))
+    figure, axis = plt.subplots(figsize=(10.5, 6.6) if report else (14.2, 8.5))
     axis.set_xscale("log")
     axis.set_xticks([0.03, 0.1, 0.3, 1.0, 3.0, 10.0, 30.0, 100.0])
     axis.xaxis.set_major_formatter(FuncFormatter(lambda value, _: f"${value:g}"))
     axis.yaxis.set_major_formatter(PercentFormatter(xmax=1.0, decimals=0))
     axis.set_xlim(
         frame["cost_per_1k"].min() / 1.35,
-        max(100.0, frame["cost_per_1k"].max() * 1.03),
+        # The report's smaller canvas needs more room for the marker of the
+        # most expensive point at the right edge.
+        max(100.0, frame["cost_per_1k"].max() * (1.15 if report else 1.03)),
     )
-    axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
+    recall = frame.attrs.get("metric") == "recall"
+    if recall:
+        axis.set_ylim(RECALL_MIN_PLOTTED - 0.02, 0.92)
+        axis.set_xlim(frame["cost_per_1k"].min() / 1.35, 40.0)
+    else:
+        axis.set_ylim(MIN_PLOTTED_PERFORMANCE - 0.02, 0.99)
 
     frontier = frame.loc[frame["on_demand_frontier"]].sort_values("cost_per_1k")
     committed_frontier = frame.loc[frame["committed_frontier"]].sort_values(
         "cost_per_1k"
     )
-    paper_frontier = _paper_frontier(frame)
+    paper_frontier = frame.iloc[:0] if recall else _paper_frontier(frame)
     axis.plot(
         paper_frontier["cost_per_1k"],
         paper_frontier["mean_ood_pauroc_at_20"],
@@ -537,8 +708,13 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         # rotates it to display.
         x0, x1 = base["cost_per_1k"], method["cost_per_1k"]
         y0, y1 = base["mean_ood_pauroc_at_20"], method["mean_ood_pauroc_at_20"]
-        x_mid = x0 * (x1 / x0) ** DISTILLATION_LABEL_POSITION
-        y_mid = y0 + DISTILLATION_LABEL_POSITION * (y1 - y0)
+        position = (
+            REPORT_DISTILLATION_LABEL_POSITION
+            if report
+            else DISTILLATION_LABEL_POSITION
+        )
+        x_mid = x0 * (x1 / x0) ** position
+        y_mid = y0 + position * (y1 - y0)
         angle = np.degrees(np.arctan2(y1 - y0, x_mid * np.log(x1 / x0)))
         if angle > 90:
             angle -= 180
@@ -547,15 +723,17 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         axis.text(
             x_mid,
             y_mid,
-            "soft distillation",
+            "distillation + serving",
             rotation=angle,
             transform_rotates_text=True,
             rotation_mode="anchor",
-            fontsize=10.5,
+            fontsize=9.5 if report else 10.5,
             fontweight="bold",
             color=ORIGIN_PALETTE["Gleipnir"],
             ha="center",
-            va="center",
+            # In the report the label sits beside the arrow, which is
+            # shorter than the label on the smaller canvas.
+            va="bottom" if report else "center",
             bbox={
                 "boxstyle": "round,pad=0.15",
                 "facecolor": "white",
@@ -566,6 +744,11 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         )
 
     cost_ratio = _draw_cost_callout(axis, frame)
+    manual_labels = {
+        **MANUAL_COMPARISON_LABELS,
+        **(REPORT_LABEL_OVERRIDES if report else {}),
+        **(RECALL_LABEL_OVERRIDES if recall else {}),
+    }
     # Direction cue in the empty upper-left corner.
     axis.annotate(
         "Better",
@@ -667,8 +850,8 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
                 zorder=4,
             )
             continue
-        if monitor in MANUAL_COMPARISON_LABELS:
-            placement = MANUAL_COMPARISON_LABELS[monitor]
+        if monitor in manual_labels:
+            placement = manual_labels[monitor]
             axis.annotate(
                 _display_label(monitor),
                 (row["cost_per_1k"], row["mean_ood_pauroc_at_20"]),
@@ -732,9 +915,28 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         )
     finally:
         np.random.set_state(random_state)
-    axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
-    axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
-    # The title states the finding; the subtitle says what is plotted.
+    if report:
+        # Shorter, smaller axis titles in the report's terms; the caption
+        # names the log scale.
+        axis.set_xlabel("Inference cost (USD per 1,000 evaluations)", fontsize=14)
+        axis.set_ylabel(
+            "Mean-OOD recall at 1% FPR" if recall else "Mean-OOD pAUROC@20",
+            fontsize=14,
+        )
+    else:
+        axis.set_xlabel("Inference cost (USD per 1,000 evaluations; log scale)")
+        axis.set_ylabel("Detection performance\n(pAUROC@20, mean over OOD sources)")
+    # The title states the finding; the subtitle says what is plotted. The
+    # report's caption does both instead.
+    if not report:
+        _draw_slide_title(axis, cost_ratio)
+    axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
+    axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
+    _draw_legends(figure, axis, report=report, recall=recall)
+    return figure
+
+
+def _draw_slide_title(axis: plt.Axes, cost_ratio: float | None) -> None:
     axis.set_title(
         "Our distilled decision monitor matches the best reasoning monitor"
         f" at ~{_one_significant_figure(cost_ratio):g}× lower cost"
@@ -755,9 +957,11 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         fontweight="bold",
         color="#4B5563",
     )
-    axis.grid(which="major", color="#D1D5DB", linewidth=0.8, alpha=0.8)
-    axis.grid(which="minor", axis="x", color="#E5E7EB", linewidth=0.5, alpha=0.5)
 
+
+def _draw_legends(
+    figure: plt.Figure, axis: plt.Axes, *, report: bool, recall: bool = False
+) -> None:
     legend_handles = [
         Line2D(
             [],
@@ -789,7 +993,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             [],
             color="#374151",
             linewidth=2.5,
-            label="Available now / on-demand GPUs",
+            label="On-demand rate" if report else "Available now / on-demand GPUs",
         ),
         Line2D(
             [],
@@ -797,7 +1001,7 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
             color="#374151",
             linestyle=(0, (5, 3)),
             linewidth=2.2,
-            label="At scale / reserved GPUs*",
+            label="Committed-use rate*" if report else "At scale / reserved GPUs*",
         ),
     ]
     legend_style = {
@@ -808,6 +1012,41 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         "title_fontproperties": {"size": 13.5, "weight": "bold"},
         "alignment": "left",
     }
+    if report and recall:
+        # No paper rows: one row with the two monitor types and two frontiers.
+        axis.legend(
+            handles=legend_handles[1:] + frontier_handles[1:],
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=4,
+            frameon=False,
+            prop={"size": 13, "weight": "bold"},
+            handlelength=2.2,
+            columnspacing=1.4,
+        )
+        figure.tight_layout()
+        return
+    if report:
+        # One legend above the axes: monitor types in the first row, frontiers
+        # in the second. Legend columns fill top to bottom.
+        handles = [
+            handle
+            for pair in zip(legend_handles, frontier_handles, strict=True)
+            for handle in pair
+        ]
+        axis.legend(
+            handles=handles,
+            loc="lower center",
+            bbox_to_anchor=(0.5, 1.01),
+            ncol=3,
+            frameon=False,
+            prop={"size": 13, "weight": "bold"},
+            handlelength=2.2,
+            columnspacing=1.6,
+            labelspacing=0.5,
+        )
+        figure.tight_layout()
+        return
     figure.tight_layout()
     # Stack the category legend above the frontier legend, both right-aligned
     # and as wide as the wider of the two.
@@ -843,7 +1082,6 @@ def plot_frontier(frame: pd.DataFrame, *, full: bool = False) -> plt.Figure:
         borderaxespad=0,
         **legend_style,
     )
-    return figure
 
 
 def parse_args() -> argparse.Namespace:
@@ -868,21 +1106,40 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help="Plot every registry point (the appendix figure)",
     )
+    parser.add_argument(
+        "--recall",
+        action="store_true",
+        help="Plot recall at 1%% FPR instead of pAUROC@20 (with --report)",
+    )
+    parser.add_argument(
+        "--report",
+        action="store_true",
+        help="Plot the technical report's version of the main figure",
+    )
     return parser.parse_args()
 
 
 def main() -> None:
     args = parse_args()
     frame = load_frontier_registry(args.source)
+    if args.recall:
+        frame = recall_frame(frame)
     plotted = select_plot_points(frame, full=args.full)
     omitted_count = len(frame) - len(plotted)
-    default_outputs = (
-        FULL_OUTPUTS if args.full else [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
-    )
+    if args.report and args.recall:
+        default_outputs = RECALL_REPORT_OUTPUTS
+    elif args.report:
+        default_outputs = REPORT_OUTPUTS
+    elif args.full:
+        default_outputs = FULL_OUTPUTS
+    else:
+        default_outputs = [DEFAULT_OUTPUT, DEFAULT_VECTOR_OUTPUT]
     outputs = args.output or default_outputs
     frontier_count = int(plotted["computed_frontier"].sum())
     for output_path in outputs:
-        output = save_figure(plot_frontier(frame, full=args.full), output_path)
+        output = save_figure(
+            plot_frontier(frame, full=args.full, report=args.report), output_path
+        )
         print(
             f"Wrote {output} from {len(plotted)} plotted points "
             f"({frontier_count} frontier; {omitted_count} omitted)."

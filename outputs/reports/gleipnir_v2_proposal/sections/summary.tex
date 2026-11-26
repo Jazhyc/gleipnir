@@ -1,0 +1,22 @@
+\section*{Summary}
+Monitors that review the actions of AI agents add cost and latency to every
+action they check, and agents in production often work over very long contexts.
+Gleipnir v1 \citep{ferrao2026gleipnir} showed that a small open-weight
+monitor can score an agent trajectory in one forward pass: Gleipnir 27B matches
+a frontier reasoning model on six held-out AI control benchmarks at 229 times
+lower cost. This project makes Gleipnir efficient enough to check every
+action in production. I will first make
+the released monitors cheaper on long trajectories, with a serving engine
+built for prompt-only requests and learned token pruning. I will then carry
+both over to Inkling 2 Mini \citep{inkling2mini}, a mixture-of-experts model
+of similar quality that, before any optimization, already scores
+trajectories faster than the optimized Gleipnir 27B, and finally set thresholds on real agent traffic at the low
+false-positive rates that deployments need.
+
+\begin{tabularx}{\linewidth}{@{}lX@{}}
+\toprule
+Amount requested & USD 4,000, for compute and API credits only (Section~\ref{sec:budget}) \\
+Duration & About six and a half weeks, 1 December 2026 to 15 January 2027 \\
+Deliverables & Monitor weights, a production serving stack and a short report \\
+\bottomrule
+\end{tabularx}

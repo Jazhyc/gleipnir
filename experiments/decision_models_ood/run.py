@@ -126,6 +126,18 @@ def reported_cost(rows: list[dict[str, Any]]) -> float:
     return float(sum(float(r["usage"].get("cost") or 0.0) for r in rows))
 
 
+def phase_ceiling(config: dict[str, Any], model: str, phase: str) -> float:
+    """Spend ceiling of one phase; a model may override the shared ones."""
+    spec = config["models"][model]
+    if phase == "full":
+        return float(spec["maximum_full_cost_usd"])
+    return float(
+        spec.get(
+            f"maximum_{phase}_cost_usd", config["inputs"][phase]["maximum_cost_usd"]
+        )
+    )
+
+
 def run_phase(config: dict[str, Any], model: str, phase: str) -> None:
     if phase == "full":
         canary = phase_dir(model, "canary") / "summary.json"
@@ -148,12 +160,7 @@ def run_phase(config: dict[str, Any], model: str, phase: str) -> None:
     api_key = os.environ.get("OPENROUTER_API_KEY")
     if not api_key:
         raise RuntimeError("OPENROUTER_API_KEY is not set")
-    spec = config["models"][model]
-    ceiling = (
-        float(spec["maximum_full_cost_usd"])
-        if phase == "full"
-        else float(config["inputs"][phase]["maximum_cost_usd"])
-    )
+    ceiling = phase_ceiling(config, model, phase)
     maximum_rejected = int(config["rejections"]["maximum_fraction"] * len(records))
     order = {r.record_id: i for i, r in enumerate(records_list)}
     workers = int(config["request"]["concurrency"])
@@ -303,7 +310,7 @@ def summarize_phase(config: dict[str, Any], model: str, phase: str) -> dict[str,
             "provider_pinned": provider_pinned,
             "revision_pinned": revision_pinned,
             "within_cost": summary["usage"]["reported_cost_usd"]
-            <= float(config["inputs"]["canary"]["maximum_cost_usd"]),
+            <= phase_ceiling(config, model, "canary"),
         }
         summary["gate"] = {"passed": all(conditions.values()), **conditions}
     else:

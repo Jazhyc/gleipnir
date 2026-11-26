@@ -11,7 +11,7 @@ Prepare the release directories with (`--model 4b|9b|27b` for one):
 python scripts/prepare_hf_adapter_release.py
 ```
 
-This creates `results/huggingface_release/Gleipnir-{4B,9B,27B}/`. A model whose
+This creates `results/huggingface_release/Gleipnir-{4B-LoRA,9B,27B-LoRA}/`. A model whose
 recipe differs from the shared `training` block (the 27B: strict-filtered
 tool trajectories only, BF16 base) overrides those fields in its own
 `training` entry. Each directory contains:

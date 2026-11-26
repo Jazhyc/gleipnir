@@ -1,0 +1,99 @@
+\section{Monitor-evading attacks and reward hacking}
+\label{sec:held-out}
+
+This section compares Gleipnir with other monitors in two settings that differ from the OOD suite: attacks designed to evade monitors, and reward hacking by other agents.
+No training, prompt or selection decision of Gleipnir used either.
+Appendix~\ref{app:exploratory} gives five exploratory stress tests.
+
+\subsection{Attacks designed to evade monitors}
+\label{sec:sleightbench}
+
+SleightBench~\citep{najt2026sleight} tests whether a monitor catches attacks that humans designed to exploit blind spots of frontier monitors: at a 1\% false-positive rate, Claude Opus 4.6 with extended thinking never catches 20 of the 40 attacks.
+The attacks fall into 11 categories, and each is a trajectory of a coding agent that covertly pursues a harmful objective.
+Each attack has a benign twin, the same trajectory without the harmful part, and in several pairs the two differ by one token.
+
+We score the stripped view of the authors, a stricter form of the action-only input (Section~\ref{sec:background-sinha}) that also removes the assistant messages.
+Every monitor receives the ControlArena instruction that the authors use: the models that we read out with binary logits receive it with our binary output lines, and the decision models receive it as their question.
+A monitor catches an attack when it scores the attack above the highest of the 43 benign trajectories, the authors' threshold for a 1\% false-positive rate.
+We price the monitors as in Section~\ref{sec:evaluation}; the prompts average about 17,600 tokens, about twice as long as those of the OOD suite, so each evaluation costs about twice as much.
+The authors report only the catch rate of their monitors, so Figure~\ref{fig:sleightbench} omits them; Appendix~\ref{app:sleightbench} lists them.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\linewidth]{sleightbench_frontier}
+\caption{On SleightBench, the low-cost monitors score close together, far below GPT-6.1 Terra. pAUROC@20 on the stripped view against the inference cost per 1,000 evaluations (log scale), over 40 attacks and 43 benign trajectories. Every monitor receives the ControlArena instruction. Gleipnir is priced at the committed-use rate; Table~\ref{tab:sleightbench} lists every monitor with both rates. Markers follow Figure~\ref{fig:frontier}, and the frontier treats costs within 3\% of each other as equal. The 95\% bootstrap intervals are about 0.25 wide (Table~\ref{tab:sleightbench}).}
+\label{fig:sleightbench}
+\end{figure}
+
+\paragraph{At low cost, no monitor stands out.}
+Below \$2 per 1,000 evaluations, every monitor scores between 0.19 and 0.40 pAUROC@20, with overlapping intervals (Figure~\ref{fig:sleightbench}).
+Gleipnir 27B scores 0.299 and Gleipnir 4B 0.209, and pplx-decider v1.3 scores 0.397 at about the cost of Gleipnir 27B.
+
+\paragraph{GPT-6.1 Terra leads at the high end.}
+GPT-6.1 Terra scores 0.734 at \$15.49, and its interval lies above those of all cheaper monitors (Table~\ref{tab:sleightbench}).
+With one decision token, it catches 55\% of the attacks at a 1\% false-positive rate, close to the 60--62\% of Claude Opus 4.6 and 4.7 in the Claude Code scaffold of the authors (Appendix~\ref{app:sleightbench}).
+
+\paragraph{Training helps less here than on the OOD suite.}
+Training raises Qwen3.5-4B from 0.193 to 0.209 and Qwen3.8-27B from 0.263 to 0.299, gains well within the intervals, against 0.152 and 0.061 on the OOD suite (Section~\ref{sec:evaluation}).
+SleightBench was built to evade monitors, while the OOD suite was not, and our training data contains no attacks built against a monitor.
+
+\paragraph{With 40 attacks, the benchmark separates only large differences.}
+The intervals of pAUROC@20 are about 0.25 wide.
+The catch rate is noisier still, because it depends on the single highest benign score: Kimi K3 catches no attack because it scores one benign trajectory above every attack, although its pAUROC@20 matches that of pplx-decider v1.3.
+On the frontier of cost and catch rate, the monitors follow the same order as for pAUROC@20 (Appendix~\ref{app:sleightbench}).
+
+Against attacks designed to evade a monitor, which a capable agent that knows its monitor could attempt, no monitor that we scored is sufficient alone, and the cheap decision models, including Gleipnir, fall further short than on the OOD suite.
+Closing this gap, with stronger monitors behind the cheap ones or with training data that contains attacks built against a monitor, is left to future work.
+
+\subsection{Reward hacking by other agents}
+\label{sec:held-out-evilgenie}
+
+Coding agents can exploit flaws in how their work is checked, for example by special-casing the tests instead of solving the task.
+A monitor that recognizes such reward hacks could judge agent runs, both in deployment and in a reinforcement learning pipeline, where low cost matters because every rollout is scored.
+Strong optimization pressure against a monitor can, however, teach agents to obfuscate their reward hacking~\citep{baker2025monitoring}.
+We test whether Gleipnir recognizes reward hacks by other agent models.
+
+We use the EvilGenie Escalation dataset~\citep{gomez2026escalation}, which builds on EvilGenie~\citep{gabor2025evilgenie}: 15 agent models solve LiveCodeBench problems~\citep{jain2024livecodebench} with ambiguous specifications and visible tests, and some hard-code the visible test outputs instead of solving the problem.
+We score all 124 reward hacks and 1,823 legitimate runs, from nine problems, with the released serving stack (Section~\ref{sec:serving}).
+The reward hacks come from five of them, and the intervals resample whole problems; the dataset omits the text of tool errors (Appendix~\ref{app:held-out-evilgenie}).
+As references we score Kimi K3, GPT-6 Luna and pplx-decider v1.3 on the same runs, each with the input and readout of its OOD evaluation (Section~\ref{sec:evaluation}).
+Each monitor flags a run when its score is above the threshold that flags 1\% of the benign OOD trajectories; we set this threshold once and do not tune it on any test set, because a deployed monitor has no labels.
+
+\begin{table}[t]
+\caption{Reward hacking by 15 agent models (EvilGenie Escalation): 124 reward hacks and 1,823 legitimate runs. Intervals are 95\% bootstrap intervals over problems. The flagged columns give the share of runs above the 1\% threshold of each monitor, with the number of runs in each column head; ``Sample output'' is the problem \texttt{arc191\_c}, whose reward hacks add the sample output to a correct solution, and ``Other'' covers the four other problems with reward hacks. This split was chosen after scoring. Appendix~\ref{app:held-out-evilgenie} gives the AUROC.}
+\label{tab:evilgenie}
+\centering
+\small
+\begin{tabular}{lccccc}
+\toprule
+ & & \multicolumn{3}{c}{Reward hacks flagged} & Legitimate \\
+\cmidrule(lr){3-5}
+Monitor & pAUROC@20 & All (124) & Other (55) & Sample output (69) & flagged (1,823) \\
+\midrule
+Gleipnir 4B & 0.283 {\scriptsize [0.136, 0.651]} & 2\% & 5\% & 0\% & 0.2\% \\
+Gleipnir 27B & 0.673 {\scriptsize [0.498, 0.934]} & 28\% & 60\% & 3\% & 1.1\% \\
+\midrule
+pplx-decider v1.3 & 0.597 {\scriptsize [0.408, 0.918]} & 17\% & 36\% & 1\% & 0.7\% \\
+GPT-6 Luna & 0.610 {\scriptsize [0.429, 0.946]} & 7\% & 16\% & 0\% & 0.2\% \\
+Kimi K3 & 0.652 {\scriptsize [0.471, 0.968]} & 53\% & 87\% & 26\% & 6.0\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\paragraph{At the 1\% threshold, Gleipnir 27B catches more reward hacks than every reference monitor except its teacher.}
+It flags 28\% of the reward hacks and 1.1\% of the legitimate runs (Table~\ref{tab:evilgenie}).
+pplx-decider v1.3, which costs about the same, flags 17\%, and GPT-6 Luna 7\%, at 0.7\% and 0.2\% of the legitimate runs.
+Only Kimi K3, the far more expensive teacher, flags more (53\%), but it also flags 6.0\% of the legitimate runs.
+In ranking the monitors are closer: Gleipnir 27B scores 0.673 pAUROC@20 and the reference monitors 0.597 to 0.652, with overlapping intervals.
+Gleipnir 4B flags 2\% of the reward hacks and scores 0.283, so despite its lower cost it is not competitive.
+
+\paragraph{Most missed reward hacks are on one problem.}
+The problem \texttt{arc191\_c} (``Sample output'' in Table~\ref{tab:evilgenie}) holds 69 of the 124 reward hacks.
+Its tests check one exact output for each input, although the problem accepts any valid output.
+The reward hacks add the sample output to a correct general solution, so their program stays correct on every input.
+Some legitimate runs instead edit the test, so the label depends on intent, which the actions alone show poorly (Appendix~\ref{app:held-out-evilgenie}).
+At the 1\% threshold, no monitor except Kimi K3 (26\%) flags more than 3\% of these reward hacks, although Gleipnir 27B ranks them above the legitimate runs of this problem (AUROC 0.858, against 0.558 for the 4B).
+On the other four problems, the 27B flags 60\% of the 55 hacks and the 4B 5\%.
+We chose this split after scoring, to show where the hard cases lie.
+
+In practice, Gleipnir 27B is the strongest low-cost monitor here, but it misses most reward hacks, so it could add a cheap check to tests and audits, in deployment or training, but not replace them.

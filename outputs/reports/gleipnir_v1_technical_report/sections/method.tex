@@ -1,0 +1,76 @@
+\section{Training Gleipnir monitors}
+\label{sec:method}
+
+\subsection{Monitor input and output}
+\label{sec:interface}
+
+A Gleipnir monitor reads one trajectory and returns one score.
+The input is a single user message: an instruction that describes harmful behavior, followed by the trajectory between \texttt{<agent\_trajectory>} tags.
+Appendix~\ref{app:prompts} gives the instructions and Appendix~\ref{app:data-discrepancies} the content of the trajectories.
+We apply the chat template of the model with thinking disabled and start its reply with the text \texttt{Prediction:}.
+The monitor then reads the logits $z_0$ and $z_1$ of the tokens \texttt{0} (benign) and \texttt{1} (harmful) at the next position.
+The score is the probability of \texttt{1} among these two tokens,
+\begin{equation}
+s = \frac{e^{z_1}}{e^{z_0} + e^{z_1}} = \sigma(z_1 - z_0) .
+\label{eq:score}
+\end{equation}
+This output has two properties that the output of Section~\ref{sec:background-sinha} lacks.
+It needs one forward pass over the prompt and writes no rationale.
+It is also continuous, so it ranks trajectories without the ties of an integer scale.
+Binary logits also score higher than an integer from 0 to 10 before any training: on the unadapted Qwen3.5-9B they score 0.698 Mean-OOD against 0.486 (Appendix~\ref{app:ablation-format}).
+We hypothesize that the binary decision helps because its probability expresses only the confidence of the monitor, while a score from 0 to 10 mixes this confidence with the severity of the behavior.
+
+\subsection{Soft-target distillation}
+\label{sec:binary-logit-distillation}
+
+We train the monitor to match the probability that a stronger teacher model gives to the decision token.
+The teacher is Kimi K3.
+It reads each training trajectory with the full specification (Appendix~\ref{app:prompts}) and answers with one decision token, without reasoning.
+We read the log-probabilities of \texttt{0} and \texttt{1} for this token and normalize them as in Equation~\ref{eq:score}, which gives the teacher probability $p$.
+We compute $p$ once for each of the 8,688 training trajectories and store it.
+The loss of the monitor on a trajectory is the binary cross-entropy between its score $s$ and the teacher probability,
+\begin{equation}
+\mathcal{L} = -\,p \log s - (1 - p) \log (1 - s) .
+\label{eq:loss}
+\end{equation}
+Each training trajectory also has a label from its dataset, benign or harmful, which we call the dataset label.
+The loss has no term for this label.
+In contrast to the pipeline of Section~\ref{sec:background-sinha}, the teacher writes no rationale, and no judge model or RL stage is needed.
+
+\paragraph{Teacher-agreement filter.}
+We use the dataset labels only to filter the training set.
+We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its dataset label, which leaves 7,836 of the 8,688 trajectories.
+The filter raised the validation score of one 4B run (Appendix~\ref{app:ablation-filter}).
+
+\subsection{Training setup}
+\label{sec:training-setup}
+
+We train two monitors with the loss of Equation~\ref{eq:loss}: Gleipnir~4B from Qwen3.5-4B and Gleipnir~27B from Qwen3.8-27B.
+The teacher reads the full specification, but the monitors train with a shorter compact instruction (Appendix~\ref{app:prompts}).
+In deployment a monitor reads its instruction with every trajectory, so a shorter instruction lowers the inference cost.
+We keep the base model frozen and train a LoRA adapter~\citep{hu2021lora} for one pass over the training set.
+On one NVIDIA B200 GPU this pass takes about one hour for the 4B and about 4.5 hours for the 27B.
+Appendix~\ref{app:training-config} gives the full configuration.
+
+\paragraph{Gleipnir 4B.}
+The 4B is the average of three training runs that differ only in the order of the training data.
+We average the weight updates of the three adapters, as in a model soup~\citep{wortsman2022soups}.
+The averaged adapter has three times the rank of a single adapter, but we merge it into the base model for serving, so the monitor costs the same to run as a single run.
+The scores of single runs vary, and on the validation set and the OOD suite the average scores within 0.002 pAUROC@20 of the best of the three runs (Appendix~\ref{app:ablation-average}).
+The serving stack of Section~\ref{sec:serving} runs the 4B with low-precision weights, which changes its scores.
+We therefore train the averaged adapter for one more pass under the arithmetic of the serving stack.
+In this pass the target is the score that the same adapter gives without quantization, a step known as quantization-aware distillation (QAD)~\citep{xin2026qad}.
+Section~\ref{sec:serving-precision} reports its effect.
+
+\paragraph{Gleipnir 27B.}
+The 27B is a single training run, without seed averaging and without QAD.
+It differs from the 4B in the instruction that it reads at scoring time.
+Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification (0.942 against 0.922 pAUROC@20), so the released 27B reads the full specification, with 9.4\% more prompt tokens on the OOD suite.
+The 4B does not gain from the full specification (Appendix~\ref{app:ablation-instruction}).
+
+\paragraph{Effect of the soft targets.}
+We test the soft targets by training on the dataset labels instead (hard labels), with all other settings unchanged.
+All these runs read the compact instruction and use BF16 serving.
+For the 4B, soft targets raise Mean-OOD from 0.716 to 0.792, as means over three runs for each objective.
+For the 27B, with one run for each objective, the two score within 0.005 of each other on the OOD suite (0.904 and 0.909), and hard labels score 0.044 higher on the validation set (Appendix~\ref{app:ablation-targets}).
+Soft targets also help probes on the unadapted models (Appendix~\ref{app:probing}).

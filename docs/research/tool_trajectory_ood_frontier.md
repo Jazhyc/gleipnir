@@ -85,9 +85,14 @@ the full benchmark; see the
 ## Reference table
 
 Gleipnir release models (Gleipnir 4B v0.3 and Gleipnir 27B) are priced at
-self-hosted break-even (user decisions, 2026-10-20). The cost is the measured
-optimized-serving wall time for all 6,395 rows on one 100%-utilized B200,
-times an hourly rate, per 1,000 rows. Each model has two rows:
+self-hosted break-even (user decisions, 2026-10-20). Since 2026-11-18 the cost
+uses the one-request-at-a-time throughput of the released image on the
+96-trajectory agent benchmark (Table 1 of the v1 report: 204,673 prompt tokens/s
+for the 4B, 50,788 for the 27B) applied to the OOD prompt tokens of each model
+(55,346,879 and 60,539,619 over 6,395 rows), on one 100%-utilized B200 at an
+hourly rate, per 1,000 rows. The earlier costs (4B `$0.0850`/`$0.0366`, 27B
+`$0.3896`/`$0.1677`) came from batched OOD wall time (244.9 s and 1,122.6 s),
+which the report no longer uses. Each model has two rows:
 
 - **On-demand:** `$7.99/h`, our Runpod rate.
 - **Committed GPUs:** `$3.44/h`, CoreWeave's published committed-use ceiling
@@ -101,7 +106,9 @@ utilization and margin.
 
 Rows are ordered by cost. `Frontier` is point-estimate nondominance: no other
 row is both no more expensive and at least as accurate, with one strict
-improvement. Each pricing regime has its own frontier: on-demand rows compete
+improvement. A row is also dominated by a more accurate row that costs at most
+3% more (user, 2026-11-18; first 2%), so near-equal costs do not split a
+frontier. Each pricing regime has its own frontier: on-demand rows compete
 with list-priced rows, and committed-GPU rows compete with list-priced rows.
 Committed-GPU rows report their regime's frontier; all other rows report the
 on-demand regime. The plot draws both frontiers. List prices such as the
@@ -110,11 +117,12 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 
 | Origin | Monitor | Evaluation interface | Uncached inference cost (USD / 1,000 evaluations) | Mean-OOD pAUROC@20 | Frontier |
 | --- | --- | --- | ---: | ---: | :---: |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0366** | **0.7703** | **yes** |
-| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0850** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average (committed GPUs)** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.0404** | **0.7703** | **yes** |
+| **Gleipnir** | **Qwen3.5-4B Kimi-soft strict seed average** | **Compact student specification, immediate `0\|1` logits; QAD, optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.0939** | **0.7703** | **yes** |
 | **Gleipnir** | **d1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1653** | **0.6742** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1677** | **0.9508** | **yes** |
+| **Gleipnir** | **pplx-decider v1.3 native probabilities** | **Native Decisions API (free endpoint, priced at the v1.2 list price), raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1760** | **0.8942** | **no** |
 | **Gleipnir** | **pplx-decider v1.2 native readout** | **Local `pplx_decider` readout, raw trajectory state + frozen Jev Noul question; true − false readout logits** | **0.1763** | **0.8956** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict (committed GPUs)** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted committed-use B200 break-even** | **0.1781** | **0.9508** | **yes** |
 | **Gleipnir** | **Mercury Decide native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.1811** | **0.8828** | **no** |
 | **Gleipnir** | **Qwen3.5-4B base** | **Full binary specification, immediate `0\|1` logits** | **0.2842** | **0.6175** | **no** |
 | **Gleipnir** | **GPT-OSS-120B base** | **Full binary specification, immediate `0\|1` logits** | **0.3270** | **0.4789** | **no** |
@@ -123,14 +131,17 @@ differ only in how Gleipnir is priced; the frontiers are labelled by it.
 | **Gleipnir** | **d1-ultra native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3472** | **0.8929** | **no** |
 | Paper | Qwen3.5-4B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.358 | 0.684 | no |
 | **Gleipnir** | **Jev 1.13 native probabilities** | **Native Decisions API, raw trajectory state + frozen Noul question; native binary probability** | **0.3887** | **0.8495** | **no** |
+| **Gleipnir** | **Jev 1.14 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.8763** | **no** |
+| **Gleipnir** | **Drex Max native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.7126** | **0.8299** | **no** |
 | **Gleipnir** | **Microsoft-Decision-1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.3887** | **0.7506** | **no** |
-| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.3896** | **0.9508** | **yes** |
+| **Gleipnir** | **Qwen3.8-27B Kimi-soft strict** | **Full binary specification, immediate `0\|1` logits; optimized FP8/FP4/MXFP8 serving; self-hosted on-demand B200 break-even** | **0.4137** | **0.9508** | **yes** |
 | Paper | GPT-OSS-120B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.511 | 0.718 | no |
 | Paper | Nemotron-30B SFT | Trained, short prompt, generated rationale + 0--10 score | 0.590 | 0.578 | no |
 | Paper | Qwen3-8B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.748 | 0.628 | no |
 | **Gleipnir** | **GPT-6 Luna binary logprobs** | **Full binary specification, terminal `0\|1` logprobs, reasoning disabled** | **0.8355** | **0.8365** | **no** |
 | **Gleipnir** | **Qwen3.5-9B Kimi-soft mixed** | **Compact student specification, immediate `0\|1` logits** | **0.8659** | **0.8212** | **no** |
 | Paper | Qwen3-32B SFT+RL | Trained, short prompt, generated rationale + 0--10 score | 0.869 | 0.703 | no |
+| **Gleipnir** | **Gemini Decision 1 native probabilities** | **Native Decisions API, raw trajectory state + frozen Jev Noul question; native binary probability** | **0.9306** | **0.8673** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base** | **Full binary specification, immediate `0\|1` logits** | **0.9468** | **0.6976** | **no** |
 | **Gleipnir** | **Qwen3.5-9B base (ordinal)** | **Full severity specification, immediate 0--10 integer** | **0.9628** | **0.4858** | **no** |
 | **Gleipnir** | **Qwen3.5-35B-A3B base (mixed providers)** | **Full binary specification, terminal `0\|1` logits; Darkbloom FP4 then Parasail FP8** | **0.9896** | **0.7580** | **no** |
@@ -202,7 +213,8 @@ plotted at its optimized-serving score (user decision, 2026-10-20):
 - **Cost.** It is priced at self-hosted break-even: one B200 at `$7.99/h`,
   fully utilized, scored the full benchmark workload (55,346,879 prompt
   tokens) through optimized serving in 244.9 s, which is `$0.0850/1K`
-  (`$0.0098/M` tokens). The earlier hosted proxy, the paper's `$0.03/M` input
+  (`$0.0098/M` tokens); the reference table now prices it at one request at
+  a time, `$0.0939/1K` (see its pricing note). The earlier hosted proxy, the paper's `$0.03/M` input
   and `$0.15/M` output 4B rate, gave `$0.2598/1K`.
 - **Frontier.** It is the lowest-cost frontier point. pplx-decider v1.2 is
   above it at about twice the cost. It dominates the unadapted 4B
@@ -411,7 +423,8 @@ prompt it was trained on), not on OOD. The workload renders byte-identically
 to the unadapted 27B row (60,539,619 input tokens, mean 9,466.7113, plus one
 output token). It is priced at self-hosted break-even: one B200 at `$7.99/h`,
 fully utilized, scored this workload through optimized serving in 1,122.6 s,
-which is `$0.3896/1K` (`$0.0412/M` tokens). The shared 27B hosted proxy
+which is `$0.3896/1K` (`$0.0412/M` tokens); the reference table now prices
+it at one request at a time, `$0.4137/1K`. The shared 27B hosted proxy
 (`$0.195/M` input, `$1.56/M` output) gave `$1.8476/1K`. Training cost is
 excluded under the registry contract.
 
@@ -598,8 +611,11 @@ at full utilization. SHADE-Arena stays weakest at
   serving stack about 3.5 times faster than the published one. Otherwise it
   is priced below cost.
 - **Committed GPUs.** Against Gleipnir rows at committed-GPU rates, the
-  Decider leaves the frontier: Gleipnir 27B (`0.9508` at `$0.1677/1K`) is
-  both cheaper and better.
+  Decider leaves the frontier. Priced at one request at a time, Gleipnir 27B
+  (`0.9508` at `$0.1781/1K`) costs 1% more per evaluation, although its
+  `$0.0188/M` is below the Decider's `$0.02/M`: its full specification makes
+  its prompts 7% longer (60.5M against 56.4M OOD tokens). The 2% cost
+  tolerance of the frontier rule (now 3%) treats the two costs as equal.
 - **Plotting.** The plot keeps the list price, which is what users pay.
   Plotted at self-hosted break-even, it would sit well behind Gleipnir 27B.
 - **Caveat.** Only the documented runtime configuration was measured, with

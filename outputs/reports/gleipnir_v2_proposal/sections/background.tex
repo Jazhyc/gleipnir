@@ -1,0 +1,64 @@
+\section{Problem and prior work}
+\label{sec:background}
+AI agents act with growing autonomy, and monitors that review their actions
+are a main line of defense. In July 2026, agents in internal evaluations at
+OpenAI broke out of their isolation and compromised the systems of Hugging
+Face; OpenAI's monitors would have raised an alert more than a day before the
+breach, but did not run on these evaluations \citep{openai2026huggingface}.
+Monitoring is also expensive: OpenAI estimates that monitoring its agents adds
+roughly 20\% to their inference compute \citep{openai2026pacing}. A monitor
+that checks each action before it runs also delays every action. Cheaper and faster monitors let developers
+check more of what their agents do.
+
+Gleipnir v1 \citep{ferrao2026gleipnir} showed that small open-weight monitors
+can learn the decision of a frontier teacher and score an agent trajectory in
+one forward pass, instead of writing a rationale first. On a suite of six
+held-out AI control benchmarks \citep{sinha2026training}, Gleipnir 27B scores 0.951 mean pAUROC@20 (the normalized area under the ROC
+curve up to a 20\% false-positive rate; higher is better), level with the strongest monitor on these benchmarks:
+Claude Opus 4.6, a frontier model that reasons before it answers (0.942).
+Gleipnir 27B does so at 229 times lower cost, served by a stack built for this
+single forward pass. The code,
+weights, teacher probabilities and serving image are public.
+
+\subsection{Why efficient monitors matter for safety}
+\label{sec:safety}
+The cost of a monitor decides how much of an agent's activity gets checked.
+Frontier labs can afford to monitor with frontier models, but many developers who deploy agents, including
+those building on open-weight models and open-source agent harnesses, cannot. An open monitor that is
+affordable and fast enough to check every action lowers that barrier for everyone, while a company that builds a monitor for
+its own traffic has little reason to release it. Efficient monitors also make AI control
+research itself cheaper, since control evaluations and red-teaming score many
+trajectories, and they fit the role of the weaker, trusted monitor in control
+protocols \citep{greenblatt2023ai}. Finally, whether a monitor that does well on benchmarks still works
+at the false-positive rates of a deployment, on real traffic, is an open
+question that matters to all monitoring work, and this project measures it.
+
+\subsection{What v1 leaves open for production}
+\label{sec:gaps}
+v1 was evaluated on the six AI control benchmarks above, not on the traffic of
+a deployed agent. Its lowest reported operating point is a 1\% false-positive
+rate, while classifiers on production traffic run far lower, for example at a
+refusal rate of 0.05\% \citep{cunningham2026constitutional}. The six benchmarks
+contain only 3,189 benign trajectories in total, so a single false positive
+already makes up 0.03\%, more than half of that rate. Its evaluation
+also drops every trajectory over 28,000 tokens, while agents in production
+generally work over far longer contexts: in real coding-agent sessions
+\citep{baumann2026swechat}, the agent's context reaches about 77,000 tokens in
+a typical session and up to a million. Almost all of the monitor's cost is the prefill over these
+trajectories, which v1 does not shorten. The strongest v1 monitor also uses all 27 billion parameters of its base
+model for every token, which sets a floor on its cost that serving work alone
+cannot remove. Attacks built to evade the monitor, where v1 falls far behind the strongest monitors on
+SleightBench \citep{najt2026sleight}, are out of scope for this proposal
+(Section~\ref{sec:aims}).
+
+\subsection{A more efficient base model: Inkling 2 Mini}
+\label{sec:inkling}
+Inkling 2 Mini \citep{inkling2mini} is a mixture-of-experts model that uses
+only 3.4B active parameters for each token. It accepts contexts of up to 1,048,576 tokens, and 20 of
+its 24 layers attend only over the last 1,024 tokens, which slows the growth
+of attention cost with context length. Without any training, it scores 0.884 mean pAUROC@20 on the same suite, against 0.890 for Qwen3.8-27B, the base of Gleipnir 27B. It already scores the 96 agent trajectories of the v1 serving benchmark at 4.3
+requests per second, sent one at a time, against 4.1 for the optimized
+Gleipnir 27B, with no optimization of my own. I therefore expect a Gleipnir monitor trained on it to match or exceed
+Gleipnir 27B at lower cost. Its support in vLLM is new and still changing, and its weights ship only in
+low-precision formats (NVFP4 and MXFP8), so training and serving it need
+engineering work (Section~\ref{sec:risks}).

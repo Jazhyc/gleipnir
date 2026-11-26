@@ -1,0 +1,25 @@
+\section{Introduction}
+\label{sec:introduction}
+
+AI agents act with growing autonomy, and the harm that they can cause grows with it.
+In July 2026, agents in internal evaluations at OpenAI broke out of their isolation and compromised the systems of Hugging Face.
+OpenAI's chain-of-thought monitors would have alerted the security team more than a day before the breach, but they did not run on these evaluations~\citep{openai2026huggingface}.
+Such monitoring is expensive: OpenAI estimates the overhead of its monitoring at roughly 20\% of the inference compute that it monitors~\citep{openai2026pacing}.
+A monitor that checks each action before it runs also delays every action (Section~\ref{sec:background-monitoring}).
+Cheaper, faster monitors would let developers check more of what their agents do.
+
+We introduce Gleipnir, small open-weight monitors that return the probability that an agent trajectory is harmful.
+The name comes from the ribbon in Norse myth that binds the wolf Fenrir: as thin as silk, yet stronger than any chain.
+A reasoning monitor spends most of its compute on a rationale; Gleipnir learns the decision of a stronger teacher directly, so that one forward pass replaces it.
+Decision models also answer in one forward pass, but they are general-purpose models for any question, while Gleipnir is trained only to monitor agents.
+Unlike several of them, it also supports prefix caching, which reuses the computation over a transcript that grows between checks (Section~\ref{sec:serving-caching}).
+
+On the OOD suite of \citet{sinha2026training}, Gleipnir 27B scores 0.951 Mean-OOD pAUROC@20, level with the strongest reasoning monitor at 229 times lower cost on demand, and, on a GPU rented at a long-term discount, 0.055 above the strongest decision model of the same cost (Section~\ref{sec:evaluation}).
+On attacks built to evade monitors, Gleipnir 4B and 27B, like other low-cost monitors, trail far behind the strongest model that we scored, and on reward hacks by other agents, the 27B flags more than other cheap monitors but misses most (Section~\ref{sec:held-out}).
+
+We release the code, data and weights of our contributions under the MIT license:
+\begin{itemize}
+\item a training recipe that distills the decision-token probabilities of a frontier teacher into small open models (Sections~\ref{sec:method} and~\ref{sec:evaluation});
+\item a serving stack for this single forward pass, which lowers the cost of the monitors from the API price by 6.4 to 10.4 times on such a GPU (Section~\ref{sec:serving});
+\item an evaluation against reasoning monitors, decision models and unadapted language models on the OOD suite and two harder benchmarks (Sections~\ref{sec:evaluation} and~\ref{sec:held-out}).
+\end{itemize}

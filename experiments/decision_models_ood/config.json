@@ -59,6 +59,47 @@
       "context_length": 65536,
       "input_price_usd_per_million": 0.02,
       "maximum_full_cost_usd": 1.55
+    },
+    "gemini_decision_1": {
+      "added_at": "2026-11-18",
+      "openrouter_id": "google/gemini-decision-1",
+      "provider": "Google AI Studio",
+      "provider_revision": "google/gemini-decision-1-20261111",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.1,
+      "maximum_canary_cost_usd": 0.15,
+      "maximum_full_cost_usd": 7.5
+    },
+    "pplx_decider_v1_3": {
+      "added_at": "2026-11-18",
+      "openrouter_id": "perplexity/pplx-decider-v1.3:free",
+      "provider": "Perplexity",
+      "provider_revision": "perplexity/pplx-decider-v1.3-20261112",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.02,
+      "price_note": "Served free on OpenRouter; costs use the $0.02/M list price of v1.2 (user, 2026-11-18). Billed spend is $0.",
+      "maximum_canary_cost_usd": 0.01,
+      "maximum_full_cost_usd": 0.01
+    },
+    "jev_1_14": {
+      "added_at": "2026-11-19",
+      "openrouter_id": "typesafe/jev-1.14",
+      "provider": "TypeSafe",
+      "provider_revision": "typesafe/jev-1.14-20261014",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.042,
+      "maximum_full_cost_usd": 3.25
+    },
+    "drex_max": {
+      "added_at": "2026-11-20",
+      "openrouter_id": "nace-ai/drex-max",
+      "provider": "DeepInfra",
+      "provider_revision": "nace-ai/drex-max-20261016",
+      "context_length": 262144,
+      "input_price_usd_per_million": 0.12,
+      "maximum_canary_cost_usd": 0.15,
+      "maximum_full_cost_usd": 4.75,
+      "price_note": "OpenRouter lists $0.06/M with a 50% discount (endpoint pricing.discount = 0.5, checked 2026-11-20); costs use the undiscounted $0.12/M, as for Mercury Decide's temporary discount (user, 2026-11-20). Billed spend is at the discounted rate."
     }
   },
   "request": {

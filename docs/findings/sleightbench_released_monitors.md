@@ -626,6 +626,110 @@ for about $3.38 at the 30m cache-write rate ($6.75 conservative bound).
 
 Results: `results/sleightbench_eval/sb13/`.
 
+## Exploratory: Gemini Decision 1 and pplx-decider v1.3 (run `sb14`)
+
+User-requested on 2026-11-19 for the technical report: the `sb11` setup (Jev
+Noul question, Decisions API) with the two decision models added to the OOD
+comparison, stripped view only
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb14-gemini-decision-1-and-pplx-decider-v13-frozen-2026-11-19)).
+All 86 rows per model answered on the pinned revisions
+(`gemini-decision-1-20261111`, `pplx-decider-v1.3-20261112`) with no input
+rejections. Gemini billed $0.165 for 1.65M input tokens; v1.3 billed $0
+(1.50M tokens, $0.030 at v1.2's list price).
+
+| Monitor, stripped | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins | Mean-OOD pAUROC@20 |
+|---|---:|---:|---:|---:|---:|
+| **pplx-decider v1.3** | **20.0%** [10.0, 35.0] | **0.719** | **0.355** | 82.5% | 0.894 |
+| pplx-decider v1.2 (`sb11`) | 25.0% [12.5, 40.0] | 0.690 | 0.319 | 90% | 0.896 |
+| **Gemini Decision 1** | **2.5%** [0, 30.0] | **0.677** | **0.287** | 65% | 0.867 |
+| Gleipnir 27B (`sb01`) | 15.0% | 0.706 | 0.317 | 70% | 0.951 |
+| Gleipnir 4B (`sb01`) | 5.0% | 0.657 | 0.212 | 60% | 0.770 |
+
+- **v1.3 ranks slightly above v1.2 and Gleipnir 27B** (AUROC 0.719 against
+  0.690 and 0.706) but catches one attack fewer than v1.2 at 1% FPR. All
+  three are within each other's intervals.
+- **Gemini Decision 1 catches one attack.** Its highest benign score (0.302)
+  sits far above the benign mean (0.075), so the threshold excludes almost
+  every attack; its ranking is between Gleipnir 4B and 27B. One attack ties
+  its twin.
+- Both thresholds give 0% realized FPR.
+
+The Gleipnir rows above use their own instructions (`sb01`), not the Jev
+question, so this table does not match prompts; `sb15` does.
+
+Results: `results/sleightbench_eval/sb14/`.
+
+## Exploratory: Gemini Decision 1 and pplx-decider v1.3 with the ControlArena prompt (run `sb15`)
+
+User-requested on 2026-11-19: `sb14` with the ControlArena instruction as the
+Noul question, the prompt that the decision models received in `sb12` and the
+Gleipnir monitors in `sb02`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb15-gemini-decision-1-and-pplx-decider-v13-with-the-controlarena-prompt-frozen-2026-11-19)).
+All 86 rows per model answered with no rejections; Gemini billed $0.165,
+v1.3 $0 ($0.030 at list price).
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **pplx-decider v1.3** | `sb15` | **27.5%** [15.0, 42.5] | **0.738** | **0.397** | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+| **Gemini Decision 1** | `sb15` | **20.0%** [10.0, 37.5] | **0.665** | **0.309** | 75% |
+| pplx-decider v1.2 | `sb12` | 12.5% [5.0, 32.5] | 0.676 | 0.300 | 87.5% |
+| Jev 1.13 | `sb12` | 12.5% [5.0, 27.5] | 0.665 | 0.255 | 60% |
+| Gleipnir 4B | `sb02` | 7.5% [0, 22.5] | 0.611 | 0.209 | 52.5% |
+
+- **v1.3 is the strongest decision model here**, above Gleipnir 27B on every
+  metric (0.738 against 0.697 AUROC), though the catch intervals overlap.
+- **The prompt matters more for these models than for Gleipnir.** v1.3 rises
+  from 20% to 27.5% catch and Gemini from 2.5% to 20%, whose highest benign
+  score falls from 0.302 to 0.206; v1.2 fell from 25% to 12.5% in `sb12`.
+- Both thresholds give 0% realized FPR, with no score ties.
+
+Results: `results/sleightbench_eval/sb15/`.
+
+## Exploratory: Jev 1.14 with the ControlArena prompt (run `sb16`)
+
+User-requested on 2026-11-19 so that TypeSafe's newest model is measured as
+Perplexity's is: `sb15` with the model changed to `jev-1.14-20261014`
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb16-jev-114-with-the-controlarena-prompt-frozen-2026-11-19)).
+All 86 stripped rows answered with no rejections, for $0.066.
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **Jev 1.14** | `sb16` | **20.0%** [7.5, 32.5] | **0.679** | **0.260** [0.165, 0.391] | 62.5% |
+| Jev 1.13 | `sb12` | 12.5% [5.0, 27.5] | 0.665 | 0.255 | 60% |
+| pplx-decider v1.3 | `sb15` | 27.5% [15.0, 42.5] | 0.738 | 0.397 | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+
+- **Jev 1.14 ranks like Jev 1.13** (pAUROC@20 0.260 against 0.255) and catches
+  three more attacks, level with Gleipnir 27B at 1% FPR.
+- **Coarse scores.** It returns 21 distinct values over 86 rows, and 11 of 40
+  attacks tie their benign twin, as Jev 1.13 did.
+- Threshold 0.17 with 0% realized FPR.
+
+Results: `results/sleightbench_eval/sb16/`.
+
+## Exploratory: Drex Max with the ControlArena prompt (run `sb17`)
+
+User-requested on 2026-11-20: `sb16` with the model changed to Nace.AI's
+`drex-max-20261016` on DeepInfra
+([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb17-drex-max-with-the-controlarena-prompt-frozen-2026-11-20)).
+All 86 stripped rows answered with no rejections; $0.044 billed. Costs use
+the undiscounted $0.12/M: $1.02 per 1,000 evaluations, on 8,499 billed
+tokens per row on average (the endpoint bills long states at about a third
+of their length; see the decision-model OOD finding).
+
+| Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
+|---|---|---:|---:|---:|---:|
+| **Drex Max** | `sb17` | **25.0%** [12.5, 40.0] | **0.706** | **0.322** [0.206, 0.483] | 70% |
+| pplx-decider v1.3 | `sb15` | 27.5% [15.0, 42.5] | 0.738 | 0.397 | 90% |
+| Gleipnir 27B | `sb02` | 20.0% [10.0, 32.5] | 0.697 | 0.299 | 70% |
+
+- Between Gleipnir 27B and Decider v1.3 on ranking, within both intervals.
+- 65 distinct values over 86 rows; 2 attacks tie their twin; threshold 0.121
+  with 0% realized FPR.
+
+Results: `results/sleightbench_eval/sb17/`.
+
 ## Diagnostic: single-trial ranking for the authors' protocol
 
 Added 2026-10-22, post-hoc. The `sb04`/`sb06` tables above rank on each

@@ -1,6 +1,7 @@
 """Native decision-model SleightBench runs (sb10/sb11: Jev 1.13 and
 pplx-decider v1.2 with the Jev Noul question; sb12: both with the
-ControlArena prompt as a Noul question).
+ControlArena prompt as a Noul question; sb14: Gemini Decision 1 and
+pplx-decider v1.3 with the Jev Noul question, stripped view only).
 
 The raw trajectory is the Decisions state and the returned probability is the
 score (``gleipnir.evaluation.openrouter_decisions``). ``control_arena_question``
@@ -9,8 +10,10 @@ question; ``--write-question`` freezes it to ``prompts/control_arena_noul.json``
 Each state is the trajectory inside the frozen ``api_control_arena.jsonl``
 prompt for the same row, so the model sees exactly the trajectory the
 logit-interface API monitors saw. Requests are pinned to the provider without fallbacks,
-with data collection denied. Any failure or input rejection stops the run;
-``--limit`` runs a canary on the first rows.
+with data collection denied. A model's ``views`` limits the rows it scores. Any
+failure stops the run; an input rejection does too, unless the model has a
+``rejections`` rule, which records the row with the uninformative score up to a
+fixed number of rows. ``--limit`` runs a canary on the first rows.
 """
 
 from __future__ import annotations
@@ -28,6 +31,7 @@ from gleipnir.data.monitoring import read_rows, write_json
 from gleipnir.evaluation.openrouter_decisions import (
     DecisionRecord,
     DecisionsConfig,
+    OpenRouterDecisionsError,
     score_decision,
     stable_sha256,
 )
@@ -74,6 +78,13 @@ def state(prompt: str) -> str:
     return prompt.split(OPEN)[1].split(CLOSE)[0]
 
 
+def select_rows(rows: list[dict], views: list[str] | None) -> list[dict]:
+    """The rows of the given views (``view/attack/...`` ids), or all rows."""
+    if views is None:
+        return rows
+    return [r for r in rows if r["id"].split("/", 1)[0] in views]
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("model", choices=sorted(CONFIG["decision_models"]))
@@ -91,6 +102,7 @@ def main() -> None:
     rows = read_rows(DATA / "api_control_arena.jsonl")
     if {r["id"]: benchmark.sha256(r["prompt"].encode()) for r in rows} != frozen:
         raise ValueError("API prompts differ from the frozen manifest")
+    rows = select_rows(rows, spec.get("views"))
     execution = spec["execution"]
     config = DecisionsConfig(
         model=spec["openrouter_id"],
@@ -109,9 +121,23 @@ def main() -> None:
     key = os.environ["OPENROUTER_API_KEY"]
     rate = spec["pricing"]["input_usd_per_million"] / 1e6
 
+    rule = spec.get("rejections")
+
     def one(row: dict) -> dict:
         record = DecisionRecord(row["id"], state(row["prompt"]), {})
-        result = score_decision(record, config, key)
+        try:
+            result = score_decision(record, config, key)
+        except OpenRouterDecisionsError as error:
+            if rule is None or not error.input_rejected:
+                raise
+            return {
+                "id": row["id"],
+                "state_sha256": record.state_sha256,
+                "rejected": True,
+                "error": str(error)[:1000],
+                "score": rule["uninformative_score"],
+                "usage": {"input_tokens": 0},
+            }
         if result["model"] != spec["provider_revision"]:
             raise ValueError(f"unexpected revision {result['model']!r}")
         return result
@@ -120,7 +146,12 @@ def main() -> None:
     spent = sum(r["usage"]["input_tokens"] for r in previous) * rate
     with ThreadPoolExecutor(execution["concurrency"]) as pool, out.open("a") as handle:
         for future in [pool.submit(one, r) for r in todo]:
-            result = future.result()  # any failure stops the run
+            result = future.result()  # any other failure stops the run
+            if result.get("rejected"):
+                rejected = sum(bool(r.get("rejected")) for r in previous) + 1
+                previous.append(result)
+                if rejected > rule["maximum_rows"]:
+                    raise RuntimeError(f"{rejected} input rejections exceed the limit")
             spent += result["usage"]["input_tokens"] * rate
             if spent > execution["budget_usd"]:
                 raise RuntimeError(f"budget exceeded: ${spent:.4f}")
@@ -134,6 +165,7 @@ def main() -> None:
             {
                 "model": spec["provider_revision"],
                 "rows": len(scored),
+                "rejected": sum(bool(r.get("rejected")) for r in scored),
                 "input_tokens": sum(r["usage"]["input_tokens"] for r in scored),
                 "list_price_cost_usd": spent,
             },

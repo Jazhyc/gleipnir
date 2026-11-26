@@ -4,16 +4,19 @@ Packages Gleipnir 4B **v0.4** and Gleipnir 27B **v0.2** for outside users.
 These are packaging releases: the weights are unchanged.
 
 - **Hugging Face, two repos per model.**
-  - `Jazhyc/Gleipnir-4B` and `Jazhyc/Gleipnir-27B` keep the FP32 and `vllm/`
-    adapters, for merging and fine-tuning.
+  - `Jazhyc/Gleipnir-4B-LoRA` and `Jazhyc/Gleipnir-27B-LoRA` keep the FP32
+    and `vllm/` adapters, for merging and fine-tuning. They were renamed from
+    `Jazhyc/Gleipnir-4B` and `Jazhyc/Gleipnir-27B` on 2026-11-23; the old IDs
+    redirect.
   - `Jazhyc/Gleipnir-4B-BF16` and `Jazhyc/Gleipnir-27B-BF16` hold the merged
     BF16 checkpoints, for stock vLLM or Transformers and for the image.
   - Every repo of a model gets the model's version tag.
 - **No pre-quantized repo.** The optimized stack quantizes the BF16
   checkpoint online at load: NVFP4 MLP/GDN, FP8 attention projections and
   MXFP8 attention.
-- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 0.2;
-  0.1 is the earlier 32K build). It
+- **Serving image** `ghcr.io/jazhyc/gleipnir-serve` (image version 1.0;
+  0.2 lacks the larger 4B graphs and tokenizes with Transformers, 0.1 is
+  the earlier 32K build). It
   is a frozen snapshot of the validated stack, not a redesign. It contains:
   - both serving runtimes and the native FA4, MXFP8 and Triton trees;
   - the receipts the integrity checks bind;
@@ -239,6 +242,182 @@ metrics move by about 0.001.
   - Logs: `logs/runpod/release_serving/image02_fresh/`.
 - **Release.** `0.2` was tagged from `0.2-rc1`, digest `ba602599…`; `0.1`
   is unchanged at `15673c65…`.
+
+## Image 1.0: larger 4B graphs and an effective Gigatoken (2026-11-16)
+
+User request. Both changes were measured in
+[serving_concurrency](../serving_concurrency/README.md).
+
+- **Changes** (release code only; runtimes, kernels and receipts are 0.2's).
+  - **4B CUDA graphs up to 4,096 tokens** (`targets.GRAPH_SIZES_4B`, added
+    to the recorded command by `serve.add_graphs`). Below 768 rows the
+    scores depend on whether a step's row count is a multiple of 32, so the
+    sizes from 257 to 768 are every multiple of 32 and the size below it;
+    scores at one request at a time then equal the recorded command's. The
+    27B keeps its recorded graphs to 2,048.
+  - **Gigatoken takes effect.** `gleipnir.serving.gigatoken` replaces
+    `BaseRenderer._encode`, which vLLM 0.31 never calls, so images 0.1 and
+    0.2 tokenized with Transformers. `tokenizer_hook/sitecustomize.py`
+    patches `_tokenize_prompt` to use the installed encoder; `serve.py`
+    puts it on `PYTHONPATH` and writes call counts to
+    `/tmp/gleipnir-release/<model>/tokenizer.json`.
+  - `--recorded-graphs` and `--transformers-tokenizer` give 0.2's
+    behaviour. `prepare()` adds neither change unless asked, so the serving
+    experiments still replay the recorded command.
+  - `image/identity.py` scores 248 synthetic prompts (330 to 7,170 tokens)
+    one at a time and compares two runs bit for bit.
+    `image/pod_fresh_check.sh` runs it for both models between the 0.2
+    behaviour and the default.
+- **Checks for releases** (user, 2026-11-16): the fresh-Pod check uses the
+  synthetic prompts of `image/identity.py` only. If a pass against the
+  recorded scores is wanted, the ID set is enough (`validate.py --splits
+  id`); OOD passes are excessive.
+- **Rebuild rule.** The switch at multiples of 32 was observed on this
+  software stack only and its kernel is not identified. Every rebuild must
+  pass `image/identity.py`; if it fails, re-derive the sizes or ship
+  `--recorded-graphs` as the default.
+- **Checks on EU-RO-1 B200 Pod `179xu9pmh64fxh`** (a container of 0.2 with
+  the new release code; `results/release_serving/image10/`).
+  - 4B identity, default against `--recorded-graphs
+    --transformers-tokenizer`, at 262K: 0 of 248 synthetic and 0 of 6,395
+    OOD prompts change. 27B identity (tokenizer only): 0 of 248.
+  - Smoke tests pass in the default and `--prefix-caching` modes of both
+    models (200,016-token prompt; 399K cached tokens hit).
+  - Tokenizer receipts: 6,001+ native calls, 0 Transformers calls (4B).
+  - 4B `validate.py`: ID 0.9096 and OOD 0.7705 (recorded 0.9117 and
+    0.7703); against the same host's 0.2-command pass of the day, MAE ratio
+    0.95 and 1.07 and correlation within 0.001, so the repeat-relative
+    gates pass (`4b_gate.json`). 231K and 227K tokens/s.
+  - The 27B's ID and OOD passes were not repeated: its command is
+    unchanged and its token IDs are identical.
+- **Build.** One layer with the changed files of this directory, appended
+  to `0.2` (digest `ba602599…`) with `crane` from the VPS
+  (`image/layer10.py`); pushed as `1.0-rc1`, 52 layers, the new one 21 KB.
+- **Fresh-Pod check.** US-NC-2 B200 Pod `7k2awsacb6zxyb` (Intel Xeon
+  Platinum 8568Y+, driver 595.91.07, no volume) ran `1.0-rc1` with
+  `image/pod_fresh_check.sh`.
+  - Cold entrypoint to ready: 4B 276 s and 27B 476 s, downloads included;
+    later starts 105 to 170 s.
+  - Identity between 0.2's behaviour and the default: 0 of 248 synthetic
+    prompts change, for each model.
+  - Smoke tests pass in the default and prefix modes of both models, with
+    the same scores as on the EU-RO-1 Pod (AMD host); the tokenizer
+    receipts name the native backend.
+  - Logs: `logs/runpod/release_serving/image10_fresh/`; rows:
+    `results/release_serving/image10/fresh/`.
+- **Release.** `1.0` was tagged from `1.0-rc1`, digest `d85c1ffd…`
+  (anonymous pulls resolve it); `0.2` is unchanged at `ba602599…`. The
+  model cards under `model_releases/hf/` still name image 0.1 and are to
+  be rewritten with the v1.0 model release.
+
+## Image 1.1: B300 support (2026-11-16)
+
+User decision, 2026-11-16: let the image run on a B300, for flexibility. The
+[B300 trial](../serving_concurrency/README.md) found identical scores and no
+gain in cost.
+
+- **What changes.** Only `serve.py`, and only when `nvidia-smi` names a GPU
+  in `COMPATIBLE_GPUS` (`NVIDIA B300 SXM6 AC`). On a B200 the command, the
+  environment and the start-up are those of 1.0.
+  - `hardware_hook` reports the receipts' `NVIDIA B200` as the GPU name, and
+    capability (10, 0) to callers in the `gleipnir` package, so the
+    hash-bound sources stay untouched.
+  - `compile_attention.py` builds the MXFP8 attention plan for the server's
+    context limit in a process of its own before the first server start.
+    The image ships that kernel compiled for the B200 only, and compiling
+    it inside the server on a cold cache fails with `TYPE_UNSTABLE_JOIN`.
+- **Other GPUs** are still refused by the receipts.
+- **Build.** One layer on `1.0` (digest `d85c1ffd…`), `image/layer11.py`;
+  pushed as `1.1-rc1` (digest `272f4a4d…`, layer 61 KB).
+- **Fresh-Pod check on a B300.** EUR-IS-1 Pod `ef2mkaw6oa4orn` (`NVIDIA B300
+  SXM6 AC`, Intel Xeon 6740E, driver 595.91.07, no volume) ran `1.1-rc1`
+  with `image/pod_fresh_check.sh` and `REFERENCE` set to the B200 rows of
+  the 1.0 check (`results/release_serving/image10/fresh/`).
+  - Every start went through the hook and the outside compile (4 to 10 s)
+    and was ready at the first attempt, at the 262,144-token limit: cold 4B
+    381 s and 27B 281 s with downloads, later starts 131 to 160 s.
+  - 4B: 0 of 248 synthetic scores differ from the B200's, and 0 between
+    the recorded and the default mode.
+  - 27B: 0 of 248 differ between the two modes on the B300, and **1 of 248
+    differs from the B200**: `synthetic-79` (2,072 tokens) has logits
+    (−1.891, −1.648) against (−2.188, −1.711), a score of 0.560 against
+    0.617. The B300 value repeats in three runs and the B200 value in four
+    runs on two hosts. Its neighbours at 2,046 and 2,098 tokens agree. The
+    cause is not known.
+  - Smoke tests (198 and 200,016 tokens, default and prefix modes, both
+    models) return the B200's scores exactly; the tokenizer receipts name
+    the native backend.
+  - The script stops at the first difference, so the 27B prefix mode was
+    run by hand afterwards. Logs:
+    `logs/runpod/release_serving/image11_b300/`; rows:
+    `results/release_serving/image11/b300/`.
+- **Release.** `1.1` was tagged from `1.1-rc1` at 18:31 UTC, digest
+  `272f4a4d…` (anonymous pulls resolve it); `1.0` is unchanged at
+  `d85c1ffd…`. User decisions, 2026-11-16: the one differing 27B score is
+  acceptable, and the tag does not wait for the B200 check, for which
+  there was no B200 capacity from 16:46 UTC on. On a B200 the only new code
+  that runs is the `nvidia-smi` name query, so the B200 check of `1.1`
+  was dropped (user, 18:40 UTC) and no B200 Pod was launched for it.
+
+## Image 1.2: shell access (2026-11-19)
+
+User decision, 2026-11-19: let users of the image reach a shell on the Pod
+that serves it. In 1.1 any start command went to the release entrypoint as a
+model name, so a Runpod Pod could serve but not be reached over SSH unless
+its entrypoint was overridden, which Runpod's GraphQL API cannot do.
+
+- **What changes.** Only `image/entrypoint.sh`:
+  - `4b`, `27b` or no argument serves exactly as in 1.1;
+  - any other command runs as given (`/start.sh`, `bash`);
+  - with `PUBLIC_KEY` set (Runpod's convention) and the base image's
+    `/start.sh` present, SSH starts in the background before the server.
+  Serving layers, kernels, command and environment are 1.1's bytes.
+- **Build.** One layer on `1.1` (digest `272f4a4d…`), `image/layer12.py`:
+  the entrypoint at `/opt/gleipnir-release/entrypoint.sh` and its repository
+  copy, this README and the builder.
+- **Check.** A fresh B200 from `1.2-rc1` with start command `4b` and
+  `PUBLIC_KEY` set: SSH reachable while the server starts, then the
+  synthetic identity scores of both models against the 1.0 B200 rows
+  (no ID passes). The same Pod runs the
+  [per-action prefix-caching replay](../prefix_caching_replay/README.md).
+- **Check result (`1.2-rc1`, digest `7725d8a0…`).** US-NC-2 Pod
+  `ypx6hooyaa38zi` (B200 `GPU-ca5da4f7…`, driver 595.112.07, no volume),
+  started with `/start.sh` through the new pass-through path: SSH came up
+  with the container. Servers were then started by hand with the image's
+  entrypoint; the first, with `PUBLIC_KEY` set, ran `/start.sh` beside the
+  server. Both models in both modes started and passed `smoke.py` (198 and
+  200,016 tokens; prefix mode hit 399,168 and 399,840 cached tokens), and
+  the synthetic identity scores equal the 1.0 B200 rows for both models
+  (0 of 248 changed). Logs: `logs/runpod/prefix_caching_replay/replay01_us_nc2/`.
+- **zstd copy (`1.2-rc1-zstd`, digest `06f12fee…`).** The same image with
+  every layer recompressed as zstd (level 3) by `skopeo` on that Pod:
+  15.3 GB instead of 17.1 GB, and the 54 uncompressed layer digests
+  (`rootfs.diff_ids`) equal `1.2-rc1`'s, so the files are byte-identical.
+  User decision, 2026-11-20: check only that a Pod starts from it and how
+  long the pull takes, without scoring. A first `skopeo copy` reused the
+  gzip blobs through its blob-info cache; the tag was overwritten.
+- **`/tmp` mode (rc2).** 1.1 and `1.2-rc1` ship `/tmp` as mode 755, so
+  `apt-get` inside the container fails unless `TMPDIR` points elsewhere.
+  User decision, 2026-11-20: fix it in 1.2. `image/layer12_tmp.py` appends
+  one layer with a `tmp` directory entry of mode 1777 (plus this README and
+  the builder) to both `1.2-rc1` and `1.2-rc1-zstd`, giving `1.2-rc2` and
+  `1.2-rc2-zstd` with the same uncompressed layers. The runtimes under
+  `/tmp` keep their own modes.
+- **rc2 check (`1.2-rc2-zstd`, digest `f3a0503f…`).** US-CA-2 Pod
+  `2o57cwijinnbp3` (B200 `GPU-512bfd53…`, AMD EPYC 9555, driver 595.112.07,
+  no volume), 2026-11-20:
+  - Runpod pulled the zstd layers; the Pod was reachable over SSH 6 minutes
+    after creation (gzip Pods on other machines: about 9 and 13 minutes;
+    not a controlled comparison).
+  - `/tmp` is mode 1777, the runtimes under it keep 755, and `apt-get
+    update` runs without errors.
+  - The `PUBLIC_KEY` path started SSH beside the 4B server; both models in
+    both modes passed `smoke.py`; identity scores equal the 1.0 B200 rows
+    (0 of 248 changed, both models).
+- **Release.** `1.2` was tagged from `1.2-rc2-zstd` on 2026-11-20 at 02:08
+  UTC (user decision: the zstd variant), digest `f3a0503f…` (anonymous
+  pulls resolve it). `1.2-rc2` is the same image with gzip layers; `1.1`
+  is unchanged at `272f4a4d…`.
 
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 

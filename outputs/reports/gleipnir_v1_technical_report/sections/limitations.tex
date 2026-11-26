@@ -1,0 +1,25 @@
+\section{Limitations}
+\label{sec:limitations}
+
+\paragraph{Benchmarks, not production traffic.}
+We evaluate Gleipnir only on benchmarks, not on the traffic of a deployed agent.
+pAUROC@20 averages over false-positive rates up to 20\%, and the lowest operating point that we report is 1\%, while classifiers on production traffic run far lower, for example at a refusal rate of 0.05\%~\citep{cunningham2026constitutional}.
+The benchmarks have too few benign trajectories to resolve such rates.
+The OOD suite also inherits the filter of \citet{sinha2026training}, which drops every trajectory over 28,000 tokens and removes 650 of the 1,500 SHADE-Arena trajectories (Appendix~\ref{app:shade}).
+
+\paragraph{Attacks and text aimed at the monitor.}
+Our training data contains no attacks built against a monitor, and on SleightBench both Gleipnir monitors fall further behind than on the OOD suite (Section~\ref{sec:sleightbench}).
+In an exploratory test, the same accusation of a backdoor in a benign and a backdoored program lowers Gleipnir 4B close to chance, while the 27B keeps its separation (Appendix~\ref{app:held-out-apps}).
+
+\paragraph{Cost comparison.}
+We price the reference monitors at API rates and Gleipnir at the cost of a dedicated self-hosted GPU (Section~\ref{sec:serving}).
+A base model read with binary logits and self-hosted would cost as much as the Gleipnir monitor of its size, so the saving comes from the output format and the serving, not from the training.
+Comparing open models on the same hardware is future work.
+
+\paragraph{Serving at scale.}
+The released stack runs on one GPU, and we built and validated its low-precision kernels on the B200.
+Prefix caching keeps the state of each transcript in the memory of that GPU (Section~\ref{sec:serving-caching}); we have not built or tested the management of this state across many concurrent agent sessions and replicas, such as eviction, offloading and routing.
+
+\paragraph{One teacher and one training set.}
+Every Gleipnir monitor distills one teacher, Kimi K3, on the training trajectories of \citet{sinha2026training}, and the 27B is a single training run.
+We do not know how the method transfers to other teachers or training sets, or how much the 27B varies between runs.

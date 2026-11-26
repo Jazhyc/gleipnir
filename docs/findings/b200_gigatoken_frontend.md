@@ -1,5 +1,13 @@
 # Native Gigatoken serving frontend
 
+**Correction, 2026-11-15.** This integration replaces `BaseRenderer._encode`,
+which exists in vLLM 0.24 and not in vLLM 0.31. Since the migration to vLLM
+0.31 the patch installs and logs but is never called, so the 0.31 stack and
+the released image tokenize with Transformers. See the
+[tokenizer measurement](../../experiments/serving_concurrency/README.md#tokenizer),
+which also gives the effect of a working hook. The text below describes the
+vLLM 0.24 stack.
+
 2026-10-07. Native Gigatoken is wired into the API renderer and validated on the
 selected Qwen3.5-4B stack. The latest same-worker comparison improves interactive
 median/p95 latency from **152.62/270.04 ms to 148.88/191.96 ms**. Full c128

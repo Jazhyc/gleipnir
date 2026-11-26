@@ -26,6 +26,8 @@ def test_pareto_frontier_keeps_nondominated_and_duplicate_points() -> None:
     )
     assert mask.tolist() == [True, False, True, True, False]
 
+    near = pareto_frontier_mask([1.0, 1.01, 1.05], [0.5, 0.6, 0.7], cost_tolerance=0.02)
+    assert near.tolist() == [False, True, True]
     duplicates = pareto_frontier_mask([1.0, 1.0], [0.5, 0.5])
     assert duplicates.tolist() == [True, True]
 
@@ -127,9 +129,9 @@ def test_cost_callout_reports_opus_to_gleipnir_27b_ratio() -> None:
     frame = select_plot_points(load_frontier_registry(DEFAULT_SOURCE))
     figure, axis = plt.subplots()
     axis.set_xscale("log")
-    assert round(_draw_cost_callout(axis, frame)) == 243
+    assert round(_draw_cost_callout(axis, frame)) == 229
     labels = [text.get_text() for text in axis.texts if text.get_text()]
-    assert labels == ["243× cheaper"]
+    assert labels == ["229× cheaper"]
     plt.close(figure)
 
 
@@ -189,6 +191,8 @@ def test_pricing_regimes_have_separate_frontiers() -> None:
     assert frame.loc[committed, "committed_frontier"].all()
     assert not frame.loc[committed, "on_demand_frontier"].any()
     assert frame.loc[on_demand + [decider], "on_demand_frontier"].all()
+    # The committed 27B costs 1% more than the Decider; the cost tolerance
+    # keeps the Decider off the committed frontier.
     assert not frame.loc[[decider], "committed_frontier"].any()
 
 
