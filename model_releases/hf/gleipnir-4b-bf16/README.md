@@ -94,9 +94,7 @@ curl -s localhost:8000/classify -H 'Content-Type: application/json' -d '{"model"
 The classifier settings repeat inside `text_config` because the Qwen
 checkpoint wraps the language model. `mamba_ssm_dtype` keeps the GDN state
 in FP32, as in the project's runs. Send the same rendered prompt as in the
-Transformers example. On an RTX PRO 6000 this reproduced the project's
-recorded BF16 results (ID 0.9335 against 0.9332, OOD 0.8045 against 0.8039
-pAUROC@20; per-row MAE 0.004) at 36K prompt tokens/s.
+Transformers example.
 
 For the highest throughput, on one NVIDIA B200 or B300, use the project's
 optimized serving image `ghcr.io/jazhyc/gleipnir-serve:1.2`, which loads this
@@ -111,6 +109,11 @@ BF16. Every file is byte-identical to the merged checkpoint the project
 evaluated, and its SHA-256 is recorded in the release manifest of the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir)
 (`experiments/release_serving/`).
+
+The stock vLLM recipe above reproduces the project's recorded BF16 scores (mean
+absolute difference 0.004 per trajectory; ID 0.9335 against 0.9332, OOD
+0.8045 against 0.8039 pAUROC@20), checked on an NVIDIA RTX PRO 6000. The
+optimized serving image does not run on that GPU.
 
 ## Changelog
 
