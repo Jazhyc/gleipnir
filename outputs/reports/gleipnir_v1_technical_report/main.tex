@@ -45,7 +45,10 @@ stipend and a compute budget.
 We worked with AI research agents, mainly GPT-6.1 Sol and Claude~Opus~5.5,
 throughout the project. The agents wrote the training, evaluation and serving
 code, launched and monitored GPU runs within compute budgets that we approved,
-analyzed results, and drafted and revised text, including this report. We
+analyzed results, and drafted and revised text, including this report. The
+serving optimizations of Section~\ref{sec:serving} came almost entirely from
+agents in an autoresearch loop, which proposed, implemented and measured
+changes against fixed checks of the scores. We
 chose the research questions, the experiments and their stopping rules, and
 reviewed the results and every section of the report. The repository records
 the protocol of each experiment and the source of every number, and we take
