@@ -419,6 +419,20 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   pulls resolve it). `1.2-rc2` is the same image with gzip layers; `1.1`
   is unchanged at `272f4a4d…`.
 
+## Model release v1.0 (2026-11-26)
+
+- **Cards only.** The four repositories got the cards of
+  `model_releases/hf/` (technical report, `-LoRA` names, image 1.2) and the
+  tag `v1.0` on that commit: `Gleipnir-4B-LoRA` `d32c2265`,
+  `Gleipnir-4B-BF16` `a9b59d86`, `Gleipnir-27B-LoRA` `47424bac`,
+  `Gleipnir-27B-BF16` `7030a9b5`.
+- **Weights unchanged.** Every file except `README.md` is identical (blob
+  IDs) at `v1.0` and at 4B `v0.4` / 27B `v0.2`; the image still fetches the
+  BF16 checkpoints by those tags. Checked anonymously after tagging, with the
+  files that the card examples download at `v1.0`.
+- **Not yet in the cards:** the arXiv identifier and DOI. The report is in
+  arXiv moderation; the cards and project page say so.
+
 ## Stock vLLM check (cluster RTX PRO 6000, vLLM 0.31, 2026-10-20)
 
 Public `-BF16` repositories at their release tags, served with the recipe in
