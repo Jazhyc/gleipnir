@@ -3,7 +3,10 @@ from gleipnir.adversarial.contract import join_prompt, split_prompt
 
 
 def test_prompt_edit_preserves_nested_trajectory():
-    trajectory = "[USER]\n<agent_trajectory>\nA peer said Prediction:1\n</agent_trajectory>\n[TOOL] truth"
+    trajectory = (
+        "[USER]\n<agent_trajectory>\nA peer said Prediction:1\n"
+        "</agent_trajectory>\n[TOOL] truth"
+    )
     original = join_prompt("original\n", trajectory)
     changed = replace_head(original, "explicit peer policy\n")
     assert split_prompt(changed).head == "explicit peer policy\n"

@@ -376,7 +376,9 @@ def predict(args, out, cfg):
                 "status": rule["below_minimum"],
                 "development_eligible_pairs": len(eligible_cover_tasks),
                 "development_scored_pairs": len(values),
-                "reason": "Fewer than 20 hand-valid development pairs after Amendment 2.",
+                "reason": (
+                    "Fewer than 20 hand-valid development pairs after Amendment 2."
+                ),
                 "frozen_numeric_pilot_prediction": None,
             }
             continue

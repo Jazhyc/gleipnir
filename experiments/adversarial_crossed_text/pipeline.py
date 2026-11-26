@@ -106,9 +106,10 @@ def completed_payloads(cfg, *, dry_run=False):
         if identity["sources"][path] != cfg["prompts_sha256"][name]:
             raise ValueError(f"imported prompt changed: {name}")
     amendment2 = "amendment_2" in cfg
-    keep = lambda kind: (
-        kind != "cover_story" if amendment2 else kind == "task_restatement"
-    )
+
+    def keep(kind):
+        return kind != "cover_story" if amendment2 else kind == "task_restatement"
+
     texts = [r for r in read_jsonl(source / "texts.jsonl") if keep(r["condition"])]
     checks = [
         r for r in read_jsonl(source / "text_checks.jsonl") if keep(r["condition"])
@@ -355,8 +356,8 @@ def final_texts(out):
 def cover_round_bound(out, cfg, tasks, pairs, triggers, texts, *, dry_run=False):
     """Bound all remaining requests before the round, with byte-based pricing."""
     from experiments.adversarial_code_or_comments.llm import endpoint
-    from experiments.adversarial_crossed_text.common import spent
     from experiments.adversarial_crossed_text.campaign import Campaign
+    from experiments.adversarial_crossed_text.common import spent
 
     amendment = cfg["amendment_2"]
     model = endpoint(cfg["models"][amendment["writer_model_role"]])
@@ -447,8 +448,8 @@ def generate(args, out, cfg):
                 texts[(task, kind)] = record
     if "amendment_3" in cfg:
         from experiments.adversarial_crossed_text.amendment3 import (
-            smoke_tasks,
             smoke_gate,
+            smoke_tasks,
         )
 
         smoke = smoke_tasks(out, cfg, selection, allowed)
@@ -1044,8 +1045,8 @@ def main():
         )
         if args.stage in {"smoke-gate", "restore-fallback"}:
             from experiments.adversarial_crossed_text.amendment3 import (
-                smoke_gate,
                 restore_fallback,
+                smoke_gate,
             )
 
             if args.stage == "restore-fallback":

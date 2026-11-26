@@ -155,7 +155,9 @@ def score():
                 handle.flush()
                 if n % 25 == 0 or n == len(rows):
                     print(
-                        f"{arm}/{name} {n}/{len(rows)}; {total_tokens / max(time.monotonic() - arm_start, 0.001):.0f} prompt tokens/s",
+                        f"{arm}/{name} {n}/{len(rows)}; "
+                        f"{total_tokens / max(time.monotonic() - arm_start, 0.001):.0f}"
+                        " prompt tokens/s",
                         flush=True,
                     )
     canaries("after")

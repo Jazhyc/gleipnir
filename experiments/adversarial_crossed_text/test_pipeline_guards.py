@@ -828,6 +828,7 @@ def test_predict_cover_fallback_uses_eligible_pairs_not_score_failures(
     study, monkeypatch, eligible, scored, exception
 ):
     import json
+
     from experiments.adversarial_crossed_text import evaluate as e
 
     cfg = study.cfg

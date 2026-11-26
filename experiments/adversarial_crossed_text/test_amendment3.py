@@ -8,10 +8,7 @@ import pytest
 from experiments.adversarial_crossed_text import amendment3 as a
 from experiments.adversarial_crossed_text import common as c
 from experiments.adversarial_crossed_text import pipeline as p
-from experiments.adversarial_crossed_text.test_pipeline_guards import (
-    study,
-    refresh_reads,
-)
+from experiments.adversarial_crossed_text.test_pipeline_guards import refresh_reads
 
 
 def setup_smoke(study, monkeypatch, finished=5, valid=2):
@@ -214,7 +211,7 @@ def test_timeout_applies_only_to_cover_writer(study):
 def test_passing_gate_continuation_preflights_whole_round_and_skips_smoke(
     study, monkeypatch
 ):
-    tasks = setup_smoke(study, monkeypatch, 5, 2)
+    setup_smoke(study, monkeypatch, 5, 2)
     a.smoke_gate(study.out, study.cfg, study.pairs, study.triggers)
     study.selection["heldout"] = ["x"]
     study.pairs["x"] = study.pairs["a"]

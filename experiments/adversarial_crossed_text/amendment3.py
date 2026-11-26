@@ -199,7 +199,7 @@ def smoke_gate(out, cfg, pairs=None, triggers=None):
 
 
 def fallback_payloads(cfg):
-    """Restore the source final cover collection; its 34 valid verdicts are unchanged."""
+    """Restore the source final cover collection; its 34 valid verdicts stay."""
     spec = cfg["amendment_3"]["fallback_import"]
     source = ROOT / spec["source"]
     for name, expected in spec["files"].items():
