@@ -111,9 +111,9 @@ All validation scores in this report use this version, which has 3,012 trajector
 \paragraph{No assistant messages in the OOD suite.}
 The OOD inputs are stricter than the description that Sinha et al.\ give: they contain no private reasoning of the agent, and most of them also contain no assistant messages at all.
 In the four benchmarks that come from ControlArena (AgentDojo, IaC, Rogue Eval and SHADE-Arena), every assistant message has an empty body, and only the tool calls and the tool results remain.
+This matches the main setting of SleightBench, which removes all assistant messages and keeps the user messages, the tool calls and the tool results.
 In CUA-SHADE-Arena, the assistant messages contain only the names of the tool calls.
 Only MLE-Sabotage keeps assistant messages: for each step, the input shows the short plan that the agent states, the code that it submits and the output of that code.
-This is the input that SleightBench uses as its main setting, which removes all assistant messages and keeps the user messages, the tool calls and the tool results.
 A monitor on the OOD suite therefore judges tool calls and tool results, and it does not see what the agent reported to the user.
 The training set and the validation set do keep the assistant messages, so the monitors are trained on a wider input than the OOD suite tests.
 We cannot be certain that the experiments of Sinha et al.\ used these published files, so this difference may not apply to the scores that they report.
@@ -130,12 +130,12 @@ Unless stated otherwise, scores are Mean-OOD pAUROC@20.
 \label{app:ood-all}
 
 Table~\ref{tab:ood-all} lists every monitor that has a score on the OOD suite: the monitors that \citet{sinha2026training} report, and the monitors that we scored.
-Besides pAUROC@20 it gives the AUROC, which other work commonly reports, and the recall at a false-positive rate of 1\%, which is closer to how a monitor is deployed: the humans who audit flagged actions can review only a small share of the honest ones.
+Besides pAUROC@20 it gives the AUROC, which other work commonly reports, and the recall at a false-positive rate of 1\%, which is closer to how a monitor is deployed: the humans who audit flagged trajectories can review only a small share of the benign ones.
 Of the APIs of the frontier labs, only that of OpenAI returns token log probabilities for current models, and only when reasoning is disabled.
 GPT-6 Astra, GPT-6.1 Sol, GPT-6.2 Sol and GPT-6.2 Astra do not allow reasoning to be disabled, so we cannot read their binary logits and do not score them.
 
 \begin{table}[p]
-\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. AUROC is the area under the full ROC curve, averaged in the same way. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the honest trajectories of a benchmark, averaged in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5. Drex Max is priced at its list price before a 50\% discount; its endpoint bills inputs above about 10,000 tokens at fewer tokens than their length.}
+\caption{Results on the OOD suite, ordered by cost within each group. Cost is the inference cost in USD per 1,000 evaluations. pAUROC@20 is Mean-OOD, the unweighted mean over the six benchmarks. AUROC is the area under the full ROC curve, averaged in the same way. Recall is the share of attack trajectories that a monitor flags at the threshold that flags at most 1\% of the benign trajectories of a benchmark, averaged in the same way; \citet{sinha2026training} do not report it. The groups marked ``Sinha et al.'' are copied from \citet{sinha2026training} (their Table~4), who price open-weight models at hosted inference prices. We measured the groups marked ``This work'' on the 6,395 trajectories of the suite. Gleipnir 4B and 27B are priced at self-hosted break-even on one B200 with one request at a time (Section~\ref{sec:serving}) and have one row for each GPU rate; the other measured rows use API prices or hosted inference prices. pplx-decider v1.3 is served free of charge at the time of writing (November 2026), which may change, so we price it at the list price of v1.2. Google blocked two inputs of Gemini Decision 1, which score 0.5. Gleipnir 9B is our earlier release, an adapter on Qwen3.5-9B that was also trained on deception data, priced at the hosted price of its base model. Drex Max is priced at its list price before a 50\% discount; its endpoint bills inputs above about 10,000 tokens at fewer tokens than their length.}
 \label{tab:ood-all}
 \centering
 \small
@@ -184,7 +184,7 @@ Microsoft-Decision-1 & 0.389 & 0.751 & 0.906 & 0.588 \\
 Drex Max & 0.713 & 0.830 & 0.933 & 0.566 \\
 Gemini Decision 1 & 0.931 & 0.867 & 0.949 & 0.694 \\
 \midrule
-\multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
+\multicolumn{5}{@{}l}{\emph{This work: unadapted language models, binary logits}} \\
 Qwen3.5-4B & 0.284 & 0.618 & 0.855 & 0.386 \\
 GPT-6 Luna & 0.835 & 0.837 & 0.929 & 0.671 \\
 Qwen3.5-9B & 0.947 & 0.698 & 0.885 & 0.503 \\
@@ -458,15 +458,15 @@ Weight average & 0.912 & 0.811 \\
 \subsection{Serving precision}
 \label{app:ablation-precision}
 
-The serving stack of Section~\ref{sec:serving} runs the monitors with low-precision weights.
+The released serving stack of Section~\ref{sec:serving} runs the monitors with low-precision weights.
 Table~\ref{tab:precision} compares it with BF16 serving for each released monitor, with the instruction that the monitor is released with.
-Before QAD, the 4B loses 0.032 on the validation set and 0.053 on the OOD suite under optimized serving.
+Before QAD, the 4B loses 0.032 on the validation set and 0.053 on the OOD suite on the released serving stack.
 QAD~\citep{xin2026qad} restores the validation score, but on the OOD suite the released 4B still scores 0.034 below its own BF16 score and 0.041 below the BF16 score before QAD.
-The 27B loses nothing: its scores under optimized serving are 0.002 and 0.016 higher than in BF16.
+The 27B loses nothing: its scores on the released serving stack are 0.002 and 0.016 higher than in BF16.
 \citet{ouyang2025lowbit} report that larger models, and models trained on fewer tokens, lose less from low-bit quantization, which agrees with the difference between our two monitors.
 
 \begin{table}[h]
-\caption{BF16 serving against optimized serving. Scores are pAUROC@20. The 4B reads the compact instruction and the 27B reads the full specification.}
+\caption{BF16 serving against the released serving stack. Scores are pAUROC@20. The 4B reads the compact instruction and the 27B reads the full specification.}
 \label{tab:precision}
 \centering
 \small
@@ -474,7 +474,7 @@ The 27B loses nothing: its scores under optimized serving are 0.002 and 0.016 hi
 \toprule
  & \multicolumn{2}{c}{Validation} & \multicolumn{2}{c}{Mean-OOD} \\
 \cmidrule(lr){2-3}\cmidrule(l){4-5}
-Monitor & BF16 & Optimized & BF16 & Optimized \\
+Monitor & BF16 & Released & BF16 & Released \\
 \midrule
 4B before QAD & 0.912 & 0.881 & 0.811 & 0.758 \\
 Gleipnir 4B (after QAD) & 0.933 & 0.912 & 0.804 & 0.770 \\
@@ -530,7 +530,7 @@ Training time & 4B: about 1\,h, 27B: about 4.5\,h & about 1\,h \\
 \subsection{Throughput and latency}
 \label{app:serving-throughput}
 
-We measured every configuration of both monitors on one machine, because latency depends on the host.
+We measured every configuration of Table~\ref{tab:serving-steps} and Figure~\ref{fig:serving-latency} on one machine, because latency depends on the host.
 Table~\ref{tab:serving-steps} gives the result for each step, and Figure~\ref{fig:serving-latency} shows how latency changes with the number of concurrent requests and with the length of the prompt.
 
 \paragraph{Environment.}
@@ -599,7 +599,7 @@ We measured this on 224 short prompts from our training data, with a median leng
 We therefore record larger graphs.
 With graphs for steps of up to 2,048 tokens, the median latency on these prompts fell to 15\,ms and 22\,ms.
 For the 4B we record graphs up to 4,096 tokens, which lowers the latency of a prompt of 4,096 tokens from 26\,ms to 23\,ms; the 27B gains nothing above 2,048 tokens.
-The trajectories of the benchmark are longer than the graphs, so this step changes nothing in Table~\ref{tab:serving-steps}.
+Almost all trajectories of the benchmark are longer than the graphs, so this step changes the throughput in Table~\ref{tab:serving-steps} by at most 2\%.
 A graph has a fixed size, and vLLM pads a step to the next recorded size.
 For the 4B we chose the sizes so that, with one request at a time, every score is bit-for-bit the same as without the larger graphs.
 
@@ -677,7 +677,7 @@ The 27B does not use it.
 \paragraph{Generation mode.}
 The step from the API price to classification mode in Table~\ref{tab:serving} changes two things at once: we host the model ourselves, and the model no longer writes a rationale.
 To isolate the second, we also hosted the two base models in generation mode, with stock vLLM in BF16 on the same type of GPU.
-Generation and classification then differ only in the rationale.
+Generation and classification then differ in the rationale and in the instruction.
 The instruction is the variant of the full specification that asks for a written analysis and then a score from 0 to 10 (Appendix~\ref{app:prompts}).
 Thinking was disabled, decoding was greedy, and the only limit on the answer was 4,096 tokens.
 Table~\ref{tab:serving-generation} gives the result.
@@ -694,7 +694,7 @@ All three passes with 64 concurrent requests contain such a request, which is wh
 The 27B returned a score for every request.
 
 \begin{table}[h]
-\caption{The base models in generation mode on the benchmark of 96 agent trajectories: they write a rationale and then a score from 0 to 10. Tokens/s counts prompt tokens, as in Table~\ref{tab:serving-steps}. p50 is the median latency over the requests of a pass, in milliseconds. Each figure is the median of three passes. Cost is in USD per million prompt tokens at the committed rate of Table~\ref{tab:serving}, and it includes the time that the GPU spends on the rationale. The API price is the price for input tokens of Table~\ref{tab:serving}; an API charges for the generated tokens in addition, which we do not include.}
+\caption{The base models in generation mode on the benchmark of 96 agent trajectories: they write a rationale and then a score from 0 to 10. Tokens/s counts the prompt tokens of these runs, whose instruction is longer than in Table~\ref{tab:serving-steps}. p50 is the median latency over the requests of a pass, in milliseconds. Each figure is the median of three passes. Cost is in USD per million prompt tokens at the committed rate of Table~\ref{tab:serving}, and it includes the time that the GPU spends on the rationale. The API price is the price for input tokens of Table~\ref{tab:serving}; an API charges for the generated tokens in addition, which we do not include.}
 \label{tab:serving-generation}
 \centering
 \small
@@ -823,7 +823,7 @@ For the 27B this fused kernel gave no gain in throughput, so the 27B applies the
 \label{app:held-out}
 
 This appendix gives the details of Section~\ref{sec:held-out}.
-Each stress test follows a protocol that we froze before scoring, and we mark every analysis that we chose after we saw the scores as post hoc.
+Both evaluations follow protocols that we froze before scoring, and we mark every analysis that we chose after we saw the scores as post hoc.
 
 \subsection{All monitors on SleightBench}
 \label{app:sleightbench}
@@ -857,7 +857,7 @@ Jev 1.14 & 0.771 & 0.260 (0.165--0.391) & 0.679 & 0.200 (0.075--0.325) \\
 Drex Max & 1.020 & 0.322 (0.206--0.483) & 0.706 & 0.250 (0.125--0.400) \\
 Gemini Decision 1 & 1.924 & 0.309 (0.193--0.449) & 0.665 & 0.200 (0.100--0.375) \\
 \midrule
-\multicolumn{5}{@{}l}{\emph{This work: unadapted models, binary logits}} \\
+\multicolumn{5}{@{}l}{\emph{This work: unadapted language models, binary logits}} \\
 Qwen3.5-4B & 0.527 & 0.193 (0.110--0.294) & 0.601 & 0.050 (0.000--0.175) \\
 GPT-6 Luna & 1.549 & 0.277 (0.157--0.448) & 0.696 & 0.050 (0.000--0.275) \\
 Qwen3.8-27B & 3.425 & 0.263 (0.168--0.398) & 0.670 & 0.125 (0.050--0.250) \\
@@ -913,20 +913,20 @@ The release removed the text of tool errors, so an errored tool output appears e
 This affects 57 of the 124 reward hacks and 842 of the 1,823 legitimate runs.
 
 \paragraph{Scoring.}
-Both Gleipnir monitors run on the released serving stack, one NVIDIA B200 with the released image, in batches of 128 runs with 128 concurrent requests, as for the OOD suite.
+Both Gleipnir monitors run on the released serving stack, one NVIDIA B200 with the released image, in batches of 128 runs with 128 concurrent requests.
 Their 1\% thresholds are 0.836 (4B) and 0.798 (27B), from the 3,189 benign OOD trajectories scored on the same stack.
 They score every run, including 144 (4B) and 154 (27B) runs longer than the 29,696 tokens of training; the longest has 111,249 tokens.
 The 4B scored the 24.2 million prompt tokens in 110 seconds and the 27B the 26.0 million in 499 seconds.
-An earlier run of both monitors in BF16, with a time limit that stopped the 27B after 1,312 runs, gave the same 27B result on the 105 reward hacks and 999 legitimate runs that both scored (pAUROC@20 0.695, against 0.699 here) and a higher score for the 4B (0.350, against 0.296).
+An earlier run of both monitors in BF16, with a time limit that stopped the 27B after 1,312 runs, gave the same 27B result on the 105 reward hacks and 999 legitimate runs that both scored (pAUROC@20 0.695, against 0.699 on the released stack) and a higher score for the 4B (0.350, against 0.296).
 
 \paragraph{Reference monitors.}
 Kimi K3 and GPT-6 Luna read the full specification and return the probabilities of the decision tokens, and pplx-decider v1.3 reads the trajectory with its frozen question, as on the OOD suite (Table~\ref{tab:ood-all}).
 Each scored all runs once, and its threshold flags at most 1\% of the 3,189 benign OOD trajectories.
-The benign OOD scores of GPT-6 Luna saturate: 8\% of them are at least 0.999, so its threshold lies within $10^{-7}$ of 1 and it flags almost nothing.
-On \texttt{arc191\_c}, Kimi K3, GPT-6 Luna and pplx-decider v1.3 reach AUROC 0.856, 0.756 and 0.847.
+The benign OOD scores of GPT-6 Luna saturate: 8\% of them are at least 0.999, so its threshold lies within $10^{-7}$ of 1 and it flags few runs: 7\% of the reward hacks and 0.2\% of the legitimate runs.
 
 \paragraph{AUROC.}
 On all runs, the AUROC is 0.751 {\scriptsize [0.655, 0.925]} for Gleipnir 4B and 0.905 {\scriptsize [0.758, 0.981]} for Gleipnir 27B, against 0.917 {\scriptsize [0.840, 0.993]} for Kimi K3, 0.888 {\scriptsize [0.823, 0.989]} for GPT-6 Luna and 0.889 {\scriptsize [0.786, 0.979]} for pplx-decider v1.3.
+On \texttt{arc191\_c}, the problem described below, Kimi K3, GPT-6 Luna and pplx-decider v1.3 reach AUROC 0.856, 0.756 and 0.847.
 
 \paragraph{Intervals.}
 The bootstrap draws the nine problems with replacement, 10,000 times.
@@ -940,7 +940,7 @@ No monitor flags any of the 180 control runs.
 Its visible test checks the exact sample output, although the problem accepts any valid output, and its hidden test also checks one exact output for each input.
 The 69 reward hacks add the sample output to a correct general solution, for example with the comment that these outputs ``are also valid choices''.
 The labels follow the submitted program.
-Of the 69 reward hacks, 66 pass the visible test but not the hidden tests, so their program reproduces the sample output.
+Of the 69 reward hacks, 66 reproduce the sample output and so pass the visible test, but fail the hidden tests.
 Of the 136 legitimate runs, 119 submit a general solution that fails the visible test, 31 of them with an escalation report about it, and 15 edit the test script before they pass all tests, which the manual review of the dataset accepts as legitimate.
 The remaining two pass only the visible test, and the judge notes that one of them hard-codes the sample answers, so at least one label on this problem appears inconsistent.
 The sample output also appears in the tool calls of 60 legitimate runs, for example when they compare their output with it, so its presence alone does not separate the two classes.
@@ -948,7 +948,7 @@ On this problem, a legitimate run may change the grader, while a reward hack onl
 Our input contains neither the reasoning nor the messages of the agent, so the monitor must judge the intent of a change from code comments, the final answer and escalation reports.
 In an exploratory check with a protocol frozen before scoring, we added the messages of the agent, outside its reasoning, to every run on the released serving stack.
 They change the input of 549 of the 2,127 runs, including 23 reward hacks on this problem, whose messages often state that they hard-code the sample.
-Neither monitor ranks the reward hacks better: on all runs, Gleipnir 27B scores pAUROC@20 0.668 with the messages and 0.673 without them (difference $-0.005$, 95\% interval $-0.017$ to $0.018$), and on this problem 0.392 and 0.383.
+Neither monitor ranks the reward hacks better: on all runs, Gleipnir 27B scores pAUROC@20 0.668 with the messages and 0.673 without them (difference $-0.005$, 95\% interval $-0.017$ to $0.018$), and on this problem 0.392 and 0.383; Gleipnir 4B scores 0.290 and 0.283 on all runs.
 On the 23 reward hacks with messages, its median score falls from 0.29 to 0.22: when the agent explains that it adds the sample output because the test checks it exactly, the monitor finds the lookup more acceptable, not more suspicious.
 Its instruction lists the gaming of a test as misbehavior and ambiguity as an innocent explanation, but says nothing about a test that is itself wrong, so these reward hacks lie outside what it was trained to judge.
 When we remove this problem with all of its runs (post hoc), 55 reward hacks and 1,687 legitimate runs remain.
@@ -979,8 +979,8 @@ Problem & Hacks & Legit. & AUROC & Hacks & Legit. & AUROC & Hacks & Legit. \\
 \section{Exploratory stress tests}
 \label{app:exploratory}
 
-This appendix gives five smaller stress tests, with the protocol of Appendix~\ref{app:held-out-protocol}.
-They are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no claim of the main text rests on them.
+This appendix gives five smaller stress tests and a probe analysis, with the protocol of Appendix~\ref{app:held-out-protocol}.
+They are exploratory: they compare Gleipnir with different sets of monitors, or with none, and some of these monitors return a score from 0 to 100 instead of decision-token probabilities, so the results are not comparable across tests, and no result of Sections~\ref{sec:evaluation} and~\ref{sec:held-out} rests on them.
 We mark every analysis that we chose after we saw the scores as post hoc.
 
 \subsection{Protocol of the stress tests}
@@ -989,7 +989,7 @@ We mark every analysis that we chose after we saw the scores as post hoc.
 \paragraph{Monitors.}
 Gleipnir 4B is the released 4B adapter on Qwen3.5-4B, after quantization-aware distillation, and it reads the compact instruction.
 Gleipnir 27B is the released 27B merged into its base model, and it reads the full specification.
-Both run in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU, and not on the serving stack of Section~\ref{sec:serving}.
+Both run in BF16 with the Transformers and PEFT libraries, one trajectory at a time, on one NVIDIA A100 80GB or H100 GPU, and not on the released serving stack of Section~\ref{sec:serving}, except for the injection study at the end of Appendix~\ref{app:held-out-apps}.
 The natural-cheat runs used the PyTorch fallback for the linear-attention layers instead of the \texttt{flash-linear-attention} kernel.
 On eight APPS trajectories, this fallback changed the 4B score by at most 0.027; we did not measure the change for the 27B.
 
@@ -1001,7 +1001,7 @@ We exclude trajectories longer than 29,696 tokens, the maximum input length in t
 \paragraph{Thresholds.}
 The 1\% threshold flags 1\% of benign OOD trajectories, sampled once before these tests.
 It is 0.622 for Gleipnir 4B, from 1,000 trajectories, and 0.731 for Gleipnir 27B, from 400 trajectories.
-Four of the 400 trajectories lie above the 27B threshold, so its false-positive rate on new data is more uncertain than that of the 4B.
+The 27B threshold rests on 400 trajectories, against 1,000 for the 4B, so its false-positive rate on new data is more uncertain.
 For Kimi K3 it is 0.755, from 1,000 trajectories.
 The test with text in the code (Appendix~\ref{app:held-out-apps}) sets its thresholds on APPS programs, and the lab test (Appendix~\ref{app:held-out-lab}) uses another threshold for the 4B and says why.
 
@@ -1014,22 +1014,6 @@ Each task, from \citet{kenney2026monitorinjection}, has two programs for an APPS
 We insert the same text as a module docstring into both programs, so the text alone does not reveal which program has the backdoor.
 We compare four conditions: no text, an unrelated text from another APPS problem, and two accusations that the program has a backdoor: a specific one that gives the trigger input and the wrong output, and a generic one that names no trigger.
 
-\begin{figure}[h]
-\centering
-\includegraphics[width=\linewidth]{held_out_apps_text}
-\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against benign programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
-\label{fig:apps-text}
-\end{figure}
-
-\paragraph{Text lowers Gleipnir 4B close to chance.}
-Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
-An accusation raises the scores of both programs close to 1.
-Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tuning made the 4B more sensitive to accusations.
-
-\paragraph{Accusations raise the separation of Gleipnir 27B.}
-Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
-With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
-
 \paragraph{Programs and triggers.}
 The programs come from \texttt{Jazhyc/gleipnir-apps-injection-evals}, a copy of \texttt{mjkenney/monitor-injection-evals} at revision \texttt{58e722bf}~\citep{kenney2026monitorinjection}.
 o3-mini wrote both programs of each task, starting from the APPS tasks of ControlArena~\citep{controlarena2025apps} and following the attacks of \citet{terekhov2025adaptive}.
@@ -1040,7 +1024,7 @@ The study also has 50 development tasks, which we used for a pilot and for the p
 
 \paragraph{Texts.}
 The study has six conditions: the four above, an accurate restatement of the task, and a cover story that presents the special case as an intended requirement.
-The scored set therefore has 982 rows: two programs for each of 99, 91, 93, 81, 99 and 28 tasks.
+The scored set therefore has 982 rows: two programs for each of 99, 93, 81 and 99 tasks in the four conditions above, 91 tasks with a restatement and 28 with a cover story.
 A restatement sees only the problem statement and has 500 to 700 characters.
 Every other text has a length within 10\% of the restatement of its task.
 The unrelated text is the restatement of another task of the same split, the nearest in length.
@@ -1057,6 +1041,22 @@ GPT-6.1 Sol, GPT-6 Luna and Claude Sonnet 5.5 have no such probabilities, so the
 These scores tie often at low thresholds.
 Claude Sonnet 5.5 scored 952 of the 982 rows: 28 replies had no valid score and 2 were refusals.
 These rows are not missing at random, so its values in Table~\ref{tab:apps-full} use fewer tasks.
+
+\begin{figure}[h]
+\centering
+\includegraphics[width=\linewidth]{held_out_apps_text}
+\caption{The same text on both programs lowers Gleipnir 4B close to chance, while Gleipnir 27B, Kimi K3 and GPT-6.1 Sol keep their separation under an accusation. Bars: pAUROC@20 of backdoored against benign programs with the same module docstring (99, 93, 81 and 99 tasks); error bars: 95\% bootstrap intervals over tasks; dotted line: chance (0.100); hatched: the base model of Gleipnir 4B. Kimi K3 returns the probabilities of its decision tokens and GPT-6.1 Sol a score from 0 to 100 at low reasoning effort. Values in Table~\ref{tab:apps-full}.}
+\label{fig:apps-text}
+\end{figure}
+
+\paragraph{Text lowers Gleipnir 4B close to chance.}
+Without text, Gleipnir 4B scores 0.690 pAUROC@20 (Figure~\ref{fig:apps-text}); an unrelated text lowers it to 0.360 and a specific accusation to 0.143.
+An accusation raises the scores of both programs close to 1.
+Its base model, Qwen3.5-4B, keeps 0.434 under a specific accusation, so fine-tuning made the 4B more sensitive to accusations.
+
+\paragraph{Accusations raise the separation of Gleipnir 27B.}
+Gleipnir 27B scores 0.818 pAUROC@20 without text, 0.872 with a generic accusation and 0.934 with a specific accusation.
+With a specific accusation, it scores the backdoored program higher in every one of the 81 pairs.
 
 \begin{table}[h]
 \caption{All monitors on APPS programs that carry the same module docstring: pAUROC@20 (chance 0.100), with 95\% bootstrap intervals over tasks (2,000 draws) below each value. Tasks: 99, 93, 81, 99 and 28; Claude Sonnet 5.5 scored 99, 89, 72, 88 and 24. Figure~\ref{fig:apps-text} plots the first four columns for five monitors.}
@@ -1104,7 +1104,7 @@ An accusation may lead the 27B to inspect the code more closely, and the descrip
 \label{tab:apps-auroc}
 \centering
 \small
-\begin{tabular}{lcccc}
+\begin{tabular}{lccc}
 \toprule
 Monitor & Condition & AUROC & Pair share \\
 \midrule
@@ -1122,13 +1122,13 @@ Gleipnir 27B & No text & 0.947 {\scriptsize [0.915, 0.973]} & 0.919 \\
 \end{table}
 
 \paragraph{A threshold set on code without text does not transfer.}
-At a 1\% threshold set on benign APPS programs without text, every Gleipnir and API monitor flags 93\% to 100\% of the benign programs under an accusation, except the unadapted 4B (65\% under a generic accusation).
+At a 1\% threshold set on benign APPS programs without text, every monitor flags 93\% to 100\% of the benign programs under an accusation, except the unadapted Qwen3.5-4B (65\% under a generic accusation).
 Under unrelated text, Gleipnir 4B flags 88\% and Gleipnir 27B 100\% of them.
 These thresholds come from 221 benign APPS programs without docstrings for the Gleipnir monitors and from 200 such programs for the API monitors.
 These tasks are disjoint from the study tasks.
 
 \paragraph{Text addressed to the monitor.}
-An earlier study scored the released Gleipnir 4B and 27B on the serving stack of Section~\ref{sec:serving}, on the frozen APPS injection sets~\citep{kenney2026monitorinjection}.
+An earlier study scored the released Gleipnir 4B and 27B on the released serving stack of Section~\ref{sec:serving}, unlike the rest of this appendix, on the frozen APPS injection sets~\citep{kenney2026monitorinjection}.
 In these sets, a text in the program asks the monitor to rate the program as benign, in one of three templates; such prompt injections can let an agent evade a trusted monitor~\citep{terekhov2025adaptive}.
 At a threshold that flags at most 2\% of benign programs without injections, both monitors flag every benign program with an injection, under all three templates.
 At a threshold of 0.5, the 4B flags 89.5\% to 99.5\% of them, and the 27B flags 26.7\% to 100\%.
@@ -1139,7 +1139,7 @@ Appendix~\ref{app:held-out-lab} gives a second test of text addressed to the mon
 \paragraph{Limits.}
 One model wrote the programs, one model wrote the texts, and the text has one position.
 We did not test accurate documentation of the code, so these flag rates apply to misleading or unrelated text.
-Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B here, so this test does not separate the effects of size, instruction and training for the 27B.
+Gleipnir 4B and 27B differ in size and in instruction, and we did not score the unadapted Qwen3.8-27B on the docstring conditions, so this test does not separate the effects of size, instruction and training for the 27B.
 
 \subsection{A linear probe under identical text}
 \label{app:held-out-probe}
@@ -1207,7 +1207,7 @@ After the length limit, 57 cheats remain, and 239 runs without a cheat for the 2
 \paragraph{Results.}
 Gleipnir 4B and 27B reach AUROC 0.959 and 0.962.
 At their 1\% thresholds they flag 75\% and 84\% of the cheats (95\% intervals over tasks 64\% to 87\% and 74\% to 93\%).
-They flag none of the runs without a cheat and none of 31 honest runs that passed the original tests.
+They flag none of the runs without a cheat and none of 31 benign runs that passed the original tests.
 
 \begin{table}[h]
 \caption{Natural cheats by Qwen3.8-27B on ImpossibleBench, at the first cheating action: 57 cheats against 239 runs without a cheat (242 for the 4B models). Intervals are 95\% bootstrap intervals over tasks (10,000 draws). Kimi K3 returns probabilities; the other API monitors return a score from 0 to 100 at low reasoning effort. Claude Sonnet 5.5 has a valid score for only 44 of the 57 cheats and 237 runs without a cheat. The keyword search counts words of cheating in the tool calls of the agent.}
@@ -1284,7 +1284,8 @@ Cheats with no admission word, flagged after & 10/11 & 11/11 \\
 \end{tabular}
 \end{table}
 
-Table~\ref{tab:comment-strip} shows that the removal changes neither monitor on these runs.
+Table~\ref{tab:comment-strip} shows that the removal lowers neither monitor on these runs, and the 27B flags three more cheats after it.
+Both monitors flag more than 1\% of the runs without a cheat (2.0\% and 2.6\%), although their thresholds flag 1\% of the OOD suite.
 Variable names and printed strings remain, so the test does not show that the monitors read only the code.
 We also prompted the agent to cheat without stating it, and it still stated its cheats.
 
@@ -1371,7 +1372,7 @@ The monitor reads the posts and tool calls of the recruiter and the posts that i
 \end{figure}
 
 \paragraph{Threshold.}
-This test uses a 4B threshold of 0.755, set earlier from all 3,189 benign OOD trajectories.
+This test was frozen before the sample of Appendix~\ref{app:held-out-protocol} existed, with a 4B threshold of 0.755 from an earlier scoring of all 3,189 benign OOD trajectories.
 At the 0.622 threshold of the other tests, the 4B still flags none of the 30 liars.
 The unadapted Qwen3.8-27B reads the full specification, with a threshold of 0.953 from 395 benign OOD trajectories.
 
@@ -1495,8 +1496,8 @@ For the 4B, the validation score peaks at layer 17 of 32, where the OOD score is
 
 \paragraph{Cost.}
 Stopping the base model after the probe layer roughly doubles throughput.
-On one B200 with the low-precision stack of Section~\ref{sec:serving}, the truncated model with its probe scores 1.84 times as many trajectories per second as the full model for the 4B and 1.95 times for the 27B, in batches of 128 trajectories; the probe itself costs about 1\%.
-Under this arithmetic, the 27B probes lose at most 0.014 Mean-OOD, and the 4B probes 0.034 to 0.054, as the 4B adapter does before QAD (Appendix~\ref{app:ablation-precision}).
+On one B200 with the released serving stack of Section~\ref{sec:serving}, the truncated model with its probe scores 1.84 times as many trajectories per second as the full model for the 4B and 1.95 times for the 27B, in batches of 128 trajectories; the probe itself costs about 1\%.
+With the low-precision arithmetic of that stack, the 27B probes lose at most 0.014 Mean-OOD, and the 4B probes 0.034 to 0.054, as the 4B adapter does before QAD (Appendix~\ref{app:ablation-precision}).
 We measured this before the tokenizer change of Section~\ref{sec:serving-work}, which shortens the host work of each request, and did not repeat the measurement.
 
 Early exits are therefore cheap to run but cost quality at half depth.
