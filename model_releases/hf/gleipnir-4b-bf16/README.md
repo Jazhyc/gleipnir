@@ -18,27 +18,20 @@ tags:
 # Gleipnir 4B (merged BF16)
 
 This repository holds [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA),
-a research monitor that scores visible tool-using agent trajectories for
-covert unauthorized actions, as a standalone checkpoint. The v0.3 adapter (identical in v0.4 and v1.0)
-was merged into `Qwen/Qwen3.5-4B` (revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`) in FP32 as
-`W + (alpha/r) B@A`, then cast once to BF16. Inference cost equals the base
-model's, and the BF16 weights need about 9 GB of accelerator memory before
-activations.
+an AI control monitor that scores visible tool-using agent trajectories for
+covert unauthorized actions, as a standalone checkpoint: its LoRA adapter
+merged into `Qwen/Qwen3.5-4B`. Inference cost equals the base model's, and the
+BF16 weights need about 9 GB of accelerator memory before activations.
 
 The model card, results, training details and limitations are in
 [`Jazhyc/Gleipnir-4B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA), which
 also keeps the FP32 adapter for merging or fine-tuning. Headline result:
-0.8039 Mean-OOD pAUROC@20 under stock BF16 serving (0.7703 under the optimized B200 stack).
+0.804 Mean-OOD pAUROC@20 under stock BF16 serving (0.770 under the optimized
+serving stack).
 
 Technical report: *Lightweight Restraints for Powerful Agents: AI Control
 Monitors That Decide in One Forward Pass* (arXiv link added on publication).
 Project page: <https://jazhyc.github.io/gleipnir-monitor/>.
-
-Every file is
-byte-identical to the merged checkpoint the project evaluated, and its SHA-256
-is recorded in the release manifest of the
-[Gleipnir repository](https://github.com/Jazhyc/gleipnir)
-(`experiments/release_serving/`).
 
 ## Usage
 
@@ -109,6 +102,22 @@ For the highest throughput, on one NVIDIA B200 or B300, use the project's
 optimized serving image `ghcr.io/jazhyc/gleipnir-serve:1.2`, which loads this
 checkpoint and quantizes it at load time; see "Optimized serving image" in the
 [main model card](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA).
+
+## Provenance
+
+The adapter was merged into `Qwen/Qwen3.5-4B` at revision
+`851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a` in FP32 as `W + (alpha/r) B@A`, then cast once to
+BF16. Every file is byte-identical to the merged checkpoint the project
+evaluated, and its SHA-256 is recorded in the release manifest of the
+[Gleipnir repository](https://github.com/Jazhyc/gleipnir)
+(`experiments/release_serving/`).
+
+## Changelog
+
+- **v1.0.** Card updated for the technical report; the files are those of
+  v0.4.
+- **v0.4 (2026-10-20).** First release: the v0.3 adapter merged into
+  `Qwen/Qwen3.5-4B`.
 
 ## License
 
