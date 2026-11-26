@@ -161,9 +161,9 @@ for each training trajectory.
   scenarios from STRIDE and Gloom), minus the 852 where the teacher's decision
   disagrees with the dataset label: 7,836 trajectories. The labels are used
   only for this filter.
-- **Recipe.** Rank-128 LoRA (alpha 256) on all attention and MLP projections
-  of `Qwen/Qwen3.8-27B`
-  (the gated-delta projections are not adapted); AdamW, learning rate `5e-5`,
+- **Recipe.** Rank-128 LoRA (alpha 256) on the projections of the
+  full-attention layers and the MLPs of `Qwen/Qwen3.8-27B` (the Gated
+  DeltaNet linear-attention layers are not adapted); AdamW, learning rate `5e-5`,
   3% warmup and linear decay, effective batch 32, one epoch (245 updates),
   inputs of up to 29,696 tokens; about 4.5 hours on one B200.
 - **One run.** The 27B is a single training run, without seed averaging and

@@ -508,7 +508,7 @@ Base model weights & frozen, BF16 & frozen, serving precision \\
 LoRA rank & 128 & 384 (average of three runs) \\
 LoRA alpha & 256 & 768 \\
 LoRA dropout & 0 & --- \\
-LoRA targets & attention and MLP projections & --- \\
+LoRA targets & full-attention and MLP projections (not GDN) & --- \\
 Adapter precision & FP32 & --- \\
 \addlinespace
 Optimizer & AdamW, no weight decay & --- \\
