@@ -51,8 +51,8 @@ fine-tuning. To run the monitor, use the merged checkpoint
 or the serving image (see [Variants](#variants)).
 
 - **Technical report:** *Lightweight Restraints for Powerful Agents: AI
-  Control Monitors That Decide in One Forward Pass* (arXiv link added on
-  publication).
+  Control Monitors That Decide in One Forward Pass* (in arXiv moderation;
+  no arXiv identifier or DOI yet). The PDF is on the project page.
 - **Project page:** <https://jazhyc.github.io/gleipnir-monitor/>, with the
   code, the training data and the serving image.
 
@@ -317,5 +317,6 @@ public weights grant no right to reconstruct or redistribute them.
 }
 ```
 
-The arXiv identifier is added on publication. Pin the repository revision you
+The report is in arXiv moderation, so it has no arXiv identifier or DOI yet;
+we will add both here once arXiv announces it. Pin the repository revision you
 used in your experiments.

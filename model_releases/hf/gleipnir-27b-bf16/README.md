@@ -30,7 +30,8 @@ also keeps the FP32 adapter for merging or fine-tuning. Headline result:
 (0.951 under the optimized serving stack).
 
 Technical report: *Lightweight Restraints for Powerful Agents: AI Control
-Monitors That Decide in One Forward Pass* (arXiv link added on publication).
+Monitors That Decide in One Forward Pass* (in arXiv moderation; no arXiv
+identifier or DOI yet).
 Project page: <https://jazhyc.github.io/gleipnir-monitor/>.
 
 ## Usage
