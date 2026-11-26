@@ -70,9 +70,8 @@ safeguard.
 | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | The adapter merged into `Qwen/Qwen3.8-27B` in FP32, exported as BF16 | Transformers or stock vLLM on any GPU |
 | `ghcr.io/jazhyc/gleipnir-serve:1.2` | The optimized serving stack (FP8/FP4/MXFP8) | Fastest scoring, on one NVIDIA B200 or B300 |
 
-Both repositories carry the tag `v1.0`, which points at the same weights as
-`v0.2`. The image fetches `Gleipnir-27B-BF16` at `v0.2` and verifies every file
-before serving.
+Both repositories carry the tag `v1.0`. The image verifies every file of the
+checkpoint before serving.
 
 ## What the model scores
 

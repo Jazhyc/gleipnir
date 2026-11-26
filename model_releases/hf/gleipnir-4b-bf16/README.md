@@ -34,8 +34,7 @@ Technical report: *Lightweight Restraints for Powerful Agents: AI Control
 Monitors That Decide in One Forward Pass* (arXiv link added on publication).
 Project page: <https://jazhyc.github.io/gleipnir-monitor/>.
 
-The tag `v1.0` matches the adapter repository's release and points at the
-same files as `v0.4`, the tag that the serving image fetches. Every file is
+The tag `v1.0` matches the adapter repository's release. Every file is
 byte-identical to the merged checkpoint the project evaluated, and its SHA-256
 is recorded in the release manifest of the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir)
