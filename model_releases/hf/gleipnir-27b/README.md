@@ -162,7 +162,7 @@ for each training trajectory.
   disagrees with the dataset label: 7,836 trajectories. The labels are used
   only for this filter.
 - **Recipe.** Rank-128 LoRA (alpha 256) on all attention and MLP projections
-  of `Qwen/Qwen3.8-27B` at revision `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`
+  of `Qwen/Qwen3.8-27B`
   (the gated-delta projections are not adapted); AdamW, learning rate `5e-5`,
   3% warmup and linear decay, effective batch 32, one epoch (245 updates),
   inputs of up to 29,696 tokens; about 4.5 hours on one B200.
@@ -281,8 +281,10 @@ gives all three routes in more detail.
 
 ## Artifacts, provenance and terms
 
-`release_manifest.json` records the checksums of the adapter, prompts, base
-revision and packaging. The teacher probabilities of the training data are
+The adapter was trained on `Qwen/Qwen3.8-27B` at revision
+`1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`; load the base at this revision, as in
+the usage example. `release_manifest.json` records the checksums of the
+adapter, prompts, base revision and packaging. The teacher probabilities of the training data are
 public in
 [`Jazhyc/gleipnir-kimi-k3-tool-trajectory-logits`](https://huggingface.co/datasets/Jazhyc/gleipnir-kimi-k3-tool-trajectory-logits);
 the training trajectories and benchmark rows are not redistributed here. The
