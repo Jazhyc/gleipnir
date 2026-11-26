@@ -21,12 +21,20 @@ conclusions live in `docs/`.
 
 | Model | Adapter (FP32 LoRA) | Merged BF16 checkpoint | Mean-OOD pAUROC@20 |
 | --- | --- | --- | ---: |
-| Gleipnir 4B v0.4 | [`Jazhyc/Gleipnir-4B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA) | [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | 0.804 (BF16), 0.770 (optimized) |
-| Gleipnir 27B v0.2 | [`Jazhyc/Gleipnir-27B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-27B-LoRA) | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | 0.935 (BF16), 0.951 (optimized) |
+| Gleipnir 4B v1.0 | [`Jazhyc/Gleipnir-4B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA) | [`Jazhyc/Gleipnir-4B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-4B-BF16) | 0.804 (BF16), 0.770 (optimized) |
+| Gleipnir 27B v1.0 | [`Jazhyc/Gleipnir-27B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-27B-LoRA) | [`Jazhyc/Gleipnir-27B-BF16`](https://huggingface.co/Jazhyc/Gleipnir-27B-BF16) | 0.935 (BF16), 0.951 (optimized) |
 
-- **What they are.** MIT-licensed research monitors that score visible
+- **What they are.** MIT-licensed AI control monitors that score visible
   AI-agent tool-use trajectories for sabotage, exfiltration and other covert
-  unauthorized actions. They are not production safety systems.
+  unauthorized actions in one forward pass. Use them as a first line of
+  defense in front of stronger monitors, not as a sole safeguard.
+- **Versions.** v1.0 accompanies the technical report and has the same
+  weights as 4B v0.4 and 27B v0.2. The adapter repositories were renamed
+  from `Jazhyc/Gleipnir-4B` and `Jazhyc/Gleipnir-27B` on 2026-11-23; the old
+  IDs redirect.
+- **Report and project page.** *Lightweight Restraints for Powerful Agents:
+  AI Control Monitors That Decide in One Forward Pass*;
+  <https://jazhyc.github.io/gleipnir-monitor/>.
 - **Model cards.** The cards give the scoring prompt, the binary-logit
   interface, results and limitations.
 - **Gleipnir 9B** ([`Jazhyc/Gleipnir-9B`](https://huggingface.co/Jazhyc/Gleipnir-9B))

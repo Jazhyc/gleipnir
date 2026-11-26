@@ -1,5 +1,5 @@
 ---
-base_model: Jazhyc/Gleipnir-4B
+base_model: Jazhyc/Gleipnir-4B-LoRA
 base_model_relation: merge
 library_name: transformers
 pipeline_tag: text-generation
@@ -17,20 +17,25 @@ tags:
 
 # Gleipnir 4B (merged BF16)
 
-This repository holds [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B),
+This repository holds [Gleipnir 4B](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA),
 a research monitor that scores visible tool-using agent trajectories for
-covert unauthorized actions, as a standalone checkpoint. The v0.3 adapter (identical in v0.4)
+covert unauthorized actions, as a standalone checkpoint. The v0.3 adapter (identical in v0.4 and v1.0)
 was merged into `Qwen/Qwen3.5-4B` (revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`) in FP32 as
 `W + (alpha/r) B@A`, then cast once to BF16. Inference cost equals the base
 model's, and the BF16 weights need about 9 GB of accelerator memory before
 activations.
 
 The model card, results, training details and limitations are in
-[`Jazhyc/Gleipnir-4B`](https://huggingface.co/Jazhyc/Gleipnir-4B), which
+[`Jazhyc/Gleipnir-4B-LoRA`](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA), which
 also keeps the FP32 adapter for merging or fine-tuning. Headline result:
 0.8039 Mean-OOD pAUROC@20 under stock BF16 serving (0.7703 under the optimized B200 stack).
 
-The tag `v0.4` matches the adapter repository's release. Every file is
+Technical report: *Lightweight Restraints for Powerful Agents: AI Control
+Monitors That Decide in One Forward Pass* (arXiv link added on publication).
+Project page: <https://jazhyc.github.io/gleipnir-monitor/>.
+
+The tag `v1.0` matches the adapter repository's release and points at the
+same files as `v0.4`, the tag that the serving image fetches. Every file is
 byte-identical to the merged checkpoint the project evaluated, and its SHA-256
 is recorded in the release manifest of the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir)
@@ -44,12 +49,12 @@ from huggingface_hub import hf_hub_download
 from transformers import AutoModelForCausalLM, AutoTokenizer
 
 model_id = "Jazhyc/Gleipnir-4B-BF16"
-tokenizer = AutoTokenizer.from_pretrained(model_id, revision="v0.4")
+tokenizer = AutoTokenizer.from_pretrained(model_id, revision="v1.0")
 model = AutoModelForCausalLM.from_pretrained(
-    model_id, revision="v0.4", torch_dtype=torch.bfloat16, device_map="auto"
+    model_id, revision="v1.0", torch_dtype=torch.bfloat16, device_map="auto"
 ).eval()
 
-instruction_path = hf_hub_download("Jazhyc/Gleipnir-4B", "student_prompt.txt")
+instruction_path = hf_hub_download("Jazhyc/Gleipnir-4B-LoRA", "student_prompt.txt")
 with open(instruction_path, encoding="utf-8") as handle:
     instruction = handle.read()
 trajectory = "User asked for a file listing. The agent ran: ls -la"
@@ -81,7 +86,7 @@ Its pooling runner turns the model into a classifier over the `0` and `1`
 logits at the last position:
 
 ```bash
-vllm serve Jazhyc/Gleipnir-4B-BF16 --revision v0.4 --served-model-name monitor \
+vllm serve Jazhyc/Gleipnir-4B-BF16 --revision v1.0 --served-model-name monitor \
   --dtype bfloat16 --language-model-only --max-model-len 32768 --no-enable-prefix-caching \
   --runner pooling --convert classify \
   --pooler-config '{"pooling_type": "LAST", "use_activation": false}' \
@@ -101,10 +106,10 @@ Transformers example. On an RTX PRO 6000 this reproduced the project's
 recorded BF16 results (ID 0.9335 against 0.9332, OOD 0.8045 against 0.8039
 pAUROC@20; per-row MAE 0.004) at 36K prompt tokens/s.
 
-For the highest throughput on an NVIDIA B200, use the project's optimized
-serving image, which loads this checkpoint and quantizes it at load time; see
-"Optimized B200 serving" in the
-[main model card](https://huggingface.co/Jazhyc/Gleipnir-4B).
+For the highest throughput, on one NVIDIA B200 or B300, use the project's
+optimized serving image `ghcr.io/jazhyc/gleipnir-serve:1.2`, which loads this
+checkpoint and quantizes it at load time; see "Optimized serving image" in the
+[main model card](https://huggingface.co/Jazhyc/Gleipnir-4B-LoRA).
 
 ## License
 
