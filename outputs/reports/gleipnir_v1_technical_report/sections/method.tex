@@ -39,8 +39,8 @@ In contrast to the pipeline of Section~\ref{sec:background-sinha}, the teacher w
 
 \paragraph{Teacher-agreement filter.}
 We use the dataset labels only to filter the training set.
-We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its dataset label, which removes 852 of the 8,688 trajectories and leaves 7,836.
-One 4B run scored higher on the validation set with the filter than without it (Appendix~\ref{app:ablation-filter}).
+We remove a trajectory when the decision of the teacher ($p \geq 0.5$) disagrees with its dataset label, which leaves 7,836 of the 8,688 trajectories.
+The filter raised the validation score of one 4B run (Appendix~\ref{app:ablation-filter}).
 
 \subsection{Training setup}
 \label{sec:training-setup}
@@ -65,12 +65,12 @@ Section~\ref{sec:serving-precision} reports its effect.
 \paragraph{Gleipnir 27B.}
 The 27B is a single training run, without seed averaging and without QAD.
 It differs from the 4B in the instruction that it reads at scoring time.
-Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification (0.942 against 0.922 pAUROC@20), so the released 27B reads the full specification, with 9.9\% more prompt tokens.
+Although it trains with the compact instruction, it scores higher on the validation set when it reads the full specification (0.942 against 0.922 pAUROC@20), so the released 27B reads the full specification, with 9.4\% more prompt tokens on the OOD suite.
 The 4B does not gain from the full specification (Appendix~\ref{app:ablation-instruction}).
 
 \paragraph{Effect of the soft targets.}
 We test the soft targets by training on the dataset labels instead (hard labels), with all other settings unchanged.
+All these runs read the compact instruction and use BF16 serving.
 For the 4B, soft targets raise Mean-OOD from 0.716 to 0.792, as means over three runs for each objective.
-For the 27B, with one run for each objective, the two score within 0.005 of each other: 0.904 with hard labels and 0.909 with soft targets.
-Appendix~\ref{app:ablation-targets} gives the full comparison, which includes the validation set.
-Soft targets also raise the scores of probes on the unadapted models at half depth, for the 27B as well as the 4B (Appendix~\ref{app:probing}).
+For the 27B, with one run for each objective, the two score within 0.005 of each other on the OOD suite (0.904 and 0.909), and hard labels score 0.044 higher on the validation set (Appendix~\ref{app:ablation-targets}).
+Soft targets also help probes on the unadapted models (Appendix~\ref{app:probing}).

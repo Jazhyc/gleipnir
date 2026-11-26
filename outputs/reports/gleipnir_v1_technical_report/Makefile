@@ -34,7 +34,7 @@ build/preamble.fmt: main.tex preamble.tex neurips_2026.sty
 		-jobname=preamble '&pdflatex' mylatexformat.ltx main.tex > /dev/null \
 		|| { tail -20 build/preamble.log; exit 1; }
 
-MAX_MAIN_PAGES := 9
+MAX_MAIN_PAGES := 10
 
 # Report the main-text page count, then list drafting markers, undefined
 # references and overfull boxes.

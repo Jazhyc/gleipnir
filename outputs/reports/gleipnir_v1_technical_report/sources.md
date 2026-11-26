@@ -489,9 +489,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   the final cost times the gains. 27B gains: total 2.28× (released `graphs01`),
   unneeded work 1.0228× (measured at BF16, before quantization), low precision
   2.28 / 1.0228 = 2.23×. The 4B benchmark projection reproduces $0.0850.
-  Open: the full specification adds 9.4% prompt tokens on the OOD suite by
-  these counts, while Section 3.3 and C.5 say 9.9%
-  (`experiments/gleipnir27b_vocab_distillation/README.md`); basis to check.
+  The full specification adds 9.4% prompt tokens on the OOD suite by these
+  counts; the 9.9% of `experiments/gleipnir27b_vocab_distillation/README.md`
+  is on the ID set. Section 3.3 and C.6 use 9.4% (resolved 2026-11-26).
   Since 2026-11-10 (JF) the table is in USD per million prompt tokens: API
   input prices $0.03 and $0.195 (the one output token is ignored); final
   $0.0098 / $0.0042 (4B) and $0.0412 / $0.0177 (27B) are the per-1,000 costs
