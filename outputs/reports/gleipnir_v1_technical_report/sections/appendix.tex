@@ -1145,11 +1145,11 @@ Gleipnir 4B and 27B differ in size and in instruction, and we did not score the 
 \label{app:held-out-probe}
 
 The probe tests whether Gleipnir 4B still represents which program has the backdoor when its output fails.
-We record the residual stream after blocks 8, 16, 24 and 32 of the 32 blocks.
-At each block we take either the position of the decision token or the mean over the tokens of the code, which excludes the inserted docstring.
+We record the residual stream after layers 7, 15, 23 and 31 of the 32 layers of the 4B, and after layers 15, 31, 47 and 63 of the 64 of the 27B, counting layers from 0.
+At each layer we take either the position of the decision token or the mean over the tokens of the code, which excludes the inserted docstring.
 We fit an L2-regularized logistic regression on the 50 development tasks without text (100 programs).
-We choose the block, the position and the regularization strength by five-fold cross-validation over tasks, and then freeze the probe.
-The procedure selects block 16 with the code mean for Gleipnir 4B, and block 24 with the decision token for the unadapted Qwen3.5-4B.
+We choose the layer, the position and the regularization strength by five-fold cross-validation over tasks, and then freeze the probe.
+The procedure selects layer 15 with the code mean for Gleipnir 4B, and layer 23 with the decision token for the unadapted Qwen3.5-4B.
 
 \begin{figure}[h]
 \centering
@@ -1183,7 +1183,7 @@ Two controls score lower under accusations: a probe trained on shuffled labels (
 A probe shows that the information is present; it does not show that the model uses it.
 The probe is fit with backdoor labels on APPS programs, supervision that the monitor lacks, and without text it already exceeds the output of the 4B (0.968 against 0.893).
 Also, the code mean excludes the docstring tokens, while the decision token reads them, and the two 4B probes use different positions; part of the difference between them can come from this choice.
-The same procedure on Gleipnir 27B selects block 64 with the decision token.
+The same procedure on Gleipnir 27B selects layer 63 with the decision token.
 That probe ranks the accused programs in reverse (AUROC 0.025 and 0.044), while the output of the 27B reaches 0.984 and 0.959.
 We have no explanation for this result.
 
@@ -1433,7 +1433,7 @@ These experiments are exploratory: a probe cannot change its policy without retr
 
 \paragraph{Setup.}
 We train the probe architectures of \citet{kramar2026building}: linear and MLP probes on mean-pooled states, attention probes, MultiMax, rolling attention with windows of 10, 64 and 256 tokens, and their AlphaEvolve probe.
-The probes read the residual stream after layer 15 of the 32 layers of Qwen3.5-4B and after block 31 of the 64 of Qwen3.8-27B, on the training trajectories of Gleipnir.
+The probes read the residual stream after layer 15 of the 32 layers of Qwen3.5-4B and after layer 31 of the 64 of Qwen3.8-27B, on the training trajectories of Gleipnir, counting layers from 0 as in Appendix~\ref{app:held-out-probe}.
 Each probe reads either the prompt of the monitor (prompted) or the bare trajectory, and trains either on the dataset labels (hard) or on the probabilities of Kimi K3 (soft), with five seeds.
 For each input and objective we select one architecture and epoch on the validation set and read the OOD suite once; scores are medians over the seeds.
 We also fit logistic-regression probes on the last token of the prompt, at every layer of both models.
@@ -1474,7 +1474,7 @@ For LoRA, soft targets raise the 4B by 0.076 and leave the 27B within 0.005 (App
 \begin{figure}[t]
 \centering
 \includegraphics[width=0.8\linewidth]{probe_objective_27b}
-\caption{Soft targets raise the OOD score of the 27B probes in every architecture and every seed, although they barely change the 27B adapter. The same comparison as Figure~\ref{fig:probe-objective} for probes on Qwen3.8-27B after block 31. The last row is one LoRA run for each objective with the compact instruction (Appendix~\ref{app:ablation-targets}), and its difference compares these two runs. The dashed line is the released Gleipnir 27B, a single run that reads the full specification instead, which accounts for its higher score. Mean-pooled probes are omitted.}
+\caption{Soft targets raise the OOD score of the 27B probes in every architecture and every seed, although they barely change the 27B adapter. The same comparison as Figure~\ref{fig:probe-objective} for probes on Qwen3.8-27B after layer 31. The last row is one LoRA run for each objective with the compact instruction (Appendix~\ref{app:ablation-targets}), and its difference compares these two runs. The dashed line is the released Gleipnir 27B, a single run that reads the full specification instead, which accounts for its higher score. Mean-pooled probes are omitted.}
 \label{fig:probe-objective-27b}
 \end{figure}
 
