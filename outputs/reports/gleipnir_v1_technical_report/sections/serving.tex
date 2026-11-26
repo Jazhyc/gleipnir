@@ -6,7 +6,7 @@ The stack is an endpoint for one GPU that takes a prompt and returns a score; sp
 
 We measure throughput on a benchmark of 96 agent trajectories with a mean length of 12,430 tokens, sent one at a time and without prefix caching (Appendix~\ref{app:serving-throughput}).
 We convert throughput to cost with two hourly rates for one NVIDIA B200, which stand for two kinds of user.
-The committed-use rate of \$3.44 is the list price of CoreWeave (\$8.60 per hour) with its largest published discount for committed use (60\%).
+The committed-use rate of \$3.44, for a GPU rented at a long-term discount, is the list price of CoreWeave (\$8.60 per hour) with its largest published discount for committed use (60\%).
 It is what a provider would pay to serve the monitor to the community over the long term.
 The on-demand rate of \$7.99 is what we paid at Runpod, and what a researcher pays today for a short task such as a benchmark.
 Both rates assume that the GPU always has a request to work on; a GPU that waits for requests costs the same per hour, so idle time raises the cost of each token.

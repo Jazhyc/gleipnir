@@ -3,7 +3,7 @@
 
 We trained small open-weight monitors that score an agent trajectory in one forward pass by learning the decision of a frontier teacher.
 On the OOD suite, Gleipnir 27B matches the strongest reasoning monitor at 229 times lower cost on demand.
-With committed-use GPU pricing, it scores 0.055 above the strongest decision model of the same cost, and our serving stack lowers the cost from the API price by 6.4 to 10.4 times.
+On a GPU rented at a long-term discount, it scores 0.055 above the strongest decision model of the same cost, and our serving stack lowers the cost from the API price by 6.4 to 10.4 times.
 Prefix caching makes checking every action cheaper still.
 
 Outside the OOD suite, the monitors are weaker.
