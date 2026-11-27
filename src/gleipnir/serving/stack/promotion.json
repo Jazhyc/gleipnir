@@ -1,4 +1,9 @@
 {
+  "accepted": {
+    "by": "user",
+    "date": "2026-11-27",
+    "evidence": "experiments/serving/serving_stack_promotion/README.md"
+  },
   "base_revision": "1bff563623ad0a5682671346048f7f10aee6a4b5",
   "sources": {
     "experiments/b200_attention_gdn_serving/attention_fp4_worker.py": {
@@ -162,5 +167,5 @@
       "sha256_before": "e3eb656b463bdd45161ff9068f985c92b487e8047d4604519e1bc6f4ace524b4"
     }
   },
-  "status": "candidate"
+  "status": "accepted"
 }

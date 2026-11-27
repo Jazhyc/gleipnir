@@ -1,6 +1,8 @@
 # Serving stack promotion check
 
-Status: completed 2026-11-27; protocol frozen before the B200 run.
+Status: completed 2026-11-27; protocol frozen before the B200 run. The user
+accepted the promotion the same day
+([decision](../../../docs/decisions/serving/promote_serving_stack.md)).
 
 **Question.** Does the optimized serving runtime, promoted from its
 experiments into `gleipnir.serving.stack` (29 files moved, imports and

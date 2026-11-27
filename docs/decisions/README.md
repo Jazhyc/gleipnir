@@ -9,6 +9,7 @@ one of three statuses:
 
 | Date | Area | Status | Decision |
 | --- | --- | --- | --- |
+| 2026-11-27 | serving | current | [Serve the optimized B200 stack from gleipnir.serving.stack](serving/promote_serving_stack.md) |
 | 2026-11-23 | evaluation | current | [Inkling 2 Mini as the next large-monitor base](evaluation/inkling2_mini_next_base.md) |
 | 2026-11-18 | serving | current | [Price release models on the released stack, one request at a time](serving/price_release_models_on_the_released_stack.md) |
 | 2026-10-20 | training | current | [Train Gleipnir 4B on tool-trajectory data only](training/train_gleipnir_4b_on_tool_trajectory_data_only.md) |
