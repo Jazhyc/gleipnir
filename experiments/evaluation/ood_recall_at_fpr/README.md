@@ -2,7 +2,7 @@
 
 User request, 2026-11-10: compute a cost frontier on the frozen OOD suite for
 recall at a 1% false-positive rate, for the monitors we scored ourselves. The
-[frontier registry](../../../docs/research/tool_trajectory_ood_frontier.md) and
+[frontier registry](../../../docs/findings/evaluation/tool_trajectory_ood_frontier.md) and
 the v1 report rank monitors by pAUROC@20, which averages over false-positive
 rates up to 20%; deployed monitors run far below that.
 
@@ -92,7 +92,7 @@ Qualifications:
 - No bootstrap intervals and one evaluation pass per monitor; the 4B's
   three-seed spread on this metric is not measured.
 - The OOD inputs lack assistant messages in five of six sources
-  ([audit](../../../docs/findings/ood_input_reasoning.md)).
+  ([audit](../../../docs/findings/evaluation/ood_input_reasoning.md)).
 - Costs mix pricing regimes as in the registry: self-hosted break-even for
   Gleipnir 4B and 27B, list or hosted prices elsewhere.
 

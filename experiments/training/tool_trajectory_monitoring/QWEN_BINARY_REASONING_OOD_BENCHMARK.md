@@ -60,7 +60,7 @@ The direction is heterogeneous: AgentDojo pAUROC@20 improves by `0.2980`, but
 all five other sources decline. Fifteen rows use the frozen boundary recovery
 and none are dropped. The complete per-source, score-behavior, cost, and run
 audit is in
-[`../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
 
 ## Reproduction
 

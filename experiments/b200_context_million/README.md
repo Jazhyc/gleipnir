@@ -4,7 +4,7 @@ Measure the current optimized serving default (vLLM 0.31, FP8 full-attention
 projections, FP4 MLP/GDN projections, MXFP8 attention prefill) at concurrency 1
 at every power of two from 1,024 to 1,048,576 input tokens. The user requested
 this baseline before long-context optimization work and asked for explicit hardware/environment
-records, because nodes drift. The archived [long-context finding](../../docs/findings/b200_long_context.md)
+records, because nodes drift. The archived [long-context finding](../../docs/findings/serving/b200_long_context.md)
 used the superseded 0.24 FP4-projection stack and stopped at 256K.
 
 Hypothesis: the fitted per-chunk model from the 0.24 sweep (constant
@@ -69,6 +69,6 @@ PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
 `--phase native` or `--phase yarn` runs one phase. Export tables and figures
 with `python -m experiments.b200_context_million.summarize
 results/b200_context_million/million01`. The completed `million01` run reaches
-1M in 43.08 s; see [the finding](../../docs/findings/b200_context_million.md). Results are under
+1M in 43.08 s; see [the finding](../../docs/findings/serving/b200_context_million.md). Results are under
 `results/b200_context_million/<name>/`; server logs under
 `logs/runpod/b200_context_million/`.

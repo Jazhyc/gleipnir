@@ -38,7 +38,7 @@ token and zero reasoning each). Three 429 failures completed sequentially,
 without changing request settings. Final pooled AUROC 0.933633, ECE(10)
 0.090544, Brier 0.119205; valid full-pass charges $0.626751. The original
 stopped pass retained 133 rows but is excluded from metrics. See
-`docs/findings/qwen38flash_matched_teacher_comparison.md` for the five-teacher
+`docs/findings/teachers/qwen38flash_matched_teacher_comparison.md` for the five-teacher
 comparison, source diagnostics, interface caveats and setup costs.
 
 ## Kimi K2.6 matched comparison protocol (2026-09-07)
@@ -65,7 +65,7 @@ concurrency-eight pass were completed with `run --concurrency 2`; the override
 only changes transport parallelism, not the frozen request settings or scores.
 K2.6 pooled AUROC 0.960449, ECE(10) 0.051102, Brier 0.081665; reported
 successful-row charges $3.380963. See
-`docs/findings/kimi26_matched_teacher_comparison.md` for all four teachers.
+`docs/findings/teachers/kimi26_matched_teacher_comparison.md` for all four teachers.
 
 ## MiniMax full comparison protocol (2026-09-07)
 
@@ -88,7 +88,7 @@ MiniMax tokenizer usage, cache hits and retries can change the bill.
 
 Completed all 640 rows with zero reasoning tokens and valid paired logprobs.
 MiniMax pooled AUROC 0.942275, ECE(10) 0.078941, Brier 0.097374; total reported
-cost $1.416517. See `docs/findings/minimax_matched_teacher_comparison.md` for
+cost $1.416517. See `docs/findings/teachers/minimax_matched_teacher_comparison.md` for
 the matched three-teacher comparison, source diagnostics and caveats.
 
 ## MiniMax direct-logit capability check (2026-09-07)
@@ -211,7 +211,7 @@ Completed the same day: all 640 unique IDs passed local re-analysis, including
 exact source-prompt hashes, labels, dataset identities, frozen config SHA and
 raw-logprob-to-probability consistency. Numerical canary passed with mean
 absolute probability difference 0.002924 and maximum 0.014350. Final results:
-`docs/findings/matched_qwen_kimi_teacher_agreement.md`. Both teacher inputs and
+`docs/findings/teachers/matched_qwen_kimi_teacher_agreement.md`. Both teacher inputs and
 Qwen outputs are retained locally under the ignored result directory.
 
 Calibration follow-up (2026-09-07): run

@@ -12,7 +12,8 @@ will touch. Load additional instructions by task:
 - Research design, data contracts, prompts, objectives, evaluation methodology
   or interpretation: read [the research program](docs/research_program.md) and
   relevant findings/decisions under `docs/` before making changes. Use
-  [the documentation index](docs/README.md) to locate them.
+  [the documentation index](docs/README.md) to locate them; start from
+  [the current state](docs/current.md) for what is in force.
 - Compute launch, monitoring, infrastructure, remote access or lifecycle work:
   read [compute instructions](docs/agent_guides/compute.md).
 - Training implementation, configuration or optimization: read
@@ -43,6 +44,13 @@ decisions/configuration, and run history, timings, process state and numerical
 receipts in experiment records. Preserve historical evidence, frozen contracts
 and acceptance qualifications there. Add to the research program only when
 evidence changes scientific direction or evaluation principles.
+
+File findings and decisions under `docs/{findings,decisions}/<category>/` (the
+index's categories), plans under `docs/plans/`. Start each with `Status:` and
+`Date:` lines, list it in `docs/README.md` (decisions also in
+`docs/decisions/README.md`), and update `docs/current.md` when a selection,
+release or open item changes; `tests/layout/test_docs.py` checks indexes,
+headers and links.
 
 Before committing documentation changes, review the diff for duplication, stale
 claims and unnecessary growth. Prefer consolidation and links over expanding

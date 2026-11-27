@@ -51,6 +51,6 @@ because a smaller GEMM can change BF16 rounding.
 
 `score02` is the historical initial endpoint trial. The subsequent validated
 mutation repair (`mutation03`) is now the user-selected optimization reference;
-see [the decision](../../docs/decisions/b200_monitor_score_reference.md).
-The original endpoint [finding](../../docs/findings/b200_monitor_score_endpoint.md)
+see [the decision](../../docs/decisions/serving/b200_monitor_score_reference.md).
+The original endpoint [finding](../../docs/findings/serving/b200_monitor_score_endpoint.md)
 retains all initial quality and failed-launch evidence.

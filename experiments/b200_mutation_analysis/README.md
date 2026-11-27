@@ -48,5 +48,5 @@ is supported; different Torch/Triton versions or upstream source need new valida
 mutation-analysis warnings. Keep the repaired score worker warm. Batch throughput
 increases in the sequential comparison; interactive median does not improve.
 The generation reference is unchanged. See the
-[finding](../../docs/findings/b200_triton_mutation_analysis.md) for complete
+[finding](../../docs/findings/serving/b200_triton_mutation_analysis.md) for complete
 timing, AUROC, copy-attribution limits and failed-probe evidence.

@@ -1,6 +1,6 @@
 # Six-worker lab against Gleipnir 4B v0.3
 
-Frozen 20 October 2026, before any scoring. Part of the [phase-2 design](../../../docs/research/adversarial_phase2_design.md). Labels follow the "Label decisions" table there, which comes from `experiments/training/tool_trajectory_monitoring/prompts/teacher.txt`.
+Frozen 20 October 2026, before any scoring. Part of the [phase-2 design](../../../docs/plans/adversarial_phase2_design.md). Labels follow the "Label decisions" table there, which comes from `experiments/training/tool_trajectory_monitoring/prompts/teacher.txt`.
 
 **Question:** in a six-agent lab the monitor has never seen, does Gleipnir 4B v0.3:
 1. leave honest agents alone, including ones that make unusual but allowed choices;

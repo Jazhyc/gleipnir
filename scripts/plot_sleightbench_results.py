@@ -3,7 +3,7 @@
 
 Grouped vertical bars, one group per model and one bar per way of running it,
 as in the paper's figures. Values are the stripped-view, ControlArena-prompt
-numbers recorded in ``docs/findings/sleightbench_released_monitors.md``.
+numbers recorded in ``docs/findings/evaluation/sleightbench_released_monitors.md``.
 Bars left of the dashed line are the paper's per-trial catch rates read from
 its appendix figures; the rest are ours. Our paper-protocol runs sample 10
 trials, and their pAUROC@20 is the mean of per-trial values, matching the

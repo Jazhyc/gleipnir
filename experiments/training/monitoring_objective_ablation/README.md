@@ -6,7 +6,7 @@ reruns and final evaluations verified on 2026-09-08.
 The initial two rationale runs are diagnostic only because their sequential
 auxiliary/direct accumulation normalization was inconsistent. They are excluded
 from promotion. Corrected reruns with the same frozen weights are complete; see
-[`the accumulation audit`](../../../docs/findings/monitoring_objective_accumulation.md).
+[`the accumulation audit`](../../../docs/findings/training/monitoring_objective_accumulation.md).
 The MIL-only runs are unaffected by that bug.
 
 Corrected rationale weights 0.05 and 0.20 reach historical-ID macro pAUROC@20

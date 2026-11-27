@@ -44,8 +44,8 @@ OOD_STEPS = (
 DISTILLATION_ID = Path("data/tool_trajectory_monitoring/distillation_id/prompts.jsonl")
 ID_OUTPUT = Path("data/id_cot_only_evaluation/prompts.jsonl")
 ID_MANIFEST = Path("data/id_cot_only_evaluation/evaluation.manifest.json")
-# Frozen outputs: docs/decisions/cot_removed_id_validation.md and
-# docs/decisions/frozen_ood_comparability.md.
+# Frozen outputs: docs/decisions/evaluation/cot_removed_id_validation.md and
+# docs/decisions/evaluation/frozen_ood_comparability.md.
 EXPECTED = {
     "id": {
         DISTILLATION_ID: (

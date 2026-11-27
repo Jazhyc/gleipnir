@@ -33,4 +33,4 @@ pytest -q experiments/evaluation/shade_length_audit
 ```
 
 Writes `results/shade_length_audit/summary.json`. Interpretation lives in
-[`docs/findings/shade_length_audit.md`](../../../docs/findings/shade_length_audit.md).
+[`docs/findings/evaluation/shade_length_audit.md`](../../../docs/findings/evaluation/shade_length_audit.md).

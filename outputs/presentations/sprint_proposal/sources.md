@@ -1,7 +1,7 @@
 # Sources
 
 Numbers are from the
-[OOD frontier registry](../../../docs/research/tool_trajectory_ood_frontier.md)
+[OOD frontier registry](../../../docs/findings/evaluation/tool_trajectory_ood_frontier.md)
 at revision `9e45f8a` (registry SHA-256 `5a23ac27…164c6`).
 
 - **Metric.** Unweighted mean over six OOD sources of the paper's raw normalized

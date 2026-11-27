@@ -10,9 +10,9 @@ released Gleipnir 4B v0.4?
 On the augmented SDPA 4B, projecting out its own layer-20 injected-minus-neutral
 direction cut injected-honest FPR from 50.8% to 0.4% and raised matched AUROC
 from 0.80 to 0.89, at a large injected-backdoor recall cost
-([finding](../../../docs/findings/b200_injection_direction.md)). Refits on the
+([finding](../../../docs/findings/injection/b200_injection_direction.md)). Refits on the
 activation-filtered and CAFT models helped much less, and the original vector
-did nothing on CAFT ([CAFT finding](../../../docs/findings/concept_ablation_training.md)).
+did nothing on CAFT ([CAFT finding](../../../docs/findings/injection/concept_ablation_training.md)).
 The released 4B (QAD of the three-seed strict-filtered average) has never been
 probed.
 

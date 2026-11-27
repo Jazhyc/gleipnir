@@ -158,7 +158,7 @@ ruff check .
 
 The lock file pins the environment (Python 3.12, vLLM 0.31.0, Transformers
 5.14.1). The full environment needs a CUDA GPU. Experiments run on rented
-B200 GPUs; [`docs/infrastructure.md`](docs/infrastructure.md) records how.
+B200 GPUs; [`docs/infrastructure/README.md`](docs/infrastructure/README.md) records how.
 
 ## Layout
 

@@ -27,7 +27,7 @@ the memory bottleneck but hit an internal layout-inference error. Version 4 keep
 2 / 16 and freezes FLA's default Triton backend. Version 5 pins Triton 3.7.1 in
 an isolated target; its matched preflight completed in 458 seconds and used about
 68.6 GiB at an observed active-step snapshot. See
-`docs/findings/monitoring_lr_sweep_preflight.md`.
+`docs/findings/training/monitoring_lr_sweep_preflight.md`.
 
 Version 6 adopts the systems recipe selected by the subsequent matched screens:
 microbatch 1 / accumulation 32, linear-attention-only checkpointing, standard

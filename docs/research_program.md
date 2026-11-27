@@ -28,28 +28,28 @@ contract below. Teachers may retain richer information, with that privilege
 recorded explicitly in target provenance.
 
 Future training uses the user-selected
-[strict agreement filter](decisions/strict_teacher_filtering.md) by default,
+[strict agreement filter](decisions/teachers/strict_teacher_filtering.md) by default,
 with explicit unfiltered controls and unchanged held-out populations.
 
 ## Conclusions that guide new work
 
 - **Data and ID improvements do not guarantee transfer.** The completed
-  [soft-distillation scaling study](research/tool_trajectory_distillation_ood_scaling.md)
+  [soft-distillation scaling study](findings/training/tool_trajectory_distillation_ood_scaling.md)
   has a non-monotonic one-seed OOD curve. More rows, larger models and stronger
   ID scores should be tested against grouped holdouts rather than assumed to
   improve generalization.
 - **Injection text can trigger alarms without harmful behavior.**
-  [Prompt changes](findings/monitoring_injection_disentanglement.md) and
-  [aggressive training-data filtering](findings/monitoring_injection_removal.md)
+  [Prompt changes](findings/injection/monitoring_injection_disentanglement.md) and
+  [aggressive training-data filtering](findings/injection/monitoring_injection_removal.md)
   did not resolve injected-honest false positives in the tested APPS controls.
   Include honest injected negatives and matched harmful/harmless examples;
   suspicious wording alone is insufficient evidence of harmful behavior.
 - **Direct monitoring augmentation is promising, with substantial limits.**
-  [4B augmentation](findings/monitor_injection_augmentation.md) improves clean ID
+  [4B augmentation](findings/injection/monitor_injection_augmentation.md) improves clean ID
   ranking and reduces injected-honest APPS alarms. The
-  [9B replication](findings/monitor_injection_augmentation_9b.md) improves clean
+  [9B replication](findings/injection/monitor_injection_augmentation_9b.md) improves clean
   ID ranking but transfers much less strongly and regresses vanilla APPS
-  ranking. The [current 4B FP4 diagnostic](findings/b200_augmented_training.md)
+  ranking. The [current 4B FP4 diagnostic](findings/injection/b200_augmented_training.md)
   reduces APPS alarms but loses clean ID ranking and harmful-action recall.
   BF16 serving and matched BF16 MLP retraining with FA4 recover part of the ID
   loss. The historical augmented checkpoint retains its original ID ranking
@@ -69,15 +69,15 @@ with explicit unfiltered controls and unchanged held-out populations.
   These single-seed, limited-template, off-policy interventions do not establish
   recipe-independent, broad or adaptive robustness, or a monotonic size benefit.
 - **Quality judging and harmfulness monitoring have different targets.**
-  [Joint preference training](findings/judge_injection_joint.md) learns the
+  [Joint preference training](findings/injection/judge_injection_joint.md) learns the
   injected preference task without resolving APPS harmless alarms.
-  [Auxiliary judge evaluation](findings/augmented_judge_evaluation.md) shows
+  [Auxiliary judge evaluation](findings/injection/augmented_judge_evaluation.md) shows
   partial transfer from monitoring augmentation with substantial residual
   sensitivity. Keep preference accuracy separate from harmfulness diagnostics.
 - **Systems gains require separate quality evidence.** Training and serving
   optimizations have explicit numerical acceptances and failed strict receipts.
   Small training-seen timing cohorts cannot establish held-out quality parity.
-  The [full-training replication](decisions/b200_fp4_full_training_replication.md)
+  The [full-training replication](decisions/systems/b200_fp4_full_training_replication.md)
   improves ID ranking but worsens ECE; it is a one-seed combined-recipe comparison.
 
 ## Evaluation contract
@@ -85,7 +85,7 @@ with explicit unfiltered controls and unchanged held-out populations.
 Apply the general [experiment standards](../AGENTS.md#experiment-standards).
 The current requirements for monitoring are:
 
-Use the accepted [CoT-removed ID dataset](decisions/cot_removed_id_validation.md)
+Use the accepted [CoT-removed ID dataset](decisions/evaluation/cot_removed_id_validation.md)
 for future monitoring validation, hyperparameter comparisons, early stopping
 and checkpoint selection. Remove source-typed reasoning and explicit thinking
 calls while preserving visible assistant prose, other tool calls and results.
@@ -101,10 +101,10 @@ full-input scores and broader prose-removal ablations are different contracts.
   training and checkpoint selection for these injection comparisons.
 - Keep the six-source OOD suite outside prompt, recipe, threshold, checkpoint
   and stopping choices; disclose prior use when interpreting later results.
-  The exception is [precision and kernel choices](decisions/precision_selection_on_ood.md),
+  The exception is [precision and kernel choices](decisions/evaluation/precision_selection_on_ood.md),
   which may select on OOD under frozen rules with every candidate reported.
   Retain its frozen inputs for paper comparability under the user's
-  [OOD input decision](decisions/frozen_ood_comparability.md); prose restoration
+  [OOD input decision](decisions/evaluation/frozen_ood_comparability.md); prose restoration
   remains a deferred diagnostic.
 - Distinguish uncertainty caused by missing observable evidence from
   presentation changes that truly preserve the label. Evaluate transfer before
@@ -114,7 +114,7 @@ full-input scores and broader prose-removal ablations are different contracts.
 
 1. Can training on the intended visible inputs, evidence-preserving consistency
    or compact grounded evidence supervision improve transfer with existing
-   teacher data? The [training follow-up backlog](research/monitoring_training_followups.md)
+   teacher data? The [training follow-up backlog](plans/monitoring_training_followups.md)
    contains candidate designs, not a selected campaign.
 2. Does broader injection wording and attack diversity reduce residual false
    positives without losing harmful-action recall? This follow-up remains

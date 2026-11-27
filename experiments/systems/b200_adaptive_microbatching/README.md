@@ -5,8 +5,8 @@ compiled 16,384-token/max-8 adaptive batching for future B200 training. Use
 `systems_screen@_global_: qwen35_4b_b200_default` for the current authoring
 profile, which adds user-selected uniform FlashQLA. The preceding
 `qwen35_4b_b200_adaptive` profile preserves original FLA. See the
-[FlashQLA decision](../../../docs/decisions/b200_flashqla_training_recipe.md).
-The [decision record](../../../docs/decisions/b200_adaptive_training_recipe.md)
+[FlashQLA decision](../../../docs/decisions/systems/b200_flashqla_training_recipe.md).
+The [decision record](../../../docs/decisions/systems/b200_adaptive_training_recipe.md)
 distinguishes this explicit choice from the historical screen contracts below;
 their failed parity gates remain intact. No new training run is launched.
 
@@ -93,7 +93,7 @@ The batching probes are complete: maxima 2, 4 and 8 all miss the 0.05
 gradient-parity gate; the best mask/precision probe is 0.09221. No timed training
 condition ran, and no adaptive policy is promoted. Keep the validated batch-1
 recipe. Implementation remains opt-in/experimental. See the
-[recorded findings](../../../docs/findings/b200_adaptive_microbatching.md) for every
+[recorded findings](../../../docs/findings/systems/b200_adaptive_microbatching.md) for every
 probe, artifacts and limits on this conclusion.
 
 Kernel audit: run `diagnose.py --mode eager --maximum-microbatch-size 1` on the
@@ -208,6 +208,6 @@ common probe losses span 0.927562–0.940055 (1.35%). Adaptive policies realized
 physical sizes 1, 2, 4 and 8. Step-compute timings are promising but exclude
 evaluation/setup/reset/export and share warm caches; no full-loop gain or ETA
 is promoted. These cohort-specific probes differ from the historical stress
-inputs. See the [complete findings](../../../docs/findings/b200_execution_audit.md)
+inputs. See the [complete findings](../../../docs/findings/systems/b200_execution_audit.md)
 for curves, individual-example limits, provenance and retained checkpoints.
 The original parity gate and fixed-batch selection remain unchanged.

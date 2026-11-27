@@ -11,7 +11,7 @@ BF16/SDPA campaign `teacher-seed-sdpa-s1-01` (7,836 rows, Kimi K3 targets, LR
 and changes only:
 - seed 0, matching the 27B initial adapter;
 - model `Qwen/Qwen3.8-27B` @ `1d4bf0f2…` with `qwen38_27b_b200_default`
-  ([decision](../../../docs/decisions/qwen38_27b_b200_training_default.md));
+  ([decision](../../../docs/decisions/systems/qwen38_27b_b200_training_default.md));
 - the initial adapter `results/qwen38_27b_initial_adapter`, exported by
   `experiments/systems/qwen38_27b_training_speed/export_initial_adapter.py` and
   digest-matched to the benchmark's fresh seed-0 LoRA (`4093b2aa…`);

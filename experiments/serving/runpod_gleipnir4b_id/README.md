@@ -63,5 +63,5 @@ AUROC is 0.953021 and pAUROC@20 0.851445 (historical 0.952674/0.850083).
 Whole-set historical score correlation is 0.999765, with MAE 0.003326 and
 10 threshold disagreements. Scoring took 11m02s excluding startup. The Pod
 remains running. See the
-[finding](../../../docs/findings/runpod_b200_gleipnir4b_id.md) for calibration,
+[finding](../../../docs/findings/serving/runpod_b200_gleipnir4b_id.md) for calibration,
 source metrics, numerical limits, startup repairs, and artifact checksums.

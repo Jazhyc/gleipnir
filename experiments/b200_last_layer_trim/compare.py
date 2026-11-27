@@ -7,7 +7,7 @@ import hashlib
 import json
 from pathlib import Path
 
-# Baseline fit (docs/findings/b200_context_million.md): ms per 32K x 32K block.
+# Baseline fit (docs/findings/serving/b200_context_million.md): ms per 32K x 32K block.
 ATTENTION_BLOCK_MS = 71.8
 CHUNK = 32768
 

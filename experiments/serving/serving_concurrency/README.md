@@ -6,7 +6,7 @@ change with client concurrency, measured on one host. Existing records give
 the per-step throughput at concurrency 128 only
 ([4B ladder](../gleipnir4b_serving_ladder/README.md),
 [27B](../qwen38_27b_serving/README.md)); the only concurrency curve is an
-older 4B recipe ([score scaling](../../../docs/findings/b200_score_scaling.md)).
+older 4B recipe ([score scaling](../../../docs/findings/serving/b200_score_scaling.md)).
 
 - **Question.** For Gleipnir 4B v0.4 and 27B v0.2 on one B200, what are
   prompt tokens/s and request latency (p50, p95) at client concurrency 1 to

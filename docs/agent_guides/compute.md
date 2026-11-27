@@ -63,7 +63,7 @@ artifact collection on any separately authorized future target. Probe and record
 its hardware before freezing a recipe. Pull important artifacts before any
 termination.
 
-Read the relevant platform section of [infrastructure.md](../infrastructure.md)
+Read the relevant platform section of [infrastructure.md](../infrastructure/README.md)
 before remote setup, access, transfers or lifecycle operations. Use
 `scripts/runpod_cloud.py` with a refreshed sanitized Pod snapshot for Runpod
 SSH and sync; preserve network volumes and compiler/kernel caches.

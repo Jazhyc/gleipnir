@@ -44,4 +44,4 @@ The completed run reached `0.4789` Mean-OOD pAUROC@20 and `0.7862` Mean-OOD
 AUROC. At the paper's `$0.039/M` input and `$0.18/M` output OpenRouter proxy,
 its exact uncached projection is `$0.3270/1K` evaluations. Full per-source
 metrics, price sensitivity, runtime, and artifact hashes are recorded in
-[`../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md`](../../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_gpt_oss_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_gpt_oss_ood_benchmark.md).

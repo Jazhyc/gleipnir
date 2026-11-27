@@ -38,7 +38,7 @@ PYTHONPATH=src:. /tmp/gleipnir-vllm031-runtime/bin/python \
 `--phase native` or `--phase yarn` profiles one server. Results go under
 `results/b200_kernel_profile/<name>/` and logs under
 `logs/runpod/b200_kernel_profile/`. The completed traces are `profile02`
-(native) and `profile03` (1M); see [the finding](../../../docs/findings/b200_kernel_profile.md).
+(native) and `profile03` (1M); see [the finding](../../../docs/findings/serving/b200_kernel_profile.md).
 
 `saturation.py` (`--name saturation01`) traces the adopted default at the 2K
 c32 and full320 c128 plateaus. It pairs each traced pass with an untraced

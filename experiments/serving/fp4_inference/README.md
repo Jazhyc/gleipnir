@@ -96,7 +96,7 @@ python -m experiments.serving.fp4_inference.run --condition baseline
 Configurations live in `configs/`. Durable logs are under
 `logs/slurm/fp4_inference/`, measurements under `results/fp4_inference/`.
 Completed or failed output directories are preserved. Every completed condition
-gets a finding here and in `docs/findings/blackwell_inference_search.md`.
+gets a finding here and in `docs/findings/serving/blackwell_inference_search.md`.
 
 ## Completed artifact reference
 

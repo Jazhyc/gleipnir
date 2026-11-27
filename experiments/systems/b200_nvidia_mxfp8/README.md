@@ -92,7 +92,7 @@ separate 10% learning ceilings. Losses 0.9492289424/0.9757985473 pass the loss
 limit; all cross-example isolation effects are exactly zero. The run stops
 before compiled checks, longest-batch preflight and optimizer updates. The FA4
 control is unrun and no training-speed result is available. Keep BF16 FA4 as
-the default; see [the finding](../../../docs/findings/b200_nvidia_mxfp8.md).
+the default; see [the finding](../../../docs/findings/systems/b200_nvidia_mxfp8.md).
 
 The user subsequently requested a speed result regardless of that discrepancy.
 `training03.yaml` authorizes a separate timing-only continuation, with 20 updates
@@ -153,4 +153,4 @@ unchanged; `control_stop.json` explains the stop and
 Sixteen preparation workers finish in 208.068 seconds with 266 hits/268 misses
 and no cache failures. Recorded lengths are preparation hints; materialized
 training and diagnostic shapes may add plans. See
-[the finding](../../../docs/findings/b200_nvidia_mxfp8.md) for receipts and limits.
+[the finding](../../../docs/findings/systems/b200_nvidia_mxfp8.md) for receipts and limits.

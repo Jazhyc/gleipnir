@@ -67,7 +67,7 @@ defaults to 262,144, the checkpoints' native RoPE range (no YaRN). Pass
 Status: validated on a B200 on 2026-10-21 (SleightBench run `sb01`). Both
 models passed the repeat-relative ID gates at 262K (`gate.py`; MAE ratio 1.05
 for the 4B and 1.06 for the 27B), and inputs up to 195K tokens scored finite.
-See the [finding](../../docs/findings/sleightbench_released_monitors.md#serving-and-gates).
+See the [finding](../../docs/findings/evaluation/sleightbench_released_monitors.md#serving-and-gates).
 User decision: later evaluations of these checkpoints on this unchanged stack
 skip the ID passes. New adapters, checkpoints or stack changes still need
 parity. The image (0.1) remains at 32K until a 0.2 build.
@@ -221,7 +221,7 @@ metrics move by about 0.001.
     prefix-cached worker twins (the 4B's `b200_prefix_replay` workers; the
     27B needs only the flags). It is off by default. Cached scores can drift
     from uncached ones by up to about 0.15
-    ([decision](../../docs/decisions/prefix_cached_serving.md)); that drift
+    ([decision](../../docs/decisions/serving/prefix_cached_serving.md)); that drift
     was not re-measured, at the user's request.
 - **Build.** On EU-RO-1 B200 Pod `2r9xvvvsx9m60v`:
   - `image/pod_trace.sh` traced a default and a prefix launch per model. Each
@@ -454,7 +454,7 @@ cluster's default `.venv` (vLLM 0.24) returned NaN logits with this recipe
 - **Opt-in prefix caching for synchronous monitoring** (user, 2026-10-20:
   important for that use case, no imminent need).
   - Expose the existing align-mode opt-in
-    ([decision](../../docs/decisions/prefix_cached_serving.md)) as an image
+    ([decision](../../docs/decisions/serving/prefix_cached_serving.md)) as an image
     switch, with its looser startup canary (MAE ≤ 0.02, correlation ≥ 0.99).
   - Evaluations stay uncached. The shared instruction prefix is only 2.8%
     (4B) and 15.7% (27B) of an evaluation prompt, and cached scores drift

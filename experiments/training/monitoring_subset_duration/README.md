@@ -109,6 +109,6 @@ over released 4B.
 source metrics, AUROC, Brier, threshold diagnostics, score ties and gate decisions;
 `stage1_summary.json` retains the initial six-arm comparison. Final masters and
 previously missing predictions were collected in the
-[campaign inventory](../../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+[campaign inventory](../../../docs/findings/operations/gleipnir_improvement_shutdown_inventory.md).
 These results precede the CoT-removed ID contract and must not be mixed with its
 scores.

@@ -1,7 +1,7 @@
 # Qwen3.8-27B BF16/SDPA packed recipe with the compiled final-layer trim and
 # 12 of 16 full-attention layers stored (not checkpointed), user-selected as
 # the 27B training default on 2026-10-17. See
-# docs/decisions/qwen38_27b_b200_training_default.md and
+# docs/decisions/systems/qwen38_27b_b200_training_default.md and
 # experiments/systems/qwen38_27b_training_speed/README.md. Everything else is the 4B
 # BF16/SDPA/trim recipe; the 27B cannot run uncheckpointed (~330 GB for a
 # 16K pack), so every GDN layer and attention layers 3, 19, 35 and 51 recompute.

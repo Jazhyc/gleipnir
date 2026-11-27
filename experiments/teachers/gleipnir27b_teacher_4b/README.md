@@ -43,7 +43,7 @@ changes the prompt.
   Kimi and Gleipnir scored byte for byte. ID uses the canonical CoT-removed
   ID trajectories rendered with the teacher template, not the frozen teacher
   ID prompts. Those keep STRIDE agent reasoning and `think` calls on 937
-  rows, which the [CoT-removed validation decision](../../../docs/decisions/cot_removed_id_validation.md)
+  rows, which the [CoT-removed validation decision](../../../docs/decisions/evaluation/cot_removed_id_validation.md)
   excludes.
 
 **Baselines.** Seed-1 Kimi control (0.8978 ID macro pAUROC@20); Kimi seeds 0

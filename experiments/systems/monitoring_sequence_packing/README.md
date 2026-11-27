@@ -89,7 +89,7 @@ loop time over a matched backend/control; report real/padded tokens, physical
 calls, peak memory, compile count and setup costs separately. The CPU entrypoint
 does not launch or schedule this stage.
 
-See the [source audit and integration design](../../../docs/research/monitoring_sequence_packing.md)
+See the [source audit and integration design](../../../docs/findings/systems/monitoring_sequence_packing.md)
 for model/kernel changes and the prior Phoenix rejection.
 
 ## Historical paired BF16 B200 entrypoint
@@ -191,7 +191,7 @@ The eager comparison completed: 9.3926 seconds/update padded versus 7.2430 packe
 peak allocated memory. Every loss and gradient norm remained finite. Its probes
 used each training collator and had slightly different starting losses, so their
 final values (0.79265 padded, 0.76925 packed) are rough stability diagnostics.
-See the [finding](../../../docs/findings/bf16_sequence_packing.md) for scope and limits.
+See the [finding](../../../docs/findings/systems/bf16_sequence_packing.md) for scope and limits.
 
 The initial compiled learning attempt reproduced the 14.3217% gradient
 disagreement and accepted it for the diagnostic. During longest-example
@@ -285,7 +285,7 @@ protocols and should only be used for an explicitly requested replay.
 The user selected packed BF16 LoRA without model checkpointing as the B200
 training default, updated on 2026-10-04 to native FA4 full attention by explicit
 user selection. Use `qwen35_4b_b200_default` for newly authored training jobs;
-see the [decision](../../../docs/decisions/b200_packed_bf16_training_recipe.md).
+see the [decision](../../../docs/decisions/systems/b200_packed_bf16_training_recipe.md).
 Ordinary training uses the same packing boundaries and example weighting, with
 the checksum-bound FA4 validation receipt reused for compatible runs. Fresh
 checks retain strict results and the separate user-accepted 10% FA4 gradient

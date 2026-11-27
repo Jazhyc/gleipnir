@@ -63,7 +63,7 @@ For subsequent research launches without a benchmark, retire the verified
 existing scorer with `experiments.b200_vllm031.stop --archive-name <receipt>`
 and use the same runtime wrapper with `-m experiments.injection.b200_vllm_lens.start
 --name <startup>`. It verifies provenance and hook coverage and keeps the server
-warm. The completed [integration finding](../../../docs/findings/b200_vllm_lens.md)
+warm. The completed [integration finding](../../../docs/findings/injection/b200_vllm_lens.md)
 records correctness, performance, failed receipts and eager numerical drift.
 
 Use the client inside that overlay environment:

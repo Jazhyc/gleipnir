@@ -16,7 +16,7 @@ source receipts remain unchanged until GPU evidence supports selection.
 
 The user authorized retiring vLLM and running the native GPU screen. The pod now
 uses the current refactored repository source; weights, datasets, environments
-and shared caches are preserved. See the [native finding](../../../docs/findings/b200_frost_training.md)
+and shared caches are preserved. See the [native finding](../../../docs/findings/systems/b200_frost_training.md)
 for passing CUDA evidence, timing qualifications and preserved failed attempts.
 
 The probe rejects another live GPU process and never stops that process.

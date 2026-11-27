@@ -2,7 +2,7 @@
 
 For future training, the user subsequently selected the compiled adaptive
 profile `systems_screen@_global_: qwen35_4b_b200_adaptive`; see the
-[recipe decision](../../../docs/decisions/b200_adaptive_training_recipe.md).
+[recipe decision](../../../docs/decisions/systems/b200_adaptive_training_recipe.md).
 The fixed-batch contracts and results below remain historical reproductions.
 
 Hypothesis: the B200's larger memory permits less activation recomputation or
@@ -156,5 +156,5 @@ reproduction with the fixed mixed-data cohort, longest-row preflight, and 5%
 gate; it does not launch a full training epoch. Full-population compute projects
 to about 3.52 hours per epoch, with startup/export and cohort uncertainty added.
 Keep the H100 profile unchanged. See the
-[complete finding](../../../docs/findings/b200_training_throughput.md) for failed
+[complete finding](../../../docs/findings/systems/b200_training_throughput.md) for failed
 conditions, source revisions, artifacts, attention interpretation, and limitations.

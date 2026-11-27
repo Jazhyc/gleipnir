@@ -50,7 +50,7 @@ Launch on the existing remote checkout:
 
 The user-selected future-QAT context applies after
 `quantization_recovery.install(model, root)`; see the
-[recipe selection](../../../docs/decisions/qat_reference_training.md):
+[recipe selection](../../../docs/decisions/quantization/qat_reference_training.md):
 
 ```python
 from gleipnir.training.qat_reference import attention_runtime
@@ -64,4 +64,4 @@ with attention_runtime(model):
 Kimi cache with `teacher_model="moonshotai/kimi-k3"` and
 `prompt_contract="privileged"`; record its returned binding receipt. The config
 contains both exact cache checksums. Actual measurements and qualifications live
-in the [finding](../../../docs/findings/qat_training_optimization.md).
+in the [finding](../../../docs/findings/quantization/qat_training_optimization.md).

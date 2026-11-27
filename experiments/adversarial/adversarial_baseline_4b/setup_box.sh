@@ -2,7 +2,7 @@
 # Prepare a fresh single-GPU box (e.g. JarvisLabs) for adversarial scoring:
 #   git clone -b feat/adversarial-stress-tests https://github.com/Jazhyc/gleipnir.git
 #   cd gleipnir && bash experiments/adversarial/adversarial_baseline_4b/setup_box.sh 4b
-# Locked environment, the pinned FLA 0.5.2 overlay (as in docs/infrastructure.md),
+# Locked environment, the pinned FLA 0.5.2 overlay (as in docs/infrastructure/README.md),
 # APPS at its pinned revision, rebuilt ID/OOD sets and one monitor's weights.
 # Needs no secrets. causal-conv1d is skipped; Transformers uses its exact torch
 # fallback for the short convolution.

@@ -11,7 +11,7 @@ starting point for the planned 27B student. All three checkpoints share the
 | `Qwen/Qwen3.8-27B` | `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0` |
 
 Only Qwen3.5-27B has an OOD result: 0.8395 Mean-OOD pAUROC@20, from 2026-08-31
-([finding](../../../docs/findings/tool_trajectory_qwen27b_ood_benchmark.md)). The
+([finding](../../../docs/findings/evaluation/tool_trajectory_qwen27b_ood_benchmark.md)). The
 earlier Qwen3.8 attempt was the FP8 checkpoint on vLLM 0.24 and H100. It
 failed its batch/singleton consistency gate, so no quality result exists for
 it ([ID screen](../../teachers/qwen122b_id/README.md)). This run uses BF16 throughout.

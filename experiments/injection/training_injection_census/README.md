@@ -71,7 +71,7 @@ Completed 2026-10-03: all 8,688 unique finite scores, no truncation, 8/8 fixed
 controls correct, and passing local collection checks. Counts at thresholds
 0.1 / 0.5 / 0.9 are 3,396 / 1,154 / 202. Reviewed code-only false positives
 prevent interpreting them as verified injection prevalence. See the
-[finding](../../../docs/findings/training_injection_census.md) for source/label
+[finding](../../../docs/findings/injection/training_injection_census.md) for source/label
 cross-tabs, scores, review evidence, ties and provenance receipts.
 
 References: [Qwen model card](https://huggingface.co/Qwen/Qwen3.5-9B),

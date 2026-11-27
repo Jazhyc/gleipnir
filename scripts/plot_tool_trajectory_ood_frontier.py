@@ -31,7 +31,9 @@ from gleipnir.plotting import (
 )
 
 REPOSITORY_ROOT = repo_root(__file__)
-DEFAULT_SOURCE = REPOSITORY_ROOT / "docs/research/tool_trajectory_ood_frontier.md"
+DEFAULT_SOURCE = (
+    REPOSITORY_ROOT / "docs/findings/evaluation" / "tool_trajectory_ood_frontier.md"
+)
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.png"
 DEFAULT_VECTOR_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_frontier.svg"
 # The technical report's version: no title (its caption states the finding),

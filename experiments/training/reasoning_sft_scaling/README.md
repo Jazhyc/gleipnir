@@ -84,4 +84,4 @@ This curve and the Kimi soft-logit curve share the 822-row validation surface,
 but not training pools, exact fractions, seeds, epochs, prompts, or readout
 protocols. Their qualitative scaling behavior is comparable; their fractional
 x-coordinates are not matched experimental cells. The complete reporting table
-is in `docs/findings/competition_poster_evidence.md`.
+is in `docs/findings/evaluation/competition_poster_evidence.md`.

@@ -65,5 +65,5 @@ kernel time in the profiled candidate; mixed GEMMs and GDN/convolution are large
 targets. The BF16 Q producer epilogue is faster in a synthetic forward-only pilot;
 the FP8 pilot also passes its quantized-operand oracle and takes similar time.
 Neither validates projection training backward. Keep BF16 FA4 as standard.
-See [the complete finding](../../../docs/findings/b200_meta_stack.md) for every
+See [the complete finding](../../../docs/findings/systems/b200_meta_stack.md) for every
 technique, negative result, artifact checksum and measurement limitation.

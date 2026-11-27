@@ -36,7 +36,7 @@ resume: Python 3.12.3, Torch 2.11.0+cu130, GPU SM100, 183,359 MiB, zero volatile
 uncorrectable ECC errors. Frozen inputs and kernel/model caches remain on the
 volume; no data migration was required. Each campaign still verifies its own
 input identities and native canaries. The infrastructure record documents the
-[reservation handoff and unused stopped Pods](../../docs/infrastructure.md#runpod).
+[reservation handoff and unused stopped Pods](../../docs/infrastructure/runpod.md#runpod).
 
 Stop on input drift, backend/kernel failure, OOM, nonfinite values, unchanged
 adapters after updates, or failed numerical gates. Diagnostic loss comparisons
@@ -69,7 +69,7 @@ native, 116.7 GiB BF16 and 134.8 GiB NF4. Native common training-probe loss fall
 1.165299 -> 0.779105. Twenty focused tests pass. This establishes bounded LoRA
 training viability; Inductor parity, activation-memory savings, matched speedup
 and held-out quality remain unestablished. Full evidence and reproduction limits
-are in [the finding](../../docs/findings/fp4_training_stability.md).
+are in [the finding](../../docs/findings/systems/fp4_training_stability.md).
 
 ## FP4 timing replay
 
@@ -106,7 +106,7 @@ step, with zero new Dynamo graphs in each. All thirty measured steps average
 cohort. The reused-cache warm-up pass takes 177.174 s of step work. Matching
 initialization/workload and source hashes pass the collected analysis; final
 adapter hashes differ across replays, so bitwise trajectory identity is not
-claimed. See the [finding](../../docs/findings/fp4_training_stability.md#warmed-fp4-timing-benchmark)
+claimed. See the [finding](../../docs/findings/systems/fp4_training_stability.md#warmed-fp4-timing-benchmark)
 for scope, memory, provenance and excluded setup costs.
 
 ## FP4 overhead profile
@@ -198,7 +198,7 @@ For the next bounded FP4 experiment, copy this configuration to a fresh output
 path and retain its initialization, native/bitwise kernel canaries, numerical
 and gradient gates, partial checkpoints, adaptive batching and full warmed
 protocol. This does not change the default NF4 recipe. Full receipts and limits
-are in [the finding](../../docs/findings/fp4_training_stability.md#faster-warmed-fp4-training).
+are in [the finding](../../docs/findings/systems/fp4_training_stability.md#faster-warmed-fp4-training).
 The B200 remains running idle; no additional campaign is queued.
 
 ## Fused activation packing canary
@@ -253,7 +253,7 @@ packing therefore does not establish a full-step speed or memory benefit.
 Keep `row_inductor_fused_timing.yaml` as the preferred bounded FP4 recipe; tiled
 packing remains an experimental option. This experiment is complete, the B200
 is idle, and no further run is queued. Receipts and limitations are in the
-[finding](../../docs/findings/fp4_training_stability.md#tiled-activation-packing-follow-up).
+[finding](../../docs/findings/systems/fp4_training_stability.md#tiled-activation-packing-follow-up).
 
 ## Sequential FP4 throughput candidates
 
@@ -396,7 +396,7 @@ interventions clears the predeclared 5% useful-gain threshold. Retain
 `row_inductor_fused_timing.yaml` as the preferred bounded FP4 recipe. Individual
 gains do not predict a combined recipe or establish a matched pure-BF16 speed,
 held-out quality or serving result. See
-`docs/findings/fp4_training_stability.md` for source revisions, gates, memory,
+`docs/findings/systems/fp4_training_stability.md` for source revisions, gates, memory,
 partitions, collected artifact checksums and limitations. No run remains queued;
 the B200 is idle and all campaign artifacts are collected and saved persistently.
 
@@ -582,7 +582,7 @@ the LM head, which can round margins before the FP32 loss. Opt-in
 changing the decoder, weights, loss objective, selected positions, or
 master adapters. Observe and record the original head output dtype on
 the first call. This follows the high-precision projection concern in
-`docs/findings/monitoring_mil_ddp.md`; it is a distinct arithmetic recipe
+`docs/findings/systems/monitoring_mil_ddp.md`; it is a distinct arithmetic recipe
 from previous screens and must not erase their failures.
 
 With the same FP32-head original-FLA reference, test all 24 then the
@@ -633,7 +633,7 @@ parity results; the explicitly bounded finite-only learning test completes.
 Ten steps provide evidence of short-run learning, not held-out quality or long-run
 stability. Both runs stop at ten calls and save verified FP32 masters. Full
 matched rows, timings, memory, source hashes and limitations are in
-[`docs/findings/fp4_training_stability.md`](../../docs/findings/fp4_training_stability.md)
+[`docs/findings/systems/fp4_training_stability.md`](../../docs/findings/systems/fp4_training_stability.md)
 and `results/nf4_flashqla_ten_step_comparison/comparison.json`.
 
 
@@ -641,11 +641,11 @@ After reviewing these results, the user selected uniform FlashQLA as the B200
 NF4/BF16 LoRA default. Ordinary training now uses `qwen35_4b_b200_default` and
 its explicit `selected_finite` canary policy. This is separate from the frozen
 ten-step diagnostic and does not change historical failed receipts. See the
-[default recipe decision](../../docs/decisions/b200_flashqla_training_recipe.md).
+[default recipe decision](../../docs/decisions/systems/b200_flashqla_training_recipe.md).
 
 Subsequent user selection: the current B200 default is packed unquantized BF16
 LoRA without model checkpointing; see the
-[packed default decision](../../docs/decisions/b200_packed_bf16_training_recipe.md).
+[packed default decision](../../docs/decisions/systems/b200_packed_bf16_training_recipe.md).
 The recipes and screens in this history retain their original contracts.
 
 ## Fully BF16 LoRA with FlashQLA: ten-step screen
@@ -681,4 +681,4 @@ paired BF16 batch is faster. Mean training loss is 0.560395 versus 0.688022,
 with different frozen base arithmetic and initial probes. Results, FP32 masters
 and comparison receipts are saved under `results/bf16_flashqla_ten_step_comparison/`
 locally and on the persistent volume. See the
-[finding](../../docs/findings/fp4_training_stability.md#fully-bf16-lora-with-uniform-flashqla).
+[finding](../../docs/findings/systems/fp4_training_stability.md#fully-bf16-lora-with-uniform-flashqla).

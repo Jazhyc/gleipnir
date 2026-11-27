@@ -1,5 +1,5 @@
 # Historical packed BF16/SDPA B200 profile selected 2026-10-02.
-# See docs/decisions/b200_packed_bf16_training_recipe.md.
+# See docs/decisions/systems/b200_packed_bf16_training_recipe.md.
 # Inherit the common kernel/optimizer contract; keep historical B200 profiles frozen.
 defaults:
   - qwen35_4b_h100_fast

@@ -136,7 +136,7 @@ below Qwen3.8-27B and 17 below unadapted Qwen3.5-4B.
 | SHADE-Arena | 0.4824 | 0.5560 |
 
 The Qwen3.5-4B figure is the archived zero-shot teacher-prompt result
-([finding](../../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md)).
+([finding](../../../docs/findings/evaluation/tool_trajectory_qwen4b_ood_benchmark.md)).
 
 - **Flint over-flags.** At 0.5 it flags 98% of benign Rogue Eval rows, 92% of
   SHADE-Arena and 69% of AgentDojo. Mean scores on benign rows are 0.30 to
@@ -174,7 +174,7 @@ Artifacts: `results/flint_ood/` (`flint/`, `comparison.json`,
 `diagnostics/`, the failed canary) and `logs/runpod/flint_ood/` (25 files
 verified against the first Pod by SHA-256, `collect.sha256`; 35 against the
 second, `collect_pod2.sha256`). Pod lifecycle:
-[infrastructure](../../../docs/infrastructure.md#runpod).
+[infrastructure](../../../docs/infrastructure/runpod.md#runpod).
 
 ## Second arm: empty think block (frozen 2026-11-20 before scoring)
 

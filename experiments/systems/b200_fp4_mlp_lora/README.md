@@ -55,4 +55,4 @@ BF16 control's 5.12363 seconds: 53.44% slower. This candidate does not meet the
 promotion threshold. Keep BF16 MLPs. The separate original-FLA/FlashQLA strict
 gradient result fails at 73.64% under the standing selected-finite policy; this
 is distinct from the passing packing checks. See
-`docs/findings/b200_fp4_mlp_lora.md` for scope and preserved receipts.
+`docs/findings/systems/b200_fp4_mlp_lora.md` for scope and preserved receipts.

@@ -39,7 +39,7 @@ PYTHONPATH=src:. <training-python> -m experiments.training.qwen38_27b_hard_label
 
 Pod `6ucjc9wunbydk8` on volume `cb7bxu71ug`. The volume returned `ENXIO`
 for 55 files (list: `logs/runpod/qwen38_27b_hard_labels/volume_scan_bad.txt`;
-see [infrastructure](../../../docs/infrastructure.md)), so the runtime was rebuilt
+see [infrastructure](../../../docs/infrastructure/README.md)), so the runtime was rebuilt
 on the container disk: `.venv-vllm031` by `uv sync --locked` (staged metadata
 hashes identical to the previous receipt), FlashQLA from fresh TileLang 0.1.12 /
 TVM-FFI 0.1.11 wheels plus the recorded FP16 patch (all 43 manifest hashes

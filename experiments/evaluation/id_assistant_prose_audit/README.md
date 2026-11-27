@@ -56,7 +56,7 @@ inputs and cannot be treated as clean action-only results after this finding.
 Completed 2026-09-07. Assistant-prose removal reduces full ID input tokens by
 5.77%; additionally removing explicit think calls reduces them by 7.93% in total
 (26.20% STRIDE, 4.63% Gloom). See
-[the finding](../../../docs/findings/id_assistant_prose_and_reasoning.md) for reasoning
+[the finding](../../../docs/findings/evaluation/id_assistant_prose_and_reasoning.md) for reasoning
 prevalence, exact counts and interpretation.
 
 ## Training-input follow-up audit
@@ -85,4 +85,4 @@ exact trajectory text in the mixed student inputs.
 Completed: 4,213 typed reasoning blocks in 1,269 STRIDE examples, plus 11,696
 think calls in 1,230 STRIDE examples; the union is 1,340/1,350 STRIDE rows and
 1,340/8,688 monitoring rows. All teacher-cache and student-input joins pass.
-See [the finding](../../../docs/findings/training_input_reasoning.md).
+See [the finding](../../../docs/findings/evaluation/training_input_reasoning.md).

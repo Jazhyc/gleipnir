@@ -38,7 +38,7 @@ subsets live in `data/<campaign_id>/strict_filter/`; preparation recounts tokens
 and updates and records removal provenance. Resume accepts the original config
 and follows its checksum-bound resolved config. Set `teacher_filter: none` for
 an unfiltered control. Historical prepared campaigns retain their contracts.
-See the [default filtering decision](../../../docs/decisions/strict_teacher_filtering.md).
+See the [default filtering decision](../../../docs/decisions/teachers/strict_teacher_filtering.md).
 
 To start training before waiting for later stages, use `run --through train`.
 Continue with `run --resume`. Completed stages are skipped only after checking
@@ -78,4 +78,4 @@ passed 58 focused checks; CPU preparation of the real frozen population bound
 are in `results/monitoring-augmented-fp4-validation03/`; GPU stage launches were
 mocked for the initial runner. Its shared completion validator also passed the
 real completed 272-update metadata. The authorized augmented diagnostic uses
-the shared optimized evaluator; see its [finding](../../../docs/findings/b200_augmented_training.md).
+the shared optimized evaluator; see its [finding](../../../docs/findings/injection/b200_augmented_training.md).

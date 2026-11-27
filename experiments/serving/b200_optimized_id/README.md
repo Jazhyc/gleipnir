@@ -69,7 +69,7 @@ checkpoint-write time and request latency percentiles; these identify barrier
 tails but do not isolate their causal throughput cost.
 
 The completed one-pass result and its quality/throughput qualifications are in
-[the ID drift finding](../../../docs/findings/b200_optimized_id.md).
+[the ID drift finding](../../../docs/findings/serving/b200_optimized_id.md).
 
 ## Continuous-admission comparison
 
@@ -114,4 +114,4 @@ PYTHONPATH=src:. python -m experiments.serving.b200_optimized_id.analyze \
 ```
 
 The continuous follow-up is recorded alongside the original grouped result in
-[the finding](../../../docs/findings/b200_optimized_id.md#continuous-admission-follow-up).
+[the finding](../../../docs/findings/serving/b200_optimized_id.md#continuous-admission-follow-up).

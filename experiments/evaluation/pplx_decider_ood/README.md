@@ -11,7 +11,7 @@ $0.01/M input against $0.042/M; no output charge, no caching).
 Perplexity's `pplx_decider` package (Transformers backbone with non-causal
 full attention and a 255-way readout head; not vLLM). It is installed in an
 isolated runtime pinned to the release requirements. Each request uses the
-frozen [Jev OOD](../../../docs/findings/tool_trajectory_jev_ood_benchmark.md)
+frozen [Jev OOD](../../../docs/findings/evaluation/tool_trajectory_jev_ood_benchmark.md)
 contract: the exact raw trajectory as `state` and the single frozen Noul
 question (`question.json`, SHA-256 `9b423177…`, byte-identical to
 `jev_noul_v1`). There is one question per request, as the Flash card recommends.
@@ -179,4 +179,4 @@ CUA-SHADE), fast and reference agree: margin Pearson 0.9983, max |Δ noul|
 - The 4B-to-27B gap within the family is large: 0.535 to 0.896 at twice the
   price.
 - Frontier: it dominates Gleipnir 4B ($0.2598, 0.7823) and Jev 1.13; see the
-  [registry](../../../docs/research/tool_trajectory_ood_frontier.md).
+  [registry](../../../docs/findings/evaluation/tool_trajectory_ood_frontier.md).

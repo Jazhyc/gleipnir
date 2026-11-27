@@ -85,4 +85,4 @@ change requires restarting from the original initialization because the first
 attempt has no intermediate disk checkpoint. The replacement restarts from the
 frozen controls on the same B200, preserving that attempt under the
 `b200_fp4_full_training_slow_attempt01` results/log paths and reusing disk caches.
-See `docs/decisions/b200_fp4_full_training_replication.md`.
+See `docs/decisions/systems/b200_fp4_full_training_replication.md`.

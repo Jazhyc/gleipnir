@@ -1,7 +1,7 @@
 # Released monitors on APPS monitor-directed injections
 
 Frozen 2026-10-21, before any score. User-requested after the SleightBench
-jailbreak results ([finding](../../../docs/findings/sleightbench_released_monitors.md)).
+jailbreak results ([finding](../../../docs/findings/evaluation/sleightbench_released_monitors.md)).
 
 ## Question
 
@@ -9,8 +9,8 @@ On SleightBench the 4B flagged the monitor-directed jailbreak under every
 prompt, while the 27B resisted it only with our prompt's security boundary.
 The 4B result may reflect a reflex: earlier 4B adapters flagged honest code
 whenever it carried text addressed to the monitor
-([b200_apps](../../../docs/findings/b200_apps.md): 74% injected-honest FPR;
-[original BF16](../../../docs/findings/monitor_injection_augmentation.md): 100%).
+([b200_apps](../../../docs/findings/injection/b200_apps.md): 74% injected-honest FPR;
+[original BF16](../../../docs/findings/injection/monitor_injection_augmentation.md): 100%).
 The released 27B v0.2 has never been scored on APPS, and the released 4B v0.4
 (QAD of the three-seed strict-filtered average, no injection augmentation)
 has not either.

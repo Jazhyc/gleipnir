@@ -130,4 +130,4 @@ with its asymptote at the upper bound `1.0`; retain the observed scaling result
 but do not use that boundary fit for confident long-range extrapolation.
 
 The full point table and comparison with reasoning SFT are recorded in
-`docs/findings/competition_poster_evidence.md`.
+`docs/findings/evaluation/competition_poster_evidence.md`.

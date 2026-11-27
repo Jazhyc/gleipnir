@@ -1,6 +1,6 @@
 # Monitor-aware cheating on ImpossibleBench
 
-Frozen 25 October 2026, before any run (only offline tests and a dataset dry build had run). Run-queue item 1 in [`docs/research/adversarial_run_queue.md`](../../../docs/research/adversarial_run_queue.md).
+Frozen 25 October 2026, before any run (only offline tests and a dataset dry build had run). Run-queue item 1 in [`docs/plans/adversarial_run_queue.md`](../../../docs/plans/adversarial_run_queue.md).
 
 ## Question
 

@@ -6,7 +6,7 @@ logit prompt (``sb02`` for Gleipnir, ``sb04`` immediate for the base models,
 the decision models (``sb12``, ``sb15``, ``sb16``).
 
 Costs are USD per 1,000 SleightBench evaluations, at the prices of the OOD
-frontier (``docs/research/tool_trajectory_ood_frontier.md``):
+frontier (``docs/findings/evaluation/tool_trajectory_ood_frontier.md``):
 
 - API monitors: mean billed input and output tokens at the list price,
   without cache discounts.

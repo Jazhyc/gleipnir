@@ -25,7 +25,7 @@ join. Logs, including rejected preparation attempts, remain under
 `results/ood_visible_prose/`.
 
 Original-source research and concrete limitations are in the
-[findings](../../../docs/findings/ood_prose_restoration.md). The recovery code requires
+[findings](../../../docs/findings/evaluation/ood_prose_restoration.md). The recovery code requires
 checksum-bound typed source snapshots, exact roles/content/tool-call identity,
 and well-formed hidden tags. CUA public exports must match all non-prose evidence.
 It rejects semantic guessing, arbitrary plain-string overrides, malformed tags,

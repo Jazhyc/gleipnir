@@ -1,6 +1,6 @@
 # Async scheduling for the pooling scorer
 
-The saturated-batch profile ([finding](../../../docs/findings/b200_kernel_profile.md#saturated-batches-on-the-adopted-stack-saturation01-2026-10-15))
+The saturated-batch profile ([finding](../../../docs/findings/serving/b200_kernel_profile.md#saturated-batches-on-the-adopted-stack-saturation01-2026-10-15))
 shows 3–7% GPU idle at the 2K c32 and full320 c128 plateaus. Most of it is
 step-start input preparation (about 5 ms per step) plus about 1 ms between
 steps. The engine runs `--no-async-scheduling`, so neither overlaps the

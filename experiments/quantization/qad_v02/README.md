@@ -3,20 +3,20 @@
 Gleipnir 4B v0.2 loses 5.3 Mean-OOD pAUROC@20 points on the optimized serving
 stack (0.8108 BF16 against 0.7579;
 [optimized gap](../../serving/optimized_gap/README.md)). The 27B loses nothing and
-needs no QAD ([decision](../../../docs/decisions.md)).
+needs no QAD ([decision](../../../docs/decisions/evaluation/plot_gleipnir_at_optimized_serving_performance_no_qad_for.md)).
 
 - **Hypothesis.** Same-model quantization-aware distillation from v0.2's own
   BF16 scores recovers a substantial part of that optimized-serving loss, on
   ID and OOD.
 - **What is new.** This is the first QAD from a BF16/SDPA-trained model. The
-  original recovery ([finding](../../../docs/findings/quantization_recovery.md))
+  original recovery ([finding](../../../docs/findings/quantization/quantization_recovery.md))
   started from the FP4/FA4-trained baseline. It recovered 71% of the ID gap,
-  but not the OOD gap ([QAD OOD](../../../docs/findings/qad_ood.md)).
+  but not the OOD gap ([QAD OOD](../../../docs/findings/quantization/qad_ood.md)).
 - **Recipe.** It is unchanged from the original QAD: the 7,836 strict-filtered
   rows (the same training file and prompt bytes as v0.2), KL at T=1, AdamW
   1e-5, no weight decay, 3% warmup with linear decay, 245 updates, logical
   batch 32, 16K packing, 29,696 context. It uses the
-  [selected lean QAT arithmetic](../../../docs/decisions/qat_reference_training.md):
+  [selected lean QAT arithmetic](../../../docs/decisions/quantization/qat_reference_training.md):
   native NVFP4 MLP/GDN forward, decoded FP8 projection reference, serving
   MXFP8 attention forward, quantized-QKV FA4 surrogate backward, BF16
   FlashQLA and FP32 masters.

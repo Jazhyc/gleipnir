@@ -4,8 +4,8 @@ Goal: speed up BF16 monitor serving of the trained Qwen3.8-27B
 (`qwen38-27b-s0-01`, merged BF16) by porting the serving changes that do not
 change precision. User scope, 2026-10-18: BF16-preserving changes only; the
 FP8 attention / FP4 MLP and GDN projection recipe stays reserved for a future
-QAD-adapted 27B ([serving decision](../../../docs/decisions/b200_monitor_score_reference.md),
-[transfer note](../../../docs/research/qwen38_27b_serving_transfer.md)).
+QAD-adapted 27B ([serving decision](../../../docs/decisions/serving/b200_monitor_score_reference.md),
+[transfer note](../../../docs/plans/qwen38_27b_serving_transfer.md)).
 
 **Candidates**, each validated on the 4B as bitwise or exact-arithmetic:
 1. last-query final-layer attention (layer 63 attends only from each

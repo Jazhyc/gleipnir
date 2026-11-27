@@ -33,4 +33,4 @@ transcript, saving counts and message-indexed evidence under
 `results/shade_prose_audit/`. Tag and side-task-string counts are diagnostics,
 not public/private classifiers. No prose is restored and no scoring is run.
 Original-author visibility code and manually reviewed examples are described in
-[the findings](../../../docs/findings/shade_missing_prose.md).
+[the findings](../../../docs/findings/evaluation/shade_missing_prose.md).

@@ -2,7 +2,7 @@
 
 Status: completed 2026-08-31. The definitive 6,395-row result and run audit are
 in
-[`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
 The 2,048-token v1 and strict-boundary 4,096-token v2 preflights were
 invalidated before analysis after the same degenerate rationale exhausted both
 length caps.

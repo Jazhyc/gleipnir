@@ -10,7 +10,7 @@ vLLM rejects `loop_num_passes` overrides on this checkpoint). The only
 checkpoint is mixed NVFP4/MXFP8 (about 20 GB); there is no BF16 release.
 
 **Outcome:** the user selected Inkling 2 Mini as the next base candidate
-([decision](../../../docs/decisions/inkling2_mini_next_base.md)).
+([decision](../../../docs/decisions/evaluation/inkling2_mini_next_base.md)).
 
 This experiment scores the unadapted checkpoint under the contract that chose
 Qwen3.8-27B ([Qwen 27B generations](../qwen27b_generations_ood/README.md)) and
@@ -289,4 +289,4 @@ Artifacts: `results/inkling_ood/` (both arms, `comparison.json`, the audits,
 `diagnostics/`, `agent_bench/`, the failed batched canary) and
 `logs/runpod/inkling_ood/` (34 files verified against the Pod by SHA-256,
 `collect.sha256`). Pod lifecycle:
-[infrastructure](../../../docs/infrastructure.md#runpod).
+[infrastructure](../../../docs/infrastructure/runpod.md#runpod).

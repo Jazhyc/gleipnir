@@ -81,7 +81,7 @@ AUROC 0.962873 versus 0.954951, and Brier 0.071914 versus 0.081820. Both ID
 sources improve. Hard-only regresses macro ranking/calibration, driven by Gloom.
 At ID completion this was a one-seed screen with no OOD evaluation or promotion.
 See
-[the completed finding](../../../docs/findings/monitoring_hard_labels.md) and
+[the completed finding](../../../docs/findings/training/monitoring_hard_labels.md) and
 `results/monitoring_hard_labels/summary.json` for the complete comparison.
 
 OOD follow-up, explicitly requested 2026-10-03: freeze the ID-selected final

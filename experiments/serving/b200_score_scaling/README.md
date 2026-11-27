@@ -40,7 +40,7 @@ No source or dependency checks are waived. Shared compilation identity remains
 receipts live under `results/b200_score_scaling/<name>/`.
 
 The completed sweep plateaus near client concurrency 16; see
-[the finding](../../../docs/findings/b200_score_scaling.md) for medians, repeat ranges
+[the finding](../../../docs/findings/serving/b200_score_scaling.md) for medians, repeat ranges
 and quality variation. Export its table and standalone figures with
 `python -m experiments.serving.b200_score_scaling.summarize results/b200_score_scaling/scale01`.
 

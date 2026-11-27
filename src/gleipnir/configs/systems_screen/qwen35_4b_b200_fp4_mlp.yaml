@@ -1,5 +1,5 @@
 # User-selected native NVFP4 MLP/BF16 GDN/FA4 recipe, 2026-10-05.
-# See docs/decisions/b200_native_fp4_training_recipe.md.
+# See docs/decisions/systems/b200_native_fp4_training_recipe.md.
 # Inherit the common kernel/optimizer contract; keep historical B200 profiles frozen.
 defaults:
   - qwen35_4b_h100_fast

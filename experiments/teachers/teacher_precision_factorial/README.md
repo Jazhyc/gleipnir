@@ -26,7 +26,7 @@ copy either way.
 **Scoring and selection.** BF16 serving on ID (through the runner) and on the
 frozen OOD suite. Comparisons are descriptive against the three-seed SDPA
 spread. Under the
-[precision-selection decision](../../../docs/decisions/precision_selection_on_ood.md),
+[precision-selection decision](../../../docs/decisions/evaluation/precision_selection_on_ood.md),
 OOD may inform precision choices. With one seed per cell, attribution relies
 on the low-noise OOD sources (CUA-SHADE, Rogue eval) and OOD macro, relative
 to the SDPA seed SD.

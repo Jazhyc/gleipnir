@@ -74,4 +74,4 @@ continuous binary-logit baseline. Rounding those binary probabilities to the
 nearest tenth retained `0.6835` pAUROC@20, so numerical binning alone explains
 only a small fraction of the ordinal interface's loss. The complete per-source,
 cost, score-distribution, and run audit is in
-[`../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_ood_benchmark.md).

@@ -4,14 +4,14 @@
 B200 `rzarg8j8x0so3i` in NC2 and completed at **01:51:07 CEST**. Implementation:
 `d6b1637`; 39 focused tests and lint passed. No new capacity or termination
 occurred during the run. Driver/scorer processes retired; the Pod was subsequently
-[terminated after preservation](../../../docs/findings/teacher_sweep_shutdown.md).
+[terminated after preservation](../../../docs/findings/operations/teacher_sweep_shutdown.md).
 
 The final source-macro normalized pAUROC@20 is **0.872081 ID** and **0.795452
 OOD**, versus **0.896106 / 0.787535** for the matched strict soft-BCE checkpoint
 with FP32 head computation. OOD gains 0.7918 percentage points, while ID loses
 2.4025 points. No default promotion occurred. The complete source/calibration/
 threshold results and qualifications are in the
-[findings](../../../docs/findings/partial_auroc.md).
+[findings](../../../docs/findings/training/partial_auroc.md).
 
 All 245 updates and all 7,836 training rows completed. The fresh gradient replay
 canary passed with maximum parameter error `5.551115123125783e-17`; every native

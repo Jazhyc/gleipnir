@@ -12,7 +12,7 @@ The 9B pooled KL advantage is **4.2%**, smaller than the 13.5% difference in
 online epoch summaries. Most of its advantage is on Bash Bench; Gloom is
 slightly worse. This does not establish a hard capacity ceiling. Complete
 source/label results, timing, numerical gates and interpretation are in the
-[findings](../../../docs/findings/monitor_training_loss_fit.md).
+[findings](../../../docs/findings/training/monitor_training_loss_fit.md).
 
 Both adapters passed master/merge, master/serving and merged/serving gates,
 with actual BF16 backbone/native attention and FP32 two-row head dispatch.
@@ -21,7 +21,7 @@ original teacher/label identities, reconstructed rendered prompts, paired token
 counts, input/prediction hashes and full CE/entropy/KL/MAE recomputation.
 Original master/export weights are preserved. The owned scorers retired, with
 GPU utilization 0% and allocation 0 MiB at the subsequent live check. The Pod
-was subsequently [terminated after preservation](../../../docs/findings/teacher_sweep_shutdown.md).
+was subsequently [terminated after preservation](../../../docs/findings/operations/teacher_sweep_shutdown.md).
 Shutdown logged a 4B EngineDeadError and semaphore cleanup warnings after
 complete scoring; no predictions failed or were excluded.
 

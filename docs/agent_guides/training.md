@@ -8,7 +8,7 @@ Also read [compute.md](compute.md) before launching or operating a run.
 
 Future binary tool-trajectory training defaults to strict teacher/source-label
 agreement filtering. Use the shared campaign preparation path; the
-[filtering decision](../decisions/strict_teacher_filtering.md) defines the rule,
+[filtering decision](../decisions/teachers/strict_teacher_filtering.md) defines the rule,
 provenance, historical-contract handling and explicit control opt-out.
 
 ## Reuse validated training recipes
@@ -39,7 +39,7 @@ sessions can inspect and reuse it. Restart when changes require it or after a
 diagnosed failure; preserve artifacts and disk caches. This preference does not
 authorize launching new billable capacity or terminating existing capacity.
 The default B200 training recipe is BF16 with SDPA attention
-([decision](../decisions/b200_bf16_sdpa_training_default.md), 2026-10-16). It
+([decision](../decisions/systems/b200_bf16_sdpa_training_default.md), 2026-10-16). It
 supersedes the 2026-10-05 native FP4/FA4 default. The FP4/FA4 recipe remains
 the systems optimization baseline.
 
@@ -88,12 +88,12 @@ For single-B200 Qwen3.5-4B training, use the user-selected
 - compiled final-layer trim (layer 31 computed only at decision positions),
   guarded by its own pre-update canary.
 
-See the [BF16/SDPA decision](../decisions/b200_bf16_sdpa_training_default.md).
+See the [BF16/SDPA decision](../decisions/systems/b200_bf16_sdpa_training_default.md).
 
 The other recipes stay available by explicit profile name:
 - native FP4/FA4: `qwen35_4b_b200_fp4_mlp`, with its warmed03 receipt and
   `selected_finite` acceptance; see
-  [its decision](../decisions/b200_native_fp4_training_recipe.md);
+  [its decision](../decisions/systems/b200_native_fp4_training_recipe.md);
 - BF16/FA4: `qwen35_4b_b200_bf16_fa4`, with its accepted 10% ceiling;
 - composite FP4/SDPA: `qwen35_4b_b200_fp4_mlp_sdpa`.
 
@@ -106,5 +106,5 @@ Use `systems_screen@_global_: qwen38_27b_b200_default`, which aliases
 `qwen38_27b_b200_packed_sdpa_trim_attn12`: the 4B BF16/SDPA/trim recipe plus
 checkpointing of all GDN layers and attention layers 3, 19, 35 and 51, with
 the other 12 attention layers stored. See the
-[27B decision](../decisions/qwen38_27b_b200_training_default.md), including
+[27B decision](../decisions/systems/qwen38_27b_b200_training_default.md), including
 what the first 27B campaign must still validate.

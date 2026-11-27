@@ -9,7 +9,7 @@ No backend upgrade or MLP optimization is part of this screen.
 
 Outcome: BF16 state is numerically feasible here, but the completed serving
 screen found no useful throughput gain. See the
-[finding](../../../docs/findings/b200_gdn_state.md) for measurements and limits.
+[finding](../../../docs/findings/serving/b200_gdn_state.md) for measurements and limits.
 
 The pinned FlashInfer 0.6.12 SM100 adapter accepts BF16 state beneath its public
 FP32 documentation. vLLM's ordinary wrapper upcasts state to FP32; the candidate

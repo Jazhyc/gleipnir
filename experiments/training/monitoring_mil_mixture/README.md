@@ -12,7 +12,7 @@ isolate a causal effect of deception data. No OOD evaluation of this mixed
 adapter was run. Full diagnostics are in
 `results/monitoring_mil_mixture_ddp/summary.json`; the final FP32 master and
 predictions are retained in the
-[campaign inventory](../../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+[campaign inventory](../../../docs/findings/operations/gleipnir_improvement_shutdown_inventory.md).
 
 Hypothesis: full-boundary deception distillation adds complementary supervision
 to the selected 20%-monitoring, three-epoch MIL recipe. User requested one fresh
@@ -103,7 +103,7 @@ cache entries before isolating rank-local writes. The accepted eight-step
 comparison is 16.5840 versus 10.4542 seconds/update (steps3–8): 1.5863x throughput.
 The fresh two-GPU full run lives under `results/monitoring_mil_mixture_ddp/` and
 uses eager shells, unchanged fast kernels, accumulation16/rank and globalbatch32.
-See [the systems finding](../../../docs/findings/monitoring_mil_ddp.md) for failed
+See [the systems finding](../../../docs/findings/systems/monitoring_mil_ddp.md) for failed
 attempts, precision tests, cache effects, sampler padding and interpretation.
 
 ```bash

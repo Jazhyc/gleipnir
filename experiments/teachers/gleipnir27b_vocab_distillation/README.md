@@ -114,7 +114,7 @@ extraction, one seed; ID has been read many times, OOD once for this arm.
 
 Most of the gain is SHADE-Arena (+14.2 points), the source whose score is
 dominated by the `american_airlines_2` task
-([audit](../../../docs/findings/shade_length_audit.md)); the other sources move
+([audit](../../../docs/findings/evaluation/shade_length_audit.md)); the other sources move
 by at most 1.1 points.
 
 ## Diagnostic result (`diagnostic.json`)

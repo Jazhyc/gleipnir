@@ -7,11 +7,11 @@ systems work only: no quality selection, no ID/OOD evaluation.
 
 **Status (2026-10-17): complete.** The user selected trim + 12 stored
 attention layers (24.99 s, −10.1%) as the 27B default and stopped further
-optimization ([decision](../../../docs/decisions/qwen38_27b_b200_training_default.md)).
+optimization ([decision](../../../docs/decisions/systems/qwen38_27b_b200_training_default.md)).
 
 **Model.** `Qwen/Qwen3.8-27B` @ `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`,
 64 layers (48 GDN, 16 full attention, final layer full attention), hidden
-5,120, untied embeddings ([architecture](../../../docs/research/qwen38_27b_serving_transfer.md)).
+5,120, untied embeddings ([architecture](../../../docs/plans/qwen38_27b_serving_transfer.md)).
 It loads text-only through the causal-LM loader, like the 4B.
 
 **Benchmark (unchanged from the 4B).** `prepare.py` copies the frozen 4B jobs
@@ -125,7 +125,7 @@ memory-efficient attention requires equal query/KV heads. FA2 matches an FP32
 reference within 0.2–0.3% (output and q/k/v gradients); forward+backward
 takes 0.112 s per layer at 28,733 tokens and 0.037 s at 16,384. FA4 is the
 only faster kernel in the repo, but it was rejected for quality on the 4B
-([decision](../../../docs/decisions/b200_bf16_sdpa_training_default.md)), so it
+([decision](../../../docs/decisions/systems/b200_bf16_sdpa_training_default.md)), so it
 is not tried without the user's say-so.
 
 ## Recompute arms

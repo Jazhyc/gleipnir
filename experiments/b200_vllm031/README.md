@@ -43,7 +43,7 @@ all archived selected repeats: input tokens/s, requests/s, latency bins,
 score/margin differences, pooled/per-source/source-macro AUROC, repeat variation,
 ties, calibration and threshold flips. This mixed systems set includes rows seen
 by the adapter during training and does not establish held-out quality; the
-[finding](../../docs/findings/b200_vllm031.md#development-cohort-quality) records
+[finding](../../docs/findings/serving/b200_vllm031.md#development-cohort-quality) records
 its composition and exact training overlap. Report host/runtime differences
 explicitly.
 
@@ -59,7 +59,7 @@ normalization/non-CP/eager screens remain separate failed canary diagnostics.
 Retire failed candidate processes;
 retain a passing candidate warm for authorized follow-up work. Keep run history
 and numerical evidence under `results/b200_vllm031/` and the linked finding.
-See [the measured migration finding](../../docs/findings/b200_vllm031.md).
+See [the measured migration finding](../../docs/findings/serving/b200_vllm031.md).
 
 The root lock retains Transformers 5.14.1 (vLLM 0.31 requires <5.18) and TRL
 1.9.0 without its unused vLLM extra, whose <=0.25.1 cap blocks the migration.

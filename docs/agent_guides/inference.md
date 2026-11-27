@@ -17,7 +17,7 @@ Standing user preference, updated 2026-10-13: use BF16 vLLM for ordinary adapter
 iteration and training-recipe comparisons. Use optimized precision serving only
 for QAD-adapted deployment candidates. Monitor scoring
 uses the cached causal two-logit path in the
-[serving decision](../decisions/b200_monitor_score_reference.md), including its
+[serving decision](../decisions/serving/b200_monitor_score_reference.md), including its
 validated context handling and pooling boundary correction. Select this path
 explicitly in new experiment launch configurations; the decision defines the
 precision selection, recipe and supported hardware/model envelope. Reuse a
@@ -134,15 +134,15 @@ and do not establish held-out quality parity or select production precision.
 
 ## B200 comparison controls
 
-Read the [serving decision](../decisions/b200_monitor_score_reference.md) and
+Read the [serving decision](../decisions/serving/b200_monitor_score_reference.md) and
 `experiments/b200_inference_benchmark/baseline.json` before preparing comparisons.
 Its checksum-bound controls supersede the October 6 GDN-only reference below;
 the future-experiment default does not rewrite these frozen measurements.
 Compare timing and quality on matched concurrency/cohorts using all available
-repeats. The [concurrency](../findings/b200_score_scaling.md),
-[fixed 2K](../findings/b200_context_scaling.md),
-[long-context](../findings/b200_long_context.md) and
-[1M-context](../findings/b200_context_million.md) records define their additional
+repeats. The [concurrency](../findings/serving/b200_score_scaling.md),
+[fixed 2K](../findings/serving/b200_context_scaling.md),
+[long-context](../findings/serving/b200_long_context.md) and
+[1M-context](../findings/serving/b200_context_million.md) records define their additional
 measurement contracts. Preserve failed strict checks separately from accepted
 finite quality. Acceptance remains adapter/recipe specific and does not waive
 finite-output checks, new-adapter parity or held-out evaluation requirements.

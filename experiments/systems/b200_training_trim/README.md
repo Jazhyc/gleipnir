@@ -4,7 +4,7 @@ The monitoring loss reads one hidden state per packed example: the last token
 after layer 31, which is a full-attention layer. Training currently runs that
 layer on every token. For non-decision tokens it only needs to produce keys and
 values. The serving equivalent left scores bitwise unchanged
-([finding](../../../docs/findings/b200_last_layer_trim.md)).
+([finding](../../../docs/findings/serving/b200_last_layer_trim.md)).
 
 `gleipnir.training.last_layer_trim` changes what layer 31 computes on the
 packed path:

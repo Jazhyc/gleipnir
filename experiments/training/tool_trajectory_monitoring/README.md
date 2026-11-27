@@ -84,7 +84,7 @@ Gloom-Exfiltration, using a frozen aggregate and tie-breaker. Its primary metric
 is per-source and Mean-OOD AUROC. The six OOD sources must not influence prompt,
 checkpoint, threshold, subset, or stopping choices. The campaign stop and
 invalidation conditions are recorded in
-[`../../docs/research/tool_transcript_monitoring.md`](../../../docs/research/tool_transcript_monitoring.md).
+[`../../docs/plans/tool_transcript_monitoring.md`](../../../docs/plans/tool_transcript_monitoring.md).
 
 ## ID input reasoning correction (2026-09-07)
 
@@ -93,13 +93,13 @@ prose, plus explicit `think` calls. Reasoning of either kind occurs in 937/946
 STRIDE rows (937/3,012 total ID rows). Prior ID scores therefore describe the
 original full transcripts, not a strict no-reasoning action-only interface.
 The separate cleanup/token audit is recorded in
-[`../../docs/findings/id_assistant_prose_and_reasoning.md`](../../../docs/findings/id_assistant_prose_and_reasoning.md).
+[`../../docs/findings/evaluation/id_assistant_prose_and_reasoning.md`](../../../docs/findings/evaluation/id_assistant_prose_and_reasoning.md).
 The frozen files and existing evaluation configurations are unchanged.
 
 The training-input audit also verifies reasoning in 1,340/1,350 STRIDE training
 rows (1,340/8,688 monitoring rows). All teacher-cache prompt hashes match and
 the same trajectories are present in student training. See
-[`../../docs/findings/training_input_reasoning.md`](../../../docs/findings/training_input_reasoning.md).
+[`../../docs/findings/evaluation/training_input_reasoning.md`](../../../docs/findings/evaluation/training_input_reasoning.md).
 
 ## Prompt contract
 
@@ -241,7 +241,7 @@ repeated recovery prompts do not demonstrate shared-prefix reuse. Treat Makora
 cross-row input caching as unsupported until a new probe shows otherwise, and
 do not scale teacher annotation under the previous cache assumption. Full
 results and interpretation are in
-[`../../docs/findings/tool_trajectory_teacher_canary.md`](../../../docs/findings/tool_trajectory_teacher_canary.md).
+[`../../docs/findings/teachers/tool_trajectory_teacher_canary.md`](../../../docs/findings/teachers/tool_trajectory_teacher_canary.md).
 
 ## Qwen3.5-35B-A3B hosted OOD benchmark
 
@@ -300,12 +300,12 @@ python -m experiments.training.tool_trajectory_monitoring.benchmark_qwen_openrou
 
 A full input audit found no confirmed private-thinking leakage in the 6,395-row
 OOD suite. It verified source/teacher/student equality and actual Kimi cache
-prompt identities; see [the evidence and limits](../../../docs/findings/ood_input_reasoning.md).
+prompt identities; see [the evidence and limits](../../../docs/findings/evaluation/ood_input_reasoning.md).
 
 The frozen Kimi K3 evaluation covers all 6,395 strict OOD rows. Its full binary
 teacher prompt and immediate literal-token logits reach `0.9084` Mean-OOD
 pAUROC@20 at an uncached list-price cost of `$25.1177/1K`. The run audit is in
-[`../../docs/findings/tool_trajectory_kimi_ood_benchmark.md`](../../../docs/findings/tool_trajectory_kimi_ood_benchmark.md).
+[`../../docs/findings/teachers/tool_trajectory_kimi_ood_benchmark.md`](../../../docs/findings/teachers/tool_trajectory_kimi_ood_benchmark.md).
 
 The completed Kimi K2.6 Inceptron follow-up reaches `0.919404` Mean-OOD
 pAUROC@20 and `0.975107` Mean-OOD AUROC on all 6,395 rows. It reuses the same
@@ -320,21 +320,21 @@ cost, and serving audit are in
 The matched unadapted Qwen3.5-9B full-teacher-prompt baseline reaches `0.6976`
 Mean-OOD pAUROC@20 at `$0.9468/1K` under the dated OpenRouter list-price
 projection. It is not a frontier point. The run audit is in
-[`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ood_benchmark.md).
 
 The matched immediate 0--10 severity interface reaches only `0.4858`
 Mean-OOD pAUROC@20 and `0.7592` Mean-OOD AUROC. A pure resolution control that
 rounds the saved binary probabilities to the nearest tenth retains `0.6835`
 pAUROC@20, showing that simple binning accounts for little of the generated
 interface's loss. Its run audit is in
-[`../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ordinal_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_ood_benchmark.md).
 
 Adding one greedy visible analysis while keeping Qwen native thinking disabled
 raises the ordinal interface to `0.6656` Mean-OOD pAUROC@20 and `0.8610`
 Mean-OOD AUROC. It recovers 84.9% of the immediate ordinal pAUROC@20 deficit,
 but remains `0.0320` below binary logits while costing 8.7% more at
 `$1.0293/1K`. The result, boundary-recovery audit, and scope caveats are in
-[`../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ordinal_reasoning_ood_benchmark.md).
 
 Keeping the same visible non-thinking analysis but extracting normalized
 literal `0`/`1` logits reaches `0.6923` Mean-OOD pAUROC@20 and `0.8607`
@@ -343,7 +343,7 @@ respectively, while costing 6.2% more at `$1.0054/1K`. AgentDojo improves
 sharply, but all five other sources decline, so the matched binary-logit
 ablation does not support a source-robust test-time-reasoning gain. The full
 audit is in
-[`../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md).
 
 The unadapted GPT-OSS-120B full-teacher-prompt baseline reaches `0.4789`
 Mean-OOD pAUROC@20 at `$0.3270/1K` under the paper-matched OpenRouter hosted
@@ -351,11 +351,11 @@ proxy. It was technically the lowest-cost frontier endpoint but is much weaker
 than the next point in the original baseline-only registry. After adding the
 mixed 4B student it is no longer on the canonical frontier; the
 price-sensitivity and run audit are in
-[`../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md`](../../../docs/findings/tool_trajectory_gpt_oss_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_gpt_oss_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_gpt_oss_ood_benchmark.md).
 
 The paper's complete cost--performance reference table and every future
 completed Gleipnir OOD evaluation belong in
-[`../../docs/research/tool_trajectory_ood_frontier.md`](../../../docs/research/tool_trajectory_ood_frontier.md).
+[`../../docs/findings/evaluation/tool_trajectory_ood_frontier.md`](../../../docs/findings/evaluation/tool_trajectory_ood_frontier.md).
 Follow that registry's frozen metric, cost, coverage, and provenance gates; do
 not add partial canaries or silently replace rows after a price or interface
 change.
@@ -397,7 +397,7 @@ python -m experiments.training.tool_trajectory_monitoring.run_distilled_ood_lamb
 ```
 
 The dedicated scaling analysis belongs in
-[`../../docs/research/tool_trajectory_distillation_ood_scaling.md`](../../../docs/research/tool_trajectory_distillation_ood_scaling.md).
+[`../../docs/findings/training/tool_trajectory_distillation_ood_scaling.md`](../../../docs/findings/training/tool_trajectory_distillation_ood_scaling.md).
 Only the completed full-mixed 9B and 4B comparisons are additionally registered
 in the general cost--performance frontier.
 
@@ -406,7 +406,7 @@ in the general cost--performance frontier.
 Use `data/id_cot_only_evaluation/prompts.jsonl` for new validation and checkpoint
 selection campaigns. It removes identified CoT while retaining visible assistant
 prose. Use the input/manifest hashes and baseline in the
-[accepted decision](../../../docs/decisions/cot_removed_id_validation.md). Historical
+[accepted decision](../../../docs/decisions/evaluation/cot_removed_id_validation.md). Historical
 configs below describe their original frozen runs.
 
 ## Gleipnir 4B held-out in-distribution evaluation
@@ -444,7 +444,7 @@ pAUROC@20 from `0.604755` to `0.869194`, macro AUROC from `0.860769` to
 Treat this suite as the fixed development comparison set for hyperparameter
 selection and keep the strict OOD suite outside that loop. Full metrics,
 runtime, serving parity, and artifact hashes are in
-[`../../docs/findings/gleipnir4b_held_out_id_baseline.md`](../../../docs/findings/gleipnir4b_held_out_id_baseline.md).
+[`../../docs/findings/training/gleipnir4b_held_out_id_baseline.md`](../../../docs/findings/training/gleipnir4b_held_out_id_baseline.md).
 
 ## Gleipnir 9B ID data-mixture comparison
 
@@ -472,7 +472,7 @@ result, so the current evidence supports distribution-dependent transfer rather
 than a general 9B mixture null. The comparison remains confounded by 683 versus
 272 optimizer steps. Full metrics, paired diagnostics, runtime, parity, and
 artifact hashes are in
-[`../../docs/findings/gleipnir9b_id_data_mixture.md`](../../../docs/findings/gleipnir9b_id_data_mixture.md).
+[`../../docs/findings/training/gleipnir9b_id_data_mixture.md`](../../../docs/findings/training/gleipnir9b_id_data_mixture.md).
 
 ```bash
 GLEIPNIR_COMMIT=$(git rev-parse HEAD) \
@@ -510,7 +510,7 @@ The completed full-prompt run reaches `0.782758` Mean-OOD pAUROC@20 and
 the compact-prompt baseline. The richer instruction changes individual scores
 (Pearson `0.984396`, 217 threshold flips) but does not improve the
 source-balanced aggregate. It also adds 9.38% prompt tokens. See
-[`../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../../../docs/findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
+[`../../docs/findings/training/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../../../docs/findings/training/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
 
 ## Qwen3.5-27B compact-rubric OpenRouter ablation
 
@@ -556,7 +556,7 @@ microbatch 8 and BF16 LoRA, but the projected 2.8--3.3-hour run was only about
 metrics exist, and the attempt is excluded from the scaling curves and frontier.
 The frozen recipe and stop rationale are recorded in
 [`DISTILLATION_SCALING.md`](DISTILLATION_SCALING.md) and the corresponding
-[systems finding](../../../docs/findings/tool_trajectory_qwen08b_stopped_systems_preflight.md).
+[systems finding](../../../docs/findings/training/tool_trajectory_qwen08b_stopped_systems_preflight.md).
 
 ## Hard-label strength follow-up (2026-10-02)
 

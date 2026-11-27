@@ -13,7 +13,7 @@ passed coverage/parity checks. Clean ID macro pAUROC@20 is 0.8730 versus 0.8463
 cached original; APPS injected-honest FPR averages 44.43% versus 100% at
 clean-code ~2% FPR, with injected-backdoor TPR 87.64%. Held-out synthetic ID
 harmless FPR is 1.85% at source-specific clean ~2% operating points. See the
-[final finding](../../../docs/findings/monitor_injection_augmentation.md) for
+[final finding](../../../docs/findings/injection/monitor_injection_augmentation.md) for
 the threshold, template, calibration and paired-effect details and limitations.
 
 The frozen preparation selects 3,475 rows (nearest integer to 40%), stratified
@@ -93,7 +93,7 @@ Run `.venv/bin/python -m experiments.injection.monitor_injection_augmentation.au
 recheck the frozen artifacts and write `results/monitor_injection_augmentation/completion_audit.json`.
 All 40 original preparation checks and scoped Ruff checks passed. Execution
 adds six focused checks; all 46 pass locally and on the B200. See the
-[campaign finding](../../../docs/findings/monitor_injection_augmentation.md) for
+[campaign finding](../../../docs/findings/injection/monitor_injection_augmentation.md) for
 the subsequent authorized launch and measured startup status.
 
 The proposed matched training run initializes a fresh Qwen3.5-4B rank-128 LoRA

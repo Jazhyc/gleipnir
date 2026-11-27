@@ -1,5 +1,5 @@
 # User-selected future B200 recipe, 2026-10-01.
-# See docs/decisions/b200_adaptive_training_recipe.md.
+# See docs/decisions/systems/b200_adaptive_training_recipe.md.
 # Historical systems screens keep their frozen profiles and parity gates.
 defaults:
   - qwen35_4b_b200_fast

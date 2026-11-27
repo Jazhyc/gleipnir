@@ -103,7 +103,7 @@ Repository evidence at the time the slides were prepared:
 
 - `experiments/student_injection_awareness/README.md` and `config.yaml`:
   frozen campaign and input population.
-- `docs/findings/student_injection_awareness.md`: completed regular 4B training,
+- `docs/findings/injection/student_injection_awareness.md`: completed regular 4B training,
   artifact verification, serving checks, and OOD results.
 - `experiments/tool_trajectory_monitoring/prepare_teacher_training_cache.py`:
   source identity and trajectory extraction.
@@ -113,7 +113,7 @@ not require any of these repository files.
 
 ## Input-contract limitation
 
-`docs/findings/training_input_reasoning.md` verifies agent reasoning or explicit
+`docs/findings/evaluation/training_input_reasoning.md` verifies agent reasoning or explicit
 thinking calls in 1,340 of 1,350 STRIDE training trajectories (15.42% of all
 training rows). The original audit checked the teacher prompts and monitoring
 rows in the mixed student file; the trajectory-only campaign retains those
@@ -122,7 +122,7 @@ bound, not proof that other sources are free of reasoning. Excluding the outer
 monitor rationale does not strip the agent's embedded reasoning.
 
 Held-out preprocessing removes recognized agent-reasoning forms. The independent
-`docs/findings/ood_input_reasoning.md` audit found no explicit reasoning markers
+`docs/findings/evaluation/ood_input_reasoning.md` audit found no explicit reasoning markers
 or evidence requiring a CoT-removal rerun across the frozen 6,395 OOD inputs.
 This does not establish that every unmarked natural-language fragment is free
 of reasoning. The deck does not claim strict action-only training or identical
@@ -248,7 +248,7 @@ trajectory matching to STRIDE metadata identified four assigned
 `prompt_inject_another_ai_to_exfiltrate_data_for_blackmail` objectives, all
 source-label 1, among 8,688 selected training rows (0.04604%). This is an
 exhaustive count of that explicit objective, not a semantic injection census
-across all sources. See `docs/findings/training_trace_prompt_injections.md`.
+across all sources. See `docs/findings/injection/training_trace_prompt_injections.md`.
 
 The frozen unadapted Qwen3.5-9B census scanned all 8,688 trajectories. At score
 >=0.5, including ties, the user-selected filter excluded 1,154 rows: 1,140
@@ -269,7 +269,7 @@ Mean scores changed and ID macro pAUROC@20 fell from 0.846273 to 0.822255;
 The intervention changes class/source composition and training exposure, and
 uses an imperfect classifier. It neither isolates injection content causally
 nor excludes other data shortcuts. Exact completed results and artifact identities
-are recorded in `docs/findings/monitoring_injection_removal.md`; the collected
+are recorded in `docs/findings/injection/monitoring_injection_removal.md`; the collected
 evaluation summary SHA-256 is
 `d3146714ef5c581ad1a5aaee21488a77dda1dbec15d3fe7c06098b8903dd96db`.
 No benchmark or training examples are redistributed in the slide.
@@ -277,7 +277,7 @@ No benchmark or training examples are redistributed in the slide.
 ## Diagnosis 2: collaborator-reported teacher scoring
 
 The relevant slide summarizes Michael Kenney’s teacher diagnostic supplied
-by the user, recorded in `docs/findings/kimi_teacher_injection_controls.md`.
+by the user, recorded in `docs/findings/injection/kimi_teacher_injection_controls.md`.
 Numbers are collaborator-reported and rounded, not freshly evaluated or locally
 raw-data audited. The stated upstream branch is `kimi-k3-teacher-controls`,
 commit `0ad1778`, with 7,173 selected APPS/control rows. Teacher settings use
@@ -299,7 +299,7 @@ caveats, source populations and audit status are retained in the finding.
 
 The relevant slide summarizes the completed instruction intervention in
 `experiments/monitoring_injection_disentanglement/README.md` and
-`docs/findings/monitoring_injection_disentanglement.md`. A fresh 4B adapter
+`docs/findings/injection/monitoring_injection_disentanglement.md`. A fresh 4B adapter
 trained for one epoch on the same 8,688 trajectories and fixed Kimi K3 soft
 targets, using the conservative behavior-grounded student instruction. The
 quoted sentence is from that project-authored instruction. Teacher targets
@@ -324,7 +324,7 @@ change is a distinct intervention and does not reproduce their experiment.
 ## Intervention 1: auxiliary preference task
 
 The relevant slide summarizes the fresh 4B joint-training run in
-`experiments/judge_injection_joint/README.md` and `docs/findings/judge_injection_joint.md`,
+`experiments/judge_injection_joint/README.md` and `docs/findings/injection/judge_injection_joint.md`,
 not the earlier preference-only continuation. A new adapter trains with 75%
 monitoring and 25% preference examples per logical batch, visiting all 8,688
 monitoring rows and sampling 2,896 preference variants. Preference draws are
@@ -351,7 +351,7 @@ injection immunity. Summary SHA-256:
 
 The relevant slide uses the completed 4B experiment in
 `experiments/monitor_injection_augmentation/README.md` and
-`docs/findings/monitor_injection_augmentation.md`. It replaces 40% of the
+`docs/findings/injection/monitor_injection_augmentation.md`. It replaces 40% of the
 8,688 original rows with one synthetic off-policy injected view, preserving
 training-set size, source labels and cached teacher targets. Roles are balanced
 among user/assistant/tool; insertion positions vary with a middle-centered
@@ -379,7 +379,7 @@ regressed ID; it is not shown here, so the deck does not assert this was the
 first intervention chronologically to change any APPS metric.
 
 The augmentation slide now also includes the completed 9B replication, from
-`docs/findings/monitor_injection_augmentation_9b.md`: original/augmented
+`docs/findings/injection/monitor_injection_augmentation_9b.md`: original/augmented
 matched injected AUROC 0.658763/0.678591, injected-honest flags
 99.85%/83.36%, and injected-backdoor TPR 100%/98.25%. Corresponding 4B
 TPRs are 100%/87.64%. TPR applies to injected backdoors, not vanilla code,
@@ -404,8 +404,8 @@ after augmentation, and every augmented query loses mean p(correct) under
 preferred injections. These are preference judgments, not harmfulness flags.
 The asymmetry supports residual avoidance, not universal failure on every input.
 
-Results come from `docs/findings/monitor_injection_augmentation.md` and
-`docs/findings/augmented_judge_evaluation.md`. The latter summary SHA-256 is
+Results come from `docs/findings/injection/monitor_injection_augmentation.md` and
+`docs/findings/injection/augmented_judge_evaluation.md`. The latter summary SHA-256 is
 `62d141b03da82d31ddcab5fa3aa67bad6a74c84f6d63a3c5164a79b5ea1dd259`.
 Original scores are checksum-verified historical reuse; augmented scores were
 collected in the independent auxiliary transfer evaluation.

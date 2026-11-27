@@ -148,7 +148,7 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   For Section 5 (C4.1): Sinha et al. price open-weight models at hosted API
   proxy prices, while we price Gleipnir at self-hosted B200 break-even; state
   this difference there. Their tables sum to 6,402 OOD rows and our frozen
-  suite has 6,395 (`docs/research/tool_transcript_monitoring.md`).
+  suite has 6,395 (`docs/plans/tool_transcript_monitoring.md`).
 - **C2.6 (written).** Decision models. A decision model returns a probability
   for each permitted answer to a question about an input, in one forward pass
   and without generating text. The class became prominent with Jev (Almeida,
@@ -173,9 +173,9 @@ and their evaluation (C2.3–C2.5), 2.3 Related approaches (C2.6–C2.8).
   control monitors (search of 2026-11-09). Section 5 compares Gleipnir with
   decision models on the OOD suite.
   Evidence: arXiv:2610.17205 (Sections 4–5, Tables 2–5, read in full);
-  `docs/findings/decision_models_ood_benchmark.md`,
-  `docs/findings/pplx_decider_ood_benchmark.md`,
-  `docs/findings/tool_trajectory_jev_ood_benchmark.md`.
+  `docs/findings/evaluation/decision_models_ood_benchmark.md`,
+  `docs/findings/evaluation/pplx_decider_ood_benchmark.md`,
+  `docs/findings/evaluation/tool_trajectory_jev_ood_benchmark.md`.
 - **Revisions to C2.6–C2.7 (JF, 2026-11-09).** The text defines a decision
   model by its use of a pretrained language model with the permitted answers
   given in the request, not fixed in the architecture. It does not call Geuter
@@ -290,7 +290,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   unquantized BF16 base with an FP32 adapter (not QLoRA); AdamW, learning
   rate 5e-5, 3% warmup then linear decay, batch 32, one epoch of 245 updates.
   One B200: about one hour per 4B seed and 4.5 hours for the soft-target 27B
-  (`docs/findings/qwen38_27b_campaign.md`; the hard-label 27B took 4.1).
+  (`docs/findings/training/qwen38_27b_campaign.md`; the hard-label 27B took 4.1).
 - 4B: three seeds that differ in data order, averaged exactly into one
   rank-384 adapter; then QAD against its own BF16 scores under the optimized
   serving quantization.
@@ -319,10 +319,10 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   pAUROC@20, an ordinal 0–10 score 0.486, and an ordinal score after visible
   reasoning 0.666 at higher cost.
   Evidence: `docs/writeups/gleipnir_project_writeup.md` (interface ablation),
-  `docs/research/tool_trajectory_ood_frontier.md`.
+  `docs/findings/evaluation/tool_trajectory_ood_frontier.md`.
 - **C3.3 (written).** We train LoRA adapters to match the teacher's (Kimi K3)
   probability on the decision token, after a strict teacher-agreement filter.
-  Evidence: `docs/decisions/strict_teacher_filtering.md`,
+  Evidence: `docs/decisions/teachers/strict_teacher_filtering.md`,
   `experiments/tool_trajectory_monitoring/README.md`.
 - **C3.4 (written).** Soft targets matter. Matched hard-label 4B seeds score
   0.690–0.746 Mean-OOD pAUROC@20 against 0.777–0.813 for soft-target seeds.
@@ -352,7 +352,7 @@ Facts checked against the repository on 2026-11-09, for 3.2 and 3.3:
   with the student prompt. Mean-OOD pAUROC@20 (BF16) is 0.935 against 0.909.
   The teacher prompt has 9.9% more prompt tokens.
   Evidence: `experiments/gleipnir27b_vocab_distillation/README.md`,
-  `docs/findings/qwen38_27b_campaign.md`.
+  `docs/findings/training/qwen38_27b_campaign.md`.
 
 ## 4. Serving and cost
 
@@ -377,7 +377,7 @@ and our changes; 4.2 points to it. Layer counts belong in the subsection on
 removing unneeded work (JF, 2026-11-14): Qwen3.5-4B has 32 layers (8 full
 attention, 24 GDN) and Qwen3.8-27B has 64 (16, 48), so last-token attention
 covers 1 of 8 attention layers in the 4B and 1 of 16 in the 27B
-(`docs/research/qwen38_27b_serving_transfer.md`). No backward-pass or training-stack detail
+(`docs/plans/qwen38_27b_serving_transfer.md`). No backward-pass or training-stack detail
 (JF, 2026-11-14: an implementation detail that users do not need).
 Serving has its own section because it is a separate contribution and sets
 the cost per evaluation used in the frontier of Section 5. Planned
@@ -406,19 +406,19 @@ implementation details are left out.
   weights: FP8 attention projections, FP4 MLP and GDN projections and MXFP8
   attention prefill. The 4B adapter is trained with quantization-aware
   distillation (QAD) for this stack; the 27B is not.
-  Evidence: `docs/decisions/b200_monitor_score_reference.md`,
+  Evidence: `docs/decisions/serving/b200_monitor_score_reference.md`,
   `experiments/b200_inference_benchmark/serving_default.json`.
 - **C3.10 (draft).** Further changes remove work the score does not need: the
   final layer attends only from the last token, and the host path is shortened
   (tokenization, GDN routing).
-  Evidence: `docs/findings/b200_last_layer_trim.md`,
-  `docs/findings/b200_gdn_route.md`, `docs/findings/b200_host_overhead.md`.
+  Evidence: `docs/findings/serving/b200_last_layer_trim.md`,
+  `docs/findings/serving/b200_gdn_route.md`, `docs/findings/serving/b200_host_overhead.md`.
 - **C3.11 (draft).** Cost per 1,000 evaluations is the measured wall time to
   score all 6,395 OOD rows on one fully used B200, times an hourly rate:
   $7.99/h on demand (Runpod) or $3.44/h committed use (CoreWeave's published
   ceiling).
-  Evidence: `docs/research/tool_trajectory_ood_frontier.md` (reference table),
-  `docs/research/tool_trajectory_inference_economics.md`.
+  Evidence: `docs/findings/evaluation/tool_trajectory_ood_frontier.md` (reference table),
+  `docs/findings/evaluation/tool_trajectory_inference_economics.md`.
 - **C3.12 (draft).** The optimized stack changes scores against BF16 serving:
   −0.034 Mean-OOD pAUROC@20 for the 4B and +0.016 for the 27B. Runs on that
   stack are not bit-for-bit repeatable (per-row MAE about 0.01 for the 4B).
@@ -444,14 +444,14 @@ Owner: JF.
   six-source, 6,395-row OOD suite of Sinha et al. Cost: uncached list-price USD
   per 1,000 evaluations. For Gleipnir, cost is the self-hosted B200 break-even
   at on-demand and at committed-use GPU prices; the text explains both.
-  Evidence: `docs/research/tool_trajectory_ood_frontier.md` (comparison contract).
+  Evidence: `docs/findings/evaluation/tool_trajectory_ood_frontier.md` (comparison contract).
 - **C4.2 (draft).** Gleipnir 27B (optimized serving, teacher prompt) scores
   0.951 Mean-OOD pAUROC@20 (95% interval 0.941–0.960) at $0.17 (committed-use)
   to $0.39 (on-demand) per 1,000 evaluations. Claude Opus 4.6, the best
   reasoning monitor of Sinha et al., scores 0.942 at $94.79. The difference is
   within the interval.
-  Evidence: `docs/research/tool_trajectory_ood_frontier.md`,
-  `docs/findings/qwen38_27b_campaign.md`, `experiments/optimized_gap/README.md`.
+  Evidence: `docs/findings/evaluation/tool_trajectory_ood_frontier.md`,
+  `docs/findings/training/qwen38_27b_campaign.md`, `experiments/optimized_gap/README.md`.
 - **C4.3 (draft).** Gleipnir 4B (optimized serving, student prompt) scores
   0.770 at $0.04 (committed-use) to $0.09 (on-demand) per 1,000 evaluations.
   The trained Qwen3.5-4B monitor of Sinha et al. (SFT+RL) scores 0.684 at
@@ -497,19 +497,19 @@ Owner: ARK (C5.1–C5.3, C5.5) and JF (C5.4, section framing).
   addressed to the monitor as a sign of harm (APPS injections: every injected
   honest program flagged at the operating point; lab post: 4B 82% of readers,
   27B and Kimi 0%). Appendix G.2 and G.7.
-  Evidence: `docs/findings/apps_released_monitors.md`, `experiments/adversarial_is_it_4b/`.
+  Evidence: `docs/findings/injection/apps_released_monitors.md`, `experiments/adversarial_is_it_4b/`.
 - **C5.5 (written, ARK; appendix).** Natural cheats (ImpossibleBench, 57
   cheats): Gleipnir 4B and 27B score 0.935 and 0.941 pAUROC@20, level with
   Kimi K3, Claude Sonnet 5.5 and GPT-6.1 Sol. Comment removal, multi-agent
   sabotage (UK AISI benchmark) and agents lying to agents are in the same
   appendix. Costs are not compared there (mixed price bases in the records).
-  Evidence: `docs/findings/adversarial_frontier_comparison.md` and the
+  Evidence: `docs/findings/adversarial/adversarial_frontier_comparison.md` and the
   experiment READMEs listed in `sources.md`.
 - **C5.4 (draft, JF).** On SleightBench (stripped view), the 27B catches 15% and
   the 4B 5% of attacks at 1% FPR. Claude Opus 4.6 with extended thinking
   catches 32%. Most misses are attacks built to look like honest mistakes,
   which the training specification labels benign.
-  Evidence: `docs/findings/sleightbench_released_monitors.md`.
+  Evidence: `docs/findings/evaluation/sleightbench_released_monitors.md`.
 
 - **Decision (JF, 2026-11-22): the four smaller tests (natural
   cheats, comment removal, multi-agent sabotage, agents that lie to agents)

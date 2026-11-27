@@ -39,5 +39,5 @@ run `--stage score --name apps02`. Preparation and scoring use the staged 0.31
 interpreter via `experiments.b200_vllm031.runtime`. Analyze locally with
 `python -m experiments.injection.b200_apps.run --stage analyze --name apps02`.
 Artifacts live under `results/b200_apps/`; logs under `logs/runpod/b200_apps/`.
-The [completed finding](../../../docs/findings/b200_apps.md) records injection
+The [completed finding](../../../docs/findings/injection/b200_apps.md) records injection
 alarms, matched discrimination, verification and the preserved startup failure.

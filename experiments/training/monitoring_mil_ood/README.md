@@ -10,7 +10,7 @@ MIL effect. Complete predictions, source breakdowns, calibration, threshold
 diagnostics, score ties and merge provenance are retained under
 `results/monitoring_mil_ood/ood_evaluation/4b/adapters/mil-pct020-lr2em05-epochs3-seed0/`.
 The master and evaluation evidence are covered by the
-[campaign inventory](../../../docs/findings/gleipnir_improvement_shutdown_inventory.md).
+[campaign inventory](../../../docs/findings/operations/gleipnir_improvement_shutdown_inventory.md).
 
 Hypothesis: the ID-selected monitoring-only MIL checkpoint transfers better
 than released Gleipnir 4B. Evaluate exactly

@@ -56,4 +56,4 @@ The analysis adds a disclosed post-hoc literal firewall-keyword cross-check and
 manual counterexample review; record its motivation and results in the findings.
 
 Completed results and classifier qualifications are recorded in the
-[firewall-content finding](../../../docs/findings/training_firewall_census.md).
+[firewall-content finding](../../../docs/findings/injection/training_firewall_census.md).

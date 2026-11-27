@@ -7,7 +7,7 @@ monitor prompt at the clean-code 2% FPR thresholds. Neutral-prompt mean injected
 honest scores fall from 0.6374 to 0.5291, while ID source-macro pAUROC@20 falls
 from 0.8463 to 0.8223 relative to the unfiltered regular model. This filtering
 changes scores but does not resolve the operating-point failure. See the
-[completed finding](../../../docs/findings/monitoring_injection_removal.md)
+[completed finding](../../../docs/findings/injection/monitoring_injection_removal.md)
 for the full grid, calibration and interpretation limits. The design below was
 frozen before launch.
 

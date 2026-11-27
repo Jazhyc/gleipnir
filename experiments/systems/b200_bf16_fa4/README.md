@@ -4,7 +4,7 @@ Default update, 2026-10-04: after reviewing the completed FA4 and FP4 screens,
 the user explicitly selected BF16 LoRA with FA4 as the standard. The historical
 screen contracts below retain their original SDPA control via
 `qwen35_4b_b200_packed_sdpa`; this default change does not alter their timings.
-See the [recipe decision](../../../docs/decisions/b200_packed_bf16_training_recipe.md).
+See the [recipe decision](../../../docs/decisions/systems/b200_packed_bf16_training_recipe.md).
 The earlier prospective replication criterion below is superseded by that user
 selection; replication and held-out quality evidence remain uncollected.
 
@@ -83,7 +83,7 @@ SDPA default; there is no valid FA4 throughput or quality conclusion.
 
 The SDPA control completed 20 updates, but restoration of older compatible
 compiler-cache entries overlapped its measured window. Preserve all timings as
-exploratory. See the [finding](../../../docs/findings/b200_bf16_fa4.md) for runtime,
+exploratory. See the [finding](../../../docs/findings/systems/b200_bf16_fa4.md) for runtime,
 input identity, failed attempts and cache limitations.
 
 The failed-receipt writer is repaired. A separate zero-update replay retains

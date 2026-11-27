@@ -13,7 +13,7 @@ asks whether another temperature improves held-out ID ranking.
 - **Margin Huber loss** (δ 0.5 / 1.0, close to the high-T limit;
   [structural screen](../training_procedure_screen/README.md)). It moved AUROC
   by −0.0010 and +0.0001, inside the 0.002–0.004 seed spread.
-- **Hard-label mixing** ([finding](../../../docs/findings/monitoring_hard_labels.md)).
+- **Hard-label mixing** ([finding](../../../docs/findings/training/monitoring_hard_labels.md)).
   A 0.3 hard fraction gained 2.8 ID pAUROC@20 points, but only 0.55 OOD points,
   with a SHADE Arena regression. That run used unfiltered targets.
 - **Never tested:** sharpening (T < 1) and classic distillation temperature

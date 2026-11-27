@@ -24,7 +24,7 @@ both in the same serving session, as a drift control against its cached
 scores.
 
 **Selection.** Descriptive only; no checkpoint is promoted. Under the
-[precision-selection decision](../../../docs/decisions/precision_selection_on_ood.md),
+[precision-selection decision](../../../docs/decisions/evaluation/precision_selection_on_ood.md),
 later precision cells may select on OOD. This run sets the noise floor for
 that.
 

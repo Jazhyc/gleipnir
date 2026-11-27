@@ -41,5 +41,5 @@ Monitor startup in-chat, then every ten minutes if an agent scheduler exists.
 Both arms completed and were audited on 2026-09-07. Pretrained-only weights
 reduce macro AUROC from .860769 to .751012 (4B) and .898587 to .798188 (9B).
 The 4B ECE improvement does not extend to Brier or ranking; 9B worsens on both.
-See [the finding](../../../docs/findings/pretrained_qwen_id.md) for the matched
+See [the finding](../../../docs/findings/evaluation/pretrained_qwen_id.md) for the matched
 comparison, coverage checks, runtime and backend caveat.

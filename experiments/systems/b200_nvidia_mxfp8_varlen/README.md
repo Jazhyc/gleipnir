@@ -45,7 +45,7 @@ timing-only authority. It averages 3.93793 s/update versus 5.29781 dense MXFP8
 and 4.08648 historical FA4, with identical physical contracts and a byte-for-byte
 identical final FP32 adapter to the dense MXFP8 run. Whole-model eager/compiled
 gradient parity still fails at 18.7114%/16.6558%; keep FA4 as the standard. See the
-[finding](../../../docs/findings/b200_nvidia_mxfp8_varlen.md) for receipts and limits.
+[finding](../../../docs/findings/systems/b200_nvidia_mxfp8_varlen.md) for receipts and limits.
 
 ```bash
 python -m experiments.systems.b200_nvidia_mxfp8_varlen.run --attempt native06

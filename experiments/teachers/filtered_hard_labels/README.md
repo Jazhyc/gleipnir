@@ -1,6 +1,6 @@
 # Hard labels on the strict-filtered recipe
 
-The [hard-label screen](../../../docs/findings/monitoring_hard_labels.md) mixed
+The [hard-label screen](../../../docs/findings/training/monitoring_hard_labels.md) mixed
 source-label cross-entropy into the Kimi K3 soft loss with fraction 0.3. It
 gained 2.8 ID pAUROC@20 points but only 0.55 OOD points, with a SHADE Arena
 regression. That run differs from the current recipe in three ways:

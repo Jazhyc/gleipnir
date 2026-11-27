@@ -1,7 +1,7 @@
 # Three-seed weight average for the Gleipnir 4B release
 
 Gleipnir 4B trains on the strict-filtered tool-trajectory data only
-([decision](../../../docs/decisions.md), 2026-10-20). Its three BF16/SDPA seeds
+([decision](../../../docs/decisions/training/train_gleipnir_4b_on_tool_trajectory_data_only.md), 2026-10-20). Its three BF16/SDPA seeds
 differ by up to 3.6 OOD and 1.8 ID points from data order alone
 ([seed variation](../../teachers/teacher_seed_variation/README.md)). Choosing the
 OOD-best seed would select on OOD and report an inflated score. This

@@ -5,7 +5,7 @@ latency without sacrificing the selected B200 scorer's bulk throughput. This is
 an opt-in waiting-queue intervention, not a kernel or precision change.
 
 The completed initial screen fails its latency/fairness and pooled-AUROC bounds.
-Keep upstream FCFS selected; see [the finding](../../../docs/findings/b200_length_admission.md).
+Keep upstream FCFS selected; see [the finding](../../../docs/findings/serving/b200_length_admission.md).
 
 The custom vLLM 0.24.0 synchronous pooling scheduler sorts waiting requests into
 <=1024, <=4096, <=16384 and larger-token buckets, FIFO within each bucket.

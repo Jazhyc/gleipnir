@@ -114,4 +114,4 @@ $0.02/M) scores 0.8942 at $0.1760/1K, just below v1.2. Jev 1.14
 (amendment, 2026-11-19) scores 0.8763 at $0.3887/1K, above Jev 1.13 (0.8495)
 and off the frontier. Drex Max (amendment, 2026-11-20) scores 0.8299 at
 $0.7126/1K at its undiscounted $0.12/M, off the frontier. See
-[the finding](../../../docs/findings/decision_models_ood_benchmark.md).
+[the finding](../../../docs/findings/evaluation/decision_models_ood_benchmark.md).

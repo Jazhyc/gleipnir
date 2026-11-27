@@ -106,7 +106,7 @@ at the 4B. Block 31 may therefore not be the best layer for the pooled 27B
 probes either; this run did not test other layers.
 
 Operations: the first H100 throttled thermally and was replaced (see
-[infrastructure](../../../docs/infrastructure.md#lambda-cloud)). Extraction on the
+[infrastructure](../../../docs/infrastructure/lambda_cloud.md#lambda-cloud)). Extraction on the
 replacement took 11.2 hours. The first training attempt failed to pin the
 166 GB ID store; the sweep now streams it (`ccca192`, and `e45fc3f` for the
 budget extension). Training then took 2.0 hours and the OOD read 29 minutes.

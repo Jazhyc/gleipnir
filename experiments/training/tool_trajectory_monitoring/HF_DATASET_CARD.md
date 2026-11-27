@@ -72,5 +72,5 @@ model-host and inference-provider terms.
 
 The corresponding Gleipnir finding records the collection history, cost and
 cache telemetry, provider-agreement canaries, checksums, metrics, and caveats:
-`docs/findings/tool_trajectory_training_teacher_cache.md` in the Gleipnir
+`docs/findings/teachers/tool_trajectory_training_teacher_cache.md` in the Gleipnir
 repository.

@@ -43,7 +43,7 @@ Historical SM120 experiments motivate this first choice: MLP-only native FP8
 passed a different adapter/workload's checks and improved full-split throughput
 1.26x, whereas tested FP4 inference layouts failed score gates. Those results
 do not establish speed or fidelity on this B200/final FP4-trained adapter.
-See `docs/findings/blackwell_inference_search.md`.
+See `docs/findings/serving/blackwell_inference_search.md`.
 
 ```bash
 python -m experiments.serving.b200_inference_kernels.run --output fp8_mlp02

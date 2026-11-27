@@ -389,7 +389,7 @@ appended to its student prompt, and InjectionAugmented40 student prompt.
 The fixed instruction is in config, not tuned on the pilot. IA40 was trained
 on tool-trajectory views with eight authored injection templates, not APPS;
 its provenance is recorded in
-[`monitor_injection_augmentation`](../../../docs/findings/monitor_injection_augmentation.md).
+[`monitor_injection_augmentation`](../../../docs/findings/injection/monitor_injection_augmentation.md).
 It differs from the released 4B in training, rank and seed, so it tests an
 existing model rather than isolating one training change.
 

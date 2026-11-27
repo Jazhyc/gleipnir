@@ -24,7 +24,7 @@ quantization) raise rather than fall back.
 
 ## Hypothesis and predictions
 
-The [1M baseline](../../docs/findings/b200_context_million.md) fit gives
+The [1M baseline](../../docs/findings/serving/b200_context_million.md) fit gives
 b = 71.8 ms per 32K×32K attention block across 8 layers. Removing one layer's
 attention saves about b/8 · n(n+1)/2 over n 32K chunks: 9 ms at 32K (4.3%),
 0.32 s at 256K (8.9%), 1.22 s at 512K (10.4%) and 4.74 s at 1M (11.0%). Lower
@@ -97,4 +97,4 @@ Results go under `results/b200_last_layer_trim/<name>/` and logs under
 `python -m experiments.b200_last_layer_trim.compare
 results/b200_last_layer_trim/trim01`. The completed `trim01` run is bitwise
 unchanged and 10.3% faster at 1M; see
-[the finding](../../docs/findings/b200_last_layer_trim.md).
+[the finding](../../docs/findings/serving/b200_last_layer_trim.md).

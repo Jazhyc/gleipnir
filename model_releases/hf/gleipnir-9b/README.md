@@ -192,7 +192,7 @@ labels, teacher caches, or benchmark rows. `release_manifest.json` records the
 adapter, prompt, base-revision, and packaging checksums needed to audit this
 release. The full experiment design and result audit are in the
 [Gleipnir repository](https://github.com/Jazhyc/gleipnir), especially
-`docs/research/tool_trajectory_distillation_ood_scaling.md`.
+`docs/findings/training/tool_trajectory_distillation_ood_scaling.md`.
 
 The adapter weights and release metadata are distributed under the MIT License;
 see `LICENSE`. Users must also review and comply with the Qwen base-model terms,

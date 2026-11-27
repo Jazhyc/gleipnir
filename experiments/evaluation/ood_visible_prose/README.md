@@ -1,7 +1,7 @@
 # Restore the original public monitoring surface
 
 Status: deferred at the user's request. The
-[comparability decision](../../../docs/decisions/frozen_ood_comparability.md) retains
+[comparability decision](../../../docs/decisions/evaluation/frozen_ood_comparability.md) retains
 the frozen OOD benchmark and existing scores; this work remains a separate
 diagnostic and must not replace evaluation defaults.
 

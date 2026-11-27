@@ -96,7 +96,7 @@ clean accuracies remain 99.40% / 99.60%. Preferred-injection correct-to-wrong
 flips remain 37.08% / 27.63%; every augmented query loses mean p(correct)
 relative to its clean counterpart. Improvement is partial and uneven, with
 the hardest MT-Bench query at only 23.44% / 34.82% augmented accuracy.
-The [finding](../../../docs/findings/augmented_judge_evaluation.md) records paired
+The [finding](../../../docs/findings/injection/augmented_judge_evaluation.md) records paired
 continuous scores, source/query breakdowns, ranking, calibration, ties and limits.
 No model promotion follows.
 

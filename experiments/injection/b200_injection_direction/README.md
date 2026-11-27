@@ -4,7 +4,7 @@ User-authorized replication on the current BF16/SDPA augmented adapter and
 BF16 eager Lens serving. Hypothesis: removing an injection-associated residual
 component lowers honest-injection alarms while preserving useful backdoor
 ranking and broader ID monitoring. The original colleague protocol is reviewed
-in `docs/research/sdpa_injection_direction_replication.md`, pinned to commit
+in `docs/plans/sdpa_injection_direction_replication.md`, pinned to commit
 931fee0a1db369bc15c01009aa77219e7e106c14.
 
 Select 64 of 655 APPS tasks by ascending SHA-256 of

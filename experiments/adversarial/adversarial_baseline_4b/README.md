@@ -1,6 +1,6 @@
 # Adversarial baseline: unattacked Gleipnir 4B scores
 
-Part of the [adversarial stress tests](../../../docs/research/adversarial_stress_testing.md). Frozen on 2026-10-20 before any GPU run.
+Part of the [adversarial stress tests](../../../docs/plans/adversarial_stress_testing.md). Frozen on 2026-10-20 before any GPU run.
 
 **Purpose:** record the unattacked scores that every phase-1 attack is measured against. This also answers attack A1 without new code: APPS already pairs each backdoor with injected and neutral-text versions of itself.
 
@@ -85,7 +85,7 @@ Ran as frozen, on JarvisLabs, on an A100-PCIE-40GB (driver 580.126.20) at commit
   - About 3 GPU-hours, ₹270.
 - **Outputs:** in `results/adversarial_baseline_4b/`, with logs in `logs/jarvislabs/adversarial_baseline_4b/`.
 
-**Parity.** The Hub 4B turns out to be the project's "cached released Gleipnir 4B" control (`docs/findings/teacher_disagreement_ood.md`), so its OOD numbers *are* a parity target. This corrects the protocol's assumption above that the Hub checkpoint predates the 4B in recent results.
+**Parity.** The Hub 4B turns out to be the project's "cached released Gleipnir 4B" control (`docs/findings/teachers/teacher_disagreement_ood.md`), so its OOD numbers *are* a parity target. This corrects the protocol's assumption above that the Hub checkpoint predates the 4B in recent results.
 
 Source-macro OOD, ours vs the cached control:
 

@@ -2,12 +2,12 @@
 
 The current launch recipe is the FP8 full-attention projection default in
 `serving_default.json`; `baseline.json` remains the frozen 0.24 comparison.
-See the [serving decision](../../docs/decisions/b200_monitor_score_reference.md).
+See the [serving decision](../../docs/decisions/serving/b200_monitor_score_reference.md).
 
 Frozen B200 optimization reference: the repaired cached two-logit score endpoint,
 retaining Direct FP4 projections/MLPs, cuDNN MXFP8 prefill, native Gigatoken and
 direct FROST bindings. `baseline.json` binds all saved score repeats and quality
-receipts; use the [selected decision](../../docs/decisions/b200_monitor_score_reference.md).
+receipts; use the [selected decision](../../docs/decisions/serving/b200_monitor_score_reference.md).
 Score comparisons use `experiments.b200_monitor_score.run.measure` with
 `baseline: selected` and `/v1/monitor/score`. Generation runs below require an
 explicit archived generation control. Preserve strict failures separately from
@@ -101,7 +101,7 @@ HTTP ablation also includes frontend/serialization/scheduling effects and
 excludes client token preparation. Preserve `tokenization01`'s c128 warmup
 ReadError; the server stayed healthy and `tokenization_batch02 --concurrency 128`
 completed with fresh pools per pass. No kernel/reference change or restart.
-See [the tokenization finding](../../docs/findings/b200_serving_tokenization.md).
+See [the tokenization finding](../../docs/findings/serving/b200_serving_tokenization.md).
 
 ## Gigatoken probe, 2026-10-07
 
@@ -145,7 +145,7 @@ preceding HF text controls). Keep it optional for latency work; no throughput
 winner or GPU-reference promotion is claimed. Retain native API/engine
 106836/106874. Thirty native/launcher/cache tests, eight caller tests and Ruff
 pass; 141 collected files verify locally. See
-[the Gigatoken finding](../../docs/findings/b200_gigatoken_frontend.md).
+[the Gigatoken finding](../../docs/findings/serving/b200_gigatoken_frontend.md).
 
 ```bash
 uv pip install --python .venv/bin/python --target /tmp/gleipnir-gigatoken-0.10.0 --no-deps --only-binary :all: gigatoken==0.10.0
@@ -170,7 +170,7 @@ Subsequent user selection: native Gigatoken plus direct FROST bindings is now
 the standard B200 serving reference. Existing direct-mode measurements and
 receipts are bound by checksum; startup enables both components by default.
 Selected comparisons use c1/quick64 and c128/full320 with all baseline repeats.
-See [the decision](../../docs/decisions/b200_gigatoken_direct_host_reference.md).
+See [the decision](../../docs/decisions/serving/b200_gigatoken_direct_host_reference.md).
 
 Hypothesis: the earlier small throughput decline may reflect different worker
 state rather than the tokenizer. Restart once to install opt-in `--frontend-ab`
@@ -205,7 +205,7 @@ c1 scores are exact; c128 macro/pooled AUROC shifts -0.0348/-0.0547 percentage
 points, with one already unstable threshold flip. No final-ID evaluation or GPU
 reference promotion follows. All 122 collected files verify, 34 focused tests
 and Ruff pass. Profiling is stopped and native mode is restored on the retained
-warm worker. See [the finding](../../docs/findings/b200_gigatoken_frontend.md).
+warm worker. See [the finding](../../docs/findings/serving/b200_gigatoken_frontend.md).
 
 ```bash
 PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name unique_ab_start --frontend-validation results/b200_inference_benchmark/gigatoken_native_canary03/validation.json --frontend-ab
@@ -264,7 +264,7 @@ rule, so original masks are restored. c1 scores are exact; c128 macro/pooled
 AUROC shifts stay within 0.1 percentage points. No timed c128 pass is CPU-quota
 throttled; engine main-thread runqueue waits stay below 1.21 ms per pass.
 All 71 collected artifacts verify. The same warm native API/engine remains
-healthy. See [the CPU-placement finding](../../docs/findings/b200_serving_cpu_placement.md).
+healthy. See [the CPU-placement finding](../../docs/findings/serving/b200_serving_cpu_placement.md).
 
 ## Completed baseline, 2026-10-06
 

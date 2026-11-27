@@ -3,7 +3,7 @@
 ## Current startup default
 
 Normal `startup --name ...` uses the user-selected vLLM 0.31 FP8 full-attention
-projection recipe. See the [serving decision](../../docs/decisions/b200_monitor_score_reference.md)
+projection recipe. See the [serving decision](../../docs/decisions/serving/b200_monitor_score_reference.md)
 for the accepted canary, native envelope and staged-runtime command. Use
 `--prepare-only` for a command-only preflight and `--legacy-fp4` for the archived
 startup/reference and its frontend/host ablations below. Frozen campaign
@@ -25,7 +25,7 @@ PYTHONPATH=src:. python -m experiments.b200_attention_gdn_serving.startup --name
 ```
 
 Use `--legacy-host` for an explicit HF/original-wrapper diagnostic after retiring
-the current server. See [the decision](../../docs/decisions/b200_gigatoken_direct_host_reference.md).
+the current server. See [the decision](../../docs/decisions/serving/b200_gigatoken_direct_host_reference.md).
 
 ## FROST host binding wrappers, 2026-10-07
 
@@ -67,7 +67,7 @@ are exact; c128 macro/pooled AUROC shifts +0.0426/+0.0391 percentage points with
 no flips. The candidate meets the frozen rule and remains enabled in the warm
 worker. API/engine 109400/109438 retain native Gigatoken and original CPU affinity.
 Thirty-five tests and Ruff pass; all 126 artifacts verify locally. Preserve both
-failed setup/fixture checks. See [the finding](../../docs/findings/b200_frost_host_wrappers.md)
+failed setup/fixture checks. See [the finding](../../docs/findings/serving/b200_frost_host_wrappers.md)
 for source bindings, profile confounds and the restart command.
 
 ## Serving startup (2026-10-07)
@@ -123,7 +123,7 @@ Result: capture and numerical replay checks passed, but warm c128 throughput
 fell 1.99% to 192,943 input tokens/s and c1 median latency rose 8.14% to
 172.44 ms. Macro/pooled AUROC changed +0.0117/-0.0352 percentage points.
 The selected reference is unchanged. See the
-[capture findings](../../docs/findings/b200_prefill_graph_capture.md).
+[capture findings](../../docs/findings/serving/b200_prefill_graph_capture.md).
 
 Hypothesis: the selected Direct FP4 reference leaves launch gaps because its
 256-token graph ceiling excludes large prefills. `prefill_graphs.json` captures
@@ -160,7 +160,7 @@ entrypoint uses `fp4_swiglu_native_output.json`. New comparisons use
 `baseline: selected` and `high_reference: selected`; preserve historical results.
 Use 196,866 input tokens/s for warm c128 comparisons and 159.46/275.92 ms
 for warm c1 median/p95. Macro/pooled development AUROC is 0.878105/0.885842.
-See the [current reference decision](../../docs/decisions/b200_native_fp4_output_inference_baseline.md).
+See the [current reference decision](../../docs/decisions/serving/b200_native_fp4_output_inference_baseline.md).
 
 ## GDN direct output-buffer trial
 
@@ -193,7 +193,7 @@ parity is exact, including max rows and graph replay. The serving profile shows
 Macro/pooled development AUROC changes -0.00391/-0.00195 percentage points.
 Keep the selected reference unchanged and this as a named candidate. Preserve
 the first caller-wiring failure; API/engine 97318/97421 remain healthy and warm.
-See the [direct-output finding](../../docs/findings/b200_gdn_direct_output.md).
+See the [direct-output finding](../../docs/findings/serving/b200_gdn_direct_output.md).
 Further tuning is deferred at the user's request when upside is small: the
 observed copy budget suggests roughly 1--2% throughput potential and little
 median-latency headroom over the existing reference. Preserve this unresolved
@@ -226,7 +226,7 @@ The user subsequently accepts this recipe as the new reference. Bind its
 executed configuration, warm confirmations and explicit quality acceptance by
 checksum; preserve the preceding selection and strict failures. The resident
 worker is reused without a kernel/settings change or control replay. See the
-[attention projection finding](../../docs/findings/b200_attention_projection_fp4.md)
+[attention projection finding](../../docs/findings/serving/b200_attention_projection_fp4.md)
 for scope, numerical validation, metrics and retained worker details.
 
 ## Gate/up GEMM and SwiGLU fusion trial
@@ -262,7 +262,7 @@ median/p95 154.87/269.13 ms. Macro/pooled AUROC change +0.0078/+0.0254
 percentage points. Preserve the final-pass HTTP failure, its fresh-client resume
 and the separate client receipt failure. Retire the collected first server
 before native FP4-output work; keep the selected reference unchanged. See the
-[follow-up finding](../../docs/findings/b200_swiglu_overhead_native_output.md).
+[follow-up finding](../../docs/findings/serving/b200_swiglu_overhead_native_output.md).
 
 Stage two completes: direct native FP4 output is admitted after midpoint-rounding
 corrections, with zero packing-reference error in all nine fixtures. Use the
@@ -298,7 +298,7 @@ median improves 1.8%, but one slow confirmation repeat makes aggregate
 throughput 2.1% worse, and warm c1 latency rises 6%. AUROC is effectively
 unchanged. Keep `fp4_swiglu_fused.json` as a named experiment; fusion was not
 selected. These measurements precede the attention-FP4 reference. See the
-[fusion finding](../../docs/findings/b200_fp4_swiglu_fusion.md) for all failures,
+[fusion finding](../../docs/findings/serving/b200_fp4_swiglu_fusion.md) for all failures,
 timings, precision receipts and the retained experimental worker.
 
 Started 2026-10-06 03:19 UTC. The user authorizes approximately nine hours of
@@ -774,7 +774,7 @@ selected baseline's five-pass 165,927. A transport failure after two complete
 passes is preserved; the three missing passes resume on the same worker.
 Source-macro AUROC changes +1.68 percentage points, pooled AUROC −0.37 points,
 with twenty threshold flips. The baseline selection remains unchanged and the
-experimental worker stays warm. See [the full finding](../../docs/findings/b200_mxfp8_serving.md)
+experimental worker stays warm. See [the full finding](../../docs/findings/serving/b200_mxfp8_serving.md)
 for timing variation, calibration, invalidated results and artifact provenance.
 
 The user subsequently accepts MXFP8 as the new optimization reference. Bind the
@@ -806,7 +806,7 @@ has a CUDA per-token NVFP4 quantizer with the required block/scale format; test
 that bounded candidate first, using a host constant to avoid the wrapper's GPU
 `.item()` synchronization. Producer fusion is a subsequent intervention because
 the vendor norm/activation fusions use scalar scale contracts. See the
-[detailed diagnosis](../../docs/findings/b200_mxfp8_serving.md#fp4-preparation-diagnosis-and-vendor-kernel-candidates).
+[detailed diagnosis](../../docs/findings/serving/b200_mxfp8_serving.md#fp4-preparation-diagnosis-and-vendor-kernel-candidates).
 No new kernel timing or AUROC claim follows from this inspection.
 
 ## FP4 preparation trials
@@ -882,7 +882,7 @@ source-macro/pooled AUROC changes are respectively −1.00/+0.47 and −1.83/−
 percentage points on the frozen training-seen cohort. Keep native fixture
 agreement separate from whole-model scores. Both workers are retired before
 the next kernel change; the selected reference remains unchanged. See the
-[preparation finding](../../docs/findings/b200_fp4_serving_preparation.md).
+[preparation finding](../../docs/findings/serving/b200_fp4_serving_preparation.md).
 
 The combined configuration requires separately bound receipts for all three
 producers. Runtime usage must match 32 normalization fusions, 32 SwiGLU fusions
@@ -952,7 +952,7 @@ warm: API/engine **89879/89962**, port 8010, same retained NC2 pod. Campaign
 state is completed, with no active driver. Collection manifest
 `fp4_gemm_tuning_collection01` verifies all 130 artifacts; 21 timed passes and
 one excluded warmup have matched IDs/prompts/tokens and finite scores.
-See [the tuning finding](../../docs/findings/b200_fp4_gemm_tuning.md).
+See [the tuning finding](../../docs/findings/serving/b200_fp4_gemm_tuning.md).
 
 
 Subsequent user selection, 2026-10-06: adopt the completed tuned stack as the
@@ -1011,7 +1011,7 @@ Four bounded warmup requests progress and current-PID native audits pass.
 Reuse the prior quality receipt and speed/AUROC controls; no new quality pass
 or alternative model kernel is claimed. Collection `fp4_backend_collection01`
 binds all native results, sources, installed implementation copies, cache and
-restore receipts. See [the backend finding](../../docs/findings/b200_fp4_backend_comparison.md).
+restore receipts. See [the backend finding](../../docs/findings/serving/b200_fp4_backend_comparison.md).
 
 ### Remaining startup setup, 2026-10-07
 
@@ -1038,7 +1038,7 @@ AUROC, pooled delta -0.0723 percentage points and zero threshold flips. Eighty-o
 collected artifact/source files have locally verified checksums. Retain API/engine
 105110/105163 with unchanged selected arithmetic; no 30-second restart achieved
 or alternative startup default promoted. See
-[the startup finding](../../docs/findings/b200_serving_startup.md).
+[the startup finding](../../docs/findings/serving/b200_serving_startup.md).
 ### Cache-free offline monitoring trial, 2026-10-07
 
 Hypothesis: scoring a complete prompt and producing one decision token does not
@@ -1077,7 +1077,7 @@ throughput result or promotion is claimed. Stop that server and restore the
 selected recipe with `startup --name prompt_only_restore01`. Preserve the two
 earlier integration failures and inadequate canary03; canary04 adds independent
 convolution verification and passes seven cases. See the
-[finding](../../docs/findings/b200_cache_free_serving.md) for boundaries and artifacts.
+[finding](../../docs/findings/serving/b200_cache_free_serving.md) for boundaries and artifacts.
 Restoration completes in 107.08 s with unchanged GPU compile identity; API/engine
 112588/112611 were kept warm. All 556 evidence files verify locally.
 The user subsequently terminates pod `i243nsg10usytq` on 2026-10-07; API deletion
@@ -1090,7 +1090,7 @@ is unreproduced rather than causally fixed. Updated quality and cross-host
 latency qualifications are recorded in the linked finding. The completed
 `cache_policy_compare` resident/fresh screen isolates the policy on one EU host:
 c1 median is 30.36 ms cached versus 25.71 ms cache-free, with about 3% lower
-batch throughput. See the [matched policy/restart record](../../docs/findings/b200_cache_policy_same_host.md)
+batch throughput. See the [matched policy/restart record](../../docs/findings/serving/b200_cache_policy_same_host.md)
 for its frozen protocol, AUROC diagnostics and the historical latency caveat.
 
 The resumed investigation records operator progress before GPU launches and

@@ -23,7 +23,9 @@ from gleipnir.plotting import ORIGIN_PALETTE, save_figure, set_plot_style
 
 REPOSITORY_ROOT = repo_root(__file__)
 DEFAULT_SOURCE = (
-    REPOSITORY_ROOT / "docs/research/tool_trajectory_distillation_ood_scaling.md"
+    REPOSITORY_ROOT
+    / "docs/findings/training"
+    / "tool_trajectory_distillation_ood_scaling.md"
 )
 DEFAULT_OUTPUT = REPOSITORY_ROOT / "figures/tool_trajectory_ood_data_scaling.png"
 DEFAULT_VECTOR_OUTPUT = (

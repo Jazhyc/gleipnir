@@ -94,12 +94,12 @@ the same eager/compiled values. Its native arithmetic canary passed, but no
 long-context backward or optimizer step ran. At the user's request, stop after
 this change: no ten-step controls or further variants were run. Both failures
 and logs are preserved, and the existing B200 Pod remains running. See
-[`b200_fouroversix_training`](../../../docs/findings/b200_fouroversix_training.md)
+[`b200_fouroversix_training`](../../../docs/findings/systems/b200_fouroversix_training.md)
 for the completed finding. Do not promote this integration or infer training
 speed, activation-memory savings or convergence from the isolated kernel tests.
 
 Before resuming, read the
-[handoff and proposed stability changes](../../../docs/findings/b200_fouroversix_training.md#resume-checklist-and-stability-candidates).
+[handoff and proposed stability changes](../../../docs/findings/systems/b200_fouroversix_training.md#resume-checklist-and-stability-candidates).
 It records the source/artifact/kernel state, the humans& recipe differences and
 the order of bounded diagnostics. Those changes are proposals; the existing
 training recipe and failed gates remain recorded as executed.

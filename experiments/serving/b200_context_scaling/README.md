@@ -32,7 +32,7 @@ PYTHONPATH=<frozen-source-bootstrap>:src:. <serving-python> \
 
 Results and executed sources are under `results/b200_context_scaling/<name>/`.
 The completed run reaches approximately 253K input tokens/s and 123 requests/s;
-see [the finding](../../../docs/findings/b200_context_scaling.md) for repeat ranges,
+see [the finding](../../../docs/findings/serving/b200_context_scaling.md) for repeat ranges,
 latency tradeoffs and the original workload's added c8 point.
 Measure the missing c8 point on the unchanged original full320 inputs too;
 preserve it as an addendum here without rewriting the original sweep.

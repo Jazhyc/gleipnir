@@ -41,12 +41,12 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   (Results, Amendments 1-3, Limits). All texts are GLM-5.3-Flash; Amendment 3
   fell back to the Amendment 1 cover stories.
 - **Text addressed to the monitor (Appendix, APPS).**
-  `docs/findings/apps_released_monitors.md` (run `apps01`, released 4B v0.4 and
+  `docs/findings/injection/apps_released_monitors.md` (run `apps01`, released 4B v0.4 and
   27B v0.2 on the optimized B200 stack).
 - **Probe (Table `tab:apps-probe`).** `experiments/adversarial_crossed_text_probe/README.md`,
   Results 24 October 2026.
 - **Natural cheats (Table `tab:natural-cheats`).**
-  `docs/findings/adversarial_frontier_comparison.md` (pAUROC@20 in percent with
+  `docs/findings/adversarial/adversarial_frontier_comparison.md` (pAUROC@20 in percent with
   two-digit intervals, AUROC) and `experiments/adversarial_natural_cheats/README.md`
   (counts, recall at 1%, comment stripping). The 2-of-4 and 1-of-4 counts for
   unannounced cheats are at a matched 1% line from the negatives (frontier
@@ -230,14 +230,14 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   regeneration with label guidance, the judge and its threshold of 7, GRPO
   with a Brier-style term and a pairwise ranking term, and that the trained
   monitor is not prompted with the specification. Counts per source:
-  `docs/research/tool_transcript_monitoring.md` (dataset inventory), which
+  `docs/plans/tool_transcript_monitoring.md` (dataset inventory), which
   takes the training and validation counts from the paper's Table 2 and the
   OOD counts (6,395) from the authors' prepared inputs
   (`adityaasinha28/deliberative-monitor-pipeline@2f10f4e`). Domain labels are
   shortened from the same inventory. Cost basis: Appendix E.2 and the Table 3
   caption, read only as a machine summary.
 - Table of all OOD results (`app:ood-results`). Every row is copied from the
-  reference table in `docs/research/tool_trajectory_ood_frontier.md` (read at
+  reference table in `docs/findings/evaluation/tool_trajectory_ood_frontier.md` (read at
   the merge commit of 2026-11-09), with costs and scores rounded to three
   decimals. The 17 rows of Sinha et al. reproduce their Appendix E, Table 4,
   as recorded in that registry; they were not rechecked against the paper on
@@ -258,7 +258,7 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   2026-11-09): our two unadapted GPT-OSS-120B rows are left out, because the
   model needs a reasoning field and the comparison with models that do not
   reason is unclear; GPT-5.6 Luna is added from
-  `docs/findings/openai_56_luna_ood_benchmark.md` (0.839729, and $1.672442
+  `docs/findings/evaluation/openai_56_luna_ood_benchmark.md` (0.839729, and $1.672442
   per 1,000 with all input at uncached standard rates), although the registry
   excludes it. The GPT-OSS rows that Sinha et al. report stay in the table.
 - Section 2.3. Read only as abstracts (2026-11-09): Kramár et al.
@@ -289,7 +289,7 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   `experiments/tool_trajectory_monitoring/prompts/manifest.json` and
   `prompting.py`, `src/gleipnir/evaluation/probabilities.py`, and the 4B model
   card. Output-format comparison on unadapted Qwen3.5-9B (6,395 OOD rows):
-  binary logits 0.6976 (`docs/findings/tool_trajectory_qwen_ood_benchmark.md`),
+  binary logits 0.6976 (`docs/findings/evaluation/tool_trajectory_qwen_ood_benchmark.md`),
   0–10 integer 0.4858 and binary rounded to tenths 0.6835, a difference of
   0.0141 (`tool_trajectory_qwen_ordinal_ood_benchmark.md`), reasoning then
   integer 0.6656 and reasoning then binary 0.6923 (the two
@@ -298,14 +298,14 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   non-thinking template, temperature zero. Costs are in the results table.
 - Appendix on data sources and discrepancies. STRIDE reasoning counts (1,269, 1,230, 1,340
   of 1,350; 15.42% of 8,688) and the reason the inputs were not cleaned:
-  `docs/findings/training_input_reasoning.md`. Validation set (3,012 rows,
+  `docs/findings/evaluation/training_input_reasoning.md`. Validation set (3,012 rows,
   typed reasoning and `think` calls removed, visible text kept):
-  `docs/decisions/cot_removed_id_validation.md`. OOD inputs per source (empty
+  `docs/decisions/evaluation/cot_removed_id_validation.md`. OOD inputs per source (empty
   or name-only assistant bodies; no confirmed private reasoning):
-  `docs/findings/ood_input_reasoning.md`. Inputs kept unchanged for
+  `docs/findings/evaluation/ood_input_reasoning.md`. Inputs kept unchanged for
   comparability, and 6,247 rows that could not be restored:
-  `docs/decisions/frozen_ood_comparability.md`,
-  `docs/findings/ood_prose_restoration.md`. That decision notes that our
+  `docs/decisions/evaluation/frozen_ood_comparability.md`,
+  `docs/findings/evaluation/ood_prose_restoration.md`. That decision notes that our
   frozen inputs are not proven to be the exact bytes of every run in the
   paper. Maximum training length 29,696 tokens: the 4B and 27B model cards.
 - Appendix on prompts. Byte copies in `assets/prompts/`, SHA-256:
@@ -322,12 +322,12 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   revisions: training set `adityaasinha28/deliberative-monitor-pipeline` at
   `2f10f4e49f4bf349965640ac021406689455d1c3`, file
   `merged/stride_gloom_crh_s45_o46_ctrl_t7_bal.parquet`
-  (`docs/findings/tool_trajectory_teacher_cost_estimate.md`); OOD inputs from
+  (`docs/findings/teachers/tool_trajectory_teacher_cost_estimate.md`); OOD inputs from
   the same repository and revision under `filtered_eval/`
-  (`docs/findings/ood_input_reasoning.md`); validation set from
+  (`docs/findings/evaluation/ood_input_reasoning.md`); validation set from
   `aksh-n/rich-trajectories-cleaned` at `92a44c82…` (STRIDE `test`, 946 rows)
   and `Syghmon/gloom-data-exfiltration` at `ee3c56ba…` (2,066 rows after the
-  length filter) (`docs/research/tool_transcript_monitoring.md`). The dataset
+  length filter) (`docs/plans/tool_transcript_monitoring.md`). The dataset
   cards declare no license, so we name the datasets and do not redistribute
   them. SleightBench's main setting removes all assistant text and thinking
   and keeps user turns, tool calls and tool results
@@ -336,21 +336,21 @@ McClish correction). 1% lines: 4B 0.622 (1,000 benign strict-OOD rows),
   (`data/tool_trajectory_monitoring/distillation_ood/prompts.jsonl`, row 956).
   It holds the user's task, then per step the agent's code under `Code:` and
   its run output under `Execution info:`; the audit in
-  `docs/findings/ood_input_reasoning.md` records that visible `Plan:` text is
+  `docs/findings/evaluation/ood_input_reasoning.md` records that visible `Plan:` text is
   kept and the separate thinking field is not. The per-benchmark counts of
   empty assistant bodies are in that finding and are no longer tabulated in
   the report.
 - Section 3.2. Teacher cache (Kimi K3, full specification, temperature zero,
   reasoning off, 8,688 rows, normalization over the `0` and `1` logprobs):
-  `docs/findings/tool_trajectory_training_teacher_cache.md`,
+  `docs/findings/teachers/tool_trajectory_training_teacher_cache.md`,
   `src/gleipnir/teachers/openrouter.py`. Loss (binary cross-entropy on the
   two-token margin, soft weight 1, hard-label weight 0, no temperature):
   `experiments/deception_distillation/train_student_sft.py`,
   `experiments/tool_trajectory_monitoring/distillation_config.yaml`. Filter
-  (852 of 8,688 removed): `docs/decisions/strict_teacher_filtering.md`; its
+  (852 of 8,688 removed): `docs/decisions/teachers/strict_teacher_filtering.md`; its
   effect on one 4B seed (validation pAUROC@20 0.846812 to 0.895914, FPR at 0.5
   5.28% to 21.45%, no random-removal control):
-  `docs/findings/teacher_disagreement_filtering.md`. Hard against soft, 4B
+  `docs/findings/teachers/teacher_disagreement_filtering.md`. Hard against soft, 4B
   (OOD 0.7458/0.7131/0.6902 against 0.7869/0.8125/0.7768; validation means
   0.8333 and 0.9026; BF16 serving): `experiments/hard_label_seeds/README.md`.
   Hard against soft, 27B (0.9044 and 0.9087 with the compact instruction and
@@ -372,14 +372,14 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   updates: `experiments/tool_trajectory_monitoring/README.md` and the campaign
   configs. Training time: about one hour per 4B run (QAD run: 64 minutes,
   `experiments/qad_v02/README.md`), 4.5 hours for the 27B
-  (`docs/findings/qwen38_27b_campaign.md`). No truncation: longest training row
+  (`docs/findings/training/qwen38_27b_campaign.md`). No truncation: longest training row
   29,337 tokens against a limit of 29,696 (`experiments/qad_v02/README.md`).
   Seed average, release rule and 0.9124 against 0.9026:
   `experiments/seed_average/README.md` (seeds share initialization and differ
   in data order). QAD recipe (learning rate 1e-5, 245 updates, target is the
   averaged adapter's own BF16 score): `experiments/qad_v02/README.md`. 27B
   instruction choice, 0.9420 against 0.9216 on the validation set (BF16), chosen
-  on the validation set, 9.9% more prompt tokens: `docs/decisions.md`
+  on the validation set, 9.9% more prompt tokens: `docs/decisions/README.md`
   (2026-10-20), `experiments/gleipnir27b_vocab_distillation/README.md`. LoRA
   citation (Hu et al., ICLR 2022, arXiv:2106.09685) entered from memory, not
   checked against the arXiv record.
@@ -393,7 +393,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   of 1.0; not confirmed for these runs) and the 16,384-token packing budget.
 - Appendix D.5 (instruction of the 27B). Validation 0.9216 and 0.9420, OOD
   0.9087 and 0.9352 (BF16), SHADE-Arena 0.588 and 0.730:
-  `docs/decisions.md` (2026-10-20), `docs/findings/qwen38_27b_campaign.md`.
+  `docs/decisions/README.md` (2026-10-20), `docs/findings/training/qwen38_27b_campaign.md`.
   The 9.9% token increase: `experiments/gleipnir27b_vocab_distillation/README.md`.
   Appendices D.2 to D.4 carry the text and numbers that were in Sections 3.1,
   3.2 and 4.2; their sources are unchanged.
@@ -428,20 +428,20 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   the text.
 - Appendix C.3 (teacher-agreement filter), additions of 2026-11-10. Updates
   272 to 245 (training tokens 83.8M to 75.9M) and "chosen for data efficiency
-  and observed ranking": `docs/decisions/strict_teacher_filtering.md`,
-  `docs/findings/teacher_disagreement_filtering.md`. Qwen3.5-9B data scaling
+  and observed ranking": `docs/decisions/teachers/strict_teacher_filtering.md`,
+  `docs/findings/teachers/teacher_disagreement_filtering.md`. Qwen3.5-9B data scaling
   (204 to 8,688 nested, source-label-balanced rows; rank-128 QLoRA, one epoch,
   learning rate 5e-5, batch 32, Kimi K3 soft targets, compact instruction; one
   seed; Mean-OOD 0.6988, 0.7076, 0.8111, 0.7907, 0.8365, 0.8227):
-  `docs/research/tool_trajectory_distillation_ood_scaling.md`. "Quantized to 4
+  `docs/findings/training/tool_trajectory_distillation_ood_scaling.md`. "Quantized to 4
   bits" is NF4 QLoRA as in the project's other QLoRA runs; the scaling record
   says only "QLoRA". In Table `tab:filter` since the same day: the margin sweep, with all five arms
   rescored on validation and OOD through one BF16 serving path on 2026-11-10
   (validation 0.846, 0.896, 0.879, 0.837, 0.851 and Mean-OOD 0.776, 0.788,
   0.796, 0.767, 0.779 for unfiltered and margins 0, 0.05, 0.10, 0.20):
   `experiments/filter_margin_ood/README.md`. The margin was selected on
-  validation (`docs/decisions/strict_teacher_filtering.md`); earlier records
-  in `docs/findings/teacher_disagreement_ood.md`.
+  validation (`docs/decisions/teachers/strict_teacher_filtering.md`); earlier records
+  in `docs/findings/teachers/teacher_disagreement_ood.md`.
 - Appendix C.5, 4B rows of `tab:instruction`. Validation 0.8773 (compact) and
   0.8762 (full specification): `experiments/gleipnir27b_teacher_4b/README.md`
   (seed 1, targets from Gleipnir 27B under the full specification, 8,239
@@ -480,12 +480,12 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   workload and harness, US-CA-2 B200, 2026-11-10): BF16 118.9K; low precision
   1.77×; last-query 1.011×; route gate 1.002×; lean host path 1.059×; total
   1.90× (226.0K): `experiments/gleipnir4b_serving_ladder/README.md`. Hosted
-  prices and B200 rates: `docs/research/tool_trajectory_inference_economics.md`.
+  prices and B200 rates: `docs/findings/evaluation/tool_trajectory_inference_economics.md`.
   Table `tab:serving` (drafted 2026-11-10). Hosted list price for the
   released prompts: 4B $0.2598 (compact, 55,346,879 OOD prompt tokens), 27B
   $1.8476 (full specification, 60,539,619 tokens), and final costs $0.0850 /
   $0.0366 and $0.3896 / $0.1677 from measured OOD wall time (244.9 s and
-  1,122.6 s): `docs/research/tool_trajectory_ood_frontier.md`. Middle rows are
+  1,122.6 s): `docs/findings/evaluation/tool_trajectory_ood_frontier.md`. Middle rows are
   the final cost times the gains. 27B gains: total 2.28× (released `graphs01`),
   unneeded work 1.0228× (measured at BF16, before quantization), low precision
   2.28 / 1.0228 = 2.23×. The 4B benchmark projection reproduces $0.0850.
@@ -514,20 +514,20 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   trajectories, concurrency 128, prefix caching off
   (`experiments/b200_inference_benchmark/README.md`). Rates $7.99 (Runpod on
   demand) and $3.44 (CoreWeave $8.60 with "up to 60%" committed discount):
-  `docs/research/tool_trajectory_inference_economics.md`.
+  `docs/findings/evaluation/tool_trajectory_inference_economics.md`.
   Revised the same day (JF): throughput numbers moved out of the text to a
   planned appendix table (`app:serving-throughput`, stub); added the
   prefill/decoding explanation (prefill compute-bound, decoding
   memory-bound; general background, no citation yet). Output-to-input price
   ratios 5 (4B: $0.15 / $0.03) and 8 (27B: $1.56 / $0.195):
-  `docs/research/tool_trajectory_inference_economics.md`.
+  `docs/findings/evaluation/tool_trajectory_inference_economics.md`.
 - Section 4.2 (low-precision arithmetic, drafted 2026-11-10). Recipe: FP8
   (E4M3, per-channel weight scales, dynamic per-token activation scales) on
   the QKV/output projections of the full-attention blocks, FP4 on the MLP and
   GDN projections, MXFP8 attention; BF16 cache/recurrence and two-row
   classifier, FP32 gates/state; small linears stay BF16:
-  `docs/decisions/b200_monitor_score_reference.md`,
-  `docs/findings/b200_attention_precision.md`. The text does not name the GDN
+  `docs/decisions/serving/b200_monitor_score_reference.md`,
+  `docs/findings/serving/b200_attention_precision.md`. The text does not name the GDN
   layers ("the other large projections"). Score changes: Table
   `tab:precision`. B200 only: the kernel receipts are hardware-bound and the
   server refused a B300 on 2026-10-20 (`experiments/optimized_gap/README.md`).
@@ -538,8 +538,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 
 - Section 4.1, Decider price comparison: OpenRouter list price of the
   `pplx-decider-v1.2` endpoint (`-20261016`), $0.02/M input tokens, no output
-  charge, from `docs/findings/pplx_decider_ood_benchmark.md` (Cost) and
-  `docs/research/tool_trajectory_inference_economics.md`. Hosted serving
+  charge, from `docs/findings/evaluation/pplx_decider_ood_benchmark.md` (Cost) and
+  `docs/findings/evaluation/tool_trajectory_inference_economics.md`. Hosted serving
   precision and hardware are not observed. Compared with the 27B committed
   cells of Table `tab:serving` (0.0414 BF16, 0.0180 final).
 
@@ -547,29 +547,29 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   recipe (16 FP8 W8A8 attention projections with per-channel weight and
   per-token activation scales on native CUTLASS GEMM; 64 FP4 MLP and 48 FP4
   GDN projections on FROST; cuDNN MXFP8 prefill) from
-  `docs/decisions/b200_monitor_score_reference.md`; FROST is
+  `docs/decisions/serving/b200_monitor_score_reference.md`; FROST is
   `cudnn.gemm.frost` (`src/gleipnir/serving/frost_wrappers.py`), tile tuning
-  from `docs/findings/b200_fp4_gemm_tuning.md`, fused activation packing from
-  `docs/findings/b200_fp4_serving_preparation.md`; MXFP8 forward kernel
+  from `docs/findings/serving/b200_fp4_gemm_tuning.md`, fused activation packing from
+  `docs/findings/serving/b200_fp4_serving_preparation.md`; MXFP8 forward kernel
   `SdpaFwdDslSm100` D256, exp2 replacement and paged-cache bridge from
-  `docs/findings/b200_mxfp8_serving.md`; backward test (18.71% adapter-gradient
+  `docs/findings/serving/b200_mxfp8_serving.md`; backward test (18.71% adapter-gradient
   difference against a 10% ceiling, 29.64% slower update) from
-  `docs/findings/b200_nvidia_mxfp8.md`; QAD arithmetic (serving MXFP8 forward,
+  `docs/findings/systems/b200_nvidia_mxfp8.md`; QAD arithmetic (serving MXFP8 forward,
   quantized-QKV FA4 surrogate backward, straight-through projections) from
   `experiments/qad_v02/README.md`; 27B port from
-  `docs/research/qwen38_27b_serving_transfer.md`. The two NVIDIA bib entries
+  `docs/plans/qwen38_27b_serving_transfer.md`. The two NVIDIA bib entries
   carry no year or version; library versions of the release image are not
   yet recorded in the report. The 8/24 layer split of the 4B is from
-  `docs/findings/b200_nvidia_mxfp8.md`.
+  `docs/findings/systems/b200_nvidia_mxfp8.md`.
 
 - Appendix E.2, fused SwiGLU kernel: adapted from NVIDIA's SM100 block-scaled
-  dense SwiGLU template (`docs/findings/b200_fp4_swiglu_fusion.md`); direct
+  dense SwiGLU template (`docs/findings/serving/b200_fp4_swiglu_fusion.md`); direct
   FP4 output selected for the 4B on 2026-10-07
-  (`docs/decisions/b200_native_fp4_output_inference_baseline.md`, +1.88%
+  (`docs/decisions/serving/b200_native_fp4_output_inference_baseline.md`, +1.88%
   c128 throughput; used above 1,536 rows, original path below) and listed in
-  the current recipe (`docs/decisions/b200_monitor_score_reference.md`);
+  the current recipe (`docs/decisions/serving/b200_monitor_score_reference.md`);
   ported to the 27B and rejected, no end-to-end gain
-  (`docs/research/qwen38_27b_serving_transfer.md`).
+  (`docs/plans/qwen38_27b_serving_transfer.md`).
 
 - Section 4.3 (removing unneeded work), 2026-11-14. Per-change gains for the
   4B from the matched ladder (`experiments/gleipnir4b_serving_ladder`,
@@ -577,14 +577,14 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   the 27B at BF16 (`experiments/qwen38_27b_serving/README.md`, candidates
   table): last-query +0.40%, fast GDN +1.99%, both +2.28%. Layer counts 32
   (8/24) and 64 (16/48), final layer full attention (layers 31 and 63):
-  `docs/research/qwen38_27b_serving_transfer.md`. Bitwise-unchanged scores at
+  `docs/plans/qwen38_27b_serving_transfer.md`. Bitwise-unchanged scores at
   concurrency 1 and the 10.3% lower latency at 1M tokens (4B, 43.08 s to
-  38.64 s): `docs/findings/b200_last_layer_trim.md`. Lean GDN host path
+  38.64 s): `docs/findings/serving/b200_last_layer_trim.md`. Lean GDN host path
   (boundaries once per forward, in-place output, zero-state start, bitwise
   equal): `experiments/b200_gdn_fast/README.md`. Route gate (context-parallel
   variant slower under 8,192 tokens, 2.3-2.9 ms on short single requests,
-  canary MAE 0.0005, 4B only): `docs/findings/b200_gdn_route.md`,
-  `docs/decisions.md` (2026-10-15). The route gate changes arithmetic for
+  canary MAE 0.0005, 4B only): `docs/findings/serving/b200_gdn_route.md`,
+  `docs/decisions/README.md` (2026-10-15). The route gate changes arithmetic for
   short requests, so the bit-for-bit statement covers only the two main
   changes. "One full-attention layer follows every three GDN layers" is
   inferred from the 4B attention layer indices 3, 7, ..., 31 and the 16/48
@@ -677,7 +677,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     escalated checks 7.9×; |cached − uncached| on 8 checks mean 0.055, max
     0.151; GDN route gate changed C1 scores by MAE 0.055. Opt-in in the image
     since 0.2 (`serve.py --prefix-caching`;
-    `docs/decisions/prefix_cached_serving.md`).
+    `docs/decisions/serving/prefix_cached_serving.md`).
     Cause and quality: `experiments/serving_concurrency/README.md`, "Prefix
     caching and score identity" (`prefix01`, 2026-11-15, released 4B):
     replay bit-identical; 528-token blocks; with `--max-num-batched-tokens
@@ -695,7 +695,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
     (`image11_b300`, EUR-IS-1), 178 s (`image02_fresh`), 290 s (`image10_fresh`).
 - Section 5 (main evaluation, 2026-11-18). Figure `fig:frontier`
   (`assets/ood_frontier.pdf`) is `scripts/plot_tool_trajectory_ood_frontier.py
-  --report` on the registry `docs/research/tool_trajectory_ood_frontier.md`;
+  --report` on the registry `docs/findings/evaluation/tool_trajectory_ood_frontier.md`;
   the slide figure in `figures/` comes from the same registry. Scores and
   costs are rows of `tab:ood-all`. "229 times": $94.794 / $0.4137. Interval
   of Gleipnir 27B: row bootstrap within source x label, 2,000 resamples,
@@ -710,14 +710,14 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   against 56,359,499 OOD prompt tokens.
 - Table `tab:ood-all`, Gemini Decision 1 (JF, 2026-11-18): registry row
   0.867342 at $0.930555 per 1,000 (59,509,013 input tokens at $0.10/M);
-  `docs/findings/decision_models_ood_benchmark.md`, section "Gemini Decision
+  `docs/findings/evaluation/decision_models_ood_benchmark.md`, section "Gemini Decision
   1". Two inputs blocked by Google's filter score 0.5; answered-only 0.8742.
   It is left out of the main figure like the other decision models off the
   frontier.
 - Table `tab:ood-all`, pplx-decider v1.3 (JF, 2026-11-18): registry row
   0.894199 at $0.176015 per 1,000 (56,280,923 billed input tokens at the
   $0.02/M list price of v1.2; the free endpoint billed $0).
-  `docs/findings/decision_models_ood_benchmark.md`, section "pplx-decider
+  `docs/findings/evaluation/decision_models_ood_benchmark.md`, section "pplx-decider
   v1.3". Section 5 still names v1.2 as the strongest decision model
   (0.8956 against 0.8942).
 - Table `tab:ood-all`, recall column (JF, 2026-11-18): mean recall at 1%
@@ -758,7 +758,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   rows, 97% against 9% median share, the quoted instruction and the loyalty
   file), Kimi K3 within-task AUROC 0.847 and pAUROC@20 0.391, and the
   without-task values (SHADE 0.9581 / 0.9397, Mean-OOD 0.9719 / 0.9693; BF16
-  0.9732): `docs/findings/shade_length_audit.md`. The report does not name
+  0.9732): `docs/findings/evaluation/shade_length_audit.md`. The report does not name
   the airline. The task-pair bootstrap paragraph was removed (JF,
   2026-11-18). Section 5's pointer cites this subsection.
 
@@ -779,7 +779,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   `sb07`/`sb08`/`sb09`/`sb13`, Jev 1.13 and pplx-decider v1.2 `sb12`, v1.3 and
   Gemini Decision 1 `sb15`. Scores and intervals from each run's
   `results/sleightbench_eval/<run>/report.json`; findings in
-  `docs/findings/sleightbench_released_monitors.md`.
+  `docs/findings/evaluation/sleightbench_released_monitors.md`.
 - Costs: `experiments/sleightbench_eval/frontier.py` →
   `results/sleightbench_eval/frontier.json`. API rows: mean billed input and
   output tokens over the 86 stripped rows at the OOD frontier's list prices,
@@ -816,7 +816,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - `tab:ood-all` row: `results/decision_models_ood/jev_1_14/full/summary.json`
   (0.8763 pAUROC@20, 0.9393 AUROC, $0.3887/1K at $0.042/M) and recall 0.783
   from `results/ood_recall_at_fpr/recall_at_fpr.json`. Registry row added to
-  `docs/research/tool_trajectory_ood_frontier.md`.
+  `docs/findings/evaluation/tool_trajectory_ood_frontier.md`.
 - `tab:sleightbench` row: run `sb16` (0.260 [0.165, 0.391], AUROC 0.679, catch
   0.200 [0.075, 0.325], $0.771/1K).
 - Figures `fig:frontier`, `fig:recall-frontier`, `fig:sleightbench` and
@@ -840,7 +840,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   models." OpenAI's reasoning guide states that GPT-6 Astra and GPT-6.1 Sol do
   not support `none` (https://developers.openai.com/api/docs/guides/reasoning,
   read 2026-11-19). The Luna canary
-  (`docs/findings/openai_luna_logprobs_canary.md`) shows logprobs only with
+  (`docs/findings/evaluation/openai_luna_logprobs_canary.md`) shows logprobs only with
   effort `none`.
 - "Only OpenAI": Anthropic's API returns no log probabilities. Google's
   `responseLogprobs` worked on Gemini 2.x, and developer reports (Google AI
@@ -856,7 +856,7 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - Section 6.1 interpretation (JF, 2026-11-19). "Matches or exceeds its
   teacher on the OOD suite": 0.951 against 0.908 (lead from one SHADE task,
   `app:shade`); SleightBench gap 0.402 − 0.299 = 0.103. Training-data support:
-  `docs/findings/sleightbench_released_monitors.md` (source review of the five
+  `docs/findings/evaluation/sleightbench_released_monitors.md` (source review of the five
   training sources, none with a monitor in the loop; keyword scan of the
   8,688 teacher-training prompts finds SleightBench mechanisms in roughly
   1–3% of rows or fewer). Decider breadth: v1.2 card ("a large amount of other
@@ -880,9 +880,9 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
 - List prices: `experiments/decision_models_ood/config.json` (Mercury Decide
   and d1 $0.02/M; Microsoft-Decision-1, d1-ultra, Jev $0.042/M) and the Decider
   v1.2 OpenRouter endpoint ($0.02/M, checked 2026-10-22).
-- Throughput: `docs/research/tool_trajectory_ood_frontier.md` ("Self-hosting
+- Throughput: `docs/findings/evaluation/tool_trajectory_ood_frontier.md` ("Self-hosting
   it costs far more than its list price") and
-  `docs/findings/pplx_decider_ood_benchmark.md`: published fast path, 56,359,499
+  `docs/findings/evaluation/pplx_decider_ood_benchmark.md`: published fast path, 56,359,499
   tokens in 4,170 s = 13,515 tokens/s on a Runpod B200, 2026-10-19. $7.99/h →
   $0.164/M; $3.44/h → $0.0707/M; break-even at $0.02/M needs 111K / 47.8K
   tokens/s. Flash 30,655 tokens/s → $0.072/M against $0.01/M.
@@ -1027,8 +1027,8 @@ BibTeX metadata for all entries comes from the arXiv API (read 2026-11-09).
   finding (needle probes and tokenizer check, 2026-11-20).
 - Kernels table, GDN row (JF, 2026-11-20): the released stack runs FlashInfer's
   `flashinfer.gdn_prefill.chunk_gated_delta_rule` in BF16 with FP32 state and
-  gates (`docs/decisions/b200_low_precision_attention_serving.md`,
-  `docs/decisions/b200_frost_inference.md`: "FROST FP4 MLP/BF16 FlashInfer GDN");
+  gates (`docs/decisions/serving/b200_low_precision_attention_serving.md`,
+  `docs/decisions/serving/b200_frost_inference.md`: "FROST FP4 MLP/BF16 FlashInfer GDN");
   `experiments/release_serving/serve.py` sets `GLEIPNIR_FLASHINFER_GDN_CP="auto"`
   (FlashInfer's automatic context-parallel route; `experiments/b200_gdn_route`).
   The direct call on empty-state steps is the "shorter host path" of Section 4.3.

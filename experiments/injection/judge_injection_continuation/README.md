@@ -101,7 +101,7 @@ from 100% to 70.64% at clean-code 2% FPR operating points, but vanilla-backdoor
 detection weakens. ID macro pAUROC@20 falls from 0.846273 to 0.795786 and pooled
 Brier worsens from 0.097827 to 0.171919. The checkpoint is more conservative,
 with a meaningful monitoring regression; no promotion follows. See the
-[finding](../../../docs/findings/judge_injection_continuation.md) for source/template
+[finding](../../../docs/findings/injection/judge_injection_continuation.md) for source/template
 breakdowns, calibration, ties, recovery receipts and limits.
 
 The first final-report attempt omitted the per-example token field required by

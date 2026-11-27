@@ -15,7 +15,7 @@ Step-by-Step).
 
 **Prior evidence.** Hard rationale SFT on Gemini analyses did not move ID
 ranking: 0.8704 and 0.8733 at weights 0.05 and 0.20, against 0.8711
-soft-only ([backlog §3](../../../docs/research/monitoring_training_followups.md)).
+soft-only ([backlog §3](../../../docs/plans/monitoring_training_followups.md)).
 That run copied long analyses as hard text. This arm differs in three ways:
 - the targets are short and grounded (one quote, one sentence);
 - they are distilled from the teacher's soft distributions;

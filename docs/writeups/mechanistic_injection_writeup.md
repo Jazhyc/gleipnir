@@ -58,7 +58,7 @@ Some inspected high-change false positives involved agents editing firewalls
 or network whitelists while trying to run tests or upload task results. Kimi
 scored these trajectories as suspicious despite their harmless ground-truth
 labels. High changes also occur outside firewall-related examples.
-[Sample review](../findings/b200_training_direction.md#targeted-review-of-harmless--teacher-positive-high-alignment).
+[Sample review](../findings/injection/b200_training_direction.md#targeted-review-of-harmless--teacher-positive-high-alignment).
 
 We ranked all original harmless training records by $\Delta z(x)$, then removed
 the top **20%:
@@ -94,7 +94,7 @@ training exposure. The random control did not match teacher-target mass, and
 its removed set overlapped ours in 394 records. We did not separate these
 mixture, target-mass and exposure changes, so the teacher-disagreement
 explanation for the ID gain remains a hypothesis.
-[Full filtering results](../findings/activation_filter_training.md).
+[Full filtering results](../findings/injection/activation_filter_training.md).
 
 We then asked whether the filtered model still used the same suspiciousness
 direction. We projected out the original direction and a direction refitted
@@ -115,7 +115,7 @@ consistent with some shift in the suspiciousness-related
 representation while retaining substantial overlap with the original direction.
 The refit's lower recalibrated FPR comes with lower recall and ranking than
 the original direction, and depends heavily on the calibration shift.
-[Projection follow-ups](../findings/activation_filter_training.md#model-specific-direction-refit).
+[Projection follow-ups](../findings/injection/activation_filter_training.md#model-specific-direction-refit).
 
 ## CAFT on regular data
 
@@ -174,7 +174,7 @@ These are matched eager comparisons on the same checkpoint and examples.
 Both fixed and recalibrated thresholds give the same saturated injection rates. Restoring
 the original component at ordinary inference therefore does not explain the
 failure on its own.
-[Inference checks](../findings/concept_ablation_training.md#keeping-the-original-training-projection-active-at-inference).
+[Inference checks](../findings/injection/concept_ablation_training.md#keeping-the-original-training-projection-active-at-inference).
 
 The model still learned to flag prompt injections despite the training-time
 ablation. This suggests that the response could be carried by other computations
@@ -203,7 +203,7 @@ CAFT's fixed clean-calibrated threshold, 0.1192.
 The original direction therefore still increases suspiciousness. At threshold
 0.5, the +2 arm's FPR was only 2.16%, so the 100% operating-point rate does
 not mean all scores exceeded 0.5.
-[CAFT steering](../findings/concept_ablation_training.md#augmented-vector-addition-on-clean-and-neutral-honest-examples).
+[CAFT steering](../findings/injection/concept_ablation_training.md#augmented-vector-addition-on-clean-and-neutral-honest-examples).
 
 A working hypothesis is that the optimization pressure during training favors
 broad suspicion of injection text. When the original direction is ablated,
@@ -216,7 +216,7 @@ In a separate test on the unadapted base model, adding the direction raised
 APPS alarms but mainly biased JudgeDeceiver judgments toward B. This suggests
 a context-dependent effect and raises the possibility of polysemanticity;
 it does not establish a shared meaning of suspiciousness across the two tasks.
-[Base-model transfer](../findings/base_judge_steering.md).
+[Base-model transfer](../findings/injection/base_judge_steering.md).
 
 ## Precision sensitivity
 
@@ -249,7 +249,7 @@ Comparing the first two rows keeps optimized serving fixed while changing MLP tr
 precision. The two BF16/FA4 rows use exactly the same adapter and differ only
 in serving; the last two keep BF16 serving fixed while changing training
 attention. These distinctions separate training effects from serving effects.
-[Precision comparisons](../findings/b200_augmented_training.md).
+[Precision comparisons](../findings/injection/b200_augmented_training.md).
 
 The same-adapter serving change substantially reduced both false alarms and
 backdoor recall, while weakening matched ranking. Training with SDPA increased

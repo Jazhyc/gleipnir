@@ -1,7 +1,7 @@
 # Host overhead of short single requests
 
 Diagnostic, user-requested 2026-10-15: why short C1 requests take about 35 ms
-when the [kernel profile](../../../docs/findings/b200_kernel_profile.md) shows
+when the [kernel profile](../../../docs/findings/serving/b200_kernel_profile.md) shows
 about 8 ms of GPU work at 1K. No recipe change or promotion.
 
 `probe.py` launches the adopted default through the normal canary-guarded

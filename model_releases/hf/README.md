@@ -64,7 +64,7 @@ comparison tables.
 Card update (2026-10-20, user request), with no new tags because the weights
 are unchanged:
 - **Gleipnir 27B** recommends and reports the full teacher prompt (0.9352
-  Mean-OOD, 0.9420 CoT-removed ID pAUROC@20; [decision](../../docs/decisions.md)).
+  Mean-OOD, 0.9420 CoT-removed ID pAUROC@20; [decision](../../docs/decisions/evaluation/evaluate_gleipnir_27b_under_the_full_teacher_prompt.md)).
   Its config sets `evaluation_prompt: teacher`, so `teacher_prompt.txt` and the
   teacher template hash are staged with it. Commit `694b5239`; 11 files
   verified.

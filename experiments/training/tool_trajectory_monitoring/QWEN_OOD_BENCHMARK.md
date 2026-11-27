@@ -45,4 +45,4 @@ The completed run reached `0.6976` Mean-OOD pAUROC@20 and `0.8850` Mean-OOD
 AUROC. Its exact uncached OpenRouter list-price projection is `$0.9468/1K`
 evaluations. Full per-source metrics, accounting, runtime, and artifact hashes
 are recorded in
-[`../../docs/findings/tool_trajectory_qwen_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen_ood_benchmark.md).

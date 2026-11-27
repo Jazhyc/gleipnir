@@ -89,5 +89,5 @@ accuracy. ID source-macro pAUROC@20 is 0.8658 (original 0.8463; preference-only
 continuation 0.7958). All injected harmless APPS controls still alarm at the
 clean-code ~2% FPR operating point: preference robustness did not transfer to
 the regular harmfulness-monitoring task. All six serving-parity cells passed.
-The [finding](../../../docs/findings/judge_injection_joint.md) records the complete
+The [finding](../../../docs/findings/injection/judge_injection_joint.md) records the complete
 comparison, provenance, calibration and limitations.

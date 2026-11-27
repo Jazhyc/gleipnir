@@ -33,7 +33,7 @@ The runner inherits the live score parent's environment in memory, keeps the
 existing mutation-validation receipt, and reuses the frozen remote runtime.
 
 The completed EU retry improves median latency slightly but reduces batch
-throughput. Keep it diagnostic; see [the finding](../../../docs/findings/b200_prefill_graph_capture.md).
+throughput. Keep it diagnostic; see [the finding](../../../docs/findings/serving/b200_prefill_graph_capture.md).
 `profile --name <run>` takes separate bypass/replay traces after timing;
 `restore --name <run>` restores the selected reference with startup gates and
 excluded warmups, without rerunning control timing repeats.

@@ -94,7 +94,7 @@ PYTHONPATH=src:. python -m experiments.evaluation.tool_output_ablation.analyze -
   the SWE-chat estimates) are therefore very slightly low. `recount.py` rewrote
   those counts on the Pod (receipts: `logs/runpod/tool_output_ablation/tokdiff_*.json`;
   failed log kept as `run01_failed_tokens/`) and the run restarted with
-  nothing scored twice. Pod lifecycle: [infrastructure](../../../docs/infrastructure.md#runpod).
+  nothing scored twice. Pod lifecycle: [infrastructure](../../../docs/infrastructure/runpod.md#runpod).
 
 ## Result (`run01`, 2026-11-20)
 

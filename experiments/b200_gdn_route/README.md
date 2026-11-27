@@ -46,4 +46,4 @@ it.
 in-server paired A/Bs `paired01` (1K/4K/quick64) and `paired02` (8K–32K)
 confirm `cp_min_tokens = 8192`. Run the paired test with
 `python -m experiments.b200_gdn_route.paired --name <n> [--cases crossover]`.
-See [the finding](../../docs/findings/b200_gdn_route.md).
+See [the finding](../../docs/findings/serving/b200_gdn_route.md).

@@ -15,7 +15,7 @@ set.
 
 Status: complete (run `sb01`, 2026-10-21). Both models passed their gates
 and were scored once. Results are in
-[the finding](../../../docs/findings/sleightbench_released_monitors.md).
+[the finding](../../../docs/findings/evaluation/sleightbench_released_monitors.md).
 
 ## Hypothesis and baselines
 
@@ -262,7 +262,7 @@ quantization confound:
   rate.
 - **Off-distribution.** Neither adapter was trained to read its own
   reasoning. The prior Qwen3.5-9B result
-  ([finding](../../../docs/findings/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md))
+  ([finding](../../../docs/findings/evaluation/tool_trajectory_qwen_binary_reasoning_ood_benchmark.md))
   found visible reasoning neutral overall but much better on injection.
 
 ```bash
@@ -421,7 +421,7 @@ python -m experiments.evaluation.sleightbench_eval.run --variant control_arena r
 ## Exploratory run sb10: Jev 1.13 native decision (frozen 2026-10-22)
 
 User-requested modern reference. It uses Jev's own interface from its OOD
-frontier point ([finding](../../../docs/findings/tool_trajectory_jev_ood_benchmark.md)),
+frontier point ([finding](../../../docs/findings/evaluation/tool_trajectory_jev_ood_benchmark.md)),
 not the logit interface:
 - **State.** The raw trajectory inside each frozen `api_control_arena.jsonl`
   prompt (172 rows, both views); checked equal to the rendered transcript
@@ -452,7 +452,7 @@ Noul question, Decisions API, rules), with only the model changed to
 Perplexity's hosted `pplx-decider-v1.2-20261016`, pinned to Perplexity.
 - **Score.** The hosted `noul` probability. Its OOD frontier point instead
   used local readout margins
-  ([finding](../../../docs/findings/pplx_decider_ood_benchmark.md)), which the
+  ([finding](../../../docs/findings/evaluation/pplx_decider_ood_benchmark.md)), which the
   hosted endpoint does not expose; both are monotone in the margin.
 - **Price.** $0.02/M input, free output (listing checked 2026-10-22); about
   $0.07, $0.50 hard bound.
@@ -510,7 +510,7 @@ python -m experiments.evaluation.sleightbench_eval.run --variant control_arena r
 
 User-requested on 2026-11-19 for the technical report, after both models
 joined the OOD comparison
-([finding](../../../docs/findings/decision_models_ood_benchmark.md)). Identical
+([finding](../../../docs/findings/evaluation/decision_models_ood_benchmark.md)). Identical
 to `sb11` (states, frozen Jev Noul question, Decisions API, routing rules)
 except:
 - **Models.** `gemini_decision_1` (`google/gemini-decision-1-20261111`,

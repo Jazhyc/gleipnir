@@ -22,7 +22,7 @@ PYTHONPATH=src:. .venv/bin/python -m experiments.injection.b200_training_clean_d
 The entrypoint reads ignored `results/b200_training_clean_direction/clean_direction01/paired_models.jsonl`
 and exports to that directory. Copy this named PNG/PDF pair to `figures/` after
 checking its plot receipt. The adjacent `.provenance.json` binds the input,
-plotting sources and copied exports; [full findings](../docs/findings/b200_training_direction.md)
+plotting sources and copied exports; [full findings](../docs/findings/injection/b200_training_direction.md)
 document the data and interpretation.
 
 ## Matched teacher final-boundary scores
@@ -33,7 +33,7 @@ teacher-agreement diagnostic. This source/label-balanced subset is not the
 full 8,688-row population. Both panels use identical 0.05-wide bins, axes,
 and binary-normalized probabilities; no prefix predictions are included.
 The input remains an ignored artifact, with provenance and caveats in
-`docs/findings/matched_qwen_kimi_teacher_agreement.md`.
+`docs/findings/teachers/matched_qwen_kimi_teacher_agreement.md`.
 
 ```bash
 PYTHONPATH=src .venv/bin/python scripts/plot_teacher_score_histograms.py
@@ -60,7 +60,7 @@ show label-conditioned score distributions, paired score density and paired
 differences. The adjacent `.provenance.json` binds input/output hashes and stores
 pooled, label and source agreement summaries. Teacher and student use different
 prompt interfaces; histogram overlap is distinct from paired decision agreement.
-See the [OOD finding](../docs/findings/teacher_disagreement_ood.md).
+See the [OOD finding](../docs/findings/teachers/teacher_disagreement_ood.md).
 
 ```bash
 PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py
@@ -72,7 +72,7 @@ PYTHONPATH=src:. .venv/bin/python scripts/plot_strict_kimi_ood.py
 4B/9B runs: five-update online loss reports, trailing 50-update averages and
 whole-population teacher entropy. These are changing-checkpoint training losses,
 not a final-checkpoint training evaluation. The adjacent provenance file binds
-inputs and exports; [findings](../docs/findings/monitor_training_loss_fit.md)
+inputs and exports; [findings](../docs/findings/training/monitor_training_loss_fit.md)
 record the comparison and its capacity/optimization qualifications.
 
 ```bash
@@ -85,7 +85,7 @@ PYTHONPATH=src:. .venv/bin/python scripts/plot_monitor_training_losses.py
 artifact; a high-resolution PNG is retained for software that does not render
 SVG. SVG text is saved as outlines, so it renders identically without the
 Cantarell font installed. Both are generated directly from the reference table in
-`docs/research/tool_trajectory_ood_frontier.md`. The script validates the
+`docs/findings/evaluation/tool_trajectory_ood_frontier.md`. The script validates the
 table's declared frontier against recomputed point-estimate nondominance before
 plotting:
 
@@ -133,14 +133,14 @@ Jev 1.13 is included from the complete retained native Decisions benchmark at
 Gleipnir 4B and Kimi K2.6, dominating GPT-6 Luna and Qwen27B as well as
 Gleipnir 9B. All comparison points remain visible. The native state/question
 interface and two provider-usage/context discrepancies are documented in
-`docs/findings/tool_trajectory_jev_ood_benchmark.md`.
+`docs/findings/evaluation/tool_trajectory_jev_ood_benchmark.md`.
 
 pplx-decider v1.2 (27B, labelled `Decider v1.2`) is included at `$0.1763/1K` and `0.8956` Mean-OOD
 pAUROC@20. It was scored locally on the Jev requests and priced at its OpenRouter
 list rate. It is the lowest-cost frontier point and dominates Gleipnir 4B and
 Jev 1.13; both remain visible. Its Flash sibling (`0.5350`) falls below the
 plotted range and is not in the registry; see
-`docs/findings/pplx_decider_ood_benchmark.md`.
+`docs/findings/evaluation/pplx_decider_ood_benchmark.md`.
 
 Pass `--source` to override the registry. Pass `--output` one or more times to
 select custom output paths and formats, for example:
@@ -167,7 +167,7 @@ selection, subsets, and output interfaces differ. The mixed-data Gleipnir 9B
 and 4B transfer conditions are intentionally excluded.
 
 The SVG and PNG are generated directly from the canonical results table in
-`docs/research/tool_trajectory_distillation_ood_scaling.md`:
+`docs/findings/training/tool_trajectory_distillation_ood_scaling.md`:
 
 ```bash
 python scripts/plot_tool_trajectory_ood_scaling.py
@@ -198,7 +198,7 @@ python scripts/plot_distillation_pipeline_comparison.py
 show stripped-view SLEIGHT-Bench results as grouped bars (one group per
 model, one bar per way of running it) for the
 [writeup](../docs/writeups/sleightbench_monitor_evaluation.md). Values are
-hard-coded from the [finding](../docs/findings/sleightbench_released_monitors.md):
+hard-coded from the [finding](../docs/findings/evaluation/sleightbench_released_monitors.md):
 paper rows are per-trial catch rates read from the paper's figures; Gleipnir
 rows are the optimized-stack `sb02` runs and base-model logit rows the BF16
 `sb04` runs. Regenerate with:

@@ -109,7 +109,7 @@ the other evaluates.
 Omitting `--variant` publishes both conditions.
 
 Systems receipts and eventual quality results are recorded in
-[the campaign finding](../../../docs/findings/student_injection_awareness.md).
+[the campaign finding](../../../docs/findings/injection/student_injection_awareness.md).
 
 
 ## Completed campaign

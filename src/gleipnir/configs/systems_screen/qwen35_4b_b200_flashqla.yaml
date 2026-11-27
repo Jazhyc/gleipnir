@@ -1,5 +1,5 @@
 # User-selected historical B200 Qwen3.5-4B NF4/BF16 LoRA recipe, 2026-10-02.
-# See docs/decisions/b200_flashqla_training_recipe.md.
+# See docs/decisions/systems/b200_flashqla_training_recipe.md.
 # Preserve qwen35_4b_b200_adaptive as the original-FLA comparison profile.
 defaults:
   - qwen35_4b_b200_adaptive

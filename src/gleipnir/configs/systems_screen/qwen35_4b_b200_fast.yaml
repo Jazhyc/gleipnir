@@ -1,5 +1,5 @@
 # Provisional rank-128 recipe from the matched B200 mixed-data screen.
-# See docs/findings/b200_training_throughput.md; preserve the longest-row preflight.
+# See docs/findings/systems/b200_training_throughput.md; preserve the longest-row preflight.
 defaults:
   - qwen35_4b_h100_fast
   - _self_

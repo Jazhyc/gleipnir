@@ -11,11 +11,11 @@ has TeX Live 2025 from apt).
 - [`sprint_proposal/`](sprint_proposal/): one-page MATS exploration-phase
   proposal for the two-week Gleipnir v1 sprint
   ([proposal.pdf](sprint_proposal/proposal.pdf)). Numbers come from the
-  [OOD frontier registry](../../docs/research/tool_trajectory_ood_frontier.md),
-  the [27B campaign](../../docs/findings/qwen38_27b_campaign.md) and the
-  [vocab-distillation diagnostic](../../experiments/gleipnir27b_vocab_distillation/README.md),
-  the [GPT-6 Luna benchmark](../../docs/findings/openai_luna_ood_benchmark.md)
-  and the [4B B200 latency baseline](../../docs/decisions/b200_inference_benchmark.md)
+  [OOD frontier registry](../../docs/findings/evaluation/tool_trajectory_ood_frontier.md),
+  the [27B campaign](../../docs/findings/training/qwen38_27b_campaign.md) and the
+  [vocab-distillation diagnostic](../../experiments/teachers/gleipnir27b_vocab_distillation/README.md),
+  the [GPT-6 Luna benchmark](../../docs/findings/evaluation/openai_luna_ood_benchmark.md)
+  and the [4B B200 latency baseline](../../docs/decisions/serving/b200_inference_benchmark.md)
   at revision `5ef9e5b`.
 - [`gleipnir_v1_technical_report/`](gleipnir_v1_technical_report/): arXiv
   technical report for the v1 monitor release, in the NeurIPS 2026 style's

@@ -39,4 +39,4 @@ The completed run reaches `0.9371` Mean-OOD AUROC and `0.8395` Mean-OOD
 pAUROC@20. The matched dense-capacity curve is `0.6175` at 4B, `0.6976` at 9B,
 and `0.8395` at 27B. Exact results, cost accounting, runtime, and artifact hashes
 are recorded in
-[`tool_trajectory_qwen27b_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen27b_ood_benchmark.md).
+[`tool_trajectory_qwen27b_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen27b_ood_benchmark.md).

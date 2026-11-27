@@ -89,4 +89,4 @@ two or three threshold flips among 256 rows. Padding deltas replicated better
 than the historical-reference discrepancy (`r=0.83` short and `r=0.89` long),
 so this is mild example-level position sensitivity rather than pure serving
 noise, but it is too small and non-directional to justify a targeted training
-ablation. See `docs/findings/monitoring_length_shortcut_audit.md`.
+ablation. See `docs/findings/evaluation/monitoring_length_shortcut_audit.md`.

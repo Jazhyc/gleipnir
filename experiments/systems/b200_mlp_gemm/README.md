@@ -5,7 +5,7 @@ training as `qwen35_4b_b200_fp4_mlp`, also selected by `qwen35_4b_b200_default`.
 Use the normal Trainer/launchers; benchmark monkeypatch flags are unnecessary.
 The BF16 comparison is `qwen35_4b_b200_bf16_fa4`. Preserve historical strict
 loss/gradient failures alongside the selected finite receipt and shared caches.
-See [the integration decision](../../../docs/decisions/b200_native_fp4_training_recipe.md).
+See [the integration decision](../../../docs/decisions/systems/b200_native_fp4_training_recipe.md).
 
 Hypothesis: merging the two frozen gate/up GEMMs and compiling the complete
 LoRA MLP, or fusing the GEMMs/LoRA adds/SwiGLU with cuDNN, reduces full MLP
@@ -192,7 +192,7 @@ row isolation and changed-live-master replay, but saves only 1.56%/2.28% complet
 MLP graph time at 4096/16384 tokens. It is not selected for full-model training.
 The separate `integrateprofile01/integratedprofile` trace finds conversion takes
 1.39850 ms versus 0.70543 ms in native FP4 GEMMs at 16384 tokens. See
-[`docs/findings/b200_mlp_gemm.md`](../../../docs/findings/b200_mlp_gemm.md) for raw
+[`docs/findings/systems/b200_mlp_gemm.md`](../../../docs/findings/systems/b200_mlp_gemm.md) for raw
 timings, profiler scope, numerical distinctions and receipt hashes. The BF16
 FA4 standard is unchanged; this is an explicit experimental integration.
 
@@ -255,7 +255,7 @@ relative L2 and loss drift above the existing bound), despite exact isolation,
 and stops before compilation, memory preflight or optimizer updates. No model-
 update speedup or training-quality equivalence is established. Preserve the
 failed receipts and retain BF16 FA4 as the standard. See the
-[finding record](../../../docs/findings/b200_mlp_gemm.md) for hashes and diagnostics.
+[finding record](../../../docs/findings/systems/b200_mlp_gemm.md) for hashes and diagnostics.
 
 After the user explicitly accepts proceeding despite gradient disagreement,
 `training_screen --timing-authority TEXT` permits a separate native-FP4/FA4
@@ -371,7 +371,7 @@ tuning alone. These are instrumented diagnostic shares, not a decomposition of
 the previous 3.74480-second unprofiled mean. The profile loss history and final
 FP32 adapter differ from `warmed03`; identical initial masters/batches do not
 establish exact trajectory replay. Preserve the original strict failures and
-BF16 FA4 default. See the [full findings](../../../docs/findings/b200_mlp_gemm.md).
+BF16 FA4 default. See the [full findings](../../../docs/findings/systems/b200_mlp_gemm.md).
 
 Analyze collected raw traces with:
 
@@ -498,7 +498,7 @@ warmed, with identical physical partitions. Both fail timing selection; retain
 FP4 MLPs/BF16 GDN/FA4. First-batch gradient differences are 117.84% and 137.15%,
 so neither is a numerical-equivalence result. Receipts and exact sources are in
 `results/b200_mlp_gemm/resident02/`; the worker remains idle and resident.
-See the [findings](../../../docs/findings/b200_mlp_gemm.md) for provenance and losses.
+See the [findings](../../../docs/findings/systems/b200_mlp_gemm.md) for provenance and losses.
 
 Candidate preparation receipts can be reused only for matching executed library
 source, merge mode, worker PID, initial master and physical contract, following

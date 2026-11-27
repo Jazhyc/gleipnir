@@ -68,12 +68,12 @@ session 1 the `quant` rung was still warming up (177K, 199K, 210K) and
 - In every session-2 rung the fifth pass is the slowest (3–6% lower; 38%
   lower for `route`), so the median is used and the cause is not diagnosed.
 - Last-query attention adds 1.1% here against 5.7% in the
-  [adoption A/B](../../../docs/findings/b200_last_layer_trim.md), which ran on
+  [adoption A/B](../../../docs/findings/serving/b200_last_layer_trim.md), which ran on
   a different host and stack state.
 - The projected $0.0850 for the released recipe equals the cost recorded
   from the measured OOD wall time (244.9 s for 55,346,879 prompt tokens,
   226K tokens/s;
-  [frontier record](../../../docs/research/tool_trajectory_ood_frontier.md)),
+  [frontier record](../../../docs/findings/evaluation/tool_trajectory_ood_frontier.md)),
   so the benchmark and the OOD suite agree at the end of the ladder.
 - Score sanity: mean absolute difference from `fast` is 0.003–0.005 for the
   optimized rungs and 0.049 for `bf16` on this training-seen cohort.

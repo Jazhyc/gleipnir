@@ -46,4 +46,4 @@ AUROC. Its exact one-token hosted-price projection is `$0.2842/1K`
 evaluations using the paper's Qwen3.5-4B proxy rate. OpenRouter did not list a
 Qwen3.5-4B route on the evaluation date. Full per-source metrics, accounting,
 runtime, and artifact hashes are recorded in
-[`../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md`](../../../docs/findings/tool_trajectory_qwen4b_ood_benchmark.md).
+[`../../docs/findings/evaluation/tool_trajectory_qwen4b_ood_benchmark.md`](../../../docs/findings/evaluation/tool_trajectory_qwen4b_ood_benchmark.md).

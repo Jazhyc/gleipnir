@@ -4,7 +4,7 @@ Score the frozen NTP probes from the
 [probe study](../probe_generalization/README.md) (run `full01`) once on
 [SleightBench](../../evaluation/sleightbench_eval/README.md), stripped view, and compare
 them with the released Gleipnir monitors on the same transcripts (run `sb01`,
-[finding](../../../docs/findings/sleightbench_released_monitors.md)).
+[finding](../../../docs/findings/evaluation/sleightbench_released_monitors.md)).
 
 **Single pass (user rule for SleightBench).** This README, `manifest.json`
 and the code are frozen and committed before any probe scores a SleightBench
@@ -82,7 +82,7 @@ run; the FP8 activation store (no text) is kept on the persistent filesystem.
 ## Compute and run
 
 One Lambda H100 in us-west-3 with the full project bootstrap (fast kernels as
-in [infrastructure](../../../docs/infrastructure.md#lambda-cloud)) and the
+in [infrastructure](../../../docs/infrastructure/lambda_cloud.md#lambda-cloud)) and the
 `gleipnir-probes` filesystem attached. At the user's request (2026-10-26),
 `run_remote.sh` copies the activation store to
 `stores/sleightbench/ntp` there for later reuse (the filesystem was deleted on
@@ -102,4 +102,4 @@ the host.
 Status: complete (run `sbprobe01`, 2026-10-26; one Lambda H100 PCIe,
 about an hour, terminated around 15:12 UTC after its 8 artifacts were SHA-256 verified).
 The parity gate passed with drift 0.0000 ID-SD. Results are in
-[the finding](../../../docs/findings/sleightbench_ntp_probes.md).
+[the finding](../../../docs/findings/probes/sleightbench_ntp_probes.md).

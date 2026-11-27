@@ -127,7 +127,7 @@ information; it shows that the released evaluation contrast can be solved by
 identifying whether the question asks about the secret. Retain the predeclared
 metrics, but do not interpret Gender Secret AUROC as clean evidence of
 belief-state extraction. Full contingency tables and poster language are in
-`docs/findings/competition_poster_evidence.md`.
+`docs/findings/evaluation/competition_poster_evidence.md`.
 
 Two evaluations stalled nondeterministically inside vLLM generation at
 different prompt percentages. In each case the process stayed live, GPU

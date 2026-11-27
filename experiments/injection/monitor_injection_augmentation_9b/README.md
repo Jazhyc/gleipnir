@@ -14,7 +14,7 @@ still give 100% alarms. Vanilla APPS AUROC falls from 0.931378 to 0.912592.
 This is substantially weaker OOD transfer than at 4B. Weights, raw scores and
 logs are collected and checksummed. The authorized B200 stop is independently
 confirmed EXITED, with its network volume and compiler/kernel caches preserved.
-See the [finding](../../../docs/findings/monitor_injection_augmentation_9b.md).
+See the [finding](../../../docs/findings/injection/monitor_injection_augmentation_9b.md).
 
 Hypothesis: the same label-independent monitor-directed distractors reduce
 injection-only alarms at 9B while preserving clean behavior discrimination.

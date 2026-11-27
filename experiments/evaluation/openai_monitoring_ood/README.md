@@ -9,14 +9,14 @@ Status: completed on all 6,395 rows and audited on 2026-09-30. Mean-OOD
 pAUROC@20 is **0.836544**, and Mean-OOD AUROC is **0.928957**. Ordinary-input
 comparison cost is **$0.836167/1K**; usage with reported cache reads/writes is
 **$1.038409/1K**, including recovery attempts. See the
-[finding](../../../docs/findings/openai_luna_ood_benchmark.md) for per-source
+[finding](../../../docs/findings/evaluation/openai_luna_ood_benchmark.md) for per-source
 results, SHADE-Arena's high false-positive rate, and complete provenance.
 
 The frozen hypothesis, intervention, baselines, selection rule, request settings,
 and stop conditions are in `config.json`. Use Standard processing
 (`service_tier=default`) and 40 concurrent workers. Reasoning is disabled,
 temperature is 1, and `top_p=1` avoids the cutoff found in the synthetic
-[compatibility canary](../../../docs/findings/openai_luna_logprobs_canary.md).
+[compatibility canary](../../../docs/findings/evaluation/openai_luna_logprobs_canary.md).
 
 The full teacher prompt is the sole user message, unchanged. The generated
 completion must be exactly `Prediction:0` or `Prediction:1`, allowing surrounding
@@ -107,7 +107,7 @@ pAUROC@20/AUROC are **0.839729/0.948568**. Reported cache reads/writes cost
 **$2.077900/1K** for OOD requests and **$13.314461** including canaries.
 Eighty workers with 1.9M TPM pacing produced zero HTTP errors. One malformed
 completed response recovered on its first identical retry. See the
-[finding](../../../docs/findings/openai_56_luna_ood_benchmark.md) for source results
+[finding](../../../docs/findings/evaluation/openai_56_luna_ood_benchmark.md) for source results
 and the worse fixed-threshold false-positive behavior despite ranking gains.
 
 The user authorized a full matched benchmark and increased concurrency on

@@ -6,9 +6,9 @@ smaller throughput cost than BF16. BF16 supplies a projection-only recovery
 bound. The user authorizes all three conditions on the existing B200.
 
 The completed quality/speed comparison and its qualifications are recorded in
-[the precision finding](../../docs/findings/b200_attention_precision.md).
+[the precision finding](../../docs/findings/serving/b200_attention_precision.md).
 The user subsequently selects FP8 projections as the default; the
-[serving decision](../../docs/decisions/b200_monitor_score_reference.md) owns
+[serving decision](../../docs/decisions/serving/b200_monitor_score_reference.md) owns
 the current selection, startup command and adapter-specific finite acceptance.
 Default startup also applies the migration runner's checked diagnostic-source
 restoration; retain `results/b200_vllm031/pre_migration_sources.tar.gz` and its

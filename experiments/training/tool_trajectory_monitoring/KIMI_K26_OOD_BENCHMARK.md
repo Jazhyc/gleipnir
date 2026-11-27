@@ -71,7 +71,7 @@ usage is `$28.254086` uncached; reported cache-discounted successful-row spend
 was `$22.930851`.
 
 The detailed per-source, cost, retry, tie, coverage, and artifact audit is in
-[`tool_trajectory_kimi_k26_ood_benchmark.md`](../../../docs/findings/tool_trajectory_kimi_k26_ood_benchmark.md).
+[`tool_trajectory_kimi_k26_ood_benchmark.md`](../../../docs/findings/teachers/tool_trajectory_kimi_k26_ood_benchmark.md).
 
 ## Interpretation contract
 

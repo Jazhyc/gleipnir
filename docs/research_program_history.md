@@ -53,14 +53,14 @@ with the proposed Kimi K3 logit-distillation comparison, is recorded in
 - Preserve raw teacher evidence and immutable prompt hashes for auditability.
 
 Instruction changes alone have not resolved injection-text sensitivity in the
-completed [behavior-grounded 4B experiment](findings/monitoring_injection_disentanglement.md):
+completed [behavior-grounded 4B experiment](findings/injection/monitoring_injection_disentanglement.md):
 all three inference prompts retained 100% alarms on injected honest-code controls
 at thresholds set from clean code. Require honest injected negatives and matched
 positive/negative templates when interpreting injection benchmarks. This result
 uses fixed teacher targets and a code-backdoor label contract; it does not identify
 the causal training examples or settle the broader agent-behavior ontology.
 
-The completed [aggressive census-filtering experiment](findings/monitoring_injection_removal.md)
+The completed [aggressive census-filtering experiment](findings/injection/monitoring_injection_removal.md)
 also retained 100% injected-honest alarms at clean-code 2% FPR operating points
 under all three monitor prompts. Removing 1,154 flagged rows lowered scores but
 reduced standard-prompt ID macro pAUROC@20 from 0.8463 to 0.8223. This broad data
@@ -68,10 +68,10 @@ intervention did not resolve the failure; its changed class/source composition
 and remaining classifier misses prevent a prompt-injection-specific causal claim.
 
 For future monitoring validation and checkpoint selection, use the
-[CoT-removed ID dataset](decisions/cot_removed_id_validation.md), preserving
+[CoT-removed ID dataset](decisions/evaluation/cot_removed_id_validation.md), preserving
 visible assistant prose. Freeze its input/manifest hashes in each new campaign.
 
-The completed [JudgeDeceiver continuation experiment](findings/judge_injection_continuation.md)
+The completed [JudgeDeceiver continuation experiment](findings/injection/judge_injection_continuation.md)
 continues the regular 4B adapter on preference judgments with injections attached
 independently to preferred and disfavored answers. Its pooled full release is
 split approximately 80:20 by original query before augmentation. Preferred-answer
@@ -95,11 +95,11 @@ AUROC is 0.6256 versus 0.6440 original. The auxiliary quality task can learn
 injection handling without transferring that behavior to harmfulness monitoring.
 These exploratory outcomes do not isolate forgetting. Only the fixed final
 checkpoint and regular monitoring prompt were evaluated, with no APPS-based
-selection or promotion. See the [finding](findings/judge_injection_joint.md).
+selection or promotion. See the [finding](findings/injection/judge_injection_joint.md).
 
 ## Near-term questions
 
-The completed [monitor-directed injection augmentation](findings/monitor_injection_augmentation.md)
+The completed [monitor-directed injection augmentation](findings/injection/monitor_injection_augmentation.md)
 replaces 40% of the original monitoring rows with one off-policy injected view,
 balancing user/assistant/tool roles and demanded verdicts across both source
 behavior classes. It directly trains the harmfulness objective using the fixed
@@ -115,7 +115,7 @@ sensitivity and limits from one seed, few authored strings and off-policy views.
 Only the new adapter receives fresh scores; original regular-adapter results
 are reused. APPS remains evaluation-only.
 
-The user authorized a [9B replication](decisions/monitor_injection_augmentation_9b.md)
+The user authorized a [9B replication](decisions/injection/monitor_injection_augmentation_9b.md)
 of the same frozen augmentation at 5e-5, using the previously validated 9B
 checkpointing recipe and cached regular 9B controls. This campaign preserves
 all training/evaluation views and introduces no recipe sweep. All 272 updates
@@ -125,11 +125,11 @@ falls only from 99.85% to 83.36%, with two templates still at 100%. Matched
 injected AUROC rises from 0.6588 to 0.6786, substantially less than at 4B;
 vanilla APPS AUROC regresses from 0.9314 to 0.9126. This supports clean ID
 benefits without broad OOD robustness or a model-size monotonicity claim. See
-the [completed finding](findings/monitor_injection_augmentation_9b.md).
+the [completed finding](findings/injection/monitor_injection_augmentation_9b.md).
 The existing B200 is verified EXITED after complete artifact collection and
 independent audits; its persistent workspace and compiler/kernel caches remain.
 
-The completed [auxiliary transfer evaluation](findings/augmented_judge_evaluation.md)
+The completed [auxiliary transfer evaluation](findings/injection/augmented_judge_evaluation.md)
 uses the unchanged original A/B quality-judging prompt and 4,188 JudgeDeceiver
 holdout variants from six queries. Neither monitoring-augmented adapter trained
 on JudgeDeceiver. Preferred-answer-injected accuracy rises from 58.36% to 62.65%
@@ -146,13 +146,13 @@ its persistent caches remain preserved.
 
 - TODO (2026-10-04): broaden training injection wording and attack styles beyond
   the current small template pool and role/position variation. The
-  [auxiliary transfer finding](findings/augmented_judge_evaluation.md) motivates
+  [auxiliary transfer finding](findings/injection/augmented_judge_evaluation.md) motivates
   testing whether greater variety reduces residual avoidance; insufficient
   variety remains a hypothesis. Experiment deferred at the user's request.
 - With the backbone and teacher cache fixed, can CoT-removed student training,
   consistency regularization, compact evidence supervision, controlled data
   exposure, or checkpoint averaging improve transfer? The
-  [possible training follow-ups](research/monitoring_training_followups.md)
+  [possible training follow-ups](plans/monitoring_training_followups.md)
   record the evidence and a proposed screen; these methods are not yet selected.
 - How do soft label margins and rationale supervision scale with teacher quality
   and annotation volume?
@@ -163,13 +163,13 @@ its persistent caches remain preserved.
 - Can a single calibrated output schema express positive detections, benign
   behavior, and epistemic uncertainty without benchmark-specific routing?
 
-A [collaborator-reported teacher diagnostic](findings/kimi_teacher_injection_controls.md)
+A [collaborator-reported teacher diagnostic](findings/injection/kimi_teacher_injection_controls.md)
 finds template-dependent Kimi K3 suspicion on OOD APPS controls, alongside
 matched injected AUROC 0.918–0.971 versus 0.644 for the original 4B student.
 This challenges simple copying of the teacher’s OOD response but does not
 identify the training mechanism; raw upstream predictions are not audited here.
 
-The [BF16 B200 FA4 screen](findings/b200_bf16_fa4.md) passes an isolated native
+The [BF16 B200 FA4 screen](findings/systems/b200_bf16_fa4.md) passes an isolated native
 kernel check but fails whole-model eager packing gradient parity at 8.29% against
 the unchanged 5% limit. The replay shows zero cross-example leakage; differences
 begin at the first full-attention layer. The user explicitly authorized a separate
@@ -183,7 +183,7 @@ and tokens. Fresh FA4 checks make total invocation time longer; reverse-order
 replication and quality validation remain unperformed. The explicit user
 selection changes the execution default without asserting quality equivalence.
 
-The [native FP4 MLP LoRA screen](findings/b200_fp4_mlp_lora.md) revisits the
+The [native FP4 MLP LoRA screen](findings/systems/b200_fp4_mlp_lora.md) revisits the
 prior FP4 path with BF16 non-MLP components and no k-bit preparation. Local
 native arithmetic, row scaling, eager/compiled packing and 20 finite updates
 pass, but FP4 measured updates take 53.44% more time (7.86192 versus 5.12363
@@ -191,7 +191,7 @@ seconds). Keep BF16 MLPs; this FP4 configuration has no throughput basis for
 promotion. Separate original-FLA/FlashQLA strict parity still fails at 73.64%
 gradient relative L2 under the standing selected-finite policy.
 
-The [B200 MLP / GEMM screen](findings/b200_mlp_gemm.md) rejects compiled
+The [B200 MLP / GEMM screen](findings/systems/b200_mlp_gemm.md) rejects compiled
 gate/up merging and the initial cuDNN LoRA-aware forward graph as throughput
 improvements over already compiled PEFT. At 16384 tokens their complete standalone
 MLP forward/backward times are 3.04% and 21.91% slower; no full-model continuation
@@ -204,7 +204,7 @@ unscripted paths remain slower. Synthetic GEMM measurements remain distinct
 from full training speed and quality evidence; the selected BF16 FA4 recipe
 is unchanged.
 
-The [MXFP8 FA4 feasibility assessment](findings/b200_mxfp8_fa4_feasibility.md)
+The [MXFP8 FA4 feasibility assessment](findings/systems/b200_mxfp8_fa4_feasibility.md)
 finds that Meta's public Blackwell implementation currently supports noncausal
 D128 MHA, while our Qwen3.5-4B recipe requires causal D256 GQA. Isolated execution
 of its actual source guards reproduces each rejection independently. This needs
@@ -213,7 +213,7 @@ Keep BF16 FA4 as the standard. The assessment records a future integration path,
 including sequence-local scales, causal quantization checks, an isolated runtime
 and complete update timing with conversion costs.
 
-The [eight-bit training kernel survey](findings/b200_eight_bit_training_kernel_survey.md)
+The [eight-bit training kernel survey](findings/systems/b200_eight_bit_training_kernel_survey.md)
 identifies NVIDIA's development cuDNN Frontend FROST MXFP8 D256 causal GQA
 forward/backward path as a full-attention integration candidate. Its backward
 adapter lacks our packed variable-length layout. No compatible public eight-bit
@@ -222,7 +222,7 @@ while LeapQuant targets inference and Delta-Matching explicitly keeps recurrence
 in BF16. These are source findings, not measured Gleipnir training results.
 Keep BF16 FA4/FlashQLA as the standard pending a separate matched screen.
 
-The [NVIDIA MXFP8 B200 screen](findings/b200_nvidia_mxfp8.md) executes causal
+The [NVIDIA MXFP8 B200 screen](findings/systems/b200_nvidia_mxfp8.md) executes causal
 D256 GQA forward/backward and passes all 24 quantizer-layout comparisons. Native
 Q/K gradient errors are 6.47–8.65%, but the fresh whole-model adapter-gradient
 error is 18.71%, exceeding the separate 10% learning ceiling. Cross-example
@@ -235,7 +235,7 @@ workers prepare the manifest's 534 exact-shape plans in 208 seconds using the
 shared cache. Keep BF16 FA4/FlashQLA as the standard and preserve failed parity
 receipts alongside the completed timing result.
 
-The follow-up [direct variable-length MXFP8 prototype](findings/b200_nvidia_mxfp8_varlen.md)
+The follow-up [direct variable-length MXFP8 prototype](findings/systems/b200_nvidia_mxfp8_varlen.md)
 uses packed forward and native cumulative-offset backward kernels. Whole-row
 quantization preserves sequence-local blocks and matches the dense MXFP8
 outputs and gradients exactly in fresh boundary tests. Singleton semantics,
@@ -251,7 +251,7 @@ and balanced packs. The remaining targets are host conversion/dispatch costs
 and a dQ backward kernel with roughly unchanged GPU time; the exact whole-model
 GDN/MLP/attention time shares remain unmeasured.
 
-The [fused MXFP8 preparation screen](findings/b200_mxfp8_fused.md) implements
+The [fused MXFP8 preparation screen](findings/systems/b200_mxfp8_fused.md) implements
 Meta-inspired single-pass operand/scaling preparation and transpose-invariant
 32x32 block scaling, plus a fused cumulative-boundary predicate. It retains the
 NVIDIA causal D256 GQA kernels and our sequence-local layouts. Native dual mode
@@ -266,7 +266,7 @@ experimental backends; no quality equivalence or fresh control replication is
 claimed. Meta's RMSNorm/GEMM producer epilogues and native attention changes
 remain outside this implementation.
 
-The [Meta optimization campaign](findings/b200_meta_stack.md) audits every blog
+The [Meta optimization campaign](findings/systems/b200_meta_stack.md) audits every blog
 technique against the pinned public implementations and tests native scheduling,
 probability scaling, wider dQ stores and project producer fusions. Persistent dQ
 stalls and the warp-maxima prototype fails replay agreement; probability scaling
@@ -281,7 +281,7 @@ forward time; an MXFP8 pilot matches its quantized-operand oracle with similar
 fused forward time. Projection backward and native FP8 returned-gradient fusion
 remain unimplemented. Keep BF16 FA4 as the standard and preserve the negative screen.
 
-The [B200 MLP/GEMM screen](findings/b200_mlp_gemm.md) adapts NVIDIA's pinned
+The [B200 MLP/GEMM screen](findings/systems/b200_mlp_gemm.md) adapts NVIDIA's pinned
 Frontend/FROST native FP4 GEMMs for frozen LoRA base forward and input gradients.
 Row-independent scaling preserves packed-example isolation, and registered
 autograd/compiler integration keeps the live FP32 adapter masters intact.
@@ -361,7 +361,7 @@ BF16 projections; native FP4 conversion is no longer the largest identified cost
 The user subsequently selects the combined native FP4 MLP/FA4 path as the
 timing baseline for further systems optimization and requests persistent workers
 across compatible trials and future sessions. The
-[resident-worker decision](decisions/b200_fp4_optimization_worker.md) records
+[resident-worker decision](decisions/systems/b200_fp4_optimization_worker.md) records
 matched state resets, reused validation, retained in-process caches and targeted
 GEMM attribution. This systems reference does not promote the FP4 path on quality
 or erase its strict numerical failures.
@@ -387,7 +387,7 @@ resident worker. Investigate NVIDIA's BF16 width-four SiLU causal convolution
 as a smaller arithmetic-preserving intervention; its native packed API needs
 cumulative offsets rather than `seq_idx`. The convolution contributes about
 4.31% of the existing trace's summed kernel time, so its potential is bounded.
-See the [completed findings](findings/b200_mlp_gemm.md).
+See the [completed findings](findings/systems/b200_mlp_gemm.md).
 
 The subsequent NVIDIA BF16 causal Conv1D screen also rejects replacement in the
 current FP4-MLP configuration: warmed updates average 4.02959 seconds versus
@@ -404,7 +404,7 @@ Keep the original convolution and resident baseline; no quality promotion follow
 The user requests a full replication of the original regular 4B run with the
 selected native FP4 MLP/FA4 default: all 8,688 monitoring rows, LR 5e-5, one epoch,
 followed by all 3,012 canonical ID examples. The
-[replication decision](decisions/b200_fp4_full_training_replication.md) freezes
+[replication decision](decisions/systems/b200_fp4_full_training_replication.md) freezes
 inputs, initial FP32 adapters and held-out selection before launch. The ordinary
 Trainer's first attempt stops at 43/272 updates on the existing NC2 B200 after a
 substantial full-corpus throughput regression; its source/logs are archived and
@@ -455,7 +455,7 @@ are recorded in the replication decision.
 
 The user next requests a small production inference benchmark covering both
 interactive latency and batch throughput. The
-[inference benchmark decision](decisions/b200_inference_benchmark.md) freezes
+[inference benchmark decision](decisions/serving/b200_inference_benchmark.md) freezes
 the training systems cohort as a development workload, with a nested 64-row
 quick pass, closed-loop HTTP concurrency 1/4/16, repeat score variation and
 prefix caching disabled. The final FP4-trained adapter is served in BF16;
@@ -474,7 +474,7 @@ The next matched HTTP benchmark removes dynamic adapter projections while
 keeping the same frozen workload, engine limits and prefix-cache policy.
 Accumulate updates in FP32 before BF16 export, preserve master/base weights and
 persistent provenance, and require fresh adapter-specific serving score parity.
-The [inference decision](decisions/b200_inference_benchmark.md) records the
+The [inference decision](decisions/serving/b200_inference_benchmark.md) records the
 protocol; historical dynamic-LoRA evaluation contracts remain frozen.
 
 The merged suite completes: prompt throughput rises 1.56×/1.96×/2.23× at
@@ -493,7 +493,7 @@ BF16 linears use PyTorch's CUDA GEMM path. The first new kernel screen uses
 native vLLM per-channel-weight/per-token-activation FP8 only in MLPs, retaining
 the warm, idle merged BF16 control and matched HTTP workload. Loaded precision
 and resolved GEMM classes are audited before the unchanged score canary.
-The [kernel screening decision](decisions/b200_inference_kernels.md) records
+The [kernel screening decision](decisions/serving/b200_inference_kernels.md) records
 scope, hypotheses and stop conditions; prior SM120 FP8 results motivate this
 trial but do not establish its B200 performance or numerical fidelity. The user
 subsequently selects stopping the previous server whenever an inference change
@@ -510,7 +510,7 @@ quality parity. Retain the active FP8 worker for compatible kernel trials and
 the archived merged BF16 reference, with the previous server stopped.
 
 The user next requests FP4 MLP inference and AUROC deviation reporting for every
-kernel update. The [FP4 inference decision](decisions/b200_fp4_inference.md)
+kernel update. The [FP4 inference decision](decisions/serving/b200_fp4_inference.md)
 freezes a native FlashInfer/cuDNN screen with dynamic activation conversion,
 independent decoded arithmetic checks and the same development workload.
 Compare pooled/per-source/macro AUROC with archived baseline predictions and
@@ -529,7 +529,7 @@ pooled −0.003448, macro −0.011364. Every subsequent kernel comparison now
 includes matched ranking deltas and source eligibility, alongside timings.
 
 The user then requests testing the optimized training FP4 forward kernels in
-vLLM. The [FROST inference decision](decisions/b200_frost_inference.md) freezes
+vLLM. The [FROST inference decision](decisions/serving/b200_frost_inference.md) freezes
 reuse of hardware row packing, 16x16 weight scales, fused descale and runtime-M
 plans through a forward-only adapter. Require bitwise agreement with original
 training-forward calls on the same merged weights before scoring. The retained
@@ -553,7 +553,7 @@ attention as the B200 inference optimization baseline, prioritizing batched
 throughput. A checksum-bound baseline selection routes new kernel comparisons
 to archived `frost02` timings/predictions, preserving explicit historical
 controls and the live worker. Lower-precision attention feasibility is recorded
-in [the serving precision decision](decisions/b200_low_precision_attention_serving.md).
+in [the serving precision decision](decisions/serving/b200_low_precision_attention_serving.md).
 
 The user authorizes an approximately nine-hour attention/GDN throughput campaign
 on the existing B200, with one serving process using the whole-GPU memory budget
@@ -581,7 +581,7 @@ whole-GPU FROST-MLP/BF16-GDN control. The user explicitly accepts the 0.47
 percentage-point development macro-AUROC drop; preserve strict score-parity
 failure separately. This is current-adapter acceptance, not held-out quality
 proof or a training recipe change. See the
-[baseline decision](decisions/b200_fp4_gdn_inference_baseline.md).
+[baseline decision](decisions/serving/b200_fp4_gdn_inference_baseline.md).
 
 The pinned FA4 D256 kernel passes six independent causal, shuffled-page and
 graph-replay checks through a zero-copy hybrid-cache adapter (maximum relative-L2
@@ -600,5 +600,5 @@ BF16. A fresh resident-worker profile assigns 34.82% of GPU kernel time to
 FP4 GEMMs plus packing/scales, 26.66% to fused elementwise/norm/gates/layouts,
 12.80% to GDN core and 10.46% to full attention including preparation. This
 prioritizes FP4 activation preparation/fusion next rather than more attention
-conversion work. See the [reference decision](decisions/b200_mxfp8_inference_baseline.md)
-and [finding](findings/b200_mxfp8_serving.md); no final ID quality claim follows.
+conversion work. See the [reference decision](decisions/serving/b200_mxfp8_inference_baseline.md)
+and [finding](findings/serving/b200_mxfp8_serving.md); no final ID quality claim follows.

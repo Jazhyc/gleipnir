@@ -94,4 +94,4 @@ The completed artifacts are:
 
 The completed reasoning-quality judgment and its qualified interpretation are
 recorded in
-[`../../docs/research/tool_trajectory_auxiliary_findings.md`](../../../docs/research/tool_trajectory_auxiliary_findings.md).
+[`../../docs/findings/training/tool_trajectory_auxiliary_findings.md`](../../../docs/findings/training/tool_trajectory_auxiliary_findings.md).

@@ -1,0 +1,366 @@
+# Local Gleipnir 4B inference campaign preparation
+
+Status: plan; the text records any progress.
+
+Prepared 2026-09-23. The user selected a subset-only campaign and a merged-BF16
+baseline; executable work now lives in
+[`experiments/serving/local_inference`](../../experiments/serving/local_inference/README.md).
+
+## Machine and environment
+
+The workstation exposes one NVIDIA GeForce RTX 4080 (16,376 MiB), an AMD
+Ryzen 9 5900X (24 logical CPUs), and 47 GiB host RAM through WSL. At inspection,
+1,641 MiB GPU memory was already occupied. Keep display headroom and record
+other GPU activity with each measurement.
+
+Installed and verified: Python 3.12.13, PyTorch 2.11.0+cu130, Transformers
+5.14.1, and vLLM 0.24.0. The vLLM engine imports and a finite BF16 CUDA
+matrix multiplication passed on compute capability 8.9. Ten focused prompt/CoT
+tests and repository Ruff checks passed, as did an offline bootstrap rerun.
+This does not yet verify Qwen loading, its serving kernels, or adapter parity.
+
+`setup_dev.sh` now supports workstations without environment modules or a
+system `python` command. It selects Python 3.12 through uv and keeps local
+caches inside ignored `.cache/`; module-based cluster defaults are preserved.
+
+```bash
+./setup_dev.sh
+source .venv/bin/activate
+export HF_HOME="$PWD/.cache/huggingface"
+```
+
+Use the checked-in lock and the released FP32 master plus its vLLM serving
+adapter. The pinned base is `Qwen/Qwen3.5-4B` revision
+`851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`. Preserve the frozen compact prompt,
+non-thinking boundary, and normalized next-token `0`/`1` score.
+
+## Dataset choice
+
+Use the [canonical CoT-removed ID set](../decisions/evaluation/cot_removed_id_validation.md),
+which preserves visible assistant prose. It contains 946 STRIDE and 2,066
+Gloom-Exfiltration rows. The recorded complete workload is **33,750,959 prompt
+tokens**, or 11,205.5 per example, plus 3,012 one-token decisions. This is a
+historical exact count, not a new local tokenization.
+
+The canonical prompts and manifest are absent from this workstation checkout.
+Restore them with the decision's checksums, or reconstruct them from the pinned
+upstream inputs and verify identical prompt bytes before freezing a subset.
+The existing preparation chain starts with
+`prepare_qwen_reasoning_id_benchmark.py`, then `prepare_teacher_id_cache.py`,
+`prepare_distillation_id.py`, and the CoT removal in
+`experiments/evaluation/id_cot_only_evaluation/prepare.py`. The last historical entrypoint
+also expects archived job metadata; do not run it blindly or rewrite historical
+configs merely to obtain the dataset. Model weights are also absent locally.
+
+For repeated screening, freeze **512 rows**, proportional to source and label:
+63 STRIDE negatives, 98 STRIDE positives, 176 Gloom negatives, and 175 Gloom
+positives. Within each group, allocate across prompt-length quartiles and select
+deterministically by a seeded hash of ID; record IDs, prompt hashes, tokenizer
+revision, and exact token counts. Do not truncate long examples to fit memory.
+The proportional estimate is **5,737,215 prompt tokens**; the actual selection
+will differ. Keep a separate longest-input startup canary. Per the user's
+updated scope, use only these 512 rows throughout, including confirmation;
+leave full-ID and strict OOD outside this campaign.
+
+## Measurement and drift
+
+Hypothesis: serving changes improve steady-state prefill throughput while
+preserving the same judge's continuous scores and decisions. Establish a BF16
+merged baseline from the published LoRA, first checking original-master/merge
+and serving parity. Future serving interventions use this merged reference.
+Start conservatively on 16 GB: memory utilization
+0.80, maximum sequences 2, batched-token budget 2,048, chunked prefill, and
+32,768 context. These are proposed canary settings, not a verified fit or an
+optimal configuration. Verify supported kernels and master/serving parity
+including a nonzero adapter effect before scaling.
+
+Per the user's updated scope, take one baseline pass and one pass per candidate;
+target meaningful speedups and do not claim a repeat-noise estimate. Warm up
+before timing, disable prefix caching, retain identical ordering,
+and report initialization separately. Measure wall time, rows/s, prompt tokens/s,
+peak memory, and all paired logit margins and scores. Compare absolute score
+deltas, threshold flips at 0.5, ties, per-source and source-macro pAUROC@20,
+AUROC, and Brier. Also inspect baseline-margin bins so saturated easy examples
+do not hide drift near the decision boundary. Use paired, lineage-grouped
+resampling for quality comparisons where grouping metadata is available.
+
+Historical BF16 runs had nonzero repeat variation, so do not interpret every
+changed score as optimization damage or select solely on aggregate AUROC.
+Freeze numerical and quality tolerances before testing candidates, acknowledging
+that the single-pass baseline does not estimate repeat noise. A 512-row screen
+can reveal paired drift but
+cannot certify absence of small population-level quality loss. Stop on OOM,
+truncation, missing/nonfinite scores, contract drift, or a failed serving-parity
+canary. Confirm repeatability on the frozen subset before choosing a candidate.
+
+## Runtime budget
+
+For this one-token judge, prompt processing dominates. Time is prompt tokens
+divided by measured prompt tokens/s; generated-token throughput is misleading.
+The following are planning scenarios, **not measured RTX 4080 performance**:
+
+| Sustained prompt tokens/s | 512-row estimate | Complete 3,012 rows |
+| ---: | ---: | ---: |
+| 5,000 | 19.1 min | 112.5 min |
+| 10,000 | 9.6 min | 56.3 min |
+| 20,000 | 4.8 min | 28.1 min |
+
+Add model loading, compilation, warmup, and serialization. The updated campaign
+uses one timed pass per condition; reference and candidate both require passes.
+For context, the historical H100 dynamic-LoRA pass processed 34,631,573 tokens
+in 861.24 seconds (40.2k tokens/s), but that is not a workstation estimate.
+Replace these scenarios with a stratified local pilot once inputs and weights
+are staged, then calculate the estimate from its measured length mix.
+
+## Measured subset baseline
+
+The merged-BF16 baseline is now complete on the fixed 512 rows: **5,760,843
+prompt tokens in 631.65 seconds**, or **9,120.28 prompt tokens/s**. The user
+selected one pass throughout; no repeat-noise estimate is claimed. Macro
+pAUROC@20 is 0.860345 and macro AUROC is 0.958579 on this subset. Software
+thermal throttling was active in all 47 recorded first-pass samples, so this
+timing describes the workstation under its current cooling conditions.
+See the [experiment result](../../experiments/serving/local_inference/README.md) for
+parity checks, per-source metrics, retained artifacts, and startup fixes.
+
+The user subsequently selected a 32-row stratified slice for iteration. Its
+338,780 tokens took **35.91 seconds** in the measured single pass, or **9,434.42
+tokens/s**. A fresh benchmark subprocess with existing compilation caches took
+**85.30 seconds total**, including **24.07 seconds constructing vLLM** and
+**4.48 seconds of canary warmup**; the remainder includes validation/imports,
+scoring, persistence, and shutdown. Use `iteration32.json` and `baseline32/`
+for iteration, while preserving the 512-row artifacts for broader checks.
+
+## First prefill-budget screen
+
+Increasing only `max_num_batched_tokens` from 2,048 to 4,096 on the frozen 32
+rows yielded **35.49 vs 35.91 seconds**, or **9,545.95 vs 9,434.42 tokens/s**.
+The 1.18% throughput difference is not a meaningful demonstrated win from one
+pass under thermal throttling. Keep the original baseline as the reference.
+Mean/max absolute score drift was 0.005636/0.030967 with zero threshold flips;
+this is not proof of numerical equivalence or population-level quality parity.
+The candidate's 172.51-second total included new compilation and initial engine
+profiling, unlike the cached 85.30-second baseline. No extra pass was run.
+Full paired evidence and thermal/startup caveats are in the experiment README
+and `results/local_inference/prefill4096/comparison.json`.
+
+## GPU profiling finding
+
+A bounded 16-step baseline prefill trace now works by initializing CUPTI inside
+the worker before model loading/graph capture. Late initialization repeatedly
+failed; no driver or permission changes were needed for activity tracing.
+The trace contains 12,944 kernels: GEMM/GEMV consumes 75.51% of summed GPU
+kernel time, FlashAttention 11.21%, named gated-delta/convolution kernels 7.29%,
+KV writes/bookkeeping 0.12%, and other kernels 5.86%. Kernel activity occupies
+98.85% of the sampled first-to-last-kernel interval. Prioritize linear-algebra
+execution over cache-write elimination or host-scheduling changes. This is a
+bounded instrumented window, not a full-workload throughput measurement.
+Cache reads remain part of attention cost. Hardware-counter access is denied
+by the Windows host, so compute versus memory-bandwidth saturation is not yet
+established. See the experiment README and
+`results/local_inference/profile_torch_early/kernel_summary.json` for evidence,
+reproduction, and limitations.
+
+After the user enabled Windows counter access and rebooted, hardware-counter
+profiling succeeded. A six-launch capture across the three dominant GEMM kernel
+names measured DRAM throughput 11.69–14.32% of peak, compute (SM) throughput
+43.58–45.68%, and achieved occupancy 15.96–16.71%. Registers/shared memory limit
+theoretical occupancy to 16.67%. This argues against saturated DRAM bandwidth
+for these sampled kernels; kernel efficiency/latency hiding is a more promising
+diagnostic direction. Neither low occupancy alone nor Nsight's suggested local
+speedups proves a fix. Capture used serialization/replay and uncontrolled clocks
+and caches, not benchmark conditions. Full evidence:
+`results/local_inference/profile_counters_2048/details.txt` and
+`results/local_inference/gemm_counters_2048.ncu-repz`.
+
+Shape-aware follow-up matched all 2,448 GEMM/GEMV calls in a 16-step sample.
+MLP gate/up (M,N,K = 2048,18432,2560) accounts for 30.87% of sampled GPU kernel
+time, and MLP down (2048,2560,9216) for 16.34%: **47.21% combined**. Gated-delta
+input projection adds 15.86%. The deeper six-launch counter capture identifies
+math-pipe throttle as about 83% of the MLP between-instruction warp cycles,
+with only 0.093–0.103 eligible warps/scheduler/active cycle and 6.09–7.02%
+scheduler issue activity. DRAM throughput remains about 14%. This supports
+testing BF16 kernel algorithms/tiling for those two exact MLP shapes first,
+not optimizing cache writes or assuming a proportional gain from higher occupancy.
+Tensor-pipeline activity is 43.54–46.14%; these kernel counters are **not MFU**.
+No serving optimization has been applied. Evidence and limitations are in the
+experiment README, `profile_shapes_2048/shape_summary.json`, and
+`profile_deep_2048/details.txt` under the local inference result directory.
+
+## Isolated BF16 kernel screen: retain the current path
+
+One 256-call measurement window per candidate, using real layer-0 weights and
+seeded synthetic BF16 activations, found no meaningful improvement from BLAS
+preferences or eight Triton tiles. Gate/up default/best times were 1.98465/1.94998
+ms (1.018x); down was 1.05308/1.02503 ms (1.027x). These small differences are
+inconclusive under variable clocks and thermal throttling and do not clear the
+predeclared 10% investigation threshold. No vLLM integration or dataset run.
+
+Down default and non-strict cuBLASLt failed the synthetic maximum-error guard;
+strict PyTorch and Triton passed and were closer to the FP32 reference, but differ
+from default outputs. No judge-score parity is established. The runner initially
+skipped the default down timing and crashed after timing the alternatives. Only
+that missing reference was timed in a separate recovery process; validation
+matched exactly, and no completed timing was repeated. All failures and original
+outputs are preserved. See the experiment README and
+`results/local_inference/gemm_bench_bf16/comparison.json` for the audited comparison.
+
+## FP8 per-tensor screen: rejected at canary
+
+Changing only online quantization to `fp8_per_tensor` selected CUTLASS FP8 linear
+kernels and reduced model allocation from 7.99 to 5.0 GiB. However, the four
+original canaries failed the unchanged score-parity gate: mean/max error against
+the merged eager reference was 0.069270/0.255398 (limits 0.02/0.10), correlation
+0.888389 (minimum 0.99). Against the existing BF16 vLLM canaries, mean/max error
+was 0.057170/0.224908; one STRIDE score fell from 0.407333 to 0.182426. There were
+no 0.5-threshold flips, which does not establish continuous-score parity.
+
+Stopped before the longest-row canary and 32-row pass, as specified in advance.
+No throughput comparison exists. Preserve BF16 and do not generalize this failure
+to all FP8 schemes: finer-grained weight scaling and selective exclusions remain
+untested. Full startup cost and failure evidence are recorded in the experiment
+README and `results/local_inference/fp8/`; the original merged weights and all
+earlier results are unchanged.
+
+## Per-channel FP8: substantially less drift, still gated
+
+The authorized follow-up changed only weight scaling to per-output-channel;
+the installed CUTLASS paths use dynamic per-token activations in both schemes.
+On the four canaries, mean/max score drift against existing BF16 vLLM improved
+from 0.057170/0.224908 to 0.016751/0.031552, correlation 0.998485, zero threshold
+flips. The previously sensitive STRIDE score was 0.377541 versus BF16 0.407333
+and per-tensor FP8 0.182426.
+
+The original eager-reference gate still fails mean error: 0.024373 versus master
+and 0.028851 versus merged, above 0.02; maximum error and correlation pass.
+The BF16-serving comparison would pass those limits, but substituting that
+reference after observing scores is not a predeclared pass. Stopped before the
+longest-row canary and timed 32-row pass. No speedup or population-quality claim.
+Any diagnostic timing continuation requires an explicit gate/reference decision.
+Evidence and preserved failures are under `results/local_inference/fp8_channel/`;
+BF16 remains the reference and no checkpoint was modified.
+
+## Authorized FP8 diagnostic: 1.399x observed scoring throughput
+
+The user explicitly authorized one diagnostic 32-row pass despite the retained
+canary failure. The runner records that override without changing the numerical
+limits, scoring code, longest-input canary, or identity/nonfinite checks. The
+comparison records an audited runner-hash difference for this gate handling.
+
+Per-channel FP8 processed 338,780 tokens in **25.6623 seconds**, versus BF16
+35.9089 seconds: **13,201.46 vs 9,434.42 tokens/s**, a 39.93% throughput increase.
+Source-macro AUROC changed 0.921488 -> 0.925620; pooled AUROC 0.909804 -> 0.917647.
+Gloom AUROC was 0.842975 -> 0.851240 and STRIDE remained 1.0. Macro pAUROC@20
+was 0.756198 -> 0.776860; macro Brier worsened 0.097959 -> 0.099850.
+
+Mean/max score drift was 0.021872/0.122459, correlation 0.996112, with one Gloom
+negative crossing from exactly 0.5 to 0.407333. The small ranking increase is not
+evidence of population quality improvement or numerical equivalence. Whole-process
+time improved only 85.30 -> 80.66 seconds due to fixed startup costs. Both FP8
+scoring samples showed thermal throttling at 83–84 C versus baseline 85–87 C;
+single-pass timing is not thermally controlled. Freed model memory went to cache
+under the unchanged memory-utilization policy. No repeats or automatic promotion.
+Preserve BF16 as reference; this is a promising measured tradeoff, not a quality
+pass. Evidence: `results/local_inference/fp8_channel_diagnostic/comparison.json`
+and the experiment README. Completed 2026-09-24 local time.
+
+## Native INT4 feasibility: hardware works, serving path missing
+
+A CUDA 12.8 SM89 probe executed native signed INT4 x INT4 with INT32 accumulation
+on the RTX 4080. SASS contains `IMMA.16864.S4.S4`; all 128 outputs in each of five
+constant-matrix cases matched exact signed references, including -8 operands.
+The checked-in `experiments/serving/local_inference/int4_smoke.cu` reproduces the probe.
+This is instruction feasibility, not an optimized GEMM or judge benchmark.
+
+Installed vLLM 0.24.0's registry, online schemes, and compressed-tensors dispatch
+provide no standard INT4 W4A4 linear path. The W4A4 implementations are FP4;
+integer paths include weight-only W4A16 and W4A8, which are different experiments.
+No end-to-end INT4 run or accuracy/speedup result exists. Further progress needs
+a custom/integrated backend; propose a separately scoped real-shape kernel screen
+including quantization/scaling costs before model integration. Existing serving
+paths, checkpoints, and data remain unchanged.
+
+## Native INT4 MLP screen: faster, but naive quantization is lossy
+
+CUTLASS S4 x S4 -> S32 kernels compiled for SM89 passed exact full-matrix integer
+checks for three tile layouts on both profiled MLP shapes. Real layer-0 weights
+and seeded synthetic BF16 activations were quantized symmetrically to [-7,7],
+per-channel for weights and per-token for activations. No model serving changes.
+
+One 256-call timing window per operation measured the complete online path
+(activation quantization/packing, native GEMM, output scaling to BF16) at
+**0.71555 ms gate/up and 0.28009 ms down**, versus contemporaneous BF16
+1.97995/1.05199 ms: **2.767x/3.756x**. Weight quantization is offline; both paths
+use preallocated buffers. Raw integer GEMM alone was 0.33392/0.14933 ms. No
+dataset pass or repeated timing windows. Clocks/thermals were uncontrolled.
+
+Relative L2 error versus FP32 was **22.18%/25.02%**, versus BF16 0.166%/0.233%.
+This simple scaling recipe is not quality-validated. Large speed potential does
+not justify integration without improved quantization and judge drift checks;
+no AUROC or end-to-end speedup can be inferred. Two validation-only failed
+attempts were preserved before matching division rounding semantics. Evidence:
+`results/local_inference/int4_gemm_screen_validated/result.json`, associated log,
+and experiment README. The existing model artifacts remain unchanged.
+
+## Real-activation quantization-method screen
+
+All proposed families were tested in `experiments/quantization/int4_calibration/`: eight
+calibration and four held-out short trajectories disjoint from iteration32 and
+the original canaries, capturing 256 token positions at six MLP projections
+(layers 0,16,31). Bounded Transformers capture used the Torch gated-delta fallback;
+this is not vLLM activation parity or a full-model quantized evaluation.
+
+Unweighted macro held-out linear-output relative L2 was 52.06% for naive W4A4,
+15.40% for weight-only INT4 and 49.64% for activation-only INT4. Activation
+quantization dominates. Calibration-selected clipping reduced it to 38.10%,
+channel rebalancing to 38.49%, block-Hadamard rotations to 21.92%, and group-64
+quantization to 14.29%. Keeping the three calibration-most-sensitive projections
+in BF16/FP8 with naive INT4 elsewhere gave 23.01%/24.42%. FP8's numerical reference
+was 2.62%, BF16 0.21%. These are reconstruction errors, not AUROC or score drift.
+
+Native layer-0 timings included online transformations/packing/scaling. A fast
+Triton Hadamard rotation plus INT4 took 0.8153/0.5611 ms for gate/up and down,
+versus BF16 2.0846/1.0755 ms (2.557x/1.917x), with uncontrolled thermals and
+separate-process timing. The unfused group-64 implementation took 23.332/10.668 ms
+because it materialized/scaled every partial output; this is not an intrinsic
+limit on a fused grouped kernel. Native integer and scaling checks passed;
+simulation/native rounding discrepancies are explicitly retained. One partial
+timing was recovered without repetition after a validation failure.
+
+FP8 remains the measured end-to-end option; native INT4 has speed potential but
+needs further error reduction and integration validation. No new judge AUROC
+pass or promotion. Full evidence, limitations, recipes and reproducible commands:
+`experiments/quantization/int4_calibration/README.md` and
+`results/int4_calibration/comparison.json`.
+
+## W4A16 versus FP8 kernel screen (2026-09-24)
+
+On the RTX 4080, vLLM 0.24 Marlin W4A16 did not beat CUTLASS FP8 for
+the dominant M=2048 prefill shapes. One 256-call window per condition,
+same process, real layer-0 calibration activations:
+
+| Projection | BF16 ms | FP8 ms | W4A16 group 64 ms | W4A16 group 128 ms |
+| --- | ---: | ---: | ---: | ---: |
+| Gate/up | 2.093 | 1.221 | 2.042 | 2.126 |
+| Down | 1.314 | 0.687 | 1.018 | 1.047 |
+
+W4A16 took 1.48–1.74x FP8's time, despite including FP8's online
+activation quantization. Offline weight packing excluded; output allocation
+included throughout. Weight-plus-scale storage was about 51–53% of FP8,
+but that memory saving did not translate into faster kernels here. This is
+consistent with compute-heavy prefill rather than weight-bandwidth-limited
+decode. Retain FP8 as the practical measured speed option; this result does
+not motivate a whole-model W4A16 export for throughput alone.
+
+Native outputs agreed with quantized FP32 references within 0.37% relative
+L2. Simple round-to-nearest W4A16 had 8.9–9.9% projection reconstruction
+error versus FP8's 3.0–3.2%; this is not calibrated GPTQ/AWQ quality, AUROC,
+or held-out judge drift. No whole-model W4A16 evaluation was performed.
+Thermals were uncontrolled (79–83 C, 2625–2775 MHz, intermittent software
+thermal slowdown); no repeat-based uncertainty estimate. Do not interpret
+small differences between group sizes as robust.
+
+Evidence: `results/local_inference/w4a16_kernel/result.json`; reproducible
+command and protocol in `experiments/serving/local_inference/README.md`. Original
+serving artifacts and defaults remain unchanged. The saved script checksum
+precedes final formatting-only string wrapping and a lint suppression.

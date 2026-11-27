@@ -1,7 +1,7 @@
 {
   "experiment": "adversarial_code_or_comments",
   "protocol_status": "frozen",
-  "design": "docs/research/adversarial_code_or_comments.md",
+  "design": "docs/plans/adversarial_code_or_comments.md",
   "output": "results/adversarial_code_or_comments",
   "env_file": "../../.env",
   "data": {
