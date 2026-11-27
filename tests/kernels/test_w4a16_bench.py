@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from experiments.local_inference.w4a16_bench import checked_load, relative_error
+from experiments.serving.local_inference.w4a16_bench import checked_load, relative_error
 from gleipnir.qwen35_adapter_rebase import sha256_file
 
 

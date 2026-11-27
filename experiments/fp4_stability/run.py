@@ -12,12 +12,12 @@ from pathlib import Path
 
 import yaml
 
-from experiments.b200_fouroversix.run import make_job, verify_inputs
 from experiments.fp4_stability.memory_recipe import (
     apply_memory_recipe,
     validate_memory_recipe,
 )
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.b200_fouroversix.run import make_job, verify_inputs
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.monitoring_systems_screen import gpu_environment, sha256_file
@@ -352,8 +352,9 @@ def main() -> None:
                 ROOT / "experiments/fp4_stability/fast_selector_canary.py",
                 ROOT / "experiments/fp4_stability/compiler_op_canary.py",
                 ROOT / "experiments/fp4_stability/reference_offload_canary.py",
-                ROOT / "experiments/b200_fouroversix/kernel_canary.py",
-                ROOT / "experiments/deception_distillation/train_student_sft.py",
+                ROOT / "experiments/systems/b200_fouroversix/kernel_canary.py",
+                ROOT
+                / "experiments/training/deception_distillation/train_student_sft.py",
                 Path(__file__),
                 args.config.resolve(),
             ]
@@ -476,7 +477,7 @@ def main() -> None:
                 )
         canary_command = [
             sys.executable,
-            "experiments/b200_fouroversix/kernel_canary.py",
+            "experiments/systems/b200_fouroversix/kernel_canary.py",
             "--output",
             str(output / "kernel_canary.json"),
             "--backward-mode",

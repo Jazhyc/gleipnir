@@ -23,6 +23,6 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python experiments/data_scaling/run_train.py \
+python experiments/training/data_scaling/run_train.py \
   --jobs results/data_scaling/jobs.jsonl \
   --index "${SLURM_ARRAY_TASK_ID}"

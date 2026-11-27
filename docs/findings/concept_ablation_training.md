@@ -10,7 +10,7 @@ solely to the training intervention.
 The user requested a CAFT-style alternative to synthetic augmentation: train
 on all regular monitoring originals while projecting the previously fitted
 injection direction out of the residual stream. The
-[frozen experiment](../../experiments/concept_ablation_training/README.md)
+[frozen experiment](../../experiments/injection/concept_ablation_training/README.md)
 uses one seed and the complete final checkpoint; it makes no promotion decision.
 
 ## Intervention and comparison scope
@@ -126,7 +126,7 @@ existing prompt-injection collection. It contains the FP32 causal master, rebase
 FP32 serving layout, frozen prompt, summary/parity receipts and negative-result
 model card. Publication does not promote this checkpoint. All remote file hashes
 and collection membership pass; `results/concept_ablation_training/upload.json`
-records the receipt. The [publication entrypoint](../../experiments/concept_ablation_training/publish.py)
+records the receipt. The [publication entrypoint](../../experiments/injection/concept_ablation_training/publish.py)
 keeps credentials local and uploads no raw training or evaluation records.
 
 The successful campaign is `results/caft-regular-sdpa02/` on the same NC2 B200
@@ -177,7 +177,7 @@ retired for the Lens follow-up below; capacity remains running.
 
 The user next requests fitting an APPS vector in the CAFT model itself and
 projecting it out, to compare with earlier models. The
-[refit contract](../../experiments/caft_direction_refit/README.md) freezes the
+[refit contract](../../experiments/injection/caft_direction_refit/README.md) freezes the
 same 64 fitting tasks / 896 rows / 384 injected-minus-neutral pairs, both labels,
 layer 20 and all-layer/all-token beta-1, zero-centered full projection. The
 same 591 test tasks / 8,218 rows remain disjoint. No ID evaluation, training,
@@ -267,7 +267,7 @@ eager Lens server remains warm on port 8010, recorded in
 
 The user clarifies a further comparison: apply the **original augmented-model
 axis**, identical to CAFT's training vector, at inference on the CAFT checkpoint.
-The [original-projection contract](../../experiments/caft_original_projection/README.md)
+The [original-projection contract](../../experiments/injection/caft_original_projection/README.md)
 keeps the exact original unit layer-20 axis and serialized all-layer/all-token
 beta-1, zero-centered operator. There is no new training or vector fitting.
 It reuses the same warm BF16 eager Lens process and both complete same-engine
@@ -325,7 +325,7 @@ the same passing Lens process remains warm; no extra baseline scoring occurs.
 
 The user requests a causal sensitivity check away from the saturated injected
 population: add the original augmented-model vector to honest examples. The
-[honest-steering contract](../../experiments/caft_honest_steering/README.md)
+[honest-steering contract](../../experiments/injection/caft_honest_steering/README.md)
 selects **591 clean + 1,773 neutral honest rows = 2,364**, on the same disjoint
 test tasks. It excludes injected views and backdoors, keeps all three neutral
 templates and reuses the same-engine plain scores. No fitting or retraining.

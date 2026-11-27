@@ -1,0 +1,90 @@
+{
+  "status": "frozen 2026-11-22, before any paid call on these rows",
+  "data": "data/evilgenie_api_baselines",
+  "output": "results/evilgenie_api_baselines",
+  "source_experiment": "experiments/adversarial/adversarial_evilgenie (dataset revision 1bb777b666b0f76801f9b5b9a28eb3f7786ea70f)",
+  "ood_prompts": "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+  "separately_reported_model": "kimi-k3",
+  "gleipnir_27b_reached_rows": 1312,
+  "gleipnir_max_tokens": 29696,
+  "gleipnir_chat_overhead_tokens": 12,
+  "gleipnir_shared_counts": {
+    "positive": 105,
+    "negative": 999,
+    "clean_negative": 115
+  },
+  "sha256": {
+    "prompts.jsonl": "71eda8100d854deff6fee8f7fc9031b830fb6efc8a1d0bb814872b332bac55d0",
+    "states.jsonl": "9bb7f4102dc600acdfa1a35d3e6f06644d092e678621948359272a32f2b81b0f"
+  },
+  "monitors": {
+    "kimi_k3": {
+      "cli_args": [
+        "--model",
+        "moonshotai/kimi-k3",
+        "--provider-only",
+        "wafer",
+        "--no-allow-fallbacks",
+        "--max-tokens",
+        "64",
+        "--top-logprobs",
+        "5",
+        "--reasoning-effort",
+        "none",
+        "--provider-max-prompt-price",
+        "3",
+        "--provider-max-completion-price",
+        "15",
+        "--concurrency",
+        "16"
+      ],
+      "ood_scores": [
+        "results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl",
+        "results/tool_trajectory_monitoring/kimi_k3_ood_full_remaining_fireworks.jsonl"
+      ],
+      "budget_usd": 12
+    },
+    "gpt6_luna": {
+      "request": {
+        "model": "gpt-6-luna",
+        "reasoning": {
+          "effort": "none"
+        },
+        "temperature": 1,
+        "top_p": 1,
+        "max_output_tokens": 16,
+        "include": [
+          "message.output_text.logprobs"
+        ],
+        "top_logprobs": 20,
+        "service_tier": "default",
+        "store": false
+      },
+      "pricing": {
+        "source": "https://developers.openai.com/api/docs/pricing",
+        "checked_date": "2026-09-30",
+        "input_usd_per_million": 0.1,
+        "cached_input_usd_per_million": 0.01,
+        "cache_write_usd_per_million": 0.125,
+        "output_usd_per_million": 0.5
+      },
+      "budget_usd": 6,
+      "concurrency": 40,
+      "max_attempts": 7,
+      "timeout_seconds": 180,
+      "ood_scores": [
+        "results/openai_luna_ood_benchmark/run_v1/predictions.jsonl"
+      ],
+      "tokens_per_minute": 1800000,
+      "pacing_note": "operational, added 2026-11-22 after 429s at the 2M TPM limit; request settings unchanged"
+    },
+    "pplx_decider_v1_3": {
+      "model_key": "pplx_decider_v1_3",
+      "concurrency": 16,
+      "budget_usd": 0.01,
+      "ood_scores": [
+        "results/decision_models_ood/pplx_decider_v1_3/full/scores.jsonl"
+      ]
+    }
+  }
+}

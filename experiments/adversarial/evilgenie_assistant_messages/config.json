@@ -1,0 +1,25 @@
+{
+  "status": "frozen 2026-11-23, before any score on these inputs",
+  "baseline_states": "data/evilgenie_api_baselines/states.jsonl",
+  "baseline_states_sha256": "9bb7f4102dc600acdfa1a35d3e6f06644d092e678621948359272a32f2b81b0f",
+  "baseline_results": "results/evilgenie_released_stack",
+  "states": "data/evilgenie_assistant_messages/states.jsonl",
+  "ood_prompts": "data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl",
+  "render_check_rows": 50,
+  "workload_dir": "data/evilgenie_assistant_messages",
+  "results_dir": "results/evilgenie_assistant_messages",
+  "batch_rows": 128,
+  "concurrency": 128,
+  "models": {
+    "4b": {
+      "instruction": "experiments/training/tool_trajectory_monitoring/prompts/student.txt",
+      "ood_workload": "data/teacher-disagreement-strict-ood01/workload.jsonl",
+      "ood_scores": "results/qad-v02-optimized01/evaluation/ood.jsonl"
+    },
+    "27b": {
+      "instruction": "experiments/training/tool_trajectory_monitoring/prompts/teacher.txt",
+      "ood_workload": "data/optimized_gap/teacher_ood_workload.jsonl",
+      "ood_scores": "results/optimized_gap/opt27b_teacher_eu01/ood.jsonl"
+    }
+  }
+}

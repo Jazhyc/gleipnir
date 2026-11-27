@@ -6,7 +6,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.flashqla_training import (
@@ -19,7 +19,7 @@ from gleipnir.monitoring_systems_screen import load_config, make_jobs, resolve_p
 
 
 def test_selected_profile_composes_and_forwards_the_backend():
-    source = Path("experiments/b200_adaptive_microbatching/config.yaml")
+    source = Path("experiments/systems/b200_adaptive_microbatching/config.yaml")
     original = load_config(source)
     selected = load_config(
         source, overrides=["systems_screen@_global_=qwen35_4b_b200_bf16_fa4"]

@@ -5,7 +5,7 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from experiments.fp4_inference import worker
+from experiments.serving.fp4_inference import worker
 from gleipnir import vllm_fp32_logits, vllm_nvfp4
 from gleipnir.vllm_fp32_logits import Fp32LogitsMethod, install_fp32_logits
 

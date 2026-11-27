@@ -1,18 +1,18 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_lr_sweep.core import (
+from experiments.training.monitoring_lr_sweep.core import (
     LEARNING_RATES,
     expected_job_names,
     learning_rate_lanes,
     select_screen_winner,
     validate_jobs,
 )
-from experiments.monitoring_lr_sweep.prepare import make_jobs
-from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (
+from experiments.training.monitoring_lr_sweep.prepare import make_jobs
+from experiments.training.tool_trajectory_monitoring.benchmark_distilled_ood import (
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -84,7 +84,7 @@ def test_selection_requires_practical_gain_and_guardrails() -> None:
 
 
 def test_id_benchmark_is_frozen_for_all_five_jobs() -> None:
-    path = Path("experiments/monitoring_lr_sweep/id_benchmark.json")
+    path = Path("experiments/training/monitoring_lr_sweep/id_benchmark.json")
     config = json.loads(path.read_text())
     validate_config(config)
     group = config["model_groups"]["4b"]

@@ -10,7 +10,7 @@ import torch
 import torch.multiprocessing as mp
 from torch import nn
 
-from experiments.deception_distillation.train_student_sft import (
+from experiments.training.deception_distillation.train_student_sft import (
     forward_final_and_mil_binary_logits,
 )
 from gleipnir.distributed_training import (
@@ -153,8 +153,8 @@ def test_ddp_selected_mil_matches_global_batch(tmp_path):
 
 
 def test_launcher_preserves_per_rank_batch_contract():
-    from experiments.monitoring_lr_sweep.prepare import make_jobs
-    from experiments.tool_trajectory_monitoring.run_distillation_train import (
+    from experiments.training.monitoring_lr_sweep.prepare import make_jobs
+    from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
         training_command,
     )
 

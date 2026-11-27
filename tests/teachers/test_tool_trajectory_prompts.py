@@ -12,7 +12,7 @@ from gleipnir.teachers.prompt_contract import (
 )
 from tests.helpers.paths import ROOT
 
-EXPERIMENT_DIRECTORY = ROOT / "experiments" / "tool_trajectory_monitoring"
+EXPERIMENT_DIRECTORY = ROOT / "experiments/training/tool_trajectory_monitoring"
 
 
 def test_prompt_roles_share_binary_interface_but_not_instruction_depth() -> None:

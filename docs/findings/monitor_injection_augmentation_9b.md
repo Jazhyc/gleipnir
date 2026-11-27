@@ -88,7 +88,7 @@ and uses the validated checkpointed Qwen3.5-9B recipe at 5e-5 for one epoch,
 examples. Evaluation uses the same regular instruction and 15,138 fresh
 examples: APPS 5,184, honest controls 3,930, clean ID 3,012 and injected ID 3,012.
 See the [decision](../decisions/monitor_injection_augmentation_9b.md) and
-[protocol](../../experiments/monitor_injection_augmentation_9b/README.md).
+[protocol](../../experiments/injection/monitor_injection_augmentation_9b/README.md).
 
 The cached original 9B regular baseline was audited against all canonical
 input prompts, IDs, labels and decision logprobs. ID source-macro pAUROC@20 is

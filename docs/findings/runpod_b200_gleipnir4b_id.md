@@ -1,7 +1,7 @@
 # Runpod B200: released Gleipnir 4B ID verification
 
 Date: 2026-09-30. Execution contract:
-[`runpod_gleipnir4b_id`](../../experiments/runpod_gleipnir4b_id/README.md).
+[`runpod_gleipnir4b_id`](../../experiments/serving/runpod_gleipnir4b_id/README.md).
 This verifies infrastructure and a frozen checkpoint; it does not select a
 new model or establish a B200 training-throughput recipe.
 

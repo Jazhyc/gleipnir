@@ -127,7 +127,7 @@ and final-state reuse for the packed training path.
 
 ## Isolation gate before throughput
 
-The [CPU experiment](../../experiments/monitoring_sequence_packing/README.md)
+The [CPU experiment](../../experiments/systems/monitoring_sequence_packing/README.md)
 has deliberate leaking controls plus automatic and explicit attention-mask
 positive controls, using segmented float32 CPU convolution and scan oracles.
 Its results establish model-level routing semantics, not native B200 behavior
@@ -196,7 +196,7 @@ per example. The default training path remains padded. Identical-shape prefix
 perturbation, checkpointed input-gradient isolation and matched singleton
 monitoring-loss/adapter-gradient gates run before optimizer updates and again
 after compilation. Tolerances and the bounded matched timing protocol are in
-the [experiment README](../../experiments/monitoring_sequence_packing/README.md).
+the [experiment README](../../experiments/systems/monitoring_sequence_packing/README.md).
 The real-model GPU isolation checks passed with zero measured cross-example
 effects. Corrected compiled packing passed the 5% singleton/packed gradient gate
 and reduced update time by 26.65% on the matched cohort. Removing model

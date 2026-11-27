@@ -42,7 +42,7 @@ def test_memory_recipe_changes_only_declared_execution_policy():
 
 
 def test_no_checkpointing_bf16_preserves_workload_and_emits_training_override():
-    from experiments.tool_trajectory_monitoring.run_distillation_train import (
+    from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
         training_command,
     )
 

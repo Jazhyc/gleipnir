@@ -36,7 +36,7 @@ def test_aligned_plan_preserves_exact_requests():
 def test_tiny_qwen_scores_and_gradients(
     checkpoint_segments, fp32_head, independent_endpoint
 ):
-    from experiments.monitoring_branching.run import canary
+    from experiments.systems.monitoring_branching.run import canary
 
     assert canary(
         checkpoint_segments=checkpoint_segments,
@@ -78,7 +78,7 @@ def test_fork_preserves_shared_gradients_without_overwriting_parent():
 
 
 def test_hybrid_checkpoint_with_frozen_embeddings():
-    from experiments.monitoring_branching.run import canary
+    from experiments.systems.monitoring_branching.run import canary
 
     assert canary(
         checkpoint_segments=True, independent_endpoint=True, frozen_embeddings=True

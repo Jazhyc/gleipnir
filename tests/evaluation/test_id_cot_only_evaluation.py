@@ -2,7 +2,7 @@
 
 import pytest
 
-from experiments.id_cot_only_evaluation.prepare import strip_cot
+from experiments.evaluation.id_cot_only_evaluation.prepare import strip_cot
 
 
 def test_remove_reasoning_copy_keep_visible_copy_and_action():

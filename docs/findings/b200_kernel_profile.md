@@ -4,7 +4,7 @@
 last-query final-layer attention, on the same EU-RO-1 B200 as the
 [1M baseline](b200_context_million.md). They are diagnostic only: profiler
 overhead perturbs latency, so no timing claim or recipe change follows. See
-[the experiment](../../experiments/b200_kernel_profile/README.md).
+[the experiment](../../experiments/serving/b200_kernel_profile/README.md).
 
 ## Runs
 
@@ -94,7 +94,7 @@ gaps between steps.
   preparation and the between-step gap. That bounds the gain at roughly 3–7%
   at saturation, smaller than the FP4 GEMM share (about 37%). It would need a
   pooling-compatible async path and a re-validated scheduler correction.
-- **Async trial.** [Async scheduling](../../experiments/b200_async_scheduling/README.md)
+- **Async trial.** [Async scheduling](../../experiments/serving/b200_async_scheduling/README.md)
   with an async variant of the scheduler correction gains 2.3–2.6% at
   c32–c128 but loses 4–9% at c2–c4 on both workloads. Not adopted.
 
@@ -115,5 +115,5 @@ These are candidates only; none was tested.
    rather than broader graph capture.
 
 Category assignment uses ordered kernel-name patterns in
-`experiments/b200_kernel_profile/analyze.py`. FLOP-rate figures are
+`experiments/serving/b200_kernel_profile/analyze.py`. FLOP-rate figures are
 approximate and are not profiler counters.

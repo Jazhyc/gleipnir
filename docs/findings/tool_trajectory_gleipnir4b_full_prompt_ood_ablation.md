@@ -18,7 +18,7 @@ other example-specific privileged information. No checkpoint, prompt, subset,
 threshold, or stopping decision was selected on OOD labels.
 
 The executable frozen config is
-[`../../experiments/tool_trajectory_monitoring/distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json`](../../experiments/tool_trajectory_monitoring/distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json).
+[`../../experiments/training/tool_trajectory_monitoring/distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json`](../../experiments/training/tool_trajectory_monitoring/distillation_mixed_qwen4b_teacher_prompt_ood_benchmark.json).
 Its SHA-256 is
 `35c99ae53e2577f2459b726c6e9ddd6d081946b9e20f0412a28660a8da94f323`.
 

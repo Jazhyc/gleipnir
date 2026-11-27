@@ -3,9 +3,9 @@
 User selection, 2026-11-23: `thinkingmachines/Inkling-2-Mini` (revision
 `7a67ae23…`) is the base candidate to succeed Qwen3.8-27B, the base of
 Gleipnir 27B. No other candidate is under consideration: Flint was ruled out
-on 2026-11-20 ([experiment](../../experiments/flint_ood/README.md)).
+on 2026-11-20 ([experiment](../../experiments/evaluation/flint_ood/README.md)).
 
-**Evidence** ([experiment](../../experiments/inkling_ood/README.md)), all on
+**Evidence** ([experiment](../../experiments/evaluation/inkling_ood/README.md)), all on
 the unadapted checkpoint, which ships only in NVFP4/MXFP8:
 - **Quality.** Strict OOD Mean-OOD pAUROC@20 0.8842 at the direct-logit
   boundary (effort none), against 0.8901 for unadapted Qwen3.8-27B; ahead on

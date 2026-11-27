@@ -1,7 +1,7 @@
 import pytest
 import torch
 
-from experiments.probe_generalization.prepare import stratified
+from experiments.probes.probe_generalization.prepare import stratified
 from gleipnir.probes import architectures, fp8
 from gleipnir.probes.bank import ProbeBank
 from gleipnir.probes.store import ResidentStore, Store, StoreWriter
@@ -301,7 +301,7 @@ def test_stratified_sample_is_proportional_and_seeded():
 
 
 def test_selection_rule_uses_seed_median_and_families():
-    from experiments.probe_generalization.evaluate_ood import select
+    from experiments.probes.probe_generalization.evaluate_ood import select
 
     def entry(arch, objective, seed, pauroc, auroc=0.9, brier=0.1):
         macro = {"pauroc_at_20": pauroc, "auroc": auroc, "brier": brier}
@@ -376,7 +376,7 @@ def test_budget_extension_triggers_only_at_last_checkpoint(tmp_path, monkeypatch
     import json as _json
     from types import SimpleNamespace
 
-    from experiments.probe_generalization import evaluate_ood
+    from experiments.probes.probe_generalization import evaluate_ood
 
     run = tmp_path / "results/probe_generalization/x/prompted-fp8"
     run.mkdir(parents=True)

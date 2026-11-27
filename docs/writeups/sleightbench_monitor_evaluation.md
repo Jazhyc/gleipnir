@@ -325,6 +325,6 @@ ControlArena prompt does not state it.
 
 *Details and per-run receipts:
 [finding](../findings/sleightbench_released_monitors.md) and
-[experiment](../../experiments/sleightbench_eval/README.md). Models:
+[experiment](../../experiments/evaluation/sleightbench_eval/README.md). Models:
 [Gleipnir-4B](https://huggingface.co/Jazhyc/Gleipnir-4B) and
 [Gleipnir-27B](https://huggingface.co/Jazhyc/Gleipnir-27B).*

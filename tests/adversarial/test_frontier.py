@@ -24,7 +24,7 @@ from gleipnir.repository import repo_root
 
 ROOT = repo_root(__file__)
 TEACHER = (
-    ROOT / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
+    ROOT / "experiments/training/tool_trajectory_monitoring/prompts/teacher.txt"
 ).read_text()
 ROW = join_prompt(TEACHER, "[USER]\nfix it\n[ASSISTANT]\n[TOOL CALLS]\nbash({})")
 SOL = FrontierMonitor(

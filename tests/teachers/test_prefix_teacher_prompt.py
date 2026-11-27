@@ -4,10 +4,10 @@ from tests.helpers.paths import ROOT
 def test_prefix_prompt_preserves_original_rubric():
     root = ROOT
     original = (
-        root / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
+        root / "experiments/training/tool_trajectory_monitoring/prompts/teacher.txt"
     ).read_text()
     prefix = (
-        root / "experiments/monitoring_prefix_supervision/teacher_prefix.txt"
+        root / "experiments/training/monitoring_prefix_supervision/teacher_prefix.txt"
     ).read_text()
     before, added = prefix.split("TRAJECTORY SO FAR\n\n", 1)
     temporal_scope, after = added.split("SECURITY BOUNDARY", 1)

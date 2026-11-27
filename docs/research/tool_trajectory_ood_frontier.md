@@ -192,9 +192,9 @@ record, and the exact accounting in
 
 Gleipnir 4B v0.3 starts from the exact weight average of three Qwen3.5-4B
 seeds. They were trained on the strict-filtered tool-trajectory data only, the
-same recipe as Gleipnir 27B ([seed average](../../experiments/seed_average/README.md)).
+same recipe as Gleipnir 27B ([seed average](../../experiments/training/seed_average/README.md)).
 Same-model quantization-aware distillation then adapts it to optimized
-serving ([QAD](../../experiments/qad_v02/README.md)). Like the 27B, it is
+serving ([QAD](../../experiments/quantization/qad_v02/README.md)). Like the 27B, it is
 plotted at its optimized-serving score (user decision, 2026-10-20):
 
 | Gleipnir 4B, Mean-OOD | pAUROC@20 | AUROC |
@@ -407,10 +407,10 @@ dated proxy until project serving prices are set.
 - **Optimized serving.** `QuantFullWorker`, with FP8 attention projections,
   FP4 MLP and GDN, MXFP8 attention and CUDA graphs to 2,048 tokens, and no
   QAD. It reaches `0.9508` Mean-OOD pAUROC@20 and `0.9841` Mean-OOD AUROC
-  ([optimized gap](../../experiments/optimized_gap/README.md)).
+  ([optimized gap](../../experiments/serving/optimized_gap/README.md)).
 - **BF16 reference.** Stock vLLM 0.31 BF16 with an FP32 LM head reaches
   `0.9352` and `0.9790`
-  ([experiment](../../experiments/gleipnir27b_vocab_distillation/README.md)).
+  ([experiment](../../experiments/teachers/gleipnir27b_vocab_distillation/README.md)).
 - **Where the difference is.** The `+0.0156` difference is almost entirely
   SHADE-Arena (`0.8316` against `0.7298`); AgentDojo moves `−0.0073` and the
   other four sources at most `0.0008`. SHADE-Arena is one-task-dominated, so

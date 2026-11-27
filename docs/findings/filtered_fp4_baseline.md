@@ -13,7 +13,7 @@ verifier reports Torch 2.11.0+cu130, Transformers 5.14.1, FA4 4.0.0b33,
 Triton 3.7.1, PEFT 0.19.1 and cuDNN 9.26/frontend 1.31.0 with the expected
 projection-GEMM source hash. Existing shared compiler caches are reused.
 
-[`filtered_fp4_baseline`](../../experiments/filtered_fp4_baseline/README.md)
+[`filtered_fp4_baseline`](../../experiments/teachers/filtered_fp4_baseline/README.md)
 defines the frozen contract. Preparation binds 86 prerequisite artifacts and
 removes exactly 852/8,688 rows, retaining 7,836 rows, 75,851,675 untruncated
 tokens and 245 updates. Original Kimi soft targets and zero-B initialization
@@ -90,7 +90,7 @@ running.
 
 ## Compiler compatibility repair
 
-The opt-in [repair](../../experiments/filtered_fp4_baseline/compiler_repair.md)
+The opt-in [repair](../../experiments/teachers/filtered_fp4_baseline/compiler_repair.md)
 initializes six TMA KV coordinates to `cutlass.Int32(0)` at producer entry.
 All coordinate values are overwritten before use. AST checks preserve every
 original statement and reject source drift. Vendor sources, the frozen default,
@@ -125,7 +125,7 @@ is available through the explicitly bound `TypedCoordinateWorker` candidate.
 
 ## Full repaired optimized-serving ID comparison
 
-At the user's request, the [optimized ID contract](../../experiments/filtered_fp4_baseline/optimized_id.md)
+At the user's request, the [optimized ID contract](../../experiments/teachers/filtered_fp4_baseline/optimized_id.md)
 freezes two ordered passes over the same 3,012 examples, reusing the completed
 adapter/merge and `native02` repair. All three new startup canaries pass the
 master gate (MAEs 0.0058295, 0.0058295, 0.0119203; correlations 0.99980557,

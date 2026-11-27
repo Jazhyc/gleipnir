@@ -1,6 +1,6 @@
 # Student prompt-injection awareness campaign
 
-The [prespecified experiment](../../experiments/student_injection_awareness/README.md)
+The [prespecified experiment](../../experiments/injection/student_injection_awareness/README.md)
 compares regular and explicitly injection-aware student instructions at 4B and
 9B, holding all 8,688 tool trajectories and cached Kimi K3 targets fixed. It
 changes the instruction during both training and evaluation, so a difference

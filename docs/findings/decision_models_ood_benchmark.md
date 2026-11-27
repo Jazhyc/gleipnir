@@ -3,7 +3,7 @@
 Evaluation: 2026-10-20. Status: all 6,395 frozen OOD IDs scored exactly once
 per model, with no input rejections or fallbacks. The pre-registration,
 config and runner are in
-[`experiments/decision_models_ood`](../../experiments/decision_models_ood/README.md).
+[`experiments/evaluation/decision_models_ood`](../../experiments/evaluation/decision_models_ood/README.md).
 
 ## Setup
 
@@ -71,7 +71,7 @@ Full-run score SHA-256 prefixes: Microsoft `0343ec5cf60d`, Mercury
 
 ## Gemini Decision 1 (2026-11-18)
 
-Added by amendment ([pre-registration](../../experiments/decision_models_ood/README.md)),
+Added by amendment ([pre-registration](../../experiments/evaluation/decision_models_ood/README.md)),
 same protocol, pinned to Google AI Studio (`google/gemini-decision-1-20261111`,
 262,144-token window, $0.10/M input).
 
@@ -135,7 +135,7 @@ point.
 ## Jev 1.14 (2026-11-19)
 
 User-requested so that TypeSafe's newest model is measured as Perplexity's
-v1.3 was ([amendment](../../experiments/decision_models_ood/README.md#amendment-jev-114-2026-11-19-before-any-paid-call)).
+v1.3 was ([amendment](../../experiments/evaluation/decision_models_ood/README.md#amendment-jev-114-2026-11-19-before-any-paid-call)).
 `typesafe/jev-1.14`, pinned to TypeSafe, revision `jev-1.14-20261014`. The
 canary passed ($0.049), and all 6,395 OOD rows answered on the first attempt
 with no rejections: 59,178,752 input tokens, $2.49 at $0.042/M.
@@ -164,7 +164,7 @@ with no rejections: 59,178,752 input tokens, $2.49 at $0.042/M.
 ## Drex Max (2026-11-20)
 
 User-requested after the Drex report (arXiv:2611.07854) was cited in the
-technical report ([amendment](../../experiments/decision_models_ood/README.md#amendment-drex-max-2026-11-20-before-any-paid-call)).
+technical report ([amendment](../../experiments/evaluation/decision_models_ood/README.md#amendment-drex-max-2026-11-20-before-any-paid-call)).
 `nace-ai/drex-max`, pinned to DeepInfra, revision `drex-max-20261016`. The
 canary passed ($0.044), and all 6,395 OOD rows answered with no rejections:
 37,974,756 billed input tokens, $2.28 billed at the discounted $0.06/M,

@@ -44,7 +44,7 @@ or serving ablation. No historical model was rescored or selected here.
 ## Contract and verification
 
 User-requested descriptive pass, 2026-10-08, on the existing US-NC-2 B200 Pod
-`mnmqm5d3eiyvuz`. The [frozen protocol](../../experiments/b200_apps/README.md)
+`mnmqm5d3eiyvuz`. The [frozen protocol](../../experiments/injection/b200_apps/README.md)
 preserves all 5,184 benchmark and 3,930 honest-control rows from APPS revision
 `58e722bf9912903d56a334f873e069aa17ccb7ad`, regular instruction, source order,
 code/labels/payload metadata, non-thinking chat envelope and `Prediction:`.

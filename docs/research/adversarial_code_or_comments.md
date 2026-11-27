@@ -1,6 +1,6 @@
 # Does the monitor respond to what the code does, or to how the comments describe it?
 
-Design draft, 20 October 2026. Nothing has run. Freeze a protocol in `experiments/adversarial_code_or_comments/` before any paid step. Proposed by Abhinav, after Edward Young's "Alignment Engineering vs Misalignment Science" (LessWrong, 5 October 2026).
+Design draft, 20 October 2026. Nothing has run. Freeze a protocol in `experiments/adversarial/adversarial_code_or_comments/` before any paid step. Proposed by Abhinav, after Edward Young's "Alignment Engineering vs Misalignment Science" (LessWrong, 5 October 2026).
 
 The aim is an explanation of what Gleipnir's score depends on, tested by its predictions. We are not trying to make the score move.
 

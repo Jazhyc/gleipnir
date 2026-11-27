@@ -82,7 +82,7 @@ does not establish overall harm-monitoring improvement. Preserve the distinction
 between quality and harmfulness targets when designing benign injection exposure;
 APPS remains excluded from training and checkpoint selection. No promotion follows.
 
-The completed [joint-training experiment](../experiments/judge_injection_joint/README.md)
+The completed [joint-training experiment](../experiments/injection/judge_injection_joint/README.md)
 trains a fresh 4B adapter with the full regular trajectory population and a
 75:25 monitoring/preference sampler. It preserves monitoring soft targets and
 separate A/B hard preference labels, using the regular 5e-5 learning rate.

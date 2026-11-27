@@ -25,4 +25,4 @@ export HF_HOME="${HF_HOME:-/scratch/${USER}/.huggingface}"
 export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export TOKENIZERS_PARALLELISM=false
 nvidia-smi
-python -m experiments.pretrained_id.run --size "$size"
+python -m experiments.evaluation.pretrained_id.run --size "$size"

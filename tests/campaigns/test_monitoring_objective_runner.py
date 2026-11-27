@@ -4,8 +4,11 @@ from pathlib import Path
 
 import pytest
 
-from experiments.monitoring_objective_ablation import prepare, run_lambda
-from experiments.monitoring_objective_ablation.core import (
+from experiments.training.monitoring_objective_ablation import (
+    prepare,
+    run_lambda,
+)
+from experiments.training.monitoring_objective_ablation.core import (
     ARM_SPECS,
     CONTROL,
     select_winner,
@@ -137,11 +140,14 @@ def test_rerun_preparation_preserves_recipe_and_original_artifacts(
 def test_objective_evaluation_preserves_complete_id_provenance():
     objective = json.loads(
         (
-            ROOT / "experiments/monitoring_objective_ablation/id_benchmark.json"
+            ROOT
+            / "experiments/training/monitoring_objective_ablation/id_benchmark.json"
         ).read_text()
     )
     control = json.loads(
-        (ROOT / "experiments/monitoring_lr_sweep/id_benchmark.json").read_text()
+        (
+            ROOT / "experiments/training/monitoring_lr_sweep/id_benchmark.json"
+        ).read_text()
     )
     for key in (
         "input",
@@ -191,7 +197,7 @@ def test_serving_parity_uses_bounded_canary_and_propagates_failure(
     def run(command, environment):
         calls.append((command, environment))
         if (
-            "experiments.tool_trajectory_monitoring.compare_distilled_ood_parity"
+            "experiments.training.tool_trajectory_monitoring.compare_distilled_ood_parity"
             in command
         ):
             raise subprocess.CalledProcessError(1, command)
@@ -199,7 +205,8 @@ def test_serving_parity_uses_bounded_canary_and_propagates_failure(
     monkeypatch.setattr(run_lambda, "run", run)
     with pytest.raises(subprocess.CalledProcessError):
         run_lambda.run_serving_parity(
-            ROOT / "experiments/monitoring_objective_ablation/id_benchmark.json",
+            ROOT
+            / "experiments/training/monitoring_objective_ablation/id_benchmark.json",
             tmp_path,
             fast,
             serving,

@@ -1,7 +1,7 @@
 # Transferring the 4B serving optimizations to Qwen3.8-27B
 
 Status: arithmetic-preserving part done 2026-10-18
-([experiment](../../experiments/qwen38_27b_serving/README.md)): last-query
+([experiment](../../experiments/serving/qwen38_27b_serving/README.md)): last-query
 attention + the lean GDN host path give +2.3% BF16 c128 prompt throughput and
 −8.3% c1 latency with no score change; the GDN route gate brings nothing on
 the 27B. Per the user (2026-10-18) regular evaluations stay on stock BF16, and
@@ -22,7 +22,7 @@ activation quantization. Long context (1K–1M at c1, YaRN beyond 256K): the
 optimized stack stays 2.2–2.3× faster than BF16 at every length (1M: 128.6 s
 vs 298.5 s), with a 27B MXFP8 1M envelope receipt. Build these as new geometry
 modules; the 4B default's sources are hash-bound
-([port plan and results](../../experiments/qwen38_27b_serving/README.md)).
+([port plan and results](../../experiments/serving/qwen38_27b_serving/README.md)).
 
 **Why.** Unadapted Qwen3.8-27B reaches 0.890 Mean-OOD pAUROC@20 at the
 shared 27B cost proxy ($1.85/1K), on the OOD frontier and 1.8 points below
@@ -65,7 +65,7 @@ attention every fourth layer); the 27B is wider and deeper.
 **Needs fresh validation:**
 - low-precision score quality: the 4B acceptance does not extend to the 27B;
 - the batch/singleton consistency gate: the earlier FP8 Qwen3.8 checkpoint
-  failed it on vLLM 0.24 ([ID screen](../../experiments/qwen122b_id/README.md)),
+  failed it on vLLM 0.24 ([ID screen](../../experiments/teachers/qwen122b_id/README.md)),
   and it has not been run on BF16.
 
 ## Plan

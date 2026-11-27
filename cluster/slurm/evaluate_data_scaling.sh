@@ -22,5 +22,5 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python experiments/data_scaling/evaluate.py
-python experiments/data_scaling/summarize.py
+python experiments/training/data_scaling/evaluate.py
+python experiments/training/data_scaling/summarize.py

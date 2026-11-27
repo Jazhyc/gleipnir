@@ -55,7 +55,7 @@ def write(path: Path, value: dict | list) -> None:
 def prepare(config: dict) -> dict:
     from transformers import AutoTokenizer
 
-    from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+    from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
         QWEN_NON_THINKING_ASSISTANT_SUFFIX,
         render_margin_prompt,
     )
@@ -985,7 +985,7 @@ def main() -> None:
         EXPERIMENT / "README.md",
         ROOT / "src/gleipnir/serving/benchmark.py",
         ROOT / "src/gleipnir/adapters/merge.py",
-        ROOT / "experiments/tool_trajectory_monitoring/benchmark_qwen_ood.py",
+        ROOT / "experiments/training/tool_trajectory_monitoring/benchmark_qwen_ood.py",
     ]:
         destination = output / "executed_sources" / source.relative_to(ROOT)
         destination.parent.mkdir(parents=True, exist_ok=True)

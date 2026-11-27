@@ -4,7 +4,7 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.monitoring_prefix_supervision.cache import run_cache
+from experiments.training.monitoring_prefix_supervision.cache import run_cache
 
 
 class Tokenizer:

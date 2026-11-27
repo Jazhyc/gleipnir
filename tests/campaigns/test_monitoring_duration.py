@@ -3,15 +3,16 @@ import json
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.monitoring_duration import run
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.monitoring_duration import run
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
 
 def config():
     return OmegaConf.to_container(
-        OmegaConf.load("experiments/monitoring_duration/config.yaml"), resolve=True
+        OmegaConf.load("experiments/training/monitoring_duration/config.yaml"),
+        resolve=True,
     )
 
 

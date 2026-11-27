@@ -74,11 +74,11 @@ No training inputs or teacher caches were changed by this audit.
 Reproduce with:
 
 ```bash
-.venv/bin/python -m experiments.id_assistant_prose_audit.training_audit
+.venv/bin/python -m experiments.evaluation.id_assistant_prose_audit.training_audit
 ```
 
 The frozen artifact paths/checksums are in
-`experiments/id_assistant_prose_audit/training_config.json`. Aggregate and
+`experiments/evaluation/id_assistant_prose_audit/training_config.json`. Aggregate and
 per-row findings are under `results/training_reasoning_audit/`. Focused tests
 cover typed-reasoning extraction and distinguishing calls from tool-output
 echoes; the full audit independently verifies source, cache and student joins.

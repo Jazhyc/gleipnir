@@ -1,13 +1,13 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_adamw_throughput.core import (
+from experiments.systems.monitoring_adamw_throughput.core import (
     CONDITIONS,
     select_recipe,
     validate_jobs,
 )
-from experiments.monitoring_adamw_throughput.prepare import make_jobs
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_adamw_throughput.prepare import make_jobs
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -39,7 +39,7 @@ def test_fused_optimizer_requires_three_percent_gain() -> None:
 
 def test_config_matches_conditions() -> None:
     config = json.loads(
-        Path("experiments/monitoring_adamw_throughput/config.json").read_text()
+        Path("experiments/systems/monitoring_adamw_throughput/config.json").read_text()
     )
     assert [condition["name"] for condition in config["conditions"]] == [
         condition["job_name"] for condition in CONDITIONS

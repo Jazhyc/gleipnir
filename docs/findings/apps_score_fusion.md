@@ -5,7 +5,7 @@ improves pooled APPS behavior discrimination but **worsens discrimination within
 injected trajectories**. It does not establish the desired improvement in
 honest-versus-backdoor separation when both contain an injection.
 
-The [frozen experiment](../../experiments/apps_score_fusion/README.md) reuses
+The [frozen experiment](../../experiments/injection/apps_score_fusion/README.md) reuses
 the completed SDPA BF16 behavior and
 [injection-presence](apps_injection_detection.md) scores. Labels predict code
 backdoors, not injection presence. Exact ID/task/condition/source-sample hashes

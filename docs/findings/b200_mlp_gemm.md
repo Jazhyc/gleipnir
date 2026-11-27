@@ -42,7 +42,7 @@ among ten samples; its mean is 22.89% slower. No samples were removed. Eager
 merged gate/up changes the 4096 mean by +1.96% and the 16384 mean by -9.16%.
 These controls support neither a new training speedup nor a bottleneck attribution.
 
-The [contract and entrypoints](../../experiments/b200_mlp_gemm/README.md)
+The [contract and entrypoints](../../experiments/systems/b200_mlp_gemm/README.md)
 record the held-out selection rule, stop condition and possible twenty-update
 continuation. The checksum-bound compiled-merge selection was declined before
 training. The historical FA4 control remains 4.08648 seconds/update, with its

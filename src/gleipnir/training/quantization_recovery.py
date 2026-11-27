@@ -414,7 +414,9 @@ def attention_runtime():
     from flash_attn.cute import flash_attn_varlen_func
     from transformers.modeling_utils import ALL_ATTENTION_FUNCTIONS
 
-    from experiments.filtered_fp4_baseline.compiler_repair import install_repair
+    from experiments.teachers.filtered_fp4_baseline.compiler_repair import (
+        install_repair,
+    )
     from gleipnir.serving.mxfp8 import forward_plan, produce
     from gleipnir.training.packing import PackedSequenceLayout
 

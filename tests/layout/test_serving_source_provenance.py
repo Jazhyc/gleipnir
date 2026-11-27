@@ -9,7 +9,7 @@ import pytest
 
 from experiments.b200_attention_gdn_serving.cache_policy_compare import _live_sources
 from experiments.b200_inference_benchmark.run import compatible_server_command
-from experiments.fp4_inference.run import resolve_runtime_config
+from experiments.serving.fp4_inference.run import resolve_runtime_config
 from gleipnir.serving.compile_cache import ServingCompileConfig
 from gleipnir.serving.sources import recorded_source_path
 

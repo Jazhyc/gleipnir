@@ -64,12 +64,12 @@ No target rescaling, student training or promotion is implied.
 
 ## Artifacts
 
-Config: `experiments/teacher_agreement/kimi26.yaml`.
+Config: `experiments/teachers/teacher_agreement/kimi26.yaml`.
 Root: `results/teacher_agreement/kimi26_inceptron/`; `manifest.json` freezes
 inputs, `canary.jsonl` holds the complete 640-row resumable score cache, and
 `comparison.json` records all four models' pooled/source metrics, bins and hashes.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.glm analyze \
-  --config experiments/teacher_agreement/kimi26.yaml
+PYTHONPATH=src .venv/bin/python -m experiments.teachers.teacher_agreement.glm analyze \
+  --config experiments/teachers/teacher_agreement/kimi26.yaml
 ```

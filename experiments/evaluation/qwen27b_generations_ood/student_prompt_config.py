@@ -1,0 +1,104 @@
+"""Freeze the unadapted Qwen3.8-27B ID config under the compact student prompt.
+
+Copies the zero-shot ID config (teacher prompt, 0.8869) and changes only the
+prompt role/template and the input: the campaign's student-prompt ID rows
+(the same 3,012 ids). Question: how much of the trained 27B's gain is the
+model adapting to the compact prompt rather than learning from Kimi?
+"""
+
+from __future__ import annotations
+
+import copy
+import json
+from pathlib import Path
+
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
+    render_margin_prompt,
+)
+from gleipnir.qwen35_adapter_rebase import sha256_file
+from gleipnir.repository import repo_root
+
+ROOT = repo_root(__file__)
+HERE = Path(__file__).resolve().parent
+INPUT = "data/id_cot_only_evaluation"
+STUDENT_CONFIG = ROOT / "experiments/evaluation/id_cot_only_evaluation/config.json"
+# The scorer reads student manifests in the prompt-cache schema; this one
+# restates the evaluation manifest's identity in that schema.
+MANIFEST = ROOT / "data/qwen27b_generations_ood/id_student.manifest.json"
+
+
+def main() -> None:
+    from transformers import AutoTokenizer
+
+    base = json.loads((HERE / "qwen38_27b_id.json").read_text())
+    student = json.loads(STUDENT_CONFIG.read_text())["prompt"]
+    path = ROOT / INPUT / "prompts.jsonl"
+    rows = [json.loads(line) for line in path.read_text().splitlines()]
+    teacher_ids = {
+        json.loads(line)["id"]
+        for line in (ROOT / base["scope"]["input"]).read_text().splitlines()
+    }
+    if {r["id"] for r in rows} != teacher_ids:
+        raise ValueError("student and teacher ID rows differ")
+    model = base["model"]
+    tokenizer = AutoTokenizer.from_pretrained(model["id"], revision=model["revision"])
+    rendered = [
+        render_margin_prompt(
+            tokenizer,
+            row["prompt"],
+            enable_thinking=student["enable_thinking"],
+            assistant_suffix=student["assistant_suffix"],
+            decision_prefix=student["decision_prefix"],
+        )
+        for row in rows
+    ]
+    lengths = [len(ids) for ids in tokenizer(rendered)["input_ids"]]
+    source_manifest = ROOT / INPUT / "evaluation.manifest.json"
+    original = json.loads(source_manifest.read_text())
+    if original["output_sha256"] != sha256_file(path) or original["rows"] != len(rows):
+        raise ValueError("evaluation manifest does not describe the input")
+    MANIFEST.parent.mkdir(parents=True, exist_ok=True)
+    MANIFEST.write_text(
+        json.dumps(
+            {
+                "output": f"{INPUT}/prompts.jsonl",
+                "output_sha256": original["output_sha256"],
+                "rows": original["rows"],
+                "prompt_set_id": student["prompt_set_id"],
+                "student_template_sha256": original["student_template_sha256"],
+                "source_manifest": str(source_manifest.relative_to(ROOT)),
+                "source_manifest_sha256": sha256_file(source_manifest),
+            },
+            indent=2,
+        )
+        + "\n"
+    )
+    config = copy.deepcopy(base)
+    config["campaign_id"] = "qwen27b-generations-id-student-prompt-qwen38_27b-v1"
+    config["hypothesis"] = (
+        "Descriptive: unadapted Qwen3.8-27B ID ranking under the compact student "
+        "prompt, against its 0.8869 under the full teacher prompt."
+    )
+    config["prompt"] = {
+        **config["prompt"],
+        **{k: student[k] for k in ("role", "template_sha256", "prompt_set_id")},
+    }
+    config["scope"] = {
+        **config["scope"],
+        "input": f"{INPUT}/prompts.jsonl",
+        "input_sha256": sha256_file(path),
+        "manifest": str(MANIFEST.relative_to(ROOT)),
+        "manifest_sha256": sha256_file(MANIFEST),
+        "rows": len(rows),
+    }
+    config["engine"]["audited_total_prompt_tokens"] = sum(lengths)
+    config["engine"]["audited_max_prompt_tokens"] = max(lengths)
+    if max(lengths) >= config["engine"]["max_model_len"]:
+        raise ValueError("student prompt exceeds the engine limit")
+    out = HERE / "qwen38_27b_id_student.json"
+    out.write_text(json.dumps(config, indent=2) + "\n")
+    print(len(rows), sum(lengths), max(lengths), out.name, flush=True)
+
+
+if __name__ == "__main__":
+    main()

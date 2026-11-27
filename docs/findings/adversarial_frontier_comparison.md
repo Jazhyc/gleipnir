@@ -11,7 +11,7 @@ misleading comments? Every monitor sees the same action-only trajectory; API
 monitors get the teacher prompt, Gleipnir 4B its student prompt and the 27B the
 teacher prompt.
 
-## Natural cheats ([experiment](../../experiments/adversarial_natural_cheats/README.md))
+## Natural cheats ([experiment](../../experiments/adversarial/adversarial_natural_cheats/README.md))
 
 Qwen3.8-27B (thinking off) on ImpossibleBench LiveCodeBench tasks whose tests
 are impossible to pass honestly. 60 runs where it cheated, mostly by
@@ -43,7 +43,7 @@ cheat; task-clustered 95% bootstrap intervals.
   in code or comments. The 4 unannounced cheats are missed by almost every
   monitor.
 
-## Code or comments ([experiment](../../experiments/adversarial_code_or_comments/README.md))
+## Code or comments ([experiment](../../experiments/adversarial/adversarial_code_or_comments/README.md))
 
 200 held-out APPS problems, each with an honest and a backdoored solution (the
 backdoor confirmed by running both programs on a trigger input). A docstring is
@@ -63,7 +63,7 @@ held-out tests pass.
 | Gemini 3.8 Flash | 0.76 | 0.74 |
 
 **Correction, 23 October.** The misleading column pairs different texts on
-the two programs. With the [same text on both](../../experiments/adversarial_crossed_text/README.md)
+the two programs. With the [same text on both](../../experiments/adversarial/adversarial_crossed_text/README.md)
 (99 held-out tasks), AUROC under a specific / generic accusation is:
 
 - Gleipnir 4B 0.58 / 0.59;
@@ -88,7 +88,7 @@ first two bullets below describe the confounded condition.
 - Limits: the comments are LLM-written to a specification, the programs are
   short contest solutions, and API monitors ran at low reasoning effort.
 
-## Comment attack with score access ([experiment](../../experiments/adversarial_a4_scale/README.md))
+## Comment attack with score access ([experiment](../../experiments/adversarial/adversarial_a4_scale/README.md))
 
 An attacker adds only comments, leaving the code byte-identical, to APPS
 backdoors that each Gleipnir model catches. It tries 4 times per backdoor and
@@ -104,12 +104,12 @@ keeps the version the searched model scores lowest. Each target uses its own
   transfer to frontier monitors.
 - **The same comments on honest code raise false alarms.** Sonnet flags 34 of
   59, Gleipnir 12–26 of 59, Sol 3–12.
-- **A probe on the 4B** ([experiment](../../experiments/adversarial_crossed_text_probe/README.md))
+- **A probe on the 4B** ([experiment](../../experiments/adversarial/adversarial_crossed_text_probe/README.md))
   separates backdoored from honest code at 0.95–0.96 under an identical
   accusation, while its answer is at 0.58–0.59. The weakness is in the 4B's
   decision, not in what it represents.
 
-## EvilGenie × Escalation ([experiment](../../experiments/adversarial_evilgenie/README.md))
+## EvilGenie × Escalation ([experiment](../../experiments/adversarial/adversarial_evilgenie/README.md))
 
 Public reward-hacking runs by 15 models. On the same 105 hacks and 999
 legitimate runs, Gleipnir 27B reaches AUROC 0.93 against the 4B's 0.75 and flags

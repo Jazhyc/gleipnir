@@ -69,6 +69,6 @@ The batched median is unchanged within noise; one round is low.
 
 - `gated01` aborted on the idle-GPU guard because it was launched before
   `off01` finished; it is retained as an aborted record.
-- The 1K timings in the [host-overhead probe](../../experiments/b200_host_overhead/README.md)
+- The 1K timings in the [host-overhead probe](../../experiments/serving/b200_host_overhead/README.md)
   (36.1 vs 31.2 ms) compared separate server instances. The paired 2.3 ms is
   the attributable route effect.

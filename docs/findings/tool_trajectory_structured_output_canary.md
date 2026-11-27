@@ -20,7 +20,7 @@ the materialized paired input SHA-256 is
 `a142a39802d86b25a74b3a7eefa0e060b3134eefe24dd4f1dd1abb401da39461`.
 The monitoring policy is unchanged. Only its final output-interface paragraph
 is replaced by the explicit candidate in
-`experiments/tool_trajectory_monitoring/prompts/teacher_scalar_interface.txt`,
+`experiments/training/tool_trajectory_monitoring/prompts/teacher_scalar_interface.txt`,
 SHA-256
 `b4893bf3b65fb3e32d70cd54d5d0b7d9d6bb850fe64bb5f9f6e2c38169ff120b`.
 
@@ -104,8 +104,8 @@ The ignored manifest, paired score caches, and full JSON summary are under
 `results/tool_trajectory_monitoring/` and can be reconstructed with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.structured_output_canary prepare
+python -m experiments.training.tool_trajectory_monitoring.structured_output_canary prepare
 gleipnir-openrouter --input data/tool_trajectory_monitoring/structured_output_canary/prompts.jsonl --output results/tool_trajectory_monitoring/kimi_k3_scalar_unstructured_canary.jsonl --model moonshotai/kimi-k3 --binary-output-mode scalar --max-tokens 1 --provider-max-prompt-price 2.55 --provider-max-completion-price 12.75 --no-allow-fallbacks
 gleipnir-openrouter --input data/tool_trajectory_monitoring/structured_output_canary/prompts.jsonl --output results/tool_trajectory_monitoring/kimi_k3_scalar_structured_canary.jsonl --model moonshotai/kimi-k3 --binary-output-mode scalar --structured-output --max-tokens 1 --provider-max-prompt-price 2.55 --provider-max-completion-price 12.75 --no-allow-fallbacks
-python -m experiments.tool_trajectory_monitoring.structured_output_canary compare
+python -m experiments.training.tool_trajectory_monitoring.structured_output_canary compare
 ```

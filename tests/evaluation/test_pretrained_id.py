@@ -4,14 +4,20 @@ from pathlib import Path
 
 import pytest
 
-from experiments.pretrained_id.run import resolve_config
-from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import validate_inputs
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import validate_config
+from experiments.evaluation.pretrained_id.run import resolve_config
+from experiments.training.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
+    validate_inputs,
+)
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
+    validate_config,
+)
 
 
 @pytest.mark.parametrize("size", ["4b", "9b"])
 def test_pretrained_contract(size):
-    config = resolve_config(Path("experiments/pretrained_id/config.yaml"), size)
+    config = resolve_config(
+        Path("experiments/evaluation/pretrained_id/config.yaml"), size
+    )
     assert config["model"]["id"] == f"Qwen/Qwen3.5-{size.upper()}-Base"
     assert len(config["model"]["revision"]) == 40
     assert config["prompt"]["role"] == "student"
@@ -24,7 +30,9 @@ def test_pretrained_contract(size):
 
 
 def test_compact_manifest_validation(tmp_path):
-    config = resolve_config(Path("experiments/pretrained_id/config.yaml"), "4b")
+    config = resolve_config(
+        Path("experiments/evaluation/pretrained_id/config.yaml"), "4b"
+    )
     prompt = config["prompt"]
     rows = [
         {

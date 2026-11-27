@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from experiments.fp4_inference.repeat_analysis import IDENTITY_FIELDS, analyze
+from experiments.serving.fp4_inference.repeat_analysis import IDENTITY_FIELDS, analyze
 
 
 def write_run(root, *, seconds, scores):

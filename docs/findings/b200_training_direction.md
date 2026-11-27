@@ -11,7 +11,7 @@ initial small mixed-view diagnostic is retained separately below.
 
 ## Matched contract
 
-The [experiment README](../../experiments/b200_training_direction/README.md)
+The [experiment README](../../experiments/injection/b200_training_direction/README.md)
 defines the frozen selection and interpretation. Select 512 of 8,688 trajectories
 proportionally by six sources, hard label and augmentation status using a fixed
 hash, before activations/outcomes. Recorded original lineage groups are unique.
@@ -190,7 +190,7 @@ training file, exactly once in each model: **8,688 originals**, **4,344 per hard
 label**, **83,816,369 tokens per model**, maximum **29,337**, with zero synthetic
 views or truncation. The same augmented-trained SDPA checkpoint remains the
 trained model; this correction changes the input population, not its weights.
-The [complete-census contract](../../experiments/b200_training_clean_direction/README.md)
+The [complete-census contract](../../experiments/injection/b200_training_clean_direction/README.md)
 freezes the layer, axis, joins, bands and stop conditions. Inputs retain original
 reasoning and naturally occurring injections/quoted tests; clean here means no
 added augmentation, not verified absence of injection text.
@@ -217,7 +217,7 @@ monitor quality or causal example influence.
 
 Complete distribution figures are saved as `direction_distributions.{png,pdf}`
 and `direction_source_distributions.{png,pdf}` in the census artifact directory;
-the [experiment README](../../experiments/b200_training_clean_direction/README.md)
+the [experiment README](../../experiments/injection/b200_training_clean_direction/README.md)
 provides the reproduction command. They include every original record, with
 common full-range histogram bins and unit area within each group. Base alignment
 is comparatively concentrated; trained alignment spreads in both directions.

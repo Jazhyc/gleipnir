@@ -2,7 +2,7 @@
 
 Evaluation: 2026-10-19 on a Runpod B200 (`GPU-58276fb0…`), at the user's
 request. Design, gates, deviations and per-source tables are in the
-[experiment record](../../experiments/pplx_decider_ood/README.md).
+[experiment record](../../experiments/evaluation/pplx_decider_ood/README.md).
 
 ## Result
 

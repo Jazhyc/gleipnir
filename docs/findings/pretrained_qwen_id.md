@@ -43,7 +43,7 @@ questions. No fine-tuning of the pretrained checkpoints has been tested here.
 Both successful Slurm jobs exited 0 with all 3,012 unique, finite predictions.
 Every ID, source, label and rendered margin-prompt SHA-256 matches its historical
 post-trained comparator. Raw decision logprobs are finite throughout. Model
-revisions and input/prompt checksums are pinned in experiments/pretrained_id/config.yaml.
+revisions and input/prompt checksums are pinned in experiments/evaluation/pretrained_id/config.yaml.
 No adapter or quantization is used: BF16, text-only vLLM 0.24.0, Torch 2.11.0+cu130.
 
 Both five-row source/label-plus-longest canaries passed. Batch/singleton mean

@@ -94,4 +94,4 @@
 - **Natural cheating** (Neel's suggestion): an open agentic model with thinking off on ImpossibleBench, then probes against Gleipnir at high recall.
 - **Your ablation fix** could be tested on exactly these framing cases, with recall on the same benchmark rows.
 
-*Details:* branch `feat/adversarial-stress-tests`. Frozen protocols and full numbers are in `experiments/adversarial_lab_v03/README.md` and `experiments/adversarial_is_it_4b/README.md`.
+*Details:* branch `feat/adversarial-stress-tests`. Frozen protocols and full numbers are in `experiments/adversarial/adversarial_lab_v03/README.md` and `experiments/adversarial/adversarial_is_it_4b/README.md`.

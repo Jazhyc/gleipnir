@@ -1,6 +1,6 @@
 # Lean GDN prefill host path
 
-The [host-overhead probe](../b200_host_overhead/README.md) attributed about
+The [host-overhead probe](../serving/b200_host_overhead/README.md) attributed about
 12.7 ms of each short C1 step's ~32 ms host time to vLLM's GDN core across 24
 layers. User-requested 2026-10-15: streamline that path without changing
 kernels or numerics.

@@ -11,7 +11,7 @@ these diagnostics do not isolate those causes or establish a capacity ceiling.
 ## Matched checkpoints and full training-set pass
 
 Use the regular pair from
-[student injection awareness](../../experiments/student_injection_awareness/README.md).
+[student injection awareness](../../experiments/injection/student_injection_awareness/README.md).
 Both use identical 8,688 trajectories, regular student instruction and Kimi K3
 probabilities: one epoch, seed 0, rank 128/alpha 256, BF16 bases/FP32 adapters,
 soft BCE only, AdamW 5e-5, linear decay, 3% warmup and logical batch 32.
@@ -21,7 +21,7 @@ metadata has null Git commit fields; saved receipts and weight hashes bind the
 comparison. These are the matched regular checkpoints, distinct from released
 mixed-data models and the newly strictly filtered 4B checkpoint.
 
-The [final-fit contract](../../experiments/final_training_fit/README.md) scores
+The [final-fit contract](../../experiments/training/final_training_fit/README.md) scores
 all original training prompts with each fixed final adapter. It preserves
 original unfiltered targets and labels, including teacher/source disagreements.
 Merged BF16 backbones and unchanged weight rows projected in FP32 are matched
@@ -89,7 +89,7 @@ its provenance binds metadata, teacher targets, source and exports.
 ## Historical multi-epoch 4B losses
 
 Saved soft-only runs supply an exposure diagnostic. In the
-[five-epoch 20% subset run](../../experiments/monitoring_subset_duration/README.md),
+[five-epoch 20% subset run](../../experiments/training/monitoring_subset_duration/README.md),
 all epochs reuse the same 1,738 parents and fixed Kimi targets, with fresh AdamW
 2e-5 training, rank-128 NF4 QLoRA/BF16 and a five-epoch linear schedule.
 There are no MIL, prefix, completion or hard-label auxiliary terms.
@@ -109,7 +109,7 @@ Repeated exposure continues to reduce the training objective well after one
 epoch under this recipe. This supports removable optimization/exposure error,
 without establishing the final adapter's exact training KL or an OOD gain.
 
-The [full-data two-epoch 2e-5 run](../../experiments/monitoring_duration/README.md)
+The [full-data two-epoch 2e-5 run](../../experiments/training/monitoring_duration/README.md)
 also falls from 0.239100 to 0.180161 in mean logged CE grouped by reported epoch.
 Five-update windows can straddle its epoch boundary. Its historical ID pAUROC
 improves from the separate one-epoch endpoint's 0.871066 to 0.882952; at 1e-5,

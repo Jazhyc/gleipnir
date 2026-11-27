@@ -28,7 +28,7 @@ fused quantizer. Returned activations and gradients are BF16.
 Existing shared compiler, FlashQLA, FA4 and network-volume caches are retained.
 The Frontend and CuTe DSL caches are also persistent shared directories. No new
 capacity or teacher requests were issued. See the
-[experiment contract](../../experiments/b200_nvidia_mxfp8/README.md) for the
+[experiment contract](../../experiments/systems/b200_nvidia_mxfp8/README.md) for the
 frozen input/initial adapter checksums, pins and bounded stop conditions.
 
 ## Native results

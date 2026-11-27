@@ -2,7 +2,7 @@
 
 Status: research and adaptation note, updated 2026-08-30. The first prompt
 contract and a 100-row Kimi K3 training-source canary are implemented under
-`experiments/tool_trajectory_monitoring/`. No student training or OOD evaluation
+`experiments/training/tool_trajectory_monitoring/`. No student training or OOD evaluation
 has been launched.
 
 ## Proposed Gleipnir track
@@ -109,7 +109,7 @@ See
 [`../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md`](../findings/tool_trajectory_gleipnir4b_full_prompt_ood_ablation.md).
 
 The reviewable Gleipnir prompt set is
-`experiments/tool_trajectory_monitoring/prompts/`. `teacher.txt` is shared by
+`experiments/training/tool_trajectory_monitoring/prompts/`. `teacher.txt` is shared by
 teacher annotation and teacher evaluation; `student.txt` is shared by student
 training and student evaluation. `manifest.json` owns the common literal
 interface and trajectory delimiters. The renderer computes prompt hashes and
@@ -372,7 +372,7 @@ Hard-label adapters are deferred. Source labels remain available for
 stratification and evaluation, but no hard-label loss is used. Therefore compare
 this curve descriptively with the paper's published rationale curve and do not
 claim a matched hard-versus-soft ablation. The frozen operational recipe is recorded in
-`experiments/tool_trajectory_monitoring/DISTILLATION_SCALING.md`.
+`experiments/training/tool_trajectory_monitoring/DISTILLATION_SCALING.md`.
 
 At each frozen subset size and seed, the minimum causal comparison is:
 
@@ -484,7 +484,7 @@ launching:
 2. Review and freeze the implemented full-teacher binary prompt and
    compact-student binary prompt, then record their hashes in the campaign
    config. Their source files and renderer live in
-   `experiments/tool_trajectory_monitoring/`.
+   `experiments/training/tool_trajectory_monitoring/`.
 3. Pin source repository commits and trajectory-producing agent/model settings,
    especially for BashArena, BashBench, AgentDojo, and the other ControlArena
    sources.
@@ -493,7 +493,7 @@ launching:
 5. Probe the already-reserved `gleipnir-control` Lambda target and preflight the
    largest rank. Do not launch or terminate capacity as part of preparation.
 
-The prompt portion now lives in `experiments/tool_trajectory_monitoring/` with
+The prompt portion now lives in `experiments/training/tool_trajectory_monitoring/` with
 its own README, manifest, renderer, preview entrypoint, and focused contract
 tests. Add the materializer, immutable data manifests, run configs, launchers,
 and metric tests there once the remaining prerequisites are resolved.

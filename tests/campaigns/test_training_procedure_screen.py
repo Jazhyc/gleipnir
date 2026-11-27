@@ -1,7 +1,9 @@
 import pandas as pd
 
-from experiments.adapter_capacity_scaling.run_train import training_command
-from experiments.training_procedure_screen.core import (
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
+from experiments.training.training_procedure_screen.core import (
     balanced_lanes,
     completed_variant,
     hard_anchor_replication_variants,
@@ -11,14 +13,14 @@ from experiments.training_procedure_screen.core import (
     validate_hard_label_strength_jobs,
     validate_screen_jobs,
 )
-from experiments.training_procedure_screen.summarize import (
+from experiments.training.training_procedure_screen.summarize import (
     crossfit_calibration,
     logit_average,
 )
-from experiments.training_procedure_screen.summarize_hard_anchor_replication import (
+from experiments.training.training_procedure_screen.summarize_hard_anchor_replication import (  # noqa: E501
     aggregate_replication,
 )
-from experiments.training_procedure_screen.summarize_hard_label_strength import (
+from experiments.training.training_procedure_screen.summarize_hard_label_strength import (  # noqa: E501
     aggregate_strength_curve,
 )
 

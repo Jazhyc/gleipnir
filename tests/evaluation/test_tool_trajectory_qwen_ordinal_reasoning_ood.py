@@ -5,10 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.tool_trajectory_monitoring import (
+from experiments.training.tool_trajectory_monitoring import (
     benchmark_qwen_ordinal_reasoning_ood as benchmark,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
+from gleipnir.serving.sources import recorded_source_path
 
 
 def fake_output(
@@ -49,9 +52,7 @@ def test_reasoning_continuation_requires_analysis_and_exact_boundary() -> None:
         prompt_token_ids=[10, 11],
         stop_reason="\nScore:",
     )
-    text, token_ids, recovery = benchmark.reasoning_continuation(
-        output, "\nScore:"
-    )
+    text, token_ids, recovery = benchmark.reasoning_continuation(output, "\nScore:")
     assert text.endswith("\nScore:")
     assert token_ids == [1, 2, 3]
     assert recovery == "none"
@@ -61,9 +62,7 @@ def test_reasoning_continuation_requires_analysis_and_exact_boundary() -> None:
         benchmark.reasoning_continuation(output, "\nScore:")
 
     output.outputs[0].text = "analysis without boundary"
-    text, token_ids, recovery = benchmark.reasoning_continuation(
-        output, "\nScore:"
-    )
+    text, token_ids, recovery = benchmark.reasoning_continuation(output, "\nScore:")
     assert text == "analysis without boundary\nScore:"
     assert token_ids == [1, 2, 3]
     assert recovery == "missing_terminal_boundary"
@@ -166,7 +165,7 @@ def test_reasoning_summary_and_immediate_comparison() -> None:
 def test_frozen_reasoning_config_and_prompt_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen_ordinal_reasoning_ood_benchmark.json"
         )
     )
@@ -179,9 +178,9 @@ def test_frozen_reasoning_config_and_prompt_contract() -> None:
     assert config["engine"]["audited_total_prompt_tokens"] == 61_575_609
     assert config["metrics"][0].startswith("primary:")
 
-    instruction = Path(config["prompt"]["instruction_file"]).read_text(
-        encoding="utf-8"
-    )
+    instruction = recorded_source_path(
+        Path.cwd(), config["prompt"]["instruction_file"]
+    ).read_text(encoding="utf-8")
     for band in ("0--2", "3--4", "5--6", "7--8", "9--10"):
         assert band in instruction
     assert "Write the concise analysis first" in instruction
@@ -191,7 +190,7 @@ def test_frozen_reasoning_config_and_prompt_contract() -> None:
 def test_frozen_config_rejects_insufficient_context() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen_ordinal_reasoning_ood_benchmark.json"
         )
     )

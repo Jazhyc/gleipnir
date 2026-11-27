@@ -1,7 +1,7 @@
 # Full-training prompt-injection presence census
 
 Run 2026-10-03 with the user-authorized Runpod B200. The frozen contract is
-[`training_injection_census`](../../experiments/training_injection_census/README.md).
+[`training_injection_census`](../../experiments/injection/training_injection_census/README.md).
 This audit scores injection **presence**, including resisted or quoted test
 payloads, separately from the training label for problematic agent behavior.
 

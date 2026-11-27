@@ -1,10 +1,10 @@
 import pytest
 import torch
 
-from experiments.deception_distillation.build_soft_teacher_cache import (
+from experiments.training.deception_distillation.build_soft_teacher_cache import (
     build_binary_soft_targets,
 )
-from experiments.deception_distillation.train_student_sft import (
+from experiments.training.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     GroupDROLoss,
     apply_gradient_checkpointing_policy,

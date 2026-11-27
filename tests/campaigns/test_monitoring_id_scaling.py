@@ -3,8 +3,8 @@ import math
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.monitoring_duration.run import two_gpu_lanes
-from experiments.monitoring_id_scaling import run
+from experiments.training.monitoring_duration.run import two_gpu_lanes
+from experiments.training.monitoring_id_scaling import run
 from gleipnir.nested_subsets import nested_subsets
 
 
@@ -53,7 +53,7 @@ def test_four_jobs_stay_on_two_gpus():
 
 def test_one_epoch_jobs_and_exact_steps(monkeypatch, tmp_path):
     config = OmegaConf.to_container(
-        OmegaConf.load("experiments/monitoring_id_scaling/config.yaml")
+        OmegaConf.load("experiments/training/monitoring_id_scaling/config.yaml")
     )
     config["result_dir"] = str(tmp_path)
     monkeypatch.setattr(run, "sha256_file", lambda _: "selection-sha")

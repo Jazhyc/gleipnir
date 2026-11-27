@@ -5,10 +5,13 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.tool_trajectory_monitoring import (
+from experiments.training.tool_trajectory_monitoring import (
     benchmark_qwen_binary_reasoning_ood as benchmark,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
+from gleipnir.serving.sources import recorded_source_path
 
 
 def fake_output(
@@ -142,7 +145,7 @@ def test_reasoning_summary_and_direct_comparison() -> None:
 def test_frozen_config_and_prompt_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen_binary_reasoning_ood_benchmark.json"
         )
     )
@@ -156,9 +159,9 @@ def test_frozen_config_and_prompt_contract() -> None:
     assert config["engine"]["audited_total_prompt_tokens"] == 60_584_384
     assert config["metrics"][0].startswith("primary:")
 
-    instruction = Path(config["prompt"]["instruction_file"]).read_text(
-        encoding="utf-8"
-    )
+    instruction = recorded_source_path(
+        Path.cwd(), config["prompt"]["instruction_file"]
+    ).read_text(encoding="utf-8")
     assert "Write the concise analysis first" in instruction
     assert "Prediction:0" in instruction
     assert "Prediction:1" in instruction
@@ -168,7 +171,7 @@ def test_frozen_config_and_prompt_contract() -> None:
 def test_frozen_config_rejects_insufficient_context() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen_binary_reasoning_ood_benchmark.json"
         )
     )

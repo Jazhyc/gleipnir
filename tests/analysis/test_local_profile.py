@@ -1,8 +1,11 @@
 import pytest
 
-from experiments.local_inference import profile
-from experiments.local_inference.profile_summary import kernel_family, summarize_trace
-from experiments.local_inference.shape_summary import summarize_shapes
+from experiments.serving.local_inference import profile
+from experiments.serving.local_inference.profile_summary import (
+    kernel_family,
+    summarize_trace,
+)
+from experiments.serving.local_inference.shape_summary import summarize_shapes
 
 
 def test_shape_correlation_uses_external_id_not_cpu_duration():

@@ -6,12 +6,12 @@ import pytest
 import torch
 import torch.nn.functional as F
 
-from experiments.deception_distillation.train_student_sft import (
+from experiments.training.deception_distillation.train_student_sft import (
     CompletionOnlyCollator,
     pool_mil_margins,
     tokenize_record,
 )
-from experiments.monitoring_mil_mixture.run import select_mixture
+from experiments.training.monitoring_mil_mixture.run import select_mixture
 from gleipnir.mil import masked_mil_bce, mil_row_enabled
 
 POOL = partial(pool_mil_margins, mode="logmeanexp", temperature=1.0, top_k=3)
@@ -20,11 +20,11 @@ POOL = partial(pool_mil_margins, mode="logmeanexp", temperature=1.0, top_k=3)
 def test_distributed_mixture_keeps_global_batch_and_epochs(monkeypatch):
     from omegaconf import OmegaConf
 
-    from experiments.monitoring_lr_sweep.prepare import make_jobs
-    from experiments.monitoring_mil_mixture import run
+    from experiments.training.monitoring_lr_sweep.prepare import make_jobs
+    from experiments.training.monitoring_mil_mixture import run
 
     config = OmegaConf.to_container(
-        OmegaConf.load("experiments/monitoring_mil_mixture/config.yaml")
+        OmegaConf.load("experiments/training/monitoring_mil_mixture/config.yaml")
     )
     source = make_jobs(Path("data"), Path("results"))[0]
     source.update(
@@ -52,7 +52,7 @@ def test_distributed_mixture_keeps_global_batch_and_epochs(monkeypatch):
 
 
 def test_slow_distributed_screen_cannot_be_promoted(tmp_path, monkeypatch):
-    from experiments.monitoring_mil_mixture import run
+    from experiments.training.monitoring_mil_mixture import run
 
     screen = tmp_path / "screen"
     screen.mkdir()
@@ -166,7 +166,9 @@ def test_collator_accepts_empty_and_mixed_bags():
 
 
 def test_disabled_tokenization_skips_action_parser(monkeypatch):
-    from experiments.deception_distillation import train_student_sft as trainer
+    from experiments.training.deception_distillation import (
+        train_student_sft as trainer,
+    )
 
     class Tokenizer:
         def apply_chat_template(self, messages, **kwargs):

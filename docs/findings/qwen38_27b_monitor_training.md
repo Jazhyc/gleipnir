@@ -39,6 +39,6 @@ in the table the unadapted 27B and Kimi were scored under the teacher prompt
 and the trained models under the compact student prompt; the release
 comparison scores both trained models under the teacher prompt.
 
-Details: [soft campaign](../../experiments/qwen38_27b_campaign/README.md);
-[hard-label baseline](../../experiments/qwen38_27b_hard_labels/README.md);
+Details: [soft campaign](../../experiments/training/qwen38_27b_campaign/README.md);
+[hard-label baseline](../../experiments/training/qwen38_27b_hard_labels/README.md);
 [training recipe](../decisions/qwen38_27b_b200_training_default.md).

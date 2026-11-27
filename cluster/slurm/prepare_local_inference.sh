@@ -20,14 +20,14 @@ export OMP_NUM_THREADS=8
 if [[ "${1:-}" == "--reference" ]]; then
     nvidia-smi
 fi
-python -m experiments.local_inference.prepare
-python -m experiments.local_inference.prepare32
+python -m experiments.serving.local_inference.prepare
+python -m experiments.serving.local_inference.prepare32
 printf '%s\n' \
     'f5800ce52b38184bf3854fbf8e7a91257a3774c2f0a859c598c97e26f5829ebf  data/local_inference/subset.jsonl' \
     'aadb48556b134150e43946ba39d31512498e2d61b8a88a7a24fd9617b5633f03  data/local_inference/iteration32.jsonl' \
     | sha256sum --check
-python -m experiments.local_inference.merge
+python -m experiments.serving.local_inference.merge
 if [[ "${1:-}" == "--reference" ]]; then
-    python -m experiments.local_inference.reference
+    python -m experiments.serving.local_inference.reference
 fi
 printf 'Requested preparation stages completed.\n'

@@ -49,10 +49,10 @@ The original hypothesis, intervention, baselines, selection rule, preflight
 gates and stop conditions are recoverable from commit
 `5c6db2af13d532b7f4ac5d67f4341b0a317e51df`:
 
-- `experiments/tool_trajectory_monitoring/jev_113_ood_benchmark.json`.
-- `experiments/tool_trajectory_monitoring/prompts/jev_noul_v1.json`.
-- `experiments/tool_trajectory_monitoring/prepare_jev_ood.py`.
-- `experiments/tool_trajectory_monitoring/benchmark_jev_ood.py`.
+- `experiments/training/tool_trajectory_monitoring/jev_113_ood_benchmark.json`.
+- `experiments/training/tool_trajectory_monitoring/prompts/jev_noul_v1.json`.
+- `experiments/training/tool_trajectory_monitoring/prepare_jev_ood.py`.
+- `experiments/training/tool_trajectory_monitoring/benchmark_jev_ood.py`.
 - `src/gleipnir/openrouter_decisions.py`.
 
 Use `git show <commit>:<path>` to recover these historical files. They are

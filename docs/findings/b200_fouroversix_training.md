@@ -1,7 +1,7 @@
 # Native Four Over Six MLP training on B200
 
 Date: 2026-10-01. Contract:
-[`b200_fouroversix`](../../experiments/b200_fouroversix/README.md).
+[`b200_fouroversix`](../../experiments/systems/b200_fouroversix/README.md).
 Status: native kernel canaries passed; both full-model preflights failed the
 same-weight compilation gate. Stopped after the requested boundary change.
 No recipe promotion.

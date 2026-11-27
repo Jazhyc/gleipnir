@@ -26,7 +26,7 @@ logical batch 32, 16,384-token packing, 29,696 context, 24 FlashQLA GDN layers,
 selected-token projection, optimizer and scheduler. No model checkpointing.
 Require exact physical batch/token agreement before comparing measured updates.
 
-The [experiment contract](../../experiments/b200_fp4_mlp_lora/README.md)
+The [experiment contract](../../experiments/systems/b200_fp4_mlp_lora/README.md)
 defines 20 updates, ten warmup, and a 5% improvement threshold for recommending
 follow-up. Strict packing gradient tolerance stays 5%; the earlier explicit
 FA4 learning acceptance does not authorize relaxing this FP4 gate. No teacher

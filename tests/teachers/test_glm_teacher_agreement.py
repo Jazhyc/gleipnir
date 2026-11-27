@@ -2,7 +2,7 @@ import hashlib
 
 import pytest
 
-from experiments.teacher_agreement.glm import validate
+from experiments.teachers.teacher_agreement.glm import validate
 from gleipnir.openrouter_cli import parse_args
 
 

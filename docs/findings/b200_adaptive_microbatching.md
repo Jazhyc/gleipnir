@@ -13,7 +13,7 @@ The separately authorized [execution audit](b200_execution_audit.md) finds
 close ten-step mean losses despite different gradients and updates.
 
 The user authorized empirical optimization with ten-update workloads on the
-existing B200. The [experiment contract](../../experiments/b200_adaptive_microbatching/README.md)
+existing B200. The [experiment contract](../../experiments/systems/b200_adaptive_microbatching/README.md)
 preserves 32 equally weighted traces per optimizer update, sorting only within
 that logical batch. Candidate padded-token budgets are 8,192/max batch 4 and
 16,384/max batch 8. The control uses the same logical Trainer path with physical

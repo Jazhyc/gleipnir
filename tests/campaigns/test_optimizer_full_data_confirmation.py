@@ -1,14 +1,16 @@
 import pandas as pd
 import pytest
 
-from experiments.adapter_capacity_scaling.run_train import training_command
-from experiments.optimizer_full_data_confirmation.core import (
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
+from experiments.training.optimizer_full_data_confirmation.core import (
     CONFIRMATION_LEARNING_RATES,
     CONFIRMATION_SEEDS,
     confirmation_lanes,
     validate_confirmation_jobs,
 )
-from experiments.optimizer_full_data_confirmation.summarize import (
+from experiments.training.optimizer_full_data_confirmation.summarize import (
     METRICS,
     paired_confirmation_contrasts,
     selection_summary,

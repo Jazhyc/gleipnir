@@ -7,7 +7,7 @@ work. Two adopted, exact or near-exact changes cut short C1 latency by about
 
 ## Diagnosis
 
-The [probe](../../experiments/b200_host_overhead/README.md) launches the
+The [probe](../../experiments/serving/b200_host_overhead/README.md) launches the
 default through normal startup, with ptrace-permitting diagnostic workers. It
 times each `execute_model` and samples both processes with `py-spy`. Per-step
 host time is about 27–32 ms regardless of size (1K–8K). There are no blocking
@@ -22,7 +22,7 @@ syncs; the cost is roughly 1,100 Python-dispatched launches per step. The
 | [Lean GDN host path](../../experiments/b200_gdn_fast/README.md) | adopted | −2.9 ms (1K 32.4 → 29.5) | bitwise; full 1K–1M sweep `full02` equals prior runs |
 | Strided gated norm in the lean GDN path (no gate copy) | adopted | 16K/32K C1 −6.8%/−4.2%; c128 throughput +4.5% | bitwise |
 | [Fused GDN conv1d + post-conv](../../experiments/b200_gdn_fast/README.md) | not adopted | 1K/quick64 ~2 ms slower; 8K–32K within noise; c128 −1 to −3% | bitwise |
-| [Lean custom-op dispatch](../../experiments/b200_lean_dispatch/README.md) | not adopted | within noise (≤0.7 ms) | bitwise |
+| [Lean custom-op dispatch](../../experiments/serving/b200_lean_dispatch/README.md) | not adopted | within noise (≤0.7 ms) | bitwise |
 
 Startup now verifies that the gate and the fast path are active. With both
 adopted (`host03`/`host04`), the 1K client p50 is about 30 ms. Engine step is

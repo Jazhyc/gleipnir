@@ -1,13 +1,15 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_gradient_checkpointing.core import (
+from experiments.systems.monitoring_gradient_checkpointing.core import (
     JOB_NAME,
     summarize,
     validate_jobs,
 )
-from experiments.monitoring_gradient_checkpointing.prepare import make_job
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_gradient_checkpointing.prepare import (
+    make_job,
+)
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -67,7 +69,9 @@ def test_summary_requires_five_percent_throughput_gain() -> None:
 
 def test_config_matches_intervention() -> None:
     config = json.loads(
-        Path("experiments/monitoring_gradient_checkpointing/config.json").read_text()
+        Path(
+            "experiments/systems/monitoring_gradient_checkpointing/config.json"
+        ).read_text()
     )
     assert config["intervention"]["name"] == JOB_NAME
     assert config["intervention"]["gradient_checkpointing"] is False

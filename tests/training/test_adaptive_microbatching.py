@@ -6,11 +6,13 @@ import pytest
 import torch
 from transformers import Trainer, TrainerCallback, TrainingArguments
 
-from experiments.b200_adaptive_microbatching.autocast_canary import (
+from experiments.systems.b200_adaptive_microbatching.autocast_canary import (
     run_training_canary,
 )
-from experiments.b200_adaptive_microbatching.diagnose import diagnostic_job
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.b200_adaptive_microbatching.diagnose import (
+    diagnostic_job,
+)
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.adaptive_microbatching import (
@@ -287,7 +289,9 @@ def test_nonfinite_training_loss_fails_before_optimizer_update(tmp_path):
 
 
 def adaptive_contract():
-    config = load_config(Path("experiments/b200_adaptive_microbatching/config.yaml"))
+    config = load_config(
+        Path("experiments/systems/b200_adaptive_microbatching/config.yaml")
+    )
     jobs = make_jobs(config, resolve_paths(config), "fixed-selection")
     job = jobs[-1]
     metadata = {

@@ -2,9 +2,9 @@
 
 2026-10-21. The released Gleipnir 4B v0.4 and 27B v0.2 were scored once on the
 frozen APPS injection populations
-([design](../../experiments/apps_released_monitors/README.md), run `apps01`).
+([design](../../experiments/injection/apps_released_monitors/README.md), run `apps01`).
 A follow-up projected an injection direction out of the released 4B
-([design](../../experiments/apps_released_direction/README.md), run
+([design](../../experiments/injection/apps_released_direction/README.md), run
 `released_direction01`). Both were requested after the SleightBench jailbreak
 results ([finding](sleightbench_released_monitors.md)).
 

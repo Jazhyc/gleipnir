@@ -10,7 +10,7 @@ from gleipnir.monitoring_systems_screen import (
     validate_training_metadata,
 )
 
-CONFIG_PATH = Path("experiments/monitoring_inner_mixer_compile/config.yaml")
+CONFIG_PATH = Path("experiments/systems/monitoring_inner_mixer_compile/config.yaml")
 CONTROL_NAME = "linear-shell-compile-control"
 CANDIDATE_NAME = "inner-linear-mixer-compile-candidate"
 CONTROL_POLICY = "full_attention_and_linear_shell"

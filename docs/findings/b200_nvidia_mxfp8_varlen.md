@@ -196,7 +196,7 @@ traces, the original timing receipt and analysis source by SHA256. Reproduce
 without GPU execution:
 
 ```bash
-python -m experiments.b200_nvidia_mxfp8_varlen.profile_attention \
+python -m experiments.systems.b200_nvidia_mxfp8_varlen.profile_attention \
   --output results/b200_nvidia_mxfp8_varlen/profile01 --analyze-existing
 ```
 

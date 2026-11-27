@@ -6,8 +6,8 @@ from pathlib import Path
 
 import pytest
 
-from experiments.fp4_inference import run
-from experiments.fp4_inference.run import (
+from experiments.serving.fp4_inference import run
+from experiments.serving.fp4_inference.run import (
     condition_config,
     remaining_seconds,
     resolve_runtime_config,
@@ -28,7 +28,7 @@ def test_condition_resolution_rejects_path_traversal(name):
 
 def test_blackwell_baseline_preserves_historical_serving_contract():
     historical = json.loads(
-        Path("experiments/local_inference/iteration32.json").read_text()
+        Path("experiments/serving/local_inference/iteration32.json").read_text()
     )
     blackwell = json.loads(condition_config("baseline").read_text())
     blackwell.pop("log_dir")

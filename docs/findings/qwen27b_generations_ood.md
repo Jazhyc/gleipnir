@@ -2,7 +2,7 @@
 
 Status: complete, 2026-10-17. Unadapted BF16 checkpoints, matched to the frozen
 Qwen3.5-27B full-teacher-prompt contract. See the
-[experiment](../../experiments/qwen27b_generations_ood/README.md) for the
+[experiment](../../experiments/evaluation/qwen27b_generations_ood/README.md) for the
 per-source breakdown, the interface audit and the drift control.
 
 Mean-OOD pAUROC@20 (6,395 rows, six sources):
@@ -27,7 +27,7 @@ for 3.5.
 token counts and decision tokens.
 
 **Unchecked for BF16.** The earlier FP8 Qwen3.8 batch/singleton consistency
-failure ([ID screen](../../experiments/qwen122b_id/README.md)) has not been
+failure ([ID screen](../../experiments/teachers/qwen122b_id/README.md)) has not been
 checked for this BF16 checkpoint.
 
 **ID and training rows (2026-10-17).** On ID, unadapted Qwen3.8-27B scores

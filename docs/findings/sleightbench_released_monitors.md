@@ -4,7 +4,7 @@
 [SLEIGHT-Bench](https://github.com/safety-research/sleight-bench)
 (arXiv:2605.16626v2), an evaluation the project had never used before. Both
 ran on the optimized B200 stack at a 262K context, under the contract frozen
-in [`experiments/sleightbench_eval`](../../experiments/sleightbench_eval/README.md)
+in [`experiments/evaluation/sleightbench_eval`](../../experiments/evaluation/sleightbench_eval/README.md)
 (run `sb01`).
 
 **Both monitors catch few of these hand-built evasion attacks at 1% FPR.**
@@ -130,7 +130,7 @@ gate receipts, and `report.json`. Logs are in `logs/runpod/sleightbench_eval/`.
 The user asked for a run matching the frontier monitors' prompt, apart from
 the output format. Both models got the upstream ControlArena text with our
 binary output lines (design frozen in the
-[experiment README](../../experiments/sleightbench_eval/README.md#exploratory-run-sb02-controlarena-instruction-frozen-2026-10-21)).
+[experiment README](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb02-controlarena-instruction-frozen-2026-10-21)).
 They were served by the released `gleipnir-serve:0.2` image on its fresh-check
 Pod. This is a post-hoc diagnostic and `sb01` remains the result.
 
@@ -163,7 +163,7 @@ Pod. This is a post-hoc diagnostic and `sb01` remains the result.
 The user asked whether letting the monitors reason helps. All three arms
 used the `sb02` ControlArena instruction on one stock vLLM 0.31 BF16 engine
 per model, with greedy decoding (design in the
-[experiment README](../../experiments/sleightbench_eval/README.md#exploratory-run-sb03-reasoning-before-the-decision-frozen-2026-10-21)).
+[experiment README](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb03-reasoning-before-the-decision-frozen-2026-10-21)).
 
 | Model, view | Arm | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
 |---|---|---:|---:|---:|---:|
@@ -212,7 +212,7 @@ The teacher was scored on the same footing as our monitors in `sb02`. It
 received the ControlArena-description instruction with our binary output
 lines, sent as the user turn. Requests used the teacher-annotation settings
 on Makora without fallbacks; design in the
-[experiment README](../../experiments/sleightbench_eval/README.md#exploratory-run-sb05-the-kimi-k3-teacher-with-the-logit-interface-frozen-2026-10-21).
+[experiment README](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb05-the-kimi-k3-teacher-with-the-logit-interface-frozen-2026-10-21).
 - **Cost.** All 172 rows matched the frozen prompt hashes under one
   request-settings hash, for $1.67 (2.53M prompt tokens).
 - **Extractor fix.** Makora now leaks the end-of-message token as text
@@ -253,7 +253,7 @@ on Makora without fallbacks; design in the
 
 The unadapted bases of both releases were run on the `sb03` stock BF16 engine:
 `Qwen/Qwen3.5-4B@851bf6e` and `Qwen/Qwen3.8-27B@1d4bf0f`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb04-base-models-frozen-2026-10-21)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb04-base-models-frozen-2026-10-21)).
 
 **Immediate logits, ControlArena-description prompt.** These isolate the
 adapter, comparing against `sb03` `immediate` on the same engine:
@@ -343,7 +343,7 @@ diagnostics; the frozen 1% FPR numbers above stand.
 
 The teacher was run under the authors' own setup on Decart (mxfp4), with no
 fallbacks and data collection denied
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb06-kimi-k3-with-the-authors-protocol-frozen-2026-10-21)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb06-kimi-k3-with-the-authors-protocol-frozen-2026-10-21)).
 - **Prompt and sampling.** Verbatim ControlArena system prompt, stripped
   transcript in `<transcript>` tags, 10 trials at temperature 1, scored by
   parsing `<score>`.
@@ -382,7 +382,7 @@ fallbacks and data collection denied
 GPT-6 Sol was scored on the frozen `sb05` prompts through the audited OpenAI
 client, with the GPT-6 Luna request contract: reasoning `none`, temperature
 1, `top_p=1` and top-20 logprobs
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb07-gpt-6-sol-with-the-logit-interface-frozen-2026-10-21)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb07-gpt-6-sol-with-the-logit-interface-frozen-2026-10-21)).
 - **Contract.** All 172 rows met it on the first attempt: exact
   `Prediction:0|1`, both literal logprobs and zero reasoning tokens, with no
   coverage repeats.
@@ -421,7 +421,7 @@ client, with the GPT-6 Luna request contract: reasoning `none`, temperature
 GPT-5.5 is one of the paper's monitors. It went through the direct OpenAI
 API because no OpenRouter endpoint for it returns logprobs. The setup
 otherwise matches `sb07`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb08-gpt-55-with-the-logit-interface-frozen-2026-10-21)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb08-gpt-55-with-the-logit-interface-frozen-2026-10-21)).
 - **Snapshot.** Pinned to `gpt-5.5-2026-04-23`. The `gpt-5.5` alias resolves
   to it, which failed the client's strict model-identity check on the first
   canary attempt.
@@ -454,7 +454,7 @@ otherwise matches `sb07`
 
 User-requested on 2026-10-22: the `sb07` request contract with only the model
 changed to `gpt-6-luna`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb09-gpt-6-luna-with-the-logit-interface-frozen-2026-10-22)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb09-gpt-6-luna-with-the-logit-interface-frozen-2026-10-22)).
 All 172 rows met the contract (zero reasoning tokens, both literal logprobs)
 for a conservative $0.34.
 
@@ -480,7 +480,7 @@ for a conservative $0.34.
 - **The jailbreak works completely on Luna.** It scores the injection attack
   about 2e-10 in both views, below its own benign twin.
 - On the frozen OOD suite Luna reached 0.929 macro AUROC under the teacher
-  prompt ([OpenAI OOD run](../../experiments/openai_monitoring_ood/config.json)),
+  prompt ([OpenAI OOD run](../../experiments/evaluation/openai_monitoring_ood/config.json)),
   close to Gleipnir 27B; SleightBench again puts them level, but far below Sol.
 
 Results: `results/sleightbench_eval/sb09/`.
@@ -490,7 +490,7 @@ Results: `results/sleightbench_eval/sb09/`.
 User-requested on 2026-10-22 as a modern reference, through Jev's own
 interface from its OOD frontier point: raw trajectory as Decisions state,
 the frozen Jev Noul question, the returned probability as score
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb10-jev-113-native-decision-frozen-2026-10-22)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb10-jev-113-native-decision-frozen-2026-10-22)).
 The endpoint now lists a 262K context (32K at the OOD run), so no row was
 rejected; the longest reported 198,409 input tokens. All 172 rows answered
 on the first attempt from `jev-1.13-20260917`; 3,182,812 input tokens cost
@@ -526,7 +526,7 @@ Results: `results/sleightbench_eval/sb10/`.
 
 User-requested on 2026-10-22 as a low-cost competitor: the `sb10` setup with
 only the model changed to Perplexity's hosted `pplx-decider-v1.2-20261016`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb11-pplx-decider-v12-native-decision-frozen-2026-10-22)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb11-pplx-decider-v12-native-decision-frozen-2026-10-22)).
 All 172 rows answered on the first attempt with full-precision probabilities
 (172 distinct); 3,045,189 input tokens cost $0.061 (provider-reported). Its
 OOD point used local readout margins
@@ -571,7 +571,7 @@ Every interval except the 4B's AUROC includes zero.
 
 User-requested on 2026-10-23 so the decision models receive the logit
 monitors' instruction instead of the Jev Noul question
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb12-decision-models-with-the-controlarena-prompt-frozen-2026-10-23)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb12-decision-models-with-the-controlarena-prompt-frozen-2026-10-23)).
 The ControlArena text becomes the Noul instructions and its classification
 line the true/false criteria (question SHA-256 `45edb32e…`). All 344 rows
 answered on the first attempt; $0.134 (Jev) and $0.061 (Decider).
@@ -602,7 +602,7 @@ Results: `results/sleightbench_eval/sb12/`.
 
 User-requested on 2026-10-31: the `sb07` request contract with only the model
 changed to `gpt-6.1-terra`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb13-gpt-61-terra-with-the-logit-interface-frozen-2026-10-31)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb13-gpt-61-terra-with-the-logit-interface-frozen-2026-10-31)).
 All 172 rows met the contract (zero reasoning tokens, both literal logprobs)
 for about $3.38 at the 30m cache-write rate ($6.75 conservative bound).
 
@@ -631,7 +631,7 @@ Results: `results/sleightbench_eval/sb13/`.
 User-requested on 2026-11-19 for the technical report: the `sb11` setup (Jev
 Noul question, Decisions API) with the two decision models added to the OOD
 comparison, stripped view only
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb14-gemini-decision-1-and-pplx-decider-v13-frozen-2026-11-19)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb14-gemini-decision-1-and-pplx-decider-v13-frozen-2026-11-19)).
 All 86 rows per model answered on the pinned revisions
 (`gemini-decision-1-20261111`, `pplx-decider-v1.3-20261112`) with no input
 rejections. Gemini billed $0.165 for 1.65M input tokens; v1.3 billed $0
@@ -664,7 +664,7 @@ Results: `results/sleightbench_eval/sb14/`.
 User-requested on 2026-11-19: `sb14` with the ControlArena instruction as the
 Noul question, the prompt that the decision models received in `sb12` and the
 Gleipnir monitors in `sb02`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb15-gemini-decision-1-and-pplx-decider-v13-with-the-controlarena-prompt-frozen-2026-11-19)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb15-gemini-decision-1-and-pplx-decider-v13-with-the-controlarena-prompt-frozen-2026-11-19)).
 All 86 rows per model answered with no rejections; Gemini billed $0.165,
 v1.3 $0 ($0.030 at list price).
 
@@ -690,7 +690,7 @@ Results: `results/sleightbench_eval/sb15/`.
 
 User-requested on 2026-11-19 so that TypeSafe's newest model is measured as
 Perplexity's is: `sb15` with the model changed to `jev-1.14-20261014`
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb16-jev-114-with-the-controlarena-prompt-frozen-2026-11-19)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb16-jev-114-with-the-controlarena-prompt-frozen-2026-11-19)).
 All 86 stripped rows answered with no rejections, for $0.066.
 
 | Monitor, stripped, ControlArena prompt | Run | Catch @1% FPR | AUROC | pAUROC@20 | Pair wins |
@@ -712,7 +712,7 @@ Results: `results/sleightbench_eval/sb16/`.
 
 User-requested on 2026-11-20: `sb16` with the model changed to Nace.AI's
 `drex-max-20261016` on DeepInfra
-([design](../../experiments/sleightbench_eval/README.md#exploratory-run-sb17-drex-max-with-the-controlarena-prompt-frozen-2026-11-20)).
+([design](../../experiments/evaluation/sleightbench_eval/README.md#exploratory-run-sb17-drex-max-with-the-controlarena-prompt-frozen-2026-11-20)).
 All 86 stripped rows answered with no rejections; $0.044 billed. Costs use
 the undiscounted $0.12/M: $1.02 per 1,000 evaluations, on 8,499 billed
 tokens per row on average (the endpoint bills long states at about a third
@@ -790,7 +790,7 @@ number above.
 Added 2026-10-22 after `sb10`; diagnostic only. Mean-OOD pAUROC@20 with and
 without SHADE-Arena's `american_airlines_2` task (333 rows), using the
 [SHADE audit](shade_length_audit.md)'s task mapping
-(`experiments/shade_length_audit/analyze.py` `workload`/`mean_ood`):
+(`experiments/evaluation/shade_length_audit/analyze.py` `workload`/`mean_ood`):
 
 | OOD scores | SHADE full | SHADE without | Mean-OOD full | Mean-OOD without | SleightBench stripped |
 |---|---:|---:|---:|---:|---:|

@@ -20,7 +20,7 @@ optimized QAD path, together with quantization, so the deployment comparison
 is stock BF16 against fully optimized QAD. For the 27B, BF16 measurements
 support carrying last-query attention and the lean GDN host path into that
 path and leaving out the GDN route gate
-([27B serving](../../experiments/qwen38_27b_serving/README.md)). This supersedes the blanket optimized-serving
+([27B serving](../../experiments/serving/qwen38_27b_serving/README.md)). This supersedes the blanket optimized-serving
 default for future experiments. Both paths retain adapter-specific merged weights,
 score parity and native dispatch checks; frozen historical comparisons stay fixed.
 

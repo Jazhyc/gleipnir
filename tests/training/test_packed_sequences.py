@@ -3,8 +3,8 @@
 import pytest
 import torch
 
-from experiments.monitoring_sequence_packing import audit_cpu
-from experiments.monitoring_sequence_packing.audit_cpu import run_audit
+from experiments.systems.monitoring_sequence_packing import audit_cpu
+from experiments.systems.monitoring_sequence_packing.audit_cpu import run_audit
 from gleipnir.packed_sequences import (
     PackedSequenceLayout,
     collate_packed_monitoring,
@@ -164,7 +164,7 @@ def test_packing_config_preserves_the_completed_bf16_recipe():
         (root / "fp4_stability/bf16_flashqla_ten_step_comparison.yaml").read_text()
     )
     config = yaml.safe_load(
-        (root / "monitoring_sequence_packing/bf16_gpu.yaml").read_text()
+        (root / "systems/monitoring_sequence_packing/bf16_gpu.yaml").read_text()
     )
     validate_config(config)
     assert {key for key in config if config[key] != baseline.get(key)} == {
@@ -188,7 +188,7 @@ def test_packing_learning_config_is_bounded_and_preserves_compiled_recipe():
 
     from experiments.fp4_stability.run import validate_config
 
-    root = ROOT / "experiments/monitoring_sequence_packing"
+    root = ROOT / "experiments/systems/monitoring_sequence_packing"
     baseline = yaml.safe_load((root / "bf16_casts_gpu.yaml").read_text())
     config = yaml.safe_load((root / "bf16_learning_gpu.yaml").read_text())
     validate_config(config)
@@ -239,7 +239,9 @@ def test_packing_only_requires_boolean(value):
 
     config = yaml.safe_load(
         (
-            ROOT / "experiments/monitoring_sequence_packing/bf16_larger_batch_gpu.yaml"
+            ROOT
+            / "experiments/systems/monitoring_sequence_packing"
+            / "bf16_larger_batch_gpu.yaml"
         ).read_text()
     )
     with pytest.raises(ValueError, match="packing_only"):

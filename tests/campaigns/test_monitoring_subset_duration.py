@@ -4,9 +4,11 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.monitoring_lr_sweep.prepare import make_jobs as lr_jobs
-from experiments.monitoring_subset_duration import run
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.monitoring_lr_sweep.prepare import (
+    make_jobs as lr_jobs,
+)
+from experiments.training.monitoring_subset_duration import run
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.staged_lanes import run_staged_lanes
@@ -15,7 +17,7 @@ from gleipnir.staged_lanes import run_staged_lanes
 @pytest.fixture
 def config(monkeypatch):
     cfg = OmegaConf.to_container(
-        OmegaConf.load("experiments/monitoring_subset_duration/config.yaml")
+        OmegaConf.load("experiments/training/monitoring_subset_duration/config.yaml")
     )
     cfg["subset_parents_with_prefix"] = 1270
     base = next(

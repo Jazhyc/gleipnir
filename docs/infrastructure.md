@@ -25,7 +25,7 @@ Large caches default to `/scratch/$USER`. Override `HF_HOME`,
 No Lambda Cloud instance is currently running. On 2026-10-24 the user
 authorized one `gpu_1x_h100_pcie` instance (`gleipnir-probe-generalization`,
 us-west-3, $3.29/hour, Ubuntu 22.04, driver 570 / CUDA 12.8) for the
-[probe study](../experiments/probe_generalization/README.md) with persistent
+[probe study](../experiments/probes/probe_generalization/README.md) with persistent
 filesystem `gleipnir-probes` (`/lambda/nfs/gleipnir-probes`). The locked CUDA-13
 Torch needs NVIDIA's `cuda-compat-13-0` package (`/usr/local/cuda-13.0/compat`,
 picked up by the bootstrap's runtime file) and the CUDA 13.0 compiler packages
@@ -40,7 +40,7 @@ logs were collected. A second, user-authorized `gpu_1x_h100_pcie`
 2026-10-25 (22:15–23:05 UTC, light Torch 2.13 cu129 venv instead of the full
 bootstrap) and was terminated after its 8 artifacts were SHA-256 verified.
 On 2026-10-26 the user authorized one GPU for the
-[attention-map study](../experiments/probe_attention_maps/README.md). The first
+[attention-map study](../experiments/probes/probe_attention_maps/README.md). The first
 `gpu_1x_h100_pcie` (`gleipnir-probe-maps`) went from booting to unhealthy with
 SSH unreachable and was terminated at the user's instruction. The replacement
 (`gleipnir-probe-maps2`, 11:45–12:40 UTC) ran the study and was terminated after
@@ -48,12 +48,12 @@ its 30 artifacts and logs were SHA-256 verified. us-west-3 capacity was scarce:
 none was free for about an hour on each attempt.
 A user-authorized `gpu_1x_h100_pcie` (`gleipnir-probe-sleightbench`,
 2026-10-26, about an hour, terminated around 15:12 UTC) ran the
-[SleightBench probe pass](../experiments/probe_sleightbench/README.md) and was
+[SleightBench probe pass](../experiments/probes/probe_sleightbench/README.md) and was
 terminated after its artifacts were SHA-256 verified. Its image lacked
 NVIDIA's apt repository: install `cuda-keyring` (ubuntu2204) before the CUDA
 13.0 packages, and set `CUDA_HOME=/usr/local/cuda-13.0` in the runtime file.
 On 2026-10-27 the user authorized one `gpu_1x_h100_pcie` for the
-[27B probe run](../experiments/probe_scale_27b/README.md). The first instance
+[27B probe run](../experiments/probes/probe_scale_27b/README.md). The first instance
 (`gleipnir-probe-scale27b`) sat at 89–92 °C with its clocks thermally throttled
 to about 450 MHz (`SW Thermal Slowdown`) and was terminated around 11:46 UTC at
 the user's instruction, after its logs were saved. The replacement
@@ -196,7 +196,7 @@ capacity was launched.
 
 Later on 2026-10-15 the user provided a second EU-RO-1 B200 Pod,
 `gswwir1daslht0` (snapshot `.runpod/long-context-2.json`), on the same volume.
-For the [seed-variation run](../experiments/teacher_seed_variation/README.md),
+For the [seed-variation run](../experiments/teachers/teacher_seed_variation/README.md),
 the user authorized the following:
 - **Transfer Pod.** RTX PRO 6000 Pod `stl3t4uz49abia` ($2.49/hour,
   `.runpod/nc2-transfer.json`) mounts NC2 volume `ixbh81vf9c`. It was created
@@ -273,14 +273,14 @@ GraphQL API (`wdbgkrnymh3n8h-64411953`), not a fixed suffix; the proxy answers
 "container not found" for a wrong one. `logs/runpod/qwen38_27b_serving/restore.sh`
 restores the runtime with the 2026-10-18 container caches and downloads the
 27B base to `/root/hf-27b` after `.venv` exists (about 3 minutes);
-`experiments/qwen38_27b_serving/remerge.py` rebuilds the merged checkpoint.
+`experiments/serving/qwen38_27b_serving/remerge.py` rebuilds the merged checkpoint.
 
 On 2026-10-19 the user provided EU-RO-1 B200 Pod `hhja1i6l6de288`
 ($7.99/hour, snapshot `.runpod/pplx-decider.json`) on machine
 `2mj1yzztlz17` (`GPU-58276fb0…`), same volume. At the user's request:
 - the container disk was resized from 50 to 300 GB (SSH port 24334);
 - it ran the [pplx-decider benchmark](findings/pplx_decider_ood_benchmark.md)
-  and the [auxiliary-target](../experiments/aux_supervision/README.md)
+  and the [auxiliary-target](../experiments/training/aux_supervision/README.md)
   extraction.
 
 The template leaves `sshd` stopped after every restart, so the key and
@@ -331,7 +331,7 @@ were terminated afterwards, one by the user. The training and serving stack
 ran on sm_103 unchanged (FP32 reference, merge, vLLM 0.31 scoring).
 The optimized serving stacks did not: their workers reject kernel receipts
 validated on another GPU model (`last-query kernel receipt hardware changed`;
-see [optimized gap](../experiments/optimized_gap/README.md)). At the user's
+see [optimized gap](../experiments/serving/optimized_gap/README.md)). At the user's
 request the B300 was terminated at about 03:50 UTC (delete 204, lookup 404; no
 Pods remain). All artifacts were pulled first, with file sizes verified.
 
@@ -345,7 +345,7 @@ snapshot `.runpod/optimized-gap-eu.json`), on volume `cb7bxu71ug`. It ran:
 Two volume issues:
 - **Quota.** The volume hit its 200 GB quota during QAD packaging. The
   campaign-layout copy moved to container disk, leaving about 4 GB free
-  ([QAD](../experiments/qad_v02/README.md)).
+  ([QAD](../experiments/quantization/qad_v02/README.md)).
 - **Bound sources.** The volume checkout still has the bound pre-PATH-fix
   `src/gleipnir/__init__.py` (`b6acfaad…`) that optimized serving requires;
   the next code sync restores the repository version.
@@ -428,7 +428,7 @@ keep the virtualenv and caches under `/workspace/gleipnir`, and verify a BF16
 GPU matmul before model loading. Bootstrap recorded a B200 (183,359 MiB),
 driver 580.126.09, CUDA 13.0, PyTorch 2.11.0+cu130, Transformers 5.14.1, and
 vLLM 0.24.0. The first campaign is
-[`runpod_gleipnir4b_id`](../experiments/runpod_gleipnir4b_id/README.md): kernel
+[`runpod_gleipnir4b_id`](../experiments/serving/runpod_gleipnir4b_id/README.md): kernel
 canary, causal-master/serving parity, then the canonical CoT-removed ID set.
 It does not establish a B200 training-throughput recipe.
 
@@ -514,7 +514,7 @@ confirmed FlashInfer GDN prefill. This inference check does not validate a
 training recipe on the new host.
 
 The campaign and frozen scoring contract are in
-[`training_injection_census`](../experiments/training_injection_census/README.md).
+[`training_injection_census`](../experiments/injection/training_injection_census/README.md).
 The current session has no agent scheduling tool; monitoring occurs in the
 active turn and cannot promise a follow-up after yielding. Preserve the volume
 and collected artifacts when the user subsequently requests stopping compute.
@@ -570,7 +570,7 @@ sanitized live SSH mapping after a restart. Temporary FLA/conv/Triton symlinks
 were restored. Shared training caches resolve through `.cache/training/shared`
 to `.cache/training/student_injection_awareness`; FA4's existing CuTe cache and
 FlashQLA's persistent caches are retained. The matched systems contract is
-[`b200_bf16_fa4`](../experiments/b200_bf16_fa4/README.md).
+[`b200_bf16_fa4`](../experiments/systems/b200_bf16_fa4/README.md).
 This session has no agent heartbeat scheduler; checks occur in the active turn.
 The Pod remains running unless the user separately requests stopping it.
 
@@ -637,7 +637,7 @@ the saved cuDNN Frontend includes the SwiGLU MLP/FROST interfaces. No package
 upgrade, new volume or cold-cache namespace is created.
 
 The bounded experiment contract is
-[`b200_mlp_gemm`](../experiments/b200_mlp_gemm/README.md). Keep BF16 FA4 as
+[`b200_mlp_gemm`](../experiments/systems/b200_mlp_gemm/README.md). Keep BF16 FA4 as
 the standard; synthetic component timings alone do not promote a recipe.
 No in-chat scheduling tool is available: startup/progress checks are performed
 during the active turn, with no autonomous follow-up promised after it ends.
@@ -872,7 +872,7 @@ repository SSH public key; scripted access uses refreshed sanitized alias
 The preserved Torch 2.13/vLLM 0.31 runtime, current native tokenizer sources,
 compiler caches and checksum-identical SDPA BF16 merge were restored from the
 shutdown archives. CUDA execution and both fresh BF16 master/native gates pass.
-The [injection-detection experiment](../experiments/apps_injection_detection/README.md)
+The [injection-detection experiment](../experiments/injection/apps_injection_detection/README.md)
 records the matched base/SDPA evaluation; hardware/runtime/model bindings are
 under `results/apps_injection_detection/presence01/{base,sdpa}/binding.json`.
 
@@ -909,7 +909,7 @@ For the APPS evaluation of the released monitors, the user authorized US B200
 Pod `1al84w5c99wiki` (`.runpod/apps-released.json`, $7.99/hour, machine
 `eosnqzirylf7`), created from `gleipnir-serve:0.2` with no volume. Lens 1.3.0
 was installed into an overlay at `/tmp/gleipnir-vllm-lens-1.3.0` from the
-hash-locked `experiments/b200_vllm_lens/requirements.txt`; it is not part of
+hash-locked `experiments/injection/b200_vllm_lens/requirements.txt`; it is not part of
 the image. After both runs, with all 566 result and log files
 verified locally by checksum, it was terminated on 2026-10-21 (delete 204,
 lookup 404).
@@ -945,7 +945,7 @@ serving stack in a few minutes, and the bound `src/gleipnir/__init__.py` was
 put back after each code sync. `sync-code` had been copying the local
 `.venv-cpu` onto the volume; it now excludes `.venv-*`, and the stray 2.9 GB
 copy was deleted. It ran the
-[optimized-stack probe benchmark](../experiments/probe_optimized_serving/README.md).
+[optimized-stack probe benchmark](../experiments/probes/probe_optimized_serving/README.md).
 After all 19 result files were verified locally by SHA-256 and the logs were
 pulled, the Pod was deleted at the user's instruction (HTTP 204, lookup 404).
 Volume `cb7bxu71ug` is retained, with the vLLM compile cache (11 GB) and the
@@ -961,7 +961,7 @@ At the user's instruction, Pod `paom6wximf7dw7` (B200, machine
 created it at 11:31 UTC. `logs/runpod/optimized_gap/restore.sh` restored the
 stack, the 27B base went to `/root/hf-27b`, and the bound
 `src/gleipnir/__init__.py` was put back after each code sync. It ran the
-[27B follow-up](../experiments/probe_optimized_serving/README.md). After 74
+[27B follow-up](../experiments/probes/probe_optimized_serving/README.md). After 74
 result and log files were verified locally by SHA-256, the Pod was deleted at
 the user's instruction around 14:58 UTC (HTTP 204, lookup 404). Volume
 `cb7bxu71ug` is retained, with the uncollected diagnostic state dumps
@@ -993,7 +993,7 @@ under `results/b200_shutdown/` and the campaign inputs read cleanly and passed
 their hashes. Damaged directories were renamed `*.damaged-20261103` (the
 unscanned `.cache/{vllm,flashinfer,torchinductor}` `*.unverified-20261103`),
 and the Pod links those paths to container-disk rebuilds; see the
-[experiment run log](../experiments/qwen38_27b_hard_labels/README.md). Treat
+[experiment run log](../experiments/training/qwen38_27b_hard_labels/README.md). Treat
 volume contents as unverified until rehashed; rebuild environments rather than
 reusing them.
 
@@ -1006,8 +1006,8 @@ kernels and Inductor cache; not the venv) are archived on the Storage Box as
 204, lookup 404); no Pods remain. Volume `cb7bxu71ug` is retained.
 
 On 2026-11-10 the user authorized a B200 Pod for two report ablations
-([4B full specification](../experiments/gleipnir4b_full_specification/README.md),
-[filter margins on OOD](../experiments/filter_margin_ood/README.md)):
+([4B full specification](../experiments/evaluation/gleipnir4b_full_specification/README.md),
+[filter margins on OOD](../experiments/teachers/filter_margin_ood/README.md)):
 `xaqw5n348zwok3` (`gleipnir-report-ablations`, $7.99/hour, snapshot
 `.runpod/report-ablations.json`), US-NC-2 with volume `ixbh81vf9c` at `/nc2`
 and the release image `ghcr.io/jazhyc/gleipnir-serve:0.2`. The REST API
@@ -1018,7 +1018,7 @@ logs were pulled and checksum-verified, and the Pod was deleted the same day
 (HTTP 204, lookup 404). No Pods remain; both volumes are retained.
 
 The same day a second B200 Pod ran the
-[4B serving ladder](../experiments/gleipnir4b_serving_ladder/README.md):
+[4B serving ladder](../experiments/serving/gleipnir4b_serving_ladder/README.md):
 `x82ld1enklasda` (`gleipnir-4b-serving-ladder`, $7.99/hour, US-CA-2, snapshot
 `.runpod/4b-serving-ladder.json`). B200 creation failed with "no instances
 currently available" for about 40 minutes in EU-RO-1 and then in every
@@ -1030,7 +1030,7 @@ set the mount path at creation. Deleted after verified collection (HTTP 204,
 lookup 404); no Pods remain.
 
 On 2026-11-15 the user authorized an EU-RO-1 B200 Pod for the
-[serving concurrency and length sweeps](../experiments/serving_concurrency/README.md):
+[serving concurrency and length sweeps](../experiments/serving/serving_concurrency/README.md):
 `nsw57y1tcxh9gw` (`gleipnir-serving-concurrency`, $7.99/hour, no network
 volume, `volumeMountPath` `/podvol`, snapshot `.runpod/serving-concurrency.json`).
 Creation failed with "no instances currently available" for about 100 minutes
@@ -1041,7 +1041,7 @@ and the benchmark data before a run. It ran from 02:19 to 04:37 UTC and was
 deleted after verified collection (HTTP 204, lookup 404); no Pods remain.
 
 The same day the user authorized a second EU-RO-1 B200 Pod for the
-[per-change breakdown and 4B graph sweep](../experiments/serving_concurrency/README.md):
+[per-change breakdown and 4B graph sweep](../experiments/serving/serving_concurrency/README.md):
 `179xu9pmh64fxh` (`gleipnir-serving-breakdown`, $7.99/hour, same settings,
 snapshot `.runpod/serving-breakdown.json`), allocated at 16:47 UTC after
 about 70 minutes of retries, on the same machine and GPU as the first. Its
@@ -1064,12 +1064,12 @@ allocated at 01:23 UTC on a different machine (`klzaw5yqymgh`) from the
 benchmark Pods, and deleted at 03:22 UTC after the measurement finished and
 its results were collected (HTTP 204, lookup 404). No Pod remains.
 
-For the [B300 trial](../experiments/serving_concurrency/README.md) (user
+For the [B300 trial](../experiments/serving/serving_concurrency/README.md) (user
 authorization 2026-11-16, any datacenter): no B300 was available at 14:48 UTC
 in EU-NL-1, EUR-IS-1 or unrestricted; a retry every 20 minutes allocated
 `4sr7r26kfoc0z9` (`gleipnir-b300-trial`, US-WA-2, $8.99/hour,
 `GPU-ac47d51d…`, Xeon 6787P, image 1.0, snapshot `.runpod/b300-trial.json`)
-at 15:11 UTC on the second try. The image lacks `experiments/gleipnir4b_serving_ladder`
+at 15:11 UTC on the second try. The image lacks `experiments/serving/gleipnir4b_serving_ladder`
 and `data/b200_inference_benchmark`, which the benchmark needs; both were
 copied over. It was deleted at 16:30 UTC after its results were collected
 (HTTP 204, lookup 404). No Pod remains.
@@ -1091,7 +1091,7 @@ public DNS). Lifecycle now goes through GraphQL (`https://api.runpod.io/graphql`
 override an image's entrypoint and has introspection disabled. Images from
 `gleipnir-serve:1.2` on start with `/start.sh` as `dockerArgs`.
 
-For the [per-action prefix-caching replay](../experiments/prefix_caching_replay/README.md)
+For the [per-action prefix-caching replay](../experiments/serving/prefix_caching_replay/README.md)
 and the [image 1.2 check](../experiments/release_serving/README.md) (user
 authorization 2026-11-19, one B200 at a time, each deleted after use):
 - `5ndq8wcpbn8bmv` (US-TX-6, image 1.1, 22:48 UTC): restart-looped because
@@ -1104,7 +1104,7 @@ authorization 2026-11-19, one B200 at a time, each deleted after use):
 - `2o57cwijinnbp3` (US-CA-2, `1.2-rc2-zstd`, 01:40 UTC; EPYC 9555): rc2
   check and the replay result; deleted at 02:05 after verified collection.
 
-For the [tool-output ablation](../experiments/tool_output_ablation/README.md)
+For the [tool-output ablation](../experiments/evaluation/tool_output_ablation/README.md)
 (user authorization 2026-11-20, one B200, deleted after collection):
 `9nxfkcv2wrzr24` (US-CA-2, image `1.2`, machine `bipo9o2yngg1`, B200
 `GPU-92d608c1…`, Xeon Platinum 8568Y+, driver 595.112.07). Created at 05:58
@@ -1112,7 +1112,7 @@ UTC, reachable over SSH at 06:16 (about 18 minutes to pull the image), run
 06:24–06:39, terminated at 06:40 (`podTerminate`; `myself.pods` empty) after
 verified collection of 13 files. No Pod remains.
 
-For the [Flint OOD benchmark](../experiments/flint_ood/README.md) (user
+For the [Flint OOD benchmark](../experiments/evaluation/flint_ood/README.md) (user
 authorization 2026-11-20, one B200, EU-RO-1 preferred, terminated after
 collection): `8l2ln36loy87kt` (`gleipnir-flint-ood`, EU-RO-1, image `1.2`,
 machine `ods55hcq87v4`, B200 `GPU-a2b24934…`, EPYC 9555, driver 595.112.07,
@@ -1131,7 +1131,7 @@ kernels of the first Pod were gone with its disk, so the first engine start
 took 581 s. Terminated at 22:49 UTC (`podTerminate`; `myself.pods` empty)
 after verified collection of 35 files; about $3.20. No Pod remains.
 
-For the [EvilGenie rescoring on the released stack](../experiments/evilgenie_released_stack/README.md)
+For the [EvilGenie rescoring on the released stack](../experiments/adversarial/evilgenie_released_stack/README.md)
 (user authorization 2026-11-22, one B200, terminated after collection):
 `i7xih3yuodf207` (`gleipnir-evilgenie-rerun`, EU-RO-1, image `1.2`, machine
 `2mj1yzztlz17`, B200 `GPU-e5eb9962…`, EPYC 9555, driver 595.112.07, 250 GB
@@ -1139,7 +1139,7 @@ container disk, no volume). Created at 02:30 UTC, reachable at 02:35, run
 02:37–02:50, terminated at 02:51 (`podTerminate`; `myself.pods` empty) after
 verified collection of 11 files; about $2.80. No Pod remains.
 
-For the [EvilGenie run with assistant messages](../experiments/evilgenie_assistant_messages/README.md)
+For the [EvilGenie run with assistant messages](../experiments/adversarial/evilgenie_assistant_messages/README.md)
 (user authorization 2026-11-23, one B200, terminated after collection):
 `soaw1em7gkhycu` (`gleipnir-evilgenie-messages`, US-TX-6 because EU-RO-1 had
 no B200, image `1.2`, machine `40ko8z1ne43c`, B200 `GPU-edea2da8…`, Xeon
@@ -1148,7 +1148,7 @@ UTC, reachable at 04:40 after a 16-minute image pull, run 04:43–04:58,
 terminated at 04:58 (`podTerminate`; `myself.pods` empty) after verified
 collection of 11 files; about $4.60. No Pod remains.
 
-For the [Inkling 2 Mini OOD screen](../experiments/inkling_ood/README.md)
+For the [Inkling 2 Mini OOD screen](../experiments/evaluation/inkling_ood/README.md)
 (user authorization 2026-11-23: one B200, kept running afterwards for
 follow-up experiments): `5uo9tcfq79m724` (`gleipnir-inkling-ood`, US-TX-6
 because EU-RO-1 and US-CA-2 had no B200, image `1.2`, machine

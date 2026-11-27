@@ -14,7 +14,7 @@ comparison set for subsequent ablations, not the final strict-OOD test.
 Both conditions use the frozen compact student prompt, non-thinking assistant
 boundary, and normalized next-token scores for literal `0` and `1`. The primary
 metric is the unweighted two-source macro pAUROC@20. The executable config is
-[`../../experiments/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json`](../../experiments/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json),
+[`../../experiments/training/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json`](../../experiments/training/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json),
 with SHA-256
 `7b523c5341882c8c66016ce7301cf3d017bdec1893afa39f3f5a1a072cd2758c`.
 

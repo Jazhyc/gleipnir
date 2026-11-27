@@ -56,7 +56,7 @@ is `$235.83`; re-query endpoint prices and fail closed before a paid launch.
 The ignored, prompt-aware cache input and manifest are reconstructed with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.prepare_teacher_training_cache
+python -m experiments.training.tool_trajectory_monitoring.prepare_teacher_training_cache
 ```
 
 The manifest records the source checksum and revision, exact source/label
@@ -88,7 +88,7 @@ predicted prompt tokens and `$299.84`; a combined 10% envelope is `$329.83`.
 The separate ignored cache input and manifest are reconstructed with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.prepare_teacher_id_cache
+python -m experiments.training.tool_trajectory_monitoring.prepare_teacher_id_cache
 ```
 
 The current output SHA-256 is

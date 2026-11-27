@@ -65,8 +65,7 @@ MODULE_ALIASES = {
     "gleipnir.fp4_memory": "gleipnir.training.fp4.memory",
     "gleipnir.fp4_performance": "gleipnir.training.fp4.performance",
     "gleipnir.fp4_quantization_kernels": (
-        "gleipnir.kernels.fp4."
-        "fp4_quantization_kernels"
+        "gleipnir.kernels.fp4.fp4_quantization_kernels"
     ),
     "gleipnir.fp4_row_kernels": "gleipnir.kernels.fp4.fp4_row_kernels",
     "gleipnir.grouped_gdn": "gleipnir.kernels.grouped_gdn",
@@ -81,45 +80,35 @@ MODULE_ALIASES = {
     "gleipnir.nvidia_causal_conv1d": "gleipnir.kernels.nvidia_causal_conv1d",
     "gleipnir.nvidia_mxfp8_attention": "gleipnir.kernels.mxfp8.nvidia_mxfp8_attention",
     "gleipnir.nvidia_mxfp8_fused_attention": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_fused_attention"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_fused_attention"
     ),
     "gleipnir.nvidia_mxfp8_fused_quantize": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_fused_quantize"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_fused_quantize"
     ),
     "gleipnir.nvidia_mxfp8_meta_training": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_meta_training"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_meta_training"
     ),
     "gleipnir.nvidia_mxfp8_meta_variants": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_meta_variants"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_meta_variants"
     ),
     "gleipnir.nvidia_mxfp8_norm_rope": "gleipnir.kernels.mxfp8.nvidia_mxfp8_norm_rope",
     "gleipnir.nvidia_mxfp8_norm_rope_kernel": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_norm_rope_kernel"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_norm_rope_kernel"
     ),
     "gleipnir.nvidia_mxfp8_projection_pilot": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_projection_pilot"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_projection_pilot"
     ),
     "gleipnir.nvidia_mxfp8_varlen_attention": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_varlen_attention"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_varlen_attention"
     ),
     "gleipnir.nvidia_mxfp8_varlen_host": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_varlen_host"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_varlen_host"
     ),
     "gleipnir.nvidia_mxfp8_varlen_quantize": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_varlen_quantize"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_varlen_quantize"
     ),
     "gleipnir.nvidia_mxfp8_varlen_repack": (
-        "gleipnir.kernels.mxfp8."
-        "nvidia_mxfp8_varlen_repack"
+        "gleipnir.kernels.mxfp8.nvidia_mxfp8_varlen_repack"
     ),
     "gleipnir.serving_attention_fp4": "gleipnir.serving.fp4.attention",
     "gleipnir.serving_cache_mirror": "gleipnir.serving.cache_mirror",
@@ -133,33 +122,26 @@ MODULE_ALIASES = {
     "gleipnir.serving_fp4_prepare": "gleipnir.serving.fp4.prepare",
     "gleipnir.serving_fp4_swiglu": "gleipnir.serving.fp4.swiglu",
     "gleipnir.serving_fp4_swiglu_block_reference": (
-        "gleipnir.serving.fp4."
-        "swiglu_block_reference"
+        "gleipnir.serving.fp4.swiglu_block_reference"
     ),
     "gleipnir.serving_fp4_swiglu_integration": (
-        "gleipnir.serving.fp4."
-        "swiglu_integration"
+        "gleipnir.serving.fp4.swiglu_integration"
     ),
     "gleipnir.serving_fp4_swiglu_native_output": (
-        "gleipnir.serving.fp4."
-        "swiglu_native_output"
+        "gleipnir.serving.fp4.swiglu_native_output"
     ),
     "gleipnir.serving_fp4_swiglu_native_output_integration": (
-        "gleipnir.serving.fp4."
-        "swiglu_native_output_integration"
+        "gleipnir.serving.fp4.swiglu_native_output_integration"
     ),
     "gleipnir.serving_fp4_swiglu_native_output_validation": (
-        "gleipnir.serving.fp4."
-        "swiglu_native_output_validation"
+        "gleipnir.serving.fp4.swiglu_native_output_validation"
     ),
     "gleipnir.serving_fp4_swiglu_overhead": "gleipnir.serving.fp4.swiglu_overhead",
     "gleipnir.serving_fp4_swiglu_overhead_integration": (
-        "gleipnir.serving.fp4."
-        "swiglu_overhead_integration"
+        "gleipnir.serving.fp4.swiglu_overhead_integration"
     ),
     "gleipnir.serving_fp4_swiglu_overhead_validation": (
-        "gleipnir.serving.fp4."
-        "swiglu_overhead_validation"
+        "gleipnir.serving.fp4.swiglu_overhead_validation"
     ),
     "gleipnir.serving_fp4_swiglu_pack": "gleipnir.serving.fp4.swiglu_pack",
     "gleipnir.serving_fp4_swiglu_padding": "gleipnir.serving.fp4.swiglu_padding",
@@ -208,6 +190,234 @@ MODULE_ALIASES = {
     ),
 }
 
+
+# Experiment directories grouped into categories (2026-11-27). Historical
+# ``experiments.<name>`` imports and ``experiments/<name>/...`` source
+# references resolve to ``experiments/<category>/<name>``. Experiments bound by
+# the accepted serving default or the released image are absent: they stay at
+# their recorded flat paths (see experiments/README.md).
+EXPERIMENT_CATEGORIES = {
+    "adversarial": (
+        "adversarial_a1_discrimination",
+        "adversarial_a2_cover_comments",
+        "adversarial_a2_high_effort",
+        "adversarial_a2_tinker_probe",
+        "adversarial_a3_random_search",
+        "adversarial_a4_feedback",
+        "adversarial_a4_scale",
+        "adversarial_a6_transfer",
+        "adversarial_baseline_4b",
+        "adversarial_cheating_pilot",
+        "adversarial_code_or_comments",
+        "adversarial_confession_strip",
+        "adversarial_crossed_text",
+        "adversarial_crossed_text_probe",
+        "adversarial_evilgenie",
+        "adversarial_goodfire",
+        "adversarial_is_it_4b",
+        "adversarial_lab_liars",
+        "adversarial_lab_liars_probe",
+        "adversarial_lab_v03",
+        "adversarial_monitor_aware",
+        "adversarial_natural_cheats",
+        "adversarial_peer_deception_prompt",
+        "adversarial_phase1_v03_replay",
+        "adversarial_quiet_cheats",
+        "evilgenie_api_baselines",
+        "evilgenie_assistant_messages",
+        "evilgenie_released_stack",
+    ),
+    "evaluation": (
+        "aisi_lie_detection_transfer",
+        "cascade",
+        "decision_models_ood",
+        "flint_ood",
+        "gleipnir4b_full_specification",
+        "id_action_only_evaluation",
+        "id_assistant_prose_audit",
+        "id_cot_only_evaluation",
+        "inkling_ood",
+        "monitor_score_resolution",
+        "monitoring_length_shortcut_audit",
+        "ood_reasoning_audit",
+        "ood_recall_at_fpr",
+        "ood_visible_prose",
+        "openai_monitoring_ood",
+        "pplx_decider_ood",
+        "pretrained_id",
+        "qwen27b_generations_ood",
+        "shade_length_audit",
+        "sleightbench_eval",
+        "tool_output_ablation",
+    ),
+    "injection": (
+        "activation_filter_projection",
+        "activation_filter_refit",
+        "activation_filter_training",
+        "apps_injection_detection",
+        "apps_released_direction",
+        "apps_released_monitors",
+        "apps_score_fusion",
+        "augmented_judge_evaluation",
+        "b200_apps",
+        "b200_augmented_bf16_apps",
+        "b200_augmented_bf16_id",
+        "b200_augmented_bf16_optimized",
+        "b200_augmented_bf16_training",
+        "b200_augmented_judge",
+        "b200_augmented_sdpa_apps",
+        "b200_augmented_sdpa_replay",
+        "b200_augmented_seed_repeat",
+        "b200_augmented_training",
+        "b200_historical_augmented_id",
+        "b200_historical_augmented_optimized",
+        "b200_injection_direction",
+        "b200_judge_direction_signal",
+        "b200_judge_numeric_surface",
+        "b200_projection_judge",
+        "b200_sdpa_lens",
+        "b200_training_clean_direction",
+        "b200_training_direction",
+        "b200_vllm_lens",
+        "base_judge_steering",
+        "caft_direction_refit",
+        "caft_honest_steering",
+        "caft_original_projection",
+        "concept_ablation_training",
+        "judge_injection_continuation",
+        "judge_injection_joint",
+        "monitor_injection_augmentation",
+        "monitor_injection_augmentation_9b",
+        "monitoring_injection_disentanglement",
+        "monitoring_injection_removal",
+        "student_injection_awareness",
+        "training_firewall_census",
+        "training_injection_census",
+    ),
+    "training": (
+        "adapter_capacity_scaling",
+        "aux_supervision",
+        "data_capacity_scaling",
+        "data_scaling",
+        "deception_distillation",
+        "distillation_temperature",
+        "final_training_fit",
+        "hard_label_seeds",
+        "monitoring_campaign",
+        "monitoring_duration",
+        "monitoring_hard_labels",
+        "monitoring_id_scaling",
+        "monitoring_lr_sweep",
+        "monitoring_mil_mixture",
+        "monitoring_mil_ood",
+        "monitoring_objective_ablation",
+        "monitoring_prefix_supervision",
+        "monitoring_subset_duration",
+        "optimization_regularization_screen",
+        "optimizer_full_data_confirmation",
+        "optimizer_lr_scaling",
+        "partial_auroc",
+        "qwen38_27b_campaign",
+        "qwen38_27b_hard_labels",
+        "reasoning_sft_scaling",
+        "seed_average",
+        "tool_trajectory_monitoring",
+        "training_procedure_screen",
+    ),
+    "probes": (
+        "probe_attention_maps",
+        "probe_generalization",
+        "probe_optimized_serving",
+        "probe_scale_27b",
+        "probe_sleightbench",
+    ),
+    "quantization": (
+        "int4_calibration",
+        "kimi_direct_qat",
+        "native_fp8_qat",
+        "native_mxfp8_qat",
+        "qad_budget",
+        "qad_ood",
+        "qad_v02",
+        "qat_training_optimization",
+    ),
+    "serving": (
+        "b200_async_scheduling",
+        "b200_attention_headroom",
+        "b200_context_scaling",
+        "b200_fp4_inference",
+        "b200_gdn_precision",
+        "b200_gdn_state",
+        "b200_host_overhead",
+        "b200_inference_kernels",
+        "b200_kernel_profile",
+        "b200_lean_dispatch",
+        "b200_length_admission",
+        "b200_long_context",
+        "b200_optimized_id",
+        "b200_score_graphs",
+        "b200_score_scaling",
+        "b200_swiglu_batching",
+        "b200_swiglu_output",
+        "classifier_throughput",
+        "fp4_inference",
+        "gleipnir4b_serving_ladder",
+        "local_inference",
+        "optimized_gap",
+        "prefix_caching_replay",
+        "prefix_caching_tokens",
+        "qwen38_27b_serving",
+        "runpod_gleipnir4b_id",
+        "serving_concurrency",
+    ),
+    "teachers": (
+        "filter_margin_ood",
+        "filtered_fp4_baseline",
+        "filtered_fp4_ood",
+        "filtered_hard_labels",
+        "gleipnir27b_teacher_4b",
+        "gleipnir27b_vocab_distillation",
+        "qwen122b_id",
+        "qwen38_teacher_4b",
+        "teacher_agreement",
+        "teacher_disagreement_filtering",
+        "teacher_disagreement_ood",
+        "teacher_precision_factorial",
+        "teacher_seed_variation",
+    ),
+    "systems": (
+        "b200_adaptive_microbatching",
+        "b200_bf16_fa4",
+        "b200_fouroversix",
+        "b200_fp4_full_training",
+        "b200_fp4_mlp_lora",
+        "b200_frost_training",
+        "b200_meta_stack",
+        "b200_mlp_gemm",
+        "b200_mxfp8_fused",
+        "b200_nvidia_mxfp8",
+        "b200_nvidia_mxfp8_varlen",
+        "b200_training_throughput",
+        "b200_training_trim",
+        "monitoring_adamw_throughput",
+        "monitoring_branching",
+        "monitoring_gradient_checkpointing",
+        "monitoring_inner_mixer_compile",
+        "monitoring_linear_shell_compile",
+        "monitoring_partial_checkpointing",
+        "monitoring_selective_checkpointing",
+        "monitoring_selective_compile",
+        "monitoring_sequence_packing",
+        "monitoring_training_throughput",
+        "qwen38_27b_training_speed",
+    ),
+}
+EXPERIMENT_MOVES = {
+    name: category
+    for category, names in EXPERIMENT_CATEGORIES.items()
+    for name in names
+}
+
 _CLI_MODULES = {
     "gleipnir.openrouter_cli",
     "gleipnir.monitoring_systems_screen",
@@ -225,7 +435,18 @@ def canonical_source_reference(reference: str) -> str:
     for legacy, canonical in MODULE_ALIASES.items():
         if reference == _module_source(legacy):
             return _module_source(canonical)
+    parts = reference.split("/")
+    if len(parts) > 2 and parts[0] == "experiments" and parts[1] in EXPERIMENT_MOVES:
+        return "/".join(["experiments", EXPERIMENT_MOVES[parts[1]], *parts[1:]])
     return reference
+
+
+def canonical_experiment_module(name: str) -> str | None:
+    """Return the grouped name of a flat ``experiments.<name>`` module, if moved."""
+    parts = name.split(".")
+    if len(parts) < 2 or parts[0] != "experiments" or parts[1] not in EXPERIMENT_MOVES:
+        return None
+    return ".".join(["experiments", EXPERIMENT_MOVES[parts[1]], *parts[1:]])
 
 
 def _module_source(module: str) -> str:
@@ -265,13 +486,51 @@ class _AliasFinder(MetaPathFinder):
         target: ModuleType | None = None,
     ) -> ModuleSpec | None:
         destination = MODULE_ALIASES.get(fullname)
+        if destination is not None:
+            return ModuleSpec(
+                fullname,
+                _AliasLoader(destination),
+                origin=_source_path(destination),
+            )
+        destination = canonical_experiment_module(fullname)
         if destination is None:
             return None
-        return ModuleSpec(
+        location = _experiment_location(destination)
+        if location is None:
+            return None
+        spec = ModuleSpec(
             fullname,
-            _AliasLoader(destination),
-            origin=_source_path(destination),
+            _ExperimentAliasLoader(destination),
+            origin=None if location.is_dir() else str(location),
+            is_package=location.is_dir() or location.name == "__init__.py",
         )
+        return spec
+
+
+def _experiment_location(target: str) -> Path | None:
+    """Locate a grouped experiment module or namespace directory on disk."""
+    package = sys.modules.get("experiments")
+    if package is None or not getattr(package, "__path__", None):
+        return None
+    base = Path(next(iter(package.__path__))).joinpath(*target.split(".")[1:])
+    for candidate in (base.with_suffix(".py"), base / "__init__.py"):
+        if candidate.is_file():
+            return candidate
+    return base if base.is_dir() else None
+
+
+def _experiment_source_path(target: str) -> str | None:
+    location = _experiment_location(target)
+    return str(location) if location is not None and location.is_file() else None
+
+
+class _ExperimentAliasLoader(_AliasLoader):
+    def get_code(self, fullname: str) -> CodeType:
+        """Run the grouped module's own code for ``python -m experiments.<old>``."""
+        origin = _experiment_source_path(self.target)
+        if origin is None:
+            raise ImportError(f"moved experiment module not found: {self.target}")
+        return compile(Path(origin).read_bytes(), origin, "exec")
 
 
 def install_aliases() -> None:

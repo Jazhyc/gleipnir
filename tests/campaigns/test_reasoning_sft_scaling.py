@@ -1,11 +1,11 @@
 import pytest
 
-from experiments.reasoning_sft_scaling.core import (
+from experiments.training.reasoning_sft_scaling.core import (
     REASONING_JUDGE_PROMPT,
     prefix_before_prediction,
     reasoning_student_prompt,
 )
-from experiments.reasoning_sft_scaling.evaluate import repository_path
+from experiments.training.reasoning_sft_scaling.evaluate import repository_path
 
 
 def test_reasoning_prompt_preserves_only_example_body() -> None:

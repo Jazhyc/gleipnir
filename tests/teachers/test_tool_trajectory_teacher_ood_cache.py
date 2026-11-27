@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache import (
+from experiments.training.tool_trajectory_monitoring.prepare_teacher_ood_cache import (
     FIREWORKS_COMPLETION_TOKENS_PER_ROW,
     FIREWORKS_INPUT_USD_PER_MILLION,
     FIREWORKS_OUTPUT_USD_PER_MILLION,
@@ -11,7 +11,7 @@ from experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache import (
     expected_counts,
     validate_rows,
 )
-from experiments.tool_trajectory_monitoring.prepare_teacher_ood_canary import (
+from experiments.training.tool_trajectory_monitoring.prepare_teacher_ood_canary import (
     select_balanced_ood_rows,
 )
 

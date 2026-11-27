@@ -9,7 +9,7 @@ This changes neither training nor the inference selection.
 ## Scope and admission
 
 The user authorizes replacing the leftover vLLM server on the existing Runpod
-B200. The [experiment](../../experiments/b200_gdn_state/README.md) freezes native
+B200. The [experiment](../../experiments/serving/b200_gdn_state/README.md) freezes native
 and model gates, three c1/six c128 repeats, rejection/recovery and no promotion
 before launch. Keep the selected merged 4B adapter, all FP4 GEMMs/SwiGLU,
 MXFP8 full attention, causal LAST pooling, cache policy and frozen quick64/full320

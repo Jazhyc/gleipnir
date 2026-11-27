@@ -6,21 +6,21 @@ from pathlib import Path
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.benchmark_distilled_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_distilled_ood import (
     validate_config,
     validate_inputs,
     validate_jobs,
 )
-from experiments.tool_trajectory_monitoring.compare_distilled_ood_parity import (
+from experiments.training.tool_trajectory_monitoring.compare_distilled_ood_parity import (  # noqa: E501
     compare_predictions,
 )
-from experiments.tool_trajectory_monitoring.prepare_distillation_ood import (
+from experiments.training.tool_trajectory_monitoring.prepare_distillation_ood import (
     materialize_rows,
 )
-from experiments.tool_trajectory_monitoring.run_distilled_ood_lambda import (
+from experiments.training.tool_trajectory_monitoring.run_distilled_ood_lambda import (
     parity_report_passed,
 )
-from experiments.tool_trajectory_monitoring.summarize_distilled_ood import (
+from experiments.training.tool_trajectory_monitoring.summarize_distilled_ood import (
     summary_rows,
 )
 from gleipnir.teachers.prompt_contract import load_prompt_set
@@ -76,7 +76,7 @@ def test_materialize_rows_accepts_a_frozen_non_ood_population() -> None:
 
 def test_gleipnir4b_id_config_is_frozen_for_one_model_group() -> None:
     path = Path(
-        "experiments/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json"
+        "experiments/training/tool_trajectory_monitoring/gleipnir4b_id_benchmark.json"
     )
     config = json.loads(path.read_text())
 
@@ -93,7 +93,7 @@ def test_gleipnir4b_id_config_is_frozen_for_one_model_group() -> None:
 
 def test_gleipnir9b_id_config_selects_two_existing_adapters() -> None:
     path = Path(
-        "experiments/tool_trajectory_monitoring/"
+        "experiments/training/tool_trajectory_monitoring/"
         "gleipnir9b_id_data_mixture_benchmark.json"
     )
     config = json.loads(path.read_text())
@@ -256,7 +256,7 @@ def test_distillation_ood_accepts_frozen_teacher_prompt_inputs(tmp_path: Path) -
 
 def test_mixed_08b_config_pins_observed_hosted_price() -> None:
     path = Path(
-        "experiments/tool_trajectory_monitoring/"
+        "experiments/training/tool_trajectory_monitoring/"
         "distillation_mixed_qwen08b_ood_benchmark.json"
     )
     config = json.loads(path.read_text())
@@ -340,7 +340,7 @@ def test_lambda_runner_is_directly_executable() -> None:
     completed = subprocess.run(
         [
             sys.executable,
-            "experiments/tool_trajectory_monitoring/run_distilled_ood_lambda.py",
+            "experiments/training/tool_trajectory_monitoring/run_distilled_ood_lambda.py",
             "--help",
         ],
         check=False,

@@ -1,6 +1,6 @@
 # Native MXFP8 backward in full QAT
 
-The [experiment](../../experiments/native_mxfp8_qat/README.md) changes attention
+The [experiment](../../experiments/quantization/native_mxfp8_qat/README.md) changes attention
 backward only relative to completed `native-fp8-qat02`: native FP8 projections,
 MLP/GDN optimizations, initial FP32 adapter, BF16 teacher cache, strict-filtered
 rows, seed/order and fixed one-epoch optimization are held constant. The forward

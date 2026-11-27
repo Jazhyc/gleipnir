@@ -24,7 +24,9 @@ def run_training(
     source_paths: tuple[str, ...],
 ) -> None:
     """Audit exact inputs, complete one epoch and preserve FP32 adapter layouts."""
-    from experiments.monitoring_hard_labels.train import validate_training_metadata
+    from experiments.training.monitoring_hard_labels.train import (
+        validate_training_metadata,
+    )
 
     started = time.monotonic()
     output = Path(job["output_dir"])

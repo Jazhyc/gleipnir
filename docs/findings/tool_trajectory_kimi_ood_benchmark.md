@@ -110,7 +110,7 @@ The ignored score artifacts are:
 Reconstruct the summary from the two resumable caches with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.summarize_teacher_canary \
+python -m experiments.training.tool_trajectory_monitoring.summarize_teacher_canary \
   --input data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k3_ood_full_remaining_fireworks.jsonl \

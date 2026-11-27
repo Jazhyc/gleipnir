@@ -11,7 +11,7 @@ Use the repaired selected FP4/MXFP8/Gigatoken/direct-host scorer on the existing
 EU-RO-1 B200, frozen quick64/full320 systems cohorts and every saved selected
 repeat. The candidate changes waiting/skipped queue admission only, retaining
 running-request scheduling, token budgets, caches, classifier and precision.
-See [the experiment](../../experiments/b200_length_admission/README.md) for the
+See [the experiment](../../experiments/serving/b200_length_admission/README.md) for the
 predeclared buckets, age limit and screening thresholds. Full320 has 320 prompts
 and 1,310,581 tokens; it is training-seen development, not held-out quality.
 

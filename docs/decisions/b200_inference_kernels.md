@@ -29,7 +29,7 @@ context/token/sequence budgets, seed, prefix-cache policy and merged ephemeral
 checkpoint. The two engines fit in existing B200 memory. No concurrent timed
 requests across engines. Preserve caches and original FP32 masters.
 
-`experiments/b200_inference_kernels/README.md` freezes the hypothesis, scope,
+`experiments/serving/b200_inference_kernels/README.md` freezes the hypothesis, scope,
 reference, unchanged score canary, performance-interest rule and stop conditions.
 Audit loaded dtypes/methods/resolved kernel classes before the canary. Fail
 closed on unexpected quantization or weight-only fallback. After fresh canary

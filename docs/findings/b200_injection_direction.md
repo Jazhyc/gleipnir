@@ -5,7 +5,7 @@
 small ID ranking changes. The user authorized replicating the colleague's fixed
 clamp, projection and steering controls on the current BF16/SDPA augmented adapter,
 including a small APPS fit portion. The
-[experiment contract](../../experiments/b200_injection_direction/README.md)
+[experiment contract](../../experiments/injection/b200_injection_direction/README.md)
 owns membership, operators, diagnostics and stop conditions; the
 [source review](../research/sdpa_injection_direction_replication.md) distinguishes
 the colleague's historical adapter and later learned-probe results.

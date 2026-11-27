@@ -6,7 +6,9 @@ import pytest
 from tests.helpers.paths import ROOT
 
 CONFIG_PATH = (
-    ROOT / "experiments" / "tool_trajectory_monitoring" / "kimi_k26_ood_benchmark.json"
+    ROOT
+    / "experiments/training/tool_trajectory_monitoring"
+    / "kimi_k26_ood_benchmark.json"
 )
 
 

@@ -113,10 +113,12 @@ def merged_reference(ctx: Campaign) -> None:
     """Check BF16 merged inference against the FP32 causal master independently."""
     from transformers import AutoModelForCausalLM, AutoTokenizer
 
-    from experiments.deception_distillation.train_student_sft import (
+    from experiments.training.deception_distillation.train_student_sft import (
         gated_delta_kernel_modules,
     )
-    from experiments.training_procedure_screen.evaluate_causal import score_adapter
+    from experiments.training.training_procedure_screen.evaluate_causal import (
+        score_adapter,
+    )
 
     config = ctx.config
     ctx.check()

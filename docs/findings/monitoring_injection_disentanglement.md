@@ -3,7 +3,7 @@
 2026-10-03. Training and the complete evaluation grid finished. The new monitor
 still alarms on 100% of honest-code injection controls under all three monitor
 prompts, at each cell's threshold derived from clean honest code. The approved design is in
-[the experiment README](../../experiments/monitoring_injection_disentanglement/README.md).
+[the experiment README](../../experiments/injection/monitoring_injection_disentanglement/README.md).
 ID uses the conservative training instruction once over all 3,012 frozen rows.
 Only the injection benchmark and honest controls receive the three-prompt grid.
 The requested benchmark is `mkenney2/monitor-injection-evals`, branch

@@ -274,7 +274,7 @@ This is **`$25.1177 per 1,000 evaluations`** at uncached list price. The exact
 ignored prompt manifest is reconstructed with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.prepare_teacher_ood_cache
+python -m experiments.training.tool_trajectory_monitoring.prepare_teacher_ood_cache
 ```
 
 The completed Kimi K3 evaluation reports 53,222,737 prompt tokens and 63,950

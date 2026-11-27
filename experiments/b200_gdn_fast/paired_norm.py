@@ -12,10 +12,10 @@ import sys
 from pathlib import Path
 
 from experiments.b200_attention_precision.startup import startup
-from experiments.b200_host_overhead.probe import sequential
 from experiments.b200_inference_benchmark.run import DATA, ROOT, write
-from experiments.b200_long_context.run import gpu, rpc
 from experiments.b200_monitor_score.run import trial
+from experiments.serving.b200_host_overhead.probe import sequential
+from experiments.serving.b200_long_context.run import gpu, rpc
 
 WORKLOAD = ROOT / "results/b200_context_million/million01/workload.json"
 SELECTION = ROOT / "experiments/b200_inference_benchmark/serving_default.json"

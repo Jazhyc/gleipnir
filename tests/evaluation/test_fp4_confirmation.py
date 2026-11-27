@@ -5,8 +5,8 @@ from pathlib import Path
 
 import pytest
 
-from experiments.fp4_inference import confirmation
-from experiments.fp4_inference.confirmation import heldout_ids
+from experiments.serving.fp4_inference import confirmation
+from experiments.serving.fp4_inference.confirmation import heldout_ids
 from gleipnir.qwen35_adapter_rebase import sha256_file
 
 
@@ -18,7 +18,7 @@ from gleipnir.qwen35_adapter_rebase import sha256_file
     ],
 )
 def test_full_confirmation_preserves_selected_serving_configuration(source, target):
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     selected = json.loads((root / f"{source}.json").read_text())
     full = json.loads((root / f"{target}.json").read_text())
     assert full.pop("input") == "data/local_inference/subset.jsonl"
@@ -39,7 +39,7 @@ def test_full_confirmation_preserves_selected_serving_configuration(source, targ
 @pytest.mark.parametrize("method", ["bf16", "fp8_mlp_b8192"])
 @pytest.mark.parametrize("suffix", ["a", "b"])
 def test_independent_full_starts_preserve_the_frozen_choice(method, suffix):
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     frozen = json.loads((root / f"{method}_full_confirmation.json").read_text())
     restart = json.loads((root / f"{method}_full_restart_{suffix}.json").read_text())
     assert restart.pop("output") != frozen.pop("output")

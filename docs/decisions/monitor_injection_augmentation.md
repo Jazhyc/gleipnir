@@ -52,8 +52,8 @@ an original-adapter synthetic baseline. Report agreeing/conflicting demands
 separately to detect copying or reversing the injected verdict; training demands
 agree in 1,785 cases and conflict in 1,690, so blind reversal is 48.6% accurate.
 
-See the [experiment protocol](../../experiments/monitor_injection_augmentation/README.md)
-and [template bank](../../experiments/monitor_injection_augmentation/templates.json).
+See the [experiment protocol](../../experiments/injection/monitor_injection_augmentation/README.md)
+and [template bank](../../experiments/injection/monitor_injection_augmentation/templates.json).
 
 Preparation audit: all 8,688 identities and original supervision remain intact;
 all 3,475 inserted spans are reversible, and 5,213 clean JSONL lines are

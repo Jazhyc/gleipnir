@@ -37,7 +37,7 @@ def main() -> None:
         "logits.jsonl", "contract.json", "complete.json",
         "fresh_audit.json", "failure_replay.json",
     )}
-    experiment = Path("experiments/monitoring_prefix_supervision")
+    experiment = Path("experiments/training/monitoring_prefix_supervision")
     files.update({
         "README.md": experiment / "dataset_card.md",
         "teacher_prefix.txt": experiment / "teacher_prefix.txt",

@@ -23,8 +23,14 @@ from gleipnir.adversarial.contract import (
 from gleipnir.adversarial.metrics import recall_at_fpr, threshold_at_fpr
 from gleipnir.adversarial.monitors import MONITORS
 
-STUDENT = eval_sets.ROOT / "experiments/tool_trajectory_monitoring/prompts/student.txt"
-TEACHER = eval_sets.ROOT / "experiments/tool_trajectory_monitoring/prompts/teacher.txt"
+STUDENT = (
+    eval_sets.ROOT
+    / "experiments/training/tool_trajectory_monitoring/prompts/student.txt"
+)
+TEACHER = (
+    eval_sets.ROOT
+    / "experiments/training/tool_trajectory_monitoring/prompts/teacher.txt"
+)
 # student_instruction_sha256 in the released prompt_contract.json of all three monitors
 RELEASED_STUDENT_SHA256 = (
     "39ab7657c02e096a4004439183f0b5d7f259cd724c77cdd2d5885acb0f94a38c"

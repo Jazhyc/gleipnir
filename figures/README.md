@@ -16,7 +16,7 @@ These are descriptive activation changes, not causal training-example influence.
 Regenerate the census plots with:
 
 ```bash
-PYTHONPATH=src:. .venv/bin/python -m experiments.b200_training_clean_direction.plot_distributions
+PYTHONPATH=src:. .venv/bin/python -m experiments.injection.b200_training_clean_direction.plot_distributions
 ```
 
 The entrypoint reads ignored `results/b200_training_clean_direction/clean_direction01/paired_models.jsonl`
@@ -43,11 +43,11 @@ The script prints the input SHA256 and descriptive summary statistics.
 
 `qwen38_27b_kimi_training_calibration.png` and `.svg` show label reliability
 of unadapted Qwen3.8-27B (BF16) and Kimi K3 on all 8,688 training rows, from
-`experiments/qwen27b_generations_ood/calibration_train.py`.
+`experiments/evaluation/qwen27b_generations_ood/calibration_train.py`.
 `teacher_final_boundary_calibration.png` and `.svg` show reliability diagrams
 on these same 640 samples, with 10 equal-width bins, bin counts and descriptive
 95% Wilson event-rate intervals. Regenerate with
-`PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.calibration`.
+`PYTHONPATH=src .venv/bin/python -m experiments.teachers.teacher_agreement.calibration`.
 Detailed pooled/per-source results and 5/10/20-bin ECE sensitivity are written
 to `results/teacher_agreement/calibration.json`. The intervals assume independent
 samples and do not establish held-out or original-population calibration.
@@ -219,8 +219,8 @@ which is always one of the family rows. Each Δ badge is shaded by sign, next to
 the count of same-seed pairs where soft wins. Mean-pooled probes (near the
 floor) and the single-fit last-token probes (no seeds to pair) are left off the
 plot; the footnote gives their scores, the
-[probe study](../experiments/probe_generalization/README.md) reports them in
-full, and the [hard-label seeds](../experiments/hard_label_seeds/README.md)
+[probe study](../experiments/probes/probe_generalization/README.md) reports them in
+full, and the [hard-label seeds](../experiments/training/hard_label_seeds/README.md)
 supply the hard-coded LoRA values. The probe inputs are ignored artifacts.
 Regenerate with:
 

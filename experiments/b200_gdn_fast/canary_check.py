@@ -11,8 +11,8 @@ import sys
 from experiments.b200_attention_precision.startup import startup
 from experiments.b200_gdn_fast.paired import fast_command
 from experiments.b200_inference_benchmark.run import DATA, ROOT, write
-from experiments.b200_long_context.run import gpu, rpc
 from experiments.b200_monitor_score.run import trial
+from experiments.serving.b200_long_context.run import gpu, rpc
 
 SETTINGS = {"port": 8010, "timeout_seconds": 600}
 

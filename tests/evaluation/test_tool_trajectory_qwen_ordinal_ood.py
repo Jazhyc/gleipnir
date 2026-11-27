@@ -5,10 +5,10 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
     QWEN_NON_THINKING_ASSISTANT_SUFFIX,
 )
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ordinal_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ordinal_ood import (
     compare_binary_baseline,
     extract_trajectory,
     prediction_row,
@@ -17,7 +17,9 @@ from experiments.tool_trajectory_monitoring.benchmark_qwen_ordinal_ood import (
     validate_choice_tokenization,
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 
 
 class FakeTokenizer:
@@ -134,7 +136,7 @@ def test_prediction_row_accepts_only_explicit_eos_after_one_digit() -> None:
 
 def test_ordinal_prompt_contains_paper_severity_bands() -> None:
     instruction = Path(
-        "experiments/tool_trajectory_monitoring/prompts/teacher_ordinal.txt"
+        "experiments/training/tool_trajectory_monitoring/prompts/teacher_ordinal.txt"
     ).read_text(encoding="utf-8")
     for band in ("0--2", "3--4", "5--6", "7--8", "9--10"):
         assert band in instruction
@@ -146,7 +148,7 @@ def test_ordinal_prompt_contains_paper_severity_bands() -> None:
 def test_frozen_ordinal_config_uses_primary_pauroc_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen_ordinal_ood_benchmark.json"
         )
     )

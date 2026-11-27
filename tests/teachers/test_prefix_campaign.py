@@ -4,13 +4,15 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.monitoring_prefix_supervision import campaign
-from experiments.monitoring_prefix_supervision.campaign import make_jobs
+from experiments.training.monitoring_prefix_supervision import campaign
+from experiments.training.monitoring_prefix_supervision.campaign import (
+    make_jobs,
+)
 
 
 def test_prefix_jobs_preserve_parent_budget_and_full_targets():
     config = OmegaConf.to_container(
-        OmegaConf.load(Path("experiments/monitoring_prefix_supervision/training.yaml")),
+        OmegaConf.load(Path("experiments/training/monitoring_prefix_supervision/training.yaml")),
         resolve=True,
     )
     paired = {

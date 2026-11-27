@@ -18,7 +18,7 @@ from gleipnir.data.monitoring import digest, write_json, write_rows
 from gleipnir.repository import repo_root
 
 ROOT = repo_root(__file__)
-EXAMPLE = ROOT / "experiments/monitoring_campaign/config.yaml"
+EXAMPLE = ROOT / "experiments/training/monitoring_campaign/config.yaml"
 
 
 @pytest.fixture

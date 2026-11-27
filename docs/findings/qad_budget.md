@@ -1,7 +1,7 @@
 # Short QAD budgets
 
 The user requests 32 and 64 updates to assess reduced QAD overhead. The
-[experiment](../../experiments/qad_budget/README.md) freezes nested 1,024/2,048-row
+[experiment](../../experiments/quantization/qad_budget/README.md) freezes nested 1,024/2,048-row
 views of the original 7,836-row same-prompt BF16 teacher cache. Both arms reset to
 the original completed trained FP32 adapter, use the selected lean QAT arithmetic
 and retain logical batch 32, 16K packing, BF16 FA4 surrogate backward and FP32

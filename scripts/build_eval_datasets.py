@@ -22,15 +22,15 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from experiments.tool_trajectory_monitoring import (  # noqa: E402
+from experiments.training.tool_trajectory_monitoring import (  # noqa: E402
     prepare_qwen_reasoning_id_benchmark as id_source,
 )
-from experiments.tool_trajectory_monitoring import (  # noqa: E402
+from experiments.training.tool_trajectory_monitoring import (  # noqa: E402
     prepare_teacher_ood_cache as ood_source,
 )
 from scripts.prepare_hf_adapter_release import sha256_file  # noqa: E402
 
-MODULE = "experiments.tool_trajectory_monitoring"
+MODULE = "experiments.training.tool_trajectory_monitoring"
 ID_SOURCE_DIRECTORY = Path("data/tool_trajectory_monitoring/source/id_evaluation")
 ID_STEPS = (
     f"{MODULE}.prepare_qwen_reasoning_id_benchmark",
@@ -137,7 +137,9 @@ def build(suite: str) -> dict[str, str]:
     for module in ID_STEPS if suite == "id" else OOD_STEPS:
         subprocess.run([sys.executable, "-m", module], check=True, cwd=ROOT)
     if suite == "id":
-        from experiments.id_cot_only_evaluation.prepare import write_evaluation
+        from experiments.evaluation.id_cot_only_evaluation.prepare import (
+            write_evaluation,
+        )
 
         write_evaluation(DISTILLATION_ID, ID_OUTPUT, ID_MANIFEST)
     return verify(suite)

@@ -9,7 +9,7 @@ representation diagnostic, not causal training attribution or a filtering rule.
 
 ## Frozen pass and coverage
 
-The [contract](../../experiments/training_firewall_census/README.md) freezes all
+The [contract](../../experiments/injection/training_firewall_census/README.md) freezes all
 8,688 original training inputs, the concept rubric, 0.1/0.5/0.9 thresholds,
 fixed top 1/5/10% bands and no prompt tuning on outputs. The unadapted
 `Qwen/Qwen3.5-9B` revision `c202236235762e1c871ad0ccb60c8ee5ba337b9a`

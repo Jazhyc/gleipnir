@@ -7,7 +7,7 @@ OOD inputs and reported scores remain the evaluation reference.
 The restoration request exposed an upstream recoverability gap: the available
 ControlArena parquets flatten assistant content into strings, and the available
 full-prose CUA exports do not match our frozen rollouts. The reproducible
-[restoration preparation](../../experiments/ood_visible_prose/README.md) therefore
+[restoration preparation](../../experiments/evaluation/ood_visible_prose/README.md) therefore
 keeps 6,247 rows explicitly unresolved and carries forward only the 148 unchanged
 MLE rows. It has not produced a corrected full suite or changed any reported
 scores. This follows the [missing-prose audit](shade_missing_prose.md).
@@ -88,7 +88,7 @@ An independent JSONL export and comparison links all 5,292 frozen ControlArena
 OOD rows to that release. All ordered tool payloads/results match; the complete
 role/content streams also match after narrowly specified formatting cleanup.
 Exact vs normalized counts, source identifiers and qualifications are in the
-[experiment record](../../experiments/ood_visible_prose/RESULTS.md#original-producer-comparison).
+[experiment record](../../experiments/evaluation/ood_visible_prose/RESULTS.md#original-producer-comparison).
 
 Thus the content retained in Sinha's `trajectory_data` matches the producer's
 release; its evaluated `transcript` omits the assistant prose. This establishes

@@ -1,14 +1,16 @@
 import pandas as pd
 import pytest
 
-from experiments.adapter_capacity_scaling.run_train import training_command
-from experiments.optimization_regularization_screen.core import (
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
+from experiments.training.optimization_regularization_screen.core import (
     BASELINE_JOB_NAME,
     balanced_screen_lanes,
     screen_variants,
     validate_screen_jobs,
 )
-from experiments.optimization_regularization_screen.summarize import (
+from experiments.training.optimization_regularization_screen.summarize import (
     contrast_frame,
     summary_payload,
 )

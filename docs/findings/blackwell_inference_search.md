@@ -1,7 +1,7 @@
 # RTX PRO 6000 inference search — 2026-09-29
 
 The frozen protocol and executable conditions are in
-[`experiments/fp4_inference`](../../experiments/fp4_inference/README.md).
+[`experiments/serving/fp4_inference`](../../experiments/serving/fp4_inference/README.md).
 This campaign uses the existing ordered 32-row development slice (338,780 prompt
 tokens) on Slurm job 32267015, with one RTX PRO 6000 Blackwell Server Edition,
 one CPU and 32 GiB host RAM. GPU work stops at 01:29:21 CEST on 2026-09-30.
@@ -29,7 +29,7 @@ is selected. The measured 43.20% baseline MLP share explains why roughly 3x
 kernel gains do not become roughly 3x whole-model gains; GPU counter access is
 unavailable, so no compute-versus-memory limitation is asserted.
 
-Use `experiments/fp4_inference/configs/fp8_mlp_b8192_full_confirmation.json`
+Use `experiments/serving/fp4_inference/configs/fp8_mlp_b8192_full_confirmation.json`
 as the recorded recipe, with a new output path in a future authorized GPU step.
 The original FP32 master adapter, BF16 merge and historical score runner remain
 unchanged. This is confirmation on the existing split, not a final-test or
@@ -826,7 +826,7 @@ Profile scores had mean/max drift 0.003884/0.029793 against corresponding
 baseline rows, correlation 0.999641 and zero flips; profiling/selection changes
 remain separate from serving timing and quality selection. Evidence:
 `profile_bf16_shapes/shape_summary.json`, its checksummed trace/config/selection,
-and the earlier RTX 4080 records in `experiments/local_inference/README.md`.
+and the earlier RTX 4080 records in `experiments/serving/local_inference/README.md`.
 
 The installed CUDA 13.2 Nsight Compute availability probe returned
 `ERR_NVGPUCTRPERM`: this cluster user cannot access GPU performance counters.

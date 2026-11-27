@@ -3,7 +3,7 @@
 import pytest
 from scipy.special import expit
 
-from experiments.teacher_agreement.run import agreement
+from experiments.teachers.teacher_agreement.run import agreement
 
 
 def rows(scale=1):

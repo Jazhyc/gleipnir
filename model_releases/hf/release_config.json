@@ -117,8 +117,8 @@
     }
   },
   "prompt": {
-    "manifest": "experiments/tool_trajectory_monitoring/prompts/manifest.json",
-    "student_instruction": "experiments/tool_trajectory_monitoring/prompts/student.txt",
+    "manifest": "experiments/training/tool_trajectory_monitoring/prompts/manifest.json",
+    "student_instruction": "experiments/training/tool_trajectory_monitoring/prompts/student.txt",
     "template_sha256": "f104aa18fe9f04094efdca14f9cebe65f7b18d976f454c134fa4282bd5162eaa",
     "teacher_template_sha256": "2418cc55801deead8983d3bde6e35b59603f0080711ce8e12e1d7299487ac128"
   },

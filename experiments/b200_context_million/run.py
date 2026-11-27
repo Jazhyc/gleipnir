@@ -25,11 +25,11 @@ from experiments.b200_context_million.environment import (
     summarize_samples,
 )
 from experiments.b200_inference_benchmark.run import DATA, ROOT, sha, write
-from experiments.b200_long_context.run import gpu, rpc, synthetic
 from experiments.b200_monitor_score.run import SERVING, trial
 from experiments.b200_vllm031.run import archive_audits
 from experiments.b200_vllm031.runtime import candidate_environment
 from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+from experiments.serving.b200_long_context.run import gpu, rpc, synthetic
 from gleipnir.inference_benchmark import paired_score_summary, ranking_comparison
 from gleipnir.serving.reference import selected_serving_default
 
@@ -449,8 +449,10 @@ async def run(name: str, phases: list[str] | None, variant: Variant = DEFAULT) -
             out / "workload_binding.json",
             {
                 "sha256": sha(out / "workload.json"),
-                "generator": "experiments/b200_long_context/run.py:synthetic",
-                "generator_sha256": sha(ROOT / "experiments/b200_long_context/run.py"),
+                "generator": "experiments/serving/b200_long_context/run.py:synthetic",
+                "generator_sha256": sha(
+                    ROOT / "experiments/serving/b200_long_context/run.py"
+                ),
                 "kind": "deterministic_synthetic_unlabelled",
                 "historical_prompt_matches": {
                     n: rows[n]["prompt_sha256"] == digest

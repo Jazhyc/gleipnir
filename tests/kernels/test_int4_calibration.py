@@ -1,8 +1,8 @@
 import pytest
 import torch
 
-from experiments.int4_calibration.capture import parse_layers, select
-from experiments.int4_calibration.screen import hadamard, quant, rotation
+from experiments.quantization.int4_calibration.capture import parse_layers, select
+from experiments.quantization.int4_calibration.screen import hadamard, quant, rotation
 
 
 def test_capture_layer_extension_preserves_default_and_checks_bounds():

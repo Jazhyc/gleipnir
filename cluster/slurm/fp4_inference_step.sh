@@ -27,7 +27,7 @@ export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false
 export OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 MAX_JOBS=1
 export VLLM_USE_FLASHINFER_SAMPLER=0
 if [[ -n "${fp4_step_module:-}" ]]; then
-    fp4_step_seconds="$(python -c 'from experiments.fp4_inference.run import remaining_seconds, TERMINATION_MARGIN_SECONDS; print(max(0, min(900, int(remaining_seconds() - TERMINATION_MARGIN_SECONDS))))')"
+    fp4_step_seconds="$(python -c 'from experiments.serving.fp4_inference.run import remaining_seconds, TERMINATION_MARGIN_SECONDS; print(max(0, min(900, int(remaining_seconds() - TERMINATION_MARGIN_SECONDS))))')"
     if (( fp4_step_seconds < 120 )); then
         echo "Insufficient time before the campaign deadline" >&2
         exit 2
@@ -35,4 +35,4 @@ if [[ -n "${fp4_step_module:-}" ]]; then
     exec timeout --signal=TERM --kill-after=15s "$fp4_step_seconds" \
         python -u -m "$fp4_step_module" "$@"
 fi
-exec python -u -m experiments.fp4_inference.run --condition "$1"
+exec python -u -m experiments.serving.fp4_inference.run --condition "$1"

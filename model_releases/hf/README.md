@@ -53,7 +53,7 @@ tags `v1.0`; a different base model gets a new repo name.
 
 Gleipnir 4B v0.2 (2026-10-20): the exact three-seed weight average of the
 strict-filtered tool-trajectory-only recipe shared with the 27B
-([seed average](../../experiments/seed_average/README.md)). It is a rank-384
+([seed average](../../experiments/training/seed_average/README.md)). It is a rank-384
 adapter, so its config sets `lora_rank: 384`. It was staged with
 `--output-dir results/huggingface_release_v0.2` and uploaded with
 `--allow-existing` as commit `7776a3e3`. All 10 manifest files were verified
@@ -77,7 +77,7 @@ are unchanged:
   comparison table is refreshed. Commit `9c4c246e`; 10 files verified.
 
 Gleipnir 4B v0.3 (2026-10-20, user request): the v0.2 average plus same-model
-QAD for optimized serving ([QAD](../../experiments/qad_v02/README.md)).
+QAD for optimized serving ([QAD](../../experiments/quantization/qad_v02/README.md)).
 - **Source.** The release adapter is the QAD master (`0716efc1…`) in the
   campaign-layout copy `results/qad-v02-01/4b/monitor`. Its
   `training_metadata.json` was added there to record the base, the QAD

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_linear_shell_compile.core import (
+from experiments.systems.monitoring_linear_shell_compile.core import (
     CANDIDATE_NAME,
     CANDIDATE_POLICY,
     CONTROL_NAME,
@@ -12,8 +12,10 @@ from experiments.monitoring_linear_shell_compile.core import (
     summarize,
     validate_jobs,
 )
-from experiments.monitoring_linear_shell_compile.prepare import make_jobs
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_linear_shell_compile.prepare import (
+    make_jobs,
+)
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -94,7 +96,7 @@ def test_summary_rejects_sub_one_percent_gain(tmp_path: Path) -> None:
 
 def test_config_freezes_eight_steps() -> None:
     config = json.loads(
-        Path("experiments/monitoring_linear_shell_compile/config.json").read_text()
+        Path("experiments/systems/monitoring_linear_shell_compile/config.json").read_text()
     )
     assert config["optimizer_steps"] == 8
     assert config["minimum_relative_improvement"] == 0.01

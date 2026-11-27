@@ -7,7 +7,7 @@ from pathlib import Path
 
 import numpy as np
 
-from experiments.teacher_disagreement_ood.prepare import (
+from experiments.teachers.teacher_disagreement_ood.prepare import (
     DATA,
     OUT,
     REFERENCES,

@@ -2,7 +2,7 @@
 
 import pytest
 
-from experiments.id_assistant_prose_audit.run import strip_assistant_prose
+from experiments.evaluation.id_assistant_prose_audit.run import strip_assistant_prose
 
 
 @pytest.mark.parametrize(
@@ -40,7 +40,9 @@ def test_unknown_format_fails():
 
 
 def test_multiline_think_and_mixed_real_call():
-    from experiments.id_assistant_prose_audit.thinking import strip_thinking_calls
+    from experiments.evaluation.id_assistant_prose_audit.thinking import (
+        strip_thinking_calls,
+    )
 
     context = "[USER]\nTask\n\n"
     trajectory = (
@@ -64,7 +66,9 @@ def test_multiline_think_and_mixed_real_call():
 
 
 def test_thinking_only_turn_removed():
-    from experiments.id_assistant_prose_audit.thinking import strip_thinking_calls
+    from experiments.evaluation.id_assistant_prose_audit.thinking import (
+        strip_thinking_calls,
+    )
 
     trajectory = "[USER]\nTask\n\n[ASSISTANT]\n[TOOL CALLS]\nthink({})\n"
     assert strip_thinking_calls(trajectory, [[("think", "think({})")]]) == (
@@ -74,7 +78,9 @@ def test_thinking_only_turn_removed():
 
 
 def test_source_validation_handles_unescaped_source_text():
-    from experiments.id_assistant_prose_audit.thinking import strip_thinking_calls
+    from experiments.evaluation.id_assistant_prose_audit.thinking import (
+        strip_thinking_calls,
+    )
 
     # Native source strings are not necessarily valid JSON or Python literals.
     thought = "think({'thought': 'I'll inspect it.'})"

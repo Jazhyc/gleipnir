@@ -11,7 +11,7 @@ from gleipnir.campaigns.monitoring.filtering import resolve_filter, retained_ind
 from gleipnir.data.monitoring import file_hash, read_rows, write_rows
 from gleipnir.repository import repo_root
 
-EXAMPLE = repo_root(__file__) / "experiments/monitoring_campaign/config.yaml"
+EXAMPLE = repo_root(__file__) / "experiments/training/monitoring_campaign/config.yaml"
 
 
 @pytest.fixture

@@ -37,7 +37,7 @@ specification. The prompt-template SHA-256 is
 The model, provider, prompt, score boundary, request settings, full-suite
 membership, and interpretation thresholds were frozen before the first paid
 request in
-[`kimi_k26_ood_benchmark.json`](../../experiments/tool_trajectory_monitoring/kimi_k26_ood_benchmark.json).
+[`kimi_k26_ood_benchmark.json`](../../experiments/training/tool_trajectory_monitoring/kimi_k26_ood_benchmark.json).
 
 The first 12 interleaved source-label rows passed provider identity, terminal
 digit, two-literal-logprob, price, and zero-reasoning gates. Inceptron
@@ -126,7 +126,7 @@ line, included both literal-token logprobs, and reported zero reasoning tokens.
 Reconstruct the ignored full summary with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.summarize_teacher_canary \
+python -m experiments.training.tool_trajectory_monitoring.summarize_teacher_canary \
   --input data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k26_inceptron_ood_canary.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k26_inceptron_ood_full_remaining.jsonl \

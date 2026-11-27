@@ -28,5 +28,5 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM=false
 
-python experiments/classifier_throughput/benchmark.py \
+python experiments/serving/classifier_throughput/benchmark.py \
     --output-dir "results/classifier_throughput/${SLURM_JOB_ID}"

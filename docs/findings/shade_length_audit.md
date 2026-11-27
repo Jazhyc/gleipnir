@@ -149,7 +149,7 @@ small position sensitivity on ID data; this audit does not test whether the
 
 ## Reproduction
 
-`python -m experiments.shade_length_audit.analyze` writes
+`python -m experiments.evaluation.shade_length_audit.analyze` writes
 `results/shade_length_audit/summary.json` (SHA-256
 `8df1e150b3c66c606a612a33ef6519b40eb8009680a16e590cda771e5eab610d`) from:
 

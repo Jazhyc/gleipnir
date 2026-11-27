@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from experiments.monitoring_hard_labels.test_validated_startup import reference_metadata
+from experiments.training.monitoring_hard_labels.test_validated_startup import (
+    reference_metadata,
+)
 from gleipnir import validated_startup
 from gleipnir.attention_backends import packed_fa4_environment
 from gleipnir.packed_training import validate_packed_training_config

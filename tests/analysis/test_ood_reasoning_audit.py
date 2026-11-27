@@ -2,7 +2,11 @@
 
 import re
 
-from experiments.ood_reasoning_audit.run import MARKERS, location, paragraph_overlaps
+from experiments.evaluation.ood_reasoning_audit.run import (
+    MARKERS,
+    location,
+    paragraph_overlaps,
+)
 
 
 def test_heading_in_tool_output_is_not_an_assistant_trace():

@@ -11,7 +11,7 @@ ranking gain over cached Gleipnir 4B. No model promotion occurred.
 
 ## Contract and population
 
-The [experiment contract](../../experiments/teacher_disagreement_filtering/README.md)
+The [experiment contract](../../experiments/teachers/teacher_disagreement_filtering/README.md)
 freezes original monitoring trajectories and Kimi K3 soft targets, without
 synthetic augmentation, deception-mixture data, hard-label loss or target
 rewriting. Remove disagreements at `p_harmful >= 0.5` for delta zero. For positive

@@ -9,11 +9,11 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
-from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
     prediction_row,
     summarize,
 )
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
     QWEN_NON_THINKING_ASSISTANT_SUFFIX,
     render_margin_prompt,
 )
@@ -90,10 +90,12 @@ def reference(context: EvaluationContext, config: dict, size: str) -> None:
     from transformers import AutoModelForCausalLM, AutoTokenizer
     from transformers.utils.import_utils import is_flash_linear_attention_available
 
-    from experiments.deception_distillation.train_student_sft import (
+    from experiments.training.deception_distillation.train_student_sft import (
         gated_delta_kernel_modules,
     )
-    from experiments.training_procedure_screen.evaluate_causal import score_adapter
+    from experiments.training.training_procedure_screen.evaluate_causal import (
+        score_adapter,
+    )
 
     spec = config["models"][size]
     if not is_flash_linear_attention_available():

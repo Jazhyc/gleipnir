@@ -149,7 +149,9 @@ def test_guarded_entrypoint_scopes_progress_to_selected_adapter(monkeypatch, tmp
     import argparse
 
     import gleipnir.evaluation_watchdog as watchdog
-    from experiments.tool_trajectory_monitoring import benchmark_distilled_ood as module
+    from experiments.training.tool_trajectory_monitoring import (
+        benchmark_distilled_ood as module,
+    )
 
     args = argparse.Namespace(
         config=Path("config"),

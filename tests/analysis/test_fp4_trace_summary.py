@@ -1,6 +1,6 @@
 """Trace categorization avoids counting attention templates as GEMM work."""
 
-from experiments.fp4_inference.trace_summary import category
+from experiments.serving.fp4_inference.trace_summary import category
 
 
 def test_attention_template_cutlass_types_do_not_become_linear():

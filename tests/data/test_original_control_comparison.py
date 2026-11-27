@@ -3,7 +3,7 @@
 import json
 import zipfile
 
-from experiments.ood_visible_prose.compare_original_control import (
+from experiments.evaluation.ood_visible_prose.compare_original_control import (
     canonical,
     export_archive,
     formatted_sections,

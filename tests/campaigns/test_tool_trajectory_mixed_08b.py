@@ -3,7 +3,7 @@ from pathlib import Path
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prepare_mixed_08b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_08b_distillation import (  # noqa: E501
     GRADIENT_ACCUMULATION_STEPS,
     JOB_NAME,
     MICRO_BATCH_SIZE,
@@ -12,10 +12,12 @@ from experiments.tool_trajectory_monitoring.prepare_mixed_08b_distillation impor
     make_job,
     validate_mixed_08b_jobs,
 )
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
-from experiments.tool_trajectory_monitoring.run_mixed_08b_lambda import recipe
+from experiments.training.tool_trajectory_monitoring.run_mixed_08b_lambda import (
+    recipe,
+)
 
 
 def test_mixed_08b_job_is_one_epoch_rank128_soft_only(tmp_path: Path) -> None:

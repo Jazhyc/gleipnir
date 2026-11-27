@@ -3,7 +3,7 @@ import json
 import pyarrow.parquet as pq
 import pytest
 
-from experiments.tool_trajectory_monitoring.export_teacher_cache_hf import (
+from experiments.training.tool_trajectory_monitoring.export_teacher_cache_hf import (
     export_public_cache,
     load_cache_rows,
 )

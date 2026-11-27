@@ -2,7 +2,7 @@
 
 2026-10-08. Lens 1.3.0 capture and steering work on the selected merged 4B
 monitor under vLLM 0.31, in opt-in eager research mode on the existing NC2 B200.
-The [experiment README](../../experiments/b200_vllm_lens/README.md) owns the
+The [experiment README](../../experiments/injection/b200_vllm_lens/README.md) owns the
 scope, commands, API and reproduction contract. The compiled serving selection
 is unchanged. No learned direction, held-out evaluation or precision promotion.
 
@@ -165,7 +165,7 @@ retired sequentially for the clamp/span/readout extension; current process
 state is in [infrastructure](../infrastructure.md). Merged weights stay on the
 B200.
 
-The [restoration contract](../../experiments/b200_sdpa_lens/README.md),
+The [restoration contract](../../experiments/injection/b200_sdpa_lens/README.md),
 `results/b200_sdpa_lens/sdpa01/` and `completion_audit.json` retain provenance.
 The shared functional smoke accepts this adapter's prevalidated canary rather
 than comparing its scores with the regular adapter's canary. No full quality

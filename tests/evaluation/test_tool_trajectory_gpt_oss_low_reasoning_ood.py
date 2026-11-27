@@ -3,7 +3,7 @@ from __future__ import annotations
 from pathlib import Path
 from types import SimpleNamespace
 
-from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_low_reasoning_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_gpt_oss_low_reasoning_ood import (  # noqa: E501
     audit_source_prompts,
     build_margin_token_ids,
     harmony_token_contract,
@@ -11,7 +11,9 @@ from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_low_reasoning_ood 
     render_reasoning_prompt,
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 
 
 class FakeTokenizer:
@@ -120,7 +122,7 @@ def test_pack_generation_requires_native_analysis_and_end_stop() -> None:
 def test_frozen_low_reasoning_config_covers_full_ood_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "gpt_oss_low_reasoning_ood_benchmark.json"
         )
     )

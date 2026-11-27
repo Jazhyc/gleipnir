@@ -49,11 +49,13 @@ def student_config(max_steps=512):
         "max_steps": max_steps,
     }
     command = training_command(job)
-    assert command[1] == "experiments/deception_distillation/train_student_sft.py"
+    assert (
+        command[1] == "experiments/training/deception_distillation/train_student_sft.py"
+    )
     assert "++student.training.native_fp4_mlp=true" in command
     assert "++student.training.native_fp4_mlp_parity_policy=selected_finite" in command
     with initialize_config_dir(
-        config_dir=str(ROOT / "experiments/tool_trajectory_monitoring"),
+        config_dir=str(ROOT / "experiments/training/tool_trajectory_monitoring"),
         version_base=None,
     ):
         cfg = compose(config_name="distillation_config", overrides=command[6:])
@@ -262,7 +264,7 @@ def sdpa_student_config():
     assert f"++student.training.native_fp4_sdpa_composite_authority={token}" in command
     assert not any("packed_attention_backend" in part for part in command)
     with initialize_config_dir(
-        config_dir=str(ROOT / "experiments/tool_trajectory_monitoring"),
+        config_dir=str(ROOT / "experiments/training/tool_trajectory_monitoring"),
         version_base=None,
     ):
         cfg = compose(config_name="distillation_config", overrides=command[6:])

@@ -9,8 +9,8 @@ backdoored code remains a source of false positives for the presence task.
 
 ## Frozen comparison
 
-The [experiment contract](../../experiments/apps_injection_detection/README.md)
-fixes the existing [census rubric](../../experiments/training_injection_census/prompt.txt),
+The [experiment contract](../../experiments/injection/apps_injection_detection/README.md)
+fixes the existing [census rubric](../../experiments/injection/training_injection_census/prompt.txt),
 pinned base revision `851bf6e806efd8d0a36b00ddf55e13ccb7b8cd0a`, final
 272-update `b200-augmented-sdpa-replay02` adapter, and complete APPS population.
 The FP32 master hash is

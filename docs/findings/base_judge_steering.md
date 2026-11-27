@@ -9,7 +9,7 @@ with task/readout-dependent behavior, without improved injection judging.
 The user requested a domain-transfer test of the original augmented-monitor
 injection vector on the **unadapted Qwen3.5-4B base**, rather than another
 projection on a monitor adapter. The
-[experiment contract](../../experiments/base_judge_steering/README.md) fixes
+[experiment contract](../../experiments/injection/base_judge_steering/README.md) fixes
 the model, vector, doses, cohorts, readouts and stop conditions before outcomes.
 No direction or classifier is fitted on JudgeDeceiver and no model is promoted.
 
@@ -31,7 +31,7 @@ injected, 252 pairs, both orders and **six held-out query groups**. Native
 tokens total 1,521,530 per arm. A/B preference labels and the .5 cutoff stay
 fixed, with ties choosing B. Source revision, construction labels, dependent
 variants, grouping and unresolved upstream license follow the
-[original dataset contract](../../experiments/judge_injection_continuation/README.md).
+[original dataset contract](../../experiments/injection/judge_injection_continuation/README.md).
 Preferences are separate from harmfulness and false-positive rates.
 
 A matched base-model APPS control uses the existing frozen 128-task subset:

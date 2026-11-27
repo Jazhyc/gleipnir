@@ -52,9 +52,9 @@ for unseen generator or conversation lineages.
 
 ## Frozen interface and audit
 
-The [configuration](../../experiments/openai_monitoring_ood/config.json) freezes
+The [configuration](../../experiments/evaluation/openai_monitoring_ood/config.json) freezes
 the hypothesis, intervention, baselines, selection rule, and stop conditions.
-The [README](../../experiments/openai_monitoring_ood/README.md) records commands
+The [README](../../experiments/evaluation/openai_monitoring_ood/README.md) records commands
 and the operational amendments.
 
 - Input: `data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl`.

@@ -3,14 +3,16 @@ import json
 import pandas as pd
 import pytest
 
-from experiments.adapter_capacity_scaling.run_train import training_command
-from experiments.data_capacity_scaling.core import (
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
+from experiments.training.data_capacity_scaling.core import (
     DEFAULT_RANKS,
     balanced_interaction_lanes,
     fraction_tag,
     validate_design,
 )
-from experiments.data_capacity_scaling.summarize import (
+from experiments.training.data_capacity_scaling.summarize import (
     high_rank_interaction,
     paired_contrasts,
 )

@@ -1,7 +1,7 @@
 # Distillation temperature
 
 Status: complete, 2026-10-16. ID screen, one seed, no promotion. See the
-[experiment](../../experiments/distillation_temperature/README.md) for the
+[experiment](../../experiments/training/distillation_temperature/README.md) for the
 audit, design and per-source results.
 
 **Teacher targets.** The strict-filtered Kimi K3 targets are bimodal: 55% lie

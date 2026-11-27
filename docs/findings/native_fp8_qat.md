@@ -1,6 +1,6 @@
 # Native FP8 QAT and MXFP8 attention backward
 
-The [experiment](../../experiments/native_fp8_qat/README.md) treats native FP8
+The [experiment](../../experiments/quantization/native_fp8_qat/README.md) treats native FP8
 projection contractions as a new quality variant rather than claiming the
 failed [gradient-reproduction screen](qat_training_optimization.md) passed.
 It retains the original strict-filtered population, BF16 monitor targets,

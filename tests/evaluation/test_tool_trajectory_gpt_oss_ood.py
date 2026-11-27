@@ -5,14 +5,16 @@ from types import SimpleNamespace
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_gpt_oss_ood import (
     balanced_canary_rows,
     binary_logprobs,
     normalized_score,
     render_margin_prompt,
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 
 
 class FakeTokenizer:
@@ -80,7 +82,7 @@ def test_binary_logprob_normalization_retains_both_values() -> None:
 def test_frozen_gpt_oss_config_uses_full_teacher_ood_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/gpt_oss_ood_benchmark.json"
+            "experiments/training/tool_trajectory_monitoring/gpt_oss_ood_benchmark.json"
         )
     )
     validate_config(config)

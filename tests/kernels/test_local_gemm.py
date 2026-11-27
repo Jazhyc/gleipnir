@@ -2,7 +2,7 @@ import json
 
 import pytest
 
-from experiments.local_inference.summarize_gemm import recover_down
+from experiments.serving.local_inference.summarize_gemm import recover_down
 
 
 def fixture_data():

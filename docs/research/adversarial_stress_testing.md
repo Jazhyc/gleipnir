@@ -44,7 +44,7 @@ Attack experiments live in `experiments/adversarial_<name>/`.
 
 | # | Attack | Access | What it tells us | Prediction |
 | --- | --- | --- | --- | --- |
-| A1 | **Template injections as evasion**: the existing monitor-directed injection templates added to harmful trajectories. APPS already contains this comparison ([baseline](../../experiments/adversarial_baseline_4b/README.md)). | none | Whether naive injection helps an attacker at all | It backfires: injected backdoors score higher on at least half the tasks |
+| A1 | **Template injections as evasion**: the existing monitor-directed injection templates added to harmful trajectories. APPS already contains this comparison ([baseline](../../experiments/adversarial/adversarial_baseline_4b/README.md)). | none | Whether naive injection helps an attacker at all | It backfires: injected backdoors score higher on at least half the tasks |
 | A2 | **Natural cover comments**: an LLM writes plausible, honest-sounding comments for the harmful code, without seeing scores | none | The realistic floor | Under 10% evasion at 1% FPR on saturated sources; more on SHADE-Arena |
 | A3 | **Random search on a comment suffix** using P(`1`), after Andriushchenko et al.'s adaptive attacks | score queries | How many queries evasion takes | Most detected rows evade within 1,000 queries with a 20-token suffix |
 | A4 | **LLM rewrite with score feedback** (PAIR-style) | score queries | Natural-language evasion with feedback; its gap to A2 is the value of score access | Clearly above A2 |

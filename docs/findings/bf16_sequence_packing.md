@@ -59,13 +59,13 @@ Temporary forward hooks used for layer traces proved unsuitable inside compiled
 graphs: a cached graph bypassed their collection and the diagnostic stopped on
 a missing entry, before updates. Layer traces are now eager-only. Compiled score,
 loss, checkpointed input-gradient and adapter-gradient gates remain unchanged.
-The corrected protocol is `experiments/monitoring_sequence_packing/bf16_checked_gpu.yaml`.
+The corrected protocol is `experiments/systems/monitoring_sequence_packing/bf16_checked_gpu.yaml`.
 
 That protocol passed eager isolation/parity again. Its compiled isolation checks
 also retained zero cross-example dependence, but singleton/packed losses were
 0.949228942/0.957633674 and adapter-gradient relative L2 was 0.0880173. It stopped
 before updates. The next matched condition,
-`experiments/monitoring_sequence_packing/bf16_casts_gpu.yaml`, enables Inductor's
+`experiments/systems/monitoring_sequence_packing/bf16_casts_gpu.yaml`, enables Inductor's
 intermediate precision-cast emulation in both controls. Installed Torch's
 `_inductor/config.py` documents that ordinary fusion elides low-precision
 downcast/upcast pairs, whereas this option preserves eager rounding boundaries.
@@ -76,7 +76,7 @@ were 0.949228942/0.967125356 and gradient relative L2 was 0.143217. Sequence
 isolation still passed, and no updates ran. Compiled packing is therefore rejected
 under the fixed 0.05 gate for both tested compiler precision policies. The
 validated native eager mode is compared with matched eager adaptive padding in
-`experiments/monitoring_sequence_packing/bf16_eager_gpu.yaml`. Both controls retain
+`experiments/systems/monitoring_sequence_packing/bf16_eager_gpu.yaml`. Both controls retain
 the same checkpoint policy and native FlashQLA/convolution kernels, with Torch
 model compilation disabled. Any speed result from that condition is an eager
 comparison, not a comparison with the original compiled BF16 recipe.
@@ -252,7 +252,7 @@ The eager canaries use two training examples truncated for bounded kernel tests;
 their loss/gradient agreement is a systems check, not task-quality evidence.
 There is no held-out quality result. Full-campaign promotion still requires the
 frozen validation contract. Focused regressions passed: 122 tests, eight intentional unsupported
-policy skips. The [experiment README](../../experiments/monitoring_sequence_packing/README.md)
+policy skips. The [experiment README](../../experiments/systems/monitoring_sequence_packing/README.md)
 records hypotheses, gates, stop conditions, and executable configurations.
 
 ## Ordinary training integration

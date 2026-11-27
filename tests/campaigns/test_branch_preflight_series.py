@@ -3,12 +3,12 @@ import json
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.monitoring_branching import preflight_series
+from experiments.systems.monitoring_branching import preflight_series
 
 
 def config():
     c = OmegaConf.to_container(
-        OmegaConf.load("experiments/monitoring_branching/preflight.yaml")
+        OmegaConf.load("experiments/systems/monitoring_branching/preflight.yaml")
     )
     c.update(parity_parents=[0, 487], memory_parents=[])
     return c

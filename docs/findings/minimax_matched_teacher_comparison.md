@@ -59,7 +59,7 @@ follows from this diagnostic.
 
 ## Artifacts and reproduction
 
-- Config: `experiments/teacher_agreement/minimax.yaml`.
+- Config: `experiments/teachers/teacher_agreement/minimax.yaml`.
 - Frozen inputs: `results/teacher_agreement/minimax_m3_coreweave/manifest.json`.
 - Full 640-row cache (historical filename retained):
   `results/teacher_agreement/minimax_m3_coreweave_canary.jsonl`.
@@ -67,6 +67,6 @@ follows from this diagnostic.
   `results/teacher_agreement/minimax_m3_coreweave/comparison.json`.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.glm analyze \
-  --config experiments/teacher_agreement/minimax.yaml
+PYTHONPATH=src .venv/bin/python -m experiments.teachers.teacher_agreement.glm analyze \
+  --config experiments/teachers/teacher_agreement/minimax.yaml
 ```

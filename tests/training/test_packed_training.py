@@ -245,11 +245,13 @@ def test_smoke_reuses_frozen_inputs_and_runs_only_the_selected_recipe():
 
     import yaml
 
-    from experiments.monitoring_sequence_packing.default_recipe_smoke import smoke_job
+    from experiments.systems.monitoring_sequence_packing.default_recipe_smoke import (
+        smoke_job,
+    )
 
     config = yaml.safe_load(
         Path(
-            "experiments/monitoring_sequence_packing/default_recipe_smoke.yaml"
+            "experiments/systems/monitoring_sequence_packing/default_recipe_smoke.yaml"
         ).read_text()
     )
     profile = yaml.safe_load(Path(config["profile"]).read_text())

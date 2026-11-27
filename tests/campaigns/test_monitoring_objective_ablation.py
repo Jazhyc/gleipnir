@@ -4,14 +4,14 @@ from types import SimpleNamespace
 import pytest
 import torch
 
-from experiments.deception_distillation.train_student_sft import (
+from experiments.training.deception_distillation.train_student_sft import (
     action_endpoint_character_offsets,
     mil_token_positions,
     pool_mil_margins,
     select_evenly_spaced_positions,
     selected_completion_cross_entropy,
 )
-from experiments.monitoring_objective_ablation import prepare
+from experiments.training.monitoring_objective_ablation import prepare
 
 
 def test_action_endpoints_cover_xml_and_bracket_trajectories() -> None:

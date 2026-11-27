@@ -2,12 +2,12 @@
 
 from pathlib import Path
 
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 from gleipnir.monitoring_systems_screen import load_config, make_jobs, resolve_paths
 
-CONFIG = Path("experiments/b200_training_throughput/config.yaml")
+CONFIG = Path("experiments/systems/b200_training_throughput/config.yaml")
 WARM_CONFIG = CONFIG.with_name("warm_config.yaml")
 FA4_CONFIG = CONFIG.with_name("fa4_config.yaml")
 

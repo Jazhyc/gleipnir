@@ -40,7 +40,7 @@ def check(config):
 def prepare(config):
     from transformers import AutoTokenizer
 
-    from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+    from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
         QWEN_NON_THINKING_ASSISTANT_SUFFIX,
         render_margin_prompt,
     )
@@ -116,7 +116,7 @@ def server_command(config, output, *, bf16, model):
         command = bf16_command(command, data["gleipnir_frost_fp4"])
     else:
         command[command.index("--worker-cls") + 1] = (
-            "experiments.filtered_fp4_baseline.compiler_repair_worker.TypedCoordinateWorker"
+            "experiments.teachers.filtered_fp4_baseline.compiler_repair_worker.TypedCoordinateWorker"
         )
         data["serving_condition"].update(
             mxfp8_validation="results/filtered_fp4_compiler_repair/native02.json",
@@ -135,8 +135,8 @@ def server_command(config, output, *, bf16, model):
             },
         )
         for path in [
-            "experiments/filtered_fp4_baseline/compiler_repair.py",
-            "experiments/filtered_fp4_baseline/compiler_repair_worker.py",
+            "experiments/teachers/filtered_fp4_baseline/compiler_repair.py",
+            "experiments/teachers/filtered_fp4_baseline/compiler_repair_worker.py",
             "src/gleipnir/serving/mxfp8_compile_compat.py",
         ]:
             data["gleipnir_frost_fp4"][path] = file_hash(ROOT / path)

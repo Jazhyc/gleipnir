@@ -16,7 +16,7 @@ checkpoint tokenizer, and freeze exact source/window lineage before timing.
 Every prompt is exactly 2,048 tokens; each pass processes 655,360 input tokens.
 Labels are removed because cropping does not preserve their meaning. This is an
 artificial systems workload, not monitor quality or observed production traffic.
-See [the experiment contract](../../experiments/b200_context_scaling/README.md).
+See [the experiment contract](../../experiments/serving/b200_context_scaling/README.md).
 
 Use the same ordered windows at all eight levels, one excluded warmup and three
 timed repeats per level with fresh HTTP pools. Closed-loop request latency
@@ -85,7 +85,7 @@ reference warm and persistent compiler/kernel caches intact.
 ## Adopted long-context stack (paired control, 2026-10-15)
 
 The same frozen 320 windows (`twok01/workload.json`, SHA-256 `bf7a1252…`) were
-run through `experiments.b200_score_scaling.current --workload twok` on the
+run through `experiments.serving.b200_score_scaling.current --workload twok` on the
 EU-RO-1 B200 `GPU-e5eb9962…`, back to back:
 
 - `twok_stack01`: the adopted FP8/vLLM 0.31 default (trim, 8K GDN gate, lean

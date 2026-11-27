@@ -4,19 +4,21 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.adapter_capacity_scaling import run_lambda
-from experiments.adapter_capacity_scaling.benchmark_qlora import (
+from experiments.training.adapter_capacity_scaling import run_lambda
+from experiments.training.adapter_capacity_scaling.benchmark_qlora import (
     benchmark_job,
     validate_preflight,
 )
-from experiments.adapter_capacity_scaling.core import (
+from experiments.training.adapter_capacity_scaling.core import (
     DEFAULT_RANKS,
     balanced_lora_lanes,
     split_jobs,
     validate_ranks,
 )
-from experiments.adapter_capacity_scaling.run_lambda import Status
-from experiments.adapter_capacity_scaling.run_train import training_command
+from experiments.training.adapter_capacity_scaling.run_lambda import Status
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
 from gleipnir.qwen35_fast_training import (
     CAUSAL_CONV1D_PACKAGE,
     FLA_PACKAGES,
@@ -159,7 +161,7 @@ def test_runtime_environment_preserves_virtualenv_bin(monkeypatch) -> None:
 
 
 def test_capacity_config_uses_standard_qlora_and_fast_batch() -> None:
-    cfg = OmegaConf.load("experiments/adapter_capacity_scaling/config.yaml")
+    cfg = OmegaConf.load("experiments/training/adapter_capacity_scaling/config.yaml")
 
     assert cfg.student.quantization.enabled is True
     assert cfg.student.quantization.bnb_4bit_quant_type == "nf4"

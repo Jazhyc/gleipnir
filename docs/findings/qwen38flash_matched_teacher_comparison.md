@@ -75,7 +75,7 @@ charges is **$0.99619048584**; malformed or interrupted calls may add charges
 not represented by successful-row caches. Cache hits were automatic; none
 were assumed in the budget.
 
-- Config: `experiments/teacher_agreement/qwen38flash_prefill.yaml`.
+- Config: `experiments/teachers/teacher_agreement/qwen38flash_prefill.yaml`.
 - Complete root: `results/teacher_agreement/qwen38flash_alibaba_prefill/`.
 - `manifest.json` freezes original inputs, configuration and additional baselines.
 - `scores.jsonl` retains all 640 raw alternatives, normalized scores and usage.
@@ -83,6 +83,6 @@ were assumed in the budget.
 - Original stopped root: `results/teacher_agreement/qwen38flash_alibaba/`.
 
 ```bash
-PYTHONPATH=src .venv/bin/python -m experiments.teacher_agreement.glm analyze \
-  --config experiments/teacher_agreement/qwen38flash_prefill.yaml
+PYTHONPATH=src .venv/bin/python -m experiments.teachers.teacher_agreement.glm analyze \
+  --config experiments/teachers/teacher_agreement/qwen38flash_prefill.yaml
 ```

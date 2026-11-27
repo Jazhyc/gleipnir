@@ -2,7 +2,7 @@
 
 Prepared 2026-09-23. The user selected a subset-only campaign and a merged-BF16
 baseline; executable work now lives in
-[`experiments/local_inference`](../../experiments/local_inference/README.md).
+[`experiments/serving/local_inference`](../../experiments/serving/local_inference/README.md).
 
 ## Machine and environment
 
@@ -46,7 +46,7 @@ upstream inputs and verify identical prompt bytes before freezing a subset.
 The existing preparation chain starts with
 `prepare_qwen_reasoning_id_benchmark.py`, then `prepare_teacher_id_cache.py`,
 `prepare_distillation_id.py`, and the CoT removal in
-`experiments/id_cot_only_evaluation/prepare.py`. The last historical entrypoint
+`experiments/evaluation/id_cot_only_evaluation/prepare.py`. The last historical entrypoint
 also expects archived job metadata; do not run it blindly or rewrite historical
 configs merely to obtain the dataset. Model weights are also absent locally.
 
@@ -118,7 +118,7 @@ selected one pass throughout; no repeat-noise estimate is claimed. Macro
 pAUROC@20 is 0.860345 and macro AUROC is 0.958579 on this subset. Software
 thermal throttling was active in all 47 recorded first-pass samples, so this
 timing describes the workstation under its current cooling conditions.
-See the [experiment result](../../experiments/local_inference/README.md) for
+See the [experiment result](../../experiments/serving/local_inference/README.md) for
 parity checks, per-source metrics, retained artifacts, and startup fixes.
 
 The user subsequently selected a 32-row stratified slice for iteration. Its
@@ -267,7 +267,7 @@ and the experiment README. Completed 2026-09-24 local time.
 A CUDA 12.8 SM89 probe executed native signed INT4 x INT4 with INT32 accumulation
 on the RTX 4080. SASS contains `IMMA.16864.S4.S4`; all 128 outputs in each of five
 constant-matrix cases matched exact signed references, including -8 operands.
-The checked-in `experiments/local_inference/int4_smoke.cu` reproduces the probe.
+The checked-in `experiments/serving/local_inference/int4_smoke.cu` reproduces the probe.
 This is instruction feasibility, not an optimized GEMM or judge benchmark.
 
 Installed vLLM 0.24.0's registry, online schemes, and compressed-tensors dispatch
@@ -302,7 +302,7 @@ and experiment README. The existing model artifacts remain unchanged.
 
 ## Real-activation quantization-method screen
 
-All proposed families were tested in `experiments/int4_calibration/`: eight
+All proposed families were tested in `experiments/quantization/int4_calibration/`: eight
 calibration and four held-out short trajectories disjoint from iteration32 and
 the original canaries, capturing 256 token positions at six MLP projections
 (layers 0,16,31). Bounded Transformers capture used the Torch gated-delta fallback;
@@ -328,7 +328,7 @@ timing was recovered without repetition after a validation failure.
 FP8 remains the measured end-to-end option; native INT4 has speed potential but
 needs further error reduction and integration validation. No new judge AUROC
 pass or promotion. Full evidence, limitations, recipes and reproducible commands:
-`experiments/int4_calibration/README.md` and
+`experiments/quantization/int4_calibration/README.md` and
 `results/int4_calibration/comparison.json`.
 
 ## W4A16 versus FP8 kernel screen (2026-09-24)
@@ -359,6 +359,6 @@ thermal slowdown); no repeat-based uncertainty estimate. Do not interpret
 small differences between group sizes as robust.
 
 Evidence: `results/local_inference/w4a16_kernel/result.json`; reproducible
-command and protocol in `experiments/local_inference/README.md`. Original
+command and protocol in `experiments/serving/local_inference/README.md`. Original
 serving artifacts and defaults remain unchanged. The saved script checksum
 precedes final formatting-only string wrapping and a lint suppression.

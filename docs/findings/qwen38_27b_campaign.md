@@ -9,7 +9,7 @@ over the unadapted 27B (0.8869) and +2.6 over the same-seed 4B student
 (0.8959). Against the best 4B seed (0.9142) the margin is within 4B seed
 variation. The gain is concentrated in Gloom exfiltration (0.887); Test STRIDE
 (0.957) stays below the 4B seeds. See the
-[experiment](../../experiments/qwen38_27b_campaign/README.md).
+[experiment](../../experiments/training/qwen38_27b_campaign/README.md).
 
 On the frozen OOD suite it reaches **0.9087 Mean-OOD pAUROC@20**, level with
 its teacher Kimi K3 (0.9084) and +1.9 points over the unadapted 27B (0.8901):
@@ -21,12 +21,12 @@ points above the 4B students (0.777–0.813). One seed; the 4B OOD seed SD is
 Scored under the full teacher prompt instead of the student prompt it was
 trained on, the same checkpoint reaches 0.9420 ID (CoT-removed) and **0.9352 Mean-OOD**
 pAUROC@20, mostly from SHADE-Arena (0.730 vs. 0.588); see
-[vocab distillation](../../experiments/gleipnir27b_vocab_distillation/README.md).
+[vocab distillation](../../experiments/teachers/gleipnir27b_vocab_distillation/README.md).
 Its optimized-serving frontier score, 0.9508, has a source-label-stratified
 row-bootstrap 95% interval of [0.941, 0.960] (SE 0.005). That excludes seed
 variation (one seed) and serving precision: BF16 scores 0.016 lower, almost
 all on SHADE-Arena, whose five task pairs make its score task-dependent. See
-the [bootstrap receipts](../../experiments/optimized_gap/README.md#bootstrap-intervals-2026-11-01).
+the [bootstrap receipts](../../experiments/serving/optimized_gap/README.md#bootstrap-intervals-2026-11-01).
 
 The run took 4.5 h of training on one B200, plus about 45 minutes for merge,
 parity and ID scoring and 46 minutes for OOD scoring. Training loss converges

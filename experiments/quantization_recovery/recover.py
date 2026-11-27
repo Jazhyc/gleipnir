@@ -17,7 +17,9 @@ from gleipnir.data.monitoring import file_hash, write_json
 def main():
     root = Path.cwd()
     config = yaml.safe_load(
-        (root / "experiments/quantization_recovery/config.yaml").read_text()
+        (
+            root / "experiments/quantization_recovery/config.yaml"
+        ).read_text()
     )
     check(config)
     output = root / "results" / config["experiment"]

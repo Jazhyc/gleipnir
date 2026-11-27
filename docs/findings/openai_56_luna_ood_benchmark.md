@@ -55,9 +55,9 @@ generator or conversation lineages or establish paired model differences.
 
 ## Frozen interface and audit
 
-The [configuration](../../experiments/openai_monitoring_ood/config_56_luna.json)
+The [configuration](../../experiments/evaluation/openai_monitoring_ood/config_56_luna.json)
 records the hypothesis, intervention, baselines, held-out selection, and stop
-conditions before calls. The [README](../../experiments/openai_monitoring_ood/README.md)
+conditions before calls. The [README](../../experiments/evaluation/openai_monitoring_ood/README.md)
 records commands and the completed-format recovery amendment.
 
 - Frozen input: `data/tool_trajectory_monitoring/teacher_ood_benchmark/prompts.jsonl`;

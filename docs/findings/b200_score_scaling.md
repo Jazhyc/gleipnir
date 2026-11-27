@@ -17,7 +17,7 @@ EU-RO-1 B200. Preserve native Gigatoken/direct FROST, FP4 MLP/projections, MXFP8
 prefill, BF16 operands/KV and FP32 gates/state, exact two-row BF16 classifier,
 causal LAST pooling, chunked prefill, prefix caching off, 32768-token budget and
 128 engine-sequence cap. These are client concurrency levels; the engine cap
-is not varied. See [the experiment](../../experiments/b200_score_scaling/README.md).
+is not varied. See [the experiment](../../experiments/serving/b200_score_scaling/README.md).
 
 Use the same frozen full320 order, prompts, labels and 1,310,581 input tokens at
 every concurrency. Earlier quick64/c1 measurements are a different cohort.

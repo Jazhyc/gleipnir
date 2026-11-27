@@ -3,7 +3,7 @@
 import pytest
 import torch
 
-from experiments.monitoring_sequence_packing import audit_cpu
+from experiments.systems.monitoring_sequence_packing import audit_cpu
 from gleipnir.packed_sequences import (
     aux_readout_positions,
     collate_packed_monitoring,
@@ -92,7 +92,7 @@ def test_truncation_keeps_the_continuation_whole() -> None:
 
 
 def test_aux_continuation_feature_validates_alignment_and_label() -> None:
-    from experiments.deception_distillation.train_student_sft import (
+    from experiments.training.deception_distillation.train_student_sft import (
         aux_continuation_feature,
     )
 

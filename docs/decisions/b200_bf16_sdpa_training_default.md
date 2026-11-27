@@ -10,7 +10,7 @@ User selection, 2026-10-16: train in BF16 with SDPA attention.
 
 **Final-layer trim.** Layer 31 runs its query, attention output, MLP and
 norms only at packed decision positions, while still producing every token's
-K/V ([experiment](../../experiments/b200_training_trim/README.md)).
+K/V ([experiment](../../experiments/systems/b200_training_trim/README.md)).
 - **Speed.** On the 320-row benchmark, against a same-GPU control (4.924 s),
   updates take 5.3% less time (4.663 s) and peak memory is 3.8 GiB lower.
 - **Exactness.** It is not bitwise. Decision logits can differ by one BF16
@@ -33,7 +33,7 @@ This supersedes the
 Completed campaigns keep their recorded profiles and receipts.
 
 **Evidence.** Teacher precision factorial on the strict-filtered data
-([results](../../experiments/teacher_precision_factorial/README.md)):
+([results](../../experiments/teachers/teacher_precision_factorial/README.md)):
 - BF16/SDPA (three seeds) has the best ID ranking.
 - FA4 lowers OOD macro pAUROC@20 under both MLP precisions (−3.4 / −7.6
   points).

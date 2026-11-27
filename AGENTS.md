@@ -51,8 +51,9 @@ the mandatory reading set; retain the context needed to apply each instruction.
 ## Project Structure
 
 Reusable library code belongs in `src/gleipnir/`. Put each hypothesis in
-`experiments/<short_name>/` with a README, configuration, entrypoint, and focused
-tests. Shared Slurm launchers live in `cluster/slurm/`; remote infrastructure
+`experiments/<category>/<short_name>/` (categories in the
+[experiments index](experiments/README.md)) with a README, configuration,
+entrypoint, and focused tests. Shared Slurm launchers live in `cluster/slurm/`; remote infrastructure
 tools live in `scripts/`. Store raw or materialized inputs under `data/`, outputs
 under `results/<experiment>/`, and runtime logs under `logs/<platform>/<experiment>/`.
 Those artifact trees are ignored by Git.

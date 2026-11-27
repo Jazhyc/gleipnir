@@ -1,7 +1,7 @@
 # Judge-targeted preference continuation
 
 Date: 2026-10-03. Experiment:
-[`experiments/judge_injection_continuation/README.md`](../../experiments/judge_injection_continuation/README.md).
+[`experiments/injection/judge_injection_continuation/README.md`](../../experiments/injection/judge_injection_continuation/README.md).
 
 The regular full-data 4B adapter avoids otherwise preferred answers carrying
 judge-targeted injections. Continuing on balanced preference examples removes

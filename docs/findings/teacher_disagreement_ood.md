@@ -8,7 +8,7 @@ does not improve over the released model. No promotion or OOD tuning occurred.
 
 ## Fixed comparison
 
-The [follow-up contract](../../experiments/teacher_disagreement_ood/README.md)
+The [follow-up contract](../../experiments/teachers/teacher_disagreement_ood/README.md)
 evaluates only the final strict delta-zero checkpoint from the
 [ID sweep](teacher_disagreement_filtering.md): 7,836 retained monitoring rows
 after removing 852 teacher/source-label disagreements, one epoch, seed 0,

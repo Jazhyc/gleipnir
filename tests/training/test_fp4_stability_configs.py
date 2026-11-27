@@ -29,7 +29,7 @@ import pytest
 def test_frozen_mechanism_preserves_scoring_and_artifact_identity(
     source, target, flag, value
 ):
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / f"{source}.json").read_text())
     candidate = json.loads((root / f"{target}.json").read_text())
     assert candidate.pop("output") != original.pop("output")
@@ -53,7 +53,7 @@ def test_frozen_mechanism_preserves_scoring_and_artifact_identity(
 def test_mlp_fp8_scheduler_screen_preserves_precision_and_scoring(
     name, budget, sequences, repeats
 ):
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / "fp8_mlp_b8192_s2.json").read_text())
     candidate = json.loads((root / f"{name}.json").read_text())
     assert candidate.pop("output") != original.pop("output")
@@ -74,7 +74,7 @@ def test_mlp_fp8_scheduler_screen_preserves_precision_and_scoring(
     ],
 )
 def test_precision_confirmation_changes_only_output_and_repeats(source, target):
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / f"{source}.json").read_text())
     candidate = json.loads((root / f"{target}.json").read_text())
     assert candidate.pop("output") != original.pop("output")
@@ -84,7 +84,7 @@ def test_precision_confirmation_changes_only_output_and_repeats(source, target):
 
 
 def test_selective_down_precision_uses_frozen_calibration_ranking():
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / "gptq_down_fp8_triton.json").read_text())
     candidate = json.loads((root / "gptq_selective_down8.json").read_text())
     selection = candidate.pop("precision_selection")
@@ -105,7 +105,7 @@ def test_selective_down_precision_uses_frozen_calibration_ranking():
 
 
 def test_gdn_per_channel_screen_changes_only_gdn_precision():
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / "fp8_mlp.json").read_text())
     gdn = json.loads((root / "fp8_mlp_gdn_channel.json").read_text())
     assert gdn.pop("output") != original.pop("output")

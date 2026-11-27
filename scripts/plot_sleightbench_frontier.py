@@ -1,7 +1,8 @@
 """Plot the SleightBench cost frontier for the technical report.
 
 Reads ``results/sleightbench_eval/frontier.json`` (written by
-``python -m experiments.sleightbench_eval.frontier``) and draws it in the style
+``python -m \
+    experiments.evaluation.sleightbench_eval.frontier``) and draws it in the style
 of the report's OOD frontier, with the 3% cost tolerance. Only the
 committed-use Gleipnir rows are plotted, with one frontier; the base models
 the superseded pplx-decider v1.2 and Jev 1.13, and GPT-5.5 are left out

@@ -26,4 +26,4 @@ Keep runtime finite/missing-gradient guards and new adapter-specific serving
 parity. Collect and verify weights, scores and logs before shutting down.
 No publication or additional billable capacity is requested.
 
-See the [protocol](../../experiments/monitor_injection_augmentation_9b/README.md).
+See the [protocol](../../experiments/injection/monitor_injection_augmentation_9b/README.md).

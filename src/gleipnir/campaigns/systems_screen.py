@@ -712,7 +712,7 @@ def run_training_job(
     command = [
         sys.executable,
         "-m",
-        "experiments.tool_trajectory_monitoring.run_distillation_train",
+        "experiments.training.tool_trajectory_monitoring.run_distillation_train",
         "--jobs",
         jobs_path.as_posix(),
         "--job-name",

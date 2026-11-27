@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_partial_checkpointing.core import (
+from experiments.systems.monitoring_partial_checkpointing.core import (
     CANDIDATE_CHECKPOINT_POLICY,
     CANDIDATE_CHECKPOINTED_LAYERS,
     CANDIDATE_NAME,
@@ -14,11 +14,13 @@ from experiments.monitoring_partial_checkpointing.core import (
     validate_jobs,
     validate_training_metadata,
 )
-from experiments.monitoring_partial_checkpointing.prepare import make_jobs
-from experiments.monitoring_selective_checkpointing.core import (
+from experiments.systems.monitoring_partial_checkpointing.prepare import (
+    make_jobs,
+)
+from experiments.systems.monitoring_selective_checkpointing.core import (
     EXPECTED_CHECKPOINTED_LAYERS,
 )
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -119,7 +121,7 @@ def test_summary_rejects_sub_one_percent_gain(tmp_path: Path) -> None:
 
 def test_config_freezes_eight_steps_and_memory_ceiling() -> None:
     config = json.loads(
-        Path("experiments/monitoring_partial_checkpointing/config.json").read_text()
+        Path("experiments/systems/monitoring_partial_checkpointing/config.json").read_text()
     )
     assert config["optimizer_steps"] == 8
     assert config["maximum_preflight_allocated_gib"] == 72.0

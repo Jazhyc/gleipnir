@@ -1,0 +1,735 @@
+# B200 MLP/GEMM optimization
+
+The user-selected warmed native FP4 MLP baseline is now available in ordinary
+training as `qwen35_4b_b200_fp4_mlp`, also selected by `qwen35_4b_b200_default`.
+Use the normal Trainer/launchers; benchmark monkeypatch flags are unnecessary.
+The BF16 comparison is `qwen35_4b_b200_bf16_fa4`. Preserve historical strict
+loss/gradient failures alongside the selected finite receipt and shared caches.
+See [the integration decision](../../../docs/decisions/b200_native_fp4_training_recipe.md).
+
+Hypothesis: merging the two frozen gate/up GEMMs and compiling the complete
+LoRA MLP, or fusing the GEMMs/LoRA adds/SwiGLU with cuDNN, reduces full MLP
+forward-plus-backward time and then complete FA4 training update time.
+Keep the original BF16 frozen base, FP32 rank-128/alpha-256 adapters, native
+causal variable-length FA4 4.0.0b33, all 24 FlashQLA GDN layers, no model
+checkpointing, logical batch 32 and the 16,384-token packing budget.
+
+First compare the actual PEFT module contract with nonzero synthetic adapters
+using the cached Qwen3.5-4B configuration. Compare eager, compiled eager,
+merged gate/up, compiled merged gate/up and cuDNN LoRA-aware forward fusion.
+Include all adapter matmuls, casts and backward operations in step timings;
+report forward separately. The merged frozen-weight copy is prepared once,
+retained as a nonpersistent buffer and explicitly counted as extra memory.
+The original masters, state-dict names and frozen parameters are untouched.
+cuDNN fusion must add both adapter updates before SwiGLU and preserve the
+BF16 rounding boundaries. Its initial backward uses ordinary BF16 GEMMs and
+SiLU backward, rather than claiming a fused native training backward.
+
+Use alternating measurement order, six warmups and ten timed repetitions at
+193, 4,096 and 16,384 tokens. Require finite outputs, input and all six adapter
+gradients, output relative L2 <= 1%, and each gradient relative L2 <= 1% versus
+the actual eager PEFT MLP. Include an independent row-isolation check. Stop a
+candidate on compile failure, nonfinite/missing gradients, failed arithmetic,
+OOM, or ten-minute timeout, and preserve its receipt. Pilot weights are seeded
+synthetic tensors: these are diagnostic timings, not checkpoint quality tests.
+
+The default decoder shells already compile MLP operations. Compiled merged
+and cuDNN candidates therefore time against a compiled PEFT MLP in the same
+process, with eager PEFT retained as the arithmetic reference. Only a passing
+candidate with at least 5% faster full forward/backward against this compiled
+control at 4,096 and 16,384 tokens advances to a bounded full-model screen. Freeze the
+same 320-row cohort and initial adapter used by the recorded FA4 control;
+run at most 20 updates, ten warmup and ten measured. A changed MLP requires
+fresh packing/isolation/memory gates, with strict 5% packing results separate
+from the user-accepted 10% FA4 gradient ceiling. Preserve original failed
+strict receipts and reject missing/nonfinite gradients before updates.
+Compare exact physical partitions/tokens against the historical FA4 control
+and require >= 5% lower complete-update time to recommend follow-up.
+No held-out selection, teacher requests, final-test access or default promotion.
+
+Use the user-authorized NC2 B200 and retained network volume/compiler caches.
+Outputs: `results/b200_mlp_gemm/`; logs: `logs/runpod/b200_mlp_gemm/`.
+There is no in-chat scheduling tool; inspect startup/progress during the active
+turn without promising checks after the turn ends. Keep BF16 FA4 as the default
+until results support a change. Native source is the existing isolated NVIDIA
+cuDNN Frontend revision `51d9d06b574222378a3d806009accab098e73705`.
+
+## Native FP4 dense-GEMM screen
+
+The next hypothesis is that native NVFP4 forward **and input-gradient** GEMMs
+can reduce the dominant frozen-base matrix cost after leaving QLoRA, including
+the activation packing/scaling overhead that the previous forward-only FP4
+screen did not offset. Probe the merged gate/up and down projections and their
+transposed input-gradient projections at actual 4B geometry (2560 / 9216), with
+193, 4096 and 16384 tokens. Synthetic seeded weights and activation/gradient
+operands are used; these are not whole-MLP or training-update measurements.
+
+Use the retained pinned NVIDIA cuDNN Frontend/FROST overlay and Torch runtime.
+Weights use global FP32 scaling plus E4M3 scales shared over 16x16 tiles, with
+nearest-even E2M1 packing from the original BF16 tensors in both orientations.
+Require exact agreement of the decoded forward/backward weight transpose.
+Activations and input-gradient operands use dynamic global scaling and per-row
+16-element E4M3 scales. Output is BF16. This bounded timing probe uses RNE for
+gradients; it does not claim Transformer Engine's stochastic gradient rounding,
+Hadamard transforms or full NVFP4 training recipe. FP32 adapter masters and the
+selected BF16 FA4 training recipe are unchanged.
+
+Compare paired ordinary BF16 GEMMs, native FP4 with prepacked operands, and
+native FP4 including all dynamic activation reductions, allocation, packing,
+scale swizzling, GEMM and output descaling. Pack frozen weights once; record
+its startup time and resident packed-pair bytes. Six warmups and ten alternating
+synchronized wall-time samples are used. Quantization is lossy: separately
+record original-BF16 error and require native-versus-decoded-operand relative
+L2 <=1%, finite outputs, and exact decoded weight-transpose consistency.
+These checks establish arithmetic implementation, not training quality or the
+existing strict 5% packed-gradient acceptance. No objective or tolerance changes.
+
+Stop on arithmetic failure or after the twelve shape/path cases, with a
+20-minute process cap. Advance to complete LoRA MLP integration only if at least
+one path improves by 5% at both long shapes with packing included. Any later
+full-model trial needs fresh precision/packing checks and the historical FA4
+control contract. No teacher calls or held-out selection occurs in this screen.
+
+After the first FP4 probe passes all twelve arithmetic checks but fails the
+speed threshold, the bounded optimized follow-up replaces the Torch global
+amax/inverse sequence with two Triton reductions. Check codes, block scales
+and inverse scale against the ordinary reduction before timing. Preserve the
+initial failed speed receipt. Also capture matched BF16 and FP4 paths in CUDA
+graphs, including the caller-to-static input copy in both replay timings. Check
+ordinary and changed-input FP4 replay against uncaptured execution so scales
+cannot become stale. Dynamic amax, packing, scale clearing, GEMM and output
+descaling remain inside capture. The same arithmetic limits, shapes, warmups,
+repetitions and 20-minute stop apply. Graph replay measurements are a bounded
+implementation feasibility result; integration with dynamically packed training
+is not established, and a graph-only speedup does not automatically authorize
+whole-model promotion or bypass full-MLP measurement.
+
+The final packing follow-up replaces tensor-wide activation amax with a per-row
+amax, block-scale computation and E2M1 packing in one Triton kernel. Tensor-wide
+scaling can make one packed example's quantization depend on another's values;
+per-row global inverse scales are applied in the BF16 output-descaling kernel.
+Frozen weight scaling remains global and 16x16. Record perturbing the first row
+by 31.7x and require exactly zero effect on all other rows before timing each
+path. Preserve earlier global-scaling receipts rather than attributing their
+speed to an already isolated training implementation. Repeat all twelve native
+arithmetic, finite, transpose and changed-input graph checks, with matched
+BF16/FP4 graph copies and full conversion included, under the same stop rules.
+Full LoRA MLP, autograd/compiler integration and packed model validation remain
+subsequent gates; these isolated native kernels do not change the default.
+
+A bounded chunked-row follow-up tests whether separating row amax reduction
+from block packing helps the wide 9216/18432-element operands. Keep identical
+per-row inverse scales, E4M3 scales and E2M1 codes; require bitwise equality of
+all three against fused-row packing before timing every case. Pack independent
+128-block chunks rather than carrying the whole padded row through quantization
+in one CTA. Record Triton register/spill metadata for both implementations to
+check the suspected register-pressure cost instead of attributing slowdown to
+launch count alone. Repeat the same twelve cases and graph/isolation gates with
+no promotion based on isolated GEMM timing.
+
+## Registered FP4 LoRA MLP integration
+
+Hypothesis: merging frozen gate/up FP4 forwards, using native FP4 base-input
+backward GEMMs, and keeping the ordinary compiled LoRA/SiLU operations can
+retain the isolated GEMM gains in complete MLP forward/backward. Register both
+native operators with fake implementations and explicit autograd; frozen base
+weights never receive gradients. Preserve all original BF16 base parameters,
+state-dict names, and FP32 adapter masters. Prepare packed forward/transposed
+weights lazily after CUDA placement, retain owners to prevent pointer reuse,
+and reuse immutable weights/plans across compatible calls. Do not retain an
+extra merged BF16 weight copy. Keep all activation/gradient scales per row.
+
+Use the same seeded nonzero adapter fixture, model geometry, 193/4096/16384
+rows, six warmups and ten alternating synchronized samples. Measure complete
+input and all six adapter gradients against compiled ordinary PEFT, first with
+ordinary dispatch and then symmetric whole-MLP forward/backward graph replay.
+Include caller input copies in both graph legs and all conversion, allocation,
+SwiGLU, adapter GEMMs/casts and backwards in candidate timings. Validate changed
+inputs and changed live FP32 adapter masters under replay. Do not cache adapter
+copies across updates. Compare native output/gradients to a decoded-operand
+FP32-matmul oracle using the identical registered gradient quantization contract,
+not to an unquantized derivative. Require <=1% output error, <=2% error for each
+of the seven gradients (a multilayer implementation check), finite nonmissing
+gradients and exactly zero cross-row output effect. Record original-BF16
+quantization errors separately. The existing strict 5% full-model packed-gradient
+and loss/isolation gates are unchanged; this 2% local oracle limit is not a
+training-quality acceptance or an extension of the FA4-specific 10% ceiling.
+
+Stop the integrated pilot on arithmetic/isolation failure, stale graph replay,
+missing gradients, OOM or a 30-minute process cap. Whole-MLP graph improvement
+must reach 5% at both long shapes before an ordinary twenty-update FA4 model
+screen; positive isolated GEMM timings are insufficient. A full-model trial uses
+the exact frozen 320 rows, targets, initial masters and physical contract of the
+historical FA4 control, with fresh precision/packing/memory checks. No repeated
+FA4 control is needed. Record startup/compiler reuse and every failed receipt;
+keep the standard BF16 FA4 profile unchanged pending complete evidence.
+
+The conditional full-model FP4 trial explicitly uses `reduce-overhead` decoder
+compilation to attempt the graph dispatch measured locally. This changes
+compilation mode as well as MLP arithmetic versus the historical FA4 control;
+any total-update difference is a combined recipe result, not an isolated FP4
+causal effect. Keep dynamic shapes and the same token/context envelope. Require
+the strict 5% fresh packing-gradient acceptance for this new precision, preserving
+the FA4-specific historical 10% record independently. A failed packing/memory/
+finite-gradient gate stops before optimizer updates; do not widen limits to
+obtain a speed result. Archive the native-runtime cache report even on failure.
+This session has no in-chat scheduling tool; monitor in the active turn and do
+not promise after-turn follow-ups.
+
+After the complete MLP pilot fails the 5% speed threshold, a bounded diagnostic
+profiles both matched 16,384-token whole-MLP graphs with ten replays per leg.
+Preserve the completed pilot rather than changing its selection rule. Retain
+all forward, input/adapter backward and caller-copy work and export raw CUDA
+traces plus kernel-name/duration histograms. Distinguish activation reduction,
+FP4 packing/scale clearing, output descaling, native dense GEMMs, ordinary
+adapter GEMMs and compiled elementwise work. Profiler duration sums describe
+instrumented GPU events; they are not replacements for synchronized wall-time
+samples, model-update timings or quality evidence. Stop after both traces or a
+30-minute cap; do not launch the conditional full-model screen on these data.
+
+Results: `integrate01/integrated` passes native arithmetic, all seven gradients,
+row isolation and changed-live-master replay, but saves only 1.56%/2.28% complete
+MLP graph time at 4096/16384 tokens. It is not selected for full-model training.
+The separate `integrateprofile01/integratedprofile` trace finds conversion takes
+1.39850 ms versus 0.70543 ms in native FP4 GEMMs at 16384 tokens. See
+[`docs/findings/b200_mlp_gemm.md`](../../../docs/findings/b200_mlp_gemm.md) for raw
+timings, profiler scope, numerical distinctions and receipt hashes. The BF16
+FA4 standard is unchanged; this is an explicit experimental integration.
+
+## Hardware packing follow-up
+
+Hypothesis: Blackwell's native nearest-even E2M1 conversion instruction reduces
+packing cost compared with the seven-comparison software encoder, preserving
+all quantized operands. The opt-in hardware path also writes padded E4M3 scale
+slots inside packing so a separate scale-buffer clearing launch is unnecessary.
+Keep identical per-row amax, block scales, weight pairs, native GEMM tiles,
+BF16 rounding and explicit input/adapter gradient contract. Do not change
+precision, global scale scope, adapter masters or the standard training recipe.
+
+Before measuring complete MLPs, require bitwise codes, scale blobs including
+padding, and row inverses against the retained software packer at 193/4096/16384
+rows and widths 2560/9216/18432. Include zero rows, signed zero, midpoint ties
+and changed-input replay. Record registers/spills and ten alternating pack-graph
+samples with copies after six warmups. Then run the existing complete-MLP gates
+and timing protocol with three same-process legs: compiled BF16 PEFT, compiled
+software-packed FP4, and compiled hardware-packed FP4. Require exactly unchanged
+native MLP output/all seven gradients versus software packing; retain the
+independent decoded oracle, isolation and live-master checks. Only >=5% faster
+complete MLP versus BF16 at both long shapes advances to fresh full-model gates.
+Stop on mismatch, missing/nonfinite gradients, replay failure, OOM or 30 minutes.
+Preserve failed receipts and do not replace historical wall time with profiles.
+
+A separate twelve-case epilogue probe adapts the existing pinned FROST graph,
+keeping its exact tile configuration, with a rowwise FP32 descale multiply.
+Declare the original raw GEMM tensor BF16 before multiplication, preserving its
+rounding even though that tensor becomes virtual. Reduce global memory traffic
+by preparing only one FP32 scale per row, then applying it in the GEMM epilogue.
+Use hardware packing in both candidate and reference; require bitwise outputs
+against the existing separately-descaled GEMM, finite/nonzero outputs, row
+isolation and changed-input replay before interpreting timings. Include all
+packing/scaling and symmetric input copies. Six warmups and ten alternating
+samples cover both orientations of both projections at all three row counts.
+Stop on a failed case or 30 minutes. These isolated timings cannot substitute
+for a complete-MLP or model-update screen, or promote a recipe.
+
+After the corrected fresh epilogue graph passes all twelve bitwise cases, test
+the combined registered-autograd MLP with four same-process compiled graph
+legs: BF16 PEFT, software FP4, hardware-packed FP4, and hardware packing plus
+row-descaling epilogues. Preserve the explicit BF16 rounding and quantized
+input-gradient contract. Repeat the nine packing gates, exact complete-MLP
+output/seven-gradient agreement against software FP4, decoded oracle, row
+isolation, live-master replay, six warmups and ten alternating synchronized
+samples at all three shapes. Only a complete passing candidate with >=5%
+gain over BF16 at both long shapes advances to fresh strict full-model gates;
+choose the better measured complete MLP candidate rather than add isolated
+path savings. Stop at 30 minutes or a failed gate and preserve prior receipts.
+
+Observed conversion follow-up: native packing preserves all nine operand
+fixtures bitwise, and the corrected NVIDIA row-descaling epilogue preserves all
+twelve projection fixtures bitwise. Their combined complete-MLP graph reduces
+time 18.54%/24.42% versus BF16 at 4096/16384 tokens, including forward and all
+input/adapter gradients. Ordinary dispatch remains slower than BF16.
+`fusedmlp01` therefore selects the combined opt-in path for `trainconv01`.
+The full-model attempt fails fresh eager packing parity (67.90% adapter-gradient
+relative L2 and loss drift above the existing bound), despite exact isolation,
+and stops before compilation, memory preflight or optimizer updates. No model-
+update speedup or training-quality equivalence is established. Preserve the
+failed receipts and retain BF16 FA4 as the standard. See the
+[finding record](../../../docs/findings/b200_mlp_gemm.md) for hashes and diagnostics.
+
+After the user explicitly accepts proceeding despite gradient disagreement,
+`training_screen --timing-authority TEXT` permits a separate native-FP4/FA4
+timing-only attempt with at most twenty fresh updates. Preserve strict and
+learning acceptance as false; record the quoted authority and waived loss/
+relative-gradient checks. Isolation, finite/missing-gradient checks, fresh
+compiled checks and longest-batch memory preflight remain mandatory. Compare
+ten measured updates after ten warmups with the checksum-bound historical FA4
+control; require exact initial master and physical partitions/tokens. Record
+the changed `reduce-overhead` compile mode as a confound in that comparison.
+Stop on isolation/finite/replay failure, OOM or twenty updates. Timing acceptance
+requires actual metadata for all 32 native forward/input-gradient MLPs and FP32
+masters; an ordinary BF16 FA4 recipe cannot use this waiver. No quality claim,
+held-out promotion or default change follows from this timing-only experiment.
+
+The first timing-only attempt reaches decoder graph compilation but fails on
+an overwritten graph output before any updates. Its retry marks one CUDA-graph
+iteration at each root-model physical forward, preserving decoder-segment
+outputs until backward completes. Keep all prior receipts, the same pilot and
+timing authority, and fresh compiled/isolation/memory checks. CPU hook tests
+cannot establish GPU replay correctness; require the retry to demonstrate it.
+
+The boundary retry advances through compiled no-grad execution but segfaults
+in native backward before updates. Preserve that failure and collect logs.
+The requested speed result is next measured with `--compile-mode default`,
+both conversion optimizations and the same timing-only authority and twenty-
+update contract. This matches the historical control's compile mode. Require
+all finite/isolation/memory checks, and report the ordinary-dispatch outcome
+even if it loses the complete-MLP graph pilot's gains.
+
+`traintiming03` completes twenty finite updates using `default` mode, with the
+same initial master and all physical partitions/tokens as the historical FA4
+control. The measured half averages 19.42944 seconds/update versus 4.08648,
+4.75x slower. Twenty-seven measured token shapes are new after warmup and
+conversion kernel compilation continues during measurement; report this as
+trajectory wall time, not fully warmed kernel speed. Both strict/learning
+packing receipts remain failed and explicitly accepted only for timing.
+Peak allocated memory is 148.31 GiB, and all saved adapter tensors are FP32.
+The local complete-MLP graph gains have not translated to this ordinary training
+recipe. Results/checkpoint/logs are collected and the B200 is idle; retain the
+opt-in implementations, negative receipts and BF16 FA4 default.
+
+## Exact-shape warmed timing
+
+User request, 2026-10-05: obtain warmed performance after the default-mode
+trajectory still specialized new shapes during measurement. Hypothesis: removing
+first-use compilation and native plan construction materially lowers complete
+FP4 update time. Use `training_screen --warm-shapes --compile-mode default`
+with the same explicit timing-only authority, initial adapter, 320-row cohort,
+twenty updates, physical partitions and historical BF16 FA4 control. Reuse all
+persistent cache namespaces. Do not alter precision, kernels, optimizer or packing.
+
+Before ordinary training, replay all twenty logical batches including full
+forward/backward without optimizer updates. Preserve global CPU/CUDA/Python/NumPy
+RNG state and the epoch-seeded loader, verify unchanged FP32 master hashes and
+empty optimizer state, and remove warmup records from training metadata. Repeat
+the sequence until a replay produces no new native plans, Triton JIT
+specializations, Dynamo graphs or Inductor graph-cache misses; require at least
+two passes and stop after three. Verify each warmup physical contract against
+the historical control. Record warmup costs separately from synchronized updates.
+Audit every actual update; claim warmed performance only if updates 11–20 show
+zero new plans/specializations/compiler graphs. Keep every sample, the existing
+finite/isolation/memory checks and failed strict parity. Stop on missing/nonfinite
+gradients, changed masters during warmup, shape-contract mismatch or persistent
+compilation. No held-out quality selection or default promotion occurs.
+
+Result: `warmed03` completes both replay passes and twenty actual updates.
+The second replay and all updates add zero native plans, Triton specializations,
+Dynamo graphs or Inductor graph-cache misses. Measured updates 11–20 average
+3.74480 seconds versus historical BF16 FA4's 4.08648 (8.36% less time), passing
+the five-percent speed rule. The final adapter is byte-for-byte identical to
+`traintiming03`, with all 256 tensors FP32; numerical acceptance remains timing-
+only. Warmup step durations total 204.84/73.96 seconds, separate from optimizer
+timings; the Trainer runtime includes warmup. All artifacts are collected and
+the GPU is idle. Retain failed launch receipts, the experimental path and the
+BF16 FA4 default; warmed timing does not establish full-corpus wall-time savings.
+
+## Current warmed full-model profile
+
+Profile the same native FP4/FA4 recipe on fixed actual optimizer updates 11, 15
+and 20 after exact-shape replay. Hypothesis: remaining cost is identifiable in
+native FP4 contractions, dynamic conversion, ordinary BF16 GEMMs, FlashQLA/GDN,
+FA4 and host dispatch. Use `--profile-updates --warm-shapes --compile-mode default`
+and the same twenty-update/320-row/master contract; no new BF16 control run.
+Reuse the checksum-bound `warmed03` startup diagnostics with original strict
+failures and timing-only acceptance preserved. Verify current hardware/software
+and native source identity; mark reused checks explicitly instead of repeating
+numerical and longest-batch probes. Actual updates retain finite/missing-gradient
+checks. Warm every actual batch until the replay adds no plans or specializations.
+
+Capture CPU/CUDA events without shapes/stacks/memory profiling. Include complete
+forward/backward, gradient checks/clipping and optimizer work. Export raw traces
+and operator/kernel histograms; distinguish summed kernel durations, the union
+of device intervals, host gaps and CPU synchronization/launch time. Keep opaque
+GEMMs and pointwise work unclassified when the trace cannot identify their model
+component. Do not treat CPU waits as additive to GPU time or infer an unprofiled
+breakdown from instrumented wall time. This run is diagnostic only: its timings
+cannot replace the completed 3.74480-second screen or promote the default.
+Stop on nonfinite/missing gradients, changed source/runtime, warmup failure,
+OOM or a 30-minute process cap. No held-out evaluation or teacher calls occur.
+Monitor during the active turn; there is no in-chat scheduling tool.
+
+Result: `warmedprofile01` completes twenty finite updates, with zero new plans,
+specializations or compiler graphs after the second warmup pass. All three
+selected CPU/CUDA traces are exported and collected. Pooled kernel shares are
+GDN 24.93%, ordinary GEMMs 20.17%, FA4 14.24%, frozen FP4 GEMMs 5.65% and
+dynamic FP4 conversion 4.31%. SiLU/fused pointwise work is left without module
+attribution; copies and unclassified kernels are reported separately. Traced
+updates launch 33,520–46,144 kernels and average 0.71491 seconds without device
+events (13.96% of their pooled device span). GDN/projection work and dispatch/
+copy overhead are better supported targets than further core FP4 contraction
+tuning alone. These are instrumented diagnostic shares, not a decomposition of
+the previous 3.74480-second unprofiled mean. The profile loss history and final
+FP32 adapter differ from `warmed03`; identical initial masters/batches do not
+establish exact trajectory replay. Preserve the original strict failures and
+BF16 FA4 default. See the [full findings](../../../docs/findings/b200_mlp_gemm.md).
+
+Analyze collected raw traces with:
+
+```bash
+python -m experiments.systems.b200_mlp_gemm.analyze_full_profile \
+  results/b200_mlp_gemm/warmedprofile01/warmed_profile
+```
+
+## Resident FP4 optimization worker
+
+User request, 2026-10-05: retain a live worker across compatible optimization
+trials, and use combined native FP4 MLPs with BF16 FA4 as the timing baseline.
+This is a systems-comparison baseline; historical strict numerical failures
+remain preserved and the general BF16 recipe is unchanged.
+
+Hypothesis: retaining the model, compiled runtime, FP4 plans and packed frozen
+weights removes repeated process setup and allows short matched experiments.
+Start one worker from the checksum-bound successful profiling launch contract.
+Verify input hashes and reuse the original timing-only validation reference.
+Prime the twenty logical batches once without updates; audit actual updates for
+new plans/specializations instead of doing a second complete replay. Each trial
+uses the same twenty updates, initial FP32 masters, RNG, fresh AdamW/scheduler
+state and exact historical physical batches. Retain caches across trials.
+
+The startup queue contains two uninstrumented FP4 baseline trajectories followed
+by one diagnostic trajectory with a shape-recording CPU/CUDA trace at update 15.
+Require the two baselines to reproduce loss/gradient logs and final-master hashes
+exactly before attributing subsequent work. Stop on nonfinite/missing gradients,
+master/contract/reset disagreement or preparation during measured updates.
+Each trial is bounded to twenty updates. The worker stays idle with the model
+resident after the queue completes. No teacher calls or held-out evaluation
+occur. This session has no in-chat scheduling tool; monitor during the active turn.
+
+Use the same session ID for subsequent submissions:
+
+```bash
+python -m experiments.systems.b200_mlp_gemm.resident_launch --session resident01 start
+python -m experiments.systems.b200_mlp_gemm.resident_launch --session resident01 status
+python -m experiments.systems.b200_mlp_gemm.resident_launch --session resident01 submit \
+  --id followup01 --variant baseline
+```
+
+Receipts/requests and the worker PID are under
+`results/b200_mlp_gemm/resident01/`; the live log is
+`logs/runpod/b200_mlp_gemm/resident01/worker.log`. Requests select baseline/profile
+variants or the checksum-bound experiment file `resident_candidate.py`.
+A candidate supplies an `intervention(trainer)` context manager and
+`validate(trainer)` targeted timing-validation receipt. Its source is archived
+per trial, and the context restores the baseline after execution. The worker
+reads candidate code at trial start, allowing compatible implementation changes
+without restarting the model process. Submission/status commands import only
+the stdlib and do not load Torch or Transformers. GEMM shape attribution identifies
+how much ordinary contraction time belongs to frozen GDN projections versus
+LoRA and other work before selecting the next implementation target.
+
+Result: `resident01` completes all three twenty-update trials and remains alive,
+idle, as PID `10916`. The two uninstrumented baselines average 3.65854/3.67101
+seconds per measured update and reproduce exact loss/gradient logs, physical
+partitions and final FP32 adapters. All sixty updates add zero plans,
+specializations or compiler graphs; only the first trial prepares shapes. The
+repeat takes 83.44038 seconds including adapter export, without preparation.
+
+GEMM shapes and forward/backward context identify frozen GDN projections as
+9.67% of summed kernel time and LoRA GEMMs as 6.62%; GDN scan/convolution/
+normalization contributes another 25.24%. The next practical GEMM candidate is
+large frozen GDN QKV/Z/output projections in NVFP4, sharing input packing where
+possible and retaining BF16 recurrence/small gate projections and FP32 gates/
+normalization. No candidate arithmetic has been introduced yet. The raw trace,
+adapters and receipts are collected; see the findings for hashes and limits.
+
+```bash
+python -m experiments.systems.b200_mlp_gemm.analyze_gemm_profile \
+  results/b200_mlp_gemm/resident01
+```
+
+## Resident GDN projection FP4 intervention
+
+Hypothesis: large frozen GDN contractions can use the existing NVIDIA NVFP4
+hardware-packing/fused-descaling kernels to improve complete-update time beyond
+the resident FP4 MLP baseline. Merge QKV and Z weights so their forward shares
+input packing and their backward uses one combined input-gradient contraction;
+also convert the frozen output projection. Leave small A/B projections, recurrent
+kernels, BF16 Q/K/V and FP32 gates/normalization unchanged. Preserve original
+BF16 weights and FP32 adapter parameter identities. A scoped context restores
+the baseline after the trial; no model reload or new GPU allocation occurs.
+
+The hot-loaded `resident_candidate.py` performs one matched first-logical-batch
+loss/adapter-gradient diagnostic against FP4 MLPs with BF16 GDN, then one
+twenty-batch forward/backward preparation pass for the changed kernels. Preserve
+masters, RNG, sampling and optimizer state, without optimizer updates. This is
+explicit finite timing acceptance, not numerical equivalence; report all loss/
+gradient differences and retain earlier strict FP4 failures. Actual updates
+must have finite/nonmissing gradients and the exact historical 147 partitions.
+Time twenty complete updates and compare updates 11–20 against both resident
+baseline means (3.65854/3.67101 seconds), retaining all samples. Select only if
+the mean is at least 2% faster than their pooled 3.66478-second reference and
+measured updates add zero plans/specializations/graphs. Otherwise retain the
+FP4 MLP/BF16 GDN baseline. No teacher calls or held-out promotion occurs.
+Stop on nonfinite/missing gradients, parameter/partition drift, OOM or a
+30-minute preparation/trial cap. If merged packing introduces a bottleneck,
+screen separate large projections in the same worker before rejecting the
+projection hypothesis; record each attempted implementation separately.
+
+The original `resident01/04gdnmerged` attempt fails before preparation/updates:
+the installer assumes a bound forward, while selective compilation installs a
+disabled wrapper and Transformers also wraps the underlying function with
+Accelerate hooks. The corrected installer handles both wrappers and preserves
+the disabled GDN boundary. Session `resident02`, PID `11905`, replaces the exited
+worker on the same GPU/caches, with two baseline resets and no repeated profile.
+The worker now records recoverable candidate errors and restores the baseline
+without exiting. Tests cover the real Transformers wrapper, disabled boundaries,
+parameter identities/restoration and unusable-CUDA rejection.
+
+Before the corrected candidate starts, designate the replacement worker's two
+baseline repeats as its matched timing reference. Apply the same 2% selection
+rule to their pooled mean; retain the prior worker's 3.66478-second reference as
+historical context. Replacing the worker changes process preparation and can
+affect timing even when the numerical recipe is unchanged.
+
+The corrected screen completes. The new pooled control is 3.67836 seconds per
+update; merged GDN FP4 takes 4.16069 seconds (+13.11% time), and separate GDN FP4
+takes 4.04658 seconds (+10.01%). All eighty actual updates are finite and fully
+warmed, with identical physical partitions. Both fail timing selection; retain
+FP4 MLPs/BF16 GDN/FA4. First-batch gradient differences are 117.84% and 137.15%,
+so neither is a numerical-equivalence result. Receipts and exact sources are in
+`results/b200_mlp_gemm/resident02/`; the worker remains idle and resident.
+See the [findings](../../../docs/findings/b200_mlp_gemm.md) for provenance and losses.
+
+Candidate preparation receipts can be reused only for matching executed library
+source, merge mode, worker PID, initial master and physical contract, following
+a completed fully warmed trial. `candidate_reuse.py` tests these identities;
+the reuse branch has not yet been exercised by a repeated GPU trial. Keep the
+historical candidate sources even when hot-loading a new intervention.
+
+The next investigated target is NVIDIA's BF16 width-four SiLU causal Conv1D
+training operation, already present in the pinned frontend. Its packed native
+route consumes `cu_seqlens`, not our current convolution's `seq_idx`. Reuse the
+existing packing offsets and preserve boundaries, layout and adapter gradients.
+No convolution integration or speed improvement is claimed yet.
+
+## Resident NVIDIA BF16 causal Conv1D screen
+
+Hypothesis: NVIDIA's native width-four SiLU convolution forward/backward can
+reduce complete-update time versus Dao causal-conv1d in the resident FP4-MLP,
+BF16-GDN/FA4 baseline. Replace only the 24 convolution calls, forwarding the
+existing CUDA int32 cumulative offsets. Preserve parameters, Accelerate hooks,
+the disabled GDN shell, sequence boundaries and all other arithmetic. The native
+route must fail closed for unsupported layout/dtype or missing packed metadata.
+Raise the scoped native plan capacities from 64/128 to 256 to retain this
+twenty-update shape envelope; restore settings and methods after the trial.
+
+Before timing, require finite independent FP32/Dao output/input-gradient relative
+L2 error at most 3%, with zero cross-example output/gradient leakage on a packed
+row including lengths 1, 2 and 3. On the first actual logical batch, require
+absolute loss difference at most 0.005 and adapter-gradient relative L2 at most
+5% versus the existing FP4 baseline. This is changed-kernel validation, not a
+repeat of FA4 or unchanged startup gates. Prepare the twenty actual shapes once
+without updates, preserving masters/RNG/data order. Abort on failed parity,
+nonfinite/missing gradients, parameter/physical-partition drift, OOM or thirty
+minutes of preparation.
+
+Run twenty complete updates from reset masters, compare updates 11–20 against
+the existing pooled 3.67836-second control, and retain every sample. Select only
+with at least 2% less time, zero native forward/backward compilations during
+measurement and the existing worker's zero plan/specialization/graph checks.
+Audit that every physical row invokes all 24 native convolutions, with autograd
+where inputs require gradients (the first frozen GDN is forward-only).
+No held-out quality promotion follows. Historical GDN projection experiments
+remain reproducible through `gdn_candidate.py` and their archived trial sources.
+
+The native isolated check passes, but `06nvidiaconv` fails the first full-model
+parity gate before updates. `07convdiagnostic` reproduces that failure while
+comparing each actual convolution with Dao; `08convpassthrough` returns Dao
+outputs/gradients through the new wrapper and exactly reproduces the control.
+Retain all three receipts (the passthrough uses a deliberate diagnostic stop).
+
+Before a separate `09convfinite` trial, restrict its objective to finite timing
+under the user's kernel-screen instruction. Reuse the checksum-bound failed
+parity, verified matching native sources/master/worker and independent canary;
+the first preparation loss must reproduce the recorded native loss exactly.
+Do not claim a new parity pass or permit quality/recipe selection. Prepare the
+twenty changed shapes once, retain all finite/missing-gradient checks, then
+measure twenty reset updates against the existing resident control. This trial
+can answer speed despite failed numerical equivalence; it cannot select a
+training replacement. The original 5%/0.005 gate and stopped trials remain.
+
+`09convfinite` prepares all twenty batches and verifies unchanged masters, then
+stops after its first finite update because the original audit wrongly expects
+autograd in the first frozen GDN. Its seven inference plus 161 autograd calls
+correctly cover seven physical rows. Preserve that audit failure. `10convwarm`
+fixes only the assertion and reuses the complete preparation receipt when
+native/integration sources, master and worker match and baseline restoration is
+verified. Do not repeat preparation. The new helper tests those identities and
+actual-update counters still verify native compilation convergence.
+
+Result: `10convwarm` completes twenty finite updates in the same worker without
+preparation replay. Updates 11–20 average 4.02959 seconds versus 3.67836 seconds
+for the pooled resident control, 9.55% more time; all ten are slower than their
+matched control steps. Every update adds zero native convolution compilations
+and zero existing compiler/plan misses. The numerical gate remains failed at
+113.75% adapter-gradient relative L2 despite tiny isolated convolution errors.
+Reject this kernel as a replacement in the current configuration. Keep Dao
+convolution and the resident FP4-MLP/BF16-GDN/FA4 baseline. The worker is left
+idle and alive; collected receipts retain failures, diagnostic stops and reuse
+references. See the findings for full numerical limits and exact checksums.
+
+## Resident CPU dispatch and dtype-copy screen
+
+Hypothesis: repeated GPU packing-metadata reads and avoidable normalization
+input copies reduce throughput of the existing resident FP4-MLP/BF16-GDN/FA4
+baseline. Screen CPU-prepared metadata first, then add direct BF16 input loading
+in the existing FP32 FLA normalization kernel. Arithmetic, boundaries, objective,
+147 physical rows, twenty updates and FP32 master adapters stay fixed. Keep
+finite/missing-gradient checks. The timing reference is the existing resident02
+control's pooled 3.67836 seconds/update; do not rerun the BF16/FA4 control.
+
+`training_hotpath_context` scopes and restores the metadata builder, FA4 router
+and optional normalization function. CPU lengths validate the layout once;
+FA4 skips device reads only for the original shared Q/K tensor with unchanged
+version and matching operands/max lengths. Untrusted/copied/mutated boundaries
+retain the original router's validation. CPU-built FlashQLA chunk metadata uses
+the pinned backend's existing prepared-varlen hook and chunk size. No upstream
+kernel source changes. FLA normalization still computes and outputs FP32 and
+retains its original BF16 recurrence boundary.
+
+Check one matched first logical batch against the restored baseline before
+updates: loss absolute difference <=0.005, adapter-gradient relative L2 <=5%,
+all gradients finite/present, exact physical contract and unchanged masters.
+Record bitwise gradient agreement separately. Reuse unchanged startup receipts.
+Do not replay all twenty model batches merely to prepare metadata; for the
+normalization intervention, prepare only changed dtype/autotune bins using its
+existing kernel. Audit compiler/plan convergence on actual updates 11–20.
+Select only with >=2% less measured mean time, preserving all samples. Stop on
+parity failure, nonfinite/missing gradients, partition/master drift, new
+preparation during measured updates, OOM or a thirty-minute trial cap.
+
+If timing supports selection or a regression needs diagnosis, capture one
+diagnostic update to verify the removed synchronization/copy operations,
+separately from uninstrumented timing. Profiled times do not establish speed.
+No held-out quality promotion
+or new BF16 numerical-equivalence claim follows. Keep the worker resident.
+
+The first metadata-only screen preserves exact gradients/final adapters but
+regresses to 3.97877 seconds/update. Direct BF16 normalization input fails the
+unchanged first-batch gate (loss difference 0.13402, gradient relative L2
+1.03411), so it stops before optimizer updates. Preserve that failed receipt.
+Investigate the regression with a bounded diagnostic adding nonblocking Trainer
+input transfers, whose blocking copies dominate traced host wait durations.
+Use the same stream and do not mutate/reuse CPU input storage during transfer;
+preserve Trainer's recursive input preparation and reject DeepSpeed. Compare
+against both the original control and metadata-only result. A subsequent
+uninstrumented timing screen is required before claiming a gain. Keep the
+first-batch strict gate and existing actual-update checks.
+
+The asynchronous-transfer diagnostic removes 209 of 268 stream synchronizations
+in update 15, but uninstrumented `14async` still takes 3.79490 seconds/update
+(3.17% more than the original control). It reuses `13hotprofile` validation in
+the same worker, with matching integration/installer/precision/input controls,
+initial masters and complete physical contract, instead of repeating that check.
+The profile's worker receipt incorrectly marks instrumentation false because
+the profiler was installed by the candidate; treat it as diagnostic and preserve
+the raw receipt with a separate analysis correction. Its timings are excluded.
+
+One final targeted normalization retry uses the FP32 baseline's exact cached
+reduction tiling for BF16 input/FP32 output, rather than allowing dtype-specific
+autotuning to choose another configuration. Scope and restore each cache entry;
+record the selected configurations. Repeat only the changed first-batch gate,
+then prepare changed normalization specializations if it passes. Failure still
+stops before updates. Do not assume matching tiling ensures numerical agreement.
+
+`15normfixed` reproduces the same failed loss/gradient values despite matching
+all fifteen resident FP32 launch configurations. It stops before updates and
+restores the baseline. This rules out dtype-specific launch-tiling selection
+as a sufficient fix, without identifying the source of numerical differences.
+To separate the two CPU interventions, run `16asynconly` with nonblocking Trainer
+inputs and the original GPU metadata builder/router/normalization. Keep the
+same first-batch strict gate, twenty reset updates, warmed audit and original
+timing/selection rule. This determines whether input-transfer changes help
+without the rejected metadata rewrite. No additional normalization retry follows.
+
+Result: `16asynconly` completes twenty finite warmed updates at 3.83429
+seconds/update (+4.24% versus control), with an exactly matching final adapter.
+All tested CPU variants fail the >=2% speed rule; both normalization variants
+stop on failed model parity. Retain the original baseline and resident worker.
+Sixty-five relevant CPU checks pass. Artifacts and the diagnostic instrumentation
+correction are collected; see the findings for the final accounting and limits.
+
+## Native grouped Q/K GDN screen
+
+Hypothesis: retaining 16 shared Q/K heads, instead of materializing 32 repeated
+heads before FlashQLA, removes head-copy traffic and duplicate normalization.
+The pinned native kernel already supports 32 value heads with 16 Q/K heads and
+reduces grouped gradients. Remove only the two upstream repeat calls, preserve
+Accelerate convolution hooks and the disabled GDN shell, original BF16 Q/K/V,
+FP32 normalization/gates, FP32 master adapters, weights and parameters. Reject
+cached decoding, which uses a separate recurrent kernel outside this screen.
+All 24 GDN layers change; FP4 MLPs, FA4, packing, inputs and losses remain fixed.
+
+Compare one actual first logical batch with the restored resident baseline:
+require absolute loss difference <=0.005, adapter-gradient relative L2 <=5%,
+finite/present gradients and unchanged initial masters/physical partitions.
+Retain any failed receipt and stop before updates on failed parity. Reuse
+unchanged startup checks and the existing pooled 3.67835565-second control;
+do not repeat FA4 controls or all twenty batches for preparation. Preserve RNG,
+optimizer/scheduler reset and the original 147 physical rows. If parity passes,
+run twenty updates and select only with >=2% less mean time on updates 11–20.
+Existing native-plan/Triton/Dynamo/Inductor counters and additional four native
+TileLang specialization-cache counters must remain unchanged during measurement.
+Stop on nonfinite/missing gradients, changed partitions/masters, measured
+preparation, OOM or thirty minutes without completing the bounded screen.
+The scoped intervention restores all forwards after success or failure; keep
+the worker and shared network-volume caches alive. No held-out promotion or new
+BF16 quality-equivalence claim follows from this systems screen.
+
+`17grouped` fails the first-batch gradient gate (18.0449% relative L2) while
+passing loss agreement (absolute difference 0.00267220). No updates occur and
+the baseline is restored. Preserve that receipt. A single targeted diagnostic
+maps grouped forward-normalization launches to the resident settings used for
+the corresponding expanded 32-head shape, keeping FP32 input/compute/output.
+Scope and restore each cache entry and the normalizer; keep the same numerical
+gate and stop before updates if it fails. This tests launch-setting effects,
+not an assumption that backward gradient reduction is equivalent.
+
+`18groupednorm` restores exact first-batch loss but still fails gradient parity
+at 17.5842%. It stops before updates. Under the user's earlier instruction to
+measure finite variants regardless of gradient differences, `19groupedfinite`
+is a timing-only continuation, retaining both failed strict receipts and
+excluding training/quality promotion. Reuse the matching diagnostic by checking
+worker PID, original FP32 master, integration source, installer AST, precision
+option, physical-contract agreement and baseline restoration; archive its hash.
+Do not repeat that numerical comparison or model preparation. Keep finite/
+missing-gradient checks, twenty reset updates, the >=2% timing selection and
+zero-preparation audit during measured updates. A timing gain alone cannot
+select this numerically failed implementation as a training replacement.
+
+`19groupedfinite` completes twenty finite updates but has new Triton
+specializations on measured updates 12, 14 and 19. Its 4.03276-second mean is
+not warmed and fails timing eligibility; retain the complete receipt and audit
+failure. `20groupedwarm` repeats only reset actual updates using the same
+diagnostic and now-prepared shapes, without a new numerical check or preparation
+replay. All five native TileLang caches are monitored, including group reduction.
+
+Also screen default grouped normalization settings as `21groupeddefault`, so
+the deliberately forced launch configurations used for diagnosis do not decide
+the efficiency of the original proposed native path. Restore original forward
+normalization dispatch, retain shared heads and every precision boundary, and
+record a targeted comparison under this final integration source. Preserve the
+strict 5% result separately from the explicitly finite timing-only acceptance.
+Run twenty reset updates with the same numerical/physical/compilation checks;
+reuse all existing native kernels and caches. Keep the original baseline if the
+warmed mean does not satisfy the >=2% timing rule; failed strict numerical
+agreement independently excludes training/quality promotion.
+
+Result: the fully warmed matched-settings repeat takes 3.68516 seconds/update
+(+0.185% versus the existing 3.67836-second control); default grouped settings
+take 3.70644 (+0.763%). Both have zero preparation on every actual update and
+preserve the 147 physical rows. Neither meets the >=2% timing gain. First-batch
+gradient differences remain 17.5842%/18.0449%, respectively, so no training
+replacement is selected. The matched repeat reproduces the earlier finite run's
+final masters and loss/gradient logs exactly. Keep the original baseline and
+resident worker; see the findings for failed checks, warm eligibility and limits.

@@ -1,7 +1,7 @@
 # Monitoring augmentation transfers partially to judge injection handling
 
 Date: 2026-10-04. Protocol:
-[augmented judge evaluation](../../experiments/augmented_judge_evaluation/README.md).
+[augmented judge evaluation](../../experiments/injection/augmented_judge_evaluation/README.md).
 
 The monitor-directed augmented adapters still avoid otherwise preferred answers
 carrying JudgeDeceiver injections. Augmentation improves this auxiliary outcome

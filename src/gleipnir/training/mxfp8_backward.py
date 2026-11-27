@@ -16,7 +16,9 @@ def forward_with_statistics(device: torch.device):
     from cudnn.frost.template_loader import load_template
     from cudnn.sdpa.fwd import SdpaFwdDslSm100, api_dsl
 
-    from experiments.filtered_fp4_baseline.compiler_repair import install_repair
+    from experiments.teachers.filtered_fp4_baseline.compiler_repair import (
+        install_repair,
+    )
     from gleipnir.nvidia_mxfp8_attention import _cudnn
     from gleipnir.serving import mxfp8 as serving
 

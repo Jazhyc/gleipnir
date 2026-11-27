@@ -31,7 +31,7 @@ The current worker is PID `11905` on the existing US-NC-2 B200, session
 health before reusing it in a future session; recorded PID alone does not prove
 the worker remains alive. No new billable capacity is implied by this preference.
 
-The control command is `experiments.b200_mlp_gemm.resident_launch`. Baseline and
+The control command is `experiments.systems.b200_mlp_gemm.resident_launch`. Baseline and
 GEMM-shape diagnostic requests are bounded to twenty updates. Candidate requests
 load the fixed experiment-owned `resident_candidate.py` file using a recorded
 source checksum; each trial archives the exact source and targeted validation

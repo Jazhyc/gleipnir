@@ -1,7 +1,7 @@
 # SDPA monitor replication of injection-direction interventions
 
 This review informed the user-authorized
-[small-fit replication](../../experiments/b200_injection_direction/README.md),
+[small-fit replication](../../experiments/injection/b200_injection_direction/README.md),
 completed on the current BF16 eager SDPA Lens scorer; its
 [findings](../findings/b200_injection_direction.md) own the current-model results.
 No intervention is selected

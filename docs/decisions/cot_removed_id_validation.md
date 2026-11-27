@@ -33,6 +33,6 @@ not establish that a model trained on reasoning-bearing inputs never relies on
 reasoning. Keep the six-source OOD evaluation outside selection.
 
 Evidence and reproduction:
-[CoT-only experiment](../../experiments/id_cot_only_evaluation/README.md),
+[CoT-only experiment](../../experiments/evaluation/id_cot_only_evaluation/README.md),
 [ID audit](../findings/id_assistant_prose_and_reasoning.md), and
 [OOD audit](../findings/ood_input_reasoning.md).

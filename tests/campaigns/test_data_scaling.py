@@ -4,7 +4,7 @@ import torch
 from safetensors import safe_open
 from safetensors.torch import save_file
 
-from experiments.classifier_throughput.core import (
+from experiments.serving.classifier_throughput.core import (
     median_scores,
     repeat_stability,
     score_parity,
@@ -12,19 +12,19 @@ from experiments.classifier_throughput.core import (
     token_length_summary,
     validate_config,
 )
-from experiments.data_scaling.core import (
+from experiments.training.data_scaling.core import (
     fit_bounded_power_law,
     nested_stratified_selections,
     record_identity,
 )
-from experiments.data_scaling.evaluate import balanced_smoke_records
-from experiments.data_scaling.rebase_adapters import (
+from experiments.training.data_scaling.evaluate import balanced_smoke_records
+from experiments.training.data_scaling.rebase_adapters import (
     DESTINATION_PREFIX,
     SOURCE_PREFIX,
     rebase_adapter,
     rebase_key,
 )
-from experiments.data_scaling.run_lambda import balanced_lanes
+from experiments.training.data_scaling.run_lambda import balanced_lanes
 
 
 def sample_records() -> list[dict[str, object]]:

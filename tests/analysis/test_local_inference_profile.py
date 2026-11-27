@@ -1,6 +1,6 @@
 """Profiling preserves precision, schedule, and custom quantizer registration."""
 
-from experiments.local_inference.profile import profiling_engine
+from experiments.serving.local_inference.profile import profiling_engine
 
 
 def test_profile_preserves_configuration_without_mutation():

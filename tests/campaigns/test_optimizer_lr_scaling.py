@@ -1,13 +1,15 @@
 import pandas as pd
 import pytest
 
-from experiments.adapter_capacity_scaling.run_train import training_command
-from experiments.optimizer_lr_scaling.core import (
+from experiments.training.adapter_capacity_scaling.run_train import (
+    training_command,
+)
+from experiments.training.optimizer_lr_scaling.core import (
     learning_rate_tag,
     paired_optimizer_lanes,
     validate_learning_rates,
 )
-from experiments.optimizer_lr_scaling.summarize import (
+from experiments.training.optimizer_lr_scaling.summarize import (
     CONTRAST_METRICS,
     paired_contrasts,
 )

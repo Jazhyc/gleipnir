@@ -182,8 +182,8 @@ def objective(out: Path) -> None:
 
 
 def mechanism(out: Path) -> None:
-    from experiments.probe_attention_maps.plot import id_logit_sd
-    from experiments.probe_attention_maps.segments import CLASSES
+    from experiments.probes.probe_attention_maps.plot import id_logit_sd
+    from experiments.probes.probe_attention_maps.segments import CLASSES
 
     maps = ROOT / "results/probe_attention_maps/maps01"
     summary = np.load(maps / "summary.npz")

@@ -33,11 +33,11 @@ development results unless otherwise stated.
 | Adding deception can interfere under the tested recipe | Adding all 13,149 deception rows to the selected MIL recipe reduces ID pAUROC to `0.876761`. | This also changes updates, schedule context and execution; it does not isolate a harmful effect of deception content. |
 | Available information differs between training and deployment | Confirmed reasoning occurs in 1,340/8,688 monitoring training examples. CoT-only removal changes released 4B ID pAUROC from `0.869194` to `0.850083`. | Train on the intended inputs. The audit is a lower bound on training reasoning exposure; the ablation is not a retraining result. |
 
-Sources: [duration](../../experiments/monitoring_duration/README.md),
-[data scaling](../../experiments/monitoring_id_scaling/README.md),
-[subset duration](../../experiments/monitoring_subset_duration/README.md),
-[MIL OOD protocol](../../experiments/monitoring_mil_ood/README.md),
-[mixed MIL protocol](../../experiments/monitoring_mil_mixture/README.md),
+Sources: [duration](../../experiments/training/monitoring_duration/README.md),
+[data scaling](../../experiments/training/monitoring_id_scaling/README.md),
+[subset duration](../../experiments/training/monitoring_subset_duration/README.md),
+[MIL OOD protocol](../../experiments/training/monitoring_mil_ood/README.md),
+[mixed MIL protocol](../../experiments/training/monitoring_mil_mixture/README.md),
 [training-input audit](../findings/training_input_reasoning.md), and
 [ID input ablations](../findings/id_assistant_prose_and_reasoning.md).
 The completed MIL OOD aggregate is in ignored artifact
@@ -202,22 +202,22 @@ test, not established evidence for Qwen monitoring or LoRA factor averaging.
 
 - Further broad optimizer, adapter-variant and generic regularization sweeps:
   earlier results provide limited support for large gains. See the
-  [structural screen](../../experiments/training_procedure_screen/README.md)
+  [structural screen](../../experiments/training/training_procedure_screen/README.md)
   and [migrated findings](../migrations/aletheia_distillation_findings.md).
 - Stronger or denser prefix supervision: sampled gains were modest and
   inconsistent; the existing prefix cache has unresolved numerical limitations
   and source-dependent teacher mismatch. All-prefix branching reached only
   `0.803823` ID pAUROC at matched allocated GPU time after visiting 336 parents.
   This rejects that implementation's compute efficiency, not a converged
-  all-prefix objective. See [prefix results](../../experiments/monitoring_prefix_supervision/README.md),
-  [branching results](../../experiments/monitoring_branching/README.md), and
+  all-prefix objective. See [prefix results](../../experiments/training/monitoring_prefix_supervision/README.md),
+  [branching results](../../experiments/systems/monitoring_branching/README.md), and
   [teacher agreement](../findings/matched_qwen_kimi_teacher_agreement.md).
 - Distillation temperature: on the BF16/SDPA recipe, KD T=2 and T=4 and
   teacher-target sharpening all lowered ID pAUROC@20 (−1.8 to −6.9 points).
   See the [temperature screen](../findings/distillation_temperature.md).
 - Hard-label anchoring: replicated internal deception gains did not establish
   broad external-transfer improvement. Label semantics can differ from the
-  monitoring rubric. See the [external comparison](../../experiments/aisi_lie_detection_transfer/README.md).
+  monitoring rubric. See the [external comparison](../../experiments/evaluation/aisi_lie_detection_transfer/README.md).
 - GRPO or generic pairwise ranking: historical RL results and prior pairwise
   overfitting reduce their priority. In the closest
   [deliberative-monitor paper](https://arxiv.org/html/2605.29601v1#S4.SS1),

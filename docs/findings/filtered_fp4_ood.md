@@ -2,7 +2,7 @@
 
 On 2026-10-13 the user authorized OOD scoring of the original strict-filtered
 FP4 MLP/BF16 FlashQLA/FA4 adapter, selecting BF16 serving only. The frozen
-[experiment contract](../../experiments/filtered_fp4_ood/README.md) evaluates
+[experiment contract](../../experiments/teachers/filtered_fp4_ood/README.md) evaluates
 two fixed passes over all 6,395 unchanged examples against cached filtered
 SDPA, released Gleipnir 4B and unfiltered references. Repeated use of this OOD
 suite and missing assistant prose remain disclosed; there is no selection or

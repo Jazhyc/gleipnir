@@ -1,6 +1,6 @@
 # Merged QAT training systems optimization
 
-The [screen](../../experiments/qat_training_optimization/README.md) optimizes the
+The [screen](../../experiments/quantization/qat_training_optimization/README.md) optimizes the
 completed [merged-weight QAD recipe](quantization_recovery.md), separately from
 the ordinary frozen-base FP4 training path. It uses the same authorized NC2 B200,
 pinned Torch 2.11 environment, shared compiler caches, strict-filtered 7,836-row

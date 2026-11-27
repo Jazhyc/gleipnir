@@ -9,7 +9,7 @@ promoted.
 
 ## Frozen intervention and controls
 
-The [experiment contract](../../experiments/activation_filter_training/README.md)
+The [experiment contract](../../experiments/injection/activation_filter_training/README.md)
 ranks all 4,344 harmless originals by trained-minus-base layer-20 projection onto
 the existing APPS unit direction. It removes 869 original identities and their
 augmented replacements, teacher rows and ledger entries together. Exact-content
@@ -87,7 +87,7 @@ in the campaign summaries and primary holdout receipt.
 ## Fixed-direction projection on the filtered checkpoint
 
 The user subsequently requests ablation of the original direction on the
-activation-filtered model. The [follow-up contract](../../experiments/activation_filter_projection/README.md)
+activation-filtered model. The [follow-up contract](../../experiments/injection/activation_filter_projection/README.md)
 freezes the original unit layer-20 axis at all layers/tokens, beta 1 and zero
 centers; no refitting or new layer/beta search. Fresh unedited and projected
 BF16 eager Lens scores use the same 591 held-out tasks / 8,218 rows per arm.
@@ -130,7 +130,7 @@ model's passing Lens server is left warm on port 8010; weights remain remote.
 ## Model-specific direction refit
 
 The user then authorizes fitting a direction on the filtered model itself. The
-[refit contract](../../experiments/activation_filter_refit/README.md) keeps the
+[refit contract](../../experiments/injection/activation_filter_refit/README.md) keeps the
 original 64-task / 896-row fitting population and 384 injected/neutral pairs,
 both labels, layer 20 and all-layer/all-token full-projection geometry. It uses
 the same resident Lens process and reuses its unedited/old-axis controls. Fresh

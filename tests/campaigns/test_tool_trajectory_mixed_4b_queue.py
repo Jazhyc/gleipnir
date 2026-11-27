@@ -1,9 +1,11 @@
 import os
 
-from experiments.tool_trajectory_monitoring.run_mixed_4b_after_scaling import (
+from experiments.training.tool_trajectory_monitoring.run_mixed_4b_after_scaling import (
     process_matches,
 )
-from experiments.tool_trajectory_monitoring.run_mixed_4b_lambda import recipe
+from experiments.training.tool_trajectory_monitoring.run_mixed_4b_lambda import (
+    recipe,
+)
 
 
 def test_process_match_is_bound_to_pid_and_marker() -> None:

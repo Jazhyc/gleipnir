@@ -179,7 +179,7 @@ successful control uses a separate frozen binding under
 `data/b200-augmented-bf16-id01/`, with predictions, summary, parity, native audit,
 paired comparison and `completion_audit.json` under
 `results/b200-augmented-bf16-id01/`. Its contract is in the
-[BF16 experiment README](../../experiments/b200_augmented_bf16_id/README.md).
+[BF16 experiment README](../../experiments/injection/b200_augmented_bf16_id/README.md).
 
 ## Matched BF16 MLP training with FA4
 
@@ -250,7 +250,7 @@ and preserves pinned-kernel Python paths; 24 focused checks and scoped Ruff pass
 The first CPU preparation was superseded before any GPU training to fix that
 launcher path issue. Preserve its binding under `b200-augmented-bf16-training01`;
 the completed run is `b200-augmented-bf16-training02` under results/data/logs.
-Its [experiment contract](../../experiments/b200_augmented_bf16_training/README.md)
+Its [experiment contract](../../experiments/injection/b200_augmented_bf16_training/README.md)
 and independent training, serving, reference and completion audits retain the
 comparison. The passing BF16-trained scorer stays warm on the existing B200.
 
@@ -315,7 +315,7 @@ Benchmark/control HTTP scoring takes 85.84/71.66 seconds for 8,207,435/7,132,518
 input tokens, or 95,608/99,529 input tokens/s and 60.39/54.84 requests/s. Request
 latency p50/p95 is 1.360/2.098 and 1.440/2.280 seconds. These are single-pass
 descriptive timings, with no inference recipe selection. The
-[APPS follow-up contract](../../experiments/b200_augmented_bf16_apps/README.md)
+[APPS follow-up contract](../../experiments/injection/b200_augmented_bf16_apps/README.md)
 is separate from the frozen training/ID run. Results/data/logs use
 `b200-augmented-bf16-apps01`; `completion_audit.json` retains independent checks.
 
@@ -404,7 +404,7 @@ Twenty-nine focused checks and scoped Ruff pass. The original BF16 scorer is
 retired with a receipt; all weights, cached controls and compiler caches remain.
 The passing optimized scorer stays warm on the existing NC2 B200. The selected
 regular checkpoint is unchanged; these results do not promote this adapter.
-The [optimized comparison contract](../../experiments/b200_augmented_bf16_optimized/README.md)
+The [optimized comparison contract](../../experiments/injection/b200_augmented_bf16_optimized/README.md)
 uses `b200-augmented-bf16-optimized01` under results/data/logs, with separate
 `id_completion_audit.json`, `apps_completion_audit.json`, native audit and
 `paired_populations.json` receipts.
@@ -507,7 +507,7 @@ and completes optimized scoring. Frozen contracts, failed receipts and complete
 predictions remain under their respective data/results/log trees; the final
 `completion_audit.json`, `collection_sha256.json` and immutable server-log
 snapshot preserve collection evidence. The
-[experiment contract](../../experiments/b200_augmented_judge/README.md) records
+[experiment contract](../../experiments/injection/b200_augmented_judge/README.md) records
 the A/B binding and explicit diagnostic scope. No adapter promotion follows.
 
 ## Historical augmented adapter on current BF16 ID
@@ -588,7 +588,7 @@ The former A/B scorer is retired with a receipt, and the passing historical
 BF16 0/1 scorer remains warm on the existing B200 with persistent caches intact.
 The selected regular checkpoint remains unchanged. Data/results/logs use
 `b200-historical-augmented-bf16-id01`; its
-[experiment contract](../../experiments/b200_historical_augmented_id/README.md)
+[experiment contract](../../experiments/injection/b200_historical_augmented_id/README.md)
 and `id_completion_audit.json` retain the numerical and provenance qualification.
 
 ## Historical augmented adapter on optimized ID: failed canary
@@ -614,7 +614,7 @@ component. Continuing requires a new explicit diagnostic exception for both
 MAE and correlation; previous adapters' exceptions do not transfer. No exception
 has been applied to this run. Artifacts use
 `b200-historical-augmented-optimized-id01`; the
-[frozen follow-up contract](../../experiments/b200_historical_augmented_optimized/README.md)
+[frozen follow-up contract](../../experiments/injection/b200_historical_augmented_optimized/README.md)
 retains the stop condition and matched controls. Twenty-six focused checks and
 scoped Ruff pass for the shared follow-up entrypoint and completion accounting.
 
@@ -673,7 +673,7 @@ pinned inputs match; three pinned base files are verified remotely. Twenty-seven
 focused tests, scoped Ruff and diff checks pass. Artifacts, immutable log snapshot
 and `id_completion_audit.json` are collected; the authorized diagnostic scorer
 remains warm on the existing B200, with no ECC errors and no capacity change.
-The [diagnostic configuration](../../experiments/b200_historical_augmented_optimized/diagnostic_config.yaml)
+The [diagnostic configuration](../../experiments/injection/b200_historical_augmented_optimized/diagnostic_config.yaml)
 preserves the separate exception and unchanged controls.
 
 ## Same-seed BF16/FA4 training repeat
@@ -726,7 +726,7 @@ with no training/scoring process resident and zero GPU ECC errors. The
 independent reuse audit verifies 371 collected checksums, 311 executed/current
 sources and 96 locally available pinned inputs; three base files are verified
 remotely. No held-out predictions were generated by this repeat. The
-[repeat contract](../../experiments/b200_augmented_seed_repeat/README.md),
+[repeat contract](../../experiments/injection/b200_augmented_seed_repeat/README.md),
 `training_repeat_audit.json` and `repeat_complete.json` bind the exact identity
 and explicit score reuse. Twenty-four campaign tests and diff checks pass.
 
@@ -828,7 +828,7 @@ diff checks pass. The initial audit's older exact head-dictionary schema was
 updated to check the additional decision-ID field explicitly, retaining its
 failed receipt. All merged weights stay on the B200. The passing BF16 scorer
 remains warm with zero ECC errors. Artifacts use `b200-augmented-sdpa-replay02`;
-the [replay contract](../../experiments/b200_augmented_sdpa_replay/README.md),
+the [replay contract](../../experiments/injection/b200_augmented_sdpa_replay/README.md),
 `independent_training_replay_audit.json`, `historical_adapter_identity.json`
 and `completion_audit.json` retain the scope and provenance.
 
@@ -888,7 +888,7 @@ Thirty focused tests, scoped Ruff and diff checks pass. Collection helpers were
 corrected to use the server receipt's log path and recognize the canonical
 training-row symlink; scoring and its frozen contract were unaffected.
 The scorer remains warm and healthy with zero ECC errors; merged weights stay
-on the B200. The [APPS contract](../../experiments/b200_augmented_sdpa_apps/README.md),
+on the B200. The [APPS contract](../../experiments/injection/b200_augmented_sdpa_apps/README.md),
 `completion_audit.json` and `paired_fa4.json` preserve full evidence. No defaults
 or promotion change.
 
@@ -912,7 +912,7 @@ Primary artifacts: `results/b200_augmented_training/`,
 `data/b200_augmented_training/`, `logs/runpod/b200_augmented_training/`.
 The diagnostic uses `results/b200-augmented-training-diagnostic01/` and a separate
 data/source binding. Its configuration and entrypoint are
-[diagnostic_config.yaml](../../experiments/b200_augmented_training/diagnostic_config.yaml)
-and [diagnostic.py](../../experiments/b200_augmented_training/diagnostic.py).
-The [experiment README](../../experiments/b200_augmented_training/README.md)
+[diagnostic_config.yaml](../../experiments/injection/b200_augmented_training/diagnostic_config.yaml)
+and [diagnostic.py](../../experiments/injection/b200_augmented_training/diagnostic.py).
+The [experiment README](../../experiments/injection/b200_augmented_training/README.md)
 retains the frozen original contract.

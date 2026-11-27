@@ -28,7 +28,7 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python -m experiments.tool_trajectory_monitoring.benchmark_qwen_ood \
-    --config experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json \
+python -m experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood \
+    --config experiments/training/tool_trajectory_monitoring/qwen27b_ood_benchmark.json \
     --output results/tool_trajectory_monitoring/qwen35_27b_teacher_ood \
     "$@"

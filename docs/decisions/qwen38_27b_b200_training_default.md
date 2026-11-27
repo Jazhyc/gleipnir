@@ -18,7 +18,7 @@ with only what the 27B needs changed:
 - `checkpointed_full_attention_and_linear_shell` compilation, compile-cache
   limit 128.
 
-**Evidence** ([experiment](../../experiments/qwen38_27b_training_speed/README.md)):
+**Evidence** ([experiment](../../experiments/systems/qwen38_27b_training_speed/README.md)):
 the ten-update packed benchmark, the same GPU, the same batches.
 - **Speed.** 24.99 s per update against 27.80 s with every layer checkpointed
   (−10.1%; every batch −9 to −12%). The trim gives −3.1% alone and the 12

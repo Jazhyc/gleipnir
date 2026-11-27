@@ -5,8 +5,11 @@ import json
 import numpy as np
 import pytest
 
-from experiments.fp4_inference import independent_analysis as analysis
-from experiments.fp4_inference.repeat_analysis import IDENTITY_FIELDS, ROW_FIELDS
+from experiments.serving.fp4_inference import independent_analysis as analysis
+from experiments.serving.fp4_inference.repeat_analysis import (
+    IDENTITY_FIELDS,
+    ROW_FIELDS,
+)
 
 
 def setup_runs(tmp_path, monkeypatch):

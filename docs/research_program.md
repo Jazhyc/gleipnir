@@ -20,7 +20,7 @@ targets and privileged evidence supervision.
 The completed tool-trajectory line uses Kimi K3 soft targets to train Qwen3.5
 students on agent trajectories. Gleipnir 4B and 9B are released research artifacts;
 see the [root README](../README.md) and
-[experiment contract](../experiments/tool_trajectory_monitoring/README.md).
+[experiment contract](../experiments/training/tool_trajectory_monitoring/README.md).
 The intended monitoring surface includes visible messages, commands, tool calls,
 outputs, edits and final reports. Historical inputs also contain identified
 private reasoning, so action-only claims require the input audits and cleanup

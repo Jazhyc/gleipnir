@@ -1,6 +1,6 @@
 """Keep typed reasoning distinct from prose and tool-output echoes."""
 
-from experiments.id_assistant_prose_audit.training_audit import (
+from experiments.evaluation.id_assistant_prose_audit.training_audit import (
     count_think_calls,
     typed_reasoning,
 )

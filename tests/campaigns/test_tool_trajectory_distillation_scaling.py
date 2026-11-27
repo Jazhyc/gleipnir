@@ -3,7 +3,7 @@ from collections import Counter
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.distillation_scaling import (
+from experiments.training.tool_trajectory_monitoring.distillation_scaling import (
     EFFECTIVE_BATCH_SIZE,
     MAX_LENGTH,
     PAPER_SCHEDULE,
@@ -11,25 +11,25 @@ from experiments.tool_trajectory_monitoring.distillation_scaling import (
     nested_count_selections,
     validate_jobs,
 )
-from experiments.tool_trajectory_monitoring.prepare_distillation_scaling import (
+from experiments.training.tool_trajectory_monitoring.prepare_distillation_scaling import (  # noqa: E501
     make_jobs,
 )
-from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (  # noqa: E501
     JOB_NAME as MIXED_4B_JOB_NAME,
 )
-from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (  # noqa: E501
     MODEL_ID as MIXED_4B_MODEL_ID,
 )
-from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (  # noqa: E501
     MODEL_REVISION as MIXED_4B_MODEL_REVISION,
 )
-from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (  # noqa: E501
     make_job as make_mixed_4b_job,
 )
-from experiments.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (
+from experiments.training.tool_trajectory_monitoring.prepare_mixed_4b_distillation import (  # noqa: E501
     validate_mixed_4b_jobs,
 )
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 

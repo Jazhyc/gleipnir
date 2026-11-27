@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.prepare_teacher_id_cache import (
+from experiments.training.tool_trajectory_monitoring.prepare_teacher_id_cache import (
     validate_id_rows,
 )
 

@@ -62,7 +62,7 @@ Receipt: `results/b200_mxfp8_fa4_feasibility/source_compatibility.json`;
 executed audit source: `results/b200_mxfp8_fa4_feasibility/executed_source.py`.
 The receipt records the upstream revision and SHA-256 hashes of seven inspected
 source/manifest files. The current recipe's shape is independently recorded in
-`experiments/b200_bf16_fa4/kernel_canary.py` and its completed native receipt.
+`experiments/systems/b200_bf16_fa4/kernel_canary.py` and its completed native receipt.
 
 Repeating each KV head four times could preserve GQA arithmetic through an
 MHA kernel, with additional storage, quantization and backward reduction cost;

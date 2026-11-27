@@ -6,7 +6,7 @@ for future training after a separate matched execution audit. See the
 measurements, selection and ETA below describe this earlier systems screen.
 
 Date: 2026-09-30 / 2026-10-01. Contract:
-[`b200_training_throughput`](../../experiments/b200_training_throughput/README.md).
+[`b200_training_throughput`](../../experiments/systems/b200_training_throughput/README.md).
 The user authorized short systems benchmarks on the existing B200, leaving the
 Pod running. No full training campaign or quality-based model selection occurs.
 
@@ -197,7 +197,7 @@ batching/FA4/half-checkpoint recipe is tested or recommended.
 
 The reusable profile is
 `src/gleipnir/configs/systems_screen/qwen35_4b_b200_fast.yaml`.
-`experiments/b200_training_throughput/selected_config.yaml` supplies the frozen
+`experiments/systems/b200_training_throughput/selected_config.yaml` supplies the frozen
 mixed-data, matched-control reproduction contract, still limited to ten updates.
 Its composed training fields, data, sample, objective, and graph bound were
 audited against both completed warmed conditions. The shared cache path retains

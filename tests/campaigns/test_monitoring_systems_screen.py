@@ -21,7 +21,9 @@ from gleipnir.monitoring_systems_screen import (
 def test_shared_compiler_cache_is_explicit_and_separate_for_each_gpu(
     tmp_path: Path,
 ) -> None:
-    config = load_config(Path("experiments/b200_training_throughput/config.yaml"))
+    config = load_config(
+        Path("experiments/systems/b200_training_throughput/config.yaml")
+    )
     paths = resolve_paths(config, result_dir=tmp_path / "results")
     assert compiler_cache_directory(config, paths, "control", 0) == (
         paths.result_dir / "compile_cache" / "control"

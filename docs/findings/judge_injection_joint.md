@@ -40,7 +40,7 @@ APPS remains excluded from training, data generation and sampler construction.
 Differences in optimizer updates, auxiliary exposure and learning rate limit
 causal attribution; no model promotion follows this exploratory comparison.
 
-Protocol: [experiment README](../../experiments/judge_injection_joint/README.md).
+Protocol: [experiment README](../../experiments/injection/judge_injection_joint/README.md).
 
 ## Startup verification
 

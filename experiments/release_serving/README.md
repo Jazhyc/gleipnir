@@ -246,7 +246,7 @@ metrics move by about 0.001.
 ## Image 1.0: larger 4B graphs and an effective Gigatoken (2026-11-16)
 
 User request. Both changes were measured in
-[serving_concurrency](../serving_concurrency/README.md).
+[serving_concurrency](../serving/serving_concurrency/README.md).
 
 - **Changes** (release code only; runtimes, kernels and receipts are 0.2's).
   - **4B CUDA graphs up to 4,096 tokens** (`targets.GRAPH_SIZES_4B`, added
@@ -313,7 +313,7 @@ User request. Both changes were measured in
 ## Image 1.1: B300 support (2026-11-16)
 
 User decision, 2026-11-16: let the image run on a B300, for flexibility. The
-[B300 trial](../serving_concurrency/README.md) found identical scores and no
+[B300 trial](../serving/serving_concurrency/README.md) found identical scores and no
 gain in cost.
 
 - **What changes.** Only `serve.py`, and only when `nvidia-smi` names a GPU
@@ -379,7 +379,7 @@ its entrypoint was overridden, which Runpod's GraphQL API cannot do.
   `PUBLIC_KEY` set: SSH reachable while the server starts, then the
   synthetic identity scores of both models against the 1.0 B200 rows
   (no ID passes). The same Pod runs the
-  [per-action prefix-caching replay](../prefix_caching_replay/README.md).
+  [per-action prefix-caching replay](../serving/prefix_caching_replay/README.md).
 - **Check result (`1.2-rc1`, digest `7725d8a0…`).** US-NC-2 Pod
   `ypx6hooyaa38zi` (B200 `GPU-ca5da4f7…`, driver 595.112.07, no volume),
   started with `/start.sh` through the new pass-through path: SSH came up

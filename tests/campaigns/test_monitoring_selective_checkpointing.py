@@ -1,15 +1,17 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_selective_checkpointing.core import (
+from experiments.systems.monitoring_selective_checkpointing.core import (
     EXPECTED_CHECKPOINTED_LAYERS,
     JOB_NAME,
     POLICY,
     summarize,
     validate_jobs,
 )
-from experiments.monitoring_selective_checkpointing.prepare import make_job
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_selective_checkpointing.prepare import (
+    make_job,
+)
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -61,6 +63,8 @@ def test_summary_requires_five_percent_gain() -> None:
 
 def test_config_matches_policy() -> None:
     config = json.loads(
-        Path("experiments/monitoring_selective_checkpointing/config.json").read_text()
+        Path(
+            "experiments/systems/monitoring_selective_checkpointing/config.json"
+        ).read_text()
     )
     assert config["gradient_checkpointing_policy"] == POLICY

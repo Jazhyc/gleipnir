@@ -2,12 +2,14 @@ from __future__ import annotations
 
 from pathlib import Path
 
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
     QWEN_NON_THINKING_ASSISTANT_SUFFIX,
     render_margin_prompt,
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 
 
 class FakeTokenizer:
@@ -33,7 +35,7 @@ def test_render_margin_prompt_uses_qwen_non_thinking_boundary() -> None:
 
 def test_frozen_qwen_config_uses_full_teacher_ood_contract() -> None:
     config = load_json(
-        Path("experiments/tool_trajectory_monitoring/qwen_ood_benchmark.json")
+        Path("experiments/training/tool_trajectory_monitoring/qwen_ood_benchmark.json")
     )
     validate_config(config)
     assert config["scope"]["rows"] == 6_395
@@ -46,7 +48,7 @@ def test_frozen_qwen_config_uses_full_teacher_ood_contract() -> None:
 
 def test_frozen_qwen4b_config_uses_full_teacher_ood_contract() -> None:
     config = load_json(
-        Path("experiments/tool_trajectory_monitoring/qwen4b_ood_benchmark.json")
+        Path("experiments/training/tool_trajectory_monitoring/qwen4b_ood_benchmark.json")
     )
     validate_config(config)
     assert config["model"]["id"] == "Qwen/Qwen3.5-4B"
@@ -63,7 +65,7 @@ def test_frozen_qwen4b_config_uses_full_teacher_ood_contract() -> None:
 
 def test_frozen_qwen27b_config_uses_full_teacher_ood_contract() -> None:
     config = load_json(
-        Path("experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json")
+        Path("experiments/training/tool_trajectory_monitoring/qwen27b_ood_benchmark.json")
     )
     validate_config(config)
     assert config["model"]["id"] == "Qwen/Qwen3.5-27B"

@@ -1,6 +1,6 @@
 # Direct Kimi K3 QAT
 
-The user selects [direct Kimi-target QAT](../../experiments/kimi_direct_qat/README.md)
+The user selects [direct Kimi-target QAT](../../experiments/quantization/kimi_direct_qat/README.md)
 from a fresh base-model adapter, rather than recovery from the trained BF16
 student. The frozen original zero-B rank-128/alpha-256 initialization is reused;
 its weight SHA256 is

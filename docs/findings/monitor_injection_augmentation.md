@@ -69,7 +69,7 @@ rows, preserving the original source behavior verdicts and cached Kimi soft
 targets. There are 3,475 injected views (1,738 harmless, 1,737 harmful) and 5,213
 clean views. Every trajectory is visited once; the matched run has 272 updates,
 one epoch, fresh rank-128 initialization and the regular 5e-5 learning rate.
-See the [protocol](../../experiments/monitor_injection_augmentation/README.md)
+See the [protocol](../../experiments/injection/monitor_injection_augmentation/README.md)
 and [decision](../decisions/monitor_injection_augmentation.md).
 
 Eight authored training templates in four families demand either 0 or 1,

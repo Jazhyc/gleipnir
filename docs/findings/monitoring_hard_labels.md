@@ -50,7 +50,7 @@ No agent scheduling capability exists in this session: startup can be inspected
 in the active turn, but automatic agent follow-ups after the turn are unavailable.
 Process persistence does not provide those follow-ups.
 
-See [the experiment contract](../../experiments/monitoring_hard_labels/README.md).
+See [the experiment contract](../../experiments/training/monitoring_hard_labels/README.md).
 
 ## First-cell startup diagnostics
 
@@ -204,7 +204,7 @@ reference and ID-result checksums, unchanged vLLM/Torch/GPU/GDN identities and
 explicit `performed_this_run=false` receipts. No new training or numerical
 canary is requested. Source provenance and zero training-lineage overlap were
 verified before launch; instructions and the strict OOD population are unchanged.
-See `experiments/monitoring_hard_labels/ood_config.yaml`. Completed results are
+See `experiments/training/monitoring_hard_labels/ood_config.yaml`. Completed results are
 recorded in `results/monitoring_hard_labels/ood_summary.json`.
 
 Launched on the existing B200 Pod `alzfug70g5237b` at 2026-10-03 00:13:57 UTC
@@ -287,4 +287,4 @@ fraction scored 0.9056 ID pAUROC@20 against 0.8978 for the soft-only control.
   did not advance.
 - Filtering appears to capture much of the original gain.
 
-See the [follow-up experiment](../../experiments/filtered_hard_labels/README.md).
+See the [follow-up experiment](../../experiments/teachers/filtered_hard_labels/README.md).

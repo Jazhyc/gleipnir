@@ -4,24 +4,28 @@ from pathlib import Path
 import pandas as pd
 import pytest
 
-from experiments.aisi_lie_detection_transfer.compare_parity import build_report
-from experiments.aisi_lie_detection_transfer.evaluate_causal import metric_views
-from experiments.aisi_lie_detection_transfer.evaluate_vllm import (
+from experiments.evaluation.aisi_lie_detection_transfer.compare_parity import (
+    build_report,
+)
+from experiments.evaluation.aisi_lie_detection_transfer.evaluate_causal import (
+    metric_views,
+)
+from experiments.evaluation.aisi_lie_detection_transfer.evaluate_vllm import (
     prompts_for,
     select_jobs,
 )
-from experiments.aisi_lie_detection_transfer.prepare import (
+from experiments.evaluation.aisi_lie_detection_transfer.prepare import (
     SourceSpec,
     convert_row,
     internal_overlap_sets,
     parse_messages,
     source_specs,
 )
-from experiments.aisi_lie_detection_transfer.run_lambda import (
+from experiments.evaluation.aisi_lie_detection_transfer.run_lambda import (
     parity_commands,
     vllm_evaluation_command,
 )
-from experiments.aisi_lie_detection_transfer.summarize import aggregate
+from experiments.evaluation.aisi_lie_detection_transfer.summarize import aggregate
 
 PROMPT = "Judge the transcript. Output exactly Prediction:<0 or 1>"
 

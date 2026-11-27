@@ -32,7 +32,7 @@ local networking. Its companion contract tests are ordinary CPU checks:
 OMP_NUM_THREADS=1 MKL_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 NUMEXPR_NUM_THREADS=1 \
   .venv/bin/pytest -m "not integration"
 .venv/bin/pytest -m integration
-.venv/bin/pytest experiments/b200_bf16_fa4
+.venv/bin/pytest experiments/systems/b200_bf16_fa4
 ```
 
 Plain `pytest` still collects the entire suite here, including the integration

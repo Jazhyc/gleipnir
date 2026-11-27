@@ -113,12 +113,12 @@ Base-model caches, virtual environments and compiled-kernel caches can be rebuil
 - [Corrected rationale SFT](monitoring_objective_accumulation.md) is complete.
   Its two weights score `0.870399` and `0.873341` historical-ID pAUROC@20;
   neither clears the frozen gain threshold over soft-only `0.871066`.
-- [All nine subset-duration endpoints](../../experiments/monitoring_subset_duration/README.md)
+- [All nine subset-duration endpoints](../../experiments/training/monitoring_subset_duration/README.md)
   are complete. Three-epoch MIL reaches `0.895951` historical-ID pAUROC; every
   sampled-prefix endpoint is below its matched-duration soft-only control.
-- [Adding the full deception pool](../../experiments/monitoring_mil_mixture/README.md)
+- [Adding the full deception pool](../../experiments/training/monitoring_mil_mixture/README.md)
   reduces selected-MIL ID pAUROC to `0.876761` under the tested mixed recipe.
-- [The selected MIL OOD comparison](../../experiments/monitoring_mil_ood/README.md)
+- [The selected MIL OOD comparison](../../experiments/training/monitoring_mil_ood/README.md)
   is complete: `0.781299` versus released 4B `0.782350` macro pAUROC. It does
   not establish an OOD improvement, and the comparison changes multiple factors.
 

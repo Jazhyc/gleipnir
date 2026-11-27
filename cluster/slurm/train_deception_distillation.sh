@@ -28,5 +28,5 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python experiments/deception_distillation/train_student_sft.py \
+python experiments/training/deception_distillation/train_student_sft.py \
   --config-path . --config-name config "$@"

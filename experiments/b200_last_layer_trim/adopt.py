@@ -18,8 +18,8 @@ from pathlib import Path
 
 from experiments.b200_attention_precision.startup import startup
 from experiments.b200_inference_benchmark.run import DATA, ROOT, write
-from experiments.b200_long_context.run import gpu
 from experiments.b200_monitor_score.run import trial
+from experiments.serving.b200_long_context.run import gpu
 
 SETTINGS = {"port": 8010, "timeout_seconds": 600}
 WORKLOADS = (("quick", 1, 3), ("full", 128, 3))

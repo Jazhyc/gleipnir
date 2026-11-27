@@ -10,7 +10,7 @@ selected. Retain larger graphs as a named diagnostic path.
 The user selected `mutation03` as the reference before this trial. Preserve its
 cached causal LAST pooling, exact two-row BF16 classifier, FP4 backbone,
 MXFP8 prefill, native Gigatoken/direct FROST bindings and validated mutation
-analysis. `experiments/b200_score_graphs` combines the existing graph and score
+analysis. `experiments/serving/b200_score_graphs` combines the existing graph and score
 worker load hooks; each audit runs once and the backbone loads once. Reuse the
 same thirteen capture buckets up to 32768, padding/producer-band guards and
 temporary profiling-cache fix described below. No new GPU capacity or timing

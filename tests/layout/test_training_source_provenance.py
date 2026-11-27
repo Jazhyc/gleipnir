@@ -7,7 +7,9 @@ from pathlib import Path
 
 import pytest
 
-from experiments.monitoring_branching.train import validate_smoke_sources
+from experiments.systems.monitoring_branching.train import (
+    validate_smoke_sources,
+)
 from gleipnir._compat import canonical_source_reference
 from tests.helpers.paths import ROOT
 

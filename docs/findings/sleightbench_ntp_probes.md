@@ -1,10 +1,10 @@
 # SleightBench: NTP activation probes, single pass
 
 2026-10-26. The frozen NTP probes of the
-[probe study](../../experiments/probe_generalization/README.md) (`full01`,
+[probe study](../../experiments/probes/probe_generalization/README.md) (`full01`,
 Qwen3.5-4B layer 15, bare trajectory, no instruction) were scored once on
 SleightBench's stripped view under the contract in
-[`experiments/probe_sleightbench`](../../experiments/probe_sleightbench/README.md)
+[`experiments/probes/probe_sleightbench`](../../experiments/probes/probe_sleightbench/README.md)
 (run `sbprobe01`). Each of the 86 transcripts got one full-length forward pass
 (up to 194K tokens) with no truncation. The parity gate reproduced the stored
 `full01` ID logits exactly (drift 0.0000 ID-SD).

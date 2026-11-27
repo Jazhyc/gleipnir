@@ -36,7 +36,7 @@ another call. None of the 3,343 typed reasoning blocks remain verbatim after
 cleanup. The original frozen prompt file and its hashes stay unchanged.
 
 The entrypoint, configuration and reproducibility details are in
-[the experiment README](../../experiments/id_assistant_prose_audit/README.md).
+[the experiment README](../../experiments/evaluation/id_assistant_prose_audit/README.md).
 Derived prompts are under `data/id_assistant_prose_audit/`; per-row token counts
 and the aggregate manifest are under `results/id_assistant_prose_audit/`.
 The reference full-input total is 34,631,573 tokens, exactly matching the prior
@@ -98,7 +98,7 @@ drop occurs under prose removal alone (no explicit think calls were found).
 The model was not retrained for the changed input distribution. No checkpoint
 or threshold was selected using these results, and OOD was not evaluated.
 
-Reproduce with `python -m experiments.id_action_only_evaluation.summarize` after
+Reproduce with `python -m experiments.evaluation.id_action_only_evaluation.summarize` after
 collecting predictions; see the experiment README for the frozen protocol.
 Cleaned predictions SHA-256:
 `fe22e5a3a8ffca61d9b3ada08e0589d673e147778e81dedaf0c8379da35606d5`.
@@ -118,6 +118,6 @@ originally. The much smaller Gloom change is consistent with inference variation
 This confirms sensitivity to identified reasoning on STRIDE, while showing that
 the broader removal's decline cannot be assigned wholly to private CoT. It does
 not measure a model retrained on cleaned inputs. See the
-[CoT-only experiment](../../experiments/id_cot_only_evaluation/README.md) for
+[CoT-only experiment](../../experiments/evaluation/id_cot_only_evaluation/README.md) for
 per-source diagnostics and preservation checks, including retention of visible
 text copies identical to reasoning blocks.

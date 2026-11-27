@@ -14,7 +14,7 @@ parameter updates. The original gradient gate and selected recipe are unchanged.
 
 The user explicitly authorized fixed-physical-batch eager/compiled gradient
 comparisons, actual clipped AdamW updates, and ten matched optimizer steps.
-The [predeclared contract](../../experiments/b200_adaptive_microbatching/README.md#authorized-gradient-actual-update-and-ten-step-execution-audit)
+The [predeclared contract](../../experiments/systems/b200_adaptive_microbatching/README.md#authorized-gradient-actual-update-and-ten-step-execution-audit)
 allows this bounded diagnostic to proceed despite the failed earlier parity
 screen. It does not authorize promotion, full training, or held-out selection.
 

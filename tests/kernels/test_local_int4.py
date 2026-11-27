@@ -2,7 +2,7 @@
 
 import torch
 
-from experiments.local_inference.int4_bench import unpack
+from experiments.serving.local_inference.int4_bench import unpack
 
 
 def test_unpack_signed_nibbles_and_row_boundaries():

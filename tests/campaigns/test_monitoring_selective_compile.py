@@ -1,15 +1,15 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_selective_compile.core import (
+from experiments.systems.monitoring_selective_compile.core import (
     COMPILE_POLICY,
     EXPECTED_COMPILED_LAYERS,
     JOB_NAME,
     summarize,
     validate_jobs,
 )
-from experiments.monitoring_selective_compile.prepare import make_job
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_selective_compile.prepare import make_job
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -88,6 +88,6 @@ def test_summary_requires_five_percent_gain() -> None:
 
 def test_config_matches_policy() -> None:
     config = json.loads(
-        Path("experiments/monitoring_selective_compile/config.json").read_text()
+        Path("experiments/systems/monitoring_selective_compile/config.json").read_text()
     )
     assert config["selective_torch_compile_policy"] == COMPILE_POLICY

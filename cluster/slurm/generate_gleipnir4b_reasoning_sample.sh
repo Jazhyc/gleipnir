@@ -28,4 +28,4 @@ export HF_HUB_CACHE="${HF_HUB_CACHE:-${HF_HOME}/hub}"
 export HF_DATASETS_CACHE="${HF_DATASETS_CACHE:-${HF_HOME}/datasets}"
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python -m experiments.tool_trajectory_monitoring.generate_gleipnir4b_reasoning_sample "$@"
+python -m experiments.training.tool_trajectory_monitoring.generate_gleipnir4b_reasoning_sample "$@"

@@ -217,7 +217,7 @@ def mxfp8_long_context(root: Path, config: Any, text: Any, gpu: str) -> dict:
 
     The 4B 1M envelope (``experiments/b200_context_million/envelope.py``)
     changes only the descriptor/producer bound; its receipt here comes from
-    ``experiments/qwen38_27b_serving/mxfp8_envelope.py`` at the served heads.
+    ``experiments/serving/qwen38_27b_serving/mxfp8_envelope.py`` at the served heads.
     """
     from experiments.b200_context_million.envelope import CHUNK, enable, validate
     from gleipnir.serving import mxfp8
@@ -308,7 +308,7 @@ class Mxfp8AttentionMixin:
 class TunedGemmMixin:
     """Install receipt-selected FROST FP4 tiles at the served model's shapes.
 
-    The receipt (``experiments/qwen38_27b_serving/fp4_gemm_tune.py``) is bound
+    The receipt (``experiments/serving/qwen38_27b_serving/fp4_gemm_tune.py``) is bound
     through ``--additional-config`` ``fp4_gemm_tuning``; arithmetic is the same
     cuDNN graph as the untuned plan, recompiled with a pinned tile.
     """

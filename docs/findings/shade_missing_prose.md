@@ -104,7 +104,7 @@ omission was found for MLE in the available representation; this does not certif
 its completeness against original producer traces. Any correction should audit
 all affected sources, not assume only the 850 SHADE rows require new scoring.
 
-Run `python -m experiments.ood_reasoning_audit.shade_prose`. Ignored
+Run `python -m experiments.evaluation.ood_reasoning_audit.shade_prose`. Ignored
 `results/shade_prose_audit/` contains the census, full message-indexed content
 evidence, pinned original source snapshots, revision trees and checksums.
 The source hash, row identities/count and empty rendered bodies are checked;

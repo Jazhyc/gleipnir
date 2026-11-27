@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood import (
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood import (  # noqa: E501
     BatchScoringError,
     RequestStartLimiter,
     completion_payload,
@@ -15,13 +15,15 @@ from experiments.tool_trajectory_monitoring.benchmark_qwen_openrouter_ood import
     score_batch,
     validate_config,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 
 
 def frozen_config() -> dict:
     return load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen27b_compact_openrouter_ood_benchmark.json"
         )
     )
@@ -30,7 +32,7 @@ def frozen_config() -> dict:
 def qwen35b_a3b_config() -> dict:
     return load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen35b_a3b_darkbloom_ood_benchmark.json"
         )
     )
@@ -39,7 +41,7 @@ def qwen35b_a3b_config() -> dict:
 def qwen35b_a3b_mixed_config() -> dict:
     return load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "qwen35b_a3b_parasail_ood_benchmark.json"
         )
     )
@@ -243,7 +245,7 @@ def test_batch_failure_preserves_successful_paid_rows(monkeypatch) -> None:
         return {"id": record["id"], "score": 0.25}
 
     monkeypatch.setattr(
-        "experiments.tool_trajectory_monitoring."
+        "experiments.training.tool_trajectory_monitoring."
         "benchmark_qwen_openrouter_ood.score_one",
         fake_score_one,
     )

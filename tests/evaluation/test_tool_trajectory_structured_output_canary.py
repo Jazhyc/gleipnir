@@ -4,7 +4,7 @@ import hashlib
 
 import pytest
 
-from experiments.tool_trajectory_monitoring.structured_output_canary import (
+from experiments.training.tool_trajectory_monitoring.structured_output_canary import (
     compare_paired_scores,
     prepare_paired_prompts,
 )

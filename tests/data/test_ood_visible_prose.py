@@ -6,7 +6,7 @@ import json
 
 import pytest
 
-from experiments.ood_visible_prose.restoration import (
+from experiments.evaluation.ood_visible_prose.restoration import (
     calls,
     restore,
     restore_cua,

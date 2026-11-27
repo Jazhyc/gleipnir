@@ -5,7 +5,7 @@ at concurrency 1 without OOM after extending the attention envelope and fixing
 the pinned pooling scheduler's final-token reservation. Median warmed latency
 is 3.60 seconds and input throughput 72,795 tokens/s. The original selected
 server's 32K limit and the failed first 256K attempt remain recorded separately.
-See [the experiment contract](../../experiments/b200_long_context/README.md).
+See [the experiment contract](../../experiments/serving/b200_long_context/README.md).
 
 ## Contract and serving changes
 

@@ -72,8 +72,8 @@ Teacher input SHA-256:
 Student input SHA-256:
 `ee2baa18a5d36cda8f9d66df642b6f3c106f92ae8ce2813acca36fa9f0e4acd2`.
 
-Run `python -m experiments.ood_reasoning_audit.run`. The
-[experiment README](../../experiments/ood_reasoning_audit/README.md) defines the
+Run `python -m experiments.evaluation.ood_reasoning_audit.run`. The
+[experiment README](../../experiments/evaluation/ood_reasoning_audit/README.md) defines the
 scope and checks. Ignored `results/ood_reasoning_audit/summary.json` records
 counts and source hashes; `rows.jsonl` records all marker/overlap evidence for
 review. Three focused parser/location tests and Ruff pass.

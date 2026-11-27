@@ -315,9 +315,9 @@ async def run() -> None:
     await replace(c, out, parent, "restored", c["trained_model"])
     await gate("restored", "adapter")
     if c.get("population") == "original_clean_all":
-        from experiments.b200_training_clean_direction.analyze import analyze
+        from experiments.injection.b200_training_clean_direction.analyze import analyze
     else:
-        from experiments.b200_training_direction.analyze import analyze
+        from experiments.injection.b200_training_direction.analyze import analyze
 
     analyze(out, ROOT, c)
     write_json(out / "closure_info.json", await info())

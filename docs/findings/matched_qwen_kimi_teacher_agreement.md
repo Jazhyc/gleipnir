@@ -1,7 +1,7 @@
 # Matched Qwen 3.5 27B and Kimi K3 teacher agreement
 
 2026-09-06. Complete diagnostic; not a held-out model-selection experiment.
-Implementation: `experiments/teacher_agreement/`, initial commit `f2ab8ef`.
+Implementation: `experiments/teachers/teacher_agreement/`, initial commit `f2ab8ef`.
 
 ## Contract and validation
 

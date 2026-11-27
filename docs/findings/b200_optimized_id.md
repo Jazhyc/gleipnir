@@ -21,7 +21,7 @@ IDs, labels, source lineage, source/rendered prompt hashes and tokenizer counts
 match the original predictions. There are 33,750,959 prompt tokens, mean
 11,205.5, maximum 29,513. No truncation, threshold fitting, training, ID tuning,
 OOD evaluation or quality promotion. See the
-[experiment contract](../../experiments/b200_optimized_id/README.md).
+[experiment contract](../../experiments/serving/b200_optimized_id/README.md).
 
 Use the selected native Gigatoken/direct FROST scorer with FP4 MLPs and large
 GDN/full-attention projections, direct FP4 SwiGLU output, MXFP8 full-attention
@@ -131,7 +131,7 @@ merged checkpoint, network volume, caches and historical evidence remain intact.
 
 The user requested continuous admission on 2026-10-08. Refill request slots as
 responses complete, reuse one HTTP pool and persist results through an
-asynchronous journal. The [experiment contract](../../experiments/b200_optimized_id/README.md#continuous-admission-comparison)
+asynchronous journal. The [experiment contract](../../experiments/serving/b200_optimized_id/README.md#continuous-admission-comparison)
 defines input/adapter-bound recovery, durability and failure handling.
 
 Freeze the grouped `id02` artifacts in `continuous.json`, use one new full pass

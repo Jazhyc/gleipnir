@@ -35,11 +35,11 @@
 - Gleipnir 27B needs no QAD: optimized serving costs it nothing measurable
   (`−0.0025` under the student prompt, `+0.0156` under the teacher prompt).
   QAD effort goes to Gleipnir 4B, which loses `0.0529` under optimized
-  serving ([optimized gap](../experiments/optimized_gap/README.md)).
+  serving ([optimized gap](../experiments/serving/optimized_gap/README.md)).
 - Update, same day: Gleipnir 4B v0.3 (v0.2 plus QAD) is entered at its
   optimized-serving score, `0.7703` (BF16 `0.8039`). QAD recovered 98% of the
   ID loss but 23% of the OOD loss
-  ([QAD](../experiments/qad_v02/README.md)).
+  ([QAD](../experiments/quantization/qad_v02/README.md)).
 
 ## 2026-10-20 — Evaluate Gleipnir 27B under the full teacher prompt
 
@@ -49,11 +49,11 @@
 - Evidence: under the teacher prompt the same checkpoint reaches 0.9420 CoT-removed
   ID and 0.9352 Mean-OOD pAUROC@20, against 0.9216 and 0.9087 under the
   student prompt. The prompt was chosen on ID
-  ([vocab distillation](../experiments/gleipnir27b_vocab_distillation/README.md)).
+  ([vocab distillation](../experiments/teachers/gleipnir27b_vocab_distillation/README.md)).
   The frontier registry already enters the 27B this way.
 - Gleipnir 4B keeps its compact student prompt. Optimized-serving gaps for
   the 27B are measured on the teacher-prompt workload
-  (`experiments/optimized_gap/teacher_workload.py`).
+  (`experiments/serving/optimized_gap/teacher_workload.py`).
 
 ## 2026-10-20 — Train Gleipnir 4B on tool-trajectory data only
 

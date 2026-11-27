@@ -3,7 +3,9 @@ import json
 
 import pytest
 
-from experiments.monitoring_prefix_supervision.prepare_training import prepare_training
+from experiments.training.monitoring_prefix_supervision.prepare_training import (
+    prepare_training,
+)
 
 
 def test_prepare_training_requires_complete_cache_and_preserves_parents(
@@ -11,7 +13,7 @@ def test_prepare_training_requires_complete_cache_and_preserves_parents(
 ):
     # Numeric/64-row audit validation has separate tests; keep this fixture tiny.
     monkeypatch.setattr(
-        "experiments.monitoring_prefix_supervision.prepare_training.validate_fresh_audit",
+        "experiments.training.monitoring_prefix_supervision.prepare_training.validate_fresh_audit",
         lambda *args, **kwargs: True,
     )
     source = tmp_path / "parents.jsonl"

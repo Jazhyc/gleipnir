@@ -2,7 +2,7 @@
 
 FlashInfer's `use_cp="auto"` selects its single-GPU context-parallel (CP) GDN
 prefill from batch-head parallelism alone. A single request therefore takes CP
-even at 1K tokens. The [host-overhead probe](../b200_host_overhead/README.md)
+even at 1K tokens. The [host-overhead probe](../serving/b200_host_overhead/README.md)
 found that CP off saves about 4 ms per 1K step (C1 p50 36.1 → 31.2 ms), with
 canary MAE 0.0005 against the default. CP should still help long single
 chunks. User-requested 2026-10-15: gate the route by length and benchmark it.

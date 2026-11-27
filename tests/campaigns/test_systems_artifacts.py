@@ -16,7 +16,9 @@ def test_scratch_output_is_explicit_and_does_not_change_historical_jobs():
     )
     from gleipnir.monitoring_training_command import training_command
 
-    config = load_config(Path("experiments/b200_training_throughput/config.yaml"))
+    config = load_config(
+        Path("experiments/systems/b200_training_throughput/config.yaml")
+    )
     paths = resolve_paths(config)
     original = make_jobs_unchecked(config, paths, "selection_hash")
     assert all("systems_adapter_scratch" not in job for job in original)

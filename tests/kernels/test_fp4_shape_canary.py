@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from experiments.fp4_inference.shape_canary import SHAPES, validate_shapes
+from experiments.serving.fp4_inference.shape_canary import SHAPES, validate_shapes
 
 
 def summary():
@@ -37,7 +37,7 @@ def test_extra_or_non_decoder_shape_cannot_supply_binding():
 
 
 def test_wider_scope_preserves_original_kernel_and_scoring_choices():
-    root = Path("experiments/fp4_inference/configs")
+    root = Path("experiments/serving/fp4_inference/configs")
     original = json.loads((root / "nvfp4_mlp_cutlass.json").read_text())
     wider = json.loads((root / "nvfp4_all_cutlass.json").read_text())
     assert wider.pop("output") != original.pop("output")

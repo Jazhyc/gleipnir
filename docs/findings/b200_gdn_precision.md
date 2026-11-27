@@ -11,7 +11,7 @@ Keep the selected FP8-attention/FP4-GDN default unchanged.
 
 ## Frozen intervention
 
-The [experiment contract](../../experiments/b200_gdn_precision/README.md)
+The [experiment contract](../../experiments/serving/b200_gdn_precision/README.md)
 predeclares one candidate, three quick64/c1 and six full320/c128 development
 repeats, and one full ID pass regardless of development results. Only the
 24 GDN blocks' QKV/Z and output projections change from FP4 to E4M3 FP8 W8A8,

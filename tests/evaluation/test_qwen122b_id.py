@@ -4,15 +4,17 @@ from pathlib import Path
 import pytest
 from omegaconf import OmegaConf
 
-from experiments.qwen122b_id.run import build_config
-from experiments.tool_trajectory_monitoring.benchmark_qwen_ood import (
+from experiments.teachers.qwen122b_id.run import build_config
+from experiments.training.tool_trajectory_monitoring.benchmark_qwen_ood import (
     optional_engine_kwargs,
     validate_config,
 )
 
 
 def settings():
-    return OmegaConf.to_container(OmegaConf.load("experiments/qwen122b_id/config.yaml"))
+    return OmegaConf.to_container(
+        OmegaConf.load("experiments/teachers/qwen122b_id/config.yaml")
+    )
 
 
 def test_id_contract_does_not_inherit_ood_scope():
@@ -51,14 +53,14 @@ def test_historical_backend_defaults_unchanged():
 
     config = json.loads(
         Path(
-            "experiments/tool_trajectory_monitoring/qwen27b_ood_benchmark.json"
+            "experiments/training/tool_trajectory_monitoring/qwen27b_ood_benchmark.json"
         ).read_text()
     )
     assert optional_engine_kwargs(config) == {}
 
 
 def test_supervisor_rejects_busy_gpus(tmp_path, monkeypatch):
-    from experiments.qwen122b_id import run as runner
+    from experiments.teachers.qwen122b_id import run as runner
 
     (tmp_path / "manifest.json").write_text('{"files": {}}')
     monkeypatch.setattr(runner, "gpu_memory", lambda: [70_000, 0])
@@ -70,7 +72,7 @@ def test_supervisor_rejects_busy_gpus(tmp_path, monkeypatch):
 def test_supervisor_records_child_outcome(tmp_path, monkeypatch, returncode, expected):
     import json
 
-    from experiments.qwen122b_id import run as runner
+    from experiments.teachers.qwen122b_id import run as runner
 
     class FakeProcess:
         def __init__(self, *args, **kwargs):
@@ -100,7 +102,8 @@ def test_followups_compose_same_scoring_and_engine_contract(version):
     from hydra import compose, initialize_config_dir
 
     with initialize_config_dir(
-        version_base=None, config_dir=str(Path("experiments/qwen122b_id").resolve())
+        version_base=None,
+        config_dir=str(Path("experiments/teachers/qwen122b_id").resolve()),
     ):
         followup = OmegaConf.to_container(
             compose(config_name=f"qwen{version}_27b"), resolve=True
@@ -118,7 +121,7 @@ def test_followups_compose_same_scoring_and_engine_contract(version):
 def test_dependency_waits_for_complete_coverage(tmp_path, state, rows, ready):
     import json
 
-    from experiments.qwen122b_id.run import dependency_ready
+    from experiments.teachers.qwen122b_id.run import dependency_ready
 
     (tmp_path / "status.json").write_text(json.dumps({"state": state}))
     (tmp_path / "evaluation").mkdir()
@@ -127,7 +130,7 @@ def test_dependency_waits_for_complete_coverage(tmp_path, state, rows, ready):
 
 
 def test_failed_predecessor_is_not_treated_as_gpu_release(tmp_path):
-    from experiments.qwen122b_id.run import dependency_ready
+    from experiments.teachers.qwen122b_id.run import dependency_ready
 
     (tmp_path / "status.json").write_text('{"state": "failed"}')
     with pytest.raises(RuntimeError, match="predecessor failed"):

@@ -10,7 +10,7 @@ and the attention core remain separate questions.
 
 ## Frozen intervention
 
-The [experiment contract](../../experiments/b200_swiglu_output/README.md)
+The [experiment contract](../../experiments/serving/b200_swiglu_output/README.md)
 predeclares one candidate, the matched development benchmark and one complete
 ID pass regardless of development results. The control is the saved
 `b200_attention_precision/precision01/fp8` default: FP8 attention projections,

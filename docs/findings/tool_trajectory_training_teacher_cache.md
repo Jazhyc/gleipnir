@@ -74,7 +74,7 @@ dataset card therefore grants no rights to upstream prompts, trajectories, or
 labels, instructs users to obtain the pinned source artifact separately, and
 does not assign a permissive license to the derived annotations. Rebuild the
 sanitized package with
-`experiments.tool_trajectory_monitoring.export_teacher_cache_hf` rather than
+`experiments.training.tool_trajectory_monitoring.export_teacher_cache_hf` rather than
 uploading the private JSONL cache shards directly.
 
 ## Provider agreement and operations
@@ -152,7 +152,7 @@ prefix savings.
 Regenerate the summary with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.summarize_teacher_canary \
+python -m experiments.training.tool_trajectory_monitoring.summarize_teacher_canary \
   --input data/tool_trajectory_monitoring/teacher_training/prompts.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k3_training_logits.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k3_training_logits_morph.jsonl \

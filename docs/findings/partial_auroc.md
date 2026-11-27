@@ -7,7 +7,7 @@ the strict soft-distillation baseline; no training-default promotion occurred.
 
 ## Intervention and reference
 
-The [frozen experiment](../../experiments/partial_auroc/README.md) adds weight
+The [frozen experiment](../../experiments/training/partial_auroc/README.md) adds weight
 0.1 to a source-macro pairwise softplus term comparing harmful samples with the
 highest-scoring 20% of benign samples in each logical batch. Fractional tail
 mass shares boundary ties equally; temperature is 1. Single-class sources retain

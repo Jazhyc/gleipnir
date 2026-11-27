@@ -5,7 +5,7 @@ import hashlib
 import pandas as pd
 import pytest
 
-from experiments.tool_trajectory_monitoring.teacher_canary import (
+from experiments.training.tool_trajectory_monitoring.teacher_canary import (
     select_balanced_candidates,
     stratified_bootstrap_auroc,
     summarize_scored_rows,

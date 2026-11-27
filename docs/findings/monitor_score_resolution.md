@@ -9,7 +9,7 @@ for this checkpoint. No training or serving-default promotion occurred.
 
 ## Fixed intervention
 
-The [experiment contract](../../experiments/monitor_score_resolution/README.md)
+The [experiment contract](../../experiments/evaluation/monitor_score_resolution/README.md)
 fixes the final strict delta-zero seed-0 Qwen3.5-4B checkpoint, its existing
 merged BF16 artifact and all canonical ID/OOD prompts. The B200 UUID, vLLM 0.31,
 Torch 2.13, tokenizer, causal LAST pooling, BF16 backbone/attention/cache/GDN,

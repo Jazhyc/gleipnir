@@ -30,4 +30,4 @@ export HF_HUB_OFFLINE=1
 export TRANSFORMERS_OFFLINE=1
 export TOKENIZERS_PARALLELISM="${TOKENIZERS_PARALLELISM:-false}"
 
-python -u -m experiments.tool_trajectory_monitoring.benchmark_gpt_oss_ood "$@"
+python -u -m experiments.training.tool_trajectory_monitoring.benchmark_gpt_oss_ood "$@"

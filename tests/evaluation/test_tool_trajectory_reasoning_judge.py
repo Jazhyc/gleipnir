@@ -5,7 +5,9 @@ from pathlib import Path
 
 import pytest
 
-from experiments.tool_trajectory_monitoring import judge_gleipnir4b_reasoning as judge
+from experiments.training.tool_trajectory_monitoring import (
+    judge_gleipnir4b_reasoning as judge,
+)
 
 
 def frozen_config() -> dict[str, object]:

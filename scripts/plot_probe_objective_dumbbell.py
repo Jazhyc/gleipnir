@@ -59,7 +59,7 @@ FAMILIES = {
     "alphaevolve": "AlphaEvolve",
 }
 # Matched 4B LoRA seeds 0-2, OOD macro pAUROC@20, from the result table in
-# experiments/hard_label_seeds/README.md (artifacts span several run dirs).
+# experiments/training/hard_label_seeds/README.md (artifacts span several run dirs).
 LORA_SEEDS = {"hard": [0.7458, 0.7131, 0.6902], "soft": [0.7869, 0.8125, 0.7768]}
 LORA_LABEL = "Gleipnir 4B recipe"
 GLEIPNIR_4B_OOD = 0.804
@@ -71,7 +71,7 @@ REFERENCE_ALIGN = ("center", "center")
 RESULT_FILES: dict[str, Path] = {}
 # The 27B version (``--model 27b``): its two inputs ran as separate studies,
 # and its LoRA comparison is one run per objective with the compact
-# instruction (experiments/qwen38_27b_hard_labels/README.md).
+# instruction (experiments/training/qwen38_27b_hard_labels/README.md).
 MODEL_27B = {
     "RESULT_FILES": {
         "prompted": REPOSITORY_ROOT

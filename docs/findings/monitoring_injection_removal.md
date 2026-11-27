@@ -10,7 +10,7 @@ requested an aggressive data intervention after the
 [behavior-grounded prompt experiment](monitoring_injection_disentanglement.md)
 retained 100% alarms on injected honest-code controls.
 
-The [prespecified experiment](../../experiments/monitoring_injection_removal/README.md)
+The [prespecified experiment](../../experiments/injection/monitoring_injection_removal/README.md)
 uses the original standard student instruction, all 7,534 retained trajectories
 and byte-identical original teacher records. Independent local checks establish
 that every retained student prompt, trajectory checksum, source label, lineage

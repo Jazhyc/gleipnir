@@ -9,7 +9,7 @@ This one-seed comparison does not establish equivalence with BF16.
 
 ## Frozen comparison
 
-Use `experiments/b200_fp4_full_training/config.yaml` and the named
+Use `experiments/systems/b200_fp4_full_training/config.yaml` and the named
 `qwen35_4b_b200_fp4_mlp` profile. Preserve the original regular prompt, Kimi soft
 targets, seed 0, initial FP32 master adapter, rank 128/alpha 256, AdamW schedule,
 logical batch 32, packing budget 16,384, no checkpointing or truncation, and

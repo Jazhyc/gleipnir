@@ -2,7 +2,7 @@
 
 The user authorized evaluating the original full QAD checkpoint on the frozen
 OOD suite on 2026-10-13, then explicitly requested optimized serving as well.
-The [fixed evaluation contract](../../experiments/qad_ood/README.md) runs one
+The [fixed evaluation contract](../../experiments/quantization/qad_ood/README.md) runs one
 BF16 pass followed by one optimized pass on all 6,395 unchanged rows. This
 separates changed checkpoint behavior from deployment precision effects; it
 does not retrain, select checkpoints, tune OOD or promote a model.

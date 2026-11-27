@@ -41,8 +41,8 @@ uv pip install --python .venv/bin/python --no-deps --no-build-isolation \
   --target .cache/kernels/fouroversix-1.0.5 \
   .cache/kernels/sources/fouroversix-1.0.5.tar.gz
 export PYTHONPATH="$PWD/.cache/kernels/fouroversix-1.0.5:/tmp/gleipnir-triton-3.7.1:$PYTHONPATH"
-.venv/bin/python experiments/b200_fouroversix/kernel_canary.py \
+.venv/bin/python experiments/systems/b200_fouroversix/kernel_canary.py \
   --output results/fp4_setup/native_kernel_canary.json
-.venv/bin/python experiments/b200_fouroversix/kernel_canary.py \
+.venv/bin/python experiments/systems/b200_fouroversix/kernel_canary.py \
   --backward-mode dequantized_bf16 \
   --output results/fp4_setup/dequantized_kernel_canary.json

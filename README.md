@@ -14,7 +14,7 @@ model.
 The [technical report](outputs/reports/gleipnir_v1_technical_report/) (in
 preparation) describes the method, the evaluation and the serving stack. The
 repository is experiment-centric: each hypothesis has its own directory under
-`experiments/`, reusable code lives in `src/gleipnir/`, and durable
+`experiments/<category>/`, reusable code lives in `src/gleipnir/`, and durable
 conclusions live in `docs/`.
 
 ## Released models
@@ -83,7 +83,7 @@ run it:
    agent trajectory of about 10,000 tokens in 48 ms with the 4B (205K prompt
    tokens/s) and in 192 ms with the 27B (51K). Sending 8 requests at once
    raises the throughput to 230K and 53K and the latency about ninefold
-   ([measurements](experiments/serving_concurrency/README.md)).
+   ([measurements](experiments/serving/serving_concurrency/README.md)).
 
    ```bash
    docker run --gpus all -p 8000:8000 \
@@ -164,8 +164,9 @@ B200 GPUs; [`docs/infrastructure.md`](docs/infrastructure.md) records how.
 
 - `src/gleipnir/`: shared code; see the [source map](src/gleipnir/README.md)
   for packages and entrypoints.
-- `experiments/<hypothesis>/`: one self-contained hypothesis with its README,
-  configuration, entrypoint and tests.
+- `experiments/<category>/<hypothesis>/`: one self-contained hypothesis with its
+  README, configuration, entrypoint and tests; see the
+  [experiments index](experiments/README.md).
 - `tests/`: tests grouped by responsibility; see the [test map](tests/README.md).
 - `scripts/`: operational entrypoints (Runpod and Lambda Cloud management,
   dataset builds, releases, plotting).
@@ -196,5 +197,5 @@ B200 GPUs; [`docs/infrastructure.md`](docs/infrastructure.md) records how.
   [compute](docs/agent_guides/compute.md): the working rules and the
   currently selected recipes.
 - The README of the experiment you are changing.
-- [vLLM Lens integration](experiments/b200_vllm_lens/README.md): activation
+- [vLLM Lens integration](experiments/injection/b200_vllm_lens/README.md): activation
   capture and steering on the merged monitor, for interpretability work.

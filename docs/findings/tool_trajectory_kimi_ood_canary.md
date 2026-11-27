@@ -74,8 +74,8 @@ The ignored artifacts are under
 `results/tool_trajectory_monitoring/`. Reconstruct and summarize with:
 
 ```bash
-python -m experiments.tool_trajectory_monitoring.prepare_teacher_ood_canary
-python -m experiments.tool_trajectory_monitoring.summarize_teacher_canary \
+python -m experiments.training.tool_trajectory_monitoring.prepare_teacher_ood_canary
+python -m experiments.training.tool_trajectory_monitoring.summarize_teacher_canary \
   --input data/tool_trajectory_monitoring/teacher_ood_canary/prompts.jsonl \
   --scores results/tool_trajectory_monitoring/kimi_k3_ood_canary_fireworks.jsonl \
   --output results/tool_trajectory_monitoring/kimi_k3_ood_canary_summary.json

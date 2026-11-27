@@ -43,7 +43,7 @@ kernels, precision, batching, packing or supported context envelope materially
 changes, after relevant failures, or on request. Supported binary loss mixtures
 and LR sweeps can reuse validation. Keep finite/missing-gradient checks during
 updates and adapter-specific serving parity. See `AGENTS.md` and
-`experiments/monitoring_hard_labels/README.md`.
+`experiments/training/monitoring_hard_labels/README.md`.
 
 Historical selection below: on 2026-10-05 the user selected
 [native FP4 MLPs](b200_native_fp4_training_recipe.md) as the new default.
@@ -109,7 +109,7 @@ their documented QLoRA/FLA recipe.
 Ordinary Trainer integration is validated with focused CPU tests for scoped
 settings, per-example gradients, arbitrary packed sizes and partial final
 batches. The two-step B200 smoke in
-`experiments/monitoring_sequence_packing/default_recipe_smoke.yaml` checks the
+`experiments/systems/monitoring_sequence_packing/default_recipe_smoke.yaml` checks the
 normal training path against the same frozen initial adapter and 320-row cohort,
 including native eager/compiled isolation gates, longest-row memory preflight,
 finite gradients, zero padding and a changed FP32 master. It completed both
@@ -138,7 +138,7 @@ The FA4 default integration smoke uses two ordinary updates from the frozen
 initial adapter/cohort and reuses the completed FA4 receipt. It checks launcher
 wiring, metadata, finite updates and FP32 master changes; it does not repeat
 numerical or memory probes or establish longer training quality. Its entrypoint
-is `experiments.b200_bf16_fa4.default_recipe_smoke`, with outputs under
+is `experiments.systems.b200_bf16_fa4.default_recipe_smoke`, with outputs under
 `results/b200_fa4_default_smoke/` and logs under `logs/runpod/b200_fa4_default/`.
 
 Completed 2026-10-04: 92 focused CPU tests pass. The FA4 default smoke completes

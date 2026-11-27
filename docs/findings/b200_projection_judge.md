@@ -4,7 +4,7 @@
 alarms has **little aggregate benefit in JudgeDeceiver preference judging**.
 Preferred-injected accuracy improves only 0.65 points, with opposing source
 effects. Pooled ranking improves slightly while calibration worsens. The
-[experiment contract](../../experiments/b200_projection_judge/README.md) owns
+[experiment contract](../../experiments/injection/b200_projection_judge/README.md) owns
 the frozen transfer, gates, populations and stop conditions; the
 [APPS finding](b200_injection_direction.md) owns fitting and original effects.
 
@@ -23,7 +23,7 @@ All preferences and prompt/token identities remain frozen; ties at p(B)=.5
 choose B. These labels are preferences, not harmfulness or injection FPR.
 Source revision, construction labels, unresolved upstream license and the
 dependent order/suffix grouping follow the
-[original JudgeDeceiver contract](../../experiments/judge_injection_continuation/README.md).
+[original JudgeDeceiver contract](../../experiments/injection/judge_injection_continuation/README.md).
 The current SDPA adapter did not train on this dataset. Previous FA4/historical
 adapter scores do not substitute for this fresh unedited SDPA control.
 
@@ -121,7 +121,7 @@ wait. These are diagnostic campaign costs, not repeated production benchmarks.
 
 The user subsequently authorized separating representation transfer from
 decision transfer. The
-[capture/control contract](../../experiments/b200_judge_direction_signal/README.md)
+[capture/control contract](../../experiments/injection/b200_judge_direction_signal/README.md)
 fixes the original APPS u20 and sign, final-token layer 20 as primary, and
 layer 31 as the ancillary removal/readout check. Reuse the same warm engine
 and all original prompts; fit or select nothing on JudgeDeceiver. This is a
@@ -243,7 +243,7 @@ projection. Both variants were frozen before scoring all 4,188 original rows:
 Question, candidate and attack bytes, labels, pairs and orders are unchanged.
 Only trusted framing changes; this adds respectively four/ten prompt tokens per
 row. No direction fitting, parameter sweep or promotion occurs. The experiment
-contract is [the numeric-surface README](../../experiments/b200_judge_numeric_surface/README.md).
+contract is [the numeric-surface README](../../experiments/injection/b200_judge_numeric_surface/README.md).
 
 | Prompt surface | Arm | Clean accuracy | Preferred-injected accuracy | Disfavored-injected accuracy | Pooled accuracy |
 |---|---|---:|---:|---:|---:|

@@ -1,15 +1,17 @@
 import json
 from pathlib import Path
 
-from experiments.monitoring_training_throughput.core import (
+from experiments.systems.monitoring_training_throughput.core import (
     CONDITIONS,
     SELECTION_ROWS,
     select_recipe,
     stable_stratified_selection,
     validate_jobs,
 )
-from experiments.monitoring_training_throughput.prepare import make_jobs
-from experiments.tool_trajectory_monitoring.run_distillation_train import (
+from experiments.systems.monitoring_training_throughput.prepare import (
+    make_jobs,
+)
+from experiments.training.tool_trajectory_monitoring.run_distillation_train import (
     training_command,
 )
 
@@ -67,7 +69,9 @@ def test_recipe_selection_requires_five_percent_gain() -> None:
 
 def test_config_matches_frozen_conditions() -> None:
     config = json.loads(
-        Path("experiments/monitoring_training_throughput/config.json").read_text()
+        Path(
+            "experiments/systems/monitoring_training_throughput/config.json"
+        ).read_text()
     )
     assert config["selection_rows"] == SELECTION_ROWS
     assert [condition["name"] for condition in config["conditions"]] == [

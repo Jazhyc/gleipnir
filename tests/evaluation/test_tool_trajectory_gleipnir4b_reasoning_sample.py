@@ -3,10 +3,12 @@ from __future__ import annotations
 from copy import deepcopy
 from pathlib import Path
 
-from experiments.tool_trajectory_monitoring import (
+from experiments.training.tool_trajectory_monitoring import (
     generate_gleipnir4b_reasoning_sample as sample,
 )
-from experiments.tool_trajectory_monitoring.qwen_reasoning_core import load_json
+from experiments.training.tool_trajectory_monitoring.qwen_reasoning_core import (
+    load_json,
+)
 from gleipnir.teachers.prompt_contract import load_prompt_set
 
 
@@ -86,7 +88,7 @@ def test_paired_summary_counts_reasoning_and_decision_changes() -> None:
 def test_frozen_gleipnir_reasoning_config_contract() -> None:
     config = load_json(
         Path(
-            "experiments/tool_trajectory_monitoring/"
+            "experiments/training/tool_trajectory_monitoring/"
             "gleipnir4b_reasoning_sample.json"
         )
     )

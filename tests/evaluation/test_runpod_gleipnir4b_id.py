@@ -4,7 +4,7 @@ import json
 
 import pytest
 
-from experiments.runpod_gleipnir4b_id import run as campaign
+from experiments.serving.runpod_gleipnir4b_id import run as campaign
 
 
 @pytest.mark.parametrize(

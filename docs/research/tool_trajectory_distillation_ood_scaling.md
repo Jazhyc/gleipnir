@@ -219,7 +219,7 @@ weights, and passed parity reports. The frozen student OOD artifact SHA-256 is
 the student template SHA-256 is
 `f104aa18fe9f04094efdca14f9cebe65f7b18d976f454c134fa4282bd5162eaa`.
 The executable config is
-[`../../experiments/tool_trajectory_monitoring/distillation_ood_benchmark.json`](../../experiments/tool_trajectory_monitoring/distillation_ood_benchmark.json),
+[`../../experiments/training/tool_trajectory_monitoring/distillation_ood_benchmark.json`](../../experiments/training/tool_trajectory_monitoring/distillation_ood_benchmark.json),
 and the completed campaign revision is
 `5a36a0dc5ccf718396eb988edb0306663c4ac237`.
 

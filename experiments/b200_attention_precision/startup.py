@@ -17,11 +17,11 @@ import httpx
 import numpy as np
 
 from experiments.b200_inference_benchmark.run import DATA, ROOT, sha, write
-from experiments.b200_long_context.run import gpu, rpc
 from experiments.b200_monitor_score.run import SERVING, trial
 from experiments.b200_vllm031.run import archive_audits
 from experiments.b200_vllm031.runtime import candidate_environment
 from experiments.b200_vllm031.source_bindings import restore_diagnostic_sources
+from experiments.serving.b200_long_context.run import gpu, rpc
 from gleipnir.serving.reference import selected_serving_default
 
 
