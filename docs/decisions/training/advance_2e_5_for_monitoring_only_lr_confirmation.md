@@ -1,6 +1,7 @@
 # Advance `2e-5` for monitoring-only LR confirmation
 
-Date: 2026-09-04. Status: recorded in the decision log.
+Date: 2026-09-04.
+Status: historical; governs no future work.
 
 - The five-cell seed-0 Qwen3.5-4B screen selected AdamW `2e-5` over the freshly
   retrained `5e-5` control on the frozen 3,012-row ID development suite. Macro

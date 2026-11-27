@@ -1,6 +1,6 @@
 # Strict-filtered FP4/FA4 OOD evaluation
 
-Status: not recorded.
+Status: completed.
 
 On 2026-10-13 the user authorized OOD scoring of the original strict-filtered
 FP4 MLP/BF16 FlashQLA/FA4 adapter, selecting BF16 serving only. The frozen

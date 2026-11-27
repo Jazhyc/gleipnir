@@ -1,6 +1,6 @@
 # Teacher-disagreement filtering on monitoring training data
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-11 (first committed).
 
 The completed one-seed ID sweep finds the strongest ranking under strict

@@ -1,6 +1,8 @@
 # Monitor-directed injection replacement
 
-Date: 2026-10-04. Status: user selected replacement; CPU preparation completed.
+Date: 2026-10-04.
+Status: historical; governs no future work.
+Recorded: user selected replacement; CPU preparation completed.
 The user authorized training/evaluation on the existing B200 on 2026-10-04;
 launch verification will record when actual optimizer updates advance.
 

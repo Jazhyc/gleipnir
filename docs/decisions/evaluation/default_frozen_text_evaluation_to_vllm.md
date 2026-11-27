@@ -1,6 +1,7 @@
 # Default frozen text evaluation to vLLM
 
-Date: 2026-08-17. Status: recorded in the decision log.
+Date: 2026-08-17.
+Status: current.
 
 - Use a persistent vLLM engine with continuous batching for large frozen
   text-only base/LoRA evaluations. Request only the literal decision-token

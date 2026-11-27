@@ -1,6 +1,6 @@
 # Teacher filtering campaign shutdown
 
-Status: not recorded.
+Status: completed.
 
 At the user's request, Runpod B200 `rzarg8j8x0so3i`
 (`gleipnir-teacher-delta-sweep`, US-NC-2) was terminated on 2026-10-12.

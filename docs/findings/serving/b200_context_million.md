@@ -1,6 +1,6 @@
 # B200 FP8 default single-request contexts to 1M
 
-Status: superseded; the text names what replaced it.
+Status: completed.
 
 2026-10-15. The current FP8 serving default completes exact 1,048,576-token
 inputs at concurrency 1 on one B200, in a median 43.08 s (24,340 input

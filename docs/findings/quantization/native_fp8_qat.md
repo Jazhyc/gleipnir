@@ -1,6 +1,6 @@
 # Native FP8 QAT and MXFP8 attention backward
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The [experiment](../../../experiments/quantization/native_fp8_qat/README.md) treats native FP8

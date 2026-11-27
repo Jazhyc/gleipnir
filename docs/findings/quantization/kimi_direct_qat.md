@@ -1,6 +1,6 @@
 # Direct Kimi K3 QAT
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-13 (first committed).
 
 The user selects [direct Kimi-target QAT](../../../experiments/quantization/kimi_direct_qat/README.md)

@@ -1,6 +1,6 @@
 # Kernel profile of the adopted last-query default
 
-Status: not recorded.
+Status: completed.
 
 2026-10-15. These are torch-profiler traces of the adopted FP8 default with
 last-query final-layer attention, on the same EU-RO-1 B200 as the

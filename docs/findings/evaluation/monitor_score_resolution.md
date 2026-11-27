@@ -1,6 +1,6 @@
 # FP32 final-head computation on the strict-filtered monitor
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-11 (first committed).
 
 The final-head precision test removes most BF16 score ties but gives only small

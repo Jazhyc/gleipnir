@@ -1,6 +1,7 @@
 # Adopt the lean GDN host path with a strided gated norm
 
-Date: 2026-10-15. Status: recorded in the decision log.
+Date: 2026-10-15.
+Status: current.
 
 - The FP8 default runs the [lean GDN prefill host path](../../../experiments/b200_gdn_fast/README.md)
   with unchanged kernels. Its gated RMS norm reads the output gate in place

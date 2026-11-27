@@ -1,6 +1,6 @@
 # MXFP8 FlashAttention 4 integration feasibility
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-04. Assessment of the user-linked
 [PyTorch article](https://pytorch.org/blog/low-precision-flash-attention-4-end-to-end-block-scaled-attention-for-blackwell/)

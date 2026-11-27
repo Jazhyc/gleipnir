@@ -1,6 +1,7 @@
 # Advance two Muon rates to replicated confirmation
 
-Date: 2026-08-13. Status: recorded in the decision log.
+Date: 2026-08-13.
+Status: historical; governs no future work.
 
 - The rank-64, 25%-data internal-development screen completed all ten paired
   cells. Muon `5e-5` won the predeclared primary metric with 0.94727 macro

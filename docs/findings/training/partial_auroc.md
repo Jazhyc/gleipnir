@@ -1,6 +1,6 @@
 # One strict-filtered partial-AUROC variant
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The single predeclared partial-AUC variant improves source-macro OOD normalized

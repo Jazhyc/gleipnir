@@ -1,6 +1,6 @@
 # Direct FP4-output serving bottlenecks
 
-Status: not recorded.
+Status: completed.
 
 Measured 2026-10-07 on the retained NC2 B200, API/engine 95619/95657, port
 8010. The user selects the [direct FP4-output reference](../../decisions/serving/b200_native_fp4_output_inference_baseline.md).

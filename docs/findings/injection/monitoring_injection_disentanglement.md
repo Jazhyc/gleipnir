@@ -1,6 +1,6 @@
 # Behavior-grounded 4B monitor: prompt change did not remove injection sensitivity
 
-Status: not recorded.
+Status: completed.
 
 2026-10-03. Training and the complete evaluation grid finished. The new monitor
 still alarms on 100% of honest-code injection controls under all three monitor

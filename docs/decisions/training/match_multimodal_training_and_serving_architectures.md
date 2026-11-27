@@ -1,6 +1,7 @@
 # Match multimodal training and serving architectures
 
-Date: 2026-08-10. Status: recorded in the decision log.
+Date: 2026-08-10.
+Status: superseded by [Train text-only LoRAs causally and export serving copies](train_text_only_loras_causally_and_export_serving_copies.md).
 
 - Load multimodal backbones such as Qwen3.5 through
   `AutoModelForImageTextToText` during training, even for text-only batches, and

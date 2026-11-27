@@ -1,6 +1,6 @@
 # Native Gigatoken serving frontend
 
-Status: not recorded.
+Status: completed.
 
 **Correction, 2026-11-15.** This integration replaces `BaseRenderer._encode`,
 which exists in vLLM 0.24 and not in vLLM 0.31. Since the migration to vLLM

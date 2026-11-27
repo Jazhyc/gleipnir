@@ -1,6 +1,6 @@
 # Activation-ranked training removal
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-10 (first committed).
 
 The user requested a deliberately exploratory activation-filtering ablation,

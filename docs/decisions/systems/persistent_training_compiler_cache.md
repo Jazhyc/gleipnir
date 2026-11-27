@@ -1,6 +1,6 @@
 # Persistent compiler caches across training campaigns
 
-Status: not recorded.
+Status: current.
 
 User-selected standing preference, 2026-10-03: reuse warm persistent compiler and
 kernel caches across compatible training runs. Campaign names identify data,

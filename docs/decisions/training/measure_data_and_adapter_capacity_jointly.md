@@ -1,6 +1,7 @@
 # Measure data and adapter capacity jointly
 
-Date: 2026-08-12. Status: recorded in the decision log.
+Date: 2026-08-12.
+Status: historical; governs no future work.
 
 - Cross nested `10%`, `25%`, and `50%` training selections with QLoRA ranks 4,
   16, 64, and 256 using paired seeds 0, 1, and 2. Reuse the matching 100%-data

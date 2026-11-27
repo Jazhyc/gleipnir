@@ -1,6 +1,6 @@
 # Lambda shutdown artifact inventory
 
-Status: not recorded.
+Status: completed.
 
 This record captures the artifacts retained locally before shutting down the
 ephemeral `monitor-foundation` Lambda instance. The inventory was verified on

@@ -1,6 +1,6 @@
 # `gleipnir-control` shutdown artifact inventory
 
-Status: not recorded.
+Status: completed.
 
 This record captures the artifacts retained locally before releasing the
 single-H100 `gleipnir-control` Lambda instance. The pre-termination inventory

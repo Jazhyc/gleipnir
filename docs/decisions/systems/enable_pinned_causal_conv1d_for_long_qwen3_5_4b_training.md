@@ -1,6 +1,7 @@
 # Enable pinned causal-conv1d for long Qwen3.5-4B training
 
-Date: 2026-09-03. Status: recorded in the decision log.
+Date: 2026-09-03.
+Status: historical; governs no future work.
 
 - On the Stack 24 two-H100 `gleipnir-improvement` target, source-build pinned
   `causal-conv1d==1.6.2.post1` into an isolated target and require a BF16 GPU

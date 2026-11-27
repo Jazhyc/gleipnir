@@ -1,6 +1,6 @@
 # Boundary-safe Qwen3.5 sequence packing
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-02. The initial source/CPU audit preceded the authorized B200 work.
 Subsequent BF16 packing canaries and matched eager/compiled training comparisons

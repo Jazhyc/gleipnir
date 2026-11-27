@@ -1,6 +1,7 @@
 # Retain the baseline after the regularization screen
 
-Date: 2026-08-14. Status: recorded in the decision log.
+Date: 2026-08-14.
+Status: historical; governs no future work.
 
 - All sixteen rank-128 screen cells completed on the fixed internal development
   split. The AdamW baseline remained best in macro AUROC at 0.96449; every

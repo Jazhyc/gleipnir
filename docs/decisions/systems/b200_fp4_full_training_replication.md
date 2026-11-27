@@ -1,6 +1,6 @@
 # Full regular 4B replication with native FP4 MLPs
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Decision date: 2026-10-05. The user requests a complete training run followed by
 ID evaluation and selects the original regular 4B run: 8,688 monitoring rows,

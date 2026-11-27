@@ -1,6 +1,6 @@
 # Kimi K2.6 matched training-population diagnostic
 
-Status: not recorded.
+Status: completed.
 
 2026-09-07. Complete on all 640 original source/label-balanced full trajectories.
 This is not a held-out model-selection result and does not use OOD scores.

@@ -1,6 +1,6 @@
 # Kimi K3 teacher-cache cost estimates
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-08-30. This estimate prices annotation only; it does not authorize a
 paid launch.

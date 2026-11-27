@@ -1,6 +1,6 @@
 # Tokenization contribution to B200 serving
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. **The text frontend materially affects long-prompt interactive
 latency, but bypassing it produces little saturated-throughput improvement.**

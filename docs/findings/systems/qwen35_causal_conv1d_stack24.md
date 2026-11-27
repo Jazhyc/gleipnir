@@ -1,6 +1,6 @@
 # Qwen3.5 causal-conv1d on Lambda Stack 24
 
-Status: not recorded.
+Status: completed.
 
 ## Question
 

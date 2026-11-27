@@ -48,8 +48,10 @@ inventory: check the provider before assuming a machine or volume exists.
 - Two paths ([decision](decisions/serving/b200_monitor_score_reference.md#current-recipe)):
   stock vLLM BF16 for regular evaluation and adapter iteration; the optimized
   B200 recipe (FP8 attention projections, FP4 MLP/GDN, MXFP8 attention,
-  last-query final layer, GDN routing and host paths) only for QAD-adapted
-  deployment candidates.
+  [last-query final layer](decisions/serving/adopt_last_query_final_layer_attention_in_the_fp8_default.md),
+  [GDN route gate](decisions/serving/gate_the_gdn_context_parallel_prefill_route_by_length.md)
+  and [lean GDN host path](decisions/serving/adopt_the_lean_gdn_host_path_with_a_strided_gated_norm.md))
+  only for QAD-adapted deployment candidates.
 - The optimized recipe is bound by path and SHA-256 in
   [`serving_default.json`](../experiments/b200_inference_benchmark/serving_default.json)
   and resolved by `gleipnir.serving.reference.selected_serving_default`. Run it
@@ -60,6 +62,27 @@ inventory: check the provider before assuming a machine or volume exists.
 - The released stack ships as the `gleipnir-serve` image built by
   [`release_serving`](../experiments/release_serving/README.md).
 - Instructions: [inference guide](agent_guides/inference.md).
+
+## Standing policies
+
+- Train text-only LoRAs causally, keep the FP32 master and export a
+  checksum-tracked serving copy
+  ([decision](decisions/training/train_text_only_loras_causally_and_export_serving_copies.md)).
+- Frozen text evaluation runs on vLLM with literal decision-token logprobs
+  ([decision](decisions/evaluation/default_frozen_text_evaluation_to_vllm.md)).
+- Paid teacher caching is provider-sticky and auditable
+  ([decision](decisions/teachers/make_paid_teacher_caching_provider_sticky_and_auditable.md)).
+- Reuse warm compiler and kernel caches across compatible training runs
+  ([decision](decisions/systems/persistent_training_compiler_cache.md)); short
+  systems checks keep only their latest weights
+  ([decision](decisions/systems/systems_training_adapter_retention.md)).
+- New training-throughput screens are config-driven
+  ([decision](decisions/systems/config_driven_systems_screens.md)).
+- Future merged-weight QAT uses the selected reference arithmetic
+  ([decision](decisions/quantization/qat_reference_training.md)); the 27B needs
+  no QAD ([decision](decisions/evaluation/plot_gleipnir_at_optimized_serving_performance_no_qad_for.md)).
+- Release models are priced at self-hosted B200 break-even
+  ([decision](decisions/serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md)).
 
 ## Code bound in place
 
@@ -85,5 +108,4 @@ scheduler) lives there rather than in `src/gleipnir/serving/`.
 - SWE-chat deployment thresholds (1% and 0.1% FPR on 16,625 sessions) are
   deferred for budget.
 - Add the arXiv identifier and citation once the report is announced.
-- 106 findings and decisions say `Status: not recorded`; mark each current,
-  superseded or historical. Long findings may later be condensed.
+- Long findings may later be condensed.

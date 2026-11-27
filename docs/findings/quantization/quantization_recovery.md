@@ -1,6 +1,6 @@
 # Quantization-aware recovery of the filtered 4B monitor
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The [experiment](../../../experiments/quantization_recovery/README.md) tests binary

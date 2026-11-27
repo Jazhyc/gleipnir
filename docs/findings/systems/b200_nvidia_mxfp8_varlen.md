@@ -1,6 +1,6 @@
 # Direct variable-length NVIDIA MXFP8 attention
 
-Status: not recorded.
+Status: completed.
 
 2026-10-05. The user requested adding native variable-length support after the
 dense MXFP8 screen averaged 5.29781 seconds/update versus 4.08648 for the matched

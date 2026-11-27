@@ -1,6 +1,6 @@
 # APPS projection transfer to JudgeDeceiver
 
-Status: not recorded.
+Status: completed.
 
 2026-10-09. The same full projection that nearly eliminates APPS honest-injection
 alarms has **little aggregate benefit in JudgeDeceiver preference judging**.

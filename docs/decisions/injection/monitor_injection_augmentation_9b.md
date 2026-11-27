@@ -1,6 +1,6 @@
 # Replicate monitor-directed injection augmentation on 9B
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Date: 2026-10-04. User authorized the Qwen3.5-9B replication at 5e-5,
 all required transfers to the existing Runpod B200, and shutdown after training,

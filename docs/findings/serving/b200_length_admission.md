@@ -1,6 +1,6 @@
 # B200 length-aware admission
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. The initial four-bucket, 250-ms FIFO-promotion policy does not meet
 its frozen screening rule. Keep upstream FCFS selected. The modest low-load

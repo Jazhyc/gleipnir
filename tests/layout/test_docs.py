@@ -44,6 +44,29 @@ def test_every_record_has_status_and_date():
         assert date.search(head), path
 
 
+def test_decision_statuses_use_the_vocabulary_and_link_to_current():
+    pattern = re.compile(
+        r"^Status: (current\.|historical; governs no future work\.|"
+        r"superseded by \[[^\]]+\]\(([^)]+)\).*)$",
+        re.M,
+    )
+    current = (DOCS / "current.md").read_text()
+    for path in (DOCS / "decisions").rglob("*.md"):
+        if path.name == "README.md":
+            continue
+        head = "\n".join(path.read_text().split("\n")[:16])
+        match = pattern.search(head)
+        assert match, path
+        if match.group(2):
+            target = (path.parent / match.group(2)).resolve()
+            assert target.read_text().count("Status: current.") == 1, (path, target)
+        if match.group(1) == "current.":
+            rel = path.relative_to(DOCS).as_posix()
+            assert f"]({rel}" in current, (
+                f"current decision missing from current.md: {rel}"
+            )
+
+
 def _relative_links(text):
     for target in LINK.findall(text):
         if re.match(r"^[a-z][a-z0-9+.-]*:", target) or target.startswith(

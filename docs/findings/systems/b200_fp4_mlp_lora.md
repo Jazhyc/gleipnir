@@ -1,6 +1,6 @@
 # Native FP4 MLPs after leaving QLoRA
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-04. Completed on the existing US-NC-2 B200. Native FP4 MLPs
 work with the current packed LoRA recipe, but measured updates take 53.44%

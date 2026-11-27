@@ -1,6 +1,6 @@
 # Dedicated two-logit monitoring endpoint
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-07 (first committed).
 
 The endpoint works, but does not demonstrate a speed improvement over the

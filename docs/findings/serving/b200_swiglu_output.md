@@ -1,6 +1,6 @@
 # Direct FP4 SwiGLU-output ablation on the FP8-attention default
 
-Status: not recorded.
+Status: completed.
 
 2026-10-08. Disabling direct FP4 SwiGLU output improves development ranking but
 **worsens full ID source-macro pAUROC@20 by 0.913 percentage points**. Both

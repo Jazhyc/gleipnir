@@ -1,6 +1,6 @@
 # Network-volume checkpoint cleanup
 
-Status: not recorded.
+Status: completed.
 
 On 2026-10-13 the user authorized removing unnecessary merged checkpoints
 while OOD evaluation runs. `scripts/prune_reconstructable_merges.py` verifies

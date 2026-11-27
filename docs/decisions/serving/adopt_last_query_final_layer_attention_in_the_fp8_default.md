@@ -1,6 +1,7 @@
 # Adopt last-query final-layer attention in the FP8 default
 
-Date: 2026-10-15. Status: recorded in the decision log.
+Date: 2026-10-15.
+Status: current.
 
 - The optimized serving default runs layer-31 attention only from each prefill
   request's last token. Scores are bitwise unchanged at C1. C1 latency drops

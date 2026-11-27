@@ -1,6 +1,6 @@
 # B200 FROST host binding wrappers
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. Retain the direct host binding path on the native Gigatoken/Direct
 FP4 worker. Same-worker comparisons give a **0.60% median paired throughput

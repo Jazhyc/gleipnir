@@ -1,6 +1,6 @@
 # Native FP4 gate/up GEMM and SwiGLU fusion
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. User-authorized follow-up to the matched GEMM backend
 comparison. **Keep the default unchanged:** fusion improves warm median

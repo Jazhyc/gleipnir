@@ -1,6 +1,7 @@
 # Confirm the two Muon candidates on full data
 
-Date: 2026-08-13. Status: recorded in the decision log.
+Date: 2026-08-13.
+Status: historical; governs no future work.
 
 - Replace the planned 50%-data confirmation with a 100%-training-data
   confirmation at the user's direction. Train rank-64 Muon at the two rates

@@ -1,6 +1,6 @@
 # Prefill launch overhead and CUDA-graph coverage
 
-Status: not recorded.
+Status: completed.
 
 Investigated 2026-10-07 on the saved Direct FP4 reference trace and archived
 installed vLLM 0.24.0 source. No new GPU run, server restart or recipe promotion.

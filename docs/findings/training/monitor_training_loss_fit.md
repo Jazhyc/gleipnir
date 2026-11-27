@@ -1,6 +1,6 @@
 # Matched 4B/9B teacher fit
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The complete final-checkpoint training pass shows very similar Kimi fit:

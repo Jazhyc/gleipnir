@@ -1,6 +1,6 @@
 # B200 training throughput and attention backend screen
 
-Status: not recorded.
+Status: completed.
 
 Subsequent decision (2026-10-01): the user selected compiled adaptive batching
 for future training after a separate matched execution audit. See the

@@ -1,6 +1,6 @@
 # Strict teacher agreement is the default training-data filter
 
-Status: not recorded.
+Status: current.
 
 User selection, 2026-10-11: default future binary tool-trajectory distillation
 to strict teacher/source-label agreement filtering. Remove a training row when

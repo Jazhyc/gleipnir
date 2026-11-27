@@ -1,6 +1,6 @@
 # Qwen3.5-0.8B mixed-distillation systems preflight
 
-Status: not recorded.
+Status: completed.
 
 ## Outcome
 

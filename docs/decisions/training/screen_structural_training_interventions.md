@@ -1,6 +1,7 @@
 # Screen structural training interventions
 
-Date: 2026-08-14. Status: recorded in the decision log.
+Date: 2026-08-14.
+Status: historical; governs no future work.
 
 - After conventional optimizer and regularization changes failed to improve
   macro AUROC, test twenty rank-128 cells on the fixed internal development

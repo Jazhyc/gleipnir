@@ -1,6 +1,6 @@
 # Monitor serving precision and frozen comparisons
 
-Status: not recorded.
+Status: current.
 
 The optimized deployment recipe uses **FP8 full-attention projections on vLLM 0.31**,
 selected on 2026-10-08 after reviewing the

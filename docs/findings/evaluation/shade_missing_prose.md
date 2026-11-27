@@ -1,6 +1,6 @@
 # SHADE assistant-prose omission audit
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The frozen SHADE evaluation inputs omit useful assistant prose, including

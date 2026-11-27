@@ -1,6 +1,6 @@
 # Gleipnir against frontier black-box monitors
 
-Status: not recorded.
+Status: completed.
 
 *22–23 October 2026 · Abhinav Kumar. Protocols, amendments and full results are
 in each experiment's README; this note is the summary.*

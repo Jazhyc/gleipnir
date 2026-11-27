@@ -1,6 +1,6 @@
 # Fused MXFP8 preparation and square block scaling
 
-Status: not recorded.
+Status: completed.
 
 2026-10-05. The user requested adopting compatible optimizations from the
 [Meta low-precision FA4 report](https://pytorch.org/blog/low-precision-flash-attention-4-end-to-end-block-scaled-attention-for-blackwell/)

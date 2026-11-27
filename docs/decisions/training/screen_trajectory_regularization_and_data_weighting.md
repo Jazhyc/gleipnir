@@ -1,6 +1,7 @@
 # Screen trajectory, regularization, and data weighting
 
-Date: 2026-08-14. Status: recorded in the decision log.
+Date: 2026-08-14.
+Status: historical; governs no future work.
 
 - After Muon failed full-data confirmation, keep AdamW and screen sixteen
   rank-128 cells: one shared baseline plus fifteen single-factor changes to

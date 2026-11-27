@@ -1,6 +1,7 @@
 # Retain AdamW after full-data Muon confirmation
 
-Date: 2026-08-13. Status: recorded in the decision log.
+Date: 2026-08-13.
+Status: historical; governs no future work.
 
 - Neither predeclared Muon candidate passed the frozen three-seed confirmation
   gate. Muon `5e-5` reduced paired mean macro AUROC by 0.00103 and improved only

@@ -1,6 +1,6 @@
 # Qwen Triton mutation-analysis repair
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-07 (first committed).
 
 The targeted repair removes the warning without changing the kernel source or

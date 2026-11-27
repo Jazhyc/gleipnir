@@ -1,6 +1,6 @@
 # SDPA injection-direction intervention replication
 
-Status: not recorded.
+Status: completed.
 
 2026-10-09. The completed replication reduces honest-injection alarms below
 0.5% and improves APPS ranking, with a large injected-backdoor recall loss and

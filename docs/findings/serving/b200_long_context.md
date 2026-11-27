@@ -1,6 +1,6 @@
 # B200 single-request long contexts
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07 UTC, recorded 2026-10-08 locally. Exact 262,144-token inputs complete
 at concurrency 1 without OOM after extending the attention envelope and fixing

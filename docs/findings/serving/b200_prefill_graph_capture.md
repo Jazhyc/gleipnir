@@ -1,6 +1,6 @@
 # B200 large-prefill graph capture
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. Larger piecewise graphs work on both the historical NC2 generation
 stack and the repaired EU scoring stack, but neither trial improves batch

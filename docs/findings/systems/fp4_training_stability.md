@@ -1,6 +1,6 @@
 # FP4 training stability on the restored B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-01. Experiment:
 [`fp4_stability`](../../../experiments/fp4_stability/README.md).

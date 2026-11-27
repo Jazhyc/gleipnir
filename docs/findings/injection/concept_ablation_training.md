@@ -1,6 +1,6 @@
 # Concept-ablation training on regular monitoring data
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-10 (first committed).
 
 This regular-data CAFT run **does not reduce APPS injection alarms**: all held-out

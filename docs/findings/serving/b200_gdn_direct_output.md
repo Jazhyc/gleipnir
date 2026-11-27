@@ -1,6 +1,6 @@
 # Direct GDN prefill output on the Direct FP4 reference
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-07. The user requests removal of the GDN output copies found
 in the [reference profile](b200_native_fp4_output_profile.md). Hypothesis:

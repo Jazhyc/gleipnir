@@ -1,6 +1,6 @@
 # SwiGLU overhead and direct FP4 output follow-up
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. The user authorizes two sequential stages: remove overhead
 from the existing fused producer, then try native FP4 output. Keep the selected

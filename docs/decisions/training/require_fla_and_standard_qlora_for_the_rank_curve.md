@@ -1,6 +1,7 @@
 # Require FLA and standard QLoRA for the rank curve
 
-Date: 2026-08-11. Status: recorded in the decision log.
+Date: 2026-08-11.
+Status: historical; governs no future work.
 
 - The fast Qwen3.5 H100 path requires more than `AutoModelForCausalLM`: install
   isolated `flash-linear-attention==0.5.2` and `fla-core==0.5.2` packages before

@@ -1,6 +1,6 @@
 # FP4 attention projections as the B200 inference reference
 
-Status: not recorded.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Decision date: 2026-10-06. The user says, “That's a pretty good throughput
 increase. Let's make it the reference now.” Select the completed

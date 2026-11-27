@@ -1,6 +1,6 @@
 # Last-query attention in the final layer
 
-Status: not recorded.
+Status: completed.
 
 2026-10-15. Running layer-31 attention only for each request's final query,
 while still writing every token's K/V, leaves every monitor score **bitwise

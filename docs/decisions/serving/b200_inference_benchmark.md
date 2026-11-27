@@ -1,6 +1,6 @@
 # Production inference development benchmark
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Decision date: 2026-10-06. The user requests moving from training optimization
 to production inference, with a small benchmark based on the existing training

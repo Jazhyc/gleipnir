@@ -1,6 +1,6 @@
 # pplx-decider v1.2 native-readout OOD benchmark
 
-Status: not recorded.
+Status: completed.
 
 Evaluation: 2026-10-19 on a Runpod B200 (`GPU-58276fb0…`), at the user's
 request. Design, gates, deviations and per-source tables are in the

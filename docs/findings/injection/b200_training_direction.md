@@ -1,6 +1,6 @@
 # Training-example alignment with the APPS direction
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-09 (first committed).
 
 The complete original-data comparison covers all **8,688 training records** in

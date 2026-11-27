@@ -1,6 +1,6 @@
 # Released monitors on APPS monitor-directed injections
 
-Status: not recorded.
+Status: completed.
 
 2026-10-21. The released Gleipnir 4B v0.4 and 27B v0.2 were scored once on the
 frozen APPS injection populations

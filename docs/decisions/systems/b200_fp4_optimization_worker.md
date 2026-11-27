@@ -1,6 +1,6 @@
 # Resident B200 FP4 optimization baseline
 
-Status: not recorded.
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md); the resident-worker preference lives in the [training guide](../../agent_guides/training.md).
 
 On 2026-10-05 the user selected combined native FP4 MLPs with BF16 FA4 as the
 baseline for further training-stack timing improvements and requested keeping

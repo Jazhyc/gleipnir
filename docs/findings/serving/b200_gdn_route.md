@@ -1,6 +1,6 @@
 # Length-gated GDN prefill route
 
-Status: not recorded.
+Status: completed.
 
 2026-10-15, on the EU-RO-1 B200 with the adopted last-query default. FlashInfer's
 single-GPU context-parallel (CP) GDN prefill is slower than its non-CP route

@@ -1,6 +1,6 @@
 # Competition poster evidence
 
-Status: not recorded.
+Status: completed.
 
 This document freezes the completed deception-monitor results available for a
 competition poster as of 2026-08-18. It is a reporting record, not a new model

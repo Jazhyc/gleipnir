@@ -1,6 +1,6 @@
 # Cache-free complete-prompt monitoring on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-07. **Keep the selected Gigatoken/direct-FROST reference.** The
 cache-free prototype removes persistent cache storage. The initial NC2 screen

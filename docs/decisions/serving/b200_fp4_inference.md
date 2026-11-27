@@ -1,6 +1,6 @@
 # Native cuDNN FP4 MLP inference screen
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Decision date: 2026-10-06. The user requests FP4 MLP inference after the native
 FP8 screen, and explicitly asks to report AUROC deviation with every kernel

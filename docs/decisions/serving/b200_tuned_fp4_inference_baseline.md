@@ -1,6 +1,6 @@
 # Combined preparation and tuned FP4 GEMMs as the B200 inference reference
 
-Status: superseded; the text names what replaced it.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Subsequently superseded by the user-selected
 [FP4 attention projection reference](b200_attention_fp4_inference_baseline.md).

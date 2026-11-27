@@ -1,6 +1,6 @@
 # Native MXFP8 backward in full QAT
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The [experiment](../../../experiments/quantization/native_mxfp8_qat/README.md) changes attention

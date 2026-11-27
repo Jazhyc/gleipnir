@@ -1,6 +1,6 @@
 # B200 MLP / GEMM screen
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-05. The user authorized a new single B200 in US-NC-2 and asked
 for large MLP / GEMM optimization, with FP4 as the eventual target. The first

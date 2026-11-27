@@ -1,6 +1,6 @@
 # FP4 GDN projections as the B200 serving baseline
 
-Status: superseded; the text names what replaced it.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Superseded for new optimization comparisons on 2026-10-06 by the
 [MXFP8 prefill reference](b200_mxfp8_inference_baseline.md). Preserve this

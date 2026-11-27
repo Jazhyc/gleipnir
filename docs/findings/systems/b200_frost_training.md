@@ -1,6 +1,6 @@
 # Direct FROST bindings in FP4 LoRA training
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. Direct positional dispatch preserves native and full-model numerics,
 but gives no measurable end-to-end training speedup on the frozen 320-row cohort.

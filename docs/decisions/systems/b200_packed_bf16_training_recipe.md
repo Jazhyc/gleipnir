@@ -1,6 +1,7 @@
 # Packed BF16 LoRA as the B200 training default
 
-Status: selected by explicit user instruction, 2026-10-04: packed BF16 LoRA
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md).
+Recorded: selected by explicit user instruction, 2026-10-04: packed BF16 LoRA
 with native FlashAttention 4 full attention. This updates the 2026-10-02 SDPA
 selection. After reviewing the completed FA4 and FP4 screens, the user said to
 make the recipe using FA4 standard from now on. That instruction supersedes the

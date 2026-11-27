@@ -1,6 +1,6 @@
 # Qwen3.8-Flash matched direct-logprob comparison
 
-Status: not recorded.
+Status: completed.
 
 2026-09-07. Complete on 640 source/label-balanced training trajectories.
 Not a held-out promotion result. No additional teacher models were called.

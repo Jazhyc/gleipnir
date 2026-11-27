@@ -1,6 +1,6 @@
 # Direct FP4-output B200 inference reference
 
-Status: not recorded.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Selected by the user on 2026-10-07. Use
 `experiments/b200_attention_gdn_serving/fp4_swiglu_native_output.json` as the

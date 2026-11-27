@@ -1,6 +1,6 @@
 # MiniMax M3 matched full-boundary comparison
 
-Status: superseded; the text names what replaced it.
+Status: completed.
 
 2026-09-07. Completed user-authorized diagnostic on the same 640 balanced
 training samples used for Qwen/Kimi agreement. Not a held-out selection result.

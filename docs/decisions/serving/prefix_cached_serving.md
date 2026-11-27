@@ -1,6 +1,6 @@
 # Opt-in prefix-cached serving
 
-Status: not recorded.
+Status: current.
 
 User decision, 2026-10-16: offer align-mode prefix caching as an opt-in serving
 mode for synchronous monitoring, accepting its score drift. Enable it with

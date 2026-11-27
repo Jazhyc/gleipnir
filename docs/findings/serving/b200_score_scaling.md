@@ -1,6 +1,6 @@
 # B200 selected reference concurrency scaling
 
-Status: not recorded.
+Status: completed.
 
 The current FP8/0.31 NC2 measurement is recorded in
 [the host comparison below](#current-fp8-scorer-on-nc2).

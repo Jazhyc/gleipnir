@@ -1,6 +1,6 @@
 # Short QAD budgets
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-13 (first committed).
 
 The user requests 32 and 64 updates to assess reduced QAD overhead. The

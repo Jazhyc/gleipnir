@@ -1,6 +1,7 @@
 # Do not promote hard-only from the internal split
 
-Date: 2026-08-17. Status: recorded in the decision log.
+Date: 2026-08-17.
+Status: historical; governs no future work.
 
 - The unadapted Qwen3.5-9B base reaches 0.92273 macro AUROC on the exact 1,972-row
   internal development surface (0.88903 pooled AUROC). Hard-only adaptation

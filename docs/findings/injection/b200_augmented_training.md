@@ -1,6 +1,6 @@
 # Augmented monitor training precision controls
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-08 (first committed).
 
 The original injection augmentation was replayed on the existing NC2 B200 with

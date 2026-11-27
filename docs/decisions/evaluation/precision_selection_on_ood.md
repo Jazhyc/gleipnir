@@ -1,6 +1,6 @@
 # Precision and kernel choices may be selected on the OOD suite
 
-Status: not recorded.
+Status: current.
 
 User decision, 2026-10-15. Training- and serving-precision or kernel choices
 may use the frozen six-source OOD suite for selection. This covers MLP

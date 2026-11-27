@@ -1,6 +1,6 @@
 # Recovering the original OOD public monitoring surface
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 Restoration and corrected-input rescoring are deferred by the user's

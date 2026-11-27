@@ -1,6 +1,6 @@
 # B200 provisioned for prospective quantization-aware training
 
-Status: not recorded.
+Status: completed.
 
 At the user's request, one B200 was provisioned on 2026-10-12 as Pod
 `tv6i08lhsf2cfy` (`gleipnir-b200-qat`) in US-CA-2 at $7.99/hour.

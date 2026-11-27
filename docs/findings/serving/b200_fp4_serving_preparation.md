@@ -1,6 +1,6 @@
 # FP4 activation preparation on the MXFP8 serving reference
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. The user authorizes all three proposed preparation changes:
 installed CUDA per-token NVFP4 packing, fused SwiGLU packing, and fused

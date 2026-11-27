@@ -1,6 +1,6 @@
 # Matched FP4 GEMM backend comparison on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. The user requests a comparison of FP4 GEMM backends after
 selecting the combined-preparation, shape-tuned FROST serving reference.

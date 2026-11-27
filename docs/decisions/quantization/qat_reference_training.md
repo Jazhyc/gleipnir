@@ -1,6 +1,6 @@
 # Selected merged-weight QAT training recipe
 
-Status: not recorded.
+Status: current.
 
 The user selects the original QAT arithmetic with redundant operations removed
 on 2026-10-13. This selection applies to future merged-weight QAT runs; it does

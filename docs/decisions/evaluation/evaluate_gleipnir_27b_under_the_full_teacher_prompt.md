@@ -1,6 +1,7 @@
 # Evaluate Gleipnir 27B under the full teacher prompt
 
-Date: 2026-10-20. Status: recorded in the decision log.
+Date: 2026-10-20.
+Status: current.
 
 - User decision: by default, Gleipnir 27B is evaluated under the full teacher
   prompt, not the compact student prompt it was trained on. This applies to

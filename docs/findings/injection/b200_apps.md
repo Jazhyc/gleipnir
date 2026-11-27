@@ -1,6 +1,6 @@
 # Current FP4-trained monitor on APPS
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-08 (first committed).
 
 The fixed 272-update regular FP4/FA4-trained Qwen3.5-4B monitor still reacts

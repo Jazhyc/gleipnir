@@ -1,6 +1,6 @@
 # RTX PRO 6000 inference search — 2026-09-29
 
-Status: not recorded.
+Status: completed.
 
 The frozen protocol and executable conditions are in
 [`experiments/serving/fp4_inference`](../../../experiments/serving/fp4_inference/README.md).

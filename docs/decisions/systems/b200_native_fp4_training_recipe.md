@@ -1,6 +1,6 @@
 # Native FP4 MLP B200 training default
 
-Status: superseded; the text names what replaced it.
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md).
 
 Superseded as the default on 2026-10-16 by
 [BF16/SDPA](b200_bf16_sdpa_training_default.md); the profile below remains

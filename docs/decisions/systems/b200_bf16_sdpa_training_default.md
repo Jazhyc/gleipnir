@@ -1,6 +1,6 @@
 # BF16/SDPA B200 training default
 
-Status: not recorded.
+Status: current.
 
 User selection, 2026-10-16: train in BF16 with SDPA attention.
 `qwen35_4b_b200_default` aliases `qwen35_4b_b200_packed_sdpa_trim`:

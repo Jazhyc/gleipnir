@@ -1,6 +1,7 @@
 # Select native FP4 MLPs as the B200 training default
 
-Date: 2026-10-05. Status: recorded in the decision log.
+Date: 2026-10-05.
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md).
 
 - `qwen35_4b_b200_default` now selects the warmed native NVFP4 MLP recipe with
   BF16 FlashQLA/FA4 and FP32 master adapters. Ordinary training reuses its bound

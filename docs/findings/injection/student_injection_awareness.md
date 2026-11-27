@@ -1,6 +1,6 @@
 # Student prompt-injection awareness campaign
 
-Status: not recorded.
+Status: completed.
 
 The [prespecified experiment](../../../experiments/injection/student_injection_awareness/README.md)
 compares regular and explicitly injection-aware student instructions at 4B and

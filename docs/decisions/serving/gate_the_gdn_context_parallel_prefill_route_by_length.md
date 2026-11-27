@@ -1,6 +1,7 @@
 # Gate the GDN context-parallel prefill route by length
 
-Date: 2026-10-15. Status: recorded in the decision log.
+Date: 2026-10-15.
+Status: current.
 
 - The FP8 default takes FlashInfer's non-CP GDN prefill below 8,192 tokens per
   call. In a same-server A/B through normal startup, quick64 c1 p50 is 2.3 ms

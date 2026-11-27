@@ -1,6 +1,6 @@
 # FP4 full-attention projections on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. The user authorizes changing the remaining full-attention
 projection GEMMs to FP4. The named recipe `attention_fp4.json` extends the

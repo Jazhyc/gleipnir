@@ -1,6 +1,6 @@
 # Two-GPU mixed-corpus MIL throughput
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-09-07. Systems screen completed; full scientific experiment launched.
 

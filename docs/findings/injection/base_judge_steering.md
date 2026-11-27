@@ -1,6 +1,6 @@
 # Augmented-vector steering in base-model JudgeDeceiver judging
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-10 (first committed).
 
 The original APPS vector has a **large causal effect in base-model judging**,

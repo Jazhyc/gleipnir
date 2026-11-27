@@ -1,6 +1,6 @@
 # Combining behavior and injection-presence scores
 
-Status: not recorded.
+Status: completed.
 
 The 2026-10-11 offline pilot gives a mixed answer: adding the injection margin
 improves pooled APPS behavior discrimination but **worsens discrimination within

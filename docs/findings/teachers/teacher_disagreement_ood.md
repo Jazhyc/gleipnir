@@ -1,6 +1,6 @@
 # Strict teacher-disagreement filtering: OOD transfer
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-11 (first committed).
 
 The fixed strict-filtered seed-0 checkpoint reaches **0.786936** six-source

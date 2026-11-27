@@ -1,6 +1,6 @@
 # Use CoT-removed ID inputs for future validation
 
-Status: not recorded.
+Status: current.
 
 Decision: accepted by the user on 2026-09-08.
 

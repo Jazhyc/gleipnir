@@ -1,6 +1,6 @@
 # Runpod B200: released Gleipnir 4B ID verification
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-09-30. Execution contract:
 [`runpod_gleipnir4b_id`](../../../experiments/serving/runpod_gleipnir4b_id/README.md).

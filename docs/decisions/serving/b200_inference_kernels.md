@@ -1,6 +1,6 @@
 # Native inference kernel screening on B200
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Decision date: 2026-10-06. The user requests kernel optimization following the
 completed merged BF16 baseline. Use the existing NC2 B200 and the frozen small

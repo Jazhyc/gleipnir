@@ -1,6 +1,6 @@
 # Merged QAT training systems optimization
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-12 (first committed).
 
 The [screen](../../../experiments/quantization/qat_training_optimization/README.md) optimizes the

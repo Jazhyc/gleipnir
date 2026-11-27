@@ -1,6 +1,6 @@
 # BF16 GDN state in vLLM
 
-Status: not recorded.
+Status: completed.
 
 The 2026-10-07 B200 screen finds BF16 recurrent-state storage/native I/O
 numerically feasible, but **no useful serving speed gain**: c128 input throughput

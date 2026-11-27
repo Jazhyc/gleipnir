@@ -1,6 +1,6 @@
 # QAT and OOD campaign shutdown
 
-Status: not recorded.
+Status: completed.
 
 At the user's explicit request, NC2 B200 Pod `fs334v0u4zysvn` was terminated on
 2026-10-13. The delete returned HTTP 204 and the subsequent Pod lookup returned

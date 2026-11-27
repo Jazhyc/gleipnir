@@ -1,6 +1,6 @@
 # Census-filtered standard-prompt 4B: filtering did not resolve injection alarms
 
-Status: not recorded.
+Status: completed.
 
 2026-10-03. Training and the full evaluation completed. Removing 1,154 census
 flags did not resolve the operational false alarms: the new monitor still alarms

@@ -1,6 +1,6 @@
 # Reuse training FROST forward arithmetic in vLLM
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Decision date: 2026-10-06. The user requests testing the exact optimized FP4
 training forward kernels after the negative stock FlashInfer/cuDNN serving

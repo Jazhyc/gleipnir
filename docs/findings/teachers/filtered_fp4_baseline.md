@@ -1,6 +1,6 @@
 # Filtered FP4/FA4 baseline campaign
 
-Status: not recorded.
+Status: completed.
 
 The user authorized setup and a new optimized-training baseline on their NC2
 B200 on 2026-10-12. Pod `fs334v0u4zysvn` mounts retained network volume

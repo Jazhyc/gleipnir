@@ -1,7 +1,7 @@
 **Can a cheap monitor be turned against the agents it watches?**
 *Gleipnir 4B in a six-agent lab · Abhinav Kumar · 20 October 2026*
 
-Status: not recorded.
+Status: completed.
 
 *Question:*
 - Cheap monitors are pitched as the first layer of oversight for agent swarms. Do they hold up when agents talk to each other?

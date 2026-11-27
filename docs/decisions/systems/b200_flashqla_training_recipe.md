@@ -1,6 +1,7 @@
 # FlashQLA for the default B200 LoRA recipe
 
-Status: selected by explicit user instruction, 2026-10-02.
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md).
+Recorded: selected by explicit user instruction, 2026-10-02.
 
 Subsequent user selection: the current B200 default uses packed unquantized BF16
 LoRA without model checkpointing. See the

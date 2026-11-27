@@ -1,6 +1,6 @@
 # Firewall content and learned direction alignment
 
-Status: not recorded.
+Status: completed.
 Date: 2026-10-09 (first committed).
 
 The completed Qwen3.5-9B pass finds a strong pooled association in harmless

@@ -1,6 +1,6 @@
 # SleightBench: released monitors, single pass
 
-Status: not recorded.
+Status: completed.
 
 2026-10-21. Gleipnir 4B v0.4 and 27B v0.2 were scored once on
 [SLEIGHT-Bench](https://github.com/safety-research/sleight-bench)

@@ -1,6 +1,7 @@
 # Run tool-trajectory scaling as Kimi-soft-only distillation
 
-Date: 2026-08-30. Status: recorded in the decision log.
+Date: 2026-08-30.
+Status: historical; governs no future work.
 
 - Train only Kimi K3 soft-logit students for the first Qwen3.5-9B
   tool-trajectory scaling campaign. Do not train matched hard-label adapters;

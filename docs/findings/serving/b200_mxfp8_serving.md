@@ -1,6 +1,6 @@
 # Forward-only cuDNN MXFP8 attention on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. The corrected causal D256/GQA serving bridge completes the
 frozen inference screen. Five additional resident concurrency-128 passes give

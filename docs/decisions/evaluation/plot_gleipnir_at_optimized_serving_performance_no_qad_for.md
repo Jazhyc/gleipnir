@@ -1,6 +1,7 @@
 # Plot Gleipnir at optimized-serving performance; no QAD for the 27B
 
-Date: 2026-10-20. Status: recorded in the decision log.
+Date: 2026-10-20.
+Status: current.
 
 - User decision: the frontier registry enters Gleipnir models at their
   performance on the project's optimized serving stack, because project

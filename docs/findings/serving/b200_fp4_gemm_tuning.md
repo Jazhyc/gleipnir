@@ -1,6 +1,6 @@
 # Shape-dependent FP4 GEMM tiles on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-06. A bounded NVIDIA tile/cluster sweep finds small native gains
 for output projections, but no clear whole-serving win. The existing tile wins

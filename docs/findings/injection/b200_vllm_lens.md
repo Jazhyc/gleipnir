@@ -1,6 +1,6 @@
 # vLLM Lens on the pooling monitor
 
-Status: not recorded.
+Status: completed.
 
 2026-10-08. Lens 1.3.0 capture and steering work on the selected merged 4B
 monitor under vLLM 0.31, in opt-in eager research mode on the existing NC2 B200.

@@ -1,6 +1,6 @@
 # B200 serving precision after FROST baseline selection
 
-Status: not recorded.
+Status: historical; governs no future work.
 
 Date: 2026-10-06. The user selects FROST FP4 MLPs as the inference optimization
 baseline, prioritizing higher-concurrency throughput, and asks about lower

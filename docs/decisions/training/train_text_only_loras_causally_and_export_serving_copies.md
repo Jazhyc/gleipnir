@@ -1,6 +1,7 @@
 # Train text-only LoRAs causally and export serving copies
 
-Date: 2026-08-11. Status: recorded in the decision log.
+Date: 2026-08-11.
+Status: current.
 
 - For experiments containing no image or video inputs, train Qwen3.5 LoRAs
   through its causal text compatibility model and preserve that FP32 adapter as

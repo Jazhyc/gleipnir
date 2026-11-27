@@ -1,6 +1,6 @@
 # B200 fixed 2K context scaling
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. The unchanged selected reference reaches a median 252,647 input
 tokens/s and 123.36 requests/s with exactly 2,048-token prompts. This is 16.56%

@@ -1,6 +1,6 @@
 # Full-attention projection precision recovery
 
-Status: not recorded.
+Status: completed.
 
 2026-10-08. On the fixed FP4-trained 4B adapter, FP8 full-attention projections
 recover 1.16 percentage points of ID source-macro pAUROC@20 over the 0.31 FP4

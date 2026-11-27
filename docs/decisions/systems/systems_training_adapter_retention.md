@@ -1,6 +1,6 @@
 # Latest-only weights for short systems training checks
 
-Status: not recorded.
+Status: current.
 
 Decision date: 2026-10-06. After the network-volume audit, the user explicitly
 requests overwriting the same adapter for systems training optimization and

@@ -1,6 +1,6 @@
 # Pretrained-only Qwen3.5 ID evaluation
 
-Status: not recorded.
+Status: completed.
 
 Completed and audited 2026-09-07. No new training, prompt tuning, or OOD access.
 

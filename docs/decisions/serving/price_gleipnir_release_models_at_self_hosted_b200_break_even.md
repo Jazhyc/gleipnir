@@ -1,6 +1,7 @@
 # Price Gleipnir release models at self-hosted B200 break-even
 
-Date: 2026-10-20. Status: recorded in the decision log.
+Date: 2026-10-20.
+Status: current.
 
 - User decision: Gleipnir 4B v0.3 and Gleipnir 27B are priced at self-hosting
   break-even, one B200 at `$7.99/h` at 100% utilization. The reference is

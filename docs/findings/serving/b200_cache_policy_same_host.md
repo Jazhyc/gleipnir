@@ -1,6 +1,6 @@
 # B200 cache policy and restart comparison
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. **Most of the NC2-to-EU latency reduction persists with the standard
 cached recipe.** On the same EU-RO-1 B200, fresh cache-free serving reduces c1

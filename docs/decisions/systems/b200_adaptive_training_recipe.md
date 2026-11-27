@@ -1,6 +1,7 @@
 # Adaptive batching for future B200 training
 
-Status: adaptive batching selected by explicit user instruction, 2026-10-01.
+Status: superseded by [BF16/SDPA B200 training default](b200_bf16_sdpa_training_default.md).
+Recorded: adaptive batching selected by explicit user instruction, 2026-10-01.
 
 The current B200 default uses packed BF16 LoRA without model checkpointing;
 see the [packed BF16 decision](b200_packed_bf16_training_recipe.md). The profile

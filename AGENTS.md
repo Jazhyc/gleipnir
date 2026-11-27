@@ -47,7 +47,8 @@ evidence changes scientific direction or evaluation principles.
 
 File findings and decisions under `docs/{findings,decisions}/<category>/` (the
 index's categories), plans under `docs/plans/`. Start each with `Status:` and
-`Date:` lines, list it in `docs/README.md` (decisions also in
+`Date:` lines (findings: `completed`; decisions: `current`, `superseded by
+<link>` or `historical`), list it in `docs/README.md` (decisions also in
 `docs/decisions/README.md`), and update `docs/current.md` when a selection,
 release or open item changes; `tests/layout/test_docs.py` checks indexes,
 headers and links.

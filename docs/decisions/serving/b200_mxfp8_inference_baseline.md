@@ -1,6 +1,6 @@
 # MXFP8 prefill as the B200 inference optimization reference
 
-Status: superseded; the text names what replaced it.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Superseded later on 2026-10-06 by the user-selected
 [combined-preparation/shape-tuned reference](b200_tuned_fp4_inference_baseline.md).

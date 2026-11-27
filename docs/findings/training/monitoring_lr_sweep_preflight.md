@@ -1,6 +1,6 @@
 # Monitoring-only 4B LR sweep preflight
 
-Status: not recorded.
+Status: completed.
 
 ## 2026-09-03: microbatch 8 is not safe at the frozen length ceiling
 

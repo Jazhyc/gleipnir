@@ -1,6 +1,6 @@
 # Crossed monitor prompt-injection evaluation
 
-Status: not recorded.
+Status: completed.
 
 ## Dataset-construction review, 2026-10-02
 

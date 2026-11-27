@@ -1,6 +1,6 @@
 # Kimi K3 on injected honest APPS code: collaborator-reported diagnostic
 
-Status: not recorded.
+Status: completed.
 
 Recorded 2026-10-04 from Michael Kenney’s writeup supplied by Jeremias Ferrao.
 This is a summary of collaborator-reported results, not an independently audited

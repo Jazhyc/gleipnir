@@ -1,6 +1,6 @@
 # Native Gigatoken and direct FROST serving reference
 
-Status: superseded; the text names what replaced it.
+Status: superseded by [Monitor serving precision and frozen comparisons](b200_monitor_score_reference.md).
 
 Historical selection, superseded by the [repaired score reference](b200_monitor_score_reference.md).
 User-selected on 2026-10-07. The earlier B200 inference optimization reference is the

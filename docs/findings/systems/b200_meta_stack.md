@@ -1,6 +1,6 @@
 # Meta attention optimization audit and causal B200 screen
 
-Status: not recorded.
+Status: completed.
 
 2026-10-05. The user requested trying all optimizations from the
 [Meta report](https://pytorch.org/blog/low-precision-flash-attention-4-end-to-end-block-scaled-attention-for-blackwell/)

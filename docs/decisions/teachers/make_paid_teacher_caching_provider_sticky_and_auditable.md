@@ -1,6 +1,7 @@
 # Make paid teacher caching provider-sticky and auditable
 
-Date: 2026-08-30. Status: recorded in the decision log.
+Date: 2026-08-30.
+Status: current.
 
 - Route synchronous OpenRouter annotation campaigns through a stable
   `session_id` derived from the model and exact prompt prefix, mark that prefix

@@ -1,6 +1,6 @@
 # Qwen3.8-27B B200 training default
 
-Status: not recorded.
+Status: current.
 
 User selection, 2026-10-17: train Qwen3.8-27B on one B200 with
 `qwen38_27b_b200_default`, which aliases

@@ -3,6 +3,8 @@
 Experiment READMEs describe executable work. Documents here record conclusions
 that should influence later experiments. Every finding, decision and plan
 starts with a `Status:` and `Date:` line; entries below are newest first.
+Findings record completed measurements; decisions say whether they are
+`current`, `superseded` or `historical`.
 
 ## Start here
 
@@ -21,20 +23,20 @@ starts with a `Status:` and `Date:` line; entries below are newest first.
 Decisions:
 
 - [Train Gleipnir 4B on tool-trajectory data only](decisions/training/train_gleipnir_4b_on_tool_trajectory_data_only.md) (2026-10-20): User decision: Gleipnir 4B uses the same training data as Gleipnir 27B.
-- [Advance `2e-5` for monitoring-only LR confirmation](decisions/training/advance_2e_5_for_monitoring_only_lr_confirmation.md) (2026-09-04): The five-cell seed-0 Qwen3.5-4B screen selected AdamW `2e-5` over the freshly retrained `5e-5` control on the frozen 3,012-row ID development suite.
-- [Run tool-trajectory scaling as Kimi-soft-only distillation](decisions/training/run_tool_trajectory_scaling_as_kimi_soft_only_distillation.md) (2026-08-30): Train only Kimi K3 soft-logit students for the first Qwen3.5-9B tool-trajectory scaling campaign.
-- [Do not promote hard-only from the internal split](decisions/training/do_not_promote_hard_only_from_the_internal_split.md) (2026-08-17): The unadapted Qwen3.5-9B base reaches 0.92273 macro AUROC on the exact 1,972-row internal development surface (0.88903 pooled AUROC).
-- [Screen trajectory, regularization, and data weighting](decisions/training/screen_trajectory_regularization_and_data_weighting.md) (2026-08-14): After Muon failed full-data confirmation, keep AdamW and screen sixteen rank-128 cells: one shared baseline plus fifteen single-factor changes to warmup, schedule, epoch …
-- [Screen structural training interventions](decisions/training/screen_structural_training_interventions.md) (2026-08-14): After conventional optimizer and regularization changes failed to improve macro AUROC, test twenty rank-128 cells on the fixed internal development protocol: three …
-- [Retain the baseline after the regularization screen](decisions/training/retain_the_baseline_after_the_regularization_screen.md) (2026-08-14): All sixteen rank-128 screen cells completed on the fixed internal development split.
-- [Retain AdamW after full-data Muon confirmation](decisions/training/retain_adamw_after_full_data_muon_confirmation.md) (2026-08-13): Neither predeclared Muon candidate passed the frozen three-seed confirmation gate.
-- [Confirm the two Muon candidates on full data](decisions/training/confirm_the_two_muon_candidates_on_full_data.md) (2026-08-13): Replace the planned 50%-data confirmation with a 100%-training-data confirmation at the user's direction.
-- [Compare Muon through scheduled update-RMS matching](decisions/training/compare_muon_through_scheduled_update_rms_matching.md) (2026-08-13): Replace the independent, unscheduled Muon learning rate with the standard scheduler-managed parameter-group `lr`.
-- [Advance two Muon rates to replicated confirmation](decisions/training/advance_two_muon_rates_to_replicated_confirmation.md) (2026-08-13): The rank-64, 25%-data internal-development screen completed all ten paired cells.
-- [Measure data and adapter capacity jointly](decisions/training/measure_data_and_adapter_capacity_jointly.md) (2026-08-12): Cross nested `10%`, `25%`, and `50%` training selections with QLoRA ranks 4, 16, 64, and 256 using paired seeds 0, 1, and 2.
+- [Advance `2e-5` for monitoring-only LR confirmation](decisions/training/advance_2e_5_for_monitoring_only_lr_confirmation.md) (2026-09-04) *(historical)*: The five-cell seed-0 Qwen3.5-4B screen selected AdamW `2e-5` over the freshly retrained `5e-5` control on the frozen 3,012-row ID development suite.
+- [Run tool-trajectory scaling as Kimi-soft-only distillation](decisions/training/run_tool_trajectory_scaling_as_kimi_soft_only_distillation.md) (2026-08-30) *(historical)*: Train only Kimi K3 soft-logit students for the first Qwen3.5-9B tool-trajectory scaling campaign.
+- [Do not promote hard-only from the internal split](decisions/training/do_not_promote_hard_only_from_the_internal_split.md) (2026-08-17) *(historical)*: The unadapted Qwen3.5-9B base reaches 0.92273 macro AUROC on the exact 1,972-row internal development surface (0.88903 pooled AUROC).
+- [Screen trajectory, regularization, and data weighting](decisions/training/screen_trajectory_regularization_and_data_weighting.md) (2026-08-14) *(historical)*: After Muon failed full-data confirmation, keep AdamW and screen sixteen rank-128 cells: one shared baseline plus fifteen single-factor changes to warmup, schedule, epoch …
+- [Screen structural training interventions](decisions/training/screen_structural_training_interventions.md) (2026-08-14) *(historical)*: After conventional optimizer and regularization changes failed to improve macro AUROC, test twenty rank-128 cells on the fixed internal development protocol: three …
+- [Retain the baseline after the regularization screen](decisions/training/retain_the_baseline_after_the_regularization_screen.md) (2026-08-14) *(historical)*: All sixteen rank-128 screen cells completed on the fixed internal development split.
+- [Retain AdamW after full-data Muon confirmation](decisions/training/retain_adamw_after_full_data_muon_confirmation.md) (2026-08-13) *(historical)*: Neither predeclared Muon candidate passed the frozen three-seed confirmation gate.
+- [Confirm the two Muon candidates on full data](decisions/training/confirm_the_two_muon_candidates_on_full_data.md) (2026-08-13) *(historical)*: Replace the planned 50%-data confirmation with a 100%-training-data confirmation at the user's direction.
+- [Compare Muon through scheduled update-RMS matching](decisions/training/compare_muon_through_scheduled_update_rms_matching.md) (2026-08-13) *(historical)*: Replace the independent, unscheduled Muon learning rate with the standard scheduler-managed parameter-group `lr`.
+- [Advance two Muon rates to replicated confirmation](decisions/training/advance_two_muon_rates_to_replicated_confirmation.md) (2026-08-13) *(historical)*: The rank-64, 25%-data internal-development screen completed all ten paired cells.
+- [Measure data and adapter capacity jointly](decisions/training/measure_data_and_adapter_capacity_jointly.md) (2026-08-12) *(historical)*: Cross nested `10%`, `25%`, and `50%` training selections with QLoRA ranks 4, 16, 64, and 256 using paired seeds 0, 1, and 2.
 - [Train text-only LoRAs causally and export serving copies](decisions/training/train_text_only_loras_causally_and_export_serving_copies.md) (2026-08-11): For experiments containing no image or video inputs, train Qwen3.5 LoRAs through its causal text compatibility model and preserve that FP32 adapter as the master …
-- [Require FLA and standard QLoRA for the rank curve](decisions/training/require_fla_and_standard_qlora_for_the_rank_curve.md) (2026-08-11): The fast Qwen3.5 H100 path requires more than `AutoModelForCausalLM`: install isolated `flash-linear-attention==0.5.2` and `fla-core==0.5.2` packages before model …
-- [Match multimodal training and serving architectures](decisions/training/match_multimodal_training_and_serving_architectures.md) (2026-08-10): Load multimodal backbones such as Qwen3.5 through `AutoModelForImageTextToText` during training, even for text-only batches, and restrict LoRA targets explicitly to the …
+- [Require FLA and standard QLoRA for the rank curve](decisions/training/require_fla_and_standard_qlora_for_the_rank_curve.md) (2026-08-11) *(historical)*: The fast Qwen3.5 H100 path requires more than `AutoModelForCausalLM`: install isolated `flash-linear-attention==0.5.2` and `fla-core==0.5.2` packages before model …
+- [Match multimodal training and serving architectures](decisions/training/match_multimodal_training_and_serving_architectures.md) (2026-08-10) *(superseded)*: Load multimodal backbones such as Qwen3.5 through `AutoModelForImageTextToText` during training, even for text-only batches, and restrict LoRA targets explicitly to the …
 
 Findings:
 
@@ -68,7 +70,7 @@ Findings:
 - [Strict teacher-disagreement filtering: OOD transfer](findings/teachers/teacher_disagreement_ood.md) (2026-10-11): small macro ranking gain over cached Gleipnir 4B, with source regressions and worse Brier; one-seed historical-serving comparison limits attribution.
 - [Teacher-disagreement filtering on monitoring training data](findings/teachers/teacher_disagreement_filtering.md) (2026-10-11): strict and 0.05-margin filtering improve one-seed ID ranking, with higher fixed-threshold false alarms; wider margins regress Gloom.
 - [Qwen3.8-Flash matched direct-logprob comparison](findings/teachers/qwen38flash_matched_teacher_comparison.md) (2026-09-07): 2026-09-07.
-- [MiniMax M3 matched full-boundary comparison](findings/teachers/minimax_matched_teacher_comparison.md) (2026-09-07) *(superseded)*: 2026-09-07.
+- [MiniMax M3 matched full-boundary comparison](findings/teachers/minimax_matched_teacher_comparison.md) (2026-09-07): 2026-09-07.
 - [Kimi K2.6 matched training-population diagnostic](findings/teachers/kimi26_matched_teacher_comparison.md) (2026-09-07): 2026-09-07.
 - [Matched Qwen 3.5 27B and Kimi K3 teacher agreement](findings/teachers/matched_qwen_kimi_teacher_agreement.md) (2026-09-06): 2026-09-06.
 - [Kimi K2.6 Inceptron OOD binary-logit benchmark](findings/teachers/tool_trajectory_kimi_k26_ood_benchmark.md) (2026-09-01): Unadapted `moonshotai/kimi-k2.6`, served exclusively by Inceptron's dated `moonshotai/kimi-k2.6-20260420` endpoint, reaches **0.9194 Mean-OOD pAUROC@20** and **0.9751 …
@@ -136,8 +138,8 @@ Findings:
 
 Decisions:
 
-- [Replicate monitor-directed injection augmentation on 9B](decisions/injection/monitor_injection_augmentation_9b.md) (2026-10-04): all required transfers to the existing Runpod B200, and shutdown after training, evaluation and verified collection.
-- [Monitor-directed injection replacement](decisions/injection/monitor_injection_augmentation.md) (2026-10-04): The user authorized training/evaluation on the existing B200 on 2026-10-04; launch verification will record when actual optimizer updates advance.
+- [Replicate monitor-directed injection augmentation on 9B](decisions/injection/monitor_injection_augmentation_9b.md) (2026-10-04) *(historical)*: all required transfers to the existing Runpod B200, and shutdown after training, evaluation and verified collection.
+- [Monitor-directed injection replacement](decisions/injection/monitor_injection_augmentation.md) (2026-10-04) *(historical)*: Recorded: user selected replacement; CPU preparation completed.
 
 Findings:
 
@@ -197,16 +199,16 @@ Decisions:
 - [Native FP4 MLP B200 training default](decisions/systems/b200_native_fp4_training_recipe.md) (2026-10-16) *(superseded)*: Superseded as the default on 2026-10-16 by BF16/SDPA; the profile below remains available as `qwen35_4b_b200_fp4_mlp`.
 - [BF16/SDPA B200 training default](decisions/systems/b200_bf16_sdpa_training_default.md) (2026-10-16): replaces the FP4/FA4 default after the teacher precision factorial.
 - [Latest-only weights for short systems training checks](decisions/systems/systems_training_adapter_retention.md) (2026-10-06): Decision date: 2026-10-06.
-- [Select native FP4 MLPs as the B200 training default](decisions/systems/select_native_fp4_mlps_as_the_b200_training_default.md) (2026-10-05): `qwen35_4b_b200_default` now selects the warmed native NVFP4 MLP recipe with BF16 FlashQLA/FA4 and FP32 master adapters.
-- [Resident B200 FP4 optimization baseline](decisions/systems/b200_fp4_optimization_worker.md) (2026-10-05): On 2026-10-05 the user selected combined native FP4 MLPs with BF16 FA4 as the baseline for further training-stack timing improvements and requested keeping a training …
-- [Full regular 4B replication with native FP4 MLPs](decisions/systems/b200_fp4_full_training_replication.md) (2026-10-05): Decision date: 2026-10-05.
-- [Packed BF16 LoRA as the B200 training default](decisions/systems/b200_packed_bf16_training_recipe.md) (2026-10-04): the selected packed training recipe without model checkpointing.
+- [Select native FP4 MLPs as the B200 training default](decisions/systems/select_native_fp4_mlps_as_the_b200_training_default.md) (2026-10-05) *(superseded)*: `qwen35_4b_b200_default` now selects the warmed native NVFP4 MLP recipe with BF16 FlashQLA/FA4 and FP32 master adapters.
+- [Resident B200 FP4 optimization baseline](decisions/systems/b200_fp4_optimization_worker.md) (2026-10-05) *(superseded)*: On 2026-10-05 the user selected combined native FP4 MLPs with BF16 FA4 as the baseline for further training-stack timing improvements and requested keeping a training …
+- [Full regular 4B replication with native FP4 MLPs](decisions/systems/b200_fp4_full_training_replication.md) (2026-10-05) *(historical)*: Decision date: 2026-10-05.
+- [Packed BF16 LoRA as the B200 training default](decisions/systems/b200_packed_bf16_training_recipe.md) (2026-10-04) *(superseded)*: the selected packed training recipe without model checkpointing.
 - [Persistent compiler caches across training campaigns](decisions/systems/persistent_training_compiler_cache.md) (2026-10-03): User-selected standing preference, 2026-10-03: reuse warm persistent compiler and kernel caches across compatible training runs.
-- [Select uniform FlashQLA for B200 NF4/BF16 LoRA](decisions/systems/select_uniform_flashqla_for_b200_nf4_bf16_lora.md) (2026-10-02): Use `systems_screen@_global_: qwen35_4b_b200_default`, with all 24 GDN layers on FlashQLA, SDPA full attention and the selected checkpoint/adaptive batching recipe.
-- [FlashQLA for the default B200 LoRA recipe](decisions/systems/b200_flashqla_training_recipe.md) (2026-10-02): Subsequent user selection: the current B200 default uses packed unquantized BF16 LoRA without model checkpointing.
-- [Adaptive batching for future B200 training](decisions/systems/b200_adaptive_training_recipe.md) (2026-10-01): The current B200 default uses packed BF16 LoRA without model checkpointing; see the packed BF16 decision.
-- [Config-driven monitoring systems screens](decisions/systems/config_driven_systems_screens.md) (2026-09-04): New matched training-throughput ablations use `gleipnir.monitoring_systems_screen` instead of creating separate `core.py`, `prepare.py`, `run_lambda.py`, and …
-- [Enable pinned causal-conv1d for long Qwen3.5-4B training](decisions/systems/enable_pinned_causal_conv1d_for_long_qwen3_5_4b_training.md) (2026-09-03): On the Stack 24 two-H100 `gleipnir-improvement` target, source-build pinned `causal-conv1d==1.6.2.post1` into an isolated target and require a BF16 GPU forward/backward …
+- [Select uniform FlashQLA for B200 NF4/BF16 LoRA](decisions/systems/select_uniform_flashqla_for_b200_nf4_bf16_lora.md) (2026-10-02) *(superseded)*: Use `systems_screen@_global_: qwen35_4b_b200_default`, with all 24 GDN layers on FlashQLA, SDPA full attention and the selected checkpoint/adaptive batching recipe.
+- [FlashQLA for the default B200 LoRA recipe](decisions/systems/b200_flashqla_training_recipe.md) (2026-10-02) *(superseded)*: Recorded: selected by explicit user instruction, 2026-10-02.
+- [Adaptive batching for future B200 training](decisions/systems/b200_adaptive_training_recipe.md) (2026-10-01) *(superseded)*: Recorded: adaptive batching selected by explicit user instruction, 2026-10-01.
+- [Config-driven monitoring systems screens](decisions/systems/config_driven_systems_screens.md) (2026-09-04): Recorded: adopted 2026-09-04; Hydra authoring added 2026-09-04.
+- [Enable pinned causal-conv1d for long Qwen3.5-4B training](decisions/systems/enable_pinned_causal_conv1d_for_long_qwen3_5_4b_training.md) (2026-09-03) *(historical)*: On the Stack 24 two-H100 `gleipnir-improvement` target, source-build pinned `causal-conv1d==1.6.2.post1` into an isolated target and require a BF16 GPU forward/backward …
 
 Findings:
 
@@ -239,19 +241,19 @@ Decisions:
 - [Gate the GDN context-parallel prefill route by length](decisions/serving/gate_the_gdn_context_parallel_prefill_route_by_length.md) (2026-10-15): The FP8 default takes FlashInfer's non-CP GDN prefill below 8,192 tokens per call.
 - [Adopt the lean GDN host path with a strided gated norm](decisions/serving/adopt_the_lean_gdn_host_path_with_a_strided_gated_norm.md) (2026-10-15): The FP8 default runs the lean GDN prefill host path with unchanged kernels.
 - [Adopt last-query final-layer attention in the FP8 default](decisions/serving/adopt_last_query_final_layer_attention_in_the_fp8_default.md) (2026-10-15): The optimized serving default runs layer-31 attention only from each prefill request's last token.
-- [Default future experiments to optimized vLLM](decisions/serving/default_future_experiments_to_optimized_vllm.md) (2026-10-08): Use the optimized serving implementation for future experiment inference, serving and evaluation.
+- [Default future experiments to optimized vLLM](decisions/serving/default_future_experiments_to_optimized_vllm.md) (2026-10-08) *(superseded)*: Use the optimized serving implementation for future experiment inference, serving and evaluation.
 - [Monitor serving precision and frozen comparisons](decisions/serving/b200_monitor_score_reference.md) (2026-10-08): future-experiment inference/evaluation recipe, supported context and model/GPU envelope, parity requirements and frozen B200 comparison controls.
-- [Direct FP4-output B200 inference reference](decisions/serving/b200_native_fp4_output_inference_baseline.md) (2026-10-07): Selected by the user on 2026-10-07.
+- [Direct FP4-output B200 inference reference](decisions/serving/b200_native_fp4_output_inference_baseline.md) (2026-10-07) *(superseded)*: Selected by the user on 2026-10-07.
 - [Native Gigatoken and direct FROST serving reference](decisions/serving/b200_gigatoken_direct_host_reference.md) (2026-10-07) *(superseded)*: Historical selection, superseded by the repaired score reference.
 - [Combined preparation and tuned FP4 GEMMs as the B200 inference reference](decisions/serving/b200_tuned_fp4_inference_baseline.md) (2026-10-06) *(superseded)*: Subsequently superseded by the user-selected FP4 attention projection reference.
 - [MXFP8 prefill as the B200 inference optimization reference](decisions/serving/b200_mxfp8_inference_baseline.md) (2026-10-06) *(superseded)*: Superseded later on 2026-10-06 by the user-selected combined-preparation/shape-tuned reference.
-- [B200 serving precision after FROST baseline selection](decisions/serving/b200_low_precision_attention_serving.md) (2026-10-06): baseline, prioritizing higher-concurrency throughput, and asks about lower precision for GDN/linear attention and full attention.
-- [Native inference kernel screening on B200](decisions/serving/b200_inference_kernels.md) (2026-10-06): Decision date: 2026-10-06.
-- [Production inference development benchmark](decisions/serving/b200_inference_benchmark.md) (2026-10-06): Decision date: 2026-10-06.
-- [Reuse training FROST forward arithmetic in vLLM](decisions/serving/b200_frost_inference.md) (2026-10-06): Decision date: 2026-10-06.
-- [Native cuDNN FP4 MLP inference screen](decisions/serving/b200_fp4_inference.md) (2026-10-06): Decision date: 2026-10-06.
+- [B200 serving precision after FROST baseline selection](decisions/serving/b200_low_precision_attention_serving.md) (2026-10-06) *(historical)*: baseline, prioritizing higher-concurrency throughput, and asks about lower precision for GDN/linear attention and full attention.
+- [Native inference kernel screening on B200](decisions/serving/b200_inference_kernels.md) (2026-10-06) *(historical)*: Decision date: 2026-10-06.
+- [Production inference development benchmark](decisions/serving/b200_inference_benchmark.md) (2026-10-06) *(historical)*: Decision date: 2026-10-06.
+- [Reuse training FROST forward arithmetic in vLLM](decisions/serving/b200_frost_inference.md) (2026-10-06) *(historical)*: Decision date: 2026-10-06.
+- [Native cuDNN FP4 MLP inference screen](decisions/serving/b200_fp4_inference.md) (2026-10-06) *(historical)*: Decision date: 2026-10-06.
 - [FP4 GDN projections as the B200 serving baseline](decisions/serving/b200_fp4_gdn_inference_baseline.md) (2026-10-06) *(superseded)*: Superseded for new optimization comparisons on 2026-10-06 by the MXFP8 prefill reference.
-- [FP4 attention projections as the B200 inference reference](decisions/serving/b200_attention_fp4_inference_baseline.md) (2026-10-06): Decision date: 2026-10-06.
+- [FP4 attention projections as the B200 inference reference](decisions/serving/b200_attention_fp4_inference_baseline.md) (2026-10-06) *(superseded)*: Decision date: 2026-10-06.
 
 Findings:
 
@@ -260,7 +262,7 @@ Findings:
 - [Kernel profile of the adopted last-query default](findings/serving/b200_kernel_profile.md) (2026-10-15): MXFP8 attention is 60–84% of GPU time from 256K; FP4 GEMMs and GDN dominate mid-length/c128; short requests are host-bound. Ranked candidates follow.
 - [Short-request host overhead](findings/serving/b200_host_overhead.md) (2026-10-15): C1 steps are host-bound; gated GDN route and lean GDN host path (both adopted) save ~5 ms; lean custom-op dispatch is within noise; remaining host time is diffuse.
 - [Length-gated GDN prefill route](findings/serving/b200_gdn_route.md) (2026-10-15): non-CP below 8K tokens per call saves 2.3–2.9 ms on short C1 requests (paired, same server); long chunks unchanged bitwise. Adopted in the FP8 default.
-- [B200 FP8 default single-request contexts to 1M](findings/serving/b200_context_million.md) (2026-10-15) *(superseded)*: C1 1K–1M sweep with node/environment receipts, YaRN beyond 256K, chunk cost fit (attention 90% at 1M) and power-capped clocks on long attention.
+- [B200 FP8 default single-request contexts to 1M](findings/serving/b200_context_million.md) (2026-10-15): C1 1K–1M sweep with node/environment receipts, YaRN beyond 256K, chunk cost fit (attention 90% at 1M) and power-capped clocks on long attention.
 - [vLLM 0.31 migration and scheduling diagnostics](findings/serving/b200_vllm031.md) (2026-10-08): source-compatible B200 runtime, failed score agreement, paired native arithmetic, scheduler diagnostics and fixed-adapter ID ranking/calibration comparison.
 - [Direct FP4 SwiGLU-output ablation on the FP8-attention default](findings/serving/b200_swiglu_output.md) (2026-10-08): restored whole-row scaling improves development ranking but worsens full ID pAUROC.
 - [Optimized-stack drift on the last full-trained adapter](findings/serving/b200_optimized_id.md) (2026-10-08): paired same-adapter ID regression, recovery groups and continuous-admission throughput/latency tradeoff.
@@ -297,7 +299,7 @@ Findings:
 
 Decisions:
 
-- [Bootstrap](decisions/operations/bootstrap.md) (2026-08-09): Start Gleipnir as a standalone repository rather than retaining competition submission and leaderboard machinery.
+- [Bootstrap](decisions/operations/bootstrap.md) (2026-08-09) *(historical)*: Start Gleipnir as a standalone repository rather than retaining competition submission and leaderboard machinery.
 
 Findings:
 
@@ -312,7 +314,7 @@ Findings:
 ## Plans and designs
 
 - [Adversarial stress tests of the released monitors](plans/adversarial_stress_testing.md) (2026-10-20): threat model, low-FPR metrics and the phase-1 attack plan for the released monitors.
-- [Adversarial stress tests: run queue](plans/adversarial_run_queue.md) (2026-10-20) *(superseded)*: One list of what is running, what's next and what's parked.
+- [Adversarial stress tests: run queue](plans/adversarial_run_queue.md) (2026-10-20): One list of what is running, what's next and what's parked.
 - [Phase 2 design: multi-agent failure modes of per-agent monitors](plans/adversarial_phase2_design.md) (2026-10-20): Draft, 20 October 2026.
 - [Does the monitor respond to what the code does, or to how the comments describe it?](plans/adversarial_code_or_comments.md) (2026-10-20): Design draft, 20 October 2026.
 - [Transferring the 4B serving optimizations to Qwen3.8-27B](plans/qwen38_27b_serving_transfer.md) (2026-10-18): backlog note on which 4B serving optimizations transfer to the 27B, what needs adapting or revalidating, and a four-step plan; not launched.

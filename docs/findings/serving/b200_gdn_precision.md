@@ -1,6 +1,6 @@
 # FP8 GDN projections on the FP8-attention default
 
-Status: not recorded.
+Status: completed.
 
 2026-10-08. Replacing only the 48 large GDN projections with FP8 gives a small
 ID source-macro pAUROC@20 gain of **0.261 percentage points**, almost entirely

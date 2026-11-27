@@ -1,6 +1,7 @@
 # Bootstrap
 
-Date: 2026-08-09. Status: recorded in the decision log.
+Date: 2026-08-09.
+Status: historical; governs no future work.
 
 - Start Gleipnir as a standalone repository rather than retaining competition
   submission and leaderboard machinery.

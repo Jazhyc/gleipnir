@@ -1,6 +1,7 @@
 # Compare Muon through scheduled update-RMS matching
 
-Date: 2026-08-13. Status: recorded in the decision log.
+Date: 2026-08-13.
+Status: historical; governs no future work.
 
 - Replace the independent, unscheduled Muon learning rate with the standard
   scheduler-managed parameter-group `lr`. Apply the per-matrix Moonshot scaling

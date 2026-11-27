@@ -1,6 +1,6 @@
 # B200 serving CPU placement
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. GPU-local CPU affinity does not provide a reliable serving gain on
 the retained native Gigatoken/Direct FP4 worker. Restore original affinity and

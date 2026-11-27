@@ -1,6 +1,6 @@
 # Full-training prompt-injection presence census
 
-Status: not recorded.
+Status: completed.
 
 Run 2026-10-03 with the user-authorized Runpod B200. The frozen contract is
 [`training_injection_census`](../../../experiments/injection/training_injection_census/README.md).

@@ -1,6 +1,7 @@
 # Train Gleipnir 4B on tool-trajectory data only
 
-Date: 2026-10-20. Status: recorded in the decision log.
+Date: 2026-10-20.
+Status: current.
 
 - User decision: Gleipnir 4B uses the same training data as Gleipnir 27B. That
   is the strict-filtered tool-trajectory monitoring pool

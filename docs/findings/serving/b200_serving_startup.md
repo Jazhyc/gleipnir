@@ -1,6 +1,6 @@
 # B200 serving startup
 
-Status: not recorded.
+Status: completed.
 
 2026-10-07. The recorded warm NC2 unchanged-arithmetic restart takes **95.44 s**,
 versus **680.8 s** for the archived selected Direct FP4 recipe. Use locally

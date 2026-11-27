@@ -1,6 +1,7 @@
 # Config-driven monitoring systems screens
 
-Status: adopted 2026-09-04; Hydra authoring added 2026-09-04.
+Status: current.
+Recorded: adopted 2026-09-04; Hydra authoring added 2026-09-04.
 
 ## Decision
 

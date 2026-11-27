@@ -1,6 +1,6 @@
 # Inkling 2 Mini as the next large-monitor base
 
-Status: not recorded.
+Status: current.
 
 User selection, 2026-11-23: `thinkingmachines/Inkling-2-Mini` (revision
 `7a67ae23…`) is the base candidate to succeed Qwen3.8-27B, the base of

@@ -1,6 +1,6 @@
 # Eight-bit attention training kernel survey
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-05. Online survey and inspection of public upstream source.
 No GPU execution, dependency changes, or new training runs were performed.

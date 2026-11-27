@@ -1,6 +1,6 @@
 # SleightBench: NTP activation probes, single pass
 
-Status: not recorded.
+Status: completed.
 
 2026-10-26. The frozen NTP probes of the
 [probe study](../../../experiments/probes/probe_generalization/README.md) (`full01`,

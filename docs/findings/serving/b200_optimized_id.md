@@ -1,6 +1,6 @@
 # Optimized-stack drift on the last full-trained adapter
 
-Status: not recorded.
+Status: completed.
 
 2026-10-08. The initial grouped evaluation of the last full-trained 4B adapter on the
 optimized vLLM stack shows a material ID regression against the same adapter's

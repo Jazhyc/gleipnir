@@ -1,6 +1,6 @@
 # NVIDIA MXFP8 causal attention on B200
 
-Status: not recorded.
+Status: completed.
 
 Date: 2026-10-05. Native forward and backward execute for causal D256 GQA.
 Strict native numerical parity fails. A separately authorized learning screen

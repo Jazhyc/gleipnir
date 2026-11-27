@@ -1,6 +1,6 @@
 # Retain the frozen OOD inputs for paper comparability
 
-Status: not recorded.
+Status: current.
 
 User selection, 2026-10-12: keep the existing six-source, 6,395-row OOD inputs
 and reported scores unchanged so comparisons retain the paper-inspired input

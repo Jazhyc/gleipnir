@@ -1,6 +1,6 @@
 # Full QAD checkpoint OOD follow-up
 
-Status: not recorded.
+Status: completed.
 
 The user authorized evaluating the original full QAD checkpoint on the frozen
 OOD suite on 2026-10-13, then explicitly requested optimized serving as well.

@@ -1,6 +1,6 @@
 # Black-box APPS injection detection
 
-Status: not recorded.
+Status: completed.
 
 Completed 2026-10-11 on the user-reserved NC2 B200. Explicit injection-presence
 prompting exposes a strong presence signal in the current augmented SDPA replay:

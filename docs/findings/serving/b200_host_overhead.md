@@ -1,6 +1,6 @@
 # Short-request host overhead
 
-Status: not recorded.
+Status: completed.
 
 2026-10-15, EU-RO-1 B200, FP8 default, C1. Short requests are host-bound. A
 1K-token step took about 32 ms of engine host time against about 8 ms of GPU

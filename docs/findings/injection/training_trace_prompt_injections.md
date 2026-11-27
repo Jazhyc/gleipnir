@@ -1,6 +1,6 @@
 # Prompt injections in the materialized training traces
 
-Status: not recorded.
+Status: completed.
 
 Reviewed 2026-10-03. The frozen 8,688-row tool-trajectory training mixture
 contains at least one actual prompt-injection attack. AgentDojo remains a
