@@ -705,3 +705,14 @@ request for the kernel profile. Terminated at 23:45 UTC on the user's
 instruction (`podTerminate`; `myself.pods` empty) after verified collection
 of 47 files (`collect.sha256`, `collect_profile.sha256`); about $23. No Pod
 remains.
+
+For the [serving stack promotion check](../../experiments/serving/serving_stack_promotion/README.md)
+(user authorization 2026-11-27, one B200, any datacenter, terminated after
+collection): `x4tbfzde1f4z88` (`gleipnir-stack-promotion`, US-NE-1, image
+`1.2`, machine `hl6nl0vylakn`, B200 `GPU-687c5627…`, Intel Xeon 6960P, driver
+595.112.07, 250 GB container disk, no network volume). Runpod's Secure Cloud
+B200 list price was $8.99/hour that day (Community Cloud $5.98, low stock),
+up from the $7.99 of earlier Pods. Allocated on the first request at about
+03:55 UTC; terminated at 04:56 UTC (`podTerminate`; lookup null,
+`myself.pods` empty) after verified collection of 18 files; about $9. No Pod
+remains.
