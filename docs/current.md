@@ -116,7 +116,7 @@ them.
   deferred for budget.
 - Add the arXiv identifier and citation once the report is announced.
 - Long findings may later be condensed.
-- Runpod volumes: EU `cb7bxu71ug` holds nothing the Storage Box lacks that the
-  user chose to keep ([inventory](findings/operations/eu_volume_inventory.md));
-  deleting it is the user's call. NC2 `ixbh81vf9c` (300 GB) is not yet
-  inventoried.
+- Runpod volumes: the EU volume is deleted; NC2 `ixbh81vf9c` (300 GB) holds
+  nothing the Storage Box lacks that the user chose to keep
+  ([inventory](findings/operations/runpod_volume_inventory.md)); deleting it is the
+  user's call.

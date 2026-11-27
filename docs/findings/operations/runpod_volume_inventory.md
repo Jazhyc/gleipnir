@@ -1,4 +1,4 @@
-# EU network volume inventory
+# Runpod network volume inventory
 
 Status: completed.
 Date: 2026-11-27.
@@ -41,6 +41,37 @@ teacher training datasets and the probe prompt sets (2.5 GB),
 the box), `systems_training_scratch/fp32_master.pt` (2.6 GB scratch; the box
 copy is a header-only stub) and 27B vocab-distillation hidden states (63 MB).
 
-The volume itself is retained; deleting it is the user's decision. The NC2
-volume `ixbh81vf9c` (US-NC-2, 300 GB) is not yet inventoried: US-NC-2 had no
-CPU instances and no GPU Pod at or under $0.50/hour that day.
+At the user's instruction the EU volume was then deleted (2026-11-27 05:42
+UTC, `deleteNetworkVolume`; no Pods attached, absent from
+`myself.networkVolumes` afterwards).
+
+## NC2 volume `ixbh81vf9c`
+
+Same method, on CPU Pod `m6j0cnb198pfck` (cpu3c-4-8, $0.12/hour, available on
+the second attempt that morning): 203.3 GB in 452,723 files, of which 106.1 GB
+in 657 model files (over 1 MB) hashed on both sides.
+
+| Group | Files | GB |
+|---|---:|---:|
+| Model files byte-identical on the box | 522 | 54.2 |
+| Model files only on the volume | 135 | 51.9 |
+| Rebuildable (environments, caches, HF downloads) | 382,633 | 72.6 |
+
+Only on the volume were the FP32 master and serving adapters of six completed
+4B runs: `activation-filter-matched20-sdpa01`,
+`activation-filter-ranked20-sdpa01`, `strict-pauc02` and
+`teacher-disagreement-delta{005,010,020}-sdpa04` (24 files with their
+`training_args.bin`). Under the same "masters only" selection they were copied
+to their recorded paths and verified on the box (24 of 24 match;
+`nc2_masters_copied.sha256`). The NC2 copies of `filtered-fp4-fa4-baseline01`
+and `teacher-disagreement-delta000-sdpa04` are byte-identical to the EU copies
+already preserved, and every `checkpoint-*` adapter equals its run's final
+master.
+
+Not copied: runtime archives (`b200_shutdown/20261009_nc2`, `20261013_qat`;
+20 GB), the concept-ablation merged-checkpoint archive (7.3 GB, derivable from
+its master), CAFT direction-refit activation caches (1.5 GB), merged and
+serving copies of the six QAT/QAD runs whose masters are on the box (6.1 GB),
+the scratch `systems_training_scratch` adapter, and the external
+`monitor-injection-evals` checkout's small result files (under 0.1 GB). The NC2
+volume is retained; deleting it is the user's decision.

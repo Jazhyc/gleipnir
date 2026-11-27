@@ -717,7 +717,7 @@ up from the $7.99 of earlier Pods. Allocated on the first request at about
 `myself.pods` empty) after verified collection of 18 files; about $9. No Pod
 remains.
 
-For the [EU volume inventory](../findings/operations/eu_volume_inventory.md)
+For the [EU volume inventory](../findings/operations/runpod_volume_inventory.md)
 (user authorization 2026-11-27): CPU Pod `hjk0msbi8ytw7e`
 (`gleipnir-volume-inventory-eu`, cpu3c-4-8, $0.12/hour, `ubuntu:24.04`, volume
 `cb7bxu71ug` at `/workspace`), created through GraphQL `deployCpuPod` (input
@@ -726,3 +726,11 @@ Terminated at 05:41 UTC (`podTerminate`; lookup null, `myself.pods` empty)
 after the master adapters were copied and verified; about $0.20. A matching
 Pod for the NC2 volume could not be created: US-NC-2 had no CPU instances and
 no GPU type at or under $0.50/hour. Both volumes are retained.
+
+At the user's instruction the EU volume `cb7bxu71ug` was deleted on 2026-11-27
+at 05:42 UTC (`deleteNetworkVolume`; no Pods attached; only `ixbh81vf9c`
+remains). For the NC2 inventory, CPU Pod `m6j0cnb198pfck`
+(`gleipnir-volume-inventory-nc2`, cpu3c-4-8, $0.12/hour, volume `ixbh81vf9c`)
+was created at about 05:43 UTC once US-NC-2 had CPU stock again, and
+terminated at 05:57 UTC (lookup null, `myself.pods` empty) after verified
+collection; about $0.05. No Pod remains.
