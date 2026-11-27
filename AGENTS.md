@@ -78,6 +78,21 @@ revisions, licenses, transformations, prompt hashes, and artifact checksums so
 data can be reconstructed. Treat labels and privileged teacher information as
 separate fields with explicit provenance.
 
+## Structural Upkeep
+
+When work turns up structure that breaks these conventions or makes the
+repository harder to navigate (fixed-depth paths, imports between experiment
+folders, shared code left inside an experiment, a crowded folder that needs
+grouping, duplicated or stale docs, unindexed records), tell the user: name
+the locations and propose a fix, then ask before reorganizing. Do not fold
+unrequested moves into the current change. Make an approved reorganization its
+own commit. First check what pins paths or file hashes: receipts, launch gates,
+frozen campaign contracts, resume commands, the directories the
+[experiments index](experiments/README.md#kept-at-their-recorded-paths) keeps
+at recorded paths, and the serving stack's
+[promotion manifest](src/gleipnir/serving/stack/promotion.json). Keep behavior
+unchanged and verify it with the tests or a matched rerun.
+
 ## Environment and Commands
 
 Use Python 3.12 and the checked-in `uv.lock`:
