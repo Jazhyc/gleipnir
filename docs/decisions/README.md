@@ -10,8 +10,9 @@ one of three statuses:
 | Date | Area | Status | Decision |
 | --- | --- | --- | --- |
 | 2026-11-23 | evaluation | current | [Inkling 2 Mini as the next large-monitor base](evaluation/inkling2_mini_next_base.md) |
+| 2026-11-18 | serving | current | [Price release models on the released stack, one request at a time](serving/price_release_models_on_the_released_stack.md) |
 | 2026-10-20 | training | current | [Train Gleipnir 4B on tool-trajectory data only](training/train_gleipnir_4b_on_tool_trajectory_data_only.md) |
-| 2026-10-20 | serving | current | [Price Gleipnir release models at self-hosted B200 break-even](serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md) |
+| 2026-10-20 | serving | superseded | [Price Gleipnir release models at self-hosted B200 break-even](serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md) |
 | 2026-10-20 | evaluation | current | [Plot Gleipnir at optimized-serving performance; no QAD for the 27B](evaluation/plot_gleipnir_at_optimized_serving_performance_no_qad_for.md) |
 | 2026-10-20 | evaluation | current | [Evaluate Gleipnir 27B under the full teacher prompt](evaluation/evaluate_gleipnir_27b_under_the_full_teacher_prompt.md) |
 | 2026-10-17 | systems | current | [Qwen3.8-27B B200 training default](systems/qwen38_27b_b200_training_default.md) |

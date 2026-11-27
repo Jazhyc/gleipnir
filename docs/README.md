@@ -236,7 +236,8 @@ Findings:
 
 Decisions:
 
-- [Price Gleipnir release models at self-hosted B200 break-even](decisions/serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md) (2026-10-20): User decision: Gleipnir 4B v0.3 and Gleipnir 27B are priced at self-hosting break-even, one B200 at `$7.99/h` at 100% utilization.
+- [Price release models on the released stack, one request at a time](decisions/serving/price_release_models_on_the_released_stack.md) (2026-11-18): User decisions, 2026-11-16 and 2026-11-18, recorded while drafting the v1 technical report: price Gleipnir at self-hosted B200 break-even from the one-request-at-a-time …
+- [Price Gleipnir release models at self-hosted B200 break-even](decisions/serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md) (2026-10-20) *(superseded)*: User decision: Gleipnir 4B v0.3 and Gleipnir 27B are priced at self-hosting break-even, one B200 at `$7.99/h` at 100% utilization.
 - [Opt-in prefix-cached serving](decisions/serving/prefix_cached_serving.md) (2026-10-16): synchronous-monitoring mode with accepted cached-score drift.
 - [Gate the GDN context-parallel prefill route by length](decisions/serving/gate_the_gdn_context_parallel_prefill_route_by_length.md) (2026-10-15): The FP8 default takes FlashInfer's non-CP GDN prefill below 8,192 tokens per call.
 - [Adopt the lean GDN host path with a strided gated norm](decisions/serving/adopt_the_lean_gdn_host_path_with_a_strided_gated_norm.md) (2026-10-15): The FP8 default runs the lean GDN prefill host path with unchanged kernels.

@@ -81,8 +81,9 @@ inventory: check the provider before assuming a machine or volume exists.
 - Future merged-weight QAT uses the selected reference arithmetic
   ([decision](decisions/quantization/qat_reference_training.md)); the 27B needs
   no QAD ([decision](decisions/evaluation/plot_gleipnir_at_optimized_serving_performance_no_qad_for.md)).
-- Release models are priced at self-hosted B200 break-even
-  ([decision](decisions/serving/price_gleipnir_release_models_at_self_hosted_b200_break_even.md)).
+- Release models are priced at self-hosted B200 break-even from the released
+  image's one-request throughput
+  ([decision](decisions/serving/price_release_models_on_the_released_stack.md)).
 
 ## Code bound in place
 
