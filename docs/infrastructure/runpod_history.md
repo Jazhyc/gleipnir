@@ -734,3 +734,7 @@ remains). For the NC2 inventory, CPU Pod `m6j0cnb198pfck`
 was created at about 05:43 UTC once US-NC-2 had CPU stock again, and
 terminated at 05:57 UTC (lookup null, `myself.pods` empty) after verified
 collection; about $0.05. No Pod remains.
+
+At the user's instruction the NC2 volume `ixbh81vf9c` was deleted on
+2026-11-27 at 06:00 UTC (`deleteNetworkVolume`; no Pods attached;
+`myself.networkVolumes` then empty). The account has no network volumes.

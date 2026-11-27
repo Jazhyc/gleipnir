@@ -74,4 +74,5 @@ its master), CAFT direction-refit activation caches (1.5 GB), merged and
 serving copies of the six QAT/QAD runs whose masters are on the box (6.1 GB),
 the scratch `systems_training_scratch` adapter, and the external
 `monitor-injection-evals` checkout's small result files (under 0.1 GB). The NC2
-volume is retained; deleting it is the user's decision.
+volume was then deleted at the user's instruction (2026-11-27 06:00 UTC;
+`myself.networkVolumes` empty afterwards).

@@ -116,7 +116,7 @@ them.
   deferred for budget.
 - Add the arXiv identifier and citation once the report is announced.
 - Long findings may later be condensed.
-- Runpod volumes: the EU volume is deleted; NC2 `ixbh81vf9c` (300 GB) holds
-  nothing the Storage Box lacks that the user chose to keep
-  ([inventory](findings/operations/runpod_volume_inventory.md)); deleting it is the
-  user's call.
+- Runpod: no network volumes remain (both deleted 2026-11-27 after their
+  unique masters were copied to the Storage Box;
+  [inventory](findings/operations/runpod_volume_inventory.md)). GPU work runs
+  from the `gleipnir-serve` image or a fresh `uv sync --locked` environment.

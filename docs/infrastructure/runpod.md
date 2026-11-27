@@ -1,5 +1,11 @@
 # Runpod
 
+Status, 2026-11-27: the account has no network volumes. EU `cb7bxu71ug` and
+NC2 `ixbh81vf9c` were deleted after their unique master adapters were copied
+to the Storage Box ([inventory](../findings/operations/runpod_volume_inventory.md)).
+Create Pods without a volume, from `gleipnir-serve` or a fresh environment;
+the volume procedures below are historical.
+
 On 2026-10-15 the user provided EU-RO-1 B200 Pod `cvjantiismcaod`
 ($7.99/hour) with network volume `cb7bxu71ug` at `/workspace`. Its template
 leaves `PUBLIC_KEY` empty: install the project key and start SSH (after
