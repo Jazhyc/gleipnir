@@ -305,6 +305,7 @@ Decisions:
 
 Findings:
 
+- [EU network volume inventory](findings/operations/eu_volume_inventory.md) (2026-11-27): User request, 2026-11-27: inventory Runpod network volume `cb7bxu71ug` (EU-RO-1, 200 GB; unused since 2026-11-04, with 55 unreadable files since 2026-11-03) against the …
 - [QAT and OOD campaign shutdown](findings/operations/qat_shutdown.md) (2026-10-13): verified B200 termination, retained NC2 volume and checksummed runtime/adapter preservation for resumption.
 - [Network-volume checkpoint cleanup](findings/operations/network_volume_cleanup.md) (2026-10-13): seven reconstructable merges pruned, preserving verified bases and FP32 adapters.
 - [Teacher filtering campaign shutdown](findings/operations/teacher_sweep_shutdown.md) (2026-10-12): verified adapter/cache retention and confirmed NC2 B200 termination.
